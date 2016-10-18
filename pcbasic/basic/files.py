@@ -55,15 +55,18 @@ class Files(object):
 
     reset_ = close_all
 
-    def close_(self, number=None):
+    def close_(self, args):
         """CLOSE: close a file, or all files."""
-        if number is None:
-            self.close_all()
-        else:
+        at_least_one = False
+        for number in args:
+            at_least_one = True
             try:
                 self.close(number)
             except KeyError:
                 pass
+        # if no file number given, close everything
+        if not at_least_one:
+            self.close_all()
 
     def open_(self, args):
         """OPEN: open a data file."""

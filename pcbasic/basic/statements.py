@@ -189,7 +189,7 @@ class StatementParser(object):
             tk.OPTION: self.exec_option,
             tk.RANDOMIZE: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.randomize_),
             tk.OPEN: partial(self.exec_args_iter, args_iter=self._parse_open_args_iter, callback=session.files.open_),
-            tk.CLOSE: self.exec_close,
+            tk.CLOSE: partial(self.exec_args_iter, args_iter=self._parse_close_args_iter, callback=session.files.close_),
             tk.LOAD: partial(self.exec_args_iter, args_iter=self._parse_load_args_iter, callback=session.load_),
             tk.MERGE: partial(self.exec_single_string_arg, callback=session.merge_),
             tk.SAVE: partial(self.exec_args_iter, args_iter=self._parse_save_args_iter, callback=session.save_),
@@ -695,16 +695,12 @@ class StatementParser(object):
             return 'RW' if ins.skip_blank_read_if((tk.WRITE,)) else 'R'
         raise error.RunError(error.STX)
 
-    def exec_close(self, ins):
-        """CLOSE: close one or more files."""
-        if ins.skip_blank() in tk.END_STATEMENT:
-            # close all open files
-            self.session.files.close_()
-        else:
+    def _parse_close_args_iter(self, ins):
+        """Parse CLOSE syntax."""
+        if ins.skip_blank() not in tk.END_STATEMENT:
             while True:
                 # if an error occurs, the files parsed before are closed anyway
-                number = self._parse_file_number(ins, opt_hash=True)
-                self.session.files.close_(number)
+                yield self._parse_file_number(ins, opt_hash=True)
                 if not ins.skip_blank_read_if((',',)):
                     break
 
