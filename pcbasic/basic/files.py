@@ -138,25 +138,33 @@ class Files(object):
         if lock_start_rec is None:
             lock_start_rec = 1
         else:
-            lock_start_rec = values.round(lock_start_rec).to_value()
+            lock_start_rec = values.round(values.csng_(lock_start_rec)).to_value()
         if lock_stop_rec is None:
             lock_stop_rec = lock_start_rec
         else:
-            lock_stop_rec = values.round(lock_stop_rec).to_value()
+            lock_stop_rec = values.round(values.csng_(lock_stop_rec)).to_value()
         if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
             raise error.RunError(error.BAD_RECORD_NUMBER)
         return lock_start_rec, lock_stop_rec
 
-    def lock_(self, thefile, lock_start_rec, lock_stop_rec):
+    def lock_(self, args):
         """LOCK: set file or record locks."""
+        thefile = self.get(next(args))
+        lock_start_rec = next(args)
+        lock_stop_rec = next(args)
+        list(args)
         try:
             thefile.lock(*self._get_lock_limits(lock_start_rec, lock_stop_rec))
         except AttributeError:
             # not a disk file
             raise error.RunError(error.PERMISSION_DENIED)
 
-    def unlock_(self, thefile, lock_start_rec, lock_stop_rec):
+    def unlock_(self, args):
         """UNLOCK: set file or record locks."""
+        thefile = self.get(next(args))
+        lock_start_rec = next(args)
+        lock_stop_rec = next(args)
+        list(args)
         try:
             thefile.unlock(*self._get_lock_limits(lock_start_rec, lock_stop_rec))
         except AttributeError:

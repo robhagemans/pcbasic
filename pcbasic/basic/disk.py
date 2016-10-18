@@ -745,7 +745,7 @@ class RandomFile(devices.CRLFTextFileBase):
         self.output_stream.seek(current)
         return lof
 
-    def lock(self, start, stop, lock_list):
+    def lock(self, start, stop):
         """Lock range of records."""
         bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
         other_lock_list = set.union(f.lock_list for f in self.locks.list(self.name))
@@ -755,7 +755,7 @@ class RandomFile(devices.CRLFTextFileBase):
                 raise error.RunError(error.PERMISSION_DENIED)
         self.lock_list.add((bstart, bstop))
 
-    def unlock(self, start, stop, lock_list):
+    def unlock(self, start, stop):
         """Unlock range of records."""
         bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
         # permission denied if the exact record range wasn't given before
@@ -865,7 +865,7 @@ class TextFile(devices.CRLFTextFileBase):
             s = self.codepage.str_from_unicode(s.decode(b'utf-8'))
         return s
 
-    def lock(self, start, stop, lock_list):
+    def lock(self, start, stop):
         """Lock the file."""
         if set.union(f.lock_list for f in self.locks.list(self.name)):
             raise error.RunError(error.PERMISSION_DENIED)

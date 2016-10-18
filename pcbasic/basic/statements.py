@@ -236,8 +236,8 @@ class StatementParser(object):
             tk.PALETTE: self.exec_palette,
             tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
             tk.PCOPY: self.exec_pcopy,
-            tk.LOCK: self.exec_lock,
-            tk.UNLOCK: self.exec_unlock,
+            tk.LOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.unlock_),
+            tk.UNLOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.unlock_),
             tk.MID: partial(self.exec_args_iter, args_iter=self._parse_mid_args_iter, callback=session.memory.mid_),
             tk.PEN: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.pen_),
             tk.STRIG: self.exec_strig,
@@ -715,24 +715,22 @@ class StatementParser(object):
                 if not ins.skip_blank_read_if((',',)):
                     break
 
-    def _parse_lock_unlock(self, ins):
-        """Parse lock records for LOCK or UNLOCK."""
-        thefile = self.session.files.get(self._parse_file_number(ins, opt_hash=True))
-        lock_start_rec = None
-        if ins.skip_blank_read_if((',',)):
-            lock_start_rec = self.values.csng_(self.parse_expression(ins))
-        lock_stop_rec = None
-        if ins.skip_blank_read_if((tk.TO,)):
-            lock_stop_rec = self.values.csng_(self.parse_expression(ins))
-        return (thefile, lock_start_rec, lock_stop_rec)
-
-    def exec_lock(self, ins):
-        """LOCK: set file or record locks."""
-        self.session.files.lock_(*self._parse_lock_unlock(ins))
-
-    def exec_unlock(self, ins):
-        """UNLOCK: unset file or record locks."""
-        self.session.files.unlock_(*self._parse_lock_unlock(ins))
+    def _parse_lock_unlock_args_iter(self, ins):
+        """Parse LOCK or UNLOCK syntax."""
+        yield self._parse_file_number(ins, opt_hash=True)
+        if not ins.skip_blank_read_if((',',)):
+            ins.require_end()
+            yield None
+            yield None
+        else:
+            expr = self.parse_expression(ins, allow_empty=True)
+            yield expr
+            if ins.skip_blank_read_if((tk.TO,)):
+                yield self.parse_expression(ins)
+            elif expr is not None:
+                yield None
+            else:
+                raise error.RunError(error.MISSING_OPERAND)
 
     def exec_ioctl(self, ins):
         """IOCTL: send control string to I/O device."""
