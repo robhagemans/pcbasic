@@ -225,7 +225,7 @@ class StatementParser(object):
             tk.DRAW: self.exec_draw,
             tk.PLAY: self.exec_play,
             tk.TIMER: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.timer_),
-            tk.IOCTL: self.exec_ioctl,
+            tk.IOCTL: partial(self.exec_args_iter, args_iter=self._parse_ioctl_args_iter, callback=session.files.ioctl_statement_),
             tk.CHDIR: partial(self.exec_single_string_arg, callback=session.devices.chdir_),
             tk.MKDIR: partial(self.exec_single_string_arg, callback=session.devices.mkdir_),
             tk.RMDIR: partial(self.exec_single_string_arg, callback=session.devices.rmdir_),
@@ -732,12 +732,11 @@ class StatementParser(object):
             else:
                 raise error.RunError(error.MISSING_OPERAND)
 
-    def exec_ioctl(self, ins):
-        """IOCTL: send control string to I/O device."""
-        thefile = self.session.files.get(self._parse_file_number(ins, opt_hash=True))
+    def _parse_ioctl_args_iter(self, ins):
+        """Parse IOCTL syntax."""
+        yield self._parse_file_number(ins, opt_hash=True)
         ins.require_read((',',))
-        control_string = self._parse_temporary_string(ins)
-        self.session.files.ioctl_statement_(thefile, control_string)
+        yield self._parse_temporary_string(ins)
 
     ###########################################################################
     # Graphics statements

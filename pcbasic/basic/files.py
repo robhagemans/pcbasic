@@ -173,8 +173,10 @@ class Files(object):
             # not a disk file
             raise error.RunError(error.PERMISSION_DENIED)
 
-    def ioctl_statement_(self, thefile, control_string):
+    def ioctl_statement_(self, args):
         """IOCTL: send control string to I/O device. Not implemented."""
+        thefile = self.get(next(args))
+        control_string, = args
         logging.warning("IOCTL statement not implemented.")
         raise error.RunError(error.IFC)
 
