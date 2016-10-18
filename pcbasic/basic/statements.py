@@ -206,7 +206,7 @@ class StatementParser(object):
             tk.KEY: self.exec_key,
             tk.LOCATE: self.exec_locate,
             tk.FILES: partial(self.exec_files_shell, callback=session.devices.files_),
-            tk.FIELD: self.exec_field,
+            tk.FIELD: partial(self.exec_args_iter, args_iter=self._parse_field_args_iter, callback=session.files.field_),
             tk.SYSTEM: partial(self.exec_after_end, callback=session.interpreter.system_),
             tk.NAME: partial(self.exec_args_iter, args_iter=self._parse_name_args_iter, callback=session.devices.name_),
             tk.LSET: self.exec_lset,
@@ -687,7 +687,7 @@ class StatementParser(object):
         return number, name, mode, reclen, access, lock
 
     def _parse_read_write(self, ins):
-        """Helper function: parse access mode."""
+        """Parse access mode for OPEN."""
         d = ins.skip_blank_read_if((tk.READ, tk.WRITE))
         if d == tk.WRITE:
             return 'W'
@@ -704,20 +704,17 @@ class StatementParser(object):
                 if not ins.skip_blank_read_if((',',)):
                     break
 
-    def exec_field(self, ins):
-        """FIELD: link a string variable to record buffer."""
-        the_file = self.session.files.get(self._parse_file_number(ins, opt_hash=True), 'R')
+    def _parse_field_args_iter(self, ins):
+        """Parse FIELD syntax."""
+        yield self._parse_file_number(ins, opt_hash=True)
         if ins.skip_blank_read_if((',',)):
-            offset = 0
             while True:
-                width = values.to_int(self.parse_expression(ins))
-                error.range_check(0, 255, width)
+                yield self.parse_expression(ins)
                 ins.require_read((tk.W_AS,), err=error.IFC)
-                name, index = self._parse_variable(ins)
-                self.session.files.field_(the_file, name, index, offset, width)
-                offset += width
+                yield self._parse_variable(ins)
                 if not ins.skip_blank_read_if((',',)):
                     break
+
     def _parse_lock_unlock(self, ins):
         """Parse lock records for LOCK or UNLOCK."""
         thefile = self.session.files.get(self._parse_file_number(ins, opt_hash=True))

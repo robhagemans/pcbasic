@@ -91,9 +91,19 @@ class Files(object):
         error.range_check_err(1, self.max_files, number, error.BAD_FILE_NUMBER)
         self.open(number, name, 'D', mode, access, lock, reclen)
 
-    def field_(self, the_file, name, index, offset, width):
-        """FIELD: attach a fiedl variable."""
-        the_file.field.attach_var(name, index, offset, width)
+    def field_(self, args):
+        """FIELD: attach a variable to the record buffer."""
+        the_file = self.get(next(args), 'R')
+        offset = 0
+        try:
+            while True:
+                width = values.to_int(next(args))
+                error.range_check(0, 255, width)
+                name, index = next(args)
+                the_file.field.attach_var(name, index, offset, width)
+                offset += width
+        except StopIteration:
+            pass
 
     def _set_record_pos(self, the_file, pos=None):
         """Helper function: PUT and GET syntax."""
