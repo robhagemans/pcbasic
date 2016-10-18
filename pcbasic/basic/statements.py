@@ -718,23 +718,6 @@ class StatementParser(object):
                 offset += width
                 if not ins.skip_blank_read_if((',',)):
                     break
-
-    def _parse_put_get_file(self, ins):
-        """Parse record number for PUT and GET."""
-        the_file = self.session.files.get(self._parse_file_number(ins, opt_hash=True), 'R')
-        pos = None
-        if ins.skip_blank_read_if((',',)):
-            pos = self.parse_expression(ins)
-        return (the_file, pos)
-
-    def exec_put_file(self, ins):
-        """PUT: write record to file."""
-        self.session.files.put_(*self._parse_put_get_file(ins))
-
-    def exec_get_file(self, ins):
-        """GET: read record from file."""
-        self.session.files.get_(*self._parse_put_get_file(ins))
-
     def _parse_lock_unlock(self, ins):
         """Parse lock records for LOCK or UNLOCK."""
         thefile = self.session.files.get(self._parse_file_number(ins, opt_hash=True))
@@ -1498,6 +1481,22 @@ class StatementParser(object):
             self.exec_put_graph(ins)
         else:
             self.exec_put_file(ins)
+
+    def _parse_put_get_file(self, ins):
+        """Parse record number for PUT and GET."""
+        the_file = self.session.files.get(self._parse_file_number(ins, opt_hash=True), 'R')
+        pos = None
+        if ins.skip_blank_read_if((',',)):
+            pos = self.parse_expression(ins)
+        return (the_file, pos)
+
+    def exec_put_file(self, ins):
+        """PUT: write record to file."""
+        self.session.files.put_(*self._parse_put_get_file(ins))
+
+    def exec_get_file(self, ins):
+        """GET: read record from file."""
+        self.session.files.get_(*self._parse_put_get_file(ins))
 
     def exec_on(self, ins):
         """ON: select ON ERROR, ON (event) or ON (jump)."""
