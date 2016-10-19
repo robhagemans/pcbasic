@@ -602,33 +602,47 @@ class Drawing(object):
 
     ### PAINT: Flood fill
 
-    def paint_(self, lcoord, cval, border, background, events):
+    def paint_(self, args, events):
         """PAINT: Fill an area defined by a border attribute with a tiled pattern."""
-        # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
-        # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
-        # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
-        # also equal to the background pattern.
+        if self.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        coord = next(args)
+        pattern = None
+        cval = next(args)
+        border = next(args)
+        if border is not None:
+            border = values.to_int(border)
+            error.range_check(0, 255, border)
+        background = next(args)
+        if background is not None:
+            background = values.pass_string(background, err=error.IFC).to_str()
+        list(args)
         c, pattern = -1, None
         if isinstance(cval, values.String):
             # pattern given; copy
-            pattern = values.pass_string(cval).to_str()
+            pattern = cval.to_str()
             # empty pattern "" is illegal function call
             error.throw_if(not pattern)
             # default for border, if pattern is specified as string: foreground attr
         elif cval is not None:
             c = values.to_int(cval)
+            error.range_check(0, 255, c)
         # if paint *colour* specified, border default = paint colour
         # if paint *attribute* specified, border default = current foreground
         if border is None:
             border = c
         # only in screen 7,8,9 is this an error (use ega memory as a check)
-        if (pattern and background[:len(pattern)] == pattern and
-                self.screen.mode.mem_start == 0xa000):
+        if (pattern and background and background[:len(pattern)] == pattern and
+                self.screen.mode.video_segment == 0xa000):
             raise error.RunError(error.IFC)
-        self.flood_fill(lcoord, c, pattern, border, background, events)
+        self.flood_fill(coord, c, pattern, border, background, events)
 
     def flood_fill(self, lcoord, c, pattern, border, background, events):
         """Fill an area defined by a border attribute with a tiled pattern."""
+        # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
+        # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
+        # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
+        # also equal to the background pattern.
         c, border = self.get_attr_index(c), self.get_attr_index(border)
         solid = (pattern is None)
         if not solid:

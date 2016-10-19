@@ -219,7 +219,8 @@ class StatementParser(object):
             tk.CHAIN: partial(self.exec_args_iter, args_iter=self._parse_chain_args_iter, callback=session.chain_),
             tk.DATE: partial(self.exec_args_iter, args_iter=self._parse_time_date_args_iter, callback=session.clock.date_),
             tk.TIME: partial(self.exec_args_iter, args_iter=self._parse_time_date_args_iter, callback=session.clock.time_),
-            tk.PAINT: self.exec_paint,
+            tk.PAINT: partial(self.exec_args_iter, args_iter=self._parse_paint_args_iter,
+                            callback=partial(session.screen.drawing.paint_, events=session.events)),
             tk.COM: partial(self.exec_args_iter, args_iter=self._parse_com_command_iter, callback=session.events.com_),
             tk.CIRCLE: partial(self.exec_args_iter, args_iter=self._parse_circle_args_iter, callback=session.screen.drawing.circle_),
             tk.DRAW: self.exec_draw,
@@ -797,24 +798,26 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def exec_paint(self, ins):
-        """PAINT: flood fill from point."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        coord = self._parse_coord_step(ins)
-        attrib, border, background_pattern = None, None, None
+    def _parse_paint_args_iter(self, ins):
+        """Parse PAINT syntax."""
+        yield self._parse_coord_step(ins)
         with self.temp_string:
             if ins.skip_blank_read_if((',',)):
-                attrib = self.parse_expression(ins, allow_empty=True)
+                yield self.parse_expression(ins, allow_empty=True)
                 if ins.skip_blank_read_if((',',)):
-                    bval = self.parse_expression(ins, allow_empty=True)
-                    if bval is not None:
-                        border = values.to_int(bval)
+                    yield self.parse_expression(ins, allow_empty=True)
                     if ins.skip_blank_read_if((',',)):
                         with self.temp_string:
-                            background_pattern = values.pass_string(
-                                    self.parse_expression(ins), err=error.IFC).to_str()
-            self.session.screen.drawing.paint_(coord, attrib, border, background_pattern, self.session.events)
+                            yield self.parse_expression(ins)
+                    else:
+                        yield None
+                else:
+                    yield None
+                    yield None
+            else:
+                yield None
+                yield None
+                yield None
 
     def exec_draw(self, ins):
         """DRAW: draw a figure defined by a Graphics Macro Language string."""
