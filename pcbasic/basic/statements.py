@@ -200,8 +200,8 @@ class StatementParser(object):
             tk.BLOAD: partial(self.exec_args_iter, args_iter=self._parse_bload_args_iter, callback=session.all_memory.bload_),
             tk.SOUND: partial(self.exec_args_iter, args_iter=self._parse_sound_args_iter, callback=session.sound.sound_),
             tk.BEEP: partial(self.exec_args_iter, args_iter=self._parse_beep_args_iter, callback=session.sound.beep_),
-            tk.PSET: self.exec_pset,
-            tk.PRESET: self.exec_preset,
+            tk.PSET: partial(self.exec_args_iter, args_iter=self._parse_pset_preset_args_iter, callback=session.screen.drawing.pset_),
+            tk.PRESET: partial(self.exec_args_iter, args_iter=self._parse_pset_preset_args_iter, callback=session.screen.drawing.preset_),
             tk.SCREEN: self.exec_screen,
             tk.KEY: self.exec_key,
             tk.LOCATE: self.exec_locate,
@@ -756,25 +756,14 @@ class StatementParser(object):
         x, y = self._parse_coord_bare(ins)
         return x, y, step
 
-    def _parse_pset_preset(self, ins):
+    def _parse_pset_preset_args_iter(self, ins):
         """Parse arguments for PSET and PRESET."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        lcoord = self._parse_coord_step(ins)
-        c = None
+        yield self._parse_coord_step(ins)
         if ins.skip_blank_read_if((',',)):
-            c = values.to_int(self.parse_expression(ins))
-            error.range_check(0, 255, c)
+            yield self.parse_expression(ins)
+        else:
+            yield None
         ins.require_end()
-        return lcoord, c
-
-    def exec_pset(self, ins, c=-1):
-        """PSET: set a pixel to a given attribute, or foreground."""
-        self.session.screen.drawing.pset_(*self._parse_pset_preset(ins))
-
-    def exec_preset(self, ins):
-        """PRESET: set a pixel to a given attribute, or background."""
-        self.session.screen.drawing.preset_(*self._parse_pset_preset(ins))
 
     def exec_line_graph(self, ins):
         """LINE: draw a line or box between two points."""

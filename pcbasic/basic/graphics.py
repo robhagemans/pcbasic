@@ -247,21 +247,31 @@ class Drawing(object):
 
     ### PSET, POINT
 
-    def pset_(self, lcoord, c=None):
-        """Draw a pixel in the given attribute (PSET, PRESET)."""
+    def pset_(self, args):
+        """PSET: set a pixel to a given attribute, or foreground."""
+        self._pset_preset(args, -1)
+
+    def preset_(self, args):
+        """PRESET: set a pixel to a given attribute, or background."""
+        self._pset_preset(args, 0)
+
+    def _pset_preset(self, args, default):
+        """Set a pixel to a given attribute."""
+        if self.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        lcoord = next(args)
+        c = next(args)
         if c is None:
-            c = -1
+            c = default
+        else:
+            c = values.to_int(c)
+            error.range_check(0, 255, c)
+        list(args)
         x, y = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         self.screen.put_pixel(x, y, c)
         self.last_attr = c
         self.last_point = x, y
-
-    def preset_(self, lcoord, c=None):
-        """Draw a pixel in the given attribute (PSET, PRESET)."""
-        if c is None:
-            c = 0
-        self.pset_(lcoord, c)
 
     ### LINE
 
