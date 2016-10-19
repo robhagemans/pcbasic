@@ -250,9 +250,12 @@ class Drawing(object):
         """Get logical to physical scale factor."""
         if self.window:
             scalex, scaley, _, _ = self.window
-            return int(round(fx * scalex)), int(round(fy * scaley))
+            x, y = int(round(fx * scalex)), int(round(fy * scaley))
         else:
-            return int(round(fx)), int(round(fy))
+            x, y = int(round(fx)), int(round(fy))
+        error.range_check_err(-32768, 32767, x, error.OVERFLOW)
+        error.range_check_err(-32768, 32767, y, error.OVERFLOW)
+        return x, y
 
     ### PSET, POINT
 
@@ -424,6 +427,7 @@ class Drawing(object):
             raise error.RunError(error.IFC)
         centre = next(args)
         r = values.csng_(next(args)).to_value()
+        error.throw_if(r < 0)
         c = next(args)
         if c is not None:
             c = values.to_int(c)
@@ -440,6 +444,8 @@ class Drawing(object):
         x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*centre))
         if c is None:
             c = -1
+        else:
+            error.range_check(0, 255, c)
         c = self.get_attr_index(c)
         if aspect is None:
             aspect = self.screen.mode.pixel_aspect[0] / float(self.screen.mode.pixel_aspect[1])
