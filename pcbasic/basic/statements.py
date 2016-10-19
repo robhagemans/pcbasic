@@ -232,7 +232,7 @@ class StatementParser(object):
             tk.SHELL: partial(self.exec_files_shell, callback=session.shell_),
             tk.ENVIRON: partial(self.exec_single_string_arg, callback=dos.environ_statement_),
             tk.VIEW: self.exec_view,
-            tk.WINDOW: self.exec_window,
+            tk.WINDOW: partial(self.exec_args_iter, args_iter=self._parse_window_args_iter, callback=session.screen.drawing.window_),
             tk.PALETTE: self.exec_palette,
             tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
             tk.PCOPY: self.exec_pcopy,
@@ -742,7 +742,7 @@ class StatementParser(object):
     # Graphics statements
 
     def _parse_coord_bare(self, ins):
-        """Helper function: parse coordinate pair."""
+        """Parse coordinate pair."""
         ins.require_read(('(',))
         x = values.csng_(self.parse_expression(ins)).to_value()
         ins.require_read((',',))
@@ -751,13 +751,13 @@ class StatementParser(object):
         return x, y
 
     def _parse_coord_step(self, ins):
-        """Helper function: parse coordinate pair."""
+        """Parse coordinate pair with optional STEP."""
         step = ins.skip_blank_read_if((tk.STEP,))
         x, y = self._parse_coord_bare(ins)
         return x, y, step
 
     def _parse_pset_preset_args_iter(self, ins):
-        """Parse arguments for PSET and PRESET."""
+        """Parse PSET and PRESET syntax."""
         yield self._parse_coord_step(ins)
         if ins.skip_blank_read_if((',',)):
             yield self.parse_expression(ins)
@@ -765,21 +765,19 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def exec_window(self, ins):
-        """WINDOW: define logical coordinate system."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        cartesian = not ins.skip_blank_read_if((tk.SCREEN,))
+    def _parse_window_args_iter(self, ins):
+        """Parse WINDOW syntax."""
+        screen = ins.skip_blank_read_if((tk.SCREEN,))
+        yield screen
         if ins.skip_blank() == '(':
-            x0, y0 = self._parse_coord_bare(ins)
+            yield self._parse_coord_bare(ins)
             ins.require_read((tk.O_MINUS,))
-            x1, y1 = self._parse_coord_bare(ins)
-            if x0 == x1 or y0 == y1:
-                raise error.RunError(error.IFC)
-            args = (x0, y0, x1, y1, cartesian)
+            yield self._parse_coord_bare(ins)
+        elif screen:
+            raise error.RunError(error.STX)
         else:
-            args = ()
-        self.session.screen.drawing.window_(*args)
+            yield None, None
+            yield None, None
 
     def exec_circle(self, ins):
         """CIRCLE: Draw a circle, ellipse, arc or sector."""

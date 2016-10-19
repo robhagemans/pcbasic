@@ -175,10 +175,19 @@ class Drawing(object):
 
     ### WINDOW logical coords
 
-    def window_(self, *args):
+    def window_(self, args):
         """WINDOW: Set/unset the logical coordinate window."""
-        if args:
-            self.set_window(*args)
+        if self.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        cartesian = not next(args)
+        x0, y0 = next(args)
+        x1, y1 = next(args)
+        if (x0, y0, x1, y1) != (None, None, None, None):
+            if x0 == x1 or y0 == y1:
+                raise error.RunError(error.IFC)
+        list(args)
+        if (x0, y0, x1, y1) != (None, None, None, None):
+            self.set_window(x0, y0, x1, y1, cartesian)
         else:
             self.unset_window()
 
