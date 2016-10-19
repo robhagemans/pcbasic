@@ -765,58 +765,6 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def exec_line_graph(self, ins):
-        """LINE: draw a line or box between two points."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        if ins.skip_blank() in ('(', tk.STEP):
-            coord0 = self._parse_coord_step(ins)
-        else:
-            coord0 = None
-        ins.require_read((tk.O_MINUS,))
-        coord1 = self._parse_coord_step(ins)
-        c, mode, pattern = None, None, None
-        if ins.skip_blank_read_if((',',)):
-            expr = self.parse_expression(ins, allow_empty=True)
-            if expr:
-                c = values.to_int(expr)
-            if ins.skip_blank_read_if((',',)):
-                if ins.skip_blank_read_if(('B',)):
-                    mode = 'BF' if ins.skip_blank_read_if(('F',)) else 'B'
-                if ins.skip_blank_read_if((',',)):
-                    pattern = self._parse_value(ins, values.INT)
-                else:
-                    # mustn't end on a comma
-                    # mode == '' if nothing after previous comma
-                    error.throw_if(not mode, error.STX)
-            elif not expr:
-                raise error.RunError(error.MISSING_OPERAND)
-        ins.require_end()
-        self.session.screen.drawing.line_(coord0, coord1, c, pattern, mode)
-
-    def exec_view_graph(self, ins):
-        """VIEW: set graphics viewport and optionally draw a box."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        absolute = ins.skip_blank_read_if((tk.SCREEN,))
-        if ins.skip_blank() == '(':
-            x0, y0 = self._parse_coord_bare(ins)
-            x0, y0 = round(x0), round(y0)
-            ins.require_read((tk.O_MINUS,))
-            x1, y1 = self._parse_coord_bare(ins)
-            x1, y1 = round(x1), round(y1)
-            error.range_check(0, self.session.screen.mode.pixel_width-1, x0, x1)
-            error.range_check(0, self.session.screen.mode.pixel_height-1, y0, y1)
-            fill, border = None, None
-            if ins.skip_blank_read_if((',',)):
-                fill = values.to_int(self.parse_expression(ins))
-                ins.require_read((',',))
-                border = values.to_int(self.parse_expression(ins))
-            args = (x0, y0, x1, y1, absolute, fill, border)
-        else:
-            args = ()
-        self.session.screen.drawing.view_(*args)
-
     def exec_window(self, ins):
         """WINDOW: define logical coordinate system."""
         if self.session.screen.mode.is_text_mode:
@@ -883,33 +831,6 @@ class StatementParser(object):
                             background_pattern = values.pass_string(
                                     self.parse_expression(ins), err=error.IFC).to_str()
             self.session.screen.drawing.paint_(coord, attrib, border, background_pattern, self.session.events)
-
-    def exec_get_graph(self, ins):
-        """GET: read a sprite to memory."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        # don't accept STEP for first coord
-        coord0 = self._parse_coord_bare(ins)
-        ins.require_read((tk.O_MINUS,))
-        coord1 = self._parse_coord_step(ins)
-        ins.require_read((',',))
-        array = self.parse_name(ins)
-        ins.require_end()
-        self.session.screen.drawing.get_(coord0, coord1, self.session.arrays, array)
-
-    def exec_put_graph(self, ins):
-        """PUT: draw sprite on screen."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        # don't accept STEP
-        x, y = self._parse_coord_bare(ins)
-        ins.require_read((',',))
-        array = self.parse_name(ins)
-        action = None
-        if ins.skip_blank_read_if((',',)):
-            action = ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
-        ins.require_end()
-        self.session.screen.drawing.put_((x, y), self.session.arrays, array, action)
 
     def exec_draw(self, ins):
         """DRAW: draw a figure defined by a Graphics Macro Language string."""
@@ -1077,20 +998,6 @@ class StatementParser(object):
             readvar = self._parse_var_list_iter(ins)
             self.session.input_(newline, prompt, following, readvar)
 
-    def exec_line_input(self, ins):
-        """LINE INPUT: request line of input from user."""
-        prompt, newline, finp = None, None, None
-        file_number = self._parse_file_number(ins, opt_hash=False)
-        if file_number is None:
-            # get prompt
-            newline, prompt, _ = self._parse_prompt(ins)
-        else:
-            finp = self.session.files.get(file_number, mode='IR')
-            ins.require_read((',',))
-        # get string variable
-        readvar, indices = self._parse_variable(ins)
-        self.session.line_input_(finp, prompt, readvar, indices, newline)
-
     def exec_restore(self, ins):
         """RESTORE: reset DATA pointer."""
         datanum = None
@@ -1193,16 +1100,6 @@ class StatementParser(object):
                     break
                 with self.temp_string:
                     yield self.parse_expression(ins)
-
-    def exec_view_print(self, ins):
-        """VIEW PRINT: set scroll region."""
-        start = self._parse_value(ins, values.INT, allow_empty=True)
-        stop = None
-        if start is not None:
-            ins.require_read((tk.TO,))
-            stop = self._parse_value(ins, values.INT)
-        ins.require_end()
-        self.session.screen.view_print_(start, stop)
 
     def _parse_width_args_iter(self, ins):
         """Parse WIDTH syntax."""
@@ -1444,12 +1341,88 @@ class StatementParser(object):
         else:
             self.exec_view_graph(ins)
 
+    def exec_view_graph(self, ins):
+        """VIEW: set graphics viewport and optionally draw a box."""
+        if self.session.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        absolute = ins.skip_blank_read_if((tk.SCREEN,))
+        if ins.skip_blank() == '(':
+            x0, y0 = self._parse_coord_bare(ins)
+            x0, y0 = round(x0), round(y0)
+            ins.require_read((tk.O_MINUS,))
+            x1, y1 = self._parse_coord_bare(ins)
+            x1, y1 = round(x1), round(y1)
+            error.range_check(0, self.session.screen.mode.pixel_width-1, x0, x1)
+            error.range_check(0, self.session.screen.mode.pixel_height-1, y0, y1)
+            fill, border = None, None
+            if ins.skip_blank_read_if((',',)):
+                fill = values.to_int(self.parse_expression(ins))
+                ins.require_read((',',))
+                border = values.to_int(self.parse_expression(ins))
+            args = (x0, y0, x1, y1, absolute, fill, border)
+        else:
+            args = ()
+        self.session.screen.drawing.view_(*args)
+
+    def exec_view_print(self, ins):
+        """VIEW PRINT: set scroll region."""
+        start = self._parse_value(ins, values.INT, allow_empty=True)
+        stop = None
+        if start is not None:
+            ins.require_read((tk.TO,))
+            stop = self._parse_value(ins, values.INT)
+        ins.require_end()
+        self.session.screen.view_print_(start, stop)
+
     def exec_line(self, ins):
         """LINE: select LINE INPUT, LINE (graphics)."""
         if ins.skip_blank_read_if((tk.INPUT,)):
             self.exec_line_input(ins)
         else:
             self.exec_line_graph(ins)
+
+    def exec_line_input(self, ins):
+        """LINE INPUT: request line of input from user."""
+        prompt, newline, finp = None, None, None
+        file_number = self._parse_file_number(ins, opt_hash=False)
+        if file_number is None:
+            # get prompt
+            newline, prompt, _ = self._parse_prompt(ins)
+        else:
+            finp = self.session.files.get(file_number, mode='IR')
+            ins.require_read((',',))
+        # get string variable
+        readvar, indices = self._parse_variable(ins)
+        self.session.line_input_(finp, prompt, readvar, indices, newline)
+
+    def exec_line_graph(self, ins):
+        """LINE: draw a line or box between two points."""
+        if self.session.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        if ins.skip_blank() in ('(', tk.STEP):
+            coord0 = self._parse_coord_step(ins)
+        else:
+            coord0 = None
+        ins.require_read((tk.O_MINUS,))
+        coord1 = self._parse_coord_step(ins)
+        c, mode, pattern = None, None, None
+        if ins.skip_blank_read_if((',',)):
+            expr = self.parse_expression(ins, allow_empty=True)
+            if expr:
+                c = values.to_int(expr)
+            if ins.skip_blank_read_if((',',)):
+                if ins.skip_blank_read_if(('B',)):
+                    mode = 'BF' if ins.skip_blank_read_if(('F',)) else 'B'
+                if ins.skip_blank_read_if((',',)):
+                    pattern = self._parse_value(ins, values.INT)
+                else:
+                    # mustn't end on a comma
+                    # mode == '' if nothing after previous comma
+                    error.throw_if(not mode, error.STX)
+            elif not expr:
+                raise error.RunError(error.MISSING_OPERAND)
+        ins.require_end()
+        self.session.screen.drawing.line_(coord0, coord1, c, pattern, mode)
 
     def exec_get(self, ins):
         """GET: select GET (graphics), GET (files)."""
@@ -1480,6 +1453,33 @@ class StatementParser(object):
     def exec_get_file(self, ins):
         """GET: read record from file."""
         self.session.files.get_(*self._parse_put_get_file(ins))
+
+    def exec_get_graph(self, ins):
+        """GET: read a sprite to memory."""
+        if self.session.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        # don't accept STEP for first coord
+        coord0 = self._parse_coord_bare(ins)
+        ins.require_read((tk.O_MINUS,))
+        coord1 = self._parse_coord_step(ins)
+        ins.require_read((',',))
+        array = self.parse_name(ins)
+        ins.require_end()
+        self.session.screen.drawing.get_(coord0, coord1, self.session.arrays, array)
+
+    def exec_put_graph(self, ins):
+        """PUT: draw sprite on screen."""
+        if self.session.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        # don't accept STEP
+        x, y = self._parse_coord_bare(ins)
+        ins.require_read((',',))
+        array = self.parse_name(ins)
+        action = None
+        if ins.skip_blank_read_if((',',)):
+            action = ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
+        ins.require_end()
+        self.session.screen.drawing.put_((x, y), self.session.arrays, array, action)
 
     def exec_on(self, ins):
         """ON: select ON ERROR, ON (event) or ON (jump)."""
