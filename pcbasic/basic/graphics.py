@@ -418,11 +418,28 @@ class Drawing(object):
     #
     # break yinc loop if one step no longer suffices
 
-    def circle_(self, lcoord, r, start, stop, c, aspect):
-        """Draw a circle, ellipse, arc or sector (CIRCLE)."""
+    def circle_(self, args):
+        """CIRCLE: Draw a circle, ellipse, arc or sector."""
+        if self.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        centre = next(args)
+        r = values.csng_(next(args)).to_value()
+        c = next(args)
+        if c is not None:
+            c = values.to_int(c)
+        start = next(args)
+        if start is not None:
+            start = values.csng_(start).to_value()
+        stop = next(args)
+        if stop is not None:
+            stop = values.csng_(stop).to_value()
+        aspect = next(args)
+        if aspect is not None:
+            aspect = values.csng_(aspect).to_value()
+        list(args)
+        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*centre))
         if c is None:
             c = -1
-        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         if aspect is None:
             aspect = self.screen.mode.pixel_aspect[0] / float(self.screen.mode.pixel_aspect[1])

@@ -221,7 +221,7 @@ class StatementParser(object):
             tk.TIME: partial(self.exec_args_iter, args_iter=self._parse_time_date_args_iter, callback=session.clock.time_),
             tk.PAINT: self.exec_paint,
             tk.COM: partial(self.exec_args_iter, args_iter=self._parse_com_command_iter, callback=session.events.com_),
-            tk.CIRCLE: self.exec_circle,
+            tk.CIRCLE: partial(self.exec_args_iter, args_iter=self._parse_circle_args_iter, callback=session.screen.drawing.circle_),
             tk.DRAW: self.exec_draw,
             tk.PLAY: self.exec_play,
             tk.TIMER: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.timer_),
@@ -779,37 +779,23 @@ class StatementParser(object):
             yield None, None
             yield None, None
 
-    def exec_circle(self, ins):
-        """CIRCLE: Draw a circle, ellipse, arc or sector."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        centre = self._parse_coord_step(ins)
+    def _parse_circle_args_iter(self, ins):
+        """Parse CIRCLE syntax."""
+        yield self._parse_coord_step(ins)
         ins.require_read((',',))
-        r = values.csng_(self.parse_expression(ins)).to_value()
-        start, stop, c, aspect = None, None, None, None
-        if ins.skip_blank_read_if((',',)):
-            cval = self.parse_expression(ins, allow_empty=True)
-            if cval is not None:
-                c = values.to_int(cval)
+        last = self.parse_expression(ins)
+        yield last
+        for count_args in range(4):
             if ins.skip_blank_read_if((',',)):
-                start = self.parse_expression(ins, allow_empty=True)
-                if start is not None:
-                    start = values.csng_(start).to_value()
-                if ins.skip_blank_read_if((',',)):
-                    stop = self.parse_expression(ins, allow_empty=True)
-                    if stop is not None:
-                        stop = values.csng_(stop).to_value()
-                    if ins.skip_blank_read_if((',',)):
-                        aspect = values.csng_(self.parse_expression(ins)).to_value()
-                    elif stop is None:
-                        # missing operand
-                        raise error.RunError(error.MISSING_OPERAND)
-                elif start is None:
-                    raise error.RunError(error.MISSING_OPERAND)
-            elif cval is None:
-                raise error.RunError(error.MISSING_OPERAND)
+                last = self.parse_expression(ins, allow_empty=True)
+                yield last
+            else:
+                break
+        if last is None:
+            raise error.RunError(error.MISSING_OPERAND)
+        for _ in range(count_args, 4):
+            yield None
         ins.require_end()
-        self.session.screen.drawing.circle_(centre, r, start, stop, c, aspect)
 
     def exec_paint(self, ins):
         """PAINT: flood fill from point."""
