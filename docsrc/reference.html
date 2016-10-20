@@ -4505,23 +4505,23 @@
     <section>
         <h4 id="DIM"><code>DIM</code></h4>
         <code class="flow">
-            <b>DIM</b> <var>name</var> {<b>(</b>|<b>[</b>} <var>limit_0</var> [<b>,</b> <var>limit_1</var>] ... {<b>)</b>|<b>]</b>}
+            <b>DIM</b> <var>name</var> [{<b>(</b>|<b>[</b>} <var>limit_0</var> [<b>,</b> <var>limit_1</var>] ... {<b>)</b>|<b>]</b>}] [<b>,</b> ... ]
         </code>
         <p>
-            Allocates memory for arrays.
+            Allocates memory for one or more arrays.
             The <code>DIM</code> statement also fixes the number of indices of the array.
             An array can only be allocated once; to re-allocate an array, <code><a href="#ERASE">ERASE</a></code> or
             <code><a href="#CLEAR">CLEAR</a></code> must be executed first.
             If an array is first used without a <code>DIM</code> statement, it is automatically allocated with its maximum indices set at <code>10</code>
-            for each index position used. If an array's <code>DIM</code> statement specifies no indices,
-            it is allocated with a single index with maximum <code>10</code>.
+            for each index position used.
+            A <code>DIM</code> entry with no brackets and no indices performs no operation. Empty brackets are not allowed.
             The least index allowed is determined by <code><a href="#OPTION-BASE">OPTION BASE</a></code>.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>name</var></code> is a legal variable name
-                specifying the array to be allocated.
+                <code><var>name</var>, ...</code> are legal variable names
+                specifying the arrays to be allocated.
             </li>
             <li>
                 <code><var>limit_0</var>, <var>limit_1</var>, ...</code> are numeric
