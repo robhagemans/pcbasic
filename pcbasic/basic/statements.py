@@ -223,7 +223,8 @@ class StatementParser(object):
                             callback=partial(session.screen.drawing.paint_, events=session.events)),
             tk.COM: partial(self.exec_args_iter, args_iter=self._parse_com_command_iter, callback=session.events.com_),
             tk.CIRCLE: partial(self.exec_args_iter, args_iter=self._parse_circle_args_iter, callback=session.screen.drawing.circle_),
-            tk.DRAW: self.exec_draw,
+            tk.DRAW: partial(self.exec_args_iter, args_iter=self._parse_draw_args_iter,
+                            callback=partial(session.screen.drawing.draw_, memory=session.memory, value_handler=session.values, events=session.events)),
             tk.PLAY: self.exec_play,
             tk.TIMER: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.timer_),
             tk.IOCTL: partial(self.exec_args_iter, args_iter=self._parse_ioctl_args_iter, callback=session.files.ioctl_statement_),
@@ -819,13 +820,10 @@ class StatementParser(object):
                 yield None
                 yield None
 
-    def exec_draw(self, ins):
-        """DRAW: draw a figure defined by a Graphics Macro Language string."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        gml = self._parse_temporary_string(ins)
+    def _parse_draw_args_iter(self, ins):
+        """Parse DRAW syntax."""
+        yield self._parse_temporary_string(ins)
         ins.require_end()
-        self.session.screen.drawing.draw_(gml, self.memory, self.values, self.session.events)
 
     ###########################################################################
     # Variable & array statements

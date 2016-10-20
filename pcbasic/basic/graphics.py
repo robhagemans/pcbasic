@@ -795,8 +795,11 @@ class Drawing(object):
 
     ### DRAW statement
 
-    def draw_(self, gml, memory, value_handler, events):
+    def draw_(self, args, memory, value_handler, events):
         """DRAW: Execute a Graphics Macro Language string."""
+        if self.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        gml, = args
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = mlparser.MLParser(gml, memory, value_handler)
         plot, goback = True, False

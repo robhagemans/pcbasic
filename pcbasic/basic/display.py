@@ -512,6 +512,7 @@ class Screen(object):
         self.fkey_macros = fkey_macros
         # print screen target, to be set later due to init order issues
         self.lpt1_file = None
+        self.drawing = graphics.Drawing(self)
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
@@ -717,7 +718,7 @@ class Screen(object):
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics characteristics
         self.graph_view = graphics.GraphicsViewPort(self)
-        self.drawing = graphics.Drawing(self)
+        self.drawing.init_mode()
         # cursor width starts out as single char
         self.cursor.init_mode(self.mode)
         self.palette = Palette(self.mode, self.capabilities)
