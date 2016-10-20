@@ -119,11 +119,11 @@ class StatementParser(object):
         assert len(token) == 2, 'Bytecode truncated in line number pointer'
         return struct.unpack('<H', token)[0]
 
-    def _parse_optional_jumpnum(self, ins, missing_value=None):
+    def _parse_optional_jumpnum(self, ins):
         """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
         # no line number
         if ins.skip_blank() != tk.T_UINT:
-            return missing_value
+            return None
         return self._parse_jumpnum(ins)
 
     ###########################################################################
@@ -1492,8 +1492,8 @@ class StatementParser(object):
         if onvar in (0, 255):
             # if any provided, check all but jump to none
             while True:
-                num = self._parse_optional_jumpnum(ins, -1)
-                if num == -1 or not ins.skip_blank_read_if((',',)):
+                num = self._parse_optional_jumpnum(ins)
+                if num is None or not ins.skip_blank_read_if((',',)):
                     ins.require_end()
                     return
         else:
