@@ -169,7 +169,7 @@ class StatementParser(object):
             tk.TRON: partial(self.exec_immediate, callback=session.interpreter.tron_),
             tk.TROFF: partial(self.exec_immediate, callback=session.interpreter.troff_),
             tk.SWAP: self.exec_swap,
-            tk.ERASE: self.exec_erase,
+            tk.ERASE: partial(self.exec_args_iter, args_iter=self._parse_erase_args_iter, callback=session.memory.arrays.erase_),
             tk.EDIT: partial(self.exec_args_iter, args_iter=self._parse_edit_args_iter, callback=session.edit_),
             tk.ERROR: partial(self.exec_args_iter, args_iter=self._parse_single_arg_iter, callback=session.error_),
             tk.RESUME: partial(self.exec_args_iter, args_iter=self._parse_resume_args_iter, callback=session.interpreter.resume_),
@@ -888,10 +888,10 @@ class StatementParser(object):
             if not ins.skip_blank_read_if((',',)):
                 break
 
-    def exec_erase(self, ins):
-        """ERASE: erase an array."""
+    def _parse_erase_args_iter(self, ins):
+        """Parse ERASE syntax."""
         while True:
-            self.session.arrays.erase_(self.parse_name(ins))
+            yield self.parse_name(ins)
             if not ins.skip_blank_read_if((',',)):
                 break
 
