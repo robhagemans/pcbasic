@@ -141,7 +141,7 @@ class StatementParser(object):
             tk.NEXT: self.exec_next,
             tk.DATA: self.skip_statement,
             tk.INPUT: self.exec_input,
-            tk.DIM: self.exec_dim,
+            tk.DIM: partial(self.exec_args_iter, args_iter=self._parse_var_list_iter, callback=session.memory.arrays.dim_),
             tk.READ: self.exec_read,
             tk.LET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.let_),
             tk.GOTO: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.goto_),
@@ -876,11 +876,6 @@ class StatementParser(object):
     def _parse_var_list(self, ins):
         """Helper function: parse variable list."""
         return list(self._parse_var_list_iter(ins))
-
-    def exec_dim(self, ins):
-        """DIM: dimension arrays."""
-        for name, dimensions in self._parse_var_list_iter(ins):
-            self.session.arrays.dim_(name, dimensions)
 
     def exec_deftype(self, ins, typechar):
         """DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables."""

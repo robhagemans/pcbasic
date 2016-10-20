@@ -102,10 +102,16 @@ class Arrays(object):
         """Store a sprite in the cache for a given array."""
         self._cache[name] = item
 
-    def dim_(self, name, dimensions):
+    def dim_(self, args):
+        """DIM: dimension arrays."""
+        for a in args:
+            self.allocate(*a)
+
+    def allocate(self, name, dimensions):
         """Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value."""
-        if dimensions is None:
-            dimensions = [10]
+        if not dimensions:
+            # DIM A does nothing
+            return
         if self._base is None:
             self._base = 0
         if name in self._dims:
@@ -137,7 +143,7 @@ class Arrays(object):
             # auto-dimension - 0..10 or 1..10
             # this even fixes the dimensions if the index turns out to be out of range
             dimensions = [10] * len(index)
-            self.dim_(name, dimensions)
+            self.allocate(name, dimensions)
         lst = self._buffers[name]
         if len(index) != len(dimensions):
             raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)

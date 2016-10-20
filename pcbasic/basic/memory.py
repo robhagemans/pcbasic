@@ -132,7 +132,7 @@ class DataSegment(object):
         yield
         for name, value in common.iteritems():
             dimensions, buf = value
-            self.arrays.dim_(name, dimensions)
+            self.arrays.allocate(name, dimensions)
             if name[-1] == '$':
                 for i in range(0, len(buf), 3):
                     # if the string array is not full, pointers are zero
