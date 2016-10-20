@@ -69,7 +69,7 @@ class MLParser(codestream.CodeStream):
             indices = self._parse_indices()
             sub = self.memory.get_variable(name, indices)
             self.require_read((';',), err=error.IFC)
-            return values.pass_string(sub, err=error.IFC).to_str()
+            return values.pass_string(sub).to_str()
         else:
             # varptr$
             ptr = self.memory.get_value_for_varptrstr(self.read(3))
