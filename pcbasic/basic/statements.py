@@ -176,10 +176,10 @@ class StatementParser(object):
             tk.DELETE: partial(self.exec_args_iter, args_iter=self._parse_delete_llist_args_iter, callback=session.delete_),
             tk.AUTO: partial(self.exec_args_iter, args_iter=self._parse_auto_args_iter, callback=session.auto_),
             tk.RENUM: partial(self.exec_args_iter, args_iter=self._parse_renum_args_iter, callback=session.renum_),
-            tk.DEFSTR: partial(self.exec_deftype, typechar='$'),
-            tk.DEFINT: partial(self.exec_deftype, typechar='%'),
-            tk.DEFSNG: partial(self.exec_deftype, typechar='!'),
-            tk.DEFDBL: partial(self.exec_deftype, typechar='#'),
+            tk.DEFSTR: partial(self.exec_args_iter, args_iter=self._parse_deftype_args_iter, callback=session.memory.defstr_),
+            tk.DEFINT: partial(self.exec_args_iter, args_iter=self._parse_deftype_args_iter, callback=session.memory.defint_),
+            tk.DEFSNG: partial(self.exec_args_iter, args_iter=self._parse_deftype_args_iter, callback=session.memory.defsng_),
+            tk.DEFDBL: partial(self.exec_args_iter, args_iter=self._parse_deftype_args_iter, callback=session.memory.defdbl_),
             tk.LINE: self.exec_line,
             tk.WHILE: partial(self.exec_immediate, callback=session.interpreter.while_),
             tk.WEND: partial(self.exec_after_end, callback=session.interpreter.wend_),
@@ -877,18 +877,14 @@ class StatementParser(object):
         """Helper function: parse variable list."""
         return list(self._parse_var_list_iter(ins))
 
-    def exec_deftype(self, ins, typechar):
-        """DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables."""
+    def _parse_deftype_args_iter(self, ins):
+        """Parse DEFSTR/DEFINT/DEFSNG/DEFDBL syntax."""
         while True:
-            start = ins.skip_blank_read()
-            if start not in string.ascii_letters:
-                raise error.RunError(error.STX)
+            start = ins.require_read(string.ascii_letters)
             stop = None
             if ins.skip_blank_read_if((tk.O_MINUS,)):
-                stop = ins.skip_blank_read()
-                if stop not in string.ascii_letters:
-                    raise error.RunError(error.STX)
-            self.memory.deftype_(typechar, start, stop)
+                stop = ins.require_read(string.ascii_letters)
+            yield start, stop
             if not ins.skip_blank_read_if((',',)):
                 break
 

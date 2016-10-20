@@ -97,14 +97,31 @@ class DataSegment(object):
         """Reset default sigils."""
         self.deftype = ['!']*26
 
-    def deftype_(self, sigil, start, stop=None):
-        """Set default sigils."""
-        start = ord(start.upper()) - ord('A')
-        if stop:
-            stop = ord(stop.upper()) - ord('A')
-        else:
-            stop = start
-        self.deftype[start:stop+1] = [sigil] * (stop-start+1)
+    def deftype_(self, sigil, args):
+        """DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables."""
+        for start, stop in args:
+            start = ord(start.upper()) - ord('A')
+            if stop:
+                stop = ord(stop.upper()) - ord('A')
+            else:
+                stop = start
+            self.deftype[start:stop+1] = [sigil] * (stop-start+1)
+
+    def defint_(self, args):
+        """Set default integer variables."""
+        self.deftype_(values.INT, args)
+
+    def defsng_(self, args):
+        """Set default single variables."""
+        self.deftype_(values.SNG, args)
+
+    def defdbl_(self, args):
+        """Set default souble variables."""
+        self.deftype_(values.DBL, args)
+
+    def defstr_(self, args):
+        """Set default string variables."""
+        self.deftype_(values.STR, args)
 
     def clear_variables(self, preserve_sc, preserve_ar):
         """Reset and clear variables, arrays, common definitions and functions."""
