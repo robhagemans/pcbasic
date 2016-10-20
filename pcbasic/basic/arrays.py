@@ -160,12 +160,10 @@ class Arrays(object):
         """Unset the array base."""
         self._base = None
 
-    def option_base_(self, base):
+    def option_base_(self, args):
         """Set the array base to 0 or 1 (OPTION BASE). Raise error if already set."""
+        base, = args
         base = int(base)
-        if base not in (1, 0):
-            # syntax error
-            raise error.RunError(error.STX)
         if self._base is not None and base != self._base:
             # duplicate definition
             raise error.RunError(error.DUPLICATE_DEFINITION)
