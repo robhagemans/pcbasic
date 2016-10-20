@@ -223,7 +223,7 @@ class StatementParser(object):
                             callback=partial(session.screen.drawing.paint_, events=session.events)),
             tk.COM: partial(self.exec_args_iter, args_iter=self._parse_com_command_iter, callback=session.events.com_),
             tk.CIRCLE: partial(self.exec_args_iter, args_iter=self._parse_circle_args_iter, callback=session.screen.drawing.circle_),
-            tk.DRAW: partial(self.exec_args_iter, args_iter=self._parse_draw_args_iter,
+            tk.DRAW: partial(self.exec_args_iter, args_iter=self._parse_string_arg_iter,
                             callback=partial(session.screen.drawing.draw_, memory=session.memory, value_handler=session.values, events=session.events)),
             tk.PLAY: self.exec_play,
             tk.TIMER: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.timer_),
@@ -336,6 +336,11 @@ class StatementParser(object):
         if ins.skip_blank() == tk.T_UINT:
             jumpnum = self._parse_jumpnum(ins)
         yield jumpnum
+
+    def _parse_string_arg_iter(self, ins):
+        """Parse DRAW syntax."""
+        yield self._parse_temporary_string(ins)
+        ins.require_end()
 
     ###########################################################################
     # Flow-control statements
@@ -825,11 +830,6 @@ class StatementParser(object):
                 yield None
                 yield None
                 yield None
-
-    def _parse_draw_args_iter(self, ins):
-        """Parse DRAW syntax."""
-        yield self._parse_temporary_string(ins)
-        ins.require_end()
 
     ###########################################################################
     # Variable & array statements
