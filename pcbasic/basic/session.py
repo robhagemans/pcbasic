@@ -765,8 +765,9 @@ class Session(object):
         self.interpreter.error_resume = None
         self.files.close_all()
 
-    def common_(self, common_vars):
+    def common_(self, args):
         """COMMON: define variables to be preserved on CHAIN."""
+        common_vars = list(args)
         common_scalars = [name for name, brackets in common_vars if not brackets]
         common_arrays = [name for name, brackets in common_vars if brackets]
         self.common_scalars |= set(common_scalars)

@@ -215,7 +215,7 @@ class StatementParser(object):
             tk.PUT: self.exec_put,
             tk.GET: self.exec_get,
             tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
-            tk.COMMON: self.exec_common,
+            tk.COMMON: partial(self.exec_args_iter, args_iter=self._parse_common_args_iter, callback=session.common_),
             tk.CHAIN: partial(self.exec_args_iter, args_iter=self._parse_chain_args_iter, callback=session.chain_),
             tk.DATE: partial(self.exec_args_iter, args_iter=self._parse_time_date_args_iter, callback=session.clock.date_),
             tk.TIME: partial(self.exec_args_iter, args_iter=self._parse_time_date_args_iter, callback=session.clock.time_),
@@ -835,7 +835,7 @@ class StatementParser(object):
     # Variable & array statements
 
     def _parse_clear_args_iter(self, ins):
-        """Generator: parse arguments for CLEAR."""
+        """Parse CLEAR syntax."""
         # integer expression allowed but ignored
         yield self.parse_expression(ins, allow_empty=True)
         if ins.skip_blank_read_if((',',)):
@@ -855,18 +855,16 @@ class StatementParser(object):
                     raise error.RunError(error.STX)
         ins.require_end()
 
-    def exec_common(self, ins):
-        """COMMON: define variables to be preserved on CHAIN."""
-        common_vars = []
+    def _parse_common_args_iter(self, ins):
+        """Parse COMMON syntax."""
         while True:
             name = self.parse_name(ins)
             brackets = ins.skip_blank_read_if(('[', '('))
             if brackets:
                 ins.require_read((']', ')'))
-            common_vars.append((name, brackets))
+            yield (name, brackets)
             if not ins.skip_blank_read_if((',',)):
                 break
-        self.session.common_(common_vars)
 
     def _parse_var_list_iter(self, ins):
         """Generator: lazily parse variable list."""
