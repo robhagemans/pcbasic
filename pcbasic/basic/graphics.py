@@ -609,14 +609,6 @@ class Drawing(object):
         coord = next(args)
         pattern = None
         cval = next(args)
-        border = next(args)
-        if border is not None:
-            border = values.to_int(border)
-            error.range_check(0, 255, border)
-        background = next(args)
-        if background is not None:
-            background = values.pass_string(background, err=error.IFC).to_str()
-        list(args)
         c, pattern = -1, None
         if isinstance(cval, values.String):
             # pattern given; copy
@@ -627,6 +619,14 @@ class Drawing(object):
         elif cval is not None:
             c = values.to_int(cval)
             error.range_check(0, 255, c)
+        border = next(args)
+        if border is not None:
+            border = values.to_int(border)
+            error.range_check(0, 255, border)
+        background = next(args)
+        if background is not None:
+            background = values.pass_string(background, err=error.IFC).to_str()
+        list(args)
         # if paint *colour* specified, border default = paint colour
         # if paint *attribute* specified, border default = current foreground
         if border is None:

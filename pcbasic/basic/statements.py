@@ -804,14 +804,20 @@ class StatementParser(object):
         yield self._parse_coord_step(ins)
         with self.temp_string:
             if ins.skip_blank_read_if((',',)):
-                yield self.parse_expression(ins, allow_empty=True)
+                last = self.parse_expression(ins, allow_empty=True)
+                yield last
                 if ins.skip_blank_read_if((',',)):
-                    yield self.parse_expression(ins, allow_empty=True)
+                    last = self.parse_expression(ins, allow_empty=True)
+                    yield last
                     if ins.skip_blank_read_if((',',)):
                         with self.temp_string:
                             yield self.parse_expression(ins)
+                    elif last is None:
+                        raise error.RunError(error.MISSING_OPERAND)
                     else:
                         yield None
+                elif last is None:
+                    raise error.RunError(error.MISSING_OPERAND)
                 else:
                     yield None
                     yield None
