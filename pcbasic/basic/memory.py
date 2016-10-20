@@ -365,8 +365,8 @@ class DataSegment(object):
 
     def varptr_str_(self, name, indices):
         """VARPTR$: Get address of variable in string representation."""
-        var_ptr = self.varptr_((name, indices))
-        return struct.pack('<Bh', values.size_bytes(name), var_ptr)
+        var_ptr = self.varptr_(name, indices)
+        return struct.pack('<Bh', values.size_bytes(self.complete_name(name)), var_ptr)
 
     def dereference(self, address):
         """Get a value for a variable given its pointer address."""
