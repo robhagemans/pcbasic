@@ -123,6 +123,17 @@ class CodeStream(io.BytesIO):
             # decimal literal
             return self._read_dec()
 
+    def require_read(self, in_range, err=error.STX):
+        """Skip whitespace, read and raise error if not in range."""
+        d = self.read(1)
+        while d and d in self.blanks:
+            d = self.read(1)
+        c = d + self.read(len(in_range[0])-1)
+        if not c or c not in in_range:
+            self.seek(-len(c), 1)
+            raise error.RunError(err)
+        return c
+
     def _read_dec(self):
         """Read decimal literal."""
         have_exp = False
@@ -274,17 +285,6 @@ class TokenisedStream(CodeStream):
             return ''
         trail = self.read(tk.PLUS_BYTES.get(lead, 0))
         return lead + trail
-
-    def require_read(self, in_range, err=error.STX):
-        """Skip whitespace, read and raise error if not in range."""
-        d = self.read(1)
-        while d and d in self.blanks:
-            d = self.read(1)
-        c = d + self.read(len(in_range[0])-1)
-        if not c or c not in in_range:
-            self.seek(-len(c), 1)
-            raise error.RunError(err)
-        return c
 
     def require_end(self, err=error.STX):
         """Skip whitespace, peek and raise error if not at end of statement."""
