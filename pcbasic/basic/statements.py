@@ -957,9 +957,9 @@ class StatementParser(object):
             yield self._parse_jumpnum(ins)
             ins.require_end()
         else:
-            yield None
             # undefined line number for syntax errors if no line number given
             ins.require_end(err=error.UNDEFINED_LINE_NUMBER)
+            yield None
 
     def exec_swap(self, ins):
         """SWAP: swap values of two variables."""
