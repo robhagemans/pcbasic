@@ -168,7 +168,7 @@ class StatementParser(object):
             tk.ELSE: self.skip_line,
             tk.TRON: partial(self.exec_immediate, callback=session.interpreter.tron_),
             tk.TROFF: partial(self.exec_immediate, callback=session.interpreter.troff_),
-            tk.SWAP: self.exec_swap,
+            tk.SWAP: partial(self.exec_args_iter, args_iter=self._parse_swap_args_iter, callback=session.memory.swap_),
             tk.ERASE: partial(self.exec_args_iter, args_iter=self._parse_erase_args_iter, callback=session.memory.arrays.erase_),
             tk.EDIT: partial(self.exec_args_iter, args_iter=self._parse_edit_args_iter, callback=session.edit_),
             tk.ERROR: partial(self.exec_args_iter, args_iter=self._parse_single_arg_iter, callback=session.error_),
@@ -961,13 +961,12 @@ class StatementParser(object):
             ins.require_end(err=error.UNDEFINED_LINE_NUMBER)
             yield None
 
-    def exec_swap(self, ins):
-        """SWAP: swap values of two variables."""
-        name1, index1 = self._parse_variable(ins)
+    def _parse_swap_args_iter(self, ins):
+        """Parse SWAP syntax."""
+        yield self._parse_variable(ins)
         ins.require_read((',',))
-        name2, index2 = self._parse_variable(ins)
-        self.memory.swap_(name1, index1, name2, index2)
-        # if syntax error, the swap has happened
+        yield self._parse_variable(ins)
+        ins.require_end()
 
     ###########################################################################
     # Console statements
