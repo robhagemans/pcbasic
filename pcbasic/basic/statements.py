@@ -966,7 +966,6 @@ class StatementParser(object):
         yield self._parse_variable(ins)
         ins.require_read((',',))
         yield self._parse_variable(ins)
-        ins.require_end()
 
     ###########################################################################
     # Console statements

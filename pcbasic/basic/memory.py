@@ -404,16 +404,17 @@ class DataSegment(object):
         varptr, = struct.unpack('<H', varptrstr[1:3])
         return self.dereference(varptr)
 
-    def _view_buffer(self, name, indices):
+    def _view_buffer(self, name, indices, empty_err):
         """Retrieve a memoryview to a scalar variable or an array element's buffer."""
-        if indices == []:
+        if not indices:
             if name not in self.scalars:
-                raise error.RunError(error.IFC)
+                # variable will be allocated
+                self.scalars.set(name)
+                if empty_err:
+                    raise error.RunError(error.IFC)
             return self.scalars.view_buffer(name)
         else:
-            if name not in self.arrays:
-                raise error.RunError(error.IFC)
-            # array would be allocated if retrieved and nonexistant
+            # array will be allocated if retrieved and nonexistant
             return self.arrays.view_buffer(name, indices)
 
     def swap_(self, args):
@@ -425,8 +426,8 @@ class DataSegment(object):
             raise error.RunError(error.TYPE_MISMATCH)
         list(args)
         # get buffers (numeric representation or string pointer)
-        left = self._view_buffer(name1, index1)
-        right = self._view_buffer(name2, index2)
+        left = self._view_buffer(name1, index1, False)
+        right = self._view_buffer(name2, index2, True)
         # swap the contents
         left[:], right[:] = right.tobytes(), left.tobytes()
         # drop caches
