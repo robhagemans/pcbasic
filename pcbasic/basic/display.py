@@ -1099,8 +1099,11 @@ class Screen(object):
         # ensure line above doesn't wrap
         self.apage.row[self.current_row-2].wrap = False
 
-    def locate_(self, row, col, cursor, start, stop):
+    def locate_(self, args):
         """LOCATE: Set cursor position, shape and visibility."""
+        args = list(args)
+        args = args + [None] * (5-len(args))
+        row, col, cursor, start, stop = args
         row = self.current_row if row is None else row
         col = self.current_col if col is None else col
         cmode = self.mode

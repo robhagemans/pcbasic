@@ -204,7 +204,7 @@ class StatementParser(object):
             tk.PRESET: partial(self.exec_args_iter, args_iter=self._parse_pset_preset_args_iter, callback=session.screen.drawing.preset_),
             tk.SCREEN: self.exec_screen,
             tk.KEY: self.exec_key,
-            tk.LOCATE: self.exec_locate,
+            tk.LOCATE: partial(self.exec_args_iter, args_iter=self._parse_locate_args_iter, callback=session.screen.locate_),
             tk.FILES: partial(self.exec_files_shell, callback=session.devices.files_),
             tk.FIELD: partial(self.exec_args_iter, args_iter=self._parse_field_args_iter, callback=session.files.field_),
             tk.SYSTEM: partial(self.exec_after_end, callback=session.interpreter.system_),
@@ -996,39 +996,15 @@ class StatementParser(object):
         elif last is None:
             raise error.RunError(error.IFC)
 
-    def exec_palette(self, ins):
-        """PALETTE: set colour palette entry."""
-        if ins.skip_blank_read_if((tk.USING,)):
-            return self.exec_palette_using(ins)
-        else:
-            attrib = self._parse_value(ins, values.INT, allow_empty=True)
-            if attrib is None:
-                colour = None
-                ins.require_end()
-            else:
-                ins.require_read((',',))
-                colour = self._parse_value(ins, values.INT, allow_empty=True)
-                error.throw_if(attrib is None or colour is None, error.STX)
-            self.session.screen.palette.palette_(attrib, colour)
-
-    def exec_palette_using(self, ins):
-        """PALETTE USING: set full colour palette."""
-        array_name, start_indices = self._parse_variable(ins)
-        # brackets are not optional
-        error.throw_if(not start_indices, error.STX)
-        self.session.screen.palette.palette_using_(array_name, start_indices, self.session.arrays)
-
-    def exec_locate(self, ins):
-        """LOCATE: Set cursor position, shape and visibility."""
+    def _parse_locate_args_iter(self, ins):
+        """Parse LOCATE syntax."""
         #row, col, cursor, start, stop
-        params = [None, None, None, None, None]
         for i in range(5):
-            params[i] = self._parse_value(ins, values.INT, allow_empty=True)
+            yield self._parse_value(ins, values.INT, allow_empty=True)
             # note that LOCATE can end on a 5th comma but no stuff allowed after it
             if not ins.skip_blank_read_if((',',)):
                 break
         ins.require_end()
-        self.session.screen.locate_(*params)
 
     def _parse_write_args_iter(self, ins):
         """Parse WRITE statement arguments."""
@@ -1370,6 +1346,28 @@ class StatementParser(object):
                 raise error.RunError(error.MISSING_OPERAND)
         ins.require_end()
         self.session.screen.drawing.line_(coord0, coord1, c, pattern, mode)
+
+    def exec_palette(self, ins):
+        """PALETTE: set colour palette entry."""
+        if ins.skip_blank_read_if((tk.USING,)):
+            return self.exec_palette_using(ins)
+        else:
+            attrib = self._parse_value(ins, values.INT, allow_empty=True)
+            if attrib is None:
+                colour = None
+                ins.require_end()
+            else:
+                ins.require_read((',',))
+                colour = self._parse_value(ins, values.INT, allow_empty=True)
+                error.throw_if(attrib is None or colour is None, error.STX)
+            self.session.screen.palette.palette_(attrib, colour)
+
+    def exec_palette_using(self, ins):
+        """PALETTE USING: set full colour palette."""
+        array_name, start_indices = self._parse_variable(ins)
+        # brackets are not optional
+        error.throw_if(not start_indices, error.STX)
+        self.session.screen.palette.palette_using_(array_name, start_indices, self.session.arrays)
 
     def exec_get(self, ins):
         """GET: select GET (graphics), GET (files)."""
