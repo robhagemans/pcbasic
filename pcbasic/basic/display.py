@@ -875,8 +875,12 @@ class Screen(object):
             self.pixels.copy_page(src, dst)
         self.session.video_queue.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
 
-    def color_(self, fore, back=None, bord=None):
+    def color_(self, args):
         """COLOR: set colour attributes."""
+        args = list(args)
+        error.throw_if(len(args) > 3)
+        args += [None] * (3-len(args))
+        fore, back, bord = args
         mode = self.mode
         if fore is None:
             fore = (self.attr>>7) * 0x10 + (self.attr & 0xf)

@@ -193,7 +193,7 @@ class StatementParser(object):
             tk.LOAD: partial(self.exec_args_iter, args_iter=self._parse_load_args_iter, callback=session.load_),
             tk.MERGE: partial(self.exec_single_string_arg, callback=session.merge_),
             tk.SAVE: partial(self.exec_args_iter, args_iter=self._parse_save_args_iter, callback=session.save_),
-            tk.COLOR: self.exec_color,
+            tk.COLOR: partial(self.exec_args_iter, args_iter=self._parse_color_args_iter, callback=session.screen.color_),
             tk.CLS: partial(self.exec_args_iter, args_iter=self._parse_cls_args_iter, callback=session.screen.cls_),
             tk.MOTOR: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.motor_),
             tk.BSAVE: partial(self.exec_args_iter, args_iter=self._parse_bsave_args_iter, callback=session.all_memory.bsave_),
@@ -980,23 +980,21 @@ class StatementParser(object):
         else:
             yield None
 
-    def exec_color(self, ins):
-        """COLOR: set colour attributes."""
-        args = [self._parse_value(ins, values.INT, allow_empty=True)]
+    def _parse_color_args_iter(self, ins):
+        """Parse COLOR syntax."""
+        last = self._parse_value(ins, values.INT, allow_empty=True)
+        yield last
         if ins.skip_blank_read_if((',',)):
             # unlike LOCATE, ending in any number of commas is a Missing Operand
             while True:
-                args.append(self._parse_value(ins, values.INT, allow_empty=True))
-                if ins.skip_blank_read_if((',',)):
-                    continue
-                elif args[-1] is None:
-                    raise error.RunError(error.MISSING_OPERAND)
-                else:
+                last = self._parse_value(ins, values.INT, allow_empty=True)
+                yield last
+                if not ins.skip_blank_read_if((',',)):
                     break
-        elif args[0] is None:
+            if last is None:
+                raise error.RunError(error.MISSING_OPERAND)
+        elif last is None:
             raise error.RunError(error.IFC)
-        error.throw_if(len(args) > 3)
-        self.session.screen.color_(*args)
 
     def exec_palette(self, ins):
         """PALETTE: set colour palette entry."""
