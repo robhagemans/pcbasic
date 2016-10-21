@@ -888,8 +888,13 @@ class Screen(object):
         fore, _, _, _ = self.split_attr(attr)
         self.session.video_queue.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
 
-    def pcopy_(self, src, dst):
+    def pcopy_(self, args):
         """Copy source to destination page."""
+        src = values.to_int(next(args))
+        error.range_check(0, self.mode.num_pages-1, src)
+        dst = values.to_int(next(args))
+        list(args)
+        error.range_check(0, self.mode.num_pages-1, dst)
         self.text.copy_page(src, dst)
         if not self.mode.is_text_mode:
             self.pixels.copy_page(src, dst)

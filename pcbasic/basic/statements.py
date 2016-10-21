@@ -237,7 +237,7 @@ class StatementParser(object):
             tk.WINDOW: partial(self.exec_args_iter, args_iter=self._parse_window_args_iter, callback=session.screen.drawing.window_),
             tk.PALETTE: self.exec_palette,
             tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
-            tk.PCOPY: self.exec_pcopy,
+            tk.PCOPY: partial(self.exec_args_iter, args_iter=self._parse_pcopy_args_iter, callback=session.screen.pcopy_),
             tk.LOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.lock_),
             tk.UNLOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.unlock_),
             tk.MID: partial(self.exec_args_iter, args_iter=self._parse_mid_args_iter, callback=session.memory.mid_),
@@ -1076,15 +1076,12 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def exec_pcopy(self, ins):
-        """PCOPY: copy video pages."""
-        src = values.to_int(self.parse_expression(ins))
-        error.range_check(0, self.session.screen.mode.num_pages-1, src)
+    def _parse_pcopy_args_iter(self, ins):
+        """Parse PCOPY syntax."""
+        yield self.parse_expression(ins)
         ins.require_read((',',))
-        dst = values.to_int(self.parse_expression(ins))
+        yield self.parse_expression(ins)
         ins.require_end()
-        error.range_check(0, self.session.screen.mode.num_pages-1, dst)
-        self.session.screen.pcopy_(src, dst)
 
     def _parse_print_args_iter(self, ins, parse_file):
         """Parse PRINT or LPRINT syntax."""
