@@ -142,7 +142,7 @@ class StatementParser(object):
             tk.DATA: self.skip_statement,
             tk.INPUT: self.exec_input,
             tk.DIM: partial(self.exec_args_iter, args_iter=self._parse_var_list_iter, callback=session.memory.arrays.dim_),
-            tk.READ: self.exec_read,
+            tk.READ: partial(self.exec_args_iter, args_iter=self._parse_var_list_iter, callback=session.interpreter.read_),
             tk.LET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.let_),
             tk.GOTO: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.goto_),
             tk.RUN: partial(self.exec_args_iter, args_iter=self._parse_run_args_iter, callback=session.run_),
@@ -927,12 +927,6 @@ class StatementParser(object):
         ins.require_read((tk.W_BASE,))
         # MUST be followed by ASCII '1' or '0', num constants or expressions are an error!
         yield ins.require_read(('0', '1'))
-
-    def exec_read(self, ins):
-        """READ: read values from DATA statement."""
-        # reading loop
-        for name, indices in self._parse_var_list(ins):
-            self.session.interpreter.read_(name, indices)
 
     def _parse_prompt(self, ins):
         """Helper function for INPUT: parse prompt definition."""

@@ -370,43 +370,44 @@ class Interpreter(object):
         except KeyError:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
 
-    def read_(self, name, indices):
+    def read_(self, args):
         """READ: read values from DATA statement."""
-        type_char, code_start = name[-1], self.session.memory.code_start
-        current = self.program_code.tell()
-        self.program_code.seek(self.data_pos)
-        if self.program_code.peek() in tk.END_STATEMENT:
-            # initialise - find first DATA
-            self.program_code.skip_to((tk.DATA,))
-        if self.program_code.read(1) not in (tk.DATA, ','):
-            self.program_code.seek(current)
-            raise error.RunError(error.OUT_OF_DATA)
-        self.program_code.skip_blank()
-        word = self.program_code.read_to((',', '"',) + tk.END_LINE + tk.END_STATEMENT)
-        if self.program_code.peek() == '"':
-            if word == '':
-                word = self.program_code.read_string().strip('"')
+        for name, indices in args:
+            type_char, code_start = name[-1], self.session.memory.code_start
+            current = self.program_code.tell()
+            self.program_code.seek(self.data_pos)
+            if self.program_code.peek() in tk.END_STATEMENT:
+                # initialise - find first DATA
+                self.program_code.skip_to((tk.DATA,))
+            if self.program_code.read(1) not in (tk.DATA, ','):
+                self.program_code.seek(current)
+                raise error.RunError(error.OUT_OF_DATA)
+            self.program_code.skip_blank()
+            word = self.program_code.read_to((',', '"',) + tk.END_LINE + tk.END_STATEMENT)
+            if self.program_code.peek() == '"':
+                if word == '':
+                    word = self.program_code.read_string().strip('"')
+                else:
+                    word += self.program_code.read_string()
+                if (self.program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
+                    raise error.RunError(error.STX)
             else:
-                word += self.program_code.read_string()
-            if (self.program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
-                raise error.RunError(error.STX)
-        else:
-            word = word.strip(self.program_code.blanks)
-        if type_char == values.STR:
-            address = self.data_pos + code_start
-            value = self.session.values.from_str_at(word, address)
-        else:
-            value = self.session.values.from_repr(word, allow_nonnum=False)
-            if value is None:
-                # set pointer for EDIT gadget to position in DATA statement
-                self.program_code.seek(self.data_pos)
-                # syntax error in DATA line (not type mismatch!) if can't convert to var type
-                raise error.RunError(error.STX, self.data_pos-1)
-        # omit leading and trailing whitespace
-        data_pos = self.program_code.tell()
-        self.program_code.seek(current)
-        self.session.memory.set_variable(name, indices, value=value)
-        self.data_pos = data_pos
+                word = word.strip(self.program_code.blanks)
+            if type_char == values.STR:
+                address = self.data_pos + code_start
+                value = self.session.values.from_str_at(word, address)
+            else:
+                value = self.session.values.from_repr(word, allow_nonnum=False)
+                if value is None:
+                    # set pointer for EDIT gadget to position in DATA statement
+                    self.program_code.seek(self.data_pos)
+                    # syntax error in DATA line (not type mismatch!) if can't convert to var type
+                    raise error.RunError(error.STX, self.data_pos-1)
+            # omit leading and trailing whitespace
+            data_pos = self.program_code.tell()
+            self.program_code.seek(current)
+            self.session.memory.set_variable(name, indices, value=value)
+            self.data_pos = data_pos
 
     ###########################################################################
     # callbacks
