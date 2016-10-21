@@ -1,0 +1,39 @@
+ERROR:         2             50 
+ERROR:         2             60 
+ 0             0             0 
+ERROR:         2             70 
+ 0             0             0 
+ERROR:         5             80 
+ 0             0             0 
+ERROR:         2             90 
+ 0             0             0 
+ERROR:         2             100 
+ 0             0             0 
+ERROR:         2             110 
+ 0             0             0 
+ERROR:         2             120 
+ 0             0             0 
+ERROR:         13            130 
+ 0             0             0 
+ERROR:         13            140 
+ 0             0             0 
+ERROR:         2             150 
+ 0             0             0 
+ERROR:         2             160 
+ 0             0             0 
+ERROR:         2             170 
+ 0             0             0 
+ 0             0             0 
+ERROR:         2             190 
+ 0             0             0 
+ERROR:         2             200 
+ 0             0             0 
+ERROR:         2             210 
+ 0             0             0 
+ERROR:         2             220 
+ 0             0             0 
+ERROR:         13            230 
+ 0             0             0 
+ERROR:         13            240 
+ 0             0             0 
+
