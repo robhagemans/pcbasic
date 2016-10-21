@@ -773,7 +773,17 @@ class Session(object):
         self.common_scalars |= set(common_scalars)
         self.common_arrays |= set(common_arrays)
 
-    def input_(self, newline, prompt, following, readvar):
+    def input_(self, args):
+        """INPUT: request input from user or read from file."""
+        file_number = next(args)
+        if file_number is not None:
+            finp = self.files.get(file_number, mode='IR')
+            self._input_file(finp, args)
+        else:
+            newline, prompt, following = next(args)
+            self._input_console(newline, prompt, following, args)
+
+    def _input_console(self, newline, prompt, following, readvar):
         """INPUT: request input from user."""
         if following == ';':
             prompt += '? '
@@ -817,7 +827,7 @@ class Session(object):
         for v in varlist:
             self.memory.set_variable(*v)
 
-    def input_file_(self, finp, readvar):
+    def _input_file(self, finp, readvar):
         """INPUT: retrieve input from file."""
         for v in readvar:
             name, indices = v

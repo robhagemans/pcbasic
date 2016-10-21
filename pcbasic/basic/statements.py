@@ -140,7 +140,7 @@ class StatementParser(object):
             tk.FOR: self.exec_for,
             tk.NEXT: self.exec_next,
             tk.DATA: self.skip_statement,
-            tk.INPUT: self.exec_input,
+            tk.INPUT: partial(self.exec_args_iter, args_iter=self._parse_input_args_iter, callback=session.input_),
             tk.DIM: partial(self.exec_args_iter, args_iter=self._parse_var_list_iter, callback=session.memory.arrays.dim_),
             tk.READ: partial(self.exec_args_iter, args_iter=self._parse_var_list_iter, callback=session.interpreter.read_),
             tk.LET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.let_),
@@ -940,18 +940,16 @@ class StatementParser(object):
             following = ins.require_read((';', ','))
         return newline, prompt, following
 
-    def exec_input(self, ins):
-        """INPUT: request input from user."""
+    def _parse_input_args_iter(self, ins):
+        """Parse INPUT syntax."""
         file_number = self._parse_file_number(ins, opt_hash=False)
+        yield file_number
         if file_number is not None:
-            finp = self.session.files.get(file_number, mode='IR')
             ins.require_read((',',))
-            readvar = self._parse_var_list(ins)
-            self.session.input_file_(finp, readvar)
         else:
-            newline, prompt, following = self._parse_prompt(ins)
-            readvar = self._parse_var_list_iter(ins)
-            self.session.input_(newline, prompt, following, readvar)
+            yield self._parse_prompt(ins)
+        for arg in self._parse_var_list_iter(ins):
+            yield arg
 
     def exec_restore(self, ins):
         """RESTORE: reset DATA pointer."""
