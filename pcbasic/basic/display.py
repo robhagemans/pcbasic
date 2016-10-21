@@ -566,8 +566,26 @@ class Screen(object):
                                 self.mode.pixel_width-1, self.mode.pixel_height-1,
                                 self.pixels.pages[pagenum].buffer)))
 
-    def screen_(self, mode, colorswitch, apagenum, vpagenum, erase):
+    def screen_(self,args):
         """SCREEN: change the video mode, colourburst, visible or active page."""
+        # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
+        # this raises error before
+        mode = next(args)
+        colorswitch = next(args)
+        apagenum = next(args)
+        vpagenum = next(args)
+        # if any parameter not in [0,255], error 5 without doing anything
+        # if the parameters are outside narrow ranges
+        # (e.g. not implemented screen mode, pagenum beyond max)
+        # then the error is only raised after changing the palette.
+        error.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
+        erase = next(args)
+        error.range_check(0, 2, erase)
+        list(args)
+        if erase is not None:
+            # erase can only be set on pcjr/tandy 5-argument syntax
+            if self.capabilities not in ('pcjr', 'tandy'):
+                raise error.RunError(error.IFC)
         # decide whether to redraw the screen
         oldmode, oldcolor = self.mode, self.colorswitch
         if erase is None:

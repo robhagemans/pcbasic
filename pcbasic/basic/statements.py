@@ -202,7 +202,7 @@ class StatementParser(object):
             tk.BEEP: partial(self.exec_args_iter, args_iter=self._parse_beep_args_iter, callback=session.sound.beep_),
             tk.PSET: partial(self.exec_args_iter, args_iter=self._parse_pset_preset_args_iter, callback=session.screen.drawing.pset_),
             tk.PRESET: partial(self.exec_args_iter, args_iter=self._parse_pset_preset_args_iter, callback=session.screen.drawing.preset_),
-            tk.SCREEN: self.exec_screen,
+            tk.SCREEN: partial(self.exec_args_iter, args_iter=self._parse_screen_args_iter, callback=session.screen.screen_),
             tk.KEY: self.exec_key,
             tk.LOCATE: partial(self.exec_args_iter, args_iter=self._parse_locate_args_iter, callback=session.screen.locate_),
             tk.FILES: partial(self.exec_files_shell, callback=session.devices.files_),
@@ -1007,7 +1007,7 @@ class StatementParser(object):
         ins.require_end()
 
     def _parse_write_args_iter(self, ins):
-        """Parse WRITE statement arguments."""
+        """Parse WRITE syntax."""
         file_number = self._parse_file_number(ins, opt_hash=False)
         yield file_number
         if file_number is not None:
@@ -1056,32 +1056,23 @@ class StatementParser(object):
                     ins.skip_blank_read_if((',',))
         ins.require_end()
 
-    def exec_screen(self, ins):
-        """SCREEN: change video mode or page."""
-        # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
-        # this raises error before
-        # mode, color, apagenum, vpagenum, erase
+    def _parse_screen_args_iter(self, ins):
+        """Parse SCREEN syntax."""
         # erase can only be set on pcjr/tandy 5-argument syntax
-        n_args = 4 + (self.syntax in ('pcjr', 'tandy'))
-        args = []
+        #n_args = 4 + (self.syntax in ('pcjr', 'tandy'))
         # all but last arguments are optional and may be followed by a comma
+        argcount = 0
         while True:
-            args.append(self._parse_value(ins, values.INT, allow_empty=True))
+            last = self._parse_value(ins, values.INT, allow_empty=True)
+            yield last
+            argcount += 1
             if not ins.skip_blank_read_if((',',)):
                 break
-        if args[-1] is None:
+        if last is None:
             raise error.RunError(error.MISSING_OPERAND)
-        if len(args) > n_args:
-            raise error.RunError(error.IFC)
-        args += [None] * (5-len(args))
-        # if any parameter not in [0,255], error 5 without doing anything
-        # if the parameters are outside narrow ranges
-        # (e.g. not implemented screen mode, pagenum beyond max)
-        # then the error is only raised after changing the palette.
-        error.range_check(0, 255, *args[:4])
-        error.range_check(0, 2, args[4])
+        for _ in range(argcount, 5):
+            yield None
         ins.require_end()
-        self.session.screen.screen_(*args)
 
     def exec_pcopy(self, ins):
         """PCOPY: copy video pages."""
