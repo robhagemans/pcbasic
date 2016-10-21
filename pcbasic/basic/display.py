@@ -937,15 +937,21 @@ class Screen(object):
         else:
             self.palette.set_entry(0, back & 0xf, check_mode=False)
 
-    def cls_(self, val):
+    def cls_(self, args):
         """CLS: clear the screen."""
-        if val is None:
+        val = next(args)
+        if val is not None:
+            # tandy gives illegal function call on CLS number
+            error.throw_if(self.capabilities == 'tandy')
+            error.range_check(0, 2, val)
+        else:
             if self.graph_view.is_set():
                 val = 1
             elif self.view_set:
                 val = 2
             else:
                 val = 0
+        list(args)
         # cls is only executed if no errors have occurred
         if val == 0:
             self.clear()

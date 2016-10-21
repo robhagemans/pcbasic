@@ -194,7 +194,7 @@ class StatementParser(object):
             tk.MERGE: partial(self.exec_single_string_arg, callback=session.merge_),
             tk.SAVE: partial(self.exec_args_iter, args_iter=self._parse_save_args_iter, callback=session.save_),
             tk.COLOR: self.exec_color,
-            tk.CLS: self.exec_cls,
+            tk.CLS: partial(self.exec_args_iter, args_iter=self._parse_cls_args_iter, callback=session.screen.cls_),
             tk.MOTOR: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.motor_),
             tk.BSAVE: partial(self.exec_args_iter, args_iter=self._parse_bsave_args_iter, callback=session.all_memory.bsave_),
             tk.BLOAD: partial(self.exec_args_iter, args_iter=self._parse_bload_args_iter, callback=session.all_memory.bload_),
@@ -970,18 +970,15 @@ class StatementParser(object):
     ###########################################################################
     # Console statements
 
-    def exec_cls(self, ins):
-        """CLS: clear the screen."""
-        val = None
+    def _parse_cls_args_iter(self, ins):
+        """Parse CLS syntax."""
         if self.syntax != 'pcjr':
-            val = self._parse_value(ins, values.INT, allow_empty=True)
-            if val is not None:
-                # tandy gives illegal function call on CLS number
-                error.throw_if(self.syntax == 'tandy')
-                error.range_check(0, 2, val)
+            yield self._parse_value(ins, values.INT, allow_empty=True)
+            # optional comma
             if not ins.skip_blank_read_if((',',)):
                 ins.require_end(err=error.IFC)
-        self.session.screen.cls_(val)
+        else:
+            yield None
 
     def exec_color(self, ins):
         """COLOR: set colour attributes."""
