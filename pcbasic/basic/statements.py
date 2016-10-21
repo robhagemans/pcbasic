@@ -147,7 +147,7 @@ class StatementParser(object):
             tk.GOTO: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.goto_),
             tk.RUN: partial(self.exec_args_iter, args_iter=self._parse_run_args_iter, callback=session.run_),
             tk.IF: self.exec_if,
-            tk.RESTORE: self.exec_restore,
+            tk.RESTORE: partial(self.exec_args_iter, args_iter=self._parse_restore_args_iter, callback=session.interpreter.restore_),
             tk.GOSUB: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.gosub_),
             tk.RETURN: partial(self.exec_args_iter, args_iter=self._parse_optional_line_number_iter, callback=session.interpreter.return_),
             tk.REM: self.skip_line,
@@ -951,14 +951,15 @@ class StatementParser(object):
         for arg in self._parse_var_list_iter(ins):
             yield arg
 
-    def exec_restore(self, ins):
-        """RESTORE: reset DATA pointer."""
-        datanum = None
+    def _parse_restore_args_iter(self, ins):
+        """Parse RESTORE syntax."""
         if ins.skip_blank() == tk.T_UINT:
-            datanum = self._parse_jumpnum(ins)
-        # undefined line number for all syntax errors
-        ins.require_end(err=error.UNDEFINED_LINE_NUMBER)
-        self.session.interpreter.restore_(datanum)
+            yield self._parse_jumpnum(ins)
+            ins.require_end()
+        else:
+            yield None
+            # undefined line number for syntax errors if no line number given
+            ins.require_end(err=error.UNDEFINED_LINE_NUMBER)
 
     def exec_swap(self, ins):
         """SWAP: swap values of two variables."""
