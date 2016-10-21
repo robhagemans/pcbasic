@@ -10315,14 +10315,15 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>var_0</var></code> and <code><var>var_1</var></code> are previously defined variables of
-                the same type.
+                <code><var>var_0</var></code> and <code><var>var_1</var></code> are variables or array elements of
+                the same type. <code><var>var_1</var></code>  must have been previously defined.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>var_0</var></code> or <code><var>var_1</var></code> is undefined: <samp>Illegal function call</samp>.
+                <code><var>var_1</var></code>is undefined: <samp>Illegal function call</samp>.
+                Note that no error is raised if <code><var>var_0</var></code> is undefined, and that after this error both variables will be defined.
             </li>
             <li>
                 The types of <code><var>var_0</var></code> and <code><var>var_1</var></code> are not the same: <samp>Type mismatch</samp>.
