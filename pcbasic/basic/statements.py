@@ -137,7 +137,7 @@ class StatementParser(object):
         self.session = session
         self.statements = {
             tk.END: partial(self.exec_after_end, callback=session.end_),
-            tk.FOR: self.exec_for,
+            tk.FOR: partial(self.exec_args_iter, args_iter=self._parse_for_args_iter, callback=session.interpreter.for_),
             tk.NEXT: self.exec_next,
             tk.DATA: self.skip_statement,
             tk.INPUT: partial(self.exec_args_iter, args_iter=self._parse_input_args_iter, callback=session.input_),
@@ -1168,24 +1168,19 @@ class StatementParser(object):
                     ins.seek(-len(d), 1)
                     break
 
-    def exec_for(self, ins):
-        """FOR: enter for-loop."""
+    def _parse_for_args_iter(self, ins):
+        """Parse FOR syntax."""
         # read variable
-        varname = self.parse_name(ins)
-        vartype = varname[-1]
+        yield self.parse_name(ins)
         ins.require_read((tk.O_EQ,))
-        start = values.to_type(vartype, self.parse_expression(ins))
+        yield self.parse_expression(ins)
         ins.require_read((tk.TO,))
-        # only raised after the TO has been parsed
-        if vartype in (values.STR, values.DBL):
-            raise error.RunError(error.TYPE_MISMATCH)
-        stop = values.to_type(vartype, self.parse_expression(ins))
-        step = None
+        yield self.parse_expression(ins)
         if ins.skip_blank_read_if((tk.STEP,)):
-            step = values.to_type(vartype, self.parse_expression(ins))
+            yield self.parse_expression(ins)
+        else:
+            yield None
         ins.require_end()
-        # initialise loop
-        self.session.interpreter.for_(varname, start, stop, step)
 
     def exec_next(self, ins):
         """NEXT: iterate for-loop."""

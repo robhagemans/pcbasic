@@ -244,8 +244,20 @@ class Interpreter(object):
     ###########################################################################
     # loops
 
-    def for_(self, varname, start, stop, step):
+    def for_(self, args):
         """Initialise a FOR loop."""
+        # read variable
+        varname = next(args)
+        vartype = varname[-1]
+        start = values.to_type(vartype, next(args))
+        # only raised after the TO has been parsed
+        if vartype in (values.STR, values.DBL):
+            raise error.RunError(error.TYPE_MISMATCH)
+        stop = values.to_type(vartype, next(args))
+        step = next(args)
+        if step is not None:
+            step = values.to_type(vartype, step)
+        list(args)
         if step is None:
             # convert 1 to vartype
             step = self.session.values.from_value(1, varname[-1])
