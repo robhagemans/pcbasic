@@ -579,6 +579,8 @@ class Screen(object):
         # (e.g. not implemented screen mode, pagenum beyond max)
         # then the error is only raised after changing the palette.
         error.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
+        if self.capabilities == 'tandy':
+            error.range_check(0, 1, colorswitch)
         erase = next(args)
         error.range_check(0, 2, erase)
         list(args)
@@ -586,10 +588,10 @@ class Screen(object):
             # erase can only be set on pcjr/tandy 5-argument syntax
             if self.capabilities not in ('pcjr', 'tandy'):
                 raise error.RunError(error.IFC)
+        else:
+            erase = 1
         # decide whether to redraw the screen
         oldmode, oldcolor = self.mode, self.colorswitch
-        if erase is None:
-            erase = 1
         self.screen(mode, colorswitch, apagenum, vpagenum, erase)
         if ((not self.mode.is_text_mode and self.mode.name != oldmode.name) or
                 (self.mode.is_text_mode and not oldmode.is_text_mode) or

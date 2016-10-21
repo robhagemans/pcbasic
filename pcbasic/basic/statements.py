@@ -1069,6 +1069,8 @@ class StatementParser(object):
             if not ins.skip_blank_read_if((',',)):
                 break
         if last is None:
+            if self.syntax == 'tandy' and argcount == 1:
+                raise error.RunError(error.IFC)
             raise error.RunError(error.MISSING_OPERAND)
         for _ in range(argcount, 5):
             yield None
