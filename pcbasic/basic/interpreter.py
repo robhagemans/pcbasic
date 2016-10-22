@@ -178,7 +178,6 @@ class Interpreter(object):
     def set_pointer(self, new_runmode, pos=None):
         """Set program pointer to the given codestream and position."""
         self.run_mode = new_runmode
-        self.statement_parser.set_runmode(new_runmode)
         # events are active in run mode
         self.session.events.set_active(new_runmode)
         # keep the sound engine on to avoid delays in run mode
@@ -543,3 +542,13 @@ class Interpreter(object):
         else:
             # RESUME n
             self.jump(where)
+
+    def def_fn_(self, args):
+        """DEF FN: define a function."""
+        fnname, = args
+        # don't allow DEF FN in direct mode, as we point to the code in the stored program
+        # this is raised before further syntax errors
+        if not self.run_mode:
+            raise error.RunError(error.ILLEGAL_DIRECT)
+        # arguments and expression are being read and parsed by UserFunctionManager
+        self.statement_parser.expression_parser.user_functions.define(fnname, self.program_code)

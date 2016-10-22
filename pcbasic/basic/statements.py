@@ -33,7 +33,6 @@ class StatementParser(object):
         self.temp_string = temp_string
         # data segment
         self.memory = memory
-        self.run_mode = False
 
     def parse_statement(self, ins):
         """Parse and execute a single statement."""
@@ -135,10 +134,6 @@ class StatementParser(object):
         return self._parse_jumpnum(ins)
 
     ###########################################################################
-
-    def set_runmode(self, new_runmode):
-        """Keep track of runmode for protected and program-only statements."""
-        self.run_mode = new_runmode
 
     def init_statements(self, session):
         """Initialise statements."""
@@ -257,7 +252,7 @@ class StatementParser(object):
                 None: self.exec_on_jump,
             },
             tk.DEF: {
-                tk.FN: self.exec_def_fn,
+                tk.FN: partial(self.exec_args_iter, args_iter=self._parse_def_fn_args_iter, callback=session.interpreter.def_fn_),
                 tk.USR: partial(self.exec_args_iter, args_iter=self._parse_def_usr_args_iter, callback=session.all_memory.def_usr_),
                 None: partial(self.exec_args_iter, args_iter=self._parse_def_seg_args_iter, callback=session.all_memory.def_seg_),
             },
@@ -334,35 +329,6 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
-
-    # DEF
-
-    def _parse_def_seg_args_iter(self, ins):
-        """Parse DEF SEG syntax."""
-        # must be uppercase in tokenised form, otherwise syntax error
-        ins.require_read((tk.W_SEG,))
-        if ins.skip_blank_read_if((tk.O_EQ,)):
-            yield self.parse_expression(ins)
-        else:
-            yield None
-
-    def _parse_def_usr_args_iter(self, ins):
-        """Parse DEF USR syntax."""
-        ins.require_read((tk.USR))
-        yield ins.skip_blank_read_if(tk.DIGIT)
-        ins.require_read((tk.O_EQ,))
-        yield self.parse_expression(ins)
-
-    def exec_def_fn(self, ins):
-        """DEF FN: define a function."""
-        ins.require_read((tk.FN))
-        fnname = self.parse_name(ins)
-        # don't allow DEF FN in direct mode, as we point to the code in the stored program
-        # this is raised before further syntax errors
-        if not self.run_mode:
-            raise error.RunError(error.ILLEGAL_DIRECT)
-        # arguments and expression are being read and parsed by UserFunctionManager
-        self.expression_parser.user_functions.define(fnname, ins)
 
     # VIEW
 
@@ -772,6 +738,22 @@ class StatementParser(object):
 
     ###########################################################################
     # machine emulation
+
+    def _parse_def_seg_args_iter(self, ins):
+        """Parse DEF SEG syntax."""
+        # must be uppercase in tokenised form, otherwise syntax error
+        ins.require_read((tk.W_SEG,))
+        if ins.skip_blank_read_if((tk.O_EQ,)):
+            yield self.parse_expression(ins)
+        else:
+            yield None
+
+    def _parse_def_usr_args_iter(self, ins):
+        """Parse DEF USR syntax."""
+        ins.require_read((tk.USR))
+        yield ins.skip_blank_read_if(tk.DIGIT)
+        ins.require_read((tk.O_EQ,))
+        yield self.parse_expression(ins)
 
     def _parse_poke_out_args_iter(self, ins):
         """Parse POKE or OUT syntax."""
@@ -1201,6 +1183,11 @@ class StatementParser(object):
             yield (name, brackets)
             if not ins.skip_blank_read_if((',',)):
                 break
+
+    def _parse_def_fn_args_iter(self, ins):
+        """DEF FN: define a function."""
+        ins.require_read((tk.FN))
+        yield self.parse_name(ins)
 
     def _parse_var_list_iter(self, ins):
         """Generator: lazily parse variable list."""
