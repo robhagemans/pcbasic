@@ -335,25 +335,6 @@ class StatementParser(object):
             raise error.RunError(error.STX)
         callback(ins)
 
-    # PLAY
-
-    def _parse_play_args_iter(self, ins):
-        """Parse PLAY (music) syntax."""
-        if self.syntax in ('pcjr', 'tandy'):
-            for _ in range(3):
-                last = self._parse_temporary_string(ins, allow_empty=True)
-                yield last
-                if not ins.skip_blank_read_if((',',)):
-                    break
-            else:
-                raise error.RunError(error.STX)
-            if last is None:
-                raise error.RunError(error.MISSING_OPERAND)
-            ins.require_end()
-        else:
-            yield self._parse_temporary_string(ins, allow_empty=True)
-            ins.require_end(err=error.IFC)
-
     # DEF
 
     def exec_def_seg(self, ins):
@@ -773,6 +754,23 @@ class StatementParser(object):
                 yield None
                 yield None
         ins.require_end()
+
+    def _parse_play_args_iter(self, ins):
+        """Parse PLAY (music) syntax."""
+        if self.syntax in ('pcjr', 'tandy'):
+            for _ in range(3):
+                last = self._parse_temporary_string(ins, allow_empty=True)
+                yield last
+                if not ins.skip_blank_read_if((',',)):
+                    break
+            else:
+                raise error.RunError(error.STX)
+            if last is None:
+                raise error.RunError(error.MISSING_OPERAND)
+            ins.require_end()
+        else:
+            yield self._parse_temporary_string(ins, allow_empty=True)
+            ins.require_end(err=error.IFC)
 
     ###########################################################################
     # machine emulation
