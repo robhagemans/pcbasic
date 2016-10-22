@@ -56,7 +56,7 @@ class ExpressionParser(object):
 
     def _init_syntax(self):
         """Initialise function syntax tables."""
-        self._with_presign = {
+        self._complex = {
             tk.USR: {
                 None: (self._parse_argument, values.SNG),
                 tk.C_0: (self._parse_argument, values.SNG),
@@ -88,7 +88,7 @@ class ExpressionParser(object):
                 None: (self._parse_varptr, values.INT),
             },
         }
-        self._bare = {
+        self._simple = {
             tk.SCREEN: (partial(self._parse_argument_list, conversions=(values.cint_, values.cint_, values.cint_), optional=True), None),
             tk.FN: (None, None),
             tk.ERL: (self._null_argument, values.SNG),
@@ -148,7 +148,7 @@ class ExpressionParser(object):
             tk.LOC: (self._parse_argument, values.SNG),
             tk.LOF: (self._parse_argument, values.SNG),
         }
-        self._functions = set(self._with_presign.keys() + self._bare.keys())
+        self._functions = set(self._complex.keys() + self._simple.keys())
 
     def init_functions(self, session):
         """Initialise function callbacks."""
@@ -235,8 +235,8 @@ class ExpressionParser(object):
         """Pickle."""
         pickle_dict = self.__dict__.copy()
         # functools.partial objects and functions can't be pickled
-        pickle_dict['_bare'] = None
-        pickle_dict['_with_presign'] = None
+        pickle_dict['_simple'] = None
+        pickle_dict['_complex'] = None
         pickle_dict['_callbacks'] = None
         return pickle_dict
 
@@ -385,11 +385,11 @@ class ExpressionParser(object):
     def _parse_function(self, ins, token):
         """Parse a function starting with the given token."""
         ins.read(len(token))
-        if token in self._bare:
+        if token in self._simple:
             # apply functions
-            fn_record = self._bare[token]
+            fn_record = self._simple[token]
         else:
-            fndict = self._with_presign[token]
+            fndict = self._complex[token]
             presign = ins.skip_blank_read_if(fndict)
             if presign:
                 token += presign

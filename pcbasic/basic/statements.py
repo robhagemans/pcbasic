@@ -40,14 +40,17 @@ class StatementParser(object):
         # read keyword token or one byte
         ins.skip_blank()
         c = ins.read_keyword_token()
-        if c in self.statements:
+        if c in self._simple:
             # statement token
-            self.statements[c](ins)
+            self._simple[c](ins)
+        elif c in self._complex:
+            # statement token
+            self._complex[c](ins)
         else:
             # implicit LET
             ins.seek(-len(c), 1)
             if c in string.ascii_letters:
-                return self.statements[tk.LET](ins)
+                return self._simple[tk.LET](ins)
         if c != tk.IF:
             ins.require_end()
 
@@ -136,11 +139,13 @@ class StatementParser(object):
     def init_statements(self, session):
         """Initialise statements."""
         self.session = session
-        self.statements = {
+        self._simple = {
+            tk.DATA: self.skip_statement,
+            tk.REM: self.skip_line,
+            tk.ELSE: self.skip_line,
             tk.END: partial(self.exec_after_end, callback=session.end_),
             tk.FOR: partial(self.exec_args_iter, args_iter=self._parse_for_args_iter, callback=session.interpreter.for_),
             tk.NEXT: partial(self.exec_args_iter, args_iter=self._parse_next_args_iter, callback=session.interpreter.next_),
-            tk.DATA: self.skip_statement,
             tk.INPUT: partial(self.exec_args_iter, args_iter=self._parse_input_args_iter, callback=session.input_),
             tk.DIM: partial(self.exec_args_iter, args_iter=self._parse_var_list_iter, callback=session.memory.arrays.dim_),
             tk.READ: partial(self.exec_args_iter, args_iter=self._parse_var_list_iter, callback=session.interpreter.read_),
@@ -151,22 +156,18 @@ class StatementParser(object):
             tk.RESTORE: partial(self.exec_args_iter, args_iter=self._parse_restore_args_iter, callback=session.interpreter.restore_),
             tk.GOSUB: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.gosub_),
             tk.RETURN: partial(self.exec_args_iter, args_iter=self._parse_optional_line_number_iter, callback=session.interpreter.return_),
-            tk.REM: self.skip_line,
             tk.STOP: partial(self.exec_after_end, callback=session.interpreter.stop_),
             tk.PRINT: partial(self.exec_args_iter, args_iter=partial(self._parse_print_args_iter, parse_file=True), callback=session.files.print_),
             tk.CLEAR: partial(self.exec_args_iter, args_iter=self._parse_clear_args_iter, callback=session.clear_),
             tk.LIST: partial(self.exec_args_iter, args_iter=self._parse_list_args_iter, callback=session.list_),
             tk.NEW: partial(self.exec_after_end, callback=session.new_),
-            tk.ON: self.exec_on,
             tk.WAIT: partial(self.exec_args_iter, args_iter=self._parse_wait_args_iter, callback=session.machine.wait_),
-            tk.DEF: self.exec_def,
             tk.POKE: partial(self.exec_args_iter, args_iter=self._parse_poke_out_args_iter, callback=session.all_memory.poke_),
             tk.CONT: partial(self.exec_immediate, callback=session.interpreter.cont_),
             tk.OUT: partial(self.exec_args_iter, args_iter=self._parse_poke_out_args_iter, callback=session.machine.out_),
             tk.LPRINT: partial(self.exec_args_iter, args_iter=partial(self._parse_print_args_iter, parse_file=False), callback=session.devices.lprint_),
             tk.LLIST: partial(self.exec_args_iter, args_iter=self._parse_delete_llist_args_iter, callback=session.llist_),
             tk.WIDTH: partial(self.exec_args_iter, args_iter=self._parse_width_args_iter, callback=session.files.width_),
-            tk.ELSE: self.skip_line,
             tk.TRON: partial(self.exec_immediate, callback=session.interpreter.tron_),
             tk.TROFF: partial(self.exec_immediate, callback=session.interpreter.troff_),
             tk.SWAP: partial(self.exec_args_iter, args_iter=self._parse_swap_args_iter, callback=session.memory.swap_),
@@ -181,7 +182,6 @@ class StatementParser(object):
             tk.DEFINT: partial(self.exec_args_iter, args_iter=self._parse_deftype_args_iter, callback=session.memory.defint_),
             tk.DEFSNG: partial(self.exec_args_iter, args_iter=self._parse_deftype_args_iter, callback=session.memory.defsng_),
             tk.DEFDBL: partial(self.exec_args_iter, args_iter=self._parse_deftype_args_iter, callback=session.memory.defdbl_),
-            tk.LINE: self.exec_line,
             tk.WHILE: partial(self.exec_immediate, callback=session.interpreter.while_),
             tk.WEND: partial(self.exec_after_end, callback=session.interpreter.wend_),
             tk.CALL: partial(self.exec_args_iter, args_iter=self._parse_call_args_iter, callback=session.all_memory.call_),
@@ -204,7 +204,6 @@ class StatementParser(object):
             tk.PSET: partial(self.exec_args_iter, args_iter=self._parse_pset_preset_args_iter, callback=session.screen.drawing.pset_),
             tk.PRESET: partial(self.exec_args_iter, args_iter=self._parse_pset_preset_args_iter, callback=session.screen.drawing.preset_),
             tk.SCREEN: partial(self.exec_args_iter, args_iter=self._parse_screen_args_iter, callback=session.screen.screen_),
-            tk.KEY: self.exec_key,
             tk.LOCATE: partial(self.exec_args_iter, args_iter=self._parse_locate_args_iter, callback=session.screen.locate_),
             tk.FILES: partial(self.exec_files_shell, callback=session.devices.files_),
             tk.FIELD: partial(self.exec_args_iter, args_iter=self._parse_field_args_iter, callback=session.files.field_),
@@ -213,8 +212,6 @@ class StatementParser(object):
             tk.LSET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.lset_),
             tk.RSET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.rset_),
             tk.KILL: partial(self.exec_single_string_arg, callback=session.devices.kill_),
-            tk.PUT: self.exec_put,
-            tk.GET: self.exec_get,
             tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
             tk.COMMON: partial(self.exec_args_iter, args_iter=self._parse_common_args_iter, callback=session.common_),
             tk.CHAIN: partial(self.exec_args_iter, args_iter=self._parse_chain_args_iter, callback=session.chain_),
@@ -226,7 +223,6 @@ class StatementParser(object):
             tk.CIRCLE: partial(self.exec_args_iter, args_iter=self._parse_circle_args_iter, callback=session.screen.drawing.circle_),
             tk.DRAW: partial(self.exec_args_iter, args_iter=self._parse_string_arg_iter,
                             callback=partial(session.screen.drawing.draw_, memory=session.memory, value_handler=session.values, events=session.events)),
-            tk.PLAY: self.exec_play,
             tk.TIMER: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.timer_),
             tk.IOCTL: partial(self.exec_args_iter, args_iter=self._parse_ioctl_args_iter, callback=session.files.ioctl_statement_),
             tk.CHDIR: partial(self.exec_single_string_arg, callback=session.devices.chdir_),
@@ -234,23 +230,32 @@ class StatementParser(object):
             tk.RMDIR: partial(self.exec_single_string_arg, callback=session.devices.rmdir_),
             tk.SHELL: partial(self.exec_files_shell, callback=session.shell_),
             tk.ENVIRON: partial(self.exec_single_string_arg, callback=dos.environ_statement_),
-            tk.VIEW: self.exec_view,
             tk.WINDOW: partial(self.exec_args_iter, args_iter=self._parse_window_args_iter, callback=session.screen.drawing.window_),
-            tk.PALETTE: self.exec_palette,
             tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
             tk.PCOPY: partial(self.exec_args_iter, args_iter=self._parse_pcopy_args_iter, callback=session.screen.pcopy_),
             tk.LOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.lock_),
             tk.UNLOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.unlock_),
             tk.MID: partial(self.exec_args_iter, args_iter=self._parse_mid_args_iter, callback=session.memory.mid_),
             tk.PEN: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.pen_),
-            tk.STRIG: self.exec_strig,
-            '_': self.exec_extension,
         }
         if self.syntax in ('pcjr', 'tandy'):
-            self.statements.update({
+            self._simple.update({
                 tk.TERM: partial(self.exec_after_end, callback=session.term_),
                 tk.NOISE: partial(self.exec_args_iter, args_iter=self._parse_noise_args_iter, callback=session.sound.noise_),
             })
+        self._complex = {
+            '_': self.exec_extension,
+            tk.ON: self.exec_on,
+            tk.DEF: self.exec_def,
+            tk.LINE: self.exec_line,
+            tk.KEY: self.exec_key,
+            tk.PUT: self.exec_put,
+            tk.GET: self.exec_get,
+            tk.PLAY: self.exec_play,
+            tk.VIEW: self.exec_view,
+            tk.PALETTE: self.exec_palette,
+            tk.STRIG: self.exec_strig,
+        }
         self.extensions = {
             'DEBUG': partial(self.exec_single_string_arg, callback=session.debugger.debug_),
         }
@@ -259,13 +264,21 @@ class StatementParser(object):
         """Pickle."""
         pickle_dict = self.__dict__.copy()
         # can't be pickled
-        pickle_dict['statements'] = None
+        pickle_dict['_simple'] = None
+        pickle_dict['_complex'] = None
         pickle_dict['extensions'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
+
+    def exec_args_iter(self, ins, args_iter, callback):
+        """Execute statement parsed by iterable."""
+        callback(args_iter(ins))
+
+    ##########################################################
+    # statements that require further qualification
 
     def exec_extension(self, ins):
         """Extension statement."""
@@ -277,9 +290,353 @@ class StatementParser(object):
             raise error.RunError(error.STX)
         callback(ins)
 
-    def exec_args_iter(self, ins, args_iter, callback):
-        """Execute statement parsed by iterable."""
-        callback(args_iter(ins))
+    def exec_def(self, ins):
+        """DEF: select DEF FN, DEF USR, DEF SEG."""
+        c = ins.skip_blank_read_if((tk.FN, tk.USR))
+        if c == tk.FN:
+            self.exec_def_fn(ins)
+        elif c == tk.USR:
+            self.exec_def_usr(ins)
+        # must be uppercase in tokenised form, otherwise syntax error
+        else:
+            self.exec_def_seg(ins)
+
+    def exec_view(self, ins):
+        """VIEW: select VIEW PRINT, VIEW (graphics)."""
+        if ins.skip_blank_read_if((tk.PRINT,)):
+            self.exec_view_print(ins)
+        else:
+            self.exec_view_graph(ins)
+
+    def exec_line(self, ins):
+        """LINE: select LINE INPUT, LINE (graphics)."""
+        if ins.skip_blank_read_if((tk.INPUT,)):
+            self.exec_line_input(ins)
+        else:
+            self.exec_line_graph(ins)
+
+    def exec_get(self, ins):
+        """GET: select GET (graphics), GET (files)."""
+        if ins.skip_blank() == '(':
+            self.exec_get_graph(ins)
+        else:
+            self.exec_get_file(ins)
+
+    def exec_put(self, ins):
+        """PUT: select PUT (graphics), PUT (files)."""
+        if ins.skip_blank() == '(':
+            self.exec_put_graph(ins)
+        else:
+            self.exec_put_file(ins)
+
+    def exec_on(self, ins):
+        """ON: select ON ERROR, ON (event) or ON (jump)."""
+        c = ins.skip_blank()
+        if c in (tk.ERROR, tk.KEY, '\xFE', '\xFF'):
+            token = ins.read_keyword_token()
+            if token == tk.ERROR:
+                ins.require_read((tk.GOTO,))
+                self.session.interpreter.on_error_goto_(self._parse_jumpnum(ins))
+            else:
+                self.exec_on_event(ins, token)
+        else:
+            self.exec_on_jump(ins)
+
+    def exec_key(self, ins):
+        """KEY: switch on/off or list function-key row on screen."""
+        d = ins.skip_blank_read()
+        if d in (tk.ON, tk.OFF, tk.LIST):
+            # KEY ON, KEY OFF, KEY LIST
+            self.session.fkey_macros.key_(d, self.session.screen)
+        elif d == '(':
+            # key (n)
+            ins.seek(-1, 1)
+            self.exec_key_events(ins)
+        else:
+            # key n, "TEXT"
+            ins.seek(-len(d), 1)
+            self.exec_key_define(ins)
+
+    def exec_play(self, ins):
+        """PLAY: event switch/play MML string."""
+        command = ins.skip_blank_read_if((tk.ON, tk.OFF, tk.STOP))
+        if command:
+            # PLAY: event switch
+            self.session.events.play_(command)
+            ins.require_end()
+        else:
+            # retrieve Music Macro Language string
+            mml1, mml2 = '', ''
+            mml0 = self._parse_temporary_string(ins, allow_empty=True)
+            if ((self.syntax == 'tandy' or (self.syntax == 'pcjr' and
+                                             self.session.sound.sound_on))
+                    and ins.skip_blank_read_if((',',))):
+                mml1 = self._parse_temporary_string(ins, allow_empty=True)
+                if ins.skip_blank_read_if((',',)):
+                    mml2 = self._parse_temporary_string(ins, allow_empty=True)
+            ins.require_end()
+            if not (mml0 or mml1 or mml2):
+                raise error.RunError(error.MISSING_OPERAND)
+            self.session.sound.play_(self.memory, self.values, (mml0, mml1, mml2))
+
+    def exec_strig(self, ins):
+        """STRIG: switch on/off fire button event handling."""
+        d = ins.require_read((tk.ON, tk.OFF, '('))
+        if d == '(':
+            # strig (n)
+            num = values.to_int(self.parse_expression(ins))
+            ins.require_read((')',))
+            command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+            self.session.events.strig_(num, command)
+        elif d in (tk.ON, tk.OFF):
+            self.session.stick.strig_statement_(d)
+
+    # DEF
+
+    def exec_def_seg(self, ins):
+        """DEF SEG: set the current memory segment."""
+        ins.require_read((tk.W_SEG,))
+        seg = None
+        if ins.skip_blank_read_if((tk.O_EQ,)):
+            # def_seg() accepts signed values
+            seg = values.to_int(self.parse_expression(ins), unsigned=True)
+        self.session.all_memory.def_seg_(seg)
+
+    def exec_def_usr(self, ins):
+        """DEF USR: Define a machine language function."""
+        usr = ins.skip_blank_read_if(tk.DIGIT)
+        ins.require_read((tk.O_EQ,))
+        addr = values.cint_(self.parse_expression(ins), unsigned=True)
+        self.session.all_memory.def_usr_(usr, addr)
+
+    def exec_def_fn(self, ins):
+        """DEF FN: define a function."""
+        fnname = self.parse_name(ins)
+        # don't allow DEF FN in direct mode, as we point to the code in the stored program
+        # this is raised before further syntax errors
+        if not self.run_mode:
+            raise error.RunError(error.ILLEGAL_DIRECT)
+        # arguments and expression are being read and parsed by UserFunctionManager
+        self.expression_parser.user_functions.define(fnname, ins)
+
+    def exec_palette(self, ins):
+        """PALETTE: set colour palette entry."""
+        if ins.skip_blank_read_if((tk.USING,)):
+            return self.exec_palette_using(ins)
+        else:
+            attrib = self._parse_value(ins, values.INT, allow_empty=True)
+            if attrib is None:
+                colour = None
+                ins.require_end()
+            else:
+                ins.require_read((',',))
+                colour = self._parse_value(ins, values.INT, allow_empty=True)
+                error.throw_if(attrib is None or colour is None, error.STX)
+            self.session.screen.palette.palette_(attrib, colour)
+
+    # VIEW
+
+    def exec_view_graph(self, ins):
+        """VIEW: set graphics viewport and optionally draw a box."""
+        if self.session.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        absolute = ins.skip_blank_read_if((tk.SCREEN,))
+        if ins.skip_blank() == '(':
+            x0, y0 = self._parse_coord_bare(ins)
+            x0, y0 = round(x0), round(y0)
+            ins.require_read((tk.O_MINUS,))
+            x1, y1 = self._parse_coord_bare(ins)
+            x1, y1 = round(x1), round(y1)
+            error.range_check(0, self.session.screen.mode.pixel_width-1, x0, x1)
+            error.range_check(0, self.session.screen.mode.pixel_height-1, y0, y1)
+            fill, border = None, None
+            if ins.skip_blank_read_if((',',)):
+                fill = values.to_int(self.parse_expression(ins))
+                ins.require_read((',',))
+                border = values.to_int(self.parse_expression(ins))
+            args = (x0, y0, x1, y1, absolute, fill, border)
+        else:
+            args = ()
+        self.session.screen.drawing.view_(*args)
+
+    def exec_view_print(self, ins):
+        """VIEW PRINT: set scroll region."""
+        start = self._parse_value(ins, values.INT, allow_empty=True)
+        stop = None
+        if start is not None:
+            ins.require_read((tk.TO,))
+            stop = self._parse_value(ins, values.INT)
+        ins.require_end()
+        self.session.screen.view_print_(start, stop)
+
+    # LINE
+
+    def exec_line_input(self, ins):
+        """LINE INPUT: request line of input from user."""
+        prompt, newline, finp = None, None, None
+        file_number = self._parse_file_number(ins, opt_hash=False)
+        if file_number is None:
+            # get prompt
+            newline, prompt, _ = self._parse_prompt(ins)
+        else:
+            finp = self.session.files.get(file_number, mode='IR')
+            ins.require_read((',',))
+        # get string variable
+        readvar, indices = self._parse_variable(ins)
+        self.session.line_input_(finp, prompt, readvar, indices, newline)
+
+    def exec_line_graph(self, ins):
+        """LINE: draw a line or box between two points."""
+        if self.session.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        if ins.skip_blank() in ('(', tk.STEP):
+            coord0 = self._parse_coord_step(ins)
+        else:
+            coord0 = None
+        ins.require_read((tk.O_MINUS,))
+        coord1 = self._parse_coord_step(ins)
+        c, mode, pattern = None, None, None
+        if ins.skip_blank_read_if((',',)):
+            expr = self.parse_expression(ins, allow_empty=True)
+            if expr:
+                c = values.to_int(expr)
+            if ins.skip_blank_read_if((',',)):
+                if ins.skip_blank_read_if(('B',)):
+                    mode = 'BF' if ins.skip_blank_read_if(('F',)) else 'B'
+                if ins.skip_blank_read_if((',',)):
+                    pattern = self._parse_value(ins, values.INT)
+                else:
+                    # mustn't end on a comma
+                    # mode == '' if nothing after previous comma
+                    error.throw_if(not mode, error.STX)
+            elif not expr:
+                raise error.RunError(error.MISSING_OPERAND)
+        ins.require_end()
+        self.session.screen.drawing.line_(coord0, coord1, c, pattern, mode)
+
+    # PALETTE
+
+    def exec_palette_using(self, ins):
+        """PALETTE USING: set full colour palette."""
+        array_name, start_indices = self._parse_variable(ins)
+        # brackets are not optional
+        error.throw_if(not start_indices, error.STX)
+        self.session.screen.palette.palette_using_(array_name, start_indices, self.session.arrays)
+
+    # PUT, GET
+
+    def _parse_put_get_file(self, ins):
+        """Parse record number for PUT and GET."""
+        the_file = self.session.files.get(self._parse_file_number(ins, opt_hash=True), 'R')
+        pos = None
+        if ins.skip_blank_read_if((',',)):
+            pos = self.parse_expression(ins)
+        return (the_file, pos)
+
+    def exec_put_file(self, ins):
+        """PUT: write record to file."""
+        self.session.files.put_(*self._parse_put_get_file(ins))
+
+    def exec_get_file(self, ins):
+        """GET: read record from file."""
+        self.session.files.get_(*self._parse_put_get_file(ins))
+
+    def exec_get_graph(self, ins):
+        """GET: read a sprite to memory."""
+        if self.session.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        # don't accept STEP for first coord
+        coord0 = self._parse_coord_bare(ins)
+        ins.require_read((tk.O_MINUS,))
+        coord1 = self._parse_coord_step(ins)
+        ins.require_read((',',))
+        array = self.parse_name(ins)
+        ins.require_end()
+        self.session.screen.drawing.get_(coord0, coord1, self.session.arrays, array)
+
+    def exec_put_graph(self, ins):
+        """PUT: draw sprite on screen."""
+        if self.session.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        # don't accept STEP
+        x, y = self._parse_coord_bare(ins)
+        ins.require_read((',',))
+        array = self.parse_name(ins)
+        action = None
+        if ins.skip_blank_read_if((',',)):
+            action = ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
+        ins.require_end()
+        self.session.screen.drawing.put_((x, y), self.session.arrays, array, action)
+
+    # ON
+
+    def exec_on_jump(self, ins):
+        """ON: calculated jump."""
+        onvar = values.to_int(self.parse_expression(ins))
+        error.range_check(0, 255, onvar)
+        command = ins.require_read((tk.GOTO, tk.GOSUB))
+        skipped = 0
+        if onvar in (0, 255):
+            # if any provided, check all but jump to none
+            while True:
+                num = self._parse_optional_jumpnum(ins)
+                if num is None or not ins.skip_blank_read_if((',',)):
+                    ins.require_end()
+                    return
+        else:
+            # only parse jumps (and errors!) up to our choice
+            while skipped < onvar-1:
+                self._parse_jumpnum(ins)
+                skipped += 1
+                if not ins.skip_blank_read_if((',',)):
+                    ins.require_end()
+                    return
+            # parse our choice
+            jumpnum = self._parse_jumpnum(ins)
+            if command == tk.GOTO:
+                self.session.interpreter.jump(jumpnum)
+            elif command == tk.GOSUB:
+                self.session.interpreter.jump_sub(jumpnum)
+
+    def exec_on_event(self, ins, token):
+        """Helper function for ON event trap definitions."""
+        num = None
+        if token not in (tk.PEN, tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
+            raise error.RunError(error.STX)
+        if token != tk.PEN:
+            num = self._parse_bracket(ins)
+        ins.require_read((tk.GOSUB,))
+        jumpnum = self._parse_jumpnum(ins)
+        if jumpnum == 0:
+            jumpnum = None
+        elif jumpnum not in self.session.program.line_numbers:
+            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+        ins.require_end()
+        self.session.events.on_event_gosub_(token, num, jumpnum)
+
+    # KEY
+
+    def exec_key_events(self, ins):
+        """KEY: switch on/off keyboard events."""
+        num = values.to_int(self._parse_bracket(ins))
+        error.range_check(0, 255, num)
+        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+        self.session.events.key_(num, command)
+
+    def exec_key_define(self, ins):
+        """KEY: define function-key shortcut or scancode for event trapping."""
+        keynum = values.to_int(self.parse_expression(ins))
+        error.range_check(1, 255, keynum)
+        ins.require_read((',',))
+        text = self._parse_temporary_string(ins)
+        if keynum <= self.session.events.num_fn_keys:
+            self.session.fkey_macros.set(keynum, text, self.session.screen)
+        else:
+            # only length-2 expressions can be assigned to KEYs over 10
+            # in which case it's a key scancode definition
+            if len(text) != 2:
+                raise error.RunError(error.IFC)
+            self.session.events.key[keynum-1].set_trigger(str(text))
 
     ###########################################################################
     # generalised callers
@@ -1172,345 +1529,3 @@ class StatementParser(object):
             # done if we're not jumping into a comma'ed NEXT
             if not ins.skip_blank_read_if((',')):
                 break
-
-    ###########################################################################
-    # User-defined functions
-
-    def exec_def_fn(self, ins):
-        """DEF FN: define a function."""
-        fnname = self.parse_name(ins)
-        # don't allow DEF FN in direct mode, as we point to the code in the stored program
-        # this is raised before further syntax errors
-        if not self.run_mode:
-            raise error.RunError(error.ILLEGAL_DIRECT)
-        # arguments and expression are being read and parsed by UserFunctionManager
-        self.expression_parser.user_functions.define(fnname, ins)
-
-
-    ##########################################################
-    # statements that require further qualification
-
-    def exec_def(self, ins):
-        """DEF: select DEF FN, DEF USR, DEF SEG."""
-        c = ins.skip_blank()
-        if ins.read_if(c, (tk.FN,)):
-            self.exec_def_fn(ins)
-        elif ins.read_if(c, (tk.USR,)):
-            self.exec_def_usr(ins)
-        # must be uppercase in tokenised form, otherwise syntax error
-        elif ins.skip_blank_read_if((tk.W_SEG,), 3):
-            self.exec_def_seg(ins)
-        else:
-            raise error.RunError(error.STX)
-
-    def exec_def_seg(self, ins):
-        """DEF SEG: set the current memory segment."""
-        seg = None
-        if ins.skip_blank_read_if((tk.O_EQ,)):
-            # def_seg() accepts signed values
-            seg = values.to_int(self.parse_expression(ins), unsigned=True)
-        self.session.all_memory.def_seg_(seg)
-
-    def exec_def_usr(self, ins):
-        """DEF USR: Define a machine language function."""
-        usr = ins.skip_blank_read_if(tk.DIGIT)
-        ins.require_read((tk.O_EQ,))
-        addr = values.cint_(self.parse_expression(ins), unsigned=True)
-        self.session.all_memory.def_usr_(usr, addr)
-
-    def exec_view(self, ins):
-        """VIEW: select VIEW PRINT, VIEW (graphics)."""
-        if ins.skip_blank_read_if((tk.PRINT,)):
-            self.exec_view_print(ins)
-        else:
-            self.exec_view_graph(ins)
-
-    def exec_view_graph(self, ins):
-        """VIEW: set graphics viewport and optionally draw a box."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        absolute = ins.skip_blank_read_if((tk.SCREEN,))
-        if ins.skip_blank() == '(':
-            x0, y0 = self._parse_coord_bare(ins)
-            x0, y0 = round(x0), round(y0)
-            ins.require_read((tk.O_MINUS,))
-            x1, y1 = self._parse_coord_bare(ins)
-            x1, y1 = round(x1), round(y1)
-            error.range_check(0, self.session.screen.mode.pixel_width-1, x0, x1)
-            error.range_check(0, self.session.screen.mode.pixel_height-1, y0, y1)
-            fill, border = None, None
-            if ins.skip_blank_read_if((',',)):
-                fill = values.to_int(self.parse_expression(ins))
-                ins.require_read((',',))
-                border = values.to_int(self.parse_expression(ins))
-            args = (x0, y0, x1, y1, absolute, fill, border)
-        else:
-            args = ()
-        self.session.screen.drawing.view_(*args)
-
-    def exec_view_print(self, ins):
-        """VIEW PRINT: set scroll region."""
-        start = self._parse_value(ins, values.INT, allow_empty=True)
-        stop = None
-        if start is not None:
-            ins.require_read((tk.TO,))
-            stop = self._parse_value(ins, values.INT)
-        ins.require_end()
-        self.session.screen.view_print_(start, stop)
-
-    def exec_line(self, ins):
-        """LINE: select LINE INPUT, LINE (graphics)."""
-        if ins.skip_blank_read_if((tk.INPUT,)):
-            self.exec_line_input(ins)
-        else:
-            self.exec_line_graph(ins)
-
-    def exec_line_input(self, ins):
-        """LINE INPUT: request line of input from user."""
-        prompt, newline, finp = None, None, None
-        file_number = self._parse_file_number(ins, opt_hash=False)
-        if file_number is None:
-            # get prompt
-            newline, prompt, _ = self._parse_prompt(ins)
-        else:
-            finp = self.session.files.get(file_number, mode='IR')
-            ins.require_read((',',))
-        # get string variable
-        readvar, indices = self._parse_variable(ins)
-        self.session.line_input_(finp, prompt, readvar, indices, newline)
-
-    def exec_line_graph(self, ins):
-        """LINE: draw a line or box between two points."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        if ins.skip_blank() in ('(', tk.STEP):
-            coord0 = self._parse_coord_step(ins)
-        else:
-            coord0 = None
-        ins.require_read((tk.O_MINUS,))
-        coord1 = self._parse_coord_step(ins)
-        c, mode, pattern = None, None, None
-        if ins.skip_blank_read_if((',',)):
-            expr = self.parse_expression(ins, allow_empty=True)
-            if expr:
-                c = values.to_int(expr)
-            if ins.skip_blank_read_if((',',)):
-                if ins.skip_blank_read_if(('B',)):
-                    mode = 'BF' if ins.skip_blank_read_if(('F',)) else 'B'
-                if ins.skip_blank_read_if((',',)):
-                    pattern = self._parse_value(ins, values.INT)
-                else:
-                    # mustn't end on a comma
-                    # mode == '' if nothing after previous comma
-                    error.throw_if(not mode, error.STX)
-            elif not expr:
-                raise error.RunError(error.MISSING_OPERAND)
-        ins.require_end()
-        self.session.screen.drawing.line_(coord0, coord1, c, pattern, mode)
-
-    def exec_palette(self, ins):
-        """PALETTE: set colour palette entry."""
-        if ins.skip_blank_read_if((tk.USING,)):
-            return self.exec_palette_using(ins)
-        else:
-            attrib = self._parse_value(ins, values.INT, allow_empty=True)
-            if attrib is None:
-                colour = None
-                ins.require_end()
-            else:
-                ins.require_read((',',))
-                colour = self._parse_value(ins, values.INT, allow_empty=True)
-                error.throw_if(attrib is None or colour is None, error.STX)
-            self.session.screen.palette.palette_(attrib, colour)
-
-    def exec_palette_using(self, ins):
-        """PALETTE USING: set full colour palette."""
-        array_name, start_indices = self._parse_variable(ins)
-        # brackets are not optional
-        error.throw_if(not start_indices, error.STX)
-        self.session.screen.palette.palette_using_(array_name, start_indices, self.session.arrays)
-
-    def exec_get(self, ins):
-        """GET: select GET (graphics), GET (files)."""
-        if ins.skip_blank() == '(':
-            self.exec_get_graph(ins)
-        else:
-            self.exec_get_file(ins)
-
-    def exec_put(self, ins):
-        """PUT: select PUT (graphics), PUT (files)."""
-        if ins.skip_blank() == '(':
-            self.exec_put_graph(ins)
-        else:
-            self.exec_put_file(ins)
-
-    def _parse_put_get_file(self, ins):
-        """Parse record number for PUT and GET."""
-        the_file = self.session.files.get(self._parse_file_number(ins, opt_hash=True), 'R')
-        pos = None
-        if ins.skip_blank_read_if((',',)):
-            pos = self.parse_expression(ins)
-        return (the_file, pos)
-
-    def exec_put_file(self, ins):
-        """PUT: write record to file."""
-        self.session.files.put_(*self._parse_put_get_file(ins))
-
-    def exec_get_file(self, ins):
-        """GET: read record from file."""
-        self.session.files.get_(*self._parse_put_get_file(ins))
-
-    def exec_get_graph(self, ins):
-        """GET: read a sprite to memory."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        # don't accept STEP for first coord
-        coord0 = self._parse_coord_bare(ins)
-        ins.require_read((tk.O_MINUS,))
-        coord1 = self._parse_coord_step(ins)
-        ins.require_read((',',))
-        array = self.parse_name(ins)
-        ins.require_end()
-        self.session.screen.drawing.get_(coord0, coord1, self.session.arrays, array)
-
-    def exec_put_graph(self, ins):
-        """PUT: draw sprite on screen."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        # don't accept STEP
-        x, y = self._parse_coord_bare(ins)
-        ins.require_read((',',))
-        array = self.parse_name(ins)
-        action = None
-        if ins.skip_blank_read_if((',',)):
-            action = ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
-        ins.require_end()
-        self.session.screen.drawing.put_((x, y), self.session.arrays, array, action)
-
-    def exec_on(self, ins):
-        """ON: select ON ERROR, ON (event) or ON (jump)."""
-        c = ins.skip_blank()
-        if c in (tk.ERROR, tk.KEY, '\xFE', '\xFF'):
-            token = ins.read_keyword_token()
-            if token == tk.ERROR:
-                ins.require_read((tk.GOTO,))
-                self.session.interpreter.on_error_goto_(self._parse_jumpnum(ins))
-            else:
-                self.exec_on_event(ins, token)
-        else:
-            self.exec_on_jump(ins)
-
-    def exec_on_jump(self, ins):
-        """ON: calculated jump."""
-        onvar = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, onvar)
-        command = ins.require_read((tk.GOTO, tk.GOSUB))
-        skipped = 0
-        if onvar in (0, 255):
-            # if any provided, check all but jump to none
-            while True:
-                num = self._parse_optional_jumpnum(ins)
-                if num is None or not ins.skip_blank_read_if((',',)):
-                    ins.require_end()
-                    return
-        else:
-            # only parse jumps (and errors!) up to our choice
-            while skipped < onvar-1:
-                self._parse_jumpnum(ins)
-                skipped += 1
-                if not ins.skip_blank_read_if((',',)):
-                    ins.require_end()
-                    return
-            # parse our choice
-            jumpnum = self._parse_jumpnum(ins)
-            if command == tk.GOTO:
-                self.session.interpreter.jump(jumpnum)
-            elif command == tk.GOSUB:
-                self.session.interpreter.jump_sub(jumpnum)
-
-    def exec_on_event(self, ins, token):
-        """Helper function for ON event trap definitions."""
-        num = None
-        if token not in (tk.PEN, tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
-            raise error.RunError(error.STX)
-        if token != tk.PEN:
-            num = self._parse_bracket(ins)
-        ins.require_read((tk.GOSUB,))
-        jumpnum = self._parse_jumpnum(ins)
-        if jumpnum == 0:
-            jumpnum = None
-        elif jumpnum not in self.session.program.line_numbers:
-            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
-        ins.require_end()
-        self.session.events.on_event_gosub_(token, num, jumpnum)
-
-    def exec_key(self, ins):
-        """KEY: switch on/off or list function-key row on screen."""
-        d = ins.skip_blank_read()
-        if d in (tk.ON, tk.OFF, tk.LIST):
-            # KEY ON, KEY OFF, KEY LIST
-            self.session.fkey_macros.key_(d, self.session.screen)
-        elif d == '(':
-            # key (n)
-            ins.seek(-1, 1)
-            self.exec_key_events(ins)
-        else:
-            # key n, "TEXT"
-            ins.seek(-len(d), 1)
-            self.exec_key_define(ins)
-
-    def exec_key_events(self, ins):
-        """KEY: switch on/off keyboard events."""
-        num = values.to_int(self._parse_bracket(ins))
-        error.range_check(0, 255, num)
-        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.key_(num, command)
-
-    def exec_key_define(self, ins):
-        """KEY: define function-key shortcut or scancode for event trapping."""
-        keynum = values.to_int(self.parse_expression(ins))
-        error.range_check(1, 255, keynum)
-        ins.require_read((',',))
-        text = self._parse_temporary_string(ins)
-        if keynum <= self.session.events.num_fn_keys:
-            self.session.fkey_macros.set(keynum, text, self.session.screen)
-        else:
-            # only length-2 expressions can be assigned to KEYs over 10
-            # in which case it's a key scancode definition
-            if len(text) != 2:
-                raise error.RunError(error.IFC)
-            self.session.events.key[keynum-1].set_trigger(str(text))
-
-    def exec_play(self, ins):
-        """PLAY: event switch/play MML string."""
-        command = ins.skip_blank_read_if((tk.ON, tk.OFF, tk.STOP))
-        if command:
-            # PLAY: event switch
-            self.session.events.play_(command)
-            ins.require_end()
-        else:
-            # retrieve Music Macro Language string
-            mml1, mml2 = '', ''
-            mml0 = self._parse_temporary_string(ins, allow_empty=True)
-            if ((self.syntax == 'tandy' or (self.syntax == 'pcjr' and
-                                             self.session.sound.sound_on))
-                    and ins.skip_blank_read_if((',',))):
-                mml1 = self._parse_temporary_string(ins, allow_empty=True)
-                if ins.skip_blank_read_if((',',)):
-                    mml2 = self._parse_temporary_string(ins, allow_empty=True)
-            ins.require_end()
-            if not (mml0 or mml1 or mml2):
-                raise error.RunError(error.MISSING_OPERAND)
-            self.session.sound.play_(self.memory, self.values, (mml0, mml1, mml2))
-
-    def exec_strig(self, ins):
-        """STRIG: switch on/off fire button event handling."""
-        d = ins.require_read((tk.ON, tk.OFF, '('))
-        if d == '(':
-            # strig (n)
-            num = values.to_int(self.parse_expression(ins))
-            ins.require_read((')',))
-            command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-            self.session.events.strig_(num, command)
-        elif d in (tk.ON, tk.OFF):
-            self.session.stick.strig_statement_(d)
