@@ -287,8 +287,9 @@ class StatementParser(object):
                 None: partial(self.exec_args_iter, args_iter=self._parse_view_args_iter, callback=session.screen.drawing.view_),
             },
             tk.PALETTE: {
-                tk.USING: self.exec_palette_using,
-                None: self.exec_palette_only,
+                tk.USING: partial(self.exec_args_iter, args_iter=self._parse_palette_using_args_iter, callback=
+                                        partial(session.screen.palette.palette_using_, session.arrays)),
+                None: partial(self.exec_args_iter, args_iter=self._parse_palette_args_iter, callback=session.screen.palette.palette_),
             },
             tk.STRIG: {
                 tk.ON: partial(self.exec_args_iter, args_iter=self._parse_strig_switch_iter, callback=session.stick.strig_statement_),
@@ -329,28 +330,6 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
-
-    # PALETTE
-
-    def exec_palette_only(self, ins):
-        """PALETTE: set colour palette entry."""
-        attrib = self._parse_value(ins, values.INT, allow_empty=True)
-        if attrib is None:
-            colour = None
-            ins.require_end()
-        else:
-            ins.require_read((',',))
-            colour = self._parse_value(ins, values.INT, allow_empty=True)
-            error.throw_if(attrib is None or colour is None, error.STX)
-        self.session.screen.palette.palette_(attrib, colour)
-
-    def exec_palette_using(self, ins):
-        """PALETTE USING: set full colour palette."""
-        ins.require_read((tk.USING,))
-        array_name, start_indices = self._parse_variable(ins)
-        # brackets are not optional
-        error.throw_if(not start_indices, error.STX)
-        self.session.screen.palette.palette_using_(array_name, start_indices, self.session.arrays)
 
     # PUT, GET
 
@@ -1299,6 +1278,27 @@ class StatementParser(object):
                 raise error.RunError(error.MISSING_OPERAND)
         elif last is None:
             raise error.RunError(error.IFC)
+
+    def _parse_palette_args_iter(self, ins):
+        """Parse PALETTE syntax."""
+        attrib = self._parse_value(ins, values.INT, allow_empty=True)
+        yield attrib
+        if attrib is None:
+            yield None
+            ins.require_end()
+        else:
+            ins.require_read((',',))
+            colour = self._parse_value(ins, values.INT, allow_empty=True)
+            yield colour
+            error.throw_if(attrib is None or colour is None, error.STX)
+
+    def _parse_palette_using_args_iter(self, ins):
+        """Parse PALETTE USING syntax."""
+        ins.require_read((tk.USING,))
+        array_name, start_indices = self._parse_variable(ins)
+        yield array_name, start_indices
+        # brackets are not optional
+        error.throw_if(not start_indices, error.STX)
 
     def _parse_locate_args_iter(self, ins):
         """Parse LOCATE syntax."""

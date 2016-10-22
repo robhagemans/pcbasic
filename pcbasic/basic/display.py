@@ -1754,8 +1754,9 @@ class Palette(object):
         else:
             return True
 
-    def palette_(self, attrib, colour):
+    def palette_(self, args):
         """PALETTE: assign colour to attribute."""
+        attrib, colour = args
         if attrib is None and colour is None:
             self.set_all(self.mode.palette)
         else:
@@ -1767,8 +1768,10 @@ class Palette(object):
             if colour != -1:
                 self.set_entry(attrib, colour)
 
-    def palette_using_(self, array_name, start_indices, arrays):
+    def palette_using_(self, arrays, args):
         """PALETTE USING: set palette from array buffer."""
+        array_name, start_indices = next(args)
+        list(args)
         num_palette_entries = self.mode.num_attr if self.mode.num_attr != 32 else 16
         try:
             dimensions = arrays.dimensions(array_name)
