@@ -117,8 +117,16 @@ class Events(object):
         command, = args
         self.command(self.play, command)
 
-    def on_event_gosub_(self, token, num, jumpnum):
+    def on_event_gosub_(self, program, args):
         """ON KEY: define key event trapping."""
+        token = next(args)
+        num = next(args)
+        jumpnum = next(args)
+        if jumpnum == 0:
+            jumpnum = None
+        elif jumpnum not in program.line_numbers:
+            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+        list(args)
         if token == tk.KEY:
             keynum = values.to_int(num)
             error.range_check(1, 20, keynum)

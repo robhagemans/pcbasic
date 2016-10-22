@@ -246,9 +246,12 @@ class StatementParser(object):
         self._complex = {
             tk.ON: {
                 tk.ERROR: partial(self.exec_args_iter, args_iter=self._parse_on_error_goto_args_iter, callback=session.interpreter.on_error_goto_),
-                tk.KEY: self.exec_on_event,
-                '\xFE': self.exec_on_event,
-                '\xFF': self.exec_on_event,
+                tk.KEY: partial(self.exec_args_iter, args_iter=self._parse_on_event_args_iter, callback=
+                                        partial(session.events.on_event_gosub_, session.program)),
+                '\xFE': partial(self.exec_args_iter, args_iter=self._parse_on_event_args_iter, callback=
+                                        partial(session.events.on_event_gosub_, session.program)),
+                '\xFF': partial(self.exec_args_iter, args_iter=self._parse_on_event_args_iter, callback=
+                                        partial(session.events.on_event_gosub_, session.program)),
                 None: self.exec_on_jump,
             },
             tk.DEF: {
@@ -362,23 +365,6 @@ class StatementParser(object):
                 self.session.interpreter.jump(jumpnum)
             elif command == tk.GOSUB:
                 self.session.interpreter.jump_sub(jumpnum)
-
-    def exec_on_event(self, ins):
-        """Helper function for ON event trap definitions."""
-        token = ins.read_keyword_token()
-        num = None
-        if token not in (tk.PEN, tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
-            raise error.RunError(error.STX)
-        if token != tk.PEN:
-            num = self._parse_bracket(ins)
-        ins.require_read((tk.GOSUB,))
-        jumpnum = self._parse_jumpnum(ins)
-        if jumpnum == 0:
-            jumpnum = None
-        elif jumpnum not in self.session.program.line_numbers:
-            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
-        ins.require_end()
-        self.session.events.on_event_gosub_(token, num, jumpnum)
 
     # KEY
 
@@ -525,6 +511,20 @@ class StatementParser(object):
     def _parse_strig_switch_iter(self, ins):
         """Parse STRIG ON/OFF syntax."""
         yield ins.require_read((tk.ON, tk.OFF))
+
+    def _parse_on_event_args_iter(self, ins):
+        """Helper function for ON event trap definitions."""
+        token = ins.read_keyword_token()
+        yield token
+        if token not in (tk.PEN, tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
+            raise error.RunError(error.STX)
+        if token != tk.PEN:
+            yield self._parse_bracket(ins)
+        else:
+            yield None
+        ins.require_read((tk.GOSUB,))
+        yield self._parse_jumpnum(ins)
+        ins.require_end()
 
     ###########################################################################
     # sound
