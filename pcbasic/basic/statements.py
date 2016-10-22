@@ -300,7 +300,7 @@ class StatementParser(object):
                 None: partial(self.exec_args_iter, args_iter=self._parse_com_command_iter, callback=session.events.strig_),
             },
         }
-        self.extensions = {
+        self._extensions = {
             'DEBUG': partial(self.exec_single_string_arg, callback=session.debugger.debug_),
         }
 
@@ -310,7 +310,7 @@ class StatementParser(object):
         # can't be pickled
         pickle_dict['_simple'] = None
         pickle_dict['_complex'] = None
-        pickle_dict['extensions'] = None
+        pickle_dict['_extensions'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
@@ -329,7 +329,7 @@ class StatementParser(object):
         # This is not a GW-BASIC behaviour.
         word = ins.read_name()
         try:
-            callback = self.extensions[word]
+            callback = self._extensions[word]
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
