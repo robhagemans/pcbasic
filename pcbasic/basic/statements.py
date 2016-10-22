@@ -245,7 +245,7 @@ class StatementParser(object):
             })
         self._complex = {
             tk.ON: {
-                tk.ERROR: self.exec_on_error_goto,
+                tk.ERROR: partial(self.exec_args_iter, args_iter=self._parse_on_error_goto_args_iter, callback=session.interpreter.on_error_goto_),
                 tk.KEY: self.exec_on_event,
                 '\xFE': self.exec_on_event,
                 '\xFF': self.exec_on_event,
@@ -334,12 +334,6 @@ class StatementParser(object):
         callback(ins)
 
     # ON
-
-    def exec_on_error_goto(self, ins):
-        """Parse ON ERROR GOTO syntax."""
-        ins.require_read((tk.ERROR,))
-        ins.require_read((tk.GOTO,))
-        self.session.interpreter.on_error_goto_(self._parse_jumpnum(ins))
 
     def exec_on_jump(self, ins):
         """ON: calculated jump."""
@@ -509,6 +503,12 @@ class StatementParser(object):
         else:
             yield self._parse_jumpnum(ins)
         ins.require_end()
+
+    def _parse_on_error_goto_args_iter(self, ins):
+        """Parse ON ERROR GOTO syntax."""
+        ins.require_read((tk.ERROR,))
+        ins.require_read((tk.GOTO,))
+        yield self._parse_jumpnum(ins)
 
     ###########################################################################
     # event switches

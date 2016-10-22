@@ -507,8 +507,9 @@ class Interpreter(object):
         """TROFF: trace off."""
         self.tron = False
 
-    def on_error_goto_(self, linenum):
+    def on_error_goto_(self, args):
         """ON ERROR GOTO: define error trapping routine."""
+        linenum, = args
         if linenum != 0 and linenum not in self.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         self.on_error = linenum
