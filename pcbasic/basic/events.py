@@ -112,8 +112,9 @@ class Events(object):
         if num >= 1 and num <= 20:
             self.command(self.key[num-1], command)
 
-    def play_(self, command):
+    def play_(self, args):
         """PLAY: switch on/off sound queue event handling."""
+        command, = args
         self.command(self.play, command)
 
     def on_event_gosub_(self, token, num, jumpnum):

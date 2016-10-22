@@ -98,7 +98,7 @@ class StatementParser(object):
             expr = self.parse_expression(ins, allow_empty)
             if expr:
                 return values.pass_string(expr).to_value()
-            return self.values.new_string()
+            return ''
 
     def _parse_file_number(self, ins, opt_hash):
         """Read a file number."""
@@ -281,10 +281,11 @@ class StatementParser(object):
                 None: self.exec_get_file,
             },
             tk.PLAY: {
-                tk.ON: self.exec_play_event,
-                tk.OFF: self.exec_play_event,
-                tk.STOP: self.exec_play_event,
-                None: self.exec_play_music,
+                tk.ON: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.play_),
+                tk.OFF: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.play_),
+                tk.STOP: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.play_),
+                None: partial(self.exec_args_iter, args_iter=self._parse_play_args_iter, callback=
+                                    partial(session.sound.play_, session.memory, session.values)),
             },
             tk.VIEW: {
                 tk.PRINT: self.exec_view_print,
@@ -336,26 +337,17 @@ class StatementParser(object):
 
     # PLAY
 
-    def exec_play_event(self, ins):
-        """PLAY: event switch."""
-        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.play_(command)
-
-    def exec_play_music(self, ins):
-        """PLAY: play MML string."""
+    def _parse_play_args_iter(self, ins):
+        """Parse PLAY (music) syntax."""
         # retrieve Music Macro Language string
-        mml1, mml2 = '', ''
-        mml0 = self._parse_temporary_string(ins, allow_empty=True)
-        if ((self.syntax == 'tandy' or (self.syntax == 'pcjr' and
-                                         self.session.sound.sound_on))
+        yield self._parse_temporary_string(ins, allow_empty=True)
+        if ((self.syntax == 'tandy' or
+                        (self.syntax == 'pcjr' and self.session.sound.sound_on))
                 and ins.skip_blank_read_if((',',))):
-            mml1 = self._parse_temporary_string(ins, allow_empty=True)
+            yield self._parse_temporary_string(ins, allow_empty=True)
             if ins.skip_blank_read_if((',',)):
-                mml2 = self._parse_temporary_string(ins, allow_empty=True)
-        ins.require_end()
-        if not (mml0 or mml1 or mml2):
-            raise error.RunError(error.MISSING_OPERAND)
-        self.session.sound.play_(self.memory, self.values, (mml0, mml1, mml2))
+                yield self._parse_temporary_string(ins, allow_empty=True)
+        ins.require_end(err=error.IFC)
 
     # DEF
 
@@ -718,7 +710,7 @@ class StatementParser(object):
     # event switches
 
     def _parse_event_command_iter(self, ins):
-        """Parse PEN or TIMER syntax."""
+        """Parse PEN, PLAY or TIMER syntax."""
         yield ins.require_read((tk.ON, tk.OFF, tk.STOP))
 
     def _parse_com_command_iter(self, ins):

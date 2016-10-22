@@ -233,8 +233,14 @@ class Sound(object):
             voice = 0
         return self.queue_length(voice)
 
-    def play_(self, data_segment, values, mml_list):
+    def play_(self, data_segment, values, args):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
+        # retrieve Music Macro Language string
+        mml_list = list(args)
+        # at least one string must be specified
+        if not any(mml_list):
+            raise error.RunError(error.MISSING_OPERAND)
+        mml_list += [''] * (3-len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, data_segment, values) for mml in mml_list]
         next_oct = 0
         voices = range(3)
@@ -297,32 +303,24 @@ class Sound(object):
                 elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
                     note = c
                     dur = vstate.length
-                    while True:
-                        c = mmls.skip_blank().upper()
-                        if not c:
-                            break
-                        elif c == '.':
-                            mmls.read(1)
-                            dur *= 1.5
-                        elif c in string.digits:
-                            numstr = ''
-                            while c and c in string.digits:
-                                mmls.read(1)
-                                numstr += c
-                                c = mmls.skip_blank()
-                            # NOT ml_parse_number, only literals allowed here!
-                            length = int(numstr)
-                            error.range_check(0, 64, length)
-                            if length > 0:
-                                dur = 1. / float(length)
-                        elif c in ('#', '+'):
-                            mmls.read(1)
-                            note += '#'
-                        elif c == '-':
-                            mmls.read(1)
-                            note += '-'
-                        else:
-                            break
+                    if mmls.skip_blank_read_if(('#', '+')):
+                        note += '#'
+                    elif mmls.skip_blank_read_if(('-',)):
+                        note += '-'
+                    c = mmls.skip_blank_read_if(string.digits)
+                    if c is not None:
+                        numstr = [c]
+                        while mmls.skip_blank() in set(string.digits):
+                            numstr.append(mmls.read(1))
+                        # NOT ml_parse_number, only literals allowed here!
+                        length = int(''.join(numstr))
+                        error.range_check(0, 64, length)
+                        if length > 0:
+                            dur = 1. / float(length)
+                    if mmls.skip_blank_read_if(('.',)):
+                        error.throw_if(note == 'P' and length == 0)
+                        dur *= 1.5
+                        break
                     if note == 'P':
                         # don't do anything for length 0
                         if length > 0:
