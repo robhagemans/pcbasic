@@ -44,8 +44,12 @@ class StatementParser(object):
             # statement token
             self._simple[c](ins)
         elif c in self._complex:
+            stat_dict = self._complex[c]
+            selector = ins.skip_blank()
+            if selector not in stat_dict.keys():
+                selector = None
             # statement token
-            self._complex[c](ins)
+            stat_dict[selector](ins)
         else:
             # implicit LET
             ins.seek(-len(c), 1)
@@ -245,16 +249,56 @@ class StatementParser(object):
                 tk.NOISE: partial(self.exec_args_iter, args_iter=self._parse_noise_args_iter, callback=session.sound.noise_),
             })
         self._complex = {
-            tk.ON: self.exec_on,
-            tk.DEF: self.exec_def,
-            tk.LINE: self.exec_line,
-            tk.KEY: self.exec_key,
-            tk.PUT: self.exec_put,
-            tk.GET: self.exec_get,
-            tk.PLAY: self.exec_play,
-            tk.VIEW: self.exec_view,
-            tk.PALETTE: self.exec_palette,
-            tk.STRIG: self.exec_strig,
+            tk.ON: {
+                tk.ERROR: self.exec_on_error_goto,
+                tk.KEY: self.exec_on_event,
+                '\xFE': self.exec_on_event,
+                '\xFF': self.exec_on_event,
+                None: self.exec_on_jump,
+            },
+            tk.DEF: {
+                tk.FN: self.exec_def_fn,
+                tk.USR: self.exec_def_usr,
+                None: self.exec_def_seg,
+            },
+            tk.LINE: {
+                tk.INPUT: self.exec_line_input,
+                None: self.exec_line_graph,
+            },
+            tk.KEY: {
+                tk.ON: self.exec_key_macro,
+                tk.OFF: self.exec_key_macro,
+                tk.LIST: self.exec_key_macro,
+                '(': self.exec_key_events,
+                None: self.exec_key_define,
+            },
+            tk.PUT: {
+                '(': self.exec_put_graph,
+                None: self.exec_put_file,
+            },
+            tk.GET: {
+                '(': self.exec_get_graph,
+                None: self.exec_get_file,
+            },
+            tk.PLAY: {
+                tk.ON: self.exec_play_event,
+                tk.OFF: self.exec_play_event,
+                tk.STOP: self.exec_play_event,
+                None: self.exec_play_music,
+            },
+            tk.VIEW: {
+                tk.PRINT: self.exec_view_print,
+                None: self.exec_view_graph,
+            },
+            tk.PALETTE: {
+                tk.USING: self.exec_palette_using,
+                None: self.exec_palette_only,
+            },
+            tk.STRIG: {
+                '(': self.exec_strig_event,
+                tk.ON: self.exec_strig_switch,
+                tk.OFF: self.exec_strig_switch,
+            },
         }
         self.extensions = {
             'DEBUG': partial(self.exec_single_string_arg, callback=session.debugger.debug_),
@@ -289,87 +333,6 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
-
-    def exec_def(self, ins):
-        """DEF: select DEF FN, DEF USR, DEF SEG."""
-        c = ins.skip_blank()
-        if c == tk.FN:
-            self.exec_def_fn(ins)
-        elif c == tk.USR:
-            self.exec_def_usr(ins)
-        else:
-            self.exec_def_seg(ins)
-
-    def exec_view(self, ins):
-        """VIEW: select VIEW PRINT, VIEW (graphics)."""
-        if ins.skip_blank() == tk.PRINT:
-            self.exec_view_print(ins)
-        else:
-            self.exec_view_graph(ins)
-
-    def exec_line(self, ins):
-        """LINE: select LINE INPUT, LINE (graphics)."""
-        if ins.skip_blank() == tk.INPUT:
-            self.exec_line_input(ins)
-        else:
-            self.exec_line_graph(ins)
-
-    def exec_get(self, ins):
-        """GET: select GET (graphics), GET (files)."""
-        if ins.skip_blank() == '(':
-            self.exec_get_graph(ins)
-        else:
-            self.exec_get_file(ins)
-
-    def exec_put(self, ins):
-        """PUT: select PUT (graphics), PUT (files)."""
-        if ins.skip_blank() == '(':
-            self.exec_put_graph(ins)
-        else:
-            self.exec_put_file(ins)
-
-    def exec_on(self, ins):
-        """ON: select ON ERROR, ON (event) or ON (jump)."""
-        c = ins.skip_blank()
-        if c == tk.ERROR:
-            self.exec_on_error_goto(ins)
-        elif c in (tk.KEY, '\xFE', '\xFF'):
-            self.exec_on_event(ins)
-        else:
-            self.exec_on_jump(ins)
-
-    def exec_key(self, ins):
-        """KEY: switch on/off or list function-key row on screen."""
-        d = ins.skip_blank()
-        if d in (tk.ON, tk.OFF, tk.LIST):
-            self.exec_key_macro(ins)
-        elif d == '(':
-            self.exec_key_events(ins)
-        else:
-            self.exec_key_define(ins)
-
-    def exec_palette(self, ins):
-        """PALETTE: set colour palette entry."""
-        if ins.skip_blank() == tk.USING:
-            self.exec_palette_using(ins)
-        else:
-            self.exec_palette_only(ins)
-
-    def exec_play(self, ins):
-        """PLAY: event switch/play MML string."""
-        command = ins.skip_blank()
-        if command:
-            self.exec_play_event(ins)
-        else:
-            self.exec_play_music(ins)
-
-    def exec_strig(self, ins):
-        """STRIG: switch on/off fire button event handling."""
-        d = ins.skip_blank()
-        if d == '(':
-            self.exec_strig_event(ins)
-        elif d in (tk.ON, tk.OFF):
-            self.session.stick.strig_statement_(d)
 
     # STRIG
 
