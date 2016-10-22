@@ -138,7 +138,7 @@ class StatementParser(object):
         self.statements = {
             tk.END: partial(self.exec_after_end, callback=session.end_),
             tk.FOR: partial(self.exec_args_iter, args_iter=self._parse_for_args_iter, callback=session.interpreter.for_),
-            tk.NEXT: self.exec_next,
+            tk.NEXT: partial(self.exec_args_iter, args_iter=self._parse_next_args_iter, callback=session.interpreter.next_),
             tk.DATA: self.skip_statement,
             tk.INPUT: partial(self.exec_args_iter, args_iter=self._parse_input_args_iter, callback=session.input_),
             tk.DIM: partial(self.exec_args_iter, args_iter=self._parse_var_list_iter, callback=session.memory.arrays.dim_),
@@ -1182,20 +1182,18 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def exec_next(self, ins):
-        """NEXT: iterate for-loop."""
+    def _parse_next_args_iter(self, ins):
+        """Parse NEXT syntax."""
+        # note that next_ will not run the full generator if it finds a loop to iterate
         while True:
             # optional var name, errors have been checked during _find_next scan
-            varname = None
             if ins.skip_blank() not in tk.END_STATEMENT + (',',):
-                varname = self.parse_name(ins)
-            # increment counter, check condition
-            if self.session.interpreter.next_(varname):
-                break
+                yield self.parse_name(ins)
+            else:
+                yield None
             # done if we're not jumping into a comma'ed NEXT
             if not ins.skip_blank_read_if((',')):
                 break
-        # if we're done iterating we no longer ignore the rest of the statement
 
     ###########################################################################
     # User-defined functions

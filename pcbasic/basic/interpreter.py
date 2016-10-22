@@ -272,7 +272,7 @@ class Interpreter(object):
         # empty loop: jump to NEXT without executing block
         if (start.gt(stop) if step.sign() > 0 else stop.gt(start)):
             ins.seek(nextpos)
-            self.next_(ins)
+            self.iterate_loop()
 
     def _find_next(self, ins, varname):
         """Helper function for FOR: find matching NEXT."""
@@ -297,7 +297,14 @@ class Interpreter(object):
         ins.seek(endforpos)
         return endforpos, nextpos
 
-    def next_(self, dummy_varname):
+    def next_(self, args):
+        """Iterate a loop (NEXT)."""
+        for varname in args:
+            # increment counter, check condition
+            if self.iterate_loop(varname):
+                break
+
+    def iterate_loop(self, dummy_varname=None):
         """Iterate a loop (NEXT)."""
         ins = self.get_codestream()
         # record the location after the variable
