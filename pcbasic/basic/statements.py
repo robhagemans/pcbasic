@@ -268,11 +268,13 @@ class StatementParser(object):
                 None: self.exec_key_define,
             },
             tk.PUT: {
-                '(': self.exec_put_graph,
+                '(': partial(self.exec_args_iter, args_iter=self._parse_put_graph_args_iter, callback=
+                                    partial(session.screen.drawing.put_, session.arrays)),
                 None: partial(self.exec_args_iter, args_iter=self._parse_put_get_file_args_iter, callback=session.files.put_),
             },
             tk.GET: {
-                '(': self.exec_get_graph,
+                '(': partial(self.exec_args_iter, args_iter=self._parse_get_graph_args_iter, callback=
+                                    partial(session.screen.drawing.get_, session.arrays)),
                 None: partial(self.exec_args_iter, args_iter=self._parse_put_get_file_args_iter, callback=session.files.get_),
             },
             tk.PLAY: {
@@ -330,35 +332,6 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
-
-    # PUT, GET
-
-    def exec_get_graph(self, ins):
-        """GET: read a sprite to memory."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        # don't accept STEP for first coord
-        coord0 = self._parse_coord_bare(ins)
-        ins.require_read((tk.O_MINUS,))
-        coord1 = self._parse_coord_step(ins)
-        ins.require_read((',',))
-        array = self.parse_name(ins)
-        ins.require_end()
-        self.session.screen.drawing.get_(coord0, coord1, self.session.arrays, array)
-
-    def exec_put_graph(self, ins):
-        """PUT: draw sprite on screen."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        # don't accept STEP
-        x, y = self._parse_coord_bare(ins)
-        ins.require_read((',',))
-        array = self.parse_name(ins)
-        action = None
-        if ins.skip_blank_read_if((',',)):
-            action = ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
-        ins.require_end()
-        self.session.screen.drawing.put_((x, y), self.session.arrays, array, action)
 
     # ON
 
@@ -1086,6 +1059,28 @@ class StatementParser(object):
         else:
             yield None
             yield None
+            yield None
+        ins.require_end()
+
+    def _parse_get_graph_args_iter(self, ins):
+        """Parse graphics GET syntax."""
+        # don't accept STEP for first coord
+        yield self._parse_coord_bare(ins)
+        ins.require_read((tk.O_MINUS,))
+        yield self._parse_coord_step(ins)
+        ins.require_read((',',))
+        yield self.parse_name(ins)
+        ins.require_end()
+
+    def _parse_put_graph_args_iter(self, ins):
+        """Parse graphics PUT syntax."""
+        # don't accept STEP
+        yield self._parse_coord_bare(ins)
+        ins.require_read((',',))
+        yield self.parse_name(ins)
+        if ins.skip_blank_read_if((',',)):
+            yield ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
+        else:
             yield None
         ins.require_end()
 
