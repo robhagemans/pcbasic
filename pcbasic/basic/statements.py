@@ -237,6 +237,7 @@ class StatementParser(object):
             tk.UNLOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.unlock_),
             tk.MID: partial(self.exec_args_iter, args_iter=self._parse_mid_args_iter, callback=session.memory.mid_),
             tk.PEN: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.pen_),
+            '_': self.exec_extension,
         }
         if self.syntax in ('pcjr', 'tandy'):
             self._simple.update({
@@ -244,7 +245,6 @@ class StatementParser(object):
                 tk.NOISE: partial(self.exec_args_iter, args_iter=self._parse_noise_args_iter, callback=session.sound.noise_),
             })
         self._complex = {
-            '_': self.exec_extension,
             tk.ON: self.exec_on,
             tk.DEF: self.exec_def,
             tk.LINE: self.exec_line,
@@ -292,7 +292,7 @@ class StatementParser(object):
 
     def exec_def(self, ins):
         """DEF: select DEF FN, DEF USR, DEF SEG."""
-        c = ins.skip_blank_read_if((tk.FN, tk.USR))
+        c = ins.skip_blank()
         if c == tk.FN:
             self.exec_def_fn(ins)
         elif c == tk.USR:
@@ -302,14 +302,14 @@ class StatementParser(object):
 
     def exec_view(self, ins):
         """VIEW: select VIEW PRINT, VIEW (graphics)."""
-        if ins.skip_blank_read_if((tk.PRINT,)):
+        if ins.skip_blank() == tk.PRINT:
             self.exec_view_print(ins)
         else:
             self.exec_view_graph(ins)
 
     def exec_line(self, ins):
         """LINE: select LINE INPUT, LINE (graphics)."""
-        if ins.skip_blank_read_if((tk.INPUT,)):
+        if ins.skip_blank() == tk.INPUT:
             self.exec_line_input(ins)
         else:
             self.exec_line_graph(ins)
@@ -350,7 +350,7 @@ class StatementParser(object):
 
     def exec_palette(self, ins):
         """PALETTE: set colour palette entry."""
-        if ins.skip_blank_read_if((tk.USING,)):
+        if ins.skip_blank() == tk.USING:
             self.exec_palette_using(ins)
         else:
             self.exec_palette_only(ins)
@@ -421,6 +421,7 @@ class StatementParser(object):
 
     def exec_def_usr(self, ins):
         """DEF USR: Define a machine language function."""
+        ins.require_read((tk.USR))
         usr = ins.skip_blank_read_if(tk.DIGIT)
         ins.require_read((tk.O_EQ,))
         addr = values.cint_(self.parse_expression(ins), unsigned=True)
@@ -428,6 +429,7 @@ class StatementParser(object):
 
     def exec_def_fn(self, ins):
         """DEF FN: define a function."""
+        ins.require_read((tk.FN))
         fnname = self.parse_name(ins)
         # don't allow DEF FN in direct mode, as we point to the code in the stored program
         # this is raised before further syntax errors
@@ -463,6 +465,7 @@ class StatementParser(object):
 
     def exec_view_print(self, ins):
         """VIEW PRINT: set scroll region."""
+        ins.require_read((tk.PRINT,))
         start = self._parse_value(ins, values.INT, allow_empty=True)
         stop = None
         if start is not None:
@@ -475,6 +478,7 @@ class StatementParser(object):
 
     def exec_line_input(self, ins):
         """LINE INPUT: request line of input from user."""
+        ins.require_read((tk.INPUT,))
         prompt, newline, finp = None, None, None
         file_number = self._parse_file_number(ins, opt_hash=False)
         if file_number is None:
@@ -532,6 +536,7 @@ class StatementParser(object):
 
     def exec_palette_using(self, ins):
         """PALETTE USING: set full colour palette."""
+        ins.require_read((tk.USING,))
         array_name, start_indices = self._parse_variable(ins)
         # brackets are not optional
         error.throw_if(not start_indices, error.STX)
