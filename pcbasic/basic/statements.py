@@ -258,8 +258,8 @@ class StatementParser(object):
             },
             tk.DEF: {
                 tk.FN: self.exec_def_fn,
-                tk.USR: self.exec_def_usr,
-                None: self.exec_def_seg,
+                tk.USR: partial(self.exec_args_iter, args_iter=self._parse_def_usr_args_iter, callback=session.all_memory.def_usr_),
+                None: partial(self.exec_args_iter, args_iter=self._parse_def_seg_args_iter, callback=session.all_memory.def_seg_),
             },
             tk.LINE: {
                 tk.INPUT: self.exec_line_input,
@@ -337,23 +337,21 @@ class StatementParser(object):
 
     # DEF
 
-    def exec_def_seg(self, ins):
-        """DEF SEG: set the current memory segment."""
+    def _parse_def_seg_args_iter(self, ins):
+        """Parse DEF SEG syntax."""
         # must be uppercase in tokenised form, otherwise syntax error
         ins.require_read((tk.W_SEG,))
-        seg = None
         if ins.skip_blank_read_if((tk.O_EQ,)):
-            # def_seg() accepts signed values
-            seg = values.to_int(self.parse_expression(ins), unsigned=True)
-        self.session.all_memory.def_seg_(seg)
+            yield self.parse_expression(ins)
+        else:
+            yield None
 
-    def exec_def_usr(self, ins):
-        """DEF USR: Define a machine language function."""
+    def _parse_def_usr_args_iter(self, ins):
+        """Parse DEF USR syntax."""
         ins.require_read((tk.USR))
-        usr = ins.skip_blank_read_if(tk.DIGIT)
+        yield ins.skip_blank_read_if(tk.DIGIT)
         ins.require_read((tk.O_EQ,))
-        addr = values.cint_(self.parse_expression(ins), unsigned=True)
-        self.session.all_memory.def_usr_(usr, addr)
+        yield self.parse_expression(ins)
 
     def exec_def_fn(self, ins):
         """DEF FN: define a function."""

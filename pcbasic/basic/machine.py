@@ -332,18 +332,22 @@ class Memory(object):
                 g.write(devices.type_to_magic['M'] +
                         struct.pack('<HHH', self.segment, offset, length))
 
-    def def_seg_(self, segment=None):
+    def def_seg_(self, args):
         """DEF SEG: Set segment."""
+        segment, = args
         # &hb800: text screen buffer; &h13d: data segment
         if segment is None:
             self.segment = self.data.data_segment
         else:
-            self.segment = segment
+            # def_seg() accepts signed values
+            self.segment = values.to_int(segment, unsigned=True)
             if self.segment < 0:
                 self.segment += 0x10000
 
-    def def_usr_(self, usr, addr):
+    def def_usr_(self, args):
         """DEF USR: Define machine language function."""
+        usr, addr = args
+        addr = values.cint_(addr, unsigned=True)
         logging.warning('DEF USR statement not implemented')
 
     def call_(self, args):
