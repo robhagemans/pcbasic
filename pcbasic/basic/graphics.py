@@ -144,11 +144,27 @@ class Drawing(object):
 
     ## VIEW graphics viewport
 
-    def view_(self, *args):
+    def view_(self, args):
         """VIEW: Set/unset the graphics viewport and optionally draw a box."""
-        if args:
-            self.set_view(*args)
-        else:
+        if self.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        absolute = next(args)
+        try:
+            x0, y0 = next(args)
+            x0, y0 = round(x0), round(y0)
+            x1, y1 = next(args)
+            x1, y1 = round(x1), round(y1)
+            error.range_check(0, self.screen.mode.pixel_width-1, x0, x1)
+            error.range_check(0, self.screen.mode.pixel_height-1, y0, y1)
+            fill = next(args)
+            if fill is not None:
+                fill = values.to_int(fill)
+            border = next(args)
+            if border is not None:
+                border = values.to_int(border)
+            list(args)
+            self.set_view(x0, y0, x1, y1, absolute, fill, border)
+        except StopIteration:
             self.unset_view()
 
     def set_view(self, x0, y0, x1, y1, absolute, fill, border):

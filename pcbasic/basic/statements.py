@@ -284,7 +284,7 @@ class StatementParser(object):
             },
             tk.VIEW: {
                 tk.PRINT: self.exec_view_print,
-                None: self.exec_view_graph,
+                None: partial(self.exec_args_iter, args_iter=self._parse_view_args_iter, callback=session.screen.drawing.view_),
             },
             tk.PALETTE: {
                 tk.USING: self.exec_palette_using,
@@ -332,28 +332,19 @@ class StatementParser(object):
 
     # VIEW
 
-    def exec_view_graph(self, ins):
+    def _parse_view_args_iter(self, ins):
         """VIEW: set graphics viewport and optionally draw a box."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        absolute = ins.skip_blank_read_if((tk.SCREEN,))
+        yield ins.skip_blank_read_if((tk.SCREEN,))
         if ins.skip_blank() == '(':
-            x0, y0 = self._parse_coord_bare(ins)
-            x0, y0 = round(x0), round(y0)
+            yield self._parse_coord_bare(ins)
             ins.require_read((tk.O_MINUS,))
-            x1, y1 = self._parse_coord_bare(ins)
-            x1, y1 = round(x1), round(y1)
-            error.range_check(0, self.session.screen.mode.pixel_width-1, x0, x1)
-            error.range_check(0, self.session.screen.mode.pixel_height-1, y0, y1)
-            fill, border = None, None
+            yield self._parse_coord_bare(ins)
             if ins.skip_blank_read_if((',',)):
-                fill = values.to_int(self.parse_expression(ins))
+                yield self.parse_expression(ins)
                 ins.require_read((',',))
-                border = values.to_int(self.parse_expression(ins))
-            args = (x0, y0, x1, y1, absolute, fill, border)
-        else:
-            args = ()
-        self.session.screen.drawing.view_(*args)
+                yield self.parse_expression(ins)
 
     def exec_view_print(self, ins):
         """VIEW PRINT: set scroll region."""
