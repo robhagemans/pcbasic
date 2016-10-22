@@ -258,7 +258,7 @@ class StatementParser(object):
             },
             tk.LINE: {
                 tk.INPUT: partial(self.exec_args_iter, args_iter=self._parse_line_input_args_iter, callback=session.line_input_),
-                None: self.exec_line_graph,
+                None: partial(self.exec_args_iter, args_iter=self._parse_line_args_iter, callback=session.screen.drawing.line_),
             },
             tk.KEY: {
                 tk.ON: self.exec_key_macro,
@@ -329,37 +329,6 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
-
-    # LINE
-
-    def exec_line_graph(self, ins):
-        """LINE: draw a line or box between two points."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        if ins.skip_blank() in ('(', tk.STEP):
-            coord0 = self._parse_coord_step(ins)
-        else:
-            coord0 = None
-        ins.require_read((tk.O_MINUS,))
-        coord1 = self._parse_coord_step(ins)
-        c, mode, pattern = None, None, None
-        if ins.skip_blank_read_if((',',)):
-            expr = self.parse_expression(ins, allow_empty=True)
-            if expr:
-                c = values.to_int(expr)
-            if ins.skip_blank_read_if((',',)):
-                if ins.skip_blank_read_if(('B',)):
-                    mode = 'BF' if ins.skip_blank_read_if(('F',)) else 'B'
-                if ins.skip_blank_read_if((',',)):
-                    pattern = self._parse_value(ins, values.INT)
-                else:
-                    # mustn't end on a comma
-                    # mode == '' if nothing after previous comma
-                    error.throw_if(not mode, error.STX)
-            elif not expr:
-                raise error.RunError(error.MISSING_OPERAND)
-        ins.require_end()
-        self.session.screen.drawing.line_(coord0, coord1, c, pattern, mode)
 
     # PALETTE
 
@@ -1111,6 +1080,43 @@ class StatementParser(object):
                 yield self.parse_expression(ins)
                 ins.require_read((',',))
                 yield self.parse_expression(ins)
+
+    def _parse_line_args_iter(self, ins):
+        """Parse LINE syntax."""
+        if self.session.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        if ins.skip_blank() in ('(', tk.STEP):
+            yield self._parse_coord_step(ins)
+        else:
+            yield None
+        ins.require_read((tk.O_MINUS,))
+        yield self._parse_coord_step(ins)
+        if ins.skip_blank_read_if((',',)):
+            expr = self.parse_expression(ins, allow_empty=True)
+            yield expr
+            if ins.skip_blank_read_if((',',)):
+                if ins.skip_blank_read_if(('B',)):
+                    shape = 'BF' if ins.skip_blank_read_if(('F',)) else 'B'
+                else:
+                    shape = None
+                yield shape
+                if ins.skip_blank_read_if((',',)):
+                    yield self._parse_value(ins, values.INT)
+                else:
+                    # mustn't end on a comma
+                    # mode == '' if nothing after previous comma
+                    error.throw_if(not shape, error.STX)
+                    yield None
+            elif not expr:
+                raise error.RunError(error.MISSING_OPERAND)
+            else:
+                yield None
+                yield None
+        else:
+            yield None
+            yield None
+            yield None
+        ins.require_end()
 
     ###########################################################################
     # Variable & array statements

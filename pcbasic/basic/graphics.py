@@ -303,17 +303,26 @@ class Drawing(object):
 
     ### LINE
 
-    def line_(self, lcoord0, lcoord1, c=None, pattern=None, shape=None):
-        """Draw a patterned line or box (LINE)."""
+    def line_(self, args):
+        """LINE: Draw a patterned line or box."""
+        if self.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        coord0 = next(args)
+        coord1 = next(args)
+        c = next(args)
+        if c:
+            c = values.to_int(c)
+            error.range_check(0, 255, c)
+        shape, pattern = args
         if c is None:
             c = -1
         if pattern is None:
             pattern = 0xffff
-        if lcoord0:
-            x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord0))
+        if coord0:
+            x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*coord0))
         else:
             x0, y0 = self.last_point
-        x1, y1 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord1))
+        x1, y1 = self.screen.graph_view.coords(*self.get_window_physical(*coord1))
         c = self.get_attr_index(c)
         if not shape:
             self.draw_line(x0, y0, x1, y1, c, pattern)
