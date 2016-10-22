@@ -85,11 +85,13 @@ class Events(object):
         command, = args
         self.command(self.pen, command)
 
-    def strig_(self, num, command):
+    def strig_(self, args):
         """STRIG: switch on/off fire button event handling."""
-        if num not in (0, 2, 4, 6):
-            raise error.RunError(error.IFC)
-        self.command(self.strig[num//2], command)
+        num = values.to_int(next(args))
+        command, = args
+        error.range_check(0, 255, num)
+        if num in (0, 2, 4, 6):
+            self.command(self.strig[num//2], command)
 
     def com_(self, args):
         """COM: switch on/off serial port event handling."""

@@ -544,7 +544,7 @@ class Session(object):
         # stop all sound
         self.sound.stop_all_sound()
         # Resets STRIG to off
-        self.stick.strig_statement_(tk.OFF)
+        self.stick.is_on = False
         # reset sound and PLAY state
         self.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position

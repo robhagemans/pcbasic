@@ -434,8 +434,9 @@ class Stick(object):
         # timer for reading game port
         self.out_time = self._decay_timer()
 
-    def strig_statement_(self, on):
+    def strig_statement_(self, args):
         """Switch joystick handling on or off."""
+        on, = args
         self.is_on = (on == tk.ON)
 
     def down(self, joy, button):

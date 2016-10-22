@@ -295,9 +295,9 @@ class StatementParser(object):
                 None: self.exec_palette_only,
             },
             tk.STRIG: {
-                '(': self.exec_strig_event,
-                tk.ON: self.exec_strig_switch,
-                tk.OFF: self.exec_strig_switch,
+                tk.ON: partial(self.exec_args_iter, args_iter=self._parse_strig_switch_iter, callback=session.stick.strig_statement_),
+                tk.OFF: partial(self.exec_args_iter, args_iter=self._parse_strig_switch_iter, callback=session.stick.strig_statement_),
+                None: partial(self.exec_args_iter, args_iter=self._parse_com_command_iter, callback=session.events.strig_),
             },
         }
         self.extensions = {
@@ -333,19 +333,6 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
-
-    # STRIG
-
-    def exec_strig_switch(self, ins):
-        """STRIG: switch on/off fire button event handling."""
-        d = ins.require_read((tk.ON, tk.OFF))
-        self.session.stick.strig_statement_(d)
-
-    def exec_strig_event(self, ins):
-        """Parse STRIG(n) syntax."""
-        num = values.to_int(self._parse_bracket(ins))
-        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.strig_(num, command)
 
     # PLAY
 
@@ -735,9 +722,13 @@ class StatementParser(object):
         yield ins.require_read((tk.ON, tk.OFF, tk.STOP))
 
     def _parse_com_command_iter(self, ins):
-        """Parse COM syntax."""
+        """Parse COM or STRIG syntax."""
         yield self._parse_bracket(ins)
         yield ins.require_read((tk.ON, tk.OFF, tk.STOP))
+
+    def _parse_strig_switch_iter(self, ins):
+        """Parse STRIG ON/OFF syntax."""
+        yield ins.require_read((tk.ON, tk.OFF))
 
     ###########################################################################
     # sound
