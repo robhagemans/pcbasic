@@ -93,9 +93,12 @@ class UserFunctionManager(object):
         fnname = self._memory.complete_name(fnname)
         # parse/evaluate arguments
         try:
-            return self._fn_dict[fnname]
+            fn = self._fn_dict[fnname]
         except KeyError:
             raise error.RunError(error.UNDEFINED_USER_FUNCTION)
+        if fn is None:
+            raise error.RunError(error.STX)
+        return fn
 
     def define(self, fnname, ins):
         """Define a function."""
@@ -115,7 +118,9 @@ class UserFunctionManager(object):
                 ins.require_read((',',))
             ins.require_read((')',))
         # read code
-        ins.require_read((tk.O_EQ,)) #=
+        if not ins.skip_blank_read_if((tk.O_EQ,)):
+            self._fn_dict[fnname] = None
+            return
         self._fn_dict[fnname] = UserFunction(fnname, ins, fnvars, self._memory, self._expression_parser)
         ins.skip_to(tk.END_STATEMENT)
         # update memory model
