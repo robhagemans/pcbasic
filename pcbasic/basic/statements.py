@@ -98,7 +98,7 @@ class StatementParser(object):
             expr = self.parse_expression(ins, allow_empty)
             if expr:
                 return values.pass_string(expr).to_value()
-            return ''
+            return None
 
     def _parse_file_number(self, ins, opt_hash):
         """Read a file number."""
@@ -339,15 +339,21 @@ class StatementParser(object):
 
     def _parse_play_args_iter(self, ins):
         """Parse PLAY (music) syntax."""
-        # retrieve Music Macro Language string
-        yield self._parse_temporary_string(ins, allow_empty=True)
-        if ((self.syntax == 'tandy' or
-                        (self.syntax == 'pcjr' and self.session.sound.sound_on))
-                and ins.skip_blank_read_if((',',))):
+        if (self.syntax == 'tandy' or
+                        (self.syntax == 'pcjr' and self.session.sound.sound_on)):
+            for _ in range(3):
+                last = self._parse_temporary_string(ins, allow_empty=True)
+                yield last
+                if not ins.skip_blank_read_if((',',)):
+                    break
+            else:
+                raise error.RunError(error.STX)
+            if last is None:
+                raise error.RunError(error.MISSING_OPERAND)
+            ins.require_end()
+        else:
             yield self._parse_temporary_string(ins, allow_empty=True)
-            if ins.skip_blank_read_if((',',)):
-                yield self._parse_temporary_string(ins, allow_empty=True)
-        ins.require_end(err=error.IFC)
+            ins.require_end(err=error.IFC)
 
     # DEF
 

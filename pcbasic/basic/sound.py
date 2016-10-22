@@ -352,7 +352,12 @@ class Sound(object):
                         raise error.RunError(error.IFC)
                 elif c == 'V' and (self.capabilities == 'tandy' or
                                     (self.capabilities == 'pcjr' and self.sound_on)):
-                    vstate.volume = min(15, max(0, mmls.parse_number()))
+                    vol = mmls.parse_number()
+                    error.range_check(-1, 15, vol)
+                    if vol == -1:
+                        vstate.volume = 15
+                    else:
+                        vstate.volume = vol
                 else:
                     raise error.RunError(error.IFC)
         max_time = max(q.expiry() for q in self.voice_queue[:3])
