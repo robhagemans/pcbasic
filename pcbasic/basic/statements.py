@@ -269,11 +269,11 @@ class StatementParser(object):
             },
             tk.PUT: {
                 '(': self.exec_put_graph,
-                None: self.exec_put_file,
+                None: partial(self.exec_args_iter, args_iter=self._parse_put_get_file_args_iter, callback=session.files.put_),
             },
             tk.GET: {
                 '(': self.exec_get_graph,
-                None: self.exec_get_file,
+                None: partial(self.exec_args_iter, args_iter=self._parse_put_get_file_args_iter, callback=session.files.get_),
             },
             tk.PLAY: {
                 tk.ON: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.play_),
@@ -332,22 +332,6 @@ class StatementParser(object):
         callback(ins)
 
     # PUT, GET
-
-    def _parse_put_get_file(self, ins):
-        """Parse record number for PUT and GET."""
-        the_file = self.session.files.get(self._parse_file_number(ins, opt_hash=True), 'R')
-        pos = None
-        if ins.skip_blank_read_if((',',)):
-            pos = self.parse_expression(ins)
-        return (the_file, pos)
-
-    def exec_put_file(self, ins):
-        """PUT: write record to file."""
-        self.session.files.put_(*self._parse_put_get_file(ins))
-
-    def exec_get_file(self, ins):
-        """GET: read record from file."""
-        self.session.files.get_(*self._parse_put_get_file(ins))
 
     def exec_get_graph(self, ins):
         """GET: read a sprite to memory."""
@@ -959,6 +943,14 @@ class StatementParser(object):
         yield self._parse_file_number(ins, opt_hash=True)
         ins.require_read((',',))
         yield self._parse_temporary_string(ins)
+
+    def _parse_put_get_file_args_iter(self, ins):
+        """Parse PUT and GET syntax."""
+        yield self._parse_file_number(ins, opt_hash=True)
+        if ins.skip_blank_read_if((',',)):
+            yield self.parse_expression(ins)
+        else:
+            yield None
 
     ###########################################################################
     # Graphics statements

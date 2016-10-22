@@ -123,13 +123,17 @@ class Files(object):
                 num_bytes = pos
         return the_file, num_bytes
 
-    def put_(self, the_file, pos=None):
+    def put_(self, args):
         """PUT: write record to file."""
+        the_file = self.get(next(args), 'R')
+        pos, = args
         thefile, num_bytes = self._set_record_pos(the_file, pos)
         thefile.put(num_bytes)
 
-    def get_(self, the_file, pos=None):
+    def get_(self, args):
         """GET: read record from file."""
+        the_file = self.get(next(args), 'R')
+        pos, = args
         thefile, num_bytes = self._set_record_pos(the_file, pos)
         thefile.get(num_bytes)
 
