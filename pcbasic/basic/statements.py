@@ -147,7 +147,7 @@ class StatementParser(object):
             tk.LET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.let_),
             tk.GOTO: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.goto_),
             tk.RUN: partial(self.exec_args_iter, args_iter=self._parse_run_args_iter, callback=session.run_),
-            tk.IF: self.exec_if,
+            tk.IF: partial(self.exec_args_iter, args_iter=self._parse_if_args_iter, callback=session.interpreter.if_),
             tk.RESTORE: partial(self.exec_args_iter, args_iter=self._parse_restore_args_iter, callback=session.interpreter.restore_),
             tk.GOSUB: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.gosub_),
             tk.RETURN: partial(self.exec_args_iter, args_iter=self._parse_optional_line_number_iter, callback=session.interpreter.return_),
@@ -1133,39 +1133,18 @@ class StatementParser(object):
     ###########################################################################
     # Loops and branches
 
-    def exec_if(self, ins):
+    def _parse_if_args_iter(self, ins):
         """IF: enter branching statement."""
         # avoid overflow: don't use bools.
-        val = values.csng_(self.parse_expression(ins))
+        condition = self.parse_expression(ins)
         ins.skip_blank_read_if((',',)) # optional comma
         ins.require_read((tk.THEN, tk.GOTO))
-        if not val.is_zero():
-            # TRUE: continue after THEN. line number or statement is implied GOTO
-            if ins.skip_blank() in (tk.T_UINT,):
-                self.session.interpreter.jump(self._parse_jumpnum(ins))
-            # continue parsing as normal from next statement, :ELSE will be ignored anyway
+        yield condition
+        # note that interpreter.if_ cofunction may jump to ELSE clause now
+        if ins.skip_blank() in (tk.T_UINT,):
+            yield self._parse_jumpnum(ins)
         else:
-            # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
-            nesting_level = 0
-            while True:
-                d = ins.skip_to_read(tk.END_STATEMENT + (tk.IF,))
-                if d == tk.IF:
-                    # nexting step on IF. (it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.)
-                    nesting_level += 1
-                elif d == ':':
-                    # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
-                    if ins.skip_blank_read_if((tk.ELSE,)):
-                        if nesting_level > 0:
-                            nesting_level -= 1
-                        else:
-                            # line number: jump
-                            if ins.skip_blank() in (tk.T_UINT,):
-                                self.session.interpreter.jump(self._parse_jumpnum(ins))
-                            # continue execution from here
-                            break
-                else:
-                    ins.seek(-len(d), 1)
-                    break
+            yield None
 
     def _parse_for_args_iter(self, ins):
         """Parse FOR syntax."""

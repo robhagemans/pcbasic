@@ -244,6 +244,44 @@ class Interpreter(object):
             self.jump(jumpnum)
 
     ###########################################################################
+    # branches
+
+    def if_(self, args):
+        """IF: branching statement."""
+        # get condition
+        # avoid overflow: don't use bools.
+        val = values.csng_(next(args))
+        if val.is_zero():
+            # find corrrect ELSE block, if any
+            # ELSEs may be nested in the THEN clause
+            ins = self.get_codestream()
+            nesting_level = 0
+            while True:
+                d = ins.skip_to_read(tk.END_STATEMENT + (tk.IF,))
+                if d == tk.IF:
+                    # nesting step on IF. (it's less convenient to count THENs
+                    # because they could be THEN or GOTO)
+                    nesting_level += 1
+                elif d == ':':
+                    # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
+                    if ins.skip_blank_read_if((tk.ELSE,)):
+                        if nesting_level > 0:
+                            nesting_level -= 1
+                        else:
+                            # read line number or continue execution
+                            break
+                else:
+                    ins.seek(-len(d), 1)
+                    break
+        branch, = args
+        # we may have a line number immediately after THEN or ELSE
+        if branch is not None:
+            self.jump(branch)
+        # otherwise continue parsing as normal from next statement after THEN
+        # note that any :ELSE block encountered will be ignored automatically
+        # since standalone ELSE is a no-op to end of line
+
+    ###########################################################################
     # loops
 
     def for_(self, args):
