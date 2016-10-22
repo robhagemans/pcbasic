@@ -48,7 +48,8 @@ class StatementParser(object):
             ins.seek(-len(c), 1)
             if c in string.ascii_letters:
                 return self.statements[tk.LET](ins)
-        ins.require_end()
+        if c != tk.IF:
+            ins.require_end()
 
     def parse_name(self, ins):
         """Get scalar part of variable name from token stream."""
@@ -1143,7 +1144,6 @@ class StatementParser(object):
             if ins.skip_blank() in (tk.T_UINT,):
                 self.session.interpreter.jump(self._parse_jumpnum(ins))
             # continue parsing as normal from next statement, :ELSE will be ignored anyway
-            self.parse_statement(ins)
         else:
             # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
             nesting_level = 0
@@ -1162,7 +1162,6 @@ class StatementParser(object):
                             if ins.skip_blank() in (tk.T_UINT,):
                                 self.session.interpreter.jump(self._parse_jumpnum(ins))
                             # continue execution from here
-                            self.parse_statement(ins)
                             break
                 else:
                     ins.seek(-len(d), 1)
@@ -1465,7 +1464,6 @@ class StatementParser(object):
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         ins.require_end()
         self.session.events.on_event_gosub_(token, num, jumpnum)
-
 
     def exec_key(self, ins):
         """KEY: switch on/off or list function-key row on screen."""

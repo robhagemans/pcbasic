@@ -77,6 +77,8 @@ class Interpreter(object):
                         linenum = struct.unpack_from('<H', token, 2)
                         self.session.screen.write('[%i]' % linenum)
                     self.session.debugger.debug_step(token)
+                elif c != ':':
+                    ins.seek(-len(c), 1)
                 self.statement_parser.parse_statement(ins)
             except error.RunError as e:
                 self.trap_error(e)
