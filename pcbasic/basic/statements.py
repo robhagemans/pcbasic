@@ -332,30 +332,39 @@ class StatementParser(object):
     def exec_on(self, ins):
         """ON: select ON ERROR, ON (event) or ON (jump)."""
         c = ins.skip_blank()
-        if c in (tk.ERROR, tk.KEY, '\xFE', '\xFF'):
-            token = ins.read_keyword_token()
-            if token == tk.ERROR:
-                ins.require_read((tk.GOTO,))
-                self.session.interpreter.on_error_goto_(self._parse_jumpnum(ins))
-            else:
-                self.exec_on_event(ins, token)
+        if c == tk.ERROR:
+            self.exec_on_error_goto(ins)
+        elif c in (tk.KEY, '\xFE', '\xFF'):
+            self.exec_on_event(ins)
         else:
             self.exec_on_jump(ins)
 
     def exec_key(self, ins):
         """KEY: switch on/off or list function-key row on screen."""
-        d = ins.skip_blank_read()
+        d = ins.skip_blank()
         if d in (tk.ON, tk.OFF, tk.LIST):
-            # KEY ON, KEY OFF, KEY LIST
-            self.session.fkey_macros.key_(d, self.session.screen)
+            self.exec_key_macro(ins)
         elif d == '(':
             # key (n)
-            ins.seek(-1, 1)
             self.exec_key_events(ins)
         else:
             # key n, "TEXT"
-            ins.seek(-len(d), 1)
             self.exec_key_define(ins)
+
+    def exec_palette(self, ins):
+        """PALETTE: set colour palette entry."""
+        if ins.skip_blank_read_if((tk.USING,)):
+            return self.exec_palette_using(ins)
+        else:
+            attrib = self._parse_value(ins, values.INT, allow_empty=True)
+            if attrib is None:
+                colour = None
+                ins.require_end()
+            else:
+                ins.require_read((',',))
+                colour = self._parse_value(ins, values.INT, allow_empty=True)
+                error.throw_if(attrib is None or colour is None, error.STX)
+            self.session.screen.palette.palette_(attrib, colour)
 
     def exec_play(self, ins):
         """PLAY: event switch/play MML string."""
@@ -418,21 +427,6 @@ class StatementParser(object):
             raise error.RunError(error.ILLEGAL_DIRECT)
         # arguments and expression are being read and parsed by UserFunctionManager
         self.expression_parser.user_functions.define(fnname, ins)
-
-    def exec_palette(self, ins):
-        """PALETTE: set colour palette entry."""
-        if ins.skip_blank_read_if((tk.USING,)):
-            return self.exec_palette_using(ins)
-        else:
-            attrib = self._parse_value(ins, values.INT, allow_empty=True)
-            if attrib is None:
-                colour = None
-                ins.require_end()
-            else:
-                ins.require_read((',',))
-                colour = self._parse_value(ins, values.INT, allow_empty=True)
-                error.throw_if(attrib is None or colour is None, error.STX)
-            self.session.screen.palette.palette_(attrib, colour)
 
     # VIEW
 
@@ -570,6 +564,12 @@ class StatementParser(object):
 
     # ON
 
+    def exec_on_error_goto(self, ins):
+        """Parse ON ERROR GOTO syntax."""
+        ins.require_read((tk.ERROR,))
+        ins.require_read((tk.GOTO,))
+        self.session.interpreter.on_error_goto_(self._parse_jumpnum(ins))
+
     def exec_on_jump(self, ins):
         """ON: calculated jump."""
         onvar = values.to_int(self.parse_expression(ins))
@@ -598,8 +598,9 @@ class StatementParser(object):
             elif command == tk.GOSUB:
                 self.session.interpreter.jump_sub(jumpnum)
 
-    def exec_on_event(self, ins, token):
+    def exec_on_event(self, ins):
         """Helper function for ON event trap definitions."""
+        token = ins.read_keyword_token()
         num = None
         if token not in (tk.PEN, tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
             raise error.RunError(error.STX)
@@ -615,6 +616,11 @@ class StatementParser(object):
         self.session.events.on_event_gosub_(token, num, jumpnum)
 
     # KEY
+
+    def exec_key_macro(self, ins):
+        """KEY: switch on/off or list function-key row on screen."""
+        token = ins.read(1)
+        self.session.fkey_macros.key_(token, self.session.screen)
 
     def exec_key_events(self, ins):
         """KEY: switch on/off keyboard events."""
