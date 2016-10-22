@@ -297,7 +297,6 @@ class StatementParser(object):
             self.exec_def_fn(ins)
         elif c == tk.USR:
             self.exec_def_usr(ins)
-        # must be uppercase in tokenised form, otherwise syntax error
         else:
             self.exec_def_seg(ins)
 
@@ -345,65 +344,74 @@ class StatementParser(object):
         if d in (tk.ON, tk.OFF, tk.LIST):
             self.exec_key_macro(ins)
         elif d == '(':
-            # key (n)
             self.exec_key_events(ins)
         else:
-            # key n, "TEXT"
             self.exec_key_define(ins)
 
     def exec_palette(self, ins):
         """PALETTE: set colour palette entry."""
         if ins.skip_blank_read_if((tk.USING,)):
-            return self.exec_palette_using(ins)
+            self.exec_palette_using(ins)
         else:
-            attrib = self._parse_value(ins, values.INT, allow_empty=True)
-            if attrib is None:
-                colour = None
-                ins.require_end()
-            else:
-                ins.require_read((',',))
-                colour = self._parse_value(ins, values.INT, allow_empty=True)
-                error.throw_if(attrib is None or colour is None, error.STX)
-            self.session.screen.palette.palette_(attrib, colour)
+            self.exec_palette_only(ins)
 
     def exec_play(self, ins):
         """PLAY: event switch/play MML string."""
-        command = ins.skip_blank_read_if((tk.ON, tk.OFF, tk.STOP))
+        command = ins.skip_blank()
         if command:
-            # PLAY: event switch
-            self.session.events.play_(command)
-            ins.require_end()
+            self.exec_play_event(ins)
         else:
-            # retrieve Music Macro Language string
-            mml1, mml2 = '', ''
-            mml0 = self._parse_temporary_string(ins, allow_empty=True)
-            if ((self.syntax == 'tandy' or (self.syntax == 'pcjr' and
-                                             self.session.sound.sound_on))
-                    and ins.skip_blank_read_if((',',))):
-                mml1 = self._parse_temporary_string(ins, allow_empty=True)
-                if ins.skip_blank_read_if((',',)):
-                    mml2 = self._parse_temporary_string(ins, allow_empty=True)
-            ins.require_end()
-            if not (mml0 or mml1 or mml2):
-                raise error.RunError(error.MISSING_OPERAND)
-            self.session.sound.play_(self.memory, self.values, (mml0, mml1, mml2))
+            self.exec_play_music(ins)
 
     def exec_strig(self, ins):
         """STRIG: switch on/off fire button event handling."""
-        d = ins.require_read((tk.ON, tk.OFF, '('))
+        d = ins.skip_blank()
         if d == '(':
-            # strig (n)
-            num = values.to_int(self.parse_expression(ins))
-            ins.require_read((')',))
-            command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-            self.session.events.strig_(num, command)
+            self.exec_strig_event(ins)
         elif d in (tk.ON, tk.OFF):
             self.session.stick.strig_statement_(d)
+
+    # STRIG
+
+    def exec_strig_switch(self, ins):
+        """STRIG: switch on/off fire button event handling."""
+        d = ins.require_read((tk.ON, tk.OFF))
+        self.session.stick.strig_statement_(d)
+
+    def exec_strig_event(self, ins):
+        """Parse STRIG(n) syntax."""
+        num = values.to_int(self._parse_bracket(ins))
+        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+        self.session.events.strig_(num, command)
+
+    # PLAY
+
+    def exec_play_event(self, ins):
+        """PLAY: event switch."""
+        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+        self.session.events.play_(command)
+
+    def exec_play_music(self, ins):
+        """PLAY: play MML string."""
+        # retrieve Music Macro Language string
+        mml1, mml2 = '', ''
+        mml0 = self._parse_temporary_string(ins, allow_empty=True)
+        if ((self.syntax == 'tandy' or (self.syntax == 'pcjr' and
+                                         self.session.sound.sound_on))
+                and ins.skip_blank_read_if((',',))):
+            mml1 = self._parse_temporary_string(ins, allow_empty=True)
+            if ins.skip_blank_read_if((',',)):
+                mml2 = self._parse_temporary_string(ins, allow_empty=True)
+        ins.require_end()
+        if not (mml0 or mml1 or mml2):
+            raise error.RunError(error.MISSING_OPERAND)
+        self.session.sound.play_(self.memory, self.values, (mml0, mml1, mml2))
 
     # DEF
 
     def exec_def_seg(self, ins):
         """DEF SEG: set the current memory segment."""
+        # must be uppercase in tokenised form, otherwise syntax error
         ins.require_read((tk.W_SEG,))
         seg = None
         if ins.skip_blank_read_if((tk.O_EQ,)):
@@ -509,6 +517,18 @@ class StatementParser(object):
         self.session.screen.drawing.line_(coord0, coord1, c, pattern, mode)
 
     # PALETTE
+
+    def exec_palette_only(self, ins):
+        """PALETTE: set colour palette entry."""
+        attrib = self._parse_value(ins, values.INT, allow_empty=True)
+        if attrib is None:
+            colour = None
+            ins.require_end()
+        else:
+            ins.require_read((',',))
+            colour = self._parse_value(ins, values.INT, allow_empty=True)
+            error.throw_if(attrib is None or colour is None, error.STX)
+        self.session.screen.palette.palette_(attrib, colour)
 
     def exec_palette_using(self, ins):
         """PALETTE USING: set full colour palette."""
