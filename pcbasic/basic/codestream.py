@@ -253,8 +253,7 @@ class TokenisedStream(CodeStream):
                 if break_on_first_char:
                     self.seek(-1, 1)
                     break
-                else:
-                    break_on_first_char = True
+            break_on_first_char = True
             # not elif! if not break_on_first_char, c needs to be properly processed.
             if c == '\0':  # offset and line number follow
                 literal = False
