@@ -212,6 +212,7 @@ class Session(object):
         self.__dict__.update(pickle_dict)
         # build function table (depends on Memory having been initialised)
         self.expression_parser.init_functions(self)
+        self.statement_parser.init_statements(self)
         self.keyboard._input_closed = False
         # suppress double prompt
         if not self._parse_mode:
