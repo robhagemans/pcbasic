@@ -838,8 +838,19 @@ class Session(object):
                 value = self.values.new(name[-1])
             self.memory.set_variable(name, indices, value)
 
-    def line_input_(self, finp, prompt, readvar, indices, newline):
+    def line_input_(self, args):
         """LINE INPUT: request line of input from user."""
+        file_number = next(args)
+        if file_number is None:
+            # get prompt
+            newline, prompt, _ = next(args)
+            finp = None
+        else:
+            prompt, newline = None, None
+            finp = self.files.get(file_number, mode='IR')
+        # get string variable
+        readvar, indices = next(args)
+        list(args)
         if not readvar:
             raise error.RunError(error.STX)
         elif readvar[-1] != '$':

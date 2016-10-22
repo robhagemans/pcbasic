@@ -257,7 +257,7 @@ class StatementParser(object):
                 None: partial(self.exec_args_iter, args_iter=self._parse_def_seg_args_iter, callback=session.all_memory.def_seg_),
             },
             tk.LINE: {
-                tk.INPUT: self.exec_line_input,
+                tk.INPUT: partial(self.exec_args_iter, args_iter=self._parse_line_input_args_iter, callback=session.line_input_),
                 None: self.exec_line_graph,
             },
             tk.KEY: {
@@ -331,21 +331,6 @@ class StatementParser(object):
         callback(ins)
 
     # LINE
-
-    def exec_line_input(self, ins):
-        """LINE INPUT: request line of input from user."""
-        ins.require_read((tk.INPUT,))
-        prompt, newline, finp = None, None, None
-        file_number = self._parse_file_number(ins, opt_hash=False)
-        if file_number is None:
-            # get prompt
-            newline, prompt, _ = self._parse_prompt(ins)
-        else:
-            finp = self.session.files.get(file_number, mode='IR')
-            ins.require_read((',',))
-        # get string variable
-        readvar, indices = self._parse_variable(ins)
-        self.session.line_input_(finp, prompt, readvar, indices, newline)
 
     def exec_line_graph(self, ins):
         """LINE: draw a line or box between two points."""
@@ -1251,6 +1236,18 @@ class StatementParser(object):
             yield self._parse_prompt(ins)
         for arg in self._parse_var_list_iter(ins):
             yield arg
+
+    def _parse_line_input_args_iter(self, ins):
+        """Parse LINE INPUT syntax."""
+        ins.require_read((tk.INPUT,))
+        file_number = self._parse_file_number(ins, opt_hash=False)
+        yield file_number
+        if file_number is None:
+            yield self._parse_prompt(ins)
+        else:
+            ins.require_read((',',))
+        # get string variable
+        yield self._parse_variable(ins)
 
     def _parse_restore_args_iter(self, ins):
         """Parse RESTORE syntax."""
