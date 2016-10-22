@@ -339,8 +339,7 @@ class StatementParser(object):
 
     def _parse_play_args_iter(self, ins):
         """Parse PLAY (music) syntax."""
-        if (self.syntax == 'tandy' or
-                        (self.syntax == 'pcjr' and self.session.sound.sound_on)):
+        if self.syntax in ('pcjr', 'tandy'):
             for _ in range(3):
                 last = self._parse_temporary_string(ins, allow_empty=True)
                 yield last

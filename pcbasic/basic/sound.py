@@ -240,6 +240,9 @@ class Sound(object):
         # at least one string must be specified
         if not any(mml_list):
             raise error.RunError(error.MISSING_OPERAND)
+        # on PCjr, three-voice PLAY requires SOUND ON
+        if self.capabilities == 'pcjr' and not self.sound_on and len(mml_list) > 1:
+            raise error.RunError(error.STX)
         mml_list += [''] * (3-len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, data_segment, values) for mml in mml_list]
         next_oct = 0
