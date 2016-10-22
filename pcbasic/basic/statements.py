@@ -283,7 +283,7 @@ class StatementParser(object):
                                     partial(session.sound.play_, session.memory, session.values)),
             },
             tk.VIEW: {
-                tk.PRINT: self.exec_view_print,
+                tk.PRINT: partial(self.exec_args_iter, args_iter=self._parse_view_print_args_iter, callback=session.screen.view_print_),
                 None: partial(self.exec_args_iter, args_iter=self._parse_view_args_iter, callback=session.screen.drawing.view_),
             },
             tk.PALETTE: {
@@ -329,33 +329,6 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
-
-    # VIEW
-
-    def _parse_view_args_iter(self, ins):
-        """VIEW: set graphics viewport and optionally draw a box."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        yield ins.skip_blank_read_if((tk.SCREEN,))
-        if ins.skip_blank() == '(':
-            yield self._parse_coord_bare(ins)
-            ins.require_read((tk.O_MINUS,))
-            yield self._parse_coord_bare(ins)
-            if ins.skip_blank_read_if((',',)):
-                yield self.parse_expression(ins)
-                ins.require_read((',',))
-                yield self.parse_expression(ins)
-
-    def exec_view_print(self, ins):
-        """VIEW PRINT: set scroll region."""
-        ins.require_read((tk.PRINT,))
-        start = self._parse_value(ins, values.INT, allow_empty=True)
-        stop = None
-        if start is not None:
-            ins.require_read((tk.TO,))
-            stop = self._parse_value(ins, values.INT)
-        ins.require_end()
-        self.session.screen.view_print_(start, stop)
 
     # LINE
 
@@ -1140,6 +1113,20 @@ class StatementParser(object):
                 yield None
                 yield None
 
+    def _parse_view_args_iter(self, ins):
+        """Parse VIEW syntax."""
+        if self.session.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        yield ins.skip_blank_read_if((tk.SCREEN,))
+        if ins.skip_blank() == '(':
+            yield self._parse_coord_bare(ins)
+            ins.require_read((tk.O_MINUS,))
+            yield self._parse_coord_bare(ins)
+            if ins.skip_blank_read_if((',',)):
+                yield self.parse_expression(ins)
+                ins.require_read((',',))
+                yield self.parse_expression(ins)
+
     ###########################################################################
     # Variable & array statements
 
@@ -1318,6 +1305,18 @@ class StatementParser(object):
             # note that LOCATE can end on a 5th comma but no stuff allowed after it
             if not ins.skip_blank_read_if((',',)):
                 break
+        ins.require_end()
+
+    def _parse_view_print_args_iter(self, ins):
+        """Parse VIEW PRINT syntax."""
+        ins.require_read((tk.PRINT,))
+        start = self._parse_value(ins, values.INT, allow_empty=True)
+        yield start
+        if start is not None:
+            ins.require_read((tk.TO,))
+            yield self._parse_value(ins, values.INT)
+        else:
+            yield None
         ins.require_end()
 
     def _parse_write_args_iter(self, ins):

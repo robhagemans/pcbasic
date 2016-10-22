@@ -1391,8 +1391,9 @@ class Screen(object):
 
     ## text viewport / scroll area
 
-    def view_print_(self, start, stop):
+    def view_print_(self, args):
         """VIEW PRINT: set scroll region."""
+        start, stop = args
         if start is None and stop is None:
             self.unset_view()
         else:
