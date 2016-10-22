@@ -139,6 +139,7 @@ class Events(object):
             self.timer.set_jump(jumpnum)
         elif token == tk.PLAY:
             playval = values.to_int(num)
+            error.range_check(1, 32, playval)
             self.play.set_trigger(playval)
             self.play.set_jump(jumpnum)
         elif token == tk.PEN:
