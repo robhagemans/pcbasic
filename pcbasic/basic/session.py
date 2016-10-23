@@ -698,8 +698,9 @@ class Session(object):
             # return to direct mode
             self.interpreter.set_pointer(False)
 
-    def merge_(self, name):
+    def merge_(self, args):
         """MERGE: merge lines from file into current program."""
+        name, = args
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         with self.files.open(0, name, filetype='A', mode='I') as f:
             self.program.merge(f)

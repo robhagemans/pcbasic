@@ -100,7 +100,7 @@ class BaseDebugger(object):
     def debug_step(self, token):
         """Dummy debug step."""
 
-    def debug_(self, debug_cmd):
+    def debug_(self, args):
         """Dummy debug exec."""
 
 
@@ -135,9 +135,10 @@ class Debugger(BaseDebugger):
         if outstr:
             logging.debug(outstr)
 
-    def debug_(self, debug_cmd):
+    def debug_(self, args):
         """Execute a debug command."""
         global debugger, session
+        debug_cmd, = args
         # make session available to debugging commands
         debugger = self
         session = self.session

@@ -504,18 +504,27 @@ class Devices(object):
             error.range_check(0, 255, values.to_int(val))
         list(args)
 
-    def chdir_(self, name):
+    def chdir_(self, args):
         """CHDIR: change working directory."""
+        name, = args
+        if not name:
+            raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
         dev.chdir(path)
 
-    def mkdir_(self, name):
+    def mkdir_(self, args):
         """MKDIR: create directory."""
+        name, = args
+        if not name:
+            raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
         dev.mkdir(path)
 
-    def rmdir_(self, name):
+    def rmdir_(self, args):
         """RMDIR: remove directory."""
+        name, = args
+        if not name:
+            raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
         dev.rmdir(path)
 
@@ -534,8 +543,11 @@ class Devices(object):
             raise error.RunError(error.FILE_ALREADY_EXISTS)
         dev.rename(oldpath, newpath)
 
-    def kill_(self, name):
+    def kill_(self, args):
         """KILL: remove file."""
+        name, = args
+        if not name:
+            raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
         # don't delete open files
         dev.check_file_not_open(path)

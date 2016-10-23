@@ -191,7 +191,7 @@ class StatementParser(object):
             tk.OPEN: partial(self.exec_args_iter, args_iter=self._parse_open_args_iter, callback=session.files.open_),
             tk.CLOSE: partial(self.exec_args_iter, args_iter=self._parse_close_args_iter, callback=session.files.close_),
             tk.LOAD: partial(self.exec_args_iter, args_iter=self._parse_load_args_iter, callback=session.load_),
-            tk.MERGE: partial(self.exec_single_string_arg, callback=session.merge_),
+            tk.MERGE: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=session.merge_),
             tk.SAVE: partial(self.exec_args_iter, args_iter=self._parse_save_args_iter, callback=session.save_),
             tk.COLOR: partial(self.exec_args_iter, args_iter=self._parse_color_args_iter, callback=session.screen.color_),
             tk.CLS: partial(self.exec_args_iter, args_iter=self._parse_cls_args_iter, callback=session.screen.cls_),
@@ -210,7 +210,7 @@ class StatementParser(object):
             tk.NAME: partial(self.exec_args_iter, args_iter=self._parse_name_args_iter, callback=session.devices.name_),
             tk.LSET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.lset_),
             tk.RSET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.rset_),
-            tk.KILL: partial(self.exec_single_string_arg, callback=session.devices.kill_),
+            tk.KILL: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=session.devices.kill_),
             tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
             tk.COMMON: partial(self.exec_args_iter, args_iter=self._parse_common_args_iter, callback=session.common_),
             tk.CHAIN: partial(self.exec_args_iter, args_iter=self._parse_chain_args_iter, callback=session.chain_),
@@ -224,11 +224,11 @@ class StatementParser(object):
                             callback=partial(session.screen.drawing.draw_, memory=session.memory, value_handler=session.values, events=session.events)),
             tk.TIMER: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.timer_),
             tk.IOCTL: partial(self.exec_args_iter, args_iter=self._parse_ioctl_args_iter, callback=session.files.ioctl_statement_),
-            tk.CHDIR: partial(self.exec_single_string_arg, callback=session.devices.chdir_),
-            tk.MKDIR: partial(self.exec_single_string_arg, callback=session.devices.mkdir_),
-            tk.RMDIR: partial(self.exec_single_string_arg, callback=session.devices.rmdir_),
+            tk.CHDIR: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=session.devices.chdir_),
+            tk.MKDIR: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=session.devices.mkdir_),
+            tk.RMDIR: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=session.devices.rmdir_),
             tk.SHELL: partial(self.exec_files_shell, callback=session.shell_),
-            tk.ENVIRON: partial(self.exec_single_string_arg, callback=dos.environ_statement_),
+            tk.ENVIRON: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=dos.environ_statement_),
             tk.WINDOW: partial(self.exec_args_iter, args_iter=self._parse_window_args_iter, callback=session.screen.drawing.window_),
             tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
             tk.PCOPY: partial(self.exec_args_iter, args_iter=self._parse_pcopy_args_iter, callback=session.screen.pcopy_),
@@ -306,7 +306,7 @@ class StatementParser(object):
             },
         }
         self._extensions = {
-            'DEBUG': partial(self.exec_single_string_arg, callback=session.debugger.debug_),
+            'DEBUG': partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=session.debugger.debug_),
         }
 
     def __getstate__(self):
@@ -367,10 +367,6 @@ class StatementParser(object):
             arg = self._parse_temporary_string(ins)
         callback(arg)
 
-    def exec_single_string_arg(self, ins, callback):
-        """Execute statement with single string-valued argument."""
-        callback(self._parse_temporary_string(ins))
-
     ###########################################################################
     # statements taking a single argument
 
@@ -399,6 +395,10 @@ class StatementParser(object):
         """Parse DRAW syntax."""
         yield self._parse_temporary_string(ins)
         ins.require_end()
+
+    def _parse_single_string_arg_iter(self, ins):
+        """Parse statement with single string-valued argument."""
+        yield self._parse_temporary_string(ins)
 
     ###########################################################################
     # Flow-control statements

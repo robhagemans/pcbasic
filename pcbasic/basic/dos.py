@@ -46,8 +46,9 @@ def environ_(expr):
         else:
             return '%s=%s' % (envlist[expr-1], os.getenv(envlist[expr-1]))
 
-def environ_statement_(envstr):
+def environ_statement_(args):
     """ENVIRON: set environment string."""
+    envstr, = args
     eqs = envstr.find('=')
     if eqs <= 0:
         raise error.RunError(error.IFC)
