@@ -25,16 +25,18 @@ class StatementParser(object):
 
     def __init__(self, temp_string, memory, program, expression_parser, syntax):
         """Initialise statement context."""
-        # syntax: advanced, pcjr, tandy
-        self.syntax = syntax
+        # expression parser
         self.expression_parser = expression_parser
-        # temporary string context guard
-        self.temp_string = temp_string
-        # data segment
-        self.memory = memory
-        self.program = program
         # re-execute current statement after Break
         self.redo_on_break = False
+        # syntax: advanced, pcjr, tandy
+        self._syntax = syntax
+        # temporary string context guard
+        self._temp_string = temp_string
+        # data segment, for complete_name()
+        self._memory = memory
+        # program, for last_stored
+        self._program = program
         # initialise syntax parser tables
         self._init_syntax()
 
@@ -80,7 +82,7 @@ class StatementParser(object):
         # must not be empty
         error.throw_if(not name, error.STX)
         # append sigil, if missing
-        return self.memory.complete_name(name)
+        return self._memory.complete_name(name)
 
     def parse_expression(self, ins, allow_empty=False):
         """Compute the value of the expression at the current code pointer."""
@@ -110,7 +112,7 @@ class StatementParser(object):
     def _parse_temporary_string(self, ins, allow_empty=False):
         """Parse an expression and return as Python value. Store strings in a temporary."""
         # if allow_empty, a missing value is returned as an empty string
-        with self.temp_string:
+        with self._temp_string:
             expr = self.parse_expression(ins, allow_empty)
             if expr:
                 return values.pass_string(expr).to_value()
@@ -130,7 +132,7 @@ class StatementParser(object):
         error.throw_if(not name, error.STX)
         # this is an evaluation-time determination
         # as we could have passed another DEFtype statement
-        name = self.memory.complete_name(name)
+        name = self._memory.complete_name(name)
         self.redo_on_break = True
         indices = self.expression_parser.parse_indices(ins)
         self.redo_on_break = False
@@ -251,7 +253,7 @@ class StatementParser(object):
             tk.MID: self._parse_mid,
             tk.PEN: self._parse_event_command,
         }
-        if self.syntax in ('pcjr', 'tandy'):
+        if self._syntax in ('pcjr', 'tandy'):
             self._simple.update({
                 tk.TERM: self._parse_end,
                 tk.NOISE: self._parse_noise,
@@ -603,7 +605,7 @@ class StatementParser(object):
 
     def _parse_beep(self, ins):
         """Parse BEEP syntax."""
-        if self.syntax in ('pcjr', 'tandy'):
+        if self._syntax in ('pcjr', 'tandy'):
             # Tandy/PCjr BEEP ON, OFF
             yield ins.skip_blank_read_if((tk.ON, tk.OFF))
         else:
@@ -622,7 +624,7 @@ class StatementParser(object):
     def _parse_sound(self, ins):
         """Parse SOUND syntax."""
         command = None
-        if self.syntax in ('pcjr', 'tandy'):
+        if self._syntax in ('pcjr', 'tandy'):
             # Tandy/PCjr SOUND ON, OFF
             command = ins.skip_blank_read_if((tk.ON, tk.OFF))
         if command:
@@ -634,7 +636,7 @@ class StatementParser(object):
             yield dur
             # only look for args 3 and 4 if duration is > 0;
             # otherwise those args are a syntax error (on tandy)
-            if (dur.sign() == 1) and ins.skip_blank_read_if((',',)) and self.syntax in ('pcjr', 'tandy'):
+            if (dur.sign() == 1) and ins.skip_blank_read_if((',',)) and self._syntax in ('pcjr', 'tandy'):
                 yield self.parse_expression(ins)
                 if ins.skip_blank_read_if((',',)):
                     yield self.parse_expression(ins)
@@ -647,7 +649,7 @@ class StatementParser(object):
 
     def _parse_play(self, ins):
         """Parse PLAY (music) syntax."""
-        if self.syntax in ('pcjr', 'tandy'):
+        if self._syntax in ('pcjr', 'tandy'):
             for _ in range(3):
                 last = self._parse_temporary_string(ins, allow_empty=True)
                 yield last
@@ -766,7 +768,7 @@ class StatementParser(object):
             assert len(token) == 2, 'bytecode truncated in line number pointer'
             return struct.unpack('<H', token)[0]
         elif c == '.':
-            return self.program.last_stored
+            return self._program.last_stored
         else:
             if allow_empty:
                 ins.seek(-len(c), 1)
@@ -1058,7 +1060,7 @@ class StatementParser(object):
     def _parse_paint(self, ins):
         """Parse PAINT syntax."""
         yield self._parse_coord_step(ins)
-        with self.temp_string:
+        with self._temp_string:
             if ins.skip_blank_read_if((',',)):
                 last = self.parse_expression(ins, allow_empty=True)
                 yield last
@@ -1066,7 +1068,7 @@ class StatementParser(object):
                     last = self.parse_expression(ins, allow_empty=True)
                     yield last
                     if ins.skip_blank_read_if((',',)):
-                        with self.temp_string:
+                        with self._temp_string:
                             yield self.parse_expression(ins)
                     elif last is None:
                         raise error.RunError(error.MISSING_OPERAND)
@@ -1168,7 +1170,7 @@ class StatementParser(object):
                 # set aside stack space for GW-BASIC. The default is the previous stack space size.
                 exp2 = self.parse_expression(ins, allow_empty=True)
                 yield exp2
-                if self.syntax in ('pcjr', 'tandy') and ins.skip_blank_read_if((',',)):
+                if self._syntax in ('pcjr', 'tandy') and ins.skip_blank_read_if((',',)):
                     # Tandy/PCjr: select video memory size
                     yield self.parse_expression(ins)
                 elif not exp2:
@@ -1315,7 +1317,7 @@ class StatementParser(object):
 
     def _parse_cls(self, ins):
         """Parse CLS syntax."""
-        if self.syntax != 'pcjr':
+        if self._syntax != 'pcjr':
             yield self._parse_value(ins, values.INT, allow_empty=True)
             # optional comma
             if not ins.skip_blank_read_if((',',)):
@@ -1388,7 +1390,7 @@ class StatementParser(object):
         yield file_number
         if file_number is not None:
             ins.require_read((',',))
-        with self.temp_string:
+        with self._temp_string:
             expr = self.parse_expression(ins, allow_empty=True)
             if expr is not None:
                 yield expr
@@ -1397,7 +1399,7 @@ class StatementParser(object):
                 if not ins.skip_blank_read_if((',', ';')):
                     ins.require_end()
                     break
-                with self.temp_string:
+                with self._temp_string:
                     yield self.parse_expression(ins)
 
     def _parse_width(self, ins):
@@ -1412,7 +1414,7 @@ class StatementParser(object):
             yield self._parse_value(ins, values.INT)
         else:
             yield None
-            with self.temp_string:
+            with self._temp_string:
                 if ins.peek() in set(string.digits) | set(tk.NUMBER):
                     expr = self.expression_parser.read_number_literal(ins)
                 else:
@@ -1435,7 +1437,6 @@ class StatementParser(object):
     def _parse_screen(self, ins):
         """Parse SCREEN syntax."""
         # erase can only be set on pcjr/tandy 5-argument syntax
-        #n_args = 4 + (self.syntax in ('pcjr', 'tandy'))
         # all but last arguments are optional and may be followed by a comma
         argcount = 0
         while True:
@@ -1445,7 +1446,7 @@ class StatementParser(object):
             if not ins.skip_blank_read_if((',',)):
                 break
         if last is None:
-            if self.syntax == 'tandy' and argcount == 1:
+            if self._syntax == 'tandy' and argcount == 1:
                 raise error.RunError(error.IFC)
             raise error.RunError(error.MISSING_OPERAND)
         for _ in range(argcount, 5):
@@ -1480,7 +1481,7 @@ class StatementParser(object):
                 yield (tk.USING, format_expr)
                 has_args = False
                 while True:
-                    with self.temp_string:
+                    with self._temp_string:
                         expr = self.parse_expression(ins, allow_empty=True)
                         yield expr
                         if expr is None:
@@ -1501,7 +1502,7 @@ class StatementParser(object):
                 yield (d, num)
             else:
                 ins.seek(-len(d), 1)
-                with self.temp_string:
+                with self._temp_string:
                     value = self.parse_expression(ins)
                     yield (None, value)
 
