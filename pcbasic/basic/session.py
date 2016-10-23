@@ -174,8 +174,7 @@ class Session(object):
         self.expression_parser = expressions.ExpressionParser(
                 self.values, self.memory, self.program, self.files)
         self.statement_parser = statements.StatementParser(
-                self.values, self.strings, self.memory, self.expression_parser,
-                syntax)
+                self.strings, self.memory, self.expression_parser, syntax)
         # initialise the parser
         self.events.reset()
         self.interpreter = interpreter.Interpreter(
