@@ -252,7 +252,7 @@ class StatementParser(object):
                                         partial(session.events.on_event_gosub_, session.program)),
                 '\xFF': partial(self.exec_args_iter, args_iter=self._parse_on_event_args_iter, callback=
                                         partial(session.events.on_event_gosub_, session.program)),
-                None: self.exec_on_jump,
+                None: partial(self.exec_args_iter, args_iter=self._parse_on_jump_args_iter, callback=session.interpreter.on_jump_),
             },
             tk.DEF: {
                 tk.FN: partial(self.exec_args_iter, args_iter=self._parse_def_fn_args_iter, callback=session.interpreter.def_fn_),
@@ -335,36 +335,6 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
-
-    # ON
-
-    def exec_on_jump(self, ins):
-        """ON: calculated jump."""
-        onvar = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, onvar)
-        command = ins.require_read((tk.GOTO, tk.GOSUB))
-        skipped = 0
-        if onvar in (0, 255):
-            # if any provided, check all but jump to none
-            while True:
-                num = self._parse_optional_jumpnum(ins)
-                if num is None or not ins.skip_blank_read_if((',',)):
-                    ins.require_end()
-                    return
-        else:
-            # only parse jumps (and errors!) up to our choice
-            while skipped < onvar-1:
-                self._parse_jumpnum(ins)
-                skipped += 1
-                if not ins.skip_blank_read_if((',',)):
-                    ins.require_end()
-                    return
-            # parse our choice
-            jumpnum = self._parse_jumpnum(ins)
-            if command == tk.GOTO:
-                self.session.interpreter.jump(jumpnum)
-            elif command == tk.GOSUB:
-                self.session.interpreter.jump_sub(jumpnum)
 
     # KEY
 
@@ -1434,6 +1404,19 @@ class StatementParser(object):
 
     ###########################################################################
     # Loops and branches
+
+    def _parse_on_jump_args_iter(self, ins):
+        """ON: calculated jump."""
+        yield self.parse_expression(ins)
+        yield ins.require_read((tk.GOTO, tk.GOSUB))
+        while True:
+            num = self._parse_optional_jumpnum(ins)
+            if num is None:
+                break
+            yield num
+            if not ins.skip_blank_read_if((',',)):
+                break
+        ins.require_end()
 
     def _parse_if_args_iter(self, ins):
         """IF: enter branching statement."""

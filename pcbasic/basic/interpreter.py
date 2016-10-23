@@ -280,6 +280,24 @@ class Interpreter(object):
         # note that any :ELSE block encountered will be ignored automatically
         # since standalone ELSE is a no-op to end of line
 
+    def on_jump_(self, args):
+        """ON GOTO/GOSUB: calculated jump."""
+        onvar = values.to_int(next(args))
+        error.range_check(0, 255, onvar)
+        jump_type = next(args)
+        # only parse jumps (and errors!) up to our choice
+        i = -1
+        for i, jumpnum in enumerate(args):
+            if i == onvar-1:
+                if jump_type == tk.GOTO:
+                    self.jump(jumpnum)
+                elif jump_type == tk.GOSUB:
+                    self.jump_sub(jumpnum)
+                return
+        if i == onvar-2:
+            # missing jump *just where we need it* is an error
+            raise error.RunError(error.STX)
+
     ###########################################################################
     # loops
 
