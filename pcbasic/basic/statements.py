@@ -49,6 +49,14 @@ class StatementParser(object):
                 selector = None
             # statement token
             stat_dict[selector](ins)
+        elif c == '_':
+            # extension statement
+            word = ins.read_name()
+            try:
+                callback = self._extensions[word]
+            except KeyError:
+                raise error.RunError(error.STX)
+            callback(ins)
         else:
             # implicit LET
             ins.seek(-len(c), 1)
@@ -142,7 +150,16 @@ class StatementParser(object):
             tk.DATA: self.skip_statement,
             tk.REM: self.skip_line,
             tk.ELSE: self.skip_line,
+            tk.CONT: partial(self.exec_immediate, callback=session.interpreter.cont_),
+            tk.TRON: partial(self.exec_immediate, callback=session.interpreter.tron_),
+            tk.TROFF: partial(self.exec_immediate, callback=session.interpreter.troff_),
+            tk.WHILE: partial(self.exec_immediate, callback=session.interpreter.while_),
+            tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
             tk.END: partial(self.exec_after_end, callback=session.end_),
+            tk.STOP: partial(self.exec_after_end, callback=session.interpreter.stop_),
+            tk.NEW: partial(self.exec_after_end, callback=session.new_),
+            tk.WEND: partial(self.exec_after_end, callback=session.interpreter.wend_),
+            tk.SYSTEM: partial(self.exec_after_end, callback=session.interpreter.system_),
             tk.FOR: partial(self.exec_args_iter, args_iter=self._parse_for_args_iter, callback=session.interpreter.for_),
             tk.NEXT: partial(self.exec_args_iter, args_iter=self._parse_next_args_iter, callback=session.interpreter.next_),
             tk.INPUT: partial(self.exec_args_iter, args_iter=self._parse_input_args_iter, callback=session.input_),
@@ -155,20 +172,15 @@ class StatementParser(object):
             tk.RESTORE: partial(self.exec_args_iter, args_iter=self._parse_restore_args_iter, callback=session.interpreter.restore_),
             tk.GOSUB: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.gosub_),
             tk.RETURN: partial(self.exec_args_iter, args_iter=self._parse_optional_line_number_iter, callback=session.interpreter.return_),
-            tk.STOP: partial(self.exec_after_end, callback=session.interpreter.stop_),
             tk.PRINT: partial(self.exec_args_iter, args_iter=partial(self._parse_print_args_iter, parse_file=True), callback=session.files.print_),
             tk.CLEAR: partial(self.exec_args_iter, args_iter=self._parse_clear_args_iter, callback=session.clear_),
             tk.LIST: partial(self.exec_args_iter, args_iter=self._parse_list_args_iter, callback=session.list_),
-            tk.NEW: partial(self.exec_after_end, callback=session.new_),
             tk.WAIT: partial(self.exec_args_iter, args_iter=self._parse_wait_args_iter, callback=session.machine.wait_),
             tk.POKE: partial(self.exec_args_iter, args_iter=self._parse_poke_out_args_iter, callback=session.all_memory.poke_),
-            tk.CONT: partial(self.exec_immediate, callback=session.interpreter.cont_),
             tk.OUT: partial(self.exec_args_iter, args_iter=self._parse_poke_out_args_iter, callback=session.machine.out_),
             tk.LPRINT: partial(self.exec_args_iter, args_iter=partial(self._parse_print_args_iter, parse_file=False), callback=session.devices.lprint_),
             tk.LLIST: partial(self.exec_args_iter, args_iter=self._parse_delete_llist_args_iter, callback=session.llist_),
             tk.WIDTH: partial(self.exec_args_iter, args_iter=self._parse_width_args_iter, callback=session.files.width_),
-            tk.TRON: partial(self.exec_immediate, callback=session.interpreter.tron_),
-            tk.TROFF: partial(self.exec_immediate, callback=session.interpreter.troff_),
             tk.SWAP: partial(self.exec_args_iter, args_iter=self._parse_swap_args_iter, callback=session.memory.swap_),
             tk.ERASE: partial(self.exec_args_iter, args_iter=self._parse_erase_args_iter, callback=session.memory.arrays.erase_),
             tk.EDIT: partial(self.exec_args_iter, args_iter=self._parse_edit_args_iter, callback=session.edit_),
@@ -181,8 +193,6 @@ class StatementParser(object):
             tk.DEFINT: partial(self.exec_args_iter, args_iter=self._parse_deftype_args_iter, callback=session.memory.defint_),
             tk.DEFSNG: partial(self.exec_args_iter, args_iter=self._parse_deftype_args_iter, callback=session.memory.defsng_),
             tk.DEFDBL: partial(self.exec_args_iter, args_iter=self._parse_deftype_args_iter, callback=session.memory.defdbl_),
-            tk.WHILE: partial(self.exec_immediate, callback=session.interpreter.while_),
-            tk.WEND: partial(self.exec_after_end, callback=session.interpreter.wend_),
             tk.CALL: partial(self.exec_args_iter, args_iter=self._parse_call_args_iter, callback=session.all_memory.call_),
             tk.CALLS: partial(self.exec_args_iter, args_iter=self._parse_call_args_iter, callback=session.all_memory.call_),
             tk.WRITE: partial(self.exec_args_iter, args_iter=self._parse_write_args_iter, callback=session.files.write_),
@@ -206,12 +216,10 @@ class StatementParser(object):
             tk.LOCATE: partial(self.exec_args_iter, args_iter=self._parse_locate_args_iter, callback=session.screen.locate_),
             tk.FILES: partial(self.exec_args_iter, args_iter=self._parse_optional_string_arg_iter, callback=session.devices.files_),
             tk.FIELD: partial(self.exec_args_iter, args_iter=self._parse_field_args_iter, callback=session.files.field_),
-            tk.SYSTEM: partial(self.exec_after_end, callback=session.interpreter.system_),
             tk.NAME: partial(self.exec_args_iter, args_iter=self._parse_name_args_iter, callback=session.devices.name_),
             tk.LSET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.lset_),
             tk.RSET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.rset_),
             tk.KILL: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=session.devices.kill_),
-            tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
             tk.COMMON: partial(self.exec_args_iter, args_iter=self._parse_common_args_iter, callback=session.common_),
             tk.CHAIN: partial(self.exec_args_iter, args_iter=self._parse_chain_args_iter, callback=session.chain_),
             tk.DATE: partial(self.exec_args_iter, args_iter=self._parse_time_date_args_iter, callback=session.clock.date_),
@@ -236,7 +244,6 @@ class StatementParser(object):
             tk.UNLOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.unlock_),
             tk.MID: partial(self.exec_args_iter, args_iter=self._parse_mid_args_iter, callback=session.memory.mid_),
             tk.PEN: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.pen_),
-            '_': self.exec_extension,
         }
         if self.syntax in ('pcjr', 'tandy'):
             self._simple.update({
@@ -325,18 +332,6 @@ class StatementParser(object):
     def exec_args_iter(self, ins, args_iter, callback):
         """Execute statement parsed by iterable."""
         callback(args_iter(ins))
-
-    ##########################################################
-    # statements that require further qualification
-
-    def exec_extension(self, ins):
-        """Extension statement."""
-        word = ins.read_name()
-        try:
-            callback = self._extensions[word]
-        except KeyError:
-            raise error.RunError(error.STX)
-        callback(ins)
 
     ###########################################################################
     # generalised callers
