@@ -155,11 +155,11 @@ class StatementParser(object):
             tk.TROFF: partial(self.exec_immediate, callback=session.interpreter.troff_),
             tk.WHILE: partial(self.exec_immediate, callback=session.interpreter.while_),
             tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
-            tk.END: partial(self.exec_after_end, callback=session.end_),
-            tk.STOP: partial(self.exec_after_end, callback=session.interpreter.stop_),
-            tk.NEW: partial(self.exec_after_end, callback=session.new_),
-            tk.WEND: partial(self.exec_after_end, callback=session.interpreter.wend_),
-            tk.SYSTEM: partial(self.exec_after_end, callback=session.interpreter.system_),
+            tk.END: partial(self.exec_args_iter, args_iter=self._parse_end, callback=session.end_),
+            tk.STOP: partial(self.exec_args_iter, args_iter=self._parse_end, callback=session.interpreter.stop_),
+            tk.NEW: partial(self.exec_args_iter, args_iter=self._parse_end, callback=session.new_),
+            tk.WEND: partial(self.exec_args_iter, args_iter=self._parse_end, callback=session.interpreter.wend_),
+            tk.SYSTEM: partial(self.exec_args_iter, args_iter=self._parse_end, callback=session.interpreter.system_),
             tk.FOR: partial(self.exec_args_iter, args_iter=self._parse_for_args_iter, callback=session.interpreter.for_),
             tk.NEXT: partial(self.exec_args_iter, args_iter=self._parse_next_args_iter, callback=session.interpreter.next_),
             tk.INPUT: partial(self.exec_args_iter, args_iter=self._parse_input_args_iter, callback=session.input_),
@@ -247,7 +247,7 @@ class StatementParser(object):
         }
         if self.syntax in ('pcjr', 'tandy'):
             self._simple.update({
-                tk.TERM: partial(self.exec_after_end, callback=session.term_),
+                tk.TERM: partial(self.exec_args_iter, args_iter=self._parse_end, callback=session.term_),
                 tk.NOISE: partial(self.exec_args_iter, args_iter=self._parse_noise_args_iter, callback=session.sound.noise_),
             })
         self._complex = {
@@ -341,11 +341,13 @@ class StatementParser(object):
         # e.g. TRON LAH raises error but TRON will have been executed
         callback()
 
-    def exec_after_end(self, ins, callback):
-        """Execute after end-of-statement."""
+    def _parse_end(self, ins):
+        """Parse end-of-statement before executing argumentless statement."""
         # e.g. SYSTEM LAH does not execute
         ins.require_end()
-        callback()
+        # empty generator
+        return
+        yield
 
     def skip_line(self, ins):
         """Ignore the rest of the line."""

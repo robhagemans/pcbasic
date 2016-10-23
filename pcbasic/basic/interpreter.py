@@ -421,8 +421,9 @@ class Interpreter(object):
             _, wendpos = self.while_stack.pop()
             ins.seek(wendpos)
 
-    def wend_(self):
+    def wend_(self, args):
         """WEND: iterate while-loop."""
+        list(args)
         ins = self.get_codestream()
         pos = ins.tell()
         while True:
@@ -493,12 +494,14 @@ class Interpreter(object):
     ###########################################################################
     # callbacks
 
-    def system_(self):
+    def system_(self, args):
         """SYSTEM: exit interpreter."""
+        list(args)
         raise error.Exit()
 
-    def stop_(self):
+    def stop_(self, args):
         """STOP: break program execution and return to interpreter."""
+        list(args)
         raise error.Break(stop=True)
 
     def cont_(self):

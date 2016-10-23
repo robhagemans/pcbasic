@@ -565,8 +565,9 @@ class Session(object):
         # reset cursor visibility to its previous state
         self.screen.cursor.reset_visibility()
 
-    def term_(self):
+    def term_(self, args):
         """TERM: terminal emulator."""
+        list(args)
         self._clear_all()
         self.interpreter.tron = False
         if not self._term_program:
@@ -708,8 +709,9 @@ class Session(object):
         # clear all program stacks
         self.interpreter.clear_stacks_and_pointers()
 
-    def new_(self):
+    def new_(self, args):
         """NEW: clear program from memory."""
+        list(args)
         self.interpreter.troff_()
         # deletes the program currently in memory
         self.program.erase()
@@ -759,8 +761,9 @@ class Session(object):
         else:
             self.interpreter.jump(jumpnum)
 
-    def end_(self):
+    def end_(self, args):
         """END: end program execution and return to interpreter."""
+        list(args)
         # jump to end of direct line so execution stops
         self.interpreter.set_pointer(False)
         # avoid NO RESUME
