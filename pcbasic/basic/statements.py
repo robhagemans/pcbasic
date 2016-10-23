@@ -23,7 +23,7 @@ from . import dos
 class StatementParser(object):
     """BASIC statements."""
 
-    def __init__(self, temp_string, memory, expression_parser, syntax):
+    def __init__(self, temp_string, memory, program, expression_parser, syntax):
         """Initialise statement context."""
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
@@ -32,6 +32,9 @@ class StatementParser(object):
         self.temp_string = temp_string
         # data segment
         self.memory = memory
+        self.program = program
+        # re-execute current statement after Break
+        self.redo_on_break = False
 
     def parse_statement(self, ins):
         """Parse and execute a single statement."""
@@ -83,9 +86,9 @@ class StatementParser(object):
         """Compute the value of the expression at the current code pointer."""
         if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
             return None
-        self.session.redo_on_break = True
+        self.redo_on_break = True
         val = self.expression_parser.parse(ins)
-        self.session.redo_on_break = False
+        self.redo_on_break = False
         return val
 
     def _parse_value(self, ins, sigil=None, allow_empty=False):
@@ -128,9 +131,9 @@ class StatementParser(object):
         # this is an evaluation-time determination
         # as we could have passed another DEFtype statement
         name = self.memory.complete_name(name)
-        self.session.redo_on_break = True
+        self.redo_on_break = True
         indices = self.expression_parser.parse_indices(ins)
-        self.session.redo_on_break = False
+        self.redo_on_break = False
         return name, indices
 
     def _parse_jumpnum(self, ins):
@@ -151,7 +154,6 @@ class StatementParser(object):
 
     def init_statements(self, session):
         """Initialise statements."""
-        self.session = session
         self._simple = {
             tk.DATA: self._skip_statement,
             tk.REM: self._skip_line,
@@ -760,7 +762,7 @@ class StatementParser(object):
             assert len(token) == 2, 'bytecode truncated in line number pointer'
             return struct.unpack('<H', token)[0]
         elif c == '.':
-            return self.session.program.last_stored
+            return self.program.last_stored
         else:
             if allow_empty:
                 ins.seek(-len(c), 1)

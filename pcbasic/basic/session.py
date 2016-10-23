@@ -81,7 +81,6 @@ class Session(object):
         self.auto_increment = 10
         # interpreter is waiting for INPUT or LINE INPUT
         self.input_mode = False
-        self.redo_on_break = False
         # syntax error prompt and EDIT
         self.edit_prompt = False
         # program for TERM command
@@ -174,7 +173,7 @@ class Session(object):
         self.expression_parser = expressions.ExpressionParser(
                 self.values, self.memory, self.program, self.files)
         self.statement_parser = statements.StatementParser(
-                self.strings, self.memory, self.expression_parser, syntax)
+                self.strings, self.memory, self.program, self.expression_parser, syntax)
         # initialise the parser
         self.events.reset()
         self.interpreter = interpreter.Interpreter(
@@ -450,7 +449,7 @@ class Session(object):
         # if we're in a program, save pointer
         pos = -1
         if self.interpreter.run_mode:
-            if self.redo_on_break:
+            if self.statement_parser.redo_on_break:
                 pos = self.interpreter.current_statement
             else:
                 self.program.bytecode.skip_to(tk.END_STATEMENT)
@@ -459,7 +458,7 @@ class Session(object):
         self._write_error_message(e.message, self.program.get_line_number(pos))
         self._set_parse_mode(False)
         self.input_mode = False
-        self.redo_on_break = False
+        self.statement_parser.redo_on_break = False
 
     def _write_error_message(self, msg, linenum):
         """Write an error message to the console."""
@@ -797,7 +796,7 @@ class Session(object):
             prompt += '? '
         # read the input
         self.input_mode = True
-        self.redo_on_break = True
+        self.statement_parser.redo_on_break = True
         # readvar is a list of (name, indices) tuples
         # we return a list of (name, indices, values) tuples
         while True:
@@ -830,7 +829,7 @@ class Session(object):
             else:
                 varlist = [r + [v] for r, v in zip(var, values)]
                 break
-        self.redo_on_break = False
+        self.statement_parser.redo_on_break = False
         self.input_mode = False
         for v in varlist:
             self.memory.set_variable(*v)
@@ -869,10 +868,10 @@ class Session(object):
                 raise error.RunError(error.INPUT_PAST_END)
         else:
             self.input_mode = True
-            self.redo_on_break = True
+            self.statement_parser.redo_on_break = True
             self.screen.write(prompt)
             line = self.editor.wait_screenline(write_endl=newline)
-            self.redo_on_break = False
+            self.statement_parser.redo_on_break = False
             self.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
 
