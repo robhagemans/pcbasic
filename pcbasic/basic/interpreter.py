@@ -18,13 +18,17 @@ from . import values
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, session, program, statement_parser):
+    def __init__(self, debugger, events, screen, devices, sound,
+                values, memory, scalars, program, statement_parser):
         """Initialise interpreter."""
-        self.session = session
-        # line number tracing
-        self.tron = False
-        # pointer position: False for direct line, True for program
-        self.run_mode = False
+        self._debugger = debugger
+        self._events = events
+        self._values = values
+        self._memory = memory
+        self._scalars = scalars
+        self._screen = screen
+        self._devices = devices
+        self._sound = sound
         # program buffer
         self.program = program
         self.program_code = program.bytecode
@@ -33,6 +37,10 @@ class Interpreter(object):
         self.current_statement = 0
         # statement syntax parser
         self.statement_parser = statement_parser
+        # line number tracing
+        self.tron = False
+        # pointer position: False for direct line, True for program
+        self.run_mode = False
         # clear stacks
         self.clear_stacks_and_pointers()
         self.init_error_trapping()
@@ -53,7 +61,7 @@ class Interpreter(object):
         """Parse from the current pointer in current codestream."""
         while True:
             # may raise Break
-            self.session.events.check_events()
+            self._events.check_events()
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()
@@ -75,8 +83,8 @@ class Interpreter(object):
                         return
                     if self.tron:
                         linenum = struct.unpack_from('<H', token, 2)
-                        self.session.screen.write('[%i]' % linenum)
-                    self.session.debugger.debug_step(token)
+                        self._screen.write('[%i]' % linenum)
+                    self._debugger.debug_step(token)
                 elif c != ':':
                     ins.seek(-len(c), 1)
                 self.statement_parser.parse_statement(ins)
@@ -93,7 +101,7 @@ class Interpreter(object):
         # disable error trapping
         self.init_error_trapping()
         # disable all event trapping (resets PEN to OFF too)
-        self.session.events.reset()
+        self._events.reset()
         # CLEAR also dumps for_next and while_wend stacks
         self.clear_loop_stacks()
         # reset the DATA pointer
@@ -127,9 +135,9 @@ class Interpreter(object):
 
     def handle_basic_events(self):
         """Jump to user-defined event subs if events triggered."""
-        if self.session.events.suspend_all or not self.run_mode:
+        if self._events.suspend_all or not self.run_mode:
             return
-        for event in self.session.events.enabled:
+        for event in self._events.enabled:
             if (event.triggered and not event.stopped and event.gosub is not None):
                 # release trigger
                 event.triggered = False
@@ -153,7 +161,7 @@ class Interpreter(object):
             self.error_resume = self.current_statement, self.run_mode
             self.jump(self.on_error)
             self.error_handle_mode = True
-            self.session.events.suspend_all = True
+            self._events.suspend_all = True
         else:
             self.error_handle_mode = False
             self.set_pointer(False)
@@ -179,11 +187,11 @@ class Interpreter(object):
         """Set program pointer to the given codestream and position."""
         self.run_mode = new_runmode
         # events are active in run mode
-        self.session.events.set_active(new_runmode)
+        self._events.set_active(new_runmode)
         # keep the sound engine on to avoid delays in run mode
-        self.session.sound.persist(new_runmode)
+        self._sound.persist(new_runmode)
         # suppress cassette messages in run mode
-        self.session.devices.devices['CAS1:'].quiet(new_runmode)
+        self._devices.devices['CAS1:'].quiet(new_runmode)
         codestream = self.get_codestream()
         if pos is not None:
             # jump to position, if given
@@ -317,14 +325,14 @@ class Interpreter(object):
         list(args)
         if step is None:
             # convert 1 to vartype
-            step = self.session.values.from_value(1, varname[-1])
+            step = self._values.from_value(1, varname[-1])
         ins = self.get_codestream()
         # find NEXT
         forpos, nextpos = self._find_next(ins, varname)
         # initialise loop variable
-        self.session.scalars.set(varname, start)
+        self._scalars.set(varname, start)
         # obtain a view of the loop variable
-        counter_view = self.session.scalars.view(varname)
+        counter_view = self._scalars.view(varname)
         self.for_stack.append((counter_view, stop, step, step.sign(), forpos, nextpos,))
         # empty loop: jump to NEXT without executing block
         if (start.gt(stop) if step.sign() > 0 else stop.gt(start)):
@@ -456,7 +464,7 @@ class Interpreter(object):
     def read_(self, args):
         """READ: read values from DATA statement."""
         for name, indices in args:
-            type_char, code_start = name[-1], self.session.memory.code_start
+            type_char, code_start = name[-1], self._memory.code_start
             current = self.program_code.tell()
             self.program_code.seek(self.data_pos)
             if self.program_code.peek() in tk.END_STATEMENT:
@@ -478,9 +486,9 @@ class Interpreter(object):
                 word = word.strip(self.program_code.blanks)
             if type_char == values.STR:
                 address = self.data_pos + code_start
-                value = self.session.values.from_str_at(word, address)
+                value = self._values.from_str_at(word, address)
             else:
-                value = self.session.values.from_repr(word, allow_nonnum=False)
+                value = self._values.from_repr(word, allow_nonnum=False)
                 if value is None:
                     # set pointer for EDIT gadget to position in DATA statement
                     self.program_code.seek(self.data_pos)
@@ -489,7 +497,7 @@ class Interpreter(object):
             # omit leading and trailing whitespace
             data_pos = self.program_code.tell()
             self.program_code.seek(current)
-            self.session.memory.set_variable(name, indices, value=value)
+            self._memory.set_variable(name, indices, value=value)
             self.data_pos = data_pos
 
     ###########################################################################
@@ -539,7 +547,7 @@ class Interpreter(object):
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         self.on_error = linenum
         # pause soft-handling math errors so that we can catch them
-        self.session.values.error_handler.suspend(linenum != 0)
+        self._values.error_handler.suspend(linenum != 0)
         # ON ERROR GOTO 0 in error handler
         if self.on_error == 0 and self.error_handle_mode:
             # re-raise the error so that execution stops
@@ -557,7 +565,7 @@ class Interpreter(object):
         self.error_num = 0
         self.error_handle_mode = False
         self.error_resume = None
-        self.session.events.suspend_all = False
+        self._events.suspend_all = False
         if not where:
             # RESUME or RESUME 0
             self.set_pointer(runmode, start_statement)

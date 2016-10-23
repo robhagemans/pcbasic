@@ -1123,7 +1123,7 @@ def str_to_decimal(s, allow_nonnum=True):
 ##############################################################################
 # convert decimal to string representation
 
-#FIXME: this can be replaced with str and zfill
+# can be replaced with str and zfill?
 def get_digits(num, digits, remove_trailing):
     """Get the digits for an int."""
     digitstr = str(abs(num))

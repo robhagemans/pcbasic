@@ -174,16 +174,18 @@ class Session(object):
                 self.values, self.memory, self.program, self.files)
         self.statement_parser = statements.StatementParser(
                 self.strings, self.memory, self.program, self.expression_parser, syntax)
+        # set up debugger
+        self.debugger = debug.get_debugger(self, option_debug)
         # initialise the parser
         self.events.reset()
         self.interpreter = interpreter.Interpreter(
-                self, self.program, self.statement_parser)
+                self.debugger, self.events, self.screen, self.devices, self.sound,
+                self.values, self.memory, self.scalars, self.program, self.statement_parser)
         # set up rest of memory model
-        self.all_memory = machine.Memory(self.memory, self.devices, self.files,
-                            self.screen, self.keyboard, self.screen.fonts[8],
-                            self.interpreter, peek_values, syntax)
-        # set up debugger
-        self.debugger = debug.get_debugger(self, option_debug)
+        self.all_memory = machine.Memory(
+                self.memory, self.devices, self.files,
+                self.screen, self.keyboard, self.screen.fonts[8],
+                self.interpreter, peek_values, syntax)
         # build function table (depends on Memory having been initialised)
         self.expression_parser.init_functions(self)
         self.statement_parser.init_statements(self)
