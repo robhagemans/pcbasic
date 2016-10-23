@@ -158,6 +158,10 @@ class Debugger(BaseDebugger):
             sys.stdout = save_stdout
             logging.debug(buf.getvalue()[:-1]) # exclude \n
 
+    def bluescreen(self, e):
+        """Pass through exceptions in debug mode."""
+        # don't catch exceptions - so that testing script records them.
+        raise e
 
 ##############################################################################
 # debugging commands
