@@ -115,8 +115,9 @@ class FunctionKeyMacros(object):
         """Get macro for given function key."""
         return self._key_replace[num]
 
-    def key_(self, command, screen):
+    def key_(self, screen, args):
         """KEY: show/hide/list macros."""
+        command, = args
         if command == tk.ON:
             # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
             error.throw_if(screen.scroll_height == 25)

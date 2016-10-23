@@ -264,9 +264,12 @@ class StatementParser(object):
                 None: partial(self.exec_args_iter, args_iter=self._parse_line_args_iter, callback=session.screen.drawing.line_),
             },
             tk.KEY: {
-                tk.ON: self.exec_key_macro,
-                tk.OFF: self.exec_key_macro,
-                tk.LIST: self.exec_key_macro,
+                tk.ON: partial(self.exec_args_iter, args_iter=self._parse_key_macro_args_iter, callback=
+                                        partial(session.fkey_macros.key_, session.screen)),
+                tk.OFF: partial(self.exec_args_iter, args_iter=self._parse_key_macro_args_iter, callback=
+                                        partial(session.fkey_macros.key_, session.screen)),
+                tk.LIST: partial(self.exec_args_iter, args_iter=self._parse_key_macro_args_iter, callback=
+                                        partial(session.fkey_macros.key_, session.screen)),
                 '(': self.exec_key_events,
                 None: self.exec_key_define,
             },
@@ -328,7 +331,6 @@ class StatementParser(object):
 
     def exec_extension(self, ins):
         """Extension statement."""
-        # This is not a GW-BASIC behaviour.
         word = ins.read_name()
         try:
             callback = self._extensions[word]
@@ -337,11 +339,6 @@ class StatementParser(object):
         callback(ins)
 
     # KEY
-
-    def exec_key_macro(self, ins):
-        """KEY: switch on/off or list function-key row on screen."""
-        token = ins.read(1)
-        self.session.fkey_macros.key_(token, self.session.screen)
 
     def exec_key_events(self, ins):
         """KEY: switch on/off keyboard events."""
@@ -1209,6 +1206,10 @@ class StatementParser(object):
 
     ###########################################################################
     # Console statements
+
+    def _parse_key_macro_args_iter(self, ins):
+        """Parse KEY ON/OFF/LIST syntax."""
+        yield ins.read_keyword_token()
 
     def _parse_cls_args_iter(self, ins):
         """Parse CLS syntax."""
