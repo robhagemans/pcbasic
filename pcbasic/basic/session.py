@@ -619,7 +619,10 @@ class Session(object):
     def list_(self, args):
         """LIST: output program lines."""
         from_line, to_line = next(args)
-        out, = args
+        out = next(args)
+        if out is not None:
+            out = self.files.open(0, out, filetype='A', mode='O')
+        list(args)
         lines = self.program.list_lines(from_line, to_line)
         if out:
             with out:

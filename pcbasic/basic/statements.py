@@ -806,8 +806,7 @@ class StatementParser(object):
         """Parse LIST syntax."""
         yield self._parse_line_range(ins)
         if ins.skip_blank_read_if((',',)):
-            outname = self._parse_temporary_string(ins)
-            yield self.session.files.open(0, outname, filetype='A', mode='O')
+            yield self._parse_temporary_string(ins)
             # ignore everything after file spec
             ins.skip_to(tk.END_LINE)
         else:
@@ -1080,8 +1079,6 @@ class StatementParser(object):
 
     def _parse_view_args_iter(self, ins):
         """Parse VIEW syntax."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
         yield ins.skip_blank_read_if((tk.SCREEN,))
         if ins.skip_blank() == '(':
             yield self._parse_coord_bare(ins)
@@ -1094,8 +1091,6 @@ class StatementParser(object):
 
     def _parse_line_args_iter(self, ins):
         """Parse LINE syntax."""
-        if self.session.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
         if ins.skip_blank() in ('(', tk.STEP):
             yield self._parse_coord_step(ins)
         else:
