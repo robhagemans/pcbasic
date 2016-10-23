@@ -712,7 +712,7 @@ class Session(object):
     def new_(self, args):
         """NEW: clear program from memory."""
         list(args)
-        self.interpreter.troff_()
+        self.interpreter.tron = False
         # deletes the program currently in memory
         self.program.erase()
         # reset stacks

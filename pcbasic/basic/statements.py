@@ -150,11 +150,11 @@ class StatementParser(object):
             tk.DATA: self.skip_statement,
             tk.REM: self.skip_line,
             tk.ELSE: self.skip_line,
-            tk.CONT: partial(self.exec_immediate, callback=session.interpreter.cont_),
-            tk.TRON: partial(self.exec_immediate, callback=session.interpreter.tron_),
-            tk.TROFF: partial(self.exec_immediate, callback=session.interpreter.troff_),
-            tk.WHILE: partial(self.exec_immediate, callback=session.interpreter.while_),
-            tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
+            tk.CONT: partial(self.exec_args_iter, args_iter=self._parse_nothing, callback=session.interpreter.cont_),
+            tk.TRON: partial(self.exec_args_iter, args_iter=self._parse_nothing, callback=session.interpreter.tron_),
+            tk.TROFF: partial(self.exec_args_iter, args_iter=self._parse_nothing, callback=session.interpreter.troff_),
+            tk.WHILE: partial(self.exec_args_iter, args_iter=self._parse_nothing, callback=session.interpreter.while_),
+            tk.RESET: partial(self.exec_args_iter, args_iter=self._parse_end, callback=session.files.reset_),
             tk.END: partial(self.exec_args_iter, args_iter=self._parse_end, callback=session.end_),
             tk.STOP: partial(self.exec_args_iter, args_iter=self._parse_end, callback=session.interpreter.stop_),
             tk.NEW: partial(self.exec_args_iter, args_iter=self._parse_end, callback=session.new_),
@@ -334,12 +334,13 @@ class StatementParser(object):
         callback(args_iter(ins))
 
     ###########################################################################
-    # generalised callers
+    # statements taking no arguments
 
-    def exec_immediate(self, ins, callback):
-        """Execute before end-of-statement."""
+    def _parse_nothing(self, ins):
+        """Parse nothing."""
         # e.g. TRON LAH raises error but TRON will have been executed
-        callback()
+        return
+        yield
 
     def _parse_end(self, ins):
         """Parse end-of-statement before executing argumentless statement."""
@@ -398,7 +399,7 @@ class StatementParser(object):
             yield None
 
     ###########################################################################
-    # Flow-control statements
+    # flow-control statements
 
     def _parse_run_args_iter(self, ins):
         """Parse RUN syntax."""
@@ -437,7 +438,7 @@ class StatementParser(object):
         yield self._parse_jumpnum(ins)
 
     ###########################################################################
-    # event switches
+    # event statements
 
     def _parse_event_command_iter(self, ins):
         """Parse PEN, PLAY or TIMER syntax."""
@@ -467,7 +468,7 @@ class StatementParser(object):
         ins.require_end()
 
     ###########################################################################
-    # sound
+    # sound statements
 
     def _parse_beep_args_iter(self, ins):
         """Parse BEEP syntax."""
@@ -531,7 +532,7 @@ class StatementParser(object):
             ins.require_end(err=error.IFC)
 
     ###########################################################################
-    # machine emulation
+    # memory and machine port statements
 
     def _parse_def_seg_args_iter(self, ins):
         """Parse DEF SEG syntax."""
@@ -596,7 +597,7 @@ class StatementParser(object):
         ins.require_end()
 
     ###########################################################################
-    # Disk
+    # disk statements
 
     def _parse_name_args_iter(self, ins):
         """Parse NAME syntax."""
@@ -606,7 +607,7 @@ class StatementParser(object):
         yield self._parse_temporary_string(ins)
 
     ###########################################################################
-    # OS
+    # clock statements
 
     def _parse_time_date_args_iter(self, ins):
         """Parse TIME$ or DATE$ syntax."""
@@ -615,7 +616,7 @@ class StatementParser(object):
         ins.require_end()
 
     ##########################################################
-    # code
+    # code statements
 
     def _parse_line_range(self, ins):
         """Helper function: parse line number ranges."""
@@ -745,7 +746,7 @@ class StatementParser(object):
         ins.require_end()
 
     ###########################################################################
-    # file
+    # file statements
 
     def _parse_open_args_iter(self, ins):
         """Parse OPEN syntax."""
@@ -866,7 +867,7 @@ class StatementParser(object):
             yield None
 
     ###########################################################################
-    # Graphics statements
+    # graphics statements
 
     def _parse_coord_bare(self, ins):
         """Parse coordinate pair."""
@@ -1025,7 +1026,7 @@ class StatementParser(object):
         ins.require_end()
 
     ###########################################################################
-    # Variable & array statements
+    # variable statements
 
     def _parse_clear_args_iter(self, ins):
         """Parse CLEAR syntax."""
@@ -1178,7 +1179,7 @@ class StatementParser(object):
         yield self._parse_variable(ins)
 
     ###########################################################################
-    # Console statements
+    # console and editor statements
 
     def _parse_key_macro_args_iter(self, ins):
         """Parse KEY ON/OFF/LIST syntax."""
@@ -1383,7 +1384,7 @@ class StatementParser(object):
                     yield (None, value)
 
     ###########################################################################
-    # Loops and branches
+    # loops and branches
 
     def _parse_on_jump_args_iter(self, ins):
         """ON: calculated jump."""

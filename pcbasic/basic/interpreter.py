@@ -386,8 +386,9 @@ class Interpreter(object):
             ins.seek(forpos)
         return not loop_ends
 
-    def while_(self):
+    def while_(self, args):
         """WHILE: enter while-loop."""
+        list(args)
         ins = self.get_codestream()
         # find matching WEND
         whilepos, wendpos = self._find_wend(ins)
@@ -504,8 +505,9 @@ class Interpreter(object):
         list(args)
         raise error.Break(stop=True)
 
-    def cont_(self):
+    def cont_(self, args):
         """CONT: continue STOPped or ENDed execution."""
+        list(args)
         if self.stop is None:
             raise error.RunError(error.CANT_CONTINUE)
         else:
@@ -520,12 +522,14 @@ class Interpreter(object):
         # then jumps back to the original return location!
         # in this implementation, the CONT command will fully overwrite the line buffer so x is not printed.
 
-    def tron_(self):
+    def tron_(self, args):
         """TRON: trace on."""
+        list(args)
         self.tron = True
 
-    def troff_(self):
+    def troff_(self, args):
         """TROFF: trace off."""
+        list(args)
         self.tron = False
 
     def on_error_goto_(self, args):

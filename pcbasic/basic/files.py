@@ -53,7 +53,10 @@ class Files(object):
             f.close()
         self.files = {}
 
-    reset_ = close_all
+    def reset_(self, args):
+        """RESET: Close all files."""
+        list(args)
+        self.close_all()
 
     def close_(self, args):
         """CLOSE: close a file, or all files."""
