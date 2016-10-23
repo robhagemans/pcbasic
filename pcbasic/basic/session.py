@@ -891,3 +891,17 @@ class Session(object):
         errn = values.to_int(errn)
         error.range_check(1, 255, errn)
         raise error.RunError(errn)
+
+    def key_(self, args):
+        """KEY: macro or event handler definition."""
+        keynum = values.to_int(next(args))
+        error.range_check(1, 255, keynum)
+        text, = args
+        if keynum <= self.events.num_fn_keys:
+            self.fkey_macros.set(keynum, text, self.screen)
+        else:
+            # only length-2 expressions can be assigned to KEYs over 10
+            # in which case it's a key scancode definition
+            if len(text) != 2:
+                raise error.RunError(error.IFC)
+            self.events.key[keynum-1].set_trigger(str(text))

@@ -271,7 +271,7 @@ class StatementParser(object):
                 tk.LIST: partial(self.exec_args_iter, args_iter=self._parse_key_macro_args_iter, callback=
                                         partial(session.fkey_macros.key_, session.screen)),
                 '(': partial(self.exec_args_iter, args_iter=self._parse_com_command_iter, callback=session.events.key_),
-                None: self.exec_key_define,
+                None: partial(self.exec_args_iter, args_iter=self._parse_key_define_args_iter, callback=session.key_),
             },
             tk.PUT: {
                 '(': partial(self.exec_args_iter, args_iter=self._parse_put_graph_args_iter, callback=
@@ -337,21 +337,6 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
-
-    def exec_key_define(self, ins):
-        """KEY: define function-key shortcut or scancode for event trapping."""
-        keynum = values.to_int(self.parse_expression(ins))
-        error.range_check(1, 255, keynum)
-        ins.require_read((',',))
-        text = self._parse_temporary_string(ins)
-        if keynum <= self.session.events.num_fn_keys:
-            self.session.fkey_macros.set(keynum, text, self.session.screen)
-        else:
-            # only length-2 expressions can be assigned to KEYs over 10
-            # in which case it's a key scancode definition
-            if len(text) != 2:
-                raise error.RunError(error.IFC)
-            self.session.events.key[keynum-1].set_trigger(str(text))
 
     ###########################################################################
     # generalised callers
@@ -1201,6 +1186,12 @@ class StatementParser(object):
     def _parse_key_macro_args_iter(self, ins):
         """Parse KEY ON/OFF/LIST syntax."""
         yield ins.read_keyword_token()
+
+    def _parse_key_define_args_iter(self, ins):
+        """Parse KEY definition syntax."""
+        yield self.parse_expression(ins)
+        ins.require_read((',',))
+        yield self._parse_temporary_string(ins)
 
     def _parse_cls_args_iter(self, ins):
         """Parse CLS syntax."""
