@@ -204,7 +204,7 @@ class StatementParser(object):
             tk.PRESET: partial(self.exec_args_iter, args_iter=self._parse_pset_preset_args_iter, callback=session.screen.drawing.preset_),
             tk.SCREEN: partial(self.exec_args_iter, args_iter=self._parse_screen_args_iter, callback=session.screen.screen_),
             tk.LOCATE: partial(self.exec_args_iter, args_iter=self._parse_locate_args_iter, callback=session.screen.locate_),
-            tk.FILES: partial(self.exec_files_shell, callback=session.devices.files_),
+            tk.FILES: partial(self.exec_args_iter, args_iter=self._parse_optional_string_arg_iter, callback=session.devices.files_),
             tk.FIELD: partial(self.exec_args_iter, args_iter=self._parse_field_args_iter, callback=session.files.field_),
             tk.SYSTEM: partial(self.exec_after_end, callback=session.interpreter.system_),
             tk.NAME: partial(self.exec_args_iter, args_iter=self._parse_name_args_iter, callback=session.devices.name_),
@@ -227,7 +227,7 @@ class StatementParser(object):
             tk.CHDIR: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=session.devices.chdir_),
             tk.MKDIR: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=session.devices.mkdir_),
             tk.RMDIR: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=session.devices.rmdir_),
-            tk.SHELL: partial(self.exec_files_shell, callback=session.shell_),
+            tk.SHELL: partial(self.exec_args_iter, args_iter=self._parse_optional_string_arg_iter, callback=session.shell_),
             tk.ENVIRON: partial(self.exec_args_iter, args_iter=self._parse_single_string_arg_iter, callback=dos.environ_statement_),
             tk.WINDOW: partial(self.exec_args_iter, args_iter=self._parse_window_args_iter, callback=session.screen.drawing.window_),
             tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
@@ -360,13 +360,6 @@ class StatementParser(object):
         """Ignore rest of statement."""
         ins.skip_to(tk.END_STATEMENT)
 
-    def exec_files_shell(self, ins, callback):
-        """Execute statemnt with single optional string-valued argument."""
-        arg = None
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            arg = self._parse_temporary_string(ins)
-        callback(arg)
-
     ###########################################################################
     # statements taking a single argument
 
@@ -399,6 +392,13 @@ class StatementParser(object):
     def _parse_single_string_arg_iter(self, ins):
         """Parse statement with single string-valued argument."""
         yield self._parse_temporary_string(ins)
+
+    def _parse_optional_string_arg_iter(self, ins):
+        """Parse statement with single optional string-valued argument."""
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            yield self._parse_temporary_string(ins)
+        else:
+            yield None
 
     ###########################################################################
     # Flow-control statements

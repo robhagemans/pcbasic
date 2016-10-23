@@ -553,8 +553,9 @@ class Devices(object):
         dev.check_file_not_open(path)
         dev.kill(path)
 
-    def files_(self, pathmask=None):
+    def files_(self, args):
         """FILES: output directory listing to screen."""
+        pathmask, = args
         # pathmask may be left unspecified, but not empty
         if pathmask == b'':
             raise error.RunError(error.BAD_FILE_NAME)

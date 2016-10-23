@@ -551,8 +551,9 @@ class Session(object):
         self.screen.drawing.reset()
         self.interpreter.clear()
 
-    def shell_(self, cmd=None):
+    def shell_(self, args):
         """SHELL: open OS shell and optionally execute command."""
+        cmd, = args
         # force cursor visible in all cases
         self.screen.cursor.show(True)
         # sound stops playing and is forgotten
