@@ -44,8 +44,7 @@ class StatementParser(object):
         ins.skip_blank()
         c = ins.read_keyword_token()
         if c in self._simple:
-            # statement token
-            args_iter = self._simple[c]
+            parse_args = self._simple[c]
         elif c in self._complex:
             stat_dict = self._complex[c]
             selector = ins.skip_blank()
@@ -53,13 +52,12 @@ class StatementParser(object):
                 selector = None
             else:
                 c += selector
-            # statement token
-            args_iter = stat_dict[selector]
+            parse_args = stat_dict[selector]
         elif c == '_':
             # extension statement
             word = ins.read_name()
             try:
-                args_iter = self._extensions[word]
+                parse_args = self._extensions[word]
                 c += word
             except KeyError:
                 raise error.RunError(error.STX)
@@ -68,11 +66,11 @@ class StatementParser(object):
             ins.seek(-len(c), 1)
             if c in string.ascii_letters:
                 c = tk.LET
-                args_iter = self._simple[tk.LET]
+                parse_args = self._simple[tk.LET]
             else:
                 ins.require_end()
                 return
-        self._callbacks[c](args_iter(ins))
+        self._callbacks[c](parse_args(ins))
         if c != tk.IF:
             ins.require_end()
 
@@ -170,148 +168,148 @@ class StatementParser(object):
             tk.NEW: self._parse_end,
             tk.WEND: self._parse_end,
             tk.SYSTEM: self._parse_end,
-            tk.FOR: self._parse_for_args_iter,
-            tk.NEXT: self._parse_next_args_iter,
-            tk.INPUT: self._parse_input_args_iter,
-            tk.DIM: self._parse_var_list_iter,
-            tk.READ: self._parse_var_list_iter,
-            tk.LET: self._parse_let_args_iter,
-            tk.GOTO: self._parse_single_line_number_iter,
-            tk.RUN: self._parse_run_args_iter,
-            tk.IF: self._parse_if_args_iter,
-            tk.RESTORE: self._parse_restore_args_iter,
-            tk.GOSUB: self._parse_single_line_number_iter,
-            tk.RETURN: self._parse_optional_line_number_iter,
-            tk.PRINT: partial(self._parse_print_args_iter, parse_file=True),
-            tk.CLEAR: self._parse_clear_args_iter,
-            tk.LIST: self._parse_list_args_iter,
-            tk.WAIT: self._parse_wait_args_iter,
-            tk.POKE: self._parse_poke_out_args_iter,
-            tk.OUT: self._parse_poke_out_args_iter,
-            tk.LPRINT: partial(self._parse_print_args_iter, parse_file=False),
-            tk.LLIST: self._parse_delete_llist_args_iter,
-            tk.WIDTH: self._parse_width_args_iter,
-            tk.SWAP: self._parse_swap_args_iter,
-            tk.ERASE: self._parse_erase_args_iter,
-            tk.EDIT: self._parse_edit_args_iter,
-            tk.ERROR: self._parse_single_arg_iter,
-            tk.RESUME: self._parse_resume_args_iter,
-            tk.DELETE: self._parse_delete_llist_args_iter,
-            tk.AUTO: self._parse_auto_args_iter,
-            tk.RENUM: self._parse_renum_args_iter,
-            tk.DEFSTR: self._parse_deftype_args_iter,
-            tk.DEFINT: self._parse_deftype_args_iter,
-            tk.DEFSNG: self._parse_deftype_args_iter,
-            tk.DEFDBL: self._parse_deftype_args_iter,
-            tk.CALL: self._parse_call_args_iter,
-            tk.CALLS: self._parse_call_args_iter,
-            tk.WRITE: self._parse_write_args_iter,
-            tk.OPTION: self._parse_option_base_args_iter,
-            tk.RANDOMIZE: self._parse_optional_arg_iter,
-            tk.OPEN: self._parse_open_args_iter,
-            tk.CLOSE: self._parse_close_args_iter,
-            tk.LOAD: self._parse_load_args_iter,
-            tk.MERGE: self._parse_single_string_arg_iter,
-            tk.SAVE: self._parse_save_args_iter,
-            tk.COLOR: self._parse_color_args_iter,
-            tk.CLS: self._parse_cls_args_iter,
-            tk.MOTOR: self._parse_optional_arg_iter,
-            tk.BSAVE: self._parse_bsave_args_iter,
-            tk.BLOAD: self._parse_bload_args_iter,
-            tk.SOUND: self._parse_sound_args_iter,
-            tk.BEEP: self._parse_beep_args_iter,
-            tk.PSET: self._parse_pset_preset_args_iter,
-            tk.PRESET: self._parse_pset_preset_args_iter,
-            tk.SCREEN: self._parse_screen_args_iter,
-            tk.LOCATE: self._parse_locate_args_iter,
-            tk.FILES: self._parse_optional_string_arg_iter,
-            tk.FIELD: self._parse_field_args_iter,
-            tk.NAME: self._parse_name_args_iter,
-            tk.LSET: self._parse_let_args_iter,
-            tk.RSET: self._parse_let_args_iter,
-            tk.KILL: self._parse_single_string_arg_iter,
-            tk.COMMON: self._parse_common_args_iter,
-            tk.CHAIN: self._parse_chain_args_iter,
-            tk.DATE: self._parse_time_date_args_iter,
-            tk.TIME: self._parse_time_date_args_iter,
-            tk.PAINT: self._parse_paint_args_iter,
-            tk.COM: self._parse_com_command_iter,
-            tk.CIRCLE: self._parse_circle_args_iter,
-            tk.DRAW: self._parse_string_arg_iter,
-            tk.TIMER: self._parse_event_command_iter,
-            tk.IOCTL: self._parse_ioctl_args_iter,
-            tk.CHDIR: self._parse_single_string_arg_iter,
-            tk.MKDIR: self._parse_single_string_arg_iter,
-            tk.RMDIR: self._parse_single_string_arg_iter,
-            tk.SHELL: self._parse_optional_string_arg_iter,
-            tk.ENVIRON: self._parse_single_string_arg_iter,
-            tk.WINDOW: self._parse_window_args_iter,
-            tk.LCOPY: self._parse_optional_arg_iter,
-            tk.PCOPY: self._parse_pcopy_args_iter,
-            tk.LOCK: self._parse_lock_unlock_args_iter,
-            tk.UNLOCK: self._parse_lock_unlock_args_iter,
-            tk.MID: self._parse_mid_args_iter,
-            tk.PEN: self._parse_event_command_iter,
+            tk.FOR: self._parse_for,
+            tk.NEXT: self._parse_next,
+            tk.INPUT: self._parse_input,
+            tk.DIM: self._parse_var_list,
+            tk.READ: self._parse_var_list,
+            tk.LET: self._parse_let,
+            tk.GOTO: self._parse_single_line_number,
+            tk.RUN: self._parse_run,
+            tk.IF: self._parse_if,
+            tk.RESTORE: self._parse_restore,
+            tk.GOSUB: self._parse_single_line_number,
+            tk.RETURN: self._parse_optional_line_number,
+            tk.PRINT: partial(self._parse_print, parse_file=True),
+            tk.CLEAR: self._parse_clear,
+            tk.LIST: self._parse_list,
+            tk.WAIT: self._parse_wait,
+            tk.POKE: self._parse_poke_out,
+            tk.OUT: self._parse_poke_out,
+            tk.LPRINT: partial(self._parse_print, parse_file=False),
+            tk.LLIST: self._parse_delete_llist,
+            tk.WIDTH: self._parse_width,
+            tk.SWAP: self._parse_swap,
+            tk.ERASE: self._parse_erase,
+            tk.EDIT: self._parse_edit,
+            tk.ERROR: self._parse_single_arg,
+            tk.RESUME: self._parse_resume,
+            tk.DELETE: self._parse_delete_llist,
+            tk.AUTO: self._parse_auto,
+            tk.RENUM: self._parse_renum,
+            tk.DEFSTR: self._parse_deftype,
+            tk.DEFINT: self._parse_deftype,
+            tk.DEFSNG: self._parse_deftype,
+            tk.DEFDBL: self._parse_deftype,
+            tk.CALL: self._parse_call,
+            tk.CALLS: self._parse_call,
+            tk.WRITE: self._parse_write,
+            tk.OPTION: self._parse_option_base,
+            tk.RANDOMIZE: self._parse_optional_arg,
+            tk.OPEN: self._parse_open,
+            tk.CLOSE: self._parse_close,
+            tk.LOAD: self._parse_load,
+            tk.MERGE: self._parse_single_string_arg,
+            tk.SAVE: self._parse_save,
+            tk.COLOR: self._parse_color,
+            tk.CLS: self._parse_cls,
+            tk.MOTOR: self._parse_optional_arg,
+            tk.BSAVE: self._parse_bsave,
+            tk.BLOAD: self._parse_bload,
+            tk.SOUND: self._parse_sound,
+            tk.BEEP: self._parse_beep,
+            tk.PSET: self._parse_pset_preset,
+            tk.PRESET: self._parse_pset_preset,
+            tk.SCREEN: self._parse_screen,
+            tk.LOCATE: self._parse_locate,
+            tk.FILES: self._parse_optional_string_arg,
+            tk.FIELD: self._parse_field,
+            tk.NAME: self._parse_name,
+            tk.LSET: self._parse_let,
+            tk.RSET: self._parse_let,
+            tk.KILL: self._parse_single_string_arg,
+            tk.COMMON: self._parse_common,
+            tk.CHAIN: self._parse_chain,
+            tk.DATE: self._parse_time_date,
+            tk.TIME: self._parse_time_date,
+            tk.PAINT: self._parse_paint,
+            tk.COM: self._parse_com_command,
+            tk.CIRCLE: self._parse_circle,
+            tk.DRAW: self._parse_string_arg,
+            tk.TIMER: self._parse_event_command,
+            tk.IOCTL: self._parse_ioctl,
+            tk.CHDIR: self._parse_single_string_arg,
+            tk.MKDIR: self._parse_single_string_arg,
+            tk.RMDIR: self._parse_single_string_arg,
+            tk.SHELL: self._parse_optional_string_arg,
+            tk.ENVIRON: self._parse_single_string_arg,
+            tk.WINDOW: self._parse_window,
+            tk.LCOPY: self._parse_optional_arg,
+            tk.PCOPY: self._parse_pcopy,
+            tk.LOCK: self._parse_lock_unlock,
+            tk.UNLOCK: self._parse_lock_unlock,
+            tk.MID: self._parse_mid,
+            tk.PEN: self._parse_event_command,
         }
         if self.syntax in ('pcjr', 'tandy'):
             self._simple.update({
                 tk.TERM: self._parse_end,
-                tk.NOISE: self._parse_noise_args_iter,
+                tk.NOISE: self._parse_noise,
             })
         self._complex = {
             tk.ON: {
-                tk.ERROR: self._parse_on_error_goto_args_iter,
-                tk.KEY: self._parse_on_event_args_iter,
-                '\xFE': self._parse_on_event_args_iter,
-                '\xFF': self._parse_on_event_args_iter,
-                None: self._parse_on_jump_args_iter,
+                tk.ERROR: self._parse_on_error_goto,
+                tk.KEY: self._parse_on_event,
+                '\xFE': self._parse_on_event,
+                '\xFF': self._parse_on_event,
+                None: self._parse_on_jump,
             },
             tk.DEF: {
-                tk.FN: self._parse_def_fn_args_iter,
-                tk.USR: self._parse_def_usr_args_iter,
-                None: self._parse_def_seg_args_iter,
+                tk.FN: self._parse_def_fn,
+                tk.USR: self._parse_def_usr,
+                None: self._parse_def_seg,
             },
             tk.LINE: {
-                tk.INPUT: self._parse_line_input_args_iter,
-                None: self._parse_line_args_iter,
+                tk.INPUT: self._parse_line_input,
+                None: self._parse_line,
             },
             tk.KEY: {
-                tk.ON: self._parse_key_macro_args_iter,
-                tk.OFF: self._parse_key_macro_args_iter,
-                tk.LIST: self._parse_key_macro_args_iter,
-                '(': self._parse_com_command_iter,
-                None: self._parse_key_define_args_iter,
+                tk.ON: self._parse_key_macro,
+                tk.OFF: self._parse_key_macro,
+                tk.LIST: self._parse_key_macro,
+                '(': self._parse_com_command,
+                None: self._parse_key_define,
             },
             tk.PUT: {
-                '(': self._parse_put_graph_args_iter,
-                None: self._parse_put_get_file_args_iter,
+                '(': self._parse_put_graph,
+                None: self._parse_put_get_file,
             },
             tk.GET: {
-                '(': self._parse_get_graph_args_iter,
-                None: self._parse_put_get_file_args_iter,
+                '(': self._parse_get_graph,
+                None: self._parse_put_get_file,
             },
             tk.PLAY: {
-                tk.ON: self._parse_event_command_iter,
-                tk.OFF: self._parse_event_command_iter,
-                tk.STOP: self._parse_event_command_iter,
-                None: self._parse_play_args_iter,
+                tk.ON: self._parse_event_command,
+                tk.OFF: self._parse_event_command,
+                tk.STOP: self._parse_event_command,
+                None: self._parse_play,
             },
             tk.VIEW: {
-                tk.PRINT: self._parse_view_print_args_iter,
-                None: self._parse_view_args_iter,
+                tk.PRINT: self._parse_view_print,
+                None: self._parse_view,
             },
             tk.PALETTE: {
-                tk.USING: self._parse_palette_using_args_iter,
-                None: self._parse_palette_args_iter,
+                tk.USING: self._parse_palette_using,
+                None: self._parse_palette,
             },
             tk.STRIG: {
-                tk.ON: self._parse_strig_switch_iter,
-                tk.OFF: self._parse_strig_switch_iter,
-                None: self._parse_com_command_iter,
+                tk.ON: self._parse_strig_switch,
+                tk.OFF: self._parse_strig_switch,
+                None: self._parse_com_command,
             },
         }
         self._extensions = {
-            'DEBUG': self._parse_single_string_arg_iter,
+            'DEBUG': self._parse_single_string_arg,
         }
 
     def init_statements(self, session):
@@ -494,37 +492,37 @@ class StatementParser(object):
     ###########################################################################
     # statements taking a single argument
 
-    def _parse_optional_arg_iter(self, ins):
+    def _parse_optional_arg(self, ins):
         """Parse statement with on eoptional argument."""
         yield self.parse_expression(ins, allow_empty=True)
         ins.require_end()
 
-    def _parse_single_arg_iter(self, ins):
+    def _parse_single_arg(self, ins):
         """Parse statement with one mandatory argument."""
         yield self.parse_expression(ins)
         ins.require_end()
 
-    def _parse_single_line_number_iter(self, ins):
+    def _parse_single_line_number(self, ins):
         """Parse statement with single line number argument."""
         yield self._parse_jumpnum(ins)
 
-    def _parse_optional_line_number_iter(self, ins):
+    def _parse_optional_line_number(self, ins):
         """Parse statement with optional line number argument."""
         jumpnum = None
         if ins.skip_blank() == tk.T_UINT:
             jumpnum = self._parse_jumpnum(ins)
         yield jumpnum
 
-    def _parse_string_arg_iter(self, ins):
+    def _parse_string_arg(self, ins):
         """Parse DRAW syntax."""
         yield self._parse_temporary_string(ins)
         ins.require_end()
 
-    def _parse_single_string_arg_iter(self, ins):
+    def _parse_single_string_arg(self, ins):
         """Parse statement with single string-valued argument."""
         yield self._parse_temporary_string(ins)
 
-    def _parse_optional_string_arg_iter(self, ins):
+    def _parse_optional_string_arg(self, ins):
         """Parse statement with single optional string-valued argument."""
         if ins.skip_blank() not in tk.END_STATEMENT:
             yield self._parse_temporary_string(ins)
@@ -534,7 +532,7 @@ class StatementParser(object):
     ###########################################################################
     # flow-control statements
 
-    def _parse_run_args_iter(self, ins):
+    def _parse_run(self, ins):
         """Parse RUN syntax."""
         c = ins.skip_blank()
         if c == tk.T_UINT:
@@ -553,7 +551,7 @@ class StatementParser(object):
             yield None
             yield None
 
-    def _parse_resume_args_iter(self, ins):
+    def _parse_resume(self, ins):
         """Parse RESUME syntax."""
         c = ins.skip_blank()
         if c == tk.NEXT:
@@ -564,7 +562,7 @@ class StatementParser(object):
             yield self._parse_jumpnum(ins)
         ins.require_end()
 
-    def _parse_on_error_goto_args_iter(self, ins):
+    def _parse_on_error_goto(self, ins):
         """Parse ON ERROR GOTO syntax."""
         ins.require_read((tk.ERROR,))
         ins.require_read((tk.GOTO,))
@@ -573,20 +571,20 @@ class StatementParser(object):
     ###########################################################################
     # event statements
 
-    def _parse_event_command_iter(self, ins):
+    def _parse_event_command(self, ins):
         """Parse PEN, PLAY or TIMER syntax."""
         yield ins.require_read((tk.ON, tk.OFF, tk.STOP))
 
-    def _parse_com_command_iter(self, ins):
+    def _parse_com_command(self, ins):
         """Parse KEY, COM or STRIG syntax."""
         yield self._parse_bracket(ins)
         yield ins.require_read((tk.ON, tk.OFF, tk.STOP))
 
-    def _parse_strig_switch_iter(self, ins):
+    def _parse_strig_switch(self, ins):
         """Parse STRIG ON/OFF syntax."""
         yield ins.require_read((tk.ON, tk.OFF))
 
-    def _parse_on_event_args_iter(self, ins):
+    def _parse_on_event(self, ins):
         """Helper function for ON event trap definitions."""
         token = ins.read_keyword_token()
         yield token
@@ -603,7 +601,7 @@ class StatementParser(object):
     ###########################################################################
     # sound statements
 
-    def _parse_beep_args_iter(self, ins):
+    def _parse_beep(self, ins):
         """Parse BEEP syntax."""
         if self.syntax in ('pcjr', 'tandy'):
             # Tandy/PCjr BEEP ON, OFF
@@ -612,7 +610,7 @@ class StatementParser(object):
             yield None
         # if a syntax error happens, we still beeped.
 
-    def _parse_noise_args_iter(self, ins):
+    def _parse_noise(self, ins):
         """Parse NOISE syntax (Tandy/PCjr)."""
         yield self.parse_expression(ins)
         ins.require_read((',',))
@@ -621,7 +619,7 @@ class StatementParser(object):
         yield self.parse_expression(ins)
         ins.require_end()
 
-    def _parse_sound_args_iter(self, ins):
+    def _parse_sound(self, ins):
         """Parse SOUND syntax."""
         command = None
         if self.syntax in ('pcjr', 'tandy'):
@@ -647,7 +645,7 @@ class StatementParser(object):
                 yield None
         ins.require_end()
 
-    def _parse_play_args_iter(self, ins):
+    def _parse_play(self, ins):
         """Parse PLAY (music) syntax."""
         if self.syntax in ('pcjr', 'tandy'):
             for _ in range(3):
@@ -667,7 +665,7 @@ class StatementParser(object):
     ###########################################################################
     # memory and machine port statements
 
-    def _parse_def_seg_args_iter(self, ins):
+    def _parse_def_seg(self, ins):
         """Parse DEF SEG syntax."""
         # must be uppercase in tokenised form, otherwise syntax error
         ins.require_read((tk.W_SEG,))
@@ -676,20 +674,20 @@ class StatementParser(object):
         else:
             yield None
 
-    def _parse_def_usr_args_iter(self, ins):
+    def _parse_def_usr(self, ins):
         """Parse DEF USR syntax."""
         ins.require_read((tk.USR))
         yield ins.skip_blank_read_if(tk.DIGIT)
         ins.require_read((tk.O_EQ,))
         yield self.parse_expression(ins)
 
-    def _parse_poke_out_args_iter(self, ins):
+    def _parse_poke_out(self, ins):
         """Parse POKE or OUT syntax."""
         yield self.parse_expression(ins)
         ins.require_read((',',))
         yield self.parse_expression(ins)
 
-    def _parse_bload_args_iter(self, ins):
+    def _parse_bload(self, ins):
         """Parse BLOAD syntax."""
         yield self._parse_temporary_string(ins)
         if ins.skip_blank_read_if((',',)):
@@ -698,7 +696,7 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def _parse_bsave_args_iter(self, ins):
+    def _parse_bsave(self, ins):
         """Parse BSAVE syntax."""
         yield self._parse_temporary_string(ins)
         ins.require_read((',',))
@@ -707,7 +705,7 @@ class StatementParser(object):
         yield self.parse_expression(ins)
         ins.require_end()
 
-    def _parse_call_args_iter(self, ins):
+    def _parse_call(self, ins):
         """Parse CALL and CALLS syntax."""
         yield self.parse_name(ins)
         if ins.skip_blank_read_if(('(',)):
@@ -718,7 +716,7 @@ class StatementParser(object):
             ins.require_read((')',))
         ins.require_end()
 
-    def _parse_wait_args_iter(self, ins):
+    def _parse_wait(self, ins):
         """Parse WAIT syntax."""
         yield self.parse_expression(ins)
         ins.require_read((',',))
@@ -732,7 +730,7 @@ class StatementParser(object):
     ###########################################################################
     # disk statements
 
-    def _parse_name_args_iter(self, ins):
+    def _parse_name(self, ins):
         """Parse NAME syntax."""
         yield self._parse_temporary_string(ins)
         # AS is not a tokenised word
@@ -742,7 +740,7 @@ class StatementParser(object):
     ###########################################################################
     # clock statements
 
-    def _parse_time_date_args_iter(self, ins):
+    def _parse_time_date(self, ins):
         """Parse TIME$ or DATE$ syntax."""
         ins.require_read((tk.O_EQ,))
         yield self._parse_temporary_string(ins)
@@ -775,12 +773,12 @@ class StatementParser(object):
                 return None
             raise error.RunError(err)
 
-    def _parse_delete_llist_args_iter(self, ins):
+    def _parse_delete_llist(self, ins):
         """Parse DELETE syntax."""
         yield self._parse_line_range(ins)
         ins.require_end()
 
-    def _parse_edit_args_iter(self, ins):
+    def _parse_edit(self, ins):
         """Parse EDIT syntax."""
         if ins.skip_blank() not in tk.END_STATEMENT:
             yield self._parse_jumpnum_or_dot(ins, err=error.IFC)
@@ -788,7 +786,7 @@ class StatementParser(object):
             yield None
         ins.require_end(err=error.IFC)
 
-    def _parse_auto_args_iter(self, ins):
+    def _parse_auto(self, ins):
         """Parse AUTO syntax."""
         yield self._parse_jumpnum_or_dot(ins, allow_empty=True)
         if ins.skip_blank_read_if((',',)):
@@ -801,7 +799,7 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def _parse_save_args_iter(self, ins):
+    def _parse_save(self, ins):
         """Parse SAVE syntax."""
         yield self._parse_temporary_string(ins)
         if ins.skip_blank_read_if((',',)):
@@ -809,7 +807,7 @@ class StatementParser(object):
         else:
             yield None
 
-    def _parse_list_args_iter(self, ins):
+    def _parse_list(self, ins):
         """Parse LIST syntax."""
         yield self._parse_line_range(ins)
         if ins.skip_blank_read_if((',',)):
@@ -820,7 +818,7 @@ class StatementParser(object):
             yield None
             ins.require_end()
 
-    def _parse_load_args_iter(self, ins):
+    def _parse_load(self, ins):
         """Parse LOAD syntax."""
         yield self._parse_temporary_string(ins)
         if ins.skip_blank_read_if((',',)):
@@ -829,7 +827,7 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def _parse_renum_args_iter(self, ins):
+    def _parse_renum(self, ins):
         """Parse RENUM syntax."""
         new, old, step = None, None, None
         if ins.skip_blank() not in tk.END_STATEMENT:
@@ -844,7 +842,7 @@ class StatementParser(object):
         for n in (new, old, step):
             yield n
 
-    def _parse_chain_args_iter(self, ins):
+    def _parse_chain(self, ins):
         """Parse CHAIN syntax."""
         yield ins.skip_blank_read_if((tk.MERGE,)) is not None
         yield self._parse_temporary_string(ins)
@@ -880,7 +878,7 @@ class StatementParser(object):
     ###########################################################################
     # file statements
 
-    def _parse_open_args_iter(self, ins):
+    def _parse_open(self, ins):
         """Parse OPEN syntax."""
         first_expr = self._parse_temporary_string(ins)
         if ins.skip_blank_read_if((',',)):
@@ -947,7 +945,7 @@ class StatementParser(object):
             return 'RW' if ins.skip_blank_read_if((tk.WRITE,)) else 'R'
         raise error.RunError(error.STX)
 
-    def _parse_close_args_iter(self, ins):
+    def _parse_close(self, ins):
         """Parse CLOSE syntax."""
         if ins.skip_blank() not in tk.END_STATEMENT:
             while True:
@@ -956,7 +954,7 @@ class StatementParser(object):
                 if not ins.skip_blank_read_if((',',)):
                     break
 
-    def _parse_field_args_iter(self, ins):
+    def _parse_field(self, ins):
         """Parse FIELD syntax."""
         yield self._parse_file_number(ins, opt_hash=True)
         if ins.skip_blank_read_if((',',)):
@@ -967,7 +965,7 @@ class StatementParser(object):
                 if not ins.skip_blank_read_if((',',)):
                     break
 
-    def _parse_lock_unlock_args_iter(self, ins):
+    def _parse_lock_unlock(self, ins):
         """Parse LOCK or UNLOCK syntax."""
         yield self._parse_file_number(ins, opt_hash=True)
         if not ins.skip_blank_read_if((',',)):
@@ -984,13 +982,13 @@ class StatementParser(object):
             else:
                 raise error.RunError(error.MISSING_OPERAND)
 
-    def _parse_ioctl_args_iter(self, ins):
+    def _parse_ioctl(self, ins):
         """Parse IOCTL syntax."""
         yield self._parse_file_number(ins, opt_hash=True)
         ins.require_read((',',))
         yield self._parse_temporary_string(ins)
 
-    def _parse_put_get_file_args_iter(self, ins):
+    def _parse_put_get_file(self, ins):
         """Parse PUT and GET syntax."""
         yield self._parse_file_number(ins, opt_hash=True)
         if ins.skip_blank_read_if((',',)):
@@ -1016,7 +1014,7 @@ class StatementParser(object):
         x, y = self._parse_coord_bare(ins)
         return x, y, step
 
-    def _parse_pset_preset_args_iter(self, ins):
+    def _parse_pset_preset(self, ins):
         """Parse PSET and PRESET syntax."""
         yield self._parse_coord_step(ins)
         if ins.skip_blank_read_if((',',)):
@@ -1025,7 +1023,7 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def _parse_window_args_iter(self, ins):
+    def _parse_window(self, ins):
         """Parse WINDOW syntax."""
         screen = ins.skip_blank_read_if((tk.SCREEN,))
         yield screen
@@ -1039,7 +1037,7 @@ class StatementParser(object):
             yield None, None
             yield None, None
 
-    def _parse_circle_args_iter(self, ins):
+    def _parse_circle(self, ins):
         """Parse CIRCLE syntax."""
         yield self._parse_coord_step(ins)
         ins.require_read((',',))
@@ -1057,7 +1055,7 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def _parse_paint_args_iter(self, ins):
+    def _parse_paint(self, ins):
         """Parse PAINT syntax."""
         yield self._parse_coord_step(ins)
         with self.temp_string:
@@ -1084,7 +1082,7 @@ class StatementParser(object):
                 yield None
                 yield None
 
-    def _parse_view_args_iter(self, ins):
+    def _parse_view(self, ins):
         """Parse VIEW syntax."""
         yield ins.skip_blank_read_if((tk.SCREEN,))
         if ins.skip_blank() == '(':
@@ -1096,7 +1094,7 @@ class StatementParser(object):
                 ins.require_read((',',))
                 yield self.parse_expression(ins)
 
-    def _parse_line_args_iter(self, ins):
+    def _parse_line(self, ins):
         """Parse LINE syntax."""
         if ins.skip_blank() in ('(', tk.STEP):
             yield self._parse_coord_step(ins)
@@ -1131,7 +1129,7 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def _parse_get_graph_args_iter(self, ins):
+    def _parse_get_graph(self, ins):
         """Parse graphics GET syntax."""
         # don't accept STEP for first coord
         yield self._parse_coord_bare(ins)
@@ -1141,7 +1139,7 @@ class StatementParser(object):
         yield self.parse_name(ins)
         ins.require_end()
 
-    def _parse_put_graph_args_iter(self, ins):
+    def _parse_put_graph(self, ins):
         """Parse graphics PUT syntax."""
         # don't accept STEP
         yield self._parse_coord_bare(ins)
@@ -1156,7 +1154,7 @@ class StatementParser(object):
     ###########################################################################
     # variable statements
 
-    def _parse_clear_args_iter(self, ins):
+    def _parse_clear(self, ins):
         """Parse CLEAR syntax."""
         # integer expression allowed but ignored
         yield self.parse_expression(ins, allow_empty=True)
@@ -1177,7 +1175,7 @@ class StatementParser(object):
                     raise error.RunError(error.STX)
         ins.require_end()
 
-    def _parse_common_args_iter(self, ins):
+    def _parse_common(self, ins):
         """Parse COMMON syntax."""
         while True:
             name = self.parse_name(ins)
@@ -1188,23 +1186,19 @@ class StatementParser(object):
             if not ins.skip_blank_read_if((',',)):
                 break
 
-    def _parse_def_fn_args_iter(self, ins):
+    def _parse_def_fn(self, ins):
         """DEF FN: define a function."""
         ins.require_read((tk.FN))
         yield self.parse_name(ins)
 
-    def _parse_var_list_iter(self, ins):
+    def _parse_var_list(self, ins):
         """Generator: lazily parse variable list."""
         while True:
             yield self._parse_variable(ins)
             if not ins.skip_blank_read_if((',',)):
                 break
 
-    def _parse_var_list(self, ins):
-        """Helper function: parse variable list."""
-        return list(self._parse_var_list_iter(ins))
-
-    def _parse_deftype_args_iter(self, ins):
+    def _parse_deftype(self, ins):
         """Parse DEFSTR/DEFINT/DEFSNG/DEFDBL syntax."""
         while True:
             start = ins.require_read(string.ascii_letters)
@@ -1215,14 +1209,14 @@ class StatementParser(object):
             if not ins.skip_blank_read_if((',',)):
                 break
 
-    def _parse_erase_args_iter(self, ins):
+    def _parse_erase(self, ins):
         """Parse ERASE syntax."""
         while True:
             yield self.parse_name(ins)
             if not ins.skip_blank_read_if((',',)):
                 break
 
-    def _parse_let_args_iter(self, ins):
+    def _parse_let(self, ins):
         """Parse LET, LSET or RSET syntax."""
         yield self._parse_variable(ins)
         ins.require_read((tk.O_EQ,))
@@ -1230,7 +1224,7 @@ class StatementParser(object):
         # as it would delete the new string generated by let if applied to a code literal
         yield self.parse_expression(ins)
 
-    def _parse_mid_args_iter(self, ins):
+    def _parse_mid(self, ins):
         """Parse MID$ syntax."""
         # do not use require_read as we don't allow whitespace here
         if ins.read(1) != '(':
@@ -1249,7 +1243,7 @@ class StatementParser(object):
         yield self.parse_expression(ins)
         ins.require_end()
 
-    def _parse_option_base_args_iter(self, ins):
+    def _parse_option_base(self, ins):
         """Parse OPTION BASE syntax."""
         ins.require_read((tk.W_BASE,))
         # MUST be followed by ASCII '1' or '0', num constants or expressions are an error!
@@ -1267,7 +1261,7 @@ class StatementParser(object):
             following = ins.require_read((';', ','))
         return newline, prompt, following
 
-    def _parse_input_args_iter(self, ins):
+    def _parse_input(self, ins):
         """Parse INPUT syntax."""
         file_number = self._parse_file_number(ins, opt_hash=False)
         yield file_number
@@ -1275,10 +1269,10 @@ class StatementParser(object):
             ins.require_read((',',))
         else:
             yield self._parse_prompt(ins)
-        for arg in self._parse_var_list_iter(ins):
+        for arg in self._parse_var_list(ins):
             yield arg
 
-    def _parse_line_input_args_iter(self, ins):
+    def _parse_line_input(self, ins):
         """Parse LINE INPUT syntax."""
         ins.require_read((tk.INPUT,))
         file_number = self._parse_file_number(ins, opt_hash=False)
@@ -1290,7 +1284,7 @@ class StatementParser(object):
         # get string variable
         yield self._parse_variable(ins)
 
-    def _parse_restore_args_iter(self, ins):
+    def _parse_restore(self, ins):
         """Parse RESTORE syntax."""
         if ins.skip_blank() == tk.T_UINT:
             yield self._parse_jumpnum(ins)
@@ -1300,7 +1294,7 @@ class StatementParser(object):
             ins.require_end(err=error.UNDEFINED_LINE_NUMBER)
             yield None
 
-    def _parse_swap_args_iter(self, ins):
+    def _parse_swap(self, ins):
         """Parse SWAP syntax."""
         yield self._parse_variable(ins)
         ins.require_read((',',))
@@ -1309,17 +1303,17 @@ class StatementParser(object):
     ###########################################################################
     # console and editor statements
 
-    def _parse_key_macro_args_iter(self, ins):
+    def _parse_key_macro(self, ins):
         """Parse KEY ON/OFF/LIST syntax."""
         yield ins.read_keyword_token()
 
-    def _parse_key_define_args_iter(self, ins):
+    def _parse_key_define(self, ins):
         """Parse KEY definition syntax."""
         yield self.parse_expression(ins)
         ins.require_read((',',))
         yield self._parse_temporary_string(ins)
 
-    def _parse_cls_args_iter(self, ins):
+    def _parse_cls(self, ins):
         """Parse CLS syntax."""
         if self.syntax != 'pcjr':
             yield self._parse_value(ins, values.INT, allow_empty=True)
@@ -1329,7 +1323,7 @@ class StatementParser(object):
         else:
             yield None
 
-    def _parse_color_args_iter(self, ins):
+    def _parse_color(self, ins):
         """Parse COLOR syntax."""
         last = self._parse_value(ins, values.INT, allow_empty=True)
         yield last
@@ -1345,7 +1339,7 @@ class StatementParser(object):
         elif last is None:
             raise error.RunError(error.IFC)
 
-    def _parse_palette_args_iter(self, ins):
+    def _parse_palette(self, ins):
         """Parse PALETTE syntax."""
         attrib = self._parse_value(ins, values.INT, allow_empty=True)
         yield attrib
@@ -1358,7 +1352,7 @@ class StatementParser(object):
             yield colour
             error.throw_if(attrib is None or colour is None, error.STX)
 
-    def _parse_palette_using_args_iter(self, ins):
+    def _parse_palette_using(self, ins):
         """Parse PALETTE USING syntax."""
         ins.require_read((tk.USING,))
         array_name, start_indices = self._parse_variable(ins)
@@ -1366,7 +1360,7 @@ class StatementParser(object):
         # brackets are not optional
         error.throw_if(not start_indices, error.STX)
 
-    def _parse_locate_args_iter(self, ins):
+    def _parse_locate(self, ins):
         """Parse LOCATE syntax."""
         #row, col, cursor, start, stop
         for i in range(5):
@@ -1376,7 +1370,7 @@ class StatementParser(object):
                 break
         ins.require_end()
 
-    def _parse_view_print_args_iter(self, ins):
+    def _parse_view_print(self, ins):
         """Parse VIEW PRINT syntax."""
         ins.require_read((tk.PRINT,))
         start = self._parse_value(ins, values.INT, allow_empty=True)
@@ -1388,7 +1382,7 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def _parse_write_args_iter(self, ins):
+    def _parse_write(self, ins):
         """Parse WRITE syntax."""
         file_number = self._parse_file_number(ins, opt_hash=False)
         yield file_number
@@ -1406,7 +1400,7 @@ class StatementParser(object):
                 with self.temp_string:
                     yield self.parse_expression(ins)
 
-    def _parse_width_args_iter(self, ins):
+    def _parse_width(self, ins):
         """Parse WIDTH syntax."""
         d = ins.skip_blank_read_if(('#', tk.LPRINT))
         if d:
@@ -1438,7 +1432,7 @@ class StatementParser(object):
                     ins.skip_blank_read_if((',',))
         ins.require_end()
 
-    def _parse_screen_args_iter(self, ins):
+    def _parse_screen(self, ins):
         """Parse SCREEN syntax."""
         # erase can only be set on pcjr/tandy 5-argument syntax
         #n_args = 4 + (self.syntax in ('pcjr', 'tandy'))
@@ -1458,14 +1452,14 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def _parse_pcopy_args_iter(self, ins):
+    def _parse_pcopy(self, ins):
         """Parse PCOPY syntax."""
         yield self.parse_expression(ins)
         ins.require_read((',',))
         yield self.parse_expression(ins)
         ins.require_end()
 
-    def _parse_print_args_iter(self, ins, parse_file):
+    def _parse_print(self, ins, parse_file):
         """Parse PRINT or LPRINT syntax."""
         if parse_file:
             # check for a file number
@@ -1514,7 +1508,7 @@ class StatementParser(object):
     ###########################################################################
     # loops and branches
 
-    def _parse_on_jump_args_iter(self, ins):
+    def _parse_on_jump(self, ins):
         """ON: calculated jump."""
         yield self.parse_expression(ins)
         yield ins.require_read((tk.GOTO, tk.GOSUB))
@@ -1527,7 +1521,7 @@ class StatementParser(object):
                 break
         ins.require_end()
 
-    def _parse_if_args_iter(self, ins):
+    def _parse_if(self, ins):
         """IF: enter branching statement."""
         # avoid overflow: don't use bools.
         condition = self.parse_expression(ins)
@@ -1540,7 +1534,7 @@ class StatementParser(object):
         else:
             yield None
 
-    def _parse_for_args_iter(self, ins):
+    def _parse_for(self, ins):
         """Parse FOR syntax."""
         # read variable
         yield self.parse_name(ins)
@@ -1554,7 +1548,7 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
-    def _parse_next_args_iter(self, ins):
+    def _parse_next(self, ins):
         """Parse NEXT syntax."""
         # note that next_ will not run the full generator if it finds a loop to iterate
         while True:
