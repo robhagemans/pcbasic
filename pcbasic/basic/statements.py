@@ -270,7 +270,7 @@ class StatementParser(object):
                                         partial(session.fkey_macros.key_, session.screen)),
                 tk.LIST: partial(self.exec_args_iter, args_iter=self._parse_key_macro_args_iter, callback=
                                         partial(session.fkey_macros.key_, session.screen)),
-                '(': self.exec_key_events,
+                '(': partial(self.exec_args_iter, args_iter=self._parse_com_command_iter, callback=session.events.key_),
                 None: self.exec_key_define,
             },
             tk.PUT: {
@@ -337,15 +337,6 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
-
-    # KEY
-
-    def exec_key_events(self, ins):
-        """KEY: switch on/off keyboard events."""
-        num = values.to_int(self._parse_bracket(ins))
-        error.range_check(0, 255, num)
-        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.key_(num, command)
 
     def exec_key_define(self, ins):
         """KEY: define function-key shortcut or scancode for event trapping."""
@@ -471,7 +462,7 @@ class StatementParser(object):
         yield ins.require_read((tk.ON, tk.OFF, tk.STOP))
 
     def _parse_com_command_iter(self, ins):
-        """Parse COM or STRIG syntax."""
+        """Parse KEY, COM or STRIG syntax."""
         yield self._parse_bracket(ins)
         yield ins.require_read((tk.ON, tk.OFF, tk.STOP))
 

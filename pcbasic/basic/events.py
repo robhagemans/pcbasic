@@ -106,8 +106,11 @@ class Events(object):
         command, = args
         self.command(self.timer, command)
 
-    def key_(self, num, command):
+    def key_(self, args):
         """KEY: switch on/off keyboard events."""
+        num = values.to_int(next(args))
+        error.range_check(0, 255, num)
+        command, = args
         # others are ignored
         if num >= 1 and num <= 20:
             self.command(self.key[num-1], command)
