@@ -30,8 +30,8 @@ class Interpreter(object):
         self._devices = devices
         self._sound = sound
         # program buffer
-        self.program = program
-        self.program_code = program.bytecode
+        self._program = program
+        self._program_code = program.bytecode
         # direct line buffer
         self.direct_line = codestream.TokenisedStream()
         self.current_statement = 0
@@ -114,7 +114,7 @@ class Interpreter(object):
         # reset loop stacks
         self.clear_stacks()
         # reset program pointer
-        self.program_code.seek(0)
+        self._program_code.seek(0)
         # reset stop/cont
         self.stop = None
         # reset data reader
@@ -151,7 +151,7 @@ class Interpreter(object):
         """Handle a BASIC error through trapping."""
         if e.pos is None:
             if self.run_mode:
-                e.pos = self.program_code.tell()-1
+                e.pos = self._program_code.tell()-1
             else:
                 e.pos = -1
         self.error_num = e.err
@@ -174,7 +174,7 @@ class Interpreter(object):
         elif self.error_pos == -1:
             return 65535
         else:
-            return self.program.get_line_number(self.error_pos)
+            return self._program.get_line_number(self.error_pos)
 
     def err_(self):
         """ERR: get error code of last error."""
@@ -202,7 +202,7 @@ class Interpreter(object):
 
     def get_codestream(self):
         """Get the current codestream."""
-        return self.program_code if self.run_mode else self.direct_line
+        return self._program_code if self.run_mode else self.direct_line
 
     def jump(self, jumpnum, err=error.UNDEFINED_LINE_NUMBER):
         """Execute jump for a GOTO or RUN instruction."""
@@ -211,7 +211,7 @@ class Interpreter(object):
         else:
             try:
                 # jump to target
-                self.set_pointer(True, self.program.line_numbers[jumpnum])
+                self.set_pointer(True, self._program.line_numbers[jumpnum])
             except KeyError:
                 raise error.RunError(err)
 
@@ -456,7 +456,7 @@ class Interpreter(object):
             self.data_pos = 0
         else:
             try:
-                self.data_pos = self.program.line_numbers[datanum]
+                self.data_pos = self._program.line_numbers[datanum]
             except KeyError:
                 raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         list(args)
@@ -465,25 +465,25 @@ class Interpreter(object):
         """READ: read values from DATA statement."""
         for name, indices in args:
             type_char, code_start = name[-1], self._memory.code_start
-            current = self.program_code.tell()
-            self.program_code.seek(self.data_pos)
-            if self.program_code.peek() in tk.END_STATEMENT:
+            current = self._program_code.tell()
+            self._program_code.seek(self.data_pos)
+            if self._program_code.peek() in tk.END_STATEMENT:
                 # initialise - find first DATA
-                self.program_code.skip_to((tk.DATA,))
-            if self.program_code.read(1) not in (tk.DATA, ','):
-                self.program_code.seek(current)
+                self._program_code.skip_to((tk.DATA,))
+            if self._program_code.read(1) not in (tk.DATA, ','):
+                self._program_code.seek(current)
                 raise error.RunError(error.OUT_OF_DATA)
-            self.program_code.skip_blank()
-            word = self.program_code.read_to((',', '"',) + tk.END_LINE + tk.END_STATEMENT)
-            if self.program_code.peek() == '"':
+            self._program_code.skip_blank()
+            word = self._program_code.read_to((',', '"',) + tk.END_LINE + tk.END_STATEMENT)
+            if self._program_code.peek() == '"':
                 if word == '':
-                    word = self.program_code.read_string().strip('"')
+                    word = self._program_code.read_string().strip('"')
                 else:
-                    word += self.program_code.read_string()
-                if (self.program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
+                    word += self._program_code.read_string()
+                if (self._program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
                     raise error.RunError(error.STX)
             else:
-                word = word.strip(self.program_code.blanks)
+                word = word.strip(self._program_code.blanks)
             if type_char == values.STR:
                 address = self.data_pos + code_start
                 value = self._values.from_str_at(word, address)
@@ -491,12 +491,12 @@ class Interpreter(object):
                 value = self._values.from_repr(word, allow_nonnum=False)
                 if value is None:
                     # set pointer for EDIT gadget to position in DATA statement
-                    self.program_code.seek(self.data_pos)
+                    self._program_code.seek(self.data_pos)
                     # syntax error in DATA line (not type mismatch!) if can't convert to var type
                     raise error.RunError(error.STX, self.data_pos-1)
             # omit leading and trailing whitespace
-            data_pos = self.program_code.tell()
-            self.program_code.seek(current)
+            data_pos = self._program_code.tell()
+            self._program_code.seek(current)
             self._memory.set_variable(name, indices, value=value)
             self.data_pos = data_pos
 
@@ -543,7 +543,7 @@ class Interpreter(object):
     def on_error_goto_(self, args):
         """ON ERROR GOTO: define error trapping routine."""
         linenum, = args
-        if linenum != 0 and linenum not in self.program.line_numbers:
+        if linenum != 0 and linenum not in self._program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         self.on_error = linenum
         # pause soft-handling math errors so that we can catch them
@@ -585,4 +585,4 @@ class Interpreter(object):
         if not self.run_mode:
             raise error.RunError(error.ILLEGAL_DIRECT)
         # arguments and expression are being read and parsed by UserFunctionManager
-        self.statement_parser.expression_parser.user_functions.define(fnname, self.program_code)
+        self.statement_parser.expression_parser.user_functions.define(fnname, self._program_code)
