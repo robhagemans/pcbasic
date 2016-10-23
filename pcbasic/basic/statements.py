@@ -147,9 +147,9 @@ class StatementParser(object):
         """Initialise statements."""
         self.session = session
         self._simple = {
-            tk.DATA: self.skip_statement,
-            tk.REM: self.skip_line,
-            tk.ELSE: self.skip_line,
+            tk.DATA: partial(self.exec_args_iter, args_iter=self._skip_statement, callback=list),
+            tk.REM: partial(self.exec_args_iter, args_iter=self._skip_line, callback=list),
+            tk.ELSE: partial(self.exec_args_iter, args_iter=self._skip_line, callback=list),
             tk.CONT: partial(self.exec_args_iter, args_iter=self._parse_nothing, callback=session.interpreter.cont_),
             tk.TRON: partial(self.exec_args_iter, args_iter=self._parse_nothing, callback=session.interpreter.tron_),
             tk.TROFF: partial(self.exec_args_iter, args_iter=self._parse_nothing, callback=session.interpreter.troff_),
@@ -350,13 +350,17 @@ class StatementParser(object):
         return
         yield
 
-    def skip_line(self, ins):
+    def _skip_line(self, ins):
         """Ignore the rest of the line."""
         ins.skip_to(tk.END_LINE)
+        return
+        yield
 
-    def skip_statement(self, ins):
+    def _skip_statement(self, ins):
         """Ignore rest of statement."""
         ins.skip_to(tk.END_STATEMENT)
+        return
+        yield
 
     ###########################################################################
     # statements taking a single argument
