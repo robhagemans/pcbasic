@@ -35,6 +35,8 @@ class StatementParser(object):
         self.program = program
         # re-execute current statement after Break
         self.redo_on_break = False
+        # initialise syntax parser tables
+        self._init_syntax()
 
     def parse_statement(self, ins):
         """Parse and execute a single statement."""
@@ -152,8 +154,8 @@ class StatementParser(object):
 
     ###########################################################################
 
-    def init_statements(self, session):
-        """Initialise statements."""
+    def _init_syntax(self):
+        """Initialise syntax parsers."""
         self._simple = {
             tk.DATA: self._skip_statement,
             tk.REM: self._skip_line,
@@ -311,6 +313,9 @@ class StatementParser(object):
         self._extensions = {
             'DEBUG': self._parse_single_string_arg_iter,
         }
+
+    def init_statements(self, session):
+        """Initialise statement callbacks."""
         self._callbacks = {
             tk.DATA: list,
             tk.REM: list,
@@ -455,6 +460,7 @@ class StatementParser(object):
     def __setstate__(self, pickle_dict):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
+        self._init_syntax()
 
     ###########################################################################
     # statements taking no arguments
