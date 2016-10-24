@@ -35,8 +35,6 @@ class StatementParser(object):
         self._temp_string = temp_string
         # data segment, for complete_name()
         self._memory = memory
-        # program, for last_stored
-        self._program = program
         # initialise syntax parser tables
         self._init_syntax()
 
@@ -151,6 +149,30 @@ class StatementParser(object):
         if ins.skip_blank() != tk.T_UINT:
             return None
         return self._parse_jumpnum(ins)
+
+    def _parse_line_range(self, ins):
+        """Parse a line number range as in LIST, DELETE."""
+        from_line = self._parse_jumpnum_or_dot(ins, allow_empty=True)
+        if ins.skip_blank_read_if((tk.O_MINUS,)):
+            to_line = self._parse_jumpnum_or_dot(ins, allow_empty=True)
+        else:
+            to_line = from_line
+        return (from_line, to_line)
+
+    def _parse_jumpnum_or_dot(self, ins, allow_empty=False, err=error.STX):
+        """Parse jump target; returns int, None or '.'"""
+        c = ins.skip_blank_read()
+        if c == tk.T_UINT:
+            token = ins.read(2)
+            assert len(token) == 2, 'bytecode truncated in line number pointer'
+            return struct.unpack('<H', token)[0]
+        elif c == '.':
+            return '.'
+        else:
+            if allow_empty:
+                ins.seek(-len(c), 1)
+                return None
+            raise error.RunError(err)
 
     ###########################################################################
 
@@ -750,30 +772,6 @@ class StatementParser(object):
 
     ##########################################################
     # code statements
-
-    def _parse_line_range(self, ins):
-        """Helper function: parse line number ranges."""
-        from_line = self._parse_jumpnum_or_dot(ins, allow_empty=True)
-        if ins.skip_blank_read_if((tk.O_MINUS,)):
-            to_line = self._parse_jumpnum_or_dot(ins, allow_empty=True)
-        else:
-            to_line = from_line
-        return (from_line, to_line)
-
-    def _parse_jumpnum_or_dot(self, ins, allow_empty=False, err=error.STX):
-        """Helper function: parse jump target."""
-        c = ins.skip_blank_read()
-        if c == tk.T_UINT:
-            token = ins.read(2)
-            assert len(token) == 2, 'bytecode truncated in line number pointer'
-            return struct.unpack('<H', token)[0]
-        elif c == '.':
-            return self._program.last_stored
-        else:
-            if allow_empty:
-                ins.seek(-len(c), 1)
-                return None
-            raise error.RunError(err)
 
     def _parse_delete_llist(self, ins):
         """Parse DELETE syntax."""

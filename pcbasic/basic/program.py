@@ -52,6 +52,10 @@ class Program(object):
         # cut off at current position
         self.code_size = self.bytecode.tell()
 
+    def explicit_lines(self, *line_range):
+        """Convert iterables of lines with '.' into explicit numbers."""
+        return (self.last_stored if l == '.' else l for l in line_range)
+
     def get_line_number(self, pos):
         """Get line number for stream position."""
         pre = -1
@@ -173,6 +177,7 @@ class Program(object):
 
     def delete(self, fromline, toline):
         """Delete range of lines from stored program."""
+        fromline, toline = self.explicit_lines(fromline, toline)
         fromline = fromline if fromline is not None else min(self.line_numbers)
         toline = toline if toline is not None else 65535
         startpos, afterpos, deleteable, beyond = self.find_pos_line_dict(fromline, toline)
@@ -337,6 +342,7 @@ class Program(object):
 
     def list_lines(self, from_line, to_line):
         """List line range."""
+        from_line, to_line = self.explicit_lines(from_line, to_line)
         if self.protected:
             # don't list protected files
             raise error.RunError(error.IFC)

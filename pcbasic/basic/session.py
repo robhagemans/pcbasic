@@ -583,10 +583,9 @@ class Session(object):
 
     def delete_(self, args):
         """DELETE: delete range of lines from program."""
-        from_line, to_line = next(args)
-        list(args)
+        line_range, = args
         # throws back to direct mode
-        self.program.delete(from_line, to_line)
+        self.program.delete(*line_range)
         # clear all program stacks
         self.interpreter.clear_stacks_and_pointers()
         # clear all variables
@@ -595,6 +594,7 @@ class Session(object):
     def edit_(self, args):
         """EDIT: output a program line and position cursor for editing."""
         from_line, = args
+        from_line, = self.program.explicit_lines(from_line)
         self.program.last_stored = from_line
         if from_line is None or from_line not in self.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
@@ -608,6 +608,7 @@ class Session(object):
     def auto_(self, args):
         """AUTO: enter automatic line numbering mode."""
         linenum, increment = args
+        from_line, = self.program.explicit_lines(linenum)
         # reset linenum and increment on each call of AUTO (even in AUTO mode)
         self.auto_linenum = linenum if linenum is not None else 10
         self.auto_increment = increment if increment is not None else 10
@@ -618,12 +619,12 @@ class Session(object):
 
     def list_(self, args):
         """LIST: output program lines."""
-        from_line, to_line = next(args)
+        line_range = next(args)
         out = next(args)
         if out is not None:
             out = self.files.open(0, out, filetype='A', mode='O')
         list(args)
-        lines = self.program.list_lines(from_line, to_line)
+        lines = self.program.list_lines(*line_range)
         if out:
             with out:
                 for l in lines:
@@ -640,9 +641,8 @@ class Session(object):
 
     def llist_(self, args):
         """LLIST: output program lines to LPT1: """
-        from_line, to_line = next(args)
-        list(args)
-        for l in self.program.list_lines(from_line, to_line):
+        line_range, = args
+        for l in self.program.list_lines(*line_range):
             self.devices.lpt1_file.write_line(l)
         # return to direct mode
         self.interpreter.set_pointer(False)
@@ -727,6 +727,7 @@ class Session(object):
     def renum_(self, args):
         """RENUM: renumber program line numbers."""
         new, old, step = args
+        new, old = self.program.explicit_lines(new, old)
         if step is not None and step < 1:
             raise error.RunError(error.IFC)
         old_to_new = self.program.renum(self.screen, new, old, step)
