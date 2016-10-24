@@ -299,6 +299,7 @@ class Session(object):
             try:
                 with self._handle_exceptions():
                     self._loop()
+                    self.screen.cursor.reset_visibility()
                     if self.auto_mode:
                         self._auto_step()
                     else:
@@ -320,26 +321,19 @@ class Session(object):
 
     def _loop(self):
         """Run commands until control returns to user."""
-        self.screen.cursor.reset_visibility()
-        while True:
-            last_parse = self._parse_mode
-            if self._parse_mode:
-                try:
-                    # parse until break or end
-                    self.interpreter.parse()
-                    self._parse_mode = False
-                except error.Break as e:
-                    # ctrl-break stops foreground and background sound
-                    self.sound.stop_all_sound()
-                    self._handle_break(e)
-            # change loop modes
-            if self._parse_mode != last_parse:
-                # move pointer to the start of direct line (for both on and off!)
-                self.interpreter.set_pointer(False, 0)
-                self.screen.cursor.reset_visibility()
-            # return control to user
-            if not self._parse_mode:
-                break
+        if not self._parse_mode:
+            return
+        try:
+            # parse until break or end
+            self.interpreter.parse()
+        except error.Break as e:
+            # ctrl-break stops foreground and background sound
+            self.sound.stop_all_sound()
+            self._handle_break(e)
+        # move pointer to the start of direct line (for both on and off!)
+        self.interpreter.set_pointer(False, 0)
+        # return control to user
+        self._parse_mode = False
 
     def _set_parse_mode(self, on):
         """Enter or exit parse mode."""
