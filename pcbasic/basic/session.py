@@ -76,11 +76,11 @@ class Session(object):
         # true if a prompt is needed on next cycle
         self._prompt = True
         # input mode is AUTO (used by AUTO)
-        self.auto_mode = False
-        self.auto_linenum = 10
-        self.auto_increment = 10
+        self._auto_mode = False
+        self._auto_linenum = 10
+        self._auto_increment = 10
         # syntax error prompt and EDIT
-        self.edit_prompt = False
+        self._edit_prompt = False
         # program for TERM command
         self._term_program = pcjr_term
         ######################################################################
@@ -297,7 +297,7 @@ class Session(object):
             try:
                 with self._handle_exceptions():
                     self.interpreter.loop()
-                    if self.auto_mode:
+                    if self._auto_mode:
                         self._auto_step()
                     else:
                         self._show_prompt()
@@ -318,10 +318,10 @@ class Session(object):
 
     def _show_prompt(self):
         """Show the Ok or EDIT prompt, unless suppressed."""
-        if self.edit_prompt:
-            linenum, tell = self.edit_prompt
+        if self._edit_prompt:
+            linenum, tell = self._edit_prompt
             self.program.edit(self.screen, linenum, tell)
-            self.edit_prompt = False
+            self._edit_prompt = False
         elif self._prompt:
             self.screen.start_line()
             self.screen.write_line('Ok\xff')
@@ -348,9 +348,9 @@ class Session(object):
     def _auto_step(self):
         """Generate an AUTO line number and wait for input."""
         try:
-            numstr = str(self.auto_linenum)
+            numstr = str(self._auto_linenum)
             self.screen.write(numstr)
-            if self.auto_linenum in self.program.line_numbers:
+            if self._auto_linenum in self.program.line_numbers:
                 self.screen.write('*')
                 line = bytearray(self.editor.wait_screenline(from_start=True))
                 if line[:len(numstr)+1] == numstr + '*':
@@ -369,14 +369,14 @@ class Session(object):
                     # clear all program stacks
                     self.interpreter.clear_stacks_and_pointers()
                     self._clear_all()
-                self.auto_linenum = scanline + self.auto_increment
+                self._auto_linenum = scanline + self._auto_increment
             elif c != '':
                 # it is a command, go and execute
                 self.interpreter.set_parse_mode(True)
         except error.Break:
             # ctrl+break, ctrl-c both stop background sound
             self.sound.stop_all_sound()
-            self.auto_mode = False
+            self._auto_mode = False
 
 
     ##############################################################################
@@ -410,7 +410,7 @@ class Session(object):
             self.interpreter.error_num = 0
             if e.pos is not None and e.pos != -1:
                 # line edit gadget appears
-                self.edit_prompt = (self.program.get_line_number(e.pos), e.pos+1)
+                self._edit_prompt = (self.program.get_line_number(e.pos), e.pos+1)
 
     ###########################################################################
     # callbacks
@@ -545,19 +545,19 @@ class Session(object):
         self.interpreter.set_pointer(False)
         self.screen.cursor.reset_visibility()
         # request edit prompt
-        self.edit_prompt = (from_line, None)
+        self._edit_prompt = (from_line, None)
 
     def auto_(self, args):
         """AUTO: enter automatic line numbering mode."""
         linenum, increment = args
         from_line, = self.program.explicit_lines(linenum)
         # reset linenum and increment on each call of AUTO (even in AUTO mode)
-        self.auto_linenum = linenum if linenum is not None else 10
-        self.auto_increment = increment if increment is not None else 10
+        self._auto_linenum = linenum if linenum is not None else 10
+        self._auto_increment = increment if increment is not None else 10
         # move program pointer to end
         self.interpreter.set_pointer(False)
         # continue input in AUTO mode
-        self.auto_mode = True
+        self._auto_mode = True
 
     def list_(self, args):
         """LIST: output program lines."""
