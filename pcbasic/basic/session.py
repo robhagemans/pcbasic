@@ -299,10 +299,13 @@ class Session(object):
             try:
                 with self._handle_exceptions():
                     self._loop()
-                    self._show_prompt()
-                    # input loop, checks events
-                    line = self.editor.wait_screenline(from_start=True)
-                    self._prompt = not self._store_line(line)
+                    if self.auto_mode:
+                        self._auto_step()
+                    else:
+                        self._show_prompt()
+                        # input loop, checks events
+                        line = self.editor.wait_screenline(from_start=True)
+                        self._prompt = not self._store_line(line)
             except error.Exit:
                 break
 
@@ -316,7 +319,7 @@ class Session(object):
     # implementation
 
     def _loop(self):
-        """Run read-eval-print loop until control returns to user."""
+        """Run commands until control returns to user."""
         self.screen.cursor.reset_visibility()
         while True:
             last_parse = self._parse_mode
@@ -329,21 +332,13 @@ class Session(object):
                     # ctrl-break stops foreground and background sound
                     self.sound.stop_all_sound()
                     self._handle_break(e)
-            elif self.auto_mode:
-                try:
-                    # auto step, checks events
-                    self._auto_step()
-                except error.Break:
-                    # ctrl+break, ctrl-c both stop background sound
-                    self.sound.stop_all_sound()
-                    self.auto_mode = False
             # change loop modes
             if self._parse_mode != last_parse:
                 # move pointer to the start of direct line (for both on and off!)
                 self.interpreter.set_pointer(False, 0)
                 self.screen.cursor.reset_visibility()
             # return control to user
-            if ((not self.auto_mode) and (not self._parse_mode)):
+            if not self._parse_mode:
                 break
 
     def _set_parse_mode(self, on):
@@ -383,31 +378,36 @@ class Session(object):
 
     def _auto_step(self):
         """Generate an AUTO line number and wait for input."""
-        numstr = str(self.auto_linenum)
-        self.screen.write(numstr)
-        if self.auto_linenum in self.program.line_numbers:
-            self.screen.write('*')
-            line = bytearray(self.editor.wait_screenline(from_start=True))
-            if line[:len(numstr)+1] == numstr+'*':
-                line[len(numstr)] = ' '
-        else:
-            self.screen.write(' ')
-            line = bytearray(self.editor.wait_screenline(from_start=True))
-        # run or store it; don't clear lines or raise undefined line number
-        self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
-        c = self.interpreter.direct_line.peek()
-        if c == '\0':
-            # check for lines starting with numbers (6553 6) and empty lines
-            empty, scanline = self.program.check_number_start(self.interpreter.direct_line)
-            if not empty:
-                self.program.store_line(self.interpreter.direct_line)
-                # clear all program stacks
-                self.interpreter.clear_stacks_and_pointers()
-                self._clear_all()
-            self.auto_linenum = scanline + self.auto_increment
-        elif c != '':
-            # it is a command, go and execute
-            self._set_parse_mode(True)
+        try:
+            numstr = str(self.auto_linenum)
+            self.screen.write(numstr)
+            if self.auto_linenum in self.program.line_numbers:
+                self.screen.write('*')
+                line = bytearray(self.editor.wait_screenline(from_start=True))
+                if line[:len(numstr)+1] == numstr+'*':
+                    line[len(numstr)] = ' '
+            else:
+                self.screen.write(' ')
+                line = bytearray(self.editor.wait_screenline(from_start=True))
+            # run or store it; don't clear lines or raise undefined line number
+            self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
+            c = self.interpreter.direct_line.peek()
+            if c == '\0':
+                # check for lines starting with numbers (6553 6) and empty lines
+                empty, scanline = self.program.check_number_start(self.interpreter.direct_line)
+                if not empty:
+                    self.program.store_line(self.interpreter.direct_line)
+                    # clear all program stacks
+                    self.interpreter.clear_stacks_and_pointers()
+                    self._clear_all()
+                self.auto_linenum = scanline + self.auto_increment
+            elif c != '':
+                # it is a command, go and execute
+                self._set_parse_mode(True)
+        except error.Break:
+            # ctrl+break, ctrl-c both stop background sound
+            self.sound.stop_all_sound()
+            self.auto_mode = False
 
 
     ##############################################################################

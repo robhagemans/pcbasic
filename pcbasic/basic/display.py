@@ -1830,14 +1830,15 @@ class Cursor(object):
         self.screen.session.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, do_show))
 
     def set_visibility(self, visible_run):
-        """Set default cursor visibility."""
+        """Set cursor visibility when a program is being run."""
         self.visible_run = visible_run
         self.reset_visibility()
 
     def reset_visibility(self):
         """Set cursor visibility to its default state."""
-        # visible if in interactive mode, unless forced visible in text mode.
+        # visible if in interactive mode and invisible when a program is being run
         visible = self.default_visible
+        # unless forced to be visible
         # in graphics mode, we can't force the cursor to be visible on execute.
         if self.screen.mode.is_text_mode:
             visible = visible or self.visible_run
