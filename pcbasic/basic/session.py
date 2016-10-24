@@ -256,7 +256,7 @@ class Session(object):
             if isinstance(cmd, unicode):
                 cmd = self.codepage.str_from_unicode(cmd)
             with self._handle_exceptions():
-                self._store_line(self.codepage.str_from_unicode(cmd))
+                self._store_line(cmd)
                 self._loop()
 
     def evaluate(self, expression):
