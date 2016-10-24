@@ -1056,6 +1056,14 @@ class Screen(object):
         self.apage.row[self.current_row-1].wrap = False
         self.set_pos(self.current_row + 1, 1)
 
+    def write_error_message(self, msg, linenum):
+        """Write an error message to the console."""
+        self.start_line()
+        self.write(msg)
+        if linenum is not None and 0 <= linenum < 65535:
+            self.write(' in %i' % linenum)
+        self.write_line('\xFF')
+
     def list_line(self, line, newline=True):
         """Print a line from a program listing or EDIT prompt."""
         # no wrap if 80-column line, clear row before printing.

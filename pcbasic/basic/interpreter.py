@@ -43,12 +43,14 @@ class Interpreter(object):
         self.run_mode = False
         # clear stacks
         self.clear_stacks_and_pointers()
-        self.init_error_trapping()
+        self._init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
         self.set_pointer(False, 0)
+        # interpreter is waiting for INPUT or LINE INPUT
+        self.input_mode = False
 
-    def init_error_trapping(self):
+    def _init_error_trapping(self):
         """Initialise error trapping."""
         # True if error handling in progress
         self.error_handle_mode = False
@@ -91,6 +93,47 @@ class Interpreter(object):
             except error.RunError as e:
                 self.trap_error(e)
 
+    def loop(self):
+        """Run commands until control returns to user."""
+        if not self._parse_mode:
+            return
+        self._screen.cursor.reset_visibility()
+        try:
+            # parse until break or end
+            self.parse()
+        except error.Break as e:
+            # ctrl-break stops foreground and background sound
+            self._sound.stop_all_sound()
+            self._handle_break(e)
+        # move pointer to the start of direct line (for both on and off!)
+        self.set_pointer(False, 0)
+        # return control to user
+        self.set_parse_mode(False)
+
+    def set_parse_mode(self, on):
+        """Enter or exit parse mode."""
+        self._parse_mode = on
+        self._screen.cursor.default_visible = not on
+
+    def _handle_break(self, e):
+        """Handle a Break event."""
+        # print ^C at current position
+        if not self.input_mode and not e.stop:
+            self._screen.write('^C')
+        # if we're in a program, save pointer
+        pos = -1
+        if self.run_mode:
+            if self.statement_parser.redo_on_break:
+                pos = self.current_statement
+            else:
+                self._program.bytecode.skip_to(tk.END_STATEMENT)
+                pos = self._program.bytecode.tell()
+            self.stop = pos
+        self._screen.write_error_message(e.message, self._program.get_line_number(pos))
+        self.set_parse_mode(False)
+        self.input_mode = False
+        self.statement_parser.redo_on_break = False
+
     ###########################################################################
     # clear state
 
@@ -99,7 +142,7 @@ class Interpreter(object):
         # clear last error number (ERR) and line number (ERL)
         self.error_num, self.error_pos = 0, 0
         # disable error trapping
-        self.init_error_trapping()
+        self._init_error_trapping()
         # disable all event trapping (resets PEN to OFF too)
         self._events.reset()
         # CLEAR also dumps for_next and while_wend stacks

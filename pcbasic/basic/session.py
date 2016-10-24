@@ -79,8 +79,6 @@ class Session(object):
         self.auto_mode = False
         self.auto_linenum = 10
         self.auto_increment = 10
-        # interpreter is waiting for INPUT or LINE INPUT
-        self.input_mode = False
         # syntax error prompt and EDIT
         self.edit_prompt = False
         # program for TERM command
@@ -167,8 +165,6 @@ class Session(object):
         self.clock = clock.Clock()
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
-        # interpreter is executing a command (needs Screen)
-        self._set_parse_mode(False)
         # initialise the expression parser
         self.expression_parser = expressions.ExpressionParser(
                 self.values, self.memory, self.program, self.files)
@@ -181,6 +177,8 @@ class Session(object):
         self.interpreter = interpreter.Interpreter(
                 self.debugger, self.events, self.screen, self.devices, self.sound,
                 self.values, self.memory, self.scalars, self.program, self.statement_parser)
+        # interpreter is executing a command (needs Screen)
+        self.interpreter.set_parse_mode(False)
         # set up rest of memory model
         self.all_memory = machine.Memory(
                 self.memory, self.devices, self.files,
@@ -215,7 +213,7 @@ class Session(object):
         self.statement_parser.init_statements(self)
         self.keyboard._input_closed = False
         # suppress double prompt
-        if not self._parse_mode:
+        if not self.interpreter._parse_mode:
             self._prompt = False
 
     def attach(self, iface=None):
@@ -257,7 +255,7 @@ class Session(object):
                 cmd = self.codepage.str_from_unicode(cmd)
             with self._handle_exceptions():
                 self._store_line(cmd)
-                self._loop()
+                self.interpreter.loop()
 
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
@@ -298,8 +296,7 @@ class Session(object):
         while True:
             try:
                 with self._handle_exceptions():
-                    self._loop()
-                    self.screen.cursor.reset_visibility()
+                    self.interpreter.loop()
                     if self.auto_mode:
                         self._auto_step()
                     else:
@@ -319,26 +316,15 @@ class Session(object):
     ###########################################################################
     # implementation
 
-    def _loop(self):
-        """Run commands until control returns to user."""
-        if not self._parse_mode:
-            return
-        try:
-            # parse until break or end
-            self.interpreter.parse()
-        except error.Break as e:
-            # ctrl-break stops foreground and background sound
-            self.sound.stop_all_sound()
-            self._handle_break(e)
-        # move pointer to the start of direct line (for both on and off!)
-        self.interpreter.set_pointer(False, 0)
-        # return control to user
-        self._parse_mode = False
-
-    def _set_parse_mode(self, on):
-        """Enter or exit parse mode."""
-        self._parse_mode = on
-        self.screen.cursor.default_visible = not on
+    def _show_prompt(self):
+        """Show the Ok or EDIT prompt, unless suppressed."""
+        if self.edit_prompt:
+            linenum, tell = self.edit_prompt
+            self.program.edit(self.screen, linenum, tell)
+            self.edit_prompt = False
+        elif self._prompt:
+            self.screen.start_line()
+            self.screen.write_line('Ok\xff')
 
     def _store_line(self, line):
         """Store a program line or schedule a command line for execution."""
@@ -353,22 +339,11 @@ class Session(object):
             # clear all program stacks
             self.interpreter.clear_stacks_and_pointers()
             self._clear_all()
+            return True
         elif c != '':
             # it is a command, go and execute
-            self._set_parse_mode(True)
-        return not self._parse_mode
-
-    def _show_prompt(self):
-        """Show the Ok or EDIT prompt, unless suppressed."""
-        if self._parse_mode:
-            return
-        if self.edit_prompt:
-            linenum, tell = self.edit_prompt
-            self.program.edit(self.screen, linenum, tell)
-            self.edit_prompt = False
-        elif self._prompt:
-            self.screen.start_line()
-            self.screen.write_line("Ok\xff")
+            self.interpreter.set_parse_mode(True)
+            return False
 
     def _auto_step(self):
         """Generate an AUTO line number and wait for input."""
@@ -378,7 +353,7 @@ class Session(object):
             if self.auto_linenum in self.program.line_numbers:
                 self.screen.write('*')
                 line = bytearray(self.editor.wait_screenline(from_start=True))
-                if line[:len(numstr)+1] == numstr+'*':
+                if line[:len(numstr)+1] == numstr + '*':
                     line[len(numstr)] = ' '
             else:
                 self.screen.write(' ')
@@ -397,7 +372,7 @@ class Session(object):
                 self.auto_linenum = scanline + self.auto_increment
             elif c != '':
                 # it is a command, go and execute
-                self._set_parse_mode(True)
+                self.interpreter.set_parse_mode(True)
         except error.Break:
             # ctrl+break, ctrl-c both stop background sound
             self.sound.stop_all_sound()
@@ -426,9 +401,9 @@ class Session(object):
     def _handle_error(self, e):
         """Handle a BASIC error through error message."""
         # not handled by ON ERROR, stop execution
-        self._write_error_message(e.message, self.program.get_line_number(e.pos))
-        self._set_parse_mode(False)
-        self.input_mode = False
+        self.screen.write_error_message(e.message, self.program.get_line_number(e.pos))
+        self.interpreter.set_parse_mode(False)
+        self.interpreter.input_mode = False
         # special case: syntax error
         if e.err == error.STX:
             # for some reason, err is reset to zero by GW-BASIC in this case.
@@ -436,33 +411,6 @@ class Session(object):
             if e.pos is not None and e.pos != -1:
                 # line edit gadget appears
                 self.edit_prompt = (self.program.get_line_number(e.pos), e.pos+1)
-
-    def _handle_break(self, e):
-        """Handle a Break event."""
-        # print ^C at current position
-        if not self.input_mode and not e.stop:
-            self.screen.write('^C')
-        # if we're in a program, save pointer
-        pos = -1
-        if self.interpreter.run_mode:
-            if self.statement_parser.redo_on_break:
-                pos = self.interpreter.current_statement
-            else:
-                self.program.bytecode.skip_to(tk.END_STATEMENT)
-                pos = self.program.bytecode.tell()
-            self.interpreter.stop = pos
-        self._write_error_message(e.message, self.program.get_line_number(pos))
-        self._set_parse_mode(False)
-        self.input_mode = False
-        self.statement_parser.redo_on_break = False
-
-    def _write_error_message(self, msg, linenum):
-        """Write an error message to the console."""
-        self.screen.start_line()
-        self.screen.write(msg)
-        if linenum is not None and linenum > -1 and linenum < 65535:
-            self.screen.write(' in %i' % linenum)
-        self.screen.write_line('\xFF')
 
     ###########################################################################
     # callbacks
@@ -792,7 +740,7 @@ class Session(object):
         if following == ';':
             prompt += '? '
         # read the input
-        self.input_mode = True
+        self.interpreter.input_mode = True
         self.statement_parser.redo_on_break = True
         # readvar is a list of (name, indices) tuples
         # we return a list of (name, indices, values) tuples
@@ -827,7 +775,7 @@ class Session(object):
                 varlist = [r + [v] for r, v in zip(var, values)]
                 break
         self.statement_parser.redo_on_break = False
-        self.input_mode = False
+        self.interpreter.input_mode = False
         for v in varlist:
             self.memory.set_variable(*v)
 
@@ -864,12 +812,12 @@ class Session(object):
             if line is None:
                 raise error.RunError(error.INPUT_PAST_END)
         else:
-            self.input_mode = True
+            self.interpreter.input_mode = True
             self.statement_parser.redo_on_break = True
             self.screen.write(prompt)
             line = self.editor.wait_screenline(write_endl=newline)
             self.statement_parser.redo_on_break = False
-            self.input_mode = False
+            self.interpreter.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
 
     def randomize_(self, args):
