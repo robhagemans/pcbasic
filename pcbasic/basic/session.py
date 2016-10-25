@@ -95,7 +95,7 @@ class Session(object):
         self.fkey_macros = editor.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
         # Sound is needed for the beeps on \a
         # Session is only for queues
-        self.screen = display.Screen(self, text_width,
+        self.screen = display.Screen(self.queues, text_width,
                 video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
                 cga_low, mono_tint, screen_aspect,
@@ -157,8 +157,6 @@ class Session(object):
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock
         self.clock = clock.Clock()
-        # initialise machine ports
-        self.machine = machine.MachinePorts(self)
         # initialise the expression parser
         self.expression_parser = expressions.ExpressionParser(
                 self.values, self.memory, self.program, self.files)
@@ -178,6 +176,8 @@ class Session(object):
                 self.memory, self.devices, self.files,
                 self.screen, self.keyboard, self.screen.fonts[8],
                 self.interpreter, peek_values, syntax)
+        # initialise machine ports
+        self.machine = machine.MachinePorts(self)
         # build function table (depends on Memory having been initialised)
         self.expression_parser.init_functions(self)
         self.statement_parser.init_statements(self)
