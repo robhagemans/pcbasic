@@ -546,10 +546,12 @@ class Interpreter(object):
     ###########################################################################
     # callbacks
 
-    def system_(self, args):
-        """SYSTEM: exit interpreter."""
-        list(args)
-        raise error.Exit()
+    def error_(self, args):
+        """ERROR: simulate an error condition."""
+        errn, = args
+        errn = values.to_int(errn)
+        error.range_check(1, 255, errn)
+        raise error.RunError(errn)
 
     def stop_(self, args):
         """STOP: break program execution and return to interpreter."""
@@ -629,3 +631,30 @@ class Interpreter(object):
             raise error.RunError(error.ILLEGAL_DIRECT)
         # arguments and expression are being read and parsed by UserFunctionManager
         self.statement_parser.expression_parser.user_functions.define(fnname, self._program_code)
+
+    def llist_(self, args):
+        """LLIST: output program lines to LPT1: """
+        line_range, = args
+        for l in self._program.list_lines(*line_range):
+            self._devices.lpt1_file.write_line(l)
+        # return to direct mode
+        self.set_pointer(False)
+
+    def renum_(self, args):
+        """RENUM: renumber program line numbers."""
+        new, old, step = args
+        new, old = self._program.explicit_lines(new, old)
+        if step is not None and step < 1:
+            raise error.RunError(error.IFC)
+        old_to_new = self._program.renum(self._screen, new, old, step)
+        # stop running if we were
+        self.set_pointer(False)
+        # reset loop stacks
+        self.clear_stacks()
+        # renumber error handler
+        if self.on_error:
+            self.on_error = old_to_new[self.on_error]
+        # renumber event traps
+        for handler in self._events.all:
+            if handler.gosub:
+                handler.set_jump(old_to_new[handler.gosub])

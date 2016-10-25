@@ -415,6 +415,11 @@ class Session(object):
     ###########################################################################
     # callbacks
 
+    def system_(self, args):
+        """SYSTEM: exit interpreter."""
+        list(args)
+        raise error.Exit()
+
     def clear_(self, args):
         """CLEAR: clear memory and redefine memory limits."""
         try:
@@ -533,6 +538,28 @@ class Session(object):
         # clear all variables
         self._clear_all()
 
+    def list_(self, args):
+        """LIST: output program lines."""
+        line_range = next(args)
+        out = next(args)
+        if out is not None:
+            out = self.files.open(0, out, filetype='A', mode='O')
+        list(args)
+        lines = self.program.list_lines(*line_range)
+        if out:
+            with out:
+                for l in lines:
+                    out.write_line(l)
+        else:
+            for l in lines:
+                # flow of listing is visible on screen
+                # and interruptible
+                self.events.wait()
+                # LIST on screen is slightly different from just writing
+                self.screen.list_line(l)
+        # return to direct mode
+        self.interpreter.set_pointer(False)
+
     def edit_(self, args):
         """EDIT: output a program line and position cursor for editing."""
         from_line, = args
@@ -558,36 +585,6 @@ class Session(object):
         self.interpreter.set_pointer(False)
         # continue input in AUTO mode
         self._auto_mode = True
-
-    def list_(self, args):
-        """LIST: output program lines."""
-        line_range = next(args)
-        out = next(args)
-        if out is not None:
-            out = self.files.open(0, out, filetype='A', mode='O')
-        list(args)
-        lines = self.program.list_lines(*line_range)
-        if out:
-            with out:
-                for l in lines:
-                    out.write_line(l)
-        else:
-            for l in lines:
-                # flow of listing is visible on screen
-                # and interruptible
-                self.events.wait()
-                # LIST on screen is slightly different from just writing
-                self.screen.list_line(l)
-        # return to direct mode
-        self.interpreter.set_pointer(False)
-
-    def llist_(self, args):
-        """LLIST: output program lines to LPT1: """
-        line_range, = args
-        for l in self.program.list_lines(*line_range):
-            self.devices.lpt1_file.write_line(l)
-        # return to direct mode
-        self.interpreter.set_pointer(False)
 
     def load_(self, args):
         """LOAD: load program from file."""
@@ -665,25 +662,6 @@ class Session(object):
         # and clears all variables
         self._clear_all()
         self.interpreter.set_pointer(False)
-
-    def renum_(self, args):
-        """RENUM: renumber program line numbers."""
-        new, old, step = args
-        new, old = self.program.explicit_lines(new, old)
-        if step is not None and step < 1:
-            raise error.RunError(error.IFC)
-        old_to_new = self.program.renum(self.screen, new, old, step)
-        # stop running if we were
-        self.interpreter.set_pointer(False)
-        # reset loop stacks
-        self.interpreter.clear_stacks()
-        # renumber error handler
-        if self.interpreter.on_error:
-            self.interpreter.on_error = old_to_new[self.interpreter.on_error]
-        # renumber event traps
-        for handler in self.events.all:
-            if handler.gosub:
-                handler.set_jump(old_to_new[handler.gosub])
 
     def run_(self, args):
         """RUN: start program execution."""
@@ -835,13 +813,6 @@ class Session(object):
             # seed entered on prompt is rounded to int
             val = values.cint_(val)
         self.randomiser.reseed(val)
-
-    def error_(self, args):
-        """ERROR: simulate an error condition."""
-        errn, = args
-        errn = values.to_int(errn)
-        error.range_check(1, 255, errn)
-        raise error.RunError(errn)
 
     def key_(self, args):
         """KEY: macro or event handler definition."""
