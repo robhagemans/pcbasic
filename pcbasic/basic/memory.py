@@ -81,8 +81,8 @@ class DataSegment(object):
 
     def reset_commons(self):
         """Reset COMMON variables."""
-        self.common_scalars = set()
-        self.common_arrays = set()
+        self._common_scalars = set()
+        self._common_arrays = set()
 
     def set_buffers(self, program, scalars, arrays, strings, values):
         """Register program and variables."""
@@ -130,8 +130,12 @@ class DataSegment(object):
         """Set default string variables."""
         self.deftype_(values.STR, args)
 
-    def clear_variables(self, preserve_sc, preserve_ar):
+    def clear_variables(self, preserve_all):
         """Reset and clear variables, arrays, common definitions and functions."""
+        if preserve_all:
+            preserve_sc, preserve_ar = self.scalars, self.arrays
+        else:
+            preserve_sc, preserve_ar = self._common_scalars, self._common_arrays
         new_strings = values.StringSpace(self)
         # preserve COMMON variables
         # this is a re-assignment which is not FOR-safe;
@@ -499,5 +503,5 @@ class DataSegment(object):
         common_vars = list(args)
         common_scalars = [name for name, brackets in common_vars if not brackets]
         common_arrays = [name for name, brackets in common_vars if brackets]
-        self.common_scalars |= set(common_scalars)
-        self.common_arrays |= set(common_arrays)
+        self._common_scalars |= set(common_scalars)
+        self._common_arrays |= set(common_arrays)

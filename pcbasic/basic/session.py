@@ -465,13 +465,10 @@ class Session(object):
         """Clear everything required for the CLEAR command."""
         #   Resets the stack and string space
         #   Clears all COMMON and user variables
-        if preserve_all:
-            self.memory.clear_variables(self.scalars, self.arrays)
-        else:
-            if not preserve_common:
-                # at least I think these should be cleared by CLEAR?
-                self.memory.reset_commons()
-            self.memory.clear_variables(self.memory.common_scalars, self.memory.common_arrays)
+        if not preserve_common and not preserve_all:
+            self.memory.reset_commons()
+        self.memory.clear_variables(preserve_all)
+        if not preserve_all:
             # functions are cleared except when CHAIN ... ALL is specified
             self.expression_parser.user_functions.clear()
         if not preserve_deftype:
