@@ -198,13 +198,13 @@ class Events(object):
         while True:
             # pop input queues
             try:
-                signal = self.session.input_queue.get(False)
+                signal = self.session.queues.inputs.get(False)
             except Queue.Empty:
                 if not self.session.keyboard.pause:
                     break
                 else:
                     continue
-            self.session.input_queue.task_done()
+            self.session.queues.inputs.task_done()
             # process input events
             if signal.event_type == signals.KEYB_QUIT:
                 raise error.Exit()
@@ -236,7 +236,7 @@ class Events(object):
                 self.session.keyboard.insert_chars(*signal.params, check_full=False)
             elif signal.event_type == signals.CLIP_COPY:
                 text = self.session.screen.get_text(*(signal.params[:4]))
-                self.session.video_queue.put(signals.Event(
+                self.session.queues.video.put(signals.Event(
                         signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
 
 

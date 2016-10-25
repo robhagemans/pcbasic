@@ -52,6 +52,28 @@ class NullQueue(object):
         pass
 
 
+class InterfaceQueues(object):
+    """Interface queue set."""
+
+    def __init__(self, inputs=None, video=None, audio=None):
+        """Initialise; default is NullQueues."""
+        self.set(inputs, video, audio)
+
+    def set(self, inputs=None, video=None, audio=None):
+        """Set; default is NullQueues."""
+        self.inputs = inputs or NullQueue()
+        self.video = video or NullQueue()
+        self.audio = audio or NullQueue()
+
+    def __getstate__(self):
+        """Don't pickle queues."""
+        return {}
+
+    def __setstate__(self, dummy_pickle_dict):
+        """Set to null queues on unpickling."""
+        self.set()
+
+
 ###############################################################################
 # signals
 

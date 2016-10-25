@@ -42,10 +42,11 @@ class PlayState(object):
 class Sound(object):
     """Sound queue manipulations."""
 
-    def __init__(self, session, syntax):
+    def __init__(self, queues, events, syntax):
         """Initialise sound queue."""
         # for wait() and queues
-        self.session = session
+        self._queues = queues
+        self._events = events
         # Tandy/PCjr noise generator
         # frequency for noise sources
         self.noise_freq = [base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
@@ -99,7 +100,7 @@ class Sound(object):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
         tone = signals.Event(signals.AUDIO_TONE, [voice, frequency, duration, fill, loop, volume])
-        self.session.audio_queue.put(tone)
+        self._queues.audio.put(tone)
         self.voice_queue[voice].put(tone, None if loop else duration)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
@@ -182,7 +183,7 @@ class Sound(object):
         """Generate a noise."""
         frequency = self.noise_freq[source]
         noise = signals.Event(signals.AUDIO_NOISE, [source > 3, frequency, duration, 1, loop, volume])
-        self.session.audio_queue.put(noise)
+        self._queues.audio.put(noise)
         self.voice_queue[3].put(noise, None if loop else duration)
         # don't wait for noise
 
@@ -191,18 +192,18 @@ class Sound(object):
         while (self.queue_length(0) > wait_length or
                 self.queue_length(1) > wait_length or
                 self.queue_length(2) > wait_length):
-            self.session.events.wait()
+            self._events.wait()
 
     def wait_all_music(self):
         """Wait until all music (not noise) has finished playing."""
         while (self.is_playing(0) or self.is_playing(1) or self.is_playing(2)):
-            self.session.events.wait()
+            self._events.wait()
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""
         for q in self.voice_queue:
             q.clear()
-        self.session.audio_queue.put(signals.Event(signals.AUDIO_STOP))
+        self._queues.audio.put(signals.Event(signals.AUDIO_STOP))
 
     def queue_length(self, voice=0):
         """Return the number of notes in the queue."""
@@ -216,7 +217,7 @@ class Sound(object):
 
     def persist(self, flag):
         """Set mixer persistence flag (runmode)."""
-        self.session.audio_queue.put(signals.Event(signals.AUDIO_PERSIST, flag))
+        self._queues.audio.put(signals.Event(signals.AUDIO_PERSIST, flag))
 
     def rebuild(self):
         """Rebuild tone queues."""
@@ -228,7 +229,7 @@ class Sound(object):
                 duration = (expiry - last_expiry).total_seconds()
                 last_expiry = expiry
                 item.params[2] = duration
-                self.session.audio_queue.put(item)
+                self._queues.audio.put(item)
 
     def play_fn_(self, voice):
         """PLAY function: get length of music queue."""

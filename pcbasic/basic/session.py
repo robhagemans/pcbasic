@@ -68,11 +68,9 @@ class Session(object):
         """Initialise the interpreter session."""
         # use dummy queues if not provided
         if iface:
-            self.input_queue, self.video_queue, self.audio_queue = iface.get_queues()
+            self.queues = signals.InterfaceQueues(*iface.get_queues())
         else:
-            self.input_queue = Queue.Queue()
-            self.video_queue = signals.NullQueue()
-            self.audio_queue = signals.NullQueue()
+            self.queues = signals.InterfaceQueues(inputs=Queue.Queue())
         # true if a prompt is needed on next cycle
         self._prompt = True
         # input mode is AUTO (used by AUTO)
@@ -88,12 +86,11 @@ class Session(object):
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
-                self.codepage, stdio, input_file, output_file, append, self.input_queue)
+                self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
         # set up event handlers
         self.events = events.Events(self, syntax)
         # initialise sound queue
-        # needs Session for wait() and queues only
-        self.sound = sound.Sound(self, syntax)
+        self.sound = sound.Sound(self.queues, self.events, syntax)
         # function key macros
         self.fkey_macros = editor.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
         # Sound is needed for the beeps on \a
@@ -196,10 +193,6 @@ class Session(object):
     def __getstate__(self):
         """Pickle the session."""
         pickle_dict = self.__dict__.copy()
-        # remove queues from state
-        pickle_dict['input_queue'] = signals.NullQueue()
-        pickle_dict['video_queue'] = signals.NullQueue()
-        pickle_dict['audio_queue'] = signals.NullQueue()
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
@@ -216,7 +209,7 @@ class Session(object):
     def attach(self, iface=None):
         """Attach interface to interpreter session."""
         if iface:
-            self.input_queue, self.video_queue, self.audio_queue = iface.get_queues()
+            self.queues.set_null()
             # rebuild the screen
             self.screen.rebuild()
             # rebuild audio queues
@@ -224,9 +217,9 @@ class Session(object):
         else:
             # use dummy video & audio queues if not provided
             # but an input queue shouls be operational for redirects
-            self.input_queue = Queue.Queue
+            self.queues.set(inputs=Queue.Queue())
         # attach input queue to redirects
-        self.input_redirection.attach(self.input_queue)
+        self.input_redirection.attach(self.queues.inputs)
         return self
 
     def load_program(self, prog, rebuild_dict=True):
