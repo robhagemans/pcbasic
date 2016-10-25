@@ -130,8 +130,13 @@ class DataSegment(object):
         """Set default string variables."""
         self.deftype_(values.STR, args)
 
-    def clear_variables(self, preserve_all):
+    def clear(self, preserve_common, preserve_all, preserve_deftype):
         """Reset and clear variables, arrays, common definitions and functions."""
+        if not preserve_deftype:
+            # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
+            self.clear_deftype()
+        if not preserve_common:
+            self.reset_commons()
         if preserve_all:
             preserve_sc, preserve_ar = self.scalars, self.arrays
         else:
@@ -149,6 +154,8 @@ class DataSegment(object):
         if not(preserve_sc or preserve_ar):
             # clear OPTION BASE
             self.arrays.clear_base()
+        # release all disk buffers (FIELD)?
+        self.reset_fields()
 
     @contextmanager
     def _preserve_arrays(self, names, string_store):
@@ -215,16 +222,19 @@ class DataSegment(object):
 
     def set_stack_size(self, new_stack_size):
         """Set the stack size (on CLEAR) """
+        if new_stack_size == 0:
+            raise error.RunError(error.IFC)
         self.stack_size = new_stack_size
 
     def set_basic_memory_size(self, new_size):
         """Set the data memory size (on CLEAR) """
-        if new_size < 0:
+        if new_size == 0:
+            raise error.RunError(error.IFC)
+        elif new_size < 0:
             new_size += 0x10000
         if new_size > self.total_memory:
-            return False
+            raise error.RunError(error.OUT_OF_MEMORY)
         self.total_memory = new_size
-        return True
 
     def get_memory(self, addr):
         """Retrieve data from data memory."""

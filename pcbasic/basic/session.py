@@ -424,36 +424,23 @@ class Session(object):
             intexp = next(args)
             if intexp is not None:
                 expr = values.to_int(intexp)
-                if expr < 0:
-                    raise error.RunError(error.IFC)
-            exp1 = next(args)
-            if exp1 is not None:
-                # this produces a *signed* int
-                mem_size = values.to_int(exp1, unsigned=True)
-                if mem_size == 0:
-                    #  0 leads to illegal fn call
-                    raise error.RunError(error.IFC)
-                else:
-                    if not self.memory.set_basic_memory_size(mem_size):
-                        raise error.RunError(error.OUT_OF_MEMORY)
-            # set aside stack space for GW-BASIC. The default is the previous stack space size.
-            exp2 = next(args)
-            if exp2 is not None:
-                stack_size = values.to_int(exp2, unsigned=True)
-                # this should be an unsigned int
-                if stack_size < 0:
-                    stack_size += 0x10000
-                if stack_size == 0:
-                    #  0 leads to illegal fn call
-                    raise error.RunError(error.IFC)
+                error.throw_if(expr < 0)
+            # set size of BASIC memory
+            mem_size = next(args)
+            if mem_size is not None:
+                mem_size = values.to_int(mem_size, unsigned=True)
+                self.memory.set_basic_memory_size(mem_size)
+            # set aside stack space for GW-BASIC.
+            # default is the previous stack space size.
+            stack_size = next(args)
+            if stack_size is not None:
+                stack_size = values.to_int(stack_size, unsigned=True)
                 self.memory.set_stack_size(stack_size)
-            exp3 = next(args)
-            if exp3 is not None:
-                # Tandy/PCjr: select video memory size
-                video_size = values.round(exp3).to_value()
-                if not self.screen.set_video_memory_size(video_size):
-                    self.screen.screen(0, 0, 0, 0)
-                    self.screen.init_mode()
+            # select video memory size (Tandy/PCjr only)
+            video_size = next(args)
+            if video_size is not None:
+                video_size = values.round(video_size).to_value()
+                self.screen.set_video_memory_size(video_size)
             # execute any remaining parsing steps
             next(args)
         except StopIteration:
@@ -463,28 +450,21 @@ class Session(object):
     def _clear_all(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
         """Clear everything required for the CLEAR command."""
-        #   Resets the stack and string space
-        #   Clears all COMMON and user variables
         if close_files:
             # close all files
             self.files.close_all()
-        if not preserve_deftype:
-            # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
-            self.memory.clear_deftype()
-        if not preserve_common:
-            self.memory.reset_commons()
-        self.memory.clear_variables(preserve_all)
+        # Resets the stack and string space
+        # Clears all COMMON and user variables
         # release all disk buffers (FIELD)?
-        self.memory.reset_fields()
+        self.memory.clear(preserve_common, preserve_all, preserve_deftype)
         if not preserve_all:
             # functions are cleared except when CHAIN ... ALL is specified
             self.expression_parser.user_functions.clear()
         # Resets STRIG to off
         self.stick.is_on = False
         # stop all sound
-        self.sound.stop_all_sound()
         # reset sound and PLAY state
-        self.sound.reset()
+        self.sound.clear()
         # reset DRAW state (angle, scale) and current graphics position
         self.screen.drawing.reset()
         # reset random number generator
@@ -793,7 +773,7 @@ class Session(object):
         else:
             # prompt for random seed if not specified
             while val is None:
-                self.screen.write("Random number seed (-32768 to 32767)? ")
+                self.screen.write('Random number seed (-32768 to 32767)? ')
                 seed = self.editor.wait_screenline()
                 val = self.values.from_repr(seed, allow_nonnum=False)
             # seed entered on prompt is rounded to int

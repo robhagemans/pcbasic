@@ -851,15 +851,16 @@ class Screen(object):
         self.prepare_modes()
         # text screen modes don't depend on video memory size
         if self.screen_mode == 0:
-            return True
+            return
         # check if we need to drop out of our current mode
         page = max(self.vpagenum, self.apagenum)
         # reload max number of pages; do we fit? if not, drop to text
         new_mode = self.mode_data[self.screen_mode]
         if (page >= new_mode.num_pages):
-            return False
-        self.mode = new_mode
-        return True
+            self.screen.screen(0, 0, 0, 0)
+            self.screen.init_mode()
+        else:
+            self.mode = new_mode
 
     def set_page(self, new_vpagenum, new_apagenum):
         """Set active page & visible page, counting from 0."""

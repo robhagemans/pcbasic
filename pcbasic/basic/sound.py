@@ -63,10 +63,15 @@ class Sound(object):
         # timed queues for each voice
         self.voice_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
         # initialise PLAY state
-        self.reset()
+        self.reset_play()
 
-    def reset(self):
-        """Reset PLAY state (CLEAR)."""
+    def clear(self):
+        """Stop all sound and reset PLAY (on CLEAR)."""
+        self.stop_all_sound()
+        self.reset_play()
+
+    def reset_play(self):
+        """Reset PLAY state."""
         # music foreground (MF) mode
         self.foreground = True
         # reset all PLAY state
