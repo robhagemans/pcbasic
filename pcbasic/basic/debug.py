@@ -75,26 +75,21 @@ class BaseDebugger(object):
             if s[3] is not None:
                 screen.set_attr(7)
                 screen.write_line('    {0}'.format(s[3]))
-        exc_message = traceback.format_exception_only(exc_type, exc_value)[0]
-        screen.set_attr(15)
-        screen.write('{0}:'.format(exc_type.__name__))
-        screen.set_attr(7)
-        screen.write_line(' {0}'.format(str(exc_value)))
-        screen.set_attr(0x70)
-        screen.write_line('\nThis is a bug in PC-BASIC.')
-        screen.set_attr(7)
-        screen.write('Sorry about that. Please send the above messages to the bugs forum\nby e-mail to ')
-        screen.set_attr(15)
-        screen.write('bugs@discussion.pcbasic.p.re.sf.net')
-        screen.set_attr(7)
-        screen.write(' or file a bug\nreport at ')
-        screen.set_attr(15)
-        screen.write('https://github.com/robhagemans/pcbasic/issues')
-        screen.set_attr(7)
-        screen.write_line('. Please include')
-        screen.write_line('as much information as you can about what you were doing and how this happened.')
-        screen.write_line('Thank you!')
-        screen.set_attr(7)
+        message = (
+            (0x0f,  '{0}:'.format(exc_type.__name__)),
+            (0x07,  ' {0}\n\n'.format(str(exc_value))),
+            (0x70,  'This is a bug in PC-BASIC.\n'),
+            (0x07,  'Sorry about that. Please send the above messages to the bugs forum\nby e-mail to '),
+            (0x0f,  'bugs@discussion.pcbasic.p.re.sf.net'),
+            (0x07,  ' or file a bug\nreport at '),
+            (0x0f,  'https://github.com/robhagemans/pcbasic/issues'),
+            (0x07,  '. Please include\n'),
+            (0x07,  'as much information as you can about what you were doing and how this happened.\n'),
+            (0x07,  'Thank you!\n')
+        )
+        for attr, text in message:
+            screen.set_attr(attr)
+            screen.write(text)
         self.session.interpreter.set_pointer(False)
 
     def debug_step(self, token):
