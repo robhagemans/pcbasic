@@ -75,7 +75,14 @@ class DataSegment(object):
         self.max_files = max_files
         self.max_reclen = max_reclen
         self.fields = {}
-        #self.reset_fields()
+        # reset_fields is called from Session.__init__
+        # COMMON variables
+        self.reset_commons()
+
+    def reset_commons(self):
+        """Reset COMMON variables."""
+        self.common_scalars = set()
+        self.common_arrays = set()
 
     def set_buffers(self, program, scalars, arrays, strings, values):
         """Register program and variables."""
@@ -486,3 +493,11 @@ class DataSegment(object):
         # copy new value into existing buffer if possible
         basic_str = self.get_variable(name, indices)
         self.set_variable(name, indices, basic_str.midset(start, num, val))
+
+    def common_(self, args):
+        """COMMON: define variables to be preserved on CHAIN."""
+        common_vars = list(args)
+        common_scalars = [name for name, brackets in common_vars if not brackets]
+        common_arrays = [name for name, brackets in common_vars if brackets]
+        self.common_scalars |= set(common_scalars)
+        self.common_arrays |= set(common_arrays)

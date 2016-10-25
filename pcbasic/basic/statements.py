@@ -412,7 +412,7 @@ class StatementParser(object):
             tk.LSET: session.memory.lset_,
             tk.RSET: session.memory.rset_,
             tk.KILL: session.devices.kill_,
-            tk.COMMON: session.common_,
+            tk.COMMON: session.memory.common_,
             tk.CHAIN: session.chain_,
             tk.DATE: session.clock.date_,
             tk.TIME: session.clock.time_,

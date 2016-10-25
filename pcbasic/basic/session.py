@@ -107,9 +107,6 @@ class Session(object):
         # initialise the data segment
         self.memory = memory.DataSegment(
                     max_memory, reserved_memory, max_reclen, max_files)
-        #MOVE into DataSegment?
-        self.common_scalars = set()
-        self.common_arrays = set()
         # string space
         self.strings = values.StringSpace(self.memory)
         # prepare string and number handler
@@ -473,9 +470,8 @@ class Session(object):
         else:
             if not preserve_common:
                 # at least I think these should be cleared by CLEAR?
-                self.common_scalars = set()
-                self.common_arrays = set()
-            self.memory.clear_variables(self.common_scalars, self.common_arrays)
+                self.memory.reset_commons()
+            self.memory.clear_variables(self.memory.common_scalars, self.memory.common_arrays)
             # functions are cleared except when CHAIN ... ALL is specified
             self.expression_parser.user_functions.clear()
         if not preserve_deftype:
@@ -694,14 +690,6 @@ class Session(object):
         self.interpreter.error_handle_mode = False
         self.interpreter.error_resume = None
         self.files.close_all()
-
-    def common_(self, args):
-        """COMMON: define variables to be preserved on CHAIN."""
-        common_vars = list(args)
-        common_scalars = [name for name, brackets in common_vars if not brackets]
-        common_arrays = [name for name, brackets in common_vars if brackets]
-        self.common_scalars |= set(common_scalars)
-        self.common_arrays |= set(common_arrays)
 
     def input_(self, args):
         """INPUT: request input from user or read from file."""
