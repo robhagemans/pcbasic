@@ -20,9 +20,9 @@ from . import tokens as tk
 class Events(object):
     """Event management."""
 
-    def __init__(self, session, syntax):
+    def __init__(self, queues, syntax):
         """Initialise event triggers."""
-        self.session = session
+        self._queues = queues
         # events start unactivated
         self.active = False
         # 12 definable function keys for Tandy, 10 otherwise
@@ -33,8 +33,19 @@ class Events(object):
         # tandy and pcjr have multi-voice sound
         self.multivoice = syntax in ('pcjr', 'tandy')
 
+    def init(self, keyboard, pen, stick, sound, clock, devices, screen):
+        """Initialise input events and BASIC events after Session has been built."""
+        self._keyboard = keyboard
+        self._pen = pen
+        self._stick = stick
+        self._sound = sound
+        self._clock = clock
+        self._devices = devices
+        self._screen = screen
+        self.reset()
+
     def reset(self):
-        """Initialise or reset event triggers."""
+        """Reset event triggers."""
         # KEY: init key events
         keys = [
             scancode.F1, scancode.F2, scancode.F3, scancode.F4, scancode.F5,
@@ -44,16 +55,16 @@ class Events(object):
             keys += [scancode.F11, scancode.F12]
         keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
         keys += [None] * (20 - self.num_fn_keys - 4)
-        self.key = [KeyHandler(self.session.keyboard, sc) for sc in keys]
+        self.key = [KeyHandler(self._keyboard, sc) for sc in keys]
         # other events
-        self.timer = TimerHandler(self.session.clock)
-        self.play = PlayHandler(self.session.sound, self.multivoice)
+        self.timer = TimerHandler(self._clock)
+        self.play = PlayHandler(self._sound, self.multivoice)
         self.com = [
-            ComHandler(self.session.devices.devices['COM1:']),
-            ComHandler(self.session.devices.devices['COM2:'])]
-        self.pen = PenHandler(self.session.pen)
+            ComHandler(self._devices.devices['COM1:']),
+            ComHandler(self._devices.devices['COM2:'])]
+        self.pen = PenHandler(self._pen)
         # joy*2 + button
-        self.strig = [StrigHandler(self.session.stick, joy, button)
+        self.strig = [StrigHandler(self._stick, joy, button)
                       for joy in range(2) for button in range(2)]
         # all handlers in order of handling; TIMER first
         # key events are not handled FIFO but first 11-20 in that order, then 1-10
@@ -178,7 +189,7 @@ class Events(object):
         if self.active:
             for e in self.enabled:
                 e.check()
-        self.session.keyboard.drain_event_buffer()
+        self._keyboard.drain_event_buffer()
 
     def command(self, handler, command_char):
         """Turn the event ON, OFF and STOP."""
@@ -198,45 +209,45 @@ class Events(object):
         while True:
             # pop input queues
             try:
-                signal = self.session.queues.inputs.get(False)
+                signal = self._queues.inputs.get(False)
             except Queue.Empty:
-                if not self.session.keyboard.pause:
+                if not self._keyboard.pause:
                     break
                 else:
                     continue
-            self.session.queues.inputs.task_done()
+            self._queues.inputs.task_done()
             # process input events
             if signal.event_type == signals.KEYB_QUIT:
                 raise error.Exit()
             elif signal.event_type == signals.KEYB_CHAR:
                 # params is a unicode sequence
-                self.session.keyboard.insert_chars(*signal.params)
+                self._keyboard.insert_chars(*signal.params)
             elif signal.event_type == signals.KEYB_DOWN:
                 # params is e-ASCII/unicode character sequence, scancode, modifier
-                self.session.keyboard.key_down(*signal.params)
+                self._keyboard.key_down(*signal.params)
             elif signal.event_type == signals.KEYB_UP:
-                self.session.keyboard.key_up(*signal.params)
+                self._keyboard.key_up(*signal.params)
             elif signal.event_type == signals.STREAM_CHAR:
-                self.session.keyboard.insert_chars(*signal.params, check_full=False)
+                self._keyboard.insert_chars(*signal.params, check_full=False)
             elif signal.event_type == signals.STREAM_CLOSED:
-                self.session.keyboard.close_input()
+                self._keyboard.close_input()
             elif signal.event_type == signals.PEN_DOWN:
-                self.session.pen.down(*signal.params)
+                self._pen.down(*signal.params)
             elif signal.event_type == signals.PEN_UP:
-                self.session.pen.up()
+                self._pen.up()
             elif signal.event_type == signals.PEN_MOVED:
-                self.session.pen.moved(*signal.params)
+                self._pen.moved(*signal.params)
             elif signal.event_type == signals.STICK_DOWN:
-                self.session.stick.down(*signal.params)
+                self._stick.down(*signal.params)
             elif signal.event_type == signals.STICK_UP:
-                self.session.stick.up(*signal.params)
+                self._stick.up(*signal.params)
             elif signal.event_type == signals.STICK_MOVED:
-                self.session.stick.moved(*signal.params)
+                self._stick.moved(*signal.params)
             elif signal.event_type == signals.CLIP_PASTE:
-                self.session.keyboard.insert_chars(*signal.params, check_full=False)
+                self._keyboard.insert_chars(*signal.params, check_full=False)
             elif signal.event_type == signals.CLIP_COPY:
-                text = self.session.screen.get_text(*(signal.params[:4]))
-                self.session.queues.video.put(signals.Event(
+                text = self._screen.get_text(*(signal.params[:4]))
+                self._queues.video.put(signals.Event(
                         signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
 
 

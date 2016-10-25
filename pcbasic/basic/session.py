@@ -88,13 +88,12 @@ class Session(object):
         self.input_redirection, self.output_redirection = redirect.get_redirection(
                 self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
         # set up event handlers
-        self.events = events.Events(self, syntax)
+        self.events = events.Events(self.queues, syntax)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.events, syntax)
         # function key macros
         self.fkey_macros = editor.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
         # Sound is needed for the beeps on \a
-        # Session is only for queues
         self.screen = display.Screen(self.queues, text_width,
                 video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
@@ -164,8 +163,11 @@ class Session(object):
                 self.strings, self.memory, self.expression_parser, syntax)
         # set up debugger
         self.debugger = debug.get_debugger(self, option_debug)
-        # initialise the parser
-        self.events.reset()
+        # events manages both input events and BASIC events
+        self.events.init(
+                self.keyboard, self.pen, self.stick, self.sound,
+                self.clock, self.devices, self.screen)
+        # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
                 self.debugger, self.events, self.screen, self.devices, self.sound,
                 self.values, self.memory, self.scalars, self.program, self.statement_parser)
