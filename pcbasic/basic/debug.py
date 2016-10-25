@@ -137,22 +137,95 @@ class Debugger(BaseDebugger):
 
     def debug_(self, args):
         """Execute a debug command."""
-        global debugger, session
+
+        # debugging commands
+
+        def crash():
+            """Simulate a crash."""
+            raise DebugException()
+
+        def reset():
+            """Ctrl+Alt+Delete."""
+            raise error.Reset()
+
+        def exit():
+            """Quit the session."""
+            raise error.Exit()
+
+        def trace(on=True):
+            """Switch line number tracing on or off."""
+            self.debug_tron = on
+
+        def watch(expr):
+            """Add an expression to the watch list."""
+            outs = self.session.tokeniser.tokenise_line('?'+expr)
+            self.watch_list.append((expr, outs))
+
+        def show_variables():
+            """Dump all variables to the log."""
+            logging.debug('==== Scalars ='.ljust(100, '='))
+            logging.debug(str(self.session.scalars))
+            logging.debug('==== Arrays ='.ljust(100, '='))
+            logging.debug(str(self.session.arrays))
+            logging.debug('==== Strings ='.ljust(100, '='))
+            logging.debug(str(self.session.strings))
+
+        def show_screen():
+            """Copy the screen buffer to the log."""
+            logging.debug('  +' + '-'*self.session.screen.mode.width + '+')
+            i = 0
+            lastwrap = False
+            for row in self.session.screen.apage.row:
+                s = [ c[0] for c in row.buf ]
+                i += 1
+                outstr = '{0:2}'.format(i)
+                if lastwrap:
+                    outstr += ('\\')
+                else:
+                    outstr += ('|')
+                outstr += (''.join(s))
+                if row.wrap:
+                    logging.debug(outstr + '\\ {0:2}'.format(row.end))
+                else:
+                    logging.debug(outstr + '| {0:2}'.format(row.end))
+                lastwrap = row.wrap
+            logging.debug('  +' + '-' * self.session.screen.mode.width + '+')
+
+        def show_program():
+            """Write a marked-up hex dump of the program to the log."""
+            prog = self.session.program
+            code = prog.bytecode.getvalue()
+            offset_val, p = 0, 0
+            for key in sorted(prog.line_numbers.keys())[1:]:
+                offset, linum = code[p+1:p+3], code[p+3:p+5]
+                last_offset = offset_val
+                offset_val = (struct.unpack('<H', offset)[0]
+                                        - (self.session.memory.code_start + 1))
+                linum_val, = struct.unpack('<H', linum)
+                logging.debug((code[p:p+1].encode('hex') + ' ' +
+                                offset.encode('hex') + ' (+%03d) ' +
+                                code[p+3:p+5].encode('hex') + ' [%05d] ' +
+                                code[p+5:prog.line_numbers[key]].encode('hex')),
+                             offset_val - last_offset, linum_val )
+                p = prog.line_numbers[key]
+            logging.debug(code[p:p+1].encode('hex') + ' ' +
+                        code[p+1:p+3].encode('hex') + ' (ENDS) ' +
+                        code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex'))
+
         debug_cmd, = args
         # make session available to debugging commands
-        debugger = self
         session = self.session
         buf = io.BytesIO()
         save_stdout = sys.stdout
         sys.stdout = buf
         try:
-            exec(debug_cmd)
+            exec debug_cmd in globals(), locals()
         except DebugException:
             raise
         except error.Exit:
             raise
         except Exception as e:
-            logging.debug(str(type(e))+' '+str(e))
+            logging.debug('%s: %s', type(e).__name__, e)
             traceback.print_tb(sys.exc_info()[2])
         finally:
             sys.stdout = save_stdout
@@ -162,84 +235,3 @@ class Debugger(BaseDebugger):
         """Pass through exceptions in debug mode."""
         # don't catch exceptions - so that testing script records them.
         raise e
-
-##############################################################################
-# debugging commands
-
-# module-globals for use by debugging commands
-# these should be set (by debug_exec) before using any of the below
-debugger = None
-# convenient access to current session
-session = None
-
-def crash():
-    """Simulate a crash."""
-    raise DebugException()
-
-def reset():
-    """Ctrl+Alt+Delete."""
-    raise error.Reset()
-
-def exit():
-    """Quit the session."""
-    raise error.Exit()
-
-def trace(on=True):
-    """Switch line number tracing on or off."""
-    debugger.debug_tron = on
-
-def watch(expr):
-    """Add an expression to the watch list."""
-    outs = session.tokeniser.tokenise_line('?'+expr)
-    debugger.watch_list.append((expr, outs))
-
-def show_variables():
-    """Dump all variables to the log."""
-    logging.debug('==== Scalars ='.ljust(100, '='))
-    logging.debug(str(debugger.session.scalars))
-    logging.debug('==== Arrays ='.ljust(100, '='))
-    logging.debug(str(debugger.session.arrays))
-    logging.debug('==== Strings ='.ljust(100, '='))
-    logging.debug(str(debugger.session.strings))
-
-def show_screen():
-    """Copy the screen buffer to the log."""
-    logging.debug('  +' + '-'*session.screen.mode.width+'+')
-    i = 0
-    lastwrap = False
-    for row in session.screen.apage.row:
-        s = [ c[0] for c in row.buf ]
-        i += 1
-        outstr = '{0:2}'.format(i)
-        if lastwrap:
-            outstr += ('\\')
-        else:
-            outstr += ('|')
-        outstr += (''.join(s))
-        if row.wrap:
-            logging.debug(outstr + '\\ {0:2}'.format(row.end))
-        else:
-            logging.debug(outstr + '| {0:2}'.format(row.end))
-        lastwrap = row.wrap
-    logging.debug('  +' + '-'*session.screen.mode.width+'+')
-
-def show_program():
-    """Write a marked-up hex dump of the program to the log."""
-    prog = debugger.session.program
-    code = prog.bytecode.getvalue()
-    offset_val, p = 0, 0
-    for key in sorted(prog.line_numbers.keys())[1:]:
-        offset, linum = code[p+1:p+3], code[p+3:p+5]
-        last_offset = offset_val
-        offset_val = (struct.unpack('<H', offset)[0]
-                                - (debugger.session.memory.code_start + 1))
-        linum_val, = struct.unpack('<H', linum)
-        logging.debug((code[p:p+1].encode('hex') + ' ' +
-                        offset.encode('hex') + ' (+%03d) ' +
-                        code[p+3:p+5].encode('hex') + ' [%05d] ' +
-                        code[p+5:prog.line_numbers[key]].encode('hex')),
-                     offset_val - last_offset, linum_val )
-        p = prog.line_numbers[key]
-    logging.debug(code[p:p+1].encode('hex') + ' ' +
-                code[p+1:p+3].encode('hex') + ' (ENDS) ' +
-                code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex'))
