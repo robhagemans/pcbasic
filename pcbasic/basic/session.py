@@ -465,30 +465,31 @@ class Session(object):
         """Clear everything required for the CLEAR command."""
         #   Resets the stack and string space
         #   Clears all COMMON and user variables
-        if not preserve_common and not preserve_all:
-            self.memory.reset_commons()
-        self.memory.clear_variables(preserve_all)
-        if not preserve_all:
-            # functions are cleared except when CHAIN ... ALL is specified
-            self.expression_parser.user_functions.clear()
-        if not preserve_deftype:
-            # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
-            self.memory.clear_deftype()
-        # reset random number generator
-        self.randomiser.clear()
         if close_files:
             # close all files
             self.files.close_all()
+        if not preserve_deftype:
+            # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
+            self.memory.clear_deftype()
+        if not preserve_common:
+            self.memory.reset_commons()
+        self.memory.clear_variables(preserve_all)
         # release all disk buffers (FIELD)?
         self.memory.reset_fields()
-        # stop all sound
-        self.sound.stop_all_sound()
+        if not preserve_all:
+            # functions are cleared except when CHAIN ... ALL is specified
+            self.expression_parser.user_functions.clear()
         # Resets STRIG to off
         self.stick.is_on = False
+        # stop all sound
+        self.sound.stop_all_sound()
         # reset sound and PLAY state
         self.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position
         self.screen.drawing.reset()
+        # reset random number generator
+        self.randomiser.clear()
+        # reset stacks & pointers
         self.interpreter.clear()
 
     def shell_(self, args):
