@@ -357,7 +357,7 @@ class Interpreter(object):
     def for_(self, args):
         """Initialise a FOR loop."""
         # read variable
-        varname = next(args)
+        varname = self._memory.complete_name(next(args))
         vartype = varname[-1]
         start = values.to_type(vartype, next(args))
         # only raised after the TO has been parsed
@@ -396,7 +396,7 @@ class Interpreter(object):
         # check var name for NEXT
         # no-var only allowed in standalone NEXT
         if ins.skip_blank() not in tk.END_STATEMENT:
-            varname2 = self.statement_parser.parse_name(ins)
+            varname2 = self._memory.complete_name(self.statement_parser.parse_name(ins))
         else:
             varname2 = None
         # get position and line number just after the matching variable in NEXT
@@ -411,10 +411,10 @@ class Interpreter(object):
         """Iterate a loop (NEXT)."""
         for varname in args:
             # increment counter, check condition
-            if self.iterate_loop(varname):
+            if self.iterate_loop():
                 break
 
-    def iterate_loop(self, dummy_varname=None):
+    def iterate_loop(self):
         """Iterate a loop (NEXT)."""
         ins = self.get_codestream()
         # record the location after the variable
@@ -509,6 +509,7 @@ class Interpreter(object):
     def read_(self, args):
         """READ: read values from DATA statement."""
         for name, indices in args:
+            name = self._memory.complete_name(name)
             type_char, code_start = name[-1], self._memory.code_start
             current = self._program_code.tell()
             self._program_code.seek(self.data_pos)
@@ -627,6 +628,7 @@ class Interpreter(object):
     def def_fn_(self, args):
         """DEF FN: define a function."""
         fnname, = args
+        fnname = self._memory.complete_name(fnname)
         # don't allow DEF FN in direct mode, as we point to the code in the stored program
         # this is raised before further syntax errors
         if not self.run_mode:
