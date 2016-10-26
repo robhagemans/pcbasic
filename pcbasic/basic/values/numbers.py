@@ -559,18 +559,15 @@ class Float(Number):
 
     def imul(self, right_in):
         """Multiply in-place."""
-        global lden_s, rden_s, sden_s
         if self.is_zero() or right_in.is_zero():
             # set any zeroes to standard zero
             self._buffer[:] = b'\0' * self.size
             return self
         lexp, lman, lneg = self._denormalise()
         rexp, rman, rneg = right_in._denormalise()
-        lden_s, rden_s = lman, rman
         lexp += rexp - right_in._bias - 8
         lneg = (lneg != rneg)
         lman *= rman
-        sden_s = lman
         if lexp < -31:
             self._buffer[:] = b'\0' * self.size
             return self._buffer
@@ -752,7 +749,6 @@ class Float(Number):
 
     def _normalise(self, exp, man, neg):
         """Normalise from shifted mantissa, exp, sign."""
-        global pden_s
         # zero denormalised mantissa -> make zero
         if man == 0 or exp <= 0:
             self._buffer[:] = b'\0' * self.size
@@ -761,7 +757,6 @@ class Float(Number):
         while man < (self._den_mask-1):
             exp -= 1
             man <<= 1
-        pden_s = man
         # round to nearest; halves to even (Gaussian rounding)
         round_up = (man & 0xff > 0x80) or (man & 0xff == 0x80 and man & 0x100 == 0x100)
         man = (man & self._carrymask) + 0x100 * round_up
@@ -833,7 +828,6 @@ class Float(Number):
         """Denormalised add."""
         lexp, lman, lneg = lden
         rexp, rman, rneg = rden
-        global lden_s, rden_s, sden_s
         if rexp == 0:
             return lexp, lman, lneg
         if lexp == 0:
@@ -848,8 +842,6 @@ class Float(Number):
         # match exponents
         lman >>= (rexp - lexp)
         lexp = rexp
-        lden_s = lman
-        rden_s = rman
         # shortcut (this affects quirky rounding)
         if (lman < 0x80 or lman == 0x80 and zero_flag) and sub_flag:
             return rexp, rman, rneg
@@ -865,7 +857,6 @@ class Float(Number):
         if not zero_flag and not sub_flag:
             man |= 0x1
         # attempt to match GW-BASIC subtraction rounding
-        sden_s = -man if sub_flag else man
         if sub_flag and (man & 0x1c0 == 0x80) and (man & 0x1df != 0x80):
             man &= (self._carrymask + 0x7f)
         return lexp, man, neg
@@ -1171,6 +1162,3 @@ def decimal_notation(digitstr, exp10, type_sign, force_dot):
         if type_sign == '#':
             valstr += type_sign
     return valstr
-
-
-lden_s, rden_s, sden_s, pden_s = 0,0,0,0

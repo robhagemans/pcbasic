@@ -47,7 +47,7 @@ if __name__ == '__main__':
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
-                            print format(numbers.lden_s, '032b'), format(numbers.rden_s, '032b'), out.encode('hex')[:2], inp.encode('hex')[:2], bin(numbers.pden_s), bufs
+                            print out.encode('hex'), inp.encode('hex')
 
 
     print 'allbytes-sub'
@@ -70,7 +70,7 @@ if __name__ == '__main__':
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
-                            print format(numbers.lden_s, '032b'), format(numbers.rden_s, '032b'), out.encode('hex')[:2], inp.encode('hex')[:2], bin(numbers.pden_s), bufs
+                            print out.encode('hex'), inp.encode('hex')
 
     print 'allshifts'
 
@@ -96,8 +96,7 @@ if __name__ == '__main__':
                             g.write(out)
                             inp = h.read(4)
                             if out != inp:
-                                print format(numbers.lden_s, '032b'), format(numbers.rden_s, '032b'), out.encode('hex')[:2], inp.encode('hex')[:2], bin(numbers.pden_s), bufs
-#                                print format(lden_s, '032b'), format(rden_s, '032b'), out.encode('hex')[:2], inp.encode('hex')[:2], bin(pden_s), bin(carry_s), bufs
+                                print out.encode('hex'), inp.encode('hex')
                             l = ll
 
 
@@ -127,7 +126,7 @@ if __name__ == '__main__':
                             g.write(out)
                             inp = h.read(4)
                             if out != inp:
-                                print format(lden_s, '032b'), format(rden_s, '032b'), out.encode('hex')[:2], inp.encode('hex')[:2], bin(pden_s), bufs, numbers.sden_s
+                                print out.encode('hex'), inp.encode('hex')
                             l = ll
 
 
@@ -149,11 +148,7 @@ if __name__ == '__main__':
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
-                            print format(numbers.lden_s>>8, '025b'), format(numbers.lden_s & 0xff, '08b'),
-                            print format(numbers.rden_s>>8, '025b'), format(numbers.rden_s & 0xff, '08b'),
-                            print out.encode('hex')[:2], inp.encode('hex')[:2],
-                            print format(numbers.pden_s>>8, '025b'), format(numbers.pden_s & 0xff, '08b'),
-                            print format(numbers.sden_s>>8, '025b'), format(numbers.sden_s & 0xff, '08b')
+                            print out.encode('hex'), inp.encode('hex')
                         l = ll
 
     print 'bigbytes'
@@ -174,11 +169,7 @@ if __name__ == '__main__':
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
-                            print format(numbers.lden_s>>8, '025b'), format(numbers.lden_s & 0xff, '08b'),
-                            print format(numbers.rden_s>>8, '025b'), format(numbers.rden_s & 0xff, '08b'),
-                            print out.encode('hex')[:2], inp.encode('hex')[:2],
-                            print format(numbers.pden_s>>8, '025b'), format(numbers.pden_s & 0xff, '08b'),
-                            print format(numbers.sden_s>>8, '025b'), format(numbers.sden_s & 0xff, '08b')
+                            print out.encode('hex'), inp.encode('hex')
                         l = ll
 
 
@@ -204,9 +195,5 @@ if __name__ == '__main__':
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
-                            print bufs[0].encode('hex'), '*', bufs[1].encode('hex'), '==', out.encode('hex'), '!=', inp.encode('hex'),
-                            print format(numbers.lden_s>>8, '025b'), format(numbers.lden_s & 0xff, '08b'),
-                            print format(numbers.rden_s>>8, '025b'), format(numbers.rden_s & 0xff, '08b'),
-                            print format(numbers.pden_s>>8, '025b'), format(numbers.pden_s & 0xff, '08b'),
-                            print numbers.sden_s #format(numbers.sden_s>>8, '025b'), format(numbers.sden_s & 0xff, '08b')
+                            print out.encode('hex'), inp.encode('hex')
                         l = ll
