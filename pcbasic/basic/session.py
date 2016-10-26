@@ -171,8 +171,6 @@ class Session(object):
         self.interpreter = interpreter.Interpreter(
                 self.debugger, self.events, self.screen, self.devices, self.sound,
                 self.values, self.memory, self.scalars, self.program, self.statement_parser)
-        # interpreter is executing a command (needs Screen)
-        self.interpreter.set_parse_mode(False)
         # set up rest of memory model
         self.all_memory = machine.Memory(
                 self.memory, self.devices, self.files,

@@ -49,6 +49,8 @@ class Interpreter(object):
         self.set_pointer(False, 0)
         # interpreter is waiting for INPUT or LINE INPUT
         self.input_mode = False
+        # interpreter is executing a command (needs Screen)
+        self.set_parse_mode(False)
 
     def _init_error_trapping(self):
         """Initialise error trapping."""
