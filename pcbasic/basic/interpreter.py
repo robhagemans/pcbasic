@@ -378,7 +378,7 @@ class Interpreter(object):
         self._scalars.set(varname, start)
         # obtain a view of the loop variable
         counter_view = self._scalars.view(varname)
-        self.for_stack.append((counter_view, stop, step, step.sign(), forpos, nextpos,))
+        self.for_stack.append((varname, counter_view, stop, step, step.sign(), forpos, nextpos,))
         # empty loop: jump to NEXT without executing block
         if (start.gt(stop) if step.sign() > 0 else stop.gt(start)):
             ins.seek(nextpos)
@@ -411,10 +411,10 @@ class Interpreter(object):
         """Iterate a loop (NEXT)."""
         for varname in args:
             # increment counter, check condition
-            if self.iterate_loop():
+            if self.iterate_loop(varname):
                 break
 
-    def iterate_loop(self):
+    def iterate_loop(self, varname=None):
         """Iterate a loop (NEXT)."""
         ins = self.get_codestream()
         # record the location after the variable
@@ -422,8 +422,12 @@ class Interpreter(object):
         # find the matching NEXT record
         num = len(self.for_stack)
         for depth in range(num):
-            counter_view, stop, step, sgn, forpos, nextpos = self.for_stack[-depth-1]
+            varname2, counter_view, stop, step, sgn, forpos, nextpos = self.for_stack[-depth-1]
             if pos == nextpos:
+                if varname is not None and varname2 != self._memory.complete_name(varname):
+                    # check once more for matches
+                    # it has been checked at FOR, but DEFtypes may have changed.
+                    raise error.RunError(error.NEXT_WITHOUT_FOR)
                 # only drop NEXT record if we've found a matching one
                 self.for_stack = self.for_stack[:len(self.for_stack)-depth]
                 break
