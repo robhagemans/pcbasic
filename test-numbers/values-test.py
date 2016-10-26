@@ -3,13 +3,16 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-from pcbasic.basic.numbers import *
-from pcbasic.basic import numbers
+from pcbasic.basic.values import *
+import pcbasic.basic.values
+from pcbasic.basic.values.numbers import *
+from pcbasic.basic.values import numbers
 
 if __name__ == '__main__':
+    vm = values.Values(None, None, False)
     for i in range(127,130):
-        a = Single().from_int(i)
-        r = Single().from_int(2**23)
+        a = vm.new_single().from_int(i)
+        r = vm.new_single().from_int(2**23)
         r.iadd(a)
         s = r.clone()
         s.view()[-1:] = chr(ord(s.view()[-1])+8)
@@ -37,9 +40,9 @@ if __name__ == '__main__':
                         bufl = bytearray(chr(buf[0])+'\0\0'+chr(0x80))
                         bufr = bytearray(chr(buf[1])+'\0\0'+chr(0x80))
 
-                        l = Single(bufl)
+                        l = Single(bufl, vm)
                         bufs = str(bufl), str(bufr)
-                        r = Single(bufr)
+                        r = Single(bufr, vm)
                         out = str(l.iadd(r).to_bytes())
                         g.write(out)
                         inp = h.read(4)
@@ -60,9 +63,9 @@ if __name__ == '__main__':
                         bufl = bytearray(chr(buf[0])+'\0\0'+chr(0x80))
                         bufr = bytearray(chr(buf[1])+'\0\0'+chr(0x80))
 
-                        l = Single(bufl)
+                        l = Single(bufl, vm)
                         bufs = str(bufl), str(bufr)
-                        r = Single(bufr)
+                        r = Single(bufr, vm)
                         out = str(l.isub(r).to_bytes())
                         g.write(out)
                         inp = h.read(4)
@@ -72,7 +75,7 @@ if __name__ == '__main__':
     print 'allshifts'
 
     for shift in [0,]+range(9, 11):
-        r = Single()
+        r = vm.new_single()
         letter = chr(ord('0')+shift) if shift<10 else chr(ord('A')-10+shift)
         print letter
 
@@ -86,7 +89,7 @@ if __name__ == '__main__':
                             if len(buf) < 4:
                                 break
                             buf[2:] = '\0\x80'
-                            r = Single(buf)
+                            r = Single(buf, vm)
                             ll = l.clone()
                             bufs = str(l.to_bytes()), str(buf)
                             out = str(l.iadd(r).to_bytes())
@@ -103,7 +106,7 @@ if __name__ == '__main__':
     print 'lowshifts'
 
     for shift in range(17):
-        r = Single()
+        r = vm.new_single()
         letter = chr(ord('0')+shift) if shift<10 else chr(ord('A')-10+shift)
         print letter
 
@@ -117,7 +120,7 @@ if __name__ == '__main__':
                             if len(buf) < 4:
                                 break
                             buf[2:] = '\0\x80'
-                            r = Single(buf)
+                            r = Single(buf, vm)
                             ll = l.clone()
                             bufs = str(l.to_bytes()), str(buf)
                             out = str(l.iadd(r).to_bytes())
@@ -130,7 +133,7 @@ if __name__ == '__main__':
 
     print 'bytes'
 
-    r = Single()
+    r = vm.new_single()
     with open('input/BYTES.DAT', 'rb') as f:
         with open ('model/GWBASADD.DAT', 'rb') as h:
             with open('output/ADD.DAT', 'wb') as g:
@@ -139,7 +142,7 @@ if __name__ == '__main__':
                         buf = bytearray(f.read(4))
                         if len(buf) < 4:
                             break
-                        r = Single(buf)
+                        r = Single(buf, vm)
                         ll = l.clone()
                         bufs = str(l.to_bytes()), str(buf)
                         out = str(l.iadd(r).to_bytes())
@@ -155,7 +158,7 @@ if __name__ == '__main__':
 
     print 'bigbytes'
 
-    r = Single()
+    r = vm.new_single()
     with open('input/BIGBYTES.DAT', 'rb') as f:
         with open ('model/GWBIGADD.DAT', 'rb') as h:
             with open('output/BIGADD.DAT', 'wb') as g:
@@ -164,7 +167,7 @@ if __name__ == '__main__':
                         buf = bytearray(f.read(4))
                         if len(buf) < 4:
                             break
-                        r = Single(buf)
+                        r = Single(buf, vm)
                         ll = l.clone()
                         bufs = str(l.to_bytes()), str(buf)
                         out = str(l.iadd(r).to_bytes())
@@ -181,7 +184,7 @@ if __name__ == '__main__':
 
     print 'bigmul'
 
-    r = Single()
+    r = vm.new_single()
     with open('input/BIGBYTES.DAT', 'rb') as f:
         with open ('model/GWBIGMUL.DAT', 'rb') as h:
             with open('output/BIGMUL.DAT', 'wb') as g:
@@ -190,7 +193,7 @@ if __name__ == '__main__':
                         buf = bytearray(f.read(4))
                         if len(buf) < 4:
                             break
-                        r = Single(buf)
+                        r = Single(buf, vm)
                         ll = l.clone()
                         bufs = str(l.to_bytes()), str(buf)
                         try:
