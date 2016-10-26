@@ -46,6 +46,7 @@ class Arrays(object):
     def erase_(self, args):
         """Remove an array from memory."""
         for name in args:
+            name = self._memory.complete_name(name)
             if name not in self._dims:
                 # IFC if array does not exist
                 raise error.RunError(error.IFC)
@@ -106,7 +107,8 @@ class Arrays(object):
     def dim_(self, args):
         """DIM: dimension arrays."""
         for a in args:
-            self.allocate(*a)
+            name, indices = a
+            self.allocate(self._memory.complete_name(name), indices)
 
     def allocate(self, name, dimensions):
         """Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value."""
