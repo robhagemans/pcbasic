@@ -17,30 +17,12 @@ from . import signals
 from . import values
 from . import tokens as tk
 
-# base frequency for noise source
-base_freq = 3579545./1024.
-
-# 12-tone equal temperament
-# C, C#, D, D#, E, F, F#, G, G#, A, A#, B
-note_freq = [ 440.*2**((i-33.)/12.) for i in range(84) ]
-notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
-            'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
-
-
-class PlayState(object):
-    """State variables of the PLAY command."""
-
-    def __init__(self):
-        """Initialise play state."""
-        self.octave = 4
-        self.speed = 7./8.
-        self.tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
-        self.length = 0.25
-        self.volume = 15
-
 
 class Sound(object):
     """Sound queue manipulations."""
+
+    # base frequency for noise source
+    _base_freq = 3579545./1024.
 
     def __init__(self, queues, events, syntax):
         """Initialise sound queue."""
@@ -49,7 +31,7 @@ class Sound(object):
         self._events = events
         # Tandy/PCjr noise generator
         # frequency for noise sources
-        self.noise_freq = [base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
+        self.noise_freq = [self._base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
         self.noise_freq[3] = 0.
         self.noise_freq[7] = 0.
         # pc-speaker on/off; (not implemented; not sure whether should be on)
@@ -63,20 +45,7 @@ class Sound(object):
         self.sound_on = (self.capabilities == 'tandy')
         # timed queues for each voice
         self.voice_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
-        # initialise PLAY state
-        self.reset_play()
-
-    def clear(self):
-        """Stop all sound and reset PLAY (on CLEAR)."""
-        self.stop_all_sound()
-        self.reset_play()
-
-    def reset_play(self):
-        """Reset PLAY state."""
-        # music foreground (MF) mode
         self.foreground = True
-        # reset all PLAY state
-        self.play_state = [ PlayState(), PlayState(), PlayState() ]
 
     def beep_(self, args):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
@@ -239,7 +208,48 @@ class Sound(object):
             voice = 0
         return self.queue_length(voice)
 
-    def play_(self, data_segment, values, args):
+
+###############################################################################
+# PLAY parser
+
+
+class PlayState(object):
+    """State variables of the PLAY command."""
+
+    def __init__(self):
+        """Initialise play state."""
+        self.octave = 4
+        self.speed = 7./8.
+        self.tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
+        self.length = 0.25
+        self.volume = 15
+
+
+class PlayParser(object):
+    """MML Parser."""
+
+    # 12-tone equal temperament
+    # C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+    _note_freq = [440.*2**((i-33.)/12.) for i in range(84)]
+    _notes = {'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
+              'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11}
+
+    def __init__(self, sound, memory, values):
+        """Initialise parser."""
+        self._memory = memory
+        self._values = values
+        self._sound = sound
+        # initialise PLAY state
+        self.reset()
+
+    def reset(self):
+        """Reset PLAY state."""
+        # music foreground (MF) mode
+        self._sound.foreground = True
+        # reset all PLAY state
+        self._state = [PlayState(), PlayState(), PlayState()]
+
+    def play_(self,  args):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
         # retrieve Music Macro Language string
         mml_list = list(args)
@@ -247,17 +257,17 @@ class Sound(object):
         if not any(mml_list):
             raise error.RunError(error.MISSING_OPERAND)
         # on PCjr, three-voice PLAY requires SOUND ON
-        if self.capabilities == 'pcjr' and not self.sound_on and len(mml_list) > 1:
+        if self._sound.capabilities == 'pcjr' and not self._sound.sound_on and len(mml_list) > 1:
             raise error.RunError(error.STX)
         mml_list += [''] * (3-len(mml_list))
-        ml_parser_list = [mlparser.MLParser(mml, data_segment, values) for mml in mml_list]
+        ml_parser_list = [mlparser.MLParser(mml, self._memory, self._values) for mml in mml_list]
         next_oct = 0
         voices = range(3)
         while True:
             if not voices:
                 break
             for voice in voices:
-                vstate = self.play_state[voice]
+                vstate = self._state[voice]
                 mmls = ml_parser_list[voice]
                 c = mmls.skip_blank_read().upper()
                 if c == '':
@@ -283,12 +293,12 @@ class Sound(object):
                         mmls.read(1)
                         dur *= 1.5
                     if note == 0:
-                        self.play_sound(0, dur*vstate.tempo, vstate.speed,
+                        self._sound.play_sound(0, dur*vstate.tempo, vstate.speed,
                                         volume=0, voice=voice)
                     else:
-                        self.play_sound(note_freq[note-1], dur*vstate.tempo,
-                                         vstate.speed, volume=vstate.volume,
-                                         voice=voice)
+                        self._sound.play_sound(self._note_freq[note-1], dur*vstate.tempo,
+                                        vstate.speed, volume=vstate.volume,
+                                        voice=voice)
                 elif c == 'L':
                     recip = mmls.parse_number()
                     error.range_check(1, 64, recip)
@@ -333,13 +343,13 @@ class Sound(object):
                     if note == 'P':
                         # don't do anything for length 0
                         if length > 0:
-                            self.play_sound(0, dur * vstate.tempo, vstate.speed,
+                            self._sound.play_sound(0, dur * vstate.tempo, vstate.speed,
                                             volume=vstate.volume, voice=voice)
                     else:
                         # use default length for length 0
                         try:
-                            self.play_sound(
-                                note_freq[(vstate.octave+next_oct)*12 + notes[note]],
+                            self._sound.play_sound(
+                                self._note_freq[(vstate.octave+next_oct)*12 + self._notes[note]],
                                 dur * vstate.tempo, vstate.speed,
                                 volume=vstate.volume, voice=voice)
                         except KeyError:
@@ -354,13 +364,13 @@ class Sound(object):
                     elif c == 'S':
                         vstate.speed = 3./4.
                     elif c == 'F':
-                        self.foreground = True
+                        self._sound.foreground = True
                     elif c == 'B':
-                        self.foreground = False
+                        self._sound.foreground = False
                     else:
                         raise error.RunError(error.IFC)
-                elif c == 'V' and (self.capabilities == 'tandy' or
-                                    (self.capabilities == 'pcjr' and self.sound_on)):
+                elif c == 'V' and (self._sound.capabilities == 'tandy' or
+                                    (self._sound.capabilities == 'pcjr' and self._sound.sound_on)):
                     vol = mmls.parse_number()
                     error.range_check(-1, 15, vol)
                     if vol == -1:
@@ -369,14 +379,17 @@ class Sound(object):
                         vstate.volume = vol
                 else:
                     raise error.RunError(error.IFC)
-        max_time = max(q.expiry() for q in self.voice_queue[:3])
-        for voice, q in enumerate(self.voice_queue):
+        max_time = max(q.expiry() for q in self._sound.voice_queue[:3])
+        for voice, q in enumerate(self._sound.voice_queue):
             dur = (max_time - q.expiry()).total_seconds()
             if dur > 0:
-                self.play_sound(0, dur, fill=1, loop=False, voice=voice)
-        if self.foreground:
-            self.wait_all_music()
+                self._sound.play_sound(0, dur, fill=1, loop=False, voice=voice)
+        if self._sound.foreground:
+            self._sound.wait_all_music()
 
+
+###############################################################################
+# sound queue
 
 class TimedQueue(object):
     """Queue with expiring elements."""

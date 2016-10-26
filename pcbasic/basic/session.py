@@ -176,6 +176,8 @@ class Session(object):
                 self.memory, self.devices, self.files,
                 self.screen, self.keyboard, self.screen.fonts[8],
                 self.interpreter, peek_values, syntax)
+        # PLAY parser
+        self.play_parser = sound.PlayParser(self.sound, self.memory, self.values)
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
         # build function table (depends on Memory having been initialised)
@@ -456,8 +458,9 @@ class Session(object):
         # Resets STRIG to off
         self.stick.is_on = False
         # stop all sound
-        # reset sound and PLAY state
-        self.sound.clear()
+        self.sound.stop_all_sound()
+        # reset PLAY state
+        self.play_parser.reset()
         # reset DRAW state (angle, scale) and current graphics position
         self.screen.drawing.reset()
         # reset random number generator

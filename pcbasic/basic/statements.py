@@ -453,7 +453,7 @@ class StatementParser(object):
             tk.PLAY + tk.ON: session.events.play_,
             tk.PLAY + tk.OFF: session.events.play_,
             tk.PLAY + tk.STOP: session.events.play_,
-            tk.PLAY: partial(session.sound.play_, session.memory, session.values),
+            tk.PLAY: session.play_parser.play_,
             tk.VIEW + tk.PRINT: session.screen.view_print_,
             tk.VIEW: session.screen.drawing.view_,
             tk.PALETTE + tk.USING: partial(session.screen.palette.palette_using_, session.arrays, session.memory),
