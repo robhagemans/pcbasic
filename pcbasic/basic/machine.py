@@ -351,9 +351,9 @@ class Memory(object):
         logging.warning('DEF USR statement not implemented')
 
     def call_(self, args):
-        """CALL: Call machine language procedure."""
+        """CALL or CALLS: Call machine language procedure."""
         addr_var = next(args)
-        if addr_var[-1] == values.STR:
+        if self.data.complete_name(addr_var)[-1] == values.STR:
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
         list(args)
