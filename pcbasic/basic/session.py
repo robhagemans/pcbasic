@@ -682,22 +682,23 @@ class Session(object):
         # readvar is a list of (name, indices) tuples
         # we return a list of (name, indices, values) tuples
         while True:
-            self.editor.screen.write(prompt)
+            self.screen.write(prompt)
             # disconnect the wrap between line with the prompt and previous line
-            if self.editor.screen.current_row > 1:
-                self.editor.screen.apage.row[self.editor.screen.current_row-2].wrap = False
+            if self.screen.current_row > 1:
+                self.screen.apage.row[self.screen.current_row-2].wrap = False
             line = self.editor.wait_screenline(write_endl=newline)
             inputstream = devices.InputTextFile(line)
             # read the values and group them and the separators
             var, values, seps = [], [], []
-            for v in readvar:
-                word, sep = inputstream.input_entry(v[0][-1], allow_past_end=True)
+            for name, indices in readvar:
+                name = self.memory.complete_name(name)
+                word, sep = inputstream.input_entry(name[-1], allow_past_end=True)
                 try:
-                    value = self.values.from_repr(word, allow_nonnum=False, typechar=v[0][-1])
+                    value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
                 except error.RunError as e:
                     # string entered into numeric field
                     value = None
-                var.append(list(v))
+                var.append([name, indices])
                 values.append(value)
                 seps.append(sep)
             # last separator not empty: there were too many values or commas
@@ -706,7 +707,7 @@ class Session(object):
             # None means a conversion error occurred
             if (seps[-1] or '' in seps[:-1] or None in values):
                 # good old Redo!
-                self.editor.screen.write_line('?Redo from start')
+                self.screen.write_line('?Redo from start')
                 readvar = var
             else:
                 varlist = [r + [v] for r, v in zip(var, values)]
@@ -741,7 +742,8 @@ class Session(object):
         list(args)
         if not readvar:
             raise error.RunError(error.STX)
-        elif readvar[-1] != '$':
+        readvar = self.memory.complete_name(readvar)
+        if readvar[-1] != '$':
             raise error.RunError(error.TYPE_MISMATCH)
         # read the input
         if finp:
