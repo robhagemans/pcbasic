@@ -1776,9 +1776,10 @@ class Palette(object):
             if colour != -1:
                 self.set_entry(attrib, colour)
 
-    def palette_using_(self, arrays, args):
+    def palette_using_(self, arrays, memory, args):
         """PALETTE USING: set palette from array buffer."""
         array_name, start_indices = next(args)
+        array_name = memory.complete_name(array_name)
         list(args)
         num_palette_entries = self.mode.num_attr if self.mode.num_attr != 32 else 16
         try:

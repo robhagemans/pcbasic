@@ -751,11 +751,12 @@ class Drawing(object):
 
     ### PUT and GET: Sprite operations
 
-    def put_(self, arrays, args):
+    def put_(self, arrays, memory, args):
         """PUT: Put a sprite on the screen."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         lcoord, array_name, operation_token = args
+        array_name = memory.complete_name(array_name)
         operation_token = operation_token or tk.XOR
         if array_name not in arrays:
             raise error.RunError(error.IFC)
@@ -789,11 +790,12 @@ class Drawing(object):
         # apply the sprite to the screen
         self.screen.put_rect(x0, y0, x1, y1, sprite, operation_token)
 
-    def get_(self, arrays, args):
+    def get_(self, arrays, memory, args):
         """GET: Read a sprite from the screen."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         lcoord0, lcoord1, array_name = args
+        array_name = memory.complete_name(array_name)
         if array_name not in arrays:
             raise error.RunError(error.IFC)
         elif array_name[-1] == values.STR:

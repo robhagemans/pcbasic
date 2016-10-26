@@ -94,7 +94,7 @@ class Files(object):
         error.range_check_err(1, self.max_files, number, error.BAD_FILE_NUMBER)
         self.open(number, name, 'D', mode, access, lock, reclen)
 
-    def field_(self, args):
+    def field_(self, args, memory):
         """FIELD: attach a variable to the record buffer."""
         the_file = self.get(next(args), 'R')
         offset = 0
@@ -103,6 +103,7 @@ class Files(object):
                 width = values.to_int(next(args))
                 error.range_check(0, 255, width)
                 name, index = next(args)
+                name = memory.complete_name(name)
                 the_file.field.attach_var(name, index, offset, width)
                 offset += width
         except StopIteration:
