@@ -23,7 +23,7 @@ from . import dos
 class StatementParser(object):
     """BASIC statements."""
 
-    def __init__(self, temp_string, memory, expression_parser, syntax):
+    def __init__(self, temp_string, expression_parser, syntax):
         """Initialise statement context."""
         # expression parser
         self.expression_parser = expression_parser
@@ -35,8 +35,6 @@ class StatementParser(object):
         self._init_syntax()
         # temporary string context guard
         self._temp_string = temp_string
-        # data segment, for complete_name()
-        self._memory = memory
 
     def parse_statement(self, ins):
         """Parse and execute a single statement."""
@@ -80,7 +78,7 @@ class StatementParser(object):
         # must not be empty
         error.throw_if(not name, error.STX)
         # append sigil, if missing
-        return self._memory.complete_name(name)
+        return name
 
     def parse_expression(self, ins, allow_empty=False):
         """Compute the value of the expression at the current code pointer."""
@@ -128,9 +126,6 @@ class StatementParser(object):
         """Helper function: parse a scalar or array element."""
         name = ins.read_name()
         error.throw_if(not name, error.STX)
-        # this is an evaluation-time determination
-        # as we could have passed another DEFtype statement
-        name = self._memory.complete_name(name)
         self.redo_on_break = True
         indices = self.expression_parser.parse_indices(ins)
         self.redo_on_break = False
