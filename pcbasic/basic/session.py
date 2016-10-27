@@ -101,8 +101,7 @@ class Session(object):
                 self.codepage, font, warn_fonts=option_debug)
         # initialise input methods
         # screen is needed for print_screen, clipboard copy and pen poll
-        # sound is used for keyboard buffer beeps
-        self.input_methods.init(self.screen, self.sound, self.fkey_macros,
+        self.input_methods.init(self.screen, self.fkey_macros,
                 self.codepage, keystring, ignore_caps, ctrl_c_is_break)
         # set up variables and memory model state
         # initialise the data segment

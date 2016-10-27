@@ -74,7 +74,7 @@ class InputMethods(object):
         """Initialise event triggers."""
         self._queues = queues
 
-    def init(self, screen, sound, fkey_macros,
+    def init(self, screen, fkey_macros,
             codepage, keystring, ignore_caps, ctrl_c_is_break):
         self._screen = screen
         self.pen = Pen(screen)
@@ -82,10 +82,8 @@ class InputMethods(object):
         # Screen needed in Keyboard for print_screen()
         # and also for clipboard operations
         # InputMethods needed for wait() only
-        # Sound is needed for the beeps when the buffer fills up
-        # for full-buffer beeps, can use the audio queue directly instead of through sound
         self.keyboard = Keyboard(self, screen, fkey_macros,
-                codepage, sound, keystring, ignore_caps, ctrl_c_is_break)
+                codepage, self._queues, keystring, ignore_caps, ctrl_c_is_break)
 
 
     ##########################################################################
@@ -159,8 +157,10 @@ class InputMethods(object):
 class KeyboardBuffer(object):
     """Quirky emulated ring buffer for keystrokes."""
 
+    # short beep (0.1s at 800Hz) emitted if buffer is full
+    _full_tone = signals.Event(signals.AUDIO_TONE, [0, 800, 0.01, 1, False, 15])
 
-    def __init__(self, sound, ring_length, fkey_macros):
+    def __init__(self, queues, ring_length, fkey_macros):
         """Initialise to given length."""
         # buffer holds tuples (eascii/codepage, scancode, modifier)
         self.buffer = []
@@ -169,7 +169,7 @@ class KeyboardBuffer(object):
         # expansion buffer for keyboard macros; also used for DBCS
         # expansion vessel holds codepage chars
         self.expansion_vessel = []
-        self.sound = sound
+        self._queues = queues
         # function-key macros
         self.fkey_macros = fkey_macros
 
@@ -197,7 +197,7 @@ class KeyboardBuffer(object):
         if cp_c:
             if check_full and len(self.buffer) >= self.ring_length:
                 # emit a sound signal when buffer is full (and we care)
-                self.sound.play_sound_no_wait(800, 0.01)
+                self._queues.audio.put(self._full_tone)
             else:
                 self.buffer.append((cp_c, scancode, modifier))
 
@@ -278,10 +278,10 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, input_methods, screen, fkey_macros, codepage, sound, keystring, ignore_caps, ctrl_c_is_break):
+    def __init__(self, input_methods, screen, fkey_macros, codepage, queues, keystring, ignore_caps, ctrl_c_is_break):
         """Initilise keyboard state."""
         # key queue (holds bytes)
-        self.buf = KeyboardBuffer(sound, 15, fkey_macros)
+        self.buf = KeyboardBuffer(queues, 15, fkey_macros)
         # pre-buffer for keystrokes to enable event handling (holds unicode)
         self.prebuf = []
         # INP(&H60) scancode
