@@ -104,9 +104,6 @@ class Session(object):
         # sound is used for keyboard buffer beeps
         self.input_methods.init(self.screen, self.sound, self.fkey_macros,
                 self.codepage, keystring, ignore_caps, ctrl_c_is_break)
-        self.pen = self.input_methods.pen
-        self.stick = self.input_methods.stick
-        self.keyboard = self.input_methods.keyboard
         # set up variables and memory model state
         # initialise the data segment
         self.memory = memory.DataSegment(
@@ -138,7 +135,7 @@ class Session(object):
         # DataSegment needed for COMn and disk FIELD buffers
         # InputMethods needed for wait()
         self.devices = files.Devices(
-                self.input_methods, self.memory.fields, self.screen, self.keyboard,
+                self.input_methods, self.memory.fields, self.screen, self.input_methods.keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)
@@ -147,10 +144,10 @@ class Session(object):
         self.screen.set_print_screen_target(self.devices.lpt1_file)
         # initialise the editor
         self.editor = editor.Editor(
-                self.screen, self.keyboard, self.sound,
+                self.screen, self.input_methods.keyboard, self.sound,
                 self.output_redirection, self.devices.lpt1_file)
         # set up the SHELL command
-        self.shell = dos.get_shell_manager(self.keyboard, self.screen, self.codepage, option_shell, syntax)
+        self.shell = dos.get_shell_manager(self.input_methods.keyboard, self.screen, self.codepage, option_shell, syntax)
         # initialise random number generator
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock
@@ -165,7 +162,7 @@ class Session(object):
         # set up BASIC event handlers
         self.basic_events = events.BasicEvents(syntax)
         self.basic_events.init(
-                self.keyboard, self.pen, self.stick, self.sound,
+                self.input_methods, self.sound,
                 self.clock, self.devices, self.screen)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
@@ -174,7 +171,7 @@ class Session(object):
         # set up rest of memory model
         self.all_memory = machine.Memory(
                 self.memory, self.devices, self.files,
-                self.screen, self.keyboard, self.screen.fonts[8],
+                self.screen, self.input_methods.keyboard, self.screen.fonts[8],
                 self.interpreter, peek_values, syntax)
         # PLAY parser
         self.play_parser = sound.PlayParser(self.sound, self.memory, self.values)
@@ -203,7 +200,7 @@ class Session(object):
         # build function table (depends on Memory having been initialised)
         self.expression_parser.init_functions(self)
         self.statement_parser.init_statements(self)
-        self.keyboard._input_closed = False
+        self.input_methods.keyboard._input_closed = False
         # suppress double prompt
         if not self.interpreter._parse_mode:
             self._prompt = False
@@ -456,7 +453,7 @@ class Session(object):
             # functions are cleared except when CHAIN ... ALL is specified
             self.expression_parser.user_functions.clear()
         # Resets STRIG to off
-        self.stick.is_on = False
+        self.input_methods.stick.is_on = False
         # stop all sound
         self.sound.stop_all_sound()
         # reset PLAY state

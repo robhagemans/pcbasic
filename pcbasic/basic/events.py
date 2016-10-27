@@ -33,11 +33,11 @@ class BasicEvents(object):
         # tandy and pcjr have multi-voice sound
         self.multivoice = syntax in ('pcjr', 'tandy')
 
-    def init(self, keyboard, pen, stick, sound, clock, devices, screen):
+    def init(self, input_methods, sound, clock, devices, screen):
         """Initialise input events and BASIC events after Session has been built."""
-        self._keyboard = keyboard
-        self._pen = pen
-        self._stick = stick
+        self._keyboard = input_methods.keyboard
+        self._pen = input_methods.pen
+        self._stick = input_methods.stick
         self._sound = sound
         self._clock = clock
         self._devices = devices

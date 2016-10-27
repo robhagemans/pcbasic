@@ -458,8 +458,8 @@ class StatementParser(object):
             tk.VIEW: session.screen.drawing.view_,
             tk.PALETTE + tk.USING: partial(session.screen.palette.palette_using_, session.arrays, session.memory),
             tk.PALETTE: session.screen.palette.palette_,
-            tk.STRIG + tk.ON: session.stick.strig_statement_,
-            tk.STRIG + tk.OFF: session.stick.strig_statement_,
+            tk.STRIG + tk.ON: session.input_methods.stick.strig_statement_,
+            tk.STRIG + tk.OFF: session.input_methods.stick.strig_statement_,
             tk.STRIG: session.basic_events.strig_,
             '_DEBUG': session.debugger.debug_,
         }
