@@ -24,11 +24,11 @@ class Sound(object):
     # base frequency for noise source
     _base_freq = 3579545./1024.
 
-    def __init__(self, queues, events, syntax):
+    def __init__(self, queues, input_methods, syntax):
         """Initialise sound queue."""
         # for wait() and queues
         self._queues = queues
-        self._events = events
+        self._input_methods = input_methods
         # Tandy/PCjr noise generator
         # frequency for noise sources
         self.noise_freq = [self._base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
@@ -161,12 +161,12 @@ class Sound(object):
         while (self.queue_length(0) > wait_length or
                 self.queue_length(1) > wait_length or
                 self.queue_length(2) > wait_length):
-            self._events.wait()
+            self._input_methods.wait()
 
     def wait_all_music(self):
         """Wait until all music (not noise) has finished playing."""
         while (self.is_playing(0) or self.is_playing(1) or self.is_playing(2)):
-            self._events.wait()
+            self._input_methods.wait()
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""

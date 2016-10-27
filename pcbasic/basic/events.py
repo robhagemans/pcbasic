@@ -1,28 +1,28 @@
 """
 PC-BASIC - events.py
-Input event loop and handlers for BASIC events
+Handlers for BASIC events
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
 from contextlib import contextmanager
-import time
-import Queue
 
 from . import scancode
-from . import signals
 from . import error
 from . import values
 from . import tokens as tk
 
 
-class Events(object):
-    """Event management."""
+###############################################################################
+# BASIC events
 
-    def __init__(self, queues, syntax):
+
+class BasicEvents(object):
+    """Manage BASIC events."""
+
+    def __init__(self, syntax):
         """Initialise event triggers."""
-        self._queues = queues
         # events start unactivated
         self.active = False
         # 12 definable function keys for Tandy, 10 otherwise
@@ -87,6 +87,27 @@ class Events(object):
         yield
         self.suspend_all = store
 
+
+    def command(self, handler, command_char):
+        """Turn the event ON, OFF and STOP."""
+        if command_char == tk.ON:
+            self.enabled.add(handler)
+            handler.stopped = False
+        elif command_char == tk.OFF:
+            self.enabled.discard(handler)
+        elif command_char == tk.STOP:
+            handler.stopped = True
+        else:
+            return False
+        return True
+
+
+    def check(self):
+        """Check and trigger events."""
+        # events are only active if a program is running
+        if self.active:
+            for e in self.enabled:
+                e.check()
 
     ##########################################################################
     # callbacks
@@ -169,90 +190,7 @@ class Events(object):
             error.range_check(1, 2, comnum)
             self.com[comnum-1].set_jump(jumpnum)
 
-    ##########################################################################
-    # main event checker
 
-    tick = 0.006
-
-    def wait(self):
-        """Wait and check events."""
-        time.sleep(self.tick)
-        self.check_events()
-
-    def check_events(self):
-        """Main event cycle."""
-        # we need this for audio thread to keep up during tight loops
-        # but how much does it slow us down otherwise?
-        time.sleep(0)
-        self._check_input()
-        # events are only active if a program is running
-        if self.active:
-            for e in self.enabled:
-                e.check()
-        self._keyboard.drain_event_buffer()
-
-    def command(self, handler, command_char):
-        """Turn the event ON, OFF and STOP."""
-        if command_char == tk.ON:
-            self.enabled.add(handler)
-            handler.stopped = False
-        elif command_char == tk.OFF:
-            self.enabled.discard(handler)
-        elif command_char == tk.STOP:
-            handler.stopped = True
-        else:
-            return False
-        return True
-
-    def _check_input(self):
-        """Handle input events."""
-        while True:
-            # pop input queues
-            try:
-                signal = self._queues.inputs.get(False)
-            except Queue.Empty:
-                if not self._keyboard.pause:
-                    break
-                else:
-                    continue
-            self._queues.inputs.task_done()
-            # process input events
-            if signal.event_type == signals.KEYB_QUIT:
-                raise error.Exit()
-            elif signal.event_type == signals.KEYB_CHAR:
-                # params is a unicode sequence
-                self._keyboard.insert_chars(*signal.params)
-            elif signal.event_type == signals.KEYB_DOWN:
-                # params is e-ASCII/unicode character sequence, scancode, modifier
-                self._keyboard.key_down(*signal.params)
-            elif signal.event_type == signals.KEYB_UP:
-                self._keyboard.key_up(*signal.params)
-            elif signal.event_type == signals.STREAM_CHAR:
-                self._keyboard.insert_chars(*signal.params, check_full=False)
-            elif signal.event_type == signals.STREAM_CLOSED:
-                self._keyboard.close_input()
-            elif signal.event_type == signals.PEN_DOWN:
-                self._pen.down(*signal.params)
-            elif signal.event_type == signals.PEN_UP:
-                self._pen.up()
-            elif signal.event_type == signals.PEN_MOVED:
-                self._pen.moved(*signal.params)
-            elif signal.event_type == signals.STICK_DOWN:
-                self._stick.down(*signal.params)
-            elif signal.event_type == signals.STICK_UP:
-                self._stick.up(*signal.params)
-            elif signal.event_type == signals.STICK_MOVED:
-                self._stick.moved(*signal.params)
-            elif signal.event_type == signals.CLIP_PASTE:
-                self._keyboard.insert_chars(*signal.params, check_full=False)
-            elif signal.event_type == signals.CLIP_COPY:
-                text = self._screen.get_text(*(signal.params[:4]))
-                self._queues.video.put(signals.Event(
-                        signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
-
-
-###############################################################################
-# BASIC event triggers
 
 class EventHandler(object):
     """Manage event triggers."""

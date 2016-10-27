@@ -18,11 +18,12 @@ from . import values
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, debugger, events, screen, devices, sound,
-                values, memory, scalars, program, statement_parser):
+    def __init__(self, debugger, input_methods, screen, devices, sound,
+                values, memory, scalars, program, statement_parser, basic_events):
         """Initialise interpreter."""
         self._debugger = debugger
-        self._events = events
+        self._input_methods = input_methods
+        self._basic_events = basic_events
         self._values = values
         self._memory = memory
         self._scalars = scalars
@@ -65,7 +66,8 @@ class Interpreter(object):
         """Parse from the current pointer in current codestream."""
         while True:
             # may raise Break
-            self._events.check_events()
+            self._input_methods.check_events()
+            self._basic_events.check()
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()
@@ -146,7 +148,7 @@ class Interpreter(object):
         # disable error trapping
         self._init_error_trapping()
         # disable all event trapping (resets PEN to OFF too)
-        self._events.reset()
+        self._basic_events.reset()
         # CLEAR also dumps for_next and while_wend stacks
         self.clear_loop_stacks()
         # reset the DATA pointer
@@ -180,9 +182,9 @@ class Interpreter(object):
 
     def handle_basic_events(self):
         """Jump to user-defined event subs if events triggered."""
-        if self._events.suspend_all or not self.run_mode:
+        if self._basic_events.suspend_all or not self.run_mode:
             return
-        for event in self._events.enabled:
+        for event in self._basic_events.enabled:
             if (event.triggered and not event.stopped and event.gosub is not None):
                 # release trigger
                 event.triggered = False
@@ -206,7 +208,7 @@ class Interpreter(object):
             self.error_resume = self.current_statement, self.run_mode
             self.jump(self.on_error)
             self.error_handle_mode = True
-            self._events.suspend_all = True
+            self._basic_events.suspend_all = True
         else:
             self.error_handle_mode = False
             self.set_pointer(False)
@@ -232,7 +234,7 @@ class Interpreter(object):
         """Set program pointer to the given codestream and position."""
         self.run_mode = new_runmode
         # events are active in run mode
-        self._events.set_active(new_runmode)
+        self._basic_events.set_active(new_runmode)
         # keep the sound engine on to avoid delays in run mode
         self._sound.persist(new_runmode)
         # suppress cassette messages in run mode
@@ -617,7 +619,7 @@ class Interpreter(object):
         self.error_num = 0
         self.error_handle_mode = False
         self.error_resume = None
-        self._events.suspend_all = False
+        self._basic_events.suspend_all = False
         if not where:
             # RESUME or RESUME 0
             self.set_pointer(runmode, start_statement)
@@ -663,6 +665,6 @@ class Interpreter(object):
         if self.on_error:
             self.on_error = old_to_new[self.on_error]
         # renumber event traps
-        for handler in self._events.all:
+        for handler in self._basic_events.all:
             if handler.gosub:
                 handler.set_jump(old_to_new[handler.gosub])

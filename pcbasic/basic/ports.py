@@ -52,25 +52,25 @@ class COMDevice(devices.Device):
 
     allowed_modes = 'IOAR'
 
-    def __init__(self, arg, events, field, serial_in_size):
+    def __init__(self, arg, input_methods, field, serial_in_size):
         """Initialise COMn: device."""
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
         self.stream = None
-        self.events = events
+        self.input_methods = input_methods
         self.field = field
         self.serial_in_size = serial_in_size
         try:
             if not addr and not val:
                 pass
             elif addr == 'SOCKET':
-                self.stream = SocketSerialStream(val, self.events, do_open=False)
+                self.stream = SocketSerialStream(val, self.input_methods, do_open=False)
             elif addr == 'STDIO' or (not addr and val.upper() == 'STDIO'):
                 crlf = (val.upper() == 'CRLF')
                 self.stream = StdIOStream(crlf)
             elif addr == 'PORT':
                 # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
-                self.stream = SerialStream(val, self.events, do_open=False)
+                self.stream = SerialStream(val, self.input_methods, do_open=False)
             else:
                 logging.warning('Could not attach %s to COM device', arg)
         except (ValueError, EnvironmentError) as e:
@@ -81,7 +81,7 @@ class COMDevice(devices.Device):
             self.stream = None
         if self.stream:
             # NOTE: opening a text file automatically tries to read a byte
-            self.device_file = COMFile(self.stream, self.field, self.events, False, serial_in_size)
+            self.device_file = COMFile(self.stream, self.field, self.input_methods, False, serial_in_size)
 
     def open(self, number, param, filetype, mode, access, lock,
                        reclen, seg, offset, length):
@@ -105,7 +105,7 @@ class COMDevice(devices.Device):
         except Exception:
             self.stream.close()
             raise
-        f = COMFile(self.stream, self.field, self.events, lf, self.serial_in_size)
+        f = COMFile(self.stream, self.field, self.input_methods, lf, self.serial_in_size)
         # inherit width settings from device file
         f.width = self.device_file.width
         f.col = self.device_file.col
@@ -187,14 +187,14 @@ class COMDevice(devices.Device):
 class COMFile(devices.CRLFTextFileBase):
     """COMn: device - serial port."""
 
-    def __init__(self, fhandle, field, events, linefeed, serial_in_size):
+    def __init__(self, fhandle, field, input_methods, linefeed, serial_in_size):
         """Initialise COMn: file."""
         # note that for random files, fhandle must be a seekable stream.
         devices.CRLFTextFileBase.__init__(self, fhandle, 'D', 'R')
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self.field = field
         # for wait()
-        self.events = events
+        self.input_methods = input_methods
         self.serial_in_size = serial_in_size
         self.in_buffer = bytearray()
         self.linefeed = linefeed
@@ -233,8 +233,7 @@ class COMFile(devices.CRLFTextFileBase):
                 out += str(self.in_buffer[:to_read])
                 del self.in_buffer[:to_read]
                 # allow for break & screen updates
-                # this also allows triggering BASIC events
-                self.events.wait()
+                self.input_methods.wait()
         return out
 
     def read_line(self):
@@ -359,25 +358,25 @@ class StdIOStream(object):
 class SerialStream(object):
     """Wrapper object for Serial to enable pickling."""
 
-    def __init__(self, port, events, do_open):
+    def __init__(self, port, input_methods, do_open):
         """Initialise the stream."""
         self._serial = serial.serial_for_url(port, timeout=0, do_not_open=not do_open)
         # for wait()
-        self._events = events
+        self._input_methods = input_methods
         self._url = port
         self.is_open = False
 
     def __getstate__(self):
         """Get pickling dict for stream."""
-        return {'events': self._events, 'url': self._url, 'is_open': self.is_open}
+        return {'input_methods': self._input_methods, 'url': self._url, 'is_open': self.is_open}
 
     def __setstate__(self, st):
         """Initialise stream from pickling dict."""
         try:
-            SerialStream.__init__(self, st['url'], st['events'], st['is_open'])
+            SerialStream.__init__(self, st['url'], st['input_methods'], st['is_open'])
         except (EnvironmentError, ValueError) as e:
             logging.warning('Could not resume serial connection: %s', e)
-            self.__init__(st['url'], st['events'], False)
+            self.__init__(st['url'], st['input_methods'], False)
             self.is_open = False
 
     # delegation doesn't play ball nicely with Pickle
@@ -411,7 +410,7 @@ class SerialStream(object):
             have_dsr = have_dsr and self._serial.getDSR()
             have_cts = have_cd and self._serial.getCD()
             # give CPU some time off
-            self._events.wait()
+            self._input_methods.wait()
         # only check for status if timeouts are set > 0
         # http://www.electro-tech-online.com/threads/qbasic-serial-port-control.19286/
         # https://measurementsensors.honeywell.com/ProductDocuments/Instruments/008-0385-00.pdf
@@ -482,9 +481,9 @@ class SerialStream(object):
 class SocketSerialStream(SerialStream):
     """Wrapper object for SocketSerial to work around timeout==0 issues."""
 
-    def __init__(self, socket, events, do_open):
+    def __init__(self, socket, input_methods, do_open):
         """Initialise the stream."""
-        SerialStream.__init__(self, 'socket://' + socket, events, do_open)
+        SerialStream.__init__(self, 'socket://' + socket, input_methods, do_open)
 
     def open(self, rs=False, cs=1000, ds=1000, cd=0):
         """Open the serial connection."""

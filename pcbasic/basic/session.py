@@ -87,18 +87,26 @@ class Session(object):
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
                 self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
-        # set up event handlers
-        self.events = events.Events(self.queues, syntax)
-        # initialise sound queue
-        self.sound = sound.Sound(self.queues, self.events, syntax)
         # function key macros
         self.fkey_macros = editor.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
+        # prepare input methods
+        self.input_methods = inputmethods.InputMethods(self.queues)
+        # initialise sound queue
+        self.sound = sound.Sound(self.queues, self.input_methods, syntax)
         # Sound is needed for the beeps on \a
         self.screen = display.Screen(self.queues, text_width,
                 video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=option_debug)
+        # initialise input methods
+        # screen is needed for print_screen, clipboard copy and pen poll
+        # sound is used for keyboard buffer beeps
+        self.input_methods.init(self.screen, self.sound, self.fkey_macros,
+                self.codepage, keystring, ignore_caps, ctrl_c_is_break)
+        self.pen = self.input_methods.pen
+        self.stick = self.input_methods.stick
+        self.keyboard = self.input_methods.keyboard
         # set up variables and memory model state
         # initialise the data segment
         self.memory = memory.DataSegment(
@@ -126,20 +134,11 @@ class Session(object):
         # register all data segment users
         self.memory.set_buffers(
                 self.program, self.scalars, self.arrays, self.strings, self.values)
-        # prepare input methods
-        self.pen = inputmethods.Pen(self.screen)
-        self.stick = inputmethods.Stick()
-        # Screen needed in Keyboard for print_screen()
-        # Sound is needed for the beeps when the buffer fills up
-        # Events needed for wait() only
-        self.keyboard = inputmethods.Keyboard(self.events, self.screen, self.fkey_macros,
-                self.codepage, self.sound,
-                keystring, ignore_caps, ctrl_c_is_break)
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
-        # Events needed for wait()
+        # InputMethods needed for wait()
         self.devices = files.Devices(
-                self.events, self.memory.fields, self.screen, self.keyboard,
+                self.input_methods, self.memory.fields, self.screen, self.keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)
@@ -163,14 +162,15 @@ class Session(object):
                 self.strings, self.expression_parser, syntax)
         # set up debugger
         self.debugger = debug.get_debugger(self, option_debug)
-        # events manages both input events and BASIC events
-        self.events.init(
+        # set up BASIC event handlers
+        self.basic_events = events.BasicEvents(syntax)
+        self.basic_events.init(
                 self.keyboard, self.pen, self.stick, self.sound,
                 self.clock, self.devices, self.screen)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
-                self.debugger, self.events, self.screen, self.devices, self.sound,
-                self.values, self.memory, self.scalars, self.program, self.statement_parser)
+                self.debugger, self.input_methods, self.screen, self.devices, self.sound,
+                self.values, self.memory, self.scalars, self.program, self.statement_parser, self.basic_events)
         # set up rest of memory model
         self.all_memory = machine.Memory(
                 self.memory, self.devices, self.files,
@@ -475,10 +475,8 @@ class Session(object):
         self.screen.cursor.show(True)
         # sound stops playing and is forgotten
         self.sound.stop_all_sound()
-        # no user events
-        with self.events.suspend():
-            # run the os-specific shell
-            self.shell.launch(cmd)
+        # run the os-specific shell
+        self.shell.launch(cmd)
         # reset cursor visibility to its previous state
         self.screen.cursor.reset_visibility()
 
@@ -524,7 +522,7 @@ class Session(object):
             for l in lines:
                 # flow of listing is visible on screen
                 # and interruptible
-                self.events.wait()
+                self.input_methods.wait()
                 # LIST on screen is slightly different from just writing
                 self.screen.list_line(l)
         # return to direct mode
@@ -783,11 +781,11 @@ class Session(object):
         keynum = values.to_int(next(args))
         error.range_check(1, 255, keynum)
         text, = args
-        if keynum <= self.events.num_fn_keys:
+        if keynum <= self.basic_events.num_fn_keys:
             self.fkey_macros.set(keynum, text, self.screen)
         else:
             # only length-2 expressions can be assigned to KEYs over 10
             # in which case it's a key scancode definition
             if len(text) != 2:
                 raise error.RunError(error.IFC)
-            self.events.key[keynum-1].set_trigger(str(text))
+            self.basic_events.key[keynum-1].set_trigger(str(text))

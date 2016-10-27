@@ -219,9 +219,8 @@ class MachinePorts(object):
             xorer = values.to_int(xorer)
         error.range_check(0, 255, xorer)
         list(args)
-        with self.session.events.suspend():
-            while (self.inp(addr) ^ xorer) & ander == 0:
-                self.session.events.wait()
+        while (self.inp(addr) ^ xorer) & ander == 0:
+            self.session.input_methods.wait()
 
 
 ###############################################################################

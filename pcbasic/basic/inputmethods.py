@@ -8,11 +8,14 @@ This file is released under the GNU GPL version 3 or later.
 
 import datetime
 import logging
+import time
+import Queue
 
 from . import error
 from . import scancode
 from . import values
 from . import tokens as tk
+from . import signals
 from .eascii import as_bytes as ea
 from .eascii import as_unicode as uea
 
@@ -61,6 +64,93 @@ home_key_replacements_eascii = {
     u'S': (scancode.SCROLLOCK, u''),
     u'C': (scancode.CAPSLOCK, u''),
 }
+
+
+
+class InputMethods(object):
+    """Manage input queue."""
+
+    def __init__(self, queues):
+        """Initialise event triggers."""
+        self._queues = queues
+
+    def init(self, screen, sound, fkey_macros,
+            codepage, keystring, ignore_caps, ctrl_c_is_break):
+        self._screen = screen
+        self.pen = Pen(screen)
+        self.stick = Stick()
+        # Screen needed in Keyboard for print_screen()
+        # and also for clipboard operations
+        # InputMethods needed for wait() only
+        # Sound is needed for the beeps when the buffer fills up
+        # for full-buffer beeps, can use the audio queue directly instead of through sound
+        self.keyboard = Keyboard(self, screen, fkey_macros,
+                codepage, sound, keystring, ignore_caps, ctrl_c_is_break)
+
+
+    ##########################################################################
+    # main event checker
+
+    tick = 0.006
+
+    def wait(self):
+        """Wait and check events."""
+        time.sleep(self.tick)
+        self.check_events()
+
+    def check_events(self):
+        """Main event cycle."""
+        # we need this for audio thread to keep up during tight loops
+        # but how much does it slow us down otherwise?
+        time.sleep(0)
+        self._check_input()
+        self.keyboard.drain_event_buffer()
+
+    def _check_input(self):
+        """Handle input events."""
+        while True:
+            # pop input queues
+            try:
+                signal = self._queues.inputs.get(False)
+            except Queue.Empty:
+                if not self.keyboard.pause:
+                    break
+                else:
+                    continue
+            self._queues.inputs.task_done()
+            # process input events
+            if signal.event_type == signals.KEYB_QUIT:
+                raise error.Exit()
+            elif signal.event_type == signals.KEYB_CHAR:
+                # params is a unicode sequence
+                self.keyboard.insert_chars(*signal.params)
+            elif signal.event_type == signals.KEYB_DOWN:
+                # params is e-ASCII/unicode character sequence, scancode, modifier
+                self.keyboard.key_down(*signal.params)
+            elif signal.event_type == signals.KEYB_UP:
+                self.keyboard.key_up(*signal.params)
+            elif signal.event_type == signals.STREAM_CHAR:
+                self.keyboard.insert_chars(*signal.params, check_full=False)
+            elif signal.event_type == signals.STREAM_CLOSED:
+                self.keyboard.close_input()
+            elif signal.event_type == signals.PEN_DOWN:
+                self.pen.down(*signal.params)
+            elif signal.event_type == signals.PEN_UP:
+                self.pen.up()
+            elif signal.event_type == signals.PEN_MOVED:
+                self.pen.moved(*signal.params)
+            elif signal.event_type == signals.STICK_DOWN:
+                self.stick.down(*signal.params)
+            elif signal.event_type == signals.STICK_UP:
+                self.stick.up(*signal.params)
+            elif signal.event_type == signals.STICK_MOVED:
+                self.stick.moved(*signal.params)
+            elif signal.event_type == signals.CLIP_PASTE:
+                self.keyboard.insert_chars(*signal.params, check_full=False)
+            elif signal.event_type == signals.CLIP_COPY:
+                text = self._screen.get_text(*(signal.params[:4]))
+                self._queues.video.put(signals.Event(
+                        signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
 
 
 ###############################################################################
@@ -188,7 +278,7 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, events, screen, fkey_macros, codepage, sound, keystring, ignore_caps, ctrl_c_is_break):
+    def __init__(self, input_methods, screen, fkey_macros, codepage, sound, keystring, ignore_caps, ctrl_c_is_break):
         """Initilise keyboard state."""
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(sound, 15, fkey_macros)
@@ -215,8 +305,8 @@ class Keyboard(object):
         self.buf.insert(self.codepage.str_from_unicode(keystring), check_full=False)
         # redirected input stream has closed
         self._input_closed = False
-        # events is needed for wait() in wait_char()
-        self.events = events
+        # input_methods is needed for wait() in wait_char()
+        self.input_methods = input_methods
 
     def read_chars(self, num):
         """Read num keystrokes, blocking."""
@@ -228,13 +318,13 @@ class Keyboard(object):
     def get_char(self, expand=True):
         """Read any keystroke, nonblocking."""
         # wait a tick to reduce CPU load in loops
-        self.events.wait()
+        self.input_methods.wait()
         return self.buf.getc(expand)
 
     def wait_char(self):
         """Wait for character, then return it but don't drop from queue."""
         while self.buf.is_empty() and not self._input_closed:
-            self.events.wait()
+            self.input_methods.wait()
         return self.buf.peek()
 
     def get_char_block(self):
