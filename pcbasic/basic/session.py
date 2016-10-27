@@ -159,10 +159,9 @@ class Session(object):
         # set up debugger
         self.debugger = debug.get_debugger(self, option_debug)
         # set up BASIC event handlers
-        self.basic_events = events.BasicEvents(syntax)
-        self.basic_events.init(
-                self.input_methods, self.sound,
-                self.clock, self.devices, self.screen)
+        self.basic_events = events.BasicEvents(
+                self.input_methods, self.sound, self.clock, self.devices,
+                self.screen, self.program, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
                 self.debugger, self.input_methods, self.screen, self.devices, self.sound,

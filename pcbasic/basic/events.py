@@ -21,8 +21,16 @@ from . import tokens as tk
 class BasicEvents(object):
     """Manage BASIC events."""
 
-    def __init__(self, syntax):
+    def __init__(self, input_methods, sound, clock, devices, screen, program, syntax):
         """Initialise event triggers."""
+        self._keyboard = input_methods.keyboard
+        self._pen = input_methods.pen
+        self._stick = input_methods.stick
+        self._sound = sound
+        self._clock = clock
+        self._devices = devices
+        self._screen = screen
+        self._program = program
         # events start unactivated
         self.active = False
         # 12 definable function keys for Tandy, 10 otherwise
@@ -32,16 +40,6 @@ class BasicEvents(object):
             self.num_fn_keys = 10
         # tandy and pcjr have multi-voice sound
         self.multivoice = syntax in ('pcjr', 'tandy')
-
-    def init(self, input_methods, sound, clock, devices, screen):
-        """Initialise input events and BASIC events after Session has been built."""
-        self._keyboard = input_methods.keyboard
-        self._pen = input_methods.pen
-        self._stick = input_methods.stick
-        self._sound = sound
-        self._clock = clock
-        self._devices = devices
-        self._screen = screen
         self.reset()
 
     def reset(self):
@@ -152,14 +150,14 @@ class BasicEvents(object):
         command, = args
         self.command(self.play, command)
 
-    def on_event_gosub_(self, program, args):
+    def on_event_gosub_(self, args):
         """ON KEY: define key event trapping."""
         token = next(args)
         num = next(args)
         jumpnum = next(args)
         if jumpnum == 0:
             jumpnum = None
-        elif jumpnum not in program.line_numbers:
+        elif jumpnum not in self._program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         list(args)
         if token == tk.KEY:
