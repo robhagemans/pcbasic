@@ -66,22 +66,28 @@ class Session(object):
             max_reclen=128, max_files=3, reserved_memory=3429,
             temp_dir=u''):
         """Initialise the interpreter session."""
-        # use dummy queues if not provided
-        if iface:
-            self.queues = signals.InterfaceQueues(*iface.get_queues())
-        else:
-            self.queues = signals.InterfaceQueues(inputs=Queue.Queue())
+        ######################################################################
+        # session-level members
+        ######################################################################
         # true if a prompt is needed on next cycle
         self._prompt = True
-        # input mode is AUTO (used by AUTO)
+        # AUTO mode state
         self._auto_mode = False
         self._auto_linenum = 10
         self._auto_increment = 10
         # syntax error prompt and EDIT
         self._edit_prompt = False
-        # program for TERM command
+        # terminal program for TERM command
         self._term_program = pcjr_term
         ######################################################################
+        # console
+        ######################################################################
+        if iface:
+            # connect to interface queues
+            self.queues = signals.InterfaceQueues(*iface.get_queues())
+        else:
+            # no interface; use dummy queues
+            self.queues = signals.InterfaceQueues(inputs=Queue.Queue())
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O redirection
@@ -103,6 +109,9 @@ class Session(object):
         # screen is needed for print_screen, clipboard copy and pen poll
         self.input_methods.init(self.screen, self.fkey_macros,
                 self.codepage, keystring, ignore_caps, ctrl_c_is_break)
+        ######################################################################
+        # data segment
+        ######################################################################
         # set up variables and memory model state
         # initialise the data segment
         self.memory = memory.DataSegment(
@@ -130,6 +139,9 @@ class Session(object):
         # register all data segment users
         self.memory.set_buffers(
                 self.program, self.scalars, self.arrays, self.strings, self.values)
+        ######################################################################
+        # devices
+        ######################################################################
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # InputMethods needed for wait()
@@ -141,16 +153,22 @@ class Session(object):
         self.files = files.Files(self.devices, max_files, max_reclen)
         # set LPT1 as target for print_screen()
         self.screen.set_print_screen_target(self.devices.lpt1_file)
-        # initialise the editor
-        self.editor = editor.Editor(
-                self.screen, self.input_methods.keyboard, self.sound,
-                self.output_redirection, self.devices.lpt1_file)
         # set up the SHELL command
         self.shell = dos.get_shell_manager(self.input_methods.keyboard, self.screen, self.codepage, option_shell, syntax)
         # initialise random number generator
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock
         self.clock = clock.Clock()
+        ######################################################################
+        # editor
+        ######################################################################
+        # initialise the editor
+        self.editor = editor.Editor(
+                self.screen, self.input_methods.keyboard, self.sound,
+                self.output_redirection, self.devices.lpt1_file)
+        ######################################################################
+        # interpreter
+        ######################################################################
         # initialise the expression parser
         self.expression_parser = expressions.ExpressionParser(
                 self.values, self.memory, self.program, self.files)
@@ -166,13 +184,16 @@ class Session(object):
         self.interpreter = interpreter.Interpreter(
                 self.debugger, self.input_methods, self.screen, self.devices, self.sound,
                 self.values, self.memory, self.scalars, self.program, self.statement_parser, self.basic_events)
-        # set up rest of memory model
+        # PLAY parser
+        self.play_parser = sound.PlayParser(self.sound, self.memory, self.values)
+        ######################################################################
+        # callbacks
+        ######################################################################
+        # set up non-data segment memory
         self.all_memory = machine.Memory(
                 self.memory, self.devices, self.files,
                 self.screen, self.input_methods.keyboard, self.screen.fonts[8],
                 self.interpreter, peek_values, syntax)
-        # PLAY parser
-        self.play_parser = sound.PlayParser(self.sound, self.memory, self.values)
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
         # build function table (depends on Memory having been initialised)
