@@ -93,10 +93,10 @@ class Session(object):
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
                 self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
-        # function key macros
-        self.fkey_macros = editor.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
         # prepare input methods
         self.input_methods = inputmethods.InputMethods(self.queues)
+        # function key macros
+        self.fkey_macros = editor.FunctionKeyMacros(self.input_methods, syntax)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.input_methods, syntax)
         # Sound is needed for the beeps on \a
@@ -107,8 +107,7 @@ class Session(object):
                 self.codepage, font, warn_fonts=option_debug)
         # initialise input methods
         # screen is needed for print_screen, clipboard copy and pen poll
-        self.input_methods.init(self.screen, self.fkey_macros,
-                self.codepage, keystring, ignore_caps, ctrl_c_is_break)
+        self.input_methods.init(self.screen, self.codepage, keystring, ignore_caps, ctrl_c_is_break)
         ######################################################################
         # data segment
         ######################################################################

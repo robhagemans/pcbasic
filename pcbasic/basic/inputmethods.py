@@ -74,15 +74,14 @@ class InputMethods(object):
         """Initialise event triggers."""
         self._queues = queues
 
-    def init(self, screen, fkey_macros,
-            codepage, keystring, ignore_caps, ctrl_c_is_break):
+    def init(self, screen, codepage, keystring, ignore_caps, ctrl_c_is_break):
         self._screen = screen
         self.pen = Pen(screen)
         self.stick = Stick()
         # Screen needed in Keyboard for print_screen()
         # and also for clipboard operations
         # InputMethods needed for wait() only
-        self.keyboard = Keyboard(self, screen, fkey_macros,
+        self.keyboard = Keyboard(self, screen,
                 codepage, self._queues, keystring, ignore_caps, ctrl_c_is_break)
 
 
@@ -157,10 +156,14 @@ class InputMethods(object):
 class KeyboardBuffer(object):
     """Quirky emulated ring buffer for keystrokes."""
 
+    _default_macros = (
+        'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
+        'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '')
+
     # short beep (0.1s at 800Hz) emitted if buffer is full
     _full_tone = signals.Event(signals.AUDIO_TONE, [0, 800, 0.01, 1, False, 15])
 
-    def __init__(self, queues, ring_length, fkey_macros):
+    def __init__(self, queues, ring_length):
         """Initialise to given length."""
         # buffer holds tuples (eascii/codepage, scancode, modifier)
         self.buffer = []
@@ -170,8 +173,8 @@ class KeyboardBuffer(object):
         # expansion vessel holds codepage chars
         self.expansion_vessel = []
         self._queues = queues
-        # function-key macros
-        self.fkey_macros = fkey_macros
+        # f-key macros
+        self.key_replace = list(self._default_macros)
 
     def length(self):
         """Return the number of keystrokes in the buffer."""
@@ -215,7 +218,7 @@ class KeyboardBuffer(object):
             self.start = (self.start + 1) % self.ring_length
         if not expand or c not in function_key:
             return c
-        self.expansion_vessel = list(self.fkey_macros.get(function_key[c]))
+        self.expansion_vessel = list(self.key_replace[function_key[c]])
         try:
             return self.expansion_vessel.pop(0)
         except IndexError:
@@ -278,10 +281,10 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, input_methods, screen, fkey_macros, codepage, queues, keystring, ignore_caps, ctrl_c_is_break):
+    def __init__(self, input_methods, screen, codepage, queues, keystring, ignore_caps, ctrl_c_is_break):
         """Initilise keyboard state."""
         # key queue (holds bytes)
-        self.buf = KeyboardBuffer(queues, 15, fkey_macros)
+        self.buf = KeyboardBuffer(queues, 15)
         # pre-buffer for keystrokes to enable event handling (holds unicode)
         self.prebuf = []
         # INP(&H60) scancode
@@ -307,6 +310,16 @@ class Keyboard(object):
         self._input_closed = False
         # input_methods is needed for wait() in wait_char()
         self.input_methods = input_methods
+
+    def set_macro(self, num, macro):
+        """Set macro for given function key."""
+        # NUL terminates macro string, rest is ignored
+        # macro starting with NUL is empty macro
+        self.buf.key_replace[num-1] = macro.split('\0', 1)[0]
+
+    def get_macro(self, num):
+        """Get macro for given function key."""
+        return self.buf.key_replace[num]
 
     def read_chars(self, num):
         """Read num keystrokes, blocking."""

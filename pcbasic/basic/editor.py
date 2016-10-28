@@ -41,7 +41,7 @@ alt_key_replace = {
 
 
 class FunctionKeyMacros(object):
-    """Handles function-key macro strings."""
+    """Handles display of function-key macro strings."""
 
     # on the keys line 25, what characters to replace & with which
     _replace_chars = {
@@ -49,26 +49,18 @@ class FunctionKeyMacros(object):
         '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
         '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19'}
 
-    _default_macros = (
-        'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
-        'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '')
-
-    def __init__(self, num_fn_keys):
+    def __init__(self, input_methods, syntax):
         """Initialise user-definable key list."""
-        self._key_replace = list(self._default_macros)
-        self._num_fn_keys = num_fn_keys
+        self._input_methods = input_methods
+        self._num_fn_keys = (12 if syntax == 'tandy' else 10)
         self.keys_visible = False
 
     def list_keys(self, screen):
         """Print a list of the function key macros."""
         for i in range(self._num_fn_keys):
-            text = bytearray(self._key_replace[i])
-            for j in range(len(text)):
-                try:
-                    text[j] = self._replace_chars[chr(text[j])]
-                except KeyError:
-                    pass
-            screen.write_line('F' + str(i+1) + ' ' + str(text))
+            text = self._input_methods.keyboard.get_macro(i)
+            text = ''.join(self._replace_chars.get(s, s) for s in text)
+            screen.write_line('F%d %s' % (i+1, text))
 
     def show_keys(self, screen, do_show):
         """Show/hide the function keys line on the active page."""
@@ -80,9 +72,9 @@ class FunctionKeyMacros(object):
             self.keys_visible = False
         else:
             self.keys_visible = True
-            for i in range(screen.mode.width/8):
-                text = str(self._key_replace[i][:6])
-                kcol = 1+8*i
+            for i in range(screen.mode.width / 8):
+                text = self._input_methods.keyboard.get_macro(i)[:6]
+                kcol = 1 + 8*i
                 self._write_for_keys(screen, str(i+1)[-1], kcol, screen.attr)
                 if not screen.mode.is_text_mode:
                     self._write_for_keys(screen, text, kcol+1, screen.attr)
@@ -108,12 +100,8 @@ class FunctionKeyMacros(object):
         """Set macro for given function key."""
         # NUL terminates macro string, rest is ignored
         # macro starting with NUL is empty macro
-        self._key_replace[num-1] = macro.split('\0', 1)[0]
+        self._input_methods.keyboard.set_macro(num, macro)
         self.redraw_keys(screen)
-
-    def get(self, num):
-        """Get macro for given function key."""
-        return self._key_replace[num]
 
     def key_(self, screen, args):
         """KEY: show/hide/list macros."""
@@ -128,7 +116,6 @@ class FunctionKeyMacros(object):
                 self.show_keys(screen, False)
         elif command == tk.LIST:
             self.list_keys(screen)
-
 
 
 class Editor(object):
