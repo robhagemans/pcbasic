@@ -112,9 +112,11 @@ class GraphicsViewPort(object):
 class Drawing(object):
     """Manage graphics drawing."""
 
-    def __init__(self, screen):
+    def __init__(self, screen, input_methods):
         """Initialise graphics object."""
         self.screen = screen
+        # for wait() in paint_
+        self.input_methods = input_methods
         self.init_mode()
 
     def init_mode(self):
@@ -627,7 +629,7 @@ class Drawing(object):
 
     ### PAINT: Flood fill
 
-    def paint_(self, args, input_methods):
+    def paint_(self, args):
         """PAINT: Fill an area defined by a border attribute with a tiled pattern."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
@@ -660,9 +662,9 @@ class Drawing(object):
         if (pattern and background and background[:len(pattern)] == pattern and
                 self.screen.mode.video_segment == 0xa000):
             raise error.RunError(error.IFC)
-        self.flood_fill(coord, c, pattern, border, background, input_methods)
+        self.flood_fill(coord, c, pattern, border, background)
 
-    def flood_fill(self, lcoord, c, pattern, border, background, input_methods):
+    def flood_fill(self, lcoord, c, pattern, border, background):
         """Fill an area defined by a border attribute with a tiled pattern."""
         # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
         # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
@@ -714,7 +716,7 @@ class Drawing(object):
                 self.screen.put_interval(self.screen.apagenum, x_left, y, interval)
             # allow interrupting the paint
             if y%4 == 0:
-                input_methods.wait()
+                self.input_methods.wait()
         self.last_attr = c
 
     def check_scanline(self, line_seed, x_start, x_stop, y,
@@ -828,7 +830,7 @@ class Drawing(object):
 
     ### DRAW statement
 
-    def draw_(self, args, memory, value_handler, input_methods):
+    def draw_(self, args, memory, value_handler):
         """DRAW: Execute a Graphics Macro Language string."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
@@ -851,7 +853,7 @@ class Drawing(object):
             elif c == 'X':
                 # execute substring
                 sub = gmls.parse_string()
-                self.draw_(iter([sub]), memory, value_handler, input_methods)
+                self.draw_(iter([sub]), memory, value_handler)
             elif c == 'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
@@ -936,7 +938,7 @@ class Drawing(object):
                 bound = gmls.parse_number()
                 error.range_check(0, 9999, bound)
                 x, y = self.get_window_logical(*self.last_point)
-                self.flood_fill((x, y, False), colour, None, bound, None, input_methods)
+                self.flood_fill((x, y, False), colour, None, bound, None)
             else:
                 raise error.RunError(error.IFC)
         list(args)

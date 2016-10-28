@@ -426,7 +426,7 @@ class Screen(object):
         (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
         (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) )
 
-    def __init__(self, queues, initial_width, video_mem_size, capabilities, monitor, sound, redirect, fkey_macros,
+    def __init__(self, queues, input_methods, initial_width, video_mem_size, capabilities, monitor, sound, redirect, fkey_macros,
                 cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
         """Minimal initialisiation of the screen."""
         self.queues = queues
@@ -511,7 +511,7 @@ class Screen(object):
         self.fkey_macros = fkey_macros
         # print screen target, to be set later due to init order issues
         self.lpt1_file = None
-        self.drawing = graphics.Drawing(self)
+        self.drawing = graphics.Drawing(self, input_methods)
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
