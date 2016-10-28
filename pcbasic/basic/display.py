@@ -393,6 +393,90 @@ class PixelPage(object):
                 index = x1-x0
             return self.buffer[y][x0:x0+index]
 
+
+###############################################################################
+# function key macros
+
+
+class FunctionKeyMacros(object):
+    """Handles display of function-key macro strings."""
+
+    # on the keys line 25, what characters to replace & with which
+    _replace_chars = {
+        '\x07': '\x0e',    '\x08': '\xfe',    '\x09': '\x1a',    '\x0A': '\x1b',
+        '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
+        '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19'}
+
+    def __init__(self, input_methods, screen, syntax):
+        """Initialise user-definable key list."""
+        self._input_methods = input_methods
+        self._screen = screen
+        self._num_fn_keys = (12 if syntax == 'tandy' else 10)
+        self.keys_visible = False
+
+    def list_keys(self):
+        """Print a list of the function key macros."""
+        for i in range(self._num_fn_keys):
+            text = self._input_methods.keyboard.get_macro(i)
+            text = ''.join(self._replace_chars.get(s, s) for s in text)
+            self._screen.write_line('F%d %s' % (i+1, text))
+
+    def show_keys(self, do_show):
+        """Show/hide the function keys line on the active page."""
+        key_row = self._screen.mode.height
+        self._screen.clear_rows(key_row, key_row)
+        # Keys will only be visible on the active page at which KEY ON was given,
+        # and only deleted on page at which KEY OFF given.
+        if not do_show:
+            self.keys_visible = False
+        else:
+            self.keys_visible = True
+            for i in range(self._screen.mode.width / 8):
+                text = self._input_methods.keyboard.get_macro(i)[:6]
+                kcol = 1 + 8*i
+                self._write_for_keys(str(i+1)[-1], kcol, self._screen.attr)
+                if not self._screen.mode.is_text_mode:
+                    self._write_for_keys(text, kcol+1, self._screen.attr)
+                else:
+                    if (self._screen.attr>>4) & 0x7 == 0:
+                        self._write_for_keys(text, kcol+1, 0x70)
+                    else:
+                        self._write_for_keys(text, kcol+1, 0x07)
+            self._screen.apage.row[24].end = self._screen.mode.width
+
+    def redraw_keys(self):
+        """Redraw key macro line if visible."""
+        if self.keys_visible:
+            self.show_keys(True)
+
+    def _write_for_keys(self, s, col, cattr):
+        """Write chars on the keys line; no echo, some character replacements."""
+        for i, c in enumerate(s):
+            self._screen.put_char_attr(self._screen.apagenum, 25, col+i,
+                    self._replace_chars.get(c, c), cattr, for_keys=True)
+
+    def set(self, num, macro):
+        """Set macro for given function key."""
+        # NUL terminates macro string, rest is ignored
+        # macro starting with NUL is empty macro
+        self._input_methods.keyboard.set_macro(num, macro)
+        self.redraw_keys()
+
+    def key_(self, args):
+        """KEY: show/hide/list macros."""
+        command, = args
+        if command == tk.ON:
+            # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
+            error.throw_if(self._screen.scroll_height == 25)
+            if not self.keys_visible:
+                self.show_keys(True)
+        elif command == tk.OFF:
+            if self.keys_visible:
+                self.show_keys(False)
+        elif command == tk.LIST:
+            self.list_keys()
+
+
 ###############################################################################
 # screen operations
 
@@ -426,7 +510,7 @@ class Screen(object):
         (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
         (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) )
 
-    def __init__(self, queues, input_methods, initial_width, video_mem_size, capabilities, monitor, sound, redirect, fkey_macros,
+    def __init__(self, queues, input_methods, initial_width, video_mem_size, capabilities, monitor, sound, redirect,
                 cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
         """Minimal initialisiation of the screen."""
         self.queues = queues
@@ -508,7 +592,7 @@ class Screen(object):
         # output redirection
         self.redirect = redirect
         # function key macros
-        self.fkey_macros = fkey_macros
+        self.fkey_macros = FunctionKeyMacros(input_methods, self, capabilities)
         # print screen target, to be set later due to init order issues
         self.lpt1_file = None
         self.drawing = graphics.Drawing(self, input_methods)
@@ -798,7 +882,7 @@ class Screen(object):
     def init_mode(self):
         """Initialisation when we switched to new screen mode."""
         # redraw key line
-        self.fkey_macros.redraw_keys(self)
+        self.fkey_macros.redraw_keys()
         # rebuild build the cursor;
         # first move to home in case the screen has shrunk
         self.set_pos(1, 1)
@@ -984,7 +1068,7 @@ class Screen(object):
         # cls is only executed if no errors have occurred
         if val == 0:
             self.clear()
-            self.fkey_macros.redraw_keys(self)
+            self.fkey_macros.redraw_keys()
             self.drawing.reset()
         elif val == 1:
             self.graph_view.clear()

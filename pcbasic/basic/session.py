@@ -95,14 +95,12 @@ class Session(object):
                 self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
         # prepare input methods
         self.input_methods = inputmethods.InputMethods(self.queues)
-        # function key macros
-        self.fkey_macros = editor.FunctionKeyMacros(self.input_methods, syntax)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.input_methods, syntax)
         # Sound is needed for the beeps on \a
         self.screen = display.Screen(self.queues, self.input_methods, text_width,
                 video_memory, video_capabilities, monitor,
-                self.sound, self.output_redirection, self.fkey_macros,
+                self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=option_debug)
         # initialise input methods
@@ -797,7 +795,7 @@ class Session(object):
         error.range_check(1, 255, keynum)
         text, = args
         if keynum <= self.basic_events.num_fn_keys:
-            self.fkey_macros.set(keynum, text, self.screen)
+            self.screen.fkey_macros.set(keynum, text)
         else:
             # only length-2 expressions can be assigned to KEYs over 10
             # in which case it's a key scancode definition
