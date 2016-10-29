@@ -447,7 +447,10 @@ def sgn_(x):
 
 def int_(inp):
     """Truncate towards negative infinity (INT)."""
-    return pass_number(inp).clone().ifloor()
+    if isinstance(inp, strings.String):
+        # strings pass unchanged
+        return inp
+    return inp.clone().ifloor()
 
 def fix_(inp):
     """Truncate towards zero."""

@@ -267,12 +267,15 @@ class Integer(Number):
 
     def iround(self):
         """Round in-place (no-op)."""
+        return self
 
     def itrunc(self):
         """Truncate towards zero in-place (no-op)."""
+        return self
 
     def ifloor(self):
         """Truncate towards negative infinity in-place (no-op)."""
+        return self
 
     def ineg(self):
         """Negate in-place."""
@@ -505,10 +508,10 @@ class Float(Number):
 
     def ifloor(self):
         """Truncate towards negative infinity in-place."""
-        if self.is_negative():
-            self.itrunc().isub(self.new().from_bytes(self._one))
-        else:
-            self.itrunc()
+        oldval = self.clone()
+        self.itrunc()
+        if not self.eq(oldval) and self.is_negative():
+            self.isub(self.new().from_bytes(self._one))
         return self
 
     # relations
