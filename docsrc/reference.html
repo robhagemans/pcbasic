@@ -1702,7 +1702,7 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>number</var></code> is a numeric expression.
+                <code><var>number</var></code> is an expression.
             </li>
         </ul>
         <h5>Notes</h5>
@@ -1711,11 +1711,8 @@
                 <code><a href="#FIX">FIX</a></code> truncates towards zero: it removes the
                 fractional part. By contrast, <code>INT</code> truncates towards negative infinity.
             </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
             <li>
-                <code><var>number</var></code> is a string expression, <samp>Type mismatch</samp> .
+                If <code><var>number</var></code> is a string expression, <code>INT</code> returns its value unchanged.
             </li>
         </ul>
     </section>
