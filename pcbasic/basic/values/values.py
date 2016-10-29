@@ -523,7 +523,7 @@ def asc_(s):
 
 def chr_(x):
     """CHR$: character for ASCII value."""
-    val = x.to_integer().to_int()
+    val = pass_number(x).to_integer().to_int()
     error.range_check(0, 255, val)
     return x._values.new_string().from_str(chr(val))
 
