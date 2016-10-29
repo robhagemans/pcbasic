@@ -94,6 +94,7 @@ def float_safe(fn):
 def _call_float_function(fn, *args):
     """Convert to IEEE 754, apply function, convert back."""
     args = list(args)
+    pass_number(args[0])
     values = args[0]._values
     feh = args[0].error_handler
     try:
