@@ -154,7 +154,7 @@ class Tokeniser(object):
                     # can separate numbers as well as jumpnums
                     allow_number = True
                 elif c in ('(', '['):
-                    allow_jumpnum, allow_number = False, True
+                    allow_number = True
                 elif c == ')' and spc_or_tab:
                     spc_or_tab = False
                     allow_jumpnum, allow_number = False, True

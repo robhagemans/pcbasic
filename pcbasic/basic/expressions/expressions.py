@@ -360,9 +360,10 @@ class ExpressionParser(object):
             return self._values.from_token(ins.read_number_token())
         elif d == tk.T_UINT:
             # gw-basic allows adding line numbers to numbers
-            # convert to signed integer
-            value = struct.unpack('<h', ins.read(2))[0]
-            return self._values.new_integer().from_int(value)
+            # drop 0E token, interpret payload to unsigned integer
+            value = struct.unpack('<bH', ins.read(3))[1]
+            # we need to convert to single to ensure it is interpreted as the unsigned value
+            return self._values.new_single().from_int(value)
         else:
             raise error.RunError(error.STX)
 
