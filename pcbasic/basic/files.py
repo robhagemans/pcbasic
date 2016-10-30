@@ -306,7 +306,7 @@ class Files(object):
         """LPOS: get the current printer column."""
         num = values.to_int(num)
         error.range_check(0, 3, num)
-        printer = self.devices['LPT' + max(1, num) + ':']
+        printer = self.devices.devices['LPT%d:' % max(1, num)]
         if printer.device_file:
             return printer.device_file.col
         return 1
