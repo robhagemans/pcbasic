@@ -13,7 +13,6 @@ import filecmp
 import contextlib
 import traceback
 import time
-import coverage
 
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -58,6 +57,7 @@ except ValueError:
     pass
 
 if '--coverage' in args:
+    import coverage
     args.remove('--coverage')
     cov = coverage.coverage()
     cov.start()
