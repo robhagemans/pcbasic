@@ -48,7 +48,7 @@ class MachinePorts(object):
     def usr_(self, num):
         """USR: get value of machine-code function; not implemented."""
         logging.warning('USR function not implemented.')
-        return 0
+        raise error.RunError(error.IFC)
 
     def inp_(self, num):
         """INP: get value from machine port."""
