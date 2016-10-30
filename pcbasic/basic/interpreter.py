@@ -217,15 +217,16 @@ class Interpreter(object):
     def erl_(self):
         """ERL: get line number of last error."""
         if self.error_pos == 0:
-            return 0
+            pos = 0
         elif self.error_pos == -1:
-            return 65535
+            pos = 65535
         else:
-            return self._program.get_line_number(self.error_pos)
+            pos = self._program.get_line_number(self.error_pos)
+        return self._values.new_single().from_int(pos)
 
     def err_(self):
         """ERR: get error code of last error."""
-        return self.error_num
+        return self._values.new_integer().from_int(self.error_num)
 
     ###########################################################################
     # jumps
