@@ -291,6 +291,7 @@ class Files(object):
 
     def eof_(self, num):
         """EOF: get end-of-file."""
+        num = values.cint_(num)
         if num.is_zero():
             return False
         return -1 if self._get_from_integer(num, 'IR').eof() else 0
