@@ -287,6 +287,7 @@ class Files(object):
 
     def loc_(self, num):
         """LOC: get file pointer."""
+        num = values.cint_(num)
         return self._get_from_integer(num).loc()
 
     def eof_(self, num):
@@ -298,6 +299,7 @@ class Files(object):
 
     def lof_(self, num):
         """LOF: get length of file."""
+        num = values.cint_(num)
         return self._get_from_integer(num).lof()
 
     def lpos_(self, num):
