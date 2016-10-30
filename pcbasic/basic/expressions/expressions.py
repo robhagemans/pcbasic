@@ -503,9 +503,9 @@ class ExpressionParser(object):
         error.range_check(1, 255, num)
         infile = None
         if ins.skip_blank_read_if((',',)):
-            num = self._parse_file_number(ins)
+            filenum = self._parse_file_number(ins)
             # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
-            infile = self._files.get(num, mode='IR', not_open=error.BAD_FILE_MODE)
+            infile = self._files.get(filenum, mode='IR', not_open=error.BAD_FILE_MODE)
         ins.require_read((')',))
         return (infile, num)
 
