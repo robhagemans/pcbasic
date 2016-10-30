@@ -13,10 +13,11 @@ import filecmp
 import contextlib
 import traceback
 import time
+import coverage
+
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-import pcbasic
 
 def is_same(file1, file2):
     try:
@@ -56,6 +57,13 @@ try:
 except ValueError:
     pass
 
+if '--coverage' in args:
+    args.remove('--coverage')
+    cov = coverage.coverage()
+    cov.start()
+else:
+    cov = None
+
 if not args or '--all' in args:
     args = [f for f in sorted(os.listdir('.'))
             if os.path.isdir(f) and os.path.isdir(os.path.join(f, 'model'))]
@@ -64,6 +72,9 @@ if not args or '--all' in args:
 numtests = 0
 failed = []
 knowfailed = []
+
+
+import pcbasic
 
 start_time = time.time()
 start_clock = time.clock()
@@ -152,3 +163,8 @@ if knowfailed:
 numpass = numtests - len(failed) - len(knowfailed)
 if numpass:
     print '    %d passes' % numpass
+
+if cov:
+    cov.stop()
+    cov.save()
+    cov.html_report()
