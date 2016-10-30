@@ -80,8 +80,8 @@ class ExpressionParser(object):
                 '$': (self._parse_input, values.STR),
             },
             tk.ERDEV: {
-                '$': (self._parse_argument, values.STR),
-                None: (self._parse_argument, values.INT),
+                '$': (self._null_argument, values.STR),
+                None: (self._null_argument, values.INT),
             },
             tk.VARPTR: {
                 '$': (self._parse_varptr_str, values.STR),
