@@ -906,11 +906,11 @@ class StatementParser(object):
             if ins.skip_blank_read_if((tk.INPUT,)):
                 mode = 'I'
             else:
-                word = ins.read_name()
-                try:
-                    mode = {tk.W_OUTPUT:'O', tk.W_RANDOM:'R', tk.W_APPEND:'A'}[word]
-                except KeyError:
-                    ins.seek(-len(word), 1)
+                mode_dict = {tk.W_OUTPUT:'O', tk.W_RANDOM:'R', tk.W_APPEND:'A'}
+                word = ins.skip_blank_read_if(mode_dict, 6)
+                if word is not None:
+                    mode = mode_dict[word]
+                else:
                     raise error.RunError(error.STX)
         # ACCESS clause
         access = None
