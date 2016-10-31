@@ -265,7 +265,7 @@ class Memory(object):
         # initial DEF SEG
         self.segment = self.data.data_segment
         # pre-defined PEEK outputs
-        self._peek_values = {}
+        self._peek_values = peek_values
         # tandy syntax
         self.tandy_syntax = syntax == 'tandy'
 

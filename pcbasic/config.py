@@ -492,6 +492,7 @@ class Settings(object):
             'max_files': self.get('max-files'),
             # first field buffer address (workspace size; 3429 for gw-basic)
             'reserved_memory': self.get('reserved-memory'),
+            'peek_values': peek_values,
         }
 
     def get_video_parameters(self):
