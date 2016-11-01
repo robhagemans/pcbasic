@@ -595,6 +595,7 @@ def string_(asc_value_or_char, num):
     else:
         # overflow if outside Integer range
         ascval = asc_value_or_char.to_integer().to_int()
+        error.range_check(0, 255, ascval)
         char = chr(ascval)
     return strings.String(None, asc_value_or_char._values).from_str(char * num)
 
