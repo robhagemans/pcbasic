@@ -1303,8 +1303,11 @@ class Screen(object):
         """SCREEN: get char or attribute at a location."""
         new_int = row.new()
         row, col = row.to_int(), col.to_int()
-        error.range_check(1, self.mode.height, row)
-        error.range_check(1, self.mode.width, col)
+        error.range_check(0, self.mode.height, row)
+        error.range_check(0, self.mode.width, col)
+        error.throw_if(row == 0 and col == 0)
+        row = row or 1
+        col = col or 1
         if want_attr:
             want_attr = want_attr.to_int()
             error.range_check(0, 255, want_attr)
