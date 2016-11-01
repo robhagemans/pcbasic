@@ -515,7 +515,7 @@ def len_(s):
 
 def space_(num):
     """SPACE$: repeat spaces."""
-    return num._values.new_string().space(num)
+    return num._values.new_string().space(pass_number(num))
 
 def asc_(s):
     """ASC: ordinal ASCII value of a character."""
