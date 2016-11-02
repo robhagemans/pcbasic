@@ -597,8 +597,14 @@ def instr_(start, big, small):
         return new_int
     return new_int.from_int(start + find)
 
-def string_(asc_value_or_char, num):
+def string_(args):
     """STRING$: repeat a character num times."""
+    num = to_int(next(args))
+    error.range_check(0, 255, num)
+    asc_value_or_char = next(args)
+    if isinstance(asc_value_or_char, numbers.Integer):
+        error.range_check(0, 255, asc_value_or_char.to_int())
+    list(args)
     if isinstance(asc_value_or_char, strings.String):
         char = asc_value_or_char.to_str()[0]
     else:

@@ -94,7 +94,7 @@ class ExpressionParser(object):
             tk.FN: None,
             tk.ERL: self._null_argument,
             tk.ERR: self._null_argument,
-            tk.STRING: self._parse_string,
+            tk.STRING: partial(self._gen_parse_arguments, length=2),
             tk.INSTR: self._parse_instr,
             tk.CSRLIN: self._null_argument,
             tk.POINT: partial(self._parse_argument_list, conversions=(values.cint_, values.cint_), optional=True),
@@ -535,18 +535,6 @@ class ExpressionParser(object):
         small = values.pass_string(s)
         ins.require_read((')',))
         return (start, big, small)
-
-    def _parse_string(self, ins):
-        """STRING$: repeat characters."""
-        ins.require_read(('(',))
-        n = values.to_int(self.parse(ins))
-        error.range_check(0, 255, n)
-        ins.require_read((',',))
-        asc_value_or_char = self.parse(ins)
-        if isinstance(asc_value_or_char, values.Integer):
-            error.range_check(0, 255, asc_value_or_char.to_int())
-        ins.require_read((')',))
-        return (asc_value_or_char, n)
 
     def _parse_rnd(self, ins):
         """RND: get pseudorandom value."""
