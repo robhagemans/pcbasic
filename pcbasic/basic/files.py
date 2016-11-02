@@ -314,7 +314,7 @@ class Files(object):
         col = 1
         if printer.device_file:
             col = printer.device_file.col
-        return self._values.new_integer(col)
+        return self._values.new_integer().from_int(col)
 
     def ioctl_(self, infile):
         """IOCTL$: read device control string response; not implemented."""

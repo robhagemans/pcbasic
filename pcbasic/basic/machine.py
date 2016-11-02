@@ -26,6 +26,7 @@ class MachinePorts(object):
     def __init__(self, session):
         """Initialise machine ports."""
         self.session = session
+        self._values = self.session.values
         # parallel port base address:
         # http://retired.beyondlogic.org/spp/parallel.htm
         # 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
@@ -57,7 +58,7 @@ class MachinePorts(object):
         # return as unsigned int
         if inp < 0:
             inp += 0x10000
-        return inp
+        return self._values.new_integer().from_int(inp)
 
     def inp(self, port):
         """Get the value in an emulated machine port."""
@@ -245,9 +246,10 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, data_memory, devices, files, screen, keyboard,
+    def __init__(self, values, data_memory, devices, files, screen, keyboard,
                 font_8, interpreter, peek_values, syntax):
         """Initialise memory."""
+        self._values = values
         # data segment initialised elsewhere
         self.data = data_memory
         # device access needed for COM and LPT ports
@@ -276,7 +278,7 @@ class Memory(object):
             raise error.RunError(error.IFC)
         addr = values.to_int(addr, unsigned=True)
         addr += self.segment * 0x10
-        return self._get_memory(addr)
+        return self._values.new_integer().from_int(self._get_memory(addr))
 
     def poke_(self, args):
         """POKE: Set the value at an emulated memory location."""

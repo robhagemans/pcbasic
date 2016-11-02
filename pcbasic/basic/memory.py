@@ -378,8 +378,8 @@ class DataSegment(object):
         else:
             self.arrays.set(name, indices, value)
 
-    def varptr_(self, *params):
-        """VARPTR: Get address of variable."""
+    def varptr(self, *params):
+        """Get address of variable."""
         if len(params) == 2:
             name, indices = params
             # this is an evaluation-time determination
@@ -402,10 +402,15 @@ class DataSegment(object):
             var_ptr -= 0x10000
         return var_ptr
 
+    def varptr_(self, *params):
+        """VARPTR: Get address of variable."""
+        return self.values.new_integer().from_int(self.varptr(*params))
+
     def varptr_str_(self, name, indices):
         """VARPTR$: Get address of variable in string representation."""
-        var_ptr = self.varptr_(name, indices)
-        return struct.pack('<Bh', values.size_bytes(self.complete_name(name)), var_ptr)
+        var_ptr = self.varptr(name, indices)
+        vps = struct.pack('<Bh', values.size_bytes(self.complete_name(name)), var_ptr)
+        return self.values.new_string().from_str(vps)
 
     def dereference(self, address):
         """Get a value for a variable given its pointer address."""
@@ -464,7 +469,7 @@ class DataSegment(object):
         if isinstance(val, values.String):
             # grabge collection if a string-valued argument is specified.
             self._collect_garbage()
-        return self._get_free()
+        return self.values.new_single().from_int(self._get_free())
 
     def lset_(self, args):
         """LSET: assign string value in-place; left justified."""

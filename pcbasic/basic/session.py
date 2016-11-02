@@ -190,7 +190,7 @@ class Session(object):
         ######################################################################
         # set up non-data segment memory
         self.all_memory = machine.Memory(
-                self.memory, self.devices, self.files,
+                self.values, self.memory, self.devices, self.files,
                 self.screen, self.input_methods.keyboard, self.screen.fonts[8],
                 self.interpreter, peek_values, syntax)
         # initialise machine ports
