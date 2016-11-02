@@ -77,7 +77,7 @@ class ExpressionParser(object):
                 '$': (self._parse_argument, values.STR),
             },
             tk.INPUT: {
-                '$': (self._parse_input, values.STR),
+                '$': (self._parse_input, None),
             },
             tk.ERDEV: {
                 '$': (self._null_argument, values.STR),
@@ -136,7 +136,7 @@ class ExpressionParser(object):
             tk.SPACE: (self._parse_argument, None),
             tk.OCT: (self._parse_argument, None),
             tk.HEX: (self._parse_argument, None),
-            tk.LPOS: (self._parse_argument, values.INT),
+            tk.LPOS: (self._parse_argument, None),
             tk.CINT: (self._parse_argument, None),
             tk.CSNG: (self._parse_argument, None),
             tk.CDBL: (self._parse_argument, None),
@@ -144,9 +144,9 @@ class ExpressionParser(object):
             tk.PEN: (self._parse_argument, values.INT),
             tk.STICK: (self._parse_argument, values.INT),
             tk.STRIG: (self._parse_argument, values.INT),
-            tk.EOF: (self._parse_argument, values.INT),
-            tk.LOC: (self._parse_argument, values.SNG),
-            tk.LOF: (self._parse_argument, values.SNG),
+            tk.EOF: (self._parse_argument, None),
+            tk.LOC: (self._parse_argument, None),
+            tk.LOF: (self._parse_argument, None),
         }
         self._functions = set(self._complex.keys() + self._simple.keys())
 

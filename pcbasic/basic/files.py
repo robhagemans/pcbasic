@@ -32,8 +32,9 @@ device_files = ('AUX', 'CON', 'NUL', 'PRN')
 class Files(object):
     """File manager."""
 
-    def __init__(self, devices, max_files, max_reclen):
+    def __init__(self, values, devices, max_files, max_reclen):
         """Initialise files."""
+        self._values = values
         self.files = {}
         self.max_files = max_files
         self.max_reclen = max_reclen
@@ -288,28 +289,32 @@ class Files(object):
     def loc_(self, num):
         """LOC: get file pointer."""
         num = values.cint_(num)
-        return self._get_from_integer(num).loc()
+        loc = self._get_from_integer(num).loc()
+        return self._values.new_single().from_int(loc)
 
     def eof_(self, num):
         """EOF: get end-of-file."""
         num = values.cint_(num)
-        if num.is_zero():
-            return False
-        return -1 if self._get_from_integer(num, 'IR').eof() else 0
+        eof = self._values.new_integer()
+        if not num.is_zero() and self._get_from_integer(num, 'IR').eof():
+            eof = eof.from_int(-1)
+        return eof
 
     def lof_(self, num):
         """LOF: get length of file."""
         num = values.cint_(num)
-        return self._get_from_integer(num).lof()
+        lof = self._get_from_integer(num).lof()
+        return self._values.new_single().from_int(lof)
 
     def lpos_(self, num):
         """LPOS: get the current printer column."""
         num = values.to_int(num)
         error.range_check(0, 3, num)
         printer = self.devices.devices['LPT%d:' % max(1, num)]
+        col = 1
         if printer.device_file:
-            return printer.device_file.col
-        return 1
+            col = printer.device_file.col
+        return self._values.new_integer(col)
 
     def ioctl_(self, infile):
         """IOCTL$: read device control string response; not implemented."""
@@ -320,7 +325,7 @@ class Files(object):
         """INPUT$: read num chars from file."""
         if file_obj is None:
             file_obj = self.devices.kybd_file
-        return file_obj.input_(num_chars)
+        return self._values.new_string().from_str(file_obj.input_(num_chars))
 
     def write_(self, args):
         """WRITE: Output machine-readable expressions to the screen or a file."""
