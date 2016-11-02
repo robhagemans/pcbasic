@@ -1692,16 +1692,11 @@ class Screen(object):
         """POINT (1 argument): Return current coordinate (2 arguments): Return the attribute of a pixel."""
         arg0 = next(args)
         arg1 = next(args)
-        if arg1 is not None:
-            if self.mode.is_text_mode:
-                raise error.RunError(error.IFC)
-            arg1 = values.pass_number(arg1)
-        else:
+        if arg1 is None:
             arg0 = values.cint_(arg0)
             fn = values.to_int(arg0)
             error.range_check(0, 3, fn)
-        list(args)
-        if arg1 is None:
+            list(args)
             if self.mode.is_text_mode:
                 return self._values.new_single()
             if fn in (0, 1):
@@ -1710,6 +1705,10 @@ class Screen(object):
                 point = self.drawing.get_window_logical(*self.drawing.last_point)[fn - 2]
             return self._values.new_single().from_value(point)
         else:
+            if self.mode.is_text_mode:
+                raise error.RunError(error.IFC)
+            arg1 = values.pass_number(arg1)
+            list(args)
             x, y = values.csng_(arg0).to_value(), values.csng_(arg1).to_value()
             x, y = self.graph_view.coords(*self.drawing.get_window_physical(x, y))
             if x < 0 or x >= self.mode.pixel_width or y < 0 or y >= self.mode.pixel_height:
