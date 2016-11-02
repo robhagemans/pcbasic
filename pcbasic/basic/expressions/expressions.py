@@ -97,7 +97,7 @@ class ExpressionParser(object):
             tk.STRING: partial(self._gen_parse_arguments, length=2),
             tk.INSTR: self._parse_instr,
             tk.CSRLIN: self._null_argument,
-            tk.POINT: partial(self._gen_parse_arguments_optional, length=2), #partial(self._parse_argument_list, conversions=(values.cint_, values.cint_), optional=True),
+            tk.POINT: partial(self._gen_parse_arguments_optional, length=2),
             tk.INKEY: self._null_argument,
             tk.CVI: self._parse_argument,
             tk.CVS: self._parse_argument,
