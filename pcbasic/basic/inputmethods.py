@@ -83,7 +83,7 @@ class InputMethods(object):
         # Screen needed in Keyboard for print_screen()
         # and also for clipboard operations
         # InputMethods needed for wait() only
-        self.keyboard = Keyboard(self, screen,
+        self.keyboard = Keyboard(self, self._values, screen,
                 codepage, self._queues, keystring, ignore_caps, ctrl_c_is_break)
 
 
@@ -283,8 +283,9 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, input_methods, screen, codepage, queues, keystring, ignore_caps, ctrl_c_is_break):
+    def __init__(self, input_methods, values, screen, codepage, queues, keystring, ignore_caps, ctrl_c_is_break):
         """Initilise keyboard state."""
+        self._values = values
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(queues, 15)
         # pre-buffer for keystrokes to enable event handling (holds unicode)
@@ -335,6 +336,11 @@ class Keyboard(object):
         # wait a tick to reduce CPU load in loops
         self.input_methods.wait()
         return self.buf.getc(expand)
+
+    def inkey_(self):
+        """INKEY$: read a keystroke."""
+        inkey = self.get_char()
+        return self._values.new_string().from_str(inkey)
 
     def wait_char(self):
         """Wait for character, then return it but don't drop from queue."""
