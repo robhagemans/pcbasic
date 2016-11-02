@@ -163,12 +163,15 @@ class FloatErrorHandler(object):
 class Values(object):
     """Handles BASIC strings and numbers."""
 
-    def __init__(self, screen, string_space, double_math):
+    def __init__(self, string_space, double_math):
         """Setup values."""
-        self.error_handler = FloatErrorHandler(screen)
         self.stringspace = string_space
         # double-precision EXP, SIN, COS, TAN, ATN, LOG
         self.double_math = double_math
+
+    def set_screen(self, screen):
+        """Initialise the error message screen."""
+        self.error_handler = FloatErrorHandler(screen)
 
     def create(self, buf):
         """Create new variable object with buffer provided."""

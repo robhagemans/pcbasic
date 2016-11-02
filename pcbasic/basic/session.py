@@ -80,6 +80,24 @@ class Session(object):
         # terminal program for TERM command
         self._term_program = pcjr_term
         ######################################################################
+        # data segment (variable section)
+        ######################################################################
+        # set up variables and memory model state
+        # initialise the data segment
+        self.memory = memory.DataSegment(
+                    max_memory, reserved_memory, max_reclen, max_files)
+        # string space
+        self.strings = values.StringSpace(self.memory)
+        # prepare string and number handler
+        self.values = values.Values(self.strings, double)
+        # create fields after value handler has been created (circular dependency in DataSegment)
+        self.memory.values = self.values
+        self.memory.reset_fields()
+        # scalar space
+        self.scalars = scalars.Scalars(self.memory, self.values)
+        # array space
+        self.arrays = arrays.Arrays(self.memory, self.values)
+        ######################################################################
         # console
         ######################################################################
         if iface:
@@ -107,23 +125,10 @@ class Session(object):
         # screen is needed for print_screen, clipboard copy and pen poll
         self.input_methods.init(self.screen, self.codepage, keystring, ignore_caps, ctrl_c_is_break)
         ######################################################################
-        # data segment
+        # data segment (program section)
         ######################################################################
-        # set up variables and memory model state
-        # initialise the data segment
-        self.memory = memory.DataSegment(
-                    max_memory, reserved_memory, max_reclen, max_files)
-        # string space
-        self.strings = values.StringSpace(self.memory)
-        # prepare string and number handler
-        self.values = values.Values(self.screen, self.strings, double)
-        # create fields after value handler has been created (circular dependency in DataSegment)
-        self.memory.values = self.values
-        self.memory.reset_fields()
-        # scalar space
-        self.scalars = scalars.Scalars(self.memory, self.values)
-        # array space
-        self.arrays = arrays.Arrays(self.memory, self.values)
+        # initilise error message stream
+        self.values.set_screen(self.screen)
         # prepare tokeniser
         token_keyword = tk.TokenKeywordDict(syntax)
         self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
