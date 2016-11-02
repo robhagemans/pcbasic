@@ -510,10 +510,11 @@ class Screen(object):
         (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
         (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) )
 
-    def __init__(self, queues, input_methods, initial_width, video_mem_size, capabilities, monitor, sound, redirect,
+    def __init__(self, queues, values, input_methods, initial_width, video_mem_size, capabilities, monitor, sound, redirect,
                 cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
         """Minimal initialisiation of the screen."""
         self.queues = queues
+        self._values = values
         # emulated video card - cga, ega, etc
         if capabilities == 'ega' and monitor == 'mono':
             capabilities = 'ega_mono'
@@ -1612,15 +1613,19 @@ class Screen(object):
         if (self.overflow and self.current_col == self.mode.width and
                                     self.current_row < self.scroll_height):
             # in overflow position, return row+1 except on the last row
-            return self.current_row + 1
-        return self.current_row
+            csrlin = self.current_row + 1
+        else:
+            csrlin = self.current_row
+        return self._values.new_integer().from_int(csrlin)
 
     def pos_(self, dummy=None):
         """POS: get the current screen column."""
         if self.current_col == self.mode.width and self.overflow:
             # in overflow position, return column 1.
-            return 1
-        return self.current_col
+            pos = 1
+        else:
+            pos = self.current_col
+        return self._values.new_integer().from_int(pos)
 
     ## graphics primitives
 
