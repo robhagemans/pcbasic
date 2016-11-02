@@ -146,7 +146,8 @@ class Session(object):
         # DataSegment needed for COMn and disk FIELD buffers
         # InputMethods needed for wait()
         self.devices = files.Devices(
-                self.input_methods, self.memory.fields, self.screen, self.input_methods.keyboard,
+                self.values, self.input_methods, self.memory.fields,
+                self.screen, self.input_methods.keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)
@@ -155,6 +156,8 @@ class Session(object):
         self.screen.set_print_screen_target(self.devices.lpt1_file)
         # set up the SHELL command
         self.shell = dos.get_shell_manager(self.input_methods.keyboard, self.screen, self.codepage, option_shell, syntax)
+        # set up environment
+        self.environment = dos.Environment(self.values)
         # initialise random number generator
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock

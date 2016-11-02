@@ -74,14 +74,14 @@ class ExpressionParser(object):
                 '$': (self._parse_ioctl, None),
             },
             tk.ENVIRON: {
-                '$': (self._parse_argument, values.STR),
+                '$': (self._parse_argument, None),
             },
             tk.INPUT: {
                 '$': (self._parse_input, None),
             },
             tk.ERDEV: {
-                '$': (self._null_argument, values.STR),
-                None: (self._null_argument, values.INT),
+                '$': (self._null_argument, None),
+                None: (self._null_argument, None),
             },
             tk.VARPTR: {
                 '$': (self._parse_varptr_str, None),
@@ -104,7 +104,7 @@ class ExpressionParser(object):
             tk.MKI: (self._parse_argument, None),
             tk.MKS: (self._parse_argument, None),
             tk.MKD: (self._parse_argument, None),
-            tk.EXTERR: (self._parse_argument, values.INT),
+            tk.EXTERR: (self._parse_argument, None),
             tk.DATE: (self._null_argument, None),
             tk.TIME: (self._null_argument, None),
             tk.PLAY: (self._parse_argument, None),
@@ -165,7 +165,7 @@ class ExpressionParser(object):
             tk.USR + tk.C_8: session.machine.usr_,
             tk.USR + tk.C_9: session.machine.usr_,
             tk.IOCTL + '$': session.files.ioctl_,
-            tk.ENVIRON + '$': dos.environ_,
+            tk.ENVIRON + '$': session.environment.environ_,
             tk.INPUT + '$': session.files.input_,
             tk.ERDEV: session.devices.erdev_,
             tk.ERDEV + '$': session.devices.erdev_str_,

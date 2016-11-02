@@ -421,7 +421,7 @@ class StatementParser(object):
             tk.MKDIR: session.devices.mkdir_,
             tk.RMDIR: session.devices.rmdir_,
             tk.SHELL: session.shell_,
-            tk.ENVIRON: dos.environ_statement_,
+            tk.ENVIRON: session.environment.environ_statement_,
             tk.WINDOW: session.screen.drawing.window_,
             tk.LCOPY: session.devices.lcopy_,
             tk.PCOPY: session.screen.pcopy_,

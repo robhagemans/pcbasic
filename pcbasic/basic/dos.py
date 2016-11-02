@@ -30,31 +30,39 @@ class InitFailed(Exception):
 #########################################
 # calling shell environment
 
-def environ_(expr):
-    """ENVIRON$: get environment string."""
-    if isinstance(expr, values.String):
-        parm = expr.to_str()
-        if not parm:
-            raise error.RunError(error.IFC)
-        return os.getenv(parm) or b''
-    else:
-        expr = values.to_int(expr)
-        error.range_check(1, 255, expr)
-        envlist = list(os.environ)
-        if expr > len(envlist):
-            return ''
-        else:
-            return '%s=%s' % (envlist[expr-1], os.getenv(envlist[expr-1]))
+class Environment(object):
+    """Handle environment changes."""
 
-def environ_statement_(args):
-    """ENVIRON: set environment string."""
-    envstr, = args
-    eqs = envstr.find('=')
-    if eqs <= 0:
-        raise error.RunError(error.IFC)
-    envvar = str(envstr[:eqs])
-    val = str(envstr[eqs+1:])
-    os.environ[envvar] = val
+    def __init__(self, values):
+        """Initialise."""
+        self._values = values
+
+    def environ_(self, expr):
+        """ENVIRON$: get environment string."""
+        if isinstance(expr, values.String):
+            parm = expr.to_str()
+            if not parm:
+                raise error.RunError(error.IFC)
+            envstr = os.getenv(parm) or b''
+        else:
+            expr = values.to_int(expr)
+            error.range_check(1, 255, expr)
+            envlist = list(os.environ)
+            if expr > len(envlist):
+                envstr = ''
+            else:
+                envstr = '%s=%s' % (envlist[expr-1], os.getenv(envlist[expr-1]))
+        return self._values.new_string().from_str(envstr)
+
+    def environ_statement_(self, args):
+        """ENVIRON: set environment string."""
+        envstr, = args
+        eqs = envstr.find('=')
+        if eqs <= 0:
+            raise error.RunError(error.IFC)
+        envvar = str(envstr[:eqs])
+        val = str(envstr[eqs+1:])
+        os.environ[envvar] = val
 
 
 #########################################

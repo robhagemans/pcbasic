@@ -404,11 +404,12 @@ class Devices(object):
     # allowable drive letters in GW-BASIC are letters or @
     drive_letters = b'@' + string.ascii_uppercase
 
-    def __init__(self, input_methods, fields, screen, keyboard,
+    def __init__(self, values, input_methods, fields, screen, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_in_size, utf8, universal):
         """Initialise devices."""
         self.devices = {}
+        self._values = values
         # screen device
         self._screen = screen
         self.devices['SCRN:'] = devices.SCRNDevice(screen)
@@ -484,18 +485,18 @@ class Devices(object):
     def erdev_(self):
         """ERDEV: device error value; not implemented."""
         logging.warning('ERDEV function not implemented.')
-        return 0
+        return self._values.new_integer()
 
     def erdev_str_(self):
         """ERDEV$: device error string; not implemented."""
         logging.warning('ERDEV$ function not implemented.')
-        return b''
+        return self._values.new_string()
 
     def exterr_(self, val):
         """EXTERR: device error information; not implemented."""
         logging.warning('EXTERR function not implemented.')
         error.range_check(0, 3, values.to_int(val))
-        return 0
+        return self._values.new_integer()
 
     ###########################################################################
     # statement callbacks
