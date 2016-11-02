@@ -97,6 +97,18 @@ class Session(object):
         self.scalars = scalars.Scalars(self.memory, self.values)
         # array space
         self.arrays = arrays.Arrays(self.memory, self.values)
+        # prepare tokeniser
+        token_keyword = tk.TokenKeywordDict(syntax)
+        self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
+        self.lister = lister.Lister(self.values, token_keyword)
+        # initialise the program
+        bytecode = codestream.TokenisedStream()
+        self.program = program.Program(
+                self.tokeniser, self.lister, max_list_line, allow_protect,
+                allow_code_poke, self.memory.code_start, bytecode)
+        # register all data segment users
+        self.memory.set_buffers(
+                self.program, self.scalars, self.arrays, self.strings, self.values)
         ######################################################################
         # console
         ######################################################################
@@ -124,23 +136,8 @@ class Session(object):
         # initialise input methods
         # screen is needed for print_screen, clipboard copy and pen poll
         self.input_methods.init(self.screen, self.codepage, keystring, ignore_caps, ctrl_c_is_break)
-        ######################################################################
-        # data segment (program section)
-        ######################################################################
-        # initilise error message stream
+        # initilise floating-point error message stream
         self.values.set_screen(self.screen)
-        # prepare tokeniser
-        token_keyword = tk.TokenKeywordDict(syntax)
-        self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
-        self.lister = lister.Lister(self.values, token_keyword)
-        # initialise the program
-        bytecode = codestream.TokenisedStream()
-        self.program = program.Program(
-                self.tokeniser, self.lister, max_list_line, allow_protect,
-                allow_code_poke, self.memory.code_start, bytecode)
-        # register all data segment users
-        self.memory.set_buffers(
-                self.program, self.scalars, self.arrays, self.strings, self.values)
         ######################################################################
         # devices
         ######################################################################
