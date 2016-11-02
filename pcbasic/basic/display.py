@@ -1713,26 +1713,27 @@ class Screen(object):
                 return new_int.from_int(-1)
             return new_int.from_int(self.get_pixel(x, y))
 
-    def pmap_(self, coord, mode):
+    def pmap_(self, args):
         """PMAP: convert between logical and physical coordinates."""
         # create a new Single for the return value
-        fvalue = mode.to_single()
+        coord = values.csng_(next(args))
+        mode = values.cint_(next(args))
+        list(args)
         mode = mode.to_int()
         error.range_check(0, 3, mode)
         if self.mode.is_text_mode:
-            return fvalue.from_value(0)
-        if mode == 0:
+            if mode in (2,3):
+                values.cint_(coord)
+            value = 0
+        elif mode == 0:
             value, _ = self.drawing.get_window_physical(values.csng_(coord).to_value(), 0.)
-            return fvalue.from_value(value)
         elif mode == 1:
             _, value = self.drawing.get_window_physical(0., values.csng_(coord).to_value())
-            return fvalue.from_value(value)
         elif mode == 2:
-            value, _ = self.drawing.get_window_logical(values.to_int(coord), 0)
-            return fvalue.from_value(value)
+            value, _ = self.drawing.get_window_logical(values.cint_(coord).to_int(), 0)
         elif mode == 3:
-            _, value = self.drawing.get_window_logical(0, values.to_int(coord))
-            return fvalue.from_value(value)
+            _, value = self.drawing.get_window_logical(0, values.cint_(coord).to_int())
+        return self._values.new_single().from_value(value)
 
     # text
 

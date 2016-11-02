@@ -545,16 +545,22 @@ def hex_(x):
 ##############################################################################
 # sring operations
 
-def left_(s, num):
+def left_(args):
     """LEFT$: get substring of num characters at the start of string."""
+    s, num = next(args), next(args)
+    s, num = pass_string(s), cint_(num)
+    list(args)
     stop = num.to_integer().to_int()
     if stop == 0:
         return s.new()
     error.range_check(0, 255, stop)
     return s.new().from_str(s.to_str()[:stop])
 
-def right_(s, num):
+def right_(args):
     """RIGHT$: get substring of num characters at the end of string."""
+    s, num = next(args), next(args)
+    s, num = pass_string(s), cint_(num)
+    list(args)
     stop = num.to_integer().to_int()
     if stop == 0:
         return s.new()

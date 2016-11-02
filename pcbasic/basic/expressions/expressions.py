@@ -11,6 +11,7 @@ from functools import partial
 import logging
 import string
 import struct
+import types
 
 from . import operators as op
 from . import userfunctions
@@ -109,9 +110,9 @@ class ExpressionParser(object):
             tk.TIME: self._null_argument,
             tk.PLAY: self._parse_argument,
             tk.TIMER: self._null_argument,
-            tk.PMAP: partial(self._parse_argument_list, conversions=(values.csng_, values.cint_), optional=False),
-            tk.LEFT: partial(self._parse_argument_list, conversions=(values.pass_string, values.cint_), optional=False),
-            tk.RIGHT: partial(self._parse_argument_list, conversions=(values.pass_string, values.cint_), optional=False),
+            tk.PMAP: partial(self._gen_parse_arguments, length=2),
+            tk.LEFT: partial(self._gen_parse_arguments, length=2),
+            tk.RIGHT: partial(self._gen_parse_arguments, length=2),
             tk.MID: partial(self._parse_argument_list, conversions=(values.pass_string, values.cint_, values.cint_), optional=True),
             tk.SGN: self._parse_argument,
             tk.INT: self._parse_argument,
@@ -403,7 +404,10 @@ class ExpressionParser(object):
         else:
             fn = self._callbacks[token]
         args = parse_args(ins)
-        result = fn(*args)
+        if isinstance(args, types.GeneratorType):
+            result = fn(args)
+        else:
+            result = fn(*args)
         return result
 
     def _null_argument(self, ins):
@@ -436,6 +440,15 @@ class ExpressionParser(object):
         if arg:
             ins.require_read((')',))
         return arg
+
+    def _gen_parse_arguments(self, ins, length):
+        """Parse a comma-separated list of arguments and apply type conversions."""
+        ins.require_read(('(',))
+        for _ in range(length-1):
+            yield self.parse(ins)
+            ins.require_read((','),)
+        yield self.parse(ins)
+        ins.require_read((')',))
 
     def _parse_file_number(self, ins):
         """Read a file number."""
