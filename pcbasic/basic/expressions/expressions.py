@@ -58,95 +58,95 @@ class ExpressionParser(object):
         """Initialise function syntax tables."""
         self._complex = {
             tk.USR: {
-                None: (self._parse_argument, None),
-                tk.C_0: (self._parse_argument, None),
-                tk.C_1: (self._parse_argument, None),
-                tk.C_2: (self._parse_argument, None),
-                tk.C_3: (self._parse_argument, None),
-                tk.C_4: (self._parse_argument, None),
-                tk.C_5: (self._parse_argument, None),
-                tk.C_6: (self._parse_argument, None),
-                tk.C_7: (self._parse_argument, None),
-                tk.C_8: (self._parse_argument, None),
-                tk.C_9: (self._parse_argument, None),
+                None: self._parse_argument,
+                tk.C_0: self._parse_argument,
+                tk.C_1: self._parse_argument,
+                tk.C_2: self._parse_argument,
+                tk.C_3: self._parse_argument,
+                tk.C_4: self._parse_argument,
+                tk.C_5: self._parse_argument,
+                tk.C_6: self._parse_argument,
+                tk.C_7: self._parse_argument,
+                tk.C_8: self._parse_argument,
+                tk.C_9: self._parse_argument,
             },
             tk.IOCTL: {
-                '$': (self._parse_ioctl, None),
+                '$': self._parse_ioctl,
             },
             tk.ENVIRON: {
-                '$': (self._parse_argument, None),
+                '$': self._parse_argument,
             },
             tk.INPUT: {
-                '$': (self._parse_input, None),
+                '$': self._parse_input,
             },
             tk.ERDEV: {
-                '$': (self._null_argument, None),
-                None: (self._null_argument, None),
+                '$': self._null_argument,
+                None: self._null_argument,
             },
             tk.VARPTR: {
-                '$': (self._parse_varptr_str, None),
-                None: (self._parse_varptr, None),
+                '$': self._parse_varptr_str,
+                None: self._parse_varptr,
             },
         }
         self._simple = {
-            tk.SCREEN: (partial(self._parse_argument_list, conversions=(values.cint_, values.cint_, values.cint_), optional=True), None),
-            tk.FN: (None, None),
-            tk.ERL: (self._null_argument, None),
-            tk.ERR: (self._null_argument, None),
-            tk.STRING: (self._parse_string, None),
-            tk.INSTR: (self._parse_instr, None),
-            tk.CSRLIN: (self._null_argument, None),
-            tk.POINT: (partial(self._parse_argument_list, conversions=(values.cint_, values.cint_), optional=True), None),
-            tk.INKEY: (self._null_argument, None),
-            tk.CVI: (self._parse_argument, None),
-            tk.CVS: (self._parse_argument, None),
-            tk.CVD: (self._parse_argument, None),
-            tk.MKI: (self._parse_argument, None),
-            tk.MKS: (self._parse_argument, None),
-            tk.MKD: (self._parse_argument, None),
-            tk.EXTERR: (self._parse_argument, None),
-            tk.DATE: (self._null_argument, None),
-            tk.TIME: (self._null_argument, None),
-            tk.PLAY: (self._parse_argument, None),
-            tk.TIMER: (self._null_argument, None),
-            tk.PMAP: (partial(self._parse_argument_list, conversions=(values.csng_, values.cint_), optional=False), None),
-            tk.LEFT: (partial(self._parse_argument_list, conversions=(values.pass_string, values.cint_), optional=False), None),
-            tk.RIGHT: (partial(self._parse_argument_list, conversions=(values.pass_string, values.cint_), optional=False), None),
-            tk.MID: (partial(self._parse_argument_list, conversions=(values.pass_string, values.cint_, values.cint_), optional=True), None),
-            tk.SGN: (self._parse_argument, None),
-            tk.INT: (self._parse_argument, None),
-            tk.ABS: (self._parse_argument, None),
-            tk.SQR: (self._parse_argument, None),
-            tk.RND: (self._parse_rnd, None),
-            tk.SIN: (self._parse_argument, None),
-            tk.LOG: (self._parse_argument, None),
-            tk.EXP: (self._parse_argument, None),
-            tk.COS: (self._parse_argument, None),
-            tk.TAN: (self._parse_argument, None),
-            tk.ATN: (self._parse_argument, None),
-            tk.FRE: (self._parse_argument, None),
-            tk.INP: (self._parse_argument, None),
-            tk.POS: (self._parse_argument, None),
-            tk.LEN: (self._parse_argument, None),
-            tk.STR: (self._parse_argument, None),
-            tk.VAL: (self._parse_argument, None),
-            tk.ASC: (self._parse_argument, None),
-            tk.CHR: (self._parse_argument, None),
-            tk.PEEK: (self._parse_argument, None),
-            tk.SPACE: (self._parse_argument, None),
-            tk.OCT: (self._parse_argument, None),
-            tk.HEX: (self._parse_argument, None),
-            tk.LPOS: (self._parse_argument, None),
-            tk.CINT: (self._parse_argument, None),
-            tk.CSNG: (self._parse_argument, None),
-            tk.CDBL: (self._parse_argument, None),
-            tk.FIX: (self._parse_argument, None),
-            tk.PEN: (self._parse_argument, None),
-            tk.STICK: (self._parse_argument, None),
-            tk.STRIG: (self._parse_argument, None),
-            tk.EOF: (self._parse_argument, None),
-            tk.LOC: (self._parse_argument, None),
-            tk.LOF: (self._parse_argument, None),
+            tk.SCREEN: partial(self._parse_argument_list, conversions=(values.cint_, values.cint_, values.cint_), optional=True),
+            tk.FN: None,
+            tk.ERL: self._null_argument,
+            tk.ERR: self._null_argument,
+            tk.STRING: self._parse_string,
+            tk.INSTR: self._parse_instr,
+            tk.CSRLIN: self._null_argument,
+            tk.POINT: partial(self._parse_argument_list, conversions=(values.cint_, values.cint_), optional=True),
+            tk.INKEY: self._null_argument,
+            tk.CVI: self._parse_argument,
+            tk.CVS: self._parse_argument,
+            tk.CVD: self._parse_argument,
+            tk.MKI: self._parse_argument,
+            tk.MKS: self._parse_argument,
+            tk.MKD: self._parse_argument,
+            tk.EXTERR: self._parse_argument,
+            tk.DATE: self._null_argument,
+            tk.TIME: self._null_argument,
+            tk.PLAY: self._parse_argument,
+            tk.TIMER: self._null_argument,
+            tk.PMAP: partial(self._parse_argument_list, conversions=(values.csng_, values.cint_), optional=False),
+            tk.LEFT: partial(self._parse_argument_list, conversions=(values.pass_string, values.cint_), optional=False),
+            tk.RIGHT: partial(self._parse_argument_list, conversions=(values.pass_string, values.cint_), optional=False),
+            tk.MID: partial(self._parse_argument_list, conversions=(values.pass_string, values.cint_, values.cint_), optional=True),
+            tk.SGN: self._parse_argument,
+            tk.INT: self._parse_argument,
+            tk.ABS: self._parse_argument,
+            tk.SQR: self._parse_argument,
+            tk.RND: self._parse_rnd,
+            tk.SIN: self._parse_argument,
+            tk.LOG: self._parse_argument,
+            tk.EXP: self._parse_argument,
+            tk.COS: self._parse_argument,
+            tk.TAN: self._parse_argument,
+            tk.ATN: self._parse_argument,
+            tk.FRE: self._parse_argument,
+            tk.INP: self._parse_argument,
+            tk.POS: self._parse_argument,
+            tk.LEN: self._parse_argument,
+            tk.STR: self._parse_argument,
+            tk.VAL: self._parse_argument,
+            tk.ASC: self._parse_argument,
+            tk.CHR: self._parse_argument,
+            tk.PEEK: self._parse_argument,
+            tk.SPACE: self._parse_argument,
+            tk.OCT: self._parse_argument,
+            tk.HEX: self._parse_argument,
+            tk.LPOS: self._parse_argument,
+            tk.CINT: self._parse_argument,
+            tk.CSNG: self._parse_argument,
+            tk.CDBL: self._parse_argument,
+            tk.FIX: self._parse_argument,
+            tk.PEN: self._parse_argument,
+            tk.STICK: self._parse_argument,
+            tk.STRIG: self._parse_argument,
+            tk.EOF: self._parse_argument,
+            tk.LOC: self._parse_argument,
+            tk.LOF: self._parse_argument,
         }
         self._functions = set(self._complex.keys() + self._simple.keys())
 
@@ -388,26 +388,22 @@ class ExpressionParser(object):
         ins.read(len(token))
         if token in self._simple:
             # apply functions
-            fn_record = self._simple[token]
+            parse_args = self._simple[token]
         else:
             fndict = self._complex[token]
             presign = ins.skip_blank_read_if(fndict)
             if presign:
                 token += presign
             try:
-                fn_record = fndict[presign]
+                parse_args = fndict[presign]
             except KeyError:
                 raise error.RunError(error.STX)
         if token == tk.FN:
-            to_type = None
             fn, parse_args = self._read_fn(ins)
         else:
-            parse_args, to_type = fn_record
             fn = self._callbacks[token]
         args = parse_args(ins)
         result = fn(*args)
-        if to_type:
-            return self._values.from_value(result, to_type)
         return result
 
     def _null_argument(self, ins):
