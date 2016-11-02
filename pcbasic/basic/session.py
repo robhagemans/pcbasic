@@ -80,7 +80,7 @@ class Session(object):
         # terminal program for TERM command
         self._term_program = pcjr_term
         ######################################################################
-        # data segment (variable section)
+        # data segment
         ######################################################################
         # set up variables and memory model state
         # initialise the data segment
