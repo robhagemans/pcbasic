@@ -13,11 +13,12 @@ from . import error
 
 class Clock(object):
 
-    def __init__(self):
+    def __init__(self, values):
         """Initialise clock."""
         # datetime offset for duration of the run
         # (so that we don't need permission to touch the system clock)
         # given in seconds
+        self._values = values
         self.time_offset = datetime.timedelta()
 
     def get_time_ms(self):
@@ -32,7 +33,8 @@ class Clock(object):
     def timer_(self):
         """TIMER: get clock ticks since midnight."""
         # precision of GWBASIC TIMER is about 1/20 of a second
-        return float(self.get_time_ms()//50) / 20.
+        timer = float(self.get_time_ms()//50) / 20.
+        return self._values.new_single().from_value(timer)
 
     def time_(self, args):
         """TIME: Set the system time offset."""
@@ -88,10 +90,10 @@ class Clock(object):
 
     def time_fn_(self):
         """Get (offset) system time."""
-        return bytearray((datetime.datetime.now() + self.time_offset)
-                    .strftime('%H:%M:%S'))
+        time = (datetime.datetime.now() + self.time_offset).strftime('%H:%M:%S')
+        return self._values.new_string().from_str(time)
 
     def date_fn_(self):
         """Get (offset) system date."""
-        return bytearray((datetime.datetime.now() + self.time_offset)
-                    .strftime('%m-%d-%Y'))
+        date = (datetime.datetime.now() + self.time_offset).strftime('%m-%d-%Y')
+        return self._values.new_string().from_str(date)
