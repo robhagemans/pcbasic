@@ -24,10 +24,11 @@ class Sound(object):
     # base frequency for noise source
     _base_freq = 3579545./1024.
 
-    def __init__(self, queues, input_methods, syntax):
+    def __init__(self, queues, values, input_methods, syntax):
         """Initialise sound queue."""
         # for wait() and queues
         self._queues = queues
+        self._values = values
         self._input_methods = input_methods
         # Tandy/PCjr noise generator
         # frequency for noise sources
@@ -206,12 +207,11 @@ class Sound(object):
         error.range_check(0, 255, voice)
         if not(self.capabilities in ('pcjr', 'tandy') and voice in (1, 2)):
             voice = 0
-        return self.queue_length(voice)
+        return self._values.new_integer().from_int(self.queue_length(voice))
 
 
 ###############################################################################
 # PLAY parser
-
 
 class PlayState(object):
     """State variables of the PLAY command."""

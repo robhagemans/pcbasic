@@ -126,7 +126,7 @@ class Session(object):
         # prepare input methods
         self.input_methods = inputmethods.InputMethods(self.queues, self.values)
         # initialise sound queue
-        self.sound = sound.Sound(self.queues, self.input_methods, syntax)
+        self.sound = sound.Sound(self.queues, self.values, self.input_methods, syntax)
         # Sound is needed for the beeps on \a
         self.screen = display.Screen(
                 self.queues, self.values, self.input_methods, text_width,
