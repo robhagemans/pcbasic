@@ -124,7 +124,7 @@ class Session(object):
         self.input_redirection, self.output_redirection = redirect.get_redirection(
                 self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
         # prepare input methods
-        self.input_methods = inputmethods.InputMethods(self.queues)
+        self.input_methods = inputmethods.InputMethods(self.queues, self.values)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.input_methods, syntax)
         # Sound is needed for the beeps on \a
@@ -177,8 +177,8 @@ class Session(object):
         self.debugger = debug.get_debugger(self, option_debug)
         # set up BASIC event handlers
         self.basic_events = events.BasicEvents(
-                self.input_methods, self.sound, self.clock, self.devices,
-                self.screen, self.program, syntax)
+                self.values, self.input_methods, self.sound, self.clock,
+                self.devices, self.screen, self.program, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
                 self.debugger, self.input_methods, self.screen, self.devices, self.sound,

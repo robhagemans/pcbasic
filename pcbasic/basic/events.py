@@ -21,8 +21,9 @@ from . import tokens as tk
 class BasicEvents(object):
     """Manage BASIC events."""
 
-    def __init__(self, input_methods, sound, clock, devices, screen, program, syntax):
+    def __init__(self, values, input_methods, sound, clock, devices, screen, program, syntax):
         """Initialise event triggers."""
+        self._values = values
         self._keyboard = input_methods.keyboard
         self._pen = input_methods.pen
         self._stick = input_methods.stick
@@ -109,6 +110,12 @@ class BasicEvents(object):
 
     ##########################################################################
     # callbacks
+
+
+    def pen_fn_(self, fn):
+        """PEN: poll the light pen."""
+        result = self._pen.poll(fn, self.pen.enabled)
+        return self._values.new_integer().from_int(result)
 
     def pen_(self, args):
         """PEN: switch on/off light pen event handling."""
@@ -345,10 +352,6 @@ class PenHandler(EventHandler):
         """Trigger PEN events."""
         if self.pen.poll_event():
             self.trigger()
-
-    def pen_(self, fn):
-        """PEN: poll the light pen."""
-        return self.pen.poll(fn, self.enabled)
 
 
 class StrigHandler(EventHandler):

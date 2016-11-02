@@ -70,14 +70,16 @@ home_key_replacements_eascii = {
 class InputMethods(object):
     """Manage input queue."""
 
-    def __init__(self, queues):
+    def __init__(self, queues, values):
         """Initialise event triggers."""
+        self._values = values
         self._queues = queues
 
     def init(self, screen, codepage, keystring, ignore_caps, ctrl_c_is_break):
+        """Finish initialisation."""
         self._screen = screen
         self.pen = Pen(screen)
-        self.stick = Stick()
+        self.stick = Stick(self._values)
         # Screen needed in Keyboard for print_screen()
         # and also for clipboard operations
         # InputMethods needed for wait() only
@@ -526,8 +528,9 @@ class Pen(object):
 class Stick(object):
     """Joystick support."""
 
-    def __init__(self):
+    def __init__(self, values):
         """Initialise joysticks."""
+        self._values = values
         self.is_firing = [[False, False], [False, False]]
         # axis 0--255; 128 is mid but reports 0, not 128 if no joysticks present
         self.axis = [[0, 0], [0, 0]]
@@ -580,10 +583,11 @@ class Stick(object):
         error.range_check(0, 3, fn)
         joy, axis = fn // 2, fn % 2
         try:
-            return self.axis[joy][axis]
+            result = self.axis[joy][axis]
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
-            pass
+            result = 0
+        return self._values.new_integer().from_int(result)
 
     def strig_(self, fn):
         """STRIG: poll the joystick fire button."""
@@ -595,10 +599,11 @@ class Stick(object):
             # has been fired
             stick_was_trig = self.was_fired[joy][trig]
             self.was_fired[joy][trig] = False
-            return -1 if stick_was_trig else 0
+            result = -1 if stick_was_trig else 0
         else:
             # is currently firing
-            return -1 if self.is_firing[joy][trig] else 0
+            result = -1 if self.is_firing[joy][trig] else 0
+        return self._values.new_integer().from_int(result)
 
     def decay(self):
         """Return time since last game port reset."""
