@@ -1688,30 +1688,35 @@ class Screen(object):
                                 (self.apagenum, x0, y0, x1, y1, index)))
         self.clear_text_area(x0, y0, x1, y1)
 
-
-    def point_(self, arg0, arg1=None):
+    def point_(self, args):
         """POINT (1 argument): Return current coordinate (2 arguments): Return the attribute of a pixel."""
-        if arg1 is None:
-            new_sng = arg0.to_single().clone()
-            if self.mode.is_text_mode:
-                return new_sng.from_int(0)
-            fn = values.to_int(arg0)
-            if fn in (0, 1):
-                return new_sng.from_value(self.drawing.last_point[fn])
-            elif fn in (2, 3):
-                return new_sng.from_value(self.drawing.get_window_logical(*self.drawing.last_point)[fn - 2])
-            return new_sng.from_int(0)
-        else:
+        arg0 = values.cint_(next(args))
+        arg1 = next(args)
+        if arg1 is not None:
             if self.mode.is_text_mode:
                 raise error.RunError(error.IFC)
-            new_int = arg0.to_integer().clone()
-            x, y = values.csng_(arg0).to_value(), values.csng_(arg1).to_value()
+            arg1 = values.cint_(arg1)
+        list(args)
+        if arg1 is None:
+            fn = values.to_int(arg0)
+            error.range_check(0, 3, fn)
+            if self.mode.is_text_mode:
+                return self._values.new_single()
+            if fn in (0, 1):
+                point = self.drawing.last_point[fn]
+            elif fn in (2, 3):
+                point = self.drawing.get_window_logical(*self.drawing.last_point)[fn - 2]
+            else:
+                raise error.RunError(error.IFC)
+            return self._values.new_single().from_value(point)
+        else:
+            x, y = arg0.to_value(), arg1.to_value()
             x, y = self.graph_view.coords(*self.drawing.get_window_physical(x, y))
-            if x < 0 or x >= self.mode.pixel_width:
-                return new_int.from_int(-1)
-            if y < 0 or y >= self.mode.pixel_height:
-                return new_int.from_int(-1)
-            return new_int.from_int(self.get_pixel(x, y))
+            if x < 0 or x >= self.mode.pixel_width or y < 0 or y >= self.mode.pixel_height:
+                point = -1
+            else:
+                point = self.get_pixel(x, y)
+            return self._values.new_integer().from_int(point)
 
     def pmap_(self, args):
         """PMAP: convert between logical and physical coordinates."""

@@ -97,7 +97,7 @@ class ExpressionParser(object):
             tk.STRING: partial(self._gen_parse_arguments, length=2),
             tk.INSTR: self._parse_instr,
             tk.CSRLIN: self._null_argument,
-            tk.POINT: partial(self._parse_argument_list, conversions=(values.cint_, values.cint_), optional=True),
+            tk.POINT: partial(self._gen_parse_arguments_optional, length=2), #partial(self._parse_argument_list, conversions=(values.cint_, values.cint_), optional=True),
             tk.INKEY: self._null_argument,
             tk.CVI: self._parse_argument,
             tk.CVS: self._parse_argument,
@@ -442,12 +442,25 @@ class ExpressionParser(object):
         return arg
 
     def _gen_parse_arguments(self, ins, length):
-        """Parse a comma-separated list of arguments and apply type conversions."""
+        """Parse a comma-separated list of arguments."""
         ins.require_read(('(',))
         for _ in range(length-1):
             yield self.parse(ins)
             ins.require_read((','),)
         yield self.parse(ins)
+        ins.require_read((')',))
+
+    def _gen_parse_arguments_optional(self, ins, length):
+        """Parse a comma-separated list of arguments, last one optional."""
+        ins.require_read(('(',))
+        yield self.parse(ins)
+        for _ in range(length-2):
+            ins.require_read((','),)
+            yield self.parse(ins)
+        if ins.skip_blank_read_if((',',),):
+            yield self.parse(ins)
+        else:
+            yield None
         ins.require_read((')',))
 
     def _parse_file_number(self, ins):
