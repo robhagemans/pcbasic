@@ -378,29 +378,18 @@ class DataSegment(object):
         else:
             self.arrays.set(name, indices, value)
 
-    def varptr(self, *params):
+    def varptr(self, name, indices):
         """Get address of variable."""
-        if len(params) == 2:
-            name, indices = params
-            # this is an evaluation-time determination
-            # as we could have passed another DEFtype statement
-            name = self.complete_name(name)
-            try:
-                if indices == []:
-                    var_ptr = self.scalars.varptr(name)
-                else:
-                    var_ptr = self.arrays.varptr(name, indices)
-            except KeyError:
-                raise error.RunError(error.IFC)
-        else:
-            filenum, = params
-            # file number 0 is allowed for VARPTR
-            if filenum < 0 or filenum > self.max_files:
-                raise error.RunError(error.BAD_FILE_NUMBER)
-            var_ptr = self.field_mem_base + filenum * self.field_mem_offset + 6
-        if var_ptr > 0x7fff:
-            var_ptr -= 0x10000
-        return var_ptr
+        # this is an evaluation-time determination
+        # as we could have passed another DEFtype statement
+        name = self.complete_name(name)
+        try:
+            if indices == []:
+                return self.scalars.varptr(name)
+            else:
+                return self.arrays.varptr(name, indices)
+        except KeyError:
+            raise error.RunError(error.IFC)
 
     def varptr_(self, args):
         """VARPTR: get memory address for variable or FCB."""
@@ -409,16 +398,17 @@ class DataSegment(object):
             filenum = values.to_int(arg0)
             error.range_check(0, 255, filenum)
             error.throw_if(filenum > self.max_files, error.BAD_FILE_NUMBER)
-            # params holds a one-element tuple
-            params = filenum,
+            list(args)
+            # file number 0 is allowed for VARPTR
+            if filenum < 0 or filenum > self.max_files:
+                raise error.RunError(error.BAD_FILE_NUMBER)
+            var_ptr = self.field_mem_base + filenum * self.field_mem_offset + 6
         else:
             name = arg0
             error.throw_if(not name, error.STX)
-            indices = next(args)
-            # params holds a two-element tuple
-            params = name, indices
-        list(args)
-        return self.values.new_integer().from_int(self.varptr(*params))
+            indices, = args
+            var_ptr = self.varptr(name, indices)
+        return self.values.new_integer().from_int(var_ptr, unsigned=True)
 
     def varptr_str_(self, args):
         """VARPTR$: Get address of variable in string representation."""
@@ -427,7 +417,7 @@ class DataSegment(object):
         indices = next(args)
         list(args)
         var_ptr = self.varptr(name, indices)
-        vps = struct.pack('<Bh', values.size_bytes(self.complete_name(name)), var_ptr)
+        vps = struct.pack('<BH', values.size_bytes(self.complete_name(name)), var_ptr)
         return self.values.new_string().from_str(vps)
 
     def dereference(self, address):
