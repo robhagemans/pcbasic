@@ -286,28 +286,32 @@ class Files(object):
         error.range_check(0, 255, num)
         return self.get(num, mode)
 
-    def loc_(self, num):
+    def loc_(self, args):
         """LOC: get file pointer."""
+        num, = args
         num = values.cint_(num)
         loc = self._get_from_integer(num).loc()
         return self._values.new_single().from_int(loc)
 
-    def eof_(self, num):
+    def eof_(self, args):
         """EOF: get end-of-file."""
+        num, = args
         num = values.cint_(num)
         eof = self._values.new_integer()
         if not num.is_zero() and self._get_from_integer(num, 'IR').eof():
             eof = eof.from_int(-1)
         return eof
 
-    def lof_(self, num):
+    def lof_(self, args):
         """LOF: get length of file."""
+        num, = args
         num = values.cint_(num)
         lof = self._get_from_integer(num).lof()
         return self._values.new_single().from_int(lof)
 
-    def lpos_(self, num):
+    def lpos_(self, args):
         """LPOS: get the current printer column."""
+        num, = args
         num = values.to_int(num)
         error.range_check(0, 3, num)
         printer = self.devices.devices['LPT%d:' % max(1, num)]
@@ -508,8 +512,9 @@ class Devices(object):
         logging.warning('ERDEV$ function not implemented.')
         return self._values.new_string()
 
-    def exterr_(self, val):
+    def exterr_(self, args):
         """EXTERR: device error information; not implemented."""
+        val, = args
         logging.warning('EXTERR function not implemented.')
         error.range_check(0, 3, values.to_int(val))
         return self._values.new_integer()

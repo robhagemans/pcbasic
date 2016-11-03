@@ -97,6 +97,7 @@ class ExpressionParser(object):
             tk.DATE: self._no_argument,
             tk.TIME: self._no_argument,
             tk.TIMER: self._no_argument,
+            tk.RND: self._gen_parse_one_optional_argument,
             tk.CVI: self._parse_argument,
             tk.CVS: self._parse_argument,
             tk.CVD: self._parse_argument,
@@ -125,7 +126,6 @@ class ExpressionParser(object):
             tk.SPACE: self._parse_argument,
             tk.OCT: self._parse_argument,
             tk.HEX: self._parse_argument,
-            tk.LPOS: self._parse_argument,
             tk.CINT: self._parse_argument,
             tk.CSNG: self._parse_argument,
             tk.CDBL: self._parse_argument,
@@ -133,12 +133,12 @@ class ExpressionParser(object):
             tk.PEN: self._parse_argument,
             tk.STICK: self._parse_argument,
             tk.STRIG: self._parse_argument,
-            tk.EOF: self._parse_argument,
-            tk.LOC: self._parse_argument,
-            tk.LOF: self._parse_argument,
-            tk.EXTERR: self._parse_argument,
-            tk.RND: self._gen_parse_one_optional_argument,
-            tk.PLAY: partial(self._gen_parse_arguments, length=1),
+            tk.EOF: self._gen_parse_arguments,
+            tk.LOC: self._gen_parse_arguments,
+            tk.LOF: self._gen_parse_arguments,
+            tk.LPOS: self._gen_parse_arguments,
+            tk.EXTERR: self._gen_parse_arguments,
+            tk.PLAY: self._gen_parse_arguments,
             tk.STRING: partial(self._gen_parse_arguments, length=2),
             tk.PMAP: partial(self._gen_parse_arguments, length=2),
             tk.LEFT: partial(self._gen_parse_arguments, length=2),
@@ -412,11 +412,6 @@ class ExpressionParser(object):
             fn = self._callbacks[token]
         return fn(parse_args(ins))
 
-    def _no_argument(self, ins):
-        """No arguments to parse."""
-        return
-        yield
-
     def _parse_argument(self, ins):
         """Parse a single function argument."""
         ins.require_read(('(',))
@@ -424,7 +419,15 @@ class ExpressionParser(object):
         ins.require_read((')',))
         return val
 
-    def _gen_parse_arguments(self, ins, length):
+    ###########################################################################
+    # argument generators
+
+    def _no_argument(self, ins):
+        """No arguments to parse."""
+        return
+        yield
+
+    def _gen_parse_arguments(self, ins, length=1):
         """Parse a comma-separated list of arguments."""
         if not length:
             return
