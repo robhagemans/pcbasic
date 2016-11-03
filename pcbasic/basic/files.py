@@ -326,11 +326,20 @@ class Files(object):
         logging.warning("IOCTL$ function not implemented.")
         raise error.RunError(error.IFC)
 
-    def input_(self, file_obj, num_chars):
+    def input_(self, args):
         """INPUT$: read num chars from file."""
-        if file_obj is None:
+        num = values.to_int(next(args))
+        error.range_check(1, 255, num)
+        filenum = next(args)
+        if filenum is not None:
+            filenum = values.to_int(filenum)
+            error.range_check(0, 255, filenum)
+            # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
+            file_obj = self.get(filenum, mode='IR', not_open=error.BAD_FILE_MODE)
+        else:
             file_obj = self.devices.kybd_file
-        return self._values.new_string().from_str(file_obj.input_(num_chars))
+        list(args)
+        return self._values.new_string().from_str(file_obj.input_(num))
 
     def write_(self, args):
         """WRITE: Output machine-readable expressions to the screen or a file."""
