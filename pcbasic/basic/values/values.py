@@ -589,9 +589,18 @@ def mid_(args):
     start -= 1
     return s.new().from_str(s.to_str()[start:start+num])
 
-# NOTE: start is still a Python int
-def instr_(start, big, small):
+def instr_(args):
     """INSTR: find substring in string."""
+    arg0 = next(args)
+    if isinstance(arg0, numbers.Number):
+        start = to_int(arg0)
+        error.range_check(1, 255, start)
+        big = pass_string(next(args))
+    else:
+        start = 1
+        big = pass_string(arg0)
+    small = pass_string(next(args))
+    list(args)
     new_int = numbers.Integer(None, big._values)
     big = big.to_str()
     small = small.to_str()

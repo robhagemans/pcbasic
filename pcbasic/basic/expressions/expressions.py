@@ -95,7 +95,7 @@ class ExpressionParser(object):
             tk.ERL: self._null_argument,
             tk.ERR: self._null_argument,
             tk.STRING: partial(self._gen_parse_arguments, length=2),
-            tk.INSTR: self._parse_instr,
+            tk.INSTR: self._gen_parse_instr,
             tk.CSRLIN: self._null_argument,
             tk.POINT: partial(self._gen_parse_arguments_optional, length=2),
             tk.INKEY: self._null_argument,
@@ -468,6 +468,19 @@ class ExpressionParser(object):
         yield self.parse(ins)
         ins.require_read((')',))
 
+    def _gen_parse_instr(self, ins):
+        """Parse INSTR syntax."""
+        ins.require_read(('(',))
+        # followed by comma so empty will raise STX
+        s = self.parse(ins)
+        yield s
+        if isinstance(s, values.Number):
+            ins.require_read((',',))
+            yield self.parse(ins)
+        ins.require_read((',',))
+        yield self.parse(ins)
+        ins.require_read((')',))
+
     def _parse_varptr_str(self, ins):
         """VARPTR$: get memory address for variable."""
         ins.require_read(('(',))
@@ -506,24 +519,6 @@ class ExpressionParser(object):
             infile = self._files.get(filenum, mode='IR', not_open=error.BAD_FILE_MODE)
         ins.require_read((')',))
         return (infile, num)
-
-    def _parse_instr(self, ins):
-        """INSTR: find substring in string."""
-        ins.require_read(('(',))
-        # followed by comma so empty will raise STX
-        s = self.parse(ins)
-        start = 1
-        if isinstance(s, values.Number):
-            start = values.to_int(s)
-            error.range_check(1, 255, start)
-            ins.require_read((',',))
-            s = self.parse(ins)
-        big = values.pass_string(s)
-        ins.require_read((',',))
-        s = self.parse(ins)
-        small = values.pass_string(s)
-        ins.require_read((')',))
-        return (start, big, small)
 
     ###########################################################################
     # FN
