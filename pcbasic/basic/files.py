@@ -316,8 +316,13 @@ class Files(object):
             col = printer.device_file.col
         return self._values.new_integer().from_int(col)
 
-    def ioctl_(self, infile):
+    def ioctl_(self, args):
         """IOCTL$: read device control string response; not implemented."""
+        num = values.to_int(next(args))
+        error.range_check(0, 255, num)
+        # raise BAD FILE NUMBER if the file is not open
+        infile = self.get(num)
+        list(args)
         logging.warning("IOCTL$ function not implemented.")
         raise error.RunError(error.IFC)
 

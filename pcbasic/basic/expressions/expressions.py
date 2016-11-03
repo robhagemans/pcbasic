@@ -72,7 +72,7 @@ class ExpressionParser(object):
                 tk.C_9: self._parse_argument,
             },
             tk.IOCTL: {
-                '$': self._parse_ioctl,
+                '$': self._gen_parse_ioctl,
             },
             tk.ENVIRON: {
                 '$': self._parse_argument,
@@ -421,26 +421,6 @@ class ExpressionParser(object):
         ins.require_read((')',))
         return (val,)
 
-    def _parse_argument_list(self, ins, conversions, optional=False):
-        """Parse a comma-separated list of arguments and apply type conversions."""
-        # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
-        # while unary functions generate it *afterwards*. this is to match GW-BASIC
-        if not conversions:
-            return ()
-        arg = []
-        # required separators
-        seps = (('(',),) + ((',',),) * (len(conversions)-1)
-        for conv, sep in zip(conversions[:-1], seps[:-1]):
-            ins.require_read(sep)
-            arg.append(conv(self.parse(ins)))
-        if ins.skip_blank_read_if(seps[-1]):
-            arg.append(conversions[-1](self.parse(ins)))
-        elif not optional:
-            raise error.RunError(error.STX)
-        if arg:
-            ins.require_read((')',))
-        return arg
-
     def _gen_parse_arguments(self, ins, length):
         """Parse a comma-separated list of arguments."""
         ins.require_read(('(',))
@@ -478,18 +458,15 @@ class ExpressionParser(object):
         error.range_check(0, 255, number)
         return number
 
-    ###########################################################
+    ###########################################################################
     # special cases
 
-    def _read_fn(self, ins):
-        """FN: get value of user-defined function."""
-        fnname = ins.read_name()
-        # must not be empty
-        error.throw_if(not fnname, error.STX)
-        # obtain function
-        fn = self.user_functions.get(fnname)
-        # get syntax
-        return fn.evaluate, partial(self._parse_argument_list, conversions=fn.get_conversions(), optional=False)
+    def _gen_parse_ioctl(self, ins):
+        """Parse IOCTL$ syntax."""
+        ins.require_read(('(',))
+        ins.skip_blank_read_if(('#',))
+        yield self.parse(ins)
+        ins.require_read((')',))
 
     def _parse_varptr_str(self, ins):
         """VARPTR$: get memory address for variable."""
@@ -516,15 +493,6 @@ class ExpressionParser(object):
             params = name, indices
         ins.require_read((')',))
         return params
-
-    def _parse_ioctl(self, ins):
-        """IOCTL$: read device control string response; not implemented."""
-        ins.require_read(('(',))
-        num = self._parse_file_number(ins)
-        # raise BAD FILE NUMBER if the file is not open
-        infile = self._files.get(num)
-        ins.require_read((')',))
-        return (infile,)
 
     def _parse_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""
@@ -556,3 +524,36 @@ class ExpressionParser(object):
         small = values.pass_string(s)
         ins.require_read((')',))
         return (start, big, small)
+
+    ###########################################################################
+    # FN
+
+    def _read_fn(self, ins):
+        """FN: get value of user-defined function."""
+        fnname = ins.read_name()
+        # must not be empty
+        error.throw_if(not fnname, error.STX)
+        # obtain function
+        fn = self.user_functions.get(fnname)
+        # get syntax
+        return fn.evaluate, partial(self._parse_argument_list, conversions=fn.get_conversions(), optional=False)
+
+    def _parse_argument_list(self, ins, conversions, optional=False):
+        """Parse a comma-separated list of arguments and apply type conversions."""
+        # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
+        # while unary functions generate it *afterwards*. this is to match GW-BASIC
+        if not conversions:
+            return ()
+        arg = []
+        # required separators
+        seps = (('(',),) + ((',',),) * (len(conversions)-1)
+        for conv, sep in zip(conversions[:-1], seps[:-1]):
+            ins.require_read(sep)
+            arg.append(conv(self.parse(ins)))
+        if ins.skip_blank_read_if(seps[-1]):
+            arg.append(conversions[-1](self.parse(ins)))
+        elif not optional:
+            raise error.RunError(error.STX)
+        if arg:
+            ins.require_read((')',))
+        return arg
