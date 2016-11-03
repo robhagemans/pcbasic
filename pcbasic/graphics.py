@@ -643,6 +643,8 @@ class Drawing(object):
             _, byte_array, version = state.basic_state.arrays[array_name]
         except KeyError:
             raise error.RunError(error.IFC)
+        y0, y1 = sorted((y0, y1))
+        x0, x1 = sorted((x0, x1))
         dx, dy = x1-x0+1, y1-y0+1
         # Tandy screen 6 simply GETs twice the width, it seems
         if self.screen.mode.name == '640x200x4':
