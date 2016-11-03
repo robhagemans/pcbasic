@@ -319,32 +319,38 @@ def to_int(inp, unsigned=False):
     """Round numeric variable and convert to Python integer."""
     return cint_(inp, unsigned).to_int(unsigned)
 
-def mki_(x):
+def mki_(args):
     """MKI$: return the byte representation of an int."""
+    x, = args
     return x._values.new_string().from_str(cint_(x).to_bytes())
 
-def mks_(x):
+def mks_(args):
     """MKS$: return the byte representation of a single."""
+    x, = args
     return x._values.new_string().from_str(csng_(x).to_bytes())
 
-def mkd_(x):
+def mkd_(args):
     """MKD$: return the byte representation of a double."""
+    x, = args
     return x._values.new_string().from_str(cdbl_(x).to_bytes())
 
-def cvi_(x):
+def cvi_(args):
     """CVI: return the int value of a byte representation."""
+    x, = args
     cstr = pass_string(x).to_str()
     error.throw_if(len(cstr) < 2)
     return x._values.from_bytes(cstr[:2])
 
-def cvs_(x):
+def cvs_(args):
     """CVS: return the single-precision value of a byte representation."""
+    x, = args
     cstr = pass_string(x).to_str()
     error.throw_if(len(cstr) < 4)
     return x._values.from_bytes(cstr[:4])
 
-def cvd_(x):
+def cvd_(args):
     """CVD: return the double-precision value of a byte representation."""
+    x, = args
     cstr = pass_string(x).to_str()
     error.throw_if(len(cstr) < 8)
     return x._values.from_bytes(cstr[:8])
@@ -429,8 +435,9 @@ def imp_(left, right):
 ##############################################################################
 # unary operations
 
-def abs_(inp):
+def abs_(args):
     """Return the absolute value of a number. No-op for strings."""
+    inp, = args
     if isinstance(inp, strings.String):
         # strings pass unchanged
         return inp
@@ -445,47 +452,57 @@ def neg(inp):
     # promote Integer to Single to avoid integer overflow on -32768
     return inp.to_float().clone().ineg()
 
-def sgn_(x):
+def sgn_(args):
     """Sign."""
+    x, = args
     return numbers.Integer(None, x._values).from_int(pass_number(x).sign())
 
-def int_(inp):
+def int_(args):
     """Truncate towards negative infinity (INT)."""
+    inp, = args
     if isinstance(inp, strings.String):
         # strings pass unchanged
         return inp
     return inp.clone().ifloor()
 
-def fix_(inp):
+def fix_(args):
     """Truncate towards zero."""
+    inp, = args
     return pass_number(inp).clone().itrunc()
 
-def sqr_(x):
+def sqr_(args):
     """Square root."""
+    x, = args
     return _call_float_function(math.sqrt, x)
 
-def exp_(x):
+def exp_(args):
     """Exponential."""
+    x, = args
     return _call_float_function(math.exp, x)
 
-def sin_(x):
+def sin_(args):
     """Sine."""
+    x, = args
     return _call_float_function(math.sin, x)
 
-def cos_(x):
+def cos_(args):
     """Cosine."""
+    x, = args
     return _call_float_function(math.cos, x)
 
-def tan_(x):
+def tan_(args):
     """Tangent."""
+    x, = args
     return _call_float_function(math.tan, x)
 
-def atn_(x):
+def atn_(args):
     """Inverse tangent."""
+    x, = args
     return _call_float_function(math.atan, x)
 
-def log_(x):
+def log_(args):
     """Logarithm."""
+    x, = args
     return _call_float_function(math.log, x)
 
 
