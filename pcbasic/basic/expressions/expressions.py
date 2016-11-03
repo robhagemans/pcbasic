@@ -118,7 +118,7 @@ class ExpressionParser(object):
             tk.INT: self._parse_argument,
             tk.ABS: self._parse_argument,
             tk.SQR: self._parse_argument,
-            tk.RND: self._parse_rnd,
+            tk.RND: self._gen_parse_one_optional_argument,
             tk.SIN: self._parse_argument,
             tk.LOG: self._parse_argument,
             tk.EXP: self._parse_argument,
@@ -463,6 +463,14 @@ class ExpressionParser(object):
             yield None
         ins.require_read((')',))
 
+    def _gen_parse_one_optional_argument(self, ins):
+        """Parse a single, optional argument."""
+        if ins.skip_blank_read_if(('(',)):
+            yield self.parse(ins)
+            ins.require_read((')',))
+        else:
+            yield None
+
     def _parse_file_number(self, ins):
         """Read a file number."""
         ins.skip_blank_read_if(('#',))
@@ -548,12 +556,3 @@ class ExpressionParser(object):
         small = values.pass_string(s)
         ins.require_read((')',))
         return (start, big, small)
-
-    def _parse_rnd(self, ins):
-        """RND: get pseudorandom value."""
-        if ins.skip_blank_read_if(('(',)):
-            val = self.parse(ins)
-            ins.require_read((')',))
-            return (values.csng_(val),)
-        else:
-            return ()

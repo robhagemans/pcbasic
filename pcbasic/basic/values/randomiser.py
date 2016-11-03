@@ -7,7 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import struct
-
+from . import values
 
 class Randomiser(object):
     """Linear Congruential Generator """
@@ -51,15 +51,18 @@ class Randomiser(object):
         self._seed += n * self._step
         self._seed %= self._period
 
-    def rnd_(self, f=None):
+    def rnd_(self, args):
         """Get a value from the random number generator."""
+        f, = args
         if f is None:
             self._cycle(1)
-        elif f.is_zero():
-            self._cycle(0)
         else:
-            # use integer value of mantissa
-            self._cycle(f.mantissa())
+            f = values.csng_(f)
+            if f.is_zero():
+                self._cycle(0)
+            else:
+                # use integer value of mantissa
+                self._cycle(f.mantissa())
         # seed/period
         return self._values.new_single().from_int(self._seed).idiv(
                     self._values.new_single().from_int(self._period))
