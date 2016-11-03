@@ -584,8 +584,9 @@ class Stick(object):
         self.was_fired_event[joy][button] = False
         return result
 
-    def stick_(self, fn):
+    def stick_(self, args):
         """STICK: poll the joystick axes."""
+        fn, = args
         fn = values.to_int(fn)
         error.range_check(0, 3, fn)
         joy, axis = fn // 2, fn % 2
@@ -596,8 +597,9 @@ class Stick(object):
             result = 0
         return self._values.new_integer().from_int(result)
 
-    def strig_(self, fn):
+    def strig_(self, args):
         """STRIG: poll the joystick fire button."""
+        fn, = args
         fn = values.to_int(fn)
         error.range_check(0, 7, fn)
         # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]

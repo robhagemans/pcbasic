@@ -112,8 +112,9 @@ class BasicEvents(object):
     # callbacks
 
 
-    def pen_fn_(self, fn):
+    def pen_fn_(self, args):
         """PEN: poll the light pen."""
+        fn, = args
         result = self._pen.poll(fn, self.pen.enabled)
         return self._values.new_integer().from_int(result)
 
