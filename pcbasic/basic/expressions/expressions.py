@@ -90,7 +90,7 @@ class ExpressionParser(object):
             },
         }
         self._simple = {
-            tk.SCREEN: partial(self._parse_argument_list, conversions=(values.cint_, values.cint_, values.cint_), optional=True),
+            tk.SCREEN: partial(self._gen_parse_arguments_optional, length=3),
             tk.FN: None,
             tk.ERL: self._null_argument,
             tk.ERR: self._null_argument,
