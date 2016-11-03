@@ -400,7 +400,14 @@ class ExpressionParser(object):
             except KeyError:
                 raise error.RunError(error.STX)
         if token == tk.FN:
-            fn, parse_args = self._read_fn(ins)
+            fnname = ins.read_name()
+            # must not be empty
+            error.throw_if(not fnname, error.STX)
+            # obtain function
+            function = self.user_functions.get(fnname)
+            # get syntax
+            parse_args = partial(self._gen_parse_arguments, length=function.number_arguments())
+            fn = function.evaluate
         else:
             fn = self._callbacks[token]
         args = parse_args(ins)
@@ -409,16 +416,6 @@ class ExpressionParser(object):
         else:
             result = fn(*args)
         return result
-
-    def _read_fn(self, ins):
-        """FN: get value of user-defined function."""
-        fnname = ins.read_name()
-        # must not be empty
-        error.throw_if(not fnname, error.STX)
-        # obtain function
-        fn = self.user_functions.get(fnname)
-        # get syntax
-        return fn.evaluate, partial(self._gen_parse_arguments, length=fn.number_arguments())
 
     def _null_argument(self, ins):
         """Return empty tuple."""
