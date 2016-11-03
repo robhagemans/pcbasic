@@ -520,41 +520,49 @@ def to_repr(inp, leading_space, type_sign):
         raise error.RunError(error.TYPE_MISMATCH)
     raise TypeError('%s is not of class Value' % type(inp))
 
-def str_(x):
+def str_(args):
     """STR$: string representation of a number."""
+    x, = args
     return x._values.new_string().from_str(
                 to_repr(pass_number(x), leading_space=True, type_sign=False))
 
-def val_(x):
+def val_(args):
     """VAL: number value of a string."""
+    x, = args
     return x._values.from_repr(pass_string(x).to_str(), allow_nonnum=True)
 
-def len_(s):
+def len_(args):
     """LEN: length of string."""
+    s, = args
     return pass_string(s).len()
 
-def space_(num):
+def space_(args):
     """SPACE$: repeat spaces."""
+    num, = args
     return num._values.new_string().space(pass_number(num))
 
-def asc_(s):
+def asc_(args):
     """ASC: ordinal ASCII value of a character."""
+    s, = args
     return pass_string(s).asc()
 
-def chr_(x):
+def chr_(args):
     """CHR$: character for ASCII value."""
+    x, = args
     val = pass_number(x).to_integer().to_int()
     error.range_check(0, 255, val)
     return x._values.new_string().from_str(chr(val))
 
-def oct_(x):
+def oct_(args):
     """OCT$: octal representation of int."""
+    x, = args
     # allow range -32768 to 65535
     val = cint_(x, unsigned=True)
     return x._values.new_string().from_str(val.to_oct())
 
-def hex_(x):
+def hex_(args):
     """HEX$: hexadecimal representation of int."""
+    x, = args
     # allow range -32768 to 65535
     val = cint_(x, unsigned=True)
     return x._values.new_string().from_str(val.to_hex())
