@@ -174,7 +174,7 @@ class Session(object):
         ######################################################################
         # initialise the expression parser
         self.expression_parser = expressions.ExpressionParser(
-                self.values, self.memory, self.program, self.files)
+                self.values, self.memory, self.program)
         self.statement_parser = statements.StatementParser(
                 self.strings, self.expression_parser, syntax)
         # set up debugger

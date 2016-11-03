@@ -39,15 +39,13 @@ from .. import dos
 class ExpressionParser(object):
     """Expression parser."""
 
-    def __init__(self, values, memory, program, files):
+    def __init__(self, values, memory, program):
         """Initialise empty expression."""
         self._values = values
         # for variable retrieval
         self._memory = memory
         # for code strings
         self._program = program
-        # for file number checks
-        self._files = files
         # user-defined functions
         self.user_functions = userfunctions.UserFunctionManager(memory, values, self)
         # initialise syntax tables
