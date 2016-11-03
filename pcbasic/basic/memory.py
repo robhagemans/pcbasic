@@ -402,12 +402,30 @@ class DataSegment(object):
             var_ptr -= 0x10000
         return var_ptr
 
-    def varptr_(self, *params):
-        """VARPTR: Get address of variable."""
+    def varptr_(self, args):
+        """VARPTR: get memory address for variable or FCB."""
+        arg0 = next(args)
+        if isinstance(arg0, values.Number):
+            filenum = values.to_int(arg0)
+            error.range_check(0, 255, filenum)
+            error.throw_if(filenum > self.max_files, error.BAD_FILE_NUMBER)
+            # params holds a one-element tuple
+            params = filenum,
+        else:
+            name = arg0
+            error.throw_if(not name, error.STX)
+            indices = next(args)
+            # params holds a two-element tuple
+            params = name, indices
+        list(args)
         return self.values.new_integer().from_int(self.varptr(*params))
 
-    def varptr_str_(self, name, indices):
+    def varptr_str_(self, args):
         """VARPTR$: Get address of variable in string representation."""
+        name = next(args)
+        error.throw_if(not name, error.STX)
+        indices = next(args)
+        list(args)
         var_ptr = self.varptr(name, indices)
         vps = struct.pack('<Bh', values.size_bytes(self.complete_name(name)), var_ptr)
         return self.values.new_string().from_str(vps)

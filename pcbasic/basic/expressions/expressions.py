@@ -78,15 +78,15 @@ class ExpressionParser(object):
                 '$': self._parse_argument,
             },
             tk.INPUT: {
-                '$': self._parse_input,
+                '$': self._gen_parse_input,
             },
             tk.ERDEV: {
                 '$': self._null_argument,
                 None: self._null_argument,
             },
             tk.VARPTR: {
-                '$': self._parse_varptr_str,
-                None: self._parse_varptr,
+                '$': self._gen_parse_varptr_str,
+                None: self._gen_parse_varptr,
             },
         }
         self._simple = {
@@ -474,7 +474,7 @@ class ExpressionParser(object):
         yield self.parse(ins)
         ins.require_read((')',))
 
-    def _parse_input(self, ins):
+    def _gen_parse_input(self, ins):
         """Parse INPUT$ syntax."""
         ins.require_read(('(',))
         yield self.parse(ins)
@@ -485,32 +485,22 @@ class ExpressionParser(object):
             yield None
         ins.require_read((')',))
 
-    def _parse_varptr_str(self, ins):
-        """VARPTR$: get memory address for variable."""
+    def _gen_parse_varptr_str(self, ins):
+        """Parse VARPTR$ syntax."""
         ins.require_read(('(',))
-        name = ins.read_name()
-        error.throw_if(not name, error.STX)
-        indices = self.parse_indices(ins)
+        yield ins.read_name()
+        yield self.parse_indices(ins)
         ins.require_read((')',))
-        return (name, indices)
 
-    def _parse_varptr(self, ins):
-        """VARPTR: get memory address for variable or FCB."""
+    def _gen_parse_varptr(self, ins):
+        """Parse VARPTR syntax."""
         ins.require_read(('(',))
         if ins.skip_blank_read_if(('#',)):
-            filenum = values.to_int(self.parse(ins))
-            error.range_check(0, 255, filenum)
-            error.throw_if(filenum > self._files.max_files, error.BAD_FILE_NUMBER)
-            # params holds a one-element tuple
-            params = filenum,
+            yield self.parse(ins)
         else:
-            name = ins.read_name()
-            error.throw_if(not name, error.STX)
-            indices = self.parse_indices(ins)
-            # params holds a two-element tuple
-            params = name, indices
+            yield ins.read_name()
+            yield self.parse_indices(ins)
         ins.require_read((')',))
-        return params
 
     ###########################################################################
     # FN
