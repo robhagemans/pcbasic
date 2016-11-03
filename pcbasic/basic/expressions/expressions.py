@@ -410,6 +410,16 @@ class ExpressionParser(object):
             result = fn(*args)
         return result
 
+    def _read_fn(self, ins):
+        """FN: get value of user-defined function."""
+        fnname = ins.read_name()
+        # must not be empty
+        error.throw_if(not fnname, error.STX)
+        # obtain function
+        fn = self.user_functions.get(fnname)
+        # get syntax
+        return fn.evaluate, partial(self._gen_parse_arguments, length=fn.number_arguments())
+
     def _null_argument(self, ins):
         """Return empty tuple."""
         return ()
@@ -423,8 +433,10 @@ class ExpressionParser(object):
 
     def _gen_parse_arguments(self, ins, length):
         """Parse a comma-separated list of arguments."""
+        if not length:
+            return
         ins.require_read(('(',))
-        for _ in range(length-1):
+        for i in range(length-1):
             yield self.parse(ins)
             ins.require_read((','),)
         yield self.parse(ins)
@@ -501,36 +513,3 @@ class ExpressionParser(object):
             yield ins.read_name()
             yield self.parse_indices(ins)
         ins.require_read((')',))
-
-    ###########################################################################
-    # FN
-
-    def _read_fn(self, ins):
-        """FN: get value of user-defined function."""
-        fnname = ins.read_name()
-        # must not be empty
-        error.throw_if(not fnname, error.STX)
-        # obtain function
-        fn = self.user_functions.get(fnname)
-        # get syntax
-        return fn.evaluate, partial(self._parse_argument_list, conversions=fn.get_conversions(), optional=False)
-
-    def _parse_argument_list(self, ins, conversions, optional=False):
-        """Parse a comma-separated list of arguments and apply type conversions."""
-        # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
-        # while unary functions generate it *afterwards*. this is to match GW-BASIC
-        if not conversions:
-            return ()
-        arg = []
-        # required separators
-        seps = (('(',),) + ((',',),) * (len(conversions)-1)
-        for conv, sep in zip(conversions[:-1], seps[:-1]):
-            ins.require_read(sep)
-            arg.append(conv(self.parse(ins)))
-        if ins.skip_blank_read_if(seps[-1]):
-            arg.append(conversions[-1](self.parse(ins)))
-        elif not optional:
-            raise error.RunError(error.STX)
-        if arg:
-            ins.require_read((')',))
-        return arg

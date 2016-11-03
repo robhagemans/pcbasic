@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import struct
+from itertools import izip
 
 from .. import error
 from .. import codestream
@@ -27,14 +28,15 @@ class UserFunction(object):
         self._sigil = name[-1]
         self._expression_parser = expression_parser
 
-    def get_conversions(self):
-        """Retrieve list of argument type conversions."""
-        # read variables
-        return [values.TYPE_TO_CONV[self._memory.complete_name(name)[-1]] for name in self._varnames]
+    def number_arguments(self):
+        """Retrieve number of arguments."""
+        return len(self._varnames)
 
-    def evaluate(self, *args):
+    def evaluate(self, iargs):
         """Evaluate user-defined function."""
         # parse/evaluate arguments
+        conversions = (values.TYPE_TO_CONV[self._memory.complete_name(name)[-1]] for name in self._varnames)
+        args = [conv(arg) for arg, conv in izip(iargs, conversions)]
         # recursion is not allowed as there's no way to terminate it
         if self._is_parsing:
             raise error.RunError(error.OUT_OF_MEMORY)
