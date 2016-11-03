@@ -201,9 +201,10 @@ class Sound(object):
                 item.params[2] = duration
                 self._queues.audio.put(item)
 
-    def play_fn_(self, voice):
+    def play_fn_(self, args):
         """PLAY function: get length of music queue."""
-        voice = values.to_int(voice)
+        voice = values.to_int(next(args))
+        list(args)
         error.range_check(0, 255, voice)
         if not(self.capabilities in ('pcjr', 'tandy') and voice in (1, 2)):
             voice = 0

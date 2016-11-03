@@ -108,7 +108,7 @@ class ExpressionParser(object):
             tk.EXTERR: self._parse_argument,
             tk.DATE: self._null_argument,
             tk.TIME: self._null_argument,
-            tk.PLAY: self._parse_argument,
+            tk.PLAY: partial(self._gen_parse_arguments, length=1),
             tk.TIMER: self._null_argument,
             tk.PMAP: partial(self._gen_parse_arguments, length=2),
             tk.LEFT: partial(self._gen_parse_arguments, length=2),
