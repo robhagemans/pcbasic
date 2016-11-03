@@ -30,8 +30,9 @@ class Clock(object):
         micro = diff.microseconds
         return long(seconds)*1000 + long(micro)/1000
 
-    def timer_(self):
+    def timer_(self, args):
         """TIMER: get clock ticks since midnight."""
+        list(args)
         # precision of GWBASIC TIMER is about 1/20 of a second
         timer = float(self.get_time_ms()//50) / 20.
         return self._values.new_single().from_value(timer)
@@ -88,12 +89,14 @@ class Clock(object):
         list(args)
         self.time_offset += newtime - now
 
-    def time_fn_(self):
+    def time_fn_(self, args):
         """Get (offset) system time."""
+        list(args)
         time = (datetime.datetime.now() + self.time_offset).strftime('%H:%M:%S')
         return self._values.new_string().from_str(time)
 
-    def date_fn_(self):
+    def date_fn_(self, args):
         """Get (offset) system date."""
+        list(args)
         date = (datetime.datetime.now() + self.time_offset).strftime('%m-%d-%Y')
         return self._values.new_string().from_str(date)

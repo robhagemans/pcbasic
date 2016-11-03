@@ -337,8 +337,9 @@ class Keyboard(object):
         self.input_methods.wait()
         return self.buf.getc(expand)
 
-    def inkey_(self):
+    def inkey_(self, args):
         """INKEY$: read a keystroke."""
+        list(args)
         inkey = self.get_char()
         return self._values.new_string().from_str(inkey)
 

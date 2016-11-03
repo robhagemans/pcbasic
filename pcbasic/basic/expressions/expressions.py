@@ -81,8 +81,8 @@ class ExpressionParser(object):
                 '$': self._gen_parse_input,
             },
             tk.ERDEV: {
-                '$': self._null_argument,
-                None: self._null_argument,
+                '$': self._no_argument,
+                None: self._no_argument,
             },
             tk.VARPTR: {
                 '$': self._gen_parse_varptr_str,
@@ -90,13 +90,13 @@ class ExpressionParser(object):
             },
         }
         self._simple = {
-            tk.ERL: self._null_argument,
-            tk.ERR: self._null_argument,
-            tk.CSRLIN: self._null_argument,
-            tk.INKEY: self._null_argument,
-            tk.DATE: self._null_argument,
-            tk.TIME: self._null_argument,
-            tk.TIMER: self._null_argument,
+            tk.ERL: self._no_argument,
+            tk.ERR: self._no_argument,
+            tk.CSRLIN: self._no_argument,
+            tk.INKEY: self._no_argument,
+            tk.DATE: self._no_argument,
+            tk.TIME: self._no_argument,
+            tk.TIMER: self._no_argument,
             tk.CVI: self._parse_argument,
             tk.CVS: self._parse_argument,
             tk.CVD: self._parse_argument,
@@ -410,23 +410,19 @@ class ExpressionParser(object):
             fn = function.evaluate
         else:
             fn = self._callbacks[token]
-        args = parse_args(ins)
-        if isinstance(args, types.GeneratorType):
-            result = fn(args)
-        else:
-            result = fn(*args)
-        return result
+        return fn(parse_args(ins))
 
-    def _null_argument(self, ins):
-        """Return empty tuple."""
-        return ()
+    def _no_argument(self, ins):
+        """No arguments to parse."""
+        return
+        yield
 
     def _parse_argument(self, ins):
         """Parse a single function argument."""
         ins.require_read(('(',))
         val = self.parse(ins)
         ins.require_read((')',))
-        return (val,)
+        return val
 
     def _gen_parse_arguments(self, ins, length):
         """Parse a comma-separated list of arguments."""

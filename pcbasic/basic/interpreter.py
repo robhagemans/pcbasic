@@ -214,8 +214,9 @@ class Interpreter(object):
             self.set_pointer(False)
             raise e
 
-    def erl_(self):
+    def erl_(self, args):
         """ERL: get line number of last error."""
+        list(args)
         if self.error_pos == 0:
             pos = 0
         elif self.error_pos == -1:
@@ -224,8 +225,9 @@ class Interpreter(object):
             pos = self._program.get_line_number(self.error_pos)
         return self._values.new_single().from_int(pos)
 
-    def err_(self):
+    def err_(self, args):
         """ERR: get error code of last error."""
+        list(args)
         return self._values.new_integer().from_int(self.error_num)
 
     ###########################################################################

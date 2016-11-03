@@ -496,13 +496,15 @@ class Devices(object):
     ###########################################################################
     # function callbacks
 
-    def erdev_(self):
+    def erdev_(self, args):
         """ERDEV: device error value; not implemented."""
+        list(args)
         logging.warning('ERDEV function not implemented.')
         return self._values.new_integer()
 
-    def erdev_str_(self):
+    def erdev_str_(self, args):
         """ERDEV$: device error string; not implemented."""
+        list(args)
         logging.warning('ERDEV$ function not implemented.')
         return self._values.new_string()
 
