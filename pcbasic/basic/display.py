@@ -1624,8 +1624,9 @@ class Screen(object):
             csrlin = self.current_row
         return self._values.new_integer().from_int(csrlin)
 
-    def pos_(self, dummy=None):
+    def pos_(self, args):
         """POS: get the current screen column."""
+        list(args)
         if self.current_col == self.mode.width and self.overflow:
             # in overflow position, return column 1.
             pos = 1

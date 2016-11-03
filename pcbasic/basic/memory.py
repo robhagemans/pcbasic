@@ -472,8 +472,9 @@ class DataSegment(object):
         if name2 in self.arrays:
             self.arrays.set_cache(name2, None)
 
-    def fre_(self, val):
+    def fre_(self, args):
         """FRE: get free memory and optionally collect garbage."""
+        val, = args
         if isinstance(val, values.String):
             # grabge collection if a string-valued argument is specified.
             self._collect_garbage()

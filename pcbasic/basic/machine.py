@@ -52,8 +52,9 @@ class MachinePorts(object):
         logging.warning('USR function not implemented.')
         raise error.RunError(error.IFC)
 
-    def inp_(self, num):
+    def inp_(self, args):
         """INP: get value from machine port."""
+        num, = args
         port = values.to_int(num, unsigned=True)
         inp = self.inp(port)
         # return as unsigned int
@@ -272,8 +273,9 @@ class Memory(object):
         # tandy syntax
         self.tandy_syntax = syntax == 'tandy'
 
-    def peek_(self, addr):
+    def peek_(self, args):
         """PEEK: Retrieve the value at an emulated memory location."""
+        addr, = args
         # no peeking the program code (or anywhere) in protected mode
         if self.data.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
