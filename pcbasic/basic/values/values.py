@@ -567,8 +567,14 @@ def right_(args):
     error.range_check(0, 255, stop)
     return s.new().from_str(s.to_str()[-stop:])
 
-def mid_(s, start, num=None):
+def mid_(args):
     """MID$: get substring."""
+    s, start = next(args), cint_(next(args))
+    p = pass_string(s)
+    num = next(args)
+    if num is not None:
+        num = cint_(num)
+    list(args)
     length = s.length()
     start = start.to_integer().to_int()
     if num is None:

@@ -113,7 +113,7 @@ class ExpressionParser(object):
             tk.PMAP: partial(self._gen_parse_arguments, length=2),
             tk.LEFT: partial(self._gen_parse_arguments, length=2),
             tk.RIGHT: partial(self._gen_parse_arguments, length=2),
-            tk.MID: partial(self._parse_argument_list, conversions=(values.pass_string, values.cint_, values.cint_), optional=True),
+            tk.MID: partial(self._gen_parse_arguments_optional, length=3),
             tk.SGN: self._parse_argument,
             tk.INT: self._parse_argument,
             tk.ABS: self._parse_argument,
