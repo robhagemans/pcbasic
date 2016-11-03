@@ -59,23 +59,23 @@ class ExpressionParser(object):
         """Initialise function syntax tables."""
         self._complex = {
             tk.USR: {
-                None: self._parse_argument,
-                tk.C_0: self._parse_argument,
-                tk.C_1: self._parse_argument,
-                tk.C_2: self._parse_argument,
-                tk.C_3: self._parse_argument,
-                tk.C_4: self._parse_argument,
-                tk.C_5: self._parse_argument,
-                tk.C_6: self._parse_argument,
-                tk.C_7: self._parse_argument,
-                tk.C_8: self._parse_argument,
-                tk.C_9: self._parse_argument,
+                None: self._gen_parse_arguments,
+                tk.C_0: self._gen_parse_arguments,
+                tk.C_1: self._gen_parse_arguments,
+                tk.C_2: self._gen_parse_arguments,
+                tk.C_3: self._gen_parse_arguments,
+                tk.C_4: self._gen_parse_arguments,
+                tk.C_5: self._gen_parse_arguments,
+                tk.C_6: self._gen_parse_arguments,
+                tk.C_7: self._gen_parse_arguments,
+                tk.C_8: self._gen_parse_arguments,
+                tk.C_9: self._gen_parse_arguments,
             },
             tk.IOCTL: {
                 '$': self._gen_parse_ioctl,
             },
             tk.ENVIRON: {
-                '$': self._parse_argument,
+                '$': self._gen_parse_arguments,
             },
             tk.INPUT: {
                 '$': self._gen_parse_input,

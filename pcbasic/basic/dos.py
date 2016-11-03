@@ -37,8 +37,9 @@ class Environment(object):
         """Initialise."""
         self._values = values
 
-    def environ_(self, expr):
+    def environ_(self, args):
         """ENVIRON$: get environment string."""
+        expr, = args
         if isinstance(expr, values.String):
             parm = expr.to_str()
             if not parm:

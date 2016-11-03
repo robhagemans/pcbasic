@@ -46,8 +46,9 @@ class MachinePorts(object):
         self.com_baud_divisor = [0, 0]
         self.com_break = [False, False]
 
-    def usr_(self, num):
+    def usr_(self, args):
         """USR: get value of machine-code function; not implemented."""
+        num, = args
         logging.warning('USR function not implemented.')
         raise error.RunError(error.IFC)
 
