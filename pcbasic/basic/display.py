@@ -994,12 +994,18 @@ class Screen(object):
         mode = self.mode
         if fore is None:
             fore = (self.attr>>7) * 0x10 + (self.attr & 0xf)
+        else:
+            fore = values.to_int(fore)
         if back is None:
             # graphics mode bg is always 0; sets palette instead
             if mode.is_text_mode:
                 back = (self.attr>>4) & 0x7
             else:
                 back = self.palette.get_entry(0)
+        else:
+            back = values.to_int(back)
+        if bord is not None:
+            bord = values.to_int(bord)
         if mode.name == '320x200x4':
             self._color_mode_1(fore, back, bord)
         elif mode.name in ('640x200x2', '720x348x2'):
@@ -1869,7 +1875,13 @@ class Palette(object):
 
     def palette_(self, args):
         """PALETTE: assign colour to attribute."""
-        attrib, colour = args
+        attrib = next(args)
+        if attrib is not None:
+            attrib = values.to_int(attrib)
+        colour = next(args)
+        if colour is not None:
+            colour = values.to_int(colour)
+        list(args)
         if attrib is None and colour is None:
             self.set_all(self.mode.palette)
         else:

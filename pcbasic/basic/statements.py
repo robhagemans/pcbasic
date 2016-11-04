@@ -1320,12 +1320,12 @@ class StatementParser(object):
 
     def _parse_color(self, ins):
         """Parse COLOR syntax."""
-        last = self._parse_value(ins, values.INT, allow_empty=True)
+        last = self.parse_expression(ins, allow_empty=True)
         yield last
         if ins.skip_blank_read_if((',',)):
             # unlike LOCATE, ending in any number of commas is a Missing Operand
             while True:
-                last = self._parse_value(ins, values.INT, allow_empty=True)
+                last = self.parse_expression(ins, allow_empty=True)
                 yield last
                 if not ins.skip_blank_read_if((',',)):
                     break
@@ -1336,14 +1336,14 @@ class StatementParser(object):
 
     def _parse_palette(self, ins):
         """Parse PALETTE syntax."""
-        attrib = self._parse_value(ins, values.INT, allow_empty=True)
+        attrib = self.parse_expression(ins, allow_empty=True)
         yield attrib
         if attrib is None:
             yield None
             ins.require_end()
         else:
             ins.require_read((',',))
-            colour = self._parse_value(ins, values.INT, allow_empty=True)
+            colour = self.parse_expression(ins, allow_empty=True)
             yield colour
             error.throw_if(attrib is None or colour is None, error.STX)
 
