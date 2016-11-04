@@ -802,7 +802,10 @@ class Drawing(object):
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         x0, y0 = (values.to_single(next(args)).to_value() for _ in range(2))
-        lcoord1, array_name = args
+        step = next(args)
+        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
+        lcoord1 = x, y, step
+        array_name, = args
         array_name = self._memory.complete_name(array_name)
         if array_name not in self._memory.arrays:
             raise error.RunError(error.IFC)

@@ -1137,7 +1137,9 @@ class StatementParser(object):
         for c in self._parse_pair(ins):
             yield c
         ins.require_read((tk.O_MINUS,))
-        yield self._parse_coord_step(ins)
+        yield ins.skip_blank_read_if((tk.STEP,))
+        for c in self._parse_pair(ins):
+            yield c
         ins.require_read((',',))
         yield self.parse_name(ins)
         ins.require_end()
