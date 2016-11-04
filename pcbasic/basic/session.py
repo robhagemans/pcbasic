@@ -792,7 +792,7 @@ class Session(object):
                 seed = self.editor.wait_screenline()
                 val = self.values.from_repr(seed, allow_nonnum=False)
             # seed entered on prompt is rounded to int
-            val = values.cint_(val)
+            val = values.to_integer(val)
         self.randomiser.reseed(val)
 
     def key_(self, args):

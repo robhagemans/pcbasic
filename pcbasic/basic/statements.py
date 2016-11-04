@@ -997,9 +997,9 @@ class StatementParser(object):
     def _parse_coord_bare(self, ins):
         """Parse coordinate pair."""
         ins.require_read(('(',))
-        x = values.csng_(self.parse_expression(ins)).to_value()
+        x = values.to_single(self.parse_expression(ins)).to_value()
         ins.require_read((',',))
-        y = values.csng_(self.parse_expression(ins)).to_value()
+        y = values.to_single(self.parse_expression(ins)).to_value()
         ins.require_read((')',))
         return x, y
 

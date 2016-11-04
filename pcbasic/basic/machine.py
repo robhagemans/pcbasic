@@ -352,7 +352,7 @@ class Memory(object):
     def def_usr_(self, args):
         """DEF USR: Define machine language function."""
         usr, addr = args
-        addr = values.cint_(addr, unsigned=True)
+        addr = values.to_integer(addr, unsigned=True)
         logging.warning('DEF USR statement not implemented')
 
     def call_(self, args):

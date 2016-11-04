@@ -117,9 +117,9 @@ class ExpressionParser(object):
             tk.FRE: self._gen_parse_arguments,
             tk.INP: self._gen_parse_arguments,
             tk.POS: self._gen_parse_arguments,
-            tk.CINT: self._parse_argument,
-            tk.CSNG: self._parse_argument,
-            tk.CDBL: self._parse_argument,
+            tk.CINT: self._gen_parse_arguments,
+            tk.CSNG: self._gen_parse_arguments,
+            tk.CDBL: self._gen_parse_arguments,
             tk.LEN: self._gen_parse_arguments,
             tk.STR: self._gen_parse_arguments,
             tk.VAL: self._gen_parse_arguments,
@@ -379,7 +379,7 @@ class ExpressionParser(object):
             ins.require_read((']', ')'))
         return indices
 
-    ###########################################################
+    ###########################################################################
     # function and argument handling
 
     def _parse_function(self, ins, token):
@@ -409,13 +409,6 @@ class ExpressionParser(object):
         else:
             fn = self._callbacks[token]
         return fn(parse_args(ins))
-
-    def _parse_argument(self, ins):
-        """Parse a single function argument."""
-        ins.require_read(('(',))
-        val = self.parse(ins)
-        ins.require_read((')',))
-        return val
 
     ###########################################################################
     # argument generators

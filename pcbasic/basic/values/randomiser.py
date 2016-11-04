@@ -57,7 +57,7 @@ class Randomiser(object):
         if f is None:
             self._cycle(1)
         else:
-            f = values.csng_(f)
+            f = values.to_single(f)
             if f.is_zero():
                 self._cycle(0)
             else:

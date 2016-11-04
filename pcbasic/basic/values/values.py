@@ -69,11 +69,11 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
 def match_types(left, right):
     """Check if variables are numeric and convert to highest-precision."""
     if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
-        return cdbl_(left), cdbl_(right)
+        return to_double(left), to_double(right)
     elif isinstance(left, numbers.Single) or isinstance(right, numbers.Single):
-        return csng_(left), csng_(right)
+        return to_single(left), to_single(right)
     elif isinstance(left, numbers.Integer) or isinstance(right, numbers.Integer):
-        return cint_(left), cint_(right)
+        return to_integer(left), to_integer(right)
     elif isinstance(left, strings.String) or isinstance(right, strings.String):
         return pass_string(left), pass_string(right)
     raise TypeError('%s or %s is not of class Value.' % (type(left), type(right)))
@@ -281,58 +281,73 @@ def round(x):
 ###############################################################################
 # conversions
 
-def cint_(inp, unsigned=False):
+def to_integer(inp, unsigned=False):
     """Check if variable is numeric, convert to Int."""
     if isinstance(inp, strings.String):
         raise error.RunError(error.TYPE_MISMATCH)
     return inp.to_integer(unsigned)
 
 @float_safe
-def csng_(num):
+def to_single(num):
     """Check if variable is numeric, convert to Single."""
     if isinstance(num, strings.String):
         raise error.RunError(error.TYPE_MISMATCH)
     return num.to_single()
 
 @float_safe
-def cdbl_(num):
+def to_double(num):
     """Check if variable is numeric, convert to Double."""
     if isinstance(num, strings.String):
         raise error.RunError(error.TYPE_MISMATCH)
     return num.to_double()
+
+def cint_(args):
+    """CINT: convert to integer (by rounding, halves away from zero)."""
+    value, = args
+    return to_integer(value)
+
+def csng_(args):
+    """CSNG: convert to single (by Gaussian rounding)."""
+    value, = args
+    return to_single(value)
+
+def cdbl_(args):
+    """CDBL: convert to double."""
+    value, = args
+    return to_double(value)
 
 def to_type(typechar, value):
     """Check if variable can be converted to the given type and convert if necessary."""
     if typechar == STR:
         return pass_string(value)
     elif typechar == INT:
-        return cint_(value)
+        return to_integer(value)
     elif typechar == SNG:
-        return csng_(value)
+        return to_single(value)
     elif typechar == DBL:
-        return cdbl_(value)
+        return to_double(value)
     raise ValueError('%s is not a valid sigil.' % typechar)
 
 # NOTE that this function will overflow if outside the range of Integer
 # whereas Float.to_int will not
 def to_int(inp, unsigned=False):
     """Round numeric variable and convert to Python integer."""
-    return cint_(inp, unsigned).to_int(unsigned)
+    return to_integer(inp, unsigned).to_int(unsigned)
 
 def mki_(args):
     """MKI$: return the byte representation of an int."""
     x, = args
-    return x._values.new_string().from_str(cint_(x).to_bytes())
+    return x._values.new_string().from_str(to_integer(x).to_bytes())
 
 def mks_(args):
     """MKS$: return the byte representation of a single."""
     x, = args
-    return x._values.new_string().from_str(csng_(x).to_bytes())
+    return x._values.new_string().from_str(to_single(x).to_bytes())
 
 def mkd_(args):
     """MKD$: return the byte representation of a double."""
     x, = args
-    return x._values.new_string().from_str(cdbl_(x).to_bytes())
+    return x._values.new_string().from_str(to_double(x).to_bytes())
 
 def cvi_(args):
     """CVI: return the int value of a byte representation."""
@@ -557,14 +572,14 @@ def oct_(args):
     """OCT$: octal representation of int."""
     x, = args
     # allow range -32768 to 65535
-    val = cint_(x, unsigned=True)
+    val = to_integer(x, unsigned=True)
     return x._values.new_string().from_str(val.to_oct())
 
 def hex_(args):
     """HEX$: hexadecimal representation of int."""
     x, = args
     # allow range -32768 to 65535
-    val = cint_(x, unsigned=True)
+    val = to_integer(x, unsigned=True)
     return x._values.new_string().from_str(val.to_hex())
 
 ##############################################################################
@@ -573,7 +588,7 @@ def hex_(args):
 def left_(args):
     """LEFT$: get substring of num characters at the start of string."""
     s, num = next(args), next(args)
-    s, num = pass_string(s), cint_(num)
+    s, num = pass_string(s), to_integer(num)
     list(args)
     stop = num.to_integer().to_int()
     if stop == 0:
@@ -584,7 +599,7 @@ def left_(args):
 def right_(args):
     """RIGHT$: get substring of num characters at the end of string."""
     s, num = next(args), next(args)
-    s, num = pass_string(s), cint_(num)
+    s, num = pass_string(s), to_integer(num)
     list(args)
     stop = num.to_integer().to_int()
     if stop == 0:
@@ -594,11 +609,11 @@ def right_(args):
 
 def mid_(args):
     """MID$: get substring."""
-    s, start = next(args), cint_(next(args))
+    s, start = next(args), to_integer(next(args))
     p = pass_string(s)
     num = next(args)
     if num is not None:
-        num = cint_(num)
+        num = to_integer(num)
     list(args)
     length = s.length()
     start = start.to_integer().to_int()
@@ -718,4 +733,4 @@ def mod_(left, right):
 
 
 # conversions to type
-TYPE_TO_CONV = {STR: pass_string, INT: cint_, SNG: csng_, DBL: cdbl_}
+TYPE_TO_CONV = {STR: pass_string, INT: to_integer, SNG: to_single, DBL: to_double}

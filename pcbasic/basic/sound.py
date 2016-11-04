@@ -86,7 +86,7 @@ class Sound(object):
         else:
             command = None
             freq = values.to_int(arg0)
-            dur = values.csng_(next(args)).to_value()
+            dur = values.to_single(next(args)).to_value()
             error.range_check(-65535, 65535, dur)
             volume = next(args)
             if volume is None:
@@ -138,7 +138,7 @@ class Sound(object):
         error.range_check(0, 7, source)
         volume = values.to_int(next(args))
         error.range_check(0, 15, volume)
-        dur = values.csng_(next(args)).to_value()
+        dur = values.to_single(next(args)).to_value()
         error.range_check(-65535, 65535, dur)
         list(args)
         # calculate duration in seconds

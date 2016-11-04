@@ -118,7 +118,7 @@ class Files(object):
             # forcing to single before rounding - this means we don't have enough precision
             # to address each individual record close to the maximum record number
             # but that's in line with GW
-            pos = values.round(values.csng_(pos)).to_value()
+            pos = values.round(values.to_single(pos)).to_value()
             # not 2^32-1 as the manual boasts!
             # pos-1 needs to fit in a single-precision mantissa
             error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
@@ -149,11 +149,11 @@ class Files(object):
         if lock_start_rec is None:
             lock_start_rec = 1
         else:
-            lock_start_rec = values.round(values.csng_(lock_start_rec)).to_value()
+            lock_start_rec = values.round(values.to_single(lock_start_rec)).to_value()
         if lock_stop_rec is None:
             lock_stop_rec = lock_start_rec
         else:
-            lock_stop_rec = values.round(values.csng_(lock_stop_rec)).to_value()
+            lock_stop_rec = values.round(values.to_single(lock_stop_rec)).to_value()
         if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
             raise error.RunError(error.BAD_RECORD_NUMBER)
         return lock_start_rec, lock_stop_rec
@@ -289,14 +289,14 @@ class Files(object):
     def loc_(self, args):
         """LOC: get file pointer."""
         num, = args
-        num = values.cint_(num)
+        num = values.to_integer(num)
         loc = self._get_from_integer(num).loc()
         return self._values.new_single().from_int(loc)
 
     def eof_(self, args):
         """EOF: get end-of-file."""
         num, = args
-        num = values.cint_(num)
+        num = values.to_integer(num)
         eof = self._values.new_integer()
         if not num.is_zero() and self._get_from_integer(num, 'IR').eof():
             eof = eof.from_int(-1)
@@ -305,7 +305,7 @@ class Files(object):
     def lof_(self, args):
         """LOF: get length of file."""
         num, = args
-        num = values.cint_(num)
+        num = values.to_integer(num)
         lof = self._get_from_integer(num).lof()
         return self._values.new_single().from_int(lof)
 

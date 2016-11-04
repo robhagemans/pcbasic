@@ -173,7 +173,7 @@ class BasicEvents(object):
             error.range_check(1, 20, keynum)
             self.key[keynum-1].set_jump(jumpnum)
         elif token == tk.TIMER:
-            timeval = values.csng_(num).to_value()
+            timeval = values.to_single(num).to_value()
             error.throw_if(timeval <= 0)
             period = round(timeval * 1000.)
             self.timer.set_trigger(period)

@@ -1302,11 +1302,11 @@ class Screen(object):
 
     def screen_fn_(self, args):
         """SCREEN: get char or attribute at a location."""
-        row = values.cint_(next(args))
-        col = values.cint_(next(args))
+        row = values.to_integer(next(args))
+        col = values.to_integer(next(args))
         want_attr = next(args)
         if want_attr is not None:
-            want_attr = values.cint_(want_attr)
+            want_attr = values.to_integer(want_attr)
             want_attr = want_attr.to_int()
             error.range_check(0, 255, want_attr)
         row, col = row.to_int(), col.to_int()
@@ -1700,7 +1700,7 @@ class Screen(object):
         arg0 = next(args)
         arg1 = next(args)
         if arg1 is None:
-            arg0 = values.cint_(arg0)
+            arg0 = values.to_integer(arg0)
             fn = values.to_int(arg0)
             error.range_check(0, 3, fn)
             list(args)
@@ -1716,7 +1716,7 @@ class Screen(object):
                 raise error.RunError(error.IFC)
             arg1 = values.pass_number(arg1)
             list(args)
-            x, y = values.csng_(arg0).to_value(), values.csng_(arg1).to_value()
+            x, y = values.to_single(arg0).to_value(), values.to_single(arg1).to_value()
             x, y = self.graph_view.coords(*self.drawing.get_window_physical(x, y))
             if x < 0 or x >= self.mode.pixel_width or y < 0 or y >= self.mode.pixel_height:
                 point = -1
@@ -1727,23 +1727,23 @@ class Screen(object):
     def pmap_(self, args):
         """PMAP: convert between logical and physical coordinates."""
         # create a new Single for the return value
-        coord = values.csng_(next(args))
-        mode = values.cint_(next(args))
+        coord = values.to_single(next(args))
+        mode = values.to_integer(next(args))
         list(args)
         mode = mode.to_int()
         error.range_check(0, 3, mode)
         if self.mode.is_text_mode:
             if mode in (2,3):
-                values.cint_(coord)
+                values.to_integer(coord)
             value = 0
         elif mode == 0:
-            value, _ = self.drawing.get_window_physical(values.csng_(coord).to_value(), 0.)
+            value, _ = self.drawing.get_window_physical(values.to_single(coord).to_value(), 0.)
         elif mode == 1:
-            _, value = self.drawing.get_window_physical(0., values.csng_(coord).to_value())
+            _, value = self.drawing.get_window_physical(0., values.to_single(coord).to_value())
         elif mode == 2:
-            value, _ = self.drawing.get_window_logical(values.cint_(coord).to_int(), 0)
+            value, _ = self.drawing.get_window_logical(values.to_integer(coord).to_int(), 0)
         elif mode == 3:
-            _, value = self.drawing.get_window_logical(0, values.cint_(coord).to_int())
+            _, value = self.drawing.get_window_logical(0, values.to_integer(coord).to_int())
         return self._values.new_single().from_value(value)
 
     # text

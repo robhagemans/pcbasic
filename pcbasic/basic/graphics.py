@@ -453,20 +453,20 @@ class Drawing(object):
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         centre = next(args)
-        r = values.csng_(next(args)).to_value()
+        r = values.to_single(next(args)).to_value()
         error.throw_if(r < 0)
         c = next(args)
         if c is not None:
             c = values.to_int(c)
         start = next(args)
         if start is not None:
-            start = values.csng_(start).to_value()
+            start = values.to_single(start).to_value()
         stop = next(args)
         if stop is not None:
-            stop = values.csng_(stop).to_value()
+            stop = values.to_single(stop).to_value()
         aspect = next(args)
         if aspect is not None:
-            aspect = values.csng_(aspect).to_value()
+            aspect = values.to_single(aspect).to_value()
         list(args)
         x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*centre))
         if c is None:

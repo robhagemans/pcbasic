@@ -307,7 +307,7 @@ class Interpreter(object):
         """IF: branching statement."""
         # get condition
         # avoid overflow: don't use bools.
-        val = values.csng_(next(args))
+        val = values.to_single(next(args))
         if val.is_zero():
             # find corrrect ELSE block, if any
             # ELSEs may be nested in the THEN clause
