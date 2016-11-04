@@ -102,7 +102,7 @@ class Session(object):
         self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
         self.lister = lister.Lister(self.values, token_keyword)
         # initialise the program
-        bytecode = codestream.TokenisedStream()
+        bytecode = codestream.TokenisedStream(self.memory.code_start)
         self.program = program.Program(
                 self.tokeniser, self.lister, max_list_line, allow_protect,
                 allow_code_poke, self.memory.code_start, bytecode)
@@ -174,7 +174,7 @@ class Session(object):
         ######################################################################
         # initialise the expression parser
         self.expression_parser = expressions.ExpressionParser(
-                self.values, self.memory, self.program)
+                self.values, self.memory)
         self.statement_parser = statements.StatementParser(
                 self.strings, self.expression_parser, syntax)
         # set up debugger

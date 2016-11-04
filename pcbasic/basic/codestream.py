@@ -232,6 +232,17 @@ class TokenisedStream(CodeStream):
 
     end_line = tk.END_LINE
 
+    def __init__(self, addr=None):
+        """Initialise tokenised stream."""
+        # memory address, if any
+        self._addr = addr
+
+    def tell_address(self):
+        """Get memory address for current stream position."""
+        if self._addr is not None:
+            return self._addr + self.tell()
+        return None
+
     def skip_to(self, findrange, break_on_first_char=True):
         """Skip until character is in findrange."""
         literal = False

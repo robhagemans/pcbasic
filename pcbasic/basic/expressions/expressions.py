@@ -39,13 +39,11 @@ from .. import dos
 class ExpressionParser(object):
     """Expression parser."""
 
-    def __init__(self, values, memory, program):
+    def __init__(self, values, memory):
         """Initialise empty expression."""
         self._values = values
         # for variable retrieval
         self._memory = memory
-        # for code strings
-        self._program = program
         # user-defined functions
         self.user_functions = userfunctions.UserFunctionManager(memory, values, self)
         # initialise syntax tables
@@ -337,15 +335,13 @@ class ExpressionParser(object):
 
     def read_string_literal(self, ins):
         """Read a quoted string literal (no leading blanks), return as String."""
-        # record the address of the first byte of the string's payload
-        if ins == self._program.bytecode:
-            address = ins.tell() + 1 + self._memory.code_start
-        else:
-            address = None
+        # address points to initial quote
+        address = ins.tell_address()
         value = ins.read_string().strip('"')
         # if this is a program, create a string pointer to code space
-        # don't reserve space in string memory
-        return self._values.from_str_at(value, address)
+        # and don't reserve space in string memory
+        # +1 to point to start of payload, not intial quote
+        return self._values.from_str_at(value, None if address is None else address + 1)
 
     def read_number_literal(self, ins):
         """Return the value of a numeric literal (no leading blanks)."""
