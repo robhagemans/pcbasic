@@ -64,6 +64,8 @@ class Files(object):
         """CLOSE: close a file, or all files."""
         at_least_one = False
         for number in args:
+            number = values.to_int(number)
+            error.range_check(0, 255, number)
             at_least_one = True
             try:
                 self.close(number)

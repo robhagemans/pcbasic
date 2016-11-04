@@ -937,7 +937,8 @@ class StatementParser(object):
         if ins.skip_blank() not in tk.END_STATEMENT:
             while True:
                 # if an error occurs, the files parsed before are closed anyway
-                yield self._parse_file_number(ins, opt_hash=True)
+                ins.skip_blank_read_if(('#',))
+                yield self.parse_expression(ins)
                 if not ins.skip_blank_read_if((',',)):
                     break
 
