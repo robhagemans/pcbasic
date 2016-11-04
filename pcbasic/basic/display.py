@@ -654,10 +654,7 @@ class Screen(object):
         """SCREEN: change the video mode, colourburst, visible or active page."""
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
         # this raises error before
-        mode = next(args)
-        colorswitch = next(args)
-        apagenum = next(args)
-        vpagenum = next(args)
+        mode, colorswitch, apagenum, vpagenum = (None if arg is None else values.to_int(arg) for _, arg in zip(range(4), args))
         # if any parameter not in [0,255], error 5 without doing anything
         # if the parameters are outside narrow ranges
         # (e.g. not implemented screen mode, pagenum beyond max)
@@ -666,7 +663,9 @@ class Screen(object):
         if self.capabilities == 'tandy':
             error.range_check(0, 1, colorswitch)
         erase = next(args)
-        error.range_check(0, 2, erase)
+        if erase is not None:
+            erase = values.to_int(erase)
+            error.range_check(0, 2, erase)
         list(args)
         if erase is not None:
             # erase can only be set on pcjr/tandy 5-argument syntax
@@ -1226,7 +1225,7 @@ class Screen(object):
 
     def locate_(self, args):
         """LOCATE: Set cursor position, shape and visibility."""
-        args = list(args)
+        args = list(None if arg is None else values.to_int(arg) for arg in args)
         args = args + [None] * (5-len(args))
         row, col, cursor, start, stop = args
         row = self.current_row if row is None else row
@@ -1501,7 +1500,7 @@ class Screen(object):
 
     def view_print_(self, args):
         """VIEW PRINT: set scroll region."""
-        start, stop = args
+        start, stop = (None if arg is None else values.to_int(arg) for arg in args)
         if start is None and stop is None:
             self.unset_view()
         else:

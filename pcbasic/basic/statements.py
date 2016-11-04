@@ -1359,7 +1359,7 @@ class StatementParser(object):
         """Parse LOCATE syntax."""
         #row, col, cursor, start, stop
         for i in range(5):
-            yield self._parse_value(ins, values.INT, allow_empty=True)
+            yield self.parse_expression(ins, allow_empty=True)
             # note that LOCATE can end on a 5th comma but no stuff allowed after it
             if not ins.skip_blank_read_if((',',)):
                 break
@@ -1368,11 +1368,11 @@ class StatementParser(object):
     def _parse_view_print(self, ins):
         """Parse VIEW PRINT syntax."""
         ins.require_read((tk.PRINT,))
-        start = self._parse_value(ins, values.INT, allow_empty=True)
+        start = self.parse_expression(ins, allow_empty=True)
         yield start
         if start is not None:
             ins.require_read((tk.TO,))
-            yield self._parse_value(ins, values.INT)
+            yield self.parse_expression(ins)
         else:
             yield None
         ins.require_end()
@@ -1433,7 +1433,7 @@ class StatementParser(object):
         # all but last arguments are optional and may be followed by a comma
         argcount = 0
         while True:
-            last = self._parse_value(ins, values.INT, allow_empty=True)
+            last = self.parse_expression(ins, allow_empty=True)
             yield last
             argcount += 1
             if not ins.skip_blank_read_if((',',)):
