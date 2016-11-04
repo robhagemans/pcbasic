@@ -154,7 +154,7 @@ class Drawing(object):
             raise error.RunError(error.IFC)
         absolute = next(args)
         try:
-            x0, y0, x1, y1 = list(round(values.to_single(next(args)).to_value()) for _ in range(4))
+            x0, y0, x1, y1 = (round(values.to_single(next(args)).to_value()) for _ in range(4))
             error.range_check(0, self.screen.mode.pixel_width-1, x0, x1)
             error.range_check(0, self.screen.mode.pixel_height-1, y0, y1)
             fill = next(args)
@@ -287,7 +287,8 @@ class Drawing(object):
         """Set a pixel to a given attribute."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        lcoord = next(args)
+        step = next(args)
+        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
         c = next(args)
         if c is None:
             c = default
@@ -295,7 +296,7 @@ class Drawing(object):
             c = values.to_int(c)
             error.range_check(0, 255, c)
         list(args)
-        x, y = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
+        x, y = self.screen.graph_view.coords(*self.get_window_physical(x, y, step))
         c = self.get_attr_index(c)
         self.screen.put_pixel(x, y, c)
         self.last_attr = c

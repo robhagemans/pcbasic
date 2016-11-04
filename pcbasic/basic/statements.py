@@ -1011,7 +1011,9 @@ class StatementParser(object):
 
     def _parse_pset_preset(self, ins):
         """Parse PSET and PRESET syntax."""
-        yield self._parse_coord_step(ins)
+        yield ins.skip_blank_read_if((tk.STEP,))
+        for c in self._parse_pair(ins):
+            yield c
         if ins.skip_blank_read_if((',',)):
             yield self.parse_expression(ins)
         else:
