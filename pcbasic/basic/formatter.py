@@ -34,9 +34,9 @@ class Formatter(object):
             elif d == ';':
                 pass
             elif d == tk.SPC:
-                self._print_spc(value)
+                self._print_spc(values.to_int(value, unsigned=True))
             elif d == tk.TAB:
-                self._print_tab(value)
+                self._print_tab(values.to_int(value, unsigned=True))
             else:
                 self._print_value(value)
             newline = d not in (tk.TAB, tk.SPC, ',', ';')

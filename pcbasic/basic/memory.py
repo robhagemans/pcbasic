@@ -509,10 +509,12 @@ class DataSegment(object):
         if indices != []:
             # pre-dim even if this is not a legal statement!
             self.arrays.check_dim(name, indices)
-        start = next(args)
+        start = values.to_int(next(args))
         num = next(args)
         if num is None:
             num = 255
+        else:
+            num = values.to_int(num)
         with self.strings:
             s = values.pass_string(self.get_variable(name, indices)).to_str()
         error.range_check(0, 255, num)

@@ -322,6 +322,8 @@ class Drawing(object):
             c = -1
         if pattern is None:
             pattern = 0xffff
+        else:
+            pattern = values.to_int(pattern)
         if coord0:
             x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*coord0))
         else:

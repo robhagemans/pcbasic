@@ -89,14 +89,6 @@ class StatementParser(object):
         self.redo_on_break = False
         return val
 
-    def _parse_value(self, ins, sigil=None, allow_empty=False):
-        """Read a value of required type and return as Python value, or None if empty."""
-        expr = self.parse_expression(ins, allow_empty)
-        if expr is not None:
-            # this will force into the requested type; e.g. Integers may overflow
-            return values.to_type(sigil, expr).to_value()
-        return None
-
     def _parse_bracket(self, ins):
         """Compute the value of the bracketed expression."""
         ins.require_read(('(',))
@@ -1107,7 +1099,7 @@ class StatementParser(object):
                     shape = None
                 yield shape
                 if ins.skip_blank_read_if((',',)):
-                    yield self._parse_value(ins, values.INT)
+                    yield self.parse_expression(ins)
                 else:
                     # mustn't end on a comma
                     # mode == '' if nothing after previous comma
@@ -1226,9 +1218,9 @@ class StatementParser(object):
             raise error.RunError(error.STX)
         yield self._parse_variable(ins)
         ins.require_read((',',))
-        yield self._parse_value(ins, values.INT)
+        yield self.parse_expression(ins)
         if ins.skip_blank_read_if((',',)):
-            yield self._parse_value(ins, values.INT)
+            yield self.parse_expression(ins)
         else:
             yield None
         ins.require_read((')',))
@@ -1490,7 +1482,7 @@ class StatementParser(object):
             elif d in (',', ';'):
                 yield (d, None)
             elif d in (tk.SPC, tk.TAB):
-                num = values.to_int(self.parse_expression(ins), unsigned=True)
+                num = self.parse_expression(ins)
                 ins.require_read((')',))
                 yield (d, num)
             else:
