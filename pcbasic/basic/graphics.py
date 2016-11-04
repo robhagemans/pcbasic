@@ -453,7 +453,8 @@ class Drawing(object):
         """CIRCLE: Draw a circle, ellipse, arc or sector."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        centre = next(args)
+        step = next(args)
+        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
         r = values.to_single(next(args)).to_value()
         error.throw_if(r < 0)
         c = next(args)
@@ -469,7 +470,7 @@ class Drawing(object):
         if aspect is not None:
             aspect = values.to_single(aspect).to_value()
         list(args)
-        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*centre))
+        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(x, y, step))
         if c is None:
             c = -1
         else:
@@ -634,7 +635,9 @@ class Drawing(object):
         """PAINT: Fill an area defined by a border attribute with a tiled pattern."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        coord = next(args)
+        step = next(args)
+        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
+        coord = x, y, step
         pattern = None
         cval = next(args)
         c, pattern = -1, None

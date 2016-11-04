@@ -1035,7 +1035,9 @@ class StatementParser(object):
 
     def _parse_circle(self, ins):
         """Parse CIRCLE syntax."""
-        yield self._parse_coord_step(ins)
+        yield ins.skip_blank_read_if((tk.STEP,))
+        for c in self._parse_pair(ins):
+            yield c
         ins.require_read((',',))
         last = self.parse_expression(ins)
         yield last
@@ -1053,7 +1055,9 @@ class StatementParser(object):
 
     def _parse_paint(self, ins):
         """Parse PAINT syntax."""
-        yield self._parse_coord_step(ins)
+        yield ins.skip_blank_read_if((tk.STEP,))
+        for c in self._parse_pair(ins):
+            yield c
         with self._temp_string:
             if ins.skip_blank_read_if((',',)):
                 last = self.parse_expression(ins, allow_empty=True)
