@@ -956,7 +956,8 @@ class StatementParser(object):
 
     def _parse_lock_unlock(self, ins):
         """Parse LOCK or UNLOCK syntax."""
-        yield self._parse_file_number(ins, opt_hash=True)
+        ins.skip_blank_read_if(('#',))
+        yield self.parse_expression(ins)
         if not ins.skip_blank_read_if((',',)):
             ins.require_end()
             yield None

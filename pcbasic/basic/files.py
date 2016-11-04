@@ -169,10 +169,10 @@ class Files(object):
 
     def lock_(self, args):
         """LOCK: set file or record locks."""
-        thefile = self.get(next(args))
-        lock_start_rec = next(args)
-        lock_stop_rec = next(args)
-        list(args)
+        num = values.to_int(next(args))
+        error.range_check(0, 255, num)
+        thefile = self.get(num)
+        lock_start_rec, lock_stop_rec = args
         try:
             thefile.lock(*self._get_lock_limits(lock_start_rec, lock_stop_rec))
         except AttributeError:
@@ -181,10 +181,10 @@ class Files(object):
 
     def unlock_(self, args):
         """UNLOCK: set file or record locks."""
-        thefile = self.get(next(args))
-        lock_start_rec = next(args)
-        lock_stop_rec = next(args)
-        list(args)
+        num = values.to_int(next(args))
+        error.range_check(0, 255, num)
+        thefile = self.get(num)
+        lock_start_rec, lock_stop_rec = args
         try:
             thefile.unlock(*self._get_lock_limits(lock_start_rec, lock_stop_rec))
         except AttributeError:
