@@ -373,16 +373,17 @@ class Files(object):
         num_rows_dummy = None
         if file_or_device == tk.LPRINT:
             dev = self.devices.lpt1_file
-            w = next(args)
-        elif isinstance(file_or_device, int):
+            w = values.to_int(next(args))
+        elif isinstance(file_or_device, values.Number):
+            file_or_device = values.to_int(file_or_device)
             error.range_check(0, 255, file_or_device)
             dev = self.get(file_or_device, mode='IOAR')
-            w = next(args)
+            w = values.to_int(next(args))
         else:
             expr = next(args)
             if isinstance(expr, values.String):
                 devname = expr.to_str().upper()
-                w = next(args)
+                w = values.to_int(next(args))
                 try:
                     dev = self.devices.devices[devname].device_file
                 except (KeyError, AttributeError):
@@ -391,6 +392,8 @@ class Files(object):
             else:
                 w = values.to_int(expr)
                 num_rows_dummy = next(args)
+                if num_rows_dummy is not None:
+                    num_rows_dummy = values.to_int(num_rows_dummy)
                 dev = self.devices.scrn_file
         error.range_check(0, 255, w)
         list(args)

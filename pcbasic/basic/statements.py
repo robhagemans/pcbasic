@@ -1400,11 +1400,11 @@ class StatementParser(object):
         d = ins.skip_blank_read_if(('#', tk.LPRINT))
         if d:
             if d == '#':
-                yield values.to_int(self.parse_expression(ins))
+                yield self.parse_expression(ins)
                 ins.require_read((',',))
             else:
                 yield tk.LPRINT
-            yield self._parse_value(ins, values.INT)
+            yield self.parse_expression(ins)
         else:
             yield None
             with self._temp_string:
@@ -1415,14 +1415,14 @@ class StatementParser(object):
                 yield expr
             if isinstance(expr, values.String):
                 ins.require_read((',',))
-                yield self._parse_value(ins, values.INT)
+                yield self.parse_expression(ins)
             else:
                 if not ins.skip_blank_read_if((',',)):
                     yield None
                     ins.require_end(error.IFC)
                 else:
                     # parse dummy number rows setting
-                    yield self._parse_value(ins, values.INT, allow_empty=True)
+                    yield self.parse_expression(ins, allow_empty=True)
                     # trailing comma is accepted
                     ins.skip_blank_read_if((',',))
         ins.require_end()
