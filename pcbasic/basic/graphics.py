@@ -757,14 +757,15 @@ class Drawing(object):
         """PUT: Put a sprite on the screen."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        lcoord, array_name, operation_token = args
+        x0, y0 = (values.to_single(next(args)).to_value() for _ in range(2))
+        array_name, operation_token = args
         array_name = self._memory.complete_name(array_name)
         operation_token = operation_token or tk.XOR
         if array_name not in self._memory.arrays:
             raise error.RunError(error.IFC)
         elif array_name[-1] == values.STR:
             raise error.RunError(error.TYPE_MISMATCH)
-        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
+        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(x0, y0))
         self.last_point = x0, y0
         try:
             byte_array = self._memory.arrays.view_full_buffer(array_name)
@@ -796,13 +797,14 @@ class Drawing(object):
         """GET: Read a sprite from the screen."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        lcoord0, lcoord1, array_name = args
+        x0, y0 = (values.to_single(next(args)).to_value() for _ in range(2))
+        lcoord1, array_name = args
         array_name = self._memory.complete_name(array_name)
         if array_name not in self._memory.arrays:
             raise error.RunError(error.IFC)
         elif array_name[-1] == values.STR:
             raise error.RunError(error.TYPE_MISMATCH)
-        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord0))
+        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(x0, y0))
         x1, y1 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
         try:

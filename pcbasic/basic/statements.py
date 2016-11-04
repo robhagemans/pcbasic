@@ -1128,7 +1128,8 @@ class StatementParser(object):
     def _parse_get_graph(self, ins):
         """Parse graphics GET syntax."""
         # don't accept STEP for first coord
-        yield self._parse_coord_bare(ins)
+        for c in self._parse_pair(ins):
+            yield c
         ins.require_read((tk.O_MINUS,))
         yield self._parse_coord_step(ins)
         ins.require_read((',',))
@@ -1138,7 +1139,8 @@ class StatementParser(object):
     def _parse_put_graph(self, ins):
         """Parse graphics PUT syntax."""
         # don't accept STEP
-        yield self._parse_coord_bare(ins)
+        for c in self._parse_pair(ins):
+            yield c
         ins.require_read((',',))
         yield self.parse_name(ins)
         if ins.skip_blank_read_if((',',)):
