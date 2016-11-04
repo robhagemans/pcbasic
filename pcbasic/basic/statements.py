@@ -986,6 +986,14 @@ class StatementParser(object):
     ###########################################################################
     # graphics statements
 
+    def _parse_pair(self, ins):
+        """Parse coordinate pair."""
+        ins.require_read(('(',))
+        yield self.parse_expression(ins)
+        ins.require_read((',',))
+        yield self.parse_expression(ins)
+        ins.require_read((')',))
+
     def _parse_coord_bare(self, ins):
         """Parse coordinate pair."""
         ins.require_read(('(',))
@@ -1015,14 +1023,13 @@ class StatementParser(object):
         screen = ins.skip_blank_read_if((tk.SCREEN,))
         yield screen
         if ins.skip_blank() == '(':
-            yield self._parse_coord_bare(ins)
+            for c in self._parse_pair(ins):
+                yield c
             ins.require_read((tk.O_MINUS,))
-            yield self._parse_coord_bare(ins)
+            for c in self._parse_pair(ins):
+                yield c
         elif screen:
             raise error.RunError(error.STX)
-        else:
-            yield None, None
-            yield None, None
 
     def _parse_circle(self, ins):
         """Parse CIRCLE syntax."""

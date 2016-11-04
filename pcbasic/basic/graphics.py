@@ -200,16 +200,15 @@ class Drawing(object):
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         cartesian = not next(args)
-        x0, y0 = next(args)
-        x1, y1 = next(args)
-        if (x0, y0, x1, y1) != (None, None, None, None):
+        coords = list(values.to_single(next(args)).to_value() for _ in range(4))
+        if not coords:
+            self.unset_window()
+        else:
+            x0, y0, x1, y1 = coords
             if x0 == x1 or y0 == y1:
                 raise error.RunError(error.IFC)
-        list(args)
-        if (x0, y0, x1, y1) != (None, None, None, None):
+            list(args)
             self.set_window(x0, y0, x1, y1, cartesian)
-        else:
-            self.unset_window()
 
     def set_window(self, fx0, fy0, fx1, fy1, cartesian=True):
         """Set the logical coordinate window (WINDOW)."""
