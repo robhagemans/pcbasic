@@ -112,9 +112,11 @@ class GraphicsViewPort(object):
 class Drawing(object):
     """Manage graphics drawing."""
 
-    def __init__(self, screen, input_methods):
+    def __init__(self, screen, input_methods, values, memory):
         """Initialise graphics object."""
         self.screen = screen
+        self._values = values
+        self._memory = memory
         # for wait() in paint_
         self.input_methods = input_methods
         self.init_mode()
@@ -753,22 +755,22 @@ class Drawing(object):
 
     ### PUT and GET: Sprite operations
 
-    def put_(self, arrays, memory, args):
+    def put_(self, args):
         """PUT: Put a sprite on the screen."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         lcoord, array_name, operation_token = args
-        array_name = memory.complete_name(array_name)
+        array_name = self._memory.complete_name(array_name)
         operation_token = operation_token or tk.XOR
-        if array_name not in arrays:
+        if array_name not in self._memory.arrays:
             raise error.RunError(error.IFC)
         elif array_name[-1] == values.STR:
             raise error.RunError(error.TYPE_MISMATCH)
         x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         self.last_point = x0, y0
         try:
-            byte_array = arrays.view_full_buffer(array_name)
-            spriterec = arrays.get_cache(array_name)
+            byte_array = self._memory.arrays.view_full_buffer(array_name)
+            spriterec = self._memory.arrays.get_cache(array_name)
         except KeyError:
             byte_array = bytearray()
             spriterec = None
@@ -779,7 +781,7 @@ class Drawing(object):
             dx, dy = self.screen.mode.record_to_sprite_size(byte_array)
             sprite = self.screen.mode.array_to_sprite(byte_array, 4, dx, dy)
             # store it now that we have it!
-            arrays.set_cache(array_name, (dx, dy, sprite))
+            self._memory.arrays.set_cache(array_name, (dx, dy, sprite))
         # sprite must be fully inside *viewport* boundary
         x1, y1 = x0+dx-1, y0+dy-1
         # Tandy screen 6 sprites are twice as wide as claimed
@@ -792,13 +794,13 @@ class Drawing(object):
         # apply the sprite to the screen
         self.screen.put_rect(x0, y0, x1, y1, sprite, operation_token)
 
-    def get_(self, arrays, memory, args):
+    def get_(self, args):
         """GET: Read a sprite from the screen."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         lcoord0, lcoord1, array_name = args
-        array_name = memory.complete_name(array_name)
-        if array_name not in arrays:
+        array_name = self._memory.complete_name(array_name)
+        if array_name not in self._memory.arrays:
             raise error.RunError(error.IFC)
         elif array_name[-1] == values.STR:
             raise error.RunError(error.TYPE_MISMATCH)
@@ -806,7 +808,7 @@ class Drawing(object):
         x1, y1 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
         try:
-            byte_array = arrays.view_full_buffer(array_name)
+            byte_array = self._memory.arrays.view_full_buffer(array_name)
         except KeyError:
             raise error.RunError(error.IFC)
         y0, y1 = sorted((y0, y1))
@@ -828,17 +830,17 @@ class Drawing(object):
         except ValueError as e:
             raise error.RunError(error.IFC)
         # store a copy in the sprite store
-        arrays.set_cache(array_name, (dx, dy, sprite))
+        self._memory.arrays.set_cache(array_name, (dx, dy, sprite))
 
     ### DRAW statement
 
-    def draw_(self, args, memory, value_handler):
+    def draw_(self, args):
         """DRAW: Execute a Graphics Macro Language string."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         gml = next(args)
         # don't convert to uppercase as VARPTR$ elements are case sensitive
-        gmls = mlparser.MLParser(gml, memory, value_handler)
+        gmls = mlparser.MLParser(gml, self._memory, self._values)
         plot, goback = True, False
         while True:
             c = gmls.skip_blank_read().upper()
@@ -855,7 +857,7 @@ class Drawing(object):
             elif c == 'X':
                 # execute substring
                 sub = gmls.parse_string()
-                self.draw_(iter([sub]), memory, value_handler)
+                self.draw_(iter([sub]))
             elif c == 'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon

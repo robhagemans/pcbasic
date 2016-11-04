@@ -510,11 +510,13 @@ class Screen(object):
         (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
         (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) )
 
-    def __init__(self, queues, values, input_methods, initial_width, video_mem_size, capabilities, monitor, sound, redirect,
+    def __init__(self, queues, values, input_methods, memory,
+                initial_width, video_mem_size, capabilities, monitor, sound, redirect,
                 cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
         """Minimal initialisiation of the screen."""
         self.queues = queues
         self._values = values
+        self._memory = memory
         # emulated video card - cga, ega, etc
         if capabilities == 'ega' and monitor == 'mono':
             capabilities = 'ega_mono'
@@ -596,7 +598,7 @@ class Screen(object):
         self.fkey_macros = FunctionKeyMacros(input_methods, self, capabilities)
         # print screen target, to be set later due to init order issues
         self.lpt1_file = None
-        self.drawing = graphics.Drawing(self, input_methods)
+        self.drawing = graphics.Drawing(self, input_methods, values, memory)
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
@@ -687,7 +689,7 @@ class Screen(object):
                erase=1, new_width=None):
         """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
-        self.palette = Palette(self.mode, self.capabilities)
+        self.palette = Palette(self.mode, self.capabilities, self._memory)
         # set default arguments
         if new_mode is None:
             new_mode = self.screen_mode
@@ -824,7 +826,7 @@ class Screen(object):
         self.drawing.init_mode()
         # cursor width starts out as single char
         self.cursor.init_mode(self.mode)
-        self.palette = Palette(self.mode, self.capabilities)
+        self.palette = Palette(self.mode, self.capabilities, self._memory)
         # set the attribute
         if not self.mode.is_text_mode:
             fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
@@ -914,7 +916,7 @@ class Screen(object):
         else:
             self.colours16[:] = self.colours16_mono
         # reset the palette to reflect the new mono or mode-5 situation
-        self.palette = Palette(self.mode, self.capabilities)
+        self.palette = Palette(self.mode, self.capabilities, self._memory)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_COLORBURST, (on and colorburst_capable,
                             self.palette.rgb_palette, self.palette.rgb_palette1)))
 
@@ -1826,10 +1828,11 @@ class Screen(object):
 class Palette(object):
     """Colour palette."""
 
-    def __init__(self, mode, capabilities):
+    def __init__(self, mode, capabilities, memory):
         """Initialise palette."""
         self.capabilities = capabilities
         self.mode = mode
+        self._memory = memory
         self.set_all(mode.palette, check_mode=False)
 
     def set_entry(self, index, colour, check_mode=True):
@@ -1892,20 +1895,20 @@ class Palette(object):
             if colour != -1:
                 self.set_entry(attrib, colour)
 
-    def palette_using_(self, arrays, memory, args):
+    def palette_using_(self, args):
         """PALETTE USING: set palette from array buffer."""
         array_name, start_indices = next(args)
-        array_name = memory.complete_name(array_name)
+        array_name = self._memory.complete_name(array_name)
         list(args)
         num_palette_entries = self.mode.num_attr if self.mode.num_attr != 32 else 16
         try:
-            dimensions = arrays.dimensions(array_name)
+            dimensions = self._memory.arrays.dimensions(array_name)
         except KeyError:
             raise error.RunError(error.IFC)
         error.throw_if(array_name[-1] != '%', error.TYPE_MISMATCH)
-        lst = arrays.view_full_buffer(array_name)
-        start = arrays.index(start_indices, dimensions)
-        error.throw_if(arrays.array_len(dimensions) - start < num_palette_entries)
+        lst = self._memory.arrays.view_full_buffer(array_name)
+        start = self._memory.arrays.index(start_indices, dimensions)
+        error.throw_if(self._memory.arrays.array_len(dimensions) - start < num_palette_entries)
         new_palette = []
         for i in range(num_palette_entries):
             offset = (start+i) * 2

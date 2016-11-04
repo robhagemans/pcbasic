@@ -129,8 +129,8 @@ class Session(object):
         self.sound = sound.Sound(self.queues, self.values, self.input_methods, syntax)
         # Sound is needed for the beeps on \a
         self.screen = display.Screen(
-                self.queues, self.values, self.input_methods, text_width,
-                video_memory, video_capabilities, monitor,
+                self.queues, self.values, self.input_methods, self.memory,
+                text_width, video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=option_debug)
