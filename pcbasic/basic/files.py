@@ -135,14 +135,18 @@ class Files(object):
 
     def put_(self, args):
         """PUT: write record to file."""
-        the_file = self.get(next(args), 'R')
+        number = values.to_int(next(args))
+        error.range_check(0, 255, number)
+        the_file = self.get(number, 'R')
         pos, = args
         thefile, num_bytes = self._set_record_pos(the_file, pos)
         thefile.put(num_bytes)
 
     def get_(self, args):
         """GET: read record from file."""
-        the_file = self.get(next(args), 'R')
+        number = values.to_int(next(args))
+        error.range_check(0, 255, number)
+        the_file = self.get(number, 'R')
         pos, = args
         thefile, num_bytes = self._set_record_pos(the_file, pos)
         thefile.get(num_bytes)
@@ -189,7 +193,9 @@ class Files(object):
 
     def ioctl_statement_(self, args):
         """IOCTL: send control string to I/O device. Not implemented."""
-        thefile = self.get(next(args))
+        num = values.to_int(next(args))
+        error.range_check(0, 255, num)
+        thefile = self.get(num)
         control_string, = args
         logging.warning("IOCTL statement not implemented.")
         raise error.RunError(error.IFC)

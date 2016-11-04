@@ -973,13 +973,15 @@ class StatementParser(object):
 
     def _parse_ioctl(self, ins):
         """Parse IOCTL syntax."""
-        yield self._parse_file_number(ins, opt_hash=True)
+        ins.skip_blank_read_if(('#',))
+        yield self.parse_expression(ins)
         ins.require_read((',',))
         yield self._parse_temporary_string(ins)
 
     def _parse_put_get_file(self, ins):
         """Parse PUT and GET syntax."""
-        yield self._parse_file_number(ins, opt_hash=True)
+        ins.skip_blank_read_if(('#',))
+        yield self.parse_expression(ins)
         if ins.skip_blank_read_if((',',)):
             yield self.parse_expression(ins)
         else:
