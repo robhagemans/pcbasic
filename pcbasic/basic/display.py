@@ -1055,6 +1055,7 @@ class Screen(object):
         """CLS: clear the screen."""
         val = next(args)
         if val is not None:
+            val = values.to_int(val)
             # tandy gives illegal function call on CLS number
             error.throw_if(self.capabilities == 'tandy')
             error.range_check(0, 2, val)

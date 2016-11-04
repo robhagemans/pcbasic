@@ -1311,7 +1311,7 @@ class StatementParser(object):
     def _parse_cls(self, ins):
         """Parse CLS syntax."""
         if self._syntax != 'pcjr':
-            yield self._parse_value(ins, values.INT, allow_empty=True)
+            yield self.parse_expression(ins, allow_empty=True)
             # optional comma
             if not ins.skip_blank_read_if((',',)):
                 ins.require_end(err=error.IFC)
