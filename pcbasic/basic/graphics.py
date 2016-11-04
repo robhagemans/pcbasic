@@ -308,8 +308,12 @@ class Drawing(object):
         """LINE: Draw a patterned line or box."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        coord0 = next(args)
-        coord1 = next(args)
+        step0 = next(args)
+        x0, y0 = (None if arg is None else values.to_single(arg).to_value() for _, arg in zip(range(2), args))
+        step1 = next(args)
+        x1, y1 = (values.to_single(next(args)).to_value() for _ in range(2))
+        coord0 = x0, y0, step0
+        coord1 = x1, y1, step1
         c = next(args)
         if c:
             c = values.to_int(c)
@@ -321,7 +325,7 @@ class Drawing(object):
             pattern = 0xffff
         else:
             pattern = values.to_int(pattern)
-        if coord0:
+        if coord0 != (None, None, None):
             x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*coord0))
         else:
             x0, y0 = self.last_point

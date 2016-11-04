@@ -994,21 +994,6 @@ class StatementParser(object):
         yield self.parse_expression(ins)
         ins.require_read((')',))
 
-    def _parse_coord_bare(self, ins):
-        """Parse coordinate pair."""
-        ins.require_read(('(',))
-        x = values.to_single(self.parse_expression(ins)).to_value()
-        ins.require_read((',',))
-        y = values.to_single(self.parse_expression(ins)).to_value()
-        ins.require_read((')',))
-        return x, y
-
-    def _parse_coord_step(self, ins):
-        """Parse coordinate pair with optional STEP."""
-        step = ins.skip_blank_read_if((tk.STEP,))
-        x, y = self._parse_coord_bare(ins)
-        return x, y, step
-
     def _parse_pset_preset(self, ins):
         """Parse PSET and PRESET syntax."""
         yield ins.skip_blank_read_if((tk.STEP,))
@@ -1099,11 +1084,16 @@ class StatementParser(object):
     def _parse_line(self, ins):
         """Parse LINE syntax."""
         if ins.skip_blank() in ('(', tk.STEP):
-            yield self._parse_coord_step(ins)
+            yield ins.skip_blank_read_if((tk.STEP,))
+            for c in self._parse_pair(ins):
+                yield c
         else:
-            yield None
+            for _ in range(3):
+                yield None
         ins.require_read((tk.O_MINUS,))
-        yield self._parse_coord_step(ins)
+        yield ins.skip_blank_read_if((tk.STEP,))
+        for c in self._parse_pair(ins):
+            yield c
         if ins.skip_blank_read_if((',',)):
             expr = self.parse_expression(ins, allow_empty=True)
             yield expr
