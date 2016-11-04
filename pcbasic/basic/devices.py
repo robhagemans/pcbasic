@@ -140,8 +140,8 @@ class RawFile(object):
         except EnvironmentError:
             pass
 
-    def input_(self, num):
-        """INPUT$: read num chars."""
+    def input_chars(self, num):
+        """Read a number of characters."""
         word = self.read_raw(num)
         if len(word) < num:
             # input past end
