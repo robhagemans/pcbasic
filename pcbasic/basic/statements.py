@@ -944,7 +944,8 @@ class StatementParser(object):
 
     def _parse_field(self, ins):
         """Parse FIELD syntax."""
-        yield self._parse_file_number(ins, opt_hash=True)
+        ins.skip_blank_read_if(('#',))
+        yield self.parse_expression(ins)
         if ins.skip_blank_read_if((',',)):
             while True:
                 yield self.parse_expression(ins)

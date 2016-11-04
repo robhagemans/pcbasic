@@ -100,7 +100,9 @@ class Files(object):
 
     def field_(self, args):
         """FIELD: attach a variable to the record buffer."""
-        the_file = self.get(next(args), 'R')
+        number = values.to_int(next(args))
+        error.range_check(0, 255, number)
+        the_file = self.get(number, 'R')
         offset = 0
         try:
             while True:
