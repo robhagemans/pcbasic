@@ -402,7 +402,7 @@ class StatementParser(object):
             tk.SCREEN: session.screen.screen_,
             tk.LOCATE: session.screen.locate_,
             tk.FILES: session.devices.files_,
-            tk.FIELD: partial(session.files.field_, memory=session.memory),
+            tk.FIELD: session.files.field_,
             tk.NAME: session.devices.name_,
             tk.LSET: session.memory.lset_,
             tk.RSET: session.memory.rset_,

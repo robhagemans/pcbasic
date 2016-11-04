@@ -32,9 +32,10 @@ device_files = ('AUX', 'CON', 'NUL', 'PRN')
 class Files(object):
     """File manager."""
 
-    def __init__(self, values, devices, max_files, max_reclen):
+    def __init__(self, values, devices, memory, max_files, max_reclen):
         """Initialise files."""
         self._values = values
+        self._memory = memory
         self.files = {}
         self.max_files = max_files
         self.max_reclen = max_reclen
@@ -95,7 +96,7 @@ class Files(object):
         error.range_check_err(1, self.max_files, number, error.BAD_FILE_NUMBER)
         self.open(number, name, 'D', mode, access, lock, reclen)
 
-    def field_(self, args, memory):
+    def field_(self, args):
         """FIELD: attach a variable to the record buffer."""
         the_file = self.get(next(args), 'R')
         offset = 0
@@ -104,7 +105,7 @@ class Files(object):
                 width = values.to_int(next(args))
                 error.range_check(0, 255, width)
                 name, index = next(args)
-                name = memory.complete_name(name)
+                name = self._memory.complete_name(name)
                 the_file.field.attach_var(name, index, offset, width)
                 offset += width
         except StopIteration:
