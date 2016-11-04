@@ -1264,11 +1264,11 @@ class StatementParser(object):
 
     def _parse_input(self, ins):
         """Parse INPUT syntax."""
-        file_number = self._parse_file_number(ins, opt_hash=False)
-        yield file_number
-        if file_number is not None:
+        if ins.skip_blank_read_if(('#',)):
+            yield self.parse_expression(ins)
             ins.require_read((',',))
         else:
+            yield None
             yield self._parse_prompt(ins)
         for arg in self._parse_var_list(ins):
             yield arg
@@ -1276,12 +1276,12 @@ class StatementParser(object):
     def _parse_line_input(self, ins):
         """Parse LINE INPUT syntax."""
         ins.require_read((tk.INPUT,))
-        file_number = self._parse_file_number(ins, opt_hash=False)
-        yield file_number
-        if file_number is None:
-            yield self._parse_prompt(ins)
-        else:
+        if ins.skip_blank_read_if(('#',)):
+            yield self.parse_expression(ins)
             ins.require_read((',',))
+        else:
+            yield None
+            yield self._parse_prompt(ins)
         # get string variable
         yield self._parse_variable(ins)
 

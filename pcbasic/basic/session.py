@@ -686,6 +686,8 @@ class Session(object):
         """INPUT: request input from user or read from file."""
         file_number = next(args)
         if file_number is not None:
+            file_number = values.to_int(file_number)
+            error.range_check(0, 255, file_number)
             finp = self.files.get(file_number, mode='IR')
             self._input_file(finp, args)
         else:
@@ -756,6 +758,8 @@ class Session(object):
             finp = None
         else:
             prompt, newline = None, None
+            file_number = values.to_int(file_number)
+            error.range_check(0, 255, file_number)
             finp = self.files.get(file_number, mode='IR')
         # get string variable
         readvar, indices = next(args)
