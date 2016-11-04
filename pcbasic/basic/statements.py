@@ -1080,9 +1080,11 @@ class StatementParser(object):
         """Parse VIEW syntax."""
         yield ins.skip_blank_read_if((tk.SCREEN,))
         if ins.skip_blank() == '(':
-            yield self._parse_coord_bare(ins)
+            for c in self._parse_pair(ins):
+                yield c
             ins.require_read((tk.O_MINUS,))
-            yield self._parse_coord_bare(ins)
+            for c in self._parse_pair(ins):
+                yield c
             if ins.skip_blank_read_if((',',)):
                 yield self.parse_expression(ins)
                 ins.require_read((',',))

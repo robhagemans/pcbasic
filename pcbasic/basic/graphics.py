@@ -154,10 +154,7 @@ class Drawing(object):
             raise error.RunError(error.IFC)
         absolute = next(args)
         try:
-            x0, y0 = next(args)
-            x0, y0 = round(x0), round(y0)
-            x1, y1 = next(args)
-            x1, y1 = round(x1), round(y1)
+            x0, y0, x1, y1 = list(round(values.to_single(next(args)).to_value()) for _ in range(4))
             error.range_check(0, self.screen.mode.pixel_width-1, x0, x1)
             error.range_check(0, self.screen.mode.pixel_height-1, y0, y1)
             fill = next(args)
