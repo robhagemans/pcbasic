@@ -489,7 +489,8 @@ class Session(object):
 
     def shell_(self, args):
         """SHELL: open OS shell and optionally execute command."""
-        cmd, = args
+        cmd = self.strings.next_temporary(args)
+        list(args)
         # force cursor visible in all cases
         self.screen.cursor.show(True)
         # sound stops playing and is forgotten

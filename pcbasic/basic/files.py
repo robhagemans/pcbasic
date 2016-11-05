@@ -626,7 +626,8 @@ class Devices(object):
 
     def files_(self, args):
         """FILES: output directory listing to screen."""
-        pathmask, = args
+        pathmask = self._memory.strings.next_temporary(args)
+        list(args)
         # pathmask may be left unspecified, but not empty
         if pathmask == b'':
             raise error.RunError(error.BAD_FILE_NAME)

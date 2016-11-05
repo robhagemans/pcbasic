@@ -225,7 +225,7 @@ class StatementParser(object):
             tk.PRESET: self._parse_pset_preset,
             tk.SCREEN: self._parse_screen,
             tk.LOCATE: self._parse_locate,
-            tk.FILES: self._parse_optional_string_arg,
+            tk.FILES: self._parse_optional_arg_no_end,
             tk.FIELD: self._parse_field,
             tk.NAME: self._parse_name,
             tk.LSET: self._parse_let,
@@ -244,7 +244,7 @@ class StatementParser(object):
             tk.CHDIR: self._parse_single_string_arg,
             tk.MKDIR: self._parse_single_string_arg,
             tk.RMDIR: self._parse_single_string_arg,
-            tk.SHELL: self._parse_optional_string_arg,
+            tk.SHELL: self._parse_optional_arg_no_end,
             tk.ENVIRON: self._parse_single_string_arg,
             tk.WINDOW: self._parse_window,
             tk.LCOPY: self._parse_optional_arg,
@@ -500,6 +500,10 @@ class StatementParser(object):
         yield self.parse_expression(ins, allow_empty=True)
         ins.require_end()
 
+    def _parse_optional_arg_no_end(self, ins):
+        """Parse statement with single optional string-valued argument."""
+        yield self.parse_expression(ins, allow_empty=True)
+
     def _parse_single_arg(self, ins):
         """Parse statement with one mandatory argument."""
         yield self.parse_expression(ins)
@@ -519,13 +523,6 @@ class StatementParser(object):
     def _parse_single_string_arg(self, ins):
         """Parse statement with single string-valued argument."""
         yield self._parse_temporary_string(ins)
-
-    def _parse_optional_string_arg(self, ins):
-        """Parse statement with single optional string-valued argument."""
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            yield self._parse_temporary_string(ins)
-        else:
-            yield None
 
     ###########################################################################
     # two arguments
