@@ -849,7 +849,12 @@ class Drawing(object):
         """DRAW: Execute a Graphics Macro Language string."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        gml = next(args)
+        gml = self._memory.strings.next_temporary(args)
+        self.draw(gml)
+        list(args)
+
+    def draw(self, gml):
+        """Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = mlparser.MLParser(gml, self._memory, self._values)
         plot, goback = True, False
@@ -868,7 +873,7 @@ class Drawing(object):
             elif c == 'X':
                 # execute substring
                 sub = gmls.parse_string()
-                self.draw_(iter([sub]))
+                self.draw(sub)
             elif c == 'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
@@ -956,7 +961,6 @@ class Drawing(object):
                 self.flood_fill((x, y, False), colour, None, bound, None)
             else:
                 raise error.RunError(error.IFC)
-        list(args)
 
     def draw_step(self, x0, y0, sx, sy, plot, goback):
         """Make a DRAW step, drawing a line and returning if requested."""

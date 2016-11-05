@@ -238,7 +238,7 @@ class StatementParser(object):
             tk.PAINT: self._parse_paint,
             tk.COM: self._parse_com_command,
             tk.CIRCLE: self._parse_circle,
-            tk.DRAW: self._parse_string_arg,
+            tk.DRAW: self._parse_single_arg,
             tk.TIMER: self._parse_event_command,
             tk.IOCTL: self._parse_ioctl,
             tk.CHDIR: self._parse_single_string_arg,
@@ -515,11 +515,6 @@ class StatementParser(object):
         if ins.skip_blank() == tk.T_UINT:
             jumpnum = self._parse_jumpnum(ins)
         yield jumpnum
-
-    def _parse_string_arg(self, ins):
-        """Parse DRAW syntax."""
-        yield self._parse_temporary_string(ins)
-        ins.require_end()
 
     def _parse_single_string_arg(self, ins):
         """Parse statement with single string-valued argument."""
