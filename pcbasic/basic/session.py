@@ -34,8 +34,6 @@ from . import files
 from . import sound
 from . import redirect
 from . import codepage as cp
-from . import scalars
-from . import arrays
 from . import values
 from . import parser
 from . import devices
@@ -85,13 +83,10 @@ class Session(object):
         # initialise the data segment
         self.memory = memory.DataSegment(
                     max_memory, reserved_memory, max_reclen, max_files, double)
-        # string space
+        # values and variables
         self.strings = self.memory.strings
-        # string and number handler
         self.values = self.memory.values
-        # scalar space
         self.scalars = self.memory.scalars
-        # array space
         self.arrays = self.memory.arrays
         # prepare tokeniser
         token_keyword = tk.TokenKeywordDict(syntax)
