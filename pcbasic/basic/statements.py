@@ -541,8 +541,8 @@ class StatementParser(object):
         if c == tk.T_UINT:
             # parse line number and ignore rest of line
             yield self._parse_jumpnum(ins)
-            yield None
         elif c not in tk.END_STATEMENT:
+            yield None
             yield self._parse_temporary_string(ins)
             if ins.skip_blank_read_if((',',)):
                 ins.require_read(('R',))
@@ -551,7 +551,6 @@ class StatementParser(object):
                 yield False
             ins.require_end()
         else:
-            yield None
             yield None
 
     def _parse_resume(self, ins):

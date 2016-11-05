@@ -652,24 +652,25 @@ class Session(object):
 
     def run_(self, args):
         """RUN: start program execution."""
-        arg0, arg1 = args
+        jumpnum = next(args)
         comma_r = False
-        jumpnum = None
-        if isinstance(arg0, bytes):
-            name, comma_r = arg0, arg1
-            with self.files.open(0, name, filetype='ABP', mode='I') as f:
-                self.program.load(f)
+        if jumpnum is None:
+            try:
+                name, comma_r = next(args), next(args)
+                with self.files.open(0, name, filetype='ABP', mode='I') as f:
+                    self.program.load(f)
+            except StopIteration:
+                pass
+        list(args)
         self.interpreter.on_error = 0
         self.interpreter.error_handle_mode = False
         self.interpreter.clear_stacks_and_pointers()
         self._clear_all(close_files=not comma_r)
-        if isinstance(arg0, int):
-            jumpnum = arg0
-            if jumpnum not in self.program.line_numbers:
-                raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         if jumpnum is None:
             self.interpreter.set_pointer(True, 0)
         else:
+            if jumpnum not in self.program.line_numbers:
+                raise error.RunError(error.UNDEFINED_LINE_NUMBER)
             self.interpreter.jump(jumpnum)
 
     def end_(self, args):
