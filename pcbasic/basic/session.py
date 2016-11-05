@@ -176,7 +176,7 @@ class Session(object):
         self.expression_parser = expressions.ExpressionParser(
                 self.values, self.memory)
         self.statement_parser = statements.StatementParser(
-                self.strings, self.expression_parser, syntax)
+                self.expression_parser, syntax)
         # set up debugger
         self.debugger = debug.get_debugger(self, option_debug)
         # set up BASIC event handlers

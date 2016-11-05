@@ -23,7 +23,7 @@ from . import dos
 class StatementParser(object):
     """BASIC statements."""
 
-    def __init__(self, temp_string, expression_parser, syntax):
+    def __init__(self, expression_parser, syntax):
         """Initialise statement context."""
         # expression parser
         self.expression_parser = expression_parser
@@ -33,8 +33,6 @@ class StatementParser(object):
         self._syntax = syntax
         # initialise syntax parser tables
         self._init_syntax()
-        # temporary string context guard
-        self._temp_string = temp_string
 
     def parse_statement(self, ins):
         """Parse and execute a single statement."""
