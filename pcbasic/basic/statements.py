@@ -1382,24 +1382,22 @@ class StatementParser(object):
             yield self.parse_expression(ins)
         else:
             yield None
-            with self._temp_string:
-                if ins.peek() in set(string.digits) | set(tk.NUMBER):
-                    expr = self.expression_parser.read_number_literal(ins)
-                else:
-                    expr = self.parse_expression(ins)
-                yield expr
+            if ins.peek() in set(string.digits) | set(tk.NUMBER):
+                expr = self.expression_parser.read_number_literal(ins)
+            else:
+                expr = self.parse_expression(ins)
+            yield expr
             if isinstance(expr, values.String):
                 ins.require_read((',',))
                 yield self.parse_expression(ins)
+            elif not ins.skip_blank_read_if((',',)):
+                yield None
+                ins.require_end(error.IFC)
             else:
-                if not ins.skip_blank_read_if((',',)):
-                    yield None
-                    ins.require_end(error.IFC)
-                else:
-                    # parse dummy number rows setting
-                    yield self.parse_expression(ins, allow_empty=True)
-                    # trailing comma is accepted
-                    ins.skip_blank_read_if((',',))
+                # parse dummy number rows setting
+                yield self.parse_expression(ins, allow_empty=True)
+                # trailing comma is accepted
+                ins.skip_blank_read_if((',',))
         ins.require_end()
 
     def _parse_screen(self, ins):
