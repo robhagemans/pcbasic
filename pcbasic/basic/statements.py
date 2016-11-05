@@ -782,7 +782,7 @@ class StatementParser(object):
 
     def _parse_save(self, ins):
         """Parse SAVE syntax."""
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
         if ins.skip_blank_read_if((',',)):
             yield ins.require_read(('A', 'a', 'P', 'p'))
         else:
@@ -792,7 +792,7 @@ class StatementParser(object):
         """Parse LIST syntax."""
         yield self._parse_line_range(ins)
         if ins.skip_blank_read_if((',',)):
-            yield self._parse_temporary_string(ins)
+            yield self.parse_expression(ins)
             # ignore everything after file spec
             ins.skip_to(tk.END_LINE)
         else:
@@ -801,7 +801,7 @@ class StatementParser(object):
 
     def _parse_load(self, ins):
         """Parse LOAD syntax."""
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
         if ins.skip_blank_read_if((',',)):
             yield ins.require_read(('R', 'r'))
         else:
@@ -826,7 +826,7 @@ class StatementParser(object):
     def _parse_chain(self, ins):
         """Parse CHAIN syntax."""
         yield ins.skip_blank_read_if((tk.MERGE,)) is not None
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
         jumpnum, common_all, delete_range = None, False, True
         if ins.skip_blank_read_if((',',)):
             # check for an expression that indicates a line in the other program.

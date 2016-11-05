@@ -528,7 +528,7 @@ class Session(object):
     def list_(self, args):
         """LIST: output program lines."""
         line_range = next(args)
-        out = next(args)
+        out = self.strings.next_temporary(args)
         if out is not None:
             out = self.files.open(0, out, filetype='A', mode='O')
         list(args)
@@ -575,7 +575,8 @@ class Session(object):
 
     def load_(self, args):
         """LOAD: load program from file."""
-        name, comma_r = args
+        name = self.strings.next_temporary(args)
+        comma_r, = args
         with self.files.open(0, name, filetype='ABP', mode='I') as f:
             self.program.load(f)
         # reset stacks
@@ -591,7 +592,9 @@ class Session(object):
 
     def chain_(self, args):
         """CHAIN: load program and chain execution."""
-        merge, name, jumpnum = next(args), next(args), next(args)
+        merge = next(args)
+        name = self.strings.next_temporary(args)
+        jumpnum = next(args)
         if jumpnum is not None:
             jumpnum = values.to_int(jumpnum, unsigned=True)
         common_all, delete_lines = next(args), next(args)
@@ -619,8 +622,9 @@ class Session(object):
 
     def save_(self, args):
         """SAVE: save program to a file."""
-        name, mode = args
-        mode = (mode or 'B').upper()
+        name = self.strings.next_temporary(args)
+        mode = (next(args) or 'B').upper()
+        list(args)
         with self.files.open(0, name, filetype=mode, mode='O',
                             seg=self.memory.data_segment, offset=self.memory.code_start,
                             length=len(self.program.bytecode.getvalue())-1) as f:
