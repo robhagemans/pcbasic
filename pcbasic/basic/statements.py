@@ -1023,28 +1023,17 @@ class StatementParser(object):
     def _parse_paint(self, ins):
         """Parse PAINT syntax."""
         yield ins.skip_blank_read_if((tk.STEP,))
-        for c in self._parse_pair(ins):
-            yield c
-        if ins.skip_blank_read_if((',',)):
-            last = self.parse_expression(ins, allow_empty=True)
+        for last in self._parse_pair(ins):
             yield last
+        for count_args in range(3):
             if ins.skip_blank_read_if((',',)):
                 last = self.parse_expression(ins, allow_empty=True)
                 yield last
-                if ins.skip_blank_read_if((',',)):
-                    yield self.parse_expression(ins)
-                elif last is None:
-                    raise error.RunError(error.MISSING_OPERAND)
-                else:
-                    yield None
-            elif last is None:
-                raise error.RunError(error.MISSING_OPERAND)
             else:
-                yield None
-                yield None
-        else:
-            yield None
-            yield None
+                break
+        if last is None:
+            raise error.RunError(error.MISSING_OPERAND)
+        for _ in range(count_args, 3):
             yield None
 
     def _parse_view(self, ins):
