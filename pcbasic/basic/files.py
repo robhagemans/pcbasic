@@ -446,7 +446,7 @@ class Files(object):
             # neither LPRINT not a file number: print to screen
             output = self.devices.scrn_file
             screen = output.screen
-        formatter.Formatter(output, screen).format(args)
+        formatter.Formatter(output, self._memory, screen).format(args)
 
 
 ###############################################################################
@@ -637,4 +637,4 @@ class Devices(object):
 
     def lprint_(self, args):
         """LPRINT: Write expressions to printer LPT1."""
-        formatter.Formatter(self.lpt1_file).format(args)
+        formatter.Formatter(self.lpt1_file, self._memory).format(args)

@@ -15,9 +15,10 @@ from . import tokens as tk
 class Formatter(object):
     """Output string formatter."""
 
-    def __init__(self, output, screen=None):
+    def __init__(self, output, memory, screen=None):
         """Initialise."""
         self._screen = screen
+        self._memory = memory
         self._output = output
 
     def format(self, args):
@@ -25,8 +26,6 @@ class Formatter(object):
         newline = True
         for d, value in args:
             if d == tk.USING:
-                if value == '':
-                    raise error.RunError(error.IFC)
                 newline = self._print_using(value, args)
                 break
             elif d == ',':
@@ -80,6 +79,9 @@ class Formatter(object):
 
     def _print_using(self, format_expr, args):
         """PRINT USING clause: Write expressions to screen or file using a formatting string."""
+        format_expr = self._memory.strings.next_temporary(args)
+        if format_expr == '':
+            raise error.RunError(error.IFC)
         fors = FormatParser(format_expr)
         newline, format_chars = True, False
         try:

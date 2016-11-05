@@ -1464,11 +1464,9 @@ class StatementParser(object):
                 ins.seek(-len(d), 1)
                 break
             elif d == tk.USING:
-                format_expr = self._parse_temporary_string(ins)
-                if format_expr == '':
-                    raise error.RunError(error.IFC)
+                yield (tk.USING, None)
+                yield self.parse_expression(ins)
                 ins.require_read((';',))
-                yield (tk.USING, format_expr)
                 has_args = False
                 while True:
                     with self._temp_string:
