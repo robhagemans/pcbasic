@@ -15,8 +15,7 @@ from contextlib import contextmanager
 
 from . import error
 from . import tokens as tk
-from . import tokeniser
-from . import lister
+from . import converter
 from . import codestream
 from . import events
 from . import program
@@ -90,8 +89,8 @@ class Session(object):
         self.arrays = self.memory.arrays
         # prepare tokeniser
         token_keyword = tk.TokenKeywordDict(syntax)
-        self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
-        self.lister = lister.Lister(self.values, token_keyword)
+        self.tokeniser = converter.Tokeniser(self.values, token_keyword)
+        self.lister = converter.Lister(self.values, token_keyword)
         # initialise the program
         bytecode = codestream.TokenisedStream(self.memory.code_start)
         self.program = program.Program(

@@ -10,9 +10,9 @@ import string
 import struct
 import io
 
-from . import tokens as tk
-from . import codestream
-from . import values
+from .. import tokens as tk
+from .. import codestream
+from .. import values
 
 
 class PlainTextStream(codestream.CodeStream):

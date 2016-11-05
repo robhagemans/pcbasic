@@ -13,7 +13,7 @@ import io
 from . import error
 from . import values
 from . import tokens as tk
-from . import protect
+from . import converter
 
 class Program(object):
     """BASIC program."""
@@ -290,7 +290,7 @@ class Program(object):
             # protected file
             self.bytecode.seek(1)
             self.protected = self.allow_protect
-            protect.unprotect(g, self.bytecode)
+            converter.unprotect(g, self.bytecode)
         elif g.filetype == 'A':
             # assume ASCII file
             # anything but numbers or whitespace: Direct Statement in File
@@ -330,7 +330,7 @@ class Program(object):
             g.write(self.bytecode.read())
         elif mode == 'P':
             # protected mode
-            protect.protect(self.bytecode, g)
+            converter.protect(self.bytecode, g)
         else:
             # ascii mode
             while True:
