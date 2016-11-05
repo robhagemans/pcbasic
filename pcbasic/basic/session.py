@@ -37,7 +37,6 @@ from . import codepage as cp
 from . import scalars
 from . import arrays
 from . import values
-from . import expressions
 from . import statements
 from . import devices
 
@@ -197,8 +196,7 @@ class Session(object):
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
         # build function table (depends on Memory having been initialised)
-        self.parser.expression_parser.init_functions(self)
-        self.parser.init_statements(self)
+        self.parser.init_callbacks(self)
 
     def __enter__(self):
         """Context guard."""
@@ -216,9 +214,9 @@ class Session(object):
     def __setstate__(self, pickle_dict):
         """Unpickle and resume the session."""
         self.__dict__.update(pickle_dict)
-        # build function table (depends on Memory having been initialised)
-        self.parser.expression_parser.init_functions(self)
-        self.parser.init_statements(self)
+        # re-assign callbacks (not picklable)
+        self.parser.init_callbacks(self)
+        # reopen keyboard, in case we quit because it was closed
         self.input_methods.keyboard._input_closed = False
         # suppress double prompt
         if not self.interpreter._parse_mode:
@@ -470,7 +468,7 @@ class Session(object):
         self.memory.clear(preserve_common, preserve_all, preserve_deftype)
         if not preserve_all:
             # functions are cleared except when CHAIN ... ALL is specified
-            self.parser.expression_parser.user_functions.clear()
+            self.parser.user_functions.clear()
         # Resets STRIG to off
         self.input_methods.stick.is_on = False
         # stop all sound

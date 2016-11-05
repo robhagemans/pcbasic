@@ -19,7 +19,7 @@ class Interpreter(object):
     """BASIC interpreter."""
 
     def __init__(self, debugger, input_methods, screen, devices, sound,
-                values, memory, scalars, program, statement_parser, basic_events):
+                values, memory, scalars, program, parser, basic_events):
         """Initialise interpreter."""
         self._debugger = debugger
         self._input_methods = input_methods
@@ -37,7 +37,7 @@ class Interpreter(object):
         self.direct_line = codestream.TokenisedStream()
         self.current_statement = 0
         # statement syntax parser
-        self.statement_parser = statement_parser
+        self.parser = parser
         # line number tracing
         self.tron = False
         # pointer position: False for direct line, True for program
@@ -93,7 +93,7 @@ class Interpreter(object):
                     self._debugger.debug_step(token)
                 elif c != ':':
                     ins.seek(-len(c), 1)
-                self.statement_parser.parse_statement(ins)
+                self.parser.parse_statement(ins)
             except error.RunError as e:
                 self.trap_error(e)
 
@@ -127,7 +127,7 @@ class Interpreter(object):
         # if we're in a program, save pointer
         pos = -1
         if self.run_mode:
-            if self.statement_parser.redo_on_break:
+            if self.parser.redo_on_break:
                 pos = self.current_statement
             else:
                 self._program.bytecode.skip_to(tk.END_STATEMENT)
@@ -136,7 +136,7 @@ class Interpreter(object):
         self._screen.write_error_message(e.message, self._program.get_line_number(pos))
         self.set_parse_mode(False)
         self.input_mode = False
-        self.statement_parser.redo_on_break = False
+        self.parser.redo_on_break = False
 
     ###########################################################################
     # clear state
@@ -401,7 +401,7 @@ class Interpreter(object):
         # check var name for NEXT
         # no-var only allowed in standalone NEXT
         if ins.skip_blank() not in tk.END_STATEMENT:
-            varname2 = self._memory.complete_name(self.statement_parser.parse_name(ins))
+            varname2 = self._memory.complete_name(self.parser.parse_name(ins))
         else:
             varname2 = None
         # get position and line number just after the matching variable in NEXT
@@ -475,7 +475,7 @@ class Interpreter(object):
         """Check condition of while-loop."""
         ins.seek(whilepos)
         # WHILE condition is zero?
-        if not values.pass_number(self.statement_parser.parse_expression(ins)).is_zero():
+        if not values.pass_number(self.parser.parse_expression(ins)).is_zero():
             # statement start is before WHILE token
             self.current_statement = whilepos-2
             ins.require_end()
@@ -643,7 +643,7 @@ class Interpreter(object):
         if not self.run_mode:
             raise error.RunError(error.ILLEGAL_DIRECT)
         # arguments and expression are being read and parsed by UserFunctionManager
-        self.statement_parser.expression_parser.user_functions.define(fnname, self._program_code)
+        self.parser.user_functions.define(fnname, self._program_code)
 
     def llist_(self, args):
         """LLIST: output program lines to LPT1: """

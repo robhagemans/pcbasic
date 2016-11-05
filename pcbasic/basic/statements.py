@@ -6,17 +6,16 @@ Statement parser
 This file is released under the GNU GPL version 3 or later.
 """
 
-import os
 import logging
 import string
 import struct
-import io
 from functools import partial
 
 from . import error
 from . import values
 from . import tokens as tk
 from . import expressions
+from .expressions import userfunctions
 
 
 class Parser(object):
@@ -24,14 +23,35 @@ class Parser(object):
 
     def __init__(self, values, memory, syntax):
         """Initialise statement context."""
-        # expression parser
-        self.expression_parser = expressions.ExpressionParser(values, memory)
         # re-execute current statement after Break
         self.redo_on_break = False
+        # expression parser
+        self._expression_parser = expressions.ExpressionParser(values, memory)
+        self.user_functions = self._expression_parser.user_functions
         # syntax: advanced, pcjr, tandy
         self._syntax = syntax
         # initialise syntax parser tables
         self._init_syntax()
+
+    def __getstate__(self):
+        """Pickle."""
+        pickle_dict = self.__dict__.copy()
+        # can't be pickled
+        pickle_dict['_simple'] = None
+        pickle_dict['_complex'] = None
+        pickle_dict['_extensions'] = None
+        pickle_dict['_callbacks'] = None
+        return pickle_dict
+
+    def __setstate__(self, pickle_dict):
+        """Unpickle."""
+        self.__dict__.update(pickle_dict)
+        self._init_syntax()
+
+    def init_callbacks(self, session):
+        """Assign statement and function callbacks."""
+        self.init_statements(session)
+        self._expression_parser.init_functions(session)
 
     def parse_statement(self, ins):
         """Parse and execute a single statement."""
@@ -82,64 +102,9 @@ class Parser(object):
         if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
             return None
         self.redo_on_break = True
-        val = self.expression_parser.parse(ins)
+        val = self._expression_parser.parse(ins)
         self.redo_on_break = False
         return val
-
-    def _parse_bracket(self, ins):
-        """Compute the value of the bracketed expression."""
-        ins.require_read(('(',))
-        # we'll get a Syntax error, not a Missing operand, if we close with )
-        val = self.parse_expression(ins)
-        ins.require_read((')',))
-        return val
-
-    def _parse_variable(self, ins):
-        """Helper function: parse a scalar or array element."""
-        name = ins.read_name()
-        error.throw_if(not name, error.STX)
-        self.redo_on_break = True
-        indices = self.expression_parser.parse_indices(ins)
-        self.redo_on_break = False
-        return name, indices
-
-    def _parse_jumpnum(self, ins):
-        """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
-        ins.require_read((tk.T_UINT,))
-        token = ins.read(2)
-        assert len(token) == 2, 'Bytecode truncated in line number pointer'
-        return struct.unpack('<H', token)[0]
-
-    def _parse_optional_jumpnum(self, ins):
-        """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
-        # no line number
-        if ins.skip_blank() != tk.T_UINT:
-            return None
-        return self._parse_jumpnum(ins)
-
-    def _parse_line_range(self, ins):
-        """Parse a line number range as in LIST, DELETE."""
-        from_line = self._parse_jumpnum_or_dot(ins, allow_empty=True)
-        if ins.skip_blank_read_if((tk.O_MINUS,)):
-            to_line = self._parse_jumpnum_or_dot(ins, allow_empty=True)
-        else:
-            to_line = from_line
-        return (from_line, to_line)
-
-    def _parse_jumpnum_or_dot(self, ins, allow_empty=False, err=error.STX):
-        """Parse jump target; returns int, None or '.'"""
-        c = ins.skip_blank_read()
-        if c == tk.T_UINT:
-            token = ins.read(2)
-            assert len(token) == 2, 'bytecode truncated in line number pointer'
-            return struct.unpack('<H', token)[0]
-        elif c == '.':
-            return '.'
-        else:
-            if allow_empty:
-                ins.seek(-len(c), 1)
-                return None
-            raise error.RunError(err)
 
     ###########################################################################
 
@@ -436,20 +401,63 @@ class Parser(object):
             '_DEBUG': session.debugger.debug_,
         }
 
-    def __getstate__(self):
-        """Pickle."""
-        pickle_dict = self.__dict__.copy()
-        # can't be pickled
-        pickle_dict['_simple'] = None
-        pickle_dict['_complex'] = None
-        pickle_dict['_extensions'] = None
-        pickle_dict['_callbacks'] = None
-        return pickle_dict
+    ###########################################################################
+    # auxiliary functions
 
-    def __setstate__(self, pickle_dict):
-        """Unpickle."""
-        self.__dict__.update(pickle_dict)
-        self._init_syntax()
+    def _parse_bracket(self, ins):
+        """Compute the value of the bracketed expression."""
+        ins.require_read(('(',))
+        # we'll get a Syntax error, not a Missing operand, if we close with )
+        val = self.parse_expression(ins)
+        ins.require_read((')',))
+        return val
+
+    def _parse_variable(self, ins):
+        """Helper function: parse a scalar or array element."""
+        name = ins.read_name()
+        error.throw_if(not name, error.STX)
+        self.redo_on_break = True
+        indices = self._expression_parser.parse_indices(ins)
+        self.redo_on_break = False
+        return name, indices
+
+    def _parse_jumpnum(self, ins):
+        """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
+        ins.require_read((tk.T_UINT,))
+        token = ins.read(2)
+        assert len(token) == 2, 'Bytecode truncated in line number pointer'
+        return struct.unpack('<H', token)[0]
+
+    def _parse_optional_jumpnum(self, ins):
+        """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
+        # no line number
+        if ins.skip_blank() != tk.T_UINT:
+            return None
+        return self._parse_jumpnum(ins)
+
+    def _parse_line_range(self, ins):
+        """Parse a line number range as in LIST, DELETE."""
+        from_line = self._parse_jumpnum_or_dot(ins, allow_empty=True)
+        if ins.skip_blank_read_if((tk.O_MINUS,)):
+            to_line = self._parse_jumpnum_or_dot(ins, allow_empty=True)
+        else:
+            to_line = from_line
+        return (from_line, to_line)
+
+    def _parse_jumpnum_or_dot(self, ins, allow_empty=False, err=error.STX):
+        """Parse jump target; returns int, None or '.'"""
+        c = ins.skip_blank_read()
+        if c == tk.T_UINT:
+            token = ins.read(2)
+            assert len(token) == 2, 'bytecode truncated in line number pointer'
+            return struct.unpack('<H', token)[0]
+        elif c == '.':
+            return '.'
+        else:
+            if allow_empty:
+                ins.seek(-len(c), 1)
+                return None
+            raise error.RunError(err)
 
     ###########################################################################
     # no arguments
@@ -1367,7 +1375,7 @@ class Parser(object):
         else:
             yield None
             if ins.peek() in set(string.digits) | set(tk.NUMBER):
-                expr = self.expression_parser.read_number_literal(ins)
+                expr = self._expression_parser.read_number_literal(ins)
             else:
                 expr = self.parse_expression(ins)
             yield expr
