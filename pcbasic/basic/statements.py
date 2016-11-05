@@ -97,15 +97,6 @@ class StatementParser(object):
         ins.require_read((')',))
         return val
 
-    def _parse_temporary_string(self, ins, allow_empty=False):
-        """Parse an expression and return as Python value. Store strings in a temporary."""
-        # if allow_empty, a missing value is returned as an empty string
-        with self._temp_string:
-            expr = self.parse_expression(ins, allow_empty)
-            if expr:
-                return values.pass_string(expr).to_value()
-            return None
-
     def _parse_variable(self, ins):
         """Helper function: parse a scalar or array element."""
         name = ins.read_name()
@@ -1372,17 +1363,12 @@ class StatementParser(object):
             ins.require_read((',',))
         else:
             yield None
-        with self._temp_string:
-            expr = self.parse_expression(ins, allow_empty=True)
-            if expr is not None:
-                yield expr
-        if expr is not None:
+        if ins.skip_blank() not in tk.END_STATEMENT:
             while True:
+                yield self.parse_expression(ins)
                 if not ins.skip_blank_read_if((',', ';')):
-                    ins.require_end()
                     break
-                with self._temp_string:
-                    yield self.parse_expression(ins)
+            ins.require_end()
 
     def _parse_width(self, ins):
         """Parse WIDTH syntax."""

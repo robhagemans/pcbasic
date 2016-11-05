@@ -385,18 +385,20 @@ class Files(object):
             output = self.get(file_number, 'OAR')
         outstrs = []
         try:
-            for expr in args:
-                if isinstance(expr, values.String):
-                    outstrs.append('"%s"' % expr.to_str())
-                else:
-                    outstrs.append(values.to_repr(expr, leading_space=False, type_sign=False))
+            while True:
+                with self._memory.strings:
+                    expr = next(args)
+                    if isinstance(expr, values.String):
+                        outstrs.append('"%s"' % expr.to_str())
+                    else:
+                        outstrs.append(values.to_repr(expr, leading_space=False, type_sign=False))
+        except StopIteration:
+            # write the whole thing as one thing (this affects line breaks)
+            output.write_line(','.join(outstrs))
         except error.RunError:
             if outstrs:
                 output.write(','.join(outstrs) + ',')
             raise
-        else:
-            # write the whole thing as one thing (this affects line breaks)
-            output.write_line(','.join(outstrs))
 
     def width_(self, args):
         """WIDTH: set width of screen or device."""
