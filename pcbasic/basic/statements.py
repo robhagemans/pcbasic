@@ -15,18 +15,17 @@ from functools import partial
 
 from . import error
 from . import values
-from . import ports
 from . import tokens as tk
-from . import dos
+from . import expressions
 
 
-class StatementParser(object):
-    """BASIC statements."""
+class Parser(object):
+    """BASIC statement parser."""
 
-    def __init__(self, expression_parser, syntax):
+    def __init__(self, values, memory, syntax):
         """Initialise statement context."""
         # expression parser
-        self.expression_parser = expression_parser
+        self.expression_parser = expressions.ExpressionParser(values, memory)
         # re-execute current statement after Break
         self.redo_on_break = False
         # syntax: advanced, pcjr, tandy

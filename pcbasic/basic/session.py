@@ -172,11 +172,8 @@ class Session(object):
         ######################################################################
         # interpreter
         ######################################################################
-        # initialise the expression parser
-        self.expression_parser = expressions.ExpressionParser(
-                self.values, self.memory)
-        self.statement_parser = statements.StatementParser(
-                self.expression_parser, syntax)
+        # initialise the parser
+        self.parser = statements.Parser(self.values, self.memory, syntax)
         # set up debugger
         self.debugger = debug.get_debugger(self, option_debug)
         # set up BASIC event handlers
@@ -186,7 +183,7 @@ class Session(object):
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
                 self.debugger, self.input_methods, self.screen, self.devices, self.sound,
-                self.values, self.memory, self.scalars, self.program, self.statement_parser, self.basic_events)
+                self.values, self.memory, self.scalars, self.program, self.parser, self.basic_events)
         # PLAY parser
         self.play_parser = sound.PlayParser(self.sound, self.memory, self.values)
         ######################################################################
@@ -200,8 +197,8 @@ class Session(object):
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
         # build function table (depends on Memory having been initialised)
-        self.expression_parser.init_functions(self)
-        self.statement_parser.init_statements(self)
+        self.parser.expression_parser.init_functions(self)
+        self.parser.init_statements(self)
 
     def __enter__(self):
         """Context guard."""
@@ -220,8 +217,8 @@ class Session(object):
         """Unpickle and resume the session."""
         self.__dict__.update(pickle_dict)
         # build function table (depends on Memory having been initialised)
-        self.expression_parser.init_functions(self)
-        self.statement_parser.init_statements(self)
+        self.parser.expression_parser.init_functions(self)
+        self.parser.init_statements(self)
         self.input_methods.keyboard._input_closed = False
         # suppress double prompt
         if not self.interpreter._parse_mode:
@@ -277,7 +274,7 @@ class Session(object):
             tokens = self.tokeniser.tokenise_line(b'?' + expression)
             # skip : and print token and parse expression
             tokens.read(2)
-            return self.expression_parser.parse(tokens).to_value()
+            return self.parser.parse_expression(tokens).to_value()
         return None
 
     def set_variable(self, name, value):
@@ -473,7 +470,7 @@ class Session(object):
         self.memory.clear(preserve_common, preserve_all, preserve_deftype)
         if not preserve_all:
             # functions are cleared except when CHAIN ... ALL is specified
-            self.expression_parser.user_functions.clear()
+            self.parser.expression_parser.user_functions.clear()
         # Resets STRIG to off
         self.input_methods.stick.is_on = False
         # stop all sound
@@ -708,7 +705,7 @@ class Session(object):
             prompt += '? '
         # read the input
         self.interpreter.input_mode = True
-        self.statement_parser.redo_on_break = True
+        self.parser.redo_on_break = True
         # readvar is a list of (name, indices) tuples
         # we return a list of (name, indices, values) tuples
         while True:
@@ -742,7 +739,7 @@ class Session(object):
             else:
                 varlist = [r + [v] for r, v in zip(var, values)]
                 break
-        self.statement_parser.redo_on_break = False
+        self.parser.redo_on_break = False
         self.interpreter.input_mode = False
         for v in varlist:
             self.memory.set_variable(*v)
@@ -784,10 +781,10 @@ class Session(object):
                 raise error.RunError(error.INPUT_PAST_END)
         else:
             self.interpreter.input_mode = True
-            self.statement_parser.redo_on_break = True
+            self.parser.redo_on_break = True
             self.screen.write(prompt)
             line = self.editor.wait_screenline(write_endl=newline)
-            self.statement_parser.redo_on_break = False
+            self.parser.redo_on_break = False
             self.interpreter.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
 
