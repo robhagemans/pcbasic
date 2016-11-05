@@ -77,7 +77,23 @@ class Files(object):
 
     def open_(self, args):
         """OPEN: open a data file."""
-        number, name, mode, reclen, access, lock = args
+        first_expr, first_syntax = next(args), next(args)
+        if first_syntax:
+            mode = first_expr[:1].upper()
+            if mode not in ('I', 'O', 'A', 'R'):
+                raise error.RunError(error.BAD_FILE_MODE)
+            number = values.to_int(next(args))
+            error.range_check(0, 255, number)
+            name, reclen = args
+            access, lock = None, None
+        else:
+            name = first_expr
+            mode, access, lock = next(args), next(args), next(args)
+            # AS file number clause
+            number = values.to_int(next(args))
+            error.range_check(0, 255, number)
+            # LEN clause
+            reclen, = args
         mode = mode or 'R'
         default_access_modes = {'I':'R', 'O':'W', 'A':'RW', 'R':'RW'}
         access = access or default_access_modes[mode]

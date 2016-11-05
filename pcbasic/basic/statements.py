@@ -106,14 +106,6 @@ class StatementParser(object):
                 return values.pass_string(expr).to_value()
             return None
 
-    def _parse_file_number(self, ins, opt_hash):
-        """Read a file number."""
-        if not ins.skip_blank_read_if(('#',)) and not opt_hash:
-            return None
-        number = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, number)
-        return number
-
     def _parse_variable(self, ins):
         """Helper function: parse a scalar or array element."""
         name = ins.read_name()
@@ -867,61 +859,63 @@ class StatementParser(object):
 
     def _parse_open(self, ins):
         """Parse OPEN syntax."""
-        first_expr = self._parse_temporary_string(ins)
-        if ins.skip_blank_read_if((',',)):
-            args = self._parse_open_first(ins, first_expr)
+        yield self._parse_temporary_string(ins)
+        first_syntax = ins.skip_blank_read_if((',',))
+        yield first_syntax
+        if first_syntax:
+            args = self._parse_open_first(ins)
         else:
-            args = self._parse_open_second(ins, first_expr)
+            args = self._parse_open_second(ins)
         for a in args:
             yield a
 
-    def _parse_open_first(self, ins, first_expr):
+    def _parse_open_first(self, ins):
         """Parse OPEN first ('old') syntax."""
-        mode = first_expr[:1].upper()
-        if mode not in ('I', 'O', 'A', 'R'):
-            raise error.RunError(error.BAD_FILE_MODE)
-        number = self._parse_file_number(ins, opt_hash=True)
+        ins.skip_blank_read_if(('#',))
+        yield self.parse_expression(ins)
         ins.require_read((',',))
-        name = self._parse_temporary_string(ins)
-        reclen = None
+        yield self._parse_temporary_string(ins)
         if ins.skip_blank_read_if((',',)):
-            reclen = self.parse_expression(ins)
-        return number, name, mode, reclen, None, None
+            yield self.parse_expression(ins)
+        else:
+            yield None
 
-    def _parse_open_second(self, ins, first_expr):
+    def _parse_open_second(self, ins):
         """Parse OPEN second ('new') syntax."""
-        name = first_expr
-        # FOR clause
-        mode = None
+        # mode clause
         if ins.skip_blank_read_if((tk.FOR,)):
             # read mode word
             if ins.skip_blank_read_if((tk.INPUT,)):
-                mode = 'I'
+                yield 'I'
             else:
                 mode_dict = {tk.W_OUTPUT:'O', tk.W_RANDOM:'R', tk.W_APPEND:'A'}
                 word = ins.skip_blank_read_if(mode_dict, 6)
                 if word is not None:
-                    mode = mode_dict[word]
+                    yield mode_dict[word]
                 else:
                     raise error.RunError(error.STX)
+        else:
+            yield None
         # ACCESS clause
-        access = None
         if ins.skip_blank_read_if((tk.W_ACCESS,), 6):
-            access = self._parse_read_write(ins)
+            yield self._parse_read_write(ins)
+        else:
+            yield None
         # LOCK clause
         if ins.skip_blank_read_if((tk.LOCK,), 2):
-            lock = self._parse_read_write(ins)
+            yield self._parse_read_write(ins)
         else:
-            lock = ins.skip_blank_read_if((tk.W_SHARED), 6)
+            yield ins.skip_blank_read_if((tk.W_SHARED), 6)
         # AS file number clause
         ins.require_read((tk.W_AS,))
-        number = self._parse_file_number(ins, opt_hash=True)
+        ins.skip_blank_read_if(('#',))
+        yield self.parse_expression(ins)
         # LEN clause
-        reclen = None
         if ins.skip_blank_read_if((tk.LEN,), 2):
             ins.require_read(tk.O_EQ)
-            reclen = self.parse_expression(ins)
-        return number, name, mode, reclen, access, lock
+            yield self.parse_expression(ins)
+        else:
+            yield None
 
     def _parse_read_write(self, ins):
         """Parse access mode for OPEN."""
