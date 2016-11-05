@@ -11,11 +11,11 @@ import Queue
 import string
 import datetime
 
-from . import error
+from .base import error
+from .base import signals
+from .base import tokens as tk
 from . import mlparser
-from . import signals
 from . import values
-from . import tokens as tk
 
 
 class Sound(object):

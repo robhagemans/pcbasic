@@ -9,9 +9,9 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 import logging
 
+from .base import error
 from . import values
 from . import devices
-from . import error
 
 
 ###############################################################################

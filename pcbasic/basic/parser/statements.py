@@ -11,9 +11,9 @@ import string
 import struct
 from functools import partial
 
-from .. import error
+from ..base import error
+from ..base import tokens as tk
 from .. import values
-from .. import tokens as tk
 from . import expressions
 from . import userfunctions
 

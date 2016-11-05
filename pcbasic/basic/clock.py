@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import datetime
 
-from . import error
+from .base import error
 
 
 class Clock(object):

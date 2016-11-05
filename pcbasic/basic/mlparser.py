@@ -8,9 +8,9 @@ This file is released under the GNU GPL version 3 or later.
 
 import string
 
-from . import error
+from .base import error
+from .base import codestream
 from . import values
-from . import codestream
 
 
 class MLParser(codestream.CodeStream):

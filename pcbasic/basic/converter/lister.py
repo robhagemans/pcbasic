@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import string
 import struct
 
-from .. import tokens as tk
+from ..base import tokens as tk
 from .. import values
 
 

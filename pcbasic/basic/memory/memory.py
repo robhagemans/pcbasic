@@ -9,10 +9,10 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 from contextlib import contextmanager
 
-from .. import error
+from ..base import error
+from ..base import tokens as tk
 from .. import values
 from .. import devices
-from .. import tokens as tk
 from . import scalars
 from . import arrays
 

@@ -12,8 +12,8 @@ import Queue
 import sys
 import platform
 
+from .base import signals
 from . import codepage as cp
-from . import signals
 
 
 def get_redirection(codepage, stdio, input_file, output_file, append, queue):

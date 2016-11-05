@@ -8,4 +8,5 @@ This file is released under the GNU GPL version 3 or later.
 from .codepage import codepages
 from .font import fonts
 from .session import Session
-from .error import *
+from .base.error import *
+from .base import signals, scancode, eascii

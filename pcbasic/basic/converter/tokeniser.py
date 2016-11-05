@@ -10,8 +10,8 @@ import string
 import struct
 import io
 
-from .. import tokens as tk
-from .. import codestream
+from ..base import tokens as tk
+from ..base import codestream
 from .. import values
 
 

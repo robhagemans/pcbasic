@@ -10,9 +10,9 @@ import io
 import os
 import struct
 
-from . import error
+from .base import error
+from .base.eascii import as_bytes as ea
 from . import values
-from .eascii import as_bytes as ea
 
 def nullstream():
     return open(os.devnull, 'r+')

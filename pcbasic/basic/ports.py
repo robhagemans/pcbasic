@@ -39,7 +39,7 @@ try:
 except Exception:
     parallel = None
 
-from . import error
+from .base import error
 from . import devices
 from . import printer
 

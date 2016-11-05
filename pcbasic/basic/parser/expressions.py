@@ -13,12 +13,12 @@ import string
 import struct
 import types
 
-from . import operators as op
-from . import userfunctions
-from .. import tokens as tk
-from .. import error
+from ..base import tokens as tk
+from ..base import error
 from .. import values
 from .. import dos
+from . import operators as op
+from . import userfunctions
 
 
 # AIMS

@@ -9,9 +9,9 @@ This file is released under the GNU GPL version 3 or later.
 import string
 import struct
 
-from . import error
-from . import tokens as tk
-from . import codestream
+from .base import error
+from .base import tokens as tk
+from .base import codestream
 from . import values
 
 

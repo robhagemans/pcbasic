@@ -10,7 +10,7 @@ import struct
 import logging
 from operator import itemgetter
 
-from .. import error
+from ..base import error
 from . import numbers
 
 

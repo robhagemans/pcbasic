@@ -25,8 +25,8 @@ This file is released under the GNU GPL version 3.
 import struct
 import math
 
-from .. import tokens as tk
-from .. import error
+from ..base import tokens as tk
+from ..base import error
 
 
 # for to_str

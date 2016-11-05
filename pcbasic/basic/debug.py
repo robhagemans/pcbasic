@@ -14,8 +14,8 @@ import platform
 import struct
 import io
 
+from .base import error
 from . import values
-from . import error
 
 
 def get_debugger(session, option_debug):

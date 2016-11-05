@@ -19,7 +19,7 @@ try:
 except ImportError:
     pexpect = None
 
-from . import error
+from .base import error
 from . import values
 
 

@@ -14,10 +14,10 @@ except ImportError:
 import math
 import io
 
-from . import error
+from .base import error
+from .base import tokens as tk
 from . import values
 from . import mlparser
-from . import tokens as tk
 
 # degree-to-radian conversion factor
 deg_to_rad = math.pi / 180.

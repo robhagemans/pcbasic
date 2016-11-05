@@ -13,13 +13,13 @@ import io
 import Queue
 from contextlib import contextmanager
 
-from . import error
-from . import tokens as tk
+from .base import error
+from .base import tokens as tk
+from .base import signals
+from .base import codestream
 from . import converter
-from . import codestream
 from . import events
 from . import program
-from . import signals
 from . import display
 from . import editor
 from . import inputmethods

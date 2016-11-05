@@ -9,10 +9,10 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 from itertools import izip
 
-from .. import error
-from .. import codestream
+from ..base import error
+from ..base import codestream
+from ..base import tokens as tk
 from .. import values
-from .. import tokens as tk
 
 
 class UserFunction(object):

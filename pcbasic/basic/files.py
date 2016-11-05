@@ -13,13 +13,13 @@ import logging
 import platform
 import io
 
-from . import error
+from .base import error
+from .base import tokens as tk
 from . import devices
 from . import cassette
 from . import disk
 from . import ports
 from . import values
-from . import tokens as tk
 from . import formatter
 
 # MS-DOS device files

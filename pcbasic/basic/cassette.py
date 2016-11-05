@@ -14,9 +14,9 @@ import string
 from chunk import Chunk
 import io
 
-from . import error
+from .base import error
+from .base import tokens as tk
 from . import devices
-from . import tokens as tk
 
 token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 type_to_token = dict((reversed(item) for item in token_to_type.items()))

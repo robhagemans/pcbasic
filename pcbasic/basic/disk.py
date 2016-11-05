@@ -21,8 +21,8 @@ if platform.system() == b'Windows':
     import win32api
     import ctypes
 
-from .bytestream import ByteStream
-from . import error
+from .base.bytestream import ByteStream
+from .base import error
 from . import values
 from . import devices
 

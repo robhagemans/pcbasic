@@ -11,8 +11,8 @@ import string
 import struct
 import functools
 
-from .. import error
-from .. import tokens as tk
+from ..base import error
+from ..base import tokens as tk
 from . import numbers
 from . import strings
 

@@ -6,10 +6,10 @@ Formatted output handling
 This file is released under the GNU GPL version 3 or later.
 """
 
-from . import codestream
+from .base import codestream
+from .base import error
+from .base import tokens as tk
 from . import values
-from . import error
-from . import tokens as tk
 
 
 class Formatter(object):

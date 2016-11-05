@@ -10,9 +10,9 @@ import logging
 import struct
 import io
 
-from . import error
+from .base import error
+from .base import tokens as tk
 from . import values
-from . import tokens as tk
 from . import converter
 
 class Program(object):

@@ -11,13 +11,13 @@ import logging
 import time
 import Queue
 
-from . import error
-from . import scancode
+from .base import error
+from .base import scancode
+from .base import tokens as tk
+from .base import signals
+from .base.eascii import as_bytes as ea
+from .base.eascii import as_unicode as uea
 from . import values
-from . import tokens as tk
-from . import signals
-from .eascii import as_bytes as ea
-from .eascii import as_unicode as uea
 
 
 # bit flags for modifier keys
