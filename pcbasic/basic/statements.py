@@ -543,7 +543,7 @@ class StatementParser(object):
             yield self._parse_jumpnum(ins)
         elif c not in tk.END_STATEMENT:
             yield None
-            yield self._parse_temporary_string(ins)
+            yield self.parse_expression(ins)
             if ins.skip_blank_read_if((',',)):
                 ins.require_read(('R',))
                 yield True

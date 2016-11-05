@@ -656,7 +656,8 @@ class Session(object):
         comma_r = False
         if jumpnum is None:
             try:
-                name, comma_r = next(args), next(args)
+                name = self.strings.next_temporary(args)
+                comma_r = next(args)
                 with self.files.open(0, name, filetype='ABP', mode='I') as f:
                     self.program.load(f)
             except StopIteration:
