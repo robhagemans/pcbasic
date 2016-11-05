@@ -212,7 +212,8 @@ class Files(object):
         num = values.to_int(next(args))
         error.range_check(0, 255, num)
         thefile = self.get(num)
-        control_string, = args
+        control_string = self._memory.strings.next_temporary(args)
+        list(args)
         logging.warning("IOCTL statement not implemented.")
         raise error.RunError(error.IFC)
 

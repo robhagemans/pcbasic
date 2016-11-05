@@ -970,7 +970,7 @@ class StatementParser(object):
         ins.skip_blank_read_if(('#',))
         yield self.parse_expression(ins)
         ins.require_read((',',))
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
 
     def _parse_put_get_file(self, ins):
         """Parse PUT and GET syntax."""
