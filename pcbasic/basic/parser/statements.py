@@ -11,11 +11,11 @@ import string
 import struct
 from functools import partial
 
-from . import error
-from . import values
-from . import tokens as tk
+from .. import error
+from .. import values
+from .. import tokens as tk
 from . import expressions
-from .expressions import userfunctions
+from . import userfunctions
 
 
 class Parser(object):

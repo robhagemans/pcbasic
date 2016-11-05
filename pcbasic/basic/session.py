@@ -37,7 +37,7 @@ from . import codepage as cp
 from . import scalars
 from . import arrays
 from . import values
-from . import statements
+from . import parser
 from . import devices
 
 
@@ -172,7 +172,7 @@ class Session(object):
         # interpreter
         ######################################################################
         # initialise the parser
-        self.parser = statements.Parser(self.values, self.memory, syntax)
+        self.parser = parser.Parser(self.values, self.memory, syntax)
         # set up debugger
         self.debugger = debug.get_debugger(self, option_debug)
         # set up BASIC event handlers
