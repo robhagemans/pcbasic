@@ -1027,29 +1027,27 @@ class StatementParser(object):
         yield ins.skip_blank_read_if((tk.STEP,))
         for c in self._parse_pair(ins):
             yield c
-        with self._temp_string:
+        if ins.skip_blank_read_if((',',)):
+            last = self.parse_expression(ins, allow_empty=True)
+            yield last
             if ins.skip_blank_read_if((',',)):
                 last = self.parse_expression(ins, allow_empty=True)
                 yield last
                 if ins.skip_blank_read_if((',',)):
-                    last = self.parse_expression(ins, allow_empty=True)
-                    yield last
-                    if ins.skip_blank_read_if((',',)):
-                        with self._temp_string:
-                            yield self.parse_expression(ins)
-                    elif last is None:
-                        raise error.RunError(error.MISSING_OPERAND)
-                    else:
-                        yield None
+                    yield self.parse_expression(ins)
                 elif last is None:
                     raise error.RunError(error.MISSING_OPERAND)
                 else:
                     yield None
-                    yield None
+            elif last is None:
+                raise error.RunError(error.MISSING_OPERAND)
             else:
                 yield None
                 yield None
-                yield None
+        else:
+            yield None
+            yield None
+            yield None
 
     def _parse_view(self, ins):
         """Parse VIEW syntax."""
