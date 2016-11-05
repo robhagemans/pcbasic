@@ -577,7 +577,8 @@ class Devices(object):
 
     def chdir_(self, args):
         """CHDIR: change working directory."""
-        name, = args
+        name = self._memory.strings.next_temporary(args)
+        list(args)
         if not name:
             raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
@@ -585,7 +586,8 @@ class Devices(object):
 
     def mkdir_(self, args):
         """MKDIR: create directory."""
-        name, = args
+        name = self._memory.strings.next_temporary(args)
+        list(args)
         if not name:
             raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
@@ -593,7 +595,8 @@ class Devices(object):
 
     def rmdir_(self, args):
         """RMDIR: remove directory."""
-        name, = args
+        name = self._memory.strings.next_temporary(args)
+        list(args)
         if not name:
             raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
@@ -616,7 +619,8 @@ class Devices(object):
 
     def kill_(self, args):
         """KILL: remove file."""
-        name, = args
+        name = self._memory.strings.next_temporary(args)
+        list(args)
         if not name:
             raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)

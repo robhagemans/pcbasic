@@ -33,9 +33,10 @@ class InitFailed(Exception):
 class Environment(object):
     """Handle environment changes."""
 
-    def __init__(self, values):
+    def __init__(self, values, strings):
         """Initialise."""
         self._values = values
+        self._strings = strings
 
     def environ_(self, args):
         """ENVIRON$: get environment string."""
@@ -57,7 +58,8 @@ class Environment(object):
 
     def environ_statement_(self, args):
         """ENVIRON: set environment string."""
-        envstr, = args
+        envstr = self._strings.next_temporary(args)
+        list(args)
         eqs = envstr.find('=')
         if eqs <= 0:
             raise error.RunError(error.IFC)

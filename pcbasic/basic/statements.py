@@ -212,7 +212,7 @@ class StatementParser(object):
             tk.OPEN: self._parse_open,
             tk.CLOSE: self._parse_close,
             tk.LOAD: self._parse_load,
-            tk.MERGE: self._parse_single_string_arg,
+            tk.MERGE: self._parse_single_arg_no_end,
             tk.SAVE: self._parse_save,
             tk.COLOR: self._parse_color,
             tk.CLS: self._parse_cls,
@@ -230,7 +230,7 @@ class StatementParser(object):
             tk.NAME: self._parse_name,
             tk.LSET: self._parse_let,
             tk.RSET: self._parse_let,
-            tk.KILL: self._parse_single_string_arg,
+            tk.KILL: self._parse_single_arg_no_end,
             tk.COMMON: self._parse_common,
             tk.CHAIN: self._parse_chain,
             tk.DATE: self._parse_time_date,
@@ -241,11 +241,11 @@ class StatementParser(object):
             tk.DRAW: self._parse_single_arg,
             tk.TIMER: self._parse_event_command,
             tk.IOCTL: self._parse_ioctl,
-            tk.CHDIR: self._parse_single_string_arg,
-            tk.MKDIR: self._parse_single_string_arg,
-            tk.RMDIR: self._parse_single_string_arg,
+            tk.CHDIR: self._parse_single_arg_no_end,
+            tk.MKDIR: self._parse_single_arg_no_end,
+            tk.RMDIR: self._parse_single_arg_no_end,
             tk.SHELL: self._parse_optional_arg_no_end,
-            tk.ENVIRON: self._parse_single_string_arg,
+            tk.ENVIRON: self._parse_single_arg_no_end,
             tk.WINDOW: self._parse_window,
             tk.LCOPY: self._parse_optional_arg,
             tk.PCOPY: self._parse_pcopy,
@@ -312,7 +312,7 @@ class StatementParser(object):
             },
         }
         self._extensions = {
-            'DEBUG': self._parse_single_string_arg,
+            'DEBUG': self._parse_single_arg_no_end,
         }
 
     def init_statements(self, session):
@@ -464,7 +464,7 @@ class StatementParser(object):
         self._init_syntax()
 
     ###########################################################################
-    # statements taking no arguments
+    # no arguments
 
     def _parse_nothing(self, ins):
         """Parse nothing."""
@@ -493,21 +493,25 @@ class StatementParser(object):
         yield
 
     ###########################################################################
-    # statements taking a single argument
+    # single argument
 
     def _parse_optional_arg(self, ins):
-        """Parse statement with on eoptional argument."""
+        """Parse statement with one optional argument."""
         yield self.parse_expression(ins, allow_empty=True)
         ins.require_end()
 
     def _parse_optional_arg_no_end(self, ins):
-        """Parse statement with single optional string-valued argument."""
+        """Parse statement with one optional argument."""
         yield self.parse_expression(ins, allow_empty=True)
 
     def _parse_single_arg(self, ins):
         """Parse statement with one mandatory argument."""
         yield self.parse_expression(ins)
         ins.require_end()
+
+    def _parse_single_arg_no_end(self, ins):
+        """Parse statement with one mandatory argument."""
+        yield self.parse_expression(ins)
 
     def _parse_single_line_number(self, ins):
         """Parse statement with single line number argument."""
@@ -519,10 +523,6 @@ class StatementParser(object):
         if ins.skip_blank() == tk.T_UINT:
             jumpnum = self._parse_jumpnum(ins)
         yield jumpnum
-
-    def _parse_single_string_arg(self, ins):
-        """Parse statement with single string-valued argument."""
-        yield self._parse_temporary_string(ins)
 
     ###########################################################################
     # two arguments

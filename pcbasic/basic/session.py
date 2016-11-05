@@ -157,7 +157,7 @@ class Session(object):
         # set up the SHELL command
         self.shell = dos.get_shell_manager(self.input_methods.keyboard, self.screen, self.codepage, option_shell, syntax)
         # set up environment
-        self.environment = dos.Environment(self.values)
+        self.environment = dos.Environment(self.values, self.strings)
         # initialise random number generator
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock
@@ -636,7 +636,8 @@ class Session(object):
 
     def merge_(self, args):
         """MERGE: merge lines from file into current program."""
-        name, = args
+        name = self.strings.next_temporary(args)
+        list(args)
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         with self.files.open(0, name, filetype='A', mode='I') as f:
             self.program.merge(f)
