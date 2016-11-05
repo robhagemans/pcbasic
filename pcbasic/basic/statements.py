@@ -1447,16 +1447,15 @@ class StatementParser(object):
                 ins.require_read((';',))
                 has_args = False
                 while True:
-                    with self._temp_string:
-                        expr = self.parse_expression(ins, allow_empty=True)
-                        yield expr
-                        if expr is None:
-                            ins.require_end()
-                            # need at least one argument after format string
-                            if not has_args:
-                                raise error.RunError(error.MISSING_OPERAND)
-                            break
-                        has_args = True
+                    expr = self.parse_expression(ins, allow_empty=True)
+                    yield expr
+                    if expr is None:
+                        ins.require_end()
+                        # need at least one argument after format string
+                        if not has_args:
+                            raise error.RunError(error.MISSING_OPERAND)
+                        break
+                    has_args = True
                     if not ins.skip_blank_read_if((';', ',')):
                         break
                 break
@@ -1468,9 +1467,8 @@ class StatementParser(object):
                 yield (d, num)
             else:
                 ins.seek(-len(d), 1)
-                with self._temp_string:
-                    value = self.parse_expression(ins)
-                    yield (None, value)
+                yield (None, None)
+                yield self.parse_expression(ins)
 
     ###########################################################################
     # loops and branches

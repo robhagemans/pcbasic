@@ -24,21 +24,22 @@ class Formatter(object):
     def format(self, args):
         """PRINT: Write expressions to screen or file."""
         newline = True
-        for d, value in args:
-            if d == tk.USING:
-                newline = self._print_using(value, args)
+        for sep, value in args:
+            if sep == tk.USING:
+                newline = self._print_using(args)
                 break
-            elif d == ',':
+            elif sep == ',':
                 self._print_comma()
-            elif d == ';':
+            elif sep == ';':
                 pass
-            elif d == tk.SPC:
+            elif sep == tk.SPC:
                 self._print_spc(values.to_int(value, unsigned=True))
-            elif d == tk.TAB:
+            elif sep == tk.TAB:
                 self._print_tab(values.to_int(value, unsigned=True))
             else:
-                self._print_value(value)
-            newline = d not in (tk.TAB, tk.SPC, ',', ';')
+                with self._memory.strings:
+                    self._print_value(next(args))
+            newline = sep not in (tk.TAB, tk.SPC, ',', ';')
         if newline:
             if self._screen and self._screen.overflow:
                 self._output.write_line()
@@ -77,7 +78,7 @@ class Formatter(object):
         else:
             self._output.write(' ' * (pos-self._output.col), can_break=False)
 
-    def _print_using(self, format_expr, args):
+    def _print_using(self, args):
         """PRINT USING clause: Write expressions to screen or file using a formatting string."""
         format_expr = self._memory.strings.next_temporary(args)
         if format_expr == '':
@@ -97,26 +98,27 @@ class Formatter(object):
                     # escape char; write next char in fors or _ if this is the last char
                     self._output.write(fors.read(2)[-1])
                 else:
-                    string_field = fors._get_string_tokens()
-                    if not string_field:
-                        number_field = fors._get_number_tokens()
-                    if string_field or number_field:
-                        format_chars = True
-                        value = next(args)
-                        if value is None:
-                            newline = False
-                            break
-                    if string_field:
-                        s = values.pass_string(value)
-                        if string_field == '&':
-                            self._output.write(s)
+                    with self._memory.strings:
+                        string_field = fors._get_string_tokens()
+                        if not string_field:
+                            number_field = fors._get_number_tokens()
+                        if string_field or number_field:
+                            format_chars = True
+                            value = next(args)
+                            if value is None:
+                                newline = False
+                                break
+                        if string_field:
+                            s = values.pass_string(value)
+                            if string_field == '&':
+                                self._output.write(s)
+                            else:
+                                self._output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
+                        elif number_field:
+                            num = values.pass_number(value)
+                            self._output.write(_format_number(num, *number_field))
                         else:
-                            self._output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
-                    elif number_field:
-                        num = values.pass_number(value)
-                        self._output.write(_format_number(num, *number_field))
-                    else:
-                        self._output.write(fors.read(1))
+                            self._output.write(fors.read(1))
         except StopIteration:
             pass
         if not format_chars:
