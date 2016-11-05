@@ -748,7 +748,7 @@ class StatementParser(object):
     def _parse_time_date(self, ins):
         """Parse TIME$ or DATE$ syntax."""
         ins.require_read((tk.O_EQ,))
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
         ins.require_end()
 
     ##########################################################

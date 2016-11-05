@@ -161,7 +161,7 @@ class Session(object):
         # initialise random number generator
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock
-        self.clock = clock.Clock(self.values)
+        self.clock = clock.Clock(self.memory, self.values)
         ######################################################################
         # editor
         ######################################################################
