@@ -253,7 +253,7 @@ class Memory(object):
         """Initialise memory."""
         self._values = values
         # data segment initialised elsewhere
-        self.data = data_memory
+        self._memory = data_memory
         # device access needed for COM and LPT ports
         self.devices = devices
         # for BLOAD and BSAVE
@@ -267,7 +267,7 @@ class Memory(object):
         # 8-pixel font
         self.font_8 = font_8
         # initial DEF SEG
-        self.segment = self.data.data_segment
+        self.segment = self._memory.data_segment
         # pre-defined PEEK outputs
         self._peek_values = peek_values
         # tandy syntax
@@ -277,7 +277,7 @@ class Memory(object):
         """PEEK: Retrieve the value at an emulated memory location."""
         addr, = args
         # no peeking the program code (or anywhere) in protected mode
-        if self.data.program.protected and not self.interpreter.run_mode:
+        if self._memory.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
         addr = values.to_int(addr, unsigned=True)
         addr += self.segment * 0x10
@@ -286,7 +286,7 @@ class Memory(object):
     def poke_(self, args):
         """POKE: Set the value at an emulated memory location."""
         addr = values.to_int(next(args), unsigned=True)
-        if self.data.program.protected and not self.interpreter.run_mode:
+        if self._memory.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
         val, = args
         val = values.to_int(val)
@@ -298,9 +298,9 @@ class Memory(object):
 
     def bload_(self, args):
         """BLOAD: Load a file into a block of memory."""
-        if self.data.program.protected and not self.interpreter.run_mode:
+        if self._memory.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
-        name = next(args)
+        name = self._memory.strings.next_temporary(args)
         offset = next(args)
         if offset is not None:
             offset = values.to_int(offset, unsigned=True)
@@ -322,9 +322,9 @@ class Memory(object):
 
     def bsave_(self, args):
         """BSAVE: Save a block of memory into a file."""
-        if self.data.program.protected and not self.interpreter.run_mode:
+        if self._memory.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
-        name = next(args)
+        name = self._memory.strings.next_temporary(args)
         offset = values.to_int(next(args), unsigned=True)
         length = values.to_int(next(args), unsigned=True)
         list(args)
@@ -342,7 +342,7 @@ class Memory(object):
         segment, = args
         # &hb800: text screen buffer; &h13d: data segment
         if segment is None:
-            self.segment = self.data.data_segment
+            self.segment = self._memory.data_segment
         else:
             # def_seg() accepts signed values
             self.segment = values.to_int(segment, unsigned=True)
@@ -358,7 +358,7 @@ class Memory(object):
     def call_(self, args):
         """CALL or CALLS: Call machine language procedure."""
         addr_var = next(args)
-        if self.data.complete_name(addr_var)[-1] == values.STR:
+        if self._memory.complete_name(addr_var)[-1] == values.STR:
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
         list(args)
@@ -382,8 +382,8 @@ class Memory(object):
             elif addr >= self.video_segment*0x10:
                 # graphics and text memory
                 return max(0, self._get_video_memory(addr))
-            elif addr >= self.data.data_segment*0x10:
-                return max(0, self.data.get_memory(addr))
+            elif addr >= self._memory.data_segment*0x10:
+                return max(0, self._memory.get_memory(addr))
             elif addr >= 0:
                 return max(0, self._get_low_memory(addr))
             else:
@@ -400,8 +400,8 @@ class Memory(object):
         elif addr >= self.video_segment*0x10:
             # graphics and text memory
             self._set_video_memory(addr, val)
-        elif addr >= self.data.data_segment*0x10:
-            self.data.set_memory(addr, val)
+        elif addr >= self._memory.data_segment*0x10:
+            self._memory.set_memory(addr, val)
         elif addr >= 0:
             self._set_low_memory(addr, val)
 

@@ -694,7 +694,7 @@ class StatementParser(object):
 
     def _parse_bload(self, ins):
         """Parse BLOAD syntax."""
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
         if ins.skip_blank_read_if((',',)):
             yield self.parse_expression(ins)
         else:
@@ -703,7 +703,7 @@ class StatementParser(object):
 
     def _parse_bsave(self, ins):
         """Parse BSAVE syntax."""
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
         ins.require_read((',',))
         yield self.parse_expression(ins)
         ins.require_read((',',))
