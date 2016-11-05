@@ -651,7 +651,7 @@ class StatementParser(object):
         """Parse PLAY (music) syntax."""
         if self._syntax in ('pcjr', 'tandy'):
             for _ in range(3):
-                last = self._parse_temporary_string(ins, allow_empty=True)
+                last = self.parse_expression(ins, allow_empty=True)
                 yield last
                 if not ins.skip_blank_read_if((',',)):
                     break
@@ -661,7 +661,7 @@ class StatementParser(object):
                 raise error.RunError(error.MISSING_OPERAND)
             ins.require_end()
         else:
-            yield self._parse_temporary_string(ins, allow_empty=True)
+            yield self.parse_expression(ins, allow_empty=True)
             ins.require_end(err=error.IFC)
 
     ###########################################################################

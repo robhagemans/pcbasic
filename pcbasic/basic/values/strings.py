@@ -273,11 +273,14 @@ class StringSpace(object):
         if self.temp != self.current:
             self.delete_last()
 
-    def next_temporary(self, args, allow_empty=False):
+    def next_temporary(self, args):
         """Retrieve a value from an iterator and return as Python value. Store strings in a temporary."""
         # if allow_empty, a missing value is returned as an empty string
         with self:
             expr = next(args)
             if isinstance(expr, String):
                 return expr.to_value()
-            return None
+            elif expr is None:
+                return expr
+            else:
+                raise error.RunError(error.TYPE_MISMATCH)
