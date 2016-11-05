@@ -861,7 +861,7 @@ class StatementParser(object):
 
     def _parse_open(self, ins):
         """Parse OPEN syntax."""
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
         first_syntax = ins.skip_blank_read_if((',',))
         yield first_syntax
         if first_syntax:
@@ -876,7 +876,7 @@ class StatementParser(object):
         ins.skip_blank_read_if(('#',))
         yield self.parse_expression(ins)
         ins.require_read((',',))
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
         if ins.skip_blank_read_if((',',)):
             yield self.parse_expression(ins)
         else:
