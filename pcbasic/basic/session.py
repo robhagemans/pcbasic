@@ -805,7 +805,8 @@ class Session(object):
         """KEY: macro or event handler definition."""
         keynum = values.to_int(next(args))
         error.range_check(1, 255, keynum)
-        text, = args
+        text = self.strings.next_temporary(args)
+        list(args)
         if keynum <= self.basic_events.num_fn_keys:
             self.screen.fkey_macros.set(keynum, text)
         else:

@@ -187,8 +187,8 @@ class StatementParser(object):
             tk.CLEAR: self._parse_clear,
             tk.LIST: self._parse_list,
             tk.WAIT: self._parse_wait,
-            tk.POKE: self._parse_poke_out,
-            tk.OUT: self._parse_poke_out,
+            tk.POKE: self._parse_two_args,
+            tk.OUT: self._parse_two_args,
             tk.LPRINT: partial(self._parse_print, parse_file=False),
             tk.LLIST: self._parse_delete_llist,
             tk.WIDTH: self._parse_width,
@@ -281,7 +281,7 @@ class StatementParser(object):
                 tk.OFF: self._parse_key_macro,
                 tk.LIST: self._parse_key_macro,
                 '(': self._parse_com_command,
-                None: self._parse_key_define,
+                None: self._parse_two_args,
             },
             tk.PUT: {
                 '(': self._parse_put_graph,
@@ -533,6 +533,15 @@ class StatementParser(object):
             yield None
 
     ###########################################################################
+    # two arguments
+
+    def _parse_two_args(self, ins):
+        """Parse POKE or OUT syntax."""
+        yield self.parse_expression(ins)
+        ins.require_read((',',))
+        yield self.parse_expression(ins)
+
+    ###########################################################################
     # flow-control statements
 
     def _parse_run(self, ins):
@@ -681,12 +690,6 @@ class StatementParser(object):
         ins.require_read((tk.USR))
         yield ins.skip_blank_read_if(tk.DIGIT)
         ins.require_read((tk.O_EQ,))
-        yield self.parse_expression(ins)
-
-    def _parse_poke_out(self, ins):
-        """Parse POKE or OUT syntax."""
-        yield self.parse_expression(ins)
-        ins.require_read((',',))
         yield self.parse_expression(ins)
 
     def _parse_bload(self, ins):
@@ -1300,12 +1303,6 @@ class StatementParser(object):
     def _parse_key_macro(self, ins):
         """Parse KEY ON/OFF/LIST syntax."""
         yield ins.read_keyword_token()
-
-    def _parse_key_define(self, ins):
-        """Parse KEY definition syntax."""
-        yield self.parse_expression(ins)
-        ins.require_read((',',))
-        yield self._parse_temporary_string(ins)
 
     def _parse_cls(self, ins):
         """Parse CLS syntax."""
