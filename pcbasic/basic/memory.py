@@ -13,6 +13,8 @@ from . import error
 from . import values
 from . import devices
 from . import tokens as tk
+from . import scalars
+from . import arrays
 
 
 # Data Segment Map - default situation
@@ -50,7 +52,7 @@ class DataSegment(object):
     # protection flag
     protection_flag_addr = 1450
 
-    def __init__(self, total_memory, reserved_memory, max_reclen, max_files):
+    def __init__(self, total_memory, reserved_memory, max_reclen, max_files, double):
         """Initialise memory."""
         # BASIC stack (determined by CLEAR)
         # Initially, the stack space should be set to 512 bytes,
@@ -75,22 +77,27 @@ class DataSegment(object):
         self.max_files = max_files
         self.max_reclen = max_reclen
         self.fields = {}
-        # reset_fields is called from Session.__init__
+        # string space
+        self.strings = values.StringSpace(self)
+        # prepare string and number handler
+        self.values = values.Values(self.strings, double)
+        # scalar space
+        self.scalars = scalars.Scalars(self, self.values)
+        # array space
+        self.arrays = arrays.Arrays(self, self.values)
         # COMMON variables
         self.reset_commons()
+        # FIELD buffers
+        self.reset_fields()
 
     def reset_commons(self):
         """Reset COMMON variables."""
         self._common_scalars = set()
         self._common_arrays = set()
 
-    def set_buffers(self, program, scalars, arrays, strings, values):
+    def set_buffers(self, program):
         """Register program and variables."""
-        self.scalars = scalars
-        self.arrays = arrays
-        self.strings = strings
         self.program = program
-        self.values = values
 
     def reset_fields(self):
         """Reset FIELD buffers."""

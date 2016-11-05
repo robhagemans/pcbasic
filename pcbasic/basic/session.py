@@ -84,18 +84,15 @@ class Session(object):
         # set up variables and memory model state
         # initialise the data segment
         self.memory = memory.DataSegment(
-                    max_memory, reserved_memory, max_reclen, max_files)
+                    max_memory, reserved_memory, max_reclen, max_files, double)
         # string space
-        self.strings = values.StringSpace(self.memory)
-        # prepare string and number handler
-        self.values = values.Values(self.strings, double)
-        # create fields after value handler has been created (circular dependency in DataSegment)
-        self.memory.values = self.values
-        self.memory.reset_fields()
+        self.strings = self.memory.strings
+        # string and number handler
+        self.values = self.memory.values
         # scalar space
-        self.scalars = scalars.Scalars(self.memory, self.values)
+        self.scalars = self.memory.scalars
         # array space
-        self.arrays = arrays.Arrays(self.memory, self.values)
+        self.arrays = self.memory.arrays
         # prepare tokeniser
         token_keyword = tk.TokenKeywordDict(syntax)
         self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
@@ -106,8 +103,7 @@ class Session(object):
                 self.tokeniser, self.lister, max_list_line, allow_protect,
                 allow_code_poke, self.memory.code_start, bytecode)
         # register all data segment users
-        self.memory.set_buffers(
-                self.program, self.scalars, self.arrays, self.strings, self.values)
+        self.memory.set_buffers(self.program)
         ######################################################################
         # console
         ######################################################################
