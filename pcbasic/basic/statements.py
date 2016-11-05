@@ -737,10 +737,10 @@ class StatementParser(object):
 
     def _parse_name(self, ins):
         """Parse NAME syntax."""
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
         # AS is not a tokenised word
         ins.require_read((tk.W_AS,))
-        yield self._parse_temporary_string(ins)
+        yield self.parse_expression(ins)
 
     ###########################################################################
     # clock statements

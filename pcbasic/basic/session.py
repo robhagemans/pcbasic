@@ -146,7 +146,7 @@ class Session(object):
         # DataSegment needed for COMn and disk FIELD buffers
         # InputMethods needed for wait()
         self.devices = files.Devices(
-                self.values, self.input_methods, self.memory.fields,
+                self.values, self.memory, self.input_methods, self.memory.fields,
                 self.screen, self.input_methods.keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,

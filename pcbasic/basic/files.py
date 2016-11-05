@@ -457,12 +457,13 @@ class Devices(object):
     # allowable drive letters in GW-BASIC are letters or @
     drive_letters = b'@' + string.ascii_uppercase
 
-    def __init__(self, values, input_methods, fields, screen, keyboard,
+    def __init__(self, values, memory, input_methods, fields, screen, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_in_size, utf8, universal):
         """Initialise devices."""
         self.devices = {}
         self._values = values
+        self._memory = memory
         # screen device
         self._screen = screen
         self.devices['SCRN:'] = devices.SCRNDevice(screen)
@@ -599,15 +600,15 @@ class Devices(object):
 
     def name_(self, args):
         """NAME: rename file or directory."""
-        dev, oldpath = self.get_diskdevice_and_path(next(args))
+        dev, oldpath = self.get_diskdevice_and_path(self._memory.strings.next_temporary(args))
         # don't rename open files
         dev.check_file_not_open(oldpath)
-        oldpath = dev._native_path(bytes(oldpath), name_err=error.FILE_NOT_FOUND, isdir=False)
-        newdev, newpath = self.get_diskdevice_and_path(next(args))
+        oldpath = dev._native_path(oldpath, name_err=error.FILE_NOT_FOUND, isdir=False)
+        newdev, newpath = self.get_diskdevice_and_path(self._memory.strings.next_temporary(args))
         list(args)
         if dev != newdev:
             raise error.RunError(error.RENAME_ACROSS_DISKS)
-        newpath = dev._native_path(bytes(newpath), name_err=None, isdir=False)
+        newpath = dev._native_path(newpath, name_err=None, isdir=False)
         if os.path.exists(newpath):
             raise error.RunError(error.FILE_ALREADY_EXISTS)
         dev.rename(oldpath, newpath)
