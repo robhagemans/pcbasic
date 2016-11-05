@@ -362,6 +362,8 @@ class Files(object):
         if file_number is None:
             output = self.devices.scrn_file
         else:
+            file_number = values.to_int(file_number)
+            error.range_check(0, 255, file_number)
             output = self.get(file_number, 'OAR')
         outstrs = []
         try:
@@ -418,6 +420,8 @@ class Files(object):
         # check for a file number
         file_number = next(args)
         if file_number is not None:
+            file_number = values.to_int(file_number)
+            error.range_check(0, 255, file_number)
             output = self.get(file_number, 'OAR')
             screen = None
         else:

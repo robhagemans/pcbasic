@@ -1385,10 +1385,11 @@ class StatementParser(object):
 
     def _parse_write(self, ins):
         """Parse WRITE syntax."""
-        file_number = self._parse_file_number(ins, opt_hash=False)
-        yield file_number
-        if file_number is not None:
+        if ins.skip_blank_read_if(('#',)):
+            yield self.parse_expression(ins)
             ins.require_read((',',))
+        else:
+            yield None
         with self._temp_string:
             expr = self.parse_expression(ins, allow_empty=True)
             if expr is not None:
@@ -1462,11 +1463,11 @@ class StatementParser(object):
     def _parse_print(self, ins, parse_file):
         """Parse PRINT or LPRINT syntax."""
         if parse_file:
-            # check for a file number
-            file_number = self._parse_file_number(ins, opt_hash=False)
-            yield file_number
-            if file_number is not None:
+            if ins.skip_blank_read_if(('#',)):
+                yield self.parse_expression(ins)
                 ins.require_read((',',))
+            else:
+                yield None
         while True:
             d = ins.skip_blank_read()
             if d in tk.END_STATEMENT:
