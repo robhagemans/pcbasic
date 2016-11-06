@@ -247,6 +247,7 @@ class TokenisedStream(CodeStream):
         """Skip until character is in findrange."""
         literal = False
         rem = False
+        nchars = len(findrange[0])
         while True:
             c = self.read(1)
             if c == '':
@@ -260,13 +261,14 @@ class TokenisedStream(CodeStream):
                 rem = False
             if literal or rem:
                 continue
-            if c in findrange:
+            if c + self.peek(nchars-1) in findrange:
                 if break_on_first_char:
                     self.seek(-1, 1)
                     break
             break_on_first_char = True
             # not elif! if not break_on_first_char, c needs to be properly processed.
-            if c == '\0':  # offset and line number follow
+            if c == '\0':
+                # offset and line number follow
                 literal = False
                 off = self.read(2)
                 if len(off) < 2 or off == '\0\0':
@@ -278,7 +280,7 @@ class TokenisedStream(CodeStream):
     def skip_to_read(self, findrange):
         """Skip until character is in findrange, then read."""
         self.skip_to(findrange)
-        return self.read(1)
+        return self.read(len(findrange[0]))
 
     def read_keyword_token(self):
         """Read full keyword token."""

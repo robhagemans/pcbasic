@@ -556,6 +556,37 @@ class Interpreter(object):
             self.data_pos = data_pos
 
     ###########################################################################
+    # COMMON
+
+    def gather_commons(self):
+        """Get all COMMON declarations."""
+        common_scalars = set()
+        common_arrays = set()
+        current = self._program_code.tell()
+        self._program_code.seek(0)
+        while self._program_code.skip_to_read((tk.COMMON,)) == tk.COMMON:
+            self._add_common_vars(common_scalars, common_arrays)
+        self._program_code.seek(current)
+        return common_scalars, common_arrays
+
+    def _parse_common_args(self, ins):
+        """Parse COMMON syntax."""
+        while True:
+            name = self.parser.parse_name(ins)
+            brackets = ins.skip_blank_read_if(('[', '('))
+            if brackets:
+                ins.require_read((']', ')'))
+            yield (name, brackets)
+            if not ins.skip_blank_read_if((',',)):
+                break
+
+    def _add_common_vars(self, common_scalars, common_arrays):
+        """COMMON: define variables to be preserved on CHAIN."""
+        common_vars = list(self._parse_common_args(self._program_code))
+        common_scalars.update(self._memory.complete_name(name) for name, brackets in common_vars if not brackets)
+        common_arrays.update(self._memory.complete_name(name) for name, brackets in common_vars if brackets)
+
+    ###########################################################################
     # callbacks
 
     def error_(self, args):

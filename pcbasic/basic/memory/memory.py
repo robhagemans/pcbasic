@@ -85,15 +85,8 @@ class DataSegment(object):
         self.scalars = scalars.Scalars(self, self.values)
         # array space
         self.arrays = arrays.Arrays(self, self.values)
-        # COMMON variables
-        self.reset_commons()
         # FIELD buffers
         self.reset_fields()
-
-    def reset_commons(self):
-        """Reset COMMON variables."""
-        self._common_scalars = set()
-        self._common_arrays = set()
 
     def set_buffers(self, program):
         """Register program and variables."""
@@ -146,10 +139,9 @@ class DataSegment(object):
         if preserve_all:
             preserve_sc, preserve_ar = self.scalars, self.arrays
         elif preserve_common:
-            preserve_sc, preserve_ar = self._common_scalars, self._common_arrays
+            preserve_sc, preserve_ar = preserve_common
         else:
-            preserve_sc, preserve_ar = {}, {}
-        self.reset_commons()
+            preserve_sc, preserve_ar = set(), set()
         new_strings = values.StringSpace(self)
         # this is a re-assignment which is not FOR-safe;
         # but clear_variables is only called in CLEAR which also clears the FOR stack
@@ -536,11 +528,3 @@ class DataSegment(object):
         # copy new value into existing buffer if possible
         basic_str = self.get_variable(name, indices)
         self.set_variable(name, indices, basic_str.midset(start, num, val))
-
-    def common_(self, args):
-        """COMMON: define variables to be preserved on CHAIN."""
-        common_vars = list(args)
-        common_scalars = [self.complete_name(name) for name, brackets in common_vars if not brackets]
-        common_arrays = [self.complete_name(name) for name, brackets in common_vars if brackets]
-        self._common_scalars |= set(common_scalars)
-        self._common_arrays |= set(common_arrays)

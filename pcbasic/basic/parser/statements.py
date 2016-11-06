@@ -112,6 +112,7 @@ class Parser(object):
         """Initialise syntax parsers."""
         self._simple = {
             tk.DATA: self._skip_statement,
+            tk.COMMON: self._skip_statement,
             tk.REM: self._skip_line,
             tk.ELSE: self._skip_line,
             tk.CONT: self._parse_nothing,
@@ -184,7 +185,6 @@ class Parser(object):
             tk.LSET: self._parse_let,
             tk.RSET: self._parse_let,
             tk.KILL: self._parse_single_arg_no_end,
-            tk.COMMON: self._parse_common,
             tk.CHAIN: self._parse_chain,
             tk.DATE: self._parse_time_date,
             tk.TIME: self._parse_time_date,
@@ -272,6 +272,7 @@ class Parser(object):
         """Initialise statement callbacks."""
         self._callbacks = {
             tk.DATA: list,
+            tk.COMMON: list,
             tk.REM: list,
             tk.ELSE: list,
             tk.CONT: session.interpreter.cont_,
@@ -344,7 +345,6 @@ class Parser(object):
             tk.LSET: session.memory.lset_,
             tk.RSET: session.memory.rset_,
             tk.KILL: session.devices.kill_,
-            tk.COMMON: session.memory.common_,
             tk.CHAIN: session.chain_,
             tk.DATE: session.clock.date_,
             tk.TIME: session.clock.time_,
@@ -1146,17 +1146,6 @@ class Parser(object):
                 elif not exp2:
                     raise error.RunError(error.STX)
         ins.require_end()
-
-    def _parse_common(self, ins):
-        """Parse COMMON syntax."""
-        while True:
-            name = self.parse_name(ins)
-            brackets = ins.skip_blank_read_if(('[', '('))
-            if brackets:
-                ins.require_read((']', ')'))
-            yield (name, brackets)
-            if not ins.skip_blank_read_if((',',)):
-                break
 
     def _parse_def_fn(self, ins):
         """DEF FN: define a function."""

@@ -590,6 +590,9 @@ class Session(object):
         list(args)
         if self.program.protected and merge:
             raise error.RunError(error.IFC)
+        # gather COMMON declarations
+        commons = self.interpreter.gather_commons()
+        # load new program
         with self.files.open(0, name, filetype='ABP', mode='I') as f:
             if delete_lines:
                 # delete lines from existing code before merge (without MERGE, this is pointless)
@@ -604,7 +607,7 @@ class Session(object):
             # RUN
             self.interpreter.jump(jumpnum, err=error.IFC)
         # preserve DEFtype on MERGE
-        self._clear_all(preserve_common=True, preserve_all=common_all, preserve_deftype=merge)
+        self._clear_all(preserve_common=commons, preserve_all=common_all, preserve_deftype=merge)
 
     def save_(self, args):
         """SAVE: save program to a file."""
