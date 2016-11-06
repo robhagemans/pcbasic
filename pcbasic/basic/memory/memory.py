@@ -142,14 +142,15 @@ class DataSegment(object):
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             self.clear_deftype()
-        if not preserve_common:
-            self.reset_commons()
+        # preserve COMMON variables
         if preserve_all:
             preserve_sc, preserve_ar = self.scalars, self.arrays
-        else:
+        elif preserve_common:
             preserve_sc, preserve_ar = self._common_scalars, self._common_arrays
+        else:
+            preserve_sc, preserve_ar = {}, {}
+        self.reset_commons()
         new_strings = values.StringSpace(self)
-        # preserve COMMON variables
         # this is a re-assignment which is not FOR-safe;
         # but clear_variables is only called in CLEAR which also clears the FOR stack
         with self._preserve_scalars(preserve_sc, new_strings):
