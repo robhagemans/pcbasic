@@ -20,9 +20,9 @@ try:
 except ImportError:
     numpy = None
 
-from ..basic import signals
-from ..basic import scancode
-from ..basic.eascii import as_unicode as uea
+from ..basic.base import signals
+from ..basic.base import scancode
+from ..basic.base.eascii import as_unicode as uea
 
 from . import clipboard
 from . import base

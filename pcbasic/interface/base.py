@@ -10,7 +10,7 @@ import Queue
 import time
 import logging
 
-from ..basic import signals
+from ..basic.base import signals
 
 
 class Interface(object):

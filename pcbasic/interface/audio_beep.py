@@ -20,7 +20,7 @@ else:
     import fcntl
     winsound = None
 
-from ..basic import signals
+from ..basic.base import signals
 from . import base
 
 
