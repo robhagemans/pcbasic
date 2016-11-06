@@ -571,14 +571,24 @@ class Interpreter(object):
 
     def _parse_common_args(self, ins):
         """Parse COMMON syntax."""
+        if ins.skip_blank() in tk.END_STATEMENT:
+            return
         while True:
             name = self.parser.parse_name(ins)
-            brackets = ins.skip_blank_read_if(('[', '('))
-            if brackets:
-                ins.require_read((']', ')'))
-            yield (name, brackets)
+            bracket = ins.skip_blank_read_if(('(','['))
+            print bracket
+            if bracket:
+                # a literal is allowed but ignored; for sqare brackets, it's a syntax error if omitted
+                if (bracket == '[') or ins.peek() in set(string.digits) | set(tk.NUMBER):
+                    x = self.parser.expression_parser.read_number_literal(ins)
+                    print x
+                ins.require_read((')',']'))
+            # entries with square brackets are completely ignored!
+            if bracket != '[':
+                yield name, bracket
             if not ins.skip_blank_read_if((',',)):
                 break
+        ins.require_end()
 
     def _add_common_vars(self, common_scalars, common_arrays):
         """COMMON: define variables to be preserved on CHAIN."""

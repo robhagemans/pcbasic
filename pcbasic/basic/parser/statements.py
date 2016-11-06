@@ -26,8 +26,8 @@ class Parser(object):
         # re-execute current statement after Break
         self.redo_on_break = False
         # expression parser
-        self._expression_parser = expressions.ExpressionParser(values, memory)
-        self.user_functions = self._expression_parser.user_functions
+        self.expression_parser = expressions.ExpressionParser(values, memory)
+        self.user_functions = self.expression_parser.user_functions
         # syntax: advanced, pcjr, tandy
         self._syntax = syntax
         # initialise syntax parser tables
@@ -51,7 +51,7 @@ class Parser(object):
     def init_callbacks(self, session):
         """Assign statement and function callbacks."""
         self.init_statements(session)
-        self._expression_parser.init_functions(session)
+        self.expression_parser.init_functions(session)
 
     def parse_statement(self, ins):
         """Parse and execute a single statement."""
@@ -102,7 +102,7 @@ class Parser(object):
         if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
             return None
         self.redo_on_break = True
-        val = self._expression_parser.parse(ins)
+        val = self.expression_parser.parse(ins)
         self.redo_on_break = False
         return val
 
@@ -417,7 +417,7 @@ class Parser(object):
         name = ins.read_name()
         error.throw_if(not name, error.STX)
         self.redo_on_break = True
-        indices = self._expression_parser.parse_indices(ins)
+        indices = self.expression_parser.parse_indices(ins)
         self.redo_on_break = False
         return name, indices
 
@@ -1364,7 +1364,7 @@ class Parser(object):
         else:
             yield None
             if ins.peek() in set(string.digits) | set(tk.NUMBER):
-                expr = self._expression_parser.read_number_literal(ins)
+                expr = self.expression_parser.read_number_literal(ins)
             else:
                 expr = self.parse_expression(ins)
             yield expr
