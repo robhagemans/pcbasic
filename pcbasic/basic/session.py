@@ -215,7 +215,7 @@ class Session(object):
     def attach(self, iface=None):
         """Attach interface to interpreter session."""
         if iface:
-            self.queues.set()
+            self.queues.set(*iface.get_queues())
             # rebuild the screen
             self.screen.rebuild()
             # rebuild audio queues
