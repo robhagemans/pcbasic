@@ -4131,12 +4131,11 @@
     <section>
         <h4 id="COMMON"><code>COMMON</code></h4>
         <code class="flow">
-            <b>COMMON</b> [<var>var_0</var> [<b>,</b> [<var>var_1</var>]] ...]
+            <b>COMMON</b> [<var>var_0</var> [<b>(</b> [<var>index_0</var>] <b>)</b>] [<b>,</b> [<var>var_1</var> [<b>(</b> [<var>index_1</var>] <b>)</b>] ]] ...]
         </code>
         <p>
             Specifies variables to be passed as common variables to the program called
             with <code><a href="#CHAIN">CHAIN</a></code>.
-            The statement may end with one or more commas.
         </p>
         <p>
             <code>COMMON</code> statements are not executed during run time; rather, when a <code>CHAIN</code> command is encountered where <code>ALL</code> is not specified,
@@ -4145,8 +4144,16 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>var_0</var>, <var>var_1</var>, ...</code> are names of variables or arrays. Array names
-                must be followed by parentheses or square brackets. Brackets may also be mixed: <code>a(]</code> <code>b[)</code>.
+                <code><var>var_0</var>, <var>var_1</var>, ...</code> are names of scalar or array variables.
+            </li>
+            <li>
+                <code><var>index_0</var>, <var>index_1</var>, ...</code> are optional number literals; they are ignored.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Array elements with square brackets and an index do not cause an error, but are ignored.
             </li>
         </ul>
     </section>
