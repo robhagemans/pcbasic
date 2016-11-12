@@ -4137,10 +4137,6 @@
             Specifies variables to be passed as common variables to the program called
             with <code><a href="#CHAIN">CHAIN</a></code>.
         </p>
-        <p>
-            <code>COMMON</code> statements are not executed during run time; rather, when a <code>CHAIN</code> command is encountered where <code>ALL</code> is not specified,
-            all <code>COMMON</code> statements in the program are executed. This includes those that come after the <code>CHAIN</code> statement, have not been reached or are unreachable in the code.
-        </p>
         <h5>Parameters</h5>
         <ul>
             <li>
@@ -4154,6 +4150,25 @@
         <ul>
             <li>
                 Array elements with square brackets and an index do not cause an error, but are ignored.
+            </li>
+            <li>
+                <code>COMMON</code> statements are not executed during run time; rather, when a <code>CHAIN</code> command is encountered where <code>ALL</code> is not specified,
+                all <code>COMMON</code> declarations in the program are parsed. As a consequence, the <code>DEFSTR</code>, <code>DEFINT</code>, <code>DEFSNG</code> or <code>DEFDBL</code> settings
+                used are those that are active at the time of execution of the <code>CHAIN</code> statement.
+            </li>
+            <li>
+                <code>COMMON</code> declarations need not be reachable in the program flow in order to be used.
+                They may occur anywhere before or after the <code>CHAIN</code> statement that uses them.
+            </li>
+            <li>
+                Variables may be repeated or occur in multiple <code>COMMON</code> declarations.
+            </li>
+            <li>
+                If the <code>COMMON</code> keyword is not the first element of the statement, the
+                declaration will be ignored. In particular, any <code>COMMON</code> declaration that occurs
+                directly after a <code>THEN</code> or <code>ELSE</code> keyword will not be used. <code>COMMON</code>
+                in the second or later statements of a compound statement after <code>THEN</code> or <code>ELSE</code>
+                will be used regardless of the value of the <code>IF</code> condition.
             </li>
         </ul>
     </section>
@@ -4222,6 +4237,20 @@
                 with or without quotation marks. If quotation marks are omitted, leading and
                 trailing whitespace is ignored and commas or colons will terminate the data
                 statement.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                <code>DATA</code> declarations need not be reachable in the program flow in order to be used.
+                They may occur anywhere before or after the <code>READ</code> statement that uses them.
+            </li>
+            <li>
+                If the <code>DATA</code> keyword is not the first element of the statement, the
+                declaration will be ignored. In particular, any <code>DATA</code> declaration that occurs
+                directly after a <code>THEN</code> or <code>ELSE</code> keyword will not be used. <code>DATA</code>
+                in the second or later statements of a compound statement after <code>THEN</code> or <code>ELSE</code>
+                will be used regardless of the value of the <code>IF</code> condition.
             </li>
         </ul>
         <h5>Errors</h5>
