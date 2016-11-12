@@ -524,7 +524,7 @@ class Interpreter(object):
             self._program_code.seek(self.data_pos)
             if self._program_code.peek() in tk.END_STATEMENT:
                 # initialise - find first DATA
-                self._program_code.skip_to((tk.DATA,))
+                self._program_code.skip_to_token(tk.DATA,)
             if self._program_code.read(1) not in (tk.DATA, ','):
                 self._program_code.seek(current)
                 raise error.RunError(error.OUT_OF_DATA)
@@ -549,7 +549,8 @@ class Interpreter(object):
                     self._program_code.seek(self.data_pos)
                     # syntax error in DATA line (not type mismatch!) if can't convert to var type
                     raise error.RunError(error.STX, self.data_pos-1)
-            # omit leading and trailing whitespace
+            # restore to current program location
+            # to ensure any other errors get the correct line number (?)
             data_pos = self._program_code.tell()
             self._program_code.seek(current)
             self._memory.set_variable(name, indices, value=value)
@@ -564,7 +565,8 @@ class Interpreter(object):
         common_arrays = set()
         current = self._program_code.tell()
         self._program_code.seek(0)
-        while self._program_code.skip_to_read((tk.COMMON,)) == tk.COMMON:
+        while self._program_code.skip_to_token(tk.COMMON):
+            self._program_code.read(len(tk.COMMON))
             self._add_common_vars(common_scalars, common_arrays)
         self._program_code.seek(current)
         return common_scalars, common_arrays
@@ -576,12 +578,10 @@ class Interpreter(object):
         while True:
             name = self.parser.parse_name(ins)
             bracket = ins.skip_blank_read_if(('(','['))
-            print bracket
             if bracket:
                 # a literal is allowed but ignored; for sqare brackets, it's a syntax error if omitted
                 if (bracket == '[') or ins.peek() in set(string.digits) | set(tk.NUMBER):
                     x = self.parser.expression_parser.read_number_literal(ins)
-                    print x
                 ins.require_read((')',']'))
             # entries with square brackets are completely ignored!
             if bracket != '[':

@@ -307,8 +307,30 @@ class TokenisedStream(CodeStream):
         if d not in tk.END_STATEMENT:
             raise error.RunError(err)
 
+    def skip_to_token(self, requested_token):
+        """
+        Skip over bytecode until particular token on statement start;
+        this excludes statements in THEN or ELSE clauses.
+        """
+        while True:
+            separator = self.skip_to_read(tk.END_STATEMENT)
+            # skip line number, if there
+            if separator == '\0':
+                # break on end of stream
+                trail = self.read(4)
+                if len(trail) < 4 or trail[:2] == '\0\0':
+                    return None
+            # get first keyword in statement
+            self.skip_blank()
+            token = self.read_keyword_token()
+            self.seek(-len(token), 1)
+            if not token:
+                return None
+            elif token == requested_token:
+                return token
+
     def skip_block(self, for_char, next_char, allow_comma=False):
-        """Helper function for block statements: skip over bytecode until block end token."""
+        """Skip over bytecode until block end token."""
         stack = 0
         while True:
             c = self.skip_to_read(tk.END_STATEMENT + (tk.THEN, tk.ELSE))
@@ -316,7 +338,7 @@ class TokenisedStream(CodeStream):
             if c == '\0':
                 # break on end of stream
                 trail = self.read(4)
-                if len(trail) < 2 or trail[:2] == '\0\0':
+                if len(trail) < 4 or trail[:2] == '\0\0':
                     break
             # get first keyword in statement
             d = self.skip_blank()
