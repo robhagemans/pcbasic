@@ -62,7 +62,9 @@ class Parser(object):
             parse_args = self._simple[c]
         elif c in self._complex:
             stat_dict = self._complex[c]
-            selector = ins.skip_blank()
+            ins.skip_blank()
+            selector = ins.read_keyword_token()
+            ins.seek(-len(selector), 1)
             if selector not in stat_dict.keys():
                 selector = None
             else:
@@ -216,8 +218,11 @@ class Parser(object):
             tk.ON: {
                 tk.ERROR: self._parse_on_error_goto,
                 tk.KEY: self._parse_on_event,
-                '\xFE': self._parse_on_event,
-                '\xFF': self._parse_on_event,
+                tk.PEN: self._parse_on_event,
+                tk.TIMER: self._parse_on_event,
+                tk.PLAY: self._parse_on_event,
+                tk.COM: self._parse_on_event,
+                tk.STRIG: self._parse_on_event,
                 None: self._parse_on_jump,
             },
             tk.DEF: {
@@ -370,8 +375,11 @@ class Parser(object):
             tk.NOISE: session.sound.noise_,
             tk.ON + tk.ERROR: session.interpreter.on_error_goto_,
             tk.ON + tk.KEY: session.basic_events.on_event_gosub_,
-            tk.ON + '\xFE': session.basic_events.on_event_gosub_,
-            tk.ON + '\xFF': session.basic_events.on_event_gosub_,
+            tk.ON + tk.PEN: session.basic_events.on_event_gosub_,
+            tk.ON + tk.TIMER: session.basic_events.on_event_gosub_,
+            tk.ON + tk.PLAY: session.basic_events.on_event_gosub_,
+            tk.ON + tk.COM: session.basic_events.on_event_gosub_,
+            tk.ON + tk.STRIG: session.basic_events.on_event_gosub_,
             tk.ON: session.interpreter.on_jump_,
             tk.DEF + tk.FN: session.interpreter.def_fn_,
             tk.DEF + tk.USR: session.all_memory.def_usr_,
