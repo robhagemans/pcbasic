@@ -517,9 +517,9 @@ class Interpreter(object):
 
     def read_(self, args):
         """READ: read values from DATA statement."""
+        data_error = False
         for name, indices in args:
             name = self._memory.complete_name(name)
-            type_char, code_start = name[-1], self._memory.code_start
             current = self._program_code.tell()
             self._program_code.seek(self.data_pos)
             if self._program_code.peek() in tk.END_STATEMENT:
@@ -529,32 +529,42 @@ class Interpreter(object):
                 self._program_code.seek(current)
                 raise error.RunError(error.OUT_OF_DATA)
             self._program_code.skip_blank()
-            word = self._program_code.read_to((',', '"',) + tk.END_LINE + tk.END_STATEMENT)
-            if self._program_code.peek() == '"':
-                if word == '':
-                    word = self._program_code.read_string().strip('"')
+            if name[-1] == values.STR:
+                # for unquoted strings, payload starts at the first non-empty character
+                address = self._program_code.tell_address()
+                word = self._program_code.read_to((',', '"',) + tk.END_STATEMENT)
+                if self._program_code.peek() == '"':
+                    if word == '':
+                        # nothing before the quotes, so this is a quoted string literal
+                        # string payload starts after quote
+                        address = self._program_code.tell_address() + 1
+                        word = self._program_code.read_string().strip('"')
+                    else:
+                        # complete unquoted string literal
+                        word += self._program_code.read_string()
+                    if (self._program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
+                        raise error.RunError(error.STX)
                 else:
-                    word += self._program_code.read_string()
-                if (self._program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
-                    raise error.RunError(error.STX)
-            else:
-                word = word.strip(self._program_code.blanks)
-            if type_char == values.STR:
-                address = self.data_pos + code_start
+                    word = word.strip(self._program_code.blanks)
                 value = self._values.from_str_at(word, address)
             else:
+                word = self._program_code.read_number()
+                if word is None:
+                    word = ''
                 value = self._values.from_repr(word, allow_nonnum=False)
-                if value is None:
-                    # set pointer for EDIT gadget to position in DATA statement
-                    self._program_code.seek(self.data_pos)
-                    # syntax error in DATA line (not type mismatch!) if can't convert to var type
-                    raise error.RunError(error.STX, self.data_pos-1)
+                # anything after the number is a syntax error, but assignment has taken place)
+                if (self._program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
+                    data_error = True
             # restore to current program location
-            # to ensure any other errors get the correct line number (?)
+            # to ensure any other errors in set_variable get the correct line number
             data_pos = self._program_code.tell()
             self._program_code.seek(current)
             self._memory.set_variable(name, indices, value=value)
-            self.data_pos = data_pos
+            if data_error:
+                self._program_code.seek(self.data_pos)
+                raise error.RunError(error.STX)
+            else:
+                self.data_pos = data_pos
 
     ###########################################################################
     # COMMON
