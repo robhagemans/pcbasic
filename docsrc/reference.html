@@ -9816,12 +9816,12 @@
                 In this case, program execution will stop and control will be returned to the user.
             </li>
             <li>
-                If <code><b>,P</b></code> is specified, the program will be saved in protected format.
+                If <code><b>,P</b></code> is specified, the program will be saved in <a href="#protected-file-format">protected format</a>.
                 When a protected program is loaded in GW-BASIC, it cannot be <code>LIST</code>ed or <code>SAVE</code>d in non-protected
                 format.
             </li>
             <li>
-                If neither is specified, the program will be saved in tokenised format.
+                If neither is specified, the program will be saved in <a href="#tokenised-file-format">tokenised format</a>.
             </li>
         </ul>
         <h5>Parameters</h5>
@@ -11149,7 +11149,7 @@
                         An <a href="#INPUT"><code>INPUT</code></a> or
                         <a href="#LINE-INPUT"><code>LINE INPUT</code></a> statement encountered
                         an input string longer than 255 characters or the plain-text program file
-                        being loaded by <a href="#LOAD"><code>LOAD</code></a>, <a href="#CHAIN"><code>CHAIN</code></a> or <a href="#MERGE"><code>MERGE</code></a> contains a line with more than 255 characters. 
+                        being loaded by <a href="#LOAD"><code>LOAD</code></a>, <a href="#CHAIN"><code>CHAIN</code></a> or <a href="#MERGE"><code>MERGE</code></a> contains a line with more than 255 characters.
                         Attempting to load a text file that has <code><i>LF</i></code> rather than <code><i>CR LF</i></code> line endings may cause this error.
                     </p>
                 </td>
