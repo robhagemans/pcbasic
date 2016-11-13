@@ -3468,6 +3468,15 @@
                 new program, <samp>Illegal function call</samp> is raised but the load or merge is
                 being performed.
             </li>
+            <li>
+                A loaded text file contains lines without line numbers:
+                <samp>Direct statement in file</samp>.
+            </li>
+            <li>
+                A loaded text file contains lines longer than 255 characters:
+                <samp>Line buffer overflow</samp>.
+                Attempting to load a text file that has <code><i>LF</i></code> rather than <code><i>CR LF</i></code> line endings may cause this error.
+            </li>
         </ul>
     </section>
 <hr />
@@ -6506,6 +6515,11 @@
                 A loaded text file contains lines without line numbers:
                 <samp>Direct statement in file</samp>.
             </li>
+            <li>
+                A loaded text file contains lines longer than 255 characters:
+                <samp>Line buffer overflow</samp>.
+                Attempting to load a text file that has <code><i>LF</i></code> rather than <code><i>CR LF</i></code> line endings may cause this error.
+            </li>
         </ul>
     </section>
 <hr />
@@ -6715,6 +6729,11 @@
             <li>
                 A loaded text file contains lines without line numbers:
                 <samp>Direct statement in file</samp>.
+            </li>
+            <li>
+                A loaded text file contains lines longer than 255 characters:
+                <samp>Line buffer overflow</samp>.
+                Attempting to load a text file that has <code><i>LF</i></code> rather than <code><i>CR LF</i></code> line endings may cause this error.
             </li>
         </ul>
     </section>
@@ -11130,7 +11149,8 @@
                         An <a href="#INPUT"><code>INPUT</code></a> or
                         <a href="#LINE-INPUT"><code>LINE INPUT</code></a> statement encountered
                         an input string longer than 255 characters or the plain-text program file
-                        being loaded contains a line with more than 255 characters.
+                        being loaded by <a href="#LOAD"><code>LOAD</code></a>, <a href="#CHAIN"><code>CHAIN</code></a> or <a href="#MERGE"><code>MERGE</code></a> contains a line with more than 255 characters. 
+                        Attempting to load a text file that has <code><i>LF</i></code> rather than <code><i>CR LF</i></code> line endings may cause this error.
                     </p>
                 </td>
             </tr>
