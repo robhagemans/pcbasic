@@ -446,13 +446,23 @@
         </tr>
     </table>
     </div>
-    <p>
-        Where necessary, the result of the operation will be upgraded to a data type
-        able to hold the result. For example, dividing integers 3 by 2 will yield a
-        single-precision 1.5. However, the exponentiation operator <code>^</code>
-        will give at most a single-precision result unless the <a href="#--double"><code>double</code></a>
-        option is used.
-    </p>
+    <h5>Notes</h5>
+    <ul>
+        <li>
+            Where necessary, the result of the operation will be upgraded to a data type
+            able to hold the result. For example, dividing integers 3 by 2 will yield a
+            single-precision 1.5.
+        </li>
+        <li>
+            However, the exponentiation operator <code>^</code>
+            will give at most a single-precision result unless the <a href="#--double"><code>double</code></a>
+            option is used.
+        </li>
+        <li>
+            The expression <code>0^0</code> will return <code>1</code> and not raise an error,
+            even though, mathematically, raising zero to the zeroeth power is undefined.
+        </li>
+    </ul>
     <h5>Errors</h5>
     <ul>
         <li>
