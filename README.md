@@ -34,7 +34,7 @@ On **Windows**:
 - run the installer  
 - to start, click PC-BASIC in your Start menu  
 
-On **OS X**:  
+On **Mac**:  
 
 - mount the disk image  
 - to start, double click the PC-BASIC app  
@@ -70,13 +70,22 @@ Use one of the key combinations `Ctrl+Break`, `Ctrl+Scroll Lock`, `Ctrl+C` or `F
 to interrupt a running program and return to direct mode.  
 
 
+#### Location for BASIC programs ####
+By default, PC-BASIC looks for programs in your home folder.  
+
+- On **Windows**, this is usually a folder with your user name, located under `C:\Users\`. You can find this folder in Windows Explorer by typing `%USERPROFILE%` in the address bar.
+- On **Mac** and **Linux** this is the directory `~/`.
+
+See [the documentation on accessing your drives](http://pc-basic.org/doc#mounting) for more information.
+
+
 #### Configuration ####
 You can supply options to change PC-BASIC's behaviour by editing the configuration file. If you install the Windows package, the installer will automatically create a shortcut to this file in the PC-BASIC start menu folder. The file can also be found in the following location:
 
 | OS         | Configuration file  
 |------------|-------------------------------------------------------------------------  
 | Windows    | `%APPDATA%\pcbasic\PCBASIC.INI`  
-| OS X       | `~/Library/Application Support/pcbasic/PCBASIC.INI`  
+| Mac        | `~/Library/Application Support/pcbasic/PCBASIC.INI`  
 | Linux      | `~/.config/pcbasic/PCBASIC.INI`  
 
 For example, to start with the emulation target set to Tandy 1000 GW-BASIC, include the following line under `[pcbasic]` in the configuration file:
