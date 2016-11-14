@@ -2538,12 +2538,29 @@
         </code>
         <p>
             Returns a pseudorandom number in the interval <code>[0&#8212;1)</code>.
-            <code><var>x</var></code> is a numeric expression. If <code><var>x</var></code> is zero, <code>RND</code> repeats the last
-            pseudo-random number. If <code><var>x</var></code> is greater than zero, a new pseudorandom number is
-            returned. If <code><var>x</var></code> is negative, the value of <code><var>x</var></code> is used to generate a new
-            random number seed; after that, a new pseudorandom number is returned.
-            The seed is generated in a different way than by <code><a href="#RANDOMIZE">RANDOMIZE</a></code>.
         </p>
+        <h5>Parameters</h5>
+        <p>
+            <code><var>x</var></code> is a numeric expression.
+        </p>
+        <ul>
+            <li>
+                If <code><var>x</var></code> is zero, <code>RND</code> repeats the last
+                pseudo-random number.
+            </li>
+            <li>
+                If <code><var>x</var></code> is greater than zero, a new pseudorandom number is
+                returned.
+            </li>
+            <li>
+                If <code><var>x</var></code> is negative, <code><var>x</var></code> is converted to a single-precision floating-point value
+                and the random number seed is set to the absolute value of its mantissa.
+                The function then generates a new pseudorandom numer with this seed.
+                Since the only the mantissa of <code><var>x</var></code> is used, any two values whose ratio is a
+                power of 2 will produce the same seed.
+                Note that this procedure for generating a new seed differs from that used by <code><a href="#RANDOMIZE">RANDOMIZE</a></code>.
+            </li>
+        </ul>
         <h5>Notes</h5>
         <ul>
             <li>
