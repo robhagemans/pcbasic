@@ -79,11 +79,11 @@ class BaseDebugger(object):
             (0x0f,  '{0}:'.format(exc_type.__name__)),
             (0x07,  ' {0}\n\n'.format(str(exc_value))),
             (0x70,  'This is a bug in PC-BASIC.\n'),
-            (0x07,  'Sorry about that. Please send the above messages to the bugs forum\nby e-mail to '),
-            (0x0f,  'bugs@discussion.pcbasic.p.re.sf.net'),
-            (0x07,  ' or file a bug\nreport at '),
+            (0x07,  'Sorry about that. Please file a bug report at\n   '),
+            (0x0f,  'https://sourceforge.net/p/pcbasic/discussion/bugs/'),
+            (0x07,  '\nor '),
             (0x0f,  'https://github.com/robhagemans/pcbasic/issues'),
-            (0x07,  '. Please include\n'),
+            (0x07,  '\nPlease include the messages above and '),
             (0x07,  'as much information as you can about what you were doing and how this happened.\n'),
             (0x07,  'Thank you!\n')
         )
