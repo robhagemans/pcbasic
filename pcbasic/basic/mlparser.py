@@ -40,10 +40,7 @@ class MLParser(codestream.CodeStream):
             if len(c) == 0:
                 raise error.RunError(error.IFC)
             elif ord(c) > 8:
-                name = self.read_name()
-                error.throw_if(not name)
-                indices = self._parse_indices()
-                step = self.memory.get_variable(name, indices).to_int()
+                step = self._parse_variable().to_int()
                 self.require_read((';',), err=error.IFC)
             else:
                 # varptr$
@@ -64,16 +61,21 @@ class MLParser(codestream.CodeStream):
         if len(c) == 0:
             raise error.RunError(error.IFC)
         elif ord(c) > 8:
-            name = self.read_name()
-            error.throw_if(not name)
-            indices = self._parse_indices()
-            sub = self.memory.get_variable(name, indices)
+            sub = self._parse_variable()
             self.require_read((';',), err=error.IFC)
             return values.pass_string(sub).to_str()
         else:
             # varptr$
             ptr = self.memory.get_value_for_varptrstr(self.read(3))
             return values.pass_string(ptr).to_str()
+
+    def _parse_variable(self):
+        """Parse and return a named variable."""
+        name = self.read_name()
+        error.throw_if(not name)
+        indices = self._parse_indices()
+        value = self.memory.get_variable(name, indices)
+        return value
 
     def _parse_const(self):
         """Parse and return a constant value in a macro-language string."""
@@ -90,7 +92,10 @@ class MLParser(codestream.CodeStream):
         indices = []
         if self.skip_blank_read_if(('[', '(')):
             while True:
-                indices.append(self._parse_const())
+                if self.skip_blank() in set(string.digits):
+                    indices.append(self._parse_const())
+                else:
+                    indices.append(self._parse_variable().to_int())
                 if not self.skip_blank_read_if((',',)):
                     break
             self.require_read((']', ')'))
