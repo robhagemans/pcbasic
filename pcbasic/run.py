@@ -255,19 +255,19 @@ def bluescreen(e):
         '\nThis is a bug in PC-BASIC.')
     state.console_state.screen.set_attr(7)
     console.write(
-        'Sorry about that. Please send the above messages to the bugs forum\nby e-mail to ')
+        'Sorry about that. Please file a bug report at\n   ')
     state.console_state.screen.set_attr(15)
     console.write(
-        'bugs@discussion.pcbasic.p.re.sf.net')
+        'https://sourceforge.net/p/pcbasic/discussion/bugs/')
     state.console_state.screen.set_attr(7)
     console.write(
-        ' or by filing a bug\nreport at ')
+        '\nor ')
     state.console_state.screen.set_attr(15)
     console.write(
         'https://github.com/robhagemans/pcbasic/issues')
     state.console_state.screen.set_attr(7)
     console.write_line(
-        '. Please include')
+        '\nPlease include the messages above and')
     console.write_line('as much information as you can about what you were doing and how this happened.')
     console.write_line('Thank you!')
     state.console_state.screen.set_attr(7)
