@@ -214,7 +214,7 @@ class Debugger(BaseDebugger):
         save_stdout = sys.stdout
         sys.stdout = buf
         try:
-            exec debug_cmd in globals(), locals()
+            exec debug_cmd.to_str() in globals(), locals()
         except DebugException:
             raise
         except error.Exit:
