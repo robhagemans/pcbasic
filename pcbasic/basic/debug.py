@@ -61,12 +61,9 @@ class BaseDebugger(object):
             self.session.interpreter.direct_line.seek(0)
             code_line = str(self.session.lister.detokenise_compound_statement(
                     self.session.interpreter.direct_line)[0])
-        # clear screen for modal message
-        screen = self.session.screen
-        screen.screen(0, 0, 0, 0, new_width=80)
-        screen.set_attr(0x17)
-        screen.clear()
-        # format the error on the screen
+        # stop program execution
+        self.session.interpreter.set_pointer(False)
+        # construct the message
         message = [
             (0x70, 'EXCEPTION\n'),
             (0x17, 'PC-BASIC version '),
@@ -81,8 +78,6 @@ class BaseDebugger(object):
             (0x17,  ' {0}\n\n'.format(str(exc_value))),
             (0x70,  'This is a bug in PC-BASIC.\n'),
             (0x17,  'Sorry about that. Please file a bug report at\n   '),
-            (0x1f,  'https://sourceforge.net/p/pcbasic/discussion/bugs/'),
-            (0x17,  '\nor '),
             (0x1f,  'https://github.com/robhagemans/pcbasic/issues'),
             (0x17,  '\nPlease include the messages above and '),
             (0x17,  'as much information as you can about what you were doing and how this happened.\n'),
@@ -91,10 +86,16 @@ class BaseDebugger(object):
             (0x1f,  'to avoid data loss in case PC-BASIC has become unstable.\n'),
             (0x07,  '\n'),
         ]
+        # clear screen for modal message
+        screen = self.session.screen
+        # choose attributes - this should be readable on VGA, MDA, PCjr etc.
+        screen.screen(0, 0, 0, 0, new_width=80)
+        screen.set_attr(0x17)
+        screen.clear()
+        # show message on screen
         for attr, text in message:
             screen.set_attr(attr)
             screen.write(text)
-        self.session.interpreter.set_pointer(False)
 
     def debug_step(self, token):
         """Dummy debug step."""
