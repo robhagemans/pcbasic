@@ -45,52 +45,51 @@ class BaseDebugger(object):
 
     def bluescreen(self, e):
         """Display a modal exception message."""
-        screen = self.session.screen
-        screen.screen(0, 0, 0, 0, new_width=80)
-        screen.clear()
-        screen.init_mode()
-        exc_type, exc_value, exc_traceback = sys.exc_info()
         # log the standard python error
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        stack = traceback.extract_tb(exc_traceback)
         logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
-        # format the error more readably on the screen
-        screen.set_border(4)
-        message = (
-            (0x70, 'EXCEPTION\n'),
-            (0x07, 'PC-BASIC version '),
-            (0x0f, __version__),
-            (0x07, '\nexecuting '),
-        )
-        for attr, text in message:
-            screen.set_attr(attr)
-            screen.write(text)
-        screen.set_attr(15)
+        # obtain statement being executed
         if self.session.interpreter.run_mode:
-            self.session.program.bytecode.seek(-1, 1)
-            self.session.program.edit(screen,
-                    self.session.program.get_line_number(
-                            self.session.program.bytecode.tell()),
-                            self.session.program.bytecode.tell())
-            screen.write_line('\n')
+            codestream = self.session.program.bytecode
+            bytepos = codestream.tell() - 1
+            from_line = self.session.program.get_line_number(bytepos)
+            codestream.seek(self.session.program.line_numbers[from_line]+1)
+            _, output, textpos = self.session.lister.detokenise_line(codestream, bytepos)
+            code_line = str(output)
         else:
             self.session.interpreter.direct_line.seek(0)
-            screen.write_line(str(
-                    self.session.lister.detokenise_compound_statement(
-                            self.session.interpreter.direct_line)[0])+'\n')
-        stack = traceback.extract_tb(exc_traceback)
+            code_line = str(self.session.lister.detokenise_compound_statement(
+                    self.session.interpreter.direct_line)[0])
+        # clear screen for modal message
+        screen = self.session.screen
+        screen.screen(0, 0, 0, 0, new_width=80)
+        screen.set_attr(0x17)
+        screen.clear()
+        # format the error on the screen
         message = [
-            (0x0f, '{0}:{1}, {2}\n'.format(os.path.split(s[0])[-1], s[1], s[2]))
+            (0x70, 'EXCEPTION\n'),
+            (0x17, 'PC-BASIC version '),
+            (0x1f, __version__),
+            (0x17, '\nexecuting '),
+            (0x1f, code_line + '\n\n'),
+        ] + [
+            (0x1f, '{0}:{1}, {2}\n'.format(os.path.split(s[0])[-1], s[1], s[2]))
             for s in stack[-4:]
         ] + [
-            (0x0f,  '{0}:'.format(exc_type.__name__)),
-            (0x07,  ' {0}\n\n'.format(str(exc_value))),
+            (0x1f,  '{0}:'.format(exc_type.__name__)),
+            (0x17,  ' {0}\n\n'.format(str(exc_value))),
             (0x70,  'This is a bug in PC-BASIC.\n'),
-            (0x07,  'Sorry about that. Please file a bug report at\n   '),
-            (0x0f,  'https://sourceforge.net/p/pcbasic/discussion/bugs/'),
-            (0x07,  '\nor '),
-            (0x0f,  'https://github.com/robhagemans/pcbasic/issues'),
-            (0x07,  '\nPlease include the messages above and '),
-            (0x07,  'as much information as you can about what you were doing and how this happened.\n'),
-            (0x07,  'Thank you!\n')
+            (0x17,  'Sorry about that. Please file a bug report at\n   '),
+            (0x1f,  'https://sourceforge.net/p/pcbasic/discussion/bugs/'),
+            (0x17,  '\nor '),
+            (0x1f,  'https://github.com/robhagemans/pcbasic/issues'),
+            (0x17,  '\nPlease include the messages above and '),
+            (0x17,  'as much information as you can about what you were doing and how this happened.\n'),
+            (0x17,  'Thank you!\n\n'),
+            (0x1f,  'You can continue to use PC-BASIC, but it is recommended to save your work now\n'),
+            (0x1f,  'to avoid data loss in case PC-BASIC has become unstable.\n'),
+            (0x07,  '\n'),
         ]
         for attr, text in message:
             screen.set_attr(attr)
