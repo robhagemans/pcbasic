@@ -14,6 +14,7 @@ import platform
 import struct
 import io
 
+from ..version import __version__
 from .base import error
 from . import values
 
@@ -53,8 +54,15 @@ class BaseDebugger(object):
         logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         # format the error more readably on the screen
         screen.set_border(4)
-        screen.set_attr(0x70)
-        screen.write_line('EXCEPTION')
+        message = (
+            (0x70, 'EXCEPTION\n'),
+            (0x07, 'PC-BASIC version '),
+            (0x0f, __version__),
+            (0x07, '\nexecuting '),
+        )
+        for attr, text in message:
+            screen.set_attr(attr)
+            screen.write(text)
         screen.set_attr(15)
         if self.session.interpreter.run_mode:
             self.session.program.bytecode.seek(-1, 1)
@@ -69,13 +77,10 @@ class BaseDebugger(object):
                     self.session.lister.detokenise_compound_statement(
                             self.session.interpreter.direct_line)[0])+'\n')
         stack = traceback.extract_tb(exc_traceback)
-        for s in stack[-4:]:
-            screen.set_attr(15)
-            screen.write_line('{0}:{1}, {2}'.format(os.path.split(s[0])[-1], s[1], s[2]))
-            if s[3] is not None:
-                screen.set_attr(7)
-                screen.write_line('    {0}'.format(s[3]))
-        message = (
+        message = [
+            (0x0f, '{0}:{1}, {2}\n'.format(os.path.split(s[0])[-1], s[1], s[2]))
+            for s in stack[-4:]
+        ] + [
             (0x0f,  '{0}:'.format(exc_type.__name__)),
             (0x07,  ' {0}\n\n'.format(str(exc_value))),
             (0x70,  'This is a bug in PC-BASIC.\n'),
@@ -86,7 +91,7 @@ class BaseDebugger(object):
             (0x07,  '\nPlease include the messages above and '),
             (0x07,  'as much information as you can about what you were doing and how this happened.\n'),
             (0x07,  'Thank you!\n')
-        )
+        ]
         for attr, text in message:
             screen.set_attr(attr)
             screen.write(text)
@@ -137,7 +142,10 @@ class Debugger(BaseDebugger):
 
         def crash():
             """Simulate a crash."""
-            raise DebugException()
+            try:
+                raise DebugException()
+            except DebugException as e:
+                BaseDebugger.bluescreen(self, e)
 
         def reset():
             """Ctrl+Alt+Delete."""
