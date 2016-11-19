@@ -11,6 +11,7 @@ sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 - **WJB**,                  bug fixes
 - **Ronald Herrera**,       testing, bug hunting
 - **Kenneth Wayne Boyd**,   testing, bug hunting
+- **Nauman Umer**,          testing, bug hunting
 - **Miguel Dorta**,         testing, serial ports
 - **Patrik**,               testing, serial ports
 - **Duane**,                testing, serial ports
