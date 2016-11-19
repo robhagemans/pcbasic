@@ -132,11 +132,11 @@ class BaseDebugger(object):
         # construct the message
         message = [
             (0x70, 'EXCEPTION\n'),
-            (0x17, 'PC-BASIC version '),
+            (0x17, 'version   '),
             (0x1f, __version__),
-            (0x17, '\non '),
+            (0x17, '\nplatform  '),
             (0x1f, platform.platform()),
-            (0x17, '\nexecuting '),
+            (0x17, '\nstatement '),
             (0x1f, code_line + '\n\n'),
         ] + [
             (0x1f, '{0}:{1}, {2}\n'.format(os.path.split(s[0])[-1], s[1], s[2]))
@@ -148,14 +148,12 @@ class BaseDebugger(object):
             (0x17,  'Sorry about that. Please file a bug report at\n  '),
             (0x1f,  'https://github.com/robhagemans/pcbasic/issues'),
             (0x17,  '\nPlease include the messages above and '),
-            (0x17,  'as much information as you can about what you were doing and how this happened.\n'),
-            (0x17,  'If possible, please attach the log file stored at\n  '),
+            (0x17,  'as much information as you can about what you were doing and how this happened. '),
+            (0x17,  'If possible, please attach the log file\n  '),
             (0x1f,  logfile.name.encode('ascii', errors='replace')),
             (0x17,  '\nThis file contains detailed information about your program and this crash.\n'),
-            (0x17,  'Thank you!\n\n'),
-            (0x1f,  'You can continue to use PC-BASIC, but it is recommended to save your work now\n'),
-            (0x1f,  'to avoid data loss in case PC-BASIC has become unstable.\n'),
-            (0x07,  '\n'),
+            (0x17,  'Thank you!\n'),
+            (0x07,  ''),
         ]
         # create crash log
         crashlog = [
@@ -179,6 +177,7 @@ class BaseDebugger(object):
         # choose attributes - this should be readable on VGA, MDA, PCjr etc.
         screen.screen(0, 0, 0, 0, new_width=80)
         screen.set_attr(0x17)
+        screen.set_border(1)
         screen.clear()
         # show message on screen
         for attr, text in message:
