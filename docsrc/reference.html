@@ -7462,7 +7462,7 @@
                     given by the preceding path, or the current directory if no preceding path is given.
                 </p>
                 <p>
-                    The <code><a href="#LOAD">LOAD</a></code>,
+                    If the file name provided does not contain any dots, the <code><a href="#LOAD">LOAD</a></code>,
                     <code><a href="#SAVE">SAVE</a></code>,
                     <code><a href="#BLOAD">BLOAD</a></code>,
                     <code><a href="#BSAVE">BSAVE</a></code>,
@@ -7470,10 +7470,10 @@
                     <code><a href="#MERGE">MERGE</a></code>,
                     <code><a href="#RUN">RUN</a></code>, and
                     <code><a href="#LIST">LIST</a></code> statements
-                    (but not <code><a href="#OPEN">OPEN</a></code>) implicitly add a default
-                    extension <code>.BAS</code> if no extension is specified. To refer
+                    append the default
+                    extension <code>.BAS</code>. To refer
                     to a file name without an extension, the file specification should
-                    end in a dot <code>.</code>.
+                    end in a dot <code>.</code>. For other statements, appending a dot is allowed but not required.
                 </p>
                 <h5>Compatibility notes</h5>
                 <p>
@@ -7488,56 +7488,41 @@
                     notably, this is the case on DOSBox.
                 </p>
                 <p>
-                    Since disk devices are mapped onto directories on the host system,
-                    DOS style names need to be mapped onto file names following the
-                    host system's (usually much less restrictive) standards.
-                    To allow access to files whose name on the host system does
-                    not conform to DOS standards, the following matching procedures are observed.
+                    In order to allow access to files whose name on the host system does
+                    not conform to DOS standards while maintaining compatibility with GW-BASIC,
+                    PC-BASIC will follow these steps to match DOS-style file names to host file names:
                 </p>
-                <dl>
-                    <dt>
-                        <code><a href="#OPEN">OPEN</a></code>,
-                        <code><a href="#KILL">KILL</a></code>,
-                        <code><a href="#NAME">NAME</a></code>,
-                        <code><a href="#CHDIR">CHDIR</a></code>,
-                        <code><a href="#MKDIR">MKDIR</a></code>,
-                        <code><a href="#RMDIR">RMDIR</a></code>
-                    </dt>
-                    <dd>
-                        PC-BASIC will first look for a file with the name
-                        exactly as provided. This can be a long name and will be case sensitive if
-                        your file system is. If such a file is not found, it will truncate the name
-                        provided to 8.3 format and convert to all uppercase. If that exact name is
-                        not found, it will look for 8.3 names in mixed case which match the name
+                <ol>
+                    <li>
+                        Look for a file with the name as provided.
+                        This can be a long file name which may contain non-permissible characters and which will be case sensitive if
+                        your file system is.
+                    </li>
+                    <li>
+                        If such a file is not found, it will truncate the name
+                        provided to all-uppercase 8.3 format and look for an exact match.
+                        The truncated name consists of the first 8 characters before the first dot,
+                        followed by the first three characters after the first dot.
+                        If the resulting file name contains non-permissible characters, an error will be raised.
+                    </li>
+                    <li>
+                        Look for 8.3 names in mixed case which match the name
                         provided in a case-insensitive way. Such files are searched in lexicographic
-                        order. Files names longer than 8.3 will not be matched, unless their name is entered exactly.
+                        order. File names longer than 8.3 will not be matched, unless their name is entered exactly.
                         On Windows, the name matched can be a short filename as well as a
                         long filename provided it is of 8.3 length &#8212; it may, for example, contain
                         spaces and thus not be a valid Windows short file name.
-                    </dd>
-                    <dt>
-                        <code><a href="#LOAD">LOAD</a></code>,
-                        <code><a href="#SAVE">SAVE</a></code>,
-                        <code><a href="#BLOAD">BLOAD</a></code>,
-                        <code><a href="#BSAVE">BSAVE</a></code>,
-                        <code><a href="#CHAIN">CHAIN</a></code>,
-                        <code><a href="#MERGE">MERGE</a></code>,
-                        <code><a href="#RUN">RUN</a></code>,
-                        <code><a href="#LIST">LIST</a></code>
-                    </dt>
-                    <dd>
-                        No attempt is made to find an exact
-                        match. Instead, the search will first match the all-caps 8.3 version of the
-                        name and continue in lexicographic order as above. If no extension is
-                        specified, the extension <code>.BAS</code> will be implicitly added. To load a program
-                        with no extension, end the filename in a dot. On file systems without
-                        short filenames, it is not possible to load a program if its filename is
-                        longer than 8.3, contains non-permissible characters or ends in a dot.
-                    </dd>
-                </dl>
+                    </li>
+                </ol>
+                <p>
+                    If the file name provided ends in a single dot and contains no other dots,
+                    PC-BASIC will first match the name as provided; if this is not found, it will match
+                    the name as provided but without the single dot. The 8.3 format of such a file name will match
+                    file names with and without the dot, in lexicographic order.
+                </p>
                 <p>
                     If no matching file is found for an output file name, a new file will be
-                    created with an all-caps 8.3 file name.
+                    created with an all-uppercase 8.3 file name.
                 </p>
             </dd>
             <dt>
