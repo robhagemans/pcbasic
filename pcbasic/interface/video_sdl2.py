@@ -121,7 +121,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # "NOTE: You should not expect to be able to create a window, render, or receive events on any thread other than the main one"
         # https://wiki.libsdl.org/CategoryThread
         # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
-        self._do_create_window(640, 400)
+        self._do_create_window(*self._find_display_size(
+                                640, 400, self.border_width))
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
         self.move_cursor(1, 1)
