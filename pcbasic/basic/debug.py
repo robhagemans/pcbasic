@@ -6,15 +6,18 @@ DEBUG statement and utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
+import os
+import io
 import sys
 import traceback
 import logging
-import os
 import platform
 import struct
-import io
+import tempfile
+from datetime import datetime
 
 from ..version import __version__
+from .. import config
 from .base import error
 from . import values
 
@@ -121,11 +124,16 @@ class BaseDebugger(object):
                     self.session.interpreter.direct_line)[0])
         # stop program execution
         self.session.interpreter.set_pointer(False)
+        # create crash log file
+        logname = datetime.now().strftime('pcbasic-crash-%Y%m%d-')
+        logfile = tempfile.NamedTemporaryFile(suffix='.log', prefix=logname, dir=config.state_path, delete=False)
         # construct the message
         message = [
             (0x70, 'EXCEPTION\n'),
             (0x17, 'PC-BASIC version '),
             (0x1f, __version__),
+            (0x17, '\non '),
+            (0x1f, platform.platform()),
             (0x17, '\nexecuting '),
             (0x1f, code_line + '\n\n'),
         ] + [
@@ -135,14 +143,27 @@ class BaseDebugger(object):
             (0x1f,  '{0}:'.format(exc_type.__name__)),
             (0x17,  ' {0}\n\n'.format(str(exc_value))),
             (0x70,  'This is a bug in PC-BASIC.\n'),
-            (0x17,  'Sorry about that. Please file a bug report at\n   '),
+            (0x17,  'Sorry about that. Please file a bug report at\n  '),
             (0x1f,  'https://github.com/robhagemans/pcbasic/issues'),
             (0x17,  '\nPlease include the messages above and '),
             (0x17,  'as much information as you can about what you were doing and how this happened.\n'),
+            (0x17,  'If possible, please attach the log file stored at\n  '),
+            (0x1f,  logfile.name.encode('ascii', errors='replace')),
+            (0x17,  '\nThis file contains detailed information about your program and this crash.\n'),
             (0x17,  'Thank you!\n\n'),
             (0x1f,  'You can continue to use PC-BASIC, but it is recommended to save your work now\n'),
             (0x1f,  'to avoid data loss in case PC-BASIC has become unstable.\n'),
             (0x07,  '\n'),
+        ]
+        # create crash log
+        crashlog = [
+            b'PC-BASIC crash log',
+            b'==================',
+            b''.join(text for _, text in message),
+            b''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
+            self._repr_screen(),
+            self._repr_variables(),
+            self._repr_program(),
         ]
         # clear screen for modal message
         screen = self.session.screen
@@ -154,6 +175,9 @@ class BaseDebugger(object):
         for attr, text in message:
             screen.set_attr(attr)
             screen.write(text)
+        # write crash log
+        with logfile as f:
+            f.write('\n'.join(crashlog))
 
     def debug_step(self, token):
         """Dummy debug step."""
