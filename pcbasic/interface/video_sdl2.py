@@ -104,6 +104,18 @@ class VideoSDL2(video_graphical.VideoGraphical):
             # SDL not initialised correctly
             logging.error('Could not initialise SDL2: %s', sdl2.SDL_GetError())
             raise base.InitFailed()
+        display_mode = sdl2.SDL_DisplayMode()
+        sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
+        self.physical_size = display_mode.w, display_mode.h
+        # create the window initially as 640*400 black
+        # "NOTE: You should not expect to be able to create a window, render, or receive events on any thread other than the main one"
+        # https://wiki.libsdl.org/CategoryThread
+        # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
+        self.display = None
+        self.work_surface = None
+        self._do_create_window(*self._find_display_size(640, 400, self.border_width))
+        # pop up as black rather than background, looks nicer
+        sdl2.SDL_UpdateWindowSurface(self.display)
 
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
@@ -112,17 +124,6 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # display palettes for blink states 0, 1
         self.show_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         # get physical screen dimensions (needs to be called before set_mode)
-        display_mode = sdl2.SDL_DisplayMode()
-        sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
-        self.physical_size = display_mode.w, display_mode.h
-        # create the window initially, size will be corrected later
-        self.display = None
-        # create window in same thread that manipulates it
-        # "NOTE: You should not expect to be able to create a window, render, or receive events on any thread other than the main one"
-        # https://wiki.libsdl.org/CategoryThread
-        # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
-        self._do_create_window(*self._find_display_size(
-                                640, 400, self.border_width))
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
         self.move_cursor(1, 1)
@@ -551,6 +552,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.border_y = int(canvas_height * self.border_width // 200)
         work_width = canvas_width + 2*self.border_x
         work_height = canvas_height + 2*self.border_y
+        sdl2.SDL_FreeSurface(self.work_surface)
         self.work_surface = sdl2.SDL_CreateRGBSurface(
                                 0, work_width, work_height, 8, 0, 0, 0, 0)
         self.work_pixels = pixels2d(self.work_surface.contents)[
