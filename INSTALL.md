@@ -8,21 +8,26 @@ please consult the notes below.
 Download the Python distribution of PC-BASIC and unpack the TGZ archive.
 The following packages are needed or recommended when installing PC-BASIC from the Python distribution:
 
-| Package                                                         | OS                 | Status       | Used for
-|-----------------------------------------------------------------|--------------------|--------------|----------------------------------------
-| [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |
-| [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows            | required     |
-| [PySDL2](https://pysdl2.readthedocs.org/en/latest/)             | all                | recommended  | sound and graphics
-| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all                | recommended  | sound and graphics
-| [PySerial](https://pypi.python.org/pypi/pyserial)               | all                | optional     | physical or emulated serial port access
-| [PyParallel](https://pypi.python.org/pypi/pyserial)             | Windows, Linux     | optional     | physical parallel port access
-| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| OSX, Linux, other  | optional     | `SHELL` command
-| [PyGame 1.9.2](http://www.pygame.org)                           | all                | optional     | sound and graphics (PyGame interface)
-| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)          | all                | experimental | sound (PortAudio engine)
+| Package                                                               | OS                 | Status       | Used for
+|-----------------------------------------------------------------------|--------------------|--------------|----------------------------------------
+| [Python 2.7](https://www.python.org/downloads/release/python-2712/)   | all                | required     |
+| [PyWin32](https://sourceforge.net/projects/pywin32/)                  | Windows            | required     |
+| [PySDL2](https://pysdl2.readthedocs.org/en/latest/)                   | all                | recommended  | sound and graphics
+| [NumPy](https://sourceforge.net/projects/numpy/files/)                | all                | recommended  | sound and graphics
+| [PySerial 2.7](https://sourceforge.net/projects/pyserial/)            | all                | optional     | physical or emulated serial port access
+| [PyParallel 0.2](https://sourceforge.net/projects/pyserial/)          | Windows, Linux     | optional     | physical parallel port access
+| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)      | OSX, Linux, other  | optional     | `SHELL` command
+| [PyGame 1.9.2](http://www.pygame.org)                                 | all                | optional     | sound and graphics (PyGame interface)
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                | all                | experimental | sound (PortAudio engine)
 
 In this list, _other_ refers to operating systems other than Windows, Linux or OSX.
 
-On **Windows**, you should download all the required packages from the project web sites linked above.
+On **Windows**, first install Python 2.7 from the web site linked on top. Most dependencies can then be installed with `pip`:
+
+        pip install pypiwin32 pysdl2 numpy pygame pyaudio
+
+If you require serial and parallel port access, download PySerial and PyParallel from the web site linked above.
+Note that PC-BASIC does not currently work with the `pip` version of these packages.
 
 Download `launcher.exe` from the [ANSI|pipe release page](http://github.com/robhagemans/ansipipe/releases/) and place it in the directory where `pcbasic.py` is located.
 You can now run pc-basic with the command `launcher python pcbasic.py`. Without ANSI|pipe, PC-BASIC will run but you will
