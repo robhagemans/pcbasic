@@ -43,6 +43,64 @@ class BaseDebugger(object):
         self.debug_tron = False
         self.session = session
 
+    def _repr_variables(self):
+        """Return a string representation of all variables."""
+        return '\n'.join((
+            '==== Scalars ='.ljust(100, '='),
+            str(self.session.scalars),
+            '==== Arrays ='.ljust(100, '='),
+            str(self.session.arrays),
+            '==== Strings ='.ljust(100, '='),
+            str(self.session.strings),
+        ))
+
+    def _repr_screen(self):
+        """Return a string representation of the screen buffer."""
+        horiz_bar = ('  +' + '-'*self.session.screen.mode.width + '+')
+        i = 0
+        lastwrap = False
+        row_strs = [horiz_bar]
+        for row in self.session.screen.apage.row:
+            s = [ c[0] for c in row.buf ]
+            i += 1
+            outstr = '{0:2}'.format(i)
+            if lastwrap:
+                outstr += ('\\')
+            else:
+                outstr += ('|')
+            outstr += (''.join(s))
+            if row.wrap:
+                row_strs.append(outstr + '\\ {0:2}'.format(row.end))
+            else:
+                row_strs.append(outstr + '| {0:2}'.format(row.end))
+            lastwrap = row.wrap
+        row_strs.append(horiz_bar)
+        return '\n'.join(row_strs)
+
+    def _repr_program(self):
+        """Return a marked-up hex dump of the program."""
+        prog = self.session.program
+        code = prog.bytecode.getvalue()
+        offset_val, p = 0, 0
+        output = []
+        for key in sorted(prog.line_numbers.keys())[1:]:
+            offset, linum = code[p+1:p+3], code[p+3:p+5]
+            last_offset = offset_val
+            offset_val = (struct.unpack('<H', offset)[0]
+                                    - (self.session.memory.code_start + 1))
+            linum_val, = struct.unpack('<H', linum)
+            output.append(
+                (code[p:p+1].encode('hex') + ' ' +
+                offset.encode('hex') + ' (+%03d) ' +
+                code[p+3:p+5].encode('hex') + ' [%05d] ' +
+                code[p+5:prog.line_numbers[key]].encode('hex')) %
+                                        (offset_val - last_offset, linum_val))
+            p = prog.line_numbers[key]
+        output.append(code[p:p+1].encode('hex') + ' ' +
+                    code[p+1:p+3].encode('hex') + ' (ENDS) ' +
+                    code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex'))
+        return '\n'.join(output)
+
     def bluescreen(self, e):
         """Display a modal exception message."""
         # log the standard python error
@@ -166,54 +224,18 @@ class Debugger(BaseDebugger):
 
         def show_variables():
             """Dump all variables to the log."""
-            logging.debug('==== Scalars ='.ljust(100, '='))
-            logging.debug(str(self.session.scalars))
-            logging.debug('==== Arrays ='.ljust(100, '='))
-            logging.debug(str(self.session.arrays))
-            logging.debug('==== Strings ='.ljust(100, '='))
-            logging.debug(str(self.session.strings))
+            for s in self._repr_variables().split('\n'):
+                logging.debug(s)
 
         def show_screen():
             """Copy the screen buffer to the log."""
-            logging.debug('  +' + '-'*self.session.screen.mode.width + '+')
-            i = 0
-            lastwrap = False
-            for row in self.session.screen.apage.row:
-                s = [ c[0] for c in row.buf ]
-                i += 1
-                outstr = '{0:2}'.format(i)
-                if lastwrap:
-                    outstr += ('\\')
-                else:
-                    outstr += ('|')
-                outstr += (''.join(s))
-                if row.wrap:
-                    logging.debug(outstr + '\\ {0:2}'.format(row.end))
-                else:
-                    logging.debug(outstr + '| {0:2}'.format(row.end))
-                lastwrap = row.wrap
-            logging.debug('  +' + '-' * self.session.screen.mode.width + '+')
+            for s in self._repr_screen().split('\n'):
+                logging.debug(s)
 
         def show_program():
             """Write a marked-up hex dump of the program to the log."""
-            prog = self.session.program
-            code = prog.bytecode.getvalue()
-            offset_val, p = 0, 0
-            for key in sorted(prog.line_numbers.keys())[1:]:
-                offset, linum = code[p+1:p+3], code[p+3:p+5]
-                last_offset = offset_val
-                offset_val = (struct.unpack('<H', offset)[0]
-                                        - (self.session.memory.code_start + 1))
-                linum_val, = struct.unpack('<H', linum)
-                logging.debug((code[p:p+1].encode('hex') + ' ' +
-                                offset.encode('hex') + ' (+%03d) ' +
-                                code[p+3:p+5].encode('hex') + ' [%05d] ' +
-                                code[p+5:prog.line_numbers[key]].encode('hex')),
-                             offset_val - last_offset, linum_val )
-                p = prog.line_numbers[key]
-            logging.debug(code[p:p+1].encode('hex') + ' ' +
-                        code[p+1:p+3].encode('hex') + ' (ENDS) ' +
-                        code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex'))
+            for s in self._repr_program().split('\n'):
+                logging.debug(s)
 
         debug_cmd, = args
         # make session available to debugging commands
