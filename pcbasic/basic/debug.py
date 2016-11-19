@@ -62,7 +62,9 @@ class BaseDebugger(object):
         horiz_bar = ('  +' + '-'*self.session.screen.mode.width + '+')
         i = 0
         lastwrap = False
-        row_strs = [horiz_bar]
+        row_strs = [
+            '==== Screen ='.ljust(100, '='),
+            horiz_bar]
         for row in self.session.screen.apage.row:
             s = [ c[0] for c in row.buf ]
             i += 1
@@ -85,7 +87,7 @@ class BaseDebugger(object):
         prog = self.session.program
         code = prog.bytecode.getvalue()
         offset_val, p = 0, 0
-        output = []
+        output = ['==== Program Buffer ='.ljust(100, '=')]
         for key in sorted(prog.line_numbers.keys())[1:]:
             offset, linum = code[p+1:p+3], code[p+3:p+5]
             last_offset = offset_val
@@ -165,6 +167,13 @@ class BaseDebugger(object):
             self._repr_variables(),
             self._repr_program(),
         ]
+        self.session.program.bytecode.seek(1)
+        crashlog.append('==== Program ='.ljust(100, '='))
+        while True:
+            _, line, _ = self.session.lister.detokenise_line(self.session.program.bytecode)
+            if not line:
+                break
+            crashlog.append(str(line))
         # clear screen for modal message
         screen = self.session.screen
         # choose attributes - this should be readable on VGA, MDA, PCjr etc.
