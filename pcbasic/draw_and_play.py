@@ -13,6 +13,7 @@ import representation
 import util
 import var
 import state
+import string
 
 # generic for both macro languages
 ml_whitepace = ' '
@@ -55,9 +56,7 @@ def ml_parse_value(gmls, default=None):
         if len(c) == 0:
             raise error.RunError(error.IFC)
         elif ord(c) > 8:
-            name = util.get_var_name(gmls)
-            indices = ml_parse_indices(gmls)
-            step = var.get_var_or_array(name, indices)
+            step = ml_parse_variable(gmls)
             util.require_read(gmls, (';',), err=error.IFC)
         else:
             # varptr$
@@ -93,15 +92,20 @@ def ml_parse_const_int(gmls):
     """ Parse a constant value in a macro-language string, return Python int. """
     return vartypes.pass_int_unpack(ml_parse_const(gmls), err=error.IFC)
 
+def ml_parse_variable(gmls):
+    """Parse and return a named variable."""
+    name = util.get_var_name(gmls)
+    indices = ml_parse_indices(gmls)
+    value = var.get_var_or_array(name, indices)
+    return value
+
 def ml_parse_string(gmls):
     """ Parse a string value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
     if len(c) == 0:
         raise error.RunError(error.IFC)
     elif ord(c) > 8:
-        name = util.get_var_name(gmls, err=error.IFC)
-        indices = ml_parse_indices(gmls)
-        sub = var.get_var_or_array(name, indices)
+        sub = ml_parse_variable(gmls)
         util.require_read(gmls, (';',), err=error.IFC)
         return vartypes.pass_string_unpack(sub, err=error.IFC)
     else:
@@ -115,7 +119,12 @@ def ml_parse_indices(gmls):
     if c in ('[', '('):
         gmls.read(1)
         while True:
-            indices.append(ml_parse_const_int(gmls))
+            if util.skip(gmls, ml_whitepace) in set(string.digits):
+                indices.append(ml_parse_const_int(gmls))
+            else:
+                val = ml_parse_variable(gmls)
+                vartypes.pass_int_unpack(val)
+                indices.append(vartypes.pass_int_unpack(val, err=error.IFC))
             c = util.skip(gmls, ml_whitepace)
             if c == ',':
                 gmls.read(1)
