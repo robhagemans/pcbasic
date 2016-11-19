@@ -262,7 +262,7 @@ class Files(object):
             self.files[number] = new_file
         return new_file
 
-    def open_native_or_basic(self, filespec, filetype, mode):
+    def open_internal(self, filespec, filetype, mode):
         """If the specified file exists, open it; if not, try as BASIC file spec. Do not register in files dict."""
         if not filespec:
             return self._open_stdio(filetype, mode)

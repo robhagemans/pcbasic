@@ -231,17 +231,13 @@ class Session(object):
     def load_program(self, prog, rebuild_dict=True):
         """Load a program from native or BASIC file."""
         with self._handle_exceptions():
-            with self.files.open_native_or_basic(
-                        prog, filetype='ABP',
-                        mode='I') as progfile:
+            with self.files.open_internal(prog, filetype='ABP', mode='I') as progfile:
                 self.program.load(progfile, rebuild_dict=rebuild_dict)
 
     def save_program(self, prog, filetype):
         """Save a program to native or BASIC file."""
         with self._handle_exceptions():
-            with self.files.open_native_or_basic(
-                        prog, filetype=filetype,
-                        mode='O') as progfile:
+            with self.files.open_internal(prog, filetype=filetype, mode='O') as progfile:
                 self.program.save(progfile)
 
     def execute(self, command):
@@ -494,8 +490,8 @@ class Session(object):
             # on Tandy, raises Internal Error
             # and deletes the program currently in memory
             raise error.RunError(error.INTERNAL_ERROR)
-        with self.files.open_native_or_basic(self._term_program,
-                    filetype='ABP', mode='I') as progfile:
+        with self.files.open_internal(
+                self._term_program, filetype='ABP', mode='I') as progfile:
             self.program.load(progfile)
         self.interpreter.error_handle_mode = False
         self.interpreter.clear_stacks_and_pointers()
