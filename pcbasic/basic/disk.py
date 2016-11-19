@@ -118,7 +118,7 @@ def handle_oserror(e):
 
 if platform.system() == b'Windows':
     def short_name(path, longname):
-        """Get unicode Windows short name or fake it."""
+        """Get bytes Windows short name or fake it."""
         path_and_longname = os.path.join(path, longname)
         try:
             # gets the short name if it exists, keeps long name otherwise
@@ -134,27 +134,31 @@ if platform.system() == b'Windows':
         return split_dosname(name, mark_shortened=True)
 else:
     def short_name(dummy_path, longname):
-        """Get unicode Windows short name or fake it."""
+        """Get bytes Windows short name or fake it."""
         # path is only needed on Windows
         return split_dosname(longname, mark_shortened=True)
 
-def split_dosname(name, defext=b'', mark_shortened=False):
-    """Convert unicode name into uppercase 8.3 tuple; apply default extension """
+def split_dosname(name, mark_shortened=False):
+    """Convert unicode name into bytes uppercase 8.3 tuple; apply default extension."""
     # convert to all uppercase, no leading or trailing spaces
+    # replace non-ascii characters with question marks
     name = name.encode(b'ascii', errors=b'replace').strip().upper()
     # don't try to split special directory names
     if name == b'.':
         return b'', b''
     elif name == b'..':
         return b'', b'.'
-    # take whatever comes after last dot as extension
+    # take whatever comes after first dot as extension
     # and whatever comes before first dot as trunk
-    elements = name.split(b'.')
+    elements = name.split(b'.', 1)
     if len(elements) == 1:
-        trunk, ext = elements[0], defext
+        trunk, ext = elements[0], ''
     else:
-        trunk, ext = elements[0], elements[-1]
+        trunk, ext = elements
+    # truncate to 8.3
     strunk, sext = trunk[:8], ext[:3]
+    # mark shortened file names with a + sign
+    # this is used in FILES
     if mark_shortened:
         if strunk != trunk:
             strunk = strunk[:7] + b'+'
@@ -162,9 +166,14 @@ def split_dosname(name, defext=b'', mark_shortened=False):
             sext = sext[:2] + b'+'
     return strunk, sext
 
-def join_dosname(trunk, ext):
+def join_dosname(trunk, ext, padding=False):
     """Join trunk and extension into (bytes) file name."""
-    return trunk + (b'.' + ext if ext else b'')
+    if ext or not trunk:
+        ext = '.' + ext
+    if padding:
+        return trunk.ljust(8) + ext.ljust(4)
+    else:
+        return trunk + ext
 
 def istype(path, native_name, isdir):
     """Return whether a file exists and is a directory or regular."""
@@ -193,13 +202,29 @@ def match_dosname(dosname, path, isdir):
 
 def match_filename(name, defext, path, name_err, isdir):
     """Find or create a matching native file name for a given BASIC name."""
+    # if the name contains a dot, do not apply the default extension
+    # to maintain GW-BASIC compatibility, a trailing single dot matches the name
+    # with no dots as well as the name with a single dot.
+    # file names with more than one dot are not affected.
+    # file spec         attempted matches
+    # LongFileName      (1) LongFileName.BAS (2) LONGFILE.BAS
+    # LongFileName.bas  (1) LongFileName.bas (2) LONGFILE.BAS
+    # LongFileName.     (1) LongFileName. (2) LongFileName (3) LONGFILE
+    # LongFileName..    (1) LongFileName.. (2) LONGFILE..
+    # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
+    if b'.' not in name:
+        name += b'.' + defext
+    elif name[-1] == b'.' and b'.' not in name[:-1]:
+        # ends in single dot; first try with dot
+        # but if it doesn't exist, base everything of dotless name
+        if istype(path, name, isdir):
+            return name
+        name = name[:-1]
     # check if the name exists as-is; should also match Windows short names.
-    # EXCEPT if default extension is not empty, in which case
-    # default extension must be found first. Necessary for GW compatibility.
-    if not defext and istype(path, name, isdir):
+    if istype(path, name, isdir):
         return name
-    # try to match dossified names with default extension
-    trunk, ext = split_dosname(name, defext)
+    # try to match dossified names
+    trunk, ext = split_dosname(name)
     # enforce allowable characters
     if (set(trunk) | set(ext)) - allowable_chars:
         raise error.RunError(error.BAD_FILE_NAME)
@@ -318,7 +343,7 @@ class DiskDevice(object):
             msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
             raise ValueError(msg)
 
-    def open(self, number, param, filetype, mode, access, lock,
+    def open(self, number, filespec, filetype, mode, access, lock,
                    reclen, seg, offset, length):
         """Open a file on a disk drive."""
         if not self.path:
@@ -331,14 +356,14 @@ class DiskDevice(object):
             defext = b''
         # translate the file name to something DOS-ish if necessary
         if mode == b'I':
-            name = self._native_path(param, defext)
+            name = self._native_path(filespec, defext)
         else:
             # random files: try to open matching file
             # if it doesn't exist, use an all-caps 8.3 file name
-            name = self._native_path(param, defext, name_err=None)
+            name = self._native_path(filespec, defext, name_err=None)
         # don't open output or append files more than once
         if mode in (b'O', b'A'):
-            self.check_file_not_open(param)
+            self.check_file_not_open(filespec)
         # obtain a lock
         if filetype == 'D':
             self.locks.acquire(name, number, lock, access)
@@ -438,8 +463,8 @@ class DiskDevice(object):
         # return drive root path, relative path, file name
         return path[:baselen], path[baselen:], name
 
-    def _native_path(self, path_and_name, defext=b'', name_err=error.FILE_NOT_FOUND,
-                    isdir=False):
+    def _native_path(self, path_and_name, defext=b'',
+                    name_err=error.FILE_NOT_FOUND, isdir=False):
         """Find os-native path to match the given BASIC path."""
         # substitute drives and cwds
         # always use Path Not Found error if not found at this stage
@@ -507,9 +532,8 @@ class DiskDevice(object):
         if not dirs and not fils:
             raise error.RunError(error.FILE_NOT_FOUND)
         # format and print contents
-        output = (
-              [(b'%-8s.%-3s' % (t, e) if (e or not t) else b'%-8s    ' % t) + b'<DIR>' for t, e in dirs]
-            + [(b'%-8s.%-3s' % (t, e) if e else b'%-8s    ' % t) + b'     ' for t, e in fils])
+        output = ([join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
+                  [join_dosname(t, e, padding=True) + b'     ' for t, e in fils])
         num = screen.mode.width // 20
         while len(output) > 0:
             line = b' '.join(output[:num])
