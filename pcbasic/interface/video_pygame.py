@@ -48,6 +48,8 @@ class VideoPygame(video_graphical.VideoGraphical):
         # reset this value
         if platform.system() == 'Windows':
             os.environ['SDL_VIDEODRIVER'] = 'directx'
+        # ensure window is centred
+        os.environ['SDL_VIDEO_CENTERED'] = '1'
         pygame.init()
         try:
             # poll the driver to force an exception if not initialised
