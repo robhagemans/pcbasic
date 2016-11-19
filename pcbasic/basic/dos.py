@@ -113,16 +113,15 @@ class WindowsShell(ShellBase):
         self.codepage = codepage
         self._encoding = locale.getpreferredencoding()
 
-    def _process_stdout(self, p, stream, shell_output):
+    def _process_stdout(self, stream, shell_output):
         """Retrieve SHELL output and write to console."""
         while True:
+            # blocking read
             c = stream.read(1)
-            if c != b'':
+            if c:
                 # don't access screen in this thread
                 # the other thread already does
                 shell_output.append(c)
-            elif p.poll() is not None:
-                break
             else:
                 # don't hog cpu, sleep 1 ms
                 time.sleep(0.001)
@@ -135,10 +134,10 @@ class WindowsShell(ShellBase):
             cmd += u' /C ' + self.codepage.str_to_unicode(command)
         p = subprocess.Popen(cmd.encode(self._encoding).split(), stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        outp = threading.Thread(target=self._process_stdout, args=(p, p.stdout, shell_output))
+        outp = threading.Thread(target=self._process_stdout, args=(p.stdout, shell_output))
         outp.daemon = True
         outp.start()
-        errp = threading.Thread(target=self._process_stdout, args=(p, p.stderr, shell_output))
+        errp = threading.Thread(target=self._process_stdout, args=(p.stderr, shell_output))
         errp.daemon = True
         errp.start()
         word = b''
@@ -174,8 +173,6 @@ class WindowsShell(ShellBase):
                 # needed for Wine and to handle backspace properly
                 word += c
                 self.screen.write(c)
-        outp.join()
-        errp.join()
 
 
 class Shell(ShellBase):
