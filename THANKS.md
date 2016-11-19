@@ -5,14 +5,16 @@
 PC-BASIC would not exist without those contributing code, reporting bugs,
 sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 
-- **Rob Hagemans**,   lead author
-- **Wengier Wu**,     bug fixes, advice for CJK support
-- **WJB**,            bug fixes
-- **Jan Bredenbeek**, bug fixes, advice for BASICODE support
-- **Ronald Herrera**, testing, bug hunting
-- **Miguel Dorta**,   testing, serial ports
-- **Patrik**,         testing, serial ports
-- **Duane**,          testing, serial ports
+- **Rob Hagemans**,         lead author
+- **Wengier Wu**,           bug fixes, CJK guidance
+- **Jan Bredenbeek**,       bug fixes, BASICODE guidance
+- **WJB**,                  bug fixes
+- **Ronald Herrera**,       testing, bug hunting
+- **Kenneth Wayne Boyd**,   testing, bug hunting
+- **Nauman Umer**,          testing, bug hunting
+- **Miguel Dorta**,         testing, serial ports
+- **Patrik**,               testing, serial ports
+- **Duane**,                testing, serial ports
 
 
 ### Shoulders of Giants
