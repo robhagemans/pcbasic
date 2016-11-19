@@ -495,8 +495,8 @@ class DiskDevice(object):
         safe(os.rmdir, self._native_path(name, name_err=error.PATH_NOT_FOUND, isdir=True))
 
     def kill(self, name):
-        """Remove regular file at given BASIC path."""
-        safe(os.remove, self._native_path(name))
+        """Remove regular file at given native path."""
+        safe(os.remove, name)
 
     def rename(self, oldname, newname):
         """Rename a file or directory."""
