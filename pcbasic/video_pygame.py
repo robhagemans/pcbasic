@@ -6,6 +6,7 @@ Graphical interface based on PyGame
 This file is released under the GNU GPL version 3.
 """
 
+import os
 import logging
 
 try:
@@ -17,6 +18,7 @@ try:
     import numpy
 except ImportError:
     numpy = None
+
 
 import plat
 import config
@@ -36,6 +38,9 @@ if plat.system == 'Windows':
     except AttributeError:
         # old versions of Windows don't have this in user32.dll
         pass
+
+# ensure window is centred
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 # fallback to curses if not working
 fallback = 'video_curses'
