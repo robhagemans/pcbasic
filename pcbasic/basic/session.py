@@ -60,7 +60,7 @@ class Session(object):
             max_list_line=65535, allow_protect=False,
             allow_code_poke=False, max_memory=65534,
             max_reclen=128, max_files=3, reserved_memory=3429,
-            temp_dir=u''):
+            temp_dir=u'', debug_uargv=None):
         """Initialise the interpreter session."""
         ######################################################################
         # session-level members
@@ -164,7 +164,7 @@ class Session(object):
         # initialise the parser
         self.parser = parser.Parser(self.values, self.memory, syntax)
         # set up debugger
-        self.debugger = debug.get_debugger(self, option_debug)
+        self.debugger = debug.get_debugger(self, option_debug, debug_uargv)
         # set up BASIC event handlers
         self.basic_events = events.BasicEvents(
                 self.values, self.input_methods, self.sound, self.clock,

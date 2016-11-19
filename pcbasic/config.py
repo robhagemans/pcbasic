@@ -339,9 +339,9 @@ class Settings(object):
     def __init__(self, temp_dir, arguments):
         """Initialise settings."""
         # convert arguments to unicode using preferred encoding
-        uargv = [''] + list(arguments) if arguments else get_unicode_argv()
+        self.uargv = [''] + list(arguments) if arguments else get_unicode_argv()
         # first parse a logfile argument, if any
-        for args in uargv:
+        for args in self.uargv:
             if args[:9] == u'--logfile':
                 logfile = args[10:]
                 break
@@ -365,7 +365,7 @@ class Settings(object):
             # unpack bundled programs
             programs.store_bundled_programs(program_path)
         # store options in options dictionary
-        self._options = self._retrieve_options(uargv)
+        self._options = self._retrieve_options(self.uargv)
         # prepare global logger for use by main program
         self._prepare_logging()
 
@@ -493,6 +493,7 @@ class Settings(object):
             # first field buffer address (workspace size; 3429 for gw-basic)
             'reserved_memory': self.get('reserved-memory'),
             'peek_values': peek_values,
+            'debug_uargv': self.uargv,
         }
 
     def get_video_parameters(self):

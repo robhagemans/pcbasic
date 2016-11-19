@@ -22,12 +22,12 @@ from .base import error
 from . import values
 
 
-def get_debugger(session, option_debug):
+def get_debugger(session, option_debug, debug_uargv):
     """Create debugger."""
     if option_debug:
-        return Debugger(session)
+        return Debugger(session, debug_uargv)
     else:
-        return BaseDebugger(session)
+        return BaseDebugger(session, debug_uargv)
 
 
 class DebugException(Exception):
@@ -41,9 +41,10 @@ class BaseDebugger(object):
 
     debug_mode = False
 
-    def __init__(self, session):
+    def __init__(self, session, uargv):
         """Initialise debugger."""
         self.debug_tron = False
+        self.uargv = uargv
         self.session = session
 
     def _repr_variables(self):
@@ -158,7 +159,7 @@ class BaseDebugger(object):
         # create crash log
         crashlog = [
             b'PC-BASIC crash log',
-            b'==================',
+            b'=' * 100,
             b''.join(text for _, text in message),
             b''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
             self._repr_screen(),
@@ -172,6 +173,8 @@ class BaseDebugger(object):
             if not line:
                 break
             crashlog.append(str(line))
+        crashlog.append('==== Options ='.ljust(100, '='))
+        crashlog.append(repr(self.uargv))
         # clear screen for modal message
         screen = self.session.screen
         # choose attributes - this should be readable on VGA, MDA, PCjr etc.
@@ -199,9 +202,9 @@ class Debugger(BaseDebugger):
 
     debug_mode = True
 
-    def __init__(self, session):
+    def __init__(self, session, uargv):
         """Initialise debugger."""
-        BaseDebugger.__init__(self, session)
+        BaseDebugger.__init__(self, session, uargv)
         self.watch_list = []
 
     def debug_step(self, token):
