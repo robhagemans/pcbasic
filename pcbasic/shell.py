@@ -93,17 +93,16 @@ def shell(command):
 if plat.system == 'Windows':
     shell_output = ''
 
-    def process_stdout(p, stream):
+    def process_stdout(stream):
         """ Retrieve SHELL output and write to console. """
         global shell_output
         while True:
+            # blocking read
             c = stream.read(1)
-            if c != '':
+            if c:
                 # don't access screen in this thread
                 # the other thread already does
                 shell_output += c
-            elif p.poll() is not None:
-                break
             else:
                 # don't hog cpu, sleep 1 ms
                 time.sleep(0.001)
@@ -114,12 +113,12 @@ if plat.system == 'Windows':
         cmd = shell_command
         if command:
             cmd += ' /C ' + command
-        p = subprocess.Popen( str(cmd).split(), stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        outp = threading.Thread(target=process_stdout, args=(p, p.stdout))
+        p = subprocess.Popen(str(cmd).split(), stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        outp = threading.Thread(target=process_stdout, args=(p.stdout))
         outp.daemon = True
         outp.start()
-        errp = threading.Thread(target=process_stdout, args=(p, p.stderr))
+        errp = threading.Thread(target=process_stdout, args=(p.stderr))
         errp.daemon = True
         errp.start()
         word = ''
@@ -157,8 +156,6 @@ if plat.system == 'Windows':
                 # needed for Wine and to handle backspace properly
                 word += c
                 console.write(c)
-        outp.join()
-        errp.join()
 
 else:
     def spawn_shell(command):
