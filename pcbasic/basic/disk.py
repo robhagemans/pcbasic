@@ -194,9 +194,11 @@ def match_dosname(dosname, path, isdir):
     # check if the dossified name exists as-is
     if istype(path, dosname, isdir):
         return dosname
-    # for case-sensitive filenames: find other case combinations, if present
+    # find other case combinations, if present
+    # also match training single dot to no dots
+    trunk, ext = split_dosname(dosname)
     for f in sorted(os.listdir(path)):
-        if f.upper() == dosname and istype(path, f, isdir):
+        if split_dosname(f) == (trunk, ext) and istype(path, f, isdir):
             return f
     return None
 
@@ -363,7 +365,7 @@ class DiskDevice(object):
             name = self._native_path(filespec, defext, name_err=None)
         # don't open output or append files more than once
         if mode in (b'O', b'A'):
-            self.check_file_not_open(filespec)
+            self.check_file_not_open(name)
         # obtain a lock
         if filetype == 'D':
             self.locks.acquire(name, number, lock, access)
@@ -558,7 +560,7 @@ class DiskDevice(object):
         """Raise an error if the file is open."""
         for f in self.locks.open_files.values():
             try:
-                if self._native_path(path, name_err=None) == f.name:
+                if path == f.name:
                     raise error.RunError(error.FILE_ALREADY_OPEN)
             except AttributeError as e:
                 # only disk files have a name, so ignore

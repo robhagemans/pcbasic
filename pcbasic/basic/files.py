@@ -627,6 +627,7 @@ class Devices(object):
         if not name:
             raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
+        path = dev._native_path(path, name_err=error.FILE_NOT_FOUND, isdir=False)
         # don't delete open files
         dev.check_file_not_open(path)
         dev.kill(path)
