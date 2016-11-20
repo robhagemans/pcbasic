@@ -137,7 +137,6 @@ class Settings(object):
             u'strict-newline': u'True',
             u'strict-protect': u'True',
             u'allow-code-poke': u'True',
-            u'shell': u'native',
             u'nokill': u'True',
             u'ctrl-c-break': u'False',
             },
