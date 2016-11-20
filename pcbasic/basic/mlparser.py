@@ -74,8 +74,7 @@ class MLParser(codestream.CodeStream):
         name = self.read_name()
         error.throw_if(not name)
         indices = self._parse_indices()
-        value = self.memory.get_variable(name, indices)
-        return value
+        return self.memory.get_variable(name, indices)
 
     def _parse_const(self):
         """Parse and return a constant value in a macro-language string."""
