@@ -1392,10 +1392,10 @@
             <p>
                 You can use the command-line interface to run one or a few BASIC commands directly, like so:
             </p>
-<pre><samp>me@mybox$ <b>pcbasic -bqe="?1+1"</b>
- <b>2</b>
-me@mybox$
-</samp></pre>
+            <samp class="block">me@mybox$ <b>pcbasic -bqe="?1+1"</b>
+                <b>2</b>
+                me@mybox$
+            </samp>
             <p>
                 For scripting purposes, it is also possible to run PC-BASIC without any
                 interface by setting <code><a href="#--interface">interface</a>=none</code> or
@@ -1415,18 +1415,18 @@ me@mybox$
                 interface is very similar to the default graphical interface, but runs in your
                 Command Prompt or Terminal window.
             </p>
-
             <p>
-                In the text-based and command-line interfaces, graphics are not available.
-                Attempting to open a graphical screen mode will lead to an <samp>Illegal
-                function call</samp> error. Furthermore, many <kbd>Ctrl</kbd> and <kbd>Alt</kbd>
+                Graphical screen modes can be used in text and command-line interface,
+                but only the text on the screen will be visible.
+                pre, many <kbd>Ctrl</kbd> and <kbd>Alt</kbd>
                 key combinations are not available.
             </p>
-
             <p>
-                On Unix systems only, you can get sound in the text and command-line
-                interfaces over the PC speaker if you install the <code>beep</code> utility and
-                enable the legacy PC-speaker driver or emulation.
+                The text and command-line interfaces will attempt to use the PC speaker
+                for sound. Only single-voice sound can be produced this way.
+                On Linux systems under X11, you may need to install the <code>beep</code> utility and
+                enable the PC-speaker driver or emulation; direct speaker access is often
+                limited to root or tty logins, and on Ubuntu systems it is disabled by default.
             </p>
         </section>
         <hr />
