@@ -3720,7 +3720,7 @@
         </p>
         <h5>Parameters</h5>
         <p>
-            <code><var>x</var></code> is a numeric valued expression that determines what is cleared:
+            <code><var>x</var></code> is a numeric valued expression.
         </p>
         <ul>
             <li>
@@ -3733,6 +3733,10 @@
                 If <code><var>x</var> = 2</code>, the text view region is cleared.
             </li>
         </ul>
+        <p>
+            The optional argument <code><var>x</var></code> is not available with
+            <code><a href="#--syntax">syntax</a>={pcjr|tandy}</code>.
+        </p>
         <h5>Errors</h5>
         <ul>
             <li>
@@ -3749,6 +3753,14 @@
             </li>
             <li>
                 A comma is specified followed by more: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                <code><a href="#--syntax">syntax</a>=pcjr</code> is set
+                and an argument is specified: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                <code><a href="#--syntax">syntax</a>=tandy</code> is set
+                and an argument is specified: <samp>Illegal function call</samp>.
             </li>
             <li>
                 If an error occurs, the screen is not cleared.
