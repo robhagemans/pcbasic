@@ -3,7 +3,10 @@ basedir = '..\\..'
 a = Analysis(
         [basedir+'\\pcbasic.py'],
         pathex=[basedir],
-        hiddenimports=[],
+        hiddenimports=['Queue'],
+	excludes=['_tkinter', 'tcl', 'tk', 
+		'pygame', 'pyaudio', 
+		'_ssl', '_bsddb', '_hashlib'],
         hookspath=None,
         runtime_hooks=None)
 pyz = PYZ(a.pure)
