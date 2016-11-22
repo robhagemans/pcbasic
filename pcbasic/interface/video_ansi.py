@@ -69,8 +69,8 @@ class VideoANSI(video_cli.VideoCLI):
         """Redraw the screen."""
         sys.stdout.write(ansi.esc_clear_screen)
         for row, textrow in enumerate(self.text[self.vpagenum]):
+            sys.stdout.write(ansi.esc_move_cursor % (row+1, 1))
             for col, charattr in enumerate(textrow):
-                sys.stdout.write(ansi.esc_move_cursor % (row+1, col+1))
                 self._set_attributes(*charattr[1])
                 sys.stdout.write(charattr[0].encode(encoding, 'replace'))
         sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
@@ -110,12 +110,15 @@ class VideoANSI(video_cli.VideoCLI):
                             for _ in range(self.num_pages)]
         self._set_default_colours(len(mode_info.palette))
         sys.stdout.write(ansi.esc_resize_term % (self.height, self.width))
+        self._set_attributes(7, 0, False, False)
         sys.stdout.write(ansi.esc_clear_screen)
         sys.stdout.flush()
         return True
 
     def set_page(self, new_vpagenum, new_apagenum):
         """Set visible and active page."""
+        if (self.vpagenum, self.apagenum) == (new_vpagenum, new_apagenum):
+            return
         self.vpagenum, self.apagenum = new_vpagenum, new_apagenum
         self._redraw()
 
