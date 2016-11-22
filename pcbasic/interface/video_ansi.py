@@ -87,6 +87,9 @@ class VideoANSI(video_cli.VideoCLI):
 
     def _set_attributes(self, fore, back, blink, underline):
         """Set ANSI colours based on split attribute."""
+        if self.last_attributes == (fore, back, blink, underline):
+            return
+        self.last_attributes = fore, back, blink, underline
         bright = (fore & 8)
         if bright == 0:
             fore = 30 + self.default_colours[fore%8]
@@ -184,9 +187,7 @@ class VideoANSI(video_cli.VideoCLI):
         if self.vpagenum != pagenum:
             return
         sys.stdout.write(ansi.esc_move_cursor % (row, col))
-        if self.last_attributes != (fore, back, blink, underline):
-            self.last_attributes = fore, back, blink, underline
-            self._set_attributes(fore, back, blink, underline)
+        self._set_attributes(fore, back, blink, underline)
         sys.stdout.write(char.encode(encoding, 'replace'))
         if is_fullwidth:
             sys.stdout.write(' ')
