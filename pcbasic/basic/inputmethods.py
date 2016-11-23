@@ -99,9 +99,10 @@ class InputMethods(object):
 
     def check_events(self):
         """Main event cycle."""
-        # we need this for audio thread to keep up during tight loops
-        # but how much does it slow us down otherwise?
-        time.sleep(0)
+        # avoid screen lockups if video queue fills up
+        # note that this really slows down screen writing
+        self._queues.video.join()
+        self._queues.audio.join()
         self._check_input()
         self.keyboard.drain_event_buffer()
 
