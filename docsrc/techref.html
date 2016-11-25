@@ -729,10 +729,10 @@
                     </tr>
                     <tr>
                         <td>
-                            4 bytes
+                            31 bits
                         </td>
                         <td>
-                            All <code>FF</code>
+                            30 1s followed by a 0.
                         </td>
                         <td>
                             End of record marker.
@@ -1149,6 +1149,83 @@
             The last block will have 0 &ndash; 1023 payload bytes; the rest of
             the block is filled with <code><i>ETH</i></code> (<code>04</code>) bytes.
             These bytes are included in that block's checksum but otherwise ignored.
+        </p>
+    </section>
+    <hr />
+
+    <section>
+        <h3 id="emulator-file-formats">Emulator file formats</h3>
+        <p>
+            PC-BASIC uses a number of file formats to support its emulation of
+            legacy hardware, which are documented in this section.
+            These file formats are not used by GW-BASIC or
+            contemporary software.
+        </p>
+        <h4 id="hex-file-format">HEX font file format</h4>
+        <p>
+            The HEX file format for bitfonts was developed by Roman Czyborra for the
+            GNU Unifont package. PC-BASIC uses this file format to store its fonts.
+        </p>
+        <p>
+            A HEX file is an ASCII text file, consisting of lines terminated by <code><i>LF</i></code>.
+            Each line of this file is one of the following:
+        </p>
+        <ul>
+            <li>
+                Empty
+            </li>
+            <li>
+                A comment, starting with a <code>#</code> character.
+            </li>
+            <li>
+                A 4 or 6-character hexadecimal Unicode code point, followed by a colon,
+                followed by a 16- or 32-character hexadecimal number representing the glyph.
+                A 16-character number represents a halfwidth (8x16) glyph, with
+                each row of 8 pixels represented by two hexadecimal characters.
+                A 32-character number represents a fullwidth (16x16) glyph, with
+                each row of 16 pixels represented by four hexadecimal characters.
+            </li>
+        </ul>
+        <p>
+            PC-BASIC also encodes 8- and 14-pixel high fonts in this manner; these
+            are encoded as 16-bit high fonts with the remaining rows set to zero.
+        </p>
+        <h4 id="ucs-file-format">UCS code page file format</h4>
+        <p>
+            Unicode-codepage mappings are stored in UCS files.
+        </p>
+        <p>
+            A UCS file is an ASCII text file, consisting of lines terminated by <code><i>LF</i></code>.
+            Each line of this file is one of the following:
+        </p>
+        <ul>
+            <li>
+                Empty
+            </li>
+            <li>
+                A comment, starting with a <code>#</code> character.
+            </li>
+            <li>
+                A 2- or 4-character hexadecimal codepage point, followed by a colon, followed
+                by a comma-separated list of 4- or 6-character hexadecimal Unicode code points.
+                If more than one Unicode code point is provided for a codepage point, the code points
+                must combine into a single glyph.
+            </li>
+        </ul>
+        <h4 id="cas-file-format">CAS tape file format</h4>
+        <p>
+            A CAS file is a bit-level representation of cassette data introduced by the PCE emulator.
+            CAS-files produced by PC-BASIC start with the characters
+            <code>PC-BASIC tape<i>EOF</i></code>. This sequence is followed by seven 0 bits,
+            followed by the tape contents. The seven zero bits are intended to
+            ensure that the tape contents are byte-aligned; the one bit is made up
+            by the synchronisation bit following the pilot wave.
+        </p>
+        <p>
+            Note that PC-BASIC does not require the introductory sequence to read
+            a CAS-file correctly, nor does it require the contents of a CAS-file
+            to be byte-aligned. However, new files produced by PC-BASIC follow
+            this convention.
         </p>
     </section>
     <hr />
