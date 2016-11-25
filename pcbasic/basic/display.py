@@ -599,6 +599,7 @@ class Screen(object):
         # print screen target, to be set later due to init order issues
         self.lpt1_file = None
         self.drawing = graphics.Drawing(self, input_methods, values, memory)
+        self.palette = Palette(self.mode, self.capabilities, self._memory)
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
@@ -689,7 +690,7 @@ class Screen(object):
                erase=1, new_width=None):
         """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
-        self.palette = Palette(self.mode, self.capabilities, self._memory)
+        self.palette.init_mode(self.mode)
         # set default arguments
         if new_mode is None:
             new_mode = self.screen_mode
@@ -826,7 +827,7 @@ class Screen(object):
         self.drawing.init_mode()
         # cursor width starts out as single char
         self.cursor.init_mode(self.mode)
-        self.palette = Palette(self.mode, self.capabilities, self._memory)
+        self.palette.init_mode(self.mode)
         # set the attribute
         if not self.mode.is_text_mode:
             fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
@@ -916,7 +917,7 @@ class Screen(object):
         else:
             self.colours16[:] = self.colours16_mono
         # reset the palette to reflect the new mono or mode-5 situation
-        self.palette = Palette(self.mode, self.capabilities, self._memory)
+        self.palette.init_mode(self.mode)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_COLORBURST, (on and colorburst_capable,
                             self.palette.rgb_palette, self.palette.rgb_palette1)))
 
@@ -1831,8 +1832,13 @@ class Palette(object):
     def __init__(self, mode, capabilities, memory):
         """Initialise palette."""
         self.capabilities = capabilities
-        self.mode = mode
         self._memory = memory
+        self.mode = mode
+        self.set_all(mode.palette, check_mode=False)
+
+    def init_mode(self, mode):
+        """Initialise for new mode."""
+        self.mode = mode
         self.set_all(mode.palette, check_mode=False)
 
     def set_entry(self, index, colour, check_mode=True):
