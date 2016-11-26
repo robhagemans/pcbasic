@@ -114,9 +114,11 @@ apologies to those whose contribution I have failed to acknowledge here.
   * _GW-BASIC 3.23 User's Guide_, Microsoft Corporation, 1987.
   * _IBM Personal Computer Hardware Reference Library: BASIC_, IBM, 1982.
   * _Tandy 1000 BASIC, A Reference Guide_, Tandy Corporation.
+  * _BASICODE Hobbyscoop 2_, Nederlandse Omroep Stichting, 1984.
   * **William Barden, Jr.**, _Graphics and Sound for the Tandy 1000s and PC Compatibles_, Microtrend, 1987.
   * **Don Inman** and **Bob Albrecht**, _The GW-BASIC Reference_, Osborne McGraw-Hill, 1990.
   * **Thomas C. McIntyre**, _BLUE: BASIC Language User Essay_, 1991, [available online](https://web.archive.org/web/20060410121551/http://scottserver.net/basically/geewhiz.html).
+  * **David I. Schneider**, _Handbook of BASIC: Third Edition for the IBM PC, XT, AT, PS/2, and Compatibles_, Brady, 1988.
 
 ### Development tools
 
