@@ -70,7 +70,7 @@ Use one of the key combinations `Ctrl+Break`, `Ctrl+Scroll Lock`, `Ctrl+C` or `F
 to interrupt a running program and return to direct mode.  
 
 
-#### Location for BASIC programs ####
+#### Program location ####
 By default, PC-BASIC looks for programs in your home folder.  
 
 - On **Windows**, this is usually a folder with your user name, located under `C:\Users\`. You can find this folder in Windows Explorer by typing `%USERPROFILE%` in the address bar.
@@ -103,7 +103,7 @@ If you start PC-BASIC from the command prompt (on Windows this is the `C:\>` pro
 
 If you use PC-BASIC from the command prompt on Windows, make sure you run the `pcbasic.com` binary. You will not see any output if you call the `pcbasic.exe` binary.
 
-#### Getting programs ####
+#### External resources ####
 The following pages have GW-BASIC program downloads, lots of information and further links.  
 
 - [KindlyRat](http://www.oocities.org/KindlyRat/GWBASIC.html)'s archived Geocities page has a number of classic games and utilities.  
