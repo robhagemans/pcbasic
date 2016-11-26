@@ -59,8 +59,8 @@
 112   LOCATE VE+1, HO+1
 113 RETURN
 120 ' Retrieve cursor position
-121   VE = CSRLIN
-122   HO = POS(0)
+121   VE = CSRLIN-1
+122   HO = POS(0)-1
 123 RETURN
 150 ' Print highlighted text block to screen
 151   COLOR O.CL%[CC[0]], O.CL%[CC[1]]: PRINT " ";
