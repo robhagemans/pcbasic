@@ -91,6 +91,8 @@ class InputMethods(object):
     # main event checker
 
     tick = 0.006
+    max_video_qsize = 500
+    max_audio_qsize = 20
 
     def wait(self):
         """Wait and check events."""
@@ -100,11 +102,11 @@ class InputMethods(object):
     def check_events(self):
         """Main event cycle."""
         # avoid screen lockups if video queue fills up
-        if self._queues.video.qsize() > 500:
+        if self._queues.video.qsize() > self.max_video_qsize:
             # note that this really slows down screen writing
             # because it triggers a sleep() in the video backend
             self._queues.video.join()
-        if self._queues.audio.qsize() > 20:
+        if self._queues.audio.qsize() > self.max_audio_qsize:
             self._queues.audio.join()
         self._check_input()
         self.keyboard.drain_event_buffer()
