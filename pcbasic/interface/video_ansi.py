@@ -49,9 +49,9 @@ class VideoANSI(video_cli.VideoCLI):
     def __exit__(self, type, value, traceback):
         """Close the text interface."""
         base.VideoPlugin.__exit__(self, type, value, traceback)
-        sys.stdout.write(ansi.esc_set_colour % 0)
-        sys.stdout.write(ansi.esc_clear_screen)
-        sys.stdout.write(ansi.esc_move_cursor % (1, 1))
+        sys.stdout.write(ansi.SET_COLOUR % 0)
+        sys.stdout.write(ansi.CLEAR_SCREEN)
+        sys.stdout.write(ansi.MOVE_CURSOR % (1, 1))
         self.show_cursor(True)
         sys.stdout.flush()
         # re-enable logger
@@ -61,29 +61,29 @@ class VideoANSI(video_cli.VideoCLI):
     def _check_display(self):
         """Handle screen and interface events."""
         if self.cursor_visible and self.last_pos != (self.cursor_row, self.cursor_col):
-            sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
+            sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
             sys.stdout.flush()
             self.last_pos = (self.cursor_row, self.cursor_col)
 
     def _redraw(self):
         """Redraw the screen."""
-        sys.stdout.write(ansi.esc_clear_screen)
+        sys.stdout.write(ansi.CLEAR_SCREEN)
         for row, textrow in enumerate(self.text[self.vpagenum]):
-            sys.stdout.write(ansi.esc_move_cursor % (row+1, 1))
+            sys.stdout.write(ansi.MOVE_CURSOR % (row+1, 1))
             for col, charattr in enumerate(textrow):
                 self._set_attributes(*charattr[1])
                 sys.stdout.write(charattr[0].encode(encoding, 'replace'))
-        sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
+        sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
         sys.stdout.flush()
 
     def _set_default_colours(self, num_attr):
         """Set colours for default palette."""
         if num_attr == 2:
-            self.default_colours = ansi.colours_2
+            self.default_colours = ansi.COLOURS_2
         elif num_attr == 4:
-            self.default_colours = ansi.colours_4
+            self.default_colours = ansi.COLOURS_4
         else:
-            self.default_colours = ansi.colours
+            self.default_colours = ansi.COLOURS_8
 
     def _set_attributes(self, fore, back, blink, underline):
         """Set ANSI colours based on split attribute."""
@@ -96,11 +96,11 @@ class VideoANSI(video_cli.VideoCLI):
         else:
             fore = 90 + self.default_colours[fore%8]
         back = 40 + self.default_colours[back%8]
-        sys.stdout.write(ansi.esc_set_colour % 0)
-        sys.stdout.write(ansi.esc_set_colour % back)
-        sys.stdout.write(ansi.esc_set_colour % fore)
+        sys.stdout.write(ansi.SET_COLOUR % 0)
+        sys.stdout.write(ansi.SET_COLOUR % back)
+        sys.stdout.write(ansi.SET_COLOUR % fore)
         if blink:
-            sys.stdout.write(ansi.esc_set_colour % 5)
+            sys.stdout.write(ansi.SET_COLOUR % 5)
         sys.stdout.flush()
 
     def set_mode(self, mode_info):
@@ -112,9 +112,9 @@ class VideoANSI(video_cli.VideoCLI):
                             for _ in range(self.height)]
                             for _ in range(self.num_pages)]
         self._set_default_colours(len(mode_info.palette))
-        sys.stdout.write(ansi.esc_resize_term % (self.height, self.width))
+        sys.stdout.write(ansi.RESIZE_TERM % (self.height, self.width))
         self._set_attributes(7, 0, False, False)
-        sys.stdout.write(ansi.esc_clear_screen)
+        sys.stdout.write(ansi.CLEAR_SCREEN)
         sys.stdout.flush()
         return True
 
@@ -139,9 +139,9 @@ class VideoANSI(video_cli.VideoCLI):
         if self.vpagenum == self.apagenum:
             self._set_attributes(7, back_attr, False, False)
             for r in range(start, stop+1):
-                sys.stdout.write(ansi.esc_move_cursor % (r, 1))
-                sys.stdout.write(ansi.esc_clear_line)
-            sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
+                sys.stdout.write(ansi.MOVE_CURSOR % (r, 1))
+                sys.stdout.write(ansi.CLEAR_LINE)
+            sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
             self.last_pos = (self.cursor_row, self.cursor_col)
             sys.stdout.flush()
 
@@ -151,17 +151,17 @@ class VideoANSI(video_cli.VideoCLI):
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
-        #sys.stdout.write(ansi.esc_set_cursor_colour % ansi.colournames[attr%16])
+        #sys.stdout.write(ansi.SET_CURSOR_COLOUR % ansi.COLOUR_NAMES[attr%16])
 
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on
         if cursor_on:
-            sys.stdout.write(ansi.esc_show_cursor)
-            #sys.stdout.write(ansi.esc_set_cursor_shape % cursor_shape)
+            sys.stdout.write(ansi.SHOW_CURSOR)
+            #sys.stdout.write(ansi.SET_CURSOR_SHAPE % cursor_shape)
         else:
             # force move when made visible again
-            sys.stdout.write(ansi.esc_hide_cursor)
+            sys.stdout.write(ansi.HIDE_CURSOR)
             self.last_pos = None
         sys.stdout.flush()
 
@@ -173,7 +173,7 @@ class VideoANSI(video_cli.VideoCLI):
             self.cursor_shape = 3
         # 1 blinking block 2 block 3 blinking line 4 line
         if self.cursor_visible:
-            #sys.stdout.write(ansi.esc_set_cursor_shape % cursor_shape)
+            #sys.stdout.write(ansi.SET_CURSOR_SHAPE % cursor_shape)
             sys.stdout.flush()
 
     def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
@@ -186,12 +186,12 @@ class VideoANSI(video_cli.VideoCLI):
             self.text[pagenum][row-1][col] = u'', (fore, back, blink, underline)
         if self.vpagenum != pagenum:
             return
-        sys.stdout.write(ansi.esc_move_cursor % (row, col))
+        sys.stdout.write(ansi.MOVE_CURSOR % (row, col))
         self._set_attributes(fore, back, blink, underline)
         sys.stdout.write(char.encode(encoding, 'replace'))
         if is_fullwidth:
             sys.stdout.write(' ')
-        sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
+        sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
         self.last_pos = (self.cursor_row, self.cursor_col)
         sys.stdout.flush()
 
@@ -202,9 +202,9 @@ class VideoANSI(video_cli.VideoCLI):
                 [[(u' ', 0)]*len(self.text[self.apagenum][0])])
         if self.apagenum != self.vpagenum:
             return
-        sys.stdout.write(ansi.esc_set_scroll_region % (from_line, scroll_height))
-        sys.stdout.write(ansi.esc_scroll_up % 1)
-        sys.stdout.write(ansi.esc_set_scroll_screen)
+        sys.stdout.write(ansi.SET_SCROLL_REGION % (from_line, scroll_height))
+        sys.stdout.write(ansi.SCROLL_UP % 1)
+        sys.stdout.write(ansi.SET_SCROLL_SCREEN)
         self.clear_rows(back_attr, scroll_height, scroll_height)
 
     def scroll_down(self, from_line, scroll_height, back_attr):
@@ -214,15 +214,15 @@ class VideoANSI(video_cli.VideoCLI):
                 self.text[self.apagenum][from_line-1:scroll_height-1])
         if self.apagenum != self.vpagenum:
             return
-        sys.stdout.write(ansi.esc_set_scroll_region % (from_line, scroll_height))
-        sys.stdout.write(ansi.esc_scroll_down % 1)
-        sys.stdout.write(ansi.esc_set_scroll_screen)
+        sys.stdout.write(ansi.SET_SCROLL_REGION % (from_line, scroll_height))
+        sys.stdout.write(ansi.SCROLL_DOWN % 1)
+        sys.stdout.write(ansi.SET_SCROLL_SCREEN)
         self.clear_rows(back_attr, from_line, from_line)
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         if msg:
-            sys.stdout.write(ansi.esc_set_title % (self.caption + ' - ' + msg))
+            sys.stdout.write(ansi.SET_TITLE % (self.caption + ' - ' + msg))
         else:
-            sys.stdout.write(ansi.esc_set_title % self.caption)
+            sys.stdout.write(ansi.SET_TITLE % self.caption)
         sys.stdout.flush()

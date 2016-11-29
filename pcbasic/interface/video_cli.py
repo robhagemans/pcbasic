@@ -150,7 +150,7 @@ class VideoCLI(base.VideoPlugin):
         if (start <= self.cursor_row and stop >= self.cursor_row and
                     self.vpagenum == self.apagenum):
             self._update_position(self.cursor_row, 1)
-            sys.stdout.write(ansi.esc_clear_line)
+            sys.stdout.write(ansi.CLEAR_LINE)
             sys.stdout.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
@@ -190,7 +190,7 @@ class VideoCLI(base.VideoPlugin):
         """Draw the stored text in a row."""
         rowtext = u''.join(self.text[self.vpagenum][row-1]).encode(encoding, 'replace')
         sys.stdout.write(rowtext)
-        sys.stdout.write(ansi.esc_move_left*len(rowtext))
+        sys.stdout.write(ansi.MOVE_LEFT * len(rowtext))
         sys.stdout.flush()
 
     def _update_position(self, row=None, col=None):
@@ -215,8 +215,8 @@ class VideoCLI(base.VideoPlugin):
             # show what's on the line where we are.
             self._redraw_row(self.cursor_row)
         if col != self.last_col:
-            sys.stdout.write(ansi.esc_move_left*(self.last_col-col))
-            sys.stdout.write(ansi.esc_move_right*(col-self.last_col))
+            sys.stdout.write(ansi.MOVE_LEFT*(self.last_col-col))
+            sys.stdout.write(ansi.MOVE_RIGHT*(col-self.last_col))
             sys.stdout.flush()
             self.last_col = col
 

@@ -97,7 +97,7 @@ class VideoCurses(base.VideoPlugin):
         self.can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
                               and curses.COLOR_PAIRS > 128)
         self.caption = kwargs.get('caption', '')
-        sys.stdout.write(ansi.esc_set_title % self.caption)
+        sys.stdout.write(ansi.SET_TITLE % self.caption)
         sys.stdout.flush()
         self._set_default_colours(16)
         # cursor is visible
@@ -193,7 +193,7 @@ class VideoCurses(base.VideoPlugin):
         by, bx = self.border_y, self.border_x
         # curses.resizeterm triggers KEY_RESIZE leading to a flickering loop
         # curses.resize_term doesn't resize the terminal
-        sys.stdout.write(ansi.esc_resize_term % (height + by*2, width + bx*2))
+        sys.stdout.write(ansi.RESIZE_TERM % (height + by*2, width + bx*2))
         sys.stdout.flush()
         self.underlay.resize(height + by*2, width + bx*2)
         self.window.resize(height, width)
@@ -341,7 +341,7 @@ class VideoCurses(base.VideoPlugin):
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
-        # term.write(ansi.esc_set_cursor_colour % ansi.colournames[attr%16])
+        # term.write(ansi.SET_CURSOR_COLOUR % ansi.COLOUR_NAMES[attr%16])
 
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
@@ -418,9 +418,9 @@ class VideoCurses(base.VideoPlugin):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         if msg:
-            sys.stdout.write(ansi.esc_set_title % (self.caption + ' - ' + msg))
+            sys.stdout.write(ansi.SET_TITLE % (self.caption + ' - ' + msg))
         else:
-            sys.stdout.write(ansi.esc_set_title % self.caption)
+            sys.stdout.write(ansi.SET_TITLE % self.caption)
         sys.stdout.flush()
         # redraw in case terminal didn't recognise ansi sequence
         self._redraw()
