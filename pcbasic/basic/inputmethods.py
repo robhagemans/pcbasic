@@ -100,9 +100,12 @@ class InputMethods(object):
     def check_events(self):
         """Main event cycle."""
         # avoid screen lockups if video queue fills up
-        # note that this really slows down screen writing
-        self._queues.video.join()
-        self._queues.audio.join()
+        if self._queues.video.qsize() > 500:
+            # note that this really slows down screen writing
+            # because it triggers a sleep() in the video backend
+            self._queues.video.join()
+        if self._queues.audio.qsize() > 20:
+            self._queues.audio.join()
         self._check_input()
         self.keyboard.drain_event_buffer()
 
