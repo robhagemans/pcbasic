@@ -881,11 +881,8 @@ class WAVBitStream(TapeBitStream):
         # 2048 halves = 1024 pulses = 512 1-bits = 64 bytes of leader
         self.min_leader_halves = 2048
         # initialise generators
-        #self.lowpass = butterworth(self.framerate, 3000)
-        #self.lowpass = butterband_sox(self.framerate, 1500, 1000)
-        #self.lowpass = butterband4(self.framerate, 500, 3000)
-        self.lowpass = passthrough()
-        self.lowpass.send(None)
+        self.filter = passthrough()
+        self.filter.send(None)
         self.read_half = self._gen_read_halfpulse()
         # write fluff at start if this is a new file
         if self.operating_mode == 'w':
@@ -957,7 +954,7 @@ class WAVBitStream(TapeBitStream):
         # sum frames over channels
         frames = map(sum, zip(*[iter(frames)]*self.nchannels))
         frames = [ x-self.subtractor if x >= self.sub_threshold else x for x in frames ]
-        return self.lowpass.send(frames)
+        return self.filter.send(frames)
 
     def _gen_read_halfpulse(self):
         """Generator to read a half-pulse and yield its length."""
@@ -1152,9 +1149,8 @@ class BasicodeWAVBitStream(WAVBitStream):
         self.length_max = 2*self.length_cut
         self.length_min = self.length_cut / 2
         # initialise generators
-        self.lowpass = butterband4(self.framerate, 1350, 3450)
-        #self.lowpass = butterband_sox(self.framerate, 2100, 1500)
-        self.lowpass.send(None)
+        self.filter = passthrough()
+        self.filter.send(None)
         # byte error correcting
         self.dropbit = None
         self.last_error_bit = None
@@ -1254,88 +1250,8 @@ def timestamp(counter):
     """Time stamp."""
     return "[%d:%02d:%02d] " % hms(counter)
 
-
-##############################################################################
-# filters
-# see e.g. http://www.exstrom.com/journal/sigproc/
-
-
 def passthrough():
     """Passthrough filter."""
     x = []
     while True:
         x = yield x
-
-def butterworth(sample_rate, cutoff_freq):
-    """Second-order Butterworth low-pass filter."""
-    # cf. src/arch/ibmpc/c (Hampa Hug) in PCE sources
-    x, y = [0, 0], [0, 0]
-    om = 1. / math.tan((math.pi * cutoff_freq) / sample_rate)
-    rb0 = 1. / (om*om + om*math.sqrt(2.) + 1.)
-    b1, b2 = 2.*(1.-om*om), (om*om-om*math.sqrt(2.)+1.)
-    while True:
-        inp = yield y[2:]
-        x = x[-2:] + inp
-        y = y[-2:] + [0]*len(inp)
-        for i in range(2, len(x)):
-            y[i] = (x[i] + 2*x[i-1] + x[i-2] - b1*y[i-1] - b2*y[i-2]) * rb0
-
-def butterband4(sample_rate, lo_freq, hi_freq):
-    """4th-order Butterworth band-pass filter."""
-    # cf. http://www.exstrom.com/journal/sigproc/bwbpf.c
-    f1 = hi_freq
-    f2 = lo_freq
-    s = sample_rate
-    n = 1
-    #
-    a = math.cos(math.pi*(f1+f2)/s) / math.cos(math.pi*(f1-f2)/s)
-    a2 = a*a
-    b = math.tan(math.pi*(f1-f2)/s)
-    b2 = b*b
-    #
-    r = math.sin(math.pi*(1.0)/(4.))
-    s = b2 + 2.0*b*r + 1.0
-    A = (b2/s)   * 2 ## *2 to gain amplitude, my addition
-    d1 = 4.0*a*(1.0+b*r)/s
-    d2 = 2.0*(b2-2.0*a2-1.0)/s
-    d3 = 4.0*a*(1.0-b*r)/s
-    d4 = -(b2 - 2.0*b*r + 1.0)/s
-    w0, w1, w2, w3, w4 = 0,0,0,0,0
-    out = []
-    while True:
-        inp = yield out
-        out = [0]*len(inp)
-        for i, x in enumerate(inp):
-            w0 = d1*w1 + d2*w2 + d3*w3 + d4*w4 + x
-            out[i] = A*(w0 - 2.0*w2 + w4)
-            w4, w3, w2, w1 = w3, w2, w1, w0
-
-def butterband_sox(sample_rate, f0, width):
-    """2-pole Butterworth band-pass filter."""
-    # see http://musicdsp.org/files/Audio-EQ-Cookbook.txt
-    # and SOX source code
-    # width is difference between -3dB cutoff points
-    # it seems f0 = sqrt(f_hi f_lo), width ~ f_hi - f_lo
-    w0 = 2.*math.pi*f0/sample_rate
-#    alpha = sin(w0)*sinh(log(2.)/2 * width_octaves * w0/sin(w0)) (digital)
-#    alpha = sin(w0)*sinh(log(2.)/2 * width_octaves) (analogue)
-    # this is from SOX:
-    alpha = math.sin(w0)/(2.*f0/width)
-    #
-    b0 =   alpha
-    #b1 =   0
-    b2 =  -alpha
-    a0 =   1. + alpha
-    a1 =  -2.*math.cos(w0)
-    a2 =   1. - alpha
-    b0a = b0/a0
-    b2a = b2/a0
-    a1a = a1/a0
-    a2a = a2/a0
-    x, y = [0, 0], [0, 0]
-    while True:
-        inp = yield y[2:]
-        x = x[-2:] + inp
-        y = y[-2:] + [0]*len(inp)
-        for i in range(2, len(x)):
-            y[i] = b0a*x[i] + b2a*x[i-2] - a1a*y[i-1] - a2a*y[i-2]
