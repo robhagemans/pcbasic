@@ -5,7 +5,7 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
-__version__ = b'16.06.0rc0'
+__version__ = b'16.12.0rc0'
 __copyright__ = b'(C) Copyright 2013--2016 Rob Hagemans.'
 
 
