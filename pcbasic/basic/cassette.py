@@ -489,11 +489,12 @@ class BasicodeStream(CassetteStream):
         except (PulseError, FramingError, EndOfTape) as e:
             logging.warning("%s, Could not read checksum: %s",
                             timestamp(self.bitstream.counter()), e)
-        # checksum shld be 0 for even # bytes, 128 for odd
-        if checksum_byte is None or checksum^checksum_byte not in (0,128):
-            logging.warning("%s Checksum failed, required: %02x realised: %02x",
-                            timestamp(self.bitstream.counter()),
-                            checksum_byte, checksum)
+        else:
+            # checksum shld be 0 for even # bytes, 128 for odd
+            if checksum_byte is None or checksum^checksum_byte not in (0,128):
+                logging.warning("%s Checksum failed, required: %02x realised: %02x",
+                                timestamp(self.bitstream.counter()),
+                                checksum_byte, checksum)
         self.record_stream.seek(0)
         self.bitstream.read_trailer()
         self.buffer_complete = True
