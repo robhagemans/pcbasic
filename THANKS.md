@@ -75,11 +75,6 @@ apologies to those whose contribution I have failed to acknowledge here.
   * **Mike Brutman**'s [Analysis of the IBM PC data cassette format](http://www.brutman.com/Cassette_Waveforms/Cassette_Waveforms.html)
   * **Dan Tobias**' [IBM PC data cassette format documentation](http://fileformats.archiveteam.org/wiki/IBM_PC_data_cassette)
 
-##### BASICODE
-
-  * **Janny Looyenga**'s documentation of the [BASICODE format](http://www.nostalgia8.nl/basicode.htm)
-  * **Prof. Dr. Horst Völz**'s documentation of the [BASICODE cassette file format](http://www.kc85emu.de/scans/rfe0190/Basicode.htm)
-
 ##### Serial ports
 
   * **Craig Peacock**'s documentation on [interfacing the serial port](http://retired.beyondlogic.org/serial/serial.htm)
@@ -114,7 +109,6 @@ apologies to those whose contribution I have failed to acknowledge here.
   * _GW-BASIC 3.23 User's Guide_, Microsoft Corporation, 1987.
   * _IBM Personal Computer Hardware Reference Library: BASIC_, IBM, 1982.
   * _Tandy 1000 BASIC, A Reference Guide_, Tandy Corporation.
-  * _BASICODE Hobbyscoop 2_, Nederlandse Omroep Stichting, 1984.
   * **William Barden, Jr.**, _Graphics and Sound for the Tandy 1000s and PC Compatibles_, Microtrend, 1987.
   * **Don Inman** and **Bob Albrecht**, _The GW-BASIC Reference_, Osborne McGraw-Hill, 1990.
   * **Thomas C. McIntyre**, _BLUE: BASIC Language User Essay_, 1991, [available online](https://web.archive.org/web/20060410121551/http://scottserver.net/basically/geewhiz.html).
