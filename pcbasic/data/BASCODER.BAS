@@ -1,17 +1,17 @@
-001 '  PC-BASIC - BASCODER.BAS
-002 '  Implementation of the BASICODE-3C API
-003 '  Copyright (c) 2015, 2016 Rob Hagemans
-004 '  This file is released under the Expat MIT licence [https://opensource.org/licenses/MIT]
+001 '  Implementation of the BASICODE API, versions 2, 3 and 3C.
+002 '  Lines 1-999 are:
+003 '  - Copyright (c) 2015, 2016 Rob Hagemans
+004 '  - Released under the Expat MIT licence [https://opensource.org/licenses/MIT]
 005 '
 006 ON ERROR GOTO 7: CLEAR ,,,32768!: GOTO 8
 007 RESUME 8
 008 ON ERROR GOTO 0
-009 GOTO 1000 ' Initialise client
+009 GOTO 21
 010 '
 011 ' Settings and initialisation
-020 '
-021 O.VERSION$ = "3C"
-024 CT = 0: CN = 0: SR = 0: SR$ = "": IN$ = " "
+012 '
+020 GOTO 1010 ' Programs should start with A=...:GOTO 20 but some do other things there
+021 CT = 0: CN = 0: SR = 0: SR$ = "": IN$ = " "
 025 CC[0] = 7: CC[1] = 0
 029 ' Colour map
 030 O.CL%[0] = 0: O.CL%[1] = 1: O.CL%[2] = 4: O.CL%[3] = 5
@@ -43,7 +43,7 @@
 077 NEXT
 080 RANDOMIZE TIMER
 085 DIM O.FN%[8]: O.FFN% = 0
-090 GOTO 1010 ' Yield control to client
+090 GOTO 1000 ' Yield control to client
 097 '
 098 ' BASICODE-2 subroutines
 099 '
@@ -113,9 +113,9 @@
 318     IF MID$(O.FR$, POS, 1) <= "9" THEN GOTO 321
 319     IF MID$(O.FR$, POS, 1) = "0"
 320   NEXT
-321   IF LEN(O.FR$) < CN+1 THEN O.FR$ = O.FR$ + STRING$("0", CN+1-LEN(O.FR$))
-322   SR$ = O.IN$ + O.FR$: IF LEN(SR$) > O.CT THEN SR$=STRING$("*", O.CT): RETURN
-324   SR$ = STRING$(" ", O.CT-LEN(SR$)) + SR$
+321   IF LEN(O.FR$) < CN+1 THEN O.FR$ = O.FR$ + STRING$(CN+1-LEN(O.FR$), "0")
+322   SR$ = O.IN$ + O.FR$: IF LEN(SR$) > CT THEN SR$=STRING$(CT, "*"): RETURN
+324   SR$ = STRING$(CT-LEN(SR$), " ") + SR$
 326 RETURN
 330 ' Capitalise a string (BASICODE-3)
 331   FOR O.I = 1 TO LEN(SR$)
@@ -219,4 +219,8 @@
 952   CC[0] = 7: CC[1] = 0: GOSUB 100
 954   PALETTE
 955 END
+996 '
+997 '  End of BASICODE API implementation.
+998 '  Line 1000 onwards form part of a BASICODE program.
+999 '
 
