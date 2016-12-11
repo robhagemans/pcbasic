@@ -69,8 +69,6 @@ class CASDevice(object):
         try:
             if not val:
                 self.tapestream = None
-            elif addr == 'BC':
-                self.tapestream = BasicodeStream(BasicodeWAVBitStream(val, 'r'))
             elif addr == 'WAV' or (addr != 'CAS' and ext == 'WAV'):
                 # if unspecified, determine type on the basis of filename extension
                 self.tapestream = CassetteStream(WAVBitStream(val, 'r'))
@@ -407,108 +405,6 @@ class CassetteStream(object):
         self.record_stream = io.BytesIO()
 
 
-
-class BasicodeStream(CassetteStream):
-    """BASICODE-format byte stream on cassette."""
-
-    # basicode-3 keywords getting an extra space
-    keywords = (
-        tk.KW_PRINT, tk.KW_INPUT, tk.KW_LET, tk.KW_GOTO,
-        tk.KW_GOSUB, tk.KW_RETURN, tk.KW_FOR, tk.KW_TO,
-        tk.KW_STEP, tk.KW_NEXT, tk.KW_IF, tk.KW_THEN, tk.KW_ON,
-        tk.KW_DIM, tk.KW_READ, tk.KW_DATA, tk.KW_RESTORE,
-        tk.KW_REM, tk.KW_DEF, tk.KW_FN, tk.KW_ABS, tk.KW_SGN,
-        tk.KW_INT, tk.KW_SQR, tk.KW_SIN, tk.KW_COS,
-        tk.KW_TAN, tk.KW_ATN, tk.KW_EXP, tk.KW_LOG, tk.KW_ASC,
-        tk.KW_VAL, tk.KW_LEN, tk.KW_CHR, tk.KW_LEFT, tk.KW_MID,
-        tk.KW_RIGHT, tk.KW_AND, tk.KW_OR, tk.KW_NOT)
-    # TAB is recognised but does not get an extra space
-
-    def open_read(self):
-        """Play until a file record is found."""
-        if not self.bitstream.read_leader():
-            # reached end-of-tape without finding appropriate file
-            raise EndOfTape()
-        self.filetype = 'A'
-        self.record_num = 0
-        self.record_stream = io.BytesIO()
-        self.buffer_complete = False
-        return ' '*8, 'A', 0, 0, 0
-
-    def open_write(self, name, filetype, seg, offs, length):
-        # writing BASICODE not implemented
-        raise OperationNotImplemented()
-
-    def _fill_record_buffer(self):
-        """Read a file from tape."""
-        if self.record_num > 0:
-            return False
-        self.record_num += 1
-        self.record_stream = io.BytesIO()
-        # xor sum includes STX byte
-        checksum = 0x02
-        word = ''
-        is_rem, is_str = False, False
-        while True:
-            try:
-                byte = self.bitstream.read_byte()
-            except (PulseError, FramingError) as e:
-                logging.warning("%s Cassette I/O error during read: %s",
-                                timestamp(self.bitstream.counter()), e)
-                # insert a zero byte as a marker for the error
-                byte = 0
-            except EndOfTape as e:
-                logging.warning("%s Cassette I/O error during read: %s",
-                                timestamp(self.bitstream.counter()), e)
-                break
-            checksum ^= byte
-            if byte == 0x03:
-                break
-            c = chr(byte)
-            self.record_stream.write(c)
-            # CR -> CRLF
-            if byte == 0x0d:
-                self.record_stream.write('\n')
-                is_rem, is_str = False, False
-                word = ''
-            # add space to keywords
-            if c not in string.ascii_letters:
-                word = ''
-                if c == '"':
-                    is_str = not is_str
-            elif not is_rem and not is_str:
-                word += c
-                if word in self.keywords:
-                    self.record_stream.write(' ')
-                    if word == 'REM':
-                        is_rem = True
-                    word = ''
-        # read one-byte checksum and report errors
-        try:
-            checksum_byte = self.bitstream.read_byte()
-        except (PulseError, FramingError, EndOfTape) as e:
-            logging.warning("%s, Could not read checksum: %s",
-                            timestamp(self.bitstream.counter()), e)
-        else:
-            # checksum shld be 0 for even # bytes, 128 for odd
-            if checksum_byte is None or checksum^checksum_byte not in (0,128):
-                logging.warning("%s Checksum failed, required: %02x realised: %02x",
-                                timestamp(self.bitstream.counter()),
-                                checksum_byte, checksum)
-        self.record_stream.seek(0)
-        self.bitstream.read_trailer()
-        self.buffer_complete = True
-        return True
-
-    def _flush_record_buffer(self):
-        """Write the tape buffer to tape."""
-        pass
-
-    def _close_record_buffer(self):
-        """Write the tape buffer to tape and finalise."""
-        pass
-
-
 ##############################################################################
 
 
@@ -835,8 +731,6 @@ class CASBitStream(TapeBitStream):
 # 0x0E	Word	Offset of load address (little-endian word)
 
 
-
-
 class WAVBitStream(TapeBitStream):
     """WAV-file cassette image bit stream."""
 
@@ -1093,134 +987,6 @@ class WAVBitStream(TapeBitStream):
         except (EndOfTape, StopIteration):
             self.read_half = self._gen_read_halfpulse()
             return False
-
-##############################################################################
-
-# Prof. Dr. rer. nat. habil. HORST VOELZ, Datenaustausch mit Basicode
-# Radio Fernsehen Elektronik 1/1990
-# http://www.kc85emu.de/scans/rfe0190/Basicode.htm
-
-# BITS:
-# 0 - 1 period  at 1200 Hz
-# 1 - 2 periods at 2400 Hz
-#
-# BYTES:
-# 1 start bit
-# 2 stop bits
-# bit 7 (most significant bit) is inverted and therefore always 1 for ASCII
-# least significant bit is sent first
-#
-# PROGRAM FILES:
-# - synchronising tone: 5s at 2400 Hz
-# - start byte 0x82 (i.e., 0x02 STX because of the inverted bit 7)
-# - ASCII text; only 0x20 -- 0x7e inclusive with lines separated by 0x0D
-# - stop byte 0x83 (i.e, 0x03 ETX)
-# - checksum byte; XOR of all previous bytes including STX and ETX
-# - 1s at 2400 Hz
-#
-# DATA FILES:
-# All code points 0x00 - 0xFF allowed
-# sent in blocks of 1024 bytes
-# each block:
-# - synch tone: 5s of 2400 Hz
-# - start byte 0x81 (i.e., 0x01 STH)
-# - block number; first is 0x80 (i.e., 0x00) incremented by 1 for each consecutive block
-# - 1024 data bytes with inverted bit 7
-# - stop byte 0x83 (i.e., 0x02, ETX)
-# - checksum byte: XOR of previous 1027 bytes
-# - 1s at 2400 Hz
-# if the final block is shorter than 1024 bytes, then the unused space is filled
-# with 0x84 (i.e., 0x04 EOT). These bytes are included in the checksum.
-# the checksum of a data file always has a 1 in bit 7 due to its structure
-
-
-class BasicodeWAVBitStream(WAVBitStream):
-    """BASICODE-standard WAV image reader."""
-
-    def __init__(self, filename, mode):
-        """Initialise BASICODE WAV-file reader."""
-        WAVBitStream.__init__(self, filename, mode)
-        # basicode uses STX as sync byte
-        self.sync_byte = 0x02
-        # fix frequencies to Basicode standards, 1200 / 2400 Hz
-        # one = two pulses of 417 us; zero = one pulse of 833 us
-        # value is cutoff for full pulse
-        self.length_cut = 626*self.framerate/1000000
-        self.length_max = 2*self.length_cut
-        self.length_min = self.length_cut / 2
-        # initialise generators
-        self.filter = passthrough()
-        self.filter.send(None)
-        # byte error correcting
-        self.dropbit = None
-        self.last_error_bit = None
-
-    def read_bit(self):
-        """Read the next bit."""
-        try:
-            pulse0 = (next(self.read_half), next(self.read_half))
-            # one = two pulses of 417 us; zero = one pulse of 833 us
-            if sum(pulse0) < self.length_cut:
-                pulse1 = (next(self.read_half), next(self.read_half))
-                if sum(pulse1) < self.length_cut:
-                    return 1
-                else:
-                    return None
-            else:
-                return 0
-        except StopIteration:
-            self.read_half = self._gen_read_halfpulse()
-            raise EndOfTape
-
-    def write_bit(self, bit):
-        """BASICODE writing not yet supported."""
-        pass
-
-    def read_byte(self, skip_start=False):
-        """Read a byte from the tape."""
-        if skip_start:
-            start = 0
-        else:
-            start = self.read_bit()
-        byte = 0
-        bits = [ self.read_bit() for _ in xrange(8) ]
-        if self.dropbit == 1 and self.last_error_bit == 0 and bits[-2:] == [1, 1]:
-            # error-correcting: have we gone one too far?
-            stop0, stop1 = bits[-2:]
-            bits = [self.dropbit, start] + bits[:-2]
-            start = self.last_error_bit
-        elif self.dropbit == 0 and bits[-1] == 1:
-            # error-correcting: keep dropbit
-            stop0, stop1 = bits[-1], self.read_bit()
-            bits = [start] + bits[:-1]
-            start = self.dropbit
-        else:
-            # normal case, no error last time
-            # or can't find a working correction
-            stop0 = self.read_bit()
-            stop1 = self.read_bit()
-        if start == 1 or stop0 == 0 or stop1 == 0:
-            self.last_error_bit = stop1
-            # incorrect start/stop bit, try to recover by shifting
-            self.dropbit = self.read_bit()
-            raise FramingError(
-                "Byte not framed: %s " % ([start] + bits + [stop0, stop1]))
-        else:
-            # start/stopbits correct or unreadable
-            self.last_error_bit = None
-            self.dropbit = None
-            if None in bits:
-                raise PulseError()
-            # bits in inverse order
-            byte = sum(bit << i for i, bit in enumerate(bits))
-            # flip bit 7
-            byte ^= 0x80
-            return byte
-
-    def _is_leader_halfpulse(self, half):
-        """Return whether the half pulse is of pilot wave frequency."""
-        return half <= self.length_cut/2
-
 
 ##############################################################################
 # supporting functions
