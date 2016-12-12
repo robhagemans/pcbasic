@@ -48,7 +48,7 @@ class ByteStream(object):
             return ''
         peeked = self._contents[self._loc:self._loc+n_bytes]
         self._loc += len(peeked)
-        return peeked
+        return str(peeked)
 
     def write(self, substr):
         """ Write a str or bytearray or char s to the current location. Overwrite, do not insert. """
