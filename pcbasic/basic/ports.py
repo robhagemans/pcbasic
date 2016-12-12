@@ -582,10 +582,10 @@ class LPTFile(devices.TextFileBase):
             self.fhandle.seek(0)
             self.fhandle.truncate()
 
-    def write(self, s):
+    def write(self, s, can_break=True):
         """Write a string to the printer buffer."""
         for c in str(s):
-            if self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
+            if can_break and self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
                 self.fhandle.write('\r\n')
                 self.flush()
                 self.col = 1
