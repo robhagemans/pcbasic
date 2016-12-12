@@ -40,7 +40,8 @@ class PrinterStreamBase(io.BytesIO):
         printbuf = self.getvalue()
         if not printbuf:
             return
-        self.truncate(0)
+        self.seek(0)
+        self.truncate()
         # any naked lead bytes in DBCS will remain just that - avoid in-line flushes.
         utf8buf = self.codepage.str_to_unicode(
                     printbuf, preserve_control=True).encode('utf-8', 'replace')

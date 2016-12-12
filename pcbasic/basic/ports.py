@@ -579,7 +579,8 @@ class LPTFile(devices.TextFileBase):
         if self.fhandle:
             val = self.fhandle.getvalue()
             self.output_stream.write(val)
-            self.fhandle.truncate(0)
+            self.fhandle.seek(0)
+            self.fhandle.truncate()
 
     def write(self, s):
         """Write a string to the printer buffer."""
