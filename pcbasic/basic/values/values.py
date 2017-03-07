@@ -89,6 +89,7 @@ def float_safe(fn):
             return fn(*args, **kwargs)
         except (ValueError, ArithmeticError) as e:
             return args[0].error_handler.handle(e)
+    wrapped_fn.__name__ = fn.__name__
     return wrapped_fn
 
 def _call_float_function(fn, *args):

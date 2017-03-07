@@ -573,7 +573,7 @@ class Float(Number):
         lman *= rman
         if lexp < -31:
             self._buffer[:] = b'\0' * self.size
-            return self._buffer
+            return self
         # drop some precision
         lman, lexp = self._bring_to_range(lman, lexp, self._den_mask>>4, self._den_upper>>4)
         # rounding quirk
