@@ -120,6 +120,14 @@ class Float(object):
     def to_bytes(self):
         """ Convert float to byte representation. """
         self.apply_carry()
+
+        if self.exp > 0xff:
+            # overflow
+            # message does not break execution, no line number
+            msg_overflow()
+            self.exp = 0xff
+            self.man = self.carry_mask #0xffffffffffffff00L
+
         # extract bytes
         s = bytearray()
         man = self.man
