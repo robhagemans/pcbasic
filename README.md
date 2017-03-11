@@ -20,7 +20,7 @@ See also the [PC-BASIC home page](http://robhagemans.github.io/pcbasic/).
 
 This quick start guide covers installation and elementary use of PC-BASIC. For more information, please refer to the [full PC-BASIC documentation](http://pc-basic.org/doc#) which covers usage, command-line options and a [comprehensive GW-BASIC language reference](http://pc-basic.org/doc#reference). This documentation is also included with the current PC-BASIC release.
 
-If you find bugs, please report them on the [SourceForge discussion page](https://sourceforge.net/p/pcbasic/discussion/bugs/) or [open an issue on GitHub](https://github.com/robhagemans/pcbasic/issues). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
+If you find bugs, please [open an issue on GitHub](https://github.com/robhagemans/pcbasic/issues). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
 
 
 #### Installation ####
