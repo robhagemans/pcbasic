@@ -5,7 +5,7 @@ Thanks for your interest in contributing to PC-BASIC!
 
 #### Bug reports ####
 
-If you find bugs, please report them on the [SourceForge discussion page](https://sourceforge.net/p/pcbasic/discussion/bugs/) or [open an issue on GitHub](https://github.com/robhagemans/pcbasic/issues).
+If you find bugs, please [open an issue on GitHub](https://github.com/robhagemans/pcbasic/issues).
 
 In your bug report, please specify:
 
