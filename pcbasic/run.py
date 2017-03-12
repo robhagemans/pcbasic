@@ -132,8 +132,9 @@ def show_prompt():
         return
     if state.basic_state.edit_prompt:
         linenum, tell = state.basic_state.edit_prompt
-        program.edit(linenum, tell)
+        # unset edit prompt first, in case program.edit throws
         state.basic_state.edit_prompt = False
+        program.edit(linenum, tell)
     elif state.basic_state.prompt:
         console.start_line()
         console.write_line("Ok\xff")
