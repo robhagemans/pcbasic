@@ -721,9 +721,6 @@ class RandomFile(devices.CRLFTextFileBase):
         """Write the string s to the field, taking care of width settings."""
         # switch to writing mode and fix readahead buffer
         self.switch_mode(b'O')
-        if self.operating_mode == b'I':
-            self.fhandle.seek(-1, 1)
-            self.operating_mode = b'O'
         devices.CRLFTextFileBase.write(self, s, can_break)
         self._check_overflow()
 
