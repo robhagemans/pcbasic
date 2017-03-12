@@ -742,13 +742,20 @@ class RandomFile(devices.CRLFTextFileBase):
         if self.fhandle.tell() > self.reclen + write - 1:
             raise error.RunError(error.FIELD_OVERFLOW)
 
+    def switch_mode(self, new_mode):
+        """Switch to input or output mode"""
+        if new_mode == b'I' and self.operating_mode == b'O':
+            self.flush()
+            self.next_char = self.fhandle.read(1)
+            self.operating_mode = b'I'
+        elif new_mode == b'O' and self.operating_mode == b'I':
+            self.fhandle.seek(-1, 1)
+            self.operating_mode = b'O'
+
     def read_raw(self, num=-1):
         """ Read num characters from the field. """
         # switch to reading mode and fix readahead buffer
-        if self.operating_mode == 'O':
-            self.flush()
-            self.next_char = self.fhandle.read(1)
-            self.operating_mode = 'I'
+        self.switch_mode(b'I')
         s = devices.CRLFTextFileBase.read_raw(self, num)
         self._check_overflow()
         return s
@@ -756,9 +763,7 @@ class RandomFile(devices.CRLFTextFileBase):
     def write(self, s):
         """ Write the string s to the field, taking care of width settings. """
         # switch to writing mode and fix readahead buffer
-        if self.operating_mode == 'I':
-            self.fhandle.seek(-1, 1)
-            self.operating_mode = 'O'
+        self.switch_mode(b'O')
         devices.CRLFTextFileBase.write(self, s)
         self._check_overflow()
 

@@ -307,6 +307,9 @@ class TextFileBase(RawFile):
         self.split_long_lines = split_long_lines
         self.char, self.last = '', ''
 
+    def switch_mode(self, new_mode):
+        """Switch to input or output mode"""
+
     def read_raw(self, num=-1):
         """ Read num characters as string. """
         s = ''
@@ -420,6 +423,7 @@ class TextFileBase(RawFile):
     def _input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry for INPUT """
         word, blanks = '', ''
+        self.switch_mode(b'I')
         last = self._skip_whitespace(self.whitespace_input)
         # read first non-whitespace char
         c = self.read(1)
