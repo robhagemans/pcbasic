@@ -312,8 +312,9 @@ class Session(object):
         """Show the Ok or EDIT prompt, unless suppressed."""
         if self._edit_prompt:
             linenum, tell = self._edit_prompt
-            self.program.edit(self.screen, linenum, tell)
+            # unset edit prompt first, in case program.edit throws
             self._edit_prompt = False
+            self.program.edit(self.screen, linenum, tell)
         elif self._prompt:
             self.screen.start_line()
             self.screen.write_line('Ok\xff')
