@@ -102,6 +102,7 @@ def get_number_tokens(fors):
         else:
             digits_before += 1
     # number field
+    comma = False
     c = util.peek(fors)
     dot = (c == '.')
     if dot:
@@ -118,6 +119,8 @@ def get_number_tokens(fors):
                     decimals += 1
                 else:
                     digits_before += 1
+                    if c == ',':
+                        comma = True
             else:
                 break
     if digits_before + decimals == 0:
@@ -128,4 +131,4 @@ def get_number_tokens(fors):
         word += fors.read(4)
     if not leading_plus and util.peek(fors) in ('-', '+'):
         word += fors.read(1)
-    return word, digits_before, decimals
+    return word, digits_before, decimals, comma

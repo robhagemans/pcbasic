@@ -2407,11 +2407,11 @@ def exec_print_using(ins, output):
                     else:
                         output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
             else:
-                number_field, digits_before, decimals = print_and_input.get_number_tokens(fors)
+                number_field, digits_before, decimals, comma = print_and_input.get_number_tokens(fors)
                 if number_field:
                     if not data_ends:
                         num = vartypes.pass_float_keep(expressions.parse_expression(ins))
-                        output.write(representation.format_number(num, number_field, digits_before, decimals))
+                        output.write(representation.format_number(num, number_field, digits_before, decimals, comma=comma))
                 else:
                     output.write(fors.read(1))
             if string_field or number_field:

@@ -131,44 +131,54 @@ def get_digits(num, digits, remove_trailing=True):
             digitstr = digitstr[:-1]
     return digitstr
 
-def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_dot=False):
-    """ Put digits in scientific E-notation. """
+def _group_digits(digitstr):
+    """Insert commas to group digits in a decimal number."""
+    before, after = digitstr.split('.')
+    first = len(before) % 3
+    chunks = [before[i:i + 3] for i in range(first, len(before), 3)]
+    if first:
+        chunks = [before[:first]] + chunks
+    return ','.join(chunks) + '.' + after
+
+def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_dot=False, group_digits=False):
+    """Put digits in scientific E-notation."""
     valstr = digitstr[:digits_to_dot]
     if len(digitstr) > digits_to_dot:
-        valstr += '.' + digitstr[digits_to_dot:]
+        after_str = digitstr[digits_to_dot:]
+        valstr += '.' + after_str
     elif len(digitstr) == digits_to_dot and force_dot:
         valstr += '.'
-    exponent = exp10-digits_to_dot+1
+    if group_digits:
+        valstr = _group_digits(valstr)
+    exponent = exp10 - digits_to_dot + 1
     valstr += exp_sign
-    if (exponent<0):
-        valstr+= '-'
+    if exponent < 0:
+        valstr += '-'
     else:
-        valstr+= '+'
-    valstr += get_digits(abs(exponent),2,False)
+        valstr += '+'
+    valstr += get_digits(abs(exponent), digits=2, remove_trailing=False)
     return valstr
 
-def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
-    """ Put digits in decimal notation. """
+def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False, group_digits=False):
+    """Put digits in decimal notation."""
     # digits to decimal point
     exp10 += 1
     if exp10 >= len(digitstr):
         valstr = digitstr + '0'*(exp10-len(digitstr))
         if force_dot:
-            valstr+='.'
-        if not force_dot or type_sign=='#':
-            valstr += type_sign
+            valstr += '.'
     elif exp10 > 0:
         valstr = digitstr[:exp10] + '.' + digitstr[exp10:]
-        if type_sign=='#':
-            valstr += type_sign
     else:
         if force_dot:
             valstr = '0'
         else:
             valstr = ''
         valstr += '.' + '0'*(-exp10) + digitstr
-        if type_sign=='#':
-            valstr += type_sign
+    if group_digits:
+        valstr = _group_digits(valstr)
+    if ('.' not in valstr) or (type_sign == '#'):
+        valstr += type_sign
     return valstr
 
 def float_to_str(n_in, screen=False, write=False):
@@ -210,7 +220,7 @@ def float_to_str(n_in, screen=False, write=False):
         valstr += decimal_notation(digitstr, exp10, type_sign)
     return valstr
 
-def format_number(value, tokens, digits_before, decimals):
+def format_number(value, tokens, digits_before, decimals, comma):
     """ Format a number to a format string. For PRINT USING. """
     # illegal function call if too many digits
     if digits_before + decimals > 24:
@@ -243,9 +253,9 @@ def format_number(value, tokens, digits_before, decimals):
     valstr += '$' if has_dollar else ''
     # format to string
     if '^' in tokens:
-        valstr += format_float_scientific(value, digits_before, decimals, force_dot)
+        valstr += format_float_scientific(value, digits_before, decimals, force_dot, comma)
     else:
-        valstr += format_float_fixed(value, decimals, force_dot)
+        valstr += format_float_fixed(value, decimals, force_dot, comma)
     # trailing signs, if any
     valstr += post_sign
     if len(valstr) > len(tokens):
@@ -255,7 +265,7 @@ def format_number(value, tokens, digits_before, decimals):
         valstr = ('*' if '*' in tokens else ' ') * (len(tokens) - len(valstr)) + valstr
     return valstr
 
-def format_float_scientific(expr, digits_before, decimals, force_dot):
+def format_float_scientific(expr, digits_before, decimals, force_dot, comma):
     """ Put a float in scientific format. """
     work_digits = digits_before + decimals
     if work_digits > expr.digits:
@@ -285,9 +295,9 @@ def format_float_scientific(expr, digits_before, decimals, force_dot):
     if work_digits == 0:
         exp10 += 1
     exp10 += digits_before + decimals - 1
-    return scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=digits_before, force_dot=force_dot)
+    return scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=digits_before, force_dot=force_dot, group_digits=comma)
 
-def format_float_fixed(expr, decimals, force_dot):
+def format_float_fixed(expr, decimals, force_dot, comma):
     """ Put a float in fixed-point representation. """
     unrounded = mul(expr, pow_int(expr.ten, decimals)) # expr * 10**decimals
     num = unrounded.copy().iround()
@@ -307,7 +317,7 @@ def format_float_fixed(expr, decimals, force_dot):
     # argument work_digits-1 means we're getting work_digits==exp10+1-diff digits
     # fill up with zeros
     digitstr = get_digits(num, work_digits-1, remove_trailing=False) + ('0' * diff)
-    return decimal_notation(digitstr, work_digits-1-1-decimals+diff, '', force_dot)
+    return decimal_notation(digitstr, work_digits-1-1-decimals+diff, '', force_dot, group_digits=comma)
 
 
 ##################################
