@@ -590,33 +590,36 @@ def value_fn(ins):
         raise error.RunError(error.OUT_OF_MEMORY)
     state.basic_state.user_function_parsing.add(fnname)
     try:
-        varnames, fncode = state.basic_state.functions[fnname]
-    except KeyError:
-        raise error.RunError(error.UNDEFINED_USER_FUNCTION)
-    # save existing vars
-    varsave = {}
-    for name in varnames:
-        if name in state.basic_state.variables:
-            # copy the *value* - set_var is in-place it's safe for FOR loops
-            varsave[name] = state.basic_state.variables[name][:]
-    # read variables
-    if util.skip_white_read_if(ins, ('(',)):
-        exprs = parse_expr_list(ins, len(varnames), err=error.STX)
-        if None in exprs:
-            raise error.RunError(error.STX)
-        for i in range(len(varnames)):
-            var.set_var(varnames[i], exprs[i])
-        util.require_read(ins, (')',))
-    # execute the code
-    fns = StringIO(fncode)
-    fns.seek(0)
-    value = parse_expression(fns)
-    # restore existing vars
-    for name in varsave:
-        # re-assign the stored value
-        state.basic_state.variables[name][:] = varsave[name]
-    state.basic_state.user_function_parsing.remove(fnname)
-    return vartypes.pass_type_keep(fnname[-1], value)
+        try:
+            varnames, fncode = state.basic_state.functions[fnname]
+        except KeyError:
+            raise error.RunError(error.UNDEFINED_USER_FUNCTION)
+        # save existing vars
+        varsave = {}
+        for name in varnames:
+            if name in state.basic_state.variables:
+                # copy the *value* - set_var is in-place it's safe for FOR loops
+                varsave[name] = state.basic_state.variables[name][:]
+        # read variables
+        if util.skip_white_read_if(ins, ('(',)):
+            exprs = parse_expr_list(ins, len(varnames), err=error.STX)
+            if None in exprs:
+                raise error.RunError(error.STX)
+            for i in range(len(varnames)):
+                var.set_var(varnames[i], exprs[i])
+            util.require_read(ins, (')',))
+        # execute the code
+        fns = StringIO(fncode)
+        fns.seek(0)
+        value = parse_expression(fns)
+        # restore existing vars
+        for name in varsave:
+            # re-assign the stored value
+            state.basic_state.variables[name][:] = varsave[name]
+        return vartypes.pass_type_keep(fnname[-1], value)
+    finally:
+        state.basic_state.user_function_parsing.remove(fnname)
+
 
 ###############################################################
 # graphics
