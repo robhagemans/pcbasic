@@ -9264,6 +9264,10 @@
                 If an error is raised, the output before the error was encountered is
                 printed as normal.
             </li>
+            <li>
+                In GW-BASIC, when formatting a number with a dollar sign, if the number is in the range <code>[-10000&mdash;-32767]</code> and does not fit in the width of the number field,
+                the minus sign is omitted. This is not implemented in PC-BASIC.
+            </li>
         </ul>
         <h5>Errors</h5>
         <ul>
