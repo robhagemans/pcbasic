@@ -83,7 +83,7 @@ class Formatter(object):
         format_expr = self._memory.strings.next_temporary(args)
         if format_expr == '':
             raise error.RunError(error.IFC)
-        fors = FormatParser(format_expr)
+        fors = codestream.CodeStream(format_expr)
         newline, format_chars = True, False
         try:
             while True:
@@ -99,26 +99,20 @@ class Formatter(object):
                     self._output.write(fors.read(2)[-1])
                 else:
                     with self._memory.strings:
-                        string_field = fors._get_string_tokens()
-                        if not string_field:
-                            number_field = fors._get_number_tokens()
-                        if string_field or number_field:
+                        try:
+                            format_field = StringField(fors)
                             format_chars = True
-                            value = next(args)
-                            if value is None:
-                                newline = False
-                                break
-                        if string_field:
-                            s = values.pass_string(value)
-                            if string_field == '&':
-                                self._output.write(s)
-                            else:
-                                self._output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
-                        elif number_field:
-                            num = values.pass_number(value)
-                            self._output.write(_format_number(num, *number_field))
-                        else:
-                            self._output.write(fors.read(1))
+                        except ValueError:
+                            try:
+                                format_field = NumberField(fors)
+                                format_chars = True
+                            except ValueError:
+                                format_field = LiteralField(fors)
+                        value = format_field.format(args)
+                        if value is None:
+                            newline = False
+                            break
+                        self._output.write(value)
         except StopIteration:
             pass
         if not format_chars:
@@ -127,63 +121,95 @@ class Formatter(object):
         return newline
 
 
-class FormatParser(codestream.CodeStream):
-    """Format string parser."""
+##############################################################################
+# formatting functions and format string parsers
 
-    def _get_string_tokens(self):
+class LiteralField(object):
+    """Literal character for PRINT USING."""
+
+    def __init__(self, fors):
+        """Initialise."""
+        self._value = fors.read(1)
+
+    def format(self, args):
+        """Format literal char."""
+        return self._value
+
+
+class StringField(object):
+    """String Formatter for PRINT USING."""
+
+    def __init__(self, fors):
         """Get consecutive string-related formatting tokens."""
         word = ''
-        c = self.peek()
+        c = fors.peek()
         if c in ('!', '&'):
-            word += self.read(1)
+            word += fors.read(1)
         elif c == '\\':
-            word += self.read(1)
+            word += fors.read(1)
             # count the width of the \ \ token;
             # only spaces allowed and closing \ is necessary
             while True:
-                c = self.read(1)
+                c = fors.read(1)
                 word += c
                 if c == '\\':
                     break
                 elif c != ' ': # can be empty as well
-                    self.seek(-len(word), 1)
-                    return ''
-        return word
+                    fors.seek(-len(word), 1)
+                    raise ValueError()
+        if not word:
+            raise ValueError()
+        self._string_field = word
 
-    def _get_number_tokens(self):
+    def format(self, args):
+        """Format a string."""
+        value = next(args)
+        if value is None:
+            return None
+        s = values.pass_string(value)
+        if self._string_field == '&':
+            return s.to_str()
+        else:
+            return s.to_str().ljust(len(self._string_field))
+
+
+class NumberField(object):
+    """Number formatter for PRINT USING."""
+
+    def __init__(self, fors):
         """Get consecutive number-related formatting tokens."""
         word, digits_before, decimals = '', 0, 0
         # + comes first
-        leading_plus = (self.peek() == '+')
+        leading_plus = (fors.peek() == '+')
         if leading_plus:
-            word += self.read(1)
+            word += fors.read(1)
         # $ and * combinations
-        c = self.peek()
+        c = fors.peek()
         if c in ('$', '*'):
-            word += self.read(2)
+            word += fors.read(2)
             if word[-1] != c:
-                self.seek(-len(word), 1)
-                return None
+                fors.seek(-len(word), 1)
+                raise ValueError()
             if c == '*':
                 digits_before += 2
-                if self.peek() == '$':
-                    word += self.read(1)
+                if fors.peek() == '$':
+                    word += fors.read(1)
             else:
                 digits_before += 1
         # number field
-        c = self.peek()
+        c = fors.peek()
         dot = (c == '.')
         comma = False
         if dot:
-            word += self.read(1)
+            word += fors.read(1)
         if c in ('.', '#'):
             while True:
-                c = self.peek()
+                c = fors.peek()
                 if not dot and c == '.':
-                    word += self.read(1)
+                    word += fors.read(1)
                     dot = True
                 elif c == '#' or (not dot and c == ','):
-                    word += self.read(1)
+                    word += fors.read(1)
                     if dot:
                         decimals += 1
                     else:
@@ -193,60 +219,63 @@ class FormatParser(codestream.CodeStream):
                 else:
                     break
         if digits_before + decimals == 0:
-            self.seek(-len(word), 1)
-            return None
+            fors.seek(-len(word), 1)
+            raise ValueError()
         # post characters
-        if self.peek(4) == '^^^^':
-            word += self.read(4)
-        if not leading_plus and self.peek() in ('-', '+'):
-            word += self.read(1)
-        return word, digits_before, decimals, comma
+        if fors.peek(4) == '^^^^':
+            word += fors.read(4)
+        if not leading_plus and fors.peek() in ('-', '+'):
+            word += fors.read(1)
+        self._tokens, self._digits_before, self._decimals, self._comma = word, digits_before, decimals, comma
 
-
-##############################################################################
-# formatting functions
-
-def _format_number(value, tokens, digits_before, decimals, comma):
-    """Format a number to a format string. For PRINT USING."""
-    # promote ints to single
-    value = value.to_float()
-    # illegal function call if too many digits
-    if digits_before + decimals > 24:
-        raise error.RunError(error.IFC)
-    # dollar sign, decimal point
-    has_dollar, force_dot = '$' in tokens, '.' in tokens
-    # leading sign, if any
-    valstr, post_sign = '', ''
-    neg = value.is_negative()
-    if tokens[0] == '+':
-        valstr += '-' if neg else '+'
-    elif tokens[-1] == '+':
-        post_sign = '-' if neg else '+'
-    elif tokens[-1] == '-':
-        post_sign = '-' if neg else ' '
-    else:
-        valstr += '-' if neg else ''
-        # reserve space for sign in scientific notation by taking away a digit position
-        if not has_dollar:
-            digits_before -= 1
-            if digits_before < 0:
-                digits_before = 0
-    # take absolute value
-    # NOTE: this could overflow for Integer -32768
-    # but we convert to Float before calling format_number
-    value = value.clone().iabs()
-    # currency sign, if any
-    valstr += '$' if has_dollar else ''
-    # format to string
-    if '^' in tokens:
-        valstr += value.to_str_scientific(digits_before, decimals, force_dot, comma)
-    else:
-        valstr += value.to_str_fixed(decimals, force_dot, comma)
-    # trailing signs, if any
-    valstr += post_sign
-    if len(valstr) > len(tokens):
-        valstr = '%' + valstr
-    else:
-        # filler
-        valstr = ('*' if '*' in tokens else ' ') * (len(tokens) - len(valstr)) + valstr
-    return valstr
+    def format(self, args):
+        """Format a number to a format string."""
+        value = next(args)
+        if value is None:
+            return None
+        value = values.pass_number(value)
+        tokens = self._tokens
+        digits_before = self._digits_before
+        decimals = self._decimals
+        comma = self._comma
+        # promote ints to single
+        value = value.to_float()
+        # illegal function call if too many digits
+        if digits_before + decimals > 24:
+            raise error.RunError(error.IFC)
+        # dollar sign, decimal point
+        has_dollar, force_dot = '$' in tokens, '.' in tokens
+        # leading sign, if any
+        valstr, post_sign = '', ''
+        neg = value.is_negative()
+        if tokens[0] == '+':
+            valstr += '-' if neg else '+'
+        elif tokens[-1] == '+':
+            post_sign = '-' if neg else '+'
+        elif tokens[-1] == '-':
+            post_sign = '-' if neg else ' '
+        else:
+            valstr += '-' if neg else ''
+            # reserve space for sign in scientific notation by taking away a digit position
+            if not has_dollar:
+                digits_before -= 1
+                if digits_before < 0:
+                    digits_before = 0
+        # take absolute value
+        # NOTE: this could overflow for Integer -32768
+        # but we convert to Float before calling format_number
+        value = value.clone().iabs()
+        # currency sign, if any
+        valstr += '$' if has_dollar else ''
+        # format to string
+        if '^' in tokens:
+            valstr += value.to_str_scientific(digits_before, decimals, force_dot, comma)
+        else:
+            valstr += value.to_str_fixed(decimals, force_dot, comma)
+        # trailing signs, if any
+        valstr += post_sign
+        if len(valstr) > len(tokens):
+            return '%' + valstr
+        else:
+            # filler
+            return valstr.rjust(len(tokens), '*' if '*' in tokens else ' ')

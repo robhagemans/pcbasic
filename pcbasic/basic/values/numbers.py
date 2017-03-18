@@ -693,7 +693,7 @@ class Float(Number):
             mantissa, exp10 = self.to_decimal(1 if n_work == 0 else n_work)
             digitstr = _get_digits(mantissa, n_work, remove_trailing=True)
             # append zeros if necessary
-            digitstr += '0' * (n_decimals + n_before - len(digitstr))
+            digitstr = digitstr.ljust(n_decimals + n_before, '0')
         # this is just to reproduce GW results for no digits:
         # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
         if n_work == 0:
@@ -717,30 +717,29 @@ class Float(Number):
         # number of digits before the radix point.
         n_before = len(digitstr) - n_after
         # fill up with zeros to required number of figures
-        digitstr += '0' * (n_decimals - n_after)
+        digitstr = digitstr.ljust(n_decimals + n_before, '0')
         return self._decimal_notation(digitstr, n_before-1, type_sign='', force_dot=force_dot, group_digits=group_digits)
 
     # implementation: floating- and fixed-point decimal notations
 
     def _group_digits(self, digitstr):
         """Insert commas to group digits in a decimal number."""
-        before, after = digitstr.split('.')
-        first = len(before) % 3
-        chunks = [before[i:i + 3] for i in range(first, len(before), 3)]
+        first = len(digitstr) % 3
+        chunks = [digitstr[i:i + 3] for i in range(first, len(digitstr), 3)]
         if first:
-            chunks = [before[:first]] + chunks
-        return ','.join(chunks) + '.' + after
+            chunks = [digitstr[:first]] + chunks
+        return ','.join(chunks)
 
     def _scientific_notation(self, digitstr, exp10, digits_to_dot, force_dot, group_digits=False):
         """Put digits in scientific E-notation."""
         valstr = digitstr[:digits_to_dot]
+        if group_digits:
+            valstr = self._group_digits(valstr)
         if len(digitstr) > digits_to_dot:
             after_str = digitstr[digits_to_dot:]
             valstr += '.' + after_str
         elif len(digitstr) == digits_to_dot and force_dot:
             valstr += '.'
-        if group_digits:
-            valstr = self._group_digits(valstr)
         exponent = exp10 - digits_to_dot + 1
         valstr += self.exp_sign
         if exponent < 0:
@@ -757,18 +756,21 @@ class Float(Number):
         exp10 += 1
         if exp10 >= len(digitstr):
             valstr = digitstr + '0'*(exp10-len(digitstr))
+            if group_digits:
+                valstr = self._group_digits(valstr)
             if force_dot:
                 valstr += '.'
         elif exp10 > 0:
-            valstr = digitstr[:exp10] + '.' + digitstr[exp10:]
+            valstr = digitstr[:exp10]
+            if group_digits:
+                valstr = self._group_digits(valstr)
+            valstr += '.' + digitstr[exp10:]
         else:
             if force_dot:
                 valstr = '0'
             else:
                 valstr = ''
             valstr += '.' + '0'*(-exp10) + digitstr
-        if group_digits:
-            valstr = self._group_digits(valstr)
         if ('.' not in valstr) or (type_sign == '#'):
             valstr += type_sign
         return valstr
@@ -1211,11 +1213,10 @@ def str_to_decimal(s, allow_nonnum=True):
         is_double = True
     return is_double, -mantissa if neg else mantissa, exp10
 
-# can be replaced with str and zfill?
 def _get_digits(mantissa, n_digits, remove_trailing):
     """Get the digits for an int."""
-    digitstr = str(abs(mantissa))
-    digitstr = '0'*(n_digits-len(digitstr)) + digitstr[:n_digits]
+    digitstr = str(abs(mantissa)).rjust(n_digits, '0')
     if remove_trailing:
         return digitstr.rstrip('0')
-    return digitstr
+    else:
+        return digitstr
