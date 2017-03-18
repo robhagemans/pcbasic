@@ -1126,13 +1126,25 @@ def get_digits(num, digits, remove_trailing):
         return digitstr.rstrip('0')
     return digitstr
 
-def scientific_notation(digitstr, exp10, exp_sign, digits_to_dot, force_dot):
+def _group_digits(digitstr):
+    """Insert commas to group digits in a decimal number."""
+    before, after = digitstr.split('.')
+    first = len(before) % 3
+    chunks = [before[i:i + 3] for i in range(first, len(before), 3)]
+    if first:
+        chunks = [before[:first]] + chunks
+    return ','.join(chunks) + '.' + after
+
+def scientific_notation(digitstr, exp10, exp_sign, digits_to_dot, force_dot, group_digits=False):
     """Put digits in scientific E-notation."""
     valstr = digitstr[:digits_to_dot]
     if len(digitstr) > digits_to_dot:
-        valstr += '.' + digitstr[digits_to_dot:]
+        after_str = digitstr[digits_to_dot:]
+        valstr += '.' + after_str
     elif len(digitstr) == digits_to_dot and force_dot:
         valstr += '.'
+    if group_digits:
+        valstr = _group_digits(valstr)
     exponent = exp10 - digits_to_dot + 1
     valstr += exp_sign
     if exponent < 0:
@@ -1142,7 +1154,7 @@ def scientific_notation(digitstr, exp10, exp_sign, digits_to_dot, force_dot):
     valstr += get_digits(abs(exponent), digits=2, remove_trailing=False)
     return valstr
 
-def decimal_notation(digitstr, exp10, type_sign, force_dot):
+def decimal_notation(digitstr, exp10, type_sign, force_dot, group_digits=False):
     """Put digits in decimal notation."""
     # digits to decimal point
     exp10 += 1
@@ -1150,18 +1162,16 @@ def decimal_notation(digitstr, exp10, type_sign, force_dot):
         valstr = digitstr + '0'*(exp10-len(digitstr))
         if force_dot:
             valstr += '.'
-        if not force_dot or type_sign == '#':
-            valstr += type_sign
     elif exp10 > 0:
         valstr = digitstr[:exp10] + '.' + digitstr[exp10:]
-        if type_sign == '#':
-            valstr += type_sign
     else:
         if force_dot:
             valstr = '0'
         else:
             valstr = ''
         valstr += '.' + '0'*(-exp10) + digitstr
-        if type_sign == '#':
-            valstr += type_sign
+    if group_digits:
+        valstr = _group_digits(valstr)
+    if ('.' not in valstr) or (type_sign == '#'):
+        valstr += type_sign
     return valstr

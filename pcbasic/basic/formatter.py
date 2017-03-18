@@ -173,6 +173,7 @@ class FormatParser(codestream.CodeStream):
         # number field
         c = self.peek()
         dot = (c == '.')
+        comma = False
         if dot:
             word += self.read(1)
         if c in ('.', '#'):
@@ -187,6 +188,8 @@ class FormatParser(codestream.CodeStream):
                         decimals += 1
                     else:
                         digits_before += 1
+                        if c == ',':
+                            comma = True
                 else:
                     break
         if digits_before + decimals == 0:
@@ -197,13 +200,13 @@ class FormatParser(codestream.CodeStream):
             word += self.read(4)
         if not leading_plus and self.peek() in ('-', '+'):
             word += self.read(1)
-        return word, digits_before, decimals
+        return word, digits_before, decimals, comma
 
 
 ##############################################################################
 # formatting functions
 
-def _format_number(value, tokens, digits_before, decimals):
+def _format_number(value, tokens, digits_before, decimals, comma):
     """Format a number to a format string. For PRINT USING."""
     # promote ints to single
     value = value.to_float()
@@ -239,9 +242,9 @@ def _format_number(value, tokens, digits_before, decimals):
     valstr += '$' if has_dollar else ''
     # format to string
     if '^' in tokens:
-        valstr += _format_float_scientific(value, digits_before, decimals, force_dot)
+        valstr += _format_float_scientific(value, digits_before, decimals, force_dot, comma)
     else:
-        valstr += _format_float_fixed(value, decimals, force_dot)
+        valstr += _format_float_fixed(value, decimals, force_dot, comma)
     # trailing signs, if any
     valstr += post_sign
     if len(valstr) > len(tokens):
@@ -251,44 +254,45 @@ def _format_number(value, tokens, digits_before, decimals):
         valstr = ('*' if '*' in tokens else ' ') * (len(tokens) - len(valstr)) + valstr
     return valstr
 
-def _format_float_scientific(expr, digits_before, decimals, force_dot):
+def _format_float_scientific(expr, n_before, n_decimals, force_dot, comma):
     """Put a float in scientific format."""
-    work_digits = min(expr.digits, digits_before + decimals)
+    n_work = min(expr.digits, n_before + n_decimals)
     if expr.is_zero():
         if not force_dot:
             if expr.exp_sign == 'E':
                 return 'E+00'
             return '0D+00'  # matches GW output. odd, odd, odd
-        digitstr = '0' * (digits_before + decimals)
+        digitstr = '0' * (n_before + n_decimals)
         exp10 = 0
     else:
         # special case when work_digits == 0, see also below
         # setting to 0 results in incorrect rounding (why?)
-        num, exp10 = expr.to_decimal(1 if work_digits == 0 else work_digits)
-        digitstr = values.get_digits(num, work_digits, remove_trailing=True)
-        if len(digitstr) < digits_before + decimals:
-            digitstr += '0' * (digits_before + decimals - len(digitstr))
+        mantissa, exp10 = expr.to_decimal(1 if n_work == 0 else n_work)
+        digitstr = values.get_digits(mantissa, n_work, remove_trailing=True)
+        # append zeros if necessary
+        digitstr += '0' * (n_decimals + n_before - len(digitstr))
     # this is just to reproduce GW results for no digits:
     # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
-    if work_digits == 0:
+    if n_work == 0:
         exp10 += 1
-    exp10 += digits_before + decimals - 1
-    return values.scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=digits_before, force_dot=force_dot)
+    exp10 += n_before + n_decimals - 1
+    return values.scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=n_before, force_dot=force_dot, group_digits=comma)
 
-def _format_float_fixed(expr, decimals, force_dot):
+def _format_float_fixed(expr, n_decimals, force_dot, comma):
     """Put a float in fixed-point representation."""
-    num, exp10 = expr.to_decimal()
+    # convert to integer_mantissa * 10**exponent
+    mantissa, exp10 = expr.to_decimal()
     # -exp10 is the number of digits after the radix point
-    if -exp10 > decimals:
-        nwork = expr.digits - (-exp10 - decimals)
-        # bring to decimal form of working precision
-        # this has nwork or nwork+1 digits, depending on rounding
-        num, exp10 = expr.to_decimal(nwork)
-    digitstr = str(abs(num))
+    n_after = -exp10
+    # bring to decimal form of working precision
+    if n_after > n_decimals:
+        n_work = expr.digits - (n_after - n_decimals)
+        # this has n_work or n_work+1 digits, depending on rounding
+        mantissa, exp10 = expr.to_decimal(n_work)
+        n_after = -exp10
+    digitstr = str(abs(mantissa))
     # number of digits before the radix point.
-    nbefore = len(digitstr) + exp10
+    n_before = len(digitstr) - n_after
     # fill up with zeros to required number of figures
-    digitstr += '0' * (decimals + exp10)
-    return values.decimal_notation(
-                digitstr, nbefore - 1,
-                type_sign='', force_dot=force_dot)
+    digitstr += '0' * (n_decimals - n_after)
+    return values.decimal_notation(digitstr, n_before-1, type_sign='', force_dot=force_dot, group_digits=comma)
