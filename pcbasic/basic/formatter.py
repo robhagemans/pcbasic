@@ -85,7 +85,8 @@ class Formatter(object):
             raise error.RunError(error.IFC)
         fors = codestream.CodeStream(format_expr)
         newline, format_chars = True, False
-        literals = ''
+        start_cycle = True
+        initial_literal = ''
         try:
             while True:
                 c = fors.peek()
@@ -94,33 +95,41 @@ class Formatter(object):
                         # avoid infinite loop
                         break
                     # loop the format string if more variables to come
+                    start_cycle = True
+                    initial_literal = ''
                     fors.seek(0)
                 elif c == '_':
                     # escape char; write next char in fors or _ if this is the last char
-                    literals += fors.read(2)[-1]
+                    if start_cycle:
+                        initial_literal += fors.read(2)[-1]
+                    else:
+                        self._output.write(fors.read(2)[-1])
                 else:
                     with self._memory.strings:
                         try:
-                            format_field = StringField(literals, fors)
-                            format_chars = True
-                            literals = ''
+                            format_field = StringField(fors)
                         except ValueError:
                             try:
-                                format_field = NumberField(literals, fors)
-                                format_chars = True
-                                literals = ''
+                                format_field = NumberField(fors)
                             except ValueError:
-                                literals += fors.read(1)
+                                if start_cycle:
+                                    initial_literal += fors.read(1)
+                                else:
+                                    self._output.write(fors.read(1))
                                 continue
                         value = next(args)
                         if value is None:
                             newline = False
                             break
+                        if start_cycle:
+                            self._output.write(initial_literal)
+                            start_cycle = False
+                            format_chars = True
                         self._output.write(format_field.format(value))
         except StopIteration:
             pass
         if not format_chars:
-            self._output.write(literals)
+            self._output.write(initial_literal)
             # there were no format chars in the string, illegal fn call
             raise error.RunError(error.IFC)
         return newline
@@ -129,11 +138,10 @@ class Formatter(object):
 ##############################################################################
 # formatting functions and format string parsers
 
-
 class StringField(object):
     """String Formatter for PRINT USING."""
 
-    def __init__(self, literals, fors):
+    def __init__(self, fors):
         """Get consecutive string-related formatting tokens."""
         word = ''
         c = fors.peek()
@@ -154,7 +162,6 @@ class StringField(object):
         if not word:
             raise ValueError()
         self._string_field = word
-        self._literals = literals
 
     def format(self, value):
         """Format a string."""
@@ -163,12 +170,12 @@ class StringField(object):
             s = s.to_str()
         else:
             s = s.to_str().ljust(len(self._string_field))[:len(self._string_field)]
-        return self._literals + s
+        return s
 
 class NumberField(object):
     """Number formatter for PRINT USING."""
 
-    def __init__(self, literals, fors):
+    def __init__(self, fors):
         """Get consecutive number-related formatting tokens."""
         word, digits_before, decimals = '', 0, 0
         # + comes first
@@ -219,7 +226,6 @@ class NumberField(object):
         if not leading_plus and fors.peek() in ('-', '+'):
             word += fors.read(1)
         self._tokens, self._digits_before, self._decimals, self._comma = word, digits_before, decimals, comma
-        self._literals = literals
 
     def format(self, value):
         """Format a number to a format string."""
@@ -269,4 +275,4 @@ class NumberField(object):
         else:
             # filler
             valstr = valstr.rjust(len(tokens), '*' if '*' in tokens else ' ')
-        return self._literals + valstr
+        return valstr
