@@ -231,9 +231,6 @@ def _format_number(value, tokens, digits_before, decimals, comma):
             digits_before -= 1
             if digits_before < 0:
                 digits_before = 0
-            # just one of those things GW does
-            #if force_dot and digits_before == 0 and decimals != 0:
-            #    valstr += '0'
     # take absolute value
     # NOTE: this could overflow for Integer -32768
     # but we convert to Float before calling format_number
@@ -242,9 +239,9 @@ def _format_number(value, tokens, digits_before, decimals, comma):
     valstr += '$' if has_dollar else ''
     # format to string
     if '^' in tokens:
-        valstr += _format_float_scientific(value, digits_before, decimals, force_dot, comma)
+        valstr += value.to_str_scientific(digits_before, decimals, force_dot, comma)
     else:
-        valstr += _format_float_fixed(value, decimals, force_dot, comma)
+        valstr += value.to_str_fixed(decimals, force_dot, comma)
     # trailing signs, if any
     valstr += post_sign
     if len(valstr) > len(tokens):
@@ -253,46 +250,3 @@ def _format_number(value, tokens, digits_before, decimals, comma):
         # filler
         valstr = ('*' if '*' in tokens else ' ') * (len(tokens) - len(valstr)) + valstr
     return valstr
-
-def _format_float_scientific(expr, n_before, n_decimals, force_dot, comma):
-    """Put a float in scientific format."""
-    n_work = min(expr.digits, n_before + n_decimals)
-    if expr.is_zero():
-        if not force_dot:
-            if expr.exp_sign == 'E':
-                return 'E+00'
-            return '0D+00'  # matches GW output. odd, odd, odd
-        digitstr = '0' * (n_before + n_decimals)
-        exp10 = 0
-    else:
-        # special case when work_digits == 0, see also below
-        # setting to 0 results in incorrect rounding (why?)
-        mantissa, exp10 = expr.to_decimal(1 if n_work == 0 else n_work)
-        digitstr = values.get_digits(mantissa, n_work, remove_trailing=True)
-        # append zeros if necessary
-        digitstr += '0' * (n_decimals + n_before - len(digitstr))
-    # this is just to reproduce GW results for no digits:
-    # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
-    if n_work == 0:
-        exp10 += 1
-    exp10 += n_before + n_decimals - 1
-    return values.scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=n_before, force_dot=force_dot, group_digits=comma)
-
-def _format_float_fixed(expr, n_decimals, force_dot, comma):
-    """Put a float in fixed-point representation."""
-    # convert to integer_mantissa * 10**exponent
-    mantissa, exp10 = expr.to_decimal()
-    # -exp10 is the number of digits after the radix point
-    n_after = -exp10
-    # bring to decimal form of working precision
-    if n_after > n_decimals:
-        n_work = expr.digits - (n_after - n_decimals)
-        # this has n_work or n_work+1 digits, depending on rounding
-        mantissa, exp10 = expr.to_decimal(n_work)
-        n_after = -exp10
-    digitstr = str(abs(mantissa))
-    # number of digits before the radix point.
-    n_before = len(digitstr) - n_after
-    # fill up with zeros to required number of figures
-    digitstr += '0' * (n_decimals - n_after)
-    return values.decimal_notation(digitstr, n_before-1, type_sign='', force_dot=force_dot, group_digits=comma)

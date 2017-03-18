@@ -611,18 +611,19 @@ class Float(Number):
             sign = '-'
         elif leading_space:
             sign = ' '
-        num, exp10 = self.to_decimal()
-        ndigits = self.digits
-        digitstr = get_digits(num, ndigits, remove_trailing=True)
+        mantissa, exp10 = self.to_decimal()
+        digitstr = _get_digits(mantissa, self.digits, remove_trailing=True)
         # exponent for scientific notation
-        exp10 += ndigits - 1
-        if exp10 > ndigits - 1 or len(digitstr)-exp10 > ndigits + 1:
+        exp10 += self.digits - 1
+        if exp10 > self.digits - 1 or len(digitstr)-exp10 > self.digits + 1:
             # use scientific notation
-            valstr = scientific_notation(digitstr, exp10, self.exp_sign, digits_to_dot=1, force_dot=False)
+            # this is self.to_str_scientific(n_before=1, n_decimals=self.digits-1, force_dot=False, group_digits=False)
+            valstr = self._scientific_notation(digitstr, exp10, digits_to_dot=1, force_dot=False)
         else:
             # use decimal notation
-            type_sign = '' if not type_sign else self.sigil
-            valstr = decimal_notation(digitstr, exp10, type_sign, force_dot=False)
+            # usual: n_decimals = -exp10
+            # this is self.to_str_fixed(self, n_decimals=-exp10, force_dot=False, group_digits=False) but with type_sign
+            valstr = self._decimal_notation(digitstr, exp10, type_sign, force_dot=False)
         return sign + valstr
 
     def to_decimal(self, digits=None):
@@ -675,6 +676,103 @@ class Float(Number):
             den = self._mul10_den(den)
             exp10 -= 1
         return self._normalise(*den)
+
+    def to_str_scientific(self, n_before, n_decimals, force_dot, group_digits):
+        """Put a float in scientific format."""
+        n_work = min(self.digits, n_before + n_decimals)
+        if self.is_zero():
+            if not force_dot:
+                if self.exp_sign == 'E':
+                    return 'E+00'
+                return '0D+00'  # matches GW output. odd, odd, odd
+            digitstr = '0' * (n_before + n_decimals)
+            exp10 = 0
+        else:
+            # special case when work_digits == 0, see also below
+            # setting to 0 results in incorrect rounding (why?)
+            mantissa, exp10 = self.to_decimal(1 if n_work == 0 else n_work)
+            digitstr = _get_digits(mantissa, n_work, remove_trailing=True)
+            # append zeros if necessary
+            digitstr += '0' * (n_decimals + n_before - len(digitstr))
+        # this is just to reproduce GW results for no digits:
+        # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
+        if n_work == 0:
+            exp10 += 1
+        exp10 += n_before + n_decimals - 1
+        return self._scientific_notation(digitstr, exp10, digits_to_dot=n_before, force_dot=force_dot, group_digits=group_digits)
+
+    def to_str_fixed(self, n_decimals, force_dot, group_digits):
+        """Put a float in fixed-point representation."""
+        # convert to integer_mantissa * 10**exponent
+        mantissa, exp10 = self.to_decimal()
+        # -exp10 is the number of digits after the radix point
+        n_after = -exp10
+        # bring to decimal form of working precision
+        if n_after > n_decimals:
+            n_work = self.digits - (n_after - n_decimals)
+            # this has n_work or n_work+1 digits, depending on rounding
+            mantissa, exp10 = self.to_decimal(n_work)
+            n_after = -exp10
+        digitstr = str(abs(mantissa))
+        # number of digits before the radix point.
+        n_before = len(digitstr) - n_after
+        # fill up with zeros to required number of figures
+        digitstr += '0' * (n_decimals - n_after)
+        return self._decimal_notation(digitstr, n_before-1, type_sign='', force_dot=force_dot, group_digits=group_digits)
+
+    # implementation: floating- and fixed-point decimal notations
+
+    def _group_digits(self, digitstr):
+        """Insert commas to group digits in a decimal number."""
+        before, after = digitstr.split('.')
+        first = len(before) % 3
+        chunks = [before[i:i + 3] for i in range(first, len(before), 3)]
+        if first:
+            chunks = [before[:first]] + chunks
+        return ','.join(chunks) + '.' + after
+
+    def _scientific_notation(self, digitstr, exp10, digits_to_dot, force_dot, group_digits=False):
+        """Put digits in scientific E-notation."""
+        valstr = digitstr[:digits_to_dot]
+        if len(digitstr) > digits_to_dot:
+            after_str = digitstr[digits_to_dot:]
+            valstr += '.' + after_str
+        elif len(digitstr) == digits_to_dot and force_dot:
+            valstr += '.'
+        if group_digits:
+            valstr = self._group_digits(valstr)
+        exponent = exp10 - digits_to_dot + 1
+        valstr += self.exp_sign
+        if exponent < 0:
+            valstr += '-'
+        else:
+            valstr += '+'
+        valstr += _get_digits(abs(exponent), n_digits=2, remove_trailing=False)
+        return valstr
+
+    def _decimal_notation(self, digitstr, exp10, type_sign, force_dot, group_digits=False):
+        """Put digits in decimal notation."""
+        type_sign = '' if not type_sign else self.sigil
+        # digits to decimal point
+        exp10 += 1
+        if exp10 >= len(digitstr):
+            valstr = digitstr + '0'*(exp10-len(digitstr))
+            if force_dot:
+                valstr += '.'
+        elif exp10 > 0:
+            valstr = digitstr[:exp10] + '.' + digitstr[exp10:]
+        else:
+            if force_dot:
+                valstr = '0'
+            else:
+                valstr = ''
+            valstr += '.' + '0'*(-exp10) + digitstr
+        if group_digits:
+            valstr = self._group_digits(valstr)
+        if ('.' not in valstr) or (type_sign == '#'):
+            valstr += type_sign
+        return valstr
+
 
     ##########################################################################
     # implementation: decimal representations only
@@ -1113,65 +1211,11 @@ def str_to_decimal(s, allow_nonnum=True):
         is_double = True
     return is_double, -mantissa if neg else mantissa, exp10
 
-
-##############################################################################
-# convert decimal to string representation
-
 # can be replaced with str and zfill?
-def get_digits(num, digits, remove_trailing):
+def _get_digits(mantissa, n_digits, remove_trailing):
     """Get the digits for an int."""
-    digitstr = str(abs(num))
-    digitstr = '0'*(digits-len(digitstr)) + digitstr[:digits]
+    digitstr = str(abs(mantissa))
+    digitstr = '0'*(n_digits-len(digitstr)) + digitstr[:n_digits]
     if remove_trailing:
         return digitstr.rstrip('0')
     return digitstr
-
-def _group_digits(digitstr):
-    """Insert commas to group digits in a decimal number."""
-    before, after = digitstr.split('.')
-    first = len(before) % 3
-    chunks = [before[i:i + 3] for i in range(first, len(before), 3)]
-    if first:
-        chunks = [before[:first]] + chunks
-    return ','.join(chunks) + '.' + after
-
-def scientific_notation(digitstr, exp10, exp_sign, digits_to_dot, force_dot, group_digits=False):
-    """Put digits in scientific E-notation."""
-    valstr = digitstr[:digits_to_dot]
-    if len(digitstr) > digits_to_dot:
-        after_str = digitstr[digits_to_dot:]
-        valstr += '.' + after_str
-    elif len(digitstr) == digits_to_dot and force_dot:
-        valstr += '.'
-    if group_digits:
-        valstr = _group_digits(valstr)
-    exponent = exp10 - digits_to_dot + 1
-    valstr += exp_sign
-    if exponent < 0:
-        valstr += '-'
-    else:
-        valstr += '+'
-    valstr += get_digits(abs(exponent), digits=2, remove_trailing=False)
-    return valstr
-
-def decimal_notation(digitstr, exp10, type_sign, force_dot, group_digits=False):
-    """Put digits in decimal notation."""
-    # digits to decimal point
-    exp10 += 1
-    if exp10 >= len(digitstr):
-        valstr = digitstr + '0'*(exp10-len(digitstr))
-        if force_dot:
-            valstr += '.'
-    elif exp10 > 0:
-        valstr = digitstr[:exp10] + '.' + digitstr[exp10:]
-    else:
-        if force_dot:
-            valstr = '0'
-        else:
-            valstr = ''
-        valstr += '.' + '0'*(-exp10) + digitstr
-    if group_digits:
-        valstr = _group_digits(valstr)
-    if ('.' not in valstr) or (type_sign == '#'):
-        valstr += type_sign
-    return valstr

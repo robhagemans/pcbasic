@@ -1,4 +1,4 @@
-10 REM PC-BASIC test 
+10 REM Test PRINT USING with commas
 20 OPEN "OUTPUT" FOR OUTPUT AS 1
 30 PRINT#1, USING "#######,.###"; 2000345.678
 40 PRINT#1, USING "#######,.###"; 12345.678
