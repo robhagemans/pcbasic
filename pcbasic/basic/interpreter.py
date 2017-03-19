@@ -66,8 +66,8 @@ class Interpreter(object):
         """Parse from the current pointer in current codestream."""
         while True:
             # may raise Break
-            self._input_methods.check_events()
-            self._basic_events.check()
+            # KEY events need to check pre-buffer, so check before draining
+            self._input_methods.check_events(self._basic_events.check)
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()

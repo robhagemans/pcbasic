@@ -99,7 +99,7 @@ class InputMethods(object):
         time.sleep(self.tick)
         self.check_events()
 
-    def check_events(self):
+    def check_events(self, event_checker=None):
         """Main event cycle."""
         # avoid screen lockups if video queue fills up
         if self._queues.video.qsize() > self.max_video_qsize:
@@ -109,6 +109,9 @@ class InputMethods(object):
         if self._queues.audio.qsize() > self.max_audio_qsize:
             self._queues.audio.join()
         self._check_input()
+        # KEY events need to check pre-buffer, so check before draining
+        if event_checker:
+            event_checker()
         self.keyboard.drain_event_buffer()
 
     def _check_input(self):
@@ -240,6 +243,14 @@ class KeyboardBuffer(object):
             return self.buffer[0][0]
         except IndexError:
             return ''
+
+    def peek_scancodes(self):
+        """Show keystrokes in keyboard buffer as scancode."""
+        try:
+            return [element[1] for element in self.buffer]
+        except IndexError:
+            return []
+
 
     def stop(self):
         """Ring buffer stopping index."""
