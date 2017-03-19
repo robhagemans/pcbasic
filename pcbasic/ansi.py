@@ -2,7 +2,7 @@
 PC-BASIC - ansi.py
 Definitions for ANSI escape sequences
 
-(c) 2013, 2014, 2015 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -47,6 +47,10 @@ esc_to_scan = {
     '\x1b\x4f\x51': scancode.F2,
     '\x1b\x4f\x52': scancode.F3,
     '\x1b\x4f\x53': scancode.F4,
+    '\x1b[11~':  scancode.F1,
+    '\x1b[12~':  scancode.F2,
+    '\x1b[13~':  scancode.F3,
+    '\x1b[14~':  scancode.F4,
     '\x1b\x5b\x31\x35\x7e':  scancode.F5,
     '\x1b\x5b\x31\x37\x7e':  scancode.F6,
     '\x1b\x5b\x31\x38\x7e':  scancode.F7,
