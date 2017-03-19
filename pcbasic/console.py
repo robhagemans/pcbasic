@@ -285,10 +285,11 @@ def wait_interactive(prompt_width):
                     if d[0] not in ('\0', '\r'):
                         if not state.console_state.overwrite_mode:
                             for c in d:
-                                insert(row, col, c, state.console_state.screen.attr)
-                                # row and col have changed
-                                state.console_state.screen.redraw_row(col-1, row)
+                                insert(state.console_state.row, col, c, state.console_state.screen.attr)
                                 col += 1
+                            # row and col have changed
+                            state.console_state.screen.redraw_row(
+                                state.console_state.col-1, state.console_state.row)
                             set_pos(state.console_state.row,
                                     state.console_state.col + len(d))
                         else:
