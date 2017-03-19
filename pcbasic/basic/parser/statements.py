@@ -79,9 +79,9 @@ class Parser(object):
             except KeyError:
                 raise error.RunError(error.STX)
         else:
-            # implicit LET
             ins.seek(-len(c), 1)
-            if c in string.ascii_letters:
+            if c in set(string.ascii_letters):
+                # implicit LET
                 c = tk.LET
                 parse_args = self._simple[tk.LET]
             else:
