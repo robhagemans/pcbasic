@@ -214,10 +214,10 @@ class Debugger(BaseDebugger):
             linum = struct.unpack_from('<H', token, 2)
             outstr += '[%i]' % linum
         for (expr, outs) in self.watch_list:
-            outstr += ' %s =' % str(expr)
+            outstr += ' %s = ' % str(expr)
             outs.seek(2)
             try:
-                val = self.session.expression_parser.parse(outs)
+                val = self.session.parser.expression_parser.parse(outs)
                 if isinstance(val, values.String):
                     outstr += '"%s"' % val.to_str()
                 else:
