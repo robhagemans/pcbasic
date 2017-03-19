@@ -241,10 +241,11 @@ class Editor(object):
                         if d[0] not in (b'\0', b'\r'):
                             if not self._overwrite_mode:
                                 for c in d:
-                                    self.insert(row, col, c, self.screen.attr)
-                                    # row and col have changed
-                                    self.screen.redraw_row(col-1, row)
+                                    self.insert(self.screen.current_row, col, c, self.screen.attr)
                                     col += 1
+                                # row and col have changed
+                                self.screen.redraw_row(
+                                        self.screen.current_col-1, self.screen.current_row)
                                 self.screen.set_pos(self.screen.current_row,
                                         self.screen.current_col + len(d))
                             else:
