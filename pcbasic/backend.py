@@ -135,6 +135,8 @@ class PlayHandler(EventHandler):
 
     def check(self):
         """ Check and trigger PLAY (music queue) events. """
+        if not self.enabled:
+            return
         play_now = [state.console_state.sound.queue_length(voice) for voice in range(3)]
         if pcjr_sound:
             for voice in range(3):
@@ -164,12 +166,13 @@ class TimerHandler(EventHandler):
 
     def set_trigger(self, n):
         """ Set TIMER trigger to n milliseconds. """
+        self.start = timedate.timer_milliseconds()
         self.period = n
 
     def check(self):
         """ Trigger TIMER events. """
         mutimer = timedate.timer_milliseconds()
-        if mutimer >= self.start + self.period:
+        if self.enabled and (mutimer >= self.start + self.period):
             self.start = mutimer
             self.trigger()
 
@@ -185,6 +188,8 @@ class ComHandler(EventHandler):
 
     def check(self):
         """ Trigger COM-port events. """
+        if not self.enabled:
+            return
         if (state.io_state.devices[self.portname] and
                     state.io_state.devices[self.portname].char_waiting()):
             self.trigger()
