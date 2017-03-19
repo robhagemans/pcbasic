@@ -267,6 +267,7 @@ class TimerHandler(EventHandler):
 
     def set_trigger(self, n):
         """Set TIMER trigger to n milliseconds."""
+        self.start = self.clock.get_time_ms()
         self.period = n
 
     def check(self):
