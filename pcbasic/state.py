@@ -10,11 +10,7 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-try:
-    import cStringIO
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+
 import copy_reg
 import os
 import logging
@@ -55,23 +51,8 @@ def pickle_file(f):
         # not seekable
         return unpickle_file, (f.name, f.mode, -1)
 
-def unpickle_StringIO(value, pos):
-    """Unpickle a cStringIO object."""
-    # needs to be called without arguments or it's a StringI object without write()
-    csio = StringIO()
-    csio.write(value)
-    csio.seek(pos)
-    return csio
-
-def pickle_StringIO(csio):
-    """Pickle a cStringIO object."""
-    value = csio.getvalue()
-    pos = csio.tell()
-    return unpickle_StringIO, (value, pos)
-
 # register the picklers for file and cStringIO
 copy_reg.pickle(file, pickle_file)
-copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)
 
 
 def zunpickle(state_file):
@@ -79,7 +60,8 @@ def zunpickle(state_file):
     if state_file:
         try:
             with open(state_file, 'rb') as f:
-                return pickle.loads(zlib.decompress(f.read()))
+                s = zlib.decompress(f.read())
+                return pickle.loads(s)
         except EnvironmentError:
             logging.error('Could not read from %s', state_file)
 

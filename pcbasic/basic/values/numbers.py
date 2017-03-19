@@ -49,7 +49,7 @@ class Value(object):
     def __init__(self, buffer, values):
         """Initialise the value."""
         if buffer is None:
-            buffer = memoryview(bytearray(self.size))
+            buffer = bytearray(self.size)
         self._buffer = memoryview(buffer)
         self._values = values
 
