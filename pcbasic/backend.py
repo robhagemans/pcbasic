@@ -252,6 +252,8 @@ def check_key_event(scancode, modifiers):
     """ Trigger KEYboard events. """
     if not scancode:
         return False
+    if not state.basic_state.run_mode:
+        return False
     result = False
     for k in state.basic_state.events.key:
         k.set_scancode_for_check(scancode, modifiers)
