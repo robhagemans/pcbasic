@@ -459,7 +459,7 @@ class Settings(object):
             'mono_tint': self.get('mono-tint'),
             'font': self.get('font'),
             # inserted keystrokes
-            'keystring': self.get('keys').decode('string_escape').decode('utf-8'),
+            'keystring': self.get('keys').encode('utf-8').decode('string_escape').decode('utf-8'),
             # find program for PCjr TERM command
             'pcjr_term': pcjr_term,
             'option_shell': self.get('shell'),
