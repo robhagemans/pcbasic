@@ -114,11 +114,11 @@ if plat.system == 'Windows':
         if command:
             cmd += ' /C ' + command
         p = subprocess.Popen(str(cmd).split(), stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
-        outp = threading.Thread(target=process_stdout, args=(p.stdout))
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        outp = threading.Thread(target=process_stdout, args=(p.stdout,))
         outp.daemon = True
         outp.start()
-        errp = threading.Thread(target=process_stdout, args=(p.stderr))
+        errp = threading.Thread(target=process_stdout, args=(p.stderr,))
         errp.daemon = True
         errp.start()
         word = ''
