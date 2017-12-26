@@ -603,7 +603,7 @@
         <hr />
 
         <section>
-            <h4 id="cassette">Tapes and BASICODE</h4>
+            <h4 id="cassette">Cassette tapes</h4>
             <p>
                 The <code>CAS1</code> device interfaces with the cassette tape emulator.
                 Tapes were never very popular on the IBM PC, and indeed only available with the
@@ -622,27 +622,13 @@
                 with tape images for the <a href="http://www.hampa.ch/pce/">PCE</a> IBM PC emulator.
             </p>
             <p>
-                BASICODE was a considerably more common audio encoding format, which enjoyed
-                huge popularity in particular in the Netherlands, the UK and East Germany.
-                BASICODE was distributed through tapes or as audio broadcast over radio.
-                Reading it into a PC required special hardware, usually hooking up a tape
-                recorder to a serial or parallel port.
-                In PC-BASIC, BASICODE tapes are read through the <code>CAS1</code> device instead,
-                by attaching a <code>.WAV</code> file with the <code><b><a href="#--cas1">cas1</a>=BC:</b><var>filename</var></code>
-                option. PC-BASIC will load the BASICODE, inserting the necessary spaces
-                between keywords where the BASICODE standard leaves these out.
-                Note that you will need a Bascoder program to run the BASICODE, and this is not
-                currently distributed with PC-BASIC.
+                Previous versions of PC-BASIC included support for BASICODE cassettes; this has
+                been discontinued in favour of a separate
+                <a href="https://github.com/robhagemans/basicode">BASICODE decoder</a>.
+                Use this decoder to convert the BASICODE program to PC-BASIC format
+                before loading it into PC-BASIC.
             </p>
-            <p>
-                If you have a Bascoder named <code>BASCODER.BAS</code>, the way to run
-                a BASICODE program named <code>PROGRAM</code> from tape is:
-            </p>
-            <code class="block">
-                LOAD "BASCODER"<br />
-                CHAIN MERGE "CAS1:PROGRAM"
-            </code>
-        </section>
+            </section>
         <hr />
 
         <section>
