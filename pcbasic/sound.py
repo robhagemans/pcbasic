@@ -287,6 +287,7 @@ class Sound(object):
                 elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
                     note = c
                     dur = vstate.length
+                    length = None
                     while True:
                         c = util.skip(gmls, draw_and_play.ml_whitepace).upper()
                         if not c:
@@ -314,8 +315,11 @@ class Sound(object):
                         else:
                             break
                     if note == 'P':
+                        # length must be specified
+                        if length is None:
+                            raise error.RunError(error.IFC)
                         # don't do anything for length 0
-                        if length > 0:
+                        elif length > 0:
                             self.play_sound(0, dur * vstate.tempo, vstate.speed,
                                             volume=vstate.volume, voice=voice)
                             total_time[voice] += dur*vstate.tempo
