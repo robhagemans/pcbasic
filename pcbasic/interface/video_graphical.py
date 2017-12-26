@@ -157,6 +157,16 @@ class ClipboardInterface(object):
     def start(self, r, c):
         """Enter clipboard mode (clipboard key pressed)."""
         self._active = True
+        if c < 1:
+            r -= 1
+            c = self.width
+        if c > self.width:
+            r += 1
+            c = 1
+        if r > self.height:
+            r, c = self.height, self.width
+        if r < 1:
+            r, c = 1, 1
         self.select_start = [r, c]
         self.select_stop = [r, c]
         self.selection_rect = []
