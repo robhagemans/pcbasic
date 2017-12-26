@@ -1265,7 +1265,7 @@ if numpy:
         global screen_changed
         # reference the interval on the canvas
         ref = pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y]
-        colours = numpy.array(colours).astype(int)
+        colours = numpy.array(colours).astype('B')
         inv_mask = 0xff ^ mask
         colours &= mask
         ref &= inv_mask
