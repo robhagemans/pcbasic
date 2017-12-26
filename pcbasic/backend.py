@@ -494,7 +494,8 @@ class Keyboard(object):
         """ Insert characters into keyboard buffer. """
         if not self.buf.insert(s, check_full):
             # keyboard buffer is full; short beep and exit
-            state.console_state.sound.play_sound(800, 0.01)
+            # don't wait for the beep: to avoid infinite loop if key is held while waiting
+            state.console_state.sound.play_sound(800, 0.01, wait=False)
 
     def key_down(self, scan, eascii='', check_full=True):
         """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
