@@ -552,7 +552,7 @@ class Screen(object):
         self.attr = 7
         # border attribute
         self.border_attr = 0
-        self.video_mem_size = video_mem_size
+        self.video_mem_size = int(video_mem_size)
         # prepare video modes
         self.cga_mode_5 = False
         self.cga4_palette = list(self.cga4_palettes[1])
@@ -932,7 +932,7 @@ class Screen(object):
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
-        self.video_mem_size = new_size
+        self.video_mem_size = int(new_size)
         # redefine number of available video pages
         self.prepare_modes()
         # text screen modes don't depend on video memory size
