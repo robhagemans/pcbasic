@@ -325,6 +325,7 @@ class PlayParser(object):
                 elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
                     note = c
                     dur = vstate.length
+                    length = None
                     if mmls.skip_blank_read_if(('#', '+')):
                         note += '#'
                     elif mmls.skip_blank_read_if(('-',)):
@@ -344,8 +345,11 @@ class PlayParser(object):
                         dur *= 1.5
                         break
                     if note == 'P':
+                        # length must be specified
+                        if length is None:
+                            raise error.RunError(error.IFC)
                         # don't do anything for length 0
-                        if length > 0:
+                        elif length > 0:
                             self._sound.play_sound(0, dur * vstate.tempo, vstate.speed,
                                             volume=vstate.volume, voice=voice)
                     else:
