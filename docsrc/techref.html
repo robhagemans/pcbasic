@@ -2465,4 +2465,194 @@
     </section>
     <hr />
 
+    <section>
+        <h3 id="memory">Memory model</h3>
+        <p>
+            PC-BASIC (rather imperfectly) emulates the memory of real-mode MS-DOS.
+            This means that memory can be addressed in <em>segments</em> of 64 KiB.
+            Each memory address is given by the segment value and the <code>0--65535</code> byte offset with respect to that segment.
+            Note that segments overlap: the actual memory address is found by <code><var>segment</var>*16 + <var>offset</var></code>.
+            The maximum memory size that can be addressed by this scheme is thus 1 MiB, which was the size of the <em>conventional</em> and <em>upper</em>
+            memory in real-mode MS-DOS.
+        </p>
+        <h4 id="memory-overview">Overview</h4>
+        <p>
+            Areas of memory with a special importance are:
+        </p>
+        <table>
+            <tr>
+                <th>
+                    Segment
+                </th>
+                <th>
+                    Name
+                </th>
+                <th>
+                    Purpose
+                </th>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;h0000</code>
+                </td>
+                <td>
+                    Low memory
+                </td>
+                <td>
+                    Holds machine information, among other things
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;h13AD</code> (may vary)
+                </td>
+                <td>
+                    Data segment
+                </td>
+                <td>
+                    Program code, variables, arrays, strings
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;hA000</code> (EGA) <br />
+                    <code>&amp;hB000</code> (MDA) <br />
+                    <code>&amp;hB800</code> (CGA) <br />
+                </td>
+                <td>
+                    Video segment
+                </td>
+                <td>
+                    Text and graphics on visible and virtual screens
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;hC000</code>
+                </td>
+                <td>
+                    --
+                </td>
+                <td>
+                    RAM font definition, among other things
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;hF000</code>
+                </td>
+                <td>
+                    Read-only memory
+                </td>
+                <td>
+                    ROM font definition, among other things
+                </td>
+            </tr>
+        </table>
+
+        <h4 id="memory-data">Data segment</h4>
+        <p>
+            The data segment is organised as follows. The addresses may vary depending on
+            the settings of various options; given here are the default values for GW-BASIC 3.21.
+        </p>
+        <table>
+            <tr>
+                <th>
+                    Offset
+                </th>
+                <th>
+                    Size (bytes)
+                </th>
+                <th>
+                    Function
+                </th>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;h0000</code>
+                </td>
+                <td>
+                    <code>3429</code>
+                </td>
+                <td>
+                    Interpreter workarea. Unused in PC-BASIC; can be adjusted with
+                    the <code><a href="#--reserved-memory">--reserved-memory</a></code> option.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;h0D65</code>
+                </td>
+                <td>
+                    <code>(<var>max-files</var>+1) * 322</code>
+                </td>
+                <td>
+                    File blocks: one for the program plus one for each file allowed by <code><a href="#--max-files">--max-files</a><code>.
+                </td>
+            </tr>
+                <td>
+                    <code>&amp;h126D</code>
+                </td>
+                <td>
+                    <code>3 + <var>c</var></code>
+                </td>
+                <td>
+                    Program code. An empty program uses 3 bytes.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;h1270 + <var>c</var></code>
+                </td>
+                <td>
+                    <code><var>v</var></code>
+                </td>
+                <td>
+                    Scalar variables.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;h1270 + <var>c</var> + <var>v</var></code>
+                </td>
+                <td>
+                    <code><var>a</var></code>
+                </td>
+                <td>
+                    Array variables.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;hFDFC - <var>s</var></code>
+                </td>
+                <td>
+                    <code><var>a</var></code>
+                </td>
+                <td>
+                    String variables, filled downward from <code>&amp;hFDFC</code>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;hFDFC</code>
+                </td>
+                <td>
+                    <code>512</code>
+                </td>
+                <td>
+                    BASIC stack, size set by <code><a href="#CLEAR">CLEAR</a></code> statement.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&amp;hFFFE</code>
+                </td>
+                <td>
+                </td>
+                <td>
+                    Top of data segment, set by <code><a href="#CLEAR">CLEAR</a></code> statement.
+                </td>
+            </tr>
+        </table>
 </article>
