@@ -168,6 +168,7 @@ class StringSpace(object):
         """Rebuild from stored copy."""
         self.clear()
         self._strings.update(stringspace._strings)
+        self.current = stringspace.current
 
     def copy_to(self, string_space, length, address):
         """Copy a string to another string space."""
