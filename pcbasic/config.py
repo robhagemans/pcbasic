@@ -94,7 +94,7 @@ arguments = {
         'type': 'string', 'list': '*', 'choices': families,
         'default': ['unifont', 'univga', 'freedos'],},
     'nosound': {'type': 'bool', 'default': False, },
-    'dimensions': {'type': 'int', 'list': 2, 'default': None,},
+    'dimensions': {'type': 'int', 'list': 2, 'default': [],},
     'fullscreen': {'type': 'bool', 'default': False,},
     'nokill': {'type': 'bool', 'default': False,},
     'debug': {'type': 'bool', 'default': False,},
@@ -458,6 +458,7 @@ def build_default_config_file(file_name):
     "# PC-BASIC private configuration file.\n"
     "# Edit this file to change your default settings or add presets.\n"
     "# Changes to this file will not affect any other users of your computer.\n"
+    "# All lines starting with # are comments and have no effect.\n"
     "\n"
     "[pcbasic]\n"
     "# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
@@ -478,17 +479,18 @@ def build_default_config_file(file_name):
             f.write(header)
             for a in argnames:
                 try:
+                    f.write('# choices: %s\n' %
+                                ', '.join(map(str, arguments[a]['choices'])))
+                except(KeyError, TypeError):
+                    pass #f.write('\n')
+                try:
                     # check if it's a list
                     arguments[a]['list']
                     formatted = ','.join(map(str, arguments[a]['default']))
                 except(KeyError, TypeError):
                     formatted = str(arguments[a]['default'])
-                f.write("# %s=%s" % (a, formatted))
-                try:
-                    f.write(' ; choices: %s\n' %
-                                ', '.join(map(str, arguments[a]['choices'])))
-                except(KeyError, TypeError):
-                    f.write('\n')
+                f.write("%s=%s\n" % (a, formatted))
+
             f.write(footer)
     except (OSError, IOError):
         # can't create file, ignore. we'll get a message later.
