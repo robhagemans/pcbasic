@@ -25,6 +25,7 @@ if platform.system() == b'Windows':
 from .version import __version__, GREETING, ICON
 from .basic import codepages, fonts, programs
 
+MIN_PYTHON_VERSION = (2, 7, 12)
 
 basename = u'pcbasic-dev'
 # user configuration and state directories
@@ -367,6 +368,13 @@ class Settings(object):
         self._options = self._retrieve_options(self.uargv)
         # prepare global logger for use by main program
         self._prepare_logging()
+        # initial validations
+        python_version = tuple(int(v) for v in platform.python_version_tuple())
+        if python_version >= (3, 0, 0) or python_version < MIN_PYTHON_VERSION:
+            msg = 'PC-BASIC requires Python 2, version %d.%d.%d or higher. ' % MIN_PYTHON_VERSION + 'You have %d.%d.%d.' % python_version
+            logging.fatal(msg)
+            raise Exception(msg)
+
 
     def _prepare_logging(self):
         """Set up the global logger."""
