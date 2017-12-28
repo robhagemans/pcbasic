@@ -249,7 +249,9 @@ class StringSpace(object):
         for view in string_ptrs:
             try:
                 length, addr = struct.unpack('<BH', view.tobytes())
-                string_list.append((view, addr, self._retrieve(length, addr)))
+                # exclude empty elements of string arrays
+                if not (length==0 and addr==0):
+                    string_list.append((view, addr, self._retrieve(length, addr)))
             except KeyError:
                 # string is not located in memory - FIELD or code
                 pass
