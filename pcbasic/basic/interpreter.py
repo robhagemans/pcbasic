@@ -382,8 +382,7 @@ class Interpreter(object):
         # initialise loop variable
         self._scalars.set(varname, start)
         # obtain a view of the loop variable
-        counter_view = self._scalars.view(varname)
-        self.for_stack.append((varname, counter_view, stop, step, step.sign(), forpos, nextpos,))
+        self.for_stack.append((varname, stop, step, step.sign(), forpos, nextpos,))
         # empty loop: jump to NEXT without executing block
         if (start.gt(stop) if step.sign() > 0 else stop.gt(start)):
             ins.seek(nextpos)
@@ -427,7 +426,7 @@ class Interpreter(object):
         # find the matching NEXT record
         num = len(self.for_stack)
         for depth in range(num):
-            varname2, counter_view, stop, step, sgn, forpos, nextpos = self.for_stack[-depth-1]
+            varname2, stop, step, sgn, forpos, nextpos = self.for_stack[-depth-1]
             if pos == nextpos:
                 if varname is not None and varname2 != self._memory.complete_name(varname):
                     # check once more for matches
@@ -439,6 +438,7 @@ class Interpreter(object):
         else:
             raise error.RunError(error.NEXT_WITHOUT_FOR)
         # increment counter
+        counter_view = self._scalars.view(varname2)
         counter_view.iadd(step)
         # check condition
         loop_ends = counter_view.gt(stop) if sgn > 0 else stop.gt(counter_view)

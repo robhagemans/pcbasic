@@ -62,6 +62,17 @@ class Value(object):
 
     __repr__ = __str__
 
+
+    def __getstate__(self):
+        # can't pickle memoryview
+        self._buffer = bytearray(self._buffer)
+        return self.__dict__
+
+    def __setstate__(self, pickle_dict):
+        # can't pickle memoryview
+        self.__dict__ = pickle_dict
+        self._buffer = memoryview(self._buffer)
+
     def to_value(self):
         """Convert to Python value."""
 
