@@ -237,24 +237,25 @@ class StringSpace(object):
             pass
 
     def collect_garbage(self, string_ptrs):
-        """Re-store the strings refrerenced in string_ptrs, delete the rest."""
+        """Re-store the strings referenced in string_ptrs, delete the rest."""
+        # string_ptrs should be a list of memoryviews to the original pointers
         # retrieve addresses and copy strings
         string_list = []
-        for value in string_ptrs:
+        for view in string_ptrs:
             try:
-                length, address = struct.unpack('<BH', value.tobytes())
-                string_list.append((value, address,
-                        self._retrieve(length, address)))
+                length, addr = struct.unpack('<BH', view.tobytes())
+                string_list.append((view, addr, self._retrieve(length, addr)))
             except KeyError:
                 # string is not located in memory - FIELD or code
                 pass
-        # sort by str_ptr, largest first (maintain order of storage)
+        # sort by address, largest first (maintain order of storage)
         string_list.sort(key=itemgetter(1), reverse=True)
         # clear the string buffer and re-store all referenced strings
         self.clear()
-        for item in string_list:
+        for view, _, string in string_list:
             # re-allocate string space
-            item[0][:] = struct.pack('<BH', *self.store(item[2]))
+            # update the original pointers supplied (these are memoryviews)
+            view[:] = struct.pack('<BH', *self.store(string))
 
     def get_memory(self, address):
         """Retrieve data from data memory: string space """
