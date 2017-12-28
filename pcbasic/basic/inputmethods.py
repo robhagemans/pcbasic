@@ -1,5 +1,5 @@
 """
-PC-BASIC - inputmethodss.py
+PC-BASIC - inputmethods.py
 Keyboard, pen and joystick handling
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans

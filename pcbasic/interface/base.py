@@ -58,6 +58,20 @@ class Interface(object):
     def quit_input(self):
         """Send signal through the input queue to quit BASIC."""
         self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+        # drain video queue (joined in other thread)
+        while not self._video_queue.empty():
+            try:
+                signal = self._video_queue.get(False)
+            except Queue.Empty:
+                continue
+            self._video_queue.task_done()
+        # drain audio queue
+        while not self._audio_queue.empty():
+            try:
+                signal = self._audio_queue.get(False)
+            except Queue.Empty:
+                continue
+            self._audio_queue.task_done()
 
     def quit_output(self):
         """Send signal through the output queues to quit plugins."""
