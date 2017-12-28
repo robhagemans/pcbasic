@@ -185,7 +185,7 @@ class BaseDebugger(object):
         # show message on screen
         for attr, text in message:
             screen.set_attr(attr)
-            screen.write(text)
+            screen.write(text.replace('\n', '\r'))
         # write crash log
         with logfile as f:
             f.write('\n'.join(crashlog))
