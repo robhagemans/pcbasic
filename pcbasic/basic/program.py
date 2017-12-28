@@ -373,6 +373,12 @@ class Program(object):
         except IndexError:
             return -1
 
+    def get_memory_block(self, offset, length):
+        """Retrieve block of data from program code."""
+        offset -= self.code_start
+        code = self.bytecode.getvalue()
+        return bytearray(code[offset:offset+length])
+
     def set_memory(self, offset, val):
         """Change program code."""
         if not self.allow_code_poke:

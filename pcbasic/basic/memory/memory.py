@@ -130,11 +130,24 @@ class DataSegment(object):
         """Set default string variables."""
         self.deftype_(values.STR, args)
 
-    def clear(self, preserve_common, preserve_all, preserve_deftype):
-        """Reset and clear variables, arrays, common definitions and functions."""
+    def clear(self, preserve_base, preserve_deftype):
+        """Reset and clear variables, type definitions, array base and fields."""
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             self.clear_deftype()
+        # clear arrays, scalars and string space
+        self.scalars.clear()
+        self.arrays.clear()
+        self.strings.clear()
+        if not(preserve_base):
+            # clear OPTION BASE
+            self.arrays.clear_base()
+        # release all disk buffers (FIELD)?
+        self.reset_fields()
+
+    @contextmanager
+    def preserve_commons(self, preserve_common, preserve_all):
+        """Preserve COMMON variables."""
         # preserve COMMON variables
         if preserve_all:
             preserve_sc, preserve_ar = self.scalars, self.arrays
@@ -142,54 +155,39 @@ class DataSegment(object):
             preserve_sc, preserve_ar = preserve_common
         else:
             preserve_sc, preserve_ar = set(), set()
-        new_strings = values.StringSpace(self)
-        # this is a re-assignment which is not FOR-safe;
-        # but clear_variables is only called in CLEAR which also clears the FOR stack
-        with self._preserve_scalars(preserve_sc, new_strings):
-            self.scalars.clear()
-        with self._preserve_arrays(preserve_ar, new_strings):
-            self.arrays.clear()
-        # clear old dict and copy into
-        self.strings.rebuild(new_strings)
-        if not(preserve_sc or preserve_ar):
-            # clear OPTION BASE
-            self.arrays.clear_base()
-        # release all disk buffers (FIELD)?
-        self.reset_fields()
-
-    @contextmanager
-    def _preserve_arrays(self, names, string_store):
-        """Preserve COMMON variables."""
-        # copy the array buffers
-        common = {name: (self.arrays.dimensions(name),
-                        bytearray(self.arrays.view_full_buffer(name)))
-                    for name in names if name in self.arrays}
-        yield
-        for name, value in common.iteritems():
-            dimensions, buf = value
-            self.arrays.allocate(name, dimensions)
+        string_store = values.StringSpace(self)
+        # preserve scalars
+        common_scalars = {
+                name: self.scalars.get(name)
+                for name in preserve_sc if name in self.scalars}
+        for name, value in common_scalars.iteritems():
             if name[-1] == '$':
+                length, address = self.strings.copy_to(string_store, *value.to_pointer())
+                value = self.values.new_string().from_pointer(length, address)
+                common_scalars[name] = value
+        # preserve arrays
+        common_arrays = {
+                name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
+                for name in preserve_ar if name in self.arrays}
+        for name, value in common_arrays.iteritems():
+            if name[-1] == '$':
+                dimensions, buf = value
                 for i in range(0, len(buf), 3):
                     # if the string array is not full, pointers are zero
                     # but address is ignored for zero length
                     length, address = self.strings.copy_to(
                                 string_store, *struct.unpack('<BH', buf[i:i+3]))
+                    # modify the stored bytearray
                     buf[i:i+3] = struct.pack('<BH', length, address)
+        yield
+        self.strings.rebuild(string_store)
+        for name, value in common_scalars.iteritems():
+            self.scalars.set(name, value)
+        for name, value in common_arrays.iteritems():
+            dimensions, buf = value
+            self.arrays.allocate(name, dimensions)
             # copy the array buffers back
             self.arrays.view_full_buffer(name)[:] = buf
-
-    @contextmanager
-    def _preserve_scalars(self, names, string_store):
-        """Preserve COMMON variables."""
-        # copy all variables that need to be preserved
-        common = {name: self.scalars.get(name)
-                    for name in names if name in self.scalars}
-        yield
-        for name, value in common.iteritems():
-            if name[-1] == '$':
-                length, address = self.strings.copy_to(string_store, *value.to_pointer())
-                value = self.values.new_string().from_pointer(length, address)
-            self.scalars.set(name, value)
 
     def _get_free(self):
         """Return the amount of memory available to variables, arrays, strings and code."""

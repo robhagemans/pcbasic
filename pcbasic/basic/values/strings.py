@@ -184,10 +184,14 @@ class StringSpace(object):
         # empty string pointers can point anywhere
         if length == 0:
             return memoryview(bytearray())
-        # address >= self._memory.var_start(): if we no longer double-store code strings in string space object
-        if address >= self._memory.code_start:
+        if address >= self._memory.var_start(): #if we no longer double-store code strings in string space object
+        #if address >= self._memory.code_start:
             # string stored in string space
             return memoryview(self._retrieve(length, address))
+        elif address >= self._memory.code_start:
+            # get string stored in code as bytearray
+            codestr = self._memory.program.get_memory_block(address, length)
+            return memoryview(codestr)
         else:
             # string stored in field buffers
             # find the file we're in
@@ -212,19 +216,20 @@ class StringSpace(object):
         # don't store overlong strings
         if length > 255:
             raise error.RunError(error.STRING_TOO_LONG)
+        # don't store if address is provided (code or FIELD strings)
         if address is None:
             # reserve string space; collect garbage if necessary
             self._memory.check_free(length, error.OUT_OF_STRING_SPACE)
             # find new string address
             self.current -= length
             address = self.current + 1
-        # don't store empty strings
-        if length > 0:
-            # copy and convert to bytearray
-            self._strings[address] = bytearray(in_str)
+            # don't store empty strings
+            if length > 0:
+                # copy and convert to bytearray
+                self._strings[address] = bytearray(in_str)
         return length, address
 
-    def delete_last(self):
+    def _delete_last(self):
         """Delete the string provided if it is at the top of string space."""
         last_address = self.current + 1
         try:
@@ -273,11 +278,10 @@ class StringSpace(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit temp-string context guard."""
         if self.temp != self.current:
-            self.delete_last()
+            self._delete_last()
 
     def next_temporary(self, args):
         """Retrieve a value from an iterator and return as Python value. Store strings in a temporary."""
-        # if allow_empty, a missing value is returned as an empty string
         with self:
             expr = next(args)
             if isinstance(expr, String):

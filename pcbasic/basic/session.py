@@ -444,7 +444,7 @@ class Session(object):
         self._clear_all()
 
     def _clear_all(self, close_files=False,
-              preserve_common=False, preserve_all=False, preserve_deftype=False):
+              preserve_functions=False, preserve_base=False, preserve_deftype=False):
         """Clear everything required for the CLEAR command."""
         if close_files:
             # close all files
@@ -452,9 +452,8 @@ class Session(object):
         # Resets the stack and string space
         # Clears all COMMON and user variables
         # release all disk buffers (FIELD)?
-        self.memory.clear(preserve_common, preserve_all, preserve_deftype)
-        if not preserve_all:
-            # functions are cleared except when CHAIN ... ALL is specified
+        self.memory.clear(preserve_base, preserve_deftype)
+        if not preserve_functions:
             self.parser.user_functions.clear()
         # Resets STRIG to off
         self.input_methods.stick.is_on = False
@@ -589,22 +588,25 @@ class Session(object):
             raise error.RunError(error.IFC)
         # gather COMMON declarations
         commons = self.interpreter.gather_commons()
-        # load new program
-        with self.files.open(0, name, filetype='ABP', mode='I') as f:
-            if delete_lines:
-                # delete lines from existing code before merge (without MERGE, this is pointless)
-                self.program.delete(*delete_lines)
-            if merge:
-                self.program.merge(f)
-            else:
-                self.program.load(f)
-            # clear all program stacks
-            self.interpreter.clear_stacks_and_pointers()
-            # don't close files!
-            # RUN
-            self.interpreter.jump(jumpnum, err=error.IFC)
-        # preserve DEFtype on MERGE
-        self._clear_all(preserve_common=commons, preserve_all=common_all, preserve_deftype=merge)
+        with self.memory.preserve_commons(commons, common_all):
+            # load new program
+            with self.files.open(0, name, filetype='ABP', mode='I') as f:
+                if delete_lines:
+                    # delete lines from existing code before merge (without MERGE, this is pointless)
+                    self.program.delete(*delete_lines)
+                if merge:
+                    self.program.merge(f)
+                else:
+                    self.program.load(f)
+                # clear all program stacks
+                self.interpreter.clear_stacks_and_pointers()
+                # don't close files!
+                # RUN
+                self.interpreter.jump(jumpnum, err=error.IFC)
+            # preserve DEFtype on MERGE
+            # functions are cleared except when CHAIN ... ALL is specified
+            # OPTION BASE is preserved when there are common variables
+            self._clear_all(preserve_functions=common_all, preserve_base=(commons or common_all), preserve_deftype=merge)
 
     def save_(self, args):
         """SAVE: save program to a file."""
