@@ -271,7 +271,7 @@ class Memory(object):
         # pre-defined PEEK outputs
         self._peek_values = peek_values
         # tandy syntax
-        self.tandy_syntax = syntax == 'tandy'
+        self._syntax = syntax
 
     def peek_(self, args):
         """PEEK: Retrieve the value at an emulated memory location."""
@@ -315,7 +315,7 @@ class Memory(object):
             if buf and buf[-1] == 0x1a:
                 buf = buf[:-1]
             # Tandys repeat the header at the end of the file
-            if self.tandy_syntax:
+            if self._syntax == 'tandy':
                 buf = buf[:-7]
             addr = seg * 0x10 + offset
             self._set_memory_block(addr, buf)
@@ -333,7 +333,7 @@ class Memory(object):
             addr = self.segment * 0x10 + offset
             g.write(str(self._get_memory_block(addr, length)))
             # Tandys repeat the header at the end of the file
-            if self.tandy_syntax:
+            if self._syntax == 'tandy':
                 g.write(devices.type_to_magic['M'] +
                         struct.pack('<HHH', self.segment, offset, length))
 
@@ -453,12 +453,34 @@ class Memory(object):
 
     def _get_rom_memory(self, addr):
         """Retrieve data from ROM."""
-        addr -= self.rom_segment*0x10 + self.rom_font_addr
-        char = addr // 8
-        if char > 127 or char<0:
-            return -1
-        return ord(self.font_8.fontdict[
-                self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
+        addr -= self.rom_segment*0x10
+        if addr == 0xfffe:
+            # machine ID byte
+            # see http://stanislavs.org/helppc/id_bytes.html
+            # FF	Original IBM PC  4/24/81
+    		# FE	IBM XT (Original)
+    		# FD	PCjr
+    		# FC	IBM AT, XT 286, PS/1, PS/2 Model 50/60
+    		# FB	IBM 256/640K XT (aka XT/2)
+    		# FA	IBM PS/2 Model 30
+    		# F9	IBM PC Convertible
+    		# F8	IBM PS/2 Model 80/70
+    		# B6    Hewlett Packard 110
+    		# 9A	Compaq Plus
+    		# 2D	Compaq PC
+            # most clones including Tandy return FF (IBM PC) for compatibility
+            # http://nerdlypleasures.blogspot.co.uk/2012/06/ibm-pcjr-and-tandy-1000-games.html
+            if self._syntax == 'pcjr':
+                return 0xfd
+            return 0xff
+        else:
+            # ROM font
+            addr -= self.rom_font_addr
+            char = addr // 8
+            if char > 127 or char<0:
+                return -1
+            return ord(self.font_8.fontdict[
+                    self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
 
     def _get_font_memory(self, addr):
         """Retrieve RAM font data."""
