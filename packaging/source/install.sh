@@ -79,6 +79,16 @@ check_permissions () {
     fi
 }
 
+check_empty() {
+    if [ -d "$INSTALL_DIR" ]; then
+        if [ ! -z "$(ls -A $INSTALL_DIR)" ]; then
+           echo
+           echo "ERROR: Installation directory $INSTALL_DIR must be empty"
+           abort
+        fi
+    fi
+}
+
 check_python () {
     if !( $PYTHON -c 'quit()' 2>/dev/null ); then
         echo
@@ -153,6 +163,7 @@ do_install () {
     fi
 
     check_permissions
+    check_empty
     init_package_manager
 
     UNINSTALLER="$INSTALL_DIR/uninstall.sh"
@@ -220,6 +231,7 @@ do_install () {
 
     echo
     echo "Copying program files ... "
+    rmdir "$INSTALL_DIR"
     mv build/ "$INSTALL_DIR"
 
     if [ "$(id -u)" = "0" ]; then
