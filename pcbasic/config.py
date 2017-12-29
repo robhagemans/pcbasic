@@ -459,6 +459,7 @@ def build_default_config_file(file_name):
     "# Edit this file to change your default settings or add presets.\n"
     "# Changes to this file will not affect any other users of your computer.\n"
     "# All lines starting with # are comments and have no effect.\n"
+    "# Thus, to use one of the example options below, you need to remove the # at the start of the line.\n"
     "\n"
     "[pcbasic]\n"
     "# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
@@ -479,7 +480,7 @@ def build_default_config_file(file_name):
             f.write(header)
             for a in argnames:
                 try:
-                    f.write('# choices: %s\n' %
+                    f.write('## choices: %s\n' %
                                 ', '.join(map(str, arguments[a]['choices'])))
                 except(KeyError, TypeError):
                     pass #f.write('\n')
@@ -489,7 +490,7 @@ def build_default_config_file(file_name):
                     formatted = ','.join(map(str, arguments[a]['default']))
                 except(KeyError, TypeError):
                     formatted = str(arguments[a]['default'])
-                f.write("%s=%s\n" % (a, formatted))
+                f.write("#%s=%s\n" % (a, formatted))
 
             f.write(footer)
     except (OSError, IOError):
