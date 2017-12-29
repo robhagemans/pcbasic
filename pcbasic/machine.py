@@ -40,7 +40,7 @@ state.basic_state.segment = memory.data_segment
 
 def prepare():
     """ Initialise machine module. """
-    global allow_code_poke, tandy_syntax
+    global allow_code_poke, tandy_syntax, pcjr_syntax
     try:
         for a in config.get('peek'):
             seg, addr, val = a.split(':')
@@ -49,6 +49,8 @@ def prepare():
         pass
     allow_code_poke = config.get('allow-code-poke')
     tandy_syntax = config.get('syntax') == 'tandy'
+    pcjr_syntax = config.get('syntax') == 'pcjr'
+
 
 def peek(addr):
     """ Retrieve the value at an emulated memory location. """
@@ -539,11 +541,32 @@ def set_video_memory_block(addr, some_bytes):
 
 def get_rom_memory(addr):
     """ Retrieve data from ROM. """
-    addr -= memory.rom_segment*0x10 + rom_font_addr
-    char = addr // 8
-    if char > 127 or char<0:
-        return -1
-    return ord(backend.video.fonts[8][chr(char)][addr%8])
+    addr -= memory.rom_segment*0x10
+    if addr == 0xfffe:
+        # machine ID byte
+        # see http://stanislavs.org/helppc/id_bytes.html
+        # FF	Original IBM PC  4/24/81
+		# FE	IBM XT (Original)
+		# FD	PCjr
+		# FC	IBM AT, XT 286, PS/1, PS/2 Model 50/60
+		# FB	IBM 256/640K XT (aka XT/2)
+		# FA	IBM PS/2 Model 30
+		# F9	IBM PC Convertible
+		# F8	IBM PS/2 Model 80/70
+		# B6    Hewlett Packard 110
+		# 9A	Compaq Plus
+		# 2D	Compaq PC
+        # most clones including Tandy return FF (IBM PC) for compatibility
+        # http://nerdlypleasures.blogspot.co.uk/2012/06/ibm-pcjr-and-tandy-1000-games.html
+        if pcjr_syntax:
+            return 0xfd
+        return 0xff
+    else:
+        addr -= rom_font_addr
+        char = addr // 8
+        if char > 127 or char<0:
+            return -1
+        return ord(backend.video.fonts[8][chr(char)][addr%8])
 
 
 def get_font_memory(addr):
