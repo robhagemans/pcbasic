@@ -884,6 +884,7 @@ class Settings(object):
         u"# Edit this file to change your default settings or add presets.\n"
         u"# Changes to this file will not affect any other users of your computer.\n"
         u"# All lines starting with # are comments and have no effect.\n"
+        u"# Thus, to use one of the example options below, you need to remove the # at the start of the line.\n"
         u"\n"
         u"[pcbasic]\n"
         u"# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
@@ -907,7 +908,7 @@ class Settings(object):
                 f.write(header.encode(b'utf-8'))
                 for a in argnames:
                     try:
-                        f.write((u'# choices: %s\n' %
+                        f.write((u'## choices: %s\n' %
                                     u', '.join(map(unicode, self.arguments[a][u'choices']))).encode(b'utf-8'))
                     except(KeyError, TypeError):
                         pass
@@ -917,7 +918,7 @@ class Settings(object):
                         formatted = u','.join(map(unicode, self.arguments[a][u'default']))
                     except(KeyError, TypeError):
                         formatted = unicode(self.arguments[a][u'default'])
-                    f.write((u'%s=%s\n' % (a, formatted)).encode(b'utf-8'))
+                    f.write((u'#%s=%s\n' % (a, formatted)).encode(b'utf-8'))
                 f.write(footer)
         except (OSError, IOError):
             # can't create file, ignore. we'll get a message later.
