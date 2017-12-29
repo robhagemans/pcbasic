@@ -1,4 +1,4 @@
-python ..\..\pcbasic.py -v > version.txt
+python ..\..\run.py -v > version.txt
 set /p VERSION=<version.txt
 del version.txt
 pyinstaller installer.spec

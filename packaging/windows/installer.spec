@@ -1,7 +1,7 @@
 # -*- mode: python -*-
 basedir = '..\\..'
 a = Analysis(
-        [basedir+'\\pcbasic.py'],
+        [basedir+'\\run.py'],
         pathex=[basedir],
         hiddenimports=['Queue'],
 	excludes=['_tkinter', 'tcl', 'tk', 

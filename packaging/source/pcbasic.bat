@@ -1,1 +1,0 @@
-launcher.exe python pcbasic %*

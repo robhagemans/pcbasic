@@ -29,8 +29,8 @@ On **Windows**, first install Python 2.7 from the web site linked on top. Most d
 If you require serial and parallel port access, download PySerial and PyParallel from the web site linked above.
 Note that PC-BASIC does not currently work with the `pip` version of these packages.
 
-Download `launcher.exe` from the [ANSI|pipe release page](http://github.com/robhagemans/ansipipe/releases/) and place it in the directory where `pcbasic.py` is located.
-You can now run pc-basic with the command `launcher python pcbasic.py`. Without ANSI|pipe, PC-BASIC will run but you will
+Download `launcher.exe` from the [ANSI|pipe release page](http://github.com/robhagemans/ansipipe/releases/) and place it in the directory where `setup.py` is located.
+You can now run pc-basic with the command `launcher python -m pcbasic`. Without ANSI|pipe, PC-BASIC will run but you will
 be unable to use the text-based interfaces (options `-t` and `-b`) as they will print only gibberish on the console.
 
 The ANSI|pipe C source is included with PC-BASIC; if you prefer this to downloading the launcher binary, you can compile it from source by running `winbuild.bat`. You will need a working C compiler (MinGW or Microsoft Visual C++) on your system.
@@ -87,7 +87,7 @@ You'll also need [`git`](https://git-scm.com/), [`setuptools`](https://pypi.pyth
 
 3. Run pcbasic directly from the source directory
 
-        python pcbasic.py
+        python -m pcbasic
 
 
 The `--recursive` option is necessary to pull the `ansipipe` submodule; if you omit the option, you will have to get the submodule separately.
