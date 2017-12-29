@@ -126,8 +126,8 @@ do_install () {
 
     #default installation directory
     DEFAULT_DIR="/opt/pcbasic/"
-    DESKTOP_DIR="/usr/share/applications"
-    ICON_DIR="/usr/share/icons"
+    DESKTOP_DIR="/usr/local/share/applications"
+    ICON_DIR="/usr/local/share/icons"
 
     if [ "$(id -u)" != "0" ]; then
         echo -n "NOTE: You are running this script without root privileges, "
@@ -172,8 +172,8 @@ do_install () {
     echo "SUMMARY OF WHAT WILL BE DONE:"
     echo "I will install PC-BASIC to directory $INSTALL_DIR"
     if [ "$(id -u)" = "0" ]; then
-        echo "I will create a symbolic link /usr/bin/pcbasic"
-        echo "I will create a symbolic link /usr/share/man/man1/pcbasic.1.gz"
+        echo "I will create a symbolic link /usr/local/bin/pcbasic"
+        echo "I will create a symbolic link /usr/local/share/man/man1/pcbasic.1.gz"
     else
         echo "Your user settings will be stored in $SETTINGS_DIR"
         echo "Runtime data will be stored in $DATA_DIR"
@@ -236,8 +236,8 @@ do_install () {
 
     if [ "$(id -u)" = "0" ]; then
         echo "Creating symlinks ... "
-        ln -s "$INSTALL_DIR/pcbasic.py" "/usr/bin/pcbasic"
-        ln -s "$INSTALL_DIR/doc/pcbasic.1.gz" "/usr/share/man/man1/"
+        ln -s "$INSTALL_DIR/pcbasic.py" "/usr/local/bin/pcbasic"
+        ln -s "$INSTALL_DIR/doc/pcbasic.1.gz" "/usr/local/share/man/man1/"
     fi
 
     echo "Creating menu entry ... "
@@ -288,8 +288,8 @@ do_uninstall () {
     echo "I will delete the icon $ICON_DIR/pcbasic.png"
     echo "I will delete the desktop menu entry $DESKTOP_DIR/pcbasic.desktop"
     if [ "$(id -u)" = "0" ]; then
-        echo "I will delete the symlink /usr/bin/pcbasic"
-        echo "I will delete the symlink /usr/share/man/man1/pcbasic.1.gz"
+        echo "I will delete the symlink /usr/local/bin/pcbasic"
+        echo "I will delete the symlink /usr/local/share/man/man1/pcbasic.1.gz"
     fi
     echo "I will delete program files from $INSTALL_DIR"
     echo
@@ -312,8 +312,8 @@ do_uninstall () {
 
     if [ "$(id -u)" = "0" ]; then
         echo "Removing symlinks ... "
-        rm /usr/bin/pcbasic
-        rm /usr/share/man/man1/pcbasic.1.gz
+        rm /usr/local/bin/pcbasic
+        rm /usr/local/share/man/man1/pcbasic.1.gz
     fi
 
     echo "Removing program files ... "
