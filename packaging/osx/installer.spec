@@ -1,6 +1,6 @@
 basedir='../..'
 # -*- mode: python -*-
-a = Analysis([basedir+'/pcbasic.py'],
+a = Analysis([basedir+'/run.py'],
          pathex=[basedir],
          hiddenimports=[],
          hookspath=None,

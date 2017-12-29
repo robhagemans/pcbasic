@@ -236,7 +236,7 @@ do_install () {
 
     if [ "$(id -u)" = "0" ]; then
         echo "Creating symlinks ... "
-        ln -s "$INSTALL_DIR/pcbasic.py" "/usr/local/bin/pcbasic"
+        ln -s "$INSTALL_DIR/run.py" "/usr/local/bin/pcbasic"
         ln -s "$INSTALL_DIR/doc/pcbasic.1.gz" "/usr/local/share/man/man1/"
     fi
 
@@ -246,7 +246,7 @@ do_install () {
     echo "[Desktop Entry]" > $DESKTOP_FILE
     echo "Name=PC-BASIC" >> $DESKTOP_FILE
     echo "GenericName=GW-BASIC compatible interpreter" >> $DESKTOP_FILE
-    echo "Exec=$INSTALL_DIR/pcbasic.py" >> $DESKTOP_FILE
+    echo "Exec=$INSTALL_DIR/run.py" >> $DESKTOP_FILE
     echo "Terminal=false" >> $DESKTOP_FILE
     echo "Type=Application" >> $DESKTOP_FILE
     echo "Icon=pcbasic" >> $DESKTOP_FILE
