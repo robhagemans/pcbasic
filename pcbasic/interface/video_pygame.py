@@ -46,17 +46,16 @@ class VideoPygame(video_graphical.VideoGraphical):
         # ensure we have the correct video driver for SDL 1.2
         # pygame sets this on import, but if we've tried SDL2 we've had to
         # reset this value
-        if platform.system() == 'Windows':
-            os.environ['SDL_VIDEODRIVER'] = 'directx'
         # ensure window is centred
-        os.environ['SDL_VIDEO_CENTERED'] = '1'
+        self._env = video_graphical.EnvironmentCache()
+        self._env.set('SDL_VIDEO_CENTERED', '1')
         pygame.init()
         try:
             # poll the driver to force an exception if not initialised
             pygame.display.get_driver()
-        except pygame.error:
+        except pygame.error as e:
             self._close_pygame()
-            logging.warning('No suitable display driver for PyGame.')
+            logging.warning('No suitable display driver for PyGame: %s', e)
             raise base.InitFailed()
         # display & border
         # display buffer
@@ -115,9 +114,9 @@ class VideoPygame(video_graphical.VideoGraphical):
             if not self.fullscreen:
                 pygame.display.set_mode(self.display_size, 0)
             self._resize_display(*self.display_size)
-        except pygame.error:
+        except pygame.error as e:
             self._close_pygame()
-            logging.warning('Could not initialise PyGame display')
+            logging.warning('Could not initialise PyGame display: %s', e)
             raise base.InitFailed()
         if self.smooth and self.display.get_bitsize() < 24:
             logging.warning("Smooth scaling not available on this display (depth %d < 24)", self.display.get_bitsize())
@@ -164,6 +163,8 @@ class VideoPygame(video_graphical.VideoGraphical):
             pygame.joystick.quit()
             pygame.display.quit()
             pygame.quit()
+        # put environment variables back as they were
+        self._env.close()
 
     def _set_icon(self, mask):
         """Set the window icon."""

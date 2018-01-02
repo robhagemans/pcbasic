@@ -45,7 +45,6 @@ from . import base
 from . import video_graphical
 
 
-
 class VideoSDL2(video_graphical.VideoGraphical):
     """SDL2-based graphical interface."""
 
@@ -97,12 +96,16 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self._has_window = False
         # ensure the correct SDL2 video driver is chosen for Windows
         # since this gets messed up if we also import pygame
+        self._env = video_graphical.EnvironmentCache()
         if platform.system() == 'Windows':
-            os.environ['SDL_VIDEODRIVER'] = 'windows'
+            self._env.set('SDL_VIDEODRIVER', 'windows')
         # initialise SDL
         if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):
             # SDL not initialised correctly
             logging.error('Could not initialise SDL2: %s', sdl2.SDL_GetError())
+            # reset the environment variable
+            # to not throw PyGame off if we try that later
+            self._env.close()
             raise base.InitFailed()
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
