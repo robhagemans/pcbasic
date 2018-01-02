@@ -152,6 +152,7 @@ class StringSpace(object):
         """Initialise empty string space."""
         self._memory = memory
         self._strings = {}
+        self._temp = None
         self.clear()
 
     def __str__(self):
@@ -265,6 +266,9 @@ class StringSpace(object):
             # re-allocate string space
             # update the original pointers supplied (these are memoryviews)
             view[:] = struct.pack('<BH', *self.store(string))
+        # readdress temporary at top of string space
+        if self._temp is not None:
+            self._temp = self.current
 
     def get_memory(self, address):
         """Retrieve data from data memory: string space """
@@ -277,12 +281,13 @@ class StringSpace(object):
 
     def __enter__(self):
         """Enter temp-string context guard."""
-        self.temp = self.current
+        self._temp = self.current
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit temp-string context guard."""
-        if self.temp != self.current:
+        if self._temp != self.current:
             self._delete_last()
+        self._temp = None
 
     def next_temporary(self, args):
         """Retrieve a value from an iterator and return as Python value. Store strings in a temporary."""
