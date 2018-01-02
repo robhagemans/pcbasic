@@ -247,14 +247,16 @@ class StringSpace(object):
         # retrieve addresses and copy strings
         string_list = []
         for view in string_ptrs:
-            try:
-                length, addr = struct.unpack('<BH', view.tobytes())
-                # exclude empty elements of string arrays
-                if not (length==0 and addr==0):
+            length, addr = struct.unpack('<BH', view.tobytes())
+            # exclude empty elements of string arrays
+            if not (length==0 and addr==0):
+                try:
                     string_list.append((view, addr, self._retrieve(length, addr)))
-            except KeyError:
-                # string is not located in memory - FIELD or code
-                pass
+                except KeyError:
+                    if addr >= self._memory.var_start():
+                        logging.error('String not found in string space when collecting garbage: %x', addr)
+                        raise
+                    # else: string is not located in memory - FIELD or code
         # sort by address, largest first (maintain order of storage)
         string_list.sort(key=itemgetter(1), reverse=True)
         # clear the string buffer and re-store all referenced strings
