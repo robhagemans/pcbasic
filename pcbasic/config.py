@@ -77,6 +77,9 @@ def get_unicode_argv():
         # NOTE: we shouldn't name the executable or python module anything that includes 'python'
         if u'python' in argv[0].lower():
             argv = argv[1:]
+            if argv[0] == u'-m':
+                # we've been called with `python -m pcbasic`, drop the -m too
+                argv = argv[1:]
         return argv
     else:
         # the official parameter should be LC_CTYPE but that's None in my locale
