@@ -278,11 +278,10 @@ class ExpressionParser(object):
                     nargs = 2
                     try:
                         oper = op.BINARY[d]
-                        self._drain(prec, stack, units)
-                    except (KeyError, IndexError):
-                        # illegal combined ops like == raise syntax error
-                        # incomplete expression also raises syntax error
+                    except KeyError:
+                        # illegal combined ops like == raise syntax error here
                         raise error.RunError(error.STX)
+                    self._drain(prec, stack, units)
                 stack.append((oper, nargs, prec))
             elif not (last in op.OPERATORS or last == ''):
                 # repeated unit ends expression
