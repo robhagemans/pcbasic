@@ -185,8 +185,7 @@ class StringSpace(object):
         # empty string pointers can point anywhere
         if length == 0:
             return memoryview(bytearray())
-        if address >= self._memory.var_start(): #if we no longer double-store code strings in string space object
-        #if address >= self._memory.code_start:
+        if address >= self._memory.var_start():
             # string stored in string space
             return memoryview(self._retrieve(length, address))
         elif address >= self._memory.code_start:
@@ -211,7 +210,7 @@ class StringSpace(object):
             length, address = self.store(self.view(length, address).tobytes())
         return length, address
 
-    def store(self, in_str, address=None):
+    def store(self, in_str, address=None, check_free=True):
         """Store a new string and return the string pointer."""
         length = len(in_str)
         # don't store overlong strings
@@ -220,7 +219,8 @@ class StringSpace(object):
         # don't store if address is provided (code or FIELD strings)
         if address is None:
             # reserve string space; collect garbage if necessary
-            self._memory.check_free(length, error.OUT_OF_STRING_SPACE)
+            if check_free:
+                self._memory.check_free(length, error.OUT_OF_STRING_SPACE)
             # find new string address
             self.current -= length
             address = self.current + 1
@@ -265,7 +265,7 @@ class StringSpace(object):
         for view, _, string in string_list:
             # re-allocate string space
             # update the original pointers supplied (these are memoryviews)
-            view[:] = struct.pack('<BH', *self.store(string))
+            view[:] = struct.pack('<BH', *self.store(string, check_free=False))
         # readdress temporary at top of string space
         if self._temp is not None:
             self._temp = self.current
