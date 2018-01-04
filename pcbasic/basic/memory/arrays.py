@@ -186,6 +186,8 @@ class Arrays(object):
 
     def set(self, name, index, value):
         """Assign a value to an array element."""
+        if isinstance(value, values.String):
+            self._memory.strings.fix_temporaries()
         # copy value into array
         self.view_buffer(name, index)[:] = values.to_type(name[-1], value).to_bytes()
         # drop cache

@@ -41,6 +41,8 @@ class Scalars(object):
 
     def set(self, name, value=None):
         """Assign a value to a variable."""
+        if isinstance(value, values.String):
+            self._memory.strings.fix_temporaries()
         type_char = name[-1]
         if value is not None:
             value = values.to_type(type_char, value)

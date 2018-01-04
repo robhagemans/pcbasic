@@ -279,15 +279,24 @@ class StringSpace(object):
                 return value[address - try_address]
         return -1
 
+    def fix_temporaries(self):
+        """Make all temporary strings permanent."""
+        self._temp = self.current
+
+    def reset_temporaries(self):
+        """Delete temporary string at top of string space."""
+        if self._temp != self.current:
+            self._delete_last()
+        self._temp = self.current
+
+
+    ## the below are no longer necessary and should be deleted/refactored
+
     def __enter__(self):
         """Enter temp-string context guard."""
-        self._temp = self.current
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit temp-string context guard."""
-        if self._temp != self.current:
-            self._delete_last()
-        self._temp = None
 
     def next_temporary(self, args):
         """Retrieve a value from an iterator and return as Python value. Store strings in a temporary."""

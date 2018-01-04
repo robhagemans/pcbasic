@@ -106,7 +106,7 @@ class DataSegment(object):
     @contextmanager
     def get_stack(self):
         """Reset temporary variables and return a (mutable) deque to use as stack."""
-        self._stack.append(deque()) #.clear()
+        self._stack.append(deque())
         yield self._stack[-1]
         self._stack.pop()
 
