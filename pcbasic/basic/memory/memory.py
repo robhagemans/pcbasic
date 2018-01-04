@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 from contextlib import contextmanager
+from collections import deque
 
 from ..base import error
 from ..base import tokens as tk
@@ -85,6 +86,8 @@ class DataSegment(object):
         self.scalars = scalars.Scalars(self, self.values)
         # array space
         self.arrays = arrays.Arrays(self, self.values)
+        # temporary values
+        self._stack = []
         # FIELD buffers
         self.reset_fields()
 
@@ -99,6 +102,13 @@ class DataSegment(object):
         # file 0 (program/system file) probably doesn't need a field
         for i in range(self.max_files+1):
             self.fields[i+1] = devices.Field(self.max_reclen, i+1, self)
+
+    @contextmanager
+    def get_stack(self):
+        """Reset temporary variables and return a (mutable) deque to use as stack."""
+        self._stack.append(deque()) #.clear()
+        yield self._stack[-1]
+        self._stack.pop()
 
     def clear_deftype(self):
         """Reset default sigils."""
@@ -196,7 +206,8 @@ class DataSegment(object):
     def _collect_garbage(self):
         """Collect garbage from string space. Compactify string storage."""
         # find all strings that are actually referenced
-        string_ptrs = self.scalars.get_strings() + self.arrays.get_strings()
+        stack_strings = [value.view() for stack in self._stack for value in stack if isinstance(value, values.String)]
+        string_ptrs = self.scalars.get_strings() + self.arrays.get_strings() + stack_strings
         self.strings.collect_garbage(string_ptrs)
 
     def check_free(self, size, err):
