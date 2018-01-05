@@ -247,12 +247,17 @@ class StringSpace(object):
         # string_ptrs should be a list of memoryviews to the original pointers
         # retrieve addresses and copy strings
         string_list = []
+        # find last non-temporary string
+        last_permanent = self._memory.stack_start()
+        last_perm_view = None
         for view in string_ptrs:
             length, addr = struct.unpack('<BH', view.tobytes())
             # exclude empty elements of string arrays (len==0 and addr==0)
             # exclude strings is not located in memory (FIELD or code strings)
             if addr >= self._memory.var_start():
                 string_list.append((view, addr, self._retrieve(length, addr)))
+                if self._temp is not None and addr > self._temp and addr < last_permanent:
+                    last_permanent, last_perm_view = addr, view
         # sort by address, largest first (maintain order of storage)
         string_list.sort(key=itemgetter(1), reverse=True)
         # clear the string buffer and re-store all referenced strings
@@ -261,9 +266,9 @@ class StringSpace(object):
             # re-allocate string space
             # update the original pointers supplied (these are memoryviews)
             view[:] = struct.pack('<BH', *self.store(string, check_free=False))
-        # readdress temporary at top of string space
-        if self._temp is not None:
-            self._temp = self.current
+        # readdress  start of temporary strings
+        if self._temp is not None and self._temp !=  self._memory.stack_start():
+            self._temp = -1 + struct.unpack_from('<H', last_perm_view.tobytes(), 1)[0]
 
     def get_memory(self, address):
         """Retrieve data from data memory: string space """
