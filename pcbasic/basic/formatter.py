@@ -15,10 +15,9 @@ from . import values
 class Formatter(object):
     """Output string formatter."""
 
-    def __init__(self, output, memory, screen=None):
+    def __init__(self, output, screen=None):
         """Initialise."""
         self._screen = screen
-        self._memory = memory
         self._output = output
 
     def format(self, args):
@@ -37,8 +36,7 @@ class Formatter(object):
             elif sep == tk.TAB:
                 self._print_tab(values.to_int(value, unsigned=True))
             else:
-                with self._memory.strings:
-                    self._print_value(next(args))
+                self._print_value(next(args))
             newline = sep not in (tk.TAB, tk.SPC, ',', ';')
         if newline:
             if self._screen and self._screen.overflow:
@@ -80,7 +78,7 @@ class Formatter(object):
 
     def _print_using(self, args):
         """PRINT USING clause: Write expressions to screen or file using a formatting string."""
-        format_expr = self._memory.strings.next_temporary(args)
+        format_expr = values.next_string(args)
         if format_expr == '':
             raise error.RunError(error.IFC)
         fors = codestream.CodeStream(format_expr)
@@ -105,27 +103,26 @@ class Formatter(object):
                     else:
                         self._output.write(fors.read(2)[-1])
                 else:
-                    with self._memory.strings:
+                    try:
+                        format_field = StringField(fors)
+                    except ValueError:
                         try:
-                            format_field = StringField(fors)
+                            format_field = NumberField(fors)
                         except ValueError:
-                            try:
-                                format_field = NumberField(fors)
-                            except ValueError:
-                                if start_cycle:
-                                    initial_literal += fors.read(1)
-                                else:
-                                    self._output.write(fors.read(1))
-                                continue
-                        value = next(args)
-                        if value is None:
-                            newline = False
-                            break
-                        if start_cycle:
-                            self._output.write(initial_literal)
-                            start_cycle = False
-                            format_chars = True
-                        self._output.write(format_field.format(value))
+                            if start_cycle:
+                                initial_literal += fors.read(1)
+                            else:
+                                self._output.write(fors.read(1))
+                            continue
+                    value = next(args)
+                    if value is None:
+                        newline = False
+                        break
+                    if start_cycle:
+                        self._output.write(initial_literal)
+                        start_cycle = False
+                        format_chars = True
+                    self._output.write(format_field.format(value))
         except StopIteration:
             pass
         if not format_chars:

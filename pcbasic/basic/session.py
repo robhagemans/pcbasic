@@ -135,7 +135,7 @@ class Session(object):
         # DataSegment needed for COMn and disk FIELD buffers
         # InputMethods needed for wait()
         self.devices = files.Devices(
-                self.values, self.memory, self.input_methods, self.memory.fields,
+                self.values, self.input_methods, self.memory.fields,
                 self.screen, self.input_methods.keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
@@ -146,11 +146,11 @@ class Session(object):
         # set up the SHELL command
         self.shell = dos.get_shell_manager(self.input_methods.keyboard, self.screen, self.codepage, option_shell, syntax)
         # set up environment
-        self.environment = dos.Environment(self.values, self.strings)
+        self.environment = dos.Environment(self.values)
         # initialise random number generator
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock
-        self.clock = clock.Clock(self.memory, self.values)
+        self.clock = clock.Clock(self.values)
         ######################################################################
         # editor
         ######################################################################
@@ -470,7 +470,7 @@ class Session(object):
 
     def shell_(self, args):
         """SHELL: open OS shell and optionally execute command."""
-        cmd = self.strings.next_temporary(args)
+        cmd = values.next_string(args)
         list(args)
         # force cursor visible in all cases
         self.screen.cursor.show(True)
@@ -510,7 +510,7 @@ class Session(object):
     def list_(self, args):
         """LIST: output program lines."""
         line_range = next(args)
-        out = self.strings.next_temporary(args)
+        out = values.next_string(args)
         if out is not None:
             out = self.files.open(0, out, filetype='A', mode='O')
         list(args)
@@ -557,7 +557,7 @@ class Session(object):
 
     def load_(self, args):
         """LOAD: load program from file."""
-        name = self.strings.next_temporary(args)
+        name = values.next_string(args)
         comma_r, = args
         with self.files.open(0, name, filetype='ABP', mode='I') as f:
             self.program.load(f)
@@ -575,7 +575,7 @@ class Session(object):
     def chain_(self, args):
         """CHAIN: load program and chain execution."""
         merge = next(args)
-        name = self.strings.next_temporary(args)
+        name = values.next_string(args)
         jumpnum = next(args)
         if jumpnum is not None:
             jumpnum = values.to_int(jumpnum, unsigned=True)
@@ -610,7 +610,7 @@ class Session(object):
 
     def save_(self, args):
         """SAVE: save program to a file."""
-        name = self.strings.next_temporary(args)
+        name = values.next_string(args)
         mode = (next(args) or 'B').upper()
         list(args)
         with self.files.open(0, name, filetype=mode, mode='O',
@@ -623,7 +623,7 @@ class Session(object):
 
     def merge_(self, args):
         """MERGE: merge lines from file into current program."""
-        name = self.strings.next_temporary(args)
+        name = values.next_string(args)
         list(args)
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         with self.files.open(0, name, filetype='A', mode='I') as f:
@@ -649,7 +649,7 @@ class Session(object):
         comma_r = False
         if jumpnum is None:
             try:
-                name = self.strings.next_temporary(args)
+                name = values.next_string(args)
                 comma_r = next(args)
                 with self.files.open(0, name, filetype='ABP', mode='I') as f:
                     self.program.load(f)
@@ -798,7 +798,7 @@ class Session(object):
         """KEY: macro or event handler definition."""
         keynum = values.to_int(next(args))
         error.range_check(1, 255, keynum)
-        text = self.strings.next_temporary(args)
+        text = values.next_string(args)
         list(args)
         if keynum <= self.basic_events.num_fn_keys:
             self.screen.fkey_macros.set(keynum, text)

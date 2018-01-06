@@ -9,16 +9,16 @@ This file is released under the GNU GPL version 3 or later.
 import datetime
 
 from .base import error
+from . import values
 
 
 class Clock(object):
 
-    def __init__(self, memory, values):
+    def __init__(self, values):
         """Initialise clock."""
         # datetime offset for duration of the run
         # (so that we don't need permission to touch the system clock)
         # given in seconds
-        self._memory = memory
         self._values = values
         self.time_offset = datetime.timedelta()
 
@@ -40,7 +40,7 @@ class Clock(object):
 
     def time_(self, args):
         """TIME: Set the system time offset."""
-        timestr = self._memory.strings.next_temporary(args)
+        timestr = values.next_string(args)
         list(args)
         # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
         now = datetime.datetime.now() + self.time_offset
@@ -62,7 +62,7 @@ class Clock(object):
 
     def date_(self, args):
         """DATE: Set the system date offset."""
-        datestr = self._memory.strings.next_temporary(args)
+        datestr = values.next_string(args)
         # allowed formats:
         # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
         # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
