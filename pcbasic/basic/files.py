@@ -386,12 +386,11 @@ class Files(object):
         outstrs = []
         try:
             while True:
-                with self._memory.strings:
-                    expr = next(args)
-                    if isinstance(expr, values.String):
-                        outstrs.append('"%s"' % expr.to_str())
-                    else:
-                        outstrs.append(values.to_repr(expr, leading_space=False, type_sign=False))
+                expr = next(args)
+                if isinstance(expr, values.String):
+                    outstrs.append('"%s"' % expr.to_str())
+                else:
+                    outstrs.append(values.to_repr(expr, leading_space=False, type_sign=False))
         except StopIteration:
             # write the whole thing as one thing (this affects line breaks)
             output.write_line(','.join(outstrs))
@@ -413,22 +412,21 @@ class Files(object):
             dev = self.get(file_or_device, mode='IOAR')
             w = values.to_int(next(args))
         else:
-            with self._memory.strings:
-                expr = next(args)
-                if isinstance(expr, values.String):
-                    devname = expr.to_str().upper()
-                    w = values.to_int(next(args))
-                    try:
-                        dev = self.devices.devices[devname].device_file
-                    except (KeyError, AttributeError):
-                        # bad file name
-                        raise error.RunError(error.BAD_FILE_NAME)
-                else:
-                    w = values.to_int(expr)
-                    num_rows_dummy = next(args)
-                    if num_rows_dummy is not None:
-                        num_rows_dummy = values.to_int(num_rows_dummy)
-                    dev = self.devices.scrn_file
+            expr = next(args)
+            if isinstance(expr, values.String):
+                devname = expr.to_str().upper()
+                w = values.to_int(next(args))
+                try:
+                    dev = self.devices.devices[devname].device_file
+                except (KeyError, AttributeError):
+                    # bad file name
+                    raise error.RunError(error.BAD_FILE_NAME)
+            else:
+                w = values.to_int(expr)
+                num_rows_dummy = next(args)
+                if num_rows_dummy is not None:
+                    num_rows_dummy = values.to_int(num_rows_dummy)
+                dev = self.devices.scrn_file
         error.range_check(0, 255, w)
         list(args)
         if num_rows_dummy is not None:

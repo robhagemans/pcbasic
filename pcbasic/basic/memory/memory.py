@@ -524,8 +524,7 @@ class DataSegment(object):
             num = 255
         else:
             num = values.to_int(num)
-        with self.strings:
-            s = values.pass_string(self.get_variable(name, indices)).to_str()
+        s = values.pass_string(self.get_variable(name, indices)).to_str()
         error.range_check(0, 255, num)
         if num > 0:
             error.range_check(1, len(s), start)

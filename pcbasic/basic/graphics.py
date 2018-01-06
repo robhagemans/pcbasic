@@ -643,25 +643,23 @@ class Drawing(object):
         x, y = (values.to_single(next(args)).to_value() for _ in range(2))
         coord = x, y, step
         c, pattern = -1, None
-        with self._memory.strings:
-            cval = next(args)
-            if isinstance(cval, values.String):
-                # pattern given; copy
-                pattern = cval.to_str()
-                # empty pattern "" is illegal function call
-                error.throw_if(not pattern)
-                # default for border, if pattern is specified as string: foreground attr
-            elif cval is not None:
-                c = values.to_int(cval)
-                error.range_check(0, 255, c)
+        cval = next(args)
+        if isinstance(cval, values.String):
+            # pattern given; copy
+            pattern = cval.to_str()
+            # empty pattern "" is illegal function call
+            error.throw_if(not pattern)
+            # default for border, if pattern is specified as string: foreground attr
+        elif cval is not None:
+            c = values.to_int(cval)
+            error.range_check(0, 255, c)
         border = next(args)
         if border is not None:
             border = values.to_int(border)
             error.range_check(0, 255, border)
-        with self._memory.strings:
-            background = next(args)
-            if background is not None:
-                background = values.pass_string(background, err=error.IFC).to_str()
+        background = next(args)
+        if background is not None:
+            background = values.pass_string(background, err=error.IFC).to_str()
         list(args)
         # if paint *colour* specified, border default = paint colour
         # if paint *attribute* specified, border default = current foreground

@@ -292,19 +292,12 @@ class StringSpace(object):
 
     ## the below are no longer necessary and should be deleted/refactored
 
-    def __enter__(self):
-        """Enter temp-string context guard."""
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit temp-string context guard."""
-
     def next_temporary(self, args):
-        """Retrieve a value from an iterator and return as Python value. Store strings in a temporary."""
-        with self:
-            expr = next(args)
-            if isinstance(expr, String):
-                return expr.to_value()
-            elif expr is None:
-                return expr
-            else:
-                raise error.RunError(error.TYPE_MISMATCH)
+        """Retrieve a string from an iterator and return as Python value."""
+        expr = next(args)
+        if isinstance(expr, String):
+            return expr.to_value()
+        elif expr is None:
+            return expr
+        else:
+            raise error.RunError(error.TYPE_MISMATCH)
