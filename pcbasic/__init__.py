@@ -13,3 +13,4 @@ __path__ = [os.path.abspath(e) for e in __path__]
 
 from .version import __version__, __copyright__
 from .main import main, run
+from .basic import Session
