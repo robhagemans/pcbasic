@@ -265,6 +265,7 @@ class Session(object):
         """Set a variable in memory."""
         if isinstance(name, unicode):
             name = name.encode('ascii')
+        name = name.upper()
         if isinstance(value, unicode):
             value = self.codepage.str_from_unicode(value)
         if '(' in name:
@@ -277,6 +278,7 @@ class Session(object):
         """Get a variable in memory."""
         if isinstance(name, unicode):
             name = name.encode('ascii')
+        name = name.upper()
         if '(' in name:
             name = name.split('(', 1)[0]
             return self.arrays.to_list(name)
