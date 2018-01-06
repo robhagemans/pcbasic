@@ -817,7 +817,7 @@ class Session(object):
     def call_python_(self, args):
         """_CALLP statement: call a python function."""
         if not self._extension:
-            raise error.RunError(error.IFC)
+            raise error.RunError(error.STX)
         extension_module = importlib.import_module(self._extension)
         func_name = values.next_string(args)
         func_args = list(arg.to_value() for arg in args)
