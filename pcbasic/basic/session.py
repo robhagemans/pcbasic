@@ -818,11 +818,14 @@ class Session(object):
         """_CALLP statement: call a python function."""
         if not self._extension:
             raise error.RunError(error.STX)
-        extension_module = importlib.import_module(self._extension)
         func_name = values.next_string(args)
         func_args = list(arg.to_value() for arg in args)
         try:
-            func = getattr(extension_module, func_name)
+            if isinstance(self._extension, basestring):
+                ext_obj = importlib.import_module(self._extension)
+            else:
+                ext_obj = self._extension
+            func = getattr(ext_obj, func_name)
             result = func(*func_args)
         except Exception:
             raise error.RunError(error.INTERNAL_ERROR)
