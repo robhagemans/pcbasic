@@ -271,6 +271,7 @@ class Parser(object):
         }
         self._extensions = {
             'DEBUG': self._parse_single_arg_no_end,
+            'CALLP': self._parse_call_python,
         }
 
     def init_statements(self, session):
@@ -407,6 +408,7 @@ class Parser(object):
             tk.STRIG + tk.OFF: session.input_methods.stick.strig_statement_,
             tk.STRIG: session.basic_events.strig_,
             '_DEBUG': session.debugger.debug_,
+            '_CALLP': session.call_python_,
         }
 
     ###########################################################################
@@ -726,6 +728,14 @@ class Parser(object):
             yield self.parse_expression(ins)
         else:
             yield None
+        ins.require_end()
+
+    def _parse_call_python(self, ins):
+        """Parse _CALL extension syntax."""
+        while True:
+            yield self.parse_expression(ins)
+            if not ins.skip_blank_read_if((',',)):
+                break
         ins.require_end()
 
     ###########################################################################
