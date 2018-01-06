@@ -197,6 +197,7 @@ class BaseDebugger(object):
 
     def debug_(self, args):
         """Dummy debug exec."""
+        raise error.RunError(error.STX)
 
 
 class Debugger(BaseDebugger):
