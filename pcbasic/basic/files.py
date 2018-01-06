@@ -77,7 +77,7 @@ class Files(object):
 
     def open_(self, args):
         """OPEN: open a data file."""
-        first_expr = self._memory.strings.next_temporary(args)
+        first_expr = values.next_string(args)
         if next(args):
             # old syntax
             mode = first_expr[:1].upper()
@@ -85,7 +85,7 @@ class Files(object):
                 raise error.RunError(error.BAD_FILE_MODE)
             number = values.to_int(next(args))
             error.range_check(0, 255, number)
-            name = self._memory.strings.next_temporary(args)
+            name = values.next_string(args)
             access, lock = None, None
         else:
             # new syntax
@@ -213,7 +213,7 @@ class Files(object):
         num = values.to_int(next(args))
         error.range_check(0, 255, num)
         thefile = self.get(num)
-        control_string = self._memory.strings.next_temporary(args)
+        control_string = values.next_string(args)
         list(args)
         logging.warning("IOCTL statement not implemented.")
         raise error.RunError(error.IFC)
@@ -447,7 +447,7 @@ class Files(object):
             # neither LPRINT not a file number: print to screen
             output = self.devices.scrn_file
             screen = output.screen
-        formatter.Formatter(output, self._memory, screen).format(args)
+        formatter.Formatter(output, screen).format(args)
 
 
 ###############################################################################
@@ -459,13 +459,12 @@ class Devices(object):
     # allowable drive letters in GW-BASIC are letters or @
     drive_letters = b'@' + string.ascii_uppercase
 
-    def __init__(self, values, memory, input_methods, fields, screen, keyboard,
+    def __init__(self, values, input_methods, fields, screen, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_in_size, utf8, universal):
         """Initialise devices."""
         self.devices = {}
         self._values = values
-        self._memory = memory
         # screen device
         self._screen = screen
         self.devices['SCRN:'] = devices.SCRNDevice(screen)
@@ -578,7 +577,7 @@ class Devices(object):
 
     def chdir_(self, args):
         """CHDIR: change working directory."""
-        name = self._memory.strings.next_temporary(args)
+        name = values.next_string(args)
         list(args)
         if not name:
             raise error.RunError(error.BAD_FILE_NAME)
@@ -587,7 +586,7 @@ class Devices(object):
 
     def mkdir_(self, args):
         """MKDIR: create directory."""
-        name = self._memory.strings.next_temporary(args)
+        name = values.next_string(args)
         list(args)
         if not name:
             raise error.RunError(error.BAD_FILE_NAME)
@@ -596,7 +595,7 @@ class Devices(object):
 
     def rmdir_(self, args):
         """RMDIR: remove directory."""
-        name = self._memory.strings.next_temporary(args)
+        name = values.next_string(args)
         list(args)
         if not name:
             raise error.RunError(error.BAD_FILE_NAME)
@@ -605,11 +604,11 @@ class Devices(object):
 
     def name_(self, args):
         """NAME: rename file or directory."""
-        dev, oldpath = self.get_diskdevice_and_path(self._memory.strings.next_temporary(args))
+        dev, oldpath = self.get_diskdevice_and_path(values.next_string(args))
         # don't rename open files
         dev.check_file_not_open(oldpath)
         oldpath = dev._native_path(oldpath, name_err=error.FILE_NOT_FOUND, isdir=False)
-        newdev, newpath = self.get_diskdevice_and_path(self._memory.strings.next_temporary(args))
+        newdev, newpath = self.get_diskdevice_and_path(values.next_string(args))
         list(args)
         if dev != newdev:
             raise error.RunError(error.RENAME_ACROSS_DISKS)
@@ -620,7 +619,7 @@ class Devices(object):
 
     def kill_(self, args):
         """KILL: remove file."""
-        name = self._memory.strings.next_temporary(args)
+        name = values.next_string(args)
         list(args)
         if not name:
             raise error.RunError(error.BAD_FILE_NAME)
@@ -632,7 +631,7 @@ class Devices(object):
 
     def files_(self, args):
         """FILES: output directory listing to screen."""
-        pathmask = self._memory.strings.next_temporary(args)
+        pathmask = values.next_string(args)
         list(args)
         # pathmask may be left unspecified, but not empty
         if pathmask == b'':
@@ -644,4 +643,4 @@ class Devices(object):
 
     def lprint_(self, args):
         """LPRINT: Write expressions to printer LPT1."""
-        formatter.Formatter(self.lpt1_file, self._memory).format(args)
+        formatter.Formatter(self.lpt1_file).format(args)

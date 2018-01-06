@@ -848,7 +848,7 @@ class Drawing(object):
         """DRAW: Execute a Graphics Macro Language string."""
         if self.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        gml = self._memory.strings.next_temporary(args)
+        gml = values.next_string(args)
         self.draw(gml)
         list(args)
 

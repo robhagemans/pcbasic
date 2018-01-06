@@ -62,6 +62,16 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
         raise error.RunError(err)
     return inp
 
+def next_string(args):
+    """Retrieve a string from an iterator and return as Python value."""
+    expr = next(args)
+    if isinstance(expr, strings.String):
+        return expr.to_value()
+    elif expr is None:
+        return expr
+    else:
+        raise error.RunError(error.TYPE_MISMATCH)
+
 
 ###############################################################################
 # type conversions

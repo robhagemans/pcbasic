@@ -253,7 +253,7 @@ class PlayParser(object):
     def play_(self,  args):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
         # retrieve Music Macro Language string
-        mml_list = list(self._memory.strings.next_temporary(args) for _ in range(3))
+        mml_list = list(values.next_string(args) for _ in range(3))
         list(args)
         # at least one string must be specified
         if not any(mml_list):

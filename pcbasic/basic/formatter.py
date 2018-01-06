@@ -15,10 +15,9 @@ from . import values
 class Formatter(object):
     """Output string formatter."""
 
-    def __init__(self, output, memory, screen=None):
+    def __init__(self, output, screen=None):
         """Initialise."""
         self._screen = screen
-        self._memory = memory
         self._output = output
 
     def format(self, args):
@@ -79,7 +78,7 @@ class Formatter(object):
 
     def _print_using(self, args):
         """PRINT USING clause: Write expressions to screen or file using a formatting string."""
-        format_expr = self._memory.strings.next_temporary(args)
+        format_expr = values.next_string(args)
         if format_expr == '':
             raise error.RunError(error.IFC)
         fors = codestream.CodeStream(format_expr)

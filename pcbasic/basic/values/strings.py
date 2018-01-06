@@ -288,16 +288,3 @@ class StringSpace(object):
         if self._temp != self.current:
             self._delete_last()
         self._temp = self.current
-
-
-    ## the below are no longer necessary and should be deleted/refactored
-
-    def next_temporary(self, args):
-        """Retrieve a string from an iterator and return as Python value."""
-        expr = next(args)
-        if isinstance(expr, String):
-            return expr.to_value()
-        elif expr is None:
-            return expr
-        else:
-            raise error.RunError(error.TYPE_MISMATCH)

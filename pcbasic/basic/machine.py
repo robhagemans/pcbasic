@@ -300,7 +300,7 @@ class Memory(object):
         """BLOAD: Load a file into a block of memory."""
         if self._memory.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
-        name = self._memory.strings.next_temporary(args)
+        name = values.next_string(args)
         offset = next(args)
         if offset is not None:
             offset = values.to_int(offset, unsigned=True)
@@ -324,7 +324,7 @@ class Memory(object):
         """BSAVE: Save a block of memory into a file."""
         if self._memory.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
-        name = self._memory.strings.next_temporary(args)
+        name = values.next_string(args)
         offset = values.to_int(next(args), unsigned=True)
         length = values.to_int(next(args), unsigned=True)
         list(args)
