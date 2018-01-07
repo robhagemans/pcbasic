@@ -306,8 +306,8 @@ class ExpressionParser(object):
                     units.append(self._memory.get_variable(name, indices))
                 elif d in self._functions:
                     units.append(self._parse_function(ins, d))
-                    if not isinstance(units[-1], values.String):
-                        self._memory.strings.reset_temporaries()
+                    #if not isinstance(units[-1], values.String):
+                    #    self._memory.strings.reset_temporaries()
                 elif d in tk.END_STATEMENT:
                     break
                 elif d in tk.END_EXPRESSION:
