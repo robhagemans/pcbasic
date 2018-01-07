@@ -49,6 +49,7 @@ class Program(object):
     def truncate(self, rest=''):
         """Write bytecode and cut the program of beyond the current position."""
         self.bytecode.write(rest if rest else '\0\0\0')
+        self.bytecode.truncate()
         # cut off at current position
         self.code_size = self.bytecode.tell()
 
