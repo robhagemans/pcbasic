@@ -104,9 +104,7 @@ class Parser(object):
         if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
             return None
         self.redo_on_break = True
-        # FIXME: addressing private member publicly
-        self.expression_parser._memory.strings.reset_temporaries()
-        val = self.expression_parser.parse(ins)
+        val = self.expression_parser.parse_expression(ins)
         self.redo_on_break = False
         return val
 

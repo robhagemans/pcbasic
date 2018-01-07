@@ -242,8 +242,13 @@ class ExpressionParser(object):
         self.__dict__.update(pickle_dict)
         self._init_syntax()
 
-    def parse(self, ins):
+    def parse_expression(self,ins):
         """Parse and evaluate tokenised expression."""
+        self._memory.strings.reset_temporaries()
+        return self.parse(ins)
+
+    def parse(self, ins):
+        """Parse and evaluate tokenised (sub-)expression."""
         operations = deque()
         with self._memory.get_stack() as units:
             final = True
