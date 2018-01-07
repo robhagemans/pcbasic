@@ -79,7 +79,7 @@ class Interpreter(object):
                     token = ins.read(4)
                     # end of program or truncated file
                     if token[:2] == '\0\0' or len(token) < 4:
-                        if self.error_resume:
+                        if c == b'\0' and self.error_resume:
                             # unfinished error handler: no RESUME (don't trap this)
                             self.error_handle_mode = True
                             # get line number right
