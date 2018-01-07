@@ -190,6 +190,14 @@ class DataSegment(object):
                     # modify the stored bytearray
                     buf[i:i+3] = struct.pack('<BH', length, address)
         yield
+        # check if there is sufficient memory
+        # FIXME: repetition of size calculations, should be in scalars/arrays modules
+        scalar_size = sum(max(3, len(name)) + 1 + values.size_bytes(name[-1])
+                            for name in common_scalars.iterkeys())
+        array_size = sum(1 + max(3, len(name)) + 3 + 2*len(val[0]) + self.arrays.array_len(val[0]) * values.size_bytes(name)
+                            for name, val in common_arrays.iteritems())
+        if self.var_start() + scalar_size + array_size > string_store.current:
+            raise error.RunError(error.OUT_OF_MEMORY)
         self.strings.rebuild(string_store)
         for name, value in common_scalars.iteritems():
             self.scalars.set(name, value)
