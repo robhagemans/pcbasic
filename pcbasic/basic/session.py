@@ -95,7 +95,7 @@ class Session(object):
         bytecode = codestream.TokenisedStream(self.memory.code_start)
         self.program = program.Program(
                 self.tokeniser, self.lister, max_list_line, allow_protect,
-                allow_code_poke, self.memory.code_start, bytecode)
+                allow_code_poke, self.memory, bytecode)
         # register all data segment users
         self.memory.set_buffers(self.program)
         ######################################################################
