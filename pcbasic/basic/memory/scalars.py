@@ -39,6 +39,22 @@ class Scalars(object):
         self._var_memory = {}
         self.current = 0
 
+    @staticmethod
+    def _record_size(name):
+        """Calculate size of scalar record in bytes."""
+        # first two bytes: chars of name or 0 if name is one byte long
+        return max(3, len(name)) + 1
+
+    @staticmethod
+    def _buffer_size(name):
+        """Calculate size of scalar buffer in bytes."""
+        return values.size_bytes(name)
+
+    @staticmethod
+    def memory_size(name):
+        """Calculate size of scalar record and buffer in bytes."""
+        return Scalars._record_size(name) + Scalars._buffer_size(name)
+
     def set(self, name, value=None):
         """Assign a value to a variable."""
         if isinstance(value, values.String):
@@ -50,13 +66,13 @@ class Scalars(object):
         # check if garbage needs collecting before allocating memory
         if name not in self._var_memory:
             # don't add string length, string already stored
-            size = (max(3, len(name)) + 1 + values.size_bytes(type_char))
+            size = self.memory_size(name)
             self._memory.check_free(size, error.OUT_OF_MEMORY)
             # first two bytes: chars of name or 0 if name is one byte long
             name_ptr = self._memory.var_current()
             # byte_size first_letter second_letter_or_nul remaining_length_or_nul
-            var_ptr = name_ptr + max(3, len(name)) + 1
-            self.current += max(3, len(name)) + 1 + values.size_bytes(name)
+            var_ptr = name_ptr + self._record_size(name)
+            self.current += size
             self._var_memory[name] = (name_ptr, var_ptr)
         # don't change the value if just checking allocation
         if value is None:
@@ -124,7 +140,7 @@ class Scalars(object):
 
     def get_strings(self):
         """Return a list of views of string scalars."""
-        return [memoryview(value) for name, value in self._vars.iteritems() if name[-1] == '$']
+        return [memoryview(value) for name, value in self._vars.iteritems() if name[-1] == values.STR]
 
 
 ###############################################################################

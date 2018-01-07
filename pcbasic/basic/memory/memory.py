@@ -171,7 +171,7 @@ class DataSegment(object):
                 name: self.scalars.get(name)
                 for name in preserve_sc if name in self.scalars}
         for name, value in common_scalars.iteritems():
-            if name[-1] == '$':
+            if name[-1] == values.STR:
                 length, address = self.strings.copy_to(string_store, *value.to_pointer())
                 value = self.values.new_string().from_pointer(length, address)
                 common_scalars[name] = value
@@ -180,7 +180,7 @@ class DataSegment(object):
                 name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
                 for name in preserve_ar if name in self.arrays}
         for name, value in common_arrays.iteritems():
-            if name[-1] == '$':
+            if name[-1] == values.STR:
                 dimensions, buf = value
                 for i in range(0, len(buf), 3):
                     # if the string array is not full, pointers are zero
@@ -191,10 +191,9 @@ class DataSegment(object):
                     buf[i:i+3] = struct.pack('<BH', length, address)
         yield
         # check if there is sufficient memory
-        # FIXME: repetition of size calculations, should be in scalars/arrays modules
-        scalar_size = sum(max(3, len(name)) + 1 + values.size_bytes(name[-1])
+        scalar_size = sum(self.scalars.memory_size(name)
                             for name in common_scalars.iterkeys())
-        array_size = sum(1 + max(3, len(name)) + 3 + 2*len(val[0]) + self.arrays.array_len(val[0]) * values.size_bytes(name)
+        array_size = sum(self.arrays.memory_size(name, val[0])
                             for name, val in common_arrays.iteritems())
         if self.var_start() + scalar_size + array_size > string_store.current:
             raise error.RunError(error.OUT_OF_MEMORY)

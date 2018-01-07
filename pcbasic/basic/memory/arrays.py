@@ -110,6 +110,20 @@ class Arrays(object):
             name, indices = a
             self.allocate(self._memory.complete_name(name), indices)
 
+    @staticmethod
+    def _record_size(name, dimensions):
+        """Calculate size of array record in bytes."""
+        # first two bytes: chars of name or 0 if name is one byte long
+        return 1 + max(3, len(name)) + 3 + 2*len(dimensions)
+
+    def _buffer_size(self, name, dimensions):
+        """Calculate size of array buffer in bytes."""
+        return self.array_len(dimensions) * values.size_bytes(name)
+
+    def memory_size(self, name, dimensions):
+        """Calculate size of array record and buffer in bytes."""
+        return self._record_size(name, dimensions) + self._buffer_size(name, dimensions)
+
     def allocate(self, name, dimensions):
         """Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value."""
         if not dimensions:
@@ -124,15 +138,14 @@ class Arrays(object):
                 raise error.RunError(error.IFC)
             elif d < self._base:
                 raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
-        size = self.array_len(dimensions)
         # update memory model
-        # first two bytes: chars of name or 0 if name is one byte long
         name_ptr = self.current
-        record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
+        record_len = self._record_size(name, dimensions)
+        array_bytes = self._buffer_size(name, dimensions)
         array_ptr = name_ptr + record_len
-        array_bytes = size * values.size_bytes(name)
-        self._memory.check_free(record_len + array_bytes, error.OUT_OF_MEMORY)
-        self.current += record_len + array_bytes
+        total_bytes = record_len + array_bytes
+        self._memory.check_free(total_bytes, error.OUT_OF_MEMORY)
+        self.current += total_bytes
         self._array_memory[name] = (name_ptr, array_ptr)
         self._buffers[name] = bytearray(array_bytes)
         self._dims[name] = dimensions
@@ -250,7 +263,7 @@ class Arrays(object):
         """Return a list of views of string array elements."""
         return [memoryview(buf)[i:i+3]
                     for name, buf in self._buffers.iteritems()
-                        if name[-1] == '$'
+                        if name[-1] == values.STR
                             for i in range(0, len(buf), 3)]
 
 
