@@ -22,10 +22,10 @@ from . import strings
 # Single (!) - stored as 4-byte Microsoft Binary Format
 # Double (#) - stored as 8-byte Microsoft Binary Format
 # String ($) - stored as 1-byte length plus 2-byte pointer to string space
-INT = '%'
-SNG = '!'
-DBL = '#'
-STR = '$'
+INT = numbers.Integer.sigil
+SNG = numbers.Single.sigil
+DBL = numbers.Double.sigil
+STR = strings.String.sigil
 
 # storage size in bytes
 TYPE_TO_SIZE = {STR: 3, INT: 2, SNG: 4, DBL: 8}

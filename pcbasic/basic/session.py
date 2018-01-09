@@ -764,7 +764,7 @@ class Session(object):
         if not readvar:
             raise error.RunError(error.STX)
         readvar = self.memory.complete_name(readvar)
-        if readvar[-1] != '$':
+        if readvar[-1] != values.STR:
             raise error.RunError(error.TYPE_MISMATCH)
         # read the input
         if finp:

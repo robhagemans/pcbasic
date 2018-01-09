@@ -314,7 +314,7 @@ class TextFileBase(RawFile):
         c = self.read(1)
         # LF escapes quotes
         # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
-        quoted = (c == '"' and typechar == '$' and last not in ('\n', '\0'))
+        quoted = (c == '"' and typechar == values.STR and last not in ('\n', '\0'))
         if quoted:
             c = self.read(1)
         # LF escapes end of file, return empty string
@@ -322,7 +322,7 @@ class TextFileBase(RawFile):
             raise error.RunError(error.INPUT_PAST_END)
         # we read the ending char before breaking the loop
         # this may raise FIELD OVERFLOW
-        while c and not ((typechar != '$' and c in self.soft_sep) or
+        while c and not ((typechar != values.STR and c in self.soft_sep) or
                         (c in ',\r' and not quoted)):
             if c == '"' and quoted:
                 # whitespace after quote will be skipped below
@@ -339,7 +339,7 @@ class TextFileBase(RawFile):
             elif c in self.whitespace_input and not quoted:
                 # ignore whitespace in numbers, except soft separators
                 # include internal whitespace in strings
-                if typechar == '$':
+                if typechar == values.STR:
                     blanks += c
             else:
                 word += blanks + c
@@ -430,7 +430,7 @@ class Field(object):
         """Attach a FIELD variable."""
         if self.address < 0 or self.memory == None:
             raise AttributeError("Can't attach variable to non-memory-mapped field.")
-        if name[-1] != '$':
+        if name[-1] != values.STR:
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
         if offset + length > len(self.buffer):
@@ -531,7 +531,7 @@ class KYBDFile(TextFileBase):
             c = self.read(1)
         # LF escapes quotes
         # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
-        quoted = (c == '"' and typechar == '$' and last not in ('\n', '\0'))
+        quoted = (c == '"' and typechar == values.STR and last not in ('\n', '\0'))
         if quoted:
             c = self.read(1)
         # LF escapes end of file, return empty string
@@ -557,7 +557,7 @@ class KYBDFile(TextFileBase):
             elif c in self.whitespace_input and not quoted:
                 # ignore whitespace in numbers, except soft separators
                 # include internal whitespace in strings
-                if typechar == '$':
+                if typechar == values.STR:
                     blanks += c
             else:
                 word += blanks + c
@@ -571,7 +571,7 @@ class KYBDFile(TextFileBase):
                     if c not in (',', '\r'):
                         self.input_last = c
                     break
-            parsing_trail = parsing_trail or (typechar != '$' and c == ' ')
+            parsing_trail = parsing_trail or (typechar != values.STR and c == ' ')
         # file position is at one past the separator char
         return word, c
 
