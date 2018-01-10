@@ -1,2 +1,0 @@
-50 REM
-60 PRINT#1, FRE(0)
