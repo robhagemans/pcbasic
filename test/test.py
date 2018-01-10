@@ -13,10 +13,11 @@ import filecmp
 import contextlib
 import traceback
 import time
+from copy import copy
 
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-
+pythonpath = copy(sys.path)
 
 def is_same(file1, file2):
     try:
@@ -79,6 +80,7 @@ import pcbasic
 start_time = time.time()
 start_clock = time.clock()
 
+
 for name in args:
     print '\033[00;37mRunning test \033[01m%s \033[00;37m.. ' % name,
     if not os.path.isdir(name):
@@ -96,6 +98,8 @@ for name in args:
     top = os.getcwd()
     os.chdir(output_dir)
     sys.stdout.flush()
+    # we need to include the output dir in the PYTHONPATH for it to find extension modules
+    sys.path = pythonpath + [os.path.abspath('.')]
     # -----------------------------------------------------------
     # suppress output and logging and call PC-BASIC
     with suppress_stdio(do_suppress):
@@ -120,7 +124,7 @@ for name in args:
     for path, dirs, files in os.walk(output_dir):
         for f in files:
             filename = os.path.join(path[len(output_dir)+1:], f)
-            if not os.path.isfile(os.path.join(output_dir, filename)):
+            if not os.path.isfile(os.path.join(model_dir, filename)):
                 failfiles.append(filename)
                 passed = False
                 known = False
