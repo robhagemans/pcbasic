@@ -1,6 +1,0 @@
-10 OPEN "output.txt" FOR OUTPUT AS 1
-20 PRINT#1, ASC(STR$(1))
-20 PRINT#1, ASC(HEX$(1))
-20 PRINT#1, ASC(OCT$(1))
-
-

@@ -1,5 +1,0 @@
-5 SAVE "NUMLIT.BIN"
-10 OPEN "a" FOR OUTPUT AS 1.5
-20 PRINT #2, "hi"
-30 PRINT #1.5, "hi"
-
