@@ -117,14 +117,15 @@ for name in args:
     for path, dirs, files in os.walk(model_dir):
         for f in files:
             filename = os.path.join(path[len(model_dir)+1:], f)
-            if not is_same(os.path.join(output_dir, filename), os.path.join(model_dir, filename)):
+            if (not is_same(os.path.join(output_dir, filename), os.path.join(model_dir, filename))
+                    and not os.path.isfile(os.path.join(name, filename))):
                 failfiles.append(filename)
                 known = os.path.isdir(known_dir) and is_same(os.path.join(output_dir, filename), os.path.join(known_dir, filename))
                 passed = False
     for path, dirs, files in os.walk(output_dir):
         for f in files:
             filename = os.path.join(path[len(output_dir)+1:], f)
-            if not os.path.isfile(os.path.join(model_dir, filename)):
+            if (not os.path.isfile(os.path.join(model_dir, filename)) and not os.path.isfile(os.path.join(name, filename))):
                 failfiles.append(filename)
                 passed = False
                 known = False
