@@ -11,4 +11,9 @@ rm -r output/
 GWBASIC=$(cat ../../gwbasicdir)
 echo "gwbasic dir: $GWBASIC"
 dosbox -c "MOUNT C ." -c "MOUNT E $GWBASIC" -c "C:" -c "E:\GWBASIC\GWBASIC TEST.BAS" -c "EXIT"
-cd ../..
+cd ..
+for file in *
+do
+  rm "model/$file"
+done
+cd ..
