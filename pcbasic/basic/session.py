@@ -11,6 +11,7 @@ import logging
 import platform
 import io
 import Queue
+import importlib
 from contextlib import contextmanager
 
 from .base import error
@@ -60,7 +61,7 @@ class Session(object):
             max_list_line=65535, allow_protect=False,
             allow_code_poke=False, max_memory=65534,
             max_reclen=128, max_files=3, reserved_memory=3429,
-            temp_dir=u'', debug_uargv=None):
+            temp_dir=u'', debug_uargv=None, extension=None):
         """Initialise the interpreter session."""
         ######################################################################
         # session-level members
@@ -75,6 +76,8 @@ class Session(object):
         self._edit_prompt = False
         # terminal program for TERM command
         self._term_program = pcjr_term
+        # extension module name
+        self._extension = extension
         ######################################################################
         # data segment
         ######################################################################
@@ -810,3 +813,33 @@ class Session(object):
             if len(text) != 2:
                 raise error.RunError(error.IFC)
             self.basic_events.key[keynum-1].set_trigger(str(text))
+
+    def call_python_(self, args):
+        """_CALLP statement: call a python function."""
+        if not self._extension:
+            raise error.RunError(error.STX)
+        func_name = values.next_string(args)
+        func_args = list(arg.to_value() for arg in args)
+        try:
+            if isinstance(self._extension, basestring):
+                ext_obj = importlib.import_module(self._extension)
+            else:
+                ext_obj = self._extension
+            func = getattr(ext_obj, func_name)
+            result = func(*func_args)
+        except Exception:
+            raise error.RunError(error.INTERNAL_ERROR)
+        return result
+
+    def call_python_func_(self, args):
+        """_CALLP function: call a python function."""
+        result = self.call_python_(args)
+        if isinstance(result, unicode):
+            result = self.codepage.str_from_unicode(result)
+        if isinstance(result, bytes):
+            return self.values.from_value(result, values.STR)
+        elif isinstance(result, bool):
+            return self.values.from_bool(result)
+        elif isinstance(result, int) or isinstance(result, float):
+            return self.values.from_value(result, values.DBL)
+        raise error.RunError(error.TYPE_MISMATCH)

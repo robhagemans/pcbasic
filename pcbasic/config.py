@@ -336,6 +336,7 @@ class Settings(object):
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': 'Z'},
+        u'extension': {u'type': u'string', u'default': u''},
     }
 
 
@@ -504,6 +505,7 @@ class Settings(object):
             'reserved_memory': self.get('reserved-memory'),
             'peek_values': peek_values,
             'debug_uargv': self.uargv,
+            'extension': self.get('extension'),
         }
 
     def get_video_parameters(self):
