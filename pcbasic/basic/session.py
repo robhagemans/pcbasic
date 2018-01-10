@@ -826,8 +826,13 @@ class Session(object):
             else:
                 ext_obj = self._extension
             func = getattr(ext_obj, func_name)
+        except Exception as e:
+            logging.error(u'Could not load extension module `%s`: %s', self._extension, e)
+            raise error.RunError(error.INTERNAL_ERROR)
+        try:
             result = func(*func_args)
-        except Exception:
+        except Exception as e:
+            logging.error(u'Could not call extension function `%s(%s)`: %s', func_name, func_args, e)
             raise error.RunError(error.INTERNAL_ERROR)
         return result
 
