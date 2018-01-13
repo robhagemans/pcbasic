@@ -146,6 +146,30 @@
             </dl>
         </dd>
 
+        <dt id="--catch-exceptions">
+            <code><b>--catch-exceptions=</b>[<b>none</b>,<b>basic</b>,<b>all</b>]</code>
+        </dt>
+        <dd>
+            <em>Developer option - use only if you know what you're doing. </em><br />
+            Determine which exceptions to catch. Uncaught exceptions terminate PC-BASIC
+            whereas caught exceptions lead to an error message.
+            <dl>
+                <dt><code><b>none</b></code></dt>
+                <dd>
+                    Don't catch exceptions or BASIC errors.
+                </dd>
+                <dt><code><b>basic</b></code></dt>
+                <dd>
+                    Catch BASIC errors but not other exceptions.
+                </dd>
+                <dt><code><b>all</b></code></dt>
+                <dd>
+                    Catch BASIC errors and other exceptions.
+                </dd>
+            </dl>
+            Default is <code><b>all</b></code>.
+        </dd>
+
         <dt id="--cga-low">
             <code><b>--cga-low</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
@@ -342,6 +366,14 @@
             with the <code>Z:</code> device mounted to your current drive.
         </dd>
 
+        <dt id="--debug">
+            <code><b>--debug</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            <em>Developer option - use only if you know what you're doing. </em><br />
+            Enable debugging extension.
+        </dd>
+
         <dt id="--dimensions">
             <code><b>--dimensions=</b><var>x</var>,<var>y</var></code>
         </dt>
@@ -371,6 +403,14 @@
             before entering into direct mode or
             running a program. Multiple statements can be entered by separating them with <code>:</code>, but note that no
             further statements are executed after e.g. <code>RUN</code>, <code>GOTO</code>.
+        </dd>
+
+        <dt id="--extension">
+            <code><b>--extension=</b><var>module_name</var>[<b>,</b><var>module_name</var> ... ]</code>
+        </dt>
+        <dd>
+            <em>Developer option - use only if you know what you're doing. </em><br />
+            Load extension module(s).
         </dd>
 
         <dt id="--font">
