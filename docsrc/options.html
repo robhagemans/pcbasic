@@ -503,6 +503,11 @@
         </dt>
         <dd>
             Insert the <code><var>keystring</var></code> into the keyboard buffer.
+            <code><var>keystring</var></code> may contain escape codes such as <code>\r</code> for return,
+            <code>\n</code> for line feed and <code>\x<var>XX</var></code> to enter <code>CHR$(&amp;H<var>XX</var>)</code>.
+            <code><var>keystring</var></code> may contain <a href="#eascii">e-ASCII codes</a> to
+            indicate keypresses that do not have a regular character encoding. For example,
+            <code>\0\x0F</code> indicates Shift+Tab.
         </dd>
 
         <dt id="--load">
