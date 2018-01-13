@@ -460,7 +460,7 @@ class Settings(object):
             'output_file': self.get(b'output'),
             'append': self.get(b'append'),
             'input_file': self.get(b'input'),
-            'video_capabilities': self.get('video'),
+            'video': self.get('video'),
             'codepage': self.get('codepage') or '437',
             'box_protect': not self.get('nobox'),
             'monitor': self.get('monitor'),
@@ -472,7 +472,7 @@ class Settings(object):
             'mono_tint': self.get('mono-tint'),
             'font': self.get('font'),
             # inserted keystrokes
-            'keystring': self.get('keys').encode('utf-8').decode('string_escape').decode('utf-8'),
+            'keys': self.get('keys').encode('utf-8').decode('string_escape').decode('utf-8'),
             # find program for PCjr TERM command
             'pcjr_term': pcjr_term,
             'shell': self.get('shell'),

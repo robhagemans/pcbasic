@@ -49,10 +49,10 @@ class Session(object):
             syntax=u'advanced', pcjr_term=u'', shell=u'',
             output_file=None, append=False, input_file=None,
             codepage=u'437', box_protect=True,
-            video_capabilities=u'vga', font=u'freedos',
+            video=u'vga', font=u'freedos',
             monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
             text_width=80, video_memory=262144, cga_low=False,
-            keystring=u'', double=False,
+            keys=u'', double=False,
             peek_values=None, device_params=None,
             current_device='Z', mount_dict=None,
             print_trigger='close', serial_buffer_size=128,
@@ -123,13 +123,13 @@ class Session(object):
         # Sound is needed for the beeps on \a
         self.screen = display.Screen(
                 self.queues, self.values, self.input_methods, self.memory,
-                text_width, video_memory, video_capabilities, monitor,
+                text_width, video_memory, video, monitor,
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=bool(debug))
         # initialise input methods
         # screen is needed for print_screen, clipboard copy and pen poll
-        self.input_methods.init(self.screen, self.codepage, keystring, ignore_caps, ctrl_c_is_break)
+        self.input_methods.init(self.screen, self.codepage, keys, ignore_caps, ctrl_c_is_break)
         # initilise floating-point error message stream
         self.values.set_screen(self.screen)
         ######################################################################
