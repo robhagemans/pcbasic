@@ -56,13 +56,13 @@ class Session(object):
             peek_values=None, device_params=None,
             current_device='Z', mount_dict=None,
             print_trigger='close', serial_buffer_size=128,
-            utf8=False, universal=True, stdio=False,
+            utf8=False, universal=True, stdio=True,
             ignore_caps=True, ctrl_c_is_break=True,
             max_list_line=65535, allow_protect=False,
             allow_code_poke=False, max_memory=65534,
             max_reclen=128, max_files=3, reserved_memory=3429,
             temp_dir=u'', extension=None,
-            debug=False, catch_exceptions='all',
+            debug=False, catch_exceptions='basic',
             ):
         """Initialise the interpreter session."""
         ######################################################################
