@@ -5,6 +5,6 @@
 50 B = _ADD(A, 1)
 60 PRINT#1, A, B
 70 _OUTPUT "one", 2, 3!, 4#
-80 _OUTPUT "!œ$"
+80 _output "!œ$"
 90 PRINT#1, "<end>"
 
