@@ -127,6 +127,7 @@ def makedoc(header=None, output=None, embedded_style=True):
     predoc.write(open(basepath + '/guide.html', 'r').read())
     predoc.write(open(basepath + '/reference.html', 'r').read())
     predoc.write(open(basepath + '/techref.html', 'r').read())
+    predoc.write(open(basepath + '/devguide.html', 'r').read())
     predoc.write('<article>\n' + ack_stream.getvalue()  + '</article>\n')
     predoc.write(licenses_html)
     predoc.write(open(basepath + '/footer.html', 'r').read())

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+    PC-BASIC documentation
+    Copyright (c) 2014-2018 Rob Hagemans
+    This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+    http://creativecommons.org/licenses/by-sa/4.0/legalcode
+-->
+<head>
+    <meta charset="utf-8" />
+    <!--[if gt IE 8]><!-->
+    <link rel="stylesheet" type="text/css" href="doc.css" />
+    <!--<![endif]-->
+    <title>PC-BASIC Documentation</title>
+</head>
+<body class="standalone">
+
+<!--
+    PC-BASIC documentation
+    Copyright (c) 2014-2018 Rob Hagemans
+    This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+    http://creativecommons.org/licenses/by-sa/4.0/legalcode
+-->
+
+<article>
+    <h2 id="dev">Developer guide</h2>
+
+    <p>
+        <em>The features described in this guide are intended for Python developers only. They are experimental, may not work as expected,
+        and may be removed from future releases without warning. You may not be able to get help if you have any problems.
+        Luckily, none of the features described here are needed for the normal functioning if PC-BASIC.</em>
+    </p>
+    <section>
+        <h3 id="session-api">Session API</h3>
+        <p>
+            PC-BASIC can be loaded as a package from Python, which makes it possible to call BASIC code directly from Python.
+        </p>
+        <h5 id="session">class <code>Session(**<var>kwargs</var>)</code></h4>
+        <p>
+            Open a PC-BASIC session. The session object holds the interpreter state,
+            e.g. the value of variables, program code and pointers, screen state, etc.
+            Note that <code>Session</code> can be used as a context manager with
+            the <code>with</code> statement.
+        </p>
+        <p>
+            Keyword arguments are largely (but not entirely) analogous to
+            PC-BASIC command-line options.
+        </p>
+        <p>
+            By default, the Session object grabs the standard input and output
+            as keyboard an screen. This may be undesirable in some applications:
+            for example, if run from an interactive Python session, this
+            means Python and PC-BASIC are competing for keystrokes. In such cases,
+            use the keyword argument <code>stdio=False</code>.
+        </p>
+
+        <h5 id="session.execute"><code>execute(<var>basic_code</var>)</code></h4>
+        <p>
+            Execute BASIC code. <code><var>basic_code</var></code> can be
+            commands or program lines, separated by <code>\n</code> or <code>\r</code>.
+        </p>
+
+        <h5 id="session.sevaluate"><code>evaluate(<var>basic_expr</var>)</code></h4>
+        <p>
+            Evaluate a BASIC expression and return its value as a Python value.
+            For type converson rules, see <a href="#session.get_variable"><code>get_variable</code></a>.
+        </p>
+
+        <h5 id="session.set_variable"><code>set_variable(<var>name</var>, <var>value</var>)</code></h4>
+        <p>
+            Set the value of a scalar or array to a Python value. <code><var>name</var></code>
+            is a valid BASIC name, including the sigil, and is not case-sensitive.
+            If the target is an array, <code><var>name</var></code> should end with <code>()</code>.
+            <code><var>value</var></code> should be of a compatible type: <code>int</code>,
+            <code>bool</code> or <code>float</code> for numeric variables and <code>bytes</code>
+            or <code>unicode</code> for strings. If the target is an array, <code><var>value</var></code>
+            should be a <code>list</code> of such values. Multi-dimensional arrays should be specified as
+            nested <code>list</code>s.
+        </p>
+
+        <h5 id="session.get_variable"><code>get_variable(<var>name</var>)</code></h4>
+        <p>
+            Retrieve the value of a scalar or array as a Python value. <code><var>name</var></code>
+            is a valid BASIC name, including the sigil, and is not case-sensitive.
+            If the target is an array, <code><var>name</var></code> should end with <code>()</code>.
+            Integers will be returned as <code>int</code>, single- and double-precision
+            values as <code>float</code>, and string as <code>bytes</code>.
+            If the target is an array, the function returns a (nested) <code>list</code> of such values.
+        </p>
+        <h5 id="session.close"><code>close()</code></h4>
+        <p>
+            Close the session: closes all open files and exits PC-BASIC.
+            If used as a context manager, this method is called automatically.
+        </p>
+
+
+    </section>
+    <hr />
+
+    <section>
+        <h3 id="session">Extensions</h3>
+        <p>
+            It's possible to enable your own BASIC statements using <em>extensions</em>.
+            An extension is a Python object or module loaded through the <a href="#--extension"><code>--extension</code></a> option or through
+            the <code>extension</code> parameter of the <a href="#session"><code>Session</code> object</a>.
+        </p>
+        <p>
+            Python functions and other callable objects in the extension's namespace will be made accessible
+            through basic as extension statements or functions whose name starts with an underscore <code>_</code>
+        </p>
+        <p>
+            In order for this to work, the function must have a name that is also a valid BASIC variable name: alphanumeric only, no underscores,
+            not equal to a BASIC keyword.
+            The name will be case-insensitive in BASIC; that is, <code>def mytestfunc(): print 1</code> and <code>def myTestFunc(): print 2</code>
+            both map to the extension statement or function <code>_MYTESTFUNC</code>. Which one of these functions would be chosen is not defined,
+            so avoid this situation.
+        </p>
+        <p>
+            Any arguments provided to the extension statement or function are supplied to the Python function as the corresponding type:
+            BASIC integers become <code>int</code>s, single- and double-precision numbers become <code>float</code>s and strings
+            become <code>bytes</code> (<em>not</em> <code>unicode</code> and no codepage conversions are applied).
+        </p>
+        <p>
+            For example, a call to <code>_MYTESTFUNC 5, "test-string"</code> would expect to find a Python function
+            <code>mytestfunc(i, s)</code> with two parameters, and will supply <code>i=int(5)</code>
+            and <code>a=bytes('test-string')</code>.
+        </p>
+        <p>
+            The same Python function can also be called as an extension function, e.g. <code>A = _MYTESTFUNC(5, "test-string")</code>.
+            If called as a function, <code>mytestfunc(i, s)</code> must return a value that is one of <code>int</code>, <code>float</code>,
+            both of which will be converted to a BASIC double-precision float; <code>bool</code>, which will be converted to a BASIC integer;
+            or <code>bytes</code>, which will be converted to a BASIC string.
+        </p>
+    </section>
+    <hr />
+
+    <section>
+        <h3 id="session">Examples</h3>
+        <pre><code>import pcbasic
+import random
+
+with pcbasic.Session(extension=random) as s:
+    s.execute('a=1')
+    print s.evaluate('string$(a+2, "@")')
+    s.set_variable('B$', 'abcd')
+    s.execute('''
+        10 a=5
+        20 print a
+        run
+        _seed(42)
+        b = _uniform(a, 25.6)
+        print a, b
+    ''')
+        </code></pre>
+
+    </section>
+    <hr />
+</article>
