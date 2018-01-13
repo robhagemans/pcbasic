@@ -337,7 +337,7 @@ class Settings(object):
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': 'Z'},
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
-        u'catch-exceptions': {u'type': u'string', u'choices':(u'none', u'basic', u'all'), u'default': [u'all']},
+        u'catch-exceptions': {u'type': u'string', u'choices':(u'none', u'basic', u'all'), u'default': u'all'},
     }
 
 
@@ -456,7 +456,7 @@ class Settings(object):
         current_device, mount_dict = self.get_drives()
         return {
             'syntax': self.get('syntax'),
-            'option_debug': self.get('debug'),
+            'debug': self.uargv if self.get('debug') else None,
             'output_file': self.get(b'output'),
             'append': self.get(b'append'),
             'input_file': self.get(b'input'),
@@ -475,7 +475,7 @@ class Settings(object):
             'keystring': self.get('keys').encode('utf-8').decode('string_escape').decode('utf-8'),
             # find program for PCjr TERM command
             'pcjr_term': pcjr_term,
-            'option_shell': self.get('shell'),
+            'shell': self.get('shell'),
             'double': self.get('double'),
             # device settings
             'device_params': device_params,
@@ -505,7 +505,6 @@ class Settings(object):
             # first field buffer address (workspace size; 3429 for gw-basic)
             'reserved_memory': self.get('reserved-memory'),
             'peek_values': peek_values,
-            'debug_uargv': self.uargv,
             'extension': self.get('extension'),
             'catch_exceptions': self.get('catch-exceptions'),
         }

@@ -23,7 +23,7 @@ from . import program
 from . import display
 from . import editor
 from . import inputmethods
-from . import debug
+from . import debug as dbg
 from . import clock
 from . import dos
 from . import memory
@@ -46,7 +46,7 @@ class Session(object):
     # public interface methods
 
     def __init__(self, iface=None,
-            syntax=u'advanced', pcjr_term=u'', option_shell=u'',
+            syntax=u'advanced', pcjr_term=u'', shell=u'',
             output_file=None, append=False, input_file=None,
             codepage=u'437', box_protect=True,
             video_capabilities=u'vga', font=u'freedos',
@@ -62,7 +62,7 @@ class Session(object):
             allow_code_poke=False, max_memory=65534,
             max_reclen=128, max_files=3, reserved_memory=3429,
             temp_dir=u'', extension=None,
-            option_debug=False, debug_uargv=None, catch_exceptions='all',
+            debug=False, catch_exceptions='all',
             ):
         """Initialise the interpreter session."""
         ######################################################################
@@ -126,7 +126,7 @@ class Session(object):
                 text_width, video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
-                self.codepage, font, warn_fonts=option_debug)
+                self.codepage, font, warn_fonts=bool(debug))
         # initialise input methods
         # screen is needed for print_screen, clipboard copy and pen poll
         self.input_methods.init(self.screen, self.codepage, keystring, ignore_caps, ctrl_c_is_break)
@@ -148,7 +148,7 @@ class Session(object):
         # set LPT1 as target for print_screen()
         self.screen.set_print_screen_target(self.devices.lpt1_file)
         # set up the SHELL command
-        self.shell = dos.get_shell_manager(self.input_methods.keyboard, self.screen, self.codepage, option_shell, syntax)
+        self.shell = dos.get_shell_manager(self.input_methods.keyboard, self.screen, self.codepage, shell, syntax)
         # set up environment
         self.environment = dos.Environment(self.values)
         # initialise random number generator
@@ -172,7 +172,7 @@ class Session(object):
         # initialise the parser
         self.parser = parser.Parser(self.values, self.memory, syntax)
         # set up debugger
-        self.debugger = debug.get_debugger(self, option_debug, debug_uargv, catch_exceptions)
+        self.debugger = dbg.get_debugger(self, bool(debug), debug, catch_exceptions)
         # set up BASIC event handlers
         self.basic_events = events.BasicEvents(
                 self.values, self.input_methods, self.sound, self.clock,
