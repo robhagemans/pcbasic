@@ -279,7 +279,6 @@ dt code {
     /* header on offline docs */
 
     .standalone header {
-        backgound: yellow;
         position:fixed;
         z-index:4;
         left: 0;
@@ -359,7 +358,7 @@ dt code {
         border: none;
     }
     nav.toc ul  {
-        padding-right: none;
+        padding-right: 0;
     }
 
     nav.toc>ul  {
