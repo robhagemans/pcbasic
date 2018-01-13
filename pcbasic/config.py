@@ -2,7 +2,7 @@
 PC-BASIC - config.py
 Configuration file and command-line options parser
 
-(c) 2013, 2014, 2015, 2016 Rob Hagemans
+(c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -337,6 +337,7 @@ class Settings(object):
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': 'Z'},
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
+        u'catch-exceptions': {u'type': u'string', u'choices':(u'none', u'basic', u'all'), u'default': [u'all']},
     }
 
 
@@ -506,6 +507,7 @@ class Settings(object):
             'peek_values': peek_values,
             'debug_uargv': self.uargv,
             'extension': self.get('extension'),
+            'catch_exceptions': self.get('catch-exceptions'),
         }
 
     def get_video_parameters(self):

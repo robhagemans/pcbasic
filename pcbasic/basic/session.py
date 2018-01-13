@@ -2,7 +2,7 @@
 PC-BASIC - session.py
 Session class and main interpreter loop
 
-(c) 2013, 2014, 2015, 2016 Rob Hagemans
+(c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 import os
@@ -46,7 +46,7 @@ class Session(object):
     # public interface methods
 
     def __init__(self, iface=None,
-            syntax=u'advanced', option_debug=False, pcjr_term=u'', option_shell=u'',
+            syntax=u'advanced', pcjr_term=u'', option_shell=u'',
             output_file=None, append=False, input_file=None,
             codepage=u'437', box_protect=True,
             video_capabilities=u'vga', font=u'freedos',
@@ -61,7 +61,9 @@ class Session(object):
             max_list_line=65535, allow_protect=False,
             allow_code_poke=False, max_memory=65534,
             max_reclen=128, max_files=3, reserved_memory=3429,
-            temp_dir=u'', debug_uargv=None, extension=None):
+            temp_dir=u'', extension=None,
+            option_debug=False, debug_uargv=None, catch_exceptions='all',
+            ):
         """Initialise the interpreter session."""
         ######################################################################
         # session-level members
@@ -76,6 +78,7 @@ class Session(object):
         self._edit_prompt = False
         # terminal program for TERM command
         self._term_program = pcjr_term
+        self._reraise = (not catch_exceptions or catch_exceptions == 'none')
         ######################################################################
         # data segment
         ######################################################################
@@ -169,7 +172,7 @@ class Session(object):
         # initialise the parser
         self.parser = parser.Parser(self.values, self.memory, syntax)
         # set up debugger
-        self.debugger = debug.get_debugger(self, option_debug, debug_uargv)
+        self.debugger = debug.get_debugger(self, option_debug, debug_uargv, catch_exceptions)
         # set up BASIC event handlers
         self.basic_events = events.BasicEvents(
                 self.values, self.input_methods, self.sound, self.clock,
@@ -394,6 +397,8 @@ class Session(object):
         except error.RunError as e:
             self._handle_error(e)
             self._prompt = True
+            if self._reraise:
+                raise
         except error.Exit:
             raise
         except Exception as e:

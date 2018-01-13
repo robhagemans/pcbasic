@@ -105,7 +105,7 @@ for name in args:
     with suppress_stdio(do_suppress):
         crash = None
         try:
-            pcbasic.run('--interface=none', '--debug')
+            pcbasic.run('--interface=none', '--catch-exceptions=basic')
         except Exception as e:
             crash = e
             traceback.print_tb(sys.exc_info()[2])
