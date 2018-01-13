@@ -47,7 +47,7 @@ class BaseDebugger(object):
         self.uargv = uargv
         self.session = session
 
-    def _repr_variables(self):
+    def repr_variables(self):
         """Return a string representation of all variables."""
         return '\n'.join((
             '==== Scalars ='.ljust(100, '='),
@@ -58,7 +58,7 @@ class BaseDebugger(object):
             str(self.session.strings),
         ))
 
-    def _repr_screen(self):
+    def repr_screen(self):
         """Return a string representation of the screen buffer."""
         horiz_bar = ('  +' + '-'*self.session.screen.mode.width + '+')
         i = 0
@@ -83,7 +83,7 @@ class BaseDebugger(object):
         row_strs.append(horiz_bar)
         return '\n'.join(row_strs)
 
-    def _repr_program(self):
+    def repr_program(self):
         """Return a marked-up hex dump of the program."""
         prog = self.session.program
         code = prog.bytecode.getvalue()
@@ -164,9 +164,9 @@ class BaseDebugger(object):
             b'=' * 100,
             b''.join(text for _, text in message),
             b''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
-            self._repr_screen(),
-            self._repr_variables(),
-            self._repr_program(),
+            self.repr_screen(),
+            self.repr_variables(),
+            self.repr_program(),
         ]
         self.session.program.bytecode.seek(1)
         crashlog.append('==== Program ='.ljust(100, '='))
@@ -192,12 +192,8 @@ class BaseDebugger(object):
         with logfile as f:
             f.write('\n'.join(crashlog))
 
-    def debug_step(self, token):
+    def step(self, token):
         """Dummy debug step."""
-
-    def debug_(self, args):
-        """Dummy debug exec."""
-        raise error.RunError(error.STX)
 
 
 class Debugger(BaseDebugger):
@@ -209,8 +205,9 @@ class Debugger(BaseDebugger):
         """Initialise debugger."""
         BaseDebugger.__init__(self, session, uargv)
         self.watch_list = []
+        session.extensions.add(DebugCommands(self))
 
-    def debug_step(self, token):
+    def step(self, token):
         """Execute traces and watches on a program step."""
         outstr = ''
         if self.debug_tron:
@@ -231,70 +228,59 @@ class Debugger(BaseDebugger):
         if outstr:
             logging.debug(outstr)
 
-    def debug_(self, args):
-        """Execute a debug command."""
-
-        # debugging commands
-
-        def crash():
-            """Simulate a crash."""
-            try:
-                raise DebugException()
-            except DebugException as e:
-                BaseDebugger.bluescreen(self, e)
-
-        def reset():
-            """Ctrl+Alt+Delete."""
-            raise error.Reset()
-
-        def exit():
-            """Quit the session."""
-            raise error.Exit()
-
-        def trace(on=True):
-            """Switch line number tracing on or off."""
-            self.debug_tron = on
-
-        def watch(expr):
-            """Add an expression to the watch list."""
-            outs = self.session.tokeniser.tokenise_line('?'+expr)
-            self.watch_list.append((expr, outs))
-
-        def show_variables():
-            """Dump all variables to the log."""
-            for s in self._repr_variables().split('\n'):
-                logging.debug(s)
-
-        def show_screen():
-            """Copy the screen buffer to the log."""
-            for s in self._repr_screen().split('\n'):
-                logging.debug(s)
-
-        def show_program():
-            """Write a marked-up hex dump of the program to the log."""
-            for s in self._repr_program().split('\n'):
-                logging.debug(s)
-
-        debug_cmd, = args
-        # make session available to debugging commands
-        session = self.session
-        buf = io.BytesIO()
-        save_stdout = sys.stdout
-        sys.stdout = buf
-        try:
-            exec debug_cmd.to_str() in globals(), locals()
-        except DebugException:
-            raise
-        except error.Exit:
-            raise
-        except Exception as e:
-            logging.debug('%s: %s', type(e).__name__, e)
-            traceback.print_tb(sys.exc_info()[2])
-        finally:
-            sys.stdout = save_stdout
-            logging.debug(buf.getvalue()[:-1]) # exclude \n
-
     def bluescreen(self, e):
         """Pass through exceptions in debug mode."""
         # don't catch exceptions - so that testing script records them.
         raise e
+
+
+class DebugCommands(object):
+    # debugging commands
+
+    def __init__(self, debugger):
+        """Initialise."""
+        self._debugger = debugger
+
+    def dir(self):
+        """Show debugging commands."""
+        logging.debug('Available commands:\n' + '\n'.join(
+            '    _%s: %s' % (n.upper(), getattr(self, n).__doc__) for n in dir(self) if not n.startswith('_')))
+
+    def crash(self):
+        """Simulate a crash."""
+        try:
+            raise DebugException()
+        except DebugException as e:
+            BaseDebugger.bluescreen(self._debugger, e)
+
+    def restart(self):
+        """Ctrl+Alt+Delete."""
+        raise error.Reset()
+
+    def exit(self):
+        """Quit the session."""
+        raise error.Exit()
+
+    def trace(self, on=True):
+        """Switch line number tracing on or off."""
+        self._debugger.debug_tron = on
+
+    def watch(self, expr):
+        """Add an expression to the watch list."""
+        outs = self._debugger.session.tokeniser.tokenise_line('?'+expr)
+        self._debugger.watch_list.append((expr, outs))
+
+    def showvariables(self):
+        """Dump all variables to the log."""
+        for s in self._debugger.repr_variables().split('\n'):
+            logging.debug(s)
+
+    def showscreen(self):
+        """Copy the screen buffer to the log."""
+        for s in self._debugger.repr_screen().split('\n'):
+            logging.debug(s)
+
+    def showprogram(self):
+        """Write a marked-up hex dump of the program to the log."""
+        for s in self._debugger.debugger.repr_program().split('\n'):
+            logging.debug(s)

@@ -39,7 +39,6 @@ class Parser(object):
         # can't be pickled
         pickle_dict['_simple'] = None
         pickle_dict['_complex'] = None
-        pickle_dict['_extensions'] = None
         pickle_dict['_callbacks'] = None
         return pickle_dict
 
@@ -70,14 +69,6 @@ class Parser(object):
             else:
                 c += selector
             parse_args = stat_dict[selector]
-        elif c == '_':
-            # extension statement
-            word = ins.read_name()
-            try:
-                parse_args = self._extensions[word]
-                c += word
-            except KeyError:
-                raise error.RunError(error.STX)
         else:
             ins.seek(-len(c), 1)
             if c in set(string.ascii_letters):
@@ -208,6 +199,7 @@ class Parser(object):
             tk.UNLOCK: self._parse_lock_unlock,
             tk.MID: self._parse_mid,
             tk.PEN: self._parse_event_command,
+            '_': self._parse_call_extension,
         }
         if self._syntax in ('pcjr', 'tandy'):
             self._simple.update({
@@ -268,10 +260,6 @@ class Parser(object):
                 tk.OFF: self._parse_strig_switch,
                 None: self._parse_com_command,
             },
-        }
-        self._extensions = {
-            'DEBUG': self._parse_single_arg_no_end,
-            'CALLP': self._parse_call_python,
         }
 
     def init_statements(self, session):
@@ -407,8 +395,7 @@ class Parser(object):
             tk.STRIG + tk.ON: session.input_methods.stick.strig_statement_,
             tk.STRIG + tk.OFF: session.input_methods.stick.strig_statement_,
             tk.STRIG: session.basic_events.strig_,
-            '_DEBUG': session.debugger.debug_,
-            '_CALLP': session.call_python_,
+            '_': session.extensions.call_as_statement,
         }
 
     ###########################################################################
@@ -730,13 +717,13 @@ class Parser(object):
             yield None
         ins.require_end()
 
-    def _parse_call_python(self, ins):
-        """Parse _CALL extension syntax."""
+    def _parse_call_extension(self, ins):
+        """Parse extension statement."""
+        yield ins.read_name()
         while True:
-            yield self.parse_expression(ins)
+            yield self.parse_expression(ins, allow_empty=True)
             if not ins.skip_blank_read_if((',',)):
                 break
-        ins.require_end()
 
     ###########################################################################
     # disk statements

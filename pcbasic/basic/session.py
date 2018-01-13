@@ -11,7 +11,6 @@ import logging
 import platform
 import io
 import Queue
-import importlib
 from contextlib import contextmanager
 
 from .base import error
@@ -37,6 +36,7 @@ from . import codepage as cp
 from . import values
 from . import parser
 from . import devices
+from . import extensions
 
 
 class Session(object):
@@ -76,8 +76,6 @@ class Session(object):
         self._edit_prompt = False
         # terminal program for TERM command
         self._term_program = pcjr_term
-        # extension module name
-        self._extension = extension
         ######################################################################
         # data segment
         ######################################################################
@@ -162,6 +160,10 @@ class Session(object):
                 self.screen, self.input_methods.keyboard, self.sound,
                 self.output_redirection, self.devices.lpt1_file)
         ######################################################################
+        # extensions
+        ######################################################################
+        self.extensions = extensions.Extensions(extension, self.values)
+        ######################################################################
         # interpreter
         ######################################################################
         # initialise the parser
@@ -190,6 +192,7 @@ class Session(object):
         self.machine = machine.MachinePorts(self)
         # build function table (depends on Memory having been initialised)
         self.parser.init_callbacks(self)
+
 
     def __enter__(self):
         """Context guard."""
@@ -813,38 +816,3 @@ class Session(object):
             if len(text) != 2:
                 raise error.RunError(error.IFC)
             self.basic_events.key[keynum-1].set_trigger(str(text))
-
-    def call_python_(self, args):
-        """_CALLP statement: call a python function."""
-        if not self._extension:
-            raise error.RunError(error.STX)
-        func_name = values.next_string(args)
-        func_args = list(arg.to_value() for arg in args)
-        try:
-            if isinstance(self._extension, basestring):
-                ext_obj = importlib.import_module(self._extension)
-            else:
-                ext_obj = self._extension
-            func = getattr(ext_obj, func_name)
-        except Exception as e:
-            logging.error(u'Could not load extension module `%s`: %s', self._extension, e)
-            raise error.RunError(error.INTERNAL_ERROR)
-        try:
-            result = func(*func_args)
-        except Exception as e:
-            logging.error(u'Could not call extension function `%s(%s)`: %s', func_name, func_args, e)
-            raise error.RunError(error.INTERNAL_ERROR)
-        return result
-
-    def call_python_func_(self, args):
-        """_CALLP function: call a python function."""
-        result = self.call_python_(args)
-        if isinstance(result, unicode):
-            result = self.codepage.str_from_unicode(result)
-        if isinstance(result, bytes):
-            return self.values.from_value(result, values.STR)
-        elif isinstance(result, bool):
-            return self.values.from_bool(result)
-        elif isinstance(result, int) or isinstance(result, float):
-            return self.values.from_value(result, values.DBL)
-        raise error.RunError(error.TYPE_MISMATCH)

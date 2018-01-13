@@ -90,7 +90,7 @@ class Interpreter(object):
                     if self.tron:
                         linenum = struct.unpack_from('<H', token, 2)
                         self._screen.write('[%i]' % linenum)
-                    self._debugger.debug_step(token)
+                    self._debugger.step(token)
                 elif c != ':':
                     ins.seek(-len(c), 1)
                 self.parser.parse_statement(ins)

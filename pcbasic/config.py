@@ -336,7 +336,7 @@ class Settings(object):
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': 'Z'},
-        u'extension': {u'type': u'string', u'default': u''},
+        u'extension': {u'type': u'string', u'list': u'*', u'default': []},
     }
 
 

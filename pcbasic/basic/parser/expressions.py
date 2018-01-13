@@ -145,7 +145,7 @@ class ExpressionParser(object):
             tk.SCREEN: partial(self._gen_parse_arguments_optional, length=3),
             tk.INSTR: self._gen_parse_instr,
             tk.FN: None,
-            '_': None,
+            '_': self._gen_parse_call_extension,
         }
         self._functions = set(self._complex.keys() + self._simple.keys())
 
@@ -228,9 +228,7 @@ class ExpressionParser(object):
             tk.EOF: session.files.eof_,
             tk.LOC: session.files.loc_,
             tk.LOF: session.files.lof_,
-        }
-        self._extensions = {
-            'CALLP': session.call_python_func_,
+            '_': session.extensions.call_as_function,
         }
 
     def __getstate__(self):
@@ -240,7 +238,6 @@ class ExpressionParser(object):
         pickle_dict['_simple'] = None
         pickle_dict['_complex'] = None
         pickle_dict['_callbacks'] = None
-        pickle_dict['_extensions'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
@@ -414,14 +411,6 @@ class ExpressionParser(object):
             # get syntax
             parse_args = partial(self._gen_parse_arguments, length=function.number_arguments())
             fn = function.evaluate
-        elif token == '_':
-            fnname = ins.read_name()
-            # must not be empty
-            try:
-                fn = self._extensions[fnname]
-                parse_args = self._gen_parse_call_python
-            except KeyError:
-                raise error.RunError(error.STX)
         else:
             fn = self._callbacks[token]
         return fn(parse_args(ins))
@@ -466,14 +455,17 @@ class ExpressionParser(object):
         else:
             yield None
 
-    def _gen_parse_call_python(self, ins):
-        """Parse a comma-separated list of arguments of arbitrary length >= 1."""
-        ins.require_read(('(',))
-        while True:
-            yield self.parse(ins)
-            if not ins.skip_blank_read_if((',',)):
-                break
-        ins.require_read((')',))
+    def _gen_parse_call_extension(self, ins):
+        """Parse an extension function."""
+        yield ins.read_name()
+        if ins.skip_blank_read_if(('(',)):
+            while True:
+                yield self.parse(ins)
+                if not ins.skip_blank_read_if((',',)):
+                    break
+            ins.require_read((')',))
+        else:
+            yield None
 
     ###########################################################################
     # special cases
