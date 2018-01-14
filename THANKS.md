@@ -61,9 +61,16 @@ apologies to those whose contribution I have failed to acknowledge here.
 
   * **Paul Kocher**, _The Cryptogram computer supplement_ **19**, American Cryptogram Association, Summer 1994
 
+##### Technical information on many topics
+
+  * [VOGONS](http://www.vogons.org/)
+  * **Erik S. Klein**'s [vintage computer forums](http://www.vintage-computer.com)
+  * **John Elliott**'s [Vintage PC pages](http://www.seasip.info/VintagePC/)
+  * **Peter Berg**'s [Pete's QBasic/QuickBasic site](http://www.petesqbsite.com/)
+  * **Vernon Brooks**'s [PC-DOS retro](https://sites.google.com/site/pcdosretro/)
+
 ##### Video hardware
 
-  * **John Elliott**'s [Vintage PC pages](http://www.seasip.info/VintagePC/)
   * **Dan Rollins**' [TechHelp](http://webpages.charter.net/danrollins/techhelp/0089.HTM) pages on PC video memory layout
   * **Great Hierophant**'s [Nerdly Pleasures Blog](http://nerdlypleasures.blogspot.com)
 
@@ -82,11 +89,11 @@ apologies to those whose contribution I have failed to acknowledge here.
   * **Christopher E. Strangio**'s tutorial on [the RS232 standard](http://www.camiresearch.com/Data_Com_Basics/RS232_standard.html)
   * [QB64 documentation](http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers)
 
-##### Technical information on many topics
+##### Keyboard scancodes
 
-  * [VOGONS](http://www.vogons.org/)
-  * **Erik S. Klein**'s [vintage computer forums](http://www.vintage-computer.com)
-  * **Peter Berg**'s [Pete's QBasic/QuickBasic site](http://www.petesqbsite.com/)
+  * **Andries Brouwer**'s extensive reference of [Keyboard scancodes](https://www.win.tue.nl/~aeb/linux/kbd/scancodes.html)
+  * **Philip Storr**'s [PC Hardware book](http://www.philipstorr.id.au/pcbook/book3/scancode.htm)
+  * Altek Instruments documentation on [PC Keyboard Scan Codes](http://www.barcodeman.co.uk/altek/mule/scandoc.php)
 
 ### Fonts
 
