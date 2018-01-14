@@ -111,6 +111,10 @@ class COMDevice(devices.Device):
         # inherit width settings from device file
         f.width = self.device_file.width
         f.col = self.device_file.col
+        #
+        # hack to enforce a single serial buffer across files and event handler
+        self.device_file = f
+        #
         return f
 
     def get_params(self, param):
