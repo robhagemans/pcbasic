@@ -187,7 +187,10 @@ class COMDevice(devices.Device):
         """Whether a char is present in buffer. For ON COM(n)."""
         if not self.device_file:
             return False
-        return self.device_file.in_buffer != ''
+        # fill up the buffer with anything waiting
+        self.device_file._check_read()
+        # anything available?
+        return len(self.device_file.in_buffer) > 0
 
 
 class COMFile(devices.CRLFTextFileBase):
