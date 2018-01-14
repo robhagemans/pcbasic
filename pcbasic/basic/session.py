@@ -402,7 +402,7 @@ class Session(object):
         except error.Exit:
             raise
         except Exception as e:
-            self.debugger.bluescreen(e)
+            self.debugger.blue_screen(e)
 
     def _handle_error(self, e):
         """Handle a BASIC error through error message."""
