@@ -1,0 +1,10 @@
+LongFileName.BAS
+LongFileName.bas
+LongFileName.
+LongFileName..
+Long.FileName.
+LONGFILE.BAS
+LONGFILE.BAS
+LONGFILE
+LONG.FIL
+
