@@ -4,15 +4,11 @@ Serial and parallel port handling
 
 (c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
-
-SocketSerialWrapper.read is modelled on Python 2.7 licensed code from PySerial
-PySerial (c) 2001-2013 Chris Liechtl <cliechti(at)gmx.net>; All Rights Reserved.
 """
 
 import logging
 import sys
 import os
-import socket
 import datetime
 import platform
 import io
@@ -29,6 +25,10 @@ else:
 
 try:
     import serial
+    # use the old VERSION constant as __version__ not defined in v2
+    if serial.VERSION < '3':
+        logging.warning('PySerial version %s found but >= 3.0.0 required.')
+        raise ImportError
     from serial import SerialException, serialutil
 except Exception:
     serial = None
@@ -63,11 +63,13 @@ class COMDevice(devices.Device):
         try:
             if not addr and not val:
                 pass
-            elif addr == 'SOCKET':
-                self.stream = SocketSerialStream(val, self.input_methods, do_open=False)
             elif addr == 'STDIO' or (not addr and val.upper() == 'STDIO'):
                 crlf = (val.upper() == 'CRLF')
                 self.stream = StdIOStream(crlf)
+            elif addr == 'SOCKET':
+                # throws ValueError if too many :s, caught below
+                host, socket = val.split(':')
+                self.stream = SerialStream('socket://%s:%s' % (host, socket), self.input_methods, do_open=False)
             elif addr == 'PORT':
                 # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
                 self.stream = SerialStream(val, self.input_methods, do_open=False)
@@ -385,7 +387,7 @@ class SerialStream(object):
 
     def _check_open(self):
         """Open the underlying port if necessary."""
-        if not self._serial._isOpen:
+        if not self._serial.is_open:
             self._serial.open()
 
     def open(self, rs=False, cs=1000, ds=1000, cd=0):
@@ -396,7 +398,7 @@ class SerialStream(object):
         # RTS can be suppressed, DTR only accessible through machine ports
         # https://lbpe.wikispaces.com/AccessingSerialPort
         if not rs:
-            self._serial.setRTS(True)
+            self._serial.rts = True
         now = datetime.datetime.now()
         timeout_cts = now + datetime.timedelta(microseconds=cs)
         timeout_dsr = now + datetime.timedelta(microseconds=ds)
@@ -406,9 +408,9 @@ class SerialStream(object):
                 (now < timeout_dsr and not have_dsr) and
                 (now < timeout_cd and not have_cd)):
             now = datetime.datetime.now()
-            have_cts = have_cts and self._serial.getCTS()
-            have_dsr = have_dsr and self._serial.getDSR()
-            have_cts = have_cd and self._serial.getCD()
+            have_cts = have_cts and self._serial.cts
+            have_dsr = have_dsr and self._serial.dsr
+            have_cts = have_cd and self._serial.cd
             # give CPU some time off
             self._input_methods.wait()
         # only check for status if timeouts are set > 0
@@ -438,17 +440,17 @@ class SerialStream(object):
         """Set signal pins."""
         self._check_open()
         if rts is not None:
-            self._serial.setRTS(rts)
+            self._serial.rts = rts
         if dtr is not None:
-            self._serial.setDTR(dtr)
+            self._serial.dtr = dtr
         if brk is not None:
-            self._serial.setBreak(brk)
+            self._serial.break_condition = brk
 
     def get_pins(self):
         """Get signal pins."""
         self._check_open()
-        return (self._serial.getCD(), self._serial.getRI(),
-                self._serial.getDSR(), self._serial.getCTS())
+        return (self._serial.cd, self._serial.ri,
+                self._serial.dsr, self._serial.cts)
 
     def close(self):
         """Close the serial connection."""
@@ -475,40 +477,7 @@ class SerialStream(object):
     def io_waiting(self):
         """ Find out whether bytes are waiting for input or output. """
         self._check_open()
-        return self._serial.inWaiting() > 0, self._serial.outWaiting() > 0
-
-
-class SocketSerialStream(SerialStream):
-    """Wrapper object for SocketSerial to work around timeout==0 issues."""
-
-    def __init__(self, socket, input_methods, do_open):
-        """Initialise the stream."""
-        SerialStream.__init__(self, 'socket://' + socket, input_methods, do_open)
-
-    def open(self, rs=False, cs=1000, ds=1000, cd=0):
-        """Open the serial connection."""
-        self._serial.open()
-        self.is_open = True
-
-    def read(self, num=1):
-        """Non-blocking read from socket."""
-        # SocketSerial.read always returns '' if timeout==0
-        if not self._serial._isOpen:
-            # this is a ValueError for some reason, not an IOError
-            # but also raised by Serial so best to toe the line
-            raise serialutil.portNotOpenError
-        self._serial._socket.setblocking(0)
-        try:
-            # fill buffer at most up to buffer size
-            return self._serial._socket.recv(num)
-        except socket.timeout:
-            return ''
-        except socket.error as e:
-            # a timeout in fact raises a socket.error 11
-            # rather than a socket.timeout (at least on Linux)
-            if e.errno == 11:
-                return ''
-            raise SerialException('connection failed (%s)' % e)
+        return self._serial.in_waiting > 0, self._serial.out_waiting > 0
 
 
 
