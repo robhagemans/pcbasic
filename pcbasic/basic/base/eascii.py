@@ -2,7 +2,7 @@
 PC-BASIC - eascii.py
 Keyboard e-ASCII codes
 
-(c) 2015, 2016 Rob Hagemans
+(c) 2015--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
