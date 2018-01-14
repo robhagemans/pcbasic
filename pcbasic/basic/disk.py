@@ -212,13 +212,13 @@ def match_filename(name, defext, path, name_err, isdir):
     # LongFileName      (1) LongFileName.BAS (2) LONGFILE.BAS
     # LongFileName.bas  (1) LongFileName.bas (2) LONGFILE.BAS
     # LongFileName.     (1) LongFileName. (2) LongFileName (3) LONGFILE
-    # LongFileName..    (1) LongFileName.. (2) LONGFILE..
+    # LongFileName..    (1) LongFileName.. (2) [does not try LONGFILE.. - not allowable]
     # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
     if b'.' not in name:
         name += b'.' + defext
     elif name[-1] == b'.' and b'.' not in name[:-1]:
         # ends in single dot; first try with dot
-        # but if it doesn't exist, base everything of dotless name
+        # but if it doesn't exist, base everything off dotless name
         if istype(path, name, isdir):
             return name
         name = name[:-1]
