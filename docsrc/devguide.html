@@ -51,21 +51,36 @@
 
         <h5 id="session.set_variable"><code>set_variable(<var>name</var>, <var>value</var>)</code></h4>
         <p>
-            Set the value of a scalar or array to a Python value. <code><var>name</var></code>
+            Set the value of a scalar or array to a Python value.
+        </p>
+        <p>
+            <code><var>name</var></code>
             is a valid BASIC name, including the sigil, and is not case-sensitive.
             If the target is an array, <code><var>name</var></code> should end with <code>()</code>.
+        </p>
+        <p>
             <code><var>value</var></code> should be of a compatible type: <code>int</code>,
             <code>bool</code> or <code>float</code> for numeric variables and <code>bytes</code>
             or <code>unicode</code> for strings. If the target is an array, <code><var>value</var></code>
             should be a <code>list</code> of such values. Multi-dimensional arrays should be specified as
             nested <code>list</code>s.
         </p>
+        <p>
+            <code>bool</code>s will be represented as in BASIC, with <code>-1</code> for <code>True</code>.
+            <code>unicode</code> will be converted according to the active codepage.
+        </p>
+
 
         <h5 id="session.get_variable"><code>get_variable(<var>name</var>)</code></h4>
         <p>
-            Retrieve the value of a scalar or array as a Python value. <code><var>name</var></code>
+            Retrieve the value of a scalar or array as a Python value.
+        </p>
+        <p>
+            <code><var>name</var></code>
             is a valid BASIC name, including the sigil, and is not case-sensitive.
             If the target is an array, <code><var>name</var></code> should end with <code>()</code>.
+        </p>
+        <p>
             Integers will be returned as <code>int</code>, single- and double-precision
             values as <code>float</code>, and string as <code>bytes</code>.
             If the target is an array, the function returns a (nested) <code>list</code> of such values.
@@ -112,7 +127,7 @@
             The same Python function can also be called as an extension function, e.g. <code>A = _MYTESTFUNC(5, "test-string")</code>.
             If called as a function, <code>mytestfunc(i, s)</code> must return a value that is one of <code>int</code>, <code>float</code>,
             both of which will be converted to a BASIC double-precision float; <code>bool</code>, which will be converted to a BASIC integer;
-            or <code>bytes</code>, which will be converted to a BASIC string.
+            or <code>bytes</code> or <code>unicode</code>, which will be converted to a BASIC string.
         </p>
     </section>
     <hr />

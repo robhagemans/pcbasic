@@ -165,7 +165,7 @@ class Session(object):
         ######################################################################
         # extensions
         ######################################################################
-        self.extensions = extensions.Extensions(extension, self.values)
+        self.extensions = extensions.Extensions(extension, self.values, self.codepage)
         ######################################################################
         # interpreter
         ######################################################################
@@ -277,6 +277,8 @@ class Session(object):
         name = name.upper()
         if isinstance(value, unicode):
             value = self.codepage.str_from_unicode(value)
+        elif isinstance(value, bool):
+            value = -1 if value else 0
         if '(' in name:
             name = name.split('(', 1)[0]
             self.arrays.from_list(value, name)

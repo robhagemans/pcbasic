@@ -16,12 +16,13 @@ from . import values
 class Extensions(object):
     """Extension handler."""
 
-    def __init__(self, extension, values):
+    def __init__(self, extension, values, codepage):
         """Initialise extension handler."""
         if isinstance(extension, basestring) or not isinstance(extension, Iterable):
             extension = [extension]
         self._extension = list(extension)
         self._values = values
+        self._codepage = codepage
         self._ext_funcs = None
 
     def __getstate__(self):
@@ -80,6 +81,8 @@ class Extensions(object):
     def call_as_function(self, args):
         """Extension function: call a python function as a function."""
         result = self.call_as_statement(args)
+        if isinstance(result, unicode):
+            result = self._codepage.str_from_unicode(result)
         if isinstance(result, bytes):
             return self._values.from_value(result, values.STR)
         elif isinstance(result, bool):
