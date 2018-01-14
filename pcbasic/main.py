@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import locale
 import logging
-import pkgutil
+import pkg_resources
 import platform
 import traceback
 import threading
@@ -73,7 +73,7 @@ def run(*arguments):
 
 def show_usage():
     """Show usage description."""
-    sys.stdout.write(pkgutil.get_data(__name__, 'USAGE.txt'))
+    sys.stdout.write(pkg_resources.resource_string(__name__, 'USAGE.txt'))
 
 def show_version(settings):
     """Show version with optional debugging details."""

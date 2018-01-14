@@ -11,6 +11,7 @@ The following packages are needed or recommended when installing PC-BASIC from t
 | Package                                                               | OS                 | Status       | Used for
 |-----------------------------------------------------------------------|--------------------|--------------|----------------------------------------
 | [Python 2.7.12](https://www.python.org/downloads/release/python-2712/)| all                | required     |
+| [Setuptools](https://pypi.python.org/pypi/setuptools)                 | all                | required     |
 | [PyWin32](https://sourceforge.net/projects/pywin32/)                  | Windows            | required     |
 | [PySDL2](https://pysdl2.readthedocs.org/en/latest/)                   | all                | recommended  | sound and graphics
 | [NumPy](https://sourceforge.net/projects/numpy/files/)                | all                | recommended  | sound and graphics

@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import logging
-import pkgutil
+import pkg_resources
 
 try:
     import numpy
@@ -16,13 +16,12 @@ except ImportError:
     numpy = None
 
 
-fonts = pkgutil.get_data(__name__, 'list.txt').splitlines()
-
+fonts = [name.split('_', 1)[0] for name in pkg_resources.resource_listdir(__name__, '.') if name.lower().endswith('.hex')]
 
 def get_data(package, name):
     """Wrapper for get_data to make it do what is advertised."""
     try:
-        return pkgutil.get_data(package, name)
+        return pkg_resources.resource_string(package, name)
     except EnvironmentError:
         return None
 

@@ -9,9 +9,10 @@ This file is released under the GNU GPL version 3 or later.
 import unicodedata
 import logging
 import os
-import pkgutil
+import pkg_resources
 
-codepages = pkgutil.get_data(__name__, 'list.txt').splitlines()
+
+codepages = [name.split('.', 1)[0] for name in pkg_resources.resource_listdir(__name__, '.') if name.lower().endswith('.ucp')]
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
@@ -36,7 +37,7 @@ class ResourceFailed(Exception):
 def read_file(codepage_name):
     """Retrieve contents of codepage file."""
     try:
-        resource = pkgutil.get_data(__name__, codepage_name + '.ucp')
+        resource = pkg_resources.resource_string(__name__, '%s.ucp' % codepage_name)
     except EnvironmentError:
         raise ResourceFailed()
     if resource is None:
