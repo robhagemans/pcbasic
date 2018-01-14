@@ -91,6 +91,7 @@ apologies to those whose contribution I have failed to acknowledge here.
 
 ##### Keyboard scancodes
 
+  * **John Savard**'s [Scan Codes Demystified](http://www.quadibloc.com/comp/scan.htm)
   * **Andries Brouwer**'s extensive reference of [Keyboard scancodes](https://www.win.tue.nl/~aeb/linux/kbd/scancodes.html)
   * **Philip Storr**'s [PC Hardware book](http://www.philipstorr.id.au/pcbook/book3/scancode.htm)
   * Altek Instruments documentation on [PC Keyboard Scan Codes](http://www.barcodeman.co.uk/altek/mule/scandoc.php)
