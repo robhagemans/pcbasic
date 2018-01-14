@@ -38,7 +38,7 @@ class MLParser(codestream.CodeStream):
             self.read(1)
             c = self.peek()
             if len(c) == 0:
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
             elif ord(c) > 8:
                 step = self._parse_variable().to_int()
                 self.require_read((';',), err=error.IFC)
@@ -50,7 +50,7 @@ class MLParser(codestream.CodeStream):
         elif default is not None:
             step = default
         else:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         if sgn == -1:
             step = -step
         return step
@@ -59,7 +59,7 @@ class MLParser(codestream.CodeStream):
         """Parse a string value in a macro-language string."""
         c = self.skip_blank()
         if len(c) == 0:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         elif ord(c) > 8:
             sub = self._parse_variable()
             self.require_read((';',), err=error.IFC)
@@ -84,7 +84,7 @@ class MLParser(codestream.CodeStream):
         try:
             return int(numstr)
         except ValueError:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
 
     def _parse_indices(self):
         """Parse constant array indices."""

@@ -89,21 +89,21 @@ class CASDevice(object):
                    reclen, seg, offset, length):
         """Open a file on tape."""
         if not self.tapestream:
-            raise error.RunError(error.DEVICE_UNAVAILABLE)
+            raise error.BASICError(error.DEVICE_UNAVAILABLE)
         if self.tapestream.is_open:
-            raise error.RunError(error.FILE_ALREADY_OPEN)
+            raise error.BASICError(error.FILE_ALREADY_OPEN)
         if set(param) & self._illegal_chars:
             # Cassette BASIC throws bad file NUMBER, for some reason.
-            raise error.RunError(error.BAD_FILE_NUMBER)
+            raise error.BASICError(error.BAD_FILE_NUMBER)
         try:
             if mode == 'O':
                 self.tapestream.open_write(param, filetype, seg, offset, length)
             elif mode == 'I':
                 _, filetype, seg, offset, length = self._search(param, filetype)
             else:
-                raise error.RunError(error.BAD_FILE_MODE)
+                raise error.BASICError(error.BAD_FILE_MODE)
         except EnvironmentError:
-            raise error.RunError(error.DEVICE_IO_ERROR)
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         if filetype == 'D':
             return CASTextFile(self.tapestream, filetype, mode)
         elif filetype == 'A':
@@ -133,7 +133,7 @@ class CASDevice(object):
             # we'll loop the tape for future use
             self.tapestream.wind(0)
             # timeout error to align with GW-BASIC behaviour
-            raise error.RunError(error.DEVICE_TIMEOUT)
+            raise error.BASICError(error.DEVICE_TIMEOUT)
 
     def quiet(self, is_quiet):
         """Suppress Skipped and Found messages."""
@@ -160,11 +160,11 @@ class CASTextFile(devices.TextFileBase):
 
     def lof(self):
         """LOF: illegal function call."""
-        raise error.RunError(error.IFC)
+        raise error.BASICError(error.IFC)
 
     def loc(self):
         """LOC: illegal function call."""
-        raise error.RunError(error.IFC)
+        raise error.BASICError(error.IFC)
 
     def close(self):
         """Close a file on tape."""

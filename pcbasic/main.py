@@ -121,7 +121,7 @@ def convert(settings):
     try:
         session.load_program(name_in, rebuild_dict=False)
         session.save_program(name_out, filetype=mode)
-    except basic.RunError as e:
+    except basic.BASICError as e:
         logging.error(e.message)
 
 def launch_session(settings):

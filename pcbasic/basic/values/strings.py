@@ -215,7 +215,7 @@ class StringSpace(object):
         length = len(in_str)
         # don't store overlong strings
         if length > 255:
-            raise error.RunError(error.STRING_TOO_LONG)
+            raise error.BASICError(error.STRING_TOO_LONG)
         # don't store if address is provided (code or FIELD strings)
         if address is None:
             # reserve string space; collect garbage if necessary

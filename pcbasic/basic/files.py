@@ -82,7 +82,7 @@ class Files(object):
             # old syntax
             mode = first_expr[:1].upper()
             if mode not in ('I', 'O', 'A', 'R'):
-                raise error.RunError(error.BAD_FILE_MODE)
+                raise error.BASICError(error.BAD_FILE_MODE)
             number = values.to_int(next(args))
             error.range_check(0, 255, number)
             name = values.next_string(args)
@@ -107,9 +107,9 @@ class Files(object):
         # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
         # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
         if mode == 'A' and access == 'W':
-            raise error.RunError(error.PATH_FILE_ACCESS_ERROR)
+            raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
         elif mode != 'R' and access and access != default_access_modes[mode]:
-            raise error.RunError(error.STX)
+            raise error.BASICError(error.STX)
         error.range_check(1, self.max_reclen, reclen)
         # can't open file 0, or beyond max_files
         error.range_check_err(1, self.max_files, number, error.BAD_FILE_NUMBER)
@@ -181,7 +181,7 @@ class Files(object):
         else:
             lock_stop_rec = values.round(values.to_single(lock_stop_rec)).to_value()
         if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
-            raise error.RunError(error.BAD_RECORD_NUMBER)
+            raise error.BASICError(error.BAD_RECORD_NUMBER)
         return lock_start_rec, lock_stop_rec
 
     def lock_(self, args):
@@ -194,7 +194,7 @@ class Files(object):
             thefile.lock(*self._get_lock_limits(lock_start_rec, lock_stop_rec))
         except AttributeError:
             # not a disk file
-            raise error.RunError(error.PERMISSION_DENIED)
+            raise error.BASICError(error.PERMISSION_DENIED)
 
     def unlock_(self, args):
         """UNLOCK: set file or record locks."""
@@ -206,7 +206,7 @@ class Files(object):
             thefile.unlock(*self._get_lock_limits(lock_start_rec, lock_stop_rec))
         except AttributeError:
             # not a disk file
-            raise error.RunError(error.PERMISSION_DENIED)
+            raise error.BASICError(error.PERMISSION_DENIED)
 
     def ioctl_statement_(self, args):
         """IOCTL: send control string to I/O device. Not implemented."""
@@ -216,16 +216,16 @@ class Files(object):
         control_string = values.next_string(args)
         list(args)
         logging.warning("IOCTL statement not implemented.")
-        raise error.RunError(error.IFC)
+        raise error.BASICError(error.IFC)
 
     def open(self, number, description, filetype, mode='I', access='R', lock='',
                   reclen=128, seg=0, offset=0, length=0):
         """Open a file on a device specified by description."""
         if (not description) or (number < 0) or (number > self.max_files):
             # bad file number; also for name='', for some reason
-            raise error.RunError(error.BAD_FILE_NUMBER)
+            raise error.BASICError(error.BAD_FILE_NUMBER)
         if number in self.files:
-            raise error.RunError(error.FILE_ALREADY_OPEN)
+            raise error.BASICError(error.FILE_ALREADY_OPEN)
         name, mode = str(description), mode.upper()
         inst = None
         split_colon = name.split(':')
@@ -237,7 +237,7 @@ class Files(object):
             except KeyError:
                 # not an allowable device or drive name
                 # bad file number, for some reason
-                raise error.RunError(error.BAD_FILE_NUMBER)
+                raise error.BASICError(error.BAD_FILE_NUMBER)
         else:
             device = self.devices.devices[self.devices.current_device + b':']
             # MS-DOS device aliases - these can't be names of disk files
@@ -300,13 +300,13 @@ class Files(object):
     def get(self, num, mode='IOAR', not_open=error.BAD_FILE_NUMBER):
         """Get the file object for a file number and check allowed mode."""
         if (num < 1):
-            raise error.RunError(error.BAD_FILE_NUMBER)
+            raise error.BASICError(error.BAD_FILE_NUMBER)
         try:
             the_file = self.files[num]
         except KeyError:
-            raise error.RunError(not_open)
+            raise error.BASICError(not_open)
         if the_file.mode.upper() not in mode:
-            raise error.RunError(error.BAD_FILE_MODE)
+            raise error.BASICError(error.BAD_FILE_MODE)
         return the_file
 
     def _get_from_integer(self, num, mode='IOAR'):
@@ -357,7 +357,7 @@ class Files(object):
         infile = self.get(num)
         list(args)
         logging.warning("IOCTL$ function not implemented.")
-        raise error.RunError(error.IFC)
+        raise error.BASICError(error.IFC)
 
     def input_(self, args):
         """INPUT$: read num chars from file."""
@@ -394,7 +394,7 @@ class Files(object):
         except StopIteration:
             # write the whole thing as one thing (this affects line breaks)
             output.write_line(','.join(outstrs))
-        except error.RunError:
+        except error.BASICError:
             if outstrs:
                 output.write(','.join(outstrs) + ',')
             raise
@@ -420,7 +420,7 @@ class Files(object):
                     dev = self.devices.devices[devname].device_file
                 except (KeyError, AttributeError):
                     # bad file name
-                    raise error.RunError(error.BAD_FILE_NAME)
+                    raise error.BASICError(error.BAD_FILE_NAME)
             else:
                 w = values.to_int(expr)
                 num_rows_dummy = next(args)
@@ -528,10 +528,10 @@ class Devices(object):
             try:
                 dev, spec = splits[0].upper(), splits[1]
             except KeyError:
-                raise error.RunError(error.DEVICE_UNAVAILABLE)
+                raise error.BASICError(error.DEVICE_UNAVAILABLE)
         # must be a disk device
         if dev not in self.drive_letters:
-            raise error.RunError(error.DEVICE_UNAVAILABLE)
+            raise error.BASICError(error.DEVICE_UNAVAILABLE)
         return self.devices[dev + b':'], spec
 
     ###########################################################################
@@ -580,7 +580,7 @@ class Devices(object):
         name = values.next_string(args)
         list(args)
         if not name:
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
         dev.chdir(path)
 
@@ -589,7 +589,7 @@ class Devices(object):
         name = values.next_string(args)
         list(args)
         if not name:
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
         dev.mkdir(path)
 
@@ -598,7 +598,7 @@ class Devices(object):
         name = values.next_string(args)
         list(args)
         if not name:
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
         dev.rmdir(path)
 
@@ -611,10 +611,10 @@ class Devices(object):
         newdev, newpath = self.get_diskdevice_and_path(values.next_string(args))
         list(args)
         if dev != newdev:
-            raise error.RunError(error.RENAME_ACROSS_DISKS)
+            raise error.BASICError(error.RENAME_ACROSS_DISKS)
         newpath = dev._native_path(newpath, name_err=None, isdir=False)
         if os.path.exists(newpath):
-            raise error.RunError(error.FILE_ALREADY_EXISTS)
+            raise error.BASICError(error.FILE_ALREADY_EXISTS)
         dev.rename(oldpath, newpath)
 
     def kill_(self, args):
@@ -622,7 +622,7 @@ class Devices(object):
         name = values.next_string(args)
         list(args)
         if not name:
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         dev, path = self.get_diskdevice_and_path(name)
         path = dev._native_path(path, name_err=error.FILE_NOT_FOUND, isdir=False)
         # don't delete open files
@@ -635,7 +635,7 @@ class Devices(object):
         list(args)
         # pathmask may be left unspecified, but not empty
         if pathmask == b'':
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         elif pathmask is None:
             pathmask = b''
         dev, path = self.get_diskdevice_and_path(pathmask)

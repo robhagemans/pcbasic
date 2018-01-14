@@ -39,7 +39,7 @@ class UserFunction(object):
         args = [conv(arg) for arg, conv in izip(iargs, conversions)]
         # recursion is not allowed as there's no way to terminate it
         if self._is_parsing:
-            raise error.RunError(error.OUT_OF_MEMORY)
+            raise error.BASICError(error.OUT_OF_MEMORY)
         # parse/evaluate function expression
         # save existing vars
         varsave = {}
@@ -97,9 +97,9 @@ class UserFunctionManager(object):
         try:
             fn = self._fn_dict[fnname]
         except KeyError:
-            raise error.RunError(error.UNDEFINED_USER_FUNCTION)
+            raise error.BASICError(error.UNDEFINED_USER_FUNCTION)
         if fn is None:
-            raise error.RunError(error.STX)
+            raise error.BASICError(error.STX)
         return fn
 
     def define(self, fnname, ins):

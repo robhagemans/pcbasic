@@ -166,7 +166,7 @@ class BasicEvents(object):
         if jumpnum == 0:
             jumpnum = None
         elif jumpnum not in self._program.line_numbers:
-            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+            raise error.BASICError(error.UNDEFINED_LINE_NUMBER)
         list(args)
         if token == tk.KEY:
             keynum = values.to_int(num)
@@ -189,7 +189,7 @@ class BasicEvents(object):
             strigval = values.to_int(num)
             ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
             if strigval not in (0,2,4,6):
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
             self.strig[strigval//2].set_jump(jumpnum)
         elif token == tk.COM:
             comnum = values.to_int(num)

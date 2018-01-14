@@ -396,7 +396,7 @@ class Session(object):
         except error.Break:
             self.sound.stop_all_sound()
             self._prompt = False
-        except error.RunError as e:
+        except error.BASICError as e:
             self._handle_error(e)
             self._prompt = True
             if self._reraise:
@@ -504,7 +504,7 @@ class Session(object):
         if not self._term_program:
             # on Tandy, raises Internal Error
             # and deletes the program currently in memory
-            raise error.RunError(error.INTERNAL_ERROR)
+            raise error.BASICError(error.INTERNAL_ERROR)
         with self.files.open_internal(
                 self._term_program, filetype='ABP', mode='I') as progfile:
             self.program.load(progfile)
@@ -550,7 +550,7 @@ class Session(object):
         from_line, = self.program.explicit_lines(from_line)
         self.program.last_stored = from_line
         if from_line is None or from_line not in self.program.line_numbers:
-            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+            raise error.BASICError(error.UNDEFINED_LINE_NUMBER)
         # throws back to direct mode
         # jump to end of direct line so execution stops
         self.interpreter.set_pointer(False)
@@ -597,10 +597,10 @@ class Session(object):
         common_all, delete_lines = next(args), next(args)
         from_line, to_line = delete_lines if delete_lines else None, None
         if to_line is not None and to_line not in self.program.line_numbers:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         list(args)
         if self.program.protected and merge:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         # gather COMMON declarations
         commons = self.interpreter.gather_commons()
         with self.memory.preserve_commons(commons, common_all):
@@ -679,7 +679,7 @@ class Session(object):
             self.interpreter.set_pointer(True, 0)
         else:
             if jumpnum not in self.program.line_numbers:
-                raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+                raise error.BASICError(error.UNDEFINED_LINE_NUMBER)
             self.interpreter.jump(jumpnum)
 
     def end_(self, args):
@@ -727,7 +727,7 @@ class Session(object):
                 word, sep = inputstream.input_entry(name[-1], allow_past_end=True)
                 try:
                     value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
-                except error.RunError as e:
+                except error.BASICError as e:
                     # string entered into numeric field
                     value = None
                 var.append([name, indices])
@@ -775,15 +775,15 @@ class Session(object):
         readvar, indices = next(args)
         list(args)
         if not readvar:
-            raise error.RunError(error.STX)
+            raise error.BASICError(error.STX)
         readvar = self.memory.complete_name(readvar)
         if readvar[-1] != values.STR:
-            raise error.RunError(error.TYPE_MISMATCH)
+            raise error.BASICError(error.TYPE_MISMATCH)
         # read the input
         if finp:
             line = finp.read_line()
             if line is None:
-                raise error.RunError(error.INPUT_PAST_END)
+                raise error.BASICError(error.INPUT_PAST_END)
         else:
             self.interpreter.input_mode = True
             self.parser.redo_on_break = True
@@ -821,5 +821,5 @@ class Session(object):
             # only length-2 expressions can be assigned to KEYs over 10
             # in which case it's a key scancode definition
             if len(text) != 2:
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
             self.basic_events.key[keynum-1].set_trigger(str(text))

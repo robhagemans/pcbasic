@@ -131,7 +131,7 @@ class CodeStream(io.BytesIO):
         c = d + self.read(len(in_range[0])-1)
         if not c or c not in in_range:
             self.seek(-len(c), 1)
-            raise error.RunError(err)
+            raise error.BASICError(err)
         return c
 
     def _read_dec(self):
@@ -305,7 +305,7 @@ class TokenisedStream(CodeStream):
             d = self.read(1)
         self.seek(-len(d), 1)
         if d not in tk.END_STATEMENT:
-            raise error.RunError(err)
+            raise error.BASICError(err)
 
     def skip_to_token(self, requested_token):
         """

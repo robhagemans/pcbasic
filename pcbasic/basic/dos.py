@@ -43,7 +43,7 @@ class Environment(object):
         if isinstance(expr, values.String):
             parm = expr.to_str()
             if not parm:
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
             envstr = os.getenv(parm) or b''
         else:
             expr = values.to_int(expr)
@@ -61,7 +61,7 @@ class Environment(object):
         list(args)
         eqs = envstr.find('=')
         if eqs <= 0:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         envvar = str(envstr[:eqs])
         val = str(envstr[eqs+1:])
         os.environ[envvar] = val
@@ -98,7 +98,7 @@ class ErrorShell(ShellBase):
 
     def launch(self, command):
         """Launch the shell."""
-        raise error.RunError(error.IFC)
+        raise error.BASICError(error.IFC)
 
 
 class WindowsShell(ShellBase):

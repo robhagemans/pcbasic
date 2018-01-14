@@ -133,7 +133,7 @@ class Sound(object):
     def noise_(self, args):
         """Generate a noise (NOISE statement)."""
         if not self.sound_on:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         source = values.to_int(next(args))
         error.range_check(0, 7, source)
         volume = values.to_int(next(args))
@@ -257,10 +257,10 @@ class PlayParser(object):
         list(args)
         # at least one string must be specified
         if not any(mml_list):
-            raise error.RunError(error.MISSING_OPERAND)
+            raise error.BASICError(error.MISSING_OPERAND)
         # on PCjr, three-voice PLAY requires SOUND ON
         if self._sound.capabilities == 'pcjr' and not self._sound.sound_on and len(mml_list) > 1:
-            raise error.RunError(error.STX)
+            raise error.BASICError(error.STX)
         mml_list += [''] * (3-len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, self._memory, self._values) for mml in mml_list]
         next_oct = 0
@@ -347,7 +347,7 @@ class PlayParser(object):
                     if note == 'P':
                         # length must be specified
                         if length is None:
-                            raise error.RunError(error.IFC)
+                            raise error.BASICError(error.IFC)
                         # don't do anything for length 0
                         elif length > 0:
                             self._sound.play_sound(0, dur * vstate.tempo, vstate.speed,
@@ -360,7 +360,7 @@ class PlayParser(object):
                                 dur * vstate.tempo, vstate.speed,
                                 volume=vstate.volume, voice=voice)
                         except KeyError:
-                            raise error.RunError(error.IFC)
+                            raise error.BASICError(error.IFC)
                     next_oct = 0
                 elif c == 'M':
                     c = mmls.skip_blank_read().upper()
@@ -375,7 +375,7 @@ class PlayParser(object):
                     elif c == 'B':
                         self._sound.foreground = False
                     else:
-                        raise error.RunError(error.IFC)
+                        raise error.BASICError(error.IFC)
                 elif c == 'V' and (self._sound.capabilities == 'tandy' or
                                     (self._sound.capabilities == 'pcjr' and self._sound.sound_on)):
                     vol = mmls.parse_number()
@@ -385,7 +385,7 @@ class PlayParser(object):
                     else:
                         vstate.volume = vol
                 else:
-                    raise error.RunError(error.IFC)
+                    raise error.BASICError(error.IFC)
         max_time = max(q.expiry() for q in self._sound.voice_queue[:3])
         for voice, q in enumerate(self._sound.voice_queue):
             dur = (max_time - q.expiry()).total_seconds()

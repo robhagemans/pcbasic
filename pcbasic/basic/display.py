@@ -673,7 +673,7 @@ class Screen(object):
         if erase is not None:
             # erase can only be set on pcjr/tandy 5-argument syntax
             if self.capabilities not in ('pcjr', 'tandy'):
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
         else:
             erase = 1
         # decide whether to redraw the screen
@@ -728,7 +728,7 @@ class Screen(object):
                 info = self.text_data[new_width]
         except KeyError:
             # no such mode
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
         if new_vpagenum is None:
@@ -763,7 +763,7 @@ class Screen(object):
             # only switch pages
             if (new_apagenum >= info.num_pages or
                     new_vpagenum >= info.num_pages):
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
             self.set_page(new_vpagenum, new_apagenum)
 
     def set_mode(self, mode_info, new_mode, new_colorswitch,
@@ -777,7 +777,7 @@ class Screen(object):
         if (not mode_info or
                 new_apagenum >= mode_info.num_pages or
                 new_vpagenum >= mode_info.num_pages):
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         # preload SBCS glyphs
         try:
             self.glyphs = {
@@ -789,7 +789,7 @@ class Screen(object):
             logging.warning(
                 'No %d-pixel font available. Could not enter video mode %s.',
                 mode_info.font_height, mode_info.name)
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, mode_info))
         if mode_info.is_text_mode:
             # send glyphs to signals; copy is necessary
@@ -844,7 +844,7 @@ class Screen(object):
         """Set the character width of the screen, reset pages and change modes."""
         # raise an error if the width value doesn't make sense
         if to_width not in (20, 40, 80):
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         # if we're currently at that width, do nothing
         if to_width == self.mode.width:
             return
@@ -852,7 +852,7 @@ class Screen(object):
             if self.capabilities in ('pcjr', 'tandy'):
                 self.screen(3, None, 0, 0)
             else:
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
         elif self.mode.is_text_mode:
             self.screen(0, None, 0, 0, new_width=to_width)
         elif to_width == 40:
@@ -879,7 +879,7 @@ class Screen(object):
             elif self.mode.name == '320x200x16':
                 self.screen(8, None, 0, 0)
         else:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         self.init_mode()
 
     def init_mode(self):
@@ -955,7 +955,7 @@ class Screen(object):
         if new_apagenum is None:
             new_apagenum = self.apagenum
         if (new_vpagenum >= self.mode.num_pages or new_apagenum >= self.mode.num_pages):
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         self.vpagenum = new_vpagenum
         self.apagenum = new_apagenum
         self.vpage = self.text.pages[new_vpagenum]
@@ -1012,7 +1012,7 @@ class Screen(object):
             self._color_mode_1(fore, back, bord)
         elif mode.name in ('640x200x2', '720x348x2'):
             # screen 2; hercules: illegal fn call
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         else:
             # for screens other than 1, no distinction between 3rd parm zero and not supplied
             bord = bord or 0
@@ -1038,7 +1038,7 @@ class Screen(object):
             elif mode.name == '640x400x2':
                 error.range_check(0, len(mode.colours)-1, fore)
                 if back != 0:
-                    raise error.RunError(error.IFC)
+                    raise error.BASICError(error.IFC)
                 self.palette.set_entry(1, fore, check_mode=False)
 
     def _color_mode_1(self, back, pal, override):
@@ -1722,7 +1722,7 @@ class Screen(object):
             return self._values.new_single().from_value(point)
         else:
             if self.mode.is_text_mode:
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
             arg1 = values.pass_number(arg1)
             list(args)
             x, y = values.to_single(arg0).to_value(), values.to_single(arg1).to_value()
@@ -1874,7 +1874,7 @@ class Palette(object):
         """Check if the video mode allows palette change."""
         # effective palette change is an error in CGA
         if self.capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         # ignore palette changes in Tandy/PCjr SCREEN 0
         elif self.capabilities in ('tandy', 'pcjr') and mode.is_text_mode:
             return False
@@ -1910,7 +1910,7 @@ class Palette(object):
         try:
             dimensions = self._memory.arrays.dimensions(array_name)
         except KeyError:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         error.throw_if(array_name[-1] != '%', error.TYPE_MISMATCH)
         lst = self._memory.arrays.view_full_buffer(array_name)
         start = self._memory.arrays.index(start_indices, dimensions)

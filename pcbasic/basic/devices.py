@@ -60,9 +60,9 @@ class Device(object):
                    reclen, seg, offset, length):
         """Open a file on the device."""
         if not self.device_file:
-            raise error.RunError(error.DEVICE_UNAVAILABLE)
+            raise error.BASICError(error.DEVICE_UNAVAILABLE)
         if mode not in self.allowed_modes:
-            raise error.RunError(error.BAD_FILE_MODE)
+            raise error.BASICError(error.BAD_FILE_MODE)
         new_file = self.device_file.open_clone(filetype, mode, reclen)
         return new_file
 
@@ -145,7 +145,7 @@ class RawFile(object):
         word = self.read_raw(num)
         if len(word) < num:
             # input past end
-            raise error.RunError(error.INPUT_PAST_END)
+            raise error.BASICError(error.INPUT_PAST_END)
         return word
 
     def read_raw(self, num=-1):
@@ -153,7 +153,7 @@ class RawFile(object):
         try:
             return self.fhandle.read(num)
         except EnvironmentError:
-            raise error.RunError(error.DEVICE_IO_ERROR)
+            raise error.BASICError(error.DEVICE_IO_ERROR)
 
     def read(self, num=-1):
         """Read num chars. If num==-1, read all available."""
@@ -164,7 +164,7 @@ class RawFile(object):
         try:
             self.fhandle.write(str(s))
         except EnvironmentError:
-            raise error.RunError(error.DEVICE_IO_ERROR)
+            raise error.BASICError(error.DEVICE_IO_ERROR)
 
     def flush(self):
         """Write contents of buffers to file."""
@@ -235,7 +235,7 @@ class TextFileBase(RawFile):
             if self.split_long_lines:
                 return True
             else:
-                raise error.RunError(error.LINE_BUFFER_OVERFLOW)
+                raise error.BASICError(error.LINE_BUFFER_OVERFLOW)
         return False
 
     def write(self, s, can_break=True):
@@ -319,7 +319,7 @@ class TextFileBase(RawFile):
             c = self.read(1)
         # LF escapes end of file, return empty string
         if not c and not allow_past_end and last not in ('\n', '\0'):
-            raise error.RunError(error.INPUT_PAST_END)
+            raise error.BASICError(error.INPUT_PAST_END)
         # we read the ending char before breaking the loop
         # this may raise FIELD OVERFLOW
         while c and not ((typechar != values.STR and c in self.soft_sep) or
@@ -432,10 +432,10 @@ class Field(object):
             raise AttributeError("Can't attach variable to non-memory-mapped field.")
         if name[-1] != values.STR:
             # type mismatch
-            raise error.RunError(error.TYPE_MISMATCH)
+            raise error.BASICError(error.TYPE_MISMATCH)
         if offset + length > len(self.buffer):
             # FIELD overflow
-            raise error.RunError(error.FIELD_OVERFLOW)
+            raise error.BASICError(error.FIELD_OVERFLOW)
         # create a string pointer
         str_addr = self.address + offset
         str_sequence = struct.pack('<BH', length, str_addr)
@@ -536,7 +536,7 @@ class KYBDFile(TextFileBase):
             c = self.read(1)
         # LF escapes end of file, return empty string
         if not c and not allow_past_end and last not in ('\n', '\0'):
-            raise error.RunError(error.INPUT_PAST_END)
+            raise error.BASICError(error.INPUT_PAST_END)
         # we read the ending char before breaking the loop
         # this may raise FIELD OVERFLOW
         # on reading from a KYBD: file, control char replacement takes place
@@ -673,12 +673,12 @@ class SCRNFile(RawFile):
 
     def lof(self):
         """LOF: bad file mode."""
-        raise error.RunError(error.BAD_FILE_MODE)
+        raise error.BASICError(error.BAD_FILE_MODE)
 
     def loc(self):
         """LOC: bad file mode."""
-        raise error.RunError(error.BAD_FILE_MODE)
+        raise error.BASICError(error.BAD_FILE_MODE)
 
     def eof(self):
         """EOF: bad file mode."""
-        raise error.RunError(error.BAD_FILE_MODE)
+        raise error.BASICError(error.BAD_FILE_MODE)

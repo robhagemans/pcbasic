@@ -80,7 +80,7 @@ class Formatter(object):
         """PRINT USING clause: Write expressions to screen or file using a formatting string."""
         format_expr = values.next_string(args)
         if format_expr == '':
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         fors = codestream.CodeStream(format_expr)
         newline, format_chars = True, False
         start_cycle = True
@@ -128,7 +128,7 @@ class Formatter(object):
         if not format_chars:
             self._output.write(initial_literal)
             # there were no format chars in the string, illegal fn call
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         return newline
 
 
@@ -235,7 +235,7 @@ class NumberField(object):
         value = value.to_float()
         # illegal function call if too many digits
         if digits_before + decimals > 24:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         # dollar sign, decimal point
         has_dollar, force_dot = '$' in tokens, '.' in tokens
         # leading sign, if any

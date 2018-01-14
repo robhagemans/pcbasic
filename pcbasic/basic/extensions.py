@@ -47,7 +47,7 @@ class Extensions(object):
         if self._ext_funcs is not None:
             return
         if not self._extension:
-            raise error.RunError(error.STX)
+            raise error.BASICError(error.STX)
         ext_objs = []
         for ext in self._extension:
             try:
@@ -57,7 +57,7 @@ class Extensions(object):
                     ext_objs.append(ext)
             except Exception as e:
                 logging.error(u'Could not load extension module `%s`: %s', ext, repr(e))
-                raise error.RunError(error.INTERNAL_ERROR)
+                raise error.BASICError(error.INTERNAL_ERROR)
         self._ext_funcs = {
             n.upper(): getattr(ext_obj, n)
             for ext_obj in ext_objs
@@ -75,7 +75,7 @@ class Extensions(object):
             raise
         except Exception as e:
             logging.error(u'Could not call extension function `%s%s`: %s', func_name, tuple(func_args), repr(e))
-            raise error.RunError(error.INTERNAL_ERROR)
+            raise error.BASICError(error.INTERNAL_ERROR)
         return result
 
     def call_as_function(self, args):
@@ -89,4 +89,4 @@ class Extensions(object):
             return self._values.from_bool(result)
         elif isinstance(result, int) or isinstance(result, float):
             return self._values.from_value(result, values.DBL)
-        raise error.RunError(error.TYPE_MISMATCH)
+        raise error.BASICError(error.TYPE_MISMATCH)

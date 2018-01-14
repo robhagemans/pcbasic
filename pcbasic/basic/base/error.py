@@ -71,7 +71,7 @@ STX = SYNTAX_ERROR
 IFC = ILLEGAL_FUNCTION_CALL
 
 
-class Error(Exception):
+class Interrupt(Exception):
     """Base type for exceptions."""
 
     def __str__(self):
@@ -79,7 +79,7 @@ class Error(Exception):
         return self.message
 
 
-class Exit(Error):
+class Exit(Interrupt):
     """Exit emulator."""
     message = 'Exit'
 
@@ -89,17 +89,17 @@ class Reset(Exit):
     message = 'Reset'
 
 
-class Break(Error):
+class Break(Interrupt):
     """Program interrupt."""
 
     def __init__(self, stop=False):
         """Initialise break."""
-        Error.__init__(self)
+        Interrupt.__init__(self)
         self.stop = stop
         self.message = 'Break'
 
 
-class RunError(Error):
+class BASICError(Interrupt):
     """Runtime error."""
 
     default_message = 'Unprintable error'
@@ -166,7 +166,7 @@ class RunError(Error):
 
     def __init__(self, value, pos=None):
         """Initialise error."""
-        Error.__init__(self)
+        Interrupt.__init__(self)
         self.err = value
         self.pos = pos
         try:
@@ -179,14 +179,14 @@ def range_check(lower, upper, *allvars):
     """Check if all variables in list are within the given inclusive range."""
     for v in allvars:
         if v is not None and not (lower <= v <= upper):
-            raise RunError(IFC)
+            raise BASICError(IFC)
 
 def throw_if(bool, err=IFC):
     """Raise IFC if condition is met."""
     if bool:
-        raise RunError(err)
+        raise BASICError(err)
 
 def range_check_err(lower, upper, v, err=IFC):
     """Check if variable is within the given inclusive range."""
     if v is not None and not (lower <= v <= upper):
-        raise RunError(err)
+        raise BASICError(err)

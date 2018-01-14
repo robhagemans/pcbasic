@@ -178,7 +178,7 @@ class Integer(Number):
             intformat = '<h'
             maxint = 0x7fff
         if not (-0x8000 <= in_int <= maxint):
-            raise error.RunError(error.OVERFLOW)
+            raise error.BASICError(error.OVERFLOW)
         struct.pack_into(intformat, self._buffer, 0, in_int)
         return self
 
@@ -291,7 +291,7 @@ class Integer(Number):
     def ineg(self):
         """Negate in-place."""
         if self._buffer == '\x00\x80':
-            raise error.RunError(error.OVERFLOW)
+            raise error.BASICError(error.OVERFLOW)
         lsb = (ord(self._buffer[0]) ^ 0xff) + 1
         msb = ord(self._buffer[1]) ^ 0xff
         # apply carry
@@ -317,7 +317,7 @@ class Integer(Number):
             msb += 1
         # overflow if signs were equal and have changed
         if (ord(self._buffer[1]) > 0x7f) == (ord(rhs._buffer[1]) > 0x7f) != (msb > 0x7f):
-            raise error.RunError(error.OVERFLOW)
+            raise error.BASICError(error.OVERFLOW)
         self._buffer[:] = chr(lsb) + chr(msb & 0xff)
         return self
 

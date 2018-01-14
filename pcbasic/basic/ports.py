@@ -87,19 +87,19 @@ class COMDevice(devices.Device):
                        reclen, seg, offset, length):
         """Open a file on COMn: """
         if not self.stream:
-            raise error.RunError(error.DEVICE_UNAVAILABLE)
+            raise error.BASICError(error.DEVICE_UNAVAILABLE)
         # PE setting not implemented
         speed, parity, bytesize, stop, rs, cs, ds, cd, lf, _ = self.get_params(param)
         # open the COM port
         if self.stream.is_open:
-            raise error.RunError(error.FILE_ALREADY_OPEN)
+            raise error.BASICError(error.FILE_ALREADY_OPEN)
         else:
             try:
                 self.stream.open(rs, cs, ds, cd)
             except EnvironmentError as e:
                 # device timeout
                 logging.debug("Serial exception: %s", e)
-                raise error.RunError(error.DEVICE_TIMEOUT)
+                raise error.BASICError(error.DEVICE_TIMEOUT)
         try:
             self.stream.set_params(speed, parity, bytesize, stop)
         except Exception:
@@ -116,29 +116,29 @@ class COMDevice(devices.Device):
         max_param = 10
         param_list = param.upper().split(',')
         if len(param_list) > max_param:
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         param_list += ['']*(max_param-len(param_list))
         speed, parity, data, stop = param_list[:4]
         # set speed
         if speed not in ('75', '110', '150', '300', '600', '1200',
                           '1800', '2400', '4800', '9600', ''):
             # Bad file name
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         speed = int(speed) if speed else 300
         # set parity
         if parity not in ('S', 'M', 'O', 'E', 'N', ''):
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         parity = parity or 'E'
         # set data bits
         if data not in ('4', '5', '6', '7', '8', ''):
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         data = int(data) if data else 7
         bytesize = data + (parity != 'N')
         if bytesize not in range(5, 9):
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         # set stopbits
         if stop not in ('1', '2', ''):
-            raise error.RunError(error.BAD_FILE_NAME)
+            raise error.BASICError(error.BAD_FILE_NAME)
         if not stop:
             stop = 2 if (speed in (75, 110)) else 1
         else:
@@ -169,9 +169,9 @@ class COMDevice(devices.Device):
                     # not implemented
                     pe = True
                 else:
-                    raise error.RunError(error.BAD_FILE_NAME)
+                    raise error.BASICError(error.BAD_FILE_NAME)
             except ValueError:
-                raise error.RunError(error.BAD_FILE_NAME)
+                raise error.BASICError(error.BAD_FILE_NAME)
         # CS default depends on RS
         if cs is None:
             cs = 1000 if not rs else 0
@@ -205,7 +205,7 @@ class COMFile(devices.CRLFTextFileBase):
         try:
             self.in_buffer += self.fhandle.read(self.serial_in_size - len(self.in_buffer))
         except (EnvironmentError, ValueError):
-            raise error.RunError(error.DEVICE_IO_ERROR)
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         # if more to read, signal an overflow
         if len(self.in_buffer) >= self.serial_in_size and self.fhandle.read(1):
             self.overflow = True
@@ -215,7 +215,7 @@ class COMFile(devices.CRLFTextFileBase):
         if not allow_overflow and self.overflow:
             # only raise this the first time the overflow is encountered
             self.overflow = False
-            raise error.RunError(error.COMMUNICATION_BUFFER_OVERFLOW)
+            raise error.BASICError(error.COMMUNICATION_BUFFER_OVERFLOW)
 
     def read_raw(self, num=-1):
         """Read num characters from the port as a string; blocking """
@@ -263,7 +263,7 @@ class COMFile(devices.CRLFTextFileBase):
                 s = s.replace('\r', '\r\n')
             self.fhandle.write(s)
         except (EnvironmentError, ValueError):
-            raise error.RunError(error.DEVICE_IO_ERROR)
+            raise error.BASICError(error.DEVICE_IO_ERROR)
 
     def get(self, num):
         """Read a record - GET."""
@@ -417,7 +417,7 @@ class SerialStream(object):
         if ((cs > 0 and not have_cts) or
                 (ds > 0 and not have_dsr) or
                 (cd > 0 and not have_cd)):
-            raise error.RunError(error.DEVICE_TIMEOUT)
+            raise error.BASICError(error.DEVICE_TIMEOUT)
         self.is_open = True
 
     def set_params(self, speed, parity, bytesize, stop):
@@ -615,15 +615,15 @@ class LPTFile(devices.TextFileBase):
 
     def lof(self):
         """LOF: bad file mode """
-        raise error.RunError(error.BAD_FILE_MODE)
+        raise error.BASICError(error.BAD_FILE_MODE)
 
     def loc(self):
         """LOC: bad file mode """
-        raise error.RunError(error.BAD_FILE_MODE)
+        raise error.BASICError(error.BAD_FILE_MODE)
 
     def eof(self):
         """EOF: bad file mode """
-        raise error.RunError(error.BAD_FILE_MODE)
+        raise error.BASICError(error.BAD_FILE_MODE)
 
     def close(self):
         """Close the printer device and actually print the output."""
@@ -661,7 +661,7 @@ class ParallelStream(object):
     def write(self, s):
         """Write to the parallel port."""
         if self._parallel.getInPaperOut():
-            raise error.RunError(error.OUT_OF_PAPER)
+            raise error.BASICError(error.OUT_OF_PAPER)
         for c in s:
             self._parallel.setData(ord(c))
 

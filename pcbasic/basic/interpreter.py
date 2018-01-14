@@ -83,7 +83,7 @@ class Interpreter(object):
                             # unfinished error handler: no RESUME (don't trap this)
                             self.error_handle_mode = True
                             # get line number right
-                            raise error.RunError(error.NO_RESUME, ins.tell()-len(token)-2)
+                            raise error.BASICError(error.NO_RESUME, ins.tell()-len(token)-2)
                         # stream has ended
                         self.set_pointer(False)
                         return
@@ -94,7 +94,7 @@ class Interpreter(object):
                 elif c != ':':
                     ins.seek(-len(c), 1)
                 self.parser.parse_statement(ins)
-            except error.RunError as e:
+            except error.BASICError as e:
                 self.trap_error(e)
 
     def loop(self):
@@ -263,7 +263,7 @@ class Interpreter(object):
                 # jump to target
                 self.set_pointer(True, self._program.line_numbers[jumpnum])
             except KeyError:
-                raise error.RunError(err)
+                raise error.BASICError(err)
 
     def jump_sub(self, jumpnum, handler=None):
         """Execute jump for a GOSUB."""
@@ -286,7 +286,7 @@ class Interpreter(object):
         try:
             pos, orig_runmode, handler = self.gosub_stack.pop()
         except IndexError:
-            raise error.RunError(error.RETURN_WITHOUT_GOSUB)
+            raise error.BASICError(error.RETURN_WITHOUT_GOSUB)
         # returning from ON (event) GOSUB, re-enable event
         if handler:
             # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
@@ -354,7 +354,7 @@ class Interpreter(object):
                 return
         if i == onvar-2:
             # missing jump *just where we need it* is an error
-            raise error.RunError(error.STX)
+            raise error.BASICError(error.STX)
 
     ###########################################################################
     # loops
@@ -367,7 +367,7 @@ class Interpreter(object):
         start = values.to_type(vartype, next(args))
         # only raised after the TO has been parsed
         if vartype in (values.STR, values.DBL):
-            raise error.RunError(error.TYPE_MISMATCH)
+            raise error.BASICError(error.TYPE_MISMATCH)
         stop = values.to_type(vartype, next(args))
         step = next(args)
         if step is not None:
@@ -395,7 +395,7 @@ class Interpreter(object):
         if ins.skip_blank() not in (tk.NEXT, ','):
             # FOR without NEXT marked with FOR line number
             ins.seek(endforpos)
-            raise error.RunError(error.FOR_WITHOUT_NEXT)
+            raise error.BASICError(error.FOR_WITHOUT_NEXT)
         comma = (ins.read(1) == ',')
         # check var name for NEXT
         # no-var only allowed in standalone NEXT
@@ -407,7 +407,7 @@ class Interpreter(object):
         nextpos = ins.tell()
         if (comma or varname2) and varname2 != varname:
             # NEXT without FOR marked with NEXT line number, while we're only at FOR
-            raise error.RunError(error.NEXT_WITHOUT_FOR)
+            raise error.BASICError(error.NEXT_WITHOUT_FOR)
         ins.seek(endforpos)
         return endforpos, nextpos
 
@@ -431,12 +431,12 @@ class Interpreter(object):
                 if varname is not None and varname2 != self._memory.complete_name(varname):
                     # check once more for matches
                     # it has been checked at FOR, but DEFtypes may have changed.
-                    raise error.RunError(error.NEXT_WITHOUT_FOR)
+                    raise error.BASICError(error.NEXT_WITHOUT_FOR)
                 # only drop NEXT record if we've found a matching one
                 self.for_stack = self.for_stack[:len(self.for_stack)-depth]
                 break
         else:
-            raise error.RunError(error.NEXT_WITHOUT_FOR)
+            raise error.BASICError(error.NEXT_WITHOUT_FOR)
         # increment counter
         counter_view = self._scalars.view(varname2)
         counter_view.iadd(step)
@@ -465,7 +465,7 @@ class Interpreter(object):
         if ins.read(1) != tk.WEND:
             # WHILE without WEND
             ins.seek(whilepos)
-            raise error.RunError(error.WHILE_WITHOUT_WEND)
+            raise error.BASICError(error.WHILE_WITHOUT_WEND)
         ins.skip_to(tk.END_STATEMENT)
         wendpos = ins.tell()
         ins.seek(whilepos)
@@ -492,7 +492,7 @@ class Interpreter(object):
         while True:
             if not self.while_stack:
                 # WEND without WHILE
-                raise error.RunError(error.WEND_WITHOUT_WHILE)
+                raise error.BASICError(error.WEND_WITHOUT_WHILE)
             whilepos, wendpos = self.while_stack[-1]
             if pos == wendpos:
                 break
@@ -512,7 +512,7 @@ class Interpreter(object):
             try:
                 self.data_pos = self._program.line_numbers[datanum]
             except KeyError:
-                raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+                raise error.BASICError(error.UNDEFINED_LINE_NUMBER)
         list(args)
 
     def read_(self, args):
@@ -527,7 +527,7 @@ class Interpreter(object):
                 self._program_code.skip_to_token(tk.DATA,)
             if self._program_code.read(1) not in (tk.DATA, ','):
                 self._program_code.seek(current)
-                raise error.RunError(error.OUT_OF_DATA)
+                raise error.BASICError(error.OUT_OF_DATA)
             self._program_code.skip_blank()
             if name[-1] == values.STR:
                 # for unquoted strings, payload starts at the first non-empty character
@@ -543,7 +543,7 @@ class Interpreter(object):
                         # complete unquoted string literal
                         word += self._program_code.read_string()
                     if (self._program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
-                        raise error.RunError(error.STX)
+                        raise error.BASICError(error.STX)
                 else:
                     word = word.strip(self._program_code.blanks)
                 value = self._values.from_str_at(word, address)
@@ -562,7 +562,7 @@ class Interpreter(object):
             self._memory.set_variable(name, indices, value=value)
             if data_error:
                 self._program_code.seek(self.data_pos)
-                raise error.RunError(error.STX)
+                raise error.BASICError(error.STX)
             else:
                 self.data_pos = data_pos
 
@@ -614,7 +614,7 @@ class Interpreter(object):
         errn, = args
         errn = values.to_int(errn)
         error.range_check(1, 255, errn)
-        raise error.RunError(errn)
+        raise error.BASICError(errn)
 
     def stop_(self, args):
         """STOP: break program execution and return to interpreter."""
@@ -625,7 +625,7 @@ class Interpreter(object):
         """CONT: continue STOPped or ENDed execution."""
         list(args)
         if self.stop is None:
-            raise error.RunError(error.CANT_CONTINUE)
+            raise error.BASICError(error.CANT_CONTINUE)
         else:
             self.set_pointer(True, self.stop)
         # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
@@ -652,21 +652,21 @@ class Interpreter(object):
         """ON ERROR GOTO: define error trapping routine."""
         linenum, = args
         if linenum != 0 and linenum not in self._program.line_numbers:
-            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+            raise error.BASICError(error.UNDEFINED_LINE_NUMBER)
         self.on_error = linenum
         # pause soft-handling math errors so that we can catch them
         self._values.error_handler.suspend(linenum != 0)
         # ON ERROR GOTO 0 in error handler
         if self.on_error == 0 and self.error_handle_mode:
             # re-raise the error so that execution stops
-            raise error.RunError(self.error_num, self.error_pos)
+            raise error.BASICError(self.error_num, self.error_pos)
 
     def resume_(self, args):
         """RESUME: resume program flow after error-trap."""
         if self.error_resume is None:
             # unset error handler
             self.on_error = 0
-            raise error.RunError(error.RESUME_WITHOUT_ERROR)
+            raise error.BASICError(error.RESUME_WITHOUT_ERROR)
         # parse arguments
         where, = args
         start_statement, runmode = self.error_resume
@@ -692,7 +692,7 @@ class Interpreter(object):
         # don't allow DEF FN in direct mode, as we point to the code in the stored program
         # this is raised before further syntax errors
         if not self.run_mode:
-            raise error.RunError(error.ILLEGAL_DIRECT)
+            raise error.BASICError(error.ILLEGAL_DIRECT)
         # arguments and expression are being read and parsed by UserFunctionManager
         self.parser.user_functions.define(fnname, self._program_code)
 
@@ -709,7 +709,7 @@ class Interpreter(object):
         new, old, step = args
         new, old = self._program.explicit_lines(new, old)
         if step is not None and step < 1:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         old_to_new = self._program.renum(self._screen, new, old, step)
         # stop running if we were
         self.set_pointer(False)

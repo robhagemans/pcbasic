@@ -151,7 +151,7 @@ class Drawing(object):
     def view_(self, args):
         """VIEW: Set/unset the graphics viewport and optionally draw a box."""
         if self.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         absolute = next(args)
         try:
             x0, y0, x1, y1 = (round(values.to_single(next(args)).to_value()) for _ in range(4))
@@ -195,7 +195,7 @@ class Drawing(object):
     def window_(self, args):
         """WINDOW: Set/unset the logical coordinate window."""
         if self.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         cartesian = not next(args)
         coords = list(values.to_single(next(args)).to_value() for _ in range(4))
         if not coords:
@@ -203,7 +203,7 @@ class Drawing(object):
         else:
             x0, y0, x1, y1 = coords
             if x0 == x1 or y0 == y1:
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
             list(args)
             self.set_window(x0, y0, x1, y1, cartesian)
 
@@ -250,7 +250,7 @@ class Drawing(object):
             y += int(round(fy))
         # overflow check
         if x < -0x8000 or y < -0x8000 or x > 0x7fff or y > 0x7fff:
-            raise error.RunError(error.OVERFLOW)
+            raise error.BASICError(error.OVERFLOW)
         return x, y
 
     def get_window_logical(self, x, y):
@@ -286,7 +286,7 @@ class Drawing(object):
     def _pset_preset(self, args, default):
         """Set a pixel to a given attribute."""
         if self.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         step = next(args)
         x, y = (values.to_single(next(args)).to_value() for _ in range(2))
         c = next(args)
@@ -307,7 +307,7 @@ class Drawing(object):
     def line_(self, args):
         """LINE: Draw a patterned line or box."""
         if self.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         step0 = next(args)
         x0, y0 = (None if arg is None else values.to_single(arg).to_value() for _, arg in zip(range(2), args))
         step1 = next(args)
@@ -456,7 +456,7 @@ class Drawing(object):
     def circle_(self, args):
         """CIRCLE: Draw a circle, ellipse, arc or sector."""
         if self.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         step = next(args)
         x, y = (values.to_single(next(args)).to_value() for _ in range(2))
         r = values.to_single(next(args)).to_value()
@@ -638,7 +638,7 @@ class Drawing(object):
     def paint_(self, args):
         """PAINT: Fill an area defined by a border attribute with a tiled pattern."""
         if self.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         step = next(args)
         x, y = (values.to_single(next(args)).to_value() for _ in range(2))
         coord = x, y, step
@@ -668,7 +668,7 @@ class Drawing(object):
         # only in screen 7,8,9 is this an error (use ega memory as a check)
         if (pattern and background and background[:len(pattern)] == pattern and
                 self.screen.mode.video_segment == 0xa000):
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         self.flood_fill(coord, c, pattern, border, background)
 
     def flood_fill(self, lcoord, c, pattern, border, background):
@@ -763,15 +763,15 @@ class Drawing(object):
     def put_(self, args):
         """PUT: Put a sprite on the screen."""
         if self.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         x0, y0 = (values.to_single(next(args)).to_value() for _ in range(2))
         array_name, operation_token = args
         array_name = self._memory.complete_name(array_name)
         operation_token = operation_token or tk.XOR
         if array_name not in self._memory.arrays:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         elif array_name[-1] == values.STR:
-            raise error.RunError(error.TYPE_MISMATCH)
+            raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(x0, y0))
         self.last_point = x0, y0
         try:
@@ -803,7 +803,7 @@ class Drawing(object):
     def get_(self, args):
         """GET: Read a sprite from the screen."""
         if self.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         x0, y0 = (values.to_single(next(args)).to_value() for _ in range(2))
         step = next(args)
         x, y = (values.to_single(next(args)).to_value() for _ in range(2))
@@ -811,16 +811,16 @@ class Drawing(object):
         array_name, = args
         array_name = self._memory.complete_name(array_name)
         if array_name not in self._memory.arrays:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         elif array_name[-1] == values.STR:
-            raise error.RunError(error.TYPE_MISMATCH)
+            raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(x0, y0))
         x1, y1 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
         try:
             byte_array = self._memory.arrays.view_full_buffer(array_name)
         except KeyError:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         y0, y1 = sorted((y0, y1))
         x0, x1 = sorted((x0, x1))
         dx, dy = x1-x0+1, y1-y0+1
@@ -838,7 +838,7 @@ class Drawing(object):
         try:
             self.screen.mode.sprite_to_array(sprite, dx, dy, byte_array, 4)
         except ValueError as e:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         # store a copy in the sprite store
         self._memory.arrays.set_cache(array_name, (dx, dy, sprite))
 
@@ -847,7 +847,7 @@ class Drawing(object):
     def draw_(self, args):
         """DRAW: Execute a Graphics Macro Language string."""
         if self.screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         gml = values.next_string(args)
         self.draw(gml)
         list(args)
@@ -900,7 +900,7 @@ class Drawing(object):
             elif c == 'T':
                 # 'turn angle' - set (don't turn) the angle to any value
                 if gmls.read(1).upper() != 'A':
-                    raise error.RunError(error.IFC)
+                    raise error.BASICError(error.IFC)
                 # allow empty spec (default 0), but only if followed by a semicolon
                 if gmls.skip_blank() == ';':
                     self.draw_angle = 0
@@ -932,7 +932,7 @@ class Drawing(object):
                 x = gmls.parse_number()
                 error.range_check(-9999, 9999, x)
                 if gmls.skip_blank() != ',':
-                    raise error.RunError(error.IFC)
+                    raise error.BASICError(error.IFC)
                 else:
                     gmls.read(1)
                 y = gmls.parse_number()
@@ -953,13 +953,13 @@ class Drawing(object):
                 colour = gmls.parse_number()
                 error.range_check(0, 9999, colour)
                 if gmls.skip_blank_read() != ',':
-                    raise error.RunError(error.IFC)
+                    raise error.BASICError(error.IFC)
                 bound = gmls.parse_number()
                 error.range_check(0, 9999, bound)
                 x, y = self.get_window_logical(*self.last_point)
                 self.flood_fill((x, y, False), colour, None, bound, None)
             else:
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
 
     def draw_step(self, x0, y0, sx, sy, plot, goback):
         """Make a DRAW step, drawing a line and returning if requested."""
@@ -1020,7 +1020,7 @@ def _get_octant(f, rx, ry):
         comp += math.pi / 4.
         octant += 1
         if octant >= 8:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
     if octant in (0, 3, 4, 7):
         # running var is y
         coord = abs(int(round(ry * math.sin(f))))

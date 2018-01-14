@@ -49,7 +49,7 @@ class Arrays(object):
             name = self._memory.complete_name(name)
             if name not in self._dims:
                 # IFC if array does not exist
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
             dimensions = self._dims[name]
             record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
             freed_bytes = self.array_len(dimensions) * values.size_bytes(name) + record_len
@@ -132,12 +132,12 @@ class Arrays(object):
         if self._base is None:
             self._base = 0
         if name in self._dims:
-            raise error.RunError(error.DUPLICATE_DEFINITION)
+            raise error.BASICError(error.DUPLICATE_DEFINITION)
         for d in dimensions:
             if d < 0:
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
             elif d < self._base:
-                raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
+                raise error.BASICError(error.SUBSCRIPT_OUT_OF_RANGE)
         # update memory model
         name_ptr = self.current
         record_len = self._record_size(name, dimensions)
@@ -162,13 +162,13 @@ class Arrays(object):
             self.allocate(name, dimensions)
         lst = self._buffers[name]
         if len(index) != len(dimensions):
-            raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
+            raise error.BASICError(error.SUBSCRIPT_OUT_OF_RANGE)
         for i, d in zip(index, dimensions):
             if i < 0:
-                raise error.RunError(error.IFC)
+                raise error.BASICError(error.IFC)
             elif i < self._base or i > d:
                 # dimensions is the *maximum index number*, regardless of self._base
-                raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
+                raise error.BASICError(error.SUBSCRIPT_OUT_OF_RANGE)
         return dimensions, lst
 
     def clear_base(self):
@@ -181,7 +181,7 @@ class Arrays(object):
         base = int(base)
         if self._base is not None and base != self._base:
             # duplicate definition
-            raise error.RunError(error.DUPLICATE_DEFINITION)
+            raise error.BASICError(error.DUPLICATE_DEFINITION)
         self._base = base
 
     def view_buffer(self, name, index):

@@ -52,14 +52,14 @@ def pass_string(inp, err=error.TYPE_MISMATCH):
     """Check if variable is String-valued."""
     if not isinstance(inp, strings.String):
         check_value(inp)
-        raise error.RunError(err)
+        raise error.BASICError(err)
     return inp
 
 def pass_number(inp, err=error.TYPE_MISMATCH):
     """Check if variable is numeric."""
     if not isinstance(inp, numbers.Number):
         check_value(inp)
-        raise error.RunError(err)
+        raise error.BASICError(err)
     return inp
 
 def next_string(args):
@@ -70,7 +70,7 @@ def next_string(args):
     elif expr is None:
         return expr
     else:
-        raise error.RunError(error.TYPE_MISMATCH)
+        raise error.BASICError(error.TYPE_MISMATCH)
 
 
 ###############################################################################
@@ -155,17 +155,17 @@ class FloatErrorHandler(object):
                 math_error not in self.soft_types):
             # also raises exception in error_handle_mode!
             # in that case, prints a normal error message
-            raise error.RunError(math_error)
+            raise error.BASICError(math_error)
         else:
             # write a message & continue as normal
-            self._screen.write_line(error.RunError(math_error).message)
+            self._screen.write_line(error.BASICError(math_error).message)
         # return max value for the appropriate float type
         if e.args and e.args[0]:
             if isinstance(e.args[0], numbers.Float):
                 return e.args[0]
             elif isinstance(e.args[0], numbers.Integer):
                 # integer values are not soft-handled
-                raise error.RunError(math_error)
+                raise error.BASICError(math_error)
         return numbers.Single(None, self).from_bytes(numbers.Single.pos_max)
 
 
@@ -273,7 +273,7 @@ class Values(object):
         except ValueError as e:
             # non-integer characters, try a float
             pass
-        except error.RunError as e:
+        except error.BASICError as e:
             if e.err != error.OVERFLOW:
                 raise
         # if allow_nonnum == False, raises ValueError for non-numerical characters
@@ -295,21 +295,21 @@ def round(x):
 def to_integer(inp, unsigned=False):
     """Check if variable is numeric, convert to Int."""
     if isinstance(inp, strings.String):
-        raise error.RunError(error.TYPE_MISMATCH)
+        raise error.BASICError(error.TYPE_MISMATCH)
     return inp.to_integer(unsigned)
 
 @float_safe
 def to_single(num):
     """Check if variable is numeric, convert to Single."""
     if isinstance(num, strings.String):
-        raise error.RunError(error.TYPE_MISMATCH)
+        raise error.BASICError(error.TYPE_MISMATCH)
     return num.to_single()
 
 @float_safe
 def to_double(num):
     """Check if variable is numeric, convert to Double."""
     if isinstance(num, strings.String):
-        raise error.RunError(error.TYPE_MISMATCH)
+        raise error.BASICError(error.TYPE_MISMATCH)
     return num.to_double()
 
 def cint_(args):
@@ -543,7 +543,7 @@ def to_repr(inp, leading_space, type_sign):
     if isinstance(inp, numbers.Number):
         return inp.to_str(leading_space, type_sign)
     elif isinstance(inp, strings.String):
-        raise error.RunError(error.TYPE_MISMATCH)
+        raise error.BASICError(error.TYPE_MISMATCH)
     raise TypeError('%s is not of class Value' % type(inp))
 
 def str_(args):
@@ -710,7 +710,7 @@ def add(left, right):
 def sub(left, right):
     """Subtract two numbers."""
     if isinstance(left, strings.String) or isinstance(right, strings.String):
-        raise error.RunError(error.TYPE_MISMATCH)
+        raise error.BASICError(error.TYPE_MISMATCH)
     # promote Integer to Single to avoid integer overflow
     left, right = match_types(left.to_float(), right)
     return left.clone().isub(right)

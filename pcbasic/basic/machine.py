@@ -50,7 +50,7 @@ class MachinePorts(object):
         """USR: get value of machine-code function; not implemented."""
         num, = args
         logging.warning('USR function not implemented.')
-        raise error.RunError(error.IFC)
+        raise error.BASICError(error.IFC)
 
     def inp_(self, args):
         """INP: get value from machine port."""
@@ -278,7 +278,7 @@ class Memory(object):
         addr, = args
         # no peeking the program code (or anywhere) in protected mode
         if self._memory.program.protected and not self.interpreter.run_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         addr = values.to_int(addr, unsigned=True)
         addr += self.segment * 0x10
         return self._values.new_integer().from_int(self._get_memory(addr))
@@ -287,7 +287,7 @@ class Memory(object):
         """POKE: Set the value at an emulated memory location."""
         addr = values.to_int(next(args), unsigned=True)
         if self._memory.program.protected and not self.interpreter.run_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         val, = args
         val = values.to_int(val)
         error.range_check(0, 255, val)
@@ -299,7 +299,7 @@ class Memory(object):
     def bload_(self, args):
         """BLOAD: Load a file into a block of memory."""
         if self._memory.program.protected and not self.interpreter.run_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         name = values.next_string(args)
         offset = next(args)
         if offset is not None:
@@ -323,7 +323,7 @@ class Memory(object):
     def bsave_(self, args):
         """BSAVE: Save a block of memory into a file."""
         if self._memory.program.protected and not self.interpreter.run_mode:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         name = values.next_string(args)
         offset = values.to_int(next(args), unsigned=True)
         length = values.to_int(next(args), unsigned=True)
@@ -360,7 +360,7 @@ class Memory(object):
         addr_var = next(args)
         if self._memory.complete_name(addr_var)[-1] == values.STR:
             # type mismatch
-            raise error.RunError(error.TYPE_MISMATCH)
+            raise error.BASICError(error.TYPE_MISMATCH)
         list(args)
         logging.warning('CALL/CALLS statement not implemented')
 

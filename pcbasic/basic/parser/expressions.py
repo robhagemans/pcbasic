@@ -281,14 +281,14 @@ class ExpressionParser(object):
                         try:
                             oper = op.UNARY[d]
                         except KeyError:
-                            raise error.RunError(error.STX)
+                            raise error.BASICError(error.STX)
                     else:
                         nargs = 2
                         try:
                             oper = op.BINARY[d]
                         except KeyError:
                             # illegal combined ops like == raise syntax error here
-                            raise error.RunError(error.STX)
+                            raise error.BASICError(error.STX)
                         self._drain(prec, operations, units)
                     operations.append((oper, nargs, prec))
                 elif not (last in op.OPERATORS or last == ''):
@@ -329,8 +329,8 @@ class ExpressionParser(object):
                 # empty expression is a syntax error (inside brackets)
                 # or Missing Operand (in an assignment)
                 if final:
-                    raise error.RunError(error.MISSING_OPERAND)
-                raise error.RunError(error.STX)
+                    raise error.BASICError(error.MISSING_OPERAND)
+                raise error.BASICError(error.STX)
 
     def _drain(self, precedence, operations, units):
         """Drain evaluation stack until an operator of low precedence on top."""
@@ -369,7 +369,7 @@ class ExpressionParser(object):
             # we need to convert to single to ensure it is interpreted as the unsigned value
             return self._values.new_single().from_int(value)
         else:
-            raise error.RunError(error.STX)
+            raise error.BASICError(error.STX)
 
     def parse_indices(self, ins):
         """Parse array indices."""
@@ -401,7 +401,7 @@ class ExpressionParser(object):
             try:
                 parse_args = fndict[presign]
             except KeyError:
-                raise error.RunError(error.STX)
+                raise error.BASICError(error.STX)
         if token == tk.FN:
             fnname = ins.read_name()
             # must not be empty

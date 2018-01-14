@@ -48,14 +48,14 @@ class Clock(object):
         if len(strlist) == 1:
             strlist = strlist[0].split('.')
         if len(strlist) not in (1, 2, 3):
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         try:
             timelist = [int(s) for s in strlist]
         except ValueError:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         timelist += [0] * (3 - len(timelist))
         if timelist[0] > 23 or timelist[1] > 59 or timelist[2] > 59:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         newtime = datetime.datetime(now.year, now.month, now.day,
                     timelist[0], timelist[1], timelist[2], now.microsecond)
         self.time_offset += newtime - now
@@ -69,15 +69,15 @@ class Clock(object):
         now = datetime.datetime.now() + self.time_offset
         strlist = datestr.replace('/', '-').split('-')
         if len(strlist) != 3:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         try:
             datelist = [int(s) for s in strlist]
         except ValueError:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         if (datelist[0] > 12 or datelist[1] > 31 or
                 (datelist[2] > 77 and datelist[2] < 80) or
                 (datelist[2] > 99 and datelist[2] < 1980 or datelist[2] > 2099)):
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         if datelist[2] <= 77:
             datelist[2] = 2000 + datelist[2]
         elif datelist[2] < 100 and datelist[2] > 79:
@@ -87,7 +87,7 @@ class Clock(object):
                             datelist[2], datelist[0], datelist[1],
                             now.hour, now.minute, now.second, now.microsecond)
         except ValueError:
-            raise error.RunError(error.IFC)
+            raise error.BASICError(error.IFC)
         list(args)
         self.time_offset += newtime - now
 
