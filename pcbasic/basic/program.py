@@ -399,6 +399,7 @@ class Program(object):
             else:
                 self.bytecode.seek(offset)
             self.bytecode.write(chr(val))
+            self.bytecode.seek(0,2)
+            self.rebuild_line_dict()
             # restore program pointer
             self.bytecode.seek(loc)
-            self.rebuild_line_dict()
