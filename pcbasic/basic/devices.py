@@ -201,7 +201,6 @@ class TextFileBase(RawFile):
                  first_char='', split_long_lines=True):
         """Setup the basic properties of the file."""
         RawFile.__init__(self, fhandle, filetype, mode)
-        print 'textfilebase init', repr(first_char), fhandle
         # width=255 means line wrap
         self.width = 255
         self.col = 1

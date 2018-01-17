@@ -52,13 +52,13 @@ class COMDevice(devices.Device):
 
     allowed_modes = 'IOAR'
 
-    def __init__(self, arg, input_methods, field, serial_in_size):
+    def __init__(self, arg, input_methods, fields, serial_in_size):
         """Initialise COMn: device."""
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
         self.stream = None
         self.input_methods = input_methods
-        self.field = field
+        self._fields = fields
         self.serial_in_size = serial_in_size
         try:
             if not addr and not val:
@@ -104,7 +104,7 @@ class COMDevice(devices.Device):
         except Exception:
             self.stream.close()
             raise
-        f = COMFile(self.combuffer, self.field, lf)
+        f = COMFile(self.combuffer, self._fields[number] if number else None, lf)
         # inherit width settings from device file
         f.width = self.device_file.width
         # FIXME: is this ever anything but 1? what uses it? on LPT it's LPOS, but on COM?
@@ -334,7 +334,8 @@ class COMFile(devices.TextFileBase):
     def get(self, num):
         """Read a record - GET."""
         # blocking read of num bytes
-        self.field.buffer[:] = self.read(num)
+        s = self.read(num)
+        self.field.buffer[:len(s)] = s
 
     def put(self, num):
         """Write a record - PUT."""
