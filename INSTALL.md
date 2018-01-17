@@ -14,7 +14,7 @@ The following packages are needed or recommended when installing PC-BASIC from t
 | [PyWin32](https://sourceforge.net/projects/pywin32/)                              | Windows            | required     |
 | [PySDL2](https://pysdl2.readthedocs.org/en/latest/)                               | all                | recommended  | sound and graphics
 | [NumPy](https://sourceforge.net/projects/numpy/files/)                            | all                | recommended  | sound and graphics
-| [PySerial 3+](https://pypi.python.org/pypi/pyserial)                              | all                | optional     | physical or emulated serial port access
+| [PySerial 3.4](https://pypi.python.org/pypi/pyserial)                             | all                | optional     | physical or emulated serial port access
 | [PyParallel 0.2](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/) | Windows, Linux     | optional     | physical parallel port access
 | [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)                  | OSX, Linux, other  | optional     | `SHELL` command
 | [PyGame 1.9.3](http://www.pygame.org)                                             | all                | optional     | sound and graphics (PyGame interface)
