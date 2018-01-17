@@ -134,8 +134,6 @@ class Files(object):
 
     def _set_record_pos(self, the_file, pos=None):
         """Helper function: PUT and GET syntax."""
-        # for COM files
-        num_bytes = the_file.reclen
         if pos is not None:
             # forcing to single before rounding - this means we don't have enough precision
             # to address each individual record close to the maximum record number
@@ -146,6 +144,7 @@ class Files(object):
             error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
             if not isinstance(the_file, ports.COMFile):
                 the_file.set_pos(pos)
+                num_bytes = the_file.reclen
             else:
                 num_bytes = pos
         return the_file, num_bytes
