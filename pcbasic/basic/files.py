@@ -493,16 +493,11 @@ class Devices(object):
         self.devices['CAS1:'] = cassette.CASDevice(device_params['CAS1:'], screen)
         # disk file locks
         self.locks = disk.Locks()
-        # for wait()
-        self.input_methods = input_methods
-        # text file settings
-        self.utf8 = utf8
-        self.universal = universal
         # disk devices
         self.internal_disk = disk.DiskDevice(
                 b'', None, u'',
                 self.locks, self.codepage,
-                self.input_methods, self.utf8, self.universal)
+                input_methods, utf8, universal)
         for letter in self.drive_letters:
             if not mount_dict:
                 mount_dict = {}
@@ -513,7 +508,7 @@ class Devices(object):
             self.devices[letter + b':'] = disk.DiskDevice(
                     letter, path, cwd,
                     self.locks, self.codepage,
-                    self.input_methods, self.utf8, self.universal)
+                    input_methods, utf8, universal)
         self.current_device = current_device.upper()
 
     def close(self):
