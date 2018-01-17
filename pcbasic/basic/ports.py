@@ -65,7 +65,7 @@ class COMDevice(devices.Device):
                 pass
             elif addr == 'STDIO' or (not addr and val.upper() == 'STDIO'):
                 crlf = (val.upper() == 'CRLF')
-                self.stream = StdIOStream(crlf)
+                self.stream = StdIOSerialStream(input_methods, crlf)
             elif addr == 'SOCKET':
                 # throws ValueError if too many :s, caught below
                 host, socket = val.split(':')
@@ -77,13 +77,10 @@ class COMDevice(devices.Device):
                 logging.warning('Could not attach %s to COM device', arg)
         except (ValueError, EnvironmentError) as e:
             logging.warning('Could not attach %s to COM device: %s', arg, e)
-            self.stream = None
         except AttributeError:
             logging.warning('Serial module not available. Could not attach %s to COM device: %s.', arg, e)
-            self.stream = None
-        if self.stream:
-            # NOTE: opening a text file automatically tries to read a byte
-            self.device_file = COMFile(self.stream, self.field, self.input_methods, False, serial_in_size)
+        self.combuffer = SerialBuffer(self.stream, self.serial_in_size)
+        self.device_file = devices.DummyDeviceFile()
 
     def open(self, number, param, filetype, mode, access, lock,
                        reclen, seg, offset, length):
@@ -107,14 +104,11 @@ class COMDevice(devices.Device):
         except Exception:
             self.stream.close()
             raise
-        f = COMFile(self.stream, self.field, self.input_methods, lf, self.serial_in_size)
+        f = COMFile(self.combuffer, self.field, lf)
         # inherit width settings from device file
         f.width = self.device_file.width
+        # FIXME: is this ever anything but 1? what uses it? on LPT it's LPOS, but on COM?
         f.col = self.device_file.col
-        #
-        # hack to enforce a single serial buffer across files and event handler
-        self.device_file = f
-        #
         return f
 
     def get_params(self, param):
@@ -123,7 +117,7 @@ class COMDevice(devices.Device):
         param_list = param.upper().split(',')
         if len(param_list) > max_param:
             raise error.BASICError(error.BAD_FILE_NAME)
-        param_list += ['']*(max_param-len(param_list))
+        param_list += [''] * (max_param-len(param_list))
         speed, parity, data, stop = param_list[:4]
         # set speed
         if speed not in ('75', '110', '150', '300', '600', '1200',
@@ -185,65 +179,131 @@ class COMDevice(devices.Device):
 
     def char_waiting(self):
         """Whether a char is present in buffer. For ON COM(n)."""
-        if not self.device_file:
+        if not self.combuffer:
             return False
-        # fill up the buffer with anything waiting
-        self.device_file._check_read()
-        # anything available?
-        return len(self.device_file.in_buffer) > 0
+        return self.combuffer.in_waiting() > 0
 
 
-class COMFile(devices.CRLFTextFileBase):
-    """COMn: device - serial port."""
+class SerialBuffer(object):
+    """Serial communications buffer."""
 
-    def __init__(self, fhandle, field, input_methods, linefeed, serial_in_size):
+    def __init__(self, fhandle, serial_in_size):
         """Initialise COMn: file."""
-        # note that for random files, fhandle must be a seekable stream.
-        devices.CRLFTextFileBase.__init__(self, fhandle, 'D', 'R')
-        # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
-        self.field = field
-        # for wait()
-        self.input_methods = input_methods
-        self.serial_in_size = serial_in_size
-        self.in_buffer = bytearray()
-        self.linefeed = linefeed
-        self.overflow = False
+        self._serial_in_size = serial_in_size
+        self._in_buffer = bytearray()
+        self._overflow = False
+        self._fhandle = fhandle or devices.nullstream()
 
     def _check_read(self, allow_overflow=False):
         """Fill buffer at most up to buffer size; non blocking."""
         try:
-            self.in_buffer += self.fhandle.read(self.serial_in_size - len(self.in_buffer))
+            self._in_buffer += self._fhandle.read(self._serial_in_size - len(self._in_buffer))
         except (EnvironmentError, ValueError):
             raise error.BASICError(error.DEVICE_IO_ERROR)
         # if more to read, signal an overflow
-        if len(self.in_buffer) >= self.serial_in_size and self.fhandle.read(1):
-            self.overflow = True
+        if len(self._in_buffer) >= self._serial_in_size and self._fhandle.read(1):
+            self._overflow = True
             # drop waiting chars that don't fit in buffer
-            while self.fhandle.read(1):
+            while self._fhandle.read(1):
                 pass
-        if not allow_overflow and self.overflow:
+        if not allow_overflow and self._overflow:
             # only raise this the first time the overflow is encountered
-            self.overflow = False
+            self._overflow = False
             raise error.BASICError(error.COMMUNICATION_BUFFER_OVERFLOW)
+        if self._in_buffer:
+            logging.debug('buffer %s', repr(self._in_buffer))
 
-    def read_raw(self, num=-1):
-        """Read num characters from the port as a string; blocking """
+    def read(self, num=-1):
+        """Read num characters from the buffer as a string. """
+        # non blocking read
+        self._check_read()
         if num == -1:
             # read whole buffer, non-blocking
-            self._check_read()
-            out = self.in_buffer
-            del self.in_buffer[:]
+            out = bytes(self._in_buffer)
+            del self._in_buffer[:]
         else:
-            out = ''
-            while len(out) < num:
-                # non blocking read
-                self._check_read()
-                to_read = min(len(self.in_buffer), num - len(out))
-                out += str(self.in_buffer[:to_read])
-                del self.in_buffer[:to_read]
-                # allow for break & screen updates
-                self.input_methods.wait()
+            to_read = min(len(self._in_buffer), num)
+            out = bytes(self._in_buffer[:to_read])
+            del self._in_buffer[:to_read]
         return out
+
+    def write(self, s):
+        """Write bytes to the port."""
+        self._fhandle.write(s)
+
+    def in_waiting(self):
+        """Return number of bytes waiting to be read."""
+        # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0
+        # fill up buffer insofar possible
+        self._check_read(allow_overflow=True)
+        return len(self._in_buffer)
+
+    def in_free(self):
+        """Returns number of bytes free in buffer."""
+        return self._serial_in_size - self.in_waiting()
+
+    def close(self):
+        """Close the buffer."""
+        self._fhandle.close()
+
+
+class COMFile(devices.TextFileBase):
+    """COMn: device - serial port."""
+
+    def __init__(self, combuffer, field, linefeed):
+        """Initialise COMn: file."""
+        # note that for random files, fhandle must be a seekable stream.
+        devices.TextFileBase.__init__(self, combuffer, 'D', 'R')
+        # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
+        self.field = field
+        # comms buffer
+        self.combuffer = combuffer
+        self.linefeed = linefeed
+
+    # def read_raw(self, num=-1):
+    #     """Read num characters from the buffer as a string. """
+    #     if num == -1:
+    #         # read whole buffer, non-blocking
+    #         return self.fhandle.read(-1)
+    #     else:
+    #         out = ''
+    #         while len(out) < num:
+    #             # non blocking read
+    #             out += bytes(self.fhandle.read(num - len(out)))
+    #     return out
+
+
+    def read_raw(self, num=-1):
+        """Read num characters as string."""
+        s = ''
+        while True:
+            if (num > -1 and len(s) >= num):
+                break
+            # check for \x1A (EOF char will actually stop further reading
+            # (that's true in disk text files but not on LPT devices)
+            #if self.next_char in ('\x1a', ''):
+            #    break
+            s += self.next_char
+            self.next_char, self.char, self.last = self.fhandle.read(1), self.next_char, self.char
+        return s
+
+    #read = devices.CRLFTextFileBase.read
+    def read(self, num=-1):
+        """Read num characters, replacing CR LF with CR."""
+        s = ''
+        while len(s) < num:
+            c = self.read_raw(1)
+            if not c:
+                break
+            s += c
+            # report CRLF as CR
+            # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
+            if (c == '\r' and self.last != '\n') and self.next_char == '\n':
+                last, char = self.last, self.char
+                self.read_raw(1)
+                self.last, self.char = last, char
+        logging.debug('read %s, last %s char %s  next %s', repr(s), repr(self.last), repr(self.char), repr(self.next_char))
+        return s
 
     def read_line(self):
         """Blocking read line from the port (not the FIELD buffer!)."""
@@ -285,10 +345,7 @@ class COMFile(devices.CRLFTextFileBase):
 
     def loc(self):
         """LOC: Returns number of chars waiting to be read."""
-        # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0
-        # fill up buffer insofar possible
-        self._check_read(allow_overflow=True)
-        return len(self.in_buffer)
+        return self.combuffer.in_waiting()
 
     def eof(self):
         """EOF: no chars waiting."""
@@ -297,71 +354,7 @@ class COMFile(devices.CRLFTextFileBase):
 
     def lof(self):
         """Returns number of bytes free in buffer."""
-        return self.serial_in_size - self.loc()
-
-
-class StdIOStream(object):
-    """Wrapper object to route port to stdio."""
-
-    def __init__(self, crlf=False):
-        """Initialise the stream."""
-        self.is_open = False
-        self._crlf = crlf
-
-    def open(self, rs=False, cs=1000, ds=1000, cd=0):
-        """Open a connection."""
-        self.is_open = True
-
-    def close(self):
-        """Close the connection."""
-        self.is_open = False
-
-    def read(self, num=1):
-        """Non-blocking read of up to `num` chars from stdin."""
-        s = ''
-        while kbhit() and len(s) < num:
-            c = sys.stdin.read(1)
-            if self._crlf and c == '\n':
-                c = '\r'
-            s += c
-        return s
-
-    def write(self, s):
-        """Write to stdout."""
-        for c in s:
-            if self._crlf and c == '\r':
-                c = '\n'
-            sys.stdout.write(c)
-        self.flush()
-
-    def flush(self):
-        """Flush stdout."""
-        sys.stdout.flush()
-
-    def set_params(self, speed, parity, bytesize, stop):
-        """Set serial port connection parameters """
-
-    def get_params(self):
-        """Get serial port connection parameters """
-        return 300, 'E', 8, 2
-
-    def set_pins(self, rts=None, dtr=None, brk=None):
-        """Set signal pins."""
-
-    def get_pins(self):
-        """Get signal pins."""
-        return False, False, False, False
-
-    def set_control(self, select=False, init=False, lf=False, strobe=False):
-        """Set the values of the control pins."""
-
-    def get_status(self):
-        """Get the values of the status pins."""
-        return False, False, False, False, False
-
-    def io_waiting(self):
-        """ Find out whether bytes are waiting for input or output. """
-        return kbhit(), False
+        return self.combuffer.in_free()
 
 
 class SerialStream(object):
@@ -387,10 +380,6 @@ class SerialStream(object):
             logging.warning('Could not resume serial connection: %s', e)
             self.__init__(st['url'], st['input_methods'], False)
             self.is_open = False
-
-    # delegation doesn't play ball nicely with Pickle
-    # def __getattr__(self, attr):
-    #     return getattr(self._serial, attr)
 
     def _check_open(self):
         """Open the underlying port if necessary."""
@@ -471,6 +460,7 @@ class SerialStream(object):
     def read(self, num=1):
         """Non-blocking read from socket."""
         self._check_open()
+        self._input_methods.wait()
         # NOTE: num=1 follows PySerial
         # stream default is num=-1 to mean all available
         # but that's ill-defined for ports
@@ -485,6 +475,65 @@ class SerialStream(object):
         """ Find out whether bytes are waiting for input or output. """
         self._check_open()
         return self._serial.in_waiting > 0, self._serial.out_waiting > 0
+
+
+class StdIOSerialStream(object):
+    """Wrapper object to route port to stdio."""
+
+    def __init__(self, input_methods, crlf):
+        """Initialise the stream."""
+        self.is_open = False
+        self._crlf = crlf
+        self._input_methods = input_methods
+
+    def open(self, rs=False, cs=1000, ds=1000, cd=0):
+        """Open a connection."""
+        self.is_open = True
+
+    def close(self):
+        """Close the connection."""
+        self.is_open = False
+
+    def read(self, num=1):
+        """Non-blocking read of up to `num` chars from stdin."""
+        s = ''
+        while kbhit() and len(s) < num:
+            c = sys.stdin.read(1)
+            if self._crlf and c == '\n':
+                c = '\r'
+            s += c
+        self._input_methods.wait()
+        return s
+
+    def write(self, s):
+        """Write to stdout."""
+        for c in s:
+            if self._crlf and c == '\r':
+                c = '\n'
+            sys.stdout.write(c)
+        self.flush()
+
+    def flush(self):
+        """Flush stdout."""
+        sys.stdout.flush()
+
+    def set_params(self, speed, parity, bytesize, stop):
+        """Set serial port connection parameters """
+
+    def get_params(self):
+        """Get serial port connection parameters """
+        return 300, 'E', 8, 2
+
+    def set_pins(self, rts=None, dtr=None, brk=None):
+        """Set signal pins."""
+
+    def get_pins(self):
+        """Get signal pins."""
+        return False, False, False, False
+
+    def io_waiting(self):
+        """ Find out whether bytes are waiting for input or output. """
+        return kbhit(), False
 
 
 
@@ -517,7 +566,7 @@ class LPTDevice(devices.Device):
                 logging.warning('Could not attach parallel port %s to LPT device: %s', val, str(e))
         elif addr == 'STDIO' or (not addr and val == 'STDIO'):
             crlf = (val.upper() == 'CRLF')
-            self.stream = StdIOStream(crlf)
+            self.stream = StdIOParallelStream(crlf)
         elif addr == 'PRINTER' or (val and not addr):
             # 'PRINTER' is default
             self.stream = printer.get_printer_stream(val, codepage, temp_dir)
@@ -525,7 +574,6 @@ class LPTDevice(devices.Device):
             logging.warning('Could not attach %s to LPT device', arg)
         if self.stream:
             self.device_file = LPTFile(self.stream, flush_trigger)
-            self.device_file.flush_trigger = flush_trigger
 
     def open(self, number, param, filetype, mode, access, lock,
                    reclen, seg, offset, length):
@@ -661,3 +709,33 @@ class ParallelStream(object):
     def close(self):
         """Close the stream."""
         pass
+
+
+class StdIOParallelStream(object):
+    """Wrapper object to route port to stdio."""
+
+    def __init__(self, crlf=False):
+        """Initialise the stream."""
+        self._crlf = crlf
+
+    def close(self):
+        """Close the connection."""
+
+    def write(self, s):
+        """Write to stdout."""
+        for c in s:
+            if self._crlf and c == '\r':
+                c = '\n'
+            sys.stdout.write(c)
+        self.flush()
+
+    def flush(self):
+        """Flush stdout."""
+        sys.stdout.flush()
+
+    def set_control(self, select=False, init=False, lf=False, strobe=False):
+        """Set the values of the control pins."""
+
+    def get_status(self):
+        """Get the values of the status pins."""
+        return False, False, False, False, False

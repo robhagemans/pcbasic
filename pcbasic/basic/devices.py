@@ -114,6 +114,24 @@ class KYBDDevice(Device):
 #################################################################################
 # file classes
 
+
+
+class DummyDeviceFile(object):
+    """Device-level settings, not a file as such."""
+
+    def __init__(self):
+        """Setup the basic properties of the file."""
+        self.width = 255
+        self.col = 1
+
+    def set_width(self, width):
+        """Set file width."""
+        self.width = width
+
+    def close(self):
+        """Close dummy device file."""
+
+
 class RawFile(object):
     """File class for raw access to underlying stream."""
 
@@ -183,6 +201,7 @@ class TextFileBase(RawFile):
                  first_char='', split_long_lines=True):
         """Setup the basic properties of the file."""
         RawFile.__init__(self, fhandle, filetype, mode)
+        print 'textfilebase init', repr(first_char), fhandle
         # width=255 means line wrap
         self.width = 255
         self.col = 1
