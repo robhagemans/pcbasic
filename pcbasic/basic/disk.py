@@ -284,7 +284,7 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, fields, locks, codepage, input_methods, utf8, universal):
+    def __init__(self, letter, path, cwd, locks, codepage, input_methods, utf8, universal):
         """Initialise a disk device."""
         self.letter = letter
         # mount root
@@ -294,7 +294,6 @@ class DiskDevice(object):
         # this is a DOS relative path, no drive letter; including leading \\
         # stored with os.sep but given using backslash separators
         self.cwd = os.path.join(*cwd.split(u'\\'))
-        self.fields = fields
         self.locks = locks
         # code page for file system names and text file conversion
         self.codepage = codepage
@@ -346,7 +345,7 @@ class DiskDevice(object):
             raise ValueError(msg)
 
     def open(self, number, filespec, filetype, mode, access, lock,
-                   reclen, seg, offset, length):
+                   reclen, seg, offset, length, field):
         """Open a file on a disk drive."""
         if not self.path:
             # undefined disk drive: path not found
@@ -373,7 +372,6 @@ class DiskDevice(object):
             # open the underlying stream
             fhandle = self._open_stream(name, mode, access)
             # apply the BASIC file wrapper
-            field = self.fields[number] if number else None
             f = self.create_file_object(fhandle, filetype, mode, name, number,
                     access, lock, field, reclen,
                     seg, offset, length)

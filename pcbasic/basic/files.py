@@ -36,6 +36,7 @@ class Files(object):
         """Initialise files."""
         self._values = values
         self._memory = memory
+        self._fields = self._memory.fields
         self.files = {}
         self.max_files = max_files
         self.max_reclen = max_reclen
@@ -255,9 +256,11 @@ class Files(object):
             else:
                 # open file on default device
                 dev_param = name
+        # get the field buffer
+        field = self._fields[number] if number else None
         # open the file on the device
         new_file = device.open(number, dev_param, filetype, mode, access, lock,
-                               reclen, seg, offset, length)
+                               reclen, seg, offset, length, field)
         if number:
             self.files[number] = new_file
         return new_file
@@ -459,7 +462,7 @@ class Devices(object):
     # allowable drive letters in GW-BASIC are letters or @
     drive_letters = b'@' + string.ascii_uppercase
 
-    def __init__(self, values, input_methods, fields, screen, keyboard,
+    def __init__(self, values, input_methods, screen, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_in_size, utf8, universal):
         """Initialise devices."""
@@ -483,32 +486,34 @@ class Devices(object):
         self.lpt1_file = self.devices['LPT1:'].device_file
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)
-        self.devices['COM1:'] = ports.COMDevice(device_params['COM1:'], input_methods, fields, serial_in_size)
-        self.devices['COM2:'] = ports.COMDevice(device_params['COM2:'], input_methods, fields, serial_in_size)
+        self.devices['COM1:'] = ports.COMDevice(device_params['COM1:'], input_methods, serial_in_size)
+        self.devices['COM2:'] = ports.COMDevice(device_params['COM2:'], input_methods, serial_in_size)
         # cassette
         # needs a screen for write() and write_line() to display Found and Skipped messages on opening files
         self.devices['CAS1:'] = cassette.CASDevice(device_params['CAS1:'], screen)
         # disk file locks
         self.locks = disk.Locks()
-        # field buffers
-        self.fields = fields
         # for wait()
         self.input_methods = input_methods
         # text file settings
         self.utf8 = utf8
         self.universal = universal
         # disk devices
-        self.internal_disk = disk.DiskDevice(b'', None, u'',
-                        self.fields, self.locks, self.codepage, self.input_methods, self.utf8, self.universal)
+        self.internal_disk = disk.DiskDevice(
+                b'', None, u'',
+                self.locks, self.codepage,
+                self.input_methods, self.utf8, self.universal)
         for letter in self.drive_letters:
             if not mount_dict:
                 mount_dict = {}
             if letter in mount_dict:
-                self.devices[letter + b':'] = disk.DiskDevice(letter, mount_dict[letter][0], mount_dict[letter][1],
-                            self.fields, self.locks, self.codepage, self.input_methods, self.utf8, self.universal)
+                path, cwd = mount_dict[letter]
             else:
-                self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'',
-                                self.fields, self.locks, self.codepage, self.input_methods, self.utf8, self.universal)
+                path, cwd = None, u''
+            self.devices[letter + b':'] = disk.DiskDevice(
+                    letter, path, cwd,
+                    self.locks, self.codepage,
+                    self.input_methods, self.utf8, self.universal)
         self.current_device = current_device.upper()
 
     def close(self):

@@ -52,13 +52,12 @@ class COMDevice(devices.Device):
 
     allowed_modes = 'IOAR'
 
-    def __init__(self, arg, input_methods, fields, serial_in_size):
+    def __init__(self, arg, input_methods, serial_in_size):
         """Initialise COMn: device."""
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
         self.stream = None
         self.input_methods = input_methods
-        self._fields = fields
         self.serial_in_size = serial_in_size
         try:
             if not addr and not val:
@@ -83,7 +82,7 @@ class COMDevice(devices.Device):
         self.device_file = devices.DummyDeviceFile()
 
     def open(self, number, param, filetype, mode, access, lock,
-                       reclen, seg, offset, length):
+                       reclen, seg, offset, length, field):
         """Open a file on COMn: """
         if not self.stream:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -104,7 +103,7 @@ class COMDevice(devices.Device):
         except Exception:
             self.stream.close()
             raise
-        f = COMFile(self.combuffer, self._fields[number] if number else None, lf)
+        f = COMFile(self.combuffer, field, lf)
         # inherit width settings from device file
         f.width = self.device_file.width
         # FIXME: is this ever anything but 1? what uses it? on LPT it's LPOS, but on COM?

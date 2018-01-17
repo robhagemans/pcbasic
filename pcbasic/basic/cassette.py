@@ -72,7 +72,7 @@ class CASDevice(object):
             self.tapestream.close_tape()
 
     def open(self, number, param, filetype, mode, access, lock,
-                   reclen, seg, offset, length):
+                   reclen, seg, offset, length, field):
         """Open a file on tape."""
         if not self.tapestream:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)

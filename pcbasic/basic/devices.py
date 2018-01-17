@@ -57,7 +57,7 @@ class Device(object):
         self.device_file = None
 
     def open(self, number, param, filetype, mode, access, lock,
-                   reclen, seg, offset, length):
+                   reclen, seg, offset, length, field):
         """Open a file on the device."""
         if not self.device_file:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -79,7 +79,7 @@ class NullDevice():
         """Set up device."""
 
     def open(self, number, param, filetype, mode, access, lock,
-                   reclen, seg, offset, length):
+                   reclen, seg, offset, length, field):
         """Open a file on the device."""
         return TextFileBase(nullstream(), filetype, mode)
 
