@@ -210,8 +210,6 @@ class SerialBuffer(object):
             # only raise this the first time the overflow is encountered
             self._overflow = False
             raise error.BASICError(error.COMMUNICATION_BUFFER_OVERFLOW)
-        if self._in_buffer:
-            logging.debug('buffer %s', repr(self._in_buffer))
 
     def read(self, num=-1):
         """Read num characters from the buffer as a string. """
@@ -302,7 +300,6 @@ class COMFile(devices.TextFileBase):
                 last, char = self.last, self.char
                 self.read_raw(1)
                 self.last, self.char = last, char
-        logging.debug('read %s, last %s char %s  next %s', repr(s), repr(self.last), repr(self.char), repr(self.next_char))
         return s
 
     def read_line(self):
