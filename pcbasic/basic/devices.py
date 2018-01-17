@@ -429,39 +429,6 @@ class InputTextFile(TextFileBase):
         TextFileBase.__init__(self, io.BytesIO(line), 'D', 'I')
 
 
-############################################################################
-# FIELD buffers
-
-class Field(object):
-    """Buffer for FIELD access."""
-
-    def __init__(self, reclen, number=0, memory=None):
-        """Set up empty FIELD buffer."""
-        if number > 0:
-            self.address = memory.field_mem_start + (number-1)*memory.field_mem_offset
-        else:
-            self.address = -1
-        self.buffer = bytearray(reclen)
-        self.memory = memory
-
-    def attach_var(self, name, indices, offset, length):
-        """Attach a FIELD variable."""
-        if self.address < 0 or self.memory == None:
-            raise AttributeError("Can't attach variable to non-memory-mapped field.")
-        if name[-1] != values.STR:
-            # type mismatch
-            raise error.BASICError(error.TYPE_MISMATCH)
-        if offset + length > len(self.buffer):
-            # FIELD overflow
-            raise error.BASICError(error.FIELD_OVERFLOW)
-        # create a string pointer
-        str_addr = self.address + offset
-        str_sequence = struct.pack('<BH', length, str_addr)
-        # assign the string ptr to the variable name
-        # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-        self.memory.set_variable(name, indices, self.memory.values.from_bytes(str_sequence))
-
-
 #################################################################################
 # Console files
 
