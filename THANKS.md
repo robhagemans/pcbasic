@@ -7,7 +7,7 @@ sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 
 - **Rob Hagemans**,         lead author
 - **Wengier Wu**,           bug fixes, CJK guidance
-- **Jan Bredenbeek**,       bug fixes, BASICODE guidance
+- **Jan Bredenbeek**,       bug fixes
 - **WJB**,                  bug fixes
 - **Ronald Herrera**,       testing, bug hunting
 - **Kenneth Wayne Boyd**,   testing, bug hunting
@@ -65,11 +65,6 @@ apologies to those whose contribution I have failed to acknowledge here.
 
   * **Mike Brutman**'s [Analysis of the IBM PC data cassette format](http://www.brutman.com/Cassette_Waveforms/Cassette_Waveforms.html)
   * **Dan Tobias**' [IBM PC data cassette format documentation](http://fileformats.archiveteam.org/wiki/IBM_PC_data_cassette)
-
-##### BASICODE
-
-  * **Janny Looyenga**'s documentation of the [BASICODE format](http://www.nostalgia8.nl/basicode.htm)
-  * **Prof. Dr. Horst Völz**'s documentation of the [BASICODE cassette file format](http://www.kc85emu.de/scans/rfe0190/Basicode.htm)
 
 ##### Serial ports
 

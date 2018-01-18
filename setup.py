@@ -85,7 +85,7 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
 
-    keywords='emulator interpreter basic retro legacy gwbasic basica pcjr tandy basicode',
+    keywords='emulator interpreter basic retro legacy gwbasic basica pcjr tandy',
     packages=find_packages(exclude=['doc', 'test', 'docsrc', 'packaging', 'patches']),
 
     # List run-time dependencies here.  These will be installed by pip when
