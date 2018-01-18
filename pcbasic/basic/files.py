@@ -94,9 +94,9 @@ class Files(object):
             return self._open_stdio(filetype, mode)
         try:
             # first try exact file name
-            return self.internal_disk.create_file_object(
+            return self._internal_disk.create_file_object(
                     open(os.path.expandvars(os.path.expanduser(filespec)),
-                         self.internal_disk.access_modes[mode]),
+                         self._internal_disk.access_modes[mode]),
                     filetype, mode)
         except EnvironmentError as e:
             # otherwise, accept capitalised versions and default extension
@@ -116,9 +116,9 @@ class Files(object):
             if mode == 'I':
                 # use io.BytesIO buffer for seekability
                 in_buffer = io.BytesIO(sys.stdin.read())
-                return self.internal_disk.create_file_object(in_buffer, filetype, mode)
+                return self._internal_disk.create_file_object(in_buffer, filetype, mode)
             else:
-                return self.internal_disk.create_file_object(sys.stdout, filetype, mode)
+                return self._internal_disk.create_file_object(sys.stdout, filetype, mode)
         except EnvironmentError as e:
             logging.warning('Could not open standard I/O: %s', e)
             return self._open_null(filetype, mode)
@@ -203,7 +203,7 @@ class Files(object):
                 # bad file number, for some reason
                 raise error.BASICError(error.BAD_FILE_NUMBER)
         else:
-            device = self._devices[self.current_device + b':']
+            device = self._devices[self._current_device + b':']
             # MS-DOS device aliases - these can't be names of disk files
             if device != self._devices['CAS1:'] and name in device_files:
                 if name == 'AUX':
@@ -527,16 +527,6 @@ class Files(object):
             col = printer.device_file.col
         return self._values.new_integer().from_int(col)
 
-    def ioctl_(self, args):
-        """IOCTL$: read device control string response; not implemented."""
-        num = values.to_int(next(args))
-        error.range_check(0, 255, num)
-        # raise BAD FILE NUMBER if the file is not open
-        infile = self.get(num)
-        list(args)
-        logging.warning("IOCTL$ function not implemented.")
-        raise error.BASICError(error.IFC)
-
     def input_(self, args):
         """INPUT$: read num chars from file."""
         num = values.to_int(next(args))
@@ -553,6 +543,16 @@ class Files(object):
         return self._values.new_string().from_str(file_obj.input_chars(num))
 
     ###########################################################################
+
+    def ioctl_(self, args):
+        """IOCTL$: read device control string response; not implemented."""
+        num = values.to_int(next(args))
+        error.range_check(0, 255, num)
+        # raise BAD FILE NUMBER if the file is not open
+        infile = self.get(num)
+        list(args)
+        logging.warning("IOCTL$ function not implemented.")
+        raise error.BASICError(error.IFC)
 
     def erdev_(self, args):
         """ERDEV: device error value; not implemented."""
@@ -586,11 +586,11 @@ class Files(object):
             codepage, utf8, universal):
         """Initialise disk devices."""
         # disk file locks
-        self.locks = disk.Locks()
+        locks = disk.Locks()
         # disk devices
-        self.internal_disk = disk.DiskDevice(
+        self._internal_disk = disk.DiskDevice(
                 b'', None, u'',
-                self.locks, codepage,
+                locks, codepage,
                 input_methods, utf8, universal)
         for letter in self.drive_letters:
             if not mount_dict:
@@ -601,18 +601,18 @@ class Files(object):
                 path, cwd = None, u''
             self._devices[letter + b':'] = disk.DiskDevice(
                     letter, path, cwd,
-                    self.locks, codepage,
+                    locks, codepage,
                     input_methods, utf8, universal)
-        self.current_device = current_device.upper()
+        self._current_device = current_device.upper()
 
-    def get_diskdevice_and_path(self, path):
+    def _get_diskdevice_and_path(self, path):
         """Return the disk device and remaining path for given file spec."""
         # careful - do not convert path to uppercase, we still need to match
         splits = bytes(path).split(b':', 1)
         if len(splits) == 0:
-            dev, spec = self.current_device, b''
+            dev, spec = self._current_device, b''
         elif len(splits) == 1:
-            dev, spec = self.current_device, splits[0]
+            dev, spec = self._current_device, splits[0]
         else:
             try:
                 dev, spec = splits[0].upper(), splits[1]
@@ -629,7 +629,7 @@ class Files(object):
         list(args)
         if not name:
             raise error.BASICError(error.BAD_FILE_NAME)
-        dev, path = self.get_diskdevice_and_path(name)
+        dev, path = self._get_diskdevice_and_path(name)
         dev.chdir(path)
 
     def mkdir_(self, args):
@@ -638,7 +638,7 @@ class Files(object):
         list(args)
         if not name:
             raise error.BASICError(error.BAD_FILE_NAME)
-        dev, path = self.get_diskdevice_and_path(name)
+        dev, path = self._get_diskdevice_and_path(name)
         dev.mkdir(path)
 
     def rmdir_(self, args):
@@ -647,16 +647,16 @@ class Files(object):
         list(args)
         if not name:
             raise error.BASICError(error.BAD_FILE_NAME)
-        dev, path = self.get_diskdevice_and_path(name)
+        dev, path = self._get_diskdevice_and_path(name)
         dev.rmdir(path)
 
     def name_(self, args):
         """NAME: rename file or directory."""
-        dev, oldpath = self.get_diskdevice_and_path(values.next_string(args))
+        dev, oldpath = self._get_diskdevice_and_path(values.next_string(args))
         # don't rename open files
         dev.check_file_not_open(oldpath)
         oldpath = dev._native_path(oldpath, name_err=error.FILE_NOT_FOUND, isdir=False)
-        newdev, newpath = self.get_diskdevice_and_path(values.next_string(args))
+        newdev, newpath = self._get_diskdevice_and_path(values.next_string(args))
         list(args)
         if dev != newdev:
             raise error.BASICError(error.RENAME_ACROSS_DISKS)
@@ -671,7 +671,7 @@ class Files(object):
         list(args)
         if not name:
             raise error.BASICError(error.BAD_FILE_NAME)
-        dev, path = self.get_diskdevice_and_path(name)
+        dev, path = self._get_diskdevice_and_path(name)
         path = dev._native_path(path, name_err=error.FILE_NOT_FOUND, isdir=False)
         # don't delete open files
         dev.check_file_not_open(path)
@@ -686,5 +686,5 @@ class Files(object):
             raise error.BASICError(error.BAD_FILE_NAME)
         elif pathmask is None:
             pathmask = b''
-        dev, path = self.get_diskdevice_and_path(pathmask)
+        dev, path = self._get_diskdevice_and_path(pathmask)
         dev.files(self._screen, path)
