@@ -32,7 +32,7 @@ class MachinePorts(object):
         # 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
         # 378h - 37Fh  Usual Address For LPT 1
         # 278h - 27Fh  Usual Address For LPT 2
-        dev = self.session.devices
+        dev = self.session.files
         self.lpt_device = [dev.devices['LPT1:'], dev.devices['LPT2:']]
         # serial port base address:
         # http://www.petesqbsite.com/sections/tutorials/zines/qbnews/9-com_ports.txt
@@ -248,15 +248,14 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, values, data_memory, devices, files, screen, keyboard,
+    def __init__(self, values, data_memory, files, screen, keyboard,
                 font_8, interpreter, peek_values, syntax):
         """Initialise memory."""
         self._values = values
         # data segment initialised elsewhere
         self._memory = data_memory
         # device access needed for COM and LPT ports
-        self.devices = devices
-        # for BLOAD and BSAVE
+        # files access for BLOAD and BSAVE
         self._files = files
         # screen access needed for video memory
         self.screen = screen
@@ -533,12 +532,12 @@ class Memory(object):
         #   "(PEEK (1041) AND 16)/16" WILL PROVIDE NUMBER OF GAME PORTS INSTALLED.
         #   "(PEEK (1041) AND 192)/64" WILL PROVIDE NUMBER OF PRINTERS INSTALLED.
         elif addr == 1041:
-            return (2 * ((self.devices.devices['COM1:'].stream is not None) +
-                        (self.devices.devices['COM2:'].stream is not None)) +
+            return (2 * ((self._files.devices['COM1:'].stream is not None) +
+                        (self._files.devices['COM2:'].stream is not None)) +
                     16 +
-                    64 * ((self.devices.devices['LPT1:'].stream is not None) +
-                        (self.devices.devices['LPT2:'].stream is not None) +
-                        (self.devices.devices['LPT3:'].stream is not None)))
+                    64 * ((self._files.devices['LPT1:'].stream is not None) +
+                        (self._files.devices['LPT2:'].stream is not None) +
+                        (self._files.devices['LPT3:'].stream is not None)))
         # &h40:&h17 keyboard flag
         # &H80 - Insert state active
         # &H40 - CapsLock state has been toggled

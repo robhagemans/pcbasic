@@ -21,7 +21,7 @@ from . import values
 class BasicEvents(object):
     """Manage BASIC events."""
 
-    def __init__(self, values, input_methods, sound, clock, devices, screen, program, syntax):
+    def __init__(self, values, input_methods, sound, clock, files, screen, program, syntax):
         """Initialise event triggers."""
         self._values = values
         self._keyboard = input_methods.keyboard
@@ -29,7 +29,7 @@ class BasicEvents(object):
         self._stick = input_methods.stick
         self._sound = sound
         self._clock = clock
-        self._devices = devices
+        self._files = files
         self._screen = screen
         self._program = program
         # events start unactivated
@@ -59,8 +59,8 @@ class BasicEvents(object):
         self.timer = TimerHandler(self._clock)
         self.play = PlayHandler(self._sound, self.multivoice)
         self.com = [
-            ComHandler(self._devices.devices['COM1:']),
-            ComHandler(self._devices.devices['COM2:'])]
+            ComHandler(self._files.devices['COM1:']),
+            ComHandler(self._files.devices['COM2:'])]
         self.pen = PenHandler(self._pen)
         # joy*2 + button
         self.strig = [StrigHandler(self._stick, joy, button)

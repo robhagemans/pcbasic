@@ -18,7 +18,7 @@ from . import values
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, debugger, input_methods, screen, devices, sound,
+    def __init__(self, debugger, input_methods, screen, files, sound,
                 values, memory, scalars, program, parser, basic_events):
         """Initialise interpreter."""
         self._debugger = debugger
@@ -28,7 +28,7 @@ class Interpreter(object):
         self._memory = memory
         self._scalars = scalars
         self._screen = screen
-        self._devices = devices
+        self._files = files
         self._sound = sound
         # program buffer
         self._program = program
@@ -241,7 +241,7 @@ class Interpreter(object):
         # keep the sound engine on to avoid delays in run mode
         self._sound.persist(new_runmode)
         # suppress cassette messages in run mode
-        self._devices.devices['CAS1:'].quiet(new_runmode)
+        self._files.devices['CAS1:'].quiet(new_runmode)
         codestream = self.get_codestream()
         if pos is not None:
             # jump to position, if given
@@ -700,7 +700,7 @@ class Interpreter(object):
         """LLIST: output program lines to LPT1: """
         line_range, = args
         for l in self._program.list_lines(*line_range):
-            self._devices.lpt1_file.write_line(l)
+            self._files.lpt1_file.write_line(l)
         # return to direct mode
         self.set_pointer(False)
 

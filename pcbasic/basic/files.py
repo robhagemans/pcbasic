@@ -32,7 +32,12 @@ device_files = ('AUX', 'CON', 'NUL', 'PRN')
 class Files(object):
     """File manager."""
 
-    def __init__(self, values, devices, memory, max_files, max_reclen):
+    def __init__(
+            self, values, memory, input_methods, screen,
+            max_files, max_reclen, serial_buffer_size,
+            device_params, current_device, mount_dict,
+            print_trigger, temp_dir,
+            utf8, universal):
         """Initialise files."""
         self._values = values
         self._memory = memory
@@ -40,7 +45,12 @@ class Files(object):
         self.files = {}
         self.max_files = max_files
         self.max_reclen = max_reclen
-        self.devices = devices
+        self._init_devices(
+                values, input_methods,
+                screen, input_methods.keyboard,
+                device_params, current_device, mount_dict,
+                print_trigger, temp_dir, serial_buffer_size,
+                utf8, universal)
 
     def close(self, num):
         """Close a numbered file."""
@@ -234,23 +244,23 @@ class Files(object):
             dev_name = split_colon[0].upper() + ':'
             dev_param = ''.join(split_colon[1:])
             try:
-                device = self.devices.devices[dev_name]
+                device = self.devices[dev_name]
             except KeyError:
                 # not an allowable device or drive name
                 # bad file number, for some reason
                 raise error.BASICError(error.BAD_FILE_NUMBER)
         else:
-            device = self.devices.devices[self.devices.current_device + b':']
+            device = self.devices[self.current_device + b':']
             # MS-DOS device aliases - these can't be names of disk files
-            if device != self.devices.devices['CAS1:'] and name in device_files:
+            if device != self.devices['CAS1:'] and name in device_files:
                 if name == 'AUX':
-                    device, dev_param = self.devices.devices['COM1:'], ''
+                    device, dev_param = self.devices['COM1:'], ''
                 elif name == 'CON' and mode == 'I':
-                    device, dev_param = self.devices.devices['KYBD:'], ''
+                    device, dev_param = self.devices['KYBD:'], ''
                 elif name == 'CON' and mode == 'O':
-                    device, dev_param = self.devices.devices['SCRN:'], ''
+                    device, dev_param = self.devices['SCRN:'], ''
                 elif name == 'PRN':
-                    device, dev_param = self.devices.devices['LPT1:'], ''
+                    device, dev_param = self.devices['LPT1:'], ''
                 elif name == 'NUL':
                     device, dev_param = devices.NullDevice(), ''
             else:
@@ -271,9 +281,9 @@ class Files(object):
             return self._open_stdio(filetype, mode)
         try:
             # first try exact file name
-            return self.devices.internal_disk.create_file_object(
+            return self.internal_disk.create_file_object(
                     open(os.path.expandvars(os.path.expanduser(filespec)),
-                         self.devices.internal_disk.access_modes[mode]),
+                         self.internal_disk.access_modes[mode]),
                     filetype, mode)
         except EnvironmentError as e:
             # otherwise, accept capitalised versions and default extension
@@ -293,9 +303,9 @@ class Files(object):
             if mode == 'I':
                 # use io.BytesIO buffer for seekability
                 in_buffer = io.BytesIO(sys.stdin.read())
-                return self.devices.internal_disk.create_file_object(in_buffer, filetype, mode)
+                return self.internal_disk.create_file_object(in_buffer, filetype, mode)
             else:
-                return self.devices.internal_disk.create_file_object(sys.stdout, filetype, mode)
+                return self.internal_disk.create_file_object(sys.stdout, filetype, mode)
         except EnvironmentError as e:
             logging.warning('Could not open standard I/O: %s', e)
             return self._open_null(filetype, mode)
@@ -346,7 +356,7 @@ class Files(object):
         num, = args
         num = values.to_int(num)
         error.range_check(0, 3, num)
-        printer = self.devices.devices['LPT%d:' % max(1, num)]
+        printer = self.devices['LPT%d:' % max(1, num)]
         col = 1
         if printer.device_file:
             col = printer.device_file.col
@@ -373,7 +383,7 @@ class Files(object):
             # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
             file_obj = self.get(filenum, mode='IR', not_open=error.BAD_FILE_MODE)
         else:
-            file_obj = self.devices.kybd_file
+            file_obj = self.kybd_file
         list(args)
         return self._values.new_string().from_str(file_obj.input_chars(num))
 
@@ -381,7 +391,7 @@ class Files(object):
         """WRITE: Output machine-readable expressions to the screen or a file."""
         file_number = next(args)
         if file_number is None:
-            output = self.devices.scrn_file
+            output = self.scrn_file
         else:
             file_number = values.to_int(file_number)
             error.range_check(0, 255, file_number)
@@ -407,7 +417,7 @@ class Files(object):
         file_or_device = next(args)
         num_rows_dummy = None
         if file_or_device == tk.LPRINT:
-            dev = self.devices.lpt1_file
+            dev = self.lpt1_file
             w = values.to_int(next(args))
         elif isinstance(file_or_device, values.Number):
             file_or_device = values.to_int(file_or_device)
@@ -420,7 +430,7 @@ class Files(object):
                 devname = expr.to_str().upper()
                 w = values.to_int(next(args))
                 try:
-                    dev = self.devices.devices[devname].device_file
+                    dev = self.devices[devname].device_file
                 except (KeyError, AttributeError):
                     # bad file name
                     raise error.BASICError(error.BAD_FILE_NAME)
@@ -429,11 +439,11 @@ class Files(object):
                 num_rows_dummy = next(args)
                 if num_rows_dummy is not None:
                     num_rows_dummy = values.to_int(num_rows_dummy)
-                dev = self.devices.scrn_file
+                dev = self.scrn_file
         error.range_check(0, 255, w)
         list(args)
         if num_rows_dummy is not None:
-            min_num_rows = 0 if self.devices.scrn_file.screen.capabilities in ('pcjr', 'tandy') else 25
+            min_num_rows = 0 if self.scrn_file.screen.capabilities in ('pcjr', 'tandy') else 25
             error.range_check(min_num_rows, 25, num_rows_dummy)
         dev.set_width(w)
 
@@ -448,91 +458,14 @@ class Files(object):
             screen = None
         else:
             # neither LPRINT not a file number: print to screen
-            output = self.devices.scrn_file
+            output = self.scrn_file
             screen = output.screen
         formatter.Formatter(output, screen).format(args)
 
+    def lprint_(self, args):
+        """LPRINT: Write expressions to printer LPT1."""
+        formatter.Formatter(self.lpt1_file).format(args)
 
-###############################################################################
-# device management
-
-class Devices(object):
-    """Device manager."""
-
-    # allowable drive letters in GW-BASIC are letters or @
-    drive_letters = b'@' + string.ascii_uppercase
-
-    def __init__(self, values, input_methods, screen, keyboard,
-                device_params, current_device, mount_dict,
-                print_trigger, temp_dir, serial_in_size, utf8, universal):
-        """Initialise devices."""
-        self.devices = {}
-        self._values = values
-        # screen device
-        self._screen = screen
-        self.devices['SCRN:'] = devices.SCRNDevice(screen)
-        # KYBD: device needs screen as it can set the screen width
-        self.devices['KYBD:'] = devices.KYBDDevice(keyboard, screen)
-        self.scrn_file = self.devices['SCRN:'].device_file
-        self.kybd_file = self.devices['KYBD:'].device_file
-        self.codepage = screen.codepage
-        # ports
-        # parallel devices - LPT1: must always be defined
-        if not device_params:
-            device_params = {'LPT1:': '', 'LPT2:': '', 'LPT3:': '', 'COM1:': '', 'COM2:': '', 'CAS1:': ''}
-        self.devices['LPT1:'] = ports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, self.codepage, temp_dir)
-        self.devices['LPT2:'] = ports.LPTDevice(device_params['LPT2:'], None, print_trigger, self.codepage, temp_dir)
-        self.devices['LPT3:'] = ports.LPTDevice(device_params['LPT3:'], None, print_trigger, self.codepage, temp_dir)
-        self.lpt1_file = self.devices['LPT1:'].device_file
-        # serial devices
-        # buffer sizes (/c switch in GW-BASIC)
-        self.devices['COM1:'] = ports.COMDevice(device_params['COM1:'], input_methods, serial_in_size)
-        self.devices['COM2:'] = ports.COMDevice(device_params['COM2:'], input_methods, serial_in_size)
-        # cassette
-        # needs a screen for write() and write_line() to display Found and Skipped messages on opening files
-        self.devices['CAS1:'] = cassette.CASDevice(device_params['CAS1:'], screen)
-        # disk file locks
-        self.locks = disk.Locks()
-        # disk devices
-        self.internal_disk = disk.DiskDevice(
-                b'', None, u'',
-                self.locks, self.codepage,
-                input_methods, utf8, universal)
-        for letter in self.drive_letters:
-            if not mount_dict:
-                mount_dict = {}
-            if letter in mount_dict:
-                path, cwd = mount_dict[letter]
-            else:
-                path, cwd = None, u''
-            self.devices[letter + b':'] = disk.DiskDevice(
-                    letter, path, cwd,
-                    self.locks, self.codepage,
-                    input_methods, utf8, universal)
-        self.current_device = current_device.upper()
-
-    def close(self):
-        """Close device master files."""
-        for d in self.devices.values():
-            d.close()
-
-    def get_diskdevice_and_path(self, path):
-        """Return the disk device and remaining path for given file spec."""
-        # careful - do not convert path to uppercase, we still need to match
-        splits = bytes(path).split(b':', 1)
-        if len(splits) == 0:
-            dev, spec = self.current_device, b''
-        elif len(splits) == 1:
-            dev, spec = self.current_device, splits[0]
-        else:
-            try:
-                dev, spec = splits[0].upper(), splits[1]
-            except KeyError:
-                raise error.BASICError(error.DEVICE_UNAVAILABLE)
-        # must be a disk device
-        if dev not in self.drive_letters:
-            raise error.BASICError(error.DEVICE_UNAVAILABLE)
-        return self.devices[dev + b':'], spec
 
     ###########################################################################
     # function callbacks
@@ -574,6 +507,94 @@ class Devices(object):
         if val is not None:
             error.range_check(0, 255, values.to_int(val))
         list(args)
+
+    ###########################################################################
+    # device management
+
+    def _init_devices(self, values, input_methods, screen, keyboard,
+                device_params, current_device, mount_dict,
+                print_trigger, temp_dir, serial_in_size, utf8, universal):
+        """Initialise devices."""
+        self.devices = {}
+        self._values = values
+        # screen device
+        self._screen = screen
+        self.devices['SCRN:'] = devices.SCRNDevice(screen)
+        # KYBD: device needs screen as it can set the screen width
+        self.devices['KYBD:'] = devices.KYBDDevice(keyboard, screen)
+        self.scrn_file = self.devices['SCRN:'].device_file
+        self.kybd_file = self.devices['KYBD:'].device_file
+        self.codepage = screen.codepage
+        # ports
+        # parallel devices - LPT1: must always be defined
+        if not device_params:
+            device_params = {'LPT1:': '', 'LPT2:': '', 'LPT3:': '', 'COM1:': '', 'COM2:': '', 'CAS1:': ''}
+        self.devices['LPT1:'] = ports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, self.codepage, temp_dir)
+        self.devices['LPT2:'] = ports.LPTDevice(device_params['LPT2:'], None, print_trigger, self.codepage, temp_dir)
+        self.devices['LPT3:'] = ports.LPTDevice(device_params['LPT3:'], None, print_trigger, self.codepage, temp_dir)
+        self.lpt1_file = self.devices['LPT1:'].device_file
+        # serial devices
+        # buffer sizes (/c switch in GW-BASIC)
+        self.devices['COM1:'] = ports.COMDevice(device_params['COM1:'], input_methods, serial_in_size)
+        self.devices['COM2:'] = ports.COMDevice(device_params['COM2:'], input_methods, serial_in_size)
+        # cassette
+        # needs a screen for write() and write_line() to display Found and Skipped messages on opening files
+        self.devices['CAS1:'] = cassette.CASDevice(device_params['CAS1:'], screen)
+        self._init_disk_devices(input_methods, mount_dict, current_device, self.codepage, utf8, universal)
+
+
+    ###########################################################################
+    # disk devices
+
+    # allowable drive letters in GW-BASIC are letters or @
+    drive_letters = b'@' + string.ascii_uppercase
+
+    def _init_disk_devices(
+            self, input_methods, mount_dict, current_device,
+            codepage, utf8, universal):
+        """Initialise disk devices."""
+        # disk file locks
+        self.locks = disk.Locks()
+        # disk devices
+        self.internal_disk = disk.DiskDevice(
+                b'', None, u'',
+                self.locks, codepage,
+                input_methods, utf8, universal)
+        for letter in self.drive_letters:
+            if not mount_dict:
+                mount_dict = {}
+            if letter in mount_dict:
+                path, cwd = mount_dict[letter]
+            else:
+                path, cwd = None, u''
+            self.devices[letter + b':'] = disk.DiskDevice(
+                    letter, path, cwd,
+                    self.locks, codepage,
+                    input_methods, utf8, universal)
+        self.current_device = current_device.upper()
+
+    def close_devices(self):
+        """Close device master files."""
+        for d in self.devices.values():
+            d.close()
+
+    def get_diskdevice_and_path(self, path):
+        """Return the disk device and remaining path for given file spec."""
+        # careful - do not convert path to uppercase, we still need to match
+        splits = bytes(path).split(b':', 1)
+        if len(splits) == 0:
+            dev, spec = self.current_device, b''
+        elif len(splits) == 1:
+            dev, spec = self.current_device, splits[0]
+        else:
+            try:
+                dev, spec = splits[0].upper(), splits[1]
+            except KeyError:
+                raise error.BASICError(error.DEVICE_UNAVAILABLE)
+        # must be a disk device
+        if dev not in self.drive_letters:
+            raise error.BASICError(error.DEVICE_UNAVAILABLE)
+        return self.devices[dev + b':'], spec
 
     def chdir_(self, args):
         """CHDIR: change working directory."""
@@ -640,7 +661,3 @@ class Devices(object):
             pathmask = b''
         dev, path = self.get_diskdevice_and_path(pathmask)
         dev.files(self._screen, path)
-
-    def lprint_(self, args):
-        """LPRINT: Write expressions to printer LPT1."""
-        formatter.Formatter(self.lpt1_file).format(args)
