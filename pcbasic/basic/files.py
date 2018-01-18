@@ -52,6 +52,9 @@ class Files(object):
                 print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)
 
+    ###########################################################################
+    # file management
+
     def close(self, num):
         """Close a numbered file."""
         try:
@@ -65,6 +68,161 @@ class Files(object):
         for f in self.files.values():
             f.close()
         self.files = {}
+
+    def open(self, number, description, filetype, mode='I', access='R', lock='',
+                  reclen=128, seg=0, offset=0, length=0):
+        """Open a file on a device specified by description."""
+        if (not description) or (number < 0) or (number > self.max_files):
+            # bad file number; also for name='', for some reason
+            raise error.BASICError(error.BAD_FILE_NUMBER)
+        if number in self.files:
+            raise error.BASICError(error.FILE_ALREADY_OPEN)
+        mode = mode.upper()
+        device, dev_param = self._get_device_param(description, mode)
+        # get the field buffer
+        field = self._fields[number] if number else None
+        # open the file on the device
+        new_file = device.open(number, dev_param, filetype, mode, access, lock,
+                               reclen, seg, offset, length, field)
+        if number:
+            self.files[number] = new_file
+        return new_file
+
+    def open_internal(self, filespec, filetype, mode):
+        """If the specified file exists, open it; if not, try as BASIC file spec. Do not register in files dict."""
+        if not filespec:
+            return self._open_stdio(filetype, mode)
+        try:
+            # first try exact file name
+            return self.internal_disk.create_file_object(
+                    open(os.path.expandvars(os.path.expanduser(filespec)),
+                         self.internal_disk.access_modes[mode]),
+                    filetype, mode)
+        except EnvironmentError as e:
+            # otherwise, accept capitalised versions and default extension
+            return self.open(0, filespec, filetype, mode)
+
+    def _open_null(self, filetype, mode):
+        """Open a null file object. Do not register in files dict."""
+        return devices.TextFileBase(devices.nullstream(), filetype, mode)
+
+    def _open_stdio(self, filetype, mode):
+        """Open a file object on standard IO. Do not register in files dict."""
+        # OS-specific stdin/stdout selection
+        # no stdin/stdout access allowed on packaged apps in OSX
+        if platform.system() == b'Darwin':
+            return self._open_null(filetype, mode)
+        try:
+            if mode == 'I':
+                # use io.BytesIO buffer for seekability
+                in_buffer = io.BytesIO(sys.stdin.read())
+                return self.internal_disk.create_file_object(in_buffer, filetype, mode)
+            else:
+                return self.internal_disk.create_file_object(sys.stdout, filetype, mode)
+        except EnvironmentError as e:
+            logging.warning('Could not open standard I/O: %s', e)
+            return self._open_null(filetype, mode)
+
+    def get(self, num, mode='IOAR', not_open=error.BAD_FILE_NUMBER):
+        """Get the file object for a file number and check allowed mode."""
+        if (num < 1):
+            raise error.BASICError(error.BAD_FILE_NUMBER)
+        try:
+            the_file = self.files[num]
+        except KeyError:
+            raise error.BASICError(not_open)
+        if the_file.mode.upper() not in mode:
+            raise error.BASICError(error.BAD_FILE_MODE)
+        return the_file
+
+    def _get_from_integer(self, num, mode='IOAR'):
+        """Get the file object for an Integer file number and check allowed mode."""
+        num = values.to_int(num, unsigned=True)
+        error.range_check(0, 255, num)
+        return self.get(num, mode)
+
+    ###########################################################################
+    # device management
+
+    def _init_devices(self, values, input_methods, screen, keyboard,
+                device_params, current_device, mount_dict,
+                print_trigger, temp_dir, serial_in_size, utf8, universal):
+        """Initialise devices."""
+        self._devices = {}
+        self._values = values
+        # screen device
+        self._screen = screen
+        self._devices['SCRN:'] = devices.SCRNDevice(screen)
+        # KYBD: device needs screen as it can set the screen width
+        self._devices['KYBD:'] = devices.KYBDDevice(keyboard, screen)
+        self.scrn_file = self._devices['SCRN:'].device_file
+        self.kybd_file = self._devices['KYBD:'].device_file
+        # ports
+        # parallel devices - LPT1: must always be defined
+        if not device_params:
+            device_params = {'LPT1:': '', 'LPT2:': '', 'LPT3:': '', 'COM1:': '', 'COM2:': '', 'CAS1:': ''}
+        self._devices['LPT1:'] = ports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, screen.codepage, temp_dir)
+        self._devices['LPT2:'] = ports.LPTDevice(device_params['LPT2:'], None, print_trigger, screen.codepage, temp_dir)
+        self._devices['LPT3:'] = ports.LPTDevice(device_params['LPT3:'], None, print_trigger, screen.codepage, temp_dir)
+        self.lpt1_file = self._devices['LPT1:'].device_file
+        # serial devices
+        # buffer sizes (/c switch in GW-BASIC)
+        self._devices['COM1:'] = ports.COMDevice(device_params['COM1:'], input_methods, serial_in_size)
+        self._devices['COM2:'] = ports.COMDevice(device_params['COM2:'], input_methods, serial_in_size)
+        # cassette
+        # needs a screen for write() and write_line() to display Found and Skipped messages on opening files
+        self._devices['CAS1:'] = cassette.CASDevice(device_params['CAS1:'], screen)
+        self._init_disk_devices(input_methods, mount_dict, current_device, screen.codepage, utf8, universal)
+
+    def close_devices(self):
+        """Close device master files."""
+        for d in self._devices.values():
+            d.close()
+
+    def device_available(self, spec):
+        """Return whether the device indicated by the spec (including :) is available."""
+        dev_name = spec.split(b':', 1)[0] + ':'
+        return (dev_name in self._devices) and self._devices[dev_name].available()
+
+    def get_device(self, name):
+        """Get a device by name (including :) or KeyError if not there."""
+        return self._devices[name]
+
+    def _get_device_param(self, file_spec, mode):
+        """Get a device object and parameters from a file specification."""
+        name = bytes(file_spec)
+        split = name.split(':', 1)
+        if len(split) > 1:
+            # colon (:) found
+            dev_name = split[0].upper() + ':'
+            dev_param = split[1]
+            try:
+                device = self._devices[dev_name]
+            except KeyError:
+                # not an allowable device or drive name
+                # bad file number, for some reason
+                raise error.BASICError(error.BAD_FILE_NUMBER)
+        else:
+            device = self._devices[self.current_device + b':']
+            # MS-DOS device aliases - these can't be names of disk files
+            if device != self._devices['CAS1:'] and name in device_files:
+                if name == 'AUX':
+                    device, dev_param = self._devices['COM1:'], ''
+                elif name == 'CON' and mode == 'I':
+                    device, dev_param = self._devices['KYBD:'], ''
+                elif name == 'CON' and mode == 'O':
+                    device, dev_param = self._devices['SCRN:'], ''
+                elif name == 'PRN':
+                    device, dev_param = self._devices['LPT1:'], ''
+                elif name == 'NUL':
+                    device, dev_param = devices.NullDevice(), ''
+            else:
+                # open file on default device
+                dev_param = name
+        return device, dev_param
+
+    ###########################################################################
+    # statement callbacks
 
     def reset_(self, args):
         """RESET: Close all files."""
@@ -125,6 +283,8 @@ class Files(object):
         # can't open file 0, or beyond max_files
         error.range_check_err(1, self.max_files, number, error.BAD_FILE_NUMBER)
         self.open(number, name, 'D', mode, access, lock, reclen)
+
+    ###########################################################################
 
     def field_(self, args):
         """FIELD: attach a variable to the record buffer."""
@@ -223,149 +383,6 @@ class Files(object):
 
     ###########################################################################
 
-    def ioctl_statement_(self, args):
-        """IOCTL: send control string to I/O device. Not implemented."""
-        num = values.to_int(next(args))
-        error.range_check(0, 255, num)
-        thefile = self.get(num)
-        control_string = values.next_string(args)
-        list(args)
-        logging.warning("IOCTL statement not implemented.")
-        raise error.BASICError(error.IFC)
-
-    ###########################################################################
-
-    def open(self, number, description, filetype, mode='I', access='R', lock='',
-                  reclen=128, seg=0, offset=0, length=0):
-        """Open a file on a device specified by description."""
-        if (not description) or (number < 0) or (number > self.max_files):
-            # bad file number; also for name='', for some reason
-            raise error.BASICError(error.BAD_FILE_NUMBER)
-        if number in self.files:
-            raise error.BASICError(error.FILE_ALREADY_OPEN)
-        mode = mode.upper()
-        device, dev_param = self._get_device_param(description, mode)
-        # get the field buffer
-        field = self._fields[number] if number else None
-        # open the file on the device
-        new_file = device.open(number, dev_param, filetype, mode, access, lock,
-                               reclen, seg, offset, length, field)
-        if number:
-            self.files[number] = new_file
-        return new_file
-
-    def open_internal(self, filespec, filetype, mode):
-        """If the specified file exists, open it; if not, try as BASIC file spec. Do not register in files dict."""
-        if not filespec:
-            return self._open_stdio(filetype, mode)
-        try:
-            # first try exact file name
-            return self.internal_disk.create_file_object(
-                    open(os.path.expandvars(os.path.expanduser(filespec)),
-                         self.internal_disk.access_modes[mode]),
-                    filetype, mode)
-        except EnvironmentError as e:
-            # otherwise, accept capitalised versions and default extension
-            return self.open(0, filespec, filetype, mode)
-
-    def _open_null(self, filetype, mode):
-        """Open a null file object. Do not register in files dict."""
-        return devices.TextFileBase(devices.nullstream(), filetype, mode)
-
-    def _open_stdio(self, filetype, mode):
-        """Open a file object on standard IO. Do not register in files dict."""
-        # OS-specific stdin/stdout selection
-        # no stdin/stdout access allowed on packaged apps in OSX
-        if platform.system() == b'Darwin':
-            return self._open_null(filetype, mode)
-        try:
-            if mode == 'I':
-                # use io.BytesIO buffer for seekability
-                in_buffer = io.BytesIO(sys.stdin.read())
-                return self.internal_disk.create_file_object(in_buffer, filetype, mode)
-            else:
-                return self.internal_disk.create_file_object(sys.stdout, filetype, mode)
-        except EnvironmentError as e:
-            logging.warning('Could not open standard I/O: %s', e)
-            return self._open_null(filetype, mode)
-
-    def get(self, num, mode='IOAR', not_open=error.BAD_FILE_NUMBER):
-        """Get the file object for a file number and check allowed mode."""
-        if (num < 1):
-            raise error.BASICError(error.BAD_FILE_NUMBER)
-        try:
-            the_file = self.files[num]
-        except KeyError:
-            raise error.BASICError(not_open)
-        if the_file.mode.upper() not in mode:
-            raise error.BASICError(error.BAD_FILE_MODE)
-        return the_file
-
-    def _get_from_integer(self, num, mode='IOAR'):
-        """Get the file object for an Integer file number and check allowed mode."""
-        num = values.to_int(num, unsigned=True)
-        error.range_check(0, 255, num)
-        return self.get(num, mode)
-
-    def loc_(self, args):
-        """LOC: get file pointer."""
-        num, = args
-        num = values.to_integer(num)
-        loc = self._get_from_integer(num).loc()
-        return self._values.new_single().from_int(loc)
-
-    def eof_(self, args):
-        """EOF: get end-of-file."""
-        num, = args
-        num = values.to_integer(num)
-        eof = self._values.new_integer()
-        if not num.is_zero() and self._get_from_integer(num, 'IR').eof():
-            eof = eof.from_int(-1)
-        return eof
-
-    def lof_(self, args):
-        """LOF: get length of file."""
-        num, = args
-        num = values.to_integer(num)
-        lof = self._get_from_integer(num).lof()
-        return self._values.new_single().from_int(lof)
-
-    def lpos_(self, args):
-        """LPOS: get the current printer column."""
-        num, = args
-        num = values.to_int(num)
-        error.range_check(0, 3, num)
-        printer = self._devices['LPT%d:' % max(1, num)]
-        col = 1
-        if printer.device_file:
-            col = printer.device_file.col
-        return self._values.new_integer().from_int(col)
-
-    def ioctl_(self, args):
-        """IOCTL$: read device control string response; not implemented."""
-        num = values.to_int(next(args))
-        error.range_check(0, 255, num)
-        # raise BAD FILE NUMBER if the file is not open
-        infile = self.get(num)
-        list(args)
-        logging.warning("IOCTL$ function not implemented.")
-        raise error.BASICError(error.IFC)
-
-    def input_(self, args):
-        """INPUT$: read num chars from file."""
-        num = values.to_int(next(args))
-        error.range_check(1, 255, num)
-        filenum = next(args)
-        if filenum is not None:
-            filenum = values.to_int(filenum)
-            error.range_check(0, 255, filenum)
-            # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
-            file_obj = self.get(filenum, mode='IR', not_open=error.BAD_FILE_MODE)
-        else:
-            file_obj = self.kybd_file
-        list(args)
-        return self._values.new_string().from_str(file_obj.input_chars(num))
-
     def write_(self, args):
         """WRITE: Output machine-readable expressions to the screen or a file."""
         file_number = next(args)
@@ -445,9 +462,97 @@ class Files(object):
         """LPRINT: Write expressions to printer LPT1."""
         formatter.Formatter(self.lpt1_file).format(args)
 
+    ###########################################################################
+
+    def ioctl_statement_(self, args):
+        """IOCTL: send control string to I/O device. Not implemented."""
+        num = values.to_int(next(args))
+        error.range_check(0, 255, num)
+        thefile = self.get(num)
+        control_string = values.next_string(args)
+        list(args)
+        logging.warning("IOCTL statement not implemented.")
+        raise error.BASICError(error.IFC)
+
+    def motor_(self, args):
+        """MOTOR: drive cassette motor; not implemented."""
+        logging.warning('MOTOR statement not implemented.')
+        val = next(args)
+        if val is not None:
+            error.range_check(0, 255, values.to_int(val))
+        list(args)
+
+    def lcopy_(self, args):
+        """LCOPY: screen copy / no-op in later GW-BASIC."""
+        # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
+        val = next(args)
+        if val is not None:
+            error.range_check(0, 255, values.to_int(val))
+        list(args)
 
     ###########################################################################
     # function callbacks
+
+    def loc_(self, args):
+        """LOC: get file pointer."""
+        num, = args
+        num = values.to_integer(num)
+        loc = self._get_from_integer(num).loc()
+        return self._values.new_single().from_int(loc)
+
+    def eof_(self, args):
+        """EOF: get end-of-file."""
+        num, = args
+        num = values.to_integer(num)
+        eof = self._values.new_integer()
+        if not num.is_zero() and self._get_from_integer(num, 'IR').eof():
+            eof = eof.from_int(-1)
+        return eof
+
+    def lof_(self, args):
+        """LOF: get length of file."""
+        num, = args
+        num = values.to_integer(num)
+        lof = self._get_from_integer(num).lof()
+        return self._values.new_single().from_int(lof)
+
+    def lpos_(self, args):
+        """LPOS: get the current printer column."""
+        num, = args
+        num = values.to_int(num)
+        error.range_check(0, 3, num)
+        printer = self._devices['LPT%d:' % max(1, num)]
+        col = 1
+        if printer.device_file:
+            col = printer.device_file.col
+        return self._values.new_integer().from_int(col)
+
+    def ioctl_(self, args):
+        """IOCTL$: read device control string response; not implemented."""
+        num = values.to_int(next(args))
+        error.range_check(0, 255, num)
+        # raise BAD FILE NUMBER if the file is not open
+        infile = self.get(num)
+        list(args)
+        logging.warning("IOCTL$ function not implemented.")
+        raise error.BASICError(error.IFC)
+
+    def input_(self, args):
+        """INPUT$: read num chars from file."""
+        num = values.to_int(next(args))
+        error.range_check(1, 255, num)
+        filenum = next(args)
+        if filenum is not None:
+            filenum = values.to_int(filenum)
+            error.range_check(0, 255, filenum)
+            # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
+            file_obj = self.get(filenum, mode='IR', not_open=error.BAD_FILE_MODE)
+        else:
+            file_obj = self.kybd_file
+        list(args)
+        return self._values.new_string().from_str(file_obj.input_chars(num))
+
+    ###########################################################################
 
     def erdev_(self, args):
         """ERDEV: device error value; not implemented."""
@@ -468,104 +573,7 @@ class Files(object):
         error.range_check(0, 3, values.to_int(val))
         return self._values.new_integer()
 
-    ###########################################################################
-    # statement callbacks
 
-    def motor_(self, args):
-        """MOTOR: drive cassette motor; not implemented."""
-        logging.warning('MOTOR statement not implemented.')
-        val = next(args)
-        if val is not None:
-            error.range_check(0, 255, values.to_int(val))
-        list(args)
-
-    def lcopy_(self, args):
-        """LCOPY: screen copy / no-op in later GW-BASIC."""
-        # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
-        val = next(args)
-        if val is not None:
-            error.range_check(0, 255, values.to_int(val))
-        list(args)
-
-    ###########################################################################
-    # device management
-
-    def _init_devices(self, values, input_methods, screen, keyboard,
-                device_params, current_device, mount_dict,
-                print_trigger, temp_dir, serial_in_size, utf8, universal):
-        """Initialise devices."""
-        self._devices = {}
-        self._values = values
-        # screen device
-        self._screen = screen
-        self._devices['SCRN:'] = devices.SCRNDevice(screen)
-        # KYBD: device needs screen as it can set the screen width
-        self._devices['KYBD:'] = devices.KYBDDevice(keyboard, screen)
-        self.scrn_file = self._devices['SCRN:'].device_file
-        self.kybd_file = self._devices['KYBD:'].device_file
-        # ports
-        # parallel devices - LPT1: must always be defined
-        if not device_params:
-            device_params = {'LPT1:': '', 'LPT2:': '', 'LPT3:': '', 'COM1:': '', 'COM2:': '', 'CAS1:': ''}
-        self._devices['LPT1:'] = ports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, screen.codepage, temp_dir)
-        self._devices['LPT2:'] = ports.LPTDevice(device_params['LPT2:'], None, print_trigger, screen.codepage, temp_dir)
-        self._devices['LPT3:'] = ports.LPTDevice(device_params['LPT3:'], None, print_trigger, screen.codepage, temp_dir)
-        self.lpt1_file = self._devices['LPT1:'].device_file
-        # serial devices
-        # buffer sizes (/c switch in GW-BASIC)
-        self._devices['COM1:'] = ports.COMDevice(device_params['COM1:'], input_methods, serial_in_size)
-        self._devices['COM2:'] = ports.COMDevice(device_params['COM2:'], input_methods, serial_in_size)
-        # cassette
-        # needs a screen for write() and write_line() to display Found and Skipped messages on opening files
-        self._devices['CAS1:'] = cassette.CASDevice(device_params['CAS1:'], screen)
-        self._init_disk_devices(input_methods, mount_dict, current_device, screen.codepage, utf8, universal)
-
-    def close_devices(self):
-        """Close device master files."""
-        for d in self._devices.values():
-            d.close()
-
-    def device_available(self, spec):
-        """Return whether the device indicated by the spec (including :) is available."""
-        dev_name = spec.split(b':', 1)[0] + ':'
-        return (dev_name in self._devices) and self._devices[dev_name].available()
-
-    def get_device(self, name):
-        """Get a device by name (including :) or KeyError if not there."""
-        return self._devices[name]
-
-    def _get_device_param(self, file_spec, mode):
-        """Get a device object and parameters from a file specification."""
-        name = bytes(file_spec)
-        split = name.split(':', 1)
-        if len(split) > 1:
-            # colon (:) found
-            dev_name = split[0].upper() + ':'
-            dev_param = split[1]
-            try:
-                device = self._devices[dev_name]
-            except KeyError:
-                # not an allowable device or drive name
-                # bad file number, for some reason
-                raise error.BASICError(error.BAD_FILE_NUMBER)
-        else:
-            device = self._devices[self.current_device + b':']
-            # MS-DOS device aliases - these can't be names of disk files
-            if device != self._devices['CAS1:'] and name in device_files:
-                if name == 'AUX':
-                    device, dev_param = self._devices['COM1:'], ''
-                elif name == 'CON' and mode == 'I':
-                    device, dev_param = self._devices['KYBD:'], ''
-                elif name == 'CON' and mode == 'O':
-                    device, dev_param = self._devices['SCRN:'], ''
-                elif name == 'PRN':
-                    device, dev_param = self._devices['LPT1:'], ''
-                elif name == 'NUL':
-                    device, dev_param = devices.NullDevice(), ''
-            else:
-                # open file on default device
-                dev_param = name
-        return device, dev_param
 
     ###########################################################################
     # disk devices
