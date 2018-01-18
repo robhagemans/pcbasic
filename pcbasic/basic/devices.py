@@ -47,6 +47,25 @@ def parse_protocol_string(arg):
     return addr, val
 
 
+class NullDevice(object):
+    """Null device (NUL) """
+
+    def __init__(self):
+        """Set up device."""
+
+    def open(self, number, param, filetype, mode, access, lock,
+                   reclen, seg, offset, length, field):
+        """Open a file on the device."""
+        return TextFileBase(nullstream(), filetype, mode)
+
+    def close(self):
+        """Close the device."""
+
+    def available(self):
+        """Device is available."""
+        return True
+
+
 class Device(object):
     """Device interface for master-file devices."""
 
@@ -71,20 +90,9 @@ class Device(object):
         if self.device_file:
             self.device_file.close()
 
-
-class NullDevice():
-    """Null device (NUL) """
-
-    def __init__(self):
-        """Set up device."""
-
-    def open(self, number, param, filetype, mode, access, lock,
-                   reclen, seg, offset, length, field):
-        """Open a file on the device."""
-        return TextFileBase(nullstream(), filetype, mode)
-
-    def close(self):
-        """Close the device."""
+    def available(self):
+        """Device is available."""
+        return True
 
 
 class SCRNDevice(Device):

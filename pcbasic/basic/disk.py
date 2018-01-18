@@ -307,6 +307,10 @@ class DiskDevice(object):
         """Close disk device."""
         pass
 
+    def available(self):
+        """Device is available."""
+        return True
+
     def create_file_object(self, fhandle, filetype, mode, name=b'', number=0,
                            access=b'RW', lock=b'', field=None, reclen=128,
                            seg=0, offset=0, length=0):

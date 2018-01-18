@@ -66,6 +66,10 @@ class CASDevice(object):
                             val, str(e))
             self.tapestream = None
 
+    def available(self):
+        """Device is available."""
+        return self.tapestream is not None
+
     def close(self):
         """Close tape device."""
         if self.tapestream:

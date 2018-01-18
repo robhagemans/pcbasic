@@ -241,7 +241,7 @@ class Interpreter(object):
         # keep the sound engine on to avoid delays in run mode
         self._sound.persist(new_runmode)
         # suppress cassette messages in run mode
-        self._files.devices['CAS1:'].quiet(new_runmode)
+        self._files.get_device('CAS1:').quiet(new_runmode)
         codestream = self.get_codestream()
         if pos is not None:
             # jump to position, if given

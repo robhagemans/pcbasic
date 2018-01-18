@@ -110,6 +110,10 @@ class COMDevice(devices.Device):
         f.col = self.device_file.col
         return f
 
+    def available(self):
+        """Device is available."""
+        return self.stream is not None
+
     def get_params(self, param):
         """Parse serial port connection parameters """
         max_param = 10
@@ -581,6 +585,10 @@ class LPTDevice(devices.Device):
         f.width = self.device_file.width
         f.col = self.device_file.col
         return f
+
+    def available(self):
+        """Device is available."""
+        return self.stream is not None
 
 
 class LPTFile(devices.TextFileBase):

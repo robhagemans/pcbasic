@@ -33,7 +33,7 @@ class MachinePorts(object):
         # 378h - 37Fh  Usual Address For LPT 1
         # 278h - 27Fh  Usual Address For LPT 2
         dev = self.session.files
-        self.lpt_device = [dev.devices['LPT1:'], dev.devices['LPT2:']]
+        self.lpt_device = [dev.get_device('LPT1:'), dev.get_device('LPT2:')]
         # serial port base address:
         # http://www.petesqbsite.com/sections/tutorials/zines/qbnews/9-com_ports.txt
         #            COM1             &H3F8
@@ -41,7 +41,7 @@ class MachinePorts(object):
         #            COM3             &H3E8 (not implemented)
         #            COM4             &H2E8 (not implemented)
         self.com_base = {0x3f8: 0, 0x2f8: 1}
-        self.com_device = [dev.devices['COM1:'], dev.devices['COM2:']]
+        self.com_device = [dev.get_device('COM1:'), dev.get_device('COM2:')]
         self.com_enable_baud_write = [False, False]
         self.com_baud_divisor = [0, 0]
         self.com_break = [False, False]
@@ -532,12 +532,14 @@ class Memory(object):
         #   "(PEEK (1041) AND 16)/16" WILL PROVIDE NUMBER OF GAME PORTS INSTALLED.
         #   "(PEEK (1041) AND 192)/64" WILL PROVIDE NUMBER OF PRINTERS INSTALLED.
         elif addr == 1041:
-            return (2 * ((self._files.devices['COM1:'].stream is not None) +
-                        (self._files.devices['COM2:'].stream is not None)) +
-                    16 +
-                    64 * ((self._files.devices['LPT1:'].stream is not None) +
-                        (self._files.devices['LPT2:'].stream is not None) +
-                        (self._files.devices['LPT3:'].stream is not None)))
+            return (
+                2 * (self._files.device_available('COM1:') +
+                    self._files.device_available('COM2:')) +
+                16 +
+                64 * (self._files.device_available('LPT1:') +
+                    self._files.device_available('LPT2:') +
+                    self._files.device_available('LPT3:'))
+            )
         # &h40:&h17 keyboard flag
         # &H80 - Insert state active
         # &H40 - CapsLock state has been toggled
