@@ -78,7 +78,7 @@ class COMDevice(devices.Device):
             logging.warning('Could not attach %s to COM device: %s', arg, e)
         except AttributeError:
             logging.warning('Serial module not available. Could not attach %s to COM device: %s.', arg, e)
-        self.combuffer = SerialBuffer(self.stream, self.serial_in_size)
+        self._serialbuffer = SerialBuffer(self.stream, self.serial_in_size)
         self.device_file = devices.DeviceSettings()
 
     def open(self, number, param, filetype, mode, access, lock,
@@ -103,7 +103,7 @@ class COMDevice(devices.Device):
         except Exception:
             self.stream.close()
             raise
-        f = COMFile(self.combuffer, field, lf)
+        f = COMFile(self._serialbuffer, field, lf)
         # inherit width settings from device file
         f.width = self.device_file.width
         # FIXME: is this ever anything but 1? what uses it? on LPT it's LPOS, but on COM?
@@ -182,9 +182,9 @@ class COMDevice(devices.Device):
 
     def char_waiting(self):
         """Whether a char is present in buffer. For ON COM(n)."""
-        if not self.combuffer:
+        if not self._serialbuffer:
             return False
-        return self.combuffer.in_waiting() > 0
+        return self._serialbuffer.in_waiting() > 0
 
 
 class COMFile(devices.TextFileBase):
@@ -192,100 +192,75 @@ class COMFile(devices.TextFileBase):
 
     def __init__(self, combuffer, field, linefeed):
         """Initialise COMn: file."""
-        # note that for random files, fhandle must be a seekable stream.
-        devices.TextFileBase.__init__(self, combuffer, 'D', 'R')
+        # prevent readahead by providing non-empty first char
+        # we're ignoring self.char and self.next_char in this class
+        devices.TextFileBase.__init__(self, combuffer, b'D', b'R', first_char=b'DUMMY')
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
-        self.field = field
+        self._field = field
         # comms buffer
-        self.combuffer = combuffer
-        self.linefeed = linefeed
-
-    # def read_raw(self, num=-1):
-    #     """Read num characters from the buffer as a string. """
-    #     if num == -1:
-    #         # read whole buffer, non-blocking
-    #         return self.fhandle.read(-1)
-    #     else:
-    #         out = ''
-    #         while len(out) < num:
-    #             # non blocking read
-    #             out += bytes(self.fhandle.read(num - len(out)))
-    #     return out
-
+        self._serialbuffer = combuffer
+        self._linefeed = linefeed
+        # buffer for the separator character that broke the last INPUT# field
+        # to be attached to the next
+        self._input_last = b''
 
     def read_raw(self, num=-1):
         """Read num characters as string."""
-        s = ''
-        while True:
-            if (num > -1 and len(s) >= num):
-                break
-            # check for \x1A (EOF char will actually stop further reading
-            # (that's true in disk text files but not on LPT devices)
-            #if self.next_char in ('\x1a', ''):
-            #    break
-            s += self.next_char
-            self.next_char, self.char, self.last = self.fhandle.read(1), self.next_char, self.char
-        return s
+        s, c = [], b''
+        while not (num > -1 and len(s) >= num):
+            c, self.last = self.fhandle.read(1), c
+            s.append(c)
+        return b''.join(s)
 
-    #read = devices.CRLFTextFileBase.read
     def read(self, num=-1):
         """Read num characters, replacing CR LF with CR."""
-        s = ''
+        s = []
         while len(s) < num:
             c = self.read_raw(1)
             if not c:
                 break
-            s += c
+            s.append(c)
             # report CRLF as CR
-            # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
-            if (c == '\r' and self.last != '\n') and self.next_char == '\n':
-                last, char = self.last, self.char
-                self.read_raw(1)
-                self.last, self.char = last, char
-        return s
+            # are we correct to ignore self._linefeed on input?
+            if (c == b'\n' and self.last == b'\r'):
+                c = self.read_raw(1)
+        return b''.join(s)
 
     def read_line(self):
         """Blocking read line from the port (not the FIELD buffer!)."""
-        out = bytearray('')
+        out = []
         while len(out) < 255:
             c = self.read(1)
-            if c == '\r':
-                if self.linefeed:
-                    c = self.read(1)
-                    if c == '\n':
-                        break
-                    out += ''.join(c)
-                else:
-                    break
-            out += ''.join(c)
-        return out
+            if c == b'\r':
+                break
+            out.append(c)
+        return ''.join(c)
 
     def write_line(self, s=''):
         """Write string or bytearray and newline to port."""
-        self.write(str(s) + '\r')
+        self.write(bytes(s) + b'\r')
 
     def write(self, s):
         """Write string to port."""
         try:
-            if self.linefeed:
-                s = s.replace('\r', '\r\n')
+            if self._linefeed:
+                s = s.replace(b'\r', b'\r\n')
             self.fhandle.write(s)
-        except (EnvironmentError, ValueError):
+        except (EnvironmentError, ValueError) as e:
             raise error.BASICError(error.DEVICE_IO_ERROR)
 
     def get(self, num):
         """Read a record - GET."""
         # blocking read of num bytes
-        s = self.read(num)
-        self.field.buffer[:len(s)] = s
+        self._field.buffer[:len(s)] = self.read(num)
 
     def put(self, num):
         """Write a record - PUT."""
-        self.write(self.field.buffer[:num])
+        self.write(self._field.buffer[:num])
 
     def loc(self):
         """LOC: Returns number of chars waiting to be read."""
-        return self.combuffer.in_waiting()
+        return self._serialbuffer.in_waiting()
 
     def eof(self):
         """EOF: no chars waiting."""
@@ -294,7 +269,10 @@ class COMFile(devices.TextFileBase):
 
     def lof(self):
         """Returns number of bytes free in buffer."""
-        return self.combuffer.in_free()
+        return self._serialbuffer.in_free()
+
+    # use real-time INPUT handling
+    input_entry = devices.KYBDFile.input_entry
 
 
 class SerialBuffer(object):
@@ -311,7 +289,7 @@ class SerialBuffer(object):
         """Fill buffer at most up to buffer size; non blocking."""
         try:
             self._in_buffer += self._fhandle.read(self._serial_in_size - len(self._in_buffer))
-        except (EnvironmentError, ValueError):
+        except (EnvironmentError, ValueError) as e:
             raise error.BASICError(error.DEVICE_IO_ERROR)
         # if more to read, signal an overflow
         if len(self._in_buffer) >= self._serial_in_size and self._fhandle.read(1):
@@ -346,7 +324,10 @@ class SerialBuffer(object):
         """Return number of bytes waiting to be read."""
         # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0
         # fill up buffer insofar possible
-        self._check_read(allow_overflow=True)
+        try:
+            self._check_read(allow_overflow=True)
+        except error.BASICError:
+            return 0
         return len(self._in_buffer)
 
     def in_free(self):
