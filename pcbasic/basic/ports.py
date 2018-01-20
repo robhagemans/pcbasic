@@ -36,6 +36,7 @@ except Exception:
 
 from .base import error
 from . import devices
+from . import values
 
 
 ###############################################################################
@@ -49,54 +50,39 @@ class COMDevice(devices.Device):
     def __init__(self, arg, input_methods, serial_in_size):
         """Initialise COMn: device."""
         devices.Device.__init__(self)
-        addr, val = devices.parse_protocol_string(arg)
-        self.stream = None
-        self.input_methods = input_methods
+        # for wait()
+        self._input_methods = input_methods
         self._serial_in_size = serial_in_size
-        try:
-            if not addr and not val:
-                pass
-            elif addr == 'STDIO' or (not addr and val.upper() == 'STDIO'):
-                crlf = (val.upper() == 'CRLF')
-                self.stream = StdIOSerialStream(input_methods, crlf)
-            elif addr == 'SOCKET':
-                # throws ValueError if too many :s, caught below
-                host, socket = val.split(':')
-                self.stream = SerialStream('socket://%s:%s' % (host, socket), self.input_methods, do_open=False)
-            elif addr == 'PORT':
-                # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
-                self.stream = SerialStream(val, self.input_methods, do_open=False)
-            else:
-                logging.warning('Could not attach %s to COM device', arg)
-        except (ValueError, EnvironmentError) as e:
-            logging.warning('Could not attach %s to COM device: %s', arg, e)
-        except AttributeError:
-            logging.warning('Serial module not available. Could not attach %s to COM device: %s.', arg, e)
+        self._serial = None
+        self._url = ''
+        self._is_open = False
+        self._spec = arg
+        self._serial = self._init_serial(arg)
         self.device_file = devices.DeviceSettings()
 
     def open(self, number, param, filetype, mode, access, lock,
                        reclen, seg, offset, length, field):
         """Open a file on COMn: """
-        if not self.stream:
+        if not self._serial:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
         # PE setting not implemented
-        speed, parity, bytesize, stop, rs, cs, ds, cd, lf, _ = self.get_params(param)
+        speed, parity, bytesize, stop, rs, cs, ds, cd, lf, _ = self._parse_params(param)
         # open the COM port
-        if self.stream.is_open:
+        if self._is_open:
             raise error.BASICError(error.FILE_ALREADY_OPEN)
         else:
             try:
-                self.stream.open(rs, cs, ds, cd)
+                self._open_serial(rs, cs, ds, cd)
             except EnvironmentError as e:
                 # device timeout
                 logging.debug("Serial exception: %s", e)
                 raise error.BASICError(error.DEVICE_TIMEOUT)
         try:
-            self.stream.set_params(speed, parity, bytesize, stop)
+            self.set_params(speed, parity, bytesize, stop)
         except Exception:
-            self.stream.close()
+            self._close_serial()
             raise
-        f = COMFile(self.stream, field, lf, self._serial_in_size)
+        f = COMFile(self._serial, field, lf, self._serial_in_size, self._input_methods)
         # inherit width settings from device file
         f.width = self.device_file.width
         # FIXME: is this ever anything but 1? what uses it? on LPT it's LPOS, but on COM?
@@ -105,9 +91,9 @@ class COMDevice(devices.Device):
 
     def available(self):
         """Device is available."""
-        return self.stream is not None
+        return self._serial is not None
 
-    def get_params(self, param):
+    def _parse_params(self, param):
         """Parse serial port connection parameters """
         max_param = 10
         param_list = param.upper().split(',')
@@ -175,17 +161,139 @@ class COMDevice(devices.Device):
 
     def char_waiting(self):
         """Whether a char is present in buffer. For ON COM(n)."""
-        return self.stream and self.stream.in_waiting
+        return self._serial and self._serial.in_waiting
 
+    ##########################################################################
+
+    def _init_serial(self, spec):
+        """Initialise the serial object."""
+        addr, val = devices.parse_protocol_string(spec)
+        try:
+            if not addr and not val:
+                pass
+            elif addr == 'STDIO' or (not addr and val.upper() == 'STDIO'):
+                return SerialStdIO(val.upper() == 'CRLF')
+            elif addr == 'SOCKET':
+                # throws ValueError if too many :s, caught below
+                host, socket = val.split(':')
+                url = 'socket://%s:%s' % (host, socket)
+                stream = serial.serial_for_url(url, timeout=0, do_not_open=True)
+                # monkey-patch serial object as SocketSerial does not have this property
+                stream.out_waiting = 0
+                return stream
+            elif addr == 'PORT':
+                # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
+                return serial.serial_for_url(val, timeout=0, do_not_open=True)
+            else:
+                raise ValueError('Invalid protocol `%s`', addr)
+        except (ValueError, EnvironmentError) as e:
+            logging.warning('Could not attach %s to COM device: %s', spec, e)
+        except AttributeError as e:
+            logging.warning('Serial module not available. Could not attach %s to COM device: %s.', spec, e)
+        return None
+
+    def __getstate__(self):
+        """Get pickling dict for stream."""
+        pickle_dict = self.__dict__
+        del pickle_dict['_serial']
+        return pickle_dict
+
+    def __setstate__(self, pickle_dict):
+        """Initialise stream from pickling dict."""
+        self.__dict__.update(pickle_dict)
+        self._init_serial(self._spec)
+
+    def _check_open(self):
+        """Open the underlying port if necessary."""
+        if not self._serial.is_open:
+            self._serial.open()
+
+    def _open_serial(self, rs=False, cs=1000, ds=1000, cd=0):
+        """Open the serial connection."""
+        self._check_open()
+        # handshake
+        # by default, RTS is up, DTR down
+        # RTS can be suppressed, DTR only accessible through machine ports
+        # https://lbpe.wikispaces.com/AccessingSerialPort
+        if not rs:
+            self._serial.rts = True
+        now = datetime.datetime.now()
+        timeout_cts = now + datetime.timedelta(microseconds=cs)
+        timeout_dsr = now + datetime.timedelta(microseconds=ds)
+        timeout_cd = now + datetime.timedelta(microseconds=cd)
+        have_cts, have_dsr, have_cd = self._serial.cts, self._serial.dsr, self._serial.cd
+        while ((now < timeout_cts and not have_cts) and
+                (now < timeout_dsr and not have_dsr) and
+                (now < timeout_cd and not have_cd)):
+            now = datetime.datetime.now()
+            have_cts = have_cts and self._serial.cts
+            have_dsr = have_dsr and self._serial.dsr
+            have_cts = have_cd and self._serial.cd
+            # give CPU some time off
+            self._input_methods.wait()
+        # only check for status if timeouts are set > 0
+        # http://www.electro-tech-online.com/threads/qbasic-serial-port-control.19286/
+        # https://measurementsensors.honeywell.com/ProductDocuments/Instruments/008-0385-00.pdf
+        if ((cs > 0 and not have_cts) or
+                (ds > 0 and not have_dsr) or
+                (cd > 0 and not have_cd)):
+            raise error.BASICError(error.DEVICE_TIMEOUT)
+        self._is_open = True
+
+    def set_params(self, speed, parity, bytesize, stop):
+        """Set serial port connection parameters."""
+        self._check_open()
+        self._serial.baudrate = speed
+        self._serial.parity = parity
+        self._serial.bytesize = bytesize
+        self._serial.stopbits = stop
+
+    def get_params(self):
+        """Get serial port connection parameters."""
+        self._check_open()
+        return (self._serial.baudrate, self._serial.parity,
+                self._serial.bytesize, self._serial.stopbits)
+
+    def set_pins(self, rts=None, dtr=None, brk=None):
+        """Set signal pins."""
+        self._check_open()
+        if rts is not None:
+            self._serial.rts = rts
+        if dtr is not None:
+            self._serial.dtr = dtr
+        if brk is not None:
+            self._serial.break_condition = brk
+
+    def get_pins(self):
+        """Get signal pins."""
+        self._check_open()
+        return (self._serial.cd, self._serial.ri,
+                self._serial.dsr, self._serial.cts)
+
+    def _close_serial(self):
+        """Close the serial connection."""
+        if self._serial:
+            self._serial.close()
+        self._is_open = False
+
+    def io_waiting(self):
+        """ Find out whether bytes are waiting for input or output. """
+        self._check_open()
+        # socketserial has no out_waiting, though Serial does
+        return self._serial.in_waiting > 0, self._serial.out_waiting > 0
+
+
+###############################################################################
 
 class COMFile(devices.TextFileBase):
     """COMn: device - serial port."""
 
-    def __init__(self, stream, field, linefeed, serial_in_size):
+    def __init__(self, stream, field, linefeed, serial_in_size, input_methods):
         """Initialise COMn: file."""
         # prevent readahead by providing non-empty first char
         # we're ignoring self.char and self.next_char in this class
         devices.TextFileBase.__init__(self, stream, b'D', b'R', first_char=b'DUMMY')
+        self._input_methods = input_methods
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self._field = field
         self._linefeed = linefeed
@@ -196,10 +304,12 @@ class COMFile(devices.TextFileBase):
 
     def read_raw(self, num=-1):
         """Read num characters as string."""
+        self._input_methods.wait()
         s, c = [], b''
         while not (num > -1 and len(s) >= num):
             c, self.last = self.fhandle.read(1), c
-            s.append(c)
+            if c:
+                s.append(c)
         return b''.join(s)
 
     def read(self, num=-1):
@@ -207,13 +317,12 @@ class COMFile(devices.TextFileBase):
         s = []
         while len(s) < num:
             c = self.read_raw(1)
-            if not c:
-                break
-            s.append(c)
             # report CRLF as CR
             # are we correct to ignore self._linefeed on input?
             if (c == b'\n' and self.last == b'\r'):
                 c = self.read_raw(1)
+            if c:
+                s.append(c)
         return b''.join(s)
 
     def read_line(self):
@@ -223,7 +332,8 @@ class COMFile(devices.TextFileBase):
             c = self.read(1)
             if c == b'\r':
                 break
-            out.append(c)
+            if c:
+                out.append(c)
         return ''.join(c)
 
     def write_line(self, s=''):
@@ -262,152 +372,36 @@ class COMFile(devices.TextFileBase):
         """Returns number of bytes free in buffer."""
         return max(0, self._serial_in_size - self.fhandle.in_waiting)
 
-    # use real-time INPUT handling
-    input_entry = devices.KYBDFile.input_entry
+    # FIXME
+    input_entry = None
 
 
-class SerialStream(object):
-    """Wrapper object for Serial to enable pickling."""
+###############################################################################
 
-    def __init__(self, port, input_methods, do_open):
-        """Initialise the stream."""
-        self._serial = serial.serial_for_url(port, timeout=0, do_not_open=not do_open)
-        # monkey-patch serial object as SocketSerial does not have this property
-        if not hasattr(self._serial, 'out_waiting'):
-            self._serial.out_waiting = 0
-        # for wait()
-        self._input_methods = input_methods
-        self._url = port
-        self.is_open = False
-
-    def __getstate__(self):
-        """Get pickling dict for stream."""
-        return {'input_methods': self._input_methods, 'url': self._url, 'is_open': self.is_open}
-
-    def __setstate__(self, st):
-        """Initialise stream from pickling dict."""
-        try:
-            SerialStream.__init__(self, st['url'], st['input_methods'], st['is_open'])
-        except (EnvironmentError, ValueError) as e:
-            logging.warning('Could not resume serial connection: %s', e)
-            self.__init__(st['url'], st['input_methods'], False)
-            self.is_open = False
-
-    def _check_open(self):
-        """Open the underlying port if necessary."""
-        if not self._serial.is_open:
-            self._serial.open()
-
-    def open(self, rs=False, cs=1000, ds=1000, cd=0):
-        """Open the serial connection."""
-        self._check_open()
-        # handshake
-        # by default, RTS is up, DTR down
-        # RTS can be suppressed, DTR only accessible through machine ports
-        # https://lbpe.wikispaces.com/AccessingSerialPort
-        if not rs:
-            self._serial.rts = True
-        now = datetime.datetime.now()
-        timeout_cts = now + datetime.timedelta(microseconds=cs)
-        timeout_dsr = now + datetime.timedelta(microseconds=ds)
-        timeout_cd = now + datetime.timedelta(microseconds=cd)
-        have_cts, have_dsr, have_cd = False, False, False
-        while ((now < timeout_cts and not have_cts) and
-                (now < timeout_dsr and not have_dsr) and
-                (now < timeout_cd and not have_cd)):
-            now = datetime.datetime.now()
-            have_cts = have_cts and self._serial.cts
-            have_dsr = have_dsr and self._serial.dsr
-            have_cts = have_cd and self._serial.cd
-            # give CPU some time off
-            self._input_methods.wait()
-        # only check for status if timeouts are set > 0
-        # http://www.electro-tech-online.com/threads/qbasic-serial-port-control.19286/
-        # https://measurementsensors.honeywell.com/ProductDocuments/Instruments/008-0385-00.pdf
-        if ((cs > 0 and not have_cts) or
-                (ds > 0 and not have_dsr) or
-                (cd > 0 and not have_cd)):
-            raise error.BASICError(error.DEVICE_TIMEOUT)
-        self.is_open = True
-
-    def set_params(self, speed, parity, bytesize, stop):
-        """Set serial port connection parameters."""
-        self._check_open()
-        self._serial.baudrate = speed
-        self._serial.parity = parity
-        self._serial.bytesize = bytesize
-        self._serial.stopbits = stop
-
-    def get_params(self):
-        """Get serial port connection parameters."""
-        self._check_open()
-        return (self._serial.baudrate, self._serial.parity,
-                self._serial.bytesize, self._serial.stopbits)
-
-    def set_pins(self, rts=None, dtr=None, brk=None):
-        """Set signal pins."""
-        self._check_open()
-        if rts is not None:
-            self._serial.rts = rts
-        if dtr is not None:
-            self._serial.dtr = dtr
-        if brk is not None:
-            self._serial.break_condition = brk
-
-    def get_pins(self):
-        """Get signal pins."""
-        self._check_open()
-        return (self._serial.cd, self._serial.ri,
-                self._serial.dsr, self._serial.cts)
-
-    def close(self):
-        """Close the serial connection."""
-        self._serial.close()
-        self.is_open = False
-
-    def flush(self):
-        """No buffer to flush."""
-        pass
-
-    def read(self, num=1):
-        """Non-blocking read from socket."""
-        self._check_open()
-        self._input_methods.wait()
-        # NOTE: num=1 follows PySerial
-        # stream default is num=-1 to mean all available
-        # but that's ill-defined for ports
-        return self._serial.read(num)
-
-    def write(self, s):
-        """Write to socket."""
-        self._check_open()
-        self._serial.write(s)
-
-    def io_waiting(self):
-        """ Find out whether bytes are waiting for input or output. """
-        self._check_open()
-        # socketserial has no out_waiting, though Serial does
-        return self._serial.in_waiting > 0, self._serial.out_waiting > 0
-
-    @property
-    def in_waiting(self):
-        return self._serial.in_waiting
-
-    @property
-    def out_waiting(self):
-        return self._serial.out_waiting
-
-
-class StdIOSerialStream(object):
+class SerialStdIO(object):
     """Wrapper object to route port to stdio."""
 
-    def __init__(self, input_methods, crlf):
+    # dummy input pins
+    cd = True
+    ri = False
+    dsr = True
+    cts = True
+
+    def __init__(self, crlf):
         """Initialise the stream."""
         self.is_open = False
         self._crlf = crlf
-        self._input_methods = input_methods
+        # dummy parameters
+        self.baudrate = 300
+        self.parity = b'E'
+        self.bytesize = 8
+        self.stopbits = 2
+        # dummy output pins
+        self.rts = False
+        self.dtr = False
+        self.break_condition = False
 
-    def open(self, rs=False, cs=1000, ds=1000, cd=0):
+    def open(self):
         """Open a connection."""
         self.is_open = True
 
@@ -417,44 +411,21 @@ class StdIOSerialStream(object):
 
     def read(self, num=1):
         """Non-blocking read of up to `num` chars from stdin."""
-        s = ''
+        s = []
         while kbhit() and len(s) < num:
             c = sys.stdin.read(1)
             if self._crlf and c == '\n':
                 c = '\r'
-            s += c
-        self._input_methods.wait()
-        return s
+            if c:
+                s.append(c)
+        return ''.join(s)
 
     def write(self, s):
         """Write to stdout."""
-        for c in s:
-            if self._crlf and c == '\r':
-                c = '\n'
-            sys.stdout.write(c)
-        self.flush()
-
-    def flush(self):
-        """Flush stdout."""
+        if self._crlf:
+            s = s.replace('\r', '\n')
+        sys.stdout.write(s)
         sys.stdout.flush()
-
-    def set_params(self, speed, parity, bytesize, stop):
-        """Set serial port connection parameters """
-
-    def get_params(self):
-        """Get serial port connection parameters """
-        return 300, 'E', 8, 2
-
-    def set_pins(self, rts=None, dtr=None, brk=None):
-        """Set signal pins."""
-
-    def get_pins(self):
-        """Get signal pins."""
-        return False, False, False, False
-
-    def io_waiting(self):
-        """ Find out whether bytes are waiting for input or output. """
-        return kbhit(), False
 
     @property
     def in_waiting(self):
@@ -462,4 +433,4 @@ class StdIOSerialStream(object):
         # we get at most 1 char waiting this way
         return kbhit()
 
-    out_waiting = False
+    out_waiting = 0

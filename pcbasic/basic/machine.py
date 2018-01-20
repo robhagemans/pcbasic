@@ -102,11 +102,11 @@ class MachinePorts(object):
             # http://control.com/thread/1026221083
             for base_addr, com_port_nr in self.com_base.iteritems():
                 com_port = self.com_device[com_port_nr]
-                if com_port.stream is None:
+                if not com_port.available():
                     continue
                 # Line Control Register: base_address + 3 (r/w)
                 if port == base_addr + 3:
-                    _, parity, bytesize, stopbits = com_port.stream.get_params()
+                    _, parity, bytesize, stopbits = com_port.get_params()
                     value = self.com_enable_baud_write[com_port_nr] * 0x80
                     value += self.com_break[com_port_nr] * 0x40
                     value += {'S': 0x38, 'M': 0x28, 'E': 0x18, 'O': 0x8, 'N': 0}[parity]
@@ -123,11 +123,11 @@ class MachinePorts(object):
                     # other bits not implemented:
                     #   1 - overrun, 2 - parity 3 - framing errors;
                     #   4 - break interrupt; 7 - at least one error in received FIFO
-                    in_waiting, out_waiting = com_port.stream.io_waiting()
+                    in_waiting, out_waiting = com_port.io_waiting()
                     return (1-out_waiting) * 0x60 + in_waiting
                 # Modem Status Register: base_address + 6 (read only)
                 elif port == base_addr + 6:
-                    cd, ri, dsr, cts = com_port.stream.get_pins()
+                    cd, ri, dsr, cts = com_port.get_pins()
                     # delta bits not implemented
                     return (cd*0x80 + ri*0x40 + dsr*0x20 + cts*0x10)
             # addr isn't one of the covered ports
@@ -174,7 +174,7 @@ class MachinePorts(object):
             # http://control.com/thread/1026221083
             for base_addr, com_port_nr in self.com_base.iteritems():
                 com_port = self.com_device[com_port_nr]
-                if com_port.stream is None:
+                if not com_port.available():
                     continue
                 # ports at base addr and the next one are used for writing baud rate
                 # (among other things that aren't implemented)
@@ -184,12 +184,12 @@ class MachinePorts(object):
                     elif addr == base_addr + 1:
                         self.com_baud_divisor[com_port_nr] = val*0x100 + (self.com_baud_divisor[com_port_nr] & 0xff)
                     if self.com_baud_divisor[com_port_nr]:
-                        baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
+                        baudrate, parity, bytesize, stopbits = com_port.get_params()
                         baudrate = 115200 // self.com_baud_divisor[com_port_nr]
-                        com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
+                        com_port.set_params(baudrate, parity, bytesize, stopbits)
                 # Line Control Register: base_address + 3 (r/w)
                 elif addr == base_addr + 3:
-                    baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
+                    baudrate, parity, bytesize, stopbits = com_port.get_params()
                     if val & 0x80:
                         self.com_enable_baud_write[com_port_nr] = True
                     # break condition
@@ -205,11 +205,11 @@ class MachinePorts(object):
                         stopbits = 1
                     # set byte size to 5, 6, 7, 8
                     bytesize = (val & 0x3) + 5
-                    com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
-                    com_port.stream.set_pins(brk=self.com_break[com_port_nr])
+                    com_port.set_params(baudrate, parity, bytesize, stopbits)
+                    com_port.set_pins(brk=self.com_break[com_port_nr])
                 # Modem Control Register: base_address + 4 (r/w)
                 elif addr == base_addr + 4:
-                    com_port.stream.set_pins(rts=val & 0x2, dtr=val & 0x1)
+                    com_port.set_pins(rts=val & 0x2, dtr=val & 0x1)
 
     def wait_(self, args):
         """WAIT: wait for a machine port."""
