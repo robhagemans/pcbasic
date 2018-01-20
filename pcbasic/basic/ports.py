@@ -58,7 +58,7 @@ class COMDevice(devices.Device):
         addr, val = devices.parse_protocol_string(arg)
         self.stream = None
         self.input_methods = input_methods
-        self.serial_in_size = serial_in_size
+        self._serial_in_size = serial_in_size
         try:
             if not addr and not val:
                 pass
@@ -78,10 +78,6 @@ class COMDevice(devices.Device):
             logging.warning('Could not attach %s to COM device: %s', arg, e)
         except AttributeError:
             logging.warning('Serial module not available. Could not attach %s to COM device: %s.', arg, e)
-        if self.stream:
-            self._serialbuffer = SerialBuffer(self.stream, self.serial_in_size)
-        else:
-            self._serialbuffer = None
         self.device_file = devices.DeviceSettings()
 
     def open(self, number, param, filetype, mode, access, lock,
@@ -106,7 +102,7 @@ class COMDevice(devices.Device):
         except Exception:
             self.stream.close()
             raise
-        f = COMFile(self._serialbuffer, field, lf)
+        f = COMFile(self.stream, field, lf, self._serial_in_size)
         # inherit width settings from device file
         f.width = self.device_file.width
         # FIXME: is this ever anything but 1? what uses it? on LPT it's LPOS, but on COM?
@@ -185,24 +181,21 @@ class COMDevice(devices.Device):
 
     def char_waiting(self):
         """Whether a char is present in buffer. For ON COM(n)."""
-        if not self._serialbuffer:
-            return False
-        return self._serialbuffer.in_waiting() > 0
+        return self.stream and self.stream.in_waiting
 
 
 class COMFile(devices.TextFileBase):
     """COMn: device - serial port."""
 
-    def __init__(self, combuffer, field, linefeed):
+    def __init__(self, stream, field, linefeed, serial_in_size):
         """Initialise COMn: file."""
         # prevent readahead by providing non-empty first char
         # we're ignoring self.char and self.next_char in this class
-        devices.TextFileBase.__init__(self, combuffer, b'D', b'R', first_char=b'DUMMY')
+        devices.TextFileBase.__init__(self, stream, b'D', b'R', first_char=b'DUMMY')
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self._field = field
-        # comms buffer
-        self._serialbuffer = combuffer
         self._linefeed = linefeed
+        self._serial_in_size = serial_in_size
         # buffer for the separator character that broke the last INPUT# field
         # to be attached to the next
         self._input_last = b''
@@ -255,7 +248,8 @@ class COMFile(devices.TextFileBase):
     def get(self, num):
         """Read a record - GET."""
         # blocking read of num bytes
-        self._field.buffer[:len(s)] = self.read(num)
+        s = self.read(num)
+        self._field.buffer[:len(s)] = s
 
     def put(self, num):
         """Write a record - PUT."""
@@ -263,7 +257,7 @@ class COMFile(devices.TextFileBase):
 
     def loc(self):
         """LOC: Returns number of chars waiting to be read."""
-        return self._serialbuffer.in_waiting()
+        return self.fhandle.in_waiting
 
     def eof(self):
         """EOF: no chars waiting."""
@@ -272,42 +266,10 @@ class COMFile(devices.TextFileBase):
 
     def lof(self):
         """Returns number of bytes free in buffer."""
-        return self._serialbuffer.in_free()
+        return max(0, self._serial_in_size - self.fhandle.in_waiting)
 
     # use real-time INPUT handling
     input_entry = devices.KYBDFile.input_entry
-
-
-class SerialBuffer(object):
-    """Serial communications buffer."""
-
-    def __init__(self, fhandle, serial_in_size):
-        """Initialise COMn: file."""
-        self._serial_in_size = serial_in_size
-        self._fhandle = fhandle #or devices.nullstream()
-
-    def _check_read(self, allow_overflow=False):
-        """Fill buffer at most up to buffer size; non blocking."""
-
-    def read(self, num=-1):
-        """Read num characters from the buffer as a string. """
-        return self._fhandle.read(num)
-
-    def write(self, s):
-        """Write bytes to the port."""
-        self._fhandle.write(s)
-
-    def in_waiting(self):
-        """Return number of bytes waiting to be read."""
-        return self._fhandle.io_waiting()[0]
-
-    def in_free(self):
-        """Returns number of bytes free in buffer."""
-        return max(0, self._serial_in_size - self.in_waiting())
-
-    def close(self):
-        """Close the buffer."""
-        self._fhandle.close()
 
 
 class SerialStream(object):
@@ -433,6 +395,14 @@ class SerialStream(object):
         # socketserial has no out_waiting, though Serial does
         return self._serial.in_waiting > 0, self._serial.out_waiting > 0
 
+    @property
+    def in_waiting(self):
+        return self._serial.in_waiting
+
+    @property
+    def out_waiting(self):
+        return self._serial.out_waiting
+
 
 class StdIOSerialStream(object):
     """Wrapper object to route port to stdio."""
@@ -492,6 +462,13 @@ class StdIOSerialStream(object):
         """ Find out whether bytes are waiting for input or output. """
         return kbhit(), False
 
+    @property
+    def in_waiting(self):
+        """Number of characters waiting to be read."""
+        # we get at most 1 char waiting this way
+        return kbhit()
+
+    out_waiting = False
 
 
 ###############################################################################
