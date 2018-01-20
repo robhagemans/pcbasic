@@ -78,7 +78,10 @@ class COMDevice(devices.Device):
             logging.warning('Could not attach %s to COM device: %s', arg, e)
         except AttributeError:
             logging.warning('Serial module not available. Could not attach %s to COM device: %s.', arg, e)
-        self._serialbuffer = SerialBuffer(self.stream, self.serial_in_size)
+        if self.stream:
+            self._serialbuffer = SerialBuffer(self.stream, self.serial_in_size)
+        else:
+            self._serialbuffer = None
         self.device_file = devices.DeviceSettings()
 
     def open(self, number, param, filetype, mode, access, lock,
@@ -281,40 +284,14 @@ class SerialBuffer(object):
     def __init__(self, fhandle, serial_in_size):
         """Initialise COMn: file."""
         self._serial_in_size = serial_in_size
-        self._in_buffer = bytearray()
-        self._overflow = False
-        self._fhandle = fhandle or devices.nullstream()
+        self._fhandle = fhandle #or devices.nullstream()
 
     def _check_read(self, allow_overflow=False):
         """Fill buffer at most up to buffer size; non blocking."""
-        try:
-            self._in_buffer += self._fhandle.read(self._serial_in_size - len(self._in_buffer))
-        except (EnvironmentError, ValueError) as e:
-            raise error.BASICError(error.DEVICE_IO_ERROR)
-        # if more to read, signal an overflow
-        if len(self._in_buffer) >= self._serial_in_size and self._fhandle.read(1):
-            self._overflow = True
-            # drop waiting chars that don't fit in buffer
-            while self._fhandle.read(1):
-                pass
-        if not allow_overflow and self._overflow:
-            # only raise this the first time the overflow is encountered
-            self._overflow = False
-            raise error.BASICError(error.COMMUNICATION_BUFFER_OVERFLOW)
 
     def read(self, num=-1):
         """Read num characters from the buffer as a string. """
-        # non blocking read
-        self._check_read()
-        if num == -1:
-            # read whole buffer, non-blocking
-            out = bytes(self._in_buffer)
-            del self._in_buffer[:]
-        else:
-            to_read = min(len(self._in_buffer), num)
-            out = bytes(self._in_buffer[:to_read])
-            del self._in_buffer[:to_read]
-        return out
+        return self._fhandle.read(num)
 
     def write(self, s):
         """Write bytes to the port."""
@@ -322,17 +299,11 @@ class SerialBuffer(object):
 
     def in_waiting(self):
         """Return number of bytes waiting to be read."""
-        # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0
-        # fill up buffer insofar possible
-        try:
-            self._check_read(allow_overflow=True)
-        except error.BASICError:
-            return 0
-        return len(self._in_buffer)
+        return self._fhandle.io_waiting()[0]
 
     def in_free(self):
         """Returns number of bytes free in buffer."""
-        return self._serial_in_size - self.in_waiting()
+        return max(0, self._serial_in_size - self.in_waiting())
 
     def close(self):
         """Close the buffer."""
@@ -456,7 +427,8 @@ class SerialStream(object):
     def io_waiting(self):
         """ Find out whether bytes are waiting for input or output. """
         self._check_open()
-        return self._serial.in_waiting > 0, self._serial.out_waiting > 0
+        # socketserial has no out_waiting, though Serial does
+        return self._serial.in_waiting > 0, False
 
 
 class StdIOSerialStream(object):

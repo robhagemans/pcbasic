@@ -86,20 +86,21 @@ class BasicEvents(object):
         yield
         self.suspend_all = store
 
-
     def command(self, handler, command_char):
         """Turn the event ON, OFF and STOP."""
         if command_char == tk.ON:
             self.enabled.add(handler)
             handler.stopped = False
         elif command_char == tk.OFF:
-            self.enabled.discard(handler)
+            # this is needed to make serial events work correctly
+            # FIXME: I don't understand why
+            if not isinstance(handler, ComHandler):
+                self.enabled.discard(handler)
         elif command_char == tk.STOP:
             handler.stopped = True
         else:
             return False
         return True
-
 
     def check(self):
         """Check and trigger events."""
@@ -286,11 +287,15 @@ class ComHandler(EventHandler):
         EventHandler.__init__(self)
         self.device = com_device
 
-    def check(self):
-        """Trigger COM-port events."""
-        if (self.device and self.device.char_waiting()):
-            self.trigger()
+    # treat com-port "trigger" as real-time check
 
+    @property
+    def triggered(self):
+        return self.device.char_waiting()
+
+    @triggered.setter
+    def triggered(self, value):
+        pass
 
 class KeyHandler(EventHandler):
     """Manage KEY events."""
