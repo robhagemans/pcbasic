@@ -717,8 +717,8 @@ class RandomFile(CRLFTextFileBase):
         # touched until PUT or GET.
         self.reclen = reclen
         # replace with empty field if already exists
-        self.field = field
-        CRLFTextFileBase.__init__(self, ByteStream(self.field.buffer), b'D', b'R')
+        self._field = field
+        CRLFTextFileBase.__init__(self, ByteStream(self._field.buffer), b'D', b'R')
         self.operating_mode = b'I'
         # note that for random files, output_stream must be a seekable stream.
         self.output_stream = output_stream
@@ -779,7 +779,7 @@ class RandomFile(CRLFTextFileBase):
         else:
             contents = self.output_stream.read(self.reclen)
         # take contents and pad with NULL to required size
-        self.field.buffer[:] = contents + b'\0' * (self.reclen - len(contents))
+        self._field.buffer[:] = contents + b'\0' * (self.reclen - len(contents))
         # reset field text file loc
         self.fhandle.seek(0)
         self.recpos += 1
@@ -791,7 +791,7 @@ class RandomFile(CRLFTextFileBase):
             self.output_stream.seek(0, 2)
             numrecs = self.recpos-current_length
             self.output_stream.write(b'\0' * numrecs * self.reclen)
-        self.output_stream.write(self.field.buffer)
+        self.output_stream.write(self._field.buffer)
         self.recpos += 1
 
     def set_pos(self, newpos):
