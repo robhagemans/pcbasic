@@ -19,6 +19,7 @@ from . import devices
 from . import cassette
 from . import disk
 from . import ports
+from . import parports
 from . import values
 from . import formatter
 
@@ -161,9 +162,9 @@ class Files(object):
         # parallel devices - LPT1: must always be defined
         if not device_params:
             device_params = {'LPT1:': '', 'LPT2:': '', 'LPT3:': '', 'COM1:': '', 'COM2:': '', 'CAS1:': ''}
-        self._devices['LPT1:'] = ports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, screen.codepage, temp_dir)
-        self._devices['LPT2:'] = ports.LPTDevice(device_params['LPT2:'], None, print_trigger, screen.codepage, temp_dir)
-        self._devices['LPT3:'] = ports.LPTDevice(device_params['LPT3:'], None, print_trigger, screen.codepage, temp_dir)
+        self._devices['LPT1:'] = parports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, screen.codepage, temp_dir)
+        self._devices['LPT2:'] = parports.LPTDevice(device_params['LPT2:'], None, print_trigger, screen.codepage, temp_dir)
+        self._devices['LPT3:'] = parports.LPTDevice(device_params['LPT3:'], None, print_trigger, screen.codepage, temp_dir)
         self.lpt1_file = self._devices['LPT1:'].device_file
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)
