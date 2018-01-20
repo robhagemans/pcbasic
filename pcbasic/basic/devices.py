@@ -182,7 +182,7 @@ class RawFile(object):
             raise error.BASICError(error.DEVICE_IO_ERROR)
 
     def read(self, num=-1):
-        """Read num chars. If num==-1, read all available."""
+        """Read num chars. If num==-1, read all available. Override to handle line endings."""
         return self.read_raw(num)
 
     def write(self, s):
@@ -385,45 +385,6 @@ class TextFileBase(RawFile):
                 c = self.read(1)
         # file position is at one past the separator char
         return word, c
-
-
-
-class CRLFTextFileBase(TextFileBase):
-    """Text file with CRLF line endings, on disk device or field buffer."""
-
-    def read(self, num=-1):
-        """Read num characters, replacing CR LF with CR."""
-        s = ''
-        while len(s) < num:
-            c = self.read_raw(1)
-            if not c:
-                break
-            s += c
-            # report CRLF as CR
-            # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
-            if (c == '\r' and self.last != '\n') and self.next_char == '\n':
-                last, char = self.last, self.char
-                self.read_raw(1)
-                self.last, self.char = last, char
-        return s
-
-    def read_line(self):
-        """Read line from text file, break on CR or CRLF (not LF)."""
-        s = ''
-        while not self._check_long_line(s):
-            c = self.read(1)
-            if not c or (c == '\r' and self.last != '\n'):
-                # break on CR, CRLF but allow LF, LFCR to pass
-                break
-            else:
-                s += c
-        if not c and not s:
-            return None
-        return s
-
-    def write_line(self, s=''):
-        """Write string or bytearray and newline to file."""
-        self.write(str(s) + '\r\n')
 
 
 class InputTextFile(TextFileBase):
