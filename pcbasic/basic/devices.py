@@ -134,7 +134,7 @@ class KYBDDevice(Device):
 #   flush(self)
 
 
-class DummyDeviceFile(object):
+class DeviceSettings(object):
     """Device-level settings, not a file as such."""
 
     def __init__(self):
@@ -158,8 +158,6 @@ class RawFile(object):
         self.fhandle = fhandle
         self.filetype = filetype
         self.mode = mode.upper()
-        # on master-file devices, this is the master file.
-        self.is_master = True
 
     def __enter__(self):
         """Context guard."""
@@ -220,7 +218,7 @@ class RawFile(object):
 #   read_line(self)
 #   write_line(self, s='')
 #   eof(self)
-#   set_width(self, new_width=255)set_width(self, new_width=255)
+#   set_width(self, new_width=255)
 #   input_entry(self, typechar, allow_past_end)
 #   lof(self)
 #   loc(self)
@@ -426,7 +424,7 @@ class KYBDFile(TextFileBase):
     """KYBD device: keyboard."""
 
     # replace some eascii codes with control characters
-    input_replace = {
+    _input_replace = {
         ea.HOME: '\xFF\x0B', ea.UP: '\xFF\x1E', ea.PAGEUP: '\xFE',
         ea.LEFT: '\xFF\x1D', ea.RIGHT: '\xFF\x1C', ea.END: '\xFF\x0E',
         ea.DOWN: '\xFF\x1F', ea.PAGEDOWN: '\xFE',
@@ -443,26 +441,28 @@ class KYBDFile(TextFileBase):
         TextFileBase.__init__(self, nullstream(), filetype='D', mode='A')
         # buffer for the separator character that broke the last INPUT# field
         # to be attached to the next
-        self.input_last = ''
-        self.keyboard = keyboard
+        self._input_last = ''
+        self._keyboard = keyboard
         # screen needed for width settings on KYBD: master file
-        self.screen = screen
+        self._screen = screen
+        # on master-file devices, this is the master file.
+        self._is_master = True
 
     def open_clone(self, filetype, mode, reclen=128):
         """Clone device file."""
-        inst = KYBDFile(self.keyboard, self.screen)
+        inst = KYBDFile(self._keyboard, self._screen)
         inst.mode = mode
         inst.reclen = reclen
         inst.filetype = filetype
-        inst.is_master = False
+        inst._is_master = False
         return inst
 
     def read_raw(self, n=1):
         """Read a string from the keyboard - INPUT$."""
         chars = b''
         while len(chars) < n:
-            chars += b''.join(b'\0' if c in self.input_replace else c if len(c) == 1 else b''
-                              for c in self.keyboard.read_chars(n-len(chars)))
+            chars += b''.join(b'\0' if c in self._input_replace else c if len(c) == 1 else b''
+                              for c in self._keyboard.read_chars(n-len(chars)))
         return chars
 
     def read(self, n=1):
@@ -471,8 +471,8 @@ class KYBDFile(TextFileBase):
         while len(chars) < n:
             # note that we need string length, not list length
             # as read_chars can return multi-byte eascii codes
-            chars += b''.join(self.input_replace.get(c, c)
-                              for c in self.keyboard.read_chars(n-len(chars)))
+            chars += b''.join(self._input_replace.get(c, c)
+                              for c in self._keyboard.read_chars(n-len(chars)))
         return chars
 
     def lof(self):
@@ -488,18 +488,18 @@ class KYBDFile(TextFileBase):
         if self.mode in ('A', 'O'):
             return False
         # blocking peek
-        return (self.keyboard.wait_char() == '\x1a')
+        return (self._keyboard.wait_char() == '\x1a')
 
     def set_width(self, new_width=255):
         """Setting width on KYBD device (not files) changes screen width."""
-        if self.is_master:
-            self.screen.set_width(new_width)
+        if self._is_master:
+            self._screen.set_width(new_width)
 
     def input_entry(self, typechar, allow_past_end):
         """Read a number or string entry from KYBD: for INPUT# """
         word, blanks = '', ''
-        if self.input_last:
-            c, self.input_last = self.input_last, ''
+        if self._input_last:
+            c, self._input_last = self._input_last, ''
         else:
             last = self._skip_whitespace(self.whitespace_input)
             # read first non-whitespace char
@@ -544,7 +544,7 @@ class KYBDFile(TextFileBase):
             if parsing_trail:
                 if c not in self.whitespace_input:
                     if c not in (',', '\r'):
-                        self.input_last = c
+                        self._input_last = c
                     break
             parsing_trail = parsing_trail or (typechar != values.STR and c == ' ')
         # file position is at one past the separator char
@@ -558,9 +558,12 @@ class SCRNFile(RawFile):
     def __init__(self, screen):
         """Initialise screen file."""
         RawFile.__init__(self, nullstream(), filetype='D', mode='O')
+        # screen member is public, needed by print_
         self.screen = screen
         self._width = self.screen.mode.width
         self._col = self.screen.current_col
+        # on master-file devices, this is the master file.
+        self._is_master = True
 
     def open_clone(self, filetype, mode, reclen=128):
         """Clone screen file."""
@@ -568,7 +571,7 @@ class SCRNFile(RawFile):
         inst.mode = mode
         inst.reclen = reclen
         inst.filetype = filetype
-        inst.is_master = False
+        inst._is_master = False
         inst._write_magic(filetype)
         return inst
 
@@ -583,7 +586,7 @@ class SCRNFile(RawFile):
     def write(self, s, can_break=True):
         """Write string s to SCRN: """
         # writes to SCRN files should *not* be echoed
-        do_echo = self.is_master
+        do_echo = self._is_master
         self._col = self.screen.current_col
         # take column 80+overflow into account
         if self.screen.overflow:
@@ -621,12 +624,12 @@ class SCRNFile(RawFile):
     def write_line(self, inp=''):
         """Write a string to the screen and follow by CR."""
         self.write(inp)
-        self.screen.write_line(do_echo=self.is_master)
+        self.screen.write_line(do_echo=self._is_master)
 
     @property
     def col(self):
         """Return current (virtual) column position."""
-        if self.is_master:
+        if self._is_master:
             return self.screen.current_col
         else:
             return self._col
@@ -634,14 +637,14 @@ class SCRNFile(RawFile):
     @property
     def width(self):
         """Return (virtual) screen width."""
-        if self.is_master:
+        if self._is_master:
             return self.screen.mode.width
         else:
             return self._width
 
     def set_width(self, new_width=255):
         """Set (virtual) screen width."""
-        if self.is_master:
+        if self._is_master:
             self.screen.set_width(new_width)
         else:
             self._width = new_width

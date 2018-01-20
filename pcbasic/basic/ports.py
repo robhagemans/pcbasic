@@ -79,7 +79,7 @@ class COMDevice(devices.Device):
         except AttributeError:
             logging.warning('Serial module not available. Could not attach %s to COM device: %s.', arg, e)
         self.combuffer = SerialBuffer(self.stream, self.serial_in_size)
-        self.device_file = devices.DummyDeviceFile()
+        self.device_file = devices.DeviceSettings()
 
     def open(self, number, param, filetype, mode, access, lock,
                        reclen, seg, offset, length, field):

@@ -47,7 +47,7 @@ class CASDevice(object):
         addr, val = devices.parse_protocol_string(arg)
         ext = val.split('.')[-1].upper()
         # WIDTH and LOC on CAS1: directly are ignored
-        self.device_file = devices.DummyDeviceFile()
+        self.device_file = devices.DeviceSettings()
         # by default, show messages
         self.is_quiet = False
         # console for messages
