@@ -122,6 +122,16 @@ class KYBDDevice(Device):
 #################################################################################
 # file classes
 
+# file interface:
+#    __enter__(self)
+#   __exit__(self, exc_type, exc_value, traceback)
+#   close(self)
+#   switch_mode(self, new_mode)
+#   input_chars(self, num)
+#   read_raw(self, num=-1)
+#   read(self, num=-1)
+#   write(self, s)
+#   flush(self)
 
 
 class DummyDeviceFile(object):
@@ -166,6 +176,9 @@ class RawFile(object):
         except EnvironmentError:
             pass
 
+    def switch_mode(self, new_mode):
+        """Switch to input or output mode"""
+
     def input_chars(self, num):
         """Read a number of characters."""
         word = self.read_raw(num)
@@ -201,6 +214,16 @@ class RawFile(object):
 #################################################################################
 # Text file base
 
+# text interface: file interface +
+#   col
+#   width
+#   read_line(self)
+#   write_line(self, s='')
+#   eof(self)
+#   set_width(self, new_width=255)set_width(self, new_width=255)
+#   input_entry(self, typechar, allow_past_end)
+#   lof(self)
+#   loc(self)
 
 class TextFileBase(RawFile):
     """Base for text files on disk, KYBD file, field buffer."""
@@ -225,9 +248,6 @@ class TextFileBase(RawFile):
         self.split_long_lines = split_long_lines
         self.char, self.last = '', ''
 
-    def switch_mode(self, new_mode):
-        """Switch to input or output mode"""
-
     def read_raw(self, num=-1):
         """Read num characters as string."""
         s = ''
@@ -241,28 +261,6 @@ class TextFileBase(RawFile):
             s += self.next_char
             self.next_char, self.char, self.last = self.fhandle.read(1), self.next_char, self.char
         return s
-
-    def read_line(self):
-        """Read a single line."""
-        out = bytearray('')
-        while not self._check_long_line(out):
-            c = self.read(1)
-            # don't check for CRLF on KYBD:, CAS:, etc.
-            if not c or c == '\r':
-                break
-            out += c
-        if not c and not out:
-            return None
-        return out
-
-    def _check_long_line(self, line):
-        """Check if line is longer than max length; raise error if needed."""
-        if len(line) > 255:
-            if self.split_long_lines:
-                return True
-            else:
-                raise error.BASICError(error.LINE_BUFFER_OVERFLOW)
-        return False
 
     def write(self, s, can_break=True):
         """Write the string s to the file, taking care of width settings."""
@@ -295,6 +293,28 @@ class TextFileBase(RawFile):
                     # col-1 is a byte that wraps
                     if self.col == 257:
                         self.col = 1
+
+    def _check_long_line(self, line):
+        """Check if line is longer than max length; raise error if needed."""
+        if len(line) > 255:
+            if self.split_long_lines:
+                return True
+            else:
+                raise error.BASICError(error.LINE_BUFFER_OVERFLOW)
+        return False
+
+    def read_line(self):
+        """Read a single line."""
+        out = bytearray('')
+        while not self._check_long_line(out):
+            c = self.read(1)
+            # don't check for CRLF on KYBD:, CAS:, etc.
+            if not c or c == '\r':
+                break
+            out += c
+        if not c and not out:
+            return None
+        return out
 
     def write_line(self, s=''):
         """Write string or bytearray and follow with CR or CRLF."""
@@ -387,6 +407,10 @@ class TextFileBase(RawFile):
         return word, c
 
 
+#################################################################################
+# Console files
+
+
 class InputTextFile(TextFileBase):
     """Handle INPUT from console."""
 
@@ -397,9 +421,6 @@ class InputTextFile(TextFileBase):
         """Initialise InputStream."""
         TextFileBase.__init__(self, io.BytesIO(line), 'D', 'I')
 
-
-#################################################################################
-# Console files
 
 class KYBDFile(TextFileBase):
     """KYBD device: keyboard."""
