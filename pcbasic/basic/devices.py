@@ -303,16 +303,16 @@ class TextFileBase(RawFile):
 
     def read_line(self):
         """Read a single line."""
-        out = bytearray('')
+        out = []
         while not self._check_long_line(out):
             c = self.read(1)
             # don't check for CRLF on KYBD:, CAS:, etc.
             if not c or c == '\r':
                 break
-            out += c
+            out.append(c)
         if not c and not out:
             return None
-        return out
+        return b''.join(out)
 
     def write_line(self, s=''):
         """Write string or bytearray and follow with CR or CRLF."""
