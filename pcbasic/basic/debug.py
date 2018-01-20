@@ -255,6 +255,14 @@ class Debugger(BaseDebugger):
         """Quit the session."""
         raise error.Exit()
 
+    def logprint(self, *args):
+        """Write arguments to log."""
+        logging.debug(' '.join(bytes(arg) for arg in args))
+
+    def logwrite(self, *args):
+        """Write arguments to log."""
+        logging.debug(' '.join(repr(arg) for arg in args))
+
     def trace(self, on=True):
         """Switch line number tracing on or off."""
         self._do_trace = on
