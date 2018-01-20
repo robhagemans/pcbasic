@@ -290,7 +290,8 @@ class Files(object):
         """FIELD: attach a variable to the record buffer."""
         number = values.to_int(next(args))
         error.range_check(0, 255, number)
-        the_file = self.get(number, 'R')
+        # check if file is open
+        self.get(number, 'R')
         offset = 0
         try:
             while True:
@@ -298,7 +299,7 @@ class Files(object):
                 error.range_check(0, 255, width)
                 name, index = next(args)
                 name = self._memory.complete_name(name)
-                the_file.field.attach_var(name, index, offset, width)
+                self._fields[number].attach_var(name, index, offset, width)
                 offset += width
         except StopIteration:
             pass
