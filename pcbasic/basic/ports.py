@@ -316,6 +316,9 @@ class SerialStream(object):
     def __init__(self, port, input_methods, do_open):
         """Initialise the stream."""
         self._serial = serial.serial_for_url(port, timeout=0, do_not_open=not do_open)
+        # monkey-patch serial object as SocketSerial does not have this property
+        if not hasattr(self._serial, 'out_waiting'):
+            self._serial.out_waiting = 0
         # for wait()
         self._input_methods = input_methods
         self._url = port
@@ -428,7 +431,7 @@ class SerialStream(object):
         """ Find out whether bytes are waiting for input or output. """
         self._check_open()
         # socketserial has no out_waiting, though Serial does
-        return self._serial.in_waiting > 0, False
+        return self._serial.in_waiting > 0, self._serial.out_waiting > 0
 
 
 class StdIOSerialStream(object):
