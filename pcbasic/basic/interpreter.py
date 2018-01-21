@@ -19,14 +19,14 @@ class Interpreter(object):
     """BASIC interpreter."""
 
     def __init__(self, debugger, input_methods, screen, files, sound,
-                values, memory, scalars, program, parser, basic_events):
+                values, memory, program, parser, basic_events):
         """Initialise interpreter."""
         self._debugger = debugger
         self._input_methods = input_methods
         self._basic_events = basic_events
         self._values = values
         self._memory = memory
-        self._scalars = scalars
+        self._scalars = memory.scalars
         self._screen = screen
         self._files = files
         self._sound = sound

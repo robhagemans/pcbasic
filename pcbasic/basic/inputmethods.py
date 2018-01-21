@@ -72,19 +72,20 @@ home_key_replacements_eascii = {
 class InputMethods(object):
     """Manage input queue."""
 
-    def __init__(self, queues, values):
+    def __init__(self, queues, values,
+            codepage, keystring, ignore_caps, ctrl_c_is_break):
         """Initialise event triggers."""
         self._values = values
         self._queues = queues
+        self.pen = Pen()
+        self.stick = Stick(values)
+        # InputMethods needed for wait() only
+        self.keyboard = Keyboard(self, values,
+                codepage, queues, keystring, ignore_caps, ctrl_c_is_break)
 
-    def init(self, screen, codepage, keystring, ignore_caps, ctrl_c_is_break):
+    def set_screen_for_clipboard(self, screen):
         """Finish initialisation."""
         self._screen = screen
-        self.pen = Pen()
-        self.stick = Stick(self._values)
-        # InputMethods needed for wait() only
-        self.keyboard = Keyboard(self, self._values,
-                codepage, self._queues, keystring, ignore_caps, ctrl_c_is_break)
 
 
     ##########################################################################

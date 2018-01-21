@@ -180,9 +180,9 @@ class Values(object):
         # double-precision EXP, SIN, COS, TAN, ATN, LOG
         self.double_math = double_math
 
-    def set_screen(self, screen):
+    def set_handler(self, handler):
         """Initialise the error message screen."""
-        self.error_handler = FloatErrorHandler(screen)
+        self.error_handler = handler
 
     def create(self, buf):
         """Create new variable object with buffer provided."""
