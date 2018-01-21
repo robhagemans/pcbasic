@@ -108,6 +108,8 @@ class BasicEvents(object):
         if self.active:
             for e in self.enabled:
                 e.check()
+        # we're done with the events, so the keyboard buffer can have them
+        self._keyboard.drain_event_buffer()
 
     ##########################################################################
     # callbacks
