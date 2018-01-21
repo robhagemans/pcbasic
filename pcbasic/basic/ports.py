@@ -55,10 +55,11 @@ class COMDevice(devices.Device):
         self._serial_in_size = serial_in_size
         self._serial = None
         self._url = ''
-        self._is_open = False
         self._spec = arg
         self._serial = self._init_serial(arg)
         self.device_file = devices.DeviceSettings()
+        # only one file open at a time
+        self._file = None
 
     def open(self, number, param, filetype, mode, access, lock,
                        reclen, seg, offset, length, field):
@@ -68,7 +69,7 @@ class COMDevice(devices.Device):
         # PE setting not implemented
         speed, parity, bytesize, stop, rs, cs, ds, cd, lf, _ = self._parse_params(param)
         # open the COM port
-        if self._is_open:
+        if self._file and self._file.is_open:
             raise error.BASICError(error.FILE_ALREADY_OPEN)
         else:
             try:
@@ -80,14 +81,14 @@ class COMDevice(devices.Device):
         try:
             self.set_params(speed, parity, bytesize, stop)
         except Exception:
-            self._close_serial()
+            self.close()
             raise
-        f = COMFile(self._serial, field, lf, self._serial_in_size, self._input_methods)
+        self._file = COMFile(self._serial, field, lf, self._serial_in_size, self._input_methods)
         # inherit width settings from device file
-        f.width = self.device_file.width
+        self._file.width = self.device_file.width
         # FIXME: is this ever anything but 1? what uses it? on LPT it's LPOS, but on COM?
-        f.col = self.device_file.col
-        return f
+        self._file.col = self.device_file.col
+        return self._file
 
     def available(self):
         """Device is available."""
@@ -194,14 +195,16 @@ class COMDevice(devices.Device):
 
     def __getstate__(self):
         """Get pickling dict for stream."""
-        pickle_dict = self.__dict__
+        # copy as we still need _serial for close()
+        # which gets called after __getstate__() on shutdown
+        pickle_dict = {k:v for k,v in self.__dict__.iteritems()}
         del pickle_dict['_serial']
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
         """Initialise stream from pickling dict."""
         self.__dict__.update(pickle_dict)
-        self._init_serial(self._spec)
+        self._serial = self._init_serial(self._spec)
 
     def _check_open(self):
         """Open the underlying port if necessary."""
@@ -238,7 +241,6 @@ class COMDevice(devices.Device):
                 (ds > 0 and not have_dsr) or
                 (cd > 0 and not have_cd)):
             raise error.BASICError(error.DEVICE_TIMEOUT)
-        self._is_open = True
 
     def set_params(self, speed, parity, bytesize, stop):
         """Set serial port connection parameters."""
@@ -270,11 +272,10 @@ class COMDevice(devices.Device):
         return (self._serial.cd, self._serial.ri,
                 self._serial.dsr, self._serial.cts)
 
-    def _close_serial(self):
+    def close(self):
         """Close the serial connection."""
-        if self._serial:
+        if self._serial and self._serial.is_open:
             self._serial.close()
-        self._is_open = False
 
     def io_waiting(self):
         """ Find out whether bytes are waiting for input or output. """
@@ -302,6 +303,12 @@ class COMFile(devices.TextFileBase):
         # buffer for the separator character that broke the last INPUT# field
         # to be attached to the next
         self._input_last = b''
+        self.is_open = True
+
+    def close(self):
+        """Close the file and the port."""
+        devices.TextFileBase.close(self)
+        self.is_open = False
 
     def read_raw(self, num=-1):
         """Read num characters as string."""
