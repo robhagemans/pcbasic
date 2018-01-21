@@ -23,8 +23,9 @@ from . import disk
 from . import ports
 from . import parports
 
+
 # MS-DOS device files
-device_files = ('AUX', 'CON', 'NUL', 'PRN')
+DOS_DEVICE_FILES = (b'AUX', b'CON', b'NUL', b'PRN')
 
 
 ############################################################################
@@ -206,7 +207,7 @@ class Files(object):
         else:
             device = self._devices[self._current_device + b':']
             # MS-DOS device aliases - these can't be names of disk files
-            if device != self._devices['CAS1:'] and name in device_files:
+            if device != self._devices['CAS1:'] and name in DOS_DEVICE_FILES:
                 if name == 'AUX':
                     device, dev_param = self._devices['COM1:'], ''
                 elif name == 'CON' and mode == 'I':

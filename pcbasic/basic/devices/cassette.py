@@ -18,8 +18,12 @@ from ..base import error
 from ..base import tokens as tk
 from . import devicebase
 
-token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
-type_to_token = dict((reversed(item) for item in token_to_type.items()))
+TOKEN_TO_TYPE = {
+    0: b'D', 1: b'M', 0xa0: b'P',
+    0x20: b'P', 0x40: b'A', 0x80: b'B'
+}
+
+TYPE_TO_TOKEN = dict(reversed(item) for item in TOKEN_TO_TYPE.iteritems())
 
 
 #################################################################################
@@ -249,7 +253,7 @@ class CassetteStream(object):
         file_trunk, token, self.length, seg, offset = struct.unpack('<8sBHHH',
                                                                     record[1:16])
         try:
-            self.filetype = token_to_type[token]
+            self.filetype = TOKEN_TO_TYPE[token]
         except KeyError:
             logging.debug('Unknown file type token: %x', token)
         self.record_num = 0
@@ -274,7 +278,7 @@ class CassetteStream(object):
         # header seems to end at 0x00, 0x01, then filled out with last char
         header = struct.pack('<c8sBHHHBB',
                     '\xa5', name[:8] + ' ' * (8-len(name)),
-                    type_to_token[filetype], length, seg, offs, 0, 1)
+                    TYPE_TO_TOKEN[filetype], length, seg, offs, 0, 1)
         self._write_record(header)
         self.is_open = True
 

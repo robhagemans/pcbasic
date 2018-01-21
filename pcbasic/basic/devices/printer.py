@@ -21,6 +21,7 @@ if platform.system() == 'Windows':
     except ImportError:
         win32print = None
 
+
 class PrinterStreamBase(io.BytesIO):
     """Base stream for printing."""
 

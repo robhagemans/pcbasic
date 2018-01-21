@@ -15,12 +15,12 @@ from ..base.eascii import as_bytes as ea
 from .. import values
 
 def nullstream():
-    return open(os.devnull, 'r+')
+    return open(os.devnull, b'r+')
 
 
 # magic chars used by some devices to indicate file type
-type_to_magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd' }
-magic_to_type = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
+TYPE_TO_MAGIC = { b'B': b'\xFF', b'P': b'\xFE', b'M': b'\xFD' }
+MAGIC_TO_TYPE = { b'\xFF': b'B', b'\xFE': b'P', b'\xFD': b'M' }
 
 
 
@@ -586,7 +586,7 @@ class SCRNFile(RawFile):
         """Write magic byte."""
         # SAVE "SCRN:" includes a magic byte
         try:
-            self.write(type_to_magic[filetype])
+            self.write(TYPE_TO_MAGIC[filetype])
         except KeyError:
             pass
 

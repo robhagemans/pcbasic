@@ -63,7 +63,7 @@ from . import devicebase
 
 
 # translate os error codes to BASIC error codes
-os_error = {
+OS_ERROR = {
     # file not found
     errno.ENOENT: error.FILE_NOT_FOUND,
     errno.EISDIR: error.FILE_NOT_FOUND,
@@ -90,7 +90,7 @@ os_error = {
 # GW-BASIC also allows 0x7F and up, but replaces accented chars with unaccented
 # based on CHCP code page, which may differ from display codepage in COUNTRY.SYS
 # this is complex and leads to unpredictable results depending on host platform.
-allowable_chars = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~")
+ALLOWABLE_CHARS = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~")
 
 
 ##############################################################################
@@ -106,7 +106,7 @@ def safe(fnname, *fnargs):
 def handle_oserror(e):
     """Translate OS and I/O exceptions to BASIC errors."""
     try:
-        basic_err = os_error[e.errno]
+        basic_err = OS_ERROR[e.errno]
     except KeyError:
         logging.error(u'Unmapped environment exception: %d', e.errno)
         basic_err = error.DEVICE_IO_ERROR
@@ -228,7 +228,7 @@ def match_filename(name, defext, path, name_err, isdir):
     # try to match dossified names
     trunk, ext = split_dosname(name)
     # enforce allowable characters
-    if (set(trunk) | set(ext)) - allowable_chars:
+    if (set(trunk) | set(ext)) - ALLOWABLE_CHARS:
         raise error.BASICError(error.BAD_FILE_NAME)
     dosname = join_dosname(trunk, ext)
     fullname = match_dosname(dosname, path, isdir)
@@ -260,7 +260,7 @@ def match_wildcard(name, mask):
 def filename_from_unicode(name):
     """Replace disallowed characters in filename with ?."""
     name_str = name.encode(b'ascii', b'replace')
-    return b''.join(c if c in allowable_chars | set(b'.') else b'?' for c in name_str)
+    return b''.join(c if c in ALLOWABLE_CHARS | set(b'.') else b'?' for c in name_str)
 
 def filter_names(path, files_list, mask=b'*.*'):
     """Apply filename filter to short version of names."""
@@ -321,7 +321,7 @@ class DiskDevice(object):
             first = fhandle.read(1)
             fhandle.seek(-len(first), 1)
             try:
-                filetype_found = devicebase.magic_to_type[first]
+                filetype_found = devicebase.MAGIC_TO_TYPE[first]
                 if filetype_found not in filetype:
                     raise error.BASICError(error.BAD_FILE_MODE)
                 filetype = filetype_found
@@ -642,7 +642,7 @@ class BinaryFile(devicebase.RawFile):
         self.access = b'RW'
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == b'O':
-            self.write(devicebase.type_to_magic[filetype])
+            self.write(devicebase.TYPE_TO_MAGIC[filetype])
             if self.filetype == b'M':
                 self.write(struct.pack(b'<HHH', seg, offset, length))
                 self.seg, self.offset, self.length = seg, offset, length

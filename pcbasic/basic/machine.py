@@ -333,7 +333,7 @@ class Memory(object):
             g.write(str(self._get_memory_block(addr, length)))
             # Tandys repeat the header at the end of the file
             if self._syntax == 'tandy':
-                g.write(devices.type_to_magic['M'] +
+                g.write(devices.TYPE_TO_MAGIC['M'] +
                         struct.pack('<HHH', self.segment, offset, length))
 
     def def_seg_(self, args):
