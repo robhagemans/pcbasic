@@ -13,15 +13,15 @@ import logging
 import platform
 import io
 
-from .base import error
-from .base import tokens as tk
-from . import devices
+from ..base import error
+from ..base import tokens as tk
+from .. import values
+from .. import formatter
+from . import devicebase
 from . import cassette
 from . import disk
 from . import ports
 from . import parports
-from . import values
-from . import formatter
 
 # MS-DOS device files
 device_files = ('AUX', 'CON', 'NUL', 'PRN')
@@ -105,7 +105,7 @@ class Files(object):
 
     def _open_null(self, filetype, mode):
         """Open a null file object. Do not register in files dict."""
-        return devices.TextFileBase(devices.nullstream(), filetype, mode)
+        return devicebase.TextFileBase(devicebase.nullstream(), filetype, mode)
 
     def _open_stdio(self, filetype, mode):
         """Open a file object on standard IO. Do not register in files dict."""
@@ -153,16 +153,16 @@ class Files(object):
         self._values = values
         # screen device
         self._screen = screen
-        self._devices['SCRN:'] = devices.SCRNDevice(screen)
+        self._devices['SCRN:'] = devicebase.SCRNDevice(screen)
         # KYBD: device needs screen as it can set the screen width
-        self._devices['KYBD:'] = devices.KYBDDevice(keyboard, screen)
+        self._devices['KYBD:'] = devicebase.KYBDDevice(keyboard, screen)
         self.scrn_file = self._devices['SCRN:'].device_file
         self.kybd_file = self._devices['KYBD:'].device_file
         # ports
         # parallel devices - LPT1: must always be defined
         if not device_params:
             device_params = {'LPT1:': '', 'LPT2:': '', 'LPT3:': '', 'COM1:': '', 'COM2:': '', 'CAS1:': ''}
-        self._devices['LPT1:'] = parports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, screen.codepage, temp_dir)
+        self._devices['LPT1:'] = parports.LPTDevice(device_params['LPT1:'], devicebase.nullstream(), print_trigger, screen.codepage, temp_dir)
         self._devices['LPT2:'] = parports.LPTDevice(device_params['LPT2:'], None, print_trigger, screen.codepage, temp_dir)
         self._devices['LPT3:'] = parports.LPTDevice(device_params['LPT3:'], None, print_trigger, screen.codepage, temp_dir)
         self.lpt1_file = self._devices['LPT1:'].device_file
@@ -216,7 +216,7 @@ class Files(object):
                 elif name == 'PRN':
                     device, dev_param = self._devices['LPT1:'], ''
                 elif name == 'NUL':
-                    device, dev_param = devices.NullDevice(), ''
+                    device, dev_param = devicebase.NullDevice(), ''
             else:
                 # open file on default device
                 dev_param = name

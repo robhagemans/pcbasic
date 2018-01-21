@@ -14,9 +14,9 @@ import string
 from chunk import Chunk
 import io
 
-from .base import error
-from .base import tokens as tk
-from . import devices
+from ..base import error
+from ..base import tokens as tk
+from . import devicebase
 
 token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 type_to_token = dict((reversed(item) for item in token_to_type.items()))
@@ -44,10 +44,10 @@ class CASDevice(object):
 
     def __init__(self, arg, screen):
         """Initialise tape device."""
-        addr, val = devices.parse_protocol_string(arg)
+        addr, val = devicebase.parse_protocol_string(arg)
         ext = val.split('.')[-1].upper()
         # WIDTH and LOC on CAS1: directly are ignored
-        self.device_file = devices.DeviceSettings()
+        self.device_file = devicebase.DeviceSettings()
         # by default, show messages
         self.is_quiet = False
         # console for messages
@@ -132,20 +132,20 @@ class CASDevice(object):
 #################################################################################
 # Cassette files
 
-class CASBinaryFile(devices.RawFile):
+class CASBinaryFile(devicebase.RawFile):
     """Program or Memory file on CASn: device."""
 
     def __init__(self, fhandle, filetype, mode, seg, offset, length):
         """Initialise binary file."""
-        devices.RawFile.__init__(self, fhandle, filetype, mode)
+        devicebase.RawFile.__init__(self, fhandle, filetype, mode)
         self.seg, self.offset, self.length = seg, offset, length
 
     def close(self):
         """Close a file on tape."""
-        devices.RawFile.close(self)
+        devicebase.RawFile.close(self)
 
 
-class CASTextFile(devices.TextFileBase):
+class CASTextFile(devicebase.TextFileBase):
     """Text file on CASn: device."""
 
     def lof(self):
@@ -165,7 +165,7 @@ class CASTextFile(devices.TextFileBase):
             self.fhandle.close()
         except EnvironmentError:
             pass
-        devices.TextFileBase.close(self)
+        devicebase.TextFileBase.close(self)
 
 
 class CassetteStream(object):

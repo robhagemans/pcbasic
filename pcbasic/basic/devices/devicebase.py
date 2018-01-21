@@ -1,5 +1,5 @@
 """
-PC-BASIC - devices.py
+PC-BASIC - devicebase.py
 Devices, Files and I/O operations
 
 (c) 2013--2018 Rob Hagemans
@@ -10,9 +10,9 @@ import io
 import os
 import struct
 
-from .base import error
-from .base.eascii import as_bytes as ea
-from . import values
+from ..base import error
+from ..base.eascii import as_bytes as ea
+from .. import values
 
 def nullstream():
     return open(os.devnull, 'r+')

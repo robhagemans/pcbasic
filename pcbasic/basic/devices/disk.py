@@ -21,10 +21,10 @@ if platform.system() == b'Windows':
     import win32api
     import ctypes
 
-from .base.bytestream import ByteStream
-from .base import error
-from . import values
-from . import devices
+from ..base.bytestream import ByteStream
+from ..base import error
+from .. import values
+from . import devicebase
 
 # GW-BASIC FILE CONTROL BLOCK structure:
 # source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5
@@ -321,7 +321,7 @@ class DiskDevice(object):
             first = fhandle.read(1)
             fhandle.seek(-len(first), 1)
             try:
-                filetype_found = devices.magic_to_type[first]
+                filetype_found = devicebase.magic_to_type[first]
                 if filetype_found not in filetype:
                     raise error.BASICError(error.BAD_FILE_MODE)
                 filetype = filetype_found
@@ -627,13 +627,13 @@ class Locks(object):
 #################################################################################
 # Disk files
 
-class BinaryFile(devices.RawFile):
+class BinaryFile(devicebase.RawFile):
     """File class for binary (B, P, M) files on disk device."""
 
     def __init__(self, fhandle, filetype, number, name, mode,
                        seg, offset, length, locks=None):
         """Initialise program file object and write header."""
-        devices.RawFile.__init__(self, fhandle, filetype, mode)
+        devicebase.RawFile.__init__(self, fhandle, filetype, mode)
         self.number = number
         # don't lock binary files
         self.lock = b''
@@ -642,7 +642,7 @@ class BinaryFile(devices.RawFile):
         self.access = b'RW'
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == b'O':
-            self.write(devices.type_to_magic[filetype])
+            self.write(devicebase.type_to_magic[filetype])
             if self.filetype == b'M':
                 self.write(struct.pack(b'<HHH', seg, offset, length))
                 self.seg, self.offset, self.length = seg, offset, length
@@ -662,13 +662,13 @@ class BinaryFile(devices.RawFile):
         """Write EOF and close program file."""
         if self.mode == b'O':
             self.write(b'\x1a')
-        devices.RawFile.close(self)
+        devicebase.RawFile.close(self)
         if self.locks is not None:
             # no locking for binary files, but we do need to register it closed
             self.locks.close_file(self.number)
 
 
-class CRLFTextFileBase(devices.TextFileBase):
+class CRLFTextFileBase(devicebase.TextFileBase):
     """Text file with CRLF line endings, on disk device or field buffer."""
 
     def read(self, num=-1):

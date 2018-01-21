@@ -26,15 +26,15 @@ else:
         """Return whether a character is ready to be read from the keyboard."""
         return select.select([sys.stdin], [], [], 0)[0] != []
 
-from .base import error
-from . import devices
+from ..base import error
+from . import devicebase
 from . import printer
 
 
 ###############################################################################
 # LPT ports
 
-class LPTDevice(devices.Device):
+class LPTDevice(devicebase.Device):
     """Parallel port or printer device (LPTn:) """
 
     # LPT1 can be opened as RANDOM
@@ -44,8 +44,8 @@ class LPTDevice(devices.Device):
 
     def __init__(self, arg, default_stream, flush_trigger, codepage, temp_dir):
         """Initialise LPTn: device."""
-        devices.Device.__init__(self)
-        addr, val = devices.parse_protocol_string(arg)
+        devicebase.Device.__init__(self)
+        addr, val = devicebase.parse_protocol_string(arg)
         self.stream = default_stream
         if addr == 'FILE':
             try:
@@ -84,12 +84,12 @@ class LPTDevice(devices.Device):
         return self.stream is not None
 
 
-class LPTFile(devices.TextFileBase):
+class LPTFile(devicebase.TextFileBase):
     """LPTn: device - line printer or parallel port."""
 
     def __init__(self, stream, filetype='D', flush_trigger='close'):
         """Initialise LPTn."""
-        devices.TextFileBase.__init__(self, io.BytesIO(), filetype, mode='A')
+        devicebase.TextFileBase.__init__(self, io.BytesIO(), filetype, mode='A')
         # width=255 means line wrap
         self.width = 255
         self.col = 1

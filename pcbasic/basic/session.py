@@ -29,7 +29,6 @@ from . import dos
 from . import memory
 from . import machine
 from . import interpreter
-from . import files
 from . import sound
 from . import redirect
 from . import codepage as cp
@@ -138,7 +137,7 @@ class Session(object):
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # InputMethods needed for wait()
-        self.files = files.Files(
+        self.files = devices.Files(
                 self.values, self.memory,
                 self.input_methods, self.screen,
                 max_files, max_reclen, serial_buffer_size,
