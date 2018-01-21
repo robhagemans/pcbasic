@@ -6,5 +6,5 @@ Devices, Files and I/O operations
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .devicebase import *
-from .files import *
+from .devicebase import type_to_magic, InputTextFile
+from .files import Files
