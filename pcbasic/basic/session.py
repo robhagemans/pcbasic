@@ -29,7 +29,6 @@ from . import dos
 from . import memory
 from . import machine
 from . import interpreter
-from . import files
 from . import sound
 from . import redirect
 from . import codepage as cp
@@ -138,15 +137,15 @@ class Session(object):
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # InputMethods needed for wait()
-        self.devices = files.Devices(
-                self.values, self.input_methods, self.memory.fields,
-                self.screen, self.input_methods.keyboard,
+        self.files = devices.Files(
+                self.values, self.memory,
+                self.input_methods, self.screen,
+                max_files, max_reclen, serial_buffer_size,
                 device_params, current_device, mount_dict,
-                print_trigger, temp_dir, serial_buffer_size,
+                print_trigger, temp_dir,
                 utf8, universal)
-        self.files = files.Files(self.values, self.devices, self.memory, max_files, max_reclen)
         # set LPT1 as target for print_screen()
-        self.screen.set_print_screen_target(self.devices.lpt1_file)
+        self.screen.set_print_screen_target(self.files.lpt1_file)
         # set up the SHELL command
         self.shell = dos.get_shell_manager(self.input_methods.keyboard, self.screen, self.codepage, shell, syntax)
         # set up environment
@@ -161,7 +160,7 @@ class Session(object):
         # initialise the editor
         self.editor = editor.Editor(
                 self.screen, self.input_methods.keyboard, self.sound,
-                self.output_redirection, self.devices.lpt1_file)
+                self.output_redirection, self.files.lpt1_file)
         ######################################################################
         # extensions
         ######################################################################
@@ -176,10 +175,10 @@ class Session(object):
         # set up BASIC event handlers
         self.basic_events = events.BasicEvents(
                 self.values, self.input_methods, self.sound, self.clock,
-                self.devices, self.screen, self.program, syntax)
+                self.files, self.screen, self.program, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
-                self.debugger, self.input_methods, self.screen, self.devices, self.sound,
+                self.debugger, self.input_methods, self.screen, self.files, self.sound,
                 self.values, self.memory, self.scalars, self.program, self.parser, self.basic_events)
         # PLAY parser
         self.play_parser = sound.PlayParser(self.sound, self.memory, self.values)
@@ -188,7 +187,7 @@ class Session(object):
         ######################################################################
         # set up non-data segment memory
         self.all_memory = machine.Memory(
-                self.values, self.memory, self.devices, self.files,
+                self.values, self.memory, self.files,
                 self.screen, self.input_methods.keyboard, self.screen.fonts[8],
                 self.interpreter, peek_values, syntax)
         # initialise machine ports
@@ -316,7 +315,7 @@ class Session(object):
         """Close the session."""
         # close files if we opened any
         self.files.close_all()
-        self.devices.close()
+        self.files.close_devices()
 
     ###########################################################################
     # implementation

@@ -380,7 +380,6 @@ class Settings(object):
             logging.fatal(msg)
             raise Exception(msg)
 
-
     def _prepare_logging(self):
         """Set up the global logger."""
         logfile = self.get('logfile')
@@ -389,12 +388,12 @@ class Settings(object):
             loglevel = logging.INFO
         else:
             # logging setup before we import modules and may need to log errors
-            formatstr = '%(levelname)s: %(message)s'
+            formatstr = '[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
             if self.get('debug'):
                 loglevel = logging.DEBUG
             else:
                 loglevel = logging.INFO
-        logging.basicConfig(format=formatstr, level=loglevel, filename=logfile)
+        logging.basicConfig(format=formatstr, level=loglevel, filename=logfile, datefmt='%H:%M:%S')
 
     def _retrieve_options(self, uargv):
         """Retrieve command line and option file options."""

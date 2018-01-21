@@ -3,6 +3,11 @@ from pylint import epylint
 import os
 import sys
 
+CONFIG = [
+    '--ignored-modules=pygame,numpy,pygame.mixer,msvcrt',
+    '--ignored-classes=Serial,pygame.Surface',
+    '--errors-only',
+]
 
 def lint_files(path, filenames, exclude=[]):
     for namext in filenames:
@@ -13,7 +18,7 @@ def lint_files(path, filenames, exclude=[]):
             continue
         fullname = os.path.join(path, namext)
         print fullname
-        epylint.lint(fullname, ['--ignored-modules=pygame,numpy,pygame.mixer', '--ignored-classes=Serial,pygame.Surface', '--errors-only'])
+        epylint.lint(fullname, CONFIG)
 
 
 basedir = os.path.join('..', 'pcbasic')
@@ -24,8 +29,9 @@ if not args or args == ['--all']:
 
     for path, _, filenames in os.walk(basedir):
         lint_files(path, filenames, exclude)
-        epylint.lint(os.path.join(basedir, 'interface', 'video_pygame.py'),
-            ['--ignored-modules=pygame,numpy,pygame.mixer', '--ignored-classes=Serial,pygame.Surface', '--errors-only', '--disable=too-many-function-args,unexpected-keyword-arg'])
+        epylint.lint(
+                os.path.join(basedir, 'interface', 'video_pygame.py'),
+                CONFIG + ['--disable=too-many-function-args,unexpected-keyword-arg'])
 
 else:
     lint_files(basedir, args)

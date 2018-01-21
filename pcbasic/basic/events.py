@@ -21,7 +21,7 @@ from . import values
 class BasicEvents(object):
     """Manage BASIC events."""
 
-    def __init__(self, values, input_methods, sound, clock, devices, screen, program, syntax):
+    def __init__(self, values, input_methods, sound, clock, files, screen, program, syntax):
         """Initialise event triggers."""
         self._values = values
         self._keyboard = input_methods.keyboard
@@ -29,7 +29,7 @@ class BasicEvents(object):
         self._stick = input_methods.stick
         self._sound = sound
         self._clock = clock
-        self._devices = devices
+        self._files = files
         self._screen = screen
         self._program = program
         # events start unactivated
@@ -59,8 +59,8 @@ class BasicEvents(object):
         self.timer = TimerHandler(self._clock)
         self.play = PlayHandler(self._sound, self.multivoice)
         self.com = [
-            ComHandler(self._devices.devices['COM1:']),
-            ComHandler(self._devices.devices['COM2:'])]
+            ComHandler(self._files.get_device('COM1:')),
+            ComHandler(self._files.get_device('COM2:'))]
         self.pen = PenHandler(self._pen)
         # joy*2 + button
         self.strig = [StrigHandler(self._stick, joy, button)
@@ -86,20 +86,21 @@ class BasicEvents(object):
         yield
         self.suspend_all = store
 
-
     def command(self, handler, command_char):
         """Turn the event ON, OFF and STOP."""
         if command_char == tk.ON:
             self.enabled.add(handler)
             handler.stopped = False
         elif command_char == tk.OFF:
-            self.enabled.discard(handler)
+            # this is needed to make serial events work correctly
+            # FIXME: I don't understand why
+            if not isinstance(handler, ComHandler):
+                self.enabled.discard(handler)
         elif command_char == tk.STOP:
             handler.stopped = True
         else:
             return False
         return True
-
 
     def check(self):
         """Check and trigger events."""
@@ -286,11 +287,15 @@ class ComHandler(EventHandler):
         EventHandler.__init__(self)
         self.device = com_device
 
-    def check(self):
-        """Trigger COM-port events."""
-        if (self.device and self.device.char_waiting()):
-            self.trigger()
+    # treat com-port "trigger" as real-time check
 
+    @property
+    def triggered(self):
+        return self.device.char_waiting()
+
+    @triggered.setter
+    def triggered(self, value):
+        pass
 
 class KeyHandler(EventHandler):
     """Manage KEY events."""
