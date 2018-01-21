@@ -123,6 +123,9 @@ class Codepage(object):
 
     def from_unicode(self, uc):
         """Convert normalised unicode grapheme cluster to codepage char sequence."""
+        # pass through eascii clusters
+        if uc and uc[0] == u'\0':
+            return b''.join(chr(min(255, ord(c))) for c in uc)
         # bring cluster on C normal form (combine what can be combined)
         if len(uc) > 1:
             uc = unicodedata.normalize('NFC', uc)
