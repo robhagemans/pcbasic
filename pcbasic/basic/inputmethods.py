@@ -63,7 +63,7 @@ home_key_replacements_eascii = {
     u'N': (scancode.NUMLOCK, u''),
     u'S': (scancode.SCROLLOCK, u''),
     u'C': (scancode.CAPSLOCK, u''),
-    u'H': (scancode.PRINT, u''),
+    u'H': (scancode.PRINT, uea.SHIFT_PRINT),
     u'\x08': (scancode.PRINT, uea.CTRL_PRINT),
 }
 
@@ -82,10 +82,8 @@ class InputMethods(object):
         self._screen = screen
         self.pen = Pen(screen)
         self.stick = Stick(self._values)
-        # Screen needed in Keyboard for print_screen()
-        # and also for clipboard operations
         # InputMethods needed for wait() only
-        self.keyboard = Keyboard(self, self._values, screen,
+        self.keyboard = Keyboard(self, self._values,
                 codepage, self._queues, keystring, ignore_caps, ctrl_c_is_break)
 
 
@@ -302,7 +300,7 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, input_methods, values, screen, codepage, queues, keystring, ignore_caps, ctrl_c_is_break):
+    def __init__(self, input_methods, values, codepage, queues, keystring, ignore_caps, ctrl_c_is_break):
         """Initilise keyboard state."""
         self._values = values
         # key queue (holds bytes)
@@ -323,8 +321,6 @@ class Keyboard(object):
         self.ignore_caps = ignore_caps
         # if true, treat Ctrl+C *exactly* like ctrl+break (unlike GW-BASIC)
         self.ctrl_c_is_break = ctrl_c_is_break
-        # screen is needed only for print_screen()
-        self.screen = screen
         # pre-inserted keystrings
         self.codepage = codepage
         self.buf.insert(self.codepage.str_from_unicode(keystring), check_full=False)
@@ -464,10 +460,6 @@ class Keyboard(object):
                     (scan == scancode.NUMLOCK and mod & modifier[scancode.CTRL])):
                 self.pause = True
                 return
-            elif scan == scancode.PRINT:
-                if mod & (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT]):
-                    # shift + printscreen
-                    self.screen.print_screen()
             self.buf.insert_keypress(
                     self.codepage.from_unicode(c),
                     scan, mod, check_full)

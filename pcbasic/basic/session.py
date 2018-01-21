@@ -127,7 +127,7 @@ class Session(object):
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=bool(debug))
         # initialise input methods
-        # screen is needed for print_screen, clipboard copy and pen poll
+        # screen is needed for clipboard copy and pen poll
         self.input_methods.init(self.screen, self.codepage, keys, ignore_caps, ctrl_c_is_break)
         # initilise floating-point error message stream
         self.values.set_screen(self.screen)
@@ -144,8 +144,6 @@ class Session(object):
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir,
                 utf8, universal)
-        # set LPT1 as target for print_screen()
-        self.screen.set_print_screen_target(self.files.lpt1_file)
         # set up the SHELL command
         self.shell = dos.get_shell_manager(self.input_methods.keyboard, self.screen, self.codepage, shell, syntax)
         # set up environment

@@ -198,6 +198,9 @@ class _EASCIIBytes(object):
         self.ALT_F11 = b'\0\xB6'
         self.ALT_F12 = b'\0\xB7'
 
+        # not a true scan code, PC-BASIC only
+        self.SHIFT_PRINT = b'\0\x97'
+
 
 class _EASCIIUnicode(_EASCIIBytes):
     """EASCII constants as unicode."""

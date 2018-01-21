@@ -596,8 +596,6 @@ class Screen(object):
         self.redirect = redirect
         # function key macros
         self.fkey_macros = FunctionKeyMacros(input_methods, self, capabilities)
-        # print screen target, to be set later due to init order issues
-        self.lpt1_file = None
         self.drawing = graphics.Drawing(self, input_methods, values, memory)
         self.palette = Palette(self.mode, self.capabilities, self._memory)
         # initialise a fresh textmode screen
@@ -1427,20 +1425,15 @@ class Screen(object):
             self.clear_rows(srow, srow)
         therow.end = save_end
 
-    def set_print_screen_target(self, lpt1_file):
-        """Set stream for print_screen() """
-        self.lpt1_file = lpt1_file
-
-    def print_screen(self):
-        """Output the visible page to LPT1."""
-        if not self.lpt1_file:
-            logging.debug('Print screen target not set.')
+    def print_screen(self, target_file):
+        """Output the visible page to file in raw bytes."""
+        if not target_file:
             return
         for crow in range(1, self.mode.height+1):
             line = ''
             for c, _ in self.vpage.row[crow-1].buf:
                 line += c
-            self.lpt1_file.write_line(line)
+            target_file.write_line(line)
 
     def clear_text_at(self, x, y):
         """Remove the character covering a single pixel."""
