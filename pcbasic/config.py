@@ -16,6 +16,7 @@ import locale
 import tempfile
 import shutil
 import platform
+import pkg_resources
 
 if platform.system() == b'Windows':
     import ctypes
@@ -23,7 +24,7 @@ if platform.system() == b'Windows':
     import win32api
 
 from .version import __version__, GREETING, ICON
-from .basic import codepages, fonts, programs
+
 
 MIN_PYTHON_VERSION = (2, 7, 12)
 
@@ -42,8 +43,13 @@ else:
     user_config_dir = os.path.join(_xdg_config_home, basename)
     state_path = os.path.join(_xdg_data_home, basename)
 
-# @: drive for bundled programs
+# @: target drive for bundled programs
 program_path = os.path.join(state_path, u'bundled_programs')
+
+# data resources
+CODEPAGES = [name.split('.', 1)[0] for name in pkg_resources.resource_listdir('pcbasic.data.codepages', '.') if name.lower().endswith('.ucp')]
+PROGRAMS = (name for name in pkg_resources.resource_listdir('pcbasic.data.programs', '.') if name.lower().endswith('.bas'))
+FONTS = [name.split('_', 1)[0] for name in pkg_resources.resource_listdir('pcbasic.data.fonts', '.') if name.lower().endswith('.hex')]
 
 
 def get_logger(logfile=None):
@@ -103,6 +109,12 @@ def safe_split(s, sep):
     else:
         s1 = u''
     return s0, s1
+
+def store_bundled_programs(program_path):
+    """Retrieve contents of BASIC programs."""
+    for name in PROGRAMS:
+        with open(os.path.join(program_path, name), 'wb') as f:
+            f.write(pkg_resources.resource_string('pcbasic.data.programs', name))
 
 
 class TemporaryDirectory():
@@ -281,9 +293,9 @@ class Settings(object):
         u'cas1': {u'type': u'string', u'default': u'',},
         u'com1': {u'type': u'string', u'default': u'',},
         u'com2': {u'type': u'string', u'default': u'',},
-        u'codepage': {u'type': u'string', u'choices': codepages, u'default': u'437',},
+        u'codepage': {u'type': u'string', u'choices': CODEPAGES, u'default': u'437',},
         u'font': {
-            u'type': u'string', u'list': u'*', u'choices': fonts,
+            u'type': u'string', u'list': u'*', u'choices': FONTS,
             u'default': [u'unifont', u'univga', u'freedos'],},
         u'dimensions': {u'type': u'int', u'list': 2, u'default': [],},
         u'fullscreen': {u'type': u'bool', u'default': False,},
@@ -368,7 +380,7 @@ class Settings(object):
         if not os.path.exists(program_path):
             os.makedirs(program_path)
             # unpack bundled programs
-            programs.store_bundled_programs(program_path)
+            store_bundled_programs(program_path)
         # store options in options dictionary
         self._options = self._retrieve_options(self.uargv)
         # prepare global logger for use by main program

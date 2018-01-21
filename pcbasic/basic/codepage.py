@@ -1,5 +1,5 @@
 """
-PC-BASIC - unicodepage.py
+PC-BASIC - codepage.py
 Codepage conversions
 
 (c) 2013--2018 Rob Hagemans
@@ -12,7 +12,7 @@ import os
 import pkg_resources
 
 
-codepages = [name.split('.', 1)[0] for name in pkg_resources.resource_listdir(__name__, '.') if name.lower().endswith('.ucp')]
+codepages = [name.split('.', 1)[0] for name in pkg_resources.resource_listdir('pcbasic.data.codepages', '.') if name.lower().endswith('.ucp')]
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
@@ -37,7 +37,7 @@ class ResourceFailed(Exception):
 def read_file(codepage_name):
     """Retrieve contents of codepage file."""
     try:
-        resource = pkg_resources.resource_string(__name__, '%s.ucp' % codepage_name)
+        resource = pkg_resources.resource_string('pcbasic.data.codepages', '%s.ucp' % codepage_name)
     except EnvironmentError:
         raise ResourceFailed()
     if resource is None:
