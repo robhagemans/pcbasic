@@ -184,7 +184,7 @@ class COMDevice(devicebase.Device):
                 return stream
             elif addr == 'PORT':
                 # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
-                return serial.serial_for_url(port, timeout=0, do_not_open=True)
+                return serial.serial_for_url(val, timeout=0, do_not_open=True)
             else:
                 raise ValueError('Invalid protocol `%s`' % (addr,))
         except (ValueError, EnvironmentError) as e:
