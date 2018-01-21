@@ -420,6 +420,64 @@ class InputTextFile(TextFileBase):
         TextFileBase.__init__(self, io.BytesIO(line), 'D', 'I')
 
 
+def input_entry_realtime(self, typechar, allow_past_end):
+    """Read a number or string entry from KYBD: or COMn: for INPUT#."""
+    word, blanks = '', ''
+    if self._input_last:
+        c, self._input_last = self._input_last, ''
+    else:
+        last = self._skip_whitespace(self.whitespace_input)
+        # read first non-whitespace char
+        c = self.read(1)
+    # LF escapes quotes
+    # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
+    quoted = (c == '"' and typechar == values.STR and last not in ('\n', '\0'))
+    if quoted:
+        c = self.read(1)
+    # LF escapes end of file, return empty string
+    if not c and not allow_past_end and last not in ('\n', '\0'):
+        raise error.BASICError(error.INPUT_PAST_END)
+    # we read the ending char before breaking the loop
+    # this may raise FIELD OVERFLOW
+    # on reading from a KYBD: file, control char replacement takes place
+    # which means we need to use read() not read_raw()
+    parsing_trail = False
+    while c and not (c in ',\r' and not quoted):
+        if c == '"' and quoted:
+            parsing_trail = True
+        elif c == '\n' and not quoted:
+            # LF, LFCR are dropped entirely
+            c = self.read(1)
+            if c == '\r':
+                c = self.read(1)
+            continue
+        elif c == '\0':
+            # NUL is dropped even within quotes
+            pass
+        elif c in self.whitespace_input and not quoted:
+            # ignore whitespace in numbers, except soft separators
+            # include internal whitespace in strings
+            if typechar == values.STR:
+                blanks += c
+        else:
+            word += blanks + c
+            blanks = ''
+        if len(word) + len(blanks) >= 255:
+            break
+        # there should be KYBD: control char replacement here even if quoted
+        c = self.read(1)
+        if parsing_trail:
+            if c not in self.whitespace_input:
+                if c not in (',', '\r'):
+                    self._input_last = c
+                break
+        parsing_trail = parsing_trail or (typechar != values.STR and c == ' ')
+    # file position is at one past the separator char
+    return word, c
+
+
+###############################################################################
+
 class KYBDFile(TextFileBase):
     """KYBD device: keyboard."""
 
@@ -495,61 +553,10 @@ class KYBDFile(TextFileBase):
         if self._is_master:
             self._screen.set_width(new_width)
 
-    def input_entry(self, typechar, allow_past_end):
-        """Read a number or string entry from KYBD: for INPUT# """
-        word, blanks = '', ''
-        if self._input_last:
-            c, self._input_last = self._input_last, ''
-        else:
-            last = self._skip_whitespace(self.whitespace_input)
-            # read first non-whitespace char
-            c = self.read(1)
-        # LF escapes quotes
-        # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
-        quoted = (c == '"' and typechar == values.STR and last not in ('\n', '\0'))
-        if quoted:
-            c = self.read(1)
-        # LF escapes end of file, return empty string
-        if not c and not allow_past_end and last not in ('\n', '\0'):
-            raise error.BASICError(error.INPUT_PAST_END)
-        # we read the ending char before breaking the loop
-        # this may raise FIELD OVERFLOW
-        # on reading from a KYBD: file, control char replacement takes place
-        # which means we need to use read() not read_raw()
-        parsing_trail = False
-        while c and not (c in ',\r' and not quoted):
-            if c == '"' and quoted:
-                parsing_trail = True
-            elif c == '\n' and not quoted:
-                # LF, LFCR are dropped entirely
-                c = self.read(1)
-                if c == '\r':
-                    c = self.read(1)
-                continue
-            elif c == '\0':
-                # NUL is dropped even within quotes
-                pass
-            elif c in self.whitespace_input and not quoted:
-                # ignore whitespace in numbers, except soft separators
-                # include internal whitespace in strings
-                if typechar == values.STR:
-                    blanks += c
-            else:
-                word += blanks + c
-                blanks = ''
-            if len(word) + len(blanks) >= 255:
-                break
-            # there should be KYBD: control char replacement here even if quoted
-            c = self.read(1)
-            if parsing_trail:
-                if c not in self.whitespace_input:
-                    if c not in (',', '\r'):
-                        self._input_last = c
-                    break
-            parsing_trail = parsing_trail or (typechar != values.STR and c == ' ')
-        # file position is at one past the separator char
-        return word, c
+    input_entry = input_entry_realtime
 
+
+###############################################################################
 
 class SCRNFile(RawFile):
     """SCRN: file, allows writing to the screen as a text file.

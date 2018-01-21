@@ -293,6 +293,7 @@ class COMFile(devices.TextFileBase):
         # prevent readahead by providing non-empty first char
         # we're ignoring self.char and self.next_char in this class
         devices.TextFileBase.__init__(self, stream, b'D', b'R', first_char=b'DUMMY')
+        self.next_char = ''
         self._input_methods = input_methods
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self._field = field
@@ -372,8 +373,7 @@ class COMFile(devices.TextFileBase):
         """Returns number of bytes free in buffer."""
         return max(0, self._serial_in_size - self.fhandle.in_waiting)
 
-    # FIXME
-    input_entry = None
+    input_entry = devices.input_entry_realtime
 
 
 ###############################################################################
