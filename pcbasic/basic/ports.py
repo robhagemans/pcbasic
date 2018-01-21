@@ -174,19 +174,19 @@ class COMDevice(devices.Device):
                 pass
             elif addr == 'STDIO' or (not addr and val.upper() == 'STDIO'):
                 return SerialStdIO(val.upper() == 'CRLF')
-            elif addr == 'SOCKET':
+            elif addr in ('SOCKET', 'RFC2217'):
                 # throws ValueError if too many :s, caught below
                 host, socket = val.split(':')
-                url = 'socket://%s:%s' % (host, socket)
+                url = '%s://%s:%s' % (addr.lower(), host, socket)
                 stream = serial.serial_for_url(url, timeout=0, do_not_open=True)
                 # monkey-patch serial object as SocketSerial does not have this property
                 stream.out_waiting = 0
                 return stream
             elif addr == 'PORT':
                 # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
-                return serial.serial_for_url(val, timeout=0, do_not_open=True)
+                return serial.serial_for_url(port, timeout=0, do_not_open=True)
             else:
-                raise ValueError('Invalid protocol `%s`', addr)
+                raise ValueError('Invalid protocol `%s`' % (addr,))
         except (ValueError, EnvironmentError) as e:
             logging.warning('Could not attach %s to COM device: %s', spec, e)
         except AttributeError as e:
