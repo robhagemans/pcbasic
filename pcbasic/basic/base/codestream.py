@@ -22,6 +22,10 @@ class CodeStream(io.BytesIO):
     # line end characters for ths stream type
     end_line = None
 
+    def __init__(self, bytesbuffer):
+        """Initialise the stream."""
+        io.BytesIO.__init__(self, bytesbuffer)
+
     def peek(self, n=1):
         """Peek next char in stream."""
         d = self.read(n)

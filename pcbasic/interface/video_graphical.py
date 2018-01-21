@@ -65,9 +65,9 @@ class VideoGraphical(base.VideoPlugin):
         self.composite_monitor = self.composite_monitor and self.composite_card in composite_640
         # the following attributes must be overridden by child classes
         # size of display
-        self.physical_size = None
+        self.physical_size = ()
         # size of canvas
-        self.size = None
+        self.size = ()
         # size of window (canvas+border)
         self.window_width = None
         self.window_height = None

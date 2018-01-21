@@ -943,8 +943,8 @@ class Screen(object):
         # reload max number of pages; do we fit? if not, drop to text
         new_mode = self.mode_data[self.screen_mode]
         if (page >= new_mode.num_pages):
-            self.screen.screen(0, 0, 0, 0)
-            self.screen.init_mode()
+            self.screen(0, 0, 0, 0)
+            self.init_mode()
         else:
             self.mode = new_mode
 
