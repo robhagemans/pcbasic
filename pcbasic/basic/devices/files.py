@@ -150,31 +150,40 @@ class Files(object):
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_in_size, utf8, universal):
         """Initialise devices."""
-        self._devices = {}
-        self._values = values
-        # screen device
+        # screen device, for files_()
         self._screen = screen
-        self._devices['SCRN:'] = devicebase.SCRNDevice(screen)
-        # KYBD: device needs screen as it can set the screen width
-        self._devices['KYBD:'] = devicebase.KYBDDevice(keyboard, screen)
-        self.scrn_file = self._devices['SCRN:'].device_file
-        self.kybd_file = self._devices['KYBD:'].device_file
-        # ports
-        # parallel devices - LPT1: must always be defined
-        if not device_params:
-            device_params = {'LPT1:': '', 'LPT2:': '', 'LPT3:': '', 'COM1:': '', 'COM2:': '', 'CAS1:': ''}
-        self._devices['LPT1:'] = parports.LPTDevice(device_params['LPT1:'], devicebase.nullstream(), print_trigger, screen.codepage, temp_dir)
-        self._devices['LPT2:'] = parports.LPTDevice(device_params['LPT2:'], None, print_trigger, screen.codepage, temp_dir)
-        self._devices['LPT3:'] = parports.LPTDevice(device_params['LPT3:'], None, print_trigger, screen.codepage, temp_dir)
-        self.lpt1_file = self._devices['LPT1:'].device_file
-        # serial devices
-        # buffer sizes (/c switch in GW-BASIC)
-        self._devices['COM1:'] = ports.COMDevice(device_params['COM1:'], input_methods, serial_in_size)
-        self._devices['COM2:'] = ports.COMDevice(device_params['COM2:'], input_methods, serial_in_size)
-        # cassette
-        # needs a screen for write() and write_line() to display Found and Skipped messages on opening files
-        self._devices['CAS1:'] = cassette.CASDevice(device_params['CAS1:'], screen)
-        self._init_disk_devices(input_methods, mount_dict, current_device, screen.codepage, utf8, universal)
+        self._devices = {
+            b'SCRN:': devicebase.SCRNDevice(screen),
+            # KYBD: device needs screen as it can set the screen width
+            b'KYBD:': devicebase.KYBDDevice(keyboard, screen),
+            # cassette: needs screen to display Found and Skipped messages
+            b'CAS1:': cassette.CASDevice(device_params.get(b'CAS1:', None), screen),
+            # serial devices
+            b'COM1:': ports.COMDevice(
+                        device_params.get(b'COM1:', None),
+                        input_methods, serial_in_size),
+            b'COM2:': ports.COMDevice(
+                        device_params.get(b'COM2:', None),
+                        input_methods, serial_in_size),
+            # parallel devices - LPT1: must always be available
+            b'LPT1:': parports.LPTDevice(
+                        device_params.get(b'LPT1:', None), devicebase.nullstream(),
+                        print_trigger, screen.codepage, temp_dir),
+            b'LPT2:': parports.LPTDevice(
+                        device_params.get(b'LPT2:', None), None,
+                        print_trigger, screen.codepage, temp_dir),
+            b'LPT3:': parports.LPTDevice(
+                        device_params.get(b'LPT3:', None), None,
+                        print_trigger, screen.codepage, temp_dir),
+        }
+        # device files
+        self.scrn_file = self._devices[b'SCRN:'].device_file
+        self.kybd_file = self._devices[b'KYBD:'].device_file
+        self.lpt1_file = self._devices[b'LPT1:'].device_file
+        # disks
+        self._init_disk_devices(
+                input_methods, mount_dict, current_device,
+                screen.codepage, utf8, universal)
 
     def close_devices(self):
         """Close device master files."""
