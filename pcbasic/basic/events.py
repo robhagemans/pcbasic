@@ -116,7 +116,7 @@ class BasicEvents(object):
     def pen_fn_(self, args):
         """PEN: poll the light pen."""
         fn, = args
-        result = self._pen.poll(fn, self.pen.enabled)
+        result = self._pen.poll(fn, self.pen.enabled, self._screen)
         return self._values.new_integer().from_int(result)
 
     def pen_(self, args):

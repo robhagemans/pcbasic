@@ -120,6 +120,8 @@ class Session(object):
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.input_methods, syntax)
         # Sound is needed for the beeps on \a
+        # InputMethods is needed for wait() in graphics
+        # InputMethods.keyboard is needed for key list at bottom row
         self.screen = display.Screen(
                 self.queues, self.values, self.input_methods, self.memory,
                 text_width, video_memory, video, monitor,
@@ -127,7 +129,7 @@ class Session(object):
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=bool(debug))
         # initialise input methods
-        # screen is needed for clipboard copy and pen poll
+        # screen is needed for clipboard copy only
         self.input_methods.init(self.screen, self.codepage, keys, ignore_caps, ctrl_c_is_break)
         # initilise floating-point error message stream
         self.values.set_screen(self.screen)

@@ -80,7 +80,7 @@ class InputMethods(object):
     def init(self, screen, codepage, keystring, ignore_caps, ctrl_c_is_break):
         """Finish initialisation."""
         self._screen = screen
-        self.pen = Pen(screen)
+        self.pen = Pen()
         self.stick = Stick(self._values)
         # InputMethods needed for wait() only
         self.keyboard = Keyboard(self, self._values,
@@ -471,7 +471,7 @@ class Keyboard(object):
 class Pen(object):
     """Light pen support."""
 
-    def __init__(self, screen):
+    def __init__(self):
         """Initialise light pen."""
         self.is_down = False
         self.pos = 0, 0
@@ -480,7 +480,6 @@ class Pen(object):
         # signal pen has been down for event triggers in poll_event()
         self.was_down_event = False
         self.down_pos = (0, 0)
-        self.screen = screen
 
     def down(self, x, y):
         """Report a pen-down event at graphical x,y """
@@ -505,13 +504,11 @@ class Pen(object):
         result, self.was_down_event = self.was_down_event, False
         return result
 
-    def poll(self, fn, enabled):
+    def poll(self, fn, enabled, screen):
         """PEN: poll the light pen."""
         fn = values.to_int(fn)
         error.range_check(0, 9, fn)
         posx, posy = self.pos
-        fw = self.screen.mode.font_width
-        fh = self.screen.mode.font_height
         if fn == 0:
             pen_down_old, self.was_down = self.was_down, False
             pen = -1 if pen_down_old else 0
@@ -526,13 +523,13 @@ class Pen(object):
         elif fn == 5:
             pen = posy
         elif fn == 6:
-            pen = 1 + self.down_pos[1]//fh
+            pen = 1 + self.down_pos[1] // screen.mode.font_height
         elif fn == 7:
-            pen = 1 + self.down_pos[0]//fw
+            pen = 1 + self.down_pos[0] // screen.mode.font_width
         elif fn == 8:
-            pen = 1 + posy//fh
+            pen = 1 + posy // screen.mode.font_height
         elif fn == 9:
-            pen = 1 + posx//fw
+            pen = 1 + posx // screen.mode.font_width
         if not enabled:
             # should return 0 or char pos 1 if PEN not ON
             pen = 1 if fn >= 6 else 0
