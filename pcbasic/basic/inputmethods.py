@@ -64,6 +64,7 @@ home_key_replacements_eascii = {
     u'S': (scancode.SCROLLOCK, u''),
     u'C': (scancode.CAPSLOCK, u''),
     u'H': (scancode.PRINT, u''),
+    u'\x08': (scancode.PRINT, uea.CTRL_PRINT),
 }
 
 
