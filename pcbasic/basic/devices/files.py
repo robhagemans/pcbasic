@@ -152,6 +152,7 @@ class Files(object):
         """Initialise devices."""
         # screen device, for files_()
         self._screen = screen
+        device_params = device_params or {}
         self._devices = {
             b'SCRN:': devicebase.SCRNDevice(screen),
             # KYBD: device needs screen as it can set the screen width
