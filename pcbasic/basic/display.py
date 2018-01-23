@@ -1425,16 +1425,6 @@ class Screen(object):
             self.clear_rows(srow, srow)
         therow.end = save_end
 
-    def print_screen(self, target_file):
-        """Output the visible page to file in raw bytes."""
-        if not target_file:
-            return
-        for crow in range(1, self.mode.height+1):
-            line = ''
-            for c, _ in self.vpage.row[crow-1].buf:
-                line += c
-            target_file.write_line(line)
-
     def clear_text_at(self, x, y):
         """Remove the character covering a single pixel."""
         fx, fy = self.mode.font_width, self.mode.font_height
@@ -1591,7 +1581,19 @@ class Screen(object):
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
         del self.apage.row[self.scroll_height-1]
 
-    def get_text(self, start_row, start_col, stop_row, stop_col):
+    ###########################################################################
+
+    def print_screen(self, target_file):
+        """Output the visible page to file in raw bytes."""
+        if not target_file:
+            return
+        for crow in range(1, self.mode.height+1):
+            line = ''
+            for c, _ in self.vpage.row[crow-1].buf:
+                line += c
+            target_file.write_line(line)
+
+    def _get_text(self, start_row, start_col, stop_row, stop_col):
         """Retrieve unicode text for copying."""
         r, c = start_row, start_col
         full = []
@@ -1614,6 +1616,14 @@ class Screen(object):
                 c = 1
         full.append(self.codepage.str_to_unicode(clip))
         return u''.join(full).replace(u'\0', u' ')
+
+    def copy_clipboard(self, start_row, start_col, stop_row, stop_col, is_mouse_selection):
+        """Copy selected screen are to clipboard."""
+        text = self._get_text(start_row, start_col, stop_row, stop_col)
+        self.queues.video.put(signals.Event(
+                signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)))
+
+    ###########################################################################
 
     def csrlin_(self, args):
         """CSRLIN: get the current screen row."""

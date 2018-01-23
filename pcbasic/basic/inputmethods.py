@@ -79,6 +79,8 @@ class InputMethods(object):
         self._queues = queues
         self.pen = Pen()
         self.stick = Stick(values)
+        # clipboard signal
+        self.copy_flag = None
         # InputMethods needed for wait() only
         self.keyboard = Keyboard(self, values,
                 codepage, queues, keystring, ignore_caps, ctrl_c_is_break)
@@ -134,7 +136,7 @@ class InputMethods(object):
                 pass
             elif self.stick.check_input(signal):
                 pass
-            elif self.clipboard.check_input(signal, self._queues):
+            elif self.clipboard.check_input(signal):
                 pass
 
 
@@ -153,13 +155,10 @@ class ClipboardCopyHandler(object):
         """Initialise copy handler."""
         self._screen = screen
 
-    def check_input(self, signal, _queues):
+    def check_input(self, signal):
         """Handle pen-related input signals."""
         if signal.event_type == signals.CLIP_COPY:
-            text = self._screen.get_text(*(signal.params[:4]))
-            #FIXME: should not depend on _queues
-            _queues.video.put(signals.Event(
-                    signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
+            self._screen.copy_clipboard(*signal.params)
             return True
         else:
             return False
