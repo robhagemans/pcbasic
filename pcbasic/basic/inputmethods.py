@@ -82,10 +82,11 @@ class InputMethods(object):
         # InputMethods needed for wait() only
         self.keyboard = Keyboard(self, values,
                 codepage, queues, keystring, ignore_caps, ctrl_c_is_break)
+        self.clipboard = None
 
     def set_screen_for_clipboard(self, screen):
         """Finish initialisation."""
-        self._screen = screen
+        self.clipboard = ClipboardCopyHandler(screen)
 
 
     ##########################################################################
@@ -119,44 +120,49 @@ class InputMethods(object):
             try:
                 signal = self._queues.inputs.get(False)
             except Queue.Empty:
-                if not self.keyboard.pause:
-                    break
-                else:
+                if self.keyboard.pause:
                     continue
+                else:
+                    break
             self._queues.inputs.task_done()
             # process input events
             if signal.event_type == signals.KEYB_QUIT:
                 raise error.Exit()
-            elif signal.event_type == signals.KEYB_CHAR:
-                # params is a unicode sequence
-                self.keyboard.insert_chars(*signal.params)
-            elif signal.event_type == signals.KEYB_DOWN:
-                # params is e-ASCII/unicode character sequence, scancode, modifier
-                self.keyboard.key_down(*signal.params)
-            elif signal.event_type == signals.KEYB_UP:
-                self.keyboard.key_up(*signal.params)
-            elif signal.event_type == signals.STREAM_CHAR:
-                self.keyboard.insert_chars(*signal.params, check_full=False)
-            elif signal.event_type == signals.STREAM_CLOSED:
-                self.keyboard.close_input()
-            elif signal.event_type == signals.PEN_DOWN:
-                self.pen.down(*signal.params)
-            elif signal.event_type == signals.PEN_UP:
-                self.pen.up()
-            elif signal.event_type == signals.PEN_MOVED:
-                self.pen.moved(*signal.params)
-            elif signal.event_type == signals.STICK_DOWN:
-                self.stick.down(*signal.params)
-            elif signal.event_type == signals.STICK_UP:
-                self.stick.up(*signal.params)
-            elif signal.event_type == signals.STICK_MOVED:
-                self.stick.moved(*signal.params)
-            elif signal.event_type == signals.CLIP_PASTE:
-                self.keyboard.insert_chars(*signal.params, check_full=False)
-            elif signal.event_type == signals.CLIP_COPY:
-                text = self._screen.get_text(*(signal.params[:4]))
-                self._queues.video.put(signals.Event(
-                        signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
+            elif self.keyboard.check_input(signal):
+                pass
+            elif self.pen.check_input(signal):
+                pass
+            elif self.stick.check_input(signal):
+                pass
+            elif self.clipboard.check_input(signal, self._queues):
+                pass
+
+
+###############################################################################
+# clipboard copy handler
+
+# clipboard copy is a special case:
+# a clipboard copy needs to handle an input signal, read the screen
+# and write the text to an output queue
+# independently of what BASIC is doing
+
+class ClipboardCopyHandler(object):
+    """Event handler for clipboard copy."""
+
+    def __init__(self, screen):
+        """Initialise copy handler."""
+        self._screen = screen
+
+    def check_input(self, signal, _queues):
+        """Handle pen-related input signals."""
+        if signal.event_type == signals.CLIP_COPY:
+            text = self._screen.get_text(*(signal.params[:4]))
+            #FIXME: should not depend on _queues
+            _queues.video.put(signals.Event(
+                    signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
+            return True
+        else:
+            return False
 
 
 ###############################################################################
@@ -327,6 +333,26 @@ class Keyboard(object):
         # input_methods is needed for wait() in wait_char()
         self.input_methods = input_methods
 
+    def check_input(self, signal):
+        """Handle keyboard input signals and clipboard paste."""
+        if signal.event_type == signals.KEYB_CHAR:
+            # params is a unicode sequence
+            self.insert_chars(*signal.params)
+        elif signal.event_type == signals.KEYB_DOWN:
+            # params is e-ASCII/unicode character sequence, scancode, modifier
+            self.key_down(*signal.params)
+        elif signal.event_type == signals.KEYB_UP:
+            self.key_up(*signal.params)
+        elif signal.event_type == signals.STREAM_CHAR:
+            self.insert_chars(*signal.params, check_full=False)
+        elif signal.event_type == signals.STREAM_CLOSED:
+            self.close_input()
+        elif signal.event_type == signals.CLIP_PASTE:
+            self.insert_chars(*signal.params, check_full=False)
+        else:
+            return False
+        return True
+
     def set_macro(self, num, macro):
         """Set macro for given function key."""
         # NUL terminates macro string, rest is ignored
@@ -479,6 +505,18 @@ class Pen(object):
         self.was_down_event = False
         self.down_pos = (0, 0)
 
+    def check_input(self, signal):
+        """Handle pen-related input signals."""
+        if signal.event_type == signals.PEN_DOWN:
+            self.down(*signal.params)
+        elif signal.event_type == signals.PEN_UP:
+            self.up()
+        elif signal.event_type == signals.PEN_MOVED:
+            self.moved(*signal.params)
+        else:
+            return False
+        return True
+
     def down(self, x, y):
         """Report a pen-down event at graphical x,y """
         # TRUE until polled
@@ -552,6 +590,18 @@ class Stick(object):
         self.was_fired_event = [[False, False], [False, False]]
         # timer for reading game port
         self.out_time = self._decay_timer()
+
+    def check_input(self, signal):
+        """Handle joystick-related input signals."""
+        if signal.event_type == signals.STICK_DOWN:
+            self.down(*signal.params)
+        elif signal.event_type == signals.STICK_UP:
+            self.up(*signal.params)
+        elif signal.event_type == signals.STICK_MOVED:
+            self.moved(*signal.params)
+        else:
+            return False
+        return True
 
     def strig_statement_(self, args):
         """Switch joystick handling on or off."""
