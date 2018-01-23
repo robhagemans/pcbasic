@@ -21,12 +21,14 @@ from . import values
 class BasicEvents(object):
     """Manage BASIC events."""
 
-    def __init__(self, values, input_methods, sound, clock, files, screen, program, syntax):
+    def __init__(
+            self, values, keyboard, pen, stick,
+            sound, clock, files, screen, program, syntax):
         """Initialise event triggers."""
         self._values = values
-        self._keyboard = input_methods.keyboard
-        self._pen = input_methods.pen
-        self._stick = input_methods.stick
+        self._keyboard = keyboard
+        self._pen = pen
+        self._stick = stick
         self._sound = sound
         self._clock = clock
         self._files = files

@@ -64,25 +64,26 @@ class MachinePorts(object):
 
     def inp(self, port):
         """Get the value in an emulated machine port."""
-        input_methods = self.session.input_methods
+        keyboard = self.session.input_methods.keyboard
+        stick = self.session.stick
         # keyboard
         if port == 0x60:
-            return input_methods.keyboard.last_scancode
+            return keyboard.last_scancode
         # game port (joystick)
         elif port == 0x201:
             value = (
-                (not input_methods.stick.is_firing[0][0]) * 0x40 +
-                (not input_methods.stick.is_firing[0][1]) * 0x20 +
-                (not input_methods.stick.is_firing[1][0]) * 0x10 +
-                (not input_methods.stick.is_firing[1][1]) * 0x80)
-            decay = input_methods.stick.decay()
-            if decay < input_methods.stick.axis[0][0] * self.joystick_time_factor:
+                (not stick.is_firing[0][0]) * 0x40 +
+                (not stick.is_firing[0][1]) * 0x20 +
+                (not stick.is_firing[1][0]) * 0x10 +
+                (not stick.is_firing[1][1]) * 0x80)
+            decay = stick.decay()
+            if decay < stick.axis[0][0] * self.joystick_time_factor:
                 value += 0x04
-            if decay < input_methods.stick.axis[0][1] * self.joystick_time_factor:
+            if decay < stick.axis[0][1] * self.joystick_time_factor:
                 value += 0x02
-            if decay < input_methods.stick.axis[1][0] * self.joystick_time_factor:
+            if decay < stick.axis[1][0] * self.joystick_time_factor:
                 value += 0x01
-            if decay < input_methods.stick.axis[1][1] * self.joystick_time_factor:
+            if decay < stick.axis[1][1] * self.joystick_time_factor:
                 value += 0x08
             return value
         elif port in (0x379, 0x279):
@@ -141,7 +142,7 @@ class MachinePorts(object):
         list(args)
         if addr == 0x201:
             # game port reset
-            self.session.input_methods.stick.reset_decay()
+            self.session.stick.reset_decay()
         elif addr == 0x3c5:
             # officially, requires OUT &H3C4, 2 first (not implemented)
             self.session.screen.mode.set_plane_mask(val)

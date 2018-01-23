@@ -72,31 +72,24 @@ home_key_replacements_eascii = {
 class InputMethods(object):
     """Manage input queue."""
 
+    tick = 0.006
+    max_video_qsize = 500
+    max_audio_qsize = 20
+
     def __init__(self, queues, values,
             codepage, keystring, ignore_caps, ctrl_c_is_break):
         """Initialise event triggers."""
         self._values = values
         self._queues = queues
-        self.pen = Pen()
-        self.stick = Stick(values)
-        # clipboard signal
-        self.copy_flag = None
+        self._handlers = []
         # InputMethods needed for wait() only
         self.keyboard = Keyboard(self, values,
                 codepage, queues, keystring, ignore_caps, ctrl_c_is_break)
-        self.clipboard = None
+        self.add_handler(self.keyboard)
 
-    def set_screen_for_clipboard(self, screen):
-        """Finish initialisation."""
-        self.clipboard = ClipboardCopyHandler(screen)
-
-
-    ##########################################################################
-    # main event checker
-
-    tick = 0.006
-    max_video_qsize = 500
-    max_audio_qsize = 20
+    def add_handler(self, handler):
+        """Add an input handler."""
+        self._handlers.append(handler)
 
     def wait(self):
         """Wait and check events."""
@@ -130,15 +123,9 @@ class InputMethods(object):
             # process input events
             if signal.event_type == signals.KEYB_QUIT:
                 raise error.Exit()
-            elif self.keyboard.check_input(signal):
-                pass
-            elif self.pen.check_input(signal):
-                pass
-            elif self.stick.check_input(signal):
-                pass
-            elif self.clipboard.check_input(signal):
-                pass
-
+            for handler in self._handlers:
+                if handler.check_input(signal):
+                    break
 
 ###############################################################################
 # clipboard copy handler

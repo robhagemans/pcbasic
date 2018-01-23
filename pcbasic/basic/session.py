@@ -115,7 +115,7 @@ class Session(object):
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
                 self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
-        # prepare input methods (keyboard, pen, joystick input handler)
+        # set up input event handler
         self.input_methods = inputmethods.InputMethods(
                 self.queues, self.values,
                 self.codepage, keys, ignore_caps, ctrl_c_is_break)
@@ -130,8 +130,12 @@ class Session(object):
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=bool(debug))
-        # screen is needed for clipboard copy only
-        self.input_methods.set_screen_for_clipboard(self.screen)
+        # prepare input devices (keyboard, pen, joystick, clipboard-copier)
+        self.pen = inputmethods.Pen()
+        self.stick = inputmethods.Stick(self.values)
+        self.input_methods.add_handler(self.pen)
+        self.input_methods.add_handler(self.stick)
+        self.input_methods.add_handler(inputmethods.ClipboardCopyHandler(self.screen))
         # initilise floating-point error message stream
         self.values.set_handler(values.FloatErrorHandler(self.screen))
         ######################################################################
@@ -177,8 +181,8 @@ class Session(object):
         self.debugger = dbg.get_debugger(self, bool(debug), debug, catch_exceptions)
         # set up BASIC event handlers
         self.basic_events = events.BasicEvents(
-                self.values, self.input_methods, self.sound, self.clock,
-                self.files, self.screen, self.program, syntax)
+                self.values, self.input_methods.keyboard, self.pen, self.stick,
+                self.sound, self.clock, self.files, self.screen, self.program, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
                 self.debugger, self.input_methods, self.screen, self.files, self.sound,
@@ -473,7 +477,7 @@ class Session(object):
         if not preserve_functions:
             self.parser.user_functions.clear()
         # Resets STRIG to off
-        self.input_methods.stick.is_on = False
+        self.stick.is_on = False
         # stop all sound
         self.sound.stop_all_sound()
         # reset PLAY state
