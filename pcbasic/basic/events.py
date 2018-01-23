@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from .base import scancode
 from .base import error
 from .base import tokens as tk
+from .base import signals
 from . import values
 
 
@@ -104,18 +105,9 @@ class BasicEvents(object):
             return False
         return True
 
-    def check(self):
-        """Check and trigger events."""
-        # events are only active if a program is running
-        if self.active:
-            for e in self.enabled:
-                e.check()
-        # we're done with the events, so the keyboard buffer can have them
-        self._keyboard.drain_event_buffer()
 
     ##########################################################################
     # callbacks
-
 
     def pen_fn_(self, args):
         """PEN: poll the light pen."""
@@ -225,8 +217,9 @@ class EventHandler(object):
         """Trigger the event."""
         self.triggered = True
 
-    def check(self):
+    def check_input(self, signal):
         """Stub for event checker."""
+        return False
 
 
 class PlayHandler(EventHandler):
@@ -240,7 +233,7 @@ class PlayHandler(EventHandler):
         self.multivoice = multivoice
         self.sound = sound
 
-    def check(self):
+    def check_input(self, signal):
         """Check and trigger PLAY (music queue) events."""
         play_now = [self.sound.queue_length(voice) for voice in range(3)]
         if self.multivoice:
@@ -254,6 +247,7 @@ class PlayHandler(EventHandler):
                     play_now[0] < self.trig):
                 self.trigger()
         self.last = play_now
+        return False
 
     def set_trigger(self, n):
         """Set PLAY trigger to n notes."""
@@ -275,12 +269,13 @@ class TimerHandler(EventHandler):
         self.start = self.clock.get_time_ms()
         self.period = n
 
-    def check(self):
+    def check_input(self, signal):
         """Trigger TIMER events."""
         mutimer = self.clock.get_time_ms()
         if mutimer >= self.start + self.period:
             self.start = mutimer
             self.trigger()
+        return False
 
 
 class ComHandler(EventHandler):
@@ -301,6 +296,7 @@ class ComHandler(EventHandler):
     def triggered(self, value):
         pass
 
+
 class KeyHandler(EventHandler):
     """Manage KEY events."""
 
@@ -312,13 +308,10 @@ class KeyHandler(EventHandler):
         self.predefined = (scancode is not None)
         self.keyboard = keyboard
 
-    def check(self):
+    def check_input(self, signal):
         """Trigger KEY events."""
-        if self.scancode is None:
-            return False
-        for c, scancode, modifiers, check_full in self.keyboard.prebuf:
-            if scancode != self.scancode:
-                continue
+        if (self.scancode is not None) and (signal.event_type == signals.KEYB_DOWN):
+            _, scancode, modifiers = signal.params
             # build KEY trigger code
             # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
             # second byte is scan code; first byte
@@ -334,12 +327,13 @@ class KeyHandler(EventHandler):
             #
             # for predefined keys, modifier is ignored
             # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-            if (self.predefined) or (modifiers is None or self.modcode == modifiers & 0x6f):
+            if (scancode == self.scancode) and (
+                    (self.predefined) or
+                    (modifiers is None or self.modcode == modifiers & 0x6f)):
                 # trigger event
                 self.trigger()
                 # drop key from key buffer
-                #if self.enabled:
-                self.keyboard.prebuf.remove((c, scancode, modifiers, check_full))
+                # True removes signal from further processing
                 return True
         return False
 
@@ -359,7 +353,7 @@ class PenHandler(EventHandler):
         EventHandler.__init__(self)
         self.pen = pen
 
-    def check(self):
+    def check_input(self, signal):
         """Trigger PEN events."""
         if self.pen.poll_event():
             self.trigger()
@@ -375,7 +369,7 @@ class StrigHandler(EventHandler):
         self.button = button
         self.stick = stick
 
-    def check(self):
+    def check_input(self, signal):
         """Trigger STRIG events."""
         if self.stick.poll_event(self.joy, self.button):
             self.trigger()

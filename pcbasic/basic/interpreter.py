@@ -67,9 +67,9 @@ class Interpreter(object):
         while True:
             # may raise Break
             # KEY events need to check pre-buffer, so check before draining
-            self._input_methods.check_events()
-            # this drains the buffer
-            self._basic_events.check()
+            self._input_methods.check_events(self._basic_events.enabled)
+            # we're done with the events, so the keyboard buffer can have them
+            self._input_methods.keyboard.drain_event_buffer()
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()

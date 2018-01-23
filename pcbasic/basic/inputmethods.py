@@ -100,7 +100,7 @@ class InputMethods(object):
         self.check_events()
         self.keyboard.drain_event_buffer()
 
-    def check_events(self):
+    def check_events(self, event_check_input=()):
         """Main event cycle."""
         # avoid screen lockups if video queue fills up
         if self._queues.video.qsize() > self.max_video_qsize:
@@ -109,9 +109,9 @@ class InputMethods(object):
             self._queues.video.join()
         if self._queues.audio.qsize() > self.max_audio_qsize:
             self._queues.audio.join()
-        self._check_input()
+        self._check_input(event_check_input)
 
-    def _check_input(self):
+    def _check_input(self, event_check_input):
         """Handle input events."""
         while True:
             # pop input queues
@@ -131,9 +131,8 @@ class InputMethods(object):
                         signals.KEYB_CHAR, signals.KEYB_DOWN,
                         signals.STREAM_CHAR, signals.CLIP_PASTE):
                 self._pause = False
-
             # handle non-exit events
-            for handler in self._handlers:
+            for handler in list(event_check_input) + self._handlers:
                 if handler.check_input(signal):
                     break
 
