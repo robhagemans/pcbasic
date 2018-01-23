@@ -81,7 +81,10 @@ class InputMethods(object):
         """Initialise event triggers."""
         self._values = values
         self._queues = queues
+        # input signal handlers
         self._handlers = []
+        # pause-key halts everything until another keypress
+        self._pause = False
         # InputMethods needed for wait() only
         self.keyboard = Keyboard(self, values,
                 codepage, queues, keystring, ignore_caps, ctrl_c_is_break)
@@ -115,7 +118,7 @@ class InputMethods(object):
             try:
                 signal = self._queues.inputs.get(False)
             except Queue.Empty:
-                if self.keyboard.pause:
+                if self._pause:
                     continue
                 else:
                     break
@@ -123,6 +126,13 @@ class InputMethods(object):
             # process input events
             if signal.event_type == signals.KEYB_QUIT:
                 raise error.Exit()
+            # exit pause mode on keyboard hits; do not swallow events
+            elif signal.event_type in (
+                        signals.KEYB_CHAR, signals.KEYB_DOWN,
+                        signals.STREAM_CHAR, signals.CLIP_PASTE):
+                self._pause = False
+
+            # handle non-exit events
             for handler in self._handlers:
                 if handler.check_input(signal):
                     break
@@ -303,8 +313,6 @@ class Keyboard(object):
         self.mod = 0
         # store for alt+keypad ascii insertion
         self.keypad_ascii = ''
-        # PAUSE is inactive
-        self.pause = False
         # F12 is inactive
         self.home_key_active = False
         # ignore caps lock, let OS handle it
@@ -381,7 +389,6 @@ class Keyboard(object):
 
     def insert_chars(self, us, check_full=True):
         """Insert eascii/unicode string into keyboard buffer."""
-        self.pause = False
         self.buf.insert(self.codepage.str_from_unicode(us), check_full)
 
     def key_down(self, c, scan, mods, check_full=True):
@@ -402,8 +409,6 @@ class Keyboard(object):
         # F12 emulator home key combinations
         if scan == scancode.F12:
             self.home_key_active = True
-        # Pause key state
-        self.pause = False
         if scan is not None:
             self.last_scancode = scan
         # update ephemeral modifier status at every keypress
@@ -466,9 +471,12 @@ class Keyboard(object):
                     mod & modifier[scancode.CTRL]) or
                     (self.ctrl_c_is_break and c == uea.CTRL_c)):
                 raise error.Break()
+            # pause key handling
+            # FIXME: move to InputMethods, but requires a change of event handling
+            # to ensure this key remains trappable
             elif (scan == scancode.BREAK or
                     (scan == scancode.NUMLOCK and mod & modifier[scancode.CTRL])):
-                self.pause = True
+                self.input_methods._pause = True
                 return
             self.buf.insert_keypress(
                     self.codepage.from_unicode(c),
