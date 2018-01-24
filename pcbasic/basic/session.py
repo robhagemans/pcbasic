@@ -118,11 +118,11 @@ class Session(object):
         # set up input event handler
         self.input_methods = inputmethods.InputMethods(
                 self.queues, self.values, ctrl_c_is_break)
+        # initialise sound queue
+        self.sound = sound.Sound(self.queues, self.values, self.input_methods, syntax)
         # InputMethods needed for wait() only
         self.keyboard = inputmethods.Keyboard(self.input_methods, self.values,
                 self.codepage, self.queues, keys, ignore_caps)
-        # initialise sound queue
-        self.sound = sound.Sound(self.queues, self.values, self.input_methods, syntax)
         # Sound is needed for the beeps on \a
         # InputMethods is needed for wait() in graphics
         # keyboard is needed for key list at bottom row
@@ -135,10 +135,6 @@ class Session(object):
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
         self.pen = inputmethods.Pen()
         self.stick = inputmethods.Stick(self.values)
-        self.input_methods.add_handler(self.keyboard)
-        self.input_methods.add_handler(self.pen)
-        self.input_methods.add_handler(self.stick)
-        self.input_methods.add_handler(inputmethods.ClipboardCopyHandler(self.screen))
         # initilise floating-point error message stream
         self.values.set_handler(values.FloatErrorHandler(self.screen))
         ######################################################################
@@ -165,6 +161,20 @@ class Session(object):
         # initialise system clock
         self.clock = clock.Clock(self.values)
         ######################################################################
+        # register input event handlers
+        ######################################################################
+        # clipboard and print screen handler
+        clip_handler = inputmethods.ScreenCopyHandler(self.screen, self.files.lpt1_file)
+        self.input_methods.add_handler(clip_handler)
+        # keyboard, pen and stick
+        self.input_methods.add_handler(self.keyboard)
+        self.input_methods.add_handler(self.pen)
+        self.input_methods.add_handler(self.stick)
+        # set up BASIC event handlers
+        self.basic_events = events.BasicEvents(
+                self.values, self.sound, self.clock, self.files,
+                self.screen, self.program, syntax)
+        ######################################################################
         # editor
         ######################################################################
         # initialise the editor
@@ -182,10 +192,6 @@ class Session(object):
         self.parser = parser.Parser(self.values, self.memory, syntax)
         # set up debugger
         self.debugger = dbg.get_debugger(self, bool(debug), debug, catch_exceptions)
-        # set up BASIC event handlers
-        self.basic_events = events.BasicEvents(
-                self.values, self.sound, self.clock, self.files,
-                self.screen, self.program, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
                 self.debugger, self.input_methods, self.screen, self.files, self.sound,

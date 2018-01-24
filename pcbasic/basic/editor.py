@@ -228,9 +228,6 @@ class Editor(object):
                 elif d == ea.CTRL_PRINT:
                     # ctrl+printscreen toggles printer copy
                     self.redirect.toggle_echo(self.lpt1_file)
-                elif d == ea.SHIFT_PRINT:
-                    # shift+printscreen triggers a print screen
-                    self.screen.print_screen(self.lpt1_file)
                 else:
                     try:
                         # these are done on a less deep level than the fn key macros

@@ -63,7 +63,8 @@ home_key_replacements_eascii = {
     u'N': (scancode.NUMLOCK, u''),
     u'S': (scancode.SCROLLOCK, u''),
     u'C': (scancode.CAPSLOCK, u''),
-    u'H': (scancode.PRINT, uea.SHIFT_PRINT),
+    u'H': (scancode.PRINT, u''),
+    # ctrl+H
     u'\x08': (scancode.PRINT, uea.CTRL_PRINT),
 }
 
@@ -194,27 +195,34 @@ class InputMethods(object):
 
 
 ###############################################################################
-# clipboard copy handler
+# clipboard copy & print screen handler
 
-# clipboard copy is a special case:
-# a clipboard copy needs to handle an input signal, read the screen
-# and write the text to an output queue
+# clipboard copy & print screen are special cases:
+# they to handle an input signal, read the screen
+# and write the text to an output queue or file
 # independently of what BASIC is doing
 
-class ClipboardCopyHandler(object):
-    """Event handler for clipboard copy."""
+class ScreenCopyHandler(object):
+    """Event handler for clipboard copy and print screen."""
 
-    def __init__(self, screen):
+    def __init__(self, screen, lpt1_file):
         """Initialise copy handler."""
         self._screen = screen
+        self._lpt1_file = lpt1_file
 
     def check_input(self, signal):
         """Handle pen-related input signals."""
         if signal.event_type == signals.CLIP_COPY:
             self._screen.copy_clipboard(*signal.params)
             return True
-        else:
-            return False
+        elif signal.event_type == signals.KEYB_DOWN:
+            c, scan, mod = signal.params
+            if scan == scancode.PRINT and (
+                    scancode.LSHIFT in mod or scancode.RSHIFT in mod):
+                # shift+printscreen triggers a print screen
+                self._screen.print_screen(self._lpt1_file)
+                return True
+        return False
 
 
 ###############################################################################
