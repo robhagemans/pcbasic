@@ -85,9 +85,11 @@ class InputMethods(object):
         self._handlers = []
         # pause-key halts everything until another keypress
         self._pause = False
+        # treat ctrl+c as break interrupt
+        self._ctrl_c_is_break = ctrl_c_is_break
         # InputMethods needed for wait() only
         self.keyboard = Keyboard(self, values,
-                codepage, queues, keystring, ignore_caps, ctrl_c_is_break)
+                codepage, queues, keystring, ignore_caps)
         self.add_handler(self.keyboard)
 
     def add_handler(self, handler):
@@ -131,10 +133,31 @@ class InputMethods(object):
                         signals.KEYB_CHAR, signals.KEYB_DOWN,
                         signals.STREAM_CHAR, signals.CLIP_PASTE):
                 self._pause = False
+            # handle special key combinations
+            if signal.event_type == signals.KEYB_DOWN:
+                c, scan, mod = signal.params
+                if (scan == scancode.DELETE and
+                        scancode.CTRL in mod and scancode.ALT in mod):
+                    # ctrl-alt-del: if not captured by the OS, reset the emulator
+                    # meaning exit and delete state. This is useful on android.
+                    raise error.Reset()
+                elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) and scancode.CTRL in mod) or
+                        (self._ctrl_c_is_break and c == uea.CTRL_c)):
+                    raise error.Break()
+                # pause key handling
+                # to ensure this key remains trappable
+                elif (scan == scancode.BREAK or
+                        (scan == scancode.NUMLOCK and scancode.CTRL in mod)):
+                    self._pause = True
+                    return
             # handle non-exit events
             for handler in list(event_check_input) + self._handlers:
                 if handler.check_input(signal):
                     break
+
+    #def _handle_interrupts(self, signal):
+    #    """Handle interrupts (before BASIC events."""
+
 
 ###############################################################################
 # clipboard copy handler
@@ -299,7 +322,7 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, input_methods, values, codepage, queues, keystring, ignore_caps, ctrl_c_is_break):
+    def __init__(self, input_methods, values, codepage, queues, keystring, ignore_caps):
         """Initilise keyboard state."""
         self._values = values
         # key queue (holds bytes)
@@ -316,8 +339,6 @@ class Keyboard(object):
         self.home_key_active = False
         # ignore caps lock, let OS handle it
         self.ignore_caps = ignore_caps
-        # if true, treat Ctrl+C *exactly* like ctrl+break (unlike GW-BASIC)
-        self.ctrl_c_is_break = ctrl_c_is_break
         # pre-inserted keystrings
         self.codepage = codepage
         self.buf.insert(self.codepage.str_from_unicode(keystring), check_full=False)
@@ -460,23 +481,6 @@ class Keyboard(object):
         """Drain prebuffer into key buffer and handle trappable special keys."""
         while self.prebuf:
             c, scan, mod, check_full = self.prebuf.pop(0)
-            # handle special key combinations
-            if (scan == scancode.DELETE and
-                    mod & (modifier[scancode.CTRL] | modifier[scancode.ALT])):
-                # ctrl-alt-del: if not captured by the OS, reset the emulator
-                # meaning exit and delete state. This is useful on android.
-                raise error.Reset()
-            elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) and
-                    mod & modifier[scancode.CTRL]) or
-                    (self.ctrl_c_is_break and c == uea.CTRL_c)):
-                raise error.Break()
-            # pause key handling
-            # FIXME: move to InputMethods, but requires a change of event handling
-            # to ensure this key remains trappable
-            elif (scan == scancode.BREAK or
-                    (scan == scancode.NUMLOCK and mod & modifier[scancode.CTRL])):
-                self.input_methods._pause = True
-                return
             self.buf.insert_keypress(
                     self.codepage.from_unicode(c),
                     scan, mod, check_full)
