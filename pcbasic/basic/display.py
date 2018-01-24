@@ -564,10 +564,8 @@ class Screen(object):
         # current row and column
         self.current_row = 1
         self.current_col = 1
-        # set codepage for video plugin
+        # set codepage
         self.codepage = codepage
-        self.queues.video.put(signals.Event(
-                signals.VIDEO_SET_CODEPAGE, self.codepage))
         # prepare fonts
         heights_needed = set([8])
         for mode in self.text_data.values():
@@ -609,16 +607,14 @@ class Screen(object):
 
     def rebuild(self):
         """Rebuild the screen from scratch."""
-        # set the codepage
-        self.queues.video.put(signals.Event(
-                signals.VIDEO_SET_CODEPAGE, self.codepage))
         # set the screen mode
         self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, self.mode))
         if self.mode.is_text_mode:
             # send glyphs to signals; copy is necessary
             # as dict may change here while the other thread is working on it
             self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                    dict((k,v) for k,v in self.glyphs.iteritems())))
+                    {self.codepage.to_unicode(k, u'\0'): v
+                        for k, v in self.glyphs.iteritems()}))
         # set the visible and active pages
         self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
         # rebuild palette
@@ -779,7 +775,8 @@ class Screen(object):
         # preload SBCS glyphs
         try:
             self.glyphs = {
-                chr(c): self.fonts[mode_info.font_height].build_glyph(self.codepage.to_unicode(chr(c), u'\0'),
+                chr(c): self.fonts[mode_info.font_height].build_glyph(
+                                    self.codepage.to_unicode(chr(c), u'\0'),
                                 mode_info.font_width, mode_info.font_height,
                                 chr(c) in carry_col_9_chars, chr(c) in carry_row_9_chars)
                 for c in range(256) }
@@ -793,7 +790,8 @@ class Screen(object):
             # send glyphs to signals; copy is necessary
             # as dict may change here while the other thread is working on it
             self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                                                                self.glyphs))
+                        {self.codepage.to_unicode(k, u'\0'): v
+                            for k, v in self.glyphs.iteritems()}))
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
                 self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
@@ -1371,8 +1369,8 @@ class Screen(object):
             # ensure glyph is stored
             mask = self.get_glyph(char)
             self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
-                    (pagenum, r, c, char, len(char) > 1,
-                                 fore, back, blink, underline, for_keys)))
+                    (pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
+                        len(char) > 1, fore, back, blink, underline, for_keys)))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
                 x0, y0, x1, y1, sprite = self.glyph_to_rect(
@@ -1434,7 +1432,7 @@ class Screen(object):
             self.apage.row[cy].buf[cx] = (' ', self.attr)
         fore, back, blink, underline = self.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
-                (self.apagenum, cy+1, cx+1, ' ', False,
+                (self.apagenum, cy+1, cx+1, u' ', False,
                              fore, back, blink, underline, True)))
 
     #MOVE to TextBuffer? replace with graphics_to_text_loc v.v.?
@@ -1774,7 +1772,7 @@ class Screen(object):
             self.glyphs[c] = mask
             if self.mode.is_text_mode:
                 self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                    {c: mask}))
+                    {uc: mask}))
         return mask
 
     if numpy:

@@ -176,9 +176,8 @@ class VideoANSI(video_cli.VideoCLI):
             #sys.stdout.write(ansi.SET_CURSOR_SHAPE % cursor_shape)
             sys.stdout.flush()
 
-    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, for_keys):
         """Put a character at a given position."""
-        char = self.codepage.to_unicode(cp, replace=u' ')
         if char == u'\0':
             char = u' '
         self.text[pagenum][row-1][col-1] = char, (fore, back, blink, underline)

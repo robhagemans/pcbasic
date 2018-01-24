@@ -137,8 +137,6 @@ VIDEO_COPY_PAGE = 28
 VIDEO_SET_CAPTION = 29
 # clipboard copy reply
 VIDEO_SET_CLIPBOARD_TEXT = 30
-# set codepage
-VIDEO_SET_CODEPAGE = 31
 
 # input queue signals
 # quit interpreter
