@@ -130,7 +130,7 @@ class InputMethods(object):
                 raise error.Exit()
             # exit pause mode on keyboard hit; swallow key
             elif signal.event_type in (
-                        signals.KEYB_CHAR, signals.KEYB_DOWN,
+                        signals.KEYB_CHAR, signals.KEYB_DOWN, signals.STREAM_DOWN,
                         signals.STREAM_CHAR, signals.CLIP_PASTE):
                 if self._pause:
                     self._pause = False
@@ -147,7 +147,6 @@ class InputMethods(object):
         """Handle trappable interrupts (after BASIC events)."""
         # handle special key combinations
         if signal.event_type == signals.KEYB_DOWN:
-            print signal.params
             c, scan, mod = signal.params
             if (scan == scancode.DELETE and
                     scancode.CTRL in mod and scancode.ALT in mod):
@@ -362,6 +361,8 @@ class Keyboard(object):
         elif signal.event_type == signals.KEYB_DOWN:
             # params is e-ASCII/unicode character sequence, scancode, modifier
             self.key_down(*signal.params)
+        elif signal.event_type == signals.STREAM_DOWN:
+            self.key_down(*signal.params, check_full=False)
         elif signal.event_type == signals.KEYB_UP:
             self.key_up(*signal.params)
         elif signal.event_type == signals.STREAM_CHAR:
