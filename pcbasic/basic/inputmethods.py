@@ -87,6 +87,8 @@ class InputMethods(object):
         self._pause = False
         # treat ctrl+c as break interrupt
         self._ctrl_c_is_break = ctrl_c_is_break
+        # F12 replacement events
+        self._f12_active = False
         # InputMethods needed for wait() only
         self.keyboard = Keyboard(self, values,
                 codepage, queues, keystring, ignore_caps)
@@ -125,6 +127,8 @@ class InputMethods(object):
                 else:
                     break
             self._queues.inputs.task_done()
+            # effect replacements
+            self._replace_inputs(signal)
             # process input events
             if signal.event_type == signals.KEYB_QUIT:
                 raise error.Exit()
@@ -153,8 +157,7 @@ class InputMethods(object):
                 # ctrl-alt-del: if not captured by the OS, reset the emulator
                 # meaning exit and delete state. This is useful on android.
                 raise error.Reset()
-            elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) and scancode.CTRL in mod) or
-                    (self._ctrl_c_is_break and c == uea.CTRL_c)):
+            elif scan in (scancode.BREAK, scancode.SCROLLOCK) and scancode.CTRL in mod:
                 raise error.Break()
             # pause key handling
             # to ensure this key remains trappable
@@ -163,6 +166,29 @@ class InputMethods(object):
                 self._pause = True
                 return True
         return False
+
+    def _replace_inputs(self, signal):
+        """Input event replacements."""
+        if signal.event_type == signals.KEYB_DOWN:
+            c, scan, mod = signal.params
+            if (self._ctrl_c_is_break and c == uea.CTRL_c):
+                # replace ctrl+c with ctrl+break if option is enabled
+                signal.params = u'', scancode.BREAK, [scancode.CTRL]
+            elif scan == scancode.F12:
+                # F12 emulator "home key"
+                self._f12_active = True
+                signal.event_type = None
+            elif self._f12_active:
+                # F12 replacements
+                if c.upper() == u'B':
+                    # f12+b -> ctrl+break
+                    signal.params = u'', scancode.BREAK, [scancode.CTRL]
+                else:
+                    scan, c = home_key_replacements_scancode.get(scan, (scan, c))
+                    scan, c = home_key_replacements_eascii.get(c.upper(), (scan, c))
+                    signal.params = c, scan, mod
+        elif (signal.event_type == signals.KEYB_UP) and (signal.params[0] == scancode.F12):
+            self._f12_active = False
 
 
 ###############################################################################
@@ -341,8 +367,6 @@ class Keyboard(object):
         self.mod = 0
         # store for alt+keypad ascii insertion
         self.keypad_ascii = ''
-        # F12 is inactive
-        self.home_key_active = False
         # ignore caps lock, let OS handle it
         self.ignore_caps = ignore_caps
         # pre-inserted keystrings
@@ -421,22 +445,6 @@ class Keyboard(object):
 
     def key_down(self, c, scan, mods, check_full=True):
         """Insert a key-down event by eascii/unicode, scancode and modifiers."""
-        # emulator home-key (f12) replacements
-        if self.home_key_active:
-            if c.upper() == u'B':
-                # f12+b -> ctrl+break
-                self.prebuf.append((u'', scancode.BREAK, modifier[scancode.CTRL], check_full))
-                return
-            try:
-                scan, c = home_key_replacements_scancode[scan]
-            except KeyError:
-                try:
-                    scan, c = home_key_replacements_eascii[c.upper()]
-                except KeyError:
-                    pass
-        # F12 emulator home key combinations
-        if scan == scancode.F12:
-            self.home_key_active = True
         if scan is not None:
             self.last_scancode = scan
         # update ephemeral modifier status at every keypress
@@ -478,8 +486,6 @@ class Keyboard(object):
                 char = '\0\0'
             self.buf.insert(char, check_full=True)
             self.keypad_ascii = ''
-        elif scan == scancode.F12:
-            self.home_key_active = False
 
     def close_input(self):
         """Signal that input stream has closed."""
