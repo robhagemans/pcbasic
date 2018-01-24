@@ -835,7 +835,6 @@ if pygame:
         pygame.K_RETURN: uea.SHIFT_RETURN,
         pygame.K_KP_ENTER: uea.SHIFT_RETURN,
         pygame.K_SPACE: uea.SHIFT_SPACE,
-        pygame.K_PRINT: uea.SHIFT_PRINT,
         pygame.K_INSERT: uea.SHIFT_INSERT,
         pygame.K_DELETE: uea.SHIFT_DELETE,
         pygame.K_KP5: uea.SHIFT_KP5,

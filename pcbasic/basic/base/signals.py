@@ -153,6 +153,8 @@ KEYB_UP = 6
 STREAM_CHAR = 7
 # redirect or stdio closed
 STREAM_CLOSED = 8
+# insert keydown, bypassing buffer limit
+STREAM_DOWN = 9
 # light pen events
 PEN_DOWN = 101
 PEN_UP = 102

@@ -35,7 +35,7 @@ class Files(object):
     """File manager."""
 
     def __init__(
-            self, values, memory, input_methods, screen,
+            self, values, memory, input_methods, keyboard, screen,
             max_files, max_reclen, serial_buffer_size,
             device_params, current_device, mount_dict,
             print_trigger, temp_dir,
@@ -49,7 +49,7 @@ class Files(object):
         self.max_reclen = max_reclen
         self._init_devices(
                 values, input_methods,
-                screen, input_methods.keyboard,
+                screen, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)

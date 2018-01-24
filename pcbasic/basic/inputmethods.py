@@ -63,7 +63,8 @@ home_key_replacements_eascii = {
     u'N': (scancode.NUMLOCK, u''),
     u'S': (scancode.SCROLLOCK, u''),
     u'C': (scancode.CAPSLOCK, u''),
-    u'H': (scancode.PRINT, uea.SHIFT_PRINT),
+    u'H': (scancode.PRINT, u''),
+    # ctrl+H
     u'\x08': (scancode.PRINT, uea.CTRL_PRINT),
 }
 
@@ -72,36 +73,33 @@ home_key_replacements_eascii = {
 class InputMethods(object):
     """Manage input queue."""
 
-    def __init__(self, queues, values,
-            codepage, keystring, ignore_caps, ctrl_c_is_break):
-        """Initialise event triggers."""
-        self._values = values
-        self._queues = queues
-        self.pen = Pen()
-        self.stick = Stick(values)
-        # InputMethods needed for wait() only
-        self.keyboard = Keyboard(self, values,
-                codepage, queues, keystring, ignore_caps, ctrl_c_is_break)
-
-    def set_screen_for_clipboard(self, screen):
-        """Finish initialisation."""
-        self._screen = screen
-
-
-    ##########################################################################
-    # main event checker
-
     tick = 0.006
     max_video_qsize = 500
     max_audio_qsize = 20
+
+    def __init__(self, queues, values, ctrl_c_is_break):
+        """Initialise event triggers."""
+        self._values = values
+        self._queues = queues
+        # input signal handlers
+        self._handlers = []
+        # pause-key halts everything until another keypress
+        self._pause = False
+        # treat ctrl+c as break interrupt
+        self._ctrl_c_is_break = ctrl_c_is_break
+        # F12 replacement events
+        self._f12_active = False
+
+    def add_handler(self, handler):
+        """Add an input handler."""
+        self._handlers.append(handler)
 
     def wait(self):
         """Wait and check events."""
         time.sleep(self.tick)
         self.check_events()
-        self.keyboard.drain_event_buffer()
 
-    def check_events(self):
+    def check_events(self, event_check_input=()):
         """Main event cycle."""
         # avoid screen lockups if video queue fills up
         if self._queues.video.qsize() > self.max_video_qsize:
@@ -110,53 +108,121 @@ class InputMethods(object):
             self._queues.video.join()
         if self._queues.audio.qsize() > self.max_audio_qsize:
             self._queues.audio.join()
-        self._check_input()
+        self._check_input(event_check_input)
 
-    def _check_input(self):
+    def _check_input(self, event_check_input):
         """Handle input events."""
         while True:
             # pop input queues
             try:
                 signal = self._queues.inputs.get(False)
             except Queue.Empty:
-                if not self.keyboard.pause:
-                    break
-                else:
+                if self._pause:
                     continue
+                else:
+                    # we still need to handle basic events: not all are inputs
+                    for e in event_check_input:
+                        e.check_input(signals.Event(None))
+                    break
             self._queues.inputs.task_done()
-            # process input events
-            if signal.event_type == signals.KEYB_QUIT:
-                raise error.Exit()
-            elif signal.event_type == signals.KEYB_CHAR:
-                # params is a unicode sequence
-                self.keyboard.insert_chars(*signal.params)
-            elif signal.event_type == signals.KEYB_DOWN:
-                # params is e-ASCII/unicode character sequence, scancode, modifier
-                self.keyboard.key_down(*signal.params)
-            elif signal.event_type == signals.KEYB_UP:
-                self.keyboard.key_up(*signal.params)
-            elif signal.event_type == signals.STREAM_CHAR:
-                self.keyboard.insert_chars(*signal.params, check_full=False)
-            elif signal.event_type == signals.STREAM_CLOSED:
-                self.keyboard.close_input()
-            elif signal.event_type == signals.PEN_DOWN:
-                self.pen.down(*signal.params)
-            elif signal.event_type == signals.PEN_UP:
-                self.pen.up()
-            elif signal.event_type == signals.PEN_MOVED:
-                self.pen.moved(*signal.params)
-            elif signal.event_type == signals.STICK_DOWN:
-                self.stick.down(*signal.params)
-            elif signal.event_type == signals.STICK_UP:
-                self.stick.up(*signal.params)
-            elif signal.event_type == signals.STICK_MOVED:
-                self.stick.moved(*signal.params)
-            elif signal.event_type == signals.CLIP_PASTE:
-                self.keyboard.insert_chars(*signal.params, check_full=False)
-            elif signal.event_type == signals.CLIP_COPY:
-                text = self._screen.get_text(*(signal.params[:4]))
-                self._queues.video.put(signals.Event(
-                        signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
+            # effect replacements
+            self._replace_inputs(signal)
+            # handle input events
+            for handle_input in (
+                        [self._handle_non_trappable_interrupts] +
+                        [e.check_input for e in event_check_input] +
+                        [self._handle_trappable_interrupts] +
+                        [e.check_input for e in self._handlers]):
+                if handle_input(signal):
+                    break
+
+    def _handle_non_trappable_interrupts(self, signal):
+        """Handle non-trappable interrupts (before BASIC events)."""
+        # process input events
+        if signal.event_type == signals.KEYB_QUIT:
+            raise error.Exit()
+        # exit pause mode on keyboard hit; swallow key
+        elif signal.event_type in (
+                    signals.KEYB_CHAR, signals.KEYB_DOWN, signals.STREAM_DOWN,
+                    signals.STREAM_CHAR, signals.CLIP_PASTE):
+            if self._pause:
+                self._pause = False
+                return True
+        return False
+
+    def _handle_trappable_interrupts(self, signal):
+        """Handle trappable interrupts (after BASIC events)."""
+        # handle special key combinations
+        if signal.event_type == signals.KEYB_DOWN:
+            c, scan, mod = signal.params
+            if (scan == scancode.DELETE and
+                    scancode.CTRL in mod and scancode.ALT in mod):
+                # ctrl-alt-del: if not captured by the OS, reset the emulator
+                # meaning exit and delete state. This is useful on android.
+                raise error.Reset()
+            elif scan in (scancode.BREAK, scancode.SCROLLOCK) and scancode.CTRL in mod:
+                raise error.Break()
+            # pause key handling
+            # to ensure this key remains trappable
+            elif (scan == scancode.BREAK or
+                    (scan == scancode.NUMLOCK and scancode.CTRL in mod)):
+                self._pause = True
+                return True
+        return False
+
+    def _replace_inputs(self, signal):
+        """Input event replacements."""
+        if signal.event_type == signals.KEYB_DOWN:
+            c, scan, mod = signal.params
+            if (self._ctrl_c_is_break and c == uea.CTRL_c):
+                # replace ctrl+c with ctrl+break if option is enabled
+                signal.params = u'', scancode.BREAK, [scancode.CTRL]
+            elif scan == scancode.F12:
+                # F12 emulator "home key"
+                self._f12_active = True
+                signal.event_type = None
+            elif self._f12_active:
+                # F12 replacements
+                if c.upper() == u'B':
+                    # f12+b -> ctrl+break
+                    signal.params = u'', scancode.BREAK, [scancode.CTRL]
+                else:
+                    scan, c = home_key_replacements_scancode.get(scan, (scan, c))
+                    scan, c = home_key_replacements_eascii.get(c.upper(), (scan, c))
+                    signal.params = c, scan, mod
+        elif (signal.event_type == signals.KEYB_UP) and (signal.params[0] == scancode.F12):
+            self._f12_active = False
+
+
+###############################################################################
+# clipboard copy & print screen handler
+
+# clipboard copy & print screen are special cases:
+# they to handle an input signal, read the screen
+# and write the text to an output queue or file
+# independently of what BASIC is doing
+
+class ScreenCopyHandler(object):
+    """Event handler for clipboard copy and print screen."""
+
+    def __init__(self, screen, lpt1_file):
+        """Initialise copy handler."""
+        self._screen = screen
+        self._lpt1_file = lpt1_file
+
+    def check_input(self, signal):
+        """Handle pen-related input signals."""
+        if signal.event_type == signals.CLIP_COPY:
+            self._screen.copy_clipboard(*signal.params)
+            return True
+        elif signal.event_type == signals.KEYB_DOWN:
+            c, scan, mod = signal.params
+            if scan == scancode.PRINT and (
+                    scancode.LSHIFT in mod or scancode.RSHIFT in mod):
+                # shift+printscreen triggers a print screen
+                self._screen.print_screen(self._lpt1_file)
+                return True
+        return False
 
 
 ###############################################################################
@@ -298,27 +364,19 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, input_methods, values, codepage, queues, keystring, ignore_caps, ctrl_c_is_break):
+    def __init__(self, input_methods, values, codepage, queues, keystring, ignore_caps):
         """Initilise keyboard state."""
         self._values = values
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(queues, 15)
-        # pre-buffer for keystrokes to enable event handling (holds unicode)
-        self.prebuf = []
         # INP(&H60) scancode
         self.last_scancode = 0
         # active status of caps, num, scroll, alt, ctrl, shift modifiers
         self.mod = 0
         # store for alt+keypad ascii insertion
         self.keypad_ascii = ''
-        # PAUSE is inactive
-        self.pause = False
-        # F12 is inactive
-        self.home_key_active = False
         # ignore caps lock, let OS handle it
         self.ignore_caps = ignore_caps
-        # if true, treat Ctrl+C *exactly* like ctrl+break (unlike GW-BASIC)
-        self.ctrl_c_is_break = ctrl_c_is_break
         # pre-inserted keystrings
         self.codepage = codepage
         self.buf.insert(self.codepage.str_from_unicode(keystring), check_full=False)
@@ -326,6 +384,28 @@ class Keyboard(object):
         self._input_closed = False
         # input_methods is needed for wait() in wait_char()
         self.input_methods = input_methods
+
+    def check_input(self, signal):
+        """Handle keyboard input signals and clipboard paste."""
+        if signal.event_type == signals.KEYB_CHAR:
+            # params is a unicode sequence
+            self.insert_chars(*signal.params)
+        elif signal.event_type == signals.KEYB_DOWN:
+            # params is e-ASCII/unicode character sequence, scancode, modifier
+            self.key_down(*signal.params)
+        elif signal.event_type == signals.STREAM_DOWN:
+            self.key_down(*signal.params, check_full=False)
+        elif signal.event_type == signals.KEYB_UP:
+            self.key_up(*signal.params)
+        elif signal.event_type == signals.STREAM_CHAR:
+            self.insert_chars(*signal.params, check_full=False)
+        elif signal.event_type == signals.STREAM_CLOSED:
+            self.close_input()
+        elif signal.event_type == signals.CLIP_PASTE:
+            self.insert_chars(*signal.params, check_full=False)
+        else:
+            return False
+        return True
 
     def set_macro(self, num, macro):
         """Set macro for given function key."""
@@ -369,34 +449,16 @@ class Keyboard(object):
 
     def insert_chars(self, us, check_full=True):
         """Insert eascii/unicode string into keyboard buffer."""
-        self.pause = False
         self.buf.insert(self.codepage.str_from_unicode(us), check_full)
 
     def key_down(self, c, scan, mods, check_full=True):
         """Insert a key-down event by eascii/unicode, scancode and modifiers."""
-        # emulator home-key (f12) replacements
-        if self.home_key_active:
-            if c.upper() == u'B':
-                # f12+b -> ctrl+break
-                self.prebuf.append((u'', scancode.BREAK, modifier[scancode.CTRL], check_full))
-                return
-            try:
-                scan, c = home_key_replacements_scancode[scan]
-            except KeyError:
-                try:
-                    scan, c = home_key_replacements_eascii[c.upper()]
-                except KeyError:
-                    pass
-        # F12 emulator home key combinations
-        if scan == scancode.F12:
-            self.home_key_active = True
-        # Pause key state
-        self.pause = False
         if scan is not None:
             self.last_scancode = scan
         # update ephemeral modifier status at every keypress
         # mods is a list of scancodes; OR together the known modifiers
-        self.mod &= ~(modifier[scancode.CTRL] | modifier[scancode.ALT] | modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])
+        self.mod &= ~(modifier[scancode.CTRL] | modifier[scancode.ALT] |
+                    modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])
         for m in mods:
             self.mod |= modifier.get(m, 0)
         # set toggle-key modifier status
@@ -415,7 +477,7 @@ class Keyboard(object):
         if (self.mod & toggle[scancode.CAPSLOCK]
                 and not self.ignore_caps and len(c) == 1):
             c = c.swapcase()
-        self.prebuf.append((c, scan, self.mod, check_full))
+        self.buf.insert_keypress(self.codepage.from_unicode(c), scan, self.mod, check_full)
 
     def key_up(self, scan):
         """Insert a key-up event."""
@@ -433,34 +495,10 @@ class Keyboard(object):
                 char = '\0\0'
             self.buf.insert(char, check_full=True)
             self.keypad_ascii = ''
-        elif scan == scancode.F12:
-            self.home_key_active = False
 
     def close_input(self):
         """Signal that input stream has closed."""
         self._input_closed = True
-
-    def drain_event_buffer(self):
-        """Drain prebuffer into key buffer and handle trappable special keys."""
-        while self.prebuf:
-            c, scan, mod, check_full = self.prebuf.pop(0)
-            # handle special key combinations
-            if (scan == scancode.DELETE and
-                    mod & (modifier[scancode.CTRL] | modifier[scancode.ALT])):
-                # ctrl-alt-del: if not captured by the OS, reset the emulator
-                # meaning exit and delete state. This is useful on android.
-                raise error.Reset()
-            elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) and
-                    mod & modifier[scancode.CTRL]) or
-                    (self.ctrl_c_is_break and c == uea.CTRL_c)):
-                raise error.Break()
-            elif (scan == scancode.BREAK or
-                    (scan == scancode.NUMLOCK and mod & modifier[scancode.CTRL])):
-                self.pause = True
-                return
-            self.buf.insert_keypress(
-                    self.codepage.from_unicode(c),
-                    scan, mod, check_full)
 
 
 ###############################################################################
@@ -475,16 +513,24 @@ class Pen(object):
         self.pos = 0, 0
         # signal pen has been down for PEN polls in pen_()
         self.was_down = False
-        # signal pen has been down for event triggers in poll_event()
-        self.was_down_event = False
         self.down_pos = (0, 0)
+
+    def check_input(self, signal):
+        """Handle pen-related input signals."""
+        if signal.event_type == signals.PEN_DOWN:
+            self.down(*signal.params)
+        elif signal.event_type == signals.PEN_UP:
+            self.up()
+        elif signal.event_type == signals.PEN_MOVED:
+            self.moved(*signal.params)
+        else:
+            return False
+        return True
 
     def down(self, x, y):
         """Report a pen-down event at graphical x,y """
         # TRUE until polled
         self.was_down = True
-        # TRUE until events checked
-        self.was_down_event = True
         # TRUE until pen up
         self.is_down = True
         self.down_pos = x, y
@@ -496,11 +542,6 @@ class Pen(object):
     def moved(self, x, y):
         """Report a pen-move event at graphical x,y """
         self.pos = x, y
-
-    def poll_event(self):
-        """Poll the pen for a pen-down event since last poll."""
-        result, self.was_down_event = self.was_down_event, False
-        return result
 
     def poll(self, fn, enabled, screen):
         """PEN: poll the light pen."""
@@ -549,9 +590,20 @@ class Stick(object):
         self.axis = [[0, 0], [0, 0]]
         self.is_on = False
         self.was_fired = [[False, False], [False, False]]
-        self.was_fired_event = [[False, False], [False, False]]
         # timer for reading game port
         self.out_time = self._decay_timer()
+
+    def check_input(self, signal):
+        """Handle joystick-related input signals."""
+        if signal.event_type == signals.STICK_DOWN:
+            self.down(*signal.params)
+        elif signal.event_type == signals.STICK_UP:
+            self.up(*signal.params)
+        elif signal.event_type == signals.STICK_MOVED:
+            self.moved(*signal.params)
+        else:
+            return False
+        return True
 
     def strig_statement_(self, args):
         """Switch joystick handling on or off."""
@@ -563,7 +615,6 @@ class Stick(object):
         try:
             self.was_fired[joy][button] = True
             self.is_firing[joy][button] = True
-            self.was_fired_event[joy][button] = True
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
@@ -583,12 +634,6 @@ class Stick(object):
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
-
-    def poll_event(self, joy, button):
-        """Poll the joystick for button events since last poll."""
-        result = self.was_fired_event[joy][button]
-        self.was_fired_event[joy][button] = False
-        return result
 
     def stick_(self, args):
         """STICK: poll the joystick axes."""
