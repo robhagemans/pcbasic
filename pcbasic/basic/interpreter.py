@@ -65,11 +65,8 @@ class Interpreter(object):
     def parse(self):
         """Parse from the current pointer in current codestream."""
         while True:
-            # may raise Break
-            # KEY events need to check pre-buffer, so check before draining
+            # check input and BASIC events. may raise Break, Reset or Exit
             self._input_methods.check_events(self._basic_events.enabled)
-            # we're done with the events, so the keyboard buffer can have them
-            self._input_methods.keyboard.drain_event_buffer()
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()

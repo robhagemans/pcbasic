@@ -102,7 +102,6 @@ class InputMethods(object):
         """Wait and check events."""
         time.sleep(self.tick)
         self.check_events()
-        self.keyboard.drain_event_buffer()
 
     def check_events(self, event_check_input=()):
         """Main event cycle."""
@@ -359,8 +358,6 @@ class Keyboard(object):
         self._values = values
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(queues, 15)
-        # pre-buffer for keystrokes to enable event handling (holds unicode)
-        self.prebuf = []
         # INP(&H60) scancode
         self.last_scancode = 0
         # active status of caps, num, scroll, alt, ctrl, shift modifiers
@@ -449,7 +446,8 @@ class Keyboard(object):
             self.last_scancode = scan
         # update ephemeral modifier status at every keypress
         # mods is a list of scancodes; OR together the known modifiers
-        self.mod &= ~(modifier[scancode.CTRL] | modifier[scancode.ALT] | modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])
+        self.mod &= ~(modifier[scancode.CTRL] | modifier[scancode.ALT] |
+                    modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])
         for m in mods:
             self.mod |= modifier.get(m, 0)
         # set toggle-key modifier status
@@ -468,7 +466,7 @@ class Keyboard(object):
         if (self.mod & toggle[scancode.CAPSLOCK]
                 and not self.ignore_caps and len(c) == 1):
             c = c.swapcase()
-        self.prebuf.append((c, scan, self.mod, check_full))
+        self.buf.insert_keypress(self.codepage.from_unicode(c), scan, self.mod, check_full)
 
     def key_up(self, scan):
         """Insert a key-up event."""
@@ -490,14 +488,6 @@ class Keyboard(object):
     def close_input(self):
         """Signal that input stream has closed."""
         self._input_closed = True
-
-    def drain_event_buffer(self):
-        """Drain prebuffer into key buffer and handle trappable special keys."""
-        while self.prebuf:
-            c, scan, mod, check_full = self.prebuf.pop(0)
-            self.buf.insert_keypress(
-                    self.codepage.from_unicode(c),
-                    scan, mod, check_full)
 
 
 ###############################################################################
