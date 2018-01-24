@@ -178,7 +178,7 @@ class ExpressionParser(object):
             tk.INSTR: values.instr_,
             tk.CSRLIN: session.screen.csrlin_,
             tk.POINT: session.screen.point_,
-            tk.INKEY: session.input_methods.keyboard.inkey_,
+            tk.INKEY: session.keyboard.inkey_,
             tk.CVI: values.cvi_,
             tk.CVS: values.cvs_,
             tk.CVD: values.cvd_,

@@ -64,7 +64,7 @@ class MachinePorts(object):
 
     def inp(self, port):
         """Get the value in an emulated machine port."""
-        keyboard = self.session.input_methods.keyboard
+        keyboard = self.session.keyboard
         stick = self.session.stick
         # keyboard
         if port == 0x60:

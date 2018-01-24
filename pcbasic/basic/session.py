@@ -117,22 +117,25 @@ class Session(object):
                 self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
         # set up input event handler
         self.input_methods = inputmethods.InputMethods(
-                self.queues, self.values,
-                self.codepage, keys, ignore_caps, ctrl_c_is_break)
+                self.queues, self.values, ctrl_c_is_break)
+        # InputMethods needed for wait() only
+        self.keyboard = inputmethods.Keyboard(self.input_methods, self.values,
+                self.codepage, self.queues, keys, ignore_caps)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.input_methods, syntax)
         # Sound is needed for the beeps on \a
         # InputMethods is needed for wait() in graphics
-        # InputMethods.keyboard is needed for key list at bottom row
+        # keyboard is needed for key list at bottom row
         self.screen = display.Screen(
-                self.queues, self.values, self.input_methods, self.memory,
-                text_width, video_memory, video, monitor,
+                self.queues, self.values, self.input_methods, self.keyboard,
+                self.memory, text_width, video_memory, video, monitor,
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=bool(debug))
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
         self.pen = inputmethods.Pen()
         self.stick = inputmethods.Stick(self.values)
+        self.input_methods.add_handler(self.keyboard)
         self.input_methods.add_handler(self.pen)
         self.input_methods.add_handler(self.stick)
         self.input_methods.add_handler(inputmethods.ClipboardCopyHandler(self.screen))
@@ -146,14 +149,14 @@ class Session(object):
         # InputMethods needed for wait()
         self.files = devices.Files(
                 self.values, self.memory,
-                self.input_methods, self.screen,
+                self.input_methods, self.keyboard, self.screen,
                 max_files, max_reclen, serial_buffer_size,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir,
                 utf8, universal)
         # set up the SHELL command
         self.shell = dos.get_shell_manager(
-                self.input_methods.keyboard, self.screen,
+                self.keyboard, self.screen,
                 self.codepage, shell, syntax)
         # set up environment
         self.environment = dos.Environment(self.values)
@@ -166,7 +169,7 @@ class Session(object):
         ######################################################################
         # initialise the editor
         self.editor = editor.Editor(
-                self.screen, self.input_methods.keyboard, self.sound,
+                self.screen, self.keyboard, self.sound,
                 self.output_redirection, self.files.lpt1_file)
         ######################################################################
         # extensions
@@ -181,7 +184,7 @@ class Session(object):
         self.debugger = dbg.get_debugger(self, bool(debug), debug, catch_exceptions)
         # set up BASIC event handlers
         self.basic_events = events.BasicEvents(
-                self.values, self.input_methods.keyboard, self.pen, self.stick,
+                self.values, self.keyboard, self.pen, self.stick,
                 self.sound, self.clock, self.files, self.screen, self.program, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
@@ -195,7 +198,7 @@ class Session(object):
         # set up non-data segment memory
         self.all_memory = machine.Memory(
                 self.values, self.memory, self.files,
-                self.screen, self.input_methods.keyboard, self.screen.fonts[8],
+                self.screen, self.keyboard, self.screen.fonts[8],
                 self.interpreter, peek_values, syntax)
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
@@ -222,7 +225,7 @@ class Session(object):
         # re-assign callbacks (not picklable)
         self.parser.init_callbacks(self)
         # reopen keyboard, in case we quit because it was closed
-        self.input_methods.keyboard._input_closed = False
+        self.keyboard._input_closed = False
         # suppress double prompt
         if not self.interpreter._parse_mode:
             self._prompt = False

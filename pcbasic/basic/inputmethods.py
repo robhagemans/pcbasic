@@ -76,8 +76,7 @@ class InputMethods(object):
     max_video_qsize = 500
     max_audio_qsize = 20
 
-    def __init__(self, queues, values,
-            codepage, keystring, ignore_caps, ctrl_c_is_break):
+    def __init__(self, queues, values, ctrl_c_is_break):
         """Initialise event triggers."""
         self._values = values
         self._queues = queues
@@ -89,10 +88,6 @@ class InputMethods(object):
         self._ctrl_c_is_break = ctrl_c_is_break
         # F12 replacement events
         self._f12_active = False
-        # InputMethods needed for wait() only
-        self.keyboard = Keyboard(self, values,
-                codepage, queues, keystring, ignore_caps)
-        self.add_handler(self.keyboard)
 
     def add_handler(self, handler):
         """Add an input handler."""
