@@ -23,18 +23,18 @@ class BasicEvents(object):
     """Manage BASIC events."""
 
     def __init__(
-            self, values, keyboard, pen, stick,
-            sound, clock, files, screen, program, syntax):
+            self, values, pen, sound, clock, files, screen, program, syntax):
         """Initialise event triggers."""
         self._values = values
-        self._keyboard = keyboard
-        self._pen = pen
-        self._stick = stick
         self._sound = sound
         self._clock = clock
+        # files for com1 and com2
         self._files = files
-        self._screen = screen
+        # for on_event_gosub_
         self._program = program
+        # pen and screen for pen_fn_
+        self._pen = pen
+        self._screen = screen
         # events start unactivated
         self.active = False
         # 12 definable function keys for Tandy, 10 otherwise
@@ -57,16 +57,16 @@ class BasicEvents(object):
             keys += [scancode.F11, scancode.F12]
         keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
         keys += [None] * (20 - self.num_fn_keys - 4)
-        self.key = [KeyHandler(self._keyboard, sc) for sc in keys]
+        self.key = [KeyHandler(sc) for sc in keys]
         # other events
         self.timer = TimerHandler(self._clock)
         self.play = PlayHandler(self._sound, self.multivoice)
         self.com = [
             ComHandler(self._files.get_device('COM1:')),
             ComHandler(self._files.get_device('COM2:'))]
-        self.pen = PenHandler(self._pen)
+        self.pen = PenHandler()
         # joy*2 + button
-        self.strig = [StrigHandler(self._stick, joy, button)
+        self.strig = [StrigHandler(joy, button)
                       for joy in range(2) for button in range(2)]
         # all handlers in order of handling; TIMER first
         # key events are not handled FIFO but first 11-20 in that order, then 1-10
@@ -300,17 +300,16 @@ class ComHandler(EventHandler):
 class KeyHandler(EventHandler):
     """Manage KEY events."""
 
-    def __init__(self, keyboard, scancode=None):
+    def __init__(self, scancode=None):
         """Initialise KEY trigger."""
         EventHandler.__init__(self)
-        self.modcode = None
-        self.scancode = scancode
-        self.predefined = (scancode is not None)
-        self.keyboard = keyboard
+        self._modcode = None
+        self._scancode = scancode
+        self._predefined = (scancode is not None)
 
     def check_input(self, signal):
         """Trigger KEY events."""
-        if (self.scancode is not None) and (signal.event_type == signals.KEYB_DOWN):
+        if (self._scancode is not None) and (signal.event_type == signals.KEYB_DOWN):
             _, scancode, modifiers = signal.params
             # build KEY trigger code
             # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
@@ -327,9 +326,9 @@ class KeyHandler(EventHandler):
             #
             # for predefined keys, modifier is ignored
             # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-            if (scancode == self.scancode) and (
-                    (self.predefined) or
-                    (modifiers is None or self.modcode == modifiers & 0x6f)):
+            if (scancode == self._scancode) and (
+                    (self._predefined) or
+                    (modifiers is None or self._modcode == modifiers & 0x6f)):
                 # trigger event
                 self.trigger()
                 # drop key from key buffer
@@ -340,36 +339,35 @@ class KeyHandler(EventHandler):
     def set_trigger(self, keystr):
         """Set KEY trigger to chr(modcode)+chr(scancode)."""
         # can't redefine scancodes for predefined keys 1-14 (pc) 1-16 (tandy)
-        if not self.predefined:
-            self.modcode = ord(keystr[0])
-            self.scancode = ord(keystr[1])
+        if not self._predefined:
+            self._modcode = ord(keystr[0])
+            self._scancode = ord(keystr[1])
 
 
 class PenHandler(EventHandler):
     """Manage PEN events."""
 
-    def __init__(self, pen):
+    def __init__(self):
         """Initialise STRIG trigger."""
         EventHandler.__init__(self)
-        self.pen = pen
 
     def check_input(self, signal):
         """Trigger PEN events."""
-        if self.pen.poll_event():
+        if signal.event_type == signals.PEN_DOWN:
             self.trigger()
+        # don't swallow event
+        return False
 
 
 class StrigHandler(EventHandler):
     """Manage STRIG events."""
 
-    def __init__(self, stick, joy, button):
+    def __init__(self, joy, button):
         """Initialise STRIG trigger."""
         EventHandler.__init__(self)
-        self.joy = joy
-        self.button = button
-        self.stick = stick
+        self._joybutton = joy, button
 
     def check_input(self, signal):
         """Trigger STRIG events."""
-        if self.stick.poll_event(self.joy, self.button):
+        if (signal.event_type == signals.STICK_DOWN) and (signal.params == self._joybutton):
             self.trigger()

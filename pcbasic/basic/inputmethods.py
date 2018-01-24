@@ -119,6 +119,9 @@ class InputMethods(object):
                 if self._pause:
                     continue
                 else:
+                    # we still need to handle basic events: not all are inputs
+                    for e in event_check_input:
+                        e.check_input(signals.Event(None))
                     break
             self._queues.inputs.task_done()
             # effect replacements
@@ -502,8 +505,6 @@ class Pen(object):
         self.pos = 0, 0
         # signal pen has been down for PEN polls in pen_()
         self.was_down = False
-        # signal pen has been down for event triggers in poll_event()
-        self.was_down_event = False
         self.down_pos = (0, 0)
 
     def check_input(self, signal):
@@ -522,8 +523,6 @@ class Pen(object):
         """Report a pen-down event at graphical x,y """
         # TRUE until polled
         self.was_down = True
-        # TRUE until events checked
-        self.was_down_event = True
         # TRUE until pen up
         self.is_down = True
         self.down_pos = x, y
@@ -535,11 +534,6 @@ class Pen(object):
     def moved(self, x, y):
         """Report a pen-move event at graphical x,y """
         self.pos = x, y
-
-    def poll_event(self):
-        """Poll the pen for a pen-down event since last poll."""
-        result, self.was_down_event = self.was_down_event, False
-        return result
 
     def poll(self, fn, enabled, screen):
         """PEN: poll the light pen."""
@@ -588,7 +582,6 @@ class Stick(object):
         self.axis = [[0, 0], [0, 0]]
         self.is_on = False
         self.was_fired = [[False, False], [False, False]]
-        self.was_fired_event = [[False, False], [False, False]]
         # timer for reading game port
         self.out_time = self._decay_timer()
 
@@ -614,7 +607,6 @@ class Stick(object):
         try:
             self.was_fired[joy][button] = True
             self.is_firing[joy][button] = True
-            self.was_fired_event[joy][button] = True
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
@@ -634,12 +626,6 @@ class Stick(object):
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
-
-    def poll_event(self, joy, button):
-        """Poll the joystick for button events since last poll."""
-        result = self.was_fired_event[joy][button]
-        self.was_fired_event[joy][button] = False
-        return result
 
     def stick_(self, args):
         """STICK: poll the joystick axes."""

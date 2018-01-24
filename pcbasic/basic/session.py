@@ -184,7 +184,7 @@ class Session(object):
         self.debugger = dbg.get_debugger(self, bool(debug), debug, catch_exceptions)
         # set up BASIC event handlers
         self.basic_events = events.BasicEvents(
-                self.values, self.keyboard, self.pen, self.stick,
+                self.values, self.pen,
                 self.sound, self.clock, self.files, self.screen, self.program, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
