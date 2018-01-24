@@ -128,35 +128,42 @@ class InputMethods(object):
             # process input events
             if signal.event_type == signals.KEYB_QUIT:
                 raise error.Exit()
-            # exit pause mode on keyboard hits; do not swallow events
+            # exit pause mode on keyboard hit; swallow key
             elif signal.event_type in (
                         signals.KEYB_CHAR, signals.KEYB_DOWN,
                         signals.STREAM_CHAR, signals.CLIP_PASTE):
-                self._pause = False
-            # handle special key combinations
-            if signal.event_type == signals.KEYB_DOWN:
-                c, scan, mod = signal.params
-                if (scan == scancode.DELETE and
-                        scancode.CTRL in mod and scancode.ALT in mod):
-                    # ctrl-alt-del: if not captured by the OS, reset the emulator
-                    # meaning exit and delete state. This is useful on android.
-                    raise error.Reset()
-                elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) and scancode.CTRL in mod) or
-                        (self._ctrl_c_is_break and c == uea.CTRL_c)):
-                    raise error.Break()
-                # pause key handling
-                # to ensure this key remains trappable
-                elif (scan == scancode.BREAK or
-                        (scan == scancode.NUMLOCK and scancode.CTRL in mod)):
-                    self._pause = True
-                    return
+                if self._pause:
+                    self._pause = False
+                    continue
             # handle non-exit events
-            for handler in list(event_check_input) + self._handlers:
-                if handler.check_input(signal):
+            for handle_input in (
+                        [e.check_input for e in event_check_input] +
+                        [self._handle_interrupts] +
+                        [e.check_input for e in self._handlers]):
+                if handle_input(signal):
                     break
 
-    #def _handle_interrupts(self, signal):
-    #    """Handle interrupts (before BASIC events."""
+    def _handle_interrupts(self, signal):
+        """Handle trappable interrupts (after BASIC events)."""
+        # handle special key combinations
+        if signal.event_type == signals.KEYB_DOWN:
+            print signal.params
+            c, scan, mod = signal.params
+            if (scan == scancode.DELETE and
+                    scancode.CTRL in mod and scancode.ALT in mod):
+                # ctrl-alt-del: if not captured by the OS, reset the emulator
+                # meaning exit and delete state. This is useful on android.
+                raise error.Reset()
+            elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) and scancode.CTRL in mod) or
+                    (self._ctrl_c_is_break and c == uea.CTRL_c)):
+                raise error.Break()
+            # pause key handling
+            # to ensure this key remains trappable
+            elif (scan == scancode.BREAK or
+                    (scan == scancode.NUMLOCK and scancode.CTRL in mod)):
+                self._pause = True
+                return True
+        return False
 
 
 ###############################################################################
