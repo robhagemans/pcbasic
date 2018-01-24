@@ -222,7 +222,7 @@ class ExpressionParser(object):
             tk.CSNG: values.csng_,
             tk.CDBL: values.cdbl_,
             tk.FIX: values.fix_,
-            tk.PEN: session.basic_events.pen_fn_,
+            tk.PEN: session.pen_fn_,
             tk.STICK: session.stick.stick_,
             tk.STRIG: session.stick.strig_,
             tk.EOF: session.files.eof_,

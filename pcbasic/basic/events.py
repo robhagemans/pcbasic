@@ -18,12 +18,10 @@ from . import values
 ###############################################################################
 # BASIC events
 
-
 class BasicEvents(object):
     """Manage BASIC events."""
 
-    def __init__(
-            self, values, pen, sound, clock, files, screen, program, syntax):
+    def __init__(self, values, sound, clock, files, screen, program, syntax):
         """Initialise event triggers."""
         self._values = values
         self._sound = sound
@@ -32,9 +30,6 @@ class BasicEvents(object):
         self._files = files
         # for on_event_gosub_
         self._program = program
-        # pen and screen for pen_fn_
-        self._pen = pen
-        self._screen = screen
         # events start unactivated
         self.active = False
         # 12 definable function keys for Tandy, 10 otherwise
@@ -108,12 +103,6 @@ class BasicEvents(object):
 
     ##########################################################################
     # callbacks
-
-    def pen_fn_(self, args):
-        """PEN: poll the light pen."""
-        fn, = args
-        result = self._pen.poll(fn, self.pen.enabled, self._screen)
-        return self._values.new_integer().from_int(result)
 
     def pen_(self, args):
         """PEN: switch on/off light pen event handling."""

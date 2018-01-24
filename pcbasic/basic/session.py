@@ -184,8 +184,8 @@ class Session(object):
         self.debugger = dbg.get_debugger(self, bool(debug), debug, catch_exceptions)
         # set up BASIC event handlers
         self.basic_events = events.BasicEvents(
-                self.values, self.pen,
-                self.sound, self.clock, self.files, self.screen, self.program, syntax)
+                self.values, self.sound, self.clock, self.files,
+                self.screen, self.program, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
                 self.debugger, self.input_methods, self.screen, self.files, self.sound,
@@ -832,3 +832,9 @@ class Session(object):
             if len(text) != 2:
                 raise error.BASICError(error.IFC)
             self.basic_events.key[keynum-1].set_trigger(str(text))
+
+    def pen_fn_(self, args):
+        """PEN: poll the light pen."""
+        fn, = args
+        result = self.pen.poll(fn, self.basic_events.pen.enabled, self.screen)
+        return self.values.new_integer().from_int(result)
