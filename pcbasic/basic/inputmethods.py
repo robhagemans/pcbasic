@@ -123,25 +123,30 @@ class InputMethods(object):
             self._queues.inputs.task_done()
             # effect replacements
             self._replace_inputs(signal)
-            # process input events
-            if signal.event_type == signals.KEYB_QUIT:
-                raise error.Exit()
-            # exit pause mode on keyboard hit; swallow key
-            elif signal.event_type in (
-                        signals.KEYB_CHAR, signals.KEYB_DOWN, signals.STREAM_DOWN,
-                        signals.STREAM_CHAR, signals.CLIP_PASTE):
-                if self._pause:
-                    self._pause = False
-                    continue
-            # handle non-exit events
+            # handle input events
             for handle_input in (
+                        [self._handle_non_trappable_interrupts] +
                         [e.check_input for e in event_check_input] +
-                        [self._handle_interrupts] +
+                        [self._handle_trappable_interrupts] +
                         [e.check_input for e in self._handlers]):
                 if handle_input(signal):
                     break
 
-    def _handle_interrupts(self, signal):
+    def _handle_non_trappable_interrupts(self, signal):
+        """Handle non-trappable interrupts (before BASIC events)."""
+        # process input events
+        if signal.event_type == signals.KEYB_QUIT:
+            raise error.Exit()
+        # exit pause mode on keyboard hit; swallow key
+        elif signal.event_type in (
+                    signals.KEYB_CHAR, signals.KEYB_DOWN, signals.STREAM_DOWN,
+                    signals.STREAM_CHAR, signals.CLIP_PASTE):
+            if self._pause:
+                self._pause = False
+                return True
+        return False
+
+    def _handle_trappable_interrupts(self, signal):
         """Handle trappable interrupts (after BASIC events)."""
         # handle special key combinations
         if signal.event_type == signals.KEYB_DOWN:
