@@ -950,7 +950,6 @@ if sdl2:
         sdl2.SDLK_RETURN: uea.SHIFT_RETURN,
         sdl2.SDLK_KP_ENTER: uea.SHIFT_RETURN,
         sdl2.SDLK_SPACE: uea.SHIFT_SPACE,
-        sdl2.SDLK_PRINTSCREEN: uea.SHIFT_PRINT,
         sdl2.SDLK_INSERT: uea.SHIFT_INSERT,
         sdl2.SDLK_DELETE: uea.SHIFT_DELETE,
         sdl2.SDLK_KP_5: uea.SHIFT_KP5,

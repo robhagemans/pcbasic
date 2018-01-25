@@ -18,6 +18,8 @@ import shutil
 import platform
 import pkg_resources
 
+from collections import deque
+
 if platform.system() == b'Windows':
     import ctypes
     import ctypes.wintypes
@@ -75,8 +77,7 @@ def get_unicode_argv():
         argv = CommandLineToArgvW(cmd, ctypes.byref(argc))
         argv = [argv[i] for i in xrange(argc.value)]
         # clip off the python interpreter call, if we use it
-        # NOTE: we shouldn't name the executable or python module anything that includes 'python'
-        if u'python' in argv[0].lower():
+        if not hasattr(sys, 'frozen'):
             argv = argv[1:]
             if argv[0] == u'-m':
                 # we've been called with `python -m pcbasic`, drop the -m too
@@ -557,7 +558,7 @@ class Settings(object):
         # build list of commands to execute on session startup
         commands = []
         if not self.get('resume'):
-            run = (self.get(0) != '') or (self.get('run') != '')
+            run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
             cmd = self.get('exec')
             # following GW, don't write greeting for redirected input
             # or command-line filter run
@@ -571,7 +572,7 @@ class Settings(object):
                 commands.append('SYSTEM')
         launch_params = {
             'wait': self.get('wait'),
-            'prog': self.get(0) or self.get('run') or self.get('load'),
+            'prog': self.get('run') or self.get('load') or self.get(0),
             'resume': self.get('resume'),
             'state_file': self.get_state_file(),
             'commands': commands,
@@ -666,37 +667,46 @@ class Settings(object):
             return 'convert'
         return None
 
+    def _append_short_args(self, args, key, value):
+        """Append short arguments and value to dict."""
+        for i, short_arg in enumerate(key[1:]):
+            try:
+                skey, svalue = safe_split(self.short_args[short_arg], u'=')
+                if not svalue and not skey:
+                    continue
+                if (not svalue) and i == len(key)-2:
+                    # assign value to last argument specified
+                    append_arg(args, skey, value)
+                else:
+                    append_arg(args, skey, svalue)
+            except KeyError:
+                self._logger.warning(u'Ignored unrecognised option `-%s`', short_arg)
+
     def _get_arguments(self, argv):
         """Convert arguments to dictionary."""
         args = {}
-        pos = 0
-        for arg in argv:
+        arg_deque = deque(argv)
+        # positional arguments must come before any options
+        for pos in range(self.positional):
+            if not arg_deque or arg_deque[0].startswith(u'-'):
+                break
+            args[pos] = arg_deque.popleft()
+        while arg_deque:
+            arg = arg_deque.popleft()
             key, value = safe_split(arg, u'=')
+            if not value:
+                if arg_deque and not arg_deque[0].startswith(u'-') and u'=' not in arg_deque[0]:
+                    value = arg_deque.popleft()
             if key:
                 if key[0:2] == u'--':
                     if key[2:]:
                         append_arg(args, key[2:], value)
                 elif key[0] == u'-':
-                    for i, short_arg in enumerate(key[1:]):
-                        try:
-                            skey, svalue = safe_split(self.short_args[short_arg], u'=')
-                            if not svalue and not skey:
-                                continue
-                            if (not svalue) and i == len(key)-2:
-                                # assign value to last argument specified
-                                append_arg(args, skey, value)
-                            else:
-                                append_arg(args, skey, svalue)
-                        except KeyError:
-                            self._logger.warning(u'Ignored unrecognised option "-%s"', short_arg)
-                elif pos < self.positional:
-                    # positional argument
-                    args[pos] = arg
-                    pos += 1
+                    self._append_short_args(args, key, value)
                 else:
-                    self._logger.warning(u'Ignored extra positional argument "%s"', arg)
+                    self._logger.warning(u'Ignored surplus positional argument `%s`', arg)
             else:
-                self._logger.warning(u'Ignored unrecognised option "=%s"', value)
+                self._logger.warning(u'Ignored unrecognised option `=%s`', value)
         return args
 
     def _parse_presets(self, remaining, conf_dict):

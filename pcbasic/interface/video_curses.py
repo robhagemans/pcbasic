@@ -178,7 +178,7 @@ class VideoCurses(base.VideoPlugin):
         for c in u:
             #check_full=False to allow pasting chunks of text
             self.input_queue.put(signals.Event(
-                                    signals.KEYB_DOWN, (c, None, [], False)))
+                                    signals.STREAM_DOWN, (c, None, [])))
             self._unset_f12()
 
     def _unset_f12(self):
@@ -273,11 +273,6 @@ class VideoCurses(base.VideoPlugin):
             cursattr |= curses.A_BLINK
         return cursattr
 
-
-    def set_codepage(self, new_codepage):
-        """Set codepage used in sending characters."""
-        self.codepage = new_codepage
-
     def set_mode(self, mode_info):
         """Change screen mode."""
         self.height = mode_info.height
@@ -356,9 +351,8 @@ class VideoCurses(base.VideoPlugin):
             self.cursor_shape = 1
         curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
-    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, c, is_fullwidth, fore, back, blink, underline, for_keys):
         """Put a character at a given position."""
-        c = self.codepage.to_unicode(cp, replace=u' ')
         if c == u'\0':
             c = u' '
         colour = self._curses_colour(fore, back, blink)

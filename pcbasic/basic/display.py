@@ -407,9 +407,9 @@ class FunctionKeyMacros(object):
         '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
         '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19'}
 
-    def __init__(self, input_methods, screen, syntax):
+    def __init__(self, keyboard, screen, syntax):
         """Initialise user-definable key list."""
-        self._input_methods = input_methods
+        self._keyboard = keyboard
         self._screen = screen
         self._num_fn_keys = (12 if syntax == 'tandy' else 10)
         self.keys_visible = False
@@ -417,7 +417,7 @@ class FunctionKeyMacros(object):
     def list_keys(self):
         """Print a list of the function key macros."""
         for i in range(self._num_fn_keys):
-            text = self._input_methods.keyboard.get_macro(i)
+            text = self._keyboard.get_macro(i)
             text = ''.join(self._replace_chars.get(s, s) for s in text)
             self._screen.write_line('F%d %s' % (i+1, text))
 
@@ -432,7 +432,7 @@ class FunctionKeyMacros(object):
         else:
             self.keys_visible = True
             for i in range(self._screen.mode.width / 8):
-                text = self._input_methods.keyboard.get_macro(i)[:6]
+                text = self._keyboard.get_macro(i)[:6]
                 kcol = 1 + 8*i
                 self._write_for_keys(str(i+1)[-1], kcol, self._screen.attr)
                 if not self._screen.mode.is_text_mode:
@@ -459,7 +459,7 @@ class FunctionKeyMacros(object):
         """Set macro for given function key."""
         # NUL terminates macro string, rest is ignored
         # macro starting with NUL is empty macro
-        self._input_methods.keyboard.set_macro(num, macro)
+        self._keyboard.set_macro(num, macro)
         self.redraw_keys()
 
     def key_(self, args):
@@ -510,7 +510,7 @@ class Screen(object):
         (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
         (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) )
 
-    def __init__(self, queues, values, input_methods, memory,
+    def __init__(self, queues, values, input_methods, keyboard, memory,
                 initial_width, video_mem_size, capabilities, monitor, sound, redirect,
                 cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
         """Minimal initialisiation of the screen."""
@@ -564,10 +564,8 @@ class Screen(object):
         # current row and column
         self.current_row = 1
         self.current_col = 1
-        # set codepage for video plugin
+        # set codepage
         self.codepage = codepage
-        self.queues.video.put(signals.Event(
-                signals.VIDEO_SET_CODEPAGE, self.codepage))
         # prepare fonts
         heights_needed = set([8])
         for mode in self.text_data.values():
@@ -595,7 +593,7 @@ class Screen(object):
         # output redirection
         self.redirect = redirect
         # function key macros
-        self.fkey_macros = FunctionKeyMacros(input_methods, self, capabilities)
+        self.fkey_macros = FunctionKeyMacros(keyboard, self, capabilities)
         self.drawing = graphics.Drawing(self, input_methods, values, memory)
         self.palette = Palette(self.mode, self.capabilities, self._memory)
         # initialise a fresh textmode screen
@@ -609,16 +607,14 @@ class Screen(object):
 
     def rebuild(self):
         """Rebuild the screen from scratch."""
-        # set the codepage
-        self.queues.video.put(signals.Event(
-                signals.VIDEO_SET_CODEPAGE, self.codepage))
         # set the screen mode
         self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, self.mode))
         if self.mode.is_text_mode:
             # send glyphs to signals; copy is necessary
             # as dict may change here while the other thread is working on it
             self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                    dict((k,v) for k,v in self.glyphs.iteritems())))
+                    {self.codepage.to_unicode(k, u'\0'): v
+                        for k, v in self.glyphs.iteritems()}))
         # set the visible and active pages
         self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
         # rebuild palette
@@ -779,7 +775,8 @@ class Screen(object):
         # preload SBCS glyphs
         try:
             self.glyphs = {
-                chr(c): self.fonts[mode_info.font_height].build_glyph(self.codepage.to_unicode(chr(c), u'\0'),
+                chr(c): self.fonts[mode_info.font_height].build_glyph(
+                                    self.codepage.to_unicode(chr(c), u'\0'),
                                 mode_info.font_width, mode_info.font_height,
                                 chr(c) in carry_col_9_chars, chr(c) in carry_row_9_chars)
                 for c in range(256) }
@@ -793,7 +790,8 @@ class Screen(object):
             # send glyphs to signals; copy is necessary
             # as dict may change here while the other thread is working on it
             self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                                                                self.glyphs))
+                        {self.codepage.to_unicode(k, u'\0'): v
+                            for k, v in self.glyphs.iteritems()}))
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
                 self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
@@ -1371,8 +1369,8 @@ class Screen(object):
             # ensure glyph is stored
             mask = self.get_glyph(char)
             self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
-                    (pagenum, r, c, char, len(char) > 1,
-                                 fore, back, blink, underline, for_keys)))
+                    (pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
+                        len(char) > 1, fore, back, blink, underline, for_keys)))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
                 x0, y0, x1, y1, sprite = self.glyph_to_rect(
@@ -1425,16 +1423,6 @@ class Screen(object):
             self.clear_rows(srow, srow)
         therow.end = save_end
 
-    def print_screen(self, target_file):
-        """Output the visible page to file in raw bytes."""
-        if not target_file:
-            return
-        for crow in range(1, self.mode.height+1):
-            line = ''
-            for c, _ in self.vpage.row[crow-1].buf:
-                line += c
-            target_file.write_line(line)
-
     def clear_text_at(self, x, y):
         """Remove the character covering a single pixel."""
         fx, fy = self.mode.font_width, self.mode.font_height
@@ -1444,7 +1432,7 @@ class Screen(object):
             self.apage.row[cy].buf[cx] = (' ', self.attr)
         fore, back, blink, underline = self.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
-                (self.apagenum, cy+1, cx+1, ' ', False,
+                (self.apagenum, cy+1, cx+1, u' ', False,
                              fore, back, blink, underline, True)))
 
     #MOVE to TextBuffer? replace with graphics_to_text_loc v.v.?
@@ -1591,7 +1579,19 @@ class Screen(object):
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
         del self.apage.row[self.scroll_height-1]
 
-    def get_text(self, start_row, start_col, stop_row, stop_col):
+    ###########################################################################
+
+    def print_screen(self, target_file):
+        """Output the visible page to file in raw bytes."""
+        if not target_file:
+            return
+        for crow in range(1, self.mode.height+1):
+            line = ''
+            for c, _ in self.vpage.row[crow-1].buf:
+                line += c
+            target_file.write_line(line)
+
+    def _get_text(self, start_row, start_col, stop_row, stop_col):
         """Retrieve unicode text for copying."""
         r, c = start_row, start_col
         full = []
@@ -1614,6 +1614,14 @@ class Screen(object):
                 c = 1
         full.append(self.codepage.str_to_unicode(clip))
         return u''.join(full).replace(u'\0', u' ')
+
+    def copy_clipboard(self, start_row, start_col, stop_row, stop_col, is_mouse_selection):
+        """Copy selected screen are to clipboard."""
+        text = self._get_text(start_row, start_col, stop_row, stop_col)
+        self.queues.video.put(signals.Event(
+                signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)))
+
+    ###########################################################################
 
     def csrlin_(self, args):
         """CSRLIN: get the current screen row."""
@@ -1764,7 +1772,7 @@ class Screen(object):
             self.glyphs[c] = mask
             if self.mode.is_text_mode:
                 self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                    {c: mask}))
+                    {uc: mask}))
         return mask
 
     if numpy:

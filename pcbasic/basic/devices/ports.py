@@ -27,7 +27,7 @@ try:
     import serial
     # use the old VERSION constant as __version__ not defined in v2
     if serial.VERSION < '3':
-        logging.warning('PySerial version %s found but >= 3.0.0 required.')
+        logging.warning('PySerial version %s found but >= 3.0.0 required.', serial.VERSION)
         raise ImportError
     from serial import SerialException, serialutil
 except Exception:

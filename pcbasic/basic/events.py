@@ -11,26 +11,24 @@ from contextlib import contextmanager
 from .base import scancode
 from .base import error
 from .base import tokens as tk
+from .base import signals
 from . import values
 
 
 ###############################################################################
 # BASIC events
 
-
 class BasicEvents(object):
     """Manage BASIC events."""
 
-    def __init__(self, values, input_methods, sound, clock, files, screen, program, syntax):
+    def __init__(self, values, sound, clock, files, screen, program, syntax):
         """Initialise event triggers."""
         self._values = values
-        self._keyboard = input_methods.keyboard
-        self._pen = input_methods.pen
-        self._stick = input_methods.stick
         self._sound = sound
         self._clock = clock
+        # files for com1 and com2
         self._files = files
-        self._screen = screen
+        # for on_event_gosub_
         self._program = program
         # events start unactivated
         self.active = False
@@ -54,16 +52,16 @@ class BasicEvents(object):
             keys += [scancode.F11, scancode.F12]
         keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
         keys += [None] * (20 - self.num_fn_keys - 4)
-        self.key = [KeyHandler(self._keyboard, sc) for sc in keys]
+        self.key = [KeyHandler(sc) for sc in keys]
         # other events
         self.timer = TimerHandler(self._clock)
         self.play = PlayHandler(self._sound, self.multivoice)
         self.com = [
             ComHandler(self._files.get_device('COM1:')),
             ComHandler(self._files.get_device('COM2:'))]
-        self.pen = PenHandler(self._pen)
+        self.pen = PenHandler()
         # joy*2 + button
-        self.strig = [StrigHandler(self._stick, joy, button)
+        self.strig = [StrigHandler(joy, button)
                       for joy in range(2) for button in range(2)]
         # all handlers in order of handling; TIMER first
         # key events are not handled FIFO but first 11-20 in that order, then 1-10
@@ -102,24 +100,9 @@ class BasicEvents(object):
             return False
         return True
 
-    def check(self):
-        """Check and trigger events."""
-        # events are only active if a program is running
-        if self.active:
-            for e in self.enabled:
-                e.check()
-        # we're done with the events, so the keyboard buffer can have them
-        self._keyboard.drain_event_buffer()
 
     ##########################################################################
     # callbacks
-
-
-    def pen_fn_(self, args):
-        """PEN: poll the light pen."""
-        fn, = args
-        result = self._pen.poll(fn, self.pen.enabled, self._screen)
-        return self._values.new_integer().from_int(result)
 
     def pen_(self, args):
         """PEN: switch on/off light pen event handling."""
@@ -223,8 +206,9 @@ class EventHandler(object):
         """Trigger the event."""
         self.triggered = True
 
-    def check(self):
+    def check_input(self, signal):
         """Stub for event checker."""
+        return False
 
 
 class PlayHandler(EventHandler):
@@ -238,7 +222,7 @@ class PlayHandler(EventHandler):
         self.multivoice = multivoice
         self.sound = sound
 
-    def check(self):
+    def check_input(self, signal):
         """Check and trigger PLAY (music queue) events."""
         play_now = [self.sound.queue_length(voice) for voice in range(3)]
         if self.multivoice:
@@ -252,6 +236,7 @@ class PlayHandler(EventHandler):
                     play_now[0] < self.trig):
                 self.trigger()
         self.last = play_now
+        return False
 
     def set_trigger(self, n):
         """Set PLAY trigger to n notes."""
@@ -273,12 +258,13 @@ class TimerHandler(EventHandler):
         self.start = self.clock.get_time_ms()
         self.period = n
 
-    def check(self):
+    def check_input(self, signal):
         """Trigger TIMER events."""
         mutimer = self.clock.get_time_ms()
         if mutimer >= self.start + self.period:
             self.start = mutimer
             self.trigger()
+        return False
 
 
 class ComHandler(EventHandler):
@@ -299,24 +285,21 @@ class ComHandler(EventHandler):
     def triggered(self, value):
         pass
 
+
 class KeyHandler(EventHandler):
     """Manage KEY events."""
 
-    def __init__(self, keyboard, scancode=None):
+    def __init__(self, scancode=None):
         """Initialise KEY trigger."""
         EventHandler.__init__(self)
-        self.modcode = None
-        self.scancode = scancode
-        self.predefined = (scancode is not None)
-        self.keyboard = keyboard
+        self._modcode = None
+        self._scancode = scancode
+        self._predefined = (scancode is not None)
 
-    def check(self):
+    def check_input(self, signal):
         """Trigger KEY events."""
-        if self.scancode is None:
-            return False
-        for c, scancode, modifiers, check_full in self.keyboard.prebuf:
-            if scancode != self.scancode:
-                continue
+        if (self._scancode is not None) and (signal.event_type == signals.KEYB_DOWN):
+            _, scancode, modifiers = signal.params
             # build KEY trigger code
             # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
             # second byte is scan code; first byte
@@ -332,48 +315,48 @@ class KeyHandler(EventHandler):
             #
             # for predefined keys, modifier is ignored
             # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-            if (self.predefined) or (modifiers is None or self.modcode == modifiers & 0x6f):
+            if (scancode == self._scancode) and (
+                    (self._predefined) or
+                    (modifiers is None or self._modcode == modifiers & 0x6f)):
                 # trigger event
                 self.trigger()
                 # drop key from key buffer
-                #if self.enabled:
-                self.keyboard.prebuf.remove((c, scancode, modifiers, check_full))
+                # True removes signal from further processing
                 return True
         return False
 
     def set_trigger(self, keystr):
         """Set KEY trigger to chr(modcode)+chr(scancode)."""
         # can't redefine scancodes for predefined keys 1-14 (pc) 1-16 (tandy)
-        if not self.predefined:
-            self.modcode = ord(keystr[0])
-            self.scancode = ord(keystr[1])
+        if not self._predefined:
+            self._modcode = ord(keystr[0])
+            self._scancode = ord(keystr[1])
 
 
 class PenHandler(EventHandler):
     """Manage PEN events."""
 
-    def __init__(self, pen):
+    def __init__(self):
         """Initialise STRIG trigger."""
         EventHandler.__init__(self)
-        self.pen = pen
 
-    def check(self):
+    def check_input(self, signal):
         """Trigger PEN events."""
-        if self.pen.poll_event():
+        if signal.event_type == signals.PEN_DOWN:
             self.trigger()
+        # don't swallow event
+        return False
 
 
 class StrigHandler(EventHandler):
     """Manage STRIG events."""
 
-    def __init__(self, stick, joy, button):
+    def __init__(self, joy, button):
         """Initialise STRIG trigger."""
         EventHandler.__init__(self)
-        self.joy = joy
-        self.button = button
-        self.stick = stick
+        self._joybutton = joy, button
 
-    def check(self):
+    def check_input(self, signal):
         """Trigger STRIG events."""
-        if self.stick.poll_event(self.joy, self.button):
+        if (signal.event_type == signals.STICK_DOWN) and (signal.params == self._joybutton):
             self.trigger()
