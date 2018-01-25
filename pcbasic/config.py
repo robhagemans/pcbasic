@@ -26,7 +26,8 @@ if platform.system() == b'Windows':
     import win32api
 
 from .version import __version__, GREETING, ICON
-from .data import CODEPAGES, FONTS, PROGRAMS, read_program_file
+from .data import CODEPAGES, FONTS, PROGRAMS
+from . import data
 
 
 MIN_PYTHON_VERSION = (2, 7, 12)
@@ -110,7 +111,7 @@ def store_bundled_programs(program_path):
     """Retrieve contents of BASIC programs."""
     for name in PROGRAMS:
         with open(os.path.join(program_path, name), 'wb') as f:
-            f.write(read_program_file(name))
+            f.write(data.read_program_file(name))
 
 
 class TemporaryDirectory():
@@ -461,6 +462,7 @@ class Settings(object):
         max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
         max_list[0] = max_list[0] or max_list[1]
         current_device, mount_dict = self.get_drives()
+        codepage_dict = data.read_codepage(self.get('codepage'))
         return {
             'syntax': self.get('syntax'),
             'debug': self.uargv if self.get('debug') else None,
@@ -468,7 +470,7 @@ class Settings(object):
             'append': self.get(b'append'),
             'input_file': self.get(b'input'),
             'video': self.get('video'),
-            'codepage': self.get('codepage') or '437',
+            'codepage': codepage_dict,
             'box_protect': not self.get('nobox'),
             'monitor': self.get('monitor'),
             # screen settings
@@ -477,7 +479,7 @@ class Settings(object):
             'video_memory': self.get('video-memory'),
             'cga_low': self.get('cga-low'),
             'mono_tint': self.get('mono-tint'),
-            'font': self.get('font'),
+            'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
             'keys': self.get('keys').encode('utf-8').decode('string_escape').decode('utf-8'),
             # find program for PCjr TERM command
