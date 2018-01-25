@@ -11,9 +11,6 @@ import logging
 import os
 import pkg_resources
 
-
-codepages = [name.split('.', 1)[0] for name in pkg_resources.resource_listdir('pcbasic.data.codepages', '.') if name.lower().endswith('.ucp')]
-
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
 # ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
@@ -37,7 +34,7 @@ class ResourceFailed(Exception):
 def read_file(codepage_name):
     """Retrieve contents of codepage file."""
     try:
-        resource = pkg_resources.resource_string('pcbasic.data.codepages', '%s.ucp' % codepage_name)
+        resource = pkg_resources.resource_string(__name__, '../data/codepages/%s.ucp' % codepage_name)
     except EnvironmentError:
         raise ResourceFailed()
     if resource is None:

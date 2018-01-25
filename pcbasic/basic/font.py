@@ -16,8 +16,6 @@ except ImportError:
     numpy = None
 
 
-fonts = [name.split('_', 1)[0] for name in pkg_resources.resource_listdir('pcbasic.data.fonts', '') if name.lower().endswith('.hex')]
-
 def get_data(package, name):
     """Wrapper for get_data to make it do what is advertised."""
     try:
@@ -27,7 +25,7 @@ def get_data(package, name):
 
 def read_files(families, height):
     """Retrieve contents of font files."""
-    return [get_data('pcbasic.data.fonts', '%s_%02d.hex' % (name, height)) for name in families]
+    return [get_data(__name__, '../data/fonts/%s_%02d.hex' % (name, height)) for name in families]
 
 
 
