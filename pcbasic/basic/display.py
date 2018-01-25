@@ -512,7 +512,7 @@ class Screen(object):
 
     def __init__(self, queues, values, input_methods, keyboard, memory,
                 initial_width, video_mem_size, capabilities, monitor, sound, redirect,
-                cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
+                cga_low, mono_tint, screen_aspect, codepage, fonts, warn_fonts):
         """Minimal initialisiation of the screen."""
         self.queues = queues
         self._values = values
@@ -568,17 +568,10 @@ class Screen(object):
         self.codepage = codepage
         # prepare fonts
         heights_needed = set([8])
-        for mode in self.text_data.values():
+        for mode in self.text_data.values() + self.mode_data.values():
             heights_needed.add(mode.font_height)
-        for mode in self.mode_data.values():
-            heights_needed.add(mode.font_height)
-        # load the graphics fonts, including the 8-pixel RAM font
-        # use set() for speed - lookup is O(1) rather than O(n) for list
-        chars_needed = set(self.codepage.cp_to_unicode.values())
-        # break up any grapheme clusters and add components to set of needed glyphs
-        chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
-        self.fonts = font.load_fonts(font_family, heights_needed,
-                    chars_needed, self.codepage.substitutes, warn_fonts)
+        self.fonts = font.prepare_fonts(
+                heights_needed, self.codepage, fonts, warn_fonts)
         # text viewport parameters
         self.view_start = 1
         self.scroll_height = 24

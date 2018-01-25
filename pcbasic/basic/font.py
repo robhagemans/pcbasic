@@ -16,9 +16,18 @@ except ImportError:
 
 from ..data import read_font_files
 
-
-def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=False):
+def prepare_fonts(heights_needed, codepage, font_family, warn_fonts):
     """Load font typefaces."""
+    # load the graphics fonts, including the 8-pixel RAM font
+    # use set() for speed - lookup is O(1) rather than O(n) for list
+    chars_needed = set(codepage.cp_to_unicode.values())
+    # break up any grapheme clusters and add components to set of needed glyphs
+    chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
+    #
+    font_families, heights_needed, unicode_needed, substitutes, warn = (
+            font_family, heights_needed,
+            chars_needed, codepage.substitutes, warn_fonts)
+    #
     fonts = {}
     if 9 in heights_needed:
         # 9-pixel font is same as 8-pixel font
