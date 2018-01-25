@@ -131,7 +131,7 @@ class Session(object):
                 self.memory, text_width, video_memory, video, monitor,
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
-                self.codepage, font, warn_fonts=bool(debug))
+                self.codepage, font)
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
         self.pen = inputmethods.Pen()
         self.stick = inputmethods.Stick(self.values)

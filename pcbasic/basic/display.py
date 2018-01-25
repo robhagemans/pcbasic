@@ -512,7 +512,7 @@ class Screen(object):
 
     def __init__(self, queues, values, input_methods, keyboard, memory,
                 initial_width, video_mem_size, capabilities, monitor, sound, redirect,
-                cga_low, mono_tint, screen_aspect, codepage, fonts, warn_fonts):
+                cga_low, mono_tint, screen_aspect, codepage, fonts):
         """Minimal initialisiation of the screen."""
         self.queues = queues
         self._values = values
@@ -567,11 +567,7 @@ class Screen(object):
         # set codepage
         self.codepage = codepage
         # prepare fonts
-        heights_needed = set([8])
-        for mode in self.text_data.values() + self.mode_data.values():
-            heights_needed.add(mode.font_height)
-        self.fonts = font.prepare_fonts(
-                heights_needed, self.codepage, fonts, warn_fonts)
+        self.fonts = {height: font.Font(height, font_dict) for height, font_dict in fonts.iteritems()}
         # text viewport parameters
         self.view_start = 1
         self.scroll_height = 24

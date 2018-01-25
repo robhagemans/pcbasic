@@ -10,7 +10,6 @@ import unicodedata
 import logging
 import os
 
-
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
 # ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
@@ -37,8 +36,6 @@ class Codepage(object):
         """Load and initialise codepage tables."""
         # is the current codepage a double-byte codepage?
         self.dbcs = False
-        # substitutes for printable ascii
-        self.substitutes = {}
         # load codepage (overrides the above)
         self._load(codepage_dict or DEFAULT_CODEPAGE)
         # protect box drawing sequences under dbcs?
@@ -56,9 +53,7 @@ class Codepage(object):
         for cp_point, grapheme_cluster in codepage_dict.iteritems():
             # do not redefine printable ASCII, but substitute glyphs
             if cp_point in PRINTABLE_ASCII and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
-                # substitutes is in reverse order: { yen: backslash }
                 ascii_cp = unichr(ord(cp_point))
-                self.substitutes[grapheme_cluster] = ascii_cp
                 self.cp_to_unicode[cp_point] = ascii_cp
             else:
                 self.cp_to_unicode[cp_point] = grapheme_cluster
