@@ -16,7 +16,7 @@ import io
 from ..base import error
 from ..base import tokens as tk
 from .. import values
-from .. import formatter
+from . import formatter
 from . import devicebase
 from . import cassette
 from . import disk
