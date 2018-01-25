@@ -9,7 +9,8 @@ This file is released under the GNU GPL version 3 or later.
 import unicodedata
 import logging
 import os
-import pkg_resources
+
+from ..data import read_codepage_file
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
@@ -23,28 +24,7 @@ CONTROL = ('\x07', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x1C', '\x1D', '\x1E
 
 
 ###############################################################################
-# resource reader
-
-class ResourceFailed(Exception):
-    """Failed to load codepage."""
-    def __str__(self):
-        return self.__doc__
-
-
-def read_file(codepage_name):
-    """Retrieve contents of codepage file."""
-    try:
-        resource = pkg_resources.resource_string(__name__, '../data/codepages/%s.ucp' % codepage_name)
-    except EnvironmentError:
-        raise ResourceFailed()
-    if resource is None:
-        raise ResourceFailed()
-    return resource
-
-
-###############################################################################
 # codepages
-
 
 class Codepage(object):
     """Codepage tables."""
@@ -69,7 +49,7 @@ class Codepage(object):
         self.box_right = [set(), set()]
         self.cp_to_unicode = {}
         self.dbcs_num_chars = 0
-        for line in read_file(codepage_name).splitlines():
+        for line in read_codepage_file(codepage_name).splitlines():
             # ignore empty lines and comment lines (first char is #)
             if (not line) or (line[0] == '#'):
                 continue

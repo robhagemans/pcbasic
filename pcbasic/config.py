@@ -24,6 +24,7 @@ if platform.system() == b'Windows':
     import win32api
 
 from .version import __version__, GREETING, ICON
+from .data import CODEPAGES, FONTS, PROGRAMS, read_program_file
 
 
 MIN_PYTHON_VERSION = (2, 7, 12)
@@ -45,12 +46,6 @@ else:
 
 # @: target drive for bundled programs
 program_path = os.path.join(state_path, u'bundled_programs')
-
-# data resources
-CODEPAGES = [name.split('.', 1)[0] for name in pkg_resources.resource_listdir(__name__, 'data/codepages') if name.lower().endswith('.ucp')]
-PROGRAMS = (name for name in pkg_resources.resource_listdir(__name__, 'data/programs') if name.lower().endswith('.bas'))
-FONTS = [name.split('_', 1)[0] for name in pkg_resources.resource_listdir(__name__, 'data/fonts') if name.lower().endswith('.hex')]
-
 
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
@@ -114,7 +109,7 @@ def store_bundled_programs(program_path):
     """Retrieve contents of BASIC programs."""
     for name in PROGRAMS:
         with open(os.path.join(program_path, name), 'wb') as f:
-            f.write(pkg_resources.resource_string(__name__, 'data/programs/' + name))
+            f.write(read_program_file(name))
 
 
 class TemporaryDirectory():
