@@ -15,11 +15,11 @@ import pkg_resources
 # but can have their glyphs subsituted - they will work and transcode as the
 # ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
 # see http://www.siao2.com/2005/09/17/469941.aspx
-printable_ascii = map(chr, range(0x20, 0x7F))
+PRINTABLE_ASCII = map(chr, range(0x20, 0x7F))
 
 # on the terminal, these values are not shown as special graphic chars but as their normal effect
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
-control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
+CONTROL = ('\x07', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x1C', '\x1D', '\x1E', '\x1F')
 
 
 ###############################################################################
@@ -84,7 +84,7 @@ class Codepage(object):
                 # allow sequence of code points separated by commas
                 grapheme_cluster = u''.join(unichr(int(ucs_str.strip(), 16)) for ucs_str in splitline[1].split(','))
                 # do not redefine printable ASCII, but substitute glyphs
-                if cp_point in printable_ascii and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
+                if cp_point in PRINTABLE_ASCII and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
                     # substitutes is in reverse order: { yen: backslash }
                     ascii_cp = unichr(ord(cp_point))
                     self.substitutes[grapheme_cluster] = ascii_cp
@@ -234,7 +234,7 @@ class Converter(object):
         if not self.dbcs:
             # stateless if not dbcs
             return u''.join([ (c.decode('ascii', errors='ignore')
-                                if (self.preserve_control and c in control)
+                                if (self.preserve_control and c in CONTROL)
                                 else self.cp.to_unicode(c))
                             for c in s ])
         else:
@@ -266,7 +266,7 @@ class Converter(object):
         if not self.box_protect:
             return self.process_nobox(c)
         out = u''
-        if self.preserve_control and c in control:
+        if self.preserve_control and c in CONTROL:
             # control char; flush buffer as SBCS and add control char unchanged
             out += self.flush() + c
             self.bset = -1
@@ -293,7 +293,7 @@ class Converter(object):
     def process_nobox(self, c):
         """Process a single char, no box drawing protection """
         out = u''
-        if self.preserve_control and c in control:
+        if self.preserve_control and c in CONTROL:
             # control char; flush buffer as SBCS and add control char unchanged
             out += self.flush() + c.decode('ascii', errors='ignore')
             return out
