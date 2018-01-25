@@ -10,7 +10,6 @@ import unicodedata
 import logging
 import os
 
-from ..data import read_codepage_file
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
@@ -22,6 +21,11 @@ PRINTABLE_ASCII = map(chr, range(0x20, 0x7F))
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
 CONTROL = ('\x07', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x1C', '\x1D', '\x1E', '\x1F')
 
+# default is codepage 437
+DEFAULT_CODEPAGE = {chr(i): c for i, c in enumerate(
+    u'\x00\u263a\u263b\u2665\u2666\u2663\u2660\u2022\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b\u263c\u25ba\u25c4\u2195\u203c\xb6\xa7\u25ac\u21a8\u2191\u2193\u2192\u2190\u221f\u2194\u25b2\u25bc !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u2302\xc7\xfc\xe9\xe2\xe4\xe0\xe5\xe7\xea\xeb\xe8\xef\xee\xec\xc4\xc5\xc9\xe6\xc6\xf4\xf6\xf2\xfb\xf9\xff\xd6\xdc\xa2\xa3\xa5\u20a7\u0192\xe1\xed\xf3\xfa\xf1\xd1\xaa\xba\xbf\u2310\xac\xbd\xbc\xa1\xab\xbb\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556\u2555\u2563\u2551\u2557\u255d\u255c\u255b\u2510\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u2567\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b\u256a\u2518\u250c\u2588\u2584\u258c\u2590\u2580\u03b1\xdf\u0393\u03c0\u03a3\u03c3\xb5\u03c4\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229\u2261\xb1\u2265\u2264\u2320\u2321\xf7\u2248\xb0\u2219\xb7\u221a\u207f\xb2\u25a0\xa0'
+)}
+
 
 ###############################################################################
 # codepages
@@ -29,19 +33,19 @@ CONTROL = ('\x07', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x1C', '\x1D', '\x1E
 class Codepage(object):
     """Codepage tables."""
 
-    def __init__(self, codepage_name, box_protect=True):
+    def __init__(self, codepage_dict=None, box_protect=True):
         """Load and initialise codepage tables."""
         # is the current codepage a double-byte codepage?
         self.dbcs = False
         # substitutes for printable ascii
         self.substitutes = {}
         # load codepage (overrides the above)
-        self.load(codepage_name)
+        self._load(codepage_dict or DEFAULT_CODEPAGE)
         # protect box drawing sequences under dbcs?
         self.box_protect = box_protect
 
-    def load(self, codepage_name):
-        """Load codepage to Unicode table."""
+    def _load(self, codepage_dict):
+        """Load codepage to Unicode dict."""
         # lead and trail bytes
         self.lead = set()
         self.trail = set()
@@ -49,42 +53,27 @@ class Codepage(object):
         self.box_right = [set(), set()]
         self.cp_to_unicode = {}
         self.dbcs_num_chars = 0
-        for line in read_codepage_file(codepage_name).splitlines():
-            # ignore empty lines and comment lines (first char is #)
-            if (not line) or (line[0] == '#'):
-                continue
-            # strip off comments; split unicodepoint and hex string
-            splitline = line.split('#')[0].split(':')
-            # ignore malformed lines
-            if len(splitline) < 2:
-                continue
-            try:
-                # extract codepage point
-                cp_point = splitline[0].strip().decode('hex')
-                # allow sequence of code points separated by commas
-                grapheme_cluster = u''.join(unichr(int(ucs_str.strip(), 16)) for ucs_str in splitline[1].split(','))
-                # do not redefine printable ASCII, but substitute glyphs
-                if cp_point in PRINTABLE_ASCII and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
-                    # substitutes is in reverse order: { yen: backslash }
-                    ascii_cp = unichr(ord(cp_point))
-                    self.substitutes[grapheme_cluster] = ascii_cp
-                    self.cp_to_unicode[cp_point] = ascii_cp
-                else:
-                    self.cp_to_unicode[cp_point] = grapheme_cluster
-                # track lead and trail bytes
-                if len(cp_point) == 2:
-                    self.lead.add(cp_point[0])
-                    self.trail.add(cp_point[1])
-                    self.dbcs_num_chars += 1
-                # track box drawing chars
-                else:
-                    for i in (0, 1):
-                        if grapheme_cluster in box_left_unicode[i]:
-                            self.box_left[i].add(cp_point[0])
-                        if grapheme_cluster in box_right_unicode[i]:
-                            self.box_right[i].add(cp_point[0])
-            except ValueError:
-                logging.warning('Could not parse line in unicode mapping table: %s', repr(line))
+        for cp_point, grapheme_cluster in codepage_dict.iteritems():
+            # do not redefine printable ASCII, but substitute glyphs
+            if cp_point in PRINTABLE_ASCII and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
+                # substitutes is in reverse order: { yen: backslash }
+                ascii_cp = unichr(ord(cp_point))
+                self.substitutes[grapheme_cluster] = ascii_cp
+                self.cp_to_unicode[cp_point] = ascii_cp
+            else:
+                self.cp_to_unicode[cp_point] = grapheme_cluster
+            # track lead and trail bytes
+            if len(cp_point) == 2:
+                self.lead.add(cp_point[0])
+                self.trail.add(cp_point[1])
+                self.dbcs_num_chars += 1
+            # track box drawing chars
+            else:
+                for i in (0, 1):
+                    if grapheme_cluster in box_left_unicode[i]:
+                        self.box_left[i].add(cp_point[0])
+                    if grapheme_cluster in box_right_unicode[i]:
+                        self.box_right[i].add(cp_point[0])
         # fill up any undefined 1-byte codepoints
         for c in range(256):
             if chr(c) not in self.cp_to_unicode:
@@ -92,7 +81,6 @@ class Codepage(object):
         self.unicode_to_cp = dict((reversed(item) for item in self.cp_to_unicode.items()))
         if self.dbcs_num_chars > 0:
             self.dbcs = True
-        return codepage_name
 
     def connects(self, c, d, bset):
         """Return True if c and d connect according to box-drawing set bset."""

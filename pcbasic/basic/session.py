@@ -47,7 +47,7 @@ class Session(object):
     def __init__(self, iface=None,
             syntax=u'advanced', pcjr_term=u'', shell=u'',
             output_file=None, append=False, input_file=None,
-            codepage=u'437', box_protect=True,
+            codepage=None, box_protect=True,
             video=u'vga', font=u'freedos',
             monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
             text_width=80, video_memory=262144, cga_low=False,

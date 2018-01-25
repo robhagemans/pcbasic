@@ -26,8 +26,8 @@ if platform.system() == b'Windows':
     import win32api
 
 from .version import __version__, GREETING, ICON
-from .data import CODEPAGES, FONTS, PROGRAMS, read_program_file
-
+from .data import CODEPAGES, FONTS, PROGRAMS
+from . import data
 
 MIN_PYTHON_VERSION = (2, 7, 12)
 
@@ -110,7 +110,7 @@ def store_bundled_programs(program_path):
     """Retrieve contents of BASIC programs."""
     for name in PROGRAMS:
         with open(os.path.join(program_path, name), 'wb') as f:
-            f.write(read_program_file(name))
+            f.write(data.read_program_file(name))
 
 
 class TemporaryDirectory():
@@ -468,7 +468,7 @@ class Settings(object):
             'append': self.get(b'append'),
             'input_file': self.get(b'input'),
             'video': self.get('video'),
-            'codepage': self.get('codepage') or '437',
+            'codepage': data.read_codepage(self.get('codepage')),
             'box_protect': not self.get('nobox'),
             'monitor': self.get('monitor'),
             # screen settings
