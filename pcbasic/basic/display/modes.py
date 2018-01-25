@@ -13,7 +13,7 @@ except ImportError:
 
 import struct
 
-from . import values
+from .. import values
 
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
 intensity_ega_mono_0 = (0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xff, 0xff, 0xff)

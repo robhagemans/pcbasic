@@ -14,13 +14,13 @@ try:
 except ImportError:
     numpy = None
 
-from .base import signals
-from .base import error
-from .base import tokens as tk
+from ..base import signals
+from ..base import error
+from ..base import tokens as tk
 from . import modes
 from . import font
 from . import graphics
-from . import values
+from .. import values
 
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
 # Many internet sources say this should be 0xC0--0xDF. However, that would
