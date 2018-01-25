@@ -78,11 +78,8 @@ def get_unicode_argv():
         argv = CommandLineToArgvW(cmd, ctypes.byref(argc))
         argv = [argv[i] for i in xrange(argc.value)]
         # clip off the python interpreter call, if we use it
-        if not hasattr(sys, 'frozen'):
-            argv = argv[1:]
-            if argv[0] == u'-m':
-                # we've been called with `python -m pcbasic`, drop the -m too
-                argv = argv[1:]
+        # anything that didn't get included in sys.argv is not for us either
+        argv = argv[len(sys.argv):]
         return argv
     else:
         # the official parameter should be LC_CTYPE but that's None in my locale
