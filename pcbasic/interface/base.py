@@ -198,8 +198,6 @@ class VideoPlugin(object):
                 self.set_caption_message(signal.params)
             elif signal.event_type == signals.VIDEO_SET_CLIPBOARD_TEXT:
                 self.set_clipboard_text(*signal.params)
-            elif signal.event_type == signals.VIDEO_SET_CODEPAGE:
-                self.set_codepage(signal.params)
             self.video_queue.task_done()
 
     # signal handlers
@@ -251,9 +249,6 @@ class VideoPlugin(object):
 
     def build_glyphs(self, new_dict):
         """Build a dict of glyphs for use in text mode."""
-
-    def set_codepage(self, new_codepage):
-        """Set codepage used in sending characters."""
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """Build a sprite for the cursor."""
