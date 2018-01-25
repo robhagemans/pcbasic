@@ -16,9 +16,14 @@ CODEPAGE_DIR = u'codepages'
 PROGRAM_DIR = u'programs'
 FONT_DIR = u'fonts'
 
+CODEPAGE_PATTERN = u'{path}/{name}.ucp'
+PROGRAM_PATTERN = u'{path}/{name}'
+FONT_PATTERN = u'{path}/{name}_{height:02d}.hex'
+
 CODEPAGES = [name.split(u'.', 1)[0] for name in pkg_resources.resource_listdir(__name__, CODEPAGE_DIR) if name.lower().endswith(u'.ucp')]
 PROGRAMS = (name for name in pkg_resources.resource_listdir(__name__, PROGRAM_DIR) if name.lower().endswith(u'.bas'))
 FONTS = [name.split(u'_', 1)[0] for name in pkg_resources.resource_listdir(__name__, FONT_DIR) if name.lower().endswith(u'.hex')]
+
 
 
 ###############################################################################
@@ -27,8 +32,8 @@ FONTS = [name.split(u'_', 1)[0] for name in pkg_resources.resource_listdir(__nam
 class ResourceFailed(Exception):
     """Failed to load resource"""
 
-    def __init__(self, spec=u'resource', name=u''):
-        self._message = u'Failed to load {0} {1}'.format(spec, name)
+    def __init__(self, name=u''):
+        self._message = u'Failed to load {0}'.format(name)
 
     def __str__(self):
         return self._message
@@ -37,33 +42,21 @@ class ResourceFailed(Exception):
 ###############################################################################
 # resource readers
 
-def get_data(name):
+def get_data(pattern, **kwargs):
     """Wrapper for resource_string."""
+    name = pattern.format(**kwargs)
     try:
         # this should return None if not available, I thought, but it doesn't
-        return pkg_resources.resource_string(__name__, name)
+        resource = pkg_resources.resource_string(__name__, name)
     except EnvironmentError:
-        return None
-
-def read_font_files(families, height):
-    """Retrieve contents of font files."""
-    return [
-        get_data(u'%s/%s_%02d.hex' % (FONT_DIR, name, height))
-        for name in families]
-
-def read_codepage_file(codepage_name):
-    """Retrieve contents of codepage file."""
-    resource = get_data('%s/%s.ucp' % (CODEPAGE_DIR, codepage_name))
+        raise ResourceFailed(name)
     if resource is None:
-        raise ResourceFailed(u'codepage', codepage_name)
+        raise ResourceFailed(name)
     return resource
 
 def read_program_file(name):
     """Read a bundled BASIC program file."""
-    program = ('%s/%s' % (PROGRAM_DIR, name))
-    if program is None:
-        raise ResourceFailed(u'bundled program', name)
-    return program
+    return get_data(PROGRAM_PATTERN, path=PROGRAM_DIR, name=name)
 
 
 ###############################################################################
@@ -72,7 +65,7 @@ def read_program_file(name):
 def read_codepage(codepage_name):
     """Read a codepage file and convert to codepage dict."""
     codepage = {}
-    for line in read_codepage_file(codepage_name).splitlines():
+    for line in get_data(CODEPAGE_PATTERN, path=CODEPAGE_DIR, name=codepage_name).splitlines():
         # ignore empty lines and comment lines (first char is #)
         if (not line) or (line[0] == '#'):
             continue
@@ -110,9 +103,16 @@ def read_fonts(codepage_dict, font_families, warn):
     # load fonts, height-16 first
     for height in (16, 14, 8):
         # load a Unifont .hex font and take the codepage subset
+        font_files = []
+        for name in font_families:
+            try:
+                font_files.append(
+                        get_data(FONT_PATTERN, path=FONT_DIR, name=name, height=height))
+            except ResourceFailed as e:
+                if warn:
+                    logging.debug(e)
         fonts[height] = FontLoader(height).load_hex(
-                read_font_files(font_families, height),
-                unicode_needed, substitutes, warn=warn)
+                font_files, unicode_needed, substitutes, warn=warn)
         # fix missing code points font based on 16-line font
         if fonts[16]:
             fonts[height].fix_missing(unicode_needed, fonts[16])
