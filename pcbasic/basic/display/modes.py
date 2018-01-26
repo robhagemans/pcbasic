@@ -211,22 +211,22 @@ def get_modes(screen, cga4_palette, video_mem_size, video_capabilities, mono_tin
             9: graphics_mode['640x350x16']}
     elif video_capabilities == 'ega_mono':
         text_data = {
-            40: TextMode(screen, 'ega_monotext40', 25, 40, 14, 8, 7,
+            40: MonoTextMode(screen, 'ega_monotext40', 25, 40, 14, 8, 7,
                          MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, has_underline=True, num_pages=8),
-            80: TextMode(screen, 'ega_monotext80', 25, 80, 14, 8, 7,
+                         is_mono=True, num_pages=8),
+            80: MonoTextMode(screen, 'ega_monotext80', 25, 80, 14, 8, 7,
                          MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, has_underline=True, num_pages=4)}
+                         is_mono=True, num_pages=4)}
         mode_data = {
             10: graphics_mode['640x350x4']}
     elif video_capabilities == 'mda':
         text_data = {
-            40: TextMode(screen, 'mdatext40', 25, 40, 14, 9, 7,
+            40: MonoTextMode(screen, 'mdatext40', 25, 40, 14, 9, 7,
                          MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, has_underline=True, num_pages=1),
-            80: TextMode(screen, 'mdatext80', 25, 80, 14, 9, 7,
+                         is_mono=True, num_pages=1),
+            80: MonoTextMode(screen, 'mdatext80', 25, 80, 14, 9, 7,
                          MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, has_underline=True, num_pages=1) }
+                         is_mono=True, num_pages=1) }
         mode_data = {}
     elif video_capabilities in ('cga', 'cga_old', 'pcjr', 'tandy'):
         if video_capabilities == 'tandy':
@@ -257,12 +257,12 @@ def get_modes(screen, cga4_palette, video_mem_size, video_capabilities, mono_tin
         # herc attributes shld distinguish black, dim, normal, bright
         # see http://www.seasip.info/VintagePC/hercplus.html
         text_data = {
-            40: TextMode(screen, 'herculestext40', 25, 40, 14, 9, 7,
+            40: MonoTextMode(screen, 'herculestext40', 25, 40, 14, 9, 7,
                          MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, has_underline=True, num_pages=2),
-            80: TextMode(screen, 'herculestext80', 25, 80, 14, 9, 7,
+                         is_mono=True, num_pages=2),
+            80: MonoTextMode(screen, 'herculestext80', 25, 80, 14, 9, 7,
                          MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, has_underline=True, num_pages=2) }
+                         is_mono=True, num_pages=2) }
         mode_data = {
             3: graphics_mode['720x348x2']}
     elif video_capabilities == 'olivetti':
@@ -286,8 +286,7 @@ class VideoMode(object):
     def __init__(self, screen, name, height, width,
                   font_height, font_width,
                   attr, palette, colours,
-                  num_pages,
-                  has_underline, has_blink,
+                  num_pages, has_blink,
                   video_segment, page_size
                   ):
         """Initialise video mode settings."""
@@ -309,37 +308,18 @@ class VideoMode(object):
         # colours1 is only used by EGA mono mode
         self.colours1 = None
         self.has_blink = has_blink
-        self._has_underline = has_underline
         self.video_segment = int(video_segment)
         self.page_size = int(page_size)
         self.num_pages = int(num_pages) # or video_mem_size // self.page_size)
 
     def split_attr(self, attr):
         """Split attribute byte into constituent parts."""
-        if self._has_underline:
-            # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
-            # see also http://support.microsoft.com/KB/35148
-            # don't try to change this with PALETTE, it won't work correctly
-            underline = (attr % 8) == 1
-            blink = (attr & 0x80) != 0
-            # background is almost always black
-            back = 0
-            # intensity set by bit 3
-            fore = 1 if not (attr & 0x8) else 2
-            # exceptions
-            if attr in (0x00, 0x08, 0x80, 0x88):
-                fore, back = 0, 0
-            elif attr in (0x70, 0xf0):
-                fore, back = 0, 1
-            elif attr in (0x78, 0xf8):
-                fore, back = 3, 1
-        else:
-            # 7  6 5 4  3 2 1 0
-            # Bl b b b  f f f f
-            back = (attr >> 4) & 7
-            blink = (attr >> 7) == 1
-            fore = attr & 0xf
-            underline = False
+        # 7  6 5 4  3 2 1 0
+        # Bl b b b  f f f f
+        back = (attr >> 4) & 7
+        blink = (attr >> 7) == 1
+        fore = attr & 0xf
+        underline = False
         return fore, back, blink, underline
 
 
@@ -347,18 +327,14 @@ class TextMode(VideoMode):
     """Default settings for a text mode."""
 
     def __init__(self, screen, name, height, width,
-                  font_height, font_width,
-                  attr, palette, colours,
-                  num_pages,
-                  is_mono=False, has_underline=False, has_blink=True):
+                font_height, font_width, attr, palette, colours,
+                num_pages, is_mono=False, has_blink=True):
         """Initialise video mode settings."""
         video_segment = 0xb000 if is_mono else 0xb800
         page_size = 0x1000 if width == 80 else 0x800
         VideoMode.__init__(self, screen, name, height, width,
-                  font_height, font_width,
-                  attr, palette, colours,
-                  num_pages, has_underline, has_blink,
-                  video_segment, page_size)
+                font_height, font_width, attr, palette, colours,
+                num_pages, has_blink, video_segment, page_size)
         self.is_text_mode = True
         self.num_attr = 32
 
@@ -402,6 +378,29 @@ class TextMode(VideoMode):
             last_row = crow
         if last_row >= 0 and last_row < 25 and page >= 0 and page < self.num_pages:
             self.screen.refresh_range(page, last_row+1, 1, self.width, for_keys=True)
+
+
+class MonoTextMode(TextMode):
+    """MDA-style text mode with underlining."""
+    def split_attr(self, attr):
+        """Split attribute byte into constituent parts."""
+        # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
+        # see also http://support.microsoft.com/KB/35148
+        # don't try to change this with PALETTE, it won't work correctly
+        underline = (attr % 8) == 1
+        blink = (attr & 0x80) != 0
+        # background is almost always black
+        back = 0
+        # intensity set by bit 3
+        fore = 1 if not (attr & 0x8) else 2
+        # exceptions
+        if attr in (0x00, 0x08, 0x80, 0x88):
+            fore, back = 0, 0
+        elif attr in (0x70, 0xf0):
+            fore, back = 0, 1
+        elif attr in (0x78, 0xf8):
+            fore, back = 3, 1
+        return fore, back, blink, underline
 
 
 # helper functions: convert between attribute lists and byte arrays
@@ -605,7 +604,7 @@ class GraphicsMode(VideoMode):
         page_size = self.interleave_times * self.bank_size
         VideoMode.__init__(self, screen, name, text_height, text_width,
                           font_height, font_width, attr, palette, colours,
-                          num_pages, False, has_blink, video_segment, page_size)
+                          num_pages, has_blink, video_segment, page_size)
         self.is_text_mode = False
         self.bitsperpixel = int(bitsperpixel)
         # number of pixels referenced in each byte of a plane
