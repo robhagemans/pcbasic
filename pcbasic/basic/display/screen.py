@@ -25,15 +25,6 @@ from .display import FunctionKeyMacros, Palette, Cursor
 from .display import TextBuffer, TextRow, PixelBuffer
 
 
-# ascii codepoints for which to repeat column 8 in column 9 (box drawing)
-# Many internet sources say this should be 0xC0--0xDF. However, that would
-# exclude the shading characters. It appears to be traced back to a mistake in
-# IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
-CARRY_COL_9_CHARS = [chr(c) for c in range(0xb0, 0xdf+1)]
-# ascii codepoints for which to repeat row 8 in row 9 (box drawing)
-CARRY_ROW_9_CHARS = [chr(c) for c in range(0xb0, 0xdf+1)]
-
-
 class Screen(object):
     """Screen manipulation operations."""
 
@@ -292,8 +283,7 @@ class Screen(object):
         try:
             self.glyphs = {
                 c: self.fonts[mode_info.font_height].build_glyph(
-                            c, mode_info.font_width, mode_info.font_height,
-                            c in CARRY_COL_9_CHARS, c in CARRY_ROW_9_CHARS)
+                            c, mode_info.font_width, mode_info.font_height)
                 for c in map(chr, range(256)) }
         except (KeyError, AttributeError):
             logging.warning(
@@ -1278,11 +1268,8 @@ class Screen(object):
         try:
             mask = self.glyphs[c]
         except KeyError:
-            carry_col_9 = c in CARRY_COL_9_CHARS
-            carry_row_9 = c in CARRY_ROW_9_CHARS
             mask = self.fonts[self.mode.font_height].build_glyph(c,
-                                self.mode.font_width*2, self.mode.font_height,
-                                carry_col_9, carry_row_9)
+                                self.mode.font_width*2, self.mode.font_height)
             self.glyphs[c] = mask
             if self.mode.is_text_mode:
                 self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,

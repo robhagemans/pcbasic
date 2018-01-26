@@ -15,6 +15,14 @@ except ImportError:
     numpy = None
 
 
+# ascii codepoints for which to repeat column 8 in column 9 (box drawing)
+# Many internet sources say this should be 0xC0--0xDF. However, that would
+# exclude the shading characters. It appears to be traced back to a mistake in
+# IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
+CARRY_COL_9_CHARS = [chr(c) for c in range(0xb0, 0xdf+1)]
+# ascii codepoints for which to repeat row 8 in row 9 (box drawing)
+CARRY_ROW_9_CHARS = [chr(c) for c in range(0xb0, 0xdf+1)]
+
 # The glyphs below are extracted from Henrique Peron's CPIDOS v3.0,
 # CPIDOS is distributed with FreeDOS at
 #   http://www.freedos.org/software/?prog=cpidos
@@ -107,7 +115,7 @@ class Font(object):
         """Set byte sequency for character."""
         self._fontdict[chr(charvalue)] = byte_sequence
 
-    def build_glyph(self, c, req_width, req_height, carry_col_9, carry_row_9):
+    def build_glyph(self, c, req_width, req_height):
         """Build a glyph for the given codepage character."""
         try:
             face = bytearray(self._fontdict[c])
@@ -128,7 +136,8 @@ class Font(object):
                     c, repr(c), req_width, code_width)
         return _unpack_glyph(
                 face, code_height, code_width, req_height, req_width,
-                force_double, force_single, carry_col_9, carry_row_9)
+                force_double, force_single,
+                c in CARRY_COL_9_CHARS, c in CARRY_ROW_9_CHARS)
 
 if numpy:
 
