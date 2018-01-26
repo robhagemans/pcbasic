@@ -291,11 +291,10 @@ class Screen(object):
         # preload SBCS glyphs
         try:
             self.glyphs = {
-                chr(c): self.fonts[mode_info.font_height].build_glyph(
-                                    self.codepage.to_unicode(chr(c), u'\0'),
-                                mode_info.font_width, mode_info.font_height,
-                                chr(c) in CARRY_COL_9_CHARS, chr(c) in CARRY_ROW_9_CHARS)
-                for c in range(256) }
+                c: self.fonts[mode_info.font_height].build_glyph(
+                            c, mode_info.font_width, mode_info.font_height,
+                            c in CARRY_COL_9_CHARS, c in CARRY_ROW_9_CHARS)
+                for c in map(chr, range(256)) }
         except (KeyError, AttributeError):
             logging.warning(
                 'No %d-pixel font available. Could not enter video mode %s.',
@@ -1279,16 +1278,15 @@ class Screen(object):
         try:
             mask = self.glyphs[c]
         except KeyError:
-            uc = self.codepage.to_unicode(c, u'\0')
             carry_col_9 = c in CARRY_COL_9_CHARS
             carry_row_9 = c in CARRY_ROW_9_CHARS
-            mask = self.fonts[self.mode.font_height].build_glyph(uc,
+            mask = self.fonts[self.mode.font_height].build_glyph(c,
                                 self.mode.font_width*2, self.mode.font_height,
                                 carry_col_9, carry_row_9)
             self.glyphs[c] = mask
             if self.mode.is_text_mode:
                 self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                    {uc: mask}))
+                    {self.codepage.to_unicode(c, u'\0'): mask}))
         return mask
 
     if numpy:
