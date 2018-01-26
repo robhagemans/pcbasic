@@ -142,14 +142,14 @@ class Screen(object):
         self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
                 (self.current_row, self.current_col)))
         if self.mode.is_text_mode:
-            fore, _, _, _ = self.split_attr(
+            fore, _, _, _ = self.mode.split_attr(
                 self.apage.row[self.current_row-1].buf[self.current_col-1][1] & 0xf)
         else:
-            fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
+            fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
         self.cursor.reset_visibility()
         # set the border
-        fore, _, _, _ = self.split_attr(self.border_attr)
+        fore, _, _, _ = self.mode.split_attr(self.border_attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
         # redraw the text screen and rebuild text buffers in video plugin
         for pagenum in range(self.mode.num_pages):
@@ -342,7 +342,7 @@ class Screen(object):
         self.palette.init_mode(self.mode)
         # set the attribute
         if not self.mode.is_text_mode:
-            fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
+            fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
             self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if self.mode.is_text_mode:
@@ -478,13 +478,13 @@ class Screen(object):
         """Set the default attribute."""
         self.attr = attr
         if not self.mode.is_text_mode and self.mode.cursor_index is None:
-            fore, _, _, _ = self.split_attr(attr)
+            fore, _, _, _ = self.mode.split_attr(attr)
             self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
 
     def set_border(self, attr):
         """Set the border attribute."""
         self.border_attr = attr
-        fore, _, _, _ = self.split_attr(attr)
+        fore, _, _, _ = self.mode.split_attr(attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
 
     def pcopy_(self, args):
@@ -881,7 +881,7 @@ class Screen(object):
                 ca = therow.buf[ccol-1]
                 r, c, char, attr = crow, ccol, ca[0], ca[1]
                 ccol += 1
-            fore, back, blink, underline = self.split_attr(attr)
+            fore, back, blink, underline = self.mode.split_attr(attr)
             # ensure glyph is stored
             mask = self.get_glyph(char)
             self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
@@ -946,7 +946,7 @@ class Screen(object):
         cx, cy = x // fx, y // fy
         if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
             self.apage.row[cy].buf[cx] = (' ', self.attr)
-        fore, back, blink, underline = self.split_attr(self.attr)
+        fore, back, blink, underline = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
                 (self.apagenum, cy+1, cx+1, u' ', False,
                              fore, back, blink, underline, True)))
@@ -979,7 +979,7 @@ class Screen(object):
                             start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
             self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
-        _, back, _, _ = self.split_attr(self.attr)
+        _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
     #MOVE to Cursor.move ?
@@ -1062,7 +1062,7 @@ class Screen(object):
         """Scroll the scroll region up by one line, starting at from_line."""
         if from_line is None:
             from_line = self.view_start
-        _, back, _, _ = self.split_attr(self.attr)
+        _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SCROLL_UP,
                     (from_line, self.scroll_height, back)))
         # sync buffers with the new screen reality:
@@ -1080,7 +1080,7 @@ class Screen(object):
 
     def scroll_down(self,from_line):
         """Scroll the scroll region down by one line, starting at from_line."""
-        _, back, _, _ = self.split_attr(self.attr)
+        _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SCROLL_DOWN,
                     (from_line, self.scroll_height, back)))
         if self.current_row >= from_line:
@@ -1259,7 +1259,7 @@ class Screen(object):
         mode = mode.to_int()
         error.range_check(0, 3, mode)
         if self.mode.is_text_mode:
-            if mode in (2,3):
+            if mode in (2, 3):
                 values.to_integer(coord)
             value = 0
         elif mode == 0:
@@ -1308,33 +1308,3 @@ class Screen(object):
             x0, y0 = (col-1) * self.mode.font_width, (row-1) * self.mode.font_height
             x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
             return x0, y0, x1, y1, glyph
-
-
-    #MOVE to modes classes in modes.py
-    def split_attr(self, attr):
-        """Split attribute byte into constituent parts."""
-        if self.mode.has_underline:
-            # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
-            # see also http://support.microsoft.com/KB/35148
-            # don't try to change this with PALETTE, it won't work correctly
-            underline = (attr % 8) == 1
-            blink = (attr & 0x80) != 0
-            # background is almost always black
-            back = 0
-            # intensity set by bit 3
-            fore = 1 if not (attr & 0x8) else 2
-            # exceptions
-            if attr in (0x00, 0x08, 0x80, 0x88):
-                fore, back = 0, 0
-            elif attr in (0x70, 0xf0):
-                fore, back = 0, 1
-            elif attr in (0x78, 0xf8):
-                fore, back = 3, 1
-        else:
-            # 7  6 5 4  3 2 1 0
-            # Bl b b b  f f f f
-            back = (attr >> 4) & 7
-            blink = (attr >> 7) == 1
-            fore = attr & 0xf
-            underline = False
-        return fore, back, blink, underline

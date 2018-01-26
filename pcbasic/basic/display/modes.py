@@ -309,10 +309,38 @@ class VideoMode(object):
         # colours1 is only used by EGA mono mode
         self.colours1 = None
         self.has_blink = has_blink
-        self.has_underline = has_underline
+        self._has_underline = has_underline
         self.video_segment = int(video_segment)
         self.page_size = int(page_size)
         self.num_pages = int(num_pages) # or video_mem_size // self.page_size)
+
+    def split_attr(self, attr):
+        """Split attribute byte into constituent parts."""
+        if self._has_underline:
+            # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
+            # see also http://support.microsoft.com/KB/35148
+            # don't try to change this with PALETTE, it won't work correctly
+            underline = (attr % 8) == 1
+            blink = (attr & 0x80) != 0
+            # background is almost always black
+            back = 0
+            # intensity set by bit 3
+            fore = 1 if not (attr & 0x8) else 2
+            # exceptions
+            if attr in (0x00, 0x08, 0x80, 0x88):
+                fore, back = 0, 0
+            elif attr in (0x70, 0xf0):
+                fore, back = 0, 1
+            elif attr in (0x78, 0xf8):
+                fore, back = 3, 1
+        else:
+            # 7  6 5 4  3 2 1 0
+            # Bl b b b  f f f f
+            back = (attr >> 4) & 7
+            blink = (attr >> 7) == 1
+            fore = attr & 0xf
+            underline = False
+        return fore, back, blink, underline
 
 
 class TextMode(VideoMode):
@@ -333,7 +361,6 @@ class TextMode(VideoMode):
                   video_segment, page_size)
         self.is_text_mode = True
         self.num_attr = 32
-        self.has_underline = has_underline
 
     def get_memory(self, addr, num_bytes):
         """Retrieve bytes from textmode video memory."""

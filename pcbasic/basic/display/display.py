@@ -598,9 +598,9 @@ class Cursor(object):
     def reset_attr(self):
         """Set the text cursor attribute to that of the current location."""
         if self.screen.mode.is_text_mode:
-            fore, _, _, _ = self.screen.split_attr(self.screen.apage.row[
-                    self.screen.current_row-1].buf[
-                    self.screen.current_col-1][1] & 0xf)
+            fore, _, _, _ = self.screen.mode.split_attr(
+                    self.screen.apage.row[self.screen.current_row-1]
+                        .buf[self.screen.current_col-1][1] & 0xf)
             self.screen.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
 
     def show(self, do_show):
