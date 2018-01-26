@@ -25,20 +25,28 @@ class Font(object):
 
     def __init__(self, height, fontdict={}):
         """Initialise the font."""
-        self.height = height
+        self._height = height
         if height == 8 and not fontdict:
             fontdict = DEFAULT_FONT
-        self.fontdict = fontdict
+        self._fontdict = fontdict
+
+    def get_bytes(self, char):
+        """Get byte sequency for character."""
+        return self._fontdict[char]
+
+    def set_bytes(self, char, byte_sequence):
+        """Set byte sequency for character."""
+        self._fontdict[char] = byte_sequence
 
     def build_glyph(self, c, req_width, req_height, carry_col_9, carry_row_9):
         """Build a glyph for the given unicode character."""
         try:
-            face = bytearray(self.fontdict[c])
+            face = bytearray(self._fontdict[c])
         except KeyError:
             logging.debug(
                     u'%s [%s] not represented in font, replacing with blank glyph.',
                     c, repr(c))
-            face = bytearray(int(self.height))
+            face = bytearray(int(self._height))
         # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
         code_height = 8 if req_height == 9 else req_height
         code_width = (8 * len(face)) // code_height

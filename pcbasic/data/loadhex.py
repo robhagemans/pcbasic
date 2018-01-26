@@ -102,7 +102,7 @@ class FontLoader(object):
                 for (new, old) in substitutes.iteritems()
                 if new in self.fontdict})
         # char 0 should always be defined and empty
-        self.fontdict[u'\0'] = '\0'*self._height
+        self.fontdict[u'\0'] = b'\0' * self._height
         self._combine_glyphs(unicode_needed)
         # in debug mode, check if we have all needed glyphs
         if warn:
@@ -153,4 +153,4 @@ class FontLoader(object):
                     else:
                         self.fontdict[c] = ''.join([s16[i] for i in range(start*2, 32-start*2)])
                 except (KeyError, AttributeError) as e:
-                    self.fontdict[c] = '\0'*self._height
+                    self.fontdict[c] = b'\0' * self._height

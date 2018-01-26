@@ -479,8 +479,8 @@ class Memory(object):
             char = addr // 8
             if char > 127 or char<0:
                 return -1
-            return ord(self.font_8.fontdict[
-                    self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
+            return ord(self.font_8.get_bytes(
+                    self.screen.codepage.to_unicode(chr(char), u'\0'))[addr%8])
 
     def _get_font_memory(self, addr):
         """Retrieve RAM font data."""
@@ -488,8 +488,8 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return -1
-        return ord(self.font_8.fontdict[
-                self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
+        return ord(self.font_8.get_bytes(
+                self.screen.codepage.to_unicode(chr(char), u'\0'))[addr%8])
 
     def _set_font_memory(self, addr, value):
         """Retrieve RAM font data."""
@@ -499,8 +499,8 @@ class Memory(object):
             return
         uc = self.screen.codepage.to_unicode(chr(char))
         if uc:
-            old = self.font_8.fontdict[uc]
-            self.font_8.fontdict[uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
+            old = self.font_8.get_bytes(uc)
+            self.font_8.set_bytes(uc, old[:addr%8]+chr(value)+old[addr%8+1:])
             self.screen.rebuild_glyph(char)
 
     #################################################################################
