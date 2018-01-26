@@ -12,15 +12,11 @@ except ImportError:
     numpy = None
 
 import math
-import io
 
 from ..base import error
 from ..base import tokens as tk
 from .. import values
 from .. import mlparser
-
-# degree-to-radian conversion factor
-deg_to_rad = math.pi / 180.
 
 
 class GraphicsViewPort(object):
@@ -110,7 +106,7 @@ class GraphicsViewPort(object):
 
 
 class Drawing(object):
-    """Manage graphics drawing."""
+    """Graphical drawing operations."""
 
     def __init__(self, screen, input_methods, values, memory):
         """Initialise graphics object."""
@@ -979,7 +975,8 @@ class Drawing(object):
             x1, y1 = -int(y1*yfac), int(x1//yfac)
         else:
             fx, fy = float(x1), float(y1)
-            phi = rotate * deg_to_rad
+            # degrees to radians
+            phi = rotate * math.pi / 180.
             sinr, cosr = math.sin(phi), math.cos(phi)
             fxfac = float(aspect[0]) / float(aspect[1])
             fx = cosr*fx + (sinr*fy) / fxfac
