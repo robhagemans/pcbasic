@@ -107,13 +107,15 @@ class Font(object):
             fontdict = DEFAULT_FONT
         self._fontdict = fontdict
 
-    def get_bytes(self, charvalue):
+    def get_byte(self, charvalue, offset):
         """Get byte sequency for character."""
-        return self._fontdict[chr(charvalue)]
+        return ord(self._fontdict[chr(charvalue)][offset])
 
-    def set_bytes(self, charvalue, byte_sequence):
+    def set_byte(self, charvalue, offset, byte):
         """Set byte sequency for character."""
-        self._fontdict[chr(charvalue)] = byte_sequence
+        old = self._fontdict[chr(charvalue)]
+        self._fontdict[chr(charvalue)] = old[:offset%8] + byte + old[offset%8+1:]
+        #self.screen.rebuild_glyph(charvalue)
 
     def build_glyph(self, c, req_width, req_height):
         """Build a glyph for the given codepage character."""
