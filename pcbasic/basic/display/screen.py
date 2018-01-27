@@ -36,35 +36,36 @@ class Screen(object):
         self.queues = queues
         self._values = values
         self._memory = memory
+        self.codepage = codepage
+        # needed for printing \a
+        self.sound = sound
+        # output redirection
+        self.redirect = redirect
+        # low level settings
         self.video = Video(capabilities, monitor, mono_tint, cga_low, screen_aspect)
         self.capabilities = self.video.capabilities
         self.video_mem_size = int(video_mem_size)
+        # video mode settings
         self._mode_nr, self.colorswitch, self.apagenum, self.vpagenum = 0, 1, 0, 0
+        # prepare video modes
+        self.prepare_modes()
+        self.mode = self.text_data[initial_width]
         # current attribute
         self.attr = 7
         # border attribute
         self.border_attr = 0
-        # prepare video modes
-        self.prepare_modes()
-        self.mode = self.text_data[initial_width]
         # cursor
         self.cursor = Cursor(self)
         # current row and column
         # overflow: true if we're on 80 but should be on 81
         self.current_row, self.current_col, self.overflow = 1, 1, False
-        # set codepage
-        self.codepage = codepage
-        # prepare fonts
-        self.fonts = {height: font.Font(height, font_dict) for height, font_dict in fonts.iteritems()}
         # text viewport parameters
         # viewport has been set
         self.view_start, self.scroll_height, self.view_set = 1, 24, False
         # writing on bottom row is allowed
         self.bottom_row_allowed = False
-        # needed for printing \a
-        self.sound = sound
-        # output redirection
-        self.redirect = redirect
+        # prepare fonts
+        self.fonts = {height: font.Font(height, font_dict) for height, font_dict in fonts.iteritems()}
         # function key macros
         self.fkey_macros = FunctionKeyMacros(keyboard, self, capabilities)
         self.drawing = graphics.Drawing(self, input_methods, values, memory)
