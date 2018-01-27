@@ -145,221 +145,220 @@ class Video(object):
                     self.monitor != 'mono' and (on or self.monitor != 'composite'))
         return on and colorburst_capable
 
+    ###########################################################################
+    # video modes
 
-###############################################################################
-# video modes
-
-def get_modes(video, video_mem_size):
-    """Build lists of allowed graphics modes."""
-    # initialise tinted monochrome palettes
-    colours_ega_mono_0 = tuple(tuple(tint*i//255 for tint in video.mono_tint)
-                               for i in INTENSITY_EGA_MONO_0)
-    colours_ega_mono_1 = tuple(tuple(tint*i//255 for tint in video.mono_tint)
-                               for i in INTENSITY_EGA_MONO_1)
-    colours_mda_mono = tuple(tuple(tint*i//255 for tint in video.mono_tint)
-                             for i in INTENSITY_MDA_MONO)
-    # Tandy/PCjr pixel aspect ratio is different from normal
-    # suggesting screen aspect ratio is not 4/3.
-    # Tandy pixel aspect ratios, experimentally found with CIRCLE:
-    # screen 2, 6:     48/100   normal if aspect = 3072, 2000
-    # screen 1, 4, 5:  96/100   normal if aspect = 3072, 2000
-    # screen 3:      1968/1000
-    # screen 3 is strange, slighly off the 192/100 you'd expect
-    graphics_mode = {
-        # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
-        # tandy:2 pages if 32k memory; ega: 1 page only
-        '320x200x4':
-            CGAMode('320x200x4', 320, 200, 25, 40, 3,
-                    video.cga4_palette, video.colours16, bitsperpixel=2,
-                    interleave_times=2, bank_size=0x2000,
-                    aspect=video.aspect,
-                    num_pages=(
-                        video_mem_size // (2*0x2000)
-                        if video.capabilities in ('pcjr', 'tandy')
-                        else 1)),
-        # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
-        '640x200x2':
-            CGAMode('640x200x2', 640, 200, 25, 80, 1,
-                    CGA2_PALETTE, video.colours16, bitsperpixel=1,
-                    interleave_times=2, bank_size=0x2000, num_pages=1,
-                    aspect=video.aspect,
-                    supports_artifacts=True),
-        # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
-        '160x200x16':
-            CGAMode('160x200x16', 160, 200, 25, 20, 15,
-                    CGA16_PALETTE, video.colours16, bitsperpixel=4,
-                    interleave_times=2, bank_size=0x2000,
-                    num_pages=video_mem_size//(2*0x2000),
-                    pixel_aspect=(1968, 1000), cursor_index=3),
-        #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
-        '320x200x4pcjr':
-            CGAMode('320x200x4pcjr', 320, 200, 25, 40, 3,
-                    video.cga4_palette, video.colours16, bitsperpixel=2,
-                    interleave_times=2, bank_size=0x2000,
-                    num_pages=video_mem_size//(2*0x2000),
-                    aspect=video.aspect,
-                    cursor_index=3),
-        # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
-        '320x200x16pcjr':
-            CGAMode('320x200x16pcjr', 320, 200, 25, 40, 15,
-                    CGA16_PALETTE, video.colours16, bitsperpixel=4,
-                    interleave_times=4, bank_size=0x2000,
-                    num_pages=video_mem_size//(4*0x2000),
-                    aspect=video.aspect,
-                    cursor_index=3),
-        # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
-        '640x200x4':
-            Tandy6Mode('640x200x4', 640, 200, 25, 80, 3,
-                        video.cga4_palette, video.colours16, bitsperpixel=2,
+    def get_modes(self, video_mem_size):
+        """Build lists of allowed graphics modes."""
+        # initialise tinted monochrome palettes
+        colours_ega_mono_0 = tuple(tuple(tint*i//255 for tint in self.mono_tint)
+                                   for i in INTENSITY_EGA_MONO_0)
+        colours_ega_mono_1 = tuple(tuple(tint*i//255 for tint in self.mono_tint)
+                                   for i in INTENSITY_EGA_MONO_1)
+        colours_mda_mono = tuple(tuple(tint*i//255 for tint in self.mono_tint)
+                                 for i in INTENSITY_MDA_MONO)
+        # Tandy/PCjr pixel aspect ratio is different from normal
+        # suggesting screen aspect ratio is not 4/3.
+        # Tandy pixel aspect ratios, experimentally found with CIRCLE:
+        # screen 2, 6:     48/100   normal if aspect = 3072, 2000
+        # screen 1, 4, 5:  96/100   normal if aspect = 3072, 2000
+        # screen 3:      1968/1000
+        # screen 3 is strange, slighly off the 192/100 you'd expect
+        graphics_mode = {
+            # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
+            # tandy:2 pages if 32k memory; ega: 1 page only
+            '320x200x4':
+                CGAMode('320x200x4', 320, 200, 25, 40, 3,
+                        self.cga4_palette, self.colours16, bitsperpixel=2,
+                        interleave_times=2, bank_size=0x2000,
+                        aspect=self.aspect,
+                        num_pages=(
+                            video_mem_size // (2*0x2000)
+                            if self.capabilities in ('pcjr', 'tandy')
+                            else 1)),
+            # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
+            '640x200x2':
+                CGAMode('640x200x2', 640, 200, 25, 80, 1,
+                        CGA2_PALETTE, self.colours16, bitsperpixel=1,
+                        interleave_times=2, bank_size=0x2000, num_pages=1,
+                        aspect=self.aspect,
+                        supports_artifacts=True),
+            # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
+            '160x200x16':
+                CGAMode('160x200x16', 160, 200, 25, 20, 15,
+                        CGA16_PALETTE, self.colours16, bitsperpixel=4,
+                        interleave_times=2, bank_size=0x2000,
+                        num_pages=video_mem_size//(2*0x2000),
+                        pixel_aspect=(1968, 1000), cursor_index=3),
+            #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
+            '320x200x4pcjr':
+                CGAMode('320x200x4pcjr', 320, 200, 25, 40, 3,
+                        self.cga4_palette, self.colours16, bitsperpixel=2,
+                        interleave_times=2, bank_size=0x2000,
+                        num_pages=video_mem_size//(2*0x2000),
+                        aspect=self.aspect,
+                        cursor_index=3),
+            # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
+            '320x200x16pcjr':
+                CGAMode('320x200x16pcjr', 320, 200, 25, 40, 15,
+                        CGA16_PALETTE, self.colours16, bitsperpixel=4,
                         interleave_times=4, bank_size=0x2000,
                         num_pages=video_mem_size//(4*0x2000),
-                        aspect=video.aspect,
+                        aspect=self.aspect,
                         cursor_index=3),
-        # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
-        '320x200x16':
-            EGAMode('320x200x16', 320, 200, 25, 40, 15,
-                    CGA16_PALETTE, video.colours16, bitsperpixel=4,
-                    num_pages=video_mem_size//(4*0x2000),
-                    aspect=video.aspect,
-                    interleave_times=1, bank_size=0x2000),
-        # 0Eh 640x200x16    EGA screen 8
-        '640x200x16':
-            EGAMode('640x200x16', 640, 200, 25, 80, 15,
-                    CGA16_PALETTE, video.colours16, bitsperpixel=4,
-                    num_pages=video_mem_size//(4*0x4000),
-                    aspect=video.aspect,
-                    interleave_times=1, bank_size=0x4000),
-        # 10h 640x350x16    EGA screen 9
-        '640x350x16':
-            EGAMode('640x350x16', 640, 350, 25, 80, 15,
-                    EGA_PALETTE, COLOURS64, bitsperpixel=4,
-                    num_pages=video_mem_size//(4*0x8000),
-                    aspect=video.aspect,
-                    interleave_times=1, bank_size=0x8000),
-        # 0Fh 640x350x4     EGA monochrome screen 10
-        '640x350x4':
-            EGAMode('640x350x16', 640, 350, 25, 80, 1,
-                    EGA_MONO_PALETTE, colours_ega_mono_0, bitsperpixel=2,
-                    interleave_times=1, bank_size=0x8000,
-                    num_pages=video_mem_size//(2*0x8000),
-                    aspect=video.aspect,
-                    colours1=colours_ega_mono_1, has_blink=True,
-                    planes_used=(1, 3)),
-        # 40h 640x400x2   1bpp  olivetti screen 3
-        '640x400x2':
-            CGAMode('640x400x2', 640, 400, 25, 80, 1,
-                    CGA2_PALETTE, video.colours16, bitsperpixel=1,
-                    interleave_times=4, bank_size=0x2000,
-                    num_pages=1,
-                    aspect=video.aspect,
-                    has_blink=True),
-        # hercules screen 3
-        '720x348x2':
-            # this actually produces 350, not 348
-            CGAMode('720x348x2', 720, 350, 25, 80, 1,
-                    CGA2_PALETTE, video.colours16_mono, bitsperpixel=1,
-                    interleave_times=4, bank_size=0x2000,
-                    num_pages=2,
-                    aspect=video.aspect,
-                    has_blink=True),
-        }
-    if video.capabilities == 'vga':
-        # technically, VGA text does have underline
-        # but it's set to an invisible scanline
-        # so not, so long as we're not allowing to set the scanline
-        text_data = {
-            40: TextMode('vgatext40', 25, 40, 16, 9, 7,
-                         EGA_PALETTE, COLOURS64, num_pages=8),
-            80: TextMode('vgatext80', 25, 80, 16, 9, 7,
-                         EGA_PALETTE, COLOURS64, num_pages=4)}
-        mode_data = {
-            1: graphics_mode['320x200x4'],
-            2: graphics_mode['640x200x2'],
-            7: graphics_mode['320x200x16'],
-            8: graphics_mode['640x200x16'],
-            9: graphics_mode['640x350x16']}
-    elif video.capabilities == 'ega':
-        text_data = {
-            40: TextMode('egatext40', 25, 40, 14, 8, 7,
-                         EGA_PALETTE, COLOURS64, num_pages=8),
-            80: TextMode('egatext80', 25, 80, 14, 8, 7,
-                         EGA_PALETTE, COLOURS64, num_pages=4)}
-        mode_data = {
-            1: graphics_mode['320x200x4'],
-            2: graphics_mode['640x200x2'],
-            7: graphics_mode['320x200x16'],
-            8: graphics_mode['640x200x16'],
-            9: graphics_mode['640x350x16']}
-    elif video.capabilities == 'ega_mono':
-        text_data = {
-            40: MonoTextMode('ega_monotext40', 25, 40, 14, 8, 7,
-                         MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, num_pages=8),
-            80: MonoTextMode('ega_monotext80', 25, 80, 14, 8, 7,
-                         MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, num_pages=4)}
-        mode_data = {
-            10: graphics_mode['640x350x4']}
-    elif video.capabilities == 'mda':
-        text_data = {
-            40: MonoTextMode('mdatext40', 25, 40, 14, 9, 7,
-                         MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, num_pages=1),
-            80: MonoTextMode('mdatext80', 25, 80, 14, 9, 7,
-                         MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, num_pages=1) }
-        mode_data = {}
-    elif video.capabilities in ('cga', 'cga_old', 'pcjr', 'tandy'):
-        if video.capabilities == 'tandy':
+            # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
+            '640x200x4':
+                Tandy6Mode('640x200x4', 640, 200, 25, 80, 3,
+                            self.cga4_palette, self.colours16, bitsperpixel=2,
+                            interleave_times=4, bank_size=0x2000,
+                            num_pages=video_mem_size//(4*0x2000),
+                            aspect=self.aspect,
+                            cursor_index=3),
+            # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
+            '320x200x16':
+                EGAMode('320x200x16', 320, 200, 25, 40, 15,
+                        CGA16_PALETTE, self.colours16, bitsperpixel=4,
+                        num_pages=video_mem_size//(4*0x2000),
+                        aspect=self.aspect,
+                        interleave_times=1, bank_size=0x2000),
+            # 0Eh 640x200x16    EGA screen 8
+            '640x200x16':
+                EGAMode('640x200x16', 640, 200, 25, 80, 15,
+                        CGA16_PALETTE, self.colours16, bitsperpixel=4,
+                        num_pages=video_mem_size//(4*0x4000),
+                        aspect=self.aspect,
+                        interleave_times=1, bank_size=0x4000),
+            # 10h 640x350x16    EGA screen 9
+            '640x350x16':
+                EGAMode('640x350x16', 640, 350, 25, 80, 15,
+                        EGA_PALETTE, COLOURS64, bitsperpixel=4,
+                        num_pages=video_mem_size//(4*0x8000),
+                        aspect=self.aspect,
+                        interleave_times=1, bank_size=0x8000),
+            # 0Fh 640x350x4     EGA monochrome screen 10
+            '640x350x4':
+                EGAMode('640x350x16', 640, 350, 25, 80, 1,
+                        EGA_MONO_PALETTE, colours_ega_mono_0, bitsperpixel=2,
+                        interleave_times=1, bank_size=0x8000,
+                        num_pages=video_mem_size//(2*0x8000),
+                        aspect=self.aspect,
+                        colours1=colours_ega_mono_1, has_blink=True,
+                        planes_used=(1, 3)),
+            # 40h 640x400x2   1bpp  olivetti screen 3
+            '640x400x2':
+                CGAMode('640x400x2', 640, 400, 25, 80, 1,
+                        CGA2_PALETTE, self.colours16, bitsperpixel=1,
+                        interleave_times=4, bank_size=0x2000,
+                        num_pages=1,
+                        aspect=self.aspect,
+                        has_blink=True),
+            # hercules screen 3
+            '720x348x2':
+                # this actually produces 350, not 348
+                CGAMode('720x348x2', 720, 350, 25, 80, 1,
+                        CGA2_PALETTE, self.colours16_mono, bitsperpixel=1,
+                        interleave_times=4, bank_size=0x2000,
+                        num_pages=2,
+                        aspect=self.aspect,
+                        has_blink=True),
+            }
+        if self.capabilities == 'vga':
+            # technically, VGA text does have underline
+            # but it's set to an invisible scanline
+            # so not, so long as we're not allowing to set the scanline
             text_data = {
-                40: TextMode('tandytext40', 25, 40, 9, 8, 7,
-                              CGA16_PALETTE, video.colours16, num_pages=8),
-                80: TextMode('tandytext80', 25, 80, 9, 8, 7,
-                              CGA16_PALETTE, video.colours16, num_pages=4)}
-        else:
-            text_data = {
-                40: TextMode('cgatext40', 25, 40, 8, 8, 7,
-                             CGA16_PALETTE, video.colours16, num_pages=8),
-                80: TextMode('cgatext80', 25, 80, 8, 8, 7,
-                             CGA16_PALETTE, video.colours16, num_pages=4)}
-        if video.capabilities in ('cga', 'cga_old'):
-            mode_data = {
-                1: graphics_mode['320x200x4'],
-                2: graphics_mode['640x200x2']}
-        else:
+                40: TextMode('vgatext40', 25, 40, 16, 9, 7,
+                             EGA_PALETTE, COLOURS64, num_pages=8),
+                80: TextMode('vgatext80', 25, 80, 16, 9, 7,
+                             EGA_PALETTE, COLOURS64, num_pages=4)}
             mode_data = {
                 1: graphics_mode['320x200x4'],
                 2: graphics_mode['640x200x2'],
-                3: graphics_mode['160x200x16'],
-                4: graphics_mode['320x200x4pcjr'],
-                5: graphics_mode['320x200x16pcjr'],
-                6: graphics_mode['640x200x4']}
-    elif video.capabilities == 'hercules':
-        # herc attributes shld distinguish black, dim, normal, bright
-        # see http://www.seasip.info/VintagePC/hercplus.html
-        text_data = {
-            40: MonoTextMode('herculestext40', 25, 40, 14, 9, 7,
-                         MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, num_pages=2),
-            80: MonoTextMode('herculestext80', 25, 80, 14, 9, 7,
-                         MDA_PALETTE, colours_mda_mono,
-                         is_mono=True, num_pages=2) }
-        mode_data = {
-            3: graphics_mode['720x348x2']}
-    elif video.capabilities == 'olivetti':
-        text_data = {
-            40: TextMode('olivettitext40', 25, 40, 16, 8, 7,
-                          CGA16_PALETTE, video.colours16, num_pages=8),
-            80: TextMode('olivettitext80', 25, 80, 16, 8, 7,
-                          CGA16_PALETTE, video.colours16, num_pages=4) }
-        mode_data = {
-            1: graphics_mode['320x200x4'],
-            2: graphics_mode['640x200x2'],
-            3: graphics_mode['640x400x2']}
-        # on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
-        for mode in range(4, 256):
-            mode_data[mode] = graphics_mode['640x400x2']
-    return text_data, mode_data
+                7: graphics_mode['320x200x16'],
+                8: graphics_mode['640x200x16'],
+                9: graphics_mode['640x350x16']}
+        elif self.capabilities == 'ega':
+            text_data = {
+                40: TextMode('egatext40', 25, 40, 14, 8, 7,
+                             EGA_PALETTE, COLOURS64, num_pages=8),
+                80: TextMode('egatext80', 25, 80, 14, 8, 7,
+                             EGA_PALETTE, COLOURS64, num_pages=4)}
+            mode_data = {
+                1: graphics_mode['320x200x4'],
+                2: graphics_mode['640x200x2'],
+                7: graphics_mode['320x200x16'],
+                8: graphics_mode['640x200x16'],
+                9: graphics_mode['640x350x16']}
+        elif self.capabilities == 'ega_mono':
+            text_data = {
+                40: MonoTextMode('ega_monotext40', 25, 40, 14, 8, 7,
+                             MDA_PALETTE, colours_mda_mono,
+                             is_mono=True, num_pages=8),
+                80: MonoTextMode('ega_monotext80', 25, 80, 14, 8, 7,
+                             MDA_PALETTE, colours_mda_mono,
+                             is_mono=True, num_pages=4)}
+            mode_data = {
+                10: graphics_mode['640x350x4']}
+        elif self.capabilities == 'mda':
+            text_data = {
+                40: MonoTextMode('mdatext40', 25, 40, 14, 9, 7,
+                             MDA_PALETTE, colours_mda_mono,
+                             is_mono=True, num_pages=1),
+                80: MonoTextMode('mdatext80', 25, 80, 14, 9, 7,
+                             MDA_PALETTE, colours_mda_mono,
+                             is_mono=True, num_pages=1) }
+            mode_data = {}
+        elif self.capabilities in ('cga', 'cga_old', 'pcjr', 'tandy'):
+            if self.capabilities == 'tandy':
+                text_data = {
+                    40: TextMode('tandytext40', 25, 40, 9, 8, 7,
+                                  CGA16_PALETTE, self.colours16, num_pages=8),
+                    80: TextMode('tandytext80', 25, 80, 9, 8, 7,
+                                  CGA16_PALETTE, self.colours16, num_pages=4)}
+            else:
+                text_data = {
+                    40: TextMode('cgatext40', 25, 40, 8, 8, 7,
+                                 CGA16_PALETTE, self.colours16, num_pages=8),
+                    80: TextMode('cgatext80', 25, 80, 8, 8, 7,
+                                 CGA16_PALETTE, self.colours16, num_pages=4)}
+            if self.capabilities in ('cga', 'cga_old'):
+                mode_data = {
+                    1: graphics_mode['320x200x4'],
+                    2: graphics_mode['640x200x2']}
+            else:
+                mode_data = {
+                    1: graphics_mode['320x200x4'],
+                    2: graphics_mode['640x200x2'],
+                    3: graphics_mode['160x200x16'],
+                    4: graphics_mode['320x200x4pcjr'],
+                    5: graphics_mode['320x200x16pcjr'],
+                    6: graphics_mode['640x200x4']}
+        elif self.capabilities == 'hercules':
+            # herc attributes shld distinguish black, dim, normal, bright
+            # see http://www.seasip.info/VintagePC/hercplus.html
+            text_data = {
+                40: MonoTextMode('herculestext40', 25, 40, 14, 9, 7,
+                             MDA_PALETTE, colours_mda_mono,
+                             is_mono=True, num_pages=2),
+                80: MonoTextMode('herculestext80', 25, 80, 14, 9, 7,
+                             MDA_PALETTE, colours_mda_mono,
+                             is_mono=True, num_pages=2) }
+            mode_data = {
+                3: graphics_mode['720x348x2']}
+        elif self.capabilities == 'olivetti':
+            text_data = {
+                40: TextMode('olivettitext40', 25, 40, 16, 8, 7,
+                              CGA16_PALETTE, self.colours16, num_pages=8),
+                80: TextMode('olivettitext80', 25, 80, 16, 8, 7,
+                              CGA16_PALETTE, self.colours16, num_pages=4) }
+            mode_data = {
+                1: graphics_mode['320x200x4'],
+                2: graphics_mode['640x200x2'],
+                3: graphics_mode['640x400x2']}
+            # on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
+            for mode in range(4, 256):
+                mode_data[mode] = graphics_mode['640x400x2']
+        return text_data, mode_data
 
 
 class VideoMode(object):

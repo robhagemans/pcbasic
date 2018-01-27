@@ -78,14 +78,15 @@ class Screen(object):
 
     def prepare_modes(self):
         """Build lists of allowed graphics modes."""
-        # Screen is needed for get_memory and set_memory
-        self.text_data, self.mode_data = modes.get_modes(self.video, self.video_mem_size)
+        self.text_data, self.mode_data = self.video.get_modes(self.video_mem_size)
 
     def screen_(self, args):
         """SCREEN: change the video mode, colourburst, visible or active page."""
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
         # this raises error before
-        mode, colorswitch, apagenum, vpagenum = (None if arg is None else values.to_int(arg) for _, arg in zip(range(4), args))
+        mode, colorswitch, apagenum, vpagenum = (
+                None if arg is None else values.to_int(arg)
+                for _, arg in zip(range(4), args))
         # if any parameter not in [0,255], error 5 without doing anything
         # if the parameters are outside narrow ranges
         # (e.g. not implemented screen mode, pagenum beyond max)
