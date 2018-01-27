@@ -68,7 +68,7 @@ COLOURS64 = (
 ###############################################################################
 # video modes
 
-def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, screen_aspect):
+def get_modes(screen, video, video_mem_size, screen_aspect):
     """Build lists of allowed graphics modes."""
     # initialise tinted monochrome palettes
     colours_ega_mono_0 = tuple(tuple(tint*i//255 for tint in video.mono_tint)
@@ -89,12 +89,12 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
         # tandy:2 pages if 32k memory; ega: 1 page only
         '320x200x4':
             CGAMode(screen, '320x200x4', 320, 200, 25, 40, 3,
-                    cga4_palette, video.colours16, bitsperpixel=2,
+                    video.cga4_palette, video.colours16, bitsperpixel=2,
                     interleave_times=2, bank_size=0x2000,
                     screen_aspect=screen_aspect,
                     num_pages=(
                         video_mem_size // (2*0x2000)
-                        if video_capabilities in ('pcjr', 'tandy')
+                        if video.capabilities in ('pcjr', 'tandy')
                         else 1)),
         # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
         '640x200x2':
@@ -113,7 +113,7 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
         #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
         '320x200x4pcjr':
             CGAMode(screen, '320x200x4pcjr', 320, 200, 25, 40, 3,
-                    cga4_palette, video.colours16, bitsperpixel=2,
+                    video.cga4_palette, video.colours16, bitsperpixel=2,
                     interleave_times=2, bank_size=0x2000,
                     num_pages=video_mem_size//(2*0x2000),
                     screen_aspect=screen_aspect,
@@ -129,7 +129,7 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
         # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
         '640x200x4':
             Tandy6Mode(screen, '640x200x4', 640, 200, 25, 80, 3,
-                        cga4_palette, video.colours16, bitsperpixel=2,
+                        video.cga4_palette, video.colours16, bitsperpixel=2,
                         interleave_times=4, bank_size=0x2000,
                         num_pages=video_mem_size//(4*0x2000),
                         screen_aspect=screen_aspect,
@@ -182,7 +182,7 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
                     screen_aspect=screen_aspect,
                     has_blink=True),
         }
-    if video_capabilities == 'vga':
+    if video.capabilities == 'vga':
         # technically, VGA text does have underline
         # but it's set to an invisible scanline
         # so not, so long as we're not allowing to set the scanline
@@ -197,7 +197,7 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
             7: graphics_mode['320x200x16'],
             8: graphics_mode['640x200x16'],
             9: graphics_mode['640x350x16']}
-    elif video_capabilities == 'ega':
+    elif video.capabilities == 'ega':
         text_data = {
             40: TextMode(screen, 'egatext40', 25, 40, 14, 8, 7,
                          EGA_PALETTE, COLOURS64, num_pages=8),
@@ -209,7 +209,7 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
             7: graphics_mode['320x200x16'],
             8: graphics_mode['640x200x16'],
             9: graphics_mode['640x350x16']}
-    elif video_capabilities == 'ega_mono':
+    elif video.capabilities == 'ega_mono':
         text_data = {
             40: MonoTextMode(screen, 'ega_monotext40', 25, 40, 14, 8, 7,
                          MDA_PALETTE, colours_mda_mono,
@@ -219,7 +219,7 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
                          is_mono=True, num_pages=4)}
         mode_data = {
             10: graphics_mode['640x350x4']}
-    elif video_capabilities == 'mda':
+    elif video.capabilities == 'mda':
         text_data = {
             40: MonoTextMode(screen, 'mdatext40', 25, 40, 14, 9, 7,
                          MDA_PALETTE, colours_mda_mono,
@@ -228,8 +228,8 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
                          MDA_PALETTE, colours_mda_mono,
                          is_mono=True, num_pages=1) }
         mode_data = {}
-    elif video_capabilities in ('cga', 'cga_old', 'pcjr', 'tandy'):
-        if video_capabilities == 'tandy':
+    elif video.capabilities in ('cga', 'cga_old', 'pcjr', 'tandy'):
+        if video.capabilities == 'tandy':
             text_data = {
                 40: TextMode(screen, 'tandytext40', 25, 40, 9, 8, 7,
                               CGA16_PALETTE, video.colours16, num_pages=8),
@@ -241,7 +241,7 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
                              CGA16_PALETTE, video.colours16, num_pages=8),
                 80: TextMode(screen, 'cgatext80', 25, 80, 8, 8, 7,
                              CGA16_PALETTE, video.colours16, num_pages=4)}
-        if video_capabilities in ('cga', 'cga_old'):
+        if video.capabilities in ('cga', 'cga_old'):
             mode_data = {
                 1: graphics_mode['320x200x4'],
                 2: graphics_mode['640x200x2']}
@@ -253,7 +253,7 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
                 4: graphics_mode['320x200x4pcjr'],
                 5: graphics_mode['320x200x16pcjr'],
                 6: graphics_mode['640x200x4']}
-    elif video_capabilities == 'hercules':
+    elif video.capabilities == 'hercules':
         # herc attributes shld distinguish black, dim, normal, bright
         # see http://www.seasip.info/VintagePC/hercplus.html
         text_data = {
@@ -265,7 +265,7 @@ def get_modes(screen, video, cga4_palette, video_mem_size, video_capabilities, s
                          is_mono=True, num_pages=2) }
         mode_data = {
             3: graphics_mode['720x348x2']}
-    elif video_capabilities == 'olivetti':
+    elif video.capabilities == 'olivetti':
         text_data = {
             40: TextMode(screen, 'olivettitext40', 25, 40, 16, 8, 7,
                           CGA16_PALETTE, video.colours16, num_pages=8),

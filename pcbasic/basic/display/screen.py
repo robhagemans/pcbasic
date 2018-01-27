@@ -28,17 +28,30 @@ from .display import TextBuffer, TextRow, PixelBuffer
 class Video(object):
     """Low-level display operations."""
 
-    def __init__(self, monitor, mono_tint):
+    def __init__(self, capabilities, monitor, mono_tint, cga_low):
         """Initialise colour sets."""
         # public members - used by VideoMode
+        self.capabilities = capabilities
         self.mono_tint = mono_tint
         # build 16-greyscale and 16-colour sets
         self.colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
                                for i in modes.INTENSITY16)
+        # NTSC colorburst settings
         if monitor == 'mono':
             self.colours16 = list(self.colours16_mono)
         else:
             self.colours16 = list(modes.COLOURS16)
+        # CGA 4-colour palette / mode 5 settings
+        if capabilities in ('pcjr', 'tandy'):
+            # pcjr does not have mode 5
+            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
+        elif cga_low:
+            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
+        else:
+            self.cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
+        self.cga4_palette = list(self.cga4_palettes[1])
+        self.cga4_palette_num = 1
+        self.cga_mode_5 = False
 
     def toggle_colour(self, has_colour):
         """Toggle between colour and monochrome (for NTSC colorburst)."""
@@ -46,6 +59,15 @@ class Video(object):
             self.colours16[:] = modes.COLOURS16
         else:
             self.colours16[:] = self.colours16_mono
+
+    def set_cga4_palette(self, num):
+        """set the default 4-colour CGA palette."""
+        self.cga4_palette_num = num
+        # we need to copy into cga4_palette as it's referenced by mode.palette
+        if self.cga_mode_5 and self.capabilities in ('cga', 'cga_old'):
+            self.cga4_palette[:] = self.cga4_palettes[5]
+        else:
+            self.cga4_palette[:] = self.cga4_palettes[num]
 
 
 class Screen(object):
@@ -66,15 +88,8 @@ class Screen(object):
         # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
         # tandy/pcjr have high-intensity white, but low-intensity colours
         # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
-        if capabilities in ('pcjr', 'tandy'):
-            # pcjr does not have mode 5
-            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
-        elif cga_low:
-            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
-        else:
-            self.cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
         self.capabilities = capabilities
-        self._video = Video(monitor, mono_tint)
+        self.video = Video(capabilities, monitor, mono_tint, cga_low)
         # emulated monitor type - rgb, composite, mono
         self.monitor = monitor
         # screen aspect ratio, for CIRCLE
@@ -89,8 +104,6 @@ class Screen(object):
         self.border_attr = 0
         self.video_mem_size = int(video_mem_size)
         # prepare video modes
-        self.cga_mode_5 = False
-        self.cga4_palette = list(self.cga4_palettes[1])
         self.prepare_modes()
         self.mode = self.text_data[initial_width]
         # cursor
@@ -125,9 +138,8 @@ class Screen(object):
     def prepare_modes(self):
         """Build lists of allowed graphics modes."""
         # Screen is needed for get_memory and set_memory
-        self.text_data, self.mode_data = modes.get_modes(self, self._video,
-                    self.cga4_palette, self.video_mem_size,
-                    self.capabilities, self.screen_aspect)
+        self.text_data, self.mode_data = modes.get_modes(self, self.video,
+                    self.video_mem_size, self.screen_aspect)
 
     def rebuild(self):
         """Rebuild the screen from scratch."""
@@ -288,7 +300,7 @@ class Screen(object):
                  new_apagenum, new_vpagenum):
         """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
-        self.set_cga4_palette(1)
+        self.video.set_cga4_palette(1)
         # if the new mode has fewer pages than current vpage/apage,
         # illegal fn call before anything happens.
         # signal the signals to change the screen resolution
@@ -428,24 +440,15 @@ class Screen(object):
                                     'cga', 'cga_old', 'tandy', 'pcjr')
         if self.mode.name == '320x200x4' and self.monitor != 'composite':
             # ega ignores colorburst; tandy and pcjr have no mode 5
-            self.cga_mode_5 = not on
-            self.set_cga4_palette(1)
+            self.video.cga_mode_5 = not on
+            self.video.set_cga4_palette(1)
         else:
-            self._video.toggle_colour(
+            self.video.toggle_colour(
                     self.monitor != 'mono' and (on or self.monitor != 'composite'))
         # reset the palette to reflect the new mono or mode-5 situation
         self.palette.init_mode(self.mode)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_COLORBURST, (on and colorburst_capable,
                             self.palette.rgb_palette, self.palette.rgb_palette1)))
-
-    def set_cga4_palette(self, num):
-        """set the default 4-colour CGA palette."""
-        self.cga4_palette_num = num
-        # we need to copy into cga4_palette as it's referenced by mode.palette
-        if self.cga_mode_5 and self.capabilities in ('cga', 'cga_old'):
-            self.cga4_palette[:] = self.cga4_palettes[5]
-        else:
-            self.cga4_palette[:] = self.cga4_palettes[num]
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
@@ -535,7 +538,7 @@ class Screen(object):
         error.range_check(0, 255, back)
         if pal is not None:
             error.range_check(0, 255, pal)
-            self.set_cga4_palette(pal%2)
+            self.video.set_cga4_palette(pal % 2)
             palette = list(self.mode.palette)
             palette[0] = back & 0xf
             # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14

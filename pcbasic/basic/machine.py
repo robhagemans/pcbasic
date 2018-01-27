@@ -639,7 +639,7 @@ class Memory(object):
         elif addr == 1126:
             if self.screen.mode.name == '320x200x4':
                 return (self.screen.palette.get_entry(0)
-                        + 32 * self.screen.cga4_palette_num)
+                        + 32 * self.screen.video.cga4_palette_num)
             elif self.screen.mode.is_text_mode:
                 return self.screen.border_attr % 16
                 # not implemented: + 16 "if current color specified through
