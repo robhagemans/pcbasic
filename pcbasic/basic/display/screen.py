@@ -510,53 +510,21 @@ class Screen(object):
         error.throw_if(len(args) > 3)
         args += [None] * (3-len(args))
         fore, back, bord = args
-        mode = self.mode
         if fore is None:
             fore = (self.attr>>7) * 0x10 + (self.attr & 0xf)
         else:
             fore = values.to_int(fore)
         if back is not None:
-            back = values.to_int(back)
+            back = back and values.to_int(back)
         if bord is not None:
-            bord = values.to_int(bord)
-        if mode.name == '320x200x4':
-            self._color_mode_1(fore, back, bord)
-        elif mode.name in ('640x200x2', '720x348x2'):
+            bord = bord and values.to_int(bord)
+        if self.mode.name in ('640x200x2', '720x348x2'):
             # screen 2; hercules: illegal fn call
             raise error.BASICError(error.IFC)
+        elif self.mode.name == '320x200x4':
+            self._color_mode_1(fore, back, bord)
         else:
-            if back is None:
-                # graphics mode bg is always 0; sets palette instead
-                if mode.is_text_mode:
-                    back = (self.attr>>4) & 0x7
-                else:
-                    back = self.palette.get_entry(0)
-            # for screens other than 1, no distinction between 3rd parm zero and not supplied
-            bord = bord or 0
-            error.range_check(0, 255, bord)
-            if mode.is_text_mode:
-                error.range_check(0, mode.num_attr-1, fore)
-                error.range_check(0, 15, back, bord)
-                self.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10
-                                + (fore & 0xf))
-                self.set_border(bord)
-            elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
-                                '640x200x4', '320x200x16', '640x200x16'):
-                error.range_check(1, mode.num_attr-1, fore)
-                error.range_check(0, mode.num_attr-1, back)
-                self.set_attr(fore)
-                # in screen 7 and 8, only low intensity palette is used.
-                self.palette.set_entry(0, back % 8, check_mode=False)
-            elif mode.name in ('640x350x16', '640x350x4'):
-                error.range_check(1, mode.num_attr-1, fore)
-                error.range_check(0, len(mode.colours)-1, back)
-                self.set_attr(fore)
-                self.palette.set_entry(0, back, check_mode=False)
-            elif mode.name == '640x400x2':
-                error.range_check(0, len(mode.colours)-1, fore)
-                if back != 0:
-                    raise error.BASICError(error.IFC)
-                self.palette.set_entry(1, fore, check_mode=False)
+            self._color_other_modes(fore, back, bord)
 
     def _color_mode_1(self, back, pal, override):
         """Helper function for COLOR in SCREEN 1."""
@@ -575,6 +543,42 @@ class Screen(object):
             self.palette.set_all(palette, check_mode=False)
         else:
             self.palette.set_entry(0, back & 0xf, check_mode=False)
+
+    def _color_other_modes(self, fore, back, bord):
+        """Helper function for COLOR in modes other than SCREEN 1."""
+        mode = self.mode
+        if back is None:
+            # graphics mode bg is always 0; sets palette instead
+            if mode.is_text_mode:
+                back = (self.attr>>4) & 0x7
+            else:
+                back = self.palette.get_entry(0)
+        # for screens other than 1, no distinction between 3rd parm zero and not supplied
+        bord = bord or 0
+        error.range_check(0, 255, bord)
+        if mode.is_text_mode:
+            error.range_check(0, mode.num_attr-1, fore)
+            error.range_check(0, 15, back, bord)
+            self.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10
+                            + (fore & 0xf))
+            self.set_border(bord)
+        elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
+                            '640x200x4', '320x200x16', '640x200x16'):
+            error.range_check(1, mode.num_attr-1, fore)
+            error.range_check(0, mode.num_attr-1, back)
+            self.set_attr(fore)
+            # in screen 7 and 8, only low intensity palette is used.
+            self.palette.set_entry(0, back % 8, check_mode=False)
+        elif mode.name in ('640x350x16', '640x350x4'):
+            error.range_check(1, mode.num_attr-1, fore)
+            error.range_check(0, len(mode.colours)-1, back)
+            self.set_attr(fore)
+            self.palette.set_entry(0, back, check_mode=False)
+        elif mode.name == '640x400x2':
+            error.range_check(0, len(mode.colours)-1, fore)
+            if back != 0:
+                raise error.BASICError(error.IFC)
+            self.palette.set_entry(1, fore, check_mode=False)
 
     def cls_(self, args):
         """CLS: clear the screen."""
