@@ -55,6 +55,8 @@ class Video(object):
 
     def toggle_colour(self, has_colour):
         """Toggle between colour and monochrome (for NTSC colorburst)."""
+        # note that colours16 member is only used in certain mode/adapter combinations
+        # e.g. in text mode it's only used for 'cga', 'cga_old', 'pcjr', 'tandy'
         if has_colour:
             self.colours16[:] = modes.COLOURS16
         else:
@@ -430,7 +432,7 @@ class Screen(object):
 
     def set_colorburst(self, on=True):
         """Set the composite colorburst bit."""
-        # On a composite monitor:
+        # On a composite monitor with CGA adapter (not EGA, VGA):
         # - on SCREEN 2 this enables artifacting
         # - on SCREEN 1 and 0 this switches between colour and greyscale
         # On an RGB monitor:
