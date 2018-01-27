@@ -25,6 +25,29 @@ from .display import FunctionKeyMacros, Palette, Cursor
 from .display import TextBuffer, TextRow, PixelBuffer
 
 
+class Video(object):
+    """Low-level display operations."""
+
+    def __init__(self, monitor, mono_tint):
+        """Initialise colour sets."""
+        # public members - used by VideoMode
+        self.mono_tint = mono_tint
+        # build 16-greyscale and 16-colour sets
+        self.colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
+                               for i in modes.INTENSITY16)
+        if monitor == 'mono':
+            self.colours16 = list(self.colours16_mono)
+        else:
+            self.colours16 = list(modes.COLOURS16)
+
+    def toggle_colour(self, has_colour):
+        """Toggle between colour and monochrome (for NTSC colorburst)."""
+        if has_colour:
+            self.colours16[:] = modes.COLOURS16
+        else:
+            self.colours16[:] = self.colours16_mono
+
+
 class Screen(object):
     """Screen manipulation operations."""
 
@@ -50,14 +73,8 @@ class Screen(object):
             self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
         else:
             self.cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
-        # build 16-greyscale and 16-colour sets
-        self.colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
-                               for i in modes.INTENSITY16)
-        if monitor == 'mono':
-            self.colours16 = list(self.colours16_mono)
-        else:
-            self.colours16 = list(modes.COLOURS16)
         self.capabilities = capabilities
+        self._video = Video(monitor, mono_tint)
         # emulated monitor type - rgb, composite, mono
         self.monitor = monitor
         # screen aspect ratio, for CIRCLE
@@ -74,7 +91,6 @@ class Screen(object):
         # prepare video modes
         self.cga_mode_5 = False
         self.cga4_palette = list(self.cga4_palettes[1])
-        self.mono_tint = mono_tint
         self.prepare_modes()
         self.mode = self.text_data[initial_width]
         # cursor
@@ -108,9 +124,10 @@ class Screen(object):
 
     def prepare_modes(self):
         """Build lists of allowed graphics modes."""
-        self.text_data, self.mode_data = modes.get_modes(self,
+        # Screen is needed for get_memory and set_memory
+        self.text_data, self.mode_data = modes.get_modes(self, self._video,
                     self.cga4_palette, self.video_mem_size,
-                    self.capabilities, self.mono_tint, self.screen_aspect)
+                    self.capabilities, self.screen_aspect)
 
     def rebuild(self):
         """Rebuild the screen from scratch."""
@@ -413,10 +430,9 @@ class Screen(object):
             # ega ignores colorburst; tandy and pcjr have no mode 5
             self.cga_mode_5 = not on
             self.set_cga4_palette(1)
-        elif self.monitor != 'mono' and (on or self.monitor != 'composite'):
-            self.colours16[:] = modes.COLOURS16
         else:
-            self.colours16[:] = self.colours16_mono
+            self._video.toggle_colour(
+                    self.monitor != 'mono' and (on or self.monitor != 'composite'))
         # reset the palette to reflect the new mono or mode-5 situation
         self.palette.init_mode(self.mode)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_COLORBURST, (on and colorburst_capable,
