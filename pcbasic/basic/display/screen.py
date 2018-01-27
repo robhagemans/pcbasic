@@ -31,8 +31,14 @@ class Video(object):
     def __init__(self, capabilities, monitor, mono_tint, cga_low):
         """Initialise colour sets."""
         # public members - used by VideoMode
+        # video adapter type - cga, ega, etc
+        if capabilities == 'ega' and monitor == 'mono':
+            capabilities = 'ega_mono'
         self.capabilities = capabilities
+        # monochrome tint in rgb
         self.mono_tint = mono_tint
+        # emulated monitor type - rgb, composite, mono
+        self.monitor = monitor
         # build 16-greyscale and 16-colour sets
         self.colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
                                for i in modes.INTENSITY16)
@@ -42,6 +48,10 @@ class Video(object):
         else:
             self.colours16 = list(modes.COLOURS16)
         # CGA 4-colour palette / mode 5 settings
+        # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
+        # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
+        # tandy/pcjr have high-intensity white, but low-intensity colours
+        # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
         if capabilities in ('pcjr', 'tandy'):
             # pcjr does not have mode 5
             self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
@@ -71,6 +81,18 @@ class Video(object):
         else:
             self.cga4_palette[:] = self.cga4_palettes[num]
 
+    def set_colorburst(self, on, is_cga):
+        """Set the NTSC colorburst bit."""
+        colorburst_capable = self.capabilities in (
+                                    'cga', 'cga_old', 'tandy', 'pcjr')
+        if is_cga and self.monitor != 'composite':
+            # ega ignores colorburst; tandy and pcjr have no mode 5
+            self.cga_mode_5 = not on
+            self.set_cga4_palette(1)
+        else:
+            self.toggle_colour(
+                    self.monitor != 'mono' and (on or self.monitor != 'composite'))
+        return on and colorburst_capable
 
 class Screen(object):
     """Screen manipulation operations."""
@@ -82,18 +104,8 @@ class Screen(object):
         self.queues = queues
         self._values = values
         self._memory = memory
-        # emulated video card - cga, ega, etc
-        if capabilities == 'ega' and monitor == 'mono':
-            capabilities = 'ega_mono'
-        # initialise the 4-colour CGA palette
-        # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
-        # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
-        # tandy/pcjr have high-intensity white, but low-intensity colours
-        # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
-        self.capabilities = capabilities
         self.video = Video(capabilities, monitor, mono_tint, cga_low)
-        # emulated monitor type - rgb, composite, mono
-        self.monitor = monitor
+        self.capabilities = self.video.capabilities
         # screen aspect ratio, for CIRCLE
         self.screen_aspect = screen_aspect
         self.screen_mode = 0
@@ -438,18 +450,10 @@ class Screen(object):
         # On an RGB monitor:
         # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
         # - ignored on other screens
-        colorburst_capable = self.capabilities in (
-                                    'cga', 'cga_old', 'tandy', 'pcjr')
-        if self.mode.name == '320x200x4' and self.monitor != 'composite':
-            # ega ignores colorburst; tandy and pcjr have no mode 5
-            self.video.cga_mode_5 = not on
-            self.video.set_cga4_palette(1)
-        else:
-            self.video.toggle_colour(
-                    self.monitor != 'mono' and (on or self.monitor != 'composite'))
+        colorburst = self.video.set_colorburst(on, is_cga=(self.mode.name == '320x200x4'))
         # reset the palette to reflect the new mono or mode-5 situation
         self.palette.init_mode(self.mode)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_COLORBURST, (on and colorburst_capable,
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_COLORBURST, (colorburst,
                             self.palette.rgb_palette, self.palette.rgb_palette1)))
 
     def set_video_memory_size(self, new_size):
