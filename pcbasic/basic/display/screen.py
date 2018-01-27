@@ -38,36 +38,29 @@ class Screen(object):
         self._memory = memory
         self.video = Video(capabilities, monitor, mono_tint, cga_low, screen_aspect)
         self.capabilities = self.video.capabilities
-        self.screen_mode = 0
-        self.colorswitch = 1
-        self.apagenum = 0
-        self.vpagenum = 0
+        self.video_mem_size = int(video_mem_size)
+        self._mode_nr, self.colorswitch, self.apagenum, self.vpagenum = 0, 1, 0, 0
         # current attribute
         self.attr = 7
         # border attribute
         self.border_attr = 0
-        self.video_mem_size = int(video_mem_size)
         # prepare video modes
         self.prepare_modes()
         self.mode = self.text_data[initial_width]
         # cursor
         self.cursor = Cursor(self)
         # current row and column
-        self.current_row = 1
-        self.current_col = 1
+        # overflow: true if we're on 80 but should be on 81
+        self.current_row, self.current_col, self.overflow = 1, 1, False
         # set codepage
         self.codepage = codepage
         # prepare fonts
         self.fonts = {height: font.Font(height, font_dict) for height, font_dict in fonts.iteritems()}
         # text viewport parameters
-        self.view_start = 1
-        self.scroll_height = 24
         # viewport has been set
-        self.view_set = False
+        self.view_start, self.scroll_height, self.view_set = 1, 24, False
         # writing on bottom row is allowed
         self.bottom_row_allowed = False
-        # true if we're on 80 but should be on 81
-        self.overflow = False
         # needed for printing \a
         self.sound = sound
         # output redirection
@@ -128,7 +121,7 @@ class Screen(object):
         self.palette.init_mode(self.mode)
         # set default arguments
         if new_mode is None:
-            new_mode = self.screen_mode
+            new_mode = self._mode_nr
         # THIS IS HOW COLORSWITCH SHOULD WORK:
         #   SCREEN 0,0 - mono on composite, color on RGB
         #   SCREEN 0,1 - color (colorburst=True)
@@ -241,7 +234,7 @@ class Screen(object):
             # start with black border
             self.set_border(0)
         # set the screen parameters
-        self.screen_mode = new_mode
+        self._mode_nr = new_mode
         self.colorswitch = new_colorswitch
         # set all state vars
         self.mode = mode_info
@@ -347,12 +340,12 @@ class Screen(object):
         # redefine number of available video pages
         self.prepare_modes()
         # text screen modes don't depend on video memory size
-        if self.screen_mode == 0:
+        if self._mode_nr == 0:
             return
         # check if we need to drop out of our current mode
         page = max(self.vpagenum, self.apagenum)
         # reload max number of pages; do we fit? if not, drop to text
-        new_mode = self.mode_data[self.screen_mode]
+        new_mode = self.mode_data[self._mode_nr]
         if (page >= new_mode.num_pages):
             self.screen(0, 0, 0, 0)
             self.init_mode()
