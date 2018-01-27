@@ -28,7 +28,7 @@ from .display import TextBuffer, TextRow, PixelBuffer
 class Video(object):
     """Low-level display operations."""
 
-    def __init__(self, capabilities, monitor, mono_tint, cga_low):
+    def __init__(self, capabilities, monitor, mono_tint, cga_low, screen_aspect):
         """Initialise colour sets."""
         # public members - used by VideoMode
         # video adapter type - cga, ega, etc
@@ -62,6 +62,8 @@ class Video(object):
         self.cga4_palette = list(self.cga4_palettes[1])
         self.cga4_palette_num = 1
         self.cga_mode_5 = False
+        # screen aspect ratio, for CIRCLE
+        self.screen_aspect = screen_aspect
 
     def toggle_colour(self, has_colour):
         """Toggle between colour and monochrome (for NTSC colorburst)."""
@@ -94,6 +96,7 @@ class Video(object):
                     self.monitor != 'mono' and (on or self.monitor != 'composite'))
         return on and colorburst_capable
 
+
 class Screen(object):
     """Screen manipulation operations."""
 
@@ -104,10 +107,8 @@ class Screen(object):
         self.queues = queues
         self._values = values
         self._memory = memory
-        self.video = Video(capabilities, monitor, mono_tint, cga_low)
+        self.video = Video(capabilities, monitor, mono_tint, cga_low, screen_aspect)
         self.capabilities = self.video.capabilities
-        # screen aspect ratio, for CIRCLE
-        self.screen_aspect = screen_aspect
         self.screen_mode = 0
         self.colorswitch = 1
         self.apagenum = 0
@@ -152,8 +153,8 @@ class Screen(object):
     def prepare_modes(self):
         """Build lists of allowed graphics modes."""
         # Screen is needed for get_memory and set_memory
-        self.text_data, self.mode_data = modes.get_modes(self, self.video,
-                    self.video_mem_size, self.screen_aspect)
+        self.text_data, self.mode_data = modes.get_modes(
+                self, self.video, self.video_mem_size)
 
     def rebuild(self):
         """Rebuild the screen from scratch."""
