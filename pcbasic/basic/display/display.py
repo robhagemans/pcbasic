@@ -17,7 +17,6 @@ except ImportError:
 from ..base import signals
 from ..base import error
 from ..base import tokens as tk
-from . import modes
 from .. import values
 
 
@@ -473,10 +472,11 @@ class FunctionKeyMacros(object):
 class Palette(object):
     """Colour palette."""
 
-    def __init__(self, mode, capabilities, memory):
+    def __init__(self, queues, mode, capabilities, memory):
         """Initialise palette."""
         self.capabilities = capabilities
         self._memory = memory
+        self._queues = queues
         self.mode = mode
         self.set_all(mode.palette, check_mode=False)
 
@@ -494,7 +494,7 @@ class Palette(object):
         self.rgb_palette[index] = mode.colours[colour]
         if mode.colours1:
             self.rgb_palette1[index] = mode.colours1[colour]
-        self.mode.screen.queues.video.put(
+        self._queues.video.put(
             signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
 
     def get_entry(self, index):
@@ -511,7 +511,7 @@ class Palette(object):
             self.rgb_palette1 = [self.mode.colours1[i] for i in self.palette]
         else:
             self.rgb_palette1 = None
-        self.mode.screen.queues.video.put(
+        self._queues.video.put(
             signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
 
     def mode_allows_palette(self, mode):

@@ -69,7 +69,7 @@ class Screen(object):
         # function key macros
         self.fkey_macros = FunctionKeyMacros(keyboard, self, capabilities)
         self.drawing = graphics.Drawing(self, input_methods, values, memory)
-        self.palette = Palette(self.mode, self.capabilities, self._memory)
+        self.palette = Palette(self.queues, self.mode, self.capabilities, self._memory)
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
@@ -79,8 +79,7 @@ class Screen(object):
     def prepare_modes(self):
         """Build lists of allowed graphics modes."""
         # Screen is needed for get_memory and set_memory
-        self.text_data, self.mode_data = modes.get_modes(
-                self, self.video, self.video_mem_size)
+        self.text_data, self.mode_data = modes.get_modes(self.video, self.video_mem_size)
 
     def screen_(self, args):
         """SCREEN: change the video mode, colourburst, visible or active page."""
@@ -180,14 +179,14 @@ class Screen(object):
             # 2: erase all video memory if screen or width changes
             # -> we're not distinguishing between 1 and 2 here
             if (erase == 0 and self.mode.video_segment == info.video_segment):
-                save_mem = self.mode.get_memory(
+                save_mem = self.get_memory(
                                 self.mode.video_segment*0x10, self.video_mem_size)
             else:
                 save_mem = None
             self.set_mode(info, new_mode, new_colorswitch,
                           new_apagenum, new_vpagenum)
             if save_mem:
-                self.mode.set_memory(self.mode.video_segment*0x10, save_mem)
+                self.set_memory(self.mode.video_segment*0x10, save_mem)
         else:
             # only switch pages
             if (new_apagenum >= info.num_pages or
@@ -1104,6 +1103,17 @@ class Screen(object):
                 signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)))
 
     ###########################################################################
+    # memory operations
+
+    def get_memory(self, addr, num_bytes):
+        """Retrieve bytes from video memory."""
+        return self.mode.get_memory(self, addr, num_bytes)
+
+    def set_memory(self, addr, bytes):
+        """Set bytes in video memory."""
+        self.mode.set_memory(self, addr, bytes)
+
+    ###########################################################################
     # graphics primitives
 
     def put_pixel(self, x, y, index, pagenum=None):
@@ -1164,6 +1174,8 @@ class Screen(object):
         self.queues.video.put(signals.Event(signals.VIDEO_FILL_RECT,
                                 (self.apagenum, x0, y0, x1, y1, index)))
         self.clear_text_area(x0, y0, x1, y1)
+
+    ###########################################################################
 
     def point_(self, args):
         """POINT (1 argument): Return current coordinate (2 arguments): Return the attribute of a pixel."""
