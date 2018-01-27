@@ -515,13 +515,7 @@ class Screen(object):
             fore = (self.attr>>7) * 0x10 + (self.attr & 0xf)
         else:
             fore = values.to_int(fore)
-        if back is None:
-            # graphics mode bg is always 0; sets palette instead
-            if mode.is_text_mode:
-                back = (self.attr>>4) & 0x7
-            else:
-                back = self.palette.get_entry(0)
-        else:
+        if back is not None:
             back = values.to_int(back)
         if bord is not None:
             bord = values.to_int(bord)
@@ -531,6 +525,12 @@ class Screen(object):
             # screen 2; hercules: illegal fn call
             raise error.BASICError(error.IFC)
         else:
+            if back is None:
+                # graphics mode bg is always 0; sets palette instead
+                if mode.is_text_mode:
+                    back = (self.attr>>4) & 0x7
+                else:
+                    back = self.palette.get_entry(0)
             # for screens other than 1, no distinction between 3rd parm zero and not supplied
             bord = bord or 0
             error.range_check(0, 255, bord)
