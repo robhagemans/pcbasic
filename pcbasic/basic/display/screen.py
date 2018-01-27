@@ -85,6 +85,12 @@ class Video(object):
 
     def set_colorburst(self, on, is_cga):
         """Set the NTSC colorburst bit."""
+        # On a composite monitor with CGA adapter (not EGA, VGA):
+        # - on SCREEN 2 this enables artifacting
+        # - on SCREEN 1 and 0 this switches between colour and greyscale
+        # On an RGB monitor:
+        # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
+        # - ignored on other screens
         colorburst_capable = self.capabilities in (
                                     'cga', 'cga_old', 'tandy', 'pcjr')
         if is_cga and self.monitor != 'composite':
@@ -445,12 +451,6 @@ class Screen(object):
 
     def set_colorburst(self, on=True):
         """Set the composite colorburst bit."""
-        # On a composite monitor with CGA adapter (not EGA, VGA):
-        # - on SCREEN 2 this enables artifacting
-        # - on SCREEN 1 and 0 this switches between colour and greyscale
-        # On an RGB monitor:
-        # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
-        # - ignored on other screens
         colorburst = self.video.set_colorburst(on, is_cga=(self.mode.name == '320x200x4'))
         # reset the palette to reflect the new mono or mode-5 situation
         self.palette.init_mode(self.mode)
