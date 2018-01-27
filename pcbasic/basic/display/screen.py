@@ -23,84 +23,7 @@ from . import modes
 
 from .display import FunctionKeyMacros, Palette, Cursor
 from .display import TextBuffer, TextRow, PixelBuffer
-
-
-class Video(object):
-    """Low-level display operations."""
-
-    def __init__(self, capabilities, monitor, mono_tint, cga_low, screen_aspect):
-        """Initialise colour sets."""
-        # public members - used by VideoMode
-        # video adapter type - cga, ega, etc
-        if capabilities == 'ega' and monitor == 'mono':
-            capabilities = 'ega_mono'
-        self.capabilities = capabilities
-        # monochrome tint in rgb
-        self.mono_tint = mono_tint
-        # emulated monitor type - rgb, composite, mono
-        self.monitor = monitor
-        # build 16-greyscale and 16-colour sets
-        self.colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
-                               for i in modes.INTENSITY16)
-        # NTSC colorburst settings
-        if monitor == 'mono':
-            self.colours16 = list(self.colours16_mono)
-        else:
-            self.colours16 = list(modes.COLOURS16)
-        # CGA 4-colour palette / mode 5 settings
-        # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
-        # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
-        # tandy/pcjr have high-intensity white, but low-intensity colours
-        # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
-        if capabilities in ('pcjr', 'tandy'):
-            # pcjr does not have mode 5
-            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
-        elif cga_low:
-            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
-        else:
-            self.cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
-        self.cga4_palette = list(self.cga4_palettes[1])
-        self.cga4_palette_num = 1
-        self.cga_mode_5 = False
-        # screen aspect ratio, for CIRCLE
-        self.screen_aspect = screen_aspect
-
-    def toggle_colour(self, has_colour):
-        """Toggle between colour and monochrome (for NTSC colorburst)."""
-        # note that colours16 member is only used in certain mode/adapter combinations
-        # e.g. in text mode it's only used for 'cga', 'cga_old', 'pcjr', 'tandy'
-        if has_colour:
-            self.colours16[:] = modes.COLOURS16
-        else:
-            self.colours16[:] = self.colours16_mono
-
-    def set_cga4_palette(self, num):
-        """set the default 4-colour CGA palette."""
-        self.cga4_palette_num = num
-        # we need to copy into cga4_palette as it's referenced by mode.palette
-        if self.cga_mode_5 and self.capabilities in ('cga', 'cga_old'):
-            self.cga4_palette[:] = self.cga4_palettes[5]
-        else:
-            self.cga4_palette[:] = self.cga4_palettes[num]
-
-    def set_colorburst(self, on, is_cga):
-        """Set the NTSC colorburst bit."""
-        # On a composite monitor with CGA adapter (not EGA, VGA):
-        # - on SCREEN 2 this enables artifacting
-        # - on SCREEN 1 and 0 this switches between colour and greyscale
-        # On an RGB monitor:
-        # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
-        # - ignored on other screens
-        colorburst_capable = self.capabilities in (
-                                    'cga', 'cga_old', 'tandy', 'pcjr')
-        if is_cga and self.monitor != 'composite':
-            # ega ignores colorburst; tandy and pcjr have no mode 5
-            self.cga_mode_5 = not on
-            self.set_cga4_palette(1)
-        else:
-            self.toggle_colour(
-                    self.monitor != 'mono' and (on or self.monitor != 'composite'))
-        return on and colorburst_capable
+from .modes import Video
 
 
 class Screen(object):
@@ -156,53 +79,14 @@ class Screen(object):
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
+    ###########################################################################
+    # video modes
+
     def prepare_modes(self):
         """Build lists of allowed graphics modes."""
         # Screen is needed for get_memory and set_memory
         self.text_data, self.mode_data = modes.get_modes(
                 self, self.video, self.video_mem_size)
-
-    def rebuild(self):
-        """Rebuild the screen from scratch."""
-        # set the screen mode
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, self.mode))
-        if self.mode.is_text_mode:
-            # send glyphs to signals; copy is necessary
-            # as dict may change here while the other thread is working on it
-            self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                    {self.codepage.to_unicode(k, u'\0'): v
-                        for k, v in self.glyphs.iteritems()}))
-        # set the visible and active pages
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
-        # rebuild palette
-        self.palette.set_all(self.palette.palette, check_mode=False)
-        # fix the cursor
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
-                (self.cursor.width, self.mode.font_height,
-                 self.cursor.from_line, self.cursor.to_line)))
-        self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
-                (self.current_row, self.current_col)))
-        if self.mode.is_text_mode:
-            fore, _, _, _ = self.mode.split_attr(
-                self.apage.row[self.current_row-1].buf[self.current_col-1][1] & 0xf)
-        else:
-            fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
-        self.cursor.reset_visibility()
-        # set the border
-        fore, _, _, _ = self.mode.split_attr(self.border_attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
-        # redraw the text screen and rebuild text buffers in video plugin
-        for pagenum in range(self.mode.num_pages):
-            for crow in range(self.mode.height):
-                # for_keys=True means 'suppress echo on cli'
-                self.refresh_range(pagenum, crow+1, 1, self.mode.width,
-                                   for_keys=True, text_only=True)
-            # redraw graphics
-            if not self.mode.is_text_mode:
-                self.queues.video.put(signals.Event(signals.VIDEO_PUT_RECT, (pagenum, 0, 0,
-                                self.mode.pixel_width-1, self.mode.pixel_height-1,
-                                self.pixels.pages[pagenum].buffer)))
 
     def screen_(self, args):
         """SCREEN: change the video mode, colourburst, visible or active page."""
@@ -475,6 +359,8 @@ class Screen(object):
         else:
             self.mode = new_mode
 
+    ###########################################################################
+
     def set_page(self, new_vpagenum, new_apagenum):
         """Set active page & visible page, counting from 0."""
         if new_vpagenum is None:
@@ -501,6 +387,8 @@ class Screen(object):
         self.border_attr = attr
         fore, _, _, _ = self.mode.split_attr(attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
+
+    ###########################################################################
 
     def pcopy_(self, args):
         """Copy source to destination page."""
@@ -617,7 +505,7 @@ class Screen(object):
         elif val == 2:
             self.clear_view()
 
-    #####################
+    ###########################################################################
     # screen read/write
 
     def write(self, s, scroll_ok=True, do_echo=True):
@@ -757,6 +645,9 @@ class Screen(object):
         # ensure line above doesn't wrap
         self.apage.row[self.current_row-2].wrap = False
 
+    ###########################################################################
+    # cursor position
+
     def locate_(self, args):
         """LOCATE: Set cursor position, shape and visibility."""
         args = list(None if arg is None else values.to_int(arg) for arg in args)
@@ -787,6 +678,27 @@ class Screen(object):
             # cursor shape only has an effect in text mode
             if cmode.is_text_mode:
                 self.cursor.set_shape(start, stop)
+
+    def csrlin_(self, args):
+        """CSRLIN: get the current screen row."""
+        list(args)
+        if (self.overflow and self.current_col == self.mode.width and
+                                    self.current_row < self.scroll_height):
+            # in overflow position, return row+1 except on the last row
+            csrlin = self.current_row + 1
+        else:
+            csrlin = self.current_row
+        return self._values.new_integer().from_int(csrlin)
+
+    def pos_(self, args):
+        """POS: get the current screen column."""
+        list(args)
+        if self.current_col == self.mode.width and self.overflow:
+            # in overflow position, return column 1.
+            pos = 1
+        else:
+            pos = self.current_col
+        return self._values.new_integer().from_int(pos)
 
     def set_pos(self, to_row, to_col, scroll_ok=True):
         """Set the current position."""
@@ -840,6 +752,14 @@ class Screen(object):
         return (self.current_row == oldrow and
                  self.current_col == oldcol)
 
+    def move_cursor(self, row, col):
+        """Move the cursor to a new position."""
+        self.current_row, self.current_col = row, col
+        self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR, (row, col)))
+        self.cursor.reset_attr()
+
+    ###########################################################################
+
     def screen_fn_(self, args):
         """SCREEN: get char or attribute at a location."""
         row = values.to_integer(next(args))
@@ -879,6 +799,50 @@ class Screen(object):
         start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr, one_only, force)
         # update the screen
         self.refresh_range(pagenum, crow, start, stop-1, for_keys)
+
+    ###########################################################################
+
+    def rebuild(self):
+        """Rebuild the screen from scratch."""
+        # set the screen mode
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, self.mode))
+        if self.mode.is_text_mode:
+            # send glyphs to signals; copy is necessary
+            # as dict may change here while the other thread is working on it
+            self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
+                    {self.codepage.to_unicode(k, u'\0'): v
+                        for k, v in self.glyphs.iteritems()}))
+        # set the visible and active pages
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
+        # rebuild palette
+        self.palette.set_all(self.palette.palette, check_mode=False)
+        # fix the cursor
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
+                (self.cursor.width, self.mode.font_height,
+                 self.cursor.from_line, self.cursor.to_line)))
+        self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
+                (self.current_row, self.current_col)))
+        if self.mode.is_text_mode:
+            fore, _, _, _ = self.mode.split_attr(
+                self.apage.row[self.current_row-1].buf[self.current_col-1][1] & 0xf)
+        else:
+            fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
+        self.cursor.reset_visibility()
+        # set the border
+        fore, _, _, _ = self.mode.split_attr(self.border_attr)
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
+        # redraw the text screen and rebuild text buffers in video plugin
+        for pagenum in range(self.mode.num_pages):
+            for crow in range(self.mode.height):
+                # for_keys=True means 'suppress echo on cli'
+                self.refresh_range(pagenum, crow+1, 1, self.mode.width,
+                                   for_keys=True, text_only=True)
+            # redraw graphics
+            if not self.mode.is_text_mode:
+                self.queues.video.put(signals.Event(signals.VIDEO_PUT_RECT, (pagenum, 0, 0,
+                                self.mode.pixel_width-1, self.mode.pixel_height-1,
+                                self.pixels.pages[pagenum].buffer)))
 
     def refresh_range(self, pagenum, crow, start, stop, for_keys=False, text_only=False):
         """Redraw a section of a screen row, assuming DBCS buffer has been set."""
@@ -1001,47 +965,6 @@ class Screen(object):
         _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
-    #MOVE to Cursor.move ?
-    def move_cursor(self, row, col):
-        """Move the cursor to a new position."""
-        self.current_row, self.current_col = row, col
-        self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR, (row, col)))
-        self.cursor.reset_attr()
-
-    def rebuild_glyph(self, ordval):
-        """Rebuild a text-mode character after POKE."""
-        if self.mode.is_text_mode:
-            # force rebuilding the character by deleting and requesting
-            del self.glyphs[chr(ordval)]
-            self.get_glyph(chr(ordval))
-
-    ## text viewport / scroll area
-
-    def view_print_(self, args):
-        """VIEW PRINT: set scroll region."""
-        start, stop = (None if arg is None else values.to_int(arg) for arg in args)
-        if start is None and stop is None:
-            self.unset_view()
-        else:
-            max_line = 25 if (self.capabilities in ('pcjr', 'tandy') and not self.fkey_macros.keys_visible) else 24
-            error.range_check(1, max_line, start, stop)
-            error.throw_if(stop < start)
-            self.set_view(start, stop)
-
-    def set_view(self, start, stop):
-        """Set the scroll area."""
-        self.view_set = True
-        self.view_start = start
-        self.scroll_height = stop
-        #set_pos(start, 1)
-        self.overflow = False
-        self.move_cursor(start, 1)
-
-    def unset_view(self):
-        """Unset scroll area."""
-        self.set_view(1, 24)
-        self.view_set = False
-
     def clear_view(self):
         """Clear the scroll area."""
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
@@ -1076,6 +999,36 @@ class Screen(object):
             self.set_view(save_view_start, save_scroll_height)
         else:
             self.unset_view()
+
+    ###########################################################################
+    # text viewport / scroll area
+
+    def view_print_(self, args):
+        """VIEW PRINT: set scroll region."""
+        start, stop = (None if arg is None else values.to_int(arg) for arg in args)
+        if start is None and stop is None:
+            self.unset_view()
+        else:
+            max_line = 25 if (self.capabilities in ('pcjr', 'tandy') and not self.fkey_macros.keys_visible) else 24
+            error.range_check(1, max_line, start, stop)
+            error.throw_if(stop < start)
+            self.set_view(start, stop)
+
+    def set_view(self, start, stop):
+        """Set the scroll area."""
+        self.view_set = True
+        self.view_start = start
+        self.scroll_height = stop
+        #set_pos(start, 1)
+        self.overflow = False
+        self.move_cursor(start, 1)
+
+    def unset_view(self):
+        """Unset scroll area."""
+        self.set_view(1, 24)
+        self.view_set = False
+
+    ###########################################################################
 
     def scroll(self, from_line=None):
         """Scroll the scroll region up by one line, starting at from_line."""
@@ -1157,29 +1110,7 @@ class Screen(object):
                 signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)))
 
     ###########################################################################
-
-    def csrlin_(self, args):
-        """CSRLIN: get the current screen row."""
-        list(args)
-        if (self.overflow and self.current_col == self.mode.width and
-                                    self.current_row < self.scroll_height):
-            # in overflow position, return row+1 except on the last row
-            csrlin = self.current_row + 1
-        else:
-            csrlin = self.current_row
-        return self._values.new_integer().from_int(csrlin)
-
-    def pos_(self, args):
-        """POS: get the current screen column."""
-        list(args)
-        if self.current_col == self.mode.width and self.overflow:
-            # in overflow position, return column 1.
-            pos = 1
-        else:
-            pos = self.current_col
-        return self._values.new_integer().from_int(pos)
-
-    ## graphics primitives
+    # graphics primitives
 
     def put_pixel(self, x, y, index, pagenum=None):
         """Put a pixel on the screen; empty character buffer."""
@@ -1291,7 +1222,15 @@ class Screen(object):
             _, value = self.drawing.get_window_logical(0, values.to_integer(coord).to_int())
         return self._values.new_single().from_value(value)
 
-    # text
+    ###########################################################################
+    # glyphs
+
+    def rebuild_glyph(self, ordval):
+        """Rebuild a text-mode character after POKE."""
+        if self.mode.is_text_mode:
+            # force rebuilding the character by deleting and requesting
+            del self.glyphs[chr(ordval)]
+            self.get_glyph(chr(ordval))
 
     def get_glyph(self, c):
         """Return a glyph mask for a given character """

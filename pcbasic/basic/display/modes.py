@@ -66,6 +66,87 @@ COLOURS64 = (
 
 
 ###############################################################################
+# Low level video (mainly about colours)
+
+class Video(object):
+    """Low-level display operations."""
+
+    def __init__(self, capabilities, monitor, mono_tint, cga_low, screen_aspect):
+        """Initialise colour sets."""
+        # public members - used by VideoMode
+        # video adapter type - cga, ega, etc
+        if capabilities == 'ega' and monitor == 'mono':
+            capabilities = 'ega_mono'
+        self.capabilities = capabilities
+        # monochrome tint in rgb
+        self.mono_tint = mono_tint
+        # emulated monitor type - rgb, composite, mono
+        self.monitor = monitor
+        # build 16-greyscale and 16-colour sets
+        self.colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
+                               for i in INTENSITY16)
+        # NTSC colorburst settings
+        if monitor == 'mono':
+            self.colours16 = list(self.colours16_mono)
+        else:
+            self.colours16 = list(COLOURS16)
+        # CGA 4-colour palette / mode 5 settings
+        # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
+        # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
+        # tandy/pcjr have high-intensity white, but low-intensity colours
+        # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
+        if capabilities in ('pcjr', 'tandy'):
+            # pcjr does not have mode 5
+            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
+        elif cga_low:
+            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
+        else:
+            self.cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
+        self.cga4_palette = list(self.cga4_palettes[1])
+        self.cga4_palette_num = 1
+        self.cga_mode_5 = False
+        # screen aspect ratio, for CIRCLE
+        self.screen_aspect = screen_aspect
+
+    def toggle_colour(self, has_colour):
+        """Toggle between colour and monochrome (for NTSC colorburst)."""
+        # note that colours16 member is only used in certain mode/adapter combinations
+        # e.g. in text mode it's only used for 'cga', 'cga_old', 'pcjr', 'tandy'
+        if has_colour:
+            self.colours16[:] = COLOURS16
+        else:
+            self.colours16[:] = self.colours16_mono
+
+    def set_cga4_palette(self, num):
+        """set the default 4-colour CGA palette."""
+        self.cga4_palette_num = num
+        # we need to copy into cga4_palette as it's referenced by mode.palette
+        if self.cga_mode_5 and self.capabilities in ('cga', 'cga_old'):
+            self.cga4_palette[:] = self.cga4_palettes[5]
+        else:
+            self.cga4_palette[:] = self.cga4_palettes[num]
+
+    def set_colorburst(self, on, is_cga):
+        """Set the NTSC colorburst bit."""
+        # On a composite monitor with CGA adapter (not EGA, VGA):
+        # - on SCREEN 2 this enables artifacting
+        # - on SCREEN 1 and 0 this switches between colour and greyscale
+        # On an RGB monitor:
+        # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
+        # - ignored on other screens
+        colorburst_capable = self.capabilities in (
+                                    'cga', 'cga_old', 'tandy', 'pcjr')
+        if is_cga and self.monitor != 'composite':
+            # ega ignores colorburst; tandy and pcjr have no mode 5
+            self.cga_mode_5 = not on
+            self.set_cga4_palette(1)
+        else:
+            self.toggle_colour(
+                    self.monitor != 'mono' and (on or self.monitor != 'composite'))
+        return on and colorburst_capable
+
+
+###############################################################################
 # video modes
 
 def get_modes(screen, video, video_mem_size):
