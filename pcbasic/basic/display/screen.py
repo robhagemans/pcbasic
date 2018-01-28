@@ -130,105 +130,90 @@ class Screen(object):
         # reset palette happens even if the SCREEN call fails
         self.palette.init_mode(self.mode)
         # set default arguments
-        if new_mode is None:
-            new_mode = self._mode_nr
+        new_mode = self._mode_nr if (new_mode is None) else new_mode
         # set colorswitch
         if new_colorswitch is None:
+            new_colorswitch = True
             if self.capabilities == 'pcjr':
-                new_colorswitch = 0
+                new_colorswitch = False
             elif self.capabilities == 'tandy':
                 new_colorswitch = not new_mode
-            else:
-                new_colorswitch = 1
-        new_colorswitch = (new_colorswitch != 0)
+        new_colorswitch = bool(new_colorswitch)
         if new_mode == 0 and new_width is None:
-            # width persists on change to screen 0
-            new_width = self.mode.width
             # if we switch out of a 20-col mode (Tandy screen 3), switch to 40-col.
-            if new_width == 20:
-                new_width = 40
+            # otherwise, width persists on change to screen 0
+            new_width = 40 if (self.mode.width == 20) else self.mode.width
         # retrieve the specs for the new video mode
         info = self.video.get_mode(new_mode, new_width)
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
+        # in other adapters, that's going to raise an IFC later on.
         if new_vpagenum is None:
             new_vpagenum = self.vpagenum
-            if (self.capabilities == 'pcjr' and info and
-                    new_vpagenum >= info.num_pages):
+            if (self.capabilities == 'pcjr' and new_vpagenum >= info.num_pages):
                 new_vpagenum = 0
         if new_apagenum is None:
             new_apagenum = self.apagenum
-            if (self.capabilities == 'pcjr' and info and
-                    new_apagenum >= info.num_pages):
+            if (self.capabilities == 'pcjr' and new_apagenum >= info.num_pages):
                 new_apagenum = 0
         if ((not info.is_text_mode and info.name != self.mode.name) or
                 (info.is_text_mode and not self.mode.is_text_mode) or
                 (info.width != self.mode.width) or
                 (new_colorswitch != self.colorswitch) or force_reset):
             self.set_mode_(
-                    info, new_mode, new_colorswitch,
-                    new_apagenum, new_vpagenum, erase)
+                    info, new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase)
         else:
             # only switch pages
-            if (new_apagenum >= info.num_pages or
-                    new_vpagenum >= info.num_pages):
+            if (new_apagenum >= info.num_pages or new_vpagenum >= info.num_pages):
                 raise error.BASICError(error.IFC)
             self.set_page(new_vpagenum, new_apagenum)
 
-    def set_mode_(self, mode_info, new_mode, new_colorswitch,
+    def set_mode_(self, spec, new_mode, new_colorswitch,
                  new_apagenum, new_vpagenum, erase=True):
         """Change the video mode, colourburst, visible or active page."""
         # preserve memeory if erase==0; don't distingush erase==1 and erase==2
-        if (not erase and self.mode.video_segment == mode_info.video_segment):
+        save_mem = None
+        if (not erase and self.mode.video_segment == spec.video_segment):
             save_mem = self.mode.get_all_memory(self)
-        else:
-            save_mem = None
         # reset palette happens even if the SCREEN call fails
         self.video.set_cga4_palette(1)
         # if the new mode has fewer pages than current vpage/apage,
         # illegal fn call before anything happens.
         # signal the signals to change the screen resolution
-        if (not mode_info or
-                new_apagenum >= mode_info.num_pages or
-                new_vpagenum >= mode_info.num_pages):
+        if (not spec or new_apagenum >= spec.num_pages or new_vpagenum >= spec.num_pages):
             raise error.BASICError(error.IFC)
         # preload SBCS glyphs
         try:
             self.glyphs = {
-                c: self.fonts[mode_info.font_height].build_glyph(
-                            c, mode_info.font_width, mode_info.font_height)
+                c: self.fonts[spec.font_height].build_glyph(c, spec.font_width, spec.font_height)
                 for c in map(chr, range(256)) }
         except (KeyError, AttributeError):
-            logging.warning(
-                'No %d-pixel font available. Could not enter video mode %s.',
-                mode_info.font_height, mode_info.name)
+            logging.warning('No %d-pixel font available. Could not enter video mode %s.',
+                            spec.font_height, spec.name)
             raise error.BASICError(error.IFC)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, mode_info))
-        if mode_info.is_text_mode:
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, spec))
+        if spec.is_text_mode:
             # send glyphs to signals; copy is necessary
             # as dict may change here while the other thread is working on it
             self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                        {self.codepage.to_unicode(k, u'\0'): v
-                            for k, v in self.glyphs.iteritems()}))
+                    {self.codepage.to_unicode(k, u'\0'): v for k, v in self.glyphs.iteritems()}))
         # attribute and border persist on width-only change
-        if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
+        if (not (self.mode.is_text_mode and spec.is_text_mode) or
                 self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
                 or self.colorswitch != new_colorswitch):
-            self.attr = mode_info.attr
-        if (not (self.mode.is_text_mode and mode_info.is_text_mode) and
-                mode_info.name != self.mode.name):
+            self.attr = spec.attr
+        if (not (self.mode.is_text_mode and spec.is_text_mode) and
+                spec.name != self.mode.name):
             # start with black border
             self.set_border(0)
         # set the screen parameters
         self._mode_nr = new_mode
         self.colorswitch = new_colorswitch
         # set all state vars
-        self.mode = mode_info
+        self.mode = spec
         # build the screen buffer
-        self.text = TextBuffer(self.attr, self.mode.width,
-                               self.mode.height, self.mode.num_pages,
-                               (self.mode.font_height >= 14),
-                               self.codepage)
+        self.text = TextBuffer(self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
+                               (self.mode.font_height >= 14), self.codepage)
         if not self.mode.is_text_mode:
             self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
                                     self.mode.num_pages, self.mode.bitsperpixel)
@@ -260,8 +245,7 @@ class Screen(object):
         self.drawing.init_mode()
         # redraw key line
         self.fkey_macros.redraw_keys()
-        # rebuild build the cursor;
-        # first move to home in case the screen has shrunk
+        # move to home in case the screen has shrunk
         self.set_pos(1, 1)
         # there is only one VIEW PRINT setting across all pages.
         if self.scroll_height == 25:
@@ -269,6 +253,7 @@ class Screen(object):
             self.set_view(1, 25)
         else:
             self.unset_view()
+        # rebuild the cursor
         self.cursor.set_default_shape(True)
         self.cursor.reset_visibility()
 
