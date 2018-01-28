@@ -425,7 +425,9 @@ class BottomBar(object):
             reverse_attr = 0x07
         if self.visible:
             error.throw_if(screen.scroll_height == key_row)
-            for i in range(screen.mode.width):
+            # always show only complete 8-character cells
+            # this matters on pcjr/tandy width=20 mode
+            for i in range((screen.mode.width//8) * 8):
                 c, reverse = self._contents[i]
                 a = reverse_attr if reverse else screen.attr
                 screen.put_char_attr(screen.apagenum, key_row, i+1, c, a, suppress_cli=True)
