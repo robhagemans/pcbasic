@@ -414,11 +414,11 @@ class VideoMode(object):
 
     def get_all_memory(self, screen):
         """Obtain a copy of all video memory."""
-        return self.get_memory(screen, self.video_segment, self.page_size*self.num_pages)
+        return self.get_memory(screen, self.video_segment*0x10, self.page_size*self.num_pages)
 
     def set_all_memory(self, screen, mem_copy):
         """Restore a copy of all video memory."""
-        return self.set_memory(screen, self.video_segment, mem_copy)
+        return self.set_memory(screen, self.video_segment*0x10, mem_copy)
 
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from video memory, stub."""
