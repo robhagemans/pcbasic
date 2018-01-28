@@ -71,7 +71,7 @@ class Screen(object):
         self.drawing = graphics.Drawing(self, input_methods, values, memory)
         self.palette = Palette(self.queues, self.mode, self.capabilities, self._memory)
         # initialise a fresh textmode screen
-        self.set_mode(self.mode, 0, 1, 0, 0)
+        self.set_mode_(self.mode, 0, 1, 0, 0)
 
     ###########################################################################
     # video modes
@@ -101,8 +101,6 @@ class Screen(object):
                 raise error.BASICError(error.IFC)
         else:
             erase = 1
-        # decide whether to redraw the screen
-        oldmode, oldcolor = self.mode, self.colorswitch
         self.screen(mode, colorswitch, apagenum, vpagenum, erase)
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
@@ -164,20 +162,9 @@ class Screen(object):
                 (info.is_text_mode and not self.mode.is_text_mode) or
                 (info.width != self.mode.width) or
                 (new_colorswitch != self.colorswitch) or force_reset):
-            # Erase tells basic how much video memory to erase
-            # 0: do not erase video memory
-            # 1: (default) erase old and new page if screen or width changes
-            # 2: erase all video memory if screen or width changes
-            # -> we're not distinguishing between 1 and 2 here
-            if (erase == 0 and self.mode.video_segment == info.video_segment):
-                save_mem = self.mode.get_all_memory(self)
-            else:
-                save_mem = None
-            self.set_mode(info, new_mode, new_colorswitch, new_apagenum, new_vpagenum)
-            if save_mem:
-                self.mode.set_all_memory(self, save_mem)
-            # rebuild the console if we've switched modes or colorswitch
-            self._reset()
+            self.set_mode_(
+                    info, new_mode, new_colorswitch,
+                    new_apagenum, new_vpagenum, erase)
         else:
             # only switch pages
             if (new_apagenum >= info.num_pages or
@@ -185,9 +172,18 @@ class Screen(object):
                 raise error.BASICError(error.IFC)
             self.set_page(new_vpagenum, new_apagenum)
 
-    def set_mode(self, mode_info, new_mode, new_colorswitch,
-                 new_apagenum, new_vpagenum):
+    def set_mode_(self, mode_info, new_mode, new_colorswitch,
+                 new_apagenum, new_vpagenum, erase=True):
         """Change the video mode, colourburst, visible or active page."""
+        # Erase tells basic how much video memory to erase
+        # 0: do not erase video memory
+        # 1: (default) erase old and new page if screen or width changes
+        # 2: erase all video memory if screen or width changes
+        # -> we're not distinguishing between 1 and 2 here
+        if (erase == 0 and self.mode.video_segment == mode_info.video_segment):
+            save_mem = self.mode.get_all_memory(self)
+        else:
+            save_mem = None
         # reset palette happens even if the SCREEN call fails
         self.video.set_cga4_palette(1)
         # if the new mode has fewer pages than current vpage/apage,
@@ -258,9 +254,9 @@ class Screen(object):
             self.set_colorburst(not new_colorswitch)
         elif self.mode.name == '640x200x2':
             self.set_colorburst(False)
-
-    def _reset(self):
-        """Reset screen after switching to new mode."""
+        # restore emulated video memory in new mode
+        if save_mem:
+            self.mode.set_all_memory(self, save_mem)
         # center graphics cursor, reset window, etc.
         self.drawing.init_mode()
         # redraw key line
