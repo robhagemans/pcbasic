@@ -246,7 +246,8 @@ class Screen(object):
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics characteristics
-        self.graph_view = graphics.GraphicsViewPort(self)
+        self.graph_view = graphics.GraphicsViewPort(
+                self.mode.pixel_width, self.mode.pixel_height)
         self.drawing.init_mode()
         # cursor width starts out as single char
         self.cursor.init_mode(self.mode)
@@ -487,7 +488,9 @@ class Screen(object):
             self.fkey_macros.redraw_keys()
             self.drawing.reset()
         elif val == 1:
-            self.graph_view.clear()
+            # clear the graphics viewport
+            if not self.mode.is_text_mode:
+                self.fill_rect(*self.graph_view.get(), index=(self.attr >> 4) & 0x7)
             self.drawing.reset()
         elif val == 2:
             self.clear_view()

@@ -22,9 +22,9 @@ from .. import mlparser
 class GraphicsViewPort(object):
     """Graphics viewport (clip area) functions."""
 
-    def __init__(self, screen):
+    def __init__(self, max_width, max_height):
         """Initialise graphics viewport."""
-        self.screen = screen
+        self._width, self._height = max_width, max_height
         self.unset()
 
     def unset(self):
@@ -49,7 +49,7 @@ class GraphicsViewPort(object):
         if self.rect:
             return self.rect
         else:
-            return 0, 0, self.screen.mode.pixel_width-1, self.screen.mode.pixel_height-1
+            return 0, 0, self._width-1, self._height-1
 
     def contains(self, x, y):
         """Return whether the specified point is within the graphics view (boundaries inclusive)."""
@@ -98,11 +98,6 @@ class GraphicsViewPort(object):
             return x, y
         else:
             return x + self.rect[0], y + self.rect[1]
-
-    def clear(self):
-        """Clear the current graphics viewport."""
-        if not self.screen.mode.is_text_mode:
-            self.screen.fill_rect(*self.get(), index=(self.screen.attr>>4) & 0x7)
 
 
 class Drawing(object):
