@@ -104,15 +104,9 @@ class Screen(object):
         # decide whether to redraw the screen
         oldmode, oldcolor = self.mode, self.colorswitch
         self.screen(mode, colorswitch, apagenum, vpagenum, erase)
-        if ((not self.mode.is_text_mode and self.mode.name != oldmode.name) or
-                (self.mode.is_text_mode and not oldmode.is_text_mode) or
-                (self.mode.width != oldmode.width) or
-                (self.colorswitch != oldcolor)):
-            # rebuild the console if we've switched modes or colorswitch
-            self.init_mode()
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
-               erase=1, new_width=None):
+               erase=1, new_width=None, force_reset=False):
         """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
         self.palette.init_mode(self.mode)
@@ -169,7 +163,7 @@ class Screen(object):
         if ((not info.is_text_mode and info.name != self.mode.name) or
                 (info.is_text_mode and not self.mode.is_text_mode) or
                 (info.width != self.mode.width) or
-                (new_colorswitch != self.colorswitch)):
+                (new_colorswitch != self.colorswitch) or force_reset):
             # Erase tells basic how much video memory to erase
             # 0: do not erase video memory
             # 1: (default) erase old and new page if screen or width changes
@@ -182,6 +176,8 @@ class Screen(object):
             self.set_mode(info, new_mode, new_colorswitch, new_apagenum, new_vpagenum)
             if save_mem:
                 self.mode.set_all_memory(self, save_mem)
+            # rebuild the console if we've switched modes or colorswitch
+            self._reset()
         else:
             # only switch pages
             if (new_apagenum >= info.num_pages or
@@ -245,10 +241,9 @@ class Screen(object):
         self.current_row, self.current_col = 1, 1
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
-        # set graphics characteristics
+        # set graphics viewport
         self.graph_view = graphics.GraphicsViewPort(
                 self.mode.pixel_width, self.mode.pixel_height)
-        self.drawing.init_mode()
         # cursor width starts out as single char
         self.cursor.init_mode(self.mode)
         self.palette.init_mode(self.mode)
@@ -264,8 +259,10 @@ class Screen(object):
         elif self.mode.name == '640x200x2':
             self.set_colorburst(False)
 
-    def init_mode(self):
-        """Initialisation when we switched to new screen mode."""
+    def _reset(self):
+        """Reset screen after switching to new mode."""
+        # center graphics cursor, reset window, etc.
+        self.drawing.init_mode()
         # redraw key line
         self.fkey_macros.redraw_keys()
         # rebuild build the cursor;
@@ -320,7 +317,7 @@ class Screen(object):
                 self.screen(8, None, 0, 0)
         else:
             raise error.BASICError(error.IFC)
-        self.init_mode()
+        #self._reset()
 
     def set_colorburst(self, on=True):
         """Set the composite colorburst bit."""
@@ -342,8 +339,7 @@ class Screen(object):
         # reload max number of pages; do we fit? if not, drop to text
         new_mode = self.video.get_mode(self._mode_nr)
         if (page >= new_mode.num_pages):
-            self.screen(0, 0, 0, 0)
-            self.init_mode()
+            self.screen(0, 0, 0, 0, force_reset=True)
         else:
             self.mode = new_mode
 

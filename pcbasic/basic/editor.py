@@ -52,7 +52,6 @@ class Editor(object):
         self.keyboard = keyboard
         self.redirect = output_redirection
         self.lpt1_file = lpt1_file
-        self.screen.init_mode()
 
     def wait_screenline(self, write_endl=True, from_start=False):
         """Enter interactive mode and read string from console."""
