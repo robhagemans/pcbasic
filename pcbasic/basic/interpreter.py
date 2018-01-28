@@ -18,17 +18,17 @@ from . import values
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, debugger, input_methods, screen, devices, sound,
-                values, memory, scalars, program, parser, basic_events):
+    def __init__(self, debugger, input_methods, screen, files, sound,
+                values, memory, program, parser, basic_events):
         """Initialise interpreter."""
         self._debugger = debugger
         self._input_methods = input_methods
         self._basic_events = basic_events
         self._values = values
         self._memory = memory
-        self._scalars = scalars
+        self._scalars = memory.scalars
         self._screen = screen
-        self._devices = devices
+        self._files = files
         self._sound = sound
         # program buffer
         self._program = program
@@ -65,9 +65,8 @@ class Interpreter(object):
     def parse(self):
         """Parse from the current pointer in current codestream."""
         while True:
-            # may raise Break
-            # KEY events need to check pre-buffer, so check before draining
-            self._input_methods.check_events(self._basic_events.check)
+            # check input and BASIC events. may raise Break, Reset or Exit
+            self._input_methods.check_events(self._basic_events.enabled)
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()
@@ -241,7 +240,7 @@ class Interpreter(object):
         # keep the sound engine on to avoid delays in run mode
         self._sound.persist(new_runmode)
         # suppress cassette messages in run mode
-        self._devices.devices['CAS1:'].quiet(new_runmode)
+        self._files.get_device('CAS1:').quiet(new_runmode)
         codestream = self.get_codestream()
         if pos is not None:
             # jump to position, if given
@@ -700,7 +699,7 @@ class Interpreter(object):
         """LLIST: output program lines to LPT1: """
         line_range, = args
         for l in self._program.list_lines(*line_range):
-            self._devices.lpt1_file.write_line(l)
+            self._files.lpt1_file.write_line(l)
         # return to direct mode
         self.set_pointer(False)
 

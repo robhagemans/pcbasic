@@ -16,6 +16,9 @@ import locale
 import tempfile
 import shutil
 import platform
+import pkg_resources
+
+from collections import deque
 
 if platform.system() == b'Windows':
     import ctypes
@@ -23,7 +26,9 @@ if platform.system() == b'Windows':
     import win32api
 
 from .version import __version__, GREETING, ICON
-from .basic import codepages, fonts, programs
+from .data import CODEPAGES, FONTS, PROGRAMS
+from . import data
+
 
 MIN_PYTHON_VERSION = (2, 7, 12)
 
@@ -42,9 +47,8 @@ else:
     user_config_dir = os.path.join(_xdg_config_home, basename)
     state_path = os.path.join(_xdg_data_home, basename)
 
-# @: drive for bundled programs
+# @: target drive for bundled programs
 program_path = os.path.join(state_path, u'bundled_programs')
-
 
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
@@ -74,12 +78,8 @@ def get_unicode_argv():
         argv = CommandLineToArgvW(cmd, ctypes.byref(argc))
         argv = [argv[i] for i in xrange(argc.value)]
         # clip off the python interpreter call, if we use it
-        # NOTE: we shouldn't name the executable or python module anything that includes 'python'
-        if u'python' in argv[0].lower():
-            argv = argv[1:]
-            if argv[0] == u'-m':
-                # we've been called with `python -m pcbasic`, drop the -m too
-                argv = argv[1:]
+        # anything that didn't get included in sys.argv is not for us either
+        argv = argv[len(sys.argv):]
         return argv
     else:
         # the official parameter should be LC_CTYPE but that's None in my locale
@@ -103,6 +103,12 @@ def safe_split(s, sep):
     else:
         s1 = u''
     return s0, s1
+
+def store_bundled_programs(program_path):
+    """Retrieve contents of BASIC programs."""
+    for name in PROGRAMS:
+        with open(os.path.join(program_path, name), 'wb') as f:
+            f.write(data.read_program_file(name))
 
 
 class TemporaryDirectory():
@@ -281,9 +287,9 @@ class Settings(object):
         u'cas1': {u'type': u'string', u'default': u'',},
         u'com1': {u'type': u'string', u'default': u'',},
         u'com2': {u'type': u'string', u'default': u'',},
-        u'codepage': {u'type': u'string', u'choices': codepages, u'default': u'437',},
+        u'codepage': {u'type': u'string', u'choices': CODEPAGES, u'default': u'437',},
         u'font': {
-            u'type': u'string', u'list': u'*', u'choices': fonts,
+            u'type': u'string', u'list': u'*', u'choices': FONTS,
             u'default': [u'unifont', u'univga', u'freedos'],},
         u'dimensions': {u'type': u'int', u'list': 2, u'default': [],},
         u'fullscreen': {u'type': u'bool', u'default': False,},
@@ -368,7 +374,7 @@ class Settings(object):
         if not os.path.exists(program_path):
             os.makedirs(program_path)
             # unpack bundled programs
-            programs.store_bundled_programs(program_path)
+            store_bundled_programs(program_path)
         # store options in options dictionary
         self._options = self._retrieve_options(self.uargv)
         # prepare global logger for use by main program
@@ -380,7 +386,6 @@ class Settings(object):
             logging.fatal(msg)
             raise Exception(msg)
 
-
     def _prepare_logging(self):
         """Set up the global logger."""
         logfile = self.get('logfile')
@@ -389,12 +394,12 @@ class Settings(object):
             loglevel = logging.INFO
         else:
             # logging setup before we import modules and may need to log errors
-            formatstr = '%(levelname)s: %(message)s'
+            formatstr = '[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
             if self.get('debug'):
                 loglevel = logging.DEBUG
             else:
                 loglevel = logging.INFO
-        logging.basicConfig(format=formatstr, level=loglevel, filename=logfile)
+        logging.basicConfig(format=formatstr, level=loglevel, filename=logfile, datefmt='%H:%M:%S')
 
     def _retrieve_options(self, uargv):
         """Retrieve command line and option file options."""
@@ -454,6 +459,7 @@ class Settings(object):
         max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
         max_list[0] = max_list[0] or max_list[1]
         current_device, mount_dict = self.get_drives()
+        codepage_dict = data.read_codepage(self.get('codepage'))
         return {
             'syntax': self.get('syntax'),
             'debug': self.uargv if self.get('debug') else None,
@@ -461,7 +467,7 @@ class Settings(object):
             'append': self.get(b'append'),
             'input_file': self.get(b'input'),
             'video': self.get('video'),
-            'codepage': self.get('codepage') or '437',
+            'codepage': codepage_dict,
             'box_protect': not self.get('nobox'),
             'monitor': self.get('monitor'),
             # screen settings
@@ -470,7 +476,7 @@ class Settings(object):
             'video_memory': self.get('video-memory'),
             'cga_low': self.get('cga-low'),
             'mono_tint': self.get('mono-tint'),
-            'font': self.get('font'),
+            'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
             'keys': self.get('keys').encode('utf-8').decode('string_escape').decode('utf-8'),
             # find program for PCjr TERM command
@@ -551,7 +557,7 @@ class Settings(object):
         # build list of commands to execute on session startup
         commands = []
         if not self.get('resume'):
-            run = (self.get(0) != '') or (self.get('run') != '')
+            run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
             cmd = self.get('exec')
             # following GW, don't write greeting for redirected input
             # or command-line filter run
@@ -565,7 +571,7 @@ class Settings(object):
                 commands.append('SYSTEM')
         launch_params = {
             'wait': self.get('wait'),
-            'prog': self.get(0) or self.get('run') or self.get('load'),
+            'prog': self.get('run') or self.get('load') or self.get(0),
             'resume': self.get('resume'),
             'state_file': self.get_state_file(),
             'commands': commands,
@@ -660,37 +666,46 @@ class Settings(object):
             return 'convert'
         return None
 
+    def _append_short_args(self, args, key, value):
+        """Append short arguments and value to dict."""
+        for i, short_arg in enumerate(key[1:]):
+            try:
+                skey, svalue = safe_split(self.short_args[short_arg], u'=')
+                if not svalue and not skey:
+                    continue
+                if (not svalue) and i == len(key)-2:
+                    # assign value to last argument specified
+                    append_arg(args, skey, value)
+                else:
+                    append_arg(args, skey, svalue)
+            except KeyError:
+                self._logger.warning(u'Ignored unrecognised option `-%s`', short_arg)
+
     def _get_arguments(self, argv):
         """Convert arguments to dictionary."""
         args = {}
-        pos = 0
-        for arg in argv:
+        arg_deque = deque(argv)
+        # positional arguments must come before any options
+        for pos in range(self.positional):
+            if not arg_deque or arg_deque[0].startswith(u'-'):
+                break
+            args[pos] = arg_deque.popleft()
+        while arg_deque:
+            arg = arg_deque.popleft()
             key, value = safe_split(arg, u'=')
+            if not value:
+                if arg_deque and not arg_deque[0].startswith(u'-') and u'=' not in arg_deque[0]:
+                    value = arg_deque.popleft()
             if key:
                 if key[0:2] == u'--':
                     if key[2:]:
                         append_arg(args, key[2:], value)
                 elif key[0] == u'-':
-                    for i, short_arg in enumerate(key[1:]):
-                        try:
-                            skey, svalue = safe_split(self.short_args[short_arg], u'=')
-                            if not svalue and not skey:
-                                continue
-                            if (not svalue) and i == len(key)-2:
-                                # assign value to last argument specified
-                                append_arg(args, skey, value)
-                            else:
-                                append_arg(args, skey, svalue)
-                        except KeyError:
-                            self._logger.warning(u'Ignored unrecognised option "-%s"', short_arg)
-                elif pos < self.positional:
-                    # positional argument
-                    args[pos] = arg
-                    pos += 1
+                    self._append_short_args(args, key, value)
                 else:
-                    self._logger.warning(u'Ignored extra positional argument "%s"', arg)
+                    self._logger.warning(u'Ignored surplus positional argument `%s`', arg)
             else:
-                self._logger.warning(u'Ignored unrecognised option "=%s"', value)
+                self._logger.warning(u'Ignored unrecognised option `=%s`', value)
         return args
 
     def _parse_presets(self, remaining, conf_dict):

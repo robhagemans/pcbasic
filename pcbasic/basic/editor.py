@@ -227,8 +227,6 @@ class Editor(object):
                     self.screen.clear_view()
                 elif d == ea.CTRL_PRINT:
                     # ctrl+printscreen toggles printer copy
-                    # note that shift+print is a BIOS trigger
-                    # and is emulated at a deeper level
                     self.redirect.toggle_echo(self.lpt1_file)
                 else:
                     try:

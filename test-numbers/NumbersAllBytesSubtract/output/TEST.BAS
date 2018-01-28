@@ -1,0 +1,13 @@
+10 OPEN "allword.dat" FOR RANDOM AS 1 LEN=4
+20 FIELD#1, 1 AS L$, 1 AS R$
+30 OPEN "subbyte.dat" FOR RANDOM AS 2 LEN=4
+40 FIELD#2, 4 AS B$
+50 FOR I = 1 TO 65536!
+60   GET#1, I
+70   L = CVS(L$+CHR$(0)+CHR$(0)+CHR$(128))
+71   R = CVS(R$+CHR$(0)+CHR$(0)+CHR$(128))
+75   LSET B$ = MKS$(L-R)
+80   PUT#2, I
+90 NEXT
+100 CLOSE
+

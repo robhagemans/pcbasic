@@ -29,7 +29,6 @@ from . import dos
 from . import memory
 from . import machine
 from . import interpreter
-from . import files
 from . import sound
 from . import redirect
 from . import codepage as cp
@@ -48,7 +47,7 @@ class Session(object):
     def __init__(self, iface=None,
             syntax=u'advanced', pcjr_term=u'', shell=u'',
             output_file=None, append=False, input_file=None,
-            codepage=u'437', box_protect=True,
+            codepage=None, box_protect=True,
             video=u'vga', font=u'freedos',
             monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
             text_width=80, video_memory=262144, cga_low=False,
@@ -116,39 +115,45 @@ class Session(object):
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
                 self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
-        # prepare input methods
-        self.input_methods = inputmethods.InputMethods(self.queues, self.values)
+        # set up input event handler
+        self.input_methods = inputmethods.InputMethods(
+                self.queues, self.values, ctrl_c_is_break)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.input_methods, syntax)
+        # InputMethods needed for wait() only
+        self.keyboard = inputmethods.Keyboard(self.input_methods, self.values,
+                self.codepage, self.queues, keys, ignore_caps)
         # Sound is needed for the beeps on \a
+        # InputMethods is needed for wait() in graphics
+        # keyboard is needed for key list at bottom row
         self.screen = display.Screen(
-                self.queues, self.values, self.input_methods, self.memory,
-                text_width, video_memory, video, monitor,
+                self.queues, self.values, self.input_methods, self.keyboard,
+                self.memory, text_width, video_memory, video, monitor,
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
-                self.codepage, font, warn_fonts=bool(debug))
-        # initialise input methods
-        # screen is needed for print_screen, clipboard copy and pen poll
-        self.input_methods.init(self.screen, self.codepage, keys, ignore_caps, ctrl_c_is_break)
+                self.codepage, font)
+        # prepare input devices (keyboard, pen, joystick, clipboard-copier)
+        self.pen = inputmethods.Pen()
+        self.stick = inputmethods.Stick(self.values)
         # initilise floating-point error message stream
-        self.values.set_screen(self.screen)
+        self.values.set_handler(values.FloatErrorHandler(self.screen))
         ######################################################################
         # devices
         ######################################################################
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # InputMethods needed for wait()
-        self.devices = files.Devices(
-                self.values, self.input_methods, self.memory.fields,
-                self.screen, self.input_methods.keyboard,
+        self.files = devices.Files(
+                self.values, self.memory,
+                self.input_methods, self.keyboard, self.screen,
+                max_files, max_reclen, serial_buffer_size,
                 device_params, current_device, mount_dict,
-                print_trigger, temp_dir, serial_buffer_size,
+                print_trigger, temp_dir,
                 utf8, universal)
-        self.files = files.Files(self.values, self.devices, self.memory, max_files, max_reclen)
-        # set LPT1 as target for print_screen()
-        self.screen.set_print_screen_target(self.devices.lpt1_file)
         # set up the SHELL command
-        self.shell = dos.get_shell_manager(self.input_methods.keyboard, self.screen, self.codepage, shell, syntax)
+        self.shell = dos.get_shell_manager(
+                self.keyboard, self.screen,
+                self.codepage, shell, syntax)
         # set up environment
         self.environment = dos.Environment(self.values)
         # initialise random number generator
@@ -156,12 +161,26 @@ class Session(object):
         # initialise system clock
         self.clock = clock.Clock(self.values)
         ######################################################################
+        # register input event handlers
+        ######################################################################
+        # clipboard and print screen handler
+        clip_handler = inputmethods.ScreenCopyHandler(self.screen, self.files.lpt1_file)
+        self.input_methods.add_handler(clip_handler)
+        # keyboard, pen and stick
+        self.input_methods.add_handler(self.keyboard)
+        self.input_methods.add_handler(self.pen)
+        self.input_methods.add_handler(self.stick)
+        # set up BASIC event handlers
+        self.basic_events = events.BasicEvents(
+                self.values, self.sound, self.clock, self.files,
+                self.screen, self.program, syntax)
+        ######################################################################
         # editor
         ######################################################################
         # initialise the editor
         self.editor = editor.Editor(
-                self.screen, self.input_methods.keyboard, self.sound,
-                self.output_redirection, self.devices.lpt1_file)
+                self.screen, self.keyboard, self.sound,
+                self.output_redirection, self.files.lpt1_file)
         ######################################################################
         # extensions
         ######################################################################
@@ -173,14 +192,10 @@ class Session(object):
         self.parser = parser.Parser(self.values, self.memory, syntax)
         # set up debugger
         self.debugger = dbg.get_debugger(self, bool(debug), debug, catch_exceptions)
-        # set up BASIC event handlers
-        self.basic_events = events.BasicEvents(
-                self.values, self.input_methods, self.sound, self.clock,
-                self.devices, self.screen, self.program, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
-                self.debugger, self.input_methods, self.screen, self.devices, self.sound,
-                self.values, self.memory, self.scalars, self.program, self.parser, self.basic_events)
+                self.debugger, self.input_methods, self.screen, self.files, self.sound,
+                self.values, self.memory, self.program, self.parser, self.basic_events)
         # PLAY parser
         self.play_parser = sound.PlayParser(self.sound, self.memory, self.values)
         ######################################################################
@@ -188,8 +203,8 @@ class Session(object):
         ######################################################################
         # set up non-data segment memory
         self.all_memory = machine.Memory(
-                self.values, self.memory, self.devices, self.files,
-                self.screen, self.input_methods.keyboard, self.screen.fonts[8],
+                self.values, self.memory, self.files,
+                self.screen, self.keyboard, self.screen.fonts[8],
                 self.interpreter, peek_values, syntax)
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
@@ -216,7 +231,7 @@ class Session(object):
         # re-assign callbacks (not picklable)
         self.parser.init_callbacks(self)
         # reopen keyboard, in case we quit because it was closed
-        self.input_methods.keyboard._input_closed = False
+        self.keyboard._input_closed = False
         # suppress double prompt
         if not self.interpreter._parse_mode:
             self._prompt = False
@@ -316,7 +331,7 @@ class Session(object):
         """Close the session."""
         # close files if we opened any
         self.files.close_all()
-        self.devices.close()
+        self.files.close_devices()
 
     ###########################################################################
     # implementation
@@ -471,7 +486,7 @@ class Session(object):
         if not preserve_functions:
             self.parser.user_functions.clear()
         # Resets STRIG to off
-        self.input_methods.stick.is_on = False
+        self.stick.is_on = False
         # stop all sound
         self.sound.stop_all_sound()
         # reset PLAY state
@@ -823,3 +838,9 @@ class Session(object):
             if len(text) != 2:
                 raise error.BASICError(error.IFC)
             self.basic_events.key[keynum-1].set_trigger(str(text))
+
+    def pen_fn_(self, args):
+        """PEN: poll the light pen."""
+        fn, = args
+        result = self.pen.poll(fn, self.basic_events.pen.enabled, self.screen)
+        return self.values.new_integer().from_int(result)

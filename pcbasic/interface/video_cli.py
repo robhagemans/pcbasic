@@ -94,7 +94,7 @@ class VideoCLI(base.VideoPlugin):
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
                 self.input_queue.put(signals.Event(
-                                        signals.KEYB_DOWN, (uc, sc, [], False)))
+                                        signals.STREAM_DOWN, (uc, sc, [])))
                 if sc == scancode.F12:
                     self.f12_active = True
                 else:
@@ -118,13 +118,8 @@ class VideoCLI(base.VideoPlugin):
     ###############################################################################
 
 
-    def set_codepage(self, new_codepage):
-        """Set codepage used in sending characters."""
-        self.codepage = new_codepage
-
-    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, for_keys):
         """Put a character at a given position."""
-        char = self.codepage.to_unicode(cp, replace=u' ')
         if char == u'\0':
             char = u' '
         self.text[pagenum][row-1][col-1] = char

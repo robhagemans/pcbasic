@@ -32,8 +32,8 @@ class MachinePorts(object):
         # 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
         # 378h - 37Fh  Usual Address For LPT 1
         # 278h - 27Fh  Usual Address For LPT 2
-        dev = self.session.devices
-        self.lpt_device = [dev.devices['LPT1:'], dev.devices['LPT2:']]
+        dev = self.session.files
+        self.lpt_device = [dev.get_device('LPT1:'), dev.get_device('LPT2:')]
         # serial port base address:
         # http://www.petesqbsite.com/sections/tutorials/zines/qbnews/9-com_ports.txt
         #            COM1             &H3F8
@@ -41,7 +41,7 @@ class MachinePorts(object):
         #            COM3             &H3E8 (not implemented)
         #            COM4             &H2E8 (not implemented)
         self.com_base = {0x3f8: 0, 0x2f8: 1}
-        self.com_device = [dev.devices['COM1:'], dev.devices['COM2:']]
+        self.com_device = [dev.get_device('COM1:'), dev.get_device('COM2:')]
         self.com_enable_baud_write = [False, False]
         self.com_baud_divisor = [0, 0]
         self.com_break = [False, False]
@@ -64,25 +64,26 @@ class MachinePorts(object):
 
     def inp(self, port):
         """Get the value in an emulated machine port."""
-        input_methods = self.session.input_methods
+        keyboard = self.session.keyboard
+        stick = self.session.stick
         # keyboard
         if port == 0x60:
-            return input_methods.keyboard.last_scancode
+            return keyboard.last_scancode
         # game port (joystick)
         elif port == 0x201:
             value = (
-                (not input_methods.stick.is_firing[0][0]) * 0x40 +
-                (not input_methods.stick.is_firing[0][1]) * 0x20 +
-                (not input_methods.stick.is_firing[1][0]) * 0x10 +
-                (not input_methods.stick.is_firing[1][1]) * 0x80)
-            decay = input_methods.stick.decay()
-            if decay < input_methods.stick.axis[0][0] * self.joystick_time_factor:
+                (not stick.is_firing[0][0]) * 0x40 +
+                (not stick.is_firing[0][1]) * 0x20 +
+                (not stick.is_firing[1][0]) * 0x10 +
+                (not stick.is_firing[1][1]) * 0x80)
+            decay = stick.decay()
+            if decay < stick.axis[0][0] * self.joystick_time_factor:
                 value += 0x04
-            if decay < input_methods.stick.axis[0][1] * self.joystick_time_factor:
+            if decay < stick.axis[0][1] * self.joystick_time_factor:
                 value += 0x02
-            if decay < input_methods.stick.axis[1][0] * self.joystick_time_factor:
+            if decay < stick.axis[1][0] * self.joystick_time_factor:
                 value += 0x01
-            if decay < input_methods.stick.axis[1][1] * self.joystick_time_factor:
+            if decay < stick.axis[1][1] * self.joystick_time_factor:
                 value += 0x08
             return value
         elif port in (0x379, 0x279):
@@ -102,11 +103,11 @@ class MachinePorts(object):
             # http://control.com/thread/1026221083
             for base_addr, com_port_nr in self.com_base.iteritems():
                 com_port = self.com_device[com_port_nr]
-                if com_port.stream is None:
+                if not com_port.available():
                     continue
                 # Line Control Register: base_address + 3 (r/w)
                 if port == base_addr + 3:
-                    _, parity, bytesize, stopbits = com_port.stream.get_params()
+                    _, parity, bytesize, stopbits = com_port.get_params()
                     value = self.com_enable_baud_write[com_port_nr] * 0x80
                     value += self.com_break[com_port_nr] * 0x40
                     value += {'S': 0x38, 'M': 0x28, 'E': 0x18, 'O': 0x8, 'N': 0}[parity]
@@ -123,11 +124,11 @@ class MachinePorts(object):
                     # other bits not implemented:
                     #   1 - overrun, 2 - parity 3 - framing errors;
                     #   4 - break interrupt; 7 - at least one error in received FIFO
-                    in_waiting, out_waiting = com_port.stream.io_waiting()
+                    in_waiting, out_waiting = com_port.io_waiting()
                     return (1-out_waiting) * 0x60 + in_waiting
                 # Modem Status Register: base_address + 6 (read only)
                 elif port == base_addr + 6:
-                    cd, ri, dsr, cts = com_port.stream.get_pins()
+                    cd, ri, dsr, cts = com_port.get_pins()
                     # delta bits not implemented
                     return (cd*0x80 + ri*0x40 + dsr*0x20 + cts*0x10)
             # addr isn't one of the covered ports
@@ -141,7 +142,7 @@ class MachinePorts(object):
         list(args)
         if addr == 0x201:
             # game port reset
-            self.session.input_methods.stick.reset_decay()
+            self.session.stick.reset_decay()
         elif addr == 0x3c5:
             # officially, requires OUT &H3C4, 2 first (not implemented)
             self.session.screen.mode.set_plane_mask(val)
@@ -174,7 +175,7 @@ class MachinePorts(object):
             # http://control.com/thread/1026221083
             for base_addr, com_port_nr in self.com_base.iteritems():
                 com_port = self.com_device[com_port_nr]
-                if com_port.stream is None:
+                if not com_port.available():
                     continue
                 # ports at base addr and the next one are used for writing baud rate
                 # (among other things that aren't implemented)
@@ -184,12 +185,12 @@ class MachinePorts(object):
                     elif addr == base_addr + 1:
                         self.com_baud_divisor[com_port_nr] = val*0x100 + (self.com_baud_divisor[com_port_nr] & 0xff)
                     if self.com_baud_divisor[com_port_nr]:
-                        baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
+                        baudrate, parity, bytesize, stopbits = com_port.get_params()
                         baudrate = 115200 // self.com_baud_divisor[com_port_nr]
-                        com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
+                        com_port.set_params(baudrate, parity, bytesize, stopbits)
                 # Line Control Register: base_address + 3 (r/w)
                 elif addr == base_addr + 3:
-                    baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
+                    baudrate, parity, bytesize, stopbits = com_port.get_params()
                     if val & 0x80:
                         self.com_enable_baud_write[com_port_nr] = True
                     # break condition
@@ -205,11 +206,11 @@ class MachinePorts(object):
                         stopbits = 1
                     # set byte size to 5, 6, 7, 8
                     bytesize = (val & 0x3) + 5
-                    com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
-                    com_port.stream.set_pins(brk=self.com_break[com_port_nr])
+                    com_port.set_params(baudrate, parity, bytesize, stopbits)
+                    com_port.set_pins(brk=self.com_break[com_port_nr])
                 # Modem Control Register: base_address + 4 (r/w)
                 elif addr == base_addr + 4:
-                    com_port.stream.set_pins(rts=val & 0x2, dtr=val & 0x1)
+                    com_port.set_pins(rts=val & 0x2, dtr=val & 0x1)
 
     def wait_(self, args):
         """WAIT: wait for a machine port."""
@@ -248,15 +249,14 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, values, data_memory, devices, files, screen, keyboard,
+    def __init__(self, values, data_memory, files, screen, keyboard,
                 font_8, interpreter, peek_values, syntax):
         """Initialise memory."""
         self._values = values
         # data segment initialised elsewhere
         self._memory = data_memory
         # device access needed for COM and LPT ports
-        self.devices = devices
-        # for BLOAD and BSAVE
+        # files access for BLOAD and BSAVE
         self._files = files
         # screen access needed for video memory
         self.screen = screen
@@ -334,7 +334,7 @@ class Memory(object):
             g.write(str(self._get_memory_block(addr, length)))
             # Tandys repeat the header at the end of the file
             if self._syntax == 'tandy':
-                g.write(devices.type_to_magic['M'] +
+                g.write(devices.TYPE_TO_MAGIC['M'] +
                         struct.pack('<HHH', self.segment, offset, length))
 
     def def_seg_(self, args):
@@ -533,12 +533,14 @@ class Memory(object):
         #   "(PEEK (1041) AND 16)/16" WILL PROVIDE NUMBER OF GAME PORTS INSTALLED.
         #   "(PEEK (1041) AND 192)/64" WILL PROVIDE NUMBER OF PRINTERS INSTALLED.
         elif addr == 1041:
-            return (2 * ((self.devices.devices['COM1:'].stream is not None) +
-                        (self.devices.devices['COM2:'].stream is not None)) +
-                    16 +
-                    64 * ((self.devices.devices['LPT1:'].stream is not None) +
-                        (self.devices.devices['LPT2:'].stream is not None) +
-                        (self.devices.devices['LPT3:'].stream is not None)))
+            return (
+                2 * (self._files.device_available('COM1:') +
+                    self._files.device_available('COM2:')) +
+                16 +
+                64 * (self._files.device_available('LPT1:') +
+                    self._files.device_available('LPT2:') +
+                    self._files.device_available('LPT3:'))
+            )
         # &h40:&h17 keyboard flag
         # &H80 - Insert state active
         # &H40 - CapsLock state has been toggled
