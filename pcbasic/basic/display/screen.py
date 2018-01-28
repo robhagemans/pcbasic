@@ -49,7 +49,7 @@ class Screen(object):
         # video mode settings
         self._mode_nr, self.colorswitch, self.apagenum, self.vpagenum = 0, 1, 0, 0
         # prepare video modes
-        self.mode = self.video.get_textmode(initial_width)
+        self.mode = self.video.get_mode(0, initial_width)
         # current attribute
         self.attr = 7
         # border attribute

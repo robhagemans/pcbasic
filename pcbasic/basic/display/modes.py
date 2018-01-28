@@ -111,10 +111,6 @@ class Video(object):
         # set up text_data and mode_data
         self.prepare_modes(video_mem_size)
 
-    def get_textmode(self, width):
-        """Retrieve text mode by width."""
-        return self.text_data[width]
-
     def get_mode(self, number, width=None):
         """Retrieve graphical mode by screen number."""
         try:
