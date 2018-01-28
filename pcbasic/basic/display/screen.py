@@ -76,6 +76,27 @@ class Screen(object):
     ###########################################################################
     # video modes
 
+    # SCREEN statement
+    # Colorswitch parameter
+    #   SCREEN 0,0 - mono on composite, color on RGB
+    #   SCREEN 0,1 - color (colorburst=True)
+    #   SCREEN 1,0 - color (colorburst=True)
+    #   SCREEN 1,1 - mono on composite, mode 5 on RGB
+    # default colorswitch:
+    #   SCREEN 0 = SCREEN 0,0 (pcjr)
+    #   SCREEN 0 = SCREEN 0,1 (tandy, cga, ega, vga, ..)
+    #   SCREEN 1 = SCREEN 1,0 (pcjr, tandy)
+    #   SCREEN 1 = SCREEN 1,1 (cga, ega, vga, ...)
+    # colorswitch is NOT preserved between screens when unspecified
+    # colorswitch is NOT the same as colorburst (opposite on screen 1)
+    #
+    # Erase parameter:
+    #   tells basic how much video memory to erase
+    #   0: do not erase video memory
+    #   1: (default) erase old and new page if screen or width changes
+    #   2: erase all video memory if screen or width changes
+    #   -> we're not distinguishing between 1 and 2 here
+
     def screen_(self, args):
         """SCREEN: change the video mode, colourburst, visible or active page."""
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
@@ -111,18 +132,7 @@ class Screen(object):
         # set default arguments
         if new_mode is None:
             new_mode = self._mode_nr
-        # THIS IS HOW COLORSWITCH SHOULD WORK:
-        #   SCREEN 0,0 - mono on composite, color on RGB
-        #   SCREEN 0,1 - color (colorburst=True)
-        #   SCREEN 1,0 - color (colorburst=True)
-        #   SCREEN 1,1 - mono on composite, mode 5 on RGB
-        # default colorswitch:
-        #   SCREEN 0 = SCREEN 0,0 (pcjr)
-        #   SCREEN 0 = SCREEN 0,1 (tandy, cga, ega, vga, ..)
-        #   SCREEN 1 = SCREEN 1,0 (pcjr, tandy)
-        #   SCREEN 1 = SCREEN 1,1 (cga, ega, vga, ...)
-        # colorswitch is NOT preserved between screens when unspecified
-        # colorswitch is NOT the same as colorburst (opposite on screen 1)
+        # set colorswitch
         if new_colorswitch is None:
             if self.capabilities == 'pcjr':
                 new_colorswitch = 0
@@ -138,14 +148,7 @@ class Screen(object):
             if new_width == 20:
                 new_width = 40
         # retrieve the specs for the new video mode
-        try:
-            if new_mode != 0:
-                info = self.video.get_mode(new_mode)
-            else:
-                info = self.video.get_textmode(new_width)
-        except KeyError:
-            # no such mode
-            raise error.BASICError(error.IFC)
+        info = self.video.get_mode(new_mode, new_width)
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
         if new_vpagenum is None:
@@ -175,12 +178,8 @@ class Screen(object):
     def set_mode_(self, mode_info, new_mode, new_colorswitch,
                  new_apagenum, new_vpagenum, erase=True):
         """Change the video mode, colourburst, visible or active page."""
-        # Erase tells basic how much video memory to erase
-        # 0: do not erase video memory
-        # 1: (default) erase old and new page if screen or width changes
-        # 2: erase all video memory if screen or width changes
-        # -> we're not distinguishing between 1 and 2 here
-        if (erase == 0 and self.mode.video_segment == mode_info.video_segment):
+        # preserve memeory if erase==0; don't distingush erase==1 and erase==2
+        if (not erase and self.mode.video_segment == mode_info.video_segment):
             save_mem = self.mode.get_all_memory(self)
         else:
             save_mem = None
@@ -313,7 +312,6 @@ class Screen(object):
                 self.screen(8, None, 0, 0)
         else:
             raise error.BASICError(error.IFC)
-        #self._reset()
 
     def set_colorburst(self, on=True):
         """Set the composite colorburst bit."""

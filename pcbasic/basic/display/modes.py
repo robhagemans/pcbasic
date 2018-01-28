@@ -14,6 +14,7 @@ except ImportError:
 import struct
 
 from .. import values
+from ..base import error
 
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
 INTENSITY_EGA_MONO_0 = (0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xff, 0xff, 0xff)
@@ -114,9 +115,16 @@ class Video(object):
         """Retrieve text mode by width."""
         return self.text_data[width]
 
-    def get_mode(self, number):
+    def get_mode(self, number, width=None):
         """Retrieve graphical mode by screen number."""
-        return self.mode_data[number]
+        try:
+            if number:
+                return self.mode_data[number]
+            else:
+                return self.text_data[width]
+        except KeyError:
+            # no such mode
+            raise error.BASICError(error.IFC)
 
     def toggle_colour(self, has_colour):
         """Toggle between colour and monochrome (for NTSC colorburst)."""
