@@ -208,7 +208,6 @@ class Screen(object):
             self.set_border(0)
         # set the screen parameters
         self._mode_nr = new_mode
-        self.colorswitch = new_colorswitch
         # set all state vars
         self.mode = spec
         # build the screen buffer
@@ -217,27 +216,19 @@ class Screen(object):
         if not self.mode.is_text_mode:
             self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
                                     self.mode.num_pages, self.mode.bitsperpixel)
-        # ensure current position is not outside new boundaries
-        self.current_row, self.current_col = 1, 1
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics viewport
         self.graph_view = graphics.GraphicsViewPort(
                 self.mode.pixel_width, self.mode.pixel_height)
-        # cursor width starts out as single char
-        self.cursor.init_mode(self.mode)
+        # initialise the palette
         self.palette.init_mode(self.mode)
         # set the attribute
         if not self.mode.is_text_mode:
             fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
             self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
-        # in screen 0, 1, set colorburst (not in SCREEN 2!)
-        if self.mode.is_text_mode:
-            self.set_colorburst(new_colorswitch)
-        elif self.mode.name == '320x200x4':
-            self.set_colorburst(not new_colorswitch)
-        elif self.mode.name == '640x200x2':
-            self.set_colorburst(False)
+        # set the colorswitch
+        self._init_mode_colorburst(new_colorswitch)
         # restore emulated video memory in new mode
         if save_mem:
             self.mode.set_all_memory(self, save_mem)
@@ -245,17 +236,10 @@ class Screen(object):
         self.drawing.init_mode()
         # redraw key line
         self.bottom_bar.redraw(self)
-        # move to home in case the screen has shrunk
-        self.set_pos(1, 1)
-        # there is only one VIEW PRINT setting across all pages.
-        if self.scroll_height == 25:
-            # tandy/pcjr special case: VIEW PRINT to 25 is preserved
-            self.set_view(1, 25)
-        else:
-            self.unset_view()
+        # initialise text viewport & move cursor home
+        self._init_mode_view()
         # rebuild the cursor
-        self.cursor.set_default_shape(True)
-        self.cursor.reset_visibility()
+        self.cursor.init_mode(self.mode)
 
     def set_width(self, to_width):
         """Set the character width of the screen, reset pages and change modes."""
@@ -295,11 +279,23 @@ class Screen(object):
         else:
             raise error.BASICError(error.IFC)
 
+    def _init_mode_colorburst(self, new_colorswitch):
+        """Initialise colorburst settings for new screen mode and colorswitch."""
+        self.colorswitch = new_colorswitch
+        # in screen 0, 1, set colorburst (not in SCREEN 2!)
+        if self.mode.is_text_mode:
+            self.set_colorburst(new_colorswitch)
+        elif self.mode.name == '320x200x4':
+            self.set_colorburst(not new_colorswitch)
+        elif self.mode.name == '640x200x2':
+            self.set_colorburst(False)
+
     def set_colorburst(self, on=True):
         """Set the composite colorburst bit."""
         colorburst = self.video.set_colorburst(on, is_cga=(self.mode.name == '320x200x4'))
         # reset the palette to reflect the new mono or mode-5 situation
         self.palette.init_mode(self.mode)
+        # this is only needed because composite artifacts are implemented in the interface
         self.queues.video.put(signals.Event(signals.VIDEO_SET_COLORBURST, (colorburst,
                             self.palette.rgb_palette, self.palette.rgb_palette1)))
 
@@ -975,6 +971,15 @@ class Screen(object):
             error.range_check(1, max_line, start, stop)
             error.throw_if(stop < start)
             self.set_view(start, stop)
+
+    def _init_mode_view(self):
+        """Initialise the scroll area for new screen mode."""
+        # there is only one VIEW PRINT setting across all pages.
+        if self.scroll_height == 25:
+            # tandy/pcjr special case: VIEW PRINT to 25 is preserved
+            self.set_view(1, 25)
+        else:
+            self.unset_view()
 
     def set_view(self, start, stop):
         """Set the scroll area."""

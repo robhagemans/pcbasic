@@ -560,8 +560,10 @@ class Cursor(object):
         """Change the cursor for a new screen mode."""
         self.width = mode.font_width
         self.height = mode.font_height
+        # cursor width starts out as single char
         self.set_default_shape(True)
         self.reset_attr()
+        self.reset_visibility()
 
     def reset_attr(self):
         """Set the text cursor attribute to that of the current location."""
