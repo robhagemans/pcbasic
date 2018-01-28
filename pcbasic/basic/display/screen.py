@@ -42,14 +42,15 @@ class Screen(object):
         # output redirection
         self.redirect = redirect
         # low level settings
-        self.video = Video(capabilities, monitor, mono_tint, cga_low, screen_aspect)
+        self.video = Video(
+                capabilities, monitor, mono_tint, cga_low,
+                screen_aspect, video_mem_size)
         self.capabilities = self.video.capabilities
         self.video_mem_size = int(video_mem_size)
         # video mode settings
         self._mode_nr, self.colorswitch, self.apagenum, self.vpagenum = 0, 1, 0, 0
         # prepare video modes
-        self.text_data, self.mode_data = self.video.get_modes(self.video_mem_size)
-        self.mode = self.text_data[initial_width]
+        self.mode = self.video.get_textmode(initial_width)
         # current attribute
         self.attr = 7
         # border attribute
@@ -148,9 +149,9 @@ class Screen(object):
         # retrieve the specs for the new video mode
         try:
             if new_mode != 0:
-                info = self.mode_data[new_mode]
+                info = self.video.get_mode(new_mode)
             else:
-                info = self.text_data[new_width]
+                info = self.video.get_textmode(new_width)
         except KeyError:
             # no such mode
             raise error.BASICError(error.IFC)
@@ -333,16 +334,16 @@ class Screen(object):
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
-        self.video_mem_size = int(new_size)
         # redefine number of available video pages
-        self.text_data, self.mode_data = self.video.get_modes(self.video_mem_size)
+        self.video.prepare_modes(new_size)
+        self.video_mem_size = int(new_size)
         # text screen modes don't depend on video memory size
         if self._mode_nr == 0:
             return
         # check if we need to drop out of our current mode
         page = max(self.vpagenum, self.apagenum)
         # reload max number of pages; do we fit? if not, drop to text
-        new_mode = self.mode_data[self._mode_nr]
+        new_mode = self.video.get_mode(self._mode_nr)
         if (page >= new_mode.num_pages):
             self.screen(0, 0, 0, 0)
             self.init_mode()
