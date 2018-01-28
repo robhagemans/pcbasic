@@ -445,7 +445,7 @@ class TextMode(VideoMode):
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from textmode video memory."""
         addr -= self.video_segment*0x10
-        mem_bytes = [0]*num_bytes
+        mem_bytes = bytearray(num_bytes)
         for i in xrange(num_bytes):
             page = (addr+i) // self.page_size
             offset = (addr+i) % self.page_size
