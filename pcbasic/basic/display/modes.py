@@ -412,6 +412,20 @@ class VideoMode(object):
         underline = False
         return fore, back, blink, underline
 
+    def get_all_memory(self, screen):
+        """Obtain a copy of all video memory."""
+        return self.get_memory(screen, self.video_segment, self.page_size*self.num_pages)
+
+    def set_all_memory(self, screen, mem_copy):
+        """Restore a copy of all video memory."""
+        return self.set_memory(screen, self.video_segment, mem_copy)
+
+    def get_memory(self, screen, addr, num_bytes):
+        """Retrieve bytes from video memory, stub."""
+
+    def set_memory(self, screen, addr, bytes):
+        """Set bytes in video memory, stub."""
+
 
 class TextMode(VideoMode):
     """Default settings for a text mode."""

@@ -46,7 +46,6 @@ class Screen(object):
                 capabilities, monitor, mono_tint, cga_low,
                 screen_aspect, video_mem_size)
         self.capabilities = self.video.capabilities
-        self.video_mem_size = int(video_mem_size)
         # video mode settings
         self._mode_nr, self.colorswitch, self.apagenum, self.vpagenum = 0, 1, 0, 0
         # prepare video modes
@@ -177,14 +176,12 @@ class Screen(object):
             # 2: erase all video memory if screen or width changes
             # -> we're not distinguishing between 1 and 2 here
             if (erase == 0 and self.mode.video_segment == info.video_segment):
-                save_mem = self.get_memory(
-                                self.mode.video_segment*0x10, self.video_mem_size)
+                save_mem = self.mode.get_all_memory(self)
             else:
                 save_mem = None
-            self.set_mode(info, new_mode, new_colorswitch,
-                          new_apagenum, new_vpagenum)
+            self.set_mode(info, new_mode, new_colorswitch, new_apagenum, new_vpagenum)
             if save_mem:
-                self.set_memory(self.mode.video_segment*0x10, save_mem)
+                self.mode.set_all_memory(self, save_mem)
         else:
             # only switch pages
             if (new_apagenum >= info.num_pages or
@@ -336,7 +333,6 @@ class Screen(object):
         """Change the amount of memory available to the video card."""
         # redefine number of available video pages
         self.video.prepare_modes(new_size)
-        self.video_mem_size = int(new_size)
         # text screen modes don't depend on video memory size
         if self._mode_nr == 0:
             return
