@@ -445,7 +445,7 @@ class TextMode(VideoMode):
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from textmode video memory."""
         addr -= self.video_segment*0x10
-        bytes = [0]*num_bytes
+        mem_bytes = [0]*num_bytes
         for i in xrange(num_bytes):
             page = (addr+i) // self.page_size
             offset = (addr+i) % self.page_size
@@ -453,16 +453,16 @@ class TextMode(VideoMode):
             crow = offset // (self.width*2)
             try:
                 c = screen.text.pages[page].row[crow].buf[ccol][(addr+i)%2]
-                bytes[i] = c if (addr+i)%2==1 else ord(c)
+                mem_bytes[i] = c if (addr+i)%2==1 else ord(c)
             except IndexError:
                 pass
-        return bytes
+        return mem_bytes
 
-    def set_memory(self, screen, addr, bytes):
+    def set_memory(self, screen, addr, mem_bytes):
         """Set bytes in textmode video memory."""
         addr -= self.video_segment*0x10
         last_row = -1
-        for i in xrange(len(bytes)):
+        for i in xrange(len(mem_bytes)):
             page = (addr+i) // self.page_size
             offset = (addr+i) % self.page_size
             ccol = (offset % (self.width*2)) // 2
@@ -470,9 +470,9 @@ class TextMode(VideoMode):
             try:
                 c, a = screen.text.pages[page].row[crow].buf[ccol]
                 if (addr+i)%2 == 0:
-                    c = chr(bytes[i])
+                    c = chr(mem_bytes[i])
                 else:
-                    a = bytes[i]
+                    a = mem_bytes[i]
                 screen.text.pages[page].put_char_attr(crow+1, ccol+1, c, a, one_only=False)
                 if last_row >= 0 and last_row != crow:
                     # set for_keys to true to avoid echoing to text terminal
@@ -510,7 +510,7 @@ class MonoTextMode(TextMode):
 # helper functions: convert between attribute lists and byte arrays
 
 if numpy:
-    def bytes_to_interval(bytes, pixels_per_byte, mask=1):
+    def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
         """Convert masked attributes packed into bytes to a scanline interval."""
         bpp = 8//pixels_per_byte
         attrmask = (1<<bpp) - 1
@@ -518,12 +518,12 @@ if numpy:
         bitmask = bitval[0::bpp]
         for i in xrange(1, bpp):
             bitmask |= bitval[i::bpp]
-        pre_mask = numpy.tile(bitmask, len(bytes))
+        pre_mask = numpy.tile(bitmask, len(byte_array))
         post_shift = numpy.tile(
                         numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp],
-                        len(bytes))
+                        len(byte_array))
         attrs = numpy.right_shift(
-                    numpy.repeat(numpy.array(bytes).astype(int),
+                    numpy.repeat(numpy.array(byte_array).astype(int),
                                  pixels_per_byte) & pre_mask,
                     post_shift) & attrmask
         return numpy.array(attrs) * mask
@@ -554,12 +554,12 @@ if numpy:
         return bytearray(list(nattrs))
 
 else:
-    def bytes_to_interval(bytes, pixels_per_byte, mask=1):
+    def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
         """Convert masked attributes packed into bytes to a scanline interval."""
         bpp = 8//pixels_per_byte
         attrmask = (1<<bpp) - 1
         return [((byte >> (8-bpp-shift)) & attrmask) * mask
-                    for byte in bytes for shift in xrange(0, 8, bpp)]
+                    for byte in byte_array for shift in xrange(0, 8, bpp)]
 
     def interval_to_bytes(colours, pixels_per_byte, plane=0):
         """Convert a scanline interval into masked attributes packed into bytes."""
@@ -866,7 +866,7 @@ class EGAMode(GraphicsMode):
                 self.ppb, plane)
         return byte_array
 
-    def set_memory(self, screen, addr, bytes):
+    def set_memory(self, screen, addr, byte_array):
         """Set bytes in EGA video memory."""
         # EGA memory is planar with memory-mapped colour planes.
         # Within a plane, 8 pixels are encoded into each byte.
@@ -876,9 +876,9 @@ class EGAMode(GraphicsMode):
         # return immediately for unused colour planes
         if mask == 0:
             return
-        for page, x, y, ofs, length in walk_memory(self, addr, len(bytes)):
+        for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array)):
             screen.put_interval(page, x, y,
-                bytes_to_interval(bytes[ofs:ofs+length], self.ppb, mask), mask)
+                bytes_to_interval(byte_array[ofs:ofs+length], self.ppb, mask), mask)
 
     sprite_to_array = sprite_to_array_ega
     array_to_sprite = array_to_sprite_ega
@@ -947,14 +947,14 @@ class Tandy6Mode(GraphicsMode):
         # resulting array may be too long by one byte, so cut to size
         return [item for pair in zip(*hbytes) for item in pair] [:num_bytes]
 
-    def set_memory(self, screen, addr, bytes):
+    def set_memory(self, screen, addr, byte_array):
         """Set bytes in Tandy 640x200x4 memory."""
-        hbytes = bytes[0::2], bytes[1::2]
+        hbytes = byte_array[0::2], byte_array[1::2]
         # Tandy-6 encodes 8 pixels per byte, alternating colour planes.
         # I.e. even addresses are 'colour plane 0', odd ones are 'plane 1'
         for parity in (0, 1):
             mask = 2 ** (parity^(addr%2))
-            for page, x, y, ofs, length in walk_memory(self, addr, len(bytes), 2):
+            for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array), 2):
                 screen.put_interval(page, x, y,
                     bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self.ppb, mask),
                     mask)
