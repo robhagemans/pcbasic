@@ -40,6 +40,58 @@ alt_key_replace = {
     }
 
 
+class FunctionKeyMacros(object):
+    """Handles display of function-key macro strings."""
+
+    # characters to replace
+    _replace_chars = {
+        b'\x07': b'\x0e', b'\x08': b'\xfe', b'\x09': b'\x1a', b'\x0A': b'\x1b',
+        b'\x0B': b'\x7f', b'\x0C': b'\x16', b'\x0D': b'\x1b', b'\x1C': b'\x10',
+        b'\x1D': b'\x11', b'\x1E': b'\x18', b'\x1F': b'\x19'}
+
+    def __init__(self, keyboard, screen, num_fn_keys):
+        """Initialise user-definable key list."""
+        self._keyboard = keyboard
+        self._screen = screen
+        self._bar = screen.bottom_bar
+        self._num_fn_keys = num_fn_keys
+        self._update_bar()
+
+    def list_keys(self):
+        """Print a list of the function key macros."""
+        for i in range(self._num_fn_keys):
+            text = self._keyboard.get_macro(i)
+            text = b''.join(self._replace_chars.get(s, s) for s in text)
+            self._screen.write_line(b'F%d %s' % (i+1, text))
+
+    def set(self, num, macro):
+        """Set macro for given function key."""
+        # NUL terminates macro string, rest is ignored
+        # macro starting with NUL is empty macro
+        self._keyboard.set_macro(num, macro)
+        self._update_bar()
+
+    def key_(self, args):
+        """KEY: show/hide/list macros."""
+        command, = args
+        if command == tk.ON:
+            self._bar.show(True, self._screen)
+        elif command == tk.OFF:
+            self._bar.show(False, self._screen)
+        elif command == tk.LIST:
+            self.list_keys()
+
+    def _update_bar(self):
+        """Show/hide the function keys line on the active page."""
+        self._bar.clear()
+        for i in range(10):
+            text = self._keyboard.get_macro(i)[:6]
+            text = b''.join(self._replace_chars.get(s, s) for s in text)
+            kcol = 1 + 8*i
+            self._bar.write(str(i+1)[-1], kcol, False)
+            self._bar.write(text, kcol+1, True)
+
+
 class Editor(object):
     """Interactive environment."""
 

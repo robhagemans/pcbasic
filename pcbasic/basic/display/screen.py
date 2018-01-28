@@ -21,7 +21,7 @@ from . import graphics
 from . import font
 from . import modes
 
-from .display import FunctionKeyMacros, Palette, Cursor
+from .display import BottomBar, Palette, Cursor
 from .display import TextBuffer, TextRow, PixelBuffer
 from .modes import Video
 
@@ -29,7 +29,7 @@ from .modes import Video
 class Screen(object):
     """Screen manipulation operations."""
 
-    def __init__(self, queues, values, input_methods, keyboard, memory,
+    def __init__(self, queues, values, input_methods, memory,
                 initial_width, video_mem_size, capabilities, monitor, sound, redirect,
                 cga_low, mono_tint, screen_aspect, codepage, fonts):
         """Minimal initialisiation of the screen."""
@@ -67,7 +67,7 @@ class Screen(object):
         # prepare fonts
         self.fonts = {height: font.Font(height, font_dict) for height, font_dict in fonts.iteritems()}
         # function key macros
-        self.fkey_macros = FunctionKeyMacros(keyboard, self, capabilities)
+        self.bottom_bar = BottomBar()
         self.drawing = graphics.Drawing(self, input_methods, values, memory)
         self.palette = Palette(self.queues, self.mode, self.capabilities, self._memory)
         # initialise a fresh textmode screen
@@ -244,7 +244,7 @@ class Screen(object):
         # center graphics cursor, reset window, etc.
         self.drawing.init_mode()
         # redraw key line
-        self.fkey_macros.redraw_keys()
+        self.bottom_bar.redraw(self)
         # move to home in case the screen has shrunk
         self.set_pos(1, 1)
         # there is only one VIEW PRINT setting across all pages.
@@ -457,7 +457,7 @@ class Screen(object):
         # cls is only executed if no errors have occurred
         if val == 0:
             self.clear()
-            self.fkey_macros.redraw_keys()
+            self.bottom_bar.redraw(self)
             self.drawing.reset()
         elif val == 1:
             # clear the graphics viewport
@@ -618,7 +618,7 @@ class Screen(object):
         row = self.current_row if row is None else row
         col = self.current_col if col is None else col
         cmode = self.mode
-        error.throw_if(row == cmode.height and self.fkey_macros.keys_visible)
+        error.throw_if(row == cmode.height and self.bottom_bar.visible)
         if self.view_set:
             error.range_check(self.view_start, self.scroll_height, row)
         else:
@@ -971,7 +971,7 @@ class Screen(object):
         if start is None and stop is None:
             self.unset_view()
         else:
-            max_line = 25 if (self.capabilities in ('pcjr', 'tandy') and not self.fkey_macros.keys_visible) else 24
+            max_line = 25 if (self.capabilities in ('pcjr', 'tandy') and not self.bottom_bar.visible) else 24
             error.range_check(1, max_line, start, stop)
             error.throw_if(stop < start)
             self.set_view(start, stop)

@@ -125,9 +125,8 @@ class Session(object):
                 self.codepage, self.queues, keys, ignore_caps)
         # Sound is needed for the beeps on \a
         # InputMethods is needed for wait() in graphics
-        # keyboard is needed for key list at bottom row
         self.screen = display.Screen(
-                self.queues, self.values, self.input_methods, self.keyboard,
+                self.queues, self.values, self.input_methods,
                 self.memory, text_width, video_memory, video, monitor,
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
@@ -177,6 +176,9 @@ class Session(object):
         ######################################################################
         # editor
         ######################################################################
+        # key macro guide
+        self.fkey_macros = editor.FunctionKeyMacros(
+                self.keyboard, self.screen, self.basic_events.num_fn_keys)
         # initialise the editor
         self.editor = editor.Editor(
                 self.screen, self.keyboard, self.sound,
@@ -831,7 +833,8 @@ class Session(object):
         text = values.next_string(args)
         list(args)
         if keynum <= self.basic_events.num_fn_keys:
-            self.screen.fkey_macros.set(keynum, text)
+            self.fkey_macros.set(keynum, text)
+            self.screen.bottom_bar.redraw(self.screen)
         else:
             # only length-2 expressions can be assigned to KEYs over 10
             # in which case it's a key scancode definition
