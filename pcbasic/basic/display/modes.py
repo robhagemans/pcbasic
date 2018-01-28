@@ -115,9 +115,9 @@ class Video(object):
         """Retrieve graphical mode by screen number."""
         try:
             if number:
-                return self.mode_data[number]
+                return self._mode_data[number]
             else:
-                return self.text_data[width]
+                return self._text_data[width]
         except KeyError:
             # no such mode
             raise error.BASICError(error.IFC)
@@ -158,6 +158,11 @@ class Video(object):
             self.toggle_colour(
                     self.monitor != 'mono' and (on or self.monitor != 'composite'))
         return on and colorburst_capable
+
+    def get_allowed_widths(self):
+        """Get allowed screen widths."""
+        return set(mode.width
+                for mode in self._text_data.values() + self._mode_data.values())
 
     ###########################################################################
     # video modes
@@ -281,67 +286,67 @@ class Video(object):
             # technically, VGA text does have underline
             # but it's set to an invisible scanline
             # so not, so long as we're not allowing to set the scanline
-            self.text_data = {
+            self._text_data = {
                 40: TextMode('vgatext40', 25, 40, 16, 9, 7,
                              EGA_PALETTE, COLOURS64, num_pages=8),
                 80: TextMode('vgatext80', 25, 80, 16, 9, 7,
                              EGA_PALETTE, COLOURS64, num_pages=4)}
-            self.mode_data = {
+            self._mode_data = {
                 1: graphics_mode['320x200x4'],
                 2: graphics_mode['640x200x2'],
                 7: graphics_mode['320x200x16'],
                 8: graphics_mode['640x200x16'],
                 9: graphics_mode['640x350x16']}
         elif self.capabilities == 'ega':
-            self.text_data = {
+            self._text_data = {
                 40: TextMode('egatext40', 25, 40, 14, 8, 7,
                              EGA_PALETTE, COLOURS64, num_pages=8),
                 80: TextMode('egatext80', 25, 80, 14, 8, 7,
                              EGA_PALETTE, COLOURS64, num_pages=4)}
-            self.mode_data = {
+            self._mode_data = {
                 1: graphics_mode['320x200x4'],
                 2: graphics_mode['640x200x2'],
                 7: graphics_mode['320x200x16'],
                 8: graphics_mode['640x200x16'],
                 9: graphics_mode['640x350x16']}
         elif self.capabilities == 'ega_mono':
-            self.text_data = {
+            self._text_data = {
                 40: MonoTextMode('ega_monotext40', 25, 40, 14, 8, 7,
                              MDA_PALETTE, colours_mda_mono,
                              is_mono=True, num_pages=8),
                 80: MonoTextMode('ega_monotext80', 25, 80, 14, 8, 7,
                              MDA_PALETTE, colours_mda_mono,
                              is_mono=True, num_pages=4)}
-            self.mode_data = {
+            self._mode_data = {
                 10: graphics_mode['640x350x4']}
         elif self.capabilities == 'mda':
-            self.text_data = {
+            self._text_data = {
                 40: MonoTextMode('mdatext40', 25, 40, 14, 9, 7,
                              MDA_PALETTE, colours_mda_mono,
                              is_mono=True, num_pages=1),
                 80: MonoTextMode('mdatext80', 25, 80, 14, 9, 7,
                              MDA_PALETTE, colours_mda_mono,
                              is_mono=True, num_pages=1) }
-            self.mode_data = {}
+            self._mode_data = {}
         elif self.capabilities in ('cga', 'cga_old', 'pcjr', 'tandy'):
             if self.capabilities == 'tandy':
-                self.text_data = {
+                self._text_data = {
                     40: TextMode('tandytext40', 25, 40, 9, 8, 7,
                                   CGA16_PALETTE, self.colours16, num_pages=8),
                     80: TextMode('tandytext80', 25, 80, 9, 8, 7,
                                   CGA16_PALETTE, self.colours16, num_pages=4)}
             else:
-                self.text_data = {
+                self._text_data = {
                     40: TextMode('cgatext40', 25, 40, 8, 8, 7,
                                  CGA16_PALETTE, self.colours16, num_pages=8),
                     80: TextMode('cgatext80', 25, 80, 8, 8, 7,
                                  CGA16_PALETTE, self.colours16, num_pages=4)}
             if self.capabilities in ('cga', 'cga_old'):
-                self.mode_data = {
+                self._mode_data = {
                     1: graphics_mode['320x200x4'],
                     2: graphics_mode['640x200x2']}
             else:
-                self.mode_data = {
+                self._mode_data = {
                     1: graphics_mode['320x200x4'],
                     2: graphics_mode['640x200x2'],
                     3: graphics_mode['160x200x16'],
@@ -351,28 +356,28 @@ class Video(object):
         elif self.capabilities == 'hercules':
             # herc attributes shld distinguish black, dim, normal, bright
             # see http://www.seasip.info/VintagePC/hercplus.html
-            self.text_data = {
+            self._text_data = {
                 40: MonoTextMode('herculestext40', 25, 40, 14, 9, 7,
                              MDA_PALETTE, colours_mda_mono,
                              is_mono=True, num_pages=2),
                 80: MonoTextMode('herculestext80', 25, 80, 14, 9, 7,
                              MDA_PALETTE, colours_mda_mono,
                              is_mono=True, num_pages=2) }
-            self.mode_data = {
+            self._mode_data = {
                 3: graphics_mode['720x348x2']}
         elif self.capabilities == 'olivetti':
-            self.text_data = {
+            self._text_data = {
                 40: TextMode('olivettitext40', 25, 40, 16, 8, 7,
                               CGA16_PALETTE, self.colours16, num_pages=8),
                 80: TextMode('olivettitext80', 25, 80, 16, 8, 7,
                               CGA16_PALETTE, self.colours16, num_pages=4) }
-            self.mode_data = {
+            self._mode_data = {
                 1: graphics_mode['320x200x4'],
                 2: graphics_mode['640x200x2'],
                 3: graphics_mode['640x400x2']}
             # on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
             for mode in range(4, 256):
-                self.mode_data[mode] = graphics_mode['640x400x2']
+                self._mode_data[mode] = graphics_mode['640x400x2']
 
 
 class VideoMode(object):

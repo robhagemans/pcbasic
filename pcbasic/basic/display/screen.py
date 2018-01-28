@@ -260,16 +260,13 @@ class Screen(object):
     def set_width(self, to_width):
         """Set the character width of the screen, reset pages and change modes."""
         # raise an error if the width value doesn't make sense
-        if to_width not in (20, 40, 80):
+        if to_width not in self.video.get_allowed_widths():
             raise error.BASICError(error.IFC)
         # if we're currently at that width, do nothing
         if to_width == self.mode.width:
             return
-        if to_width == 20:
-            if self.capabilities in ('pcjr', 'tandy'):
-                self.screen(3, None, 0, 0)
-            else:
-                raise error.BASICError(error.IFC)
+        elif to_width == 20:
+            self.screen(3, None, 0, 0)
         elif self.mode.is_text_mode:
             self.screen(0, None, 0, 0, new_width=to_width)
         elif to_width == 40:
