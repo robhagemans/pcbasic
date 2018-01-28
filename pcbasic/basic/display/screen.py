@@ -751,7 +751,7 @@ class Screen(object):
         return self.text.pages[pagenum].get_char_attr(crow, ccol, want_attr)
 
     def put_char_attr(self, pagenum, crow, ccol, c, cattr,
-                            one_only=False, for_keys=False, force=False):
+                            one_only=False, suppress_cli=False, force=False):
         """Put a byte to the screen, redrawing as necessary."""
         if not self.mode.is_text_mode:
             cattr = cattr & 0xf
@@ -760,7 +760,7 @@ class Screen(object):
                 force = True
         start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr, one_only, force)
         # update the screen
-        self.refresh_range(pagenum, crow, start, stop-1, for_keys)
+        self.refresh_range(pagenum, crow, start, stop-1, suppress_cli)
 
     ###########################################################################
 
@@ -797,16 +797,16 @@ class Screen(object):
         # redraw the text screen and rebuild text buffers in video plugin
         for pagenum in range(self.mode.num_pages):
             for crow in range(self.mode.height):
-                # for_keys=True means 'suppress echo on cli'
+                # suppress_cli=True means 'suppress echo on cli'
                 self.refresh_range(pagenum, crow+1, 1, self.mode.width,
-                                   for_keys=True, text_only=True)
+                                   suppress_cli=True, text_only=True)
             # redraw graphics
             if not self.mode.is_text_mode:
                 self.queues.video.put(signals.Event(signals.VIDEO_PUT_RECT, (pagenum, 0, 0,
                                 self.mode.pixel_width-1, self.mode.pixel_height-1,
                                 self.pixels.pages[pagenum].buffer)))
 
-    def refresh_range(self, pagenum, crow, start, stop, for_keys=False, text_only=False):
+    def refresh_range(self, pagenum, crow, start, stop, suppress_cli=False, text_only=False):
         """Redraw a section of a screen row, assuming DBCS buffer has been set."""
         therow = self.text.pages[pagenum].row[crow-1]
         ccol = start
@@ -831,7 +831,7 @@ class Screen(object):
             mask = self.get_glyph(char)
             self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
                     (pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
-                        len(char) > 1, fore, back, blink, underline, for_keys)))
+                        len(char) > 1, fore, back, blink, underline, suppress_cli)))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
                 x0, y0, x1, y1, sprite = self.glyph_to_rect(

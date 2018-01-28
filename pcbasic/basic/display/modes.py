@@ -484,13 +484,13 @@ class TextMode(VideoMode):
                     a = mem_bytes[i]
                 screen.text.pages[page].put_char_attr(crow+1, ccol+1, c, a, one_only=False)
                 if last_row >= 0 and last_row != crow:
-                    # set for_keys to true to avoid echoing to text terminal
-                    screen.refresh_range(page, last_row+1, 1, self.width, for_keys=True)
+                    # set suppress_cli to true to avoid echoing to text terminal
+                    screen.refresh_range(page, last_row+1, 1, self.width, suppress_cli=True)
             except IndexError:
                 pass
             last_row = crow
         if last_row >= 0 and last_row < 25 and page >= 0 and page < self.num_pages:
-            screen.refresh_range(page, last_row+1, 1, self.width, for_keys=True)
+            screen.refresh_range(page, last_row+1, 1, self.width, suppress_cli=True)
 
 
 class MonoTextMode(TextMode):
