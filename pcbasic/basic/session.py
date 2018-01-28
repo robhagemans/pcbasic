@@ -120,9 +120,6 @@ class Session(object):
                 self.queues, self.values, ctrl_c_is_break)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.input_methods, syntax)
-        # InputMethods needed for wait() only
-        self.keyboard = inputmethods.Keyboard(self.input_methods, self.values,
-                self.codepage, self.queues, keys, ignore_caps)
         # Sound is needed for the beeps on \a
         # InputMethods is needed for wait() in graphics
         self.screen = display.Screen(
@@ -131,11 +128,14 @@ class Session(object):
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font)
-        # prepare input devices (keyboard, pen, joystick, clipboard-copier)
-        self.pen = inputmethods.Pen()
-        self.stick = inputmethods.Stick(self.values)
         # initilise floating-point error message stream
         self.values.set_handler(values.FloatErrorHandler(self.screen))
+        # prepare input devices (keyboard, pen, joystick, clipboard-copier)
+        # InputMethods needed for wait() only
+        self.keyboard = inputmethods.Keyboard(self.input_methods, self.values,
+                self.codepage, self.queues, keys, ignore_caps)
+        self.pen = inputmethods.Pen()
+        self.stick = inputmethods.Stick(self.values)
         ######################################################################
         # devices
         ######################################################################
