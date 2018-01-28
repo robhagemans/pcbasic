@@ -48,7 +48,7 @@ class Screen(object):
         # video mode settings
         self._mode_nr, self.colorswitch, self.apagenum, self.vpagenum = 0, 1, 0, 0
         # prepare video modes
-        self.prepare_modes()
+        self.text_data, self.mode_data = self.video.get_modes(self.video_mem_size)
         self.mode = self.text_data[initial_width]
         # current attribute
         self.attr = 7
@@ -75,10 +75,6 @@ class Screen(object):
 
     ###########################################################################
     # video modes
-
-    def prepare_modes(self):
-        """Build lists of allowed graphics modes."""
-        self.text_data, self.mode_data = self.video.get_modes(self.video_mem_size)
 
     def screen_(self, args):
         """SCREEN: change the video mode, colourburst, visible or active page."""
@@ -269,6 +265,22 @@ class Screen(object):
         elif self.mode.name == '640x200x2':
             self.set_colorburst(False)
 
+    def init_mode(self):
+        """Initialisation when we switched to new screen mode."""
+        # redraw key line
+        self.fkey_macros.redraw_keys()
+        # rebuild build the cursor;
+        # first move to home in case the screen has shrunk
+        self.set_pos(1, 1)
+        # there is only one VIEW PRINT setting across all pages.
+        if self.scroll_height == 25:
+            # tandy/pcjr special case: VIEW PRINT to 25 is preserved
+            self.set_view(1, 25)
+        else:
+            self.unset_view()
+        self.cursor.set_default_shape(True)
+        self.cursor.reset_visibility()
+
     def set_width(self, to_width):
         """Set the character width of the screen, reset pages and change modes."""
         # raise an error if the width value doesn't make sense
@@ -311,22 +323,6 @@ class Screen(object):
             raise error.BASICError(error.IFC)
         self.init_mode()
 
-    def init_mode(self):
-        """Initialisation when we switched to new screen mode."""
-        # redraw key line
-        self.fkey_macros.redraw_keys()
-        # rebuild build the cursor;
-        # first move to home in case the screen has shrunk
-        self.set_pos(1, 1)
-        # there is only one VIEW PRINT setting across all pages.
-        if self.scroll_height == 25:
-            # tandy/pcjr special case: VIEW PRINT to 25 is preserved
-            self.set_view(1, 25)
-        else:
-            self.unset_view()
-        self.cursor.set_default_shape(True)
-        self.cursor.reset_visibility()
-
     def set_colorburst(self, on=True):
         """Set the composite colorburst bit."""
         colorburst = self.video.set_colorburst(on, is_cga=(self.mode.name == '320x200x4'))
@@ -339,7 +335,7 @@ class Screen(object):
         """Change the amount of memory available to the video card."""
         self.video_mem_size = int(new_size)
         # redefine number of available video pages
-        self.prepare_modes()
+        self.text_data, self.mode_data = self.video.get_modes(self.video_mem_size)
         # text screen modes don't depend on video memory size
         if self._mode_nr == 0:
             return
