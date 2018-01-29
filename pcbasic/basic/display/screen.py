@@ -523,7 +523,7 @@ class Screen(object):
         self.write(s, scroll_ok, do_echo)
         if do_echo:
             self.redirect.write('\r\n')
-        self.check_pos(scroll_ok=True)
+        self._check_pos(scroll_ok=True)
         self.apage.row[self.current_row-1].wrap = False
         self.set_pos(self.current_row + 1, 1)
 
@@ -562,7 +562,7 @@ class Screen(object):
         # see if we need to wrap and scroll down
         self._check_wrap(do_scroll_down)
         # move cursor and see if we need to scroll up
-        self.check_pos(scroll_ok=True)
+        self._check_pos(scroll_ok=True)
         # put the character
         self.put_char_attr(self.apagenum,
                 self.current_row, self.current_col, c, self.attr)
@@ -577,7 +577,7 @@ class Screen(object):
         else:
             self.overflow = True
         # move cursor and see if we need to scroll up
-        self.check_pos(scroll_ok=True)
+        self._check_pos(scroll_ok=True)
 
     def _check_wrap(self, do_scroll_down):
         """Wrap if we need to."""
@@ -590,7 +590,7 @@ class Screen(object):
                     if self.current_row < self.scroll_height:
                         self.scroll_down(self.current_row+1)
                 # move cursor and reset cursor attribute
-                self.move_cursor(self.current_row + 1, 1)
+                self._move_cursor(self.current_row + 1, 1)
             else:
                 self.current_col = self.mode.width
 
@@ -598,7 +598,7 @@ class Screen(object):
         """Move the cursor to the start of the next line, this line if empty."""
         if self.current_col != 1:
             self.redirect.write('\r\n')
-            self.check_pos(scroll_ok=True)
+            self._check_pos(scroll_ok=True)
             self.set_pos(self.current_row + 1, 1)
         # ensure line above doesn't wrap
         self.apage.row[self.current_row-2].wrap = False
@@ -662,12 +662,11 @@ class Screen(object):
         """Set the current position."""
         self.overflow = False
         self.current_row, self.current_col = to_row, to_col
-        # this may alter self.current_row, self.current_col
-        self.check_pos(scroll_ok)
         # move cursor and reset cursor attribute
-        self.move_cursor(self.current_row, self.current_col)
+        # this may alter self.current_row, self.current_col
+        self._check_pos(scroll_ok)
 
-    def check_pos(self, scroll_ok=True):
+    def _check_pos(self, scroll_ok=True):
         """Check if we have crossed the screen boundaries and move as needed."""
         oldrow, oldcol = self.current_row, self.current_col
         if self.bottom_row_allowed:
@@ -675,7 +674,7 @@ class Screen(object):
                 self.current_col = min(self.mode.width, self.current_col)
                 if self.current_col < 1:
                     self.current_col += 1
-                self.move_cursor(self.current_row, self.current_col)
+                self._move_cursor(self.current_row, self.current_col)
                 return self.current_col == oldcol
             else:
                 # if row > height, we also end up here
@@ -691,7 +690,7 @@ class Screen(object):
             else:
                 # we can't scroll, so we just stop at the right border
                 self.current_col = self.mode.width
-        # see if we eed to move a row up
+        # see if we need to move a row up
         elif self.current_col < 1:
             if self.current_row > self.view_start:
                 self.current_col += self.mode.width
@@ -705,12 +704,12 @@ class Screen(object):
             self.current_row = self.scroll_height
         elif self.current_row < self.view_start:
             self.current_row = self.view_start
-        self.move_cursor(self.current_row, self.current_col)
+        self._move_cursor(self.current_row, self.current_col)
         # signal position change
         return (self.current_row == oldrow and
                  self.current_col == oldcol)
 
-    def move_cursor(self, row, col):
+    def _move_cursor(self, row, col):
         """Move the cursor to a new position."""
         self.current_row, self.current_col = row, col
         self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR, (row, col)))
@@ -943,8 +942,8 @@ class Screen(object):
             # we're clearing the rows below, but don't set the wrap there
             r.wrap = False
         self.clear_rows(self.view_start, last_row)
-        # ensure the cursor is show in the right position
-        self.move_cursor(self.current_row, self.current_col)
+        # ensure the cursor is shown in the right position
+        self._move_cursor(self.current_row, self.current_col)
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
             # restore attr
             self.set_attr(attr_save)
@@ -991,7 +990,7 @@ class Screen(object):
         self.scroll_height = stop
         #set_pos(start, 1)
         self.overflow = False
-        self.move_cursor(start, 1)
+        self._move_cursor(start, 1)
 
     def unset_view(self):
         """Unset scroll area."""
