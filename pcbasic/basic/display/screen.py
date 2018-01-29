@@ -55,7 +55,7 @@ class Screen(object):
         # border attribute
         self.border_attr = 0
         # cursor
-        self.cursor = Cursor(self)
+        self.cursor = Cursor(self.queues, self.mode, self.capabilities)
         # current row and column
         # overflow: true if we're on 80 but should be on 81
         self.current_row, self.current_col, self.overflow = 1, 1, False
@@ -714,7 +714,10 @@ class Screen(object):
         """Move the cursor to a new position."""
         self.current_row, self.current_col = row, col
         self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR, (row, col)))
-        self.cursor.reset_attr()
+        # set the cursor's attribute to that of the current location
+        fore, _, _, _ = self.mode.split_attr(
+                self.apage.row[self.current_row-1].buf[self.current_col-1][1] & 0xf)
+        self.cursor.reset_attr(fore)
 
     ###########################################################################
 
