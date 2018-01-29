@@ -666,6 +666,15 @@ class Screen(object):
         # this may alter self.current_row, self.current_col
         self._check_pos(scroll_ok)
 
+    def incr_pos(self):
+        """Increase the current position by one."""
+        # skip dbcs trail byte
+        row, col = self.current_row, self.current_col
+        if self.apage.row[row-1].double[col-1] == 1:
+            self.set_pos(row, col + 2, scroll_ok=False)
+        else:
+            self.set_pos(row, col + 1, scroll_ok=False)
+
     def _check_pos(self, scroll_ok=True):
         """Check if we have crossed the screen boundaries and move as needed."""
         oldrow, oldcol = self.current_row, self.current_col
@@ -712,11 +721,21 @@ class Screen(object):
     def _move_cursor(self, row, col):
         """Move the cursor to a new position."""
         self.current_row, self.current_col = row, col
-        self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR, (row, col)))
+        # set halfwidth/fullwidth cursor
+        # move left if we end up on dbcs trail byte
+        if self.apage.row[self.current_row-1].double[self.current_col-1] == 2:
+            self.current_col -= 1
+        if self.apage.row[self.current_row-1].double[self.current_col-1] == 1:
+            self.cursor.set_width(2)
+        else:
+            self.cursor.set_width(1)
         # set the cursor's attribute to that of the current location
         fore, _, _, _ = self.mode.split_attr(
                 self.apage.row[self.current_row-1].buf[self.current_col-1][1] & 0xf)
         self.cursor.reset_attr(fore)
+        self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
+                (self.current_row, self.current_col)))
+
 
     ###########################################################################
 

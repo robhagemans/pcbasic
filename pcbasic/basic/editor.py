@@ -253,14 +253,8 @@ class Editor(object):
                 elif d in (ea.DOWN, ea.CTRL_MINUS):
                     self._screen.set_pos(row + 1, col, scroll_ok=False)
                 elif d in (ea.RIGHT, ea.CTRL_BACKSLASH):
-                    # RIGHT, CTRL+\
-                    # skip dbcs trail byte
-                    if self._screen.apage.row[row-1].double[col-1] == 1:
-                        self._screen.set_pos(row, col + 2, scroll_ok=False)
-                    else:
-                        self._screen.set_pos(row, col + 1, scroll_ok=False)
+                    self._screen.incr_pos()
                 elif d in (ea.LEFT, ea.CTRL_RIGHTBRACKET):
-                    # LEFT, CTRL+]
                     self._screen.set_pos(row, col - 1, scroll_ok=False)
                 elif d in (ea.CTRL_RIGHT, ea.CTRL_f):
                     self.skip_word_right()
@@ -301,16 +295,6 @@ class Editor(object):
                                 # put all dbcs in before messing with cursor position
                                 for c in d:
                                     self._screen.write_char(c, do_scroll_down=True)
-                # move left if we end up on dbcs trail byte
-                row, col = self._screen.current_row, self._screen.current_col
-                if self._screen.apage.row[row-1].double[col-1] == 2:
-                    self._screen.set_pos(row, col-1, scroll_ok=False)
-                # adjust cursor width
-                row, col = self._screen.current_row, self._screen.current_col
-                if self._screen.apage.row[row-1].double[col-1] == 1:
-                    self._screen.cursor.set_width(2)
-                else:
-                    self._screen.cursor.set_width(1)
         finally:
             self.set_overwrite_mode(True)
             # reset cursor visibility
@@ -444,9 +428,6 @@ class Editor(object):
         elif ccol != start_col or self._screen.current_row != start_row:
             ccol -= 1
         self._screen.set_pos(crow, max(1, ccol))
-        if self._screen.apage.row[self._screen.current_row-1].double[self._screen.current_col-1] == 2:
-            # we're on a trail byte, move to the lead
-            self._screen.set_pos(self._screen.current_row, self._screen.current_col-1)
         self.delete(crow, ccol)
 
     def tab(self):
