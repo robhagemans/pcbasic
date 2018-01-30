@@ -426,7 +426,7 @@ class Session(object):
     def _handle_error(self, e):
         """Handle a BASIC error through error message."""
         # not handled by ON ERROR, stop execution
-        self.screen.write_error_message(e.message, self.program.get_line_number(e.pos))
+        self.screen.write(e.get_message(self.program.get_line_number(e.pos)))
         self.interpreter.set_parse_mode(False)
         self.interpreter.input_mode = False
         # special case: syntax error

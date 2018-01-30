@@ -158,6 +158,7 @@ class FloatErrorHandler(object):
             raise error.BASICError(math_error)
         else:
             # write a message & continue as normal
+            # message should not include line number or trailing \xFF
             self._screen.write_line(error.BASICError(math_error).message)
         # return max value for the appropriate float type
         if e.args and e.args[0]:

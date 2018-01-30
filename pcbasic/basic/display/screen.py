@@ -386,14 +386,6 @@ class Screen(object):
         self.apage.row[self.current_row-1].wrap = False
         self.set_pos(self.current_row + 1, 1)
 
-    def write_error_message(self, msg, linenum):
-        """Write an error message to the console."""
-        self.start_line()
-        self.write(msg)
-        if linenum is not None and 0 <= linenum < 65535:
-            self.write(' in %i' % linenum)
-        self.write_line('\xFF')
-
     def list_line(self, line, newline=True):
         """Print a line from a program listing or EDIT prompt."""
         # no wrap if 80-column line, clear row before printing.
@@ -644,8 +636,7 @@ class Screen(object):
         for r in self.apage.row[start-1:stop]:
             r.clear(self.attr)
         if not self.mode.is_text_mode:
-            x0, y0, x1, y1 = self.text_to_pixel_area(
-                            start, 1, stop, self.mode.width)
+            x0, y0, x1, y1 = self.text_to_pixel_area(start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
             self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
         _, back, _, _ = self.mode.split_attr(self.attr)
@@ -663,8 +654,7 @@ class Screen(object):
             last_row = self.mode.height
         else:
             last_row = self.scroll_height
-        for r in self.apage.row[self.view_start-1:
-                        self.scroll_height]:
+        for r in self.apage.row[self.view_start-1:self.scroll_height]:
             # we're clearing the rows below, but don't set the wrap there
             r.wrap = False
         self.clear_rows(self.view_start, last_row)
