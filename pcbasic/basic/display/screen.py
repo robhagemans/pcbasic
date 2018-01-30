@@ -8,11 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 from ..base import signals
 from ..base import error
 from ..base import tokens as tk
@@ -21,7 +16,7 @@ from . import graphics
 from . import font
 from . import modes
 
-from .display import BottomBar, Palette, Cursor, GlyphCache
+from .display import BottomBar, Palette, Cursor
 from .display import TextBuffer, TextRow, PixelBuffer
 from .modes import Video
 
@@ -201,7 +196,7 @@ class Screen(object):
         # set the screen mode parameters
         self.mode, self._mode_nr = spec, new_mode
         # set up glyph cache and preload halfwidth glyphs (i.e. single-byte code points)
-        self._glyphs = GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
+        self._glyphs = font.GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
         # build the screen buffer
         self.text = TextBuffer(self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
                                (self.mode.font_height >= 14), self.codepage)
