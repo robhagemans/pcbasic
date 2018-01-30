@@ -759,11 +759,8 @@ class Screen(object):
         """Output the visible page to file in raw bytes."""
         if not target_file:
             return
-        for crow in range(1, self.mode.height+1):
-            line = ''
-            for c, _ in self.vpage.row[crow-1].buf:
-                line += c
-            target_file.write_line(line)
+        for line in self.text.get_text_raw(self.vpagenum):
+            target_file.write_line(line.replace(b'\0', b' '))
 
     def _get_text(self, start_row, start_col, stop_row, stop_col):
         """Retrieve unicode text for copying."""

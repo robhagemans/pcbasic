@@ -28,7 +28,7 @@ class BottomBar(object):
 
     def clear(self):
         """Clear the contents."""
-        self._contents = [(b'\0', 0)] * 80
+        self._contents = [(b' ', 0)] * 80
 
     def write(self, s, col, reverse):
         """Write chars on virtual bottom bar."""

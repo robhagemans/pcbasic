@@ -147,3 +147,10 @@ class TextBuffer(object):
     def get_attr(self, pagenum, crow, ccol):
         """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
         return self.pages[pagenum].row[crow-1].buf[ccol-1][1]
+
+    def get_text_raw(self, pagenum):
+        """Retrieve all raw text on a page."""
+        return tuple(
+            b''.join(c for c, _ in self.pages[pagenum].row[row_index].buf)
+            for row_index in range(self.pages[pagenum].height)
+        )
