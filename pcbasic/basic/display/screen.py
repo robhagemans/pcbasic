@@ -21,7 +21,7 @@ from . import graphics
 from . import font
 from . import modes
 
-from .display import BottomBar, Palette, Cursor
+from .display import BottomBar, Palette, Cursor, GlyphCache
 from .display import TextBuffer, TextRow, PixelBuffer
 from .modes import Video
 
@@ -171,7 +171,7 @@ class Screen(object):
     def set_mode_(self, spec, new_mode, new_colorswitch,
                  new_apagenum, new_vpagenum, erase=True):
         """Change the video mode, colourburst, visible or active page."""
-        # preserve memeory if erase==0; don't distingush erase==1 and erase==2
+        # preserve memory if erase==0; don't distingush erase==1 and erase==2
         save_mem = None
         if (not erase and self.mode.video_segment == spec.video_segment):
             save_mem = self.mode.get_all_memory(self)
@@ -182,34 +182,26 @@ class Screen(object):
         # signal the signals to change the screen resolution
         if (not spec or new_apagenum >= spec.num_pages or new_vpagenum >= spec.num_pages):
             raise error.BASICError(error.IFC)
-        # preload SBCS glyphs
-        try:
-            self.glyphs = {
-                c: self.fonts[spec.font_height].build_glyph(c, spec.font_width, spec.font_height)
-                for c in map(chr, range(256)) }
-        except (KeyError, AttributeError):
+        # illegal fn call if we don't have a font for this mode
+        if spec.font_height not in self.fonts:
             logging.warning('No %d-pixel font available. Could not enter video mode %s.',
                             spec.font_height, spec.name)
             raise error.BASICError(error.IFC)
+        # if we made it here we're ready to commit to the new mode
         self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, spec))
-        if spec.is_text_mode:
-            # send glyphs to signals; copy is necessary
-            # as dict may change here while the other thread is working on it
-            self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                    {self.codepage.to_unicode(k, u'\0'): v for k, v in self.glyphs.iteritems()}))
+        # switching to another text mode (width-only change)
+        width_only = (self.mode.is_text_mode and spec.is_text_mode)
         # attribute and border persist on width-only change
-        if (not (self.mode.is_text_mode and spec.is_text_mode) or
-                self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
+        # otherwise start with black border and default attr
+        if (not width_only or self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
                 or self.colorswitch != new_colorswitch):
             self.attr = spec.attr
-        if (not (self.mode.is_text_mode and spec.is_text_mode) and
-                spec.name != self.mode.name):
-            # start with black border
+        if (not width_only and spec.name != self.mode.name):
             self.set_border(0)
-        # set the screen parameters
-        self._mode_nr = new_mode
-        # set all state vars
-        self.mode = spec
+        # set the screen mode parameters
+        self.mode, self._mode_nr = spec, new_mode
+        # set up glyph cache and preload halfwidth glyphs (i.e. single-byte code points)
+        self._glyphs = GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
         # build the screen buffer
         self.text = TextBuffer(self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
                                (self.mode.font_height >= 14), self.codepage)
@@ -223,7 +215,7 @@ class Screen(object):
                 self.mode.pixel_width, self.mode.pixel_height)
         # initialise the palette
         self.palette.init_mode(self.mode)
-        # set the attribute
+        # set the cursor attribute
         if not self.mode.is_text_mode:
             fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
             self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
@@ -785,12 +777,8 @@ class Screen(object):
         """Rebuild the screen from scratch."""
         # set the screen mode
         self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, self.mode))
-        if self.mode.is_text_mode:
-            # send glyphs to signals; copy is necessary
-            # as dict may change here while the other thread is working on it
-            self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                    {self.codepage.to_unicode(k, u'\0'): v
-                        for k, v in self.glyphs.iteritems()}))
+        # send the glyph dict to interface if necessary
+        self._glyphs.submit()
         # set the visible and active pages
         self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
         # rebuild palette
@@ -845,16 +833,14 @@ class Screen(object):
                 ccol += 1
             fore, back, blink, underline = self.mode.split_attr(attr)
             # ensure glyph is stored
-            mask = self.get_glyph(char)
+            mask = self._glyphs.get_glyph(char)
             self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
                     (pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
                         len(char) > 1, fore, back, blink, underline, suppress_cli)))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
-                x0, y0, x1, y1, sprite = self.glyph_to_rect(
-                                                r, c, mask, fore, back)
-                self.pixels.pages[self.apagenum].put_rect(
-                                                x0, y0, x1, y1, sprite, tk.PSET)
+                x0, y0, x1, y1, sprite = self._glyphs.to_rect(r, c, mask, fore, back)
+                self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1, sprite, tk.PSET)
                 self.queues.video.put(signals.Event(signals.VIDEO_PUT_RECT,
                                         (self.apagenum, x0, y0, x1, y1, sprite)))
 
@@ -1222,44 +1208,3 @@ class Screen(object):
         elif mode == 3:
             _, value = self.drawing.get_window_logical(0, values.to_integer(coord).to_int())
         return self._values.new_single().from_value(value)
-
-    ###########################################################################
-    # glyphs
-
-    def rebuild_glyph(self, ordval):
-        """Rebuild a text-mode character after POKE."""
-        if self.mode.is_text_mode:
-            # force rebuilding the character by deleting and requesting
-            del self.glyphs[chr(ordval)]
-            self.get_glyph(chr(ordval))
-
-    def get_glyph(self, c):
-        """Return a glyph mask for a given character """
-        try:
-            mask = self.glyphs[c]
-        except KeyError:
-            mask = self.fonts[self.mode.font_height].build_glyph(c,
-                                self.mode.font_width*2, self.mode.font_height)
-            self.glyphs[c] = mask
-            if self.mode.is_text_mode:
-                self.queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                    {self.codepage.to_unicode(c, u'\0'): mask}))
-        return mask
-
-    if numpy:
-        def glyph_to_rect(self, row, col, mask, fore, back):
-            """Return a sprite for a given character """
-            # set background
-            glyph = numpy.full(mask.shape, back)
-            # stamp foreground mask
-            glyph[mask] = fore
-            x0, y0 = (col-1) * self.mode.font_width, (row-1) * self.mode.font_height
-            x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
-            return x0, y0, x1, y1, glyph
-    else:
-        def glyph_to_rect(self, row, col, mask, fore, back):
-            """Return a sprite for a given character """
-            glyph = [[(fore if bit else back) for bit in row] for row in mask]
-            x0, y0 = (col-1) * self.mode.font_width, (row-1) * self.mode.font_height
-            x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
-            return x0, y0, x1, y1, glyph
