@@ -377,27 +377,22 @@ class Screen(object):
                 self.write_char(c)
             last = c
 
-    def write_line(self, s='', scroll_ok=True, do_echo=True):
+    def write_line(self, s=b'', scroll_ok=True, do_echo=True):
         """Write a string to the screen and end with a newline."""
-        self.write(s, scroll_ok, do_echo)
-        if do_echo:
-            self.redirect.write('\r\n')
-        self._check_pos(scroll_ok=True)
-        self.apage.row[self.current_row-1].wrap = False
-        self.set_pos(self.current_row + 1, 1)
+        self.write(b'%s\r' % (s,), scroll_ok, do_echo)
 
     def list_line(self, line, newline=True):
         """Print a line from a program listing or EDIT prompt."""
         # no wrap if 80-column line, clear row before printing.
         # replace LF CR with LF
-        line = line.replace('\n\r', '\n')
-        cuts = line.split('\n')
+        line = line.replace(b'\n\r', b'\n')
+        cuts = line.split(b'\n')
         for i, l in enumerate(cuts):
             # clear_line looks back along wraps, use screen.clear_from instead
             self.clear_from(self.current_row, 1)
             self.write(str(l))
-            if i != len(cuts)-1:
-                self.write('\n')
+            if i != len(cuts) - 1:
+                self.write(b'\n')
         if newline:
             self.write_line()
         # remove wrap after 80-column program line
@@ -415,12 +410,10 @@ class Screen(object):
         # move cursor and see if we need to scroll up
         self._check_pos(scroll_ok=True)
         # put the character
-        self.put_char_attr(self.apagenum,
-                self.current_row, self.current_col, c, self.attr)
+        self.put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
         # adjust end of line marker
-        if (self.current_col >
-                self.apage.row[self.current_row-1].end):
-             self.apage.row[self.current_row-1].end = self.current_col
+        if (self.current_col > self.apage.row[self.current_row-1].end):
+            self.apage.row[self.current_row-1].end = self.current_col
         # move cursor. if on col 80, only move cursor to the next row
         # when the char is printed
         if self.current_col < self.mode.width:
