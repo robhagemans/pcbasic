@@ -545,10 +545,6 @@ class Screen(object):
 
     ###########################################################################
 
-    def get_char_attr(self, pagenum, crow, ccol, want_attr):
-        """Retrieve a byte from the screen."""
-        return self.text.pages[pagenum].get_char_attr(crow, ccol, want_attr)
-
     def put_char_attr(self, pagenum, crow, ccol, c, cattr,
                             one_only=False, suppress_cli=False, force=False):
         """Put a byte to the screen, redrawing as necessary."""
@@ -1144,10 +1140,13 @@ class Screen(object):
         col = col or 1
         if self.view_set:
             error.range_check(self.view_start, self.scroll_height, row)
-        if want_attr and not self.mode.is_text_mode:
-            result = 0
+        if want_attr:
+            if not self.mode.is_text_mode:
+                result = 0
+            else:
+                result = self.text.get_attr(self.apagenum, row, col)
         else:
-            result = self.apage.get_char_attr(row, col, bool(want_attr))
+            result = self.text.get_char(self.apagenum, row, col)
         return self._values.new_integer().from_int(result)
 
     def view_print_(self, args):

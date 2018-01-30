@@ -46,11 +46,6 @@ class TextPage(object):
         self.do_dbcs = do_dbcs
         self.codepage = codepage
 
-    def get_char_attr(self, crow, ccol, want_attr):
-        """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
-        ca = self.row[crow-1].buf[ccol-1][want_attr]
-        return ca if want_attr else ord(ca)
-
     def put_char_attr(self, crow, ccol, c, cattr, one_only=False, force=False):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
         # update the screen buffer
@@ -125,6 +120,7 @@ class TextPage(object):
                     ccol += 1
         return start, stop
 
+
 class TextBuffer(object):
     """Buffer for text on all screen pages."""
 
@@ -143,3 +139,11 @@ class TextBuffer(object):
             dstrow.buf[:] = srcrow.buf[:]
             dstrow.end = srcrow.end
             dstrow.wrap = srcrow.wrap
+
+    def get_char(self, pagenum, crow, ccol):
+        """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
+        return ord(self.pages[pagenum].row[crow-1].buf[ccol-1][0])
+
+    def get_attr(self, pagenum, crow, ccol):
+        """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
+        return self.pages[pagenum].row[crow-1].buf[ccol-1][1]
