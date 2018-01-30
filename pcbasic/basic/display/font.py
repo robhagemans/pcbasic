@@ -240,23 +240,28 @@ class GlyphCache(object):
         if self._mode.is_text_mode:
             # force rebuilding the character by deleting and requesting
             del self._glyphs[chr(ordval)]
-            self.get_glyph(chr(ordval))
+            self.submit_char(chr(ordval))
 
-    def get_glyph(self, c):
-        """Return a glyph mask for a given character """
-        try:
-            mask = self._glyphs[c]
-        except KeyError:
-            mask = self._fonts[self._mode.font_height].build_glyph(
-                                        c, self._mode.font_width*2, self._mode.font_height)
-            self._glyphs[c] = mask
-            if self._mode.is_text_mode:
-                self._queues.video.put(signals.Event(
-                        signals.VIDEO_BUILD_GLYPHS, {self._codepage.to_unicode(c, u'\0'): mask}))
-        return mask
+    def submit_char(self, char):
+        """Rebuild glyph and send to interface."""
+        mask = self._fonts[self._mode.font_height].build_glyph(
+                char, self._mode.font_width*2, self._mode.font_height)
+        self._glyphs[char] = mask
+        if self._mode.is_text_mode:
+            self._queues.video.put(signals.Event(
+                    signals.VIDEO_BUILD_GLYPHS, {self._codepage.to_unicode(c, u'\0'): mask}))
+
+    def submit_and_get_sprite(self, row, col, char, fore, back, suppress_submit=False):
+        """Ensure a glyph is submitted and return a sprite for a given character."""
+        if char not in self._glyphs:
+            self.submit_char(char)
+        if not self._mode.is_text_mode and not suppress_submit:
+            # update pixel buffer
+            return self._to_rect(row, col, self._glyphs[char], fore, back)
+        return None
 
     if numpy:
-        def to_rect(self, row, col, mask, fore, back):
+        def _to_rect(self, row, col, mask, fore, back):
             """Return a sprite for a given character """
             # set background
             glyph = numpy.full(mask.shape, back)
@@ -266,7 +271,7 @@ class GlyphCache(object):
             x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
             return x0, y0, x1, y1, glyph
     else:
-        def to_rect(self, row, col, mask, fore, back):
+        def _to_rect(self, row, col, mask, fore, back):
             """Return a sprite for a given character """
             glyph = [[(fore if bit else back) for bit in row] for row in mask]
             x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height

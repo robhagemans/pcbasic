@@ -827,17 +827,19 @@ class Screen(object):
                 r, c, char, attr = crow, ccol, ca[0], ca[1]
                 ccol += 1
             fore, back, blink, underline = self.mode.split_attr(attr)
-            # ensure glyph is stored
-            mask = self._glyphs.get_glyph(char)
-            self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
-                    (pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
-                        len(char) > 1, fore, back, blink, underline, suppress_cli)))
-            if not self.mode.is_text_mode and not text_only:
+            # ensure glyph is stored, get sprite if not text-only or textmode
+            sprite_data = self._glyphs.submit_and_get_sprite(
+                    r, c, char, fore, back, suppress_submit=text_only)
+            self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH, (
+                    pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
+                    len(char) > 1, fore, back, blink, underline, suppress_cli
+            )))
+            if sprite_data:
                 # update pixel buffer
-                x0, y0, x1, y1, sprite = self._glyphs.to_rect(r, c, mask, fore, back)
+                x0, y0, x1, y1, sprite = sprite_data
                 self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1, sprite, tk.PSET)
-                self.queues.video.put(signals.Event(signals.VIDEO_PUT_RECT,
-                                        (self.apagenum, x0, y0, x1, y1, sprite)))
+                self.queues.video.put(signals.Event(
+                        signals.VIDEO_PUT_RECT, (self.apagenum, x0, y0, x1, y1, sprite)))
 
     def redraw_row(self, start, crow, wrap=True):
         """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
