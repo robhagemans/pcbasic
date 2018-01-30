@@ -154,3 +154,27 @@ class TextBuffer(object):
             b''.join(c for c, _ in self.pages[pagenum].row[row_index].buf)
             for row_index in range(self.pages[pagenum].height)
         )
+
+    # cf. Editor._get_logical_line() !
+    def get_text_logical(self, pagenum, start_row, start_col, stop_row, stop_col):
+        """Retrieve section of logical text for copying."""
+        # include lead byte if start on trail
+        if self.pages[pagenum].row[start_row-1].double[start_col-1] == 2:
+            start_col -= 1
+        # include trail byte if end on lead
+        if self.pages[pagenum].row[stop_row-1].double[stop_col-2] == 1:
+            stop_col += 1
+        r, c = start_row, start_col
+        full = []
+        clip = []
+        while r < stop_row or (r == stop_row and c < stop_col):
+            clip.append(self.pages[pagenum].row[r-1].buf[c-1][0])
+            c += 1
+            if c > self.pages[pagenum].row[r-1].end:
+                if not self.pages[pagenum].row[r-1].wrap:
+                    full.append(b''.join(clip))
+                    clip = []
+                r += 1
+                c = 1
+        full.append(b''.join(clip))
+        return full
