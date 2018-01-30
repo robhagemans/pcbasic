@@ -17,7 +17,8 @@ from . import font
 from . import modes
 
 from .display import BottomBar, Palette, Cursor
-from .display import TextBuffer, TextRow, PixelBuffer
+from .text import TextBuffer, TextRow
+from .pixels import PixelBuffer
 from .modes import Video
 
 
