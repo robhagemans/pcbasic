@@ -251,18 +251,17 @@ class GlyphCache(object):
             self._queues.video.put(signals.Event(
                     signals.VIDEO_BUILD_GLYPHS, {self._codepage.to_unicode(c, u'\0'): mask}))
 
-    def submit_and_get_sprite(self, row, col, char, fore, back, suppress_submit=False):
-        """Ensure a glyph is submitted and return a sprite for a given character."""
-        if char not in self._glyphs:
+    def check_char(self, char):
+        """Submit glyph if needed."""
+        if self._mode.is_text_mode and char not in self._glyphs:
             self.submit_char(char)
-        if not self._mode.is_text_mode and not suppress_submit:
-            # update pixel buffer
-            return self._to_rect(row, col, self._glyphs[char], fore, back)
-        return None
 
     if numpy:
-        def _to_rect(self, row, col, mask, fore, back):
-            """Return a sprite for a given character """
+        def get_sprite(self, row, col, char, fore, back):
+            """Return a sprite for a given character."""
+            if char not in self._glyphs:
+                self.submit_char(char)
+            mask = self._glyphs[char]
             # set background
             glyph = numpy.full(mask.shape, back)
             # stamp foreground mask
@@ -271,8 +270,11 @@ class GlyphCache(object):
             x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
             return x0, y0, x1, y1, glyph
     else:
-        def _to_rect(self, row, col, mask, fore, back):
-            """Return a sprite for a given character """
+        def get_sprite(self, row, col, char, fore, back):
+            """Return a sprite for a given character."""
+            if char not in self._glyphs:
+                self.submit_char(char)
+            mask = self._glyphs[char]
             glyph = [[(fore if bit else back) for bit in row] for row in mask]
             x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height
             x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
