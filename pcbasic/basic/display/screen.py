@@ -58,7 +58,7 @@ class Screen(object):
         # text viewport parameters
         self.scroll_area = ScrollArea(self.mode)
         # writing on bottom row is allowed
-        self.bottom_row_allowed = False
+        self._bottom_row_allowed = False
         # prepare fonts
         self.fonts = {height: font.Font(height, font_dict) for height, font_dict in fonts.iteritems()}
         # function key macros
@@ -470,7 +470,7 @@ class Screen(object):
     def _check_pos(self, scroll_ok=True):
         """Check if we have crossed the screen boundaries and move as needed."""
         oldrow, oldcol = self.current_row, self.current_col
-        if self.bottom_row_allowed:
+        if self._bottom_row_allowed:
             if self.current_row == self.mode.height:
                 self.current_col = min(self.mode.width, self.current_col)
                 if self.current_col < 1:
@@ -481,7 +481,7 @@ class Screen(object):
                 # if row > height, we also end up here
                 # (eg if we do INPUT on the bottom row)
                 # adjust viewport if necessary
-                self.bottom_row_allowed = False
+                self._bottom_row_allowed = False
         # see if we need to move to the next row
         if self.current_col > self.mode.width:
             if self.current_row < self.scroll_area.bottom or scroll_ok:
@@ -635,39 +635,36 @@ class Screen(object):
         _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
-    def clear_view(self):
-        """Clear the scroll area."""
+    def _clear_area(self, start_row, stop_row):
+        """Clear the screen or the scroll area."""
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
-        self.current_row = self.scroll_area.top
+        self.current_row = start_row
         self.current_col = 1
-        if self.bottom_row_allowed:
+        # this is weird, is it actually used anywhere?
+        if self._bottom_row_allowed:
             last_row = self.mode.height
         else:
-            last_row = self.scroll_area.bottom
-        for r in self.apage.row[self.scroll_area.top-1:self.scroll_area.bottom]:
+            last_row = stop_row
+        for r in self.apage.row[start_row-1:stop_row]:
             # we're clearing the rows below, but don't set the wrap there
             r.wrap = False
-        self.clear_rows(self.scroll_area.top, last_row)
+        self.clear_rows(start_row, last_row)
         # ensure the cursor is shown in the right position
         self._move_cursor(self.current_row, self.current_col)
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
             # restore attr
             self.set_attr(attr_save)
 
+    def clear_view(self):
+        """Clear the scroll area."""
+        self._clear_area(self.scroll_area.top, self.scroll_area.bottom)
+
     def clear(self):
         """Clear the screen."""
-        save_view_set = self.scroll_area.active
-        save_view_start = self.scroll_area.top
-        save_scroll_height = self.scroll_area.bottom
-        self._set_scroll_area(1, self.mode.height)
-        self.clear_view()
-        if save_view_set:
-            self._set_scroll_area(save_view_start, save_scroll_height)
-        else:
-            self.scroll_area.unset()
+        self._clear_area(1, self.mode.height)
 
     ###########################################################################
     # text viewport / scroll area
@@ -1028,7 +1025,7 @@ class Screen(object):
         error.range_check(1, cmode.width, col)
         if row == cmode.height:
             # temporarily allow writing on last row
-            self.bottom_row_allowed = True
+            self._bottom_row_allowed = True
         self.set_pos(row, col, scroll_ok=False)
         if cursor is not None:
             error.range_check(0, (255 if self.capabilities in ('pcjr', 'tandy') else 1), cursor)
