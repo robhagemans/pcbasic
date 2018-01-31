@@ -54,7 +54,7 @@ class BottomBar(object):
         else:
             reverse_attr = 0x07
         if self.visible:
-            error.throw_if(screen.scroll_height == key_row)
+            error.throw_if(screen.scroll_area.top == key_row)
             # always show only complete 8-character cells
             # this matters on pcjr/tandy width=20 mode
             for i in range((screen.mode.width//8) * 8):
@@ -287,3 +287,63 @@ class Cursor(object):
             self.width = new_width
             self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
                     (self.width, self._height, self.from_line, self.to_line)))
+
+
+###############################################################################
+# text viewport / scroll area
+
+class ScrollArea(object):
+    """Text viewport / scroll area."""
+
+    def __init__(self, mode):
+        """Initialise the scroll area."""
+        self._height = mode.height
+        self.unset()
+
+    def init_mode(self, mode):
+        """Initialise the scroll area for new screen mode."""
+        self._height = mode.height
+        if self._bottom == self._height:
+            # tandy/pcjr special case: VIEW PRINT to 25 is preserved
+            self.set(1, self._height)
+        else:
+            self.unset()
+
+    @property
+    def active(self):
+        """A viewport has been set."""
+        return self._active
+
+    @property
+    def bounds(self):
+        """Return viewport bounds."""
+        return self._top, self._bottom
+
+    @property
+    def top(self):
+        """Return viewport top bound."""
+        return self._top
+
+    @property
+    def bottom(self):
+        """Return viewport bottom bound."""
+        return self._bottom
+
+    def set(self, start, stop):
+        """Set the scroll area."""
+        self._active = True
+        # _top and _bottom are inclusive and count rows from 1
+        self._top = start
+        self._bottom = stop
+        #  need this:
+        #set_pos(start, 1)
+        #  or this:
+        #self.overflow = False
+        #self._move_cursor(start, 1)
+
+    def unset(self):
+        """Unset scroll area."""
+        # there is only one VIEW PRINT setting across all pages.
+        # scroll area normally excludes the bottom bar
+        self.set(1, self._height - 1)
+        self._active = False

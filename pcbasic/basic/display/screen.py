@@ -16,7 +16,7 @@ from . import graphics
 from . import font
 from . import modes
 
-from .display import BottomBar, Palette, Cursor
+from .display import BottomBar, Palette, Cursor, ScrollArea
 from .text import TextBuffer, TextRow
 from .pixels import PixelBuffer
 from .modes import Video
@@ -56,8 +56,7 @@ class Screen(object):
         # overflow: true if we're on 80 but should be on 81
         self.current_row, self.current_col, self.overflow = 1, 1, False
         # text viewport parameters
-        # viewport has been set
-        self.view_start, self.scroll_height, self.view_set = 1, 24, False
+        self.scroll_area = ScrollArea(self.mode)
         # writing on bottom row is allowed
         self.bottom_row_allowed = False
         # prepare fonts
@@ -177,7 +176,8 @@ class Screen(object):
         # redraw key line
         self.bottom_bar.redraw(self)
         # initialise text viewport & move cursor home
-        self._init_mode_view()
+        self.scroll_area.init_mode(self.mode)
+        self.set_pos(self.scroll_area.top, 1)
         # rebuild the cursor
         self.cursor.init_mode(self.mode)
 
@@ -431,7 +431,7 @@ class Screen(object):
                 self.apage.row[self.current_row-1].wrap = True
                 if do_scroll_down:
                     # scroll down (make space by shifting the next rows down)
-                    if self.current_row < self.scroll_height:
+                    if self.current_row < self.scroll_area.bottom:
                         self.scroll_down(self.current_row+1)
                 # move cursor and reset cursor attribute
                 self._move_cursor(self.current_row + 1, 1)
@@ -484,7 +484,7 @@ class Screen(object):
                 self.bottom_row_allowed = False
         # see if we need to move to the next row
         if self.current_col > self.mode.width:
-            if self.current_row < self.scroll_height or scroll_ok:
+            if self.current_row < self.scroll_area.bottom or scroll_ok:
                 # either we don't nee to scroll, or we're allowed to
                 self.current_col -= self.mode.width
                 self.current_row += 1
@@ -493,18 +493,18 @@ class Screen(object):
                 self.current_col = self.mode.width
         # see if we need to move a row up
         elif self.current_col < 1:
-            if self.current_row > self.view_start:
+            if self.current_row > self.scroll_area.top:
                 self.current_col += self.mode.width
                 self.current_row -= 1
             else:
                 self.current_col = 1
         # see if we need to scroll
-        if self.current_row > self.scroll_height:
+        if self.current_row > self.scroll_area.bottom:
             if scroll_ok:
                 self.scroll()
-            self.current_row = self.scroll_height
-        elif self.current_row < self.view_start:
-            self.current_row = self.view_start
+            self.current_row = self.scroll_area.bottom
+        elif self.current_row < self.scroll_area.top:
+            self.current_row = self.scroll_area.top
         self._move_cursor(self.current_row, self.current_col)
         # signal position change
         return (self.current_row == oldrow and
@@ -641,16 +641,16 @@ class Screen(object):
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
-        self.current_row = self.view_start
+        self.current_row = self.scroll_area.top
         self.current_col = 1
         if self.bottom_row_allowed:
             last_row = self.mode.height
         else:
-            last_row = self.scroll_height
-        for r in self.apage.row[self.view_start-1:self.scroll_height]:
+            last_row = self.scroll_area.bottom
+        for r in self.apage.row[self.scroll_area.top-1:self.scroll_area.bottom]:
             # we're clearing the rows below, but don't set the wrap there
             r.wrap = False
-        self.clear_rows(self.view_start, last_row)
+        self.clear_rows(self.scroll_area.top, last_row)
         # ensure the cursor is shown in the right position
         self._move_cursor(self.current_row, self.current_col)
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
@@ -659,41 +659,25 @@ class Screen(object):
 
     def clear(self):
         """Clear the screen."""
-        save_view_set = self.view_set
-        save_view_start = self.view_start
-        save_scroll_height = self.scroll_height
-        self.set_view(1, self.mode.height)
+        save_view_set = self.scroll_area.active
+        save_view_start = self.scroll_area.top
+        save_scroll_height = self.scroll_area.bottom
+        self._set_scroll_area(1, self.mode.height)
         self.clear_view()
         if save_view_set:
-            self.set_view(save_view_start, save_scroll_height)
+            self._set_scroll_area(save_view_start, save_scroll_height)
         else:
-            self.unset_view()
+            self.scroll_area.unset()
 
     ###########################################################################
     # text viewport / scroll area
 
-    def _init_mode_view(self):
-        """Initialise the scroll area for new screen mode."""
-        # there is only one VIEW PRINT setting across all pages.
-        if self.scroll_height == 25:
-            # tandy/pcjr special case: VIEW PRINT to 25 is preserved
-            self.set_view(1, 25)
-        else:
-            self.unset_view()
-
-    def set_view(self, start, stop):
+    def _set_scroll_area(self, start, stop):
         """Set the scroll area."""
-        self.view_set = True
-        self.view_start = start
-        self.scroll_height = stop
+        self.scroll_area.set(start, stop)
         #set_pos(start, 1)
         self.overflow = False
         self._move_cursor(start, 1)
-
-    def unset_view(self):
-        """Unset scroll area."""
-        self.set_view(1, 24)
-        self.view_set = False
 
     ###########################################################################
     # scrolling
@@ -701,20 +685,20 @@ class Screen(object):
     def scroll(self, from_line=None):
         """Scroll the scroll region up by one line, starting at from_line."""
         if from_line is None:
-            from_line = self.view_start
+            from_line = self.scroll_area.top
         _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SCROLL_UP,
-                    (from_line, self.scroll_height, back)))
+                    (from_line, self.scroll_area.bottom, back)))
         # sync buffers with the new screen reality:
         if self.current_row > from_line:
             self.current_row -= 1
-        self.apage.row.insert(self.scroll_height,
+        self.apage.row.insert(self.scroll_area.bottom,
                               TextRow(self.attr, self.mode.width))
         if not self.mode.is_text_mode:
             sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line+1, 1,
-                self.scroll_height, self.mode.width)
+                self.scroll_area.bottom, self.mode.width)
             tx0, ty0, _, _ = self.text_to_pixel_area(from_line, 1,
-                self.scroll_height-1, self.mode.width)
+                self.scroll_area.bottom-1, self.mode.width)
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
         del self.apage.row[from_line-1]
 
@@ -722,18 +706,18 @@ class Screen(object):
         """Scroll the scroll region down by one line, starting at from_line."""
         _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SCROLL_DOWN,
-                    (from_line, self.scroll_height, back)))
+                    (from_line, self.scroll_area.bottom, back)))
         if self.current_row >= from_line:
             self.current_row += 1
         # sync buffers with the new screen reality:
         self.apage.row.insert(from_line - 1, TextRow(self.attr, self.mode.width))
         if not self.mode.is_text_mode:
             sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line, 1,
-                self.scroll_height-1, self.mode.width)
+                self.scroll_area.bottom-1, self.mode.width)
             tx0, ty0, _, _ = self.text_to_pixel_area(from_line+1, 1,
-                self.scroll_height, self.mode.width)
+                self.scroll_area.bottom, self.mode.width)
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
-        del self.apage.row[self.scroll_height-1]
+        del self.apage.row[self.scroll_area.bottom-1]
 
     ###########################################################################
     # vpage text retrieval
@@ -1010,7 +994,7 @@ class Screen(object):
         else:
             if self.graph_view.is_set():
                 val = 1
-            elif self.view_set:
+            elif self.scroll_area.active:
                 val = 2
             else:
                 val = 0
@@ -1037,8 +1021,8 @@ class Screen(object):
         col = self.current_col if col is None else col
         cmode = self.mode
         error.throw_if(row == cmode.height and self.bottom_bar.visible)
-        if self.view_set:
-            error.range_check(self.view_start, self.scroll_height, row)
+        if self.scroll_area.active:
+            error.range_check(self.scroll_area.top, self.scroll_area.bottom, row)
         else:
             error.range_check(1, cmode.height, row)
         error.range_check(1, cmode.width, col)
@@ -1063,7 +1047,7 @@ class Screen(object):
         """CSRLIN: get the current screen row."""
         list(args)
         if (self.overflow and self.current_col == self.mode.width and
-                                    self.current_row < self.scroll_height):
+                                    self.current_row < self.scroll_area.bottom):
             # in overflow position, return row+1 except on the last row
             csrlin = self.current_row + 1
         else:
@@ -1096,8 +1080,8 @@ class Screen(object):
         list(args)
         row = row or 1
         col = col or 1
-        if self.view_set:
-            error.range_check(self.view_start, self.scroll_height, row)
+        if self.scroll_area.active:
+            error.range_check(self.scroll_area.top, self.scroll_area.bottom, row)
         if want_attr:
             if not self.mode.is_text_mode:
                 result = 0
@@ -1111,12 +1095,12 @@ class Screen(object):
         """VIEW PRINT: set scroll region."""
         start, stop = (None if arg is None else values.to_int(arg) for arg in args)
         if start is None and stop is None:
-            self.unset_view()
+            self.scroll_area.unset()
         else:
             max_line = 25 if (self.capabilities in ('pcjr', 'tandy') and not self.bottom_bar.visible) else 24
             error.range_check(1, max_line, start, stop)
             error.throw_if(stop < start)
-            self.set_view(start, stop)
+            self._set_scroll_area(start, stop)
 
     def point_(self, args):
         """POINT (1 argument): Return current coordinate (2 arguments): Return the attribute of a pixel."""

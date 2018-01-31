@@ -320,7 +320,7 @@ class Editor(object):
                     therow.end = ccol
                 break
             else:
-                if crow == self._screen.scroll_height:
+                if crow == self._screen.scroll_area.bottom:
                     self._screen.scroll()
                     # this is not the global row which is changed by scroll()
                     crow -= 1
@@ -360,7 +360,7 @@ class Editor(object):
             therow.buf[ccol-1:] = nextrow.buf[:width-ccol+1]
             therow.end = min(max(therow.end, ccol) + nextrow.end, width)
             # and continue on the following rows as long as we wrap.
-            while crow < self._screen.scroll_height and nextrow.wrap:
+            while crow < self._screen.scroll_area.bottom and nextrow.wrap:
                 nextrow2 = thepage.row[crow+1]
                 nextrow.buf = (nextrow.buf[width-ccol+1:] +
                                nextrow2.buf[:width-ccol+1])
@@ -383,7 +383,7 @@ class Editor(object):
         elif ccol <= therow.end:
             # row not ending with LF
             while True:
-                if (therow.end < width or crow == self._screen.scroll_height
+                if (therow.end < width or crow == self._screen.scroll_area.bottom
                         or not therow.wrap):
                     # no knock on to next row, just delete the char
                     del therow.buf[ccol-1]
@@ -464,9 +464,9 @@ class Editor(object):
             self._screen.apage.row[crow-1].end = ccol - 1
         else:
             while (self._screen.apage.row[crow-1].wrap and
-                    crow < self._screen.scroll_height):
+                    crow < self._screen.scroll_area.bottom):
                 crow += 1
-            if crow >= self._screen.scroll_height:
+            if crow >= self._screen.scroll_area.bottom:
                 self._screen.scroll()
             # self._screen.current_row has changed, don't use crow
             if self._screen.current_row < self._screen.mode.height:
@@ -485,7 +485,7 @@ class Editor(object):
                 break
             ccol += 1
             if ccol > self._screen.mode.width:
-                if crow >= self._screen.scroll_height:
+                if crow >= self._screen.scroll_area.bottom:
                     # nothing found
                     return
                 crow += 1
@@ -497,7 +497,7 @@ class Editor(object):
                 break
             ccol += 1
             if ccol > self._screen.mode.width:
-                if crow >= self._screen.scroll_height:
+                if crow >= self._screen.scroll_area.bottom:
                     # nothing found
                     return
                 crow += 1
@@ -511,7 +511,7 @@ class Editor(object):
         while True:
             ccol -= 1
             if ccol < 1:
-                if crow <= self._screen.view_start:
+                if crow <= self._screen.scroll_area.top:
                     # not found
                     return
                 crow -= 1
@@ -524,7 +524,7 @@ class Editor(object):
             last_row, last_col = crow, ccol
             ccol -= 1
             if ccol < 1:
-                if crow <= self._screen.view_start:
+                if crow <= self._screen.scroll_area.top:
                     break
                 crow -= 1
                 ccol = self._screen.mode.width
