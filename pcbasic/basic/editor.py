@@ -390,10 +390,8 @@ class Editor(object):
 
     def end(self):
         """Jump to end of logical line; follow wraps (END)."""
-        crow = self._screen.current_row
-        while (self._screen.apage.row[crow-1].wrap and
-                crow < self._screen.mode.height):
-            crow += 1
+        crow = self._screen.text.find_end_of_line(
+                self._screen.apagenum, self._screen.current_row)
         if self._screen.apage.row[crow-1].end == self._screen.mode.width:
             self._screen.set_pos(crow, self._screen.apage.row[crow-1].end)
             self._screen.overflow = True
@@ -426,7 +424,7 @@ class Editor(object):
         crow, ccol = self._screen.current_row, self._screen.current_col
         # find non-alphanumeric chars
         while True:
-            c = self._screen.apage.row[crow-1].buf[ccol-1][0]
+            c = self._screen.text.get_char(self._screen.apagenum, crow, ccol)
             if (c not in string.digits + string.ascii_letters):
                 break
             ccol += 1
@@ -438,7 +436,7 @@ class Editor(object):
                 ccol = 1
         # find alphanumeric chars
         while True:
-            c = self._screen.apage.row[crow-1].buf[ccol-1][0]
+            c = self._screen.text.get_char(self._screen.apagenum, crow, ccol)
             if (c in string.digits + string.ascii_letters):
                 break
             ccol += 1
@@ -462,7 +460,7 @@ class Editor(object):
                     return
                 crow -= 1
                 ccol = self._screen.mode.width
-            c = self._screen.apage.row[crow-1].buf[ccol-1][0]
+            c = self._screen.text.get_char(self._screen.apagenum, crow, ccol)
             if (c in string.digits + string.ascii_letters):
                 break
         # find non-alphanumeric chars
@@ -474,7 +472,7 @@ class Editor(object):
                     break
                 crow -= 1
                 ccol = self._screen.mode.width
-            c = self._screen.apage.row[crow-1].buf[ccol-1][0]
+            c = self._screen.text.get_char(self._screen.apagenum, crow, ccol)
             if (c not in string.digits + string.ascii_letters):
                 break
         self._screen.set_pos(last_row, last_col)
