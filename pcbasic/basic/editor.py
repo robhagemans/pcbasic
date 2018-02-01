@@ -6,6 +6,7 @@ Direct mode environment
 This file is released under the GNU GPL version 3 or later.
 """
 
+import logging
 import string
 
 from .base import error
@@ -277,16 +278,17 @@ class Editor(object):
 
     def delete(self, crow, ccol):
         """Delete the character (single/double width) at the current position."""
-        double = self._screen.apage.row[crow-1].double[ccol-1]
-        if double == 0:
+        width = self._screen.text.get_charwidth(self._screen.apagenum, crow, ccol)
+        if width == 1:
             # we're on an sbcs byte.
             self._delete_sbcs_char(crow, ccol)
-        elif double == 1:
+        elif width == 2:
             # we're on a lead byte, delete this and the next.
             self._delete_sbcs_char(crow, ccol)
             self._delete_sbcs_char(crow, ccol)
-        elif double == 2:
+        elif width == 0:
             # we're on a trail byte, delete the previous and this.
+            logging.debug('DBCS trail byte delete at %d, %d.', crow, ccol)
             self._delete_sbcs_char(crow, ccol-1)
             self._delete_sbcs_char(crow, ccol-1)
 
