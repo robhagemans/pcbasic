@@ -6,6 +6,7 @@ Text-buffer operations
 This file is released under the GNU GPL version 3 or later.
 """
 
+import logging
 
 #######################################################################################
 # text buffer
@@ -13,25 +14,27 @@ This file is released under the GNU GPL version 3 or later.
 class TextRow(object):
     """Buffer for a single row of the screen."""
 
-    def __init__(self, battr, bwidth):
+    def __init__(self, attr, width):
         """Set up screen row empty and unwrapped."""
-        # screen buffer, initialised to spaces, dim white on black
-        self.buf = [(' ', battr)] * bwidth
-        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
-        self.double = [ 0 ] * bwidth
-        # last non-whitespace character
-        self.end = 0
+        self.width = width
+        self.clear(attr)
         # line continues on next row (either LF or word wrap happened)
         self.wrap = False
 
-    def clear(self, battr):
+    def clear(self, attr):
         """Clear the screen row buffer. Leave wrap untouched."""
-        bwidth = len(self.buf)
-        self.buf = [(' ', battr)] * bwidth
+        # screen buffer, initialised to spaces
+        self.buf = [(b' ', attr)] * self.width
         # character is part of double width char; 0 = no; 1 = lead, 2 = trail
-        self.double = [ 0 ] * bwidth
+        self.double = [0] * self.width
         # last non-whitespace character
         self.end = 0
+
+    def clear_from(self, scol, attr):
+        """Clear characters from given position till end of row."""
+        self.buf = self.buf[:scol-1] + [(b' ', attr)] * (self.width - scol + 1)
+        self.double = self.double[:scol-1] + [0] * (self.width - scol + 1)
+        self.end = min(self.end, scol-1)
 
 
 class TextPage(object):
@@ -145,8 +148,34 @@ class TextBuffer(object):
         return ord(self.pages[pagenum].row[crow-1].buf[ccol-1][0])
 
     def get_attr(self, pagenum, crow, ccol):
-        """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
+        """Retrieve attribute from the screen."""
         return self.pages[pagenum].row[crow-1].buf[ccol-1][1]
+
+    def get_charwidth(self, pagenum, row, col):
+        """Retrieve DBCS character width in bytes."""
+        dbcs = self.pages[pagenum].row[row-1].double[col-1]
+        if dbcs == 0:
+            return 1
+        elif dbcs == 1:
+            return 2
+        return 0
+
+    def get_fullchar_attr(self, pagenum, row, col):
+        """Retrieve SBCS or DBCS character."""
+        therow = self.pages[pagenum].row[row-1]
+        if therow.double[col-1] == 1:
+            ca = therow.buf[col-1]
+            da = therow.buf[col]
+            char, attr = ca[0] + da[0], da[1]
+            # do we need to set this here?
+            therow.double[col-1] = 1
+            therow.double[col] = 2
+        elif therow.double[col-1] == 0:
+            ca = therow.buf[col-1]
+            char, attr = ca[0], ca[1]
+        else:
+            logging.debug('DBCS buffer corrupted at %d, %d (%d)', row, col, therow.double[col-1])
+        return char, attr
 
     def get_text_raw(self, pagenum):
         """Retrieve all raw text on a page."""

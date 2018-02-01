@@ -462,10 +462,8 @@ class Screen(object):
         """Increase the current position by one."""
         # skip dbcs trail byte
         row, col = self.current_row, self.current_col
-        if self.apage.row[row-1].double[col-1] == 1:
-            self.set_pos(row, col + 2, scroll_ok=False)
-        else:
-            self.set_pos(row, col + 1, scroll_ok=False)
+        width = self.text.get_charwidth(self.apagenum, row, col) or 1
+        self.set_pos(row, col + width, scroll_ok=False)
 
     def _check_pos(self, scroll_ok=True):
         """Check if we have crossed the screen boundaries and move as needed."""
@@ -515,15 +513,13 @@ class Screen(object):
         self.current_row, self.current_col = row, col
         # set halfwidth/fullwidth cursor
         # move left if we end up on dbcs trail byte
-        if self.apage.row[self.current_row-1].double[self.current_col-1] == 2:
+        if not self.text.get_charwidth(self.apagenum, self.current_row, self.current_col):
             self.current_col -= 1
-        if self.apage.row[self.current_row-1].double[self.current_col-1] == 1:
-            self.cursor.set_width(2)
-        else:
-            self.cursor.set_width(1)
+        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
+        self.cursor.set_width(width)
         # set the cursor's attribute to that of the current location
-        fore, _, _, _ = self.mode.split_attr(
-                self.apage.row[self.current_row-1].buf[self.current_col-1][1] & 0xf)
+        fore, _, _, _ = self.mode.split_attr(0xf &
+                self.text.get_attr(self.apagenum, self.current_row, self.current_col))
         self.cursor.reset_attr(fore)
         self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
                 (self.current_row, self.current_col)))
@@ -549,21 +545,9 @@ class Screen(object):
         therow = self.text.pages[pagenum].row[crow-1]
         ccol = start
         while ccol <= stop:
-            double = therow.double[ccol-1]
-            if double == 1:
-                ca = therow.buf[ccol-1]
-                da = therow.buf[ccol]
-                r, c, char, attr = crow, ccol, ca[0]+da[0], da[1]
-                therow.double[ccol-1] = 1
-                therow.double[ccol] = 2
-                ccol += 2
-            else:
-                if double != 0:
-                    logging.debug('DBCS buffer corrupted at %d, %d (%d)',
-                                  crow, ccol, double)
-                ca = therow.buf[ccol-1]
-                r, c, char, attr = crow, ccol, ca[0], ca[1]
-                ccol += 1
+            r, c = crow, ccol
+            char, attr = self.text.get_fullchar_attr(pagenum, crow, ccol)
+            ccol += len(char)
             # ensure glyph is stored
             self._glyphs.check_char(char)
             fore, back, blink, underline = self.mode.split_attr(attr)
@@ -596,13 +580,9 @@ class Screen(object):
 
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
-        mode = self.mode
-        therow = self.apage.row[srow-1]
-        therow.buf = (therow.buf[:scol-1] +
-            [(' ', self.attr)] * (mode.width-scol+1))
-        therow.double = (therow.double[:scol-1] + [0] * (mode.width-scol+1))
-        therow.end = min(therow.end, scol-1)
+        self.apage.row[srow-1].clear_from(scol, self.attr)
         crow = srow
+        # can use self.text.find_end_of_line
         while self.apage.row[crow-1].wrap:
             crow += 1
             self.apage.row[crow-1].clear(self.attr)
@@ -613,7 +593,7 @@ class Screen(object):
         therow.wrap = False
         self.set_pos(srow, scol)
         save_end = therow.end
-        therow.end = mode.width
+        therow.end = self.mode.width
         if scol > 1:
             self.redraw_row(scol-1, srow)
         else:
