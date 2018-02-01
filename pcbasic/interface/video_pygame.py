@@ -558,7 +558,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 if '\0' not in self.glyph_dict:
                     logging.error('No glyph received for code point 0')
                     return
-                logging.warning('No glyph received for code point %s', cp.encode('hex'))
+                logging.warning('No glyph received for code point %s', hex(ord(cp)))
                 glyph = self.glyph_dict['\0']
             if glyph.get_palette_at(0) != bg:
                 glyph.set_palette_at(0, bg)

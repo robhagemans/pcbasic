@@ -678,7 +678,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         try:
             glyph = self.glyph_dict[cp]
         except KeyError:
-            logging.warning('No glyph received for code point %s', cp.encode('hex'))
+            logging.warning('No glyph received for code point %s', hex(ord(cp)))
             try:
                 glyph = self.glyph_dict['\0']
             except KeyError:
