@@ -37,6 +37,8 @@ class BottomBar(object):
 
     def show(self, on, screen):
         """Switch bottom bar visibility."""
+        # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
+        error.throw_if(on and screen.scroll_area.bottom == screen.mode.height)
         self.visible, was_visible = on, self.visible
         if self.visible != was_visible:
             self.redraw(screen)
@@ -54,7 +56,6 @@ class BottomBar(object):
         else:
             reverse_attr = 0x07
         if self.visible:
-            error.throw_if(screen.scroll_area.top == key_row)
             # always show only complete 8-character cells
             # this matters on pcjr/tandy width=20 mode
             for i in range((screen.mode.width//8) * 8):
