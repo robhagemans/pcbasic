@@ -641,19 +641,12 @@ class Screen(object):
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
-        self.current_row = start_row
-        self.current_col = 1
-        # this is weird, is it actually used anywhere?
-        if self._bottom_row_allowed:
-            last_row = self.mode.height
-        else:
-            last_row = stop_row
+        # can't we just do this in row.clear?
         for r in self.apage.row[start_row-1:stop_row]:
-            # we're clearing the rows below, but don't set the wrap there
             r.wrap = False
-        self.clear_rows(start_row, last_row)
+        self.clear_rows(start_row, stop_row)
         # ensure the cursor is shown in the right position
-        self._move_cursor(self.current_row, self.current_col)
+        self.set_pos(start_row, 1)
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
             # restore attr
             self.set_attr(attr_save)
