@@ -114,86 +114,30 @@ class Editor(object):
             prompt_row, left, right = self._interact(prompt_width)
         except error.Break:
             # x0E CR LF is printed to redirects at break
-            self._redirect.write('\x0e')
+            self._redirect.write(b'\x0e')
             # while only a line break appears on the console
             self._screen.write_line()
             raise
         # get contents of the logical line
         if from_start:
-            outstr = self._get_logical_line(self._screen.current_row)
+            outstr = self._screen.text.get_logical_line(
+                    self._screen.apagenum, self._screen.current_row)
         else:
-            outstr = self._get_logical_line_input(self._screen.current_row,
-                                            prompt_row, left, right)
+            outstr = self._screen.text.get_logical_line_from(
+                    self._screen.apagenum, self._screen.current_row,
+                    prompt_row, left, right)
         # redirects output exactly the contents of the logical line
         # including any trailing whitespace and chars past 255
         self._redirect.write(outstr)
         # go to last row of logical line
-        self._screen.current_row = self._find_end_of_line(self._screen.current_row)
+        self._screen.current_row = self._screen.text.find_end_of_line(
+                self._screen.apagenum, self._screen.current_row)
         # echo the CR, if requested
         if write_endl:
             self._screen.write_line()
         # to the parser/INPUT, only the first 255 chars are returned
         # with trailing whitespace removed
-        return str(outstr[:255].rstrip(' \t\n'))
-
-    def _find_start_of_line(self, srow):
-        """Find the start of the logical line that includes our current position."""
-        # move up as long as previous line wraps
-        while srow > 1 and self._screen.apage.row[srow-2].wrap:
-            srow -= 1
-        return srow
-
-    def _find_end_of_line(self, srow):
-        """Find the end of the logical line that includes our current position."""
-        # move down as long as this line wraps
-        while srow <= self._screen.mode.height and self._screen.apage.row[srow-1].wrap:
-            srow += 1
-        return srow
-
-    def _get_logical_line(self, srow):
-        """Get bytearray of the contents of the logical line."""
-        # find start of logical line
-        srow = self._find_start_of_line(srow)
-        line = bytearray()
-        # add all rows of the logical line
-        for therow in self._screen.apage.row[
-                                    srow-1:self._screen.mode.height]:
-            line += bytearray(pair[0] for pair in therow.buf[:therow.end])
-            # continue so long as the line wraps
-            if not therow.wrap:
-                break
-            # wrap before end of line means LF
-            if therow.end < self._screen.mode.width:
-                line += '\n'
-        return line
-
-    def _get_logical_line_input(self, srow, prompt_row, left, right):
-        """Get bytearray of the contents of the logical line, adapted for INPUT."""
-        # INPUT: the prompt starts at the beginning of a logical line
-        # but the row may have moved up: this happens on line 24
-        # in this case we need to move up to the start of the logical line
-        prompt_row = self._find_start_of_line(prompt_row)
-        # find start of logical line
-        srow = self._find_start_of_line(srow)
-        line = bytearray()
-        # INPUT returns empty string if enter pressed below prompt row
-        if srow <= prompt_row:
-            # add all rows of the logical line
-            for crow in range(srow, self._screen.mode.height+1):
-                therow = self._screen.apage.row[crow-1]
-                # exclude prompt, if any; only go from furthest_left to furthest_right
-                if crow == prompt_row:
-                    rowpairs = therow.buf[:therow.end][left-1:right-1]
-                else:
-                    rowpairs = therow.buf[:therow.end]
-                # get characters from char/attr pairs and convert to bytearray
-                line += bytearray(pair[0] for pair in rowpairs)
-                if not therow.wrap:
-                    break
-                # wrap before end of line means LF
-                if therow.end < self._screen.mode.width:
-                    line += '\n'
-        return line
+        return outstr[:255].rstrip(b' \t\n')
 
     def _interact(self, prompt_width):
         """Manage the interactive mode."""
@@ -415,7 +359,9 @@ class Editor(object):
 
     def clear_line(self, the_row, from_col=1):
         """Clear whole logical line (ESC), leaving prompt."""
-        self._screen.clear_from(self._find_start_of_line(the_row), from_col)
+        self._screen.clear_from(
+                self._screen.text.find_start_of_line(self._screen.apagenum, the_row),
+                from_col)
 
     def backspace(self, start_row, start_col):
         """Delete the char to the left (BACKSPACE)."""

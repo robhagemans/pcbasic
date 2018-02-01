@@ -564,9 +564,9 @@ class Screen(object):
                 ca = therow.buf[ccol-1]
                 r, c, char, attr = crow, ccol, ca[0], ca[1]
                 ccol += 1
-            fore, back, blink, underline = self.mode.split_attr(attr)
             # ensure glyph is stored
             self._glyphs.check_char(char)
+            fore, back, blink, underline = self.mode.split_attr(attr)
             self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH, (
                     pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
                     len(char) > 1, fore, back, blink, underline, suppress_cli
@@ -691,7 +691,7 @@ class Screen(object):
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
         del self.apage.row[from_line-1]
 
-    def scroll_down(self,from_line):
+    def scroll_down(self, from_line):
         """Scroll the scroll region down by one line, starting at from_line."""
         _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SCROLL_DOWN,

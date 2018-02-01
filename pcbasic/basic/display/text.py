@@ -155,7 +155,9 @@ class TextBuffer(object):
             for row_index in range(self.pages[pagenum].height)
         )
 
-    # cf. Editor._get_logical_line() !
+    ###########################################################################
+    # logical lines
+
     def get_text_logical(self, pagenum, start_row, start_col, stop_row, stop_col):
         """Retrieve section of logical text for copying."""
         # include lead byte if start on trail
@@ -178,3 +180,61 @@ class TextBuffer(object):
                 c = 1
         full.append(b''.join(clip))
         return full
+
+    def find_start_of_line(self, pagenum, srow):
+        """Find the start of the logical line that includes our current position."""
+        # move up as long as previous line wraps
+        while srow > 1 and self.pages[pagenum].row[srow-2].wrap:
+            srow -= 1
+        return srow
+
+    def find_end_of_line(self, pagenum, srow):
+        """Find the end of the logical line that includes our current position."""
+        # move down as long as this line wraps
+        while srow <= self.height and self.pages[pagenum].row[srow-1].wrap:
+            srow += 1
+        return srow
+
+    def get_logical_line(self, pagenum, srow):
+        """Get bytearray of the contents of the logical line."""
+        # find start of logical line
+        srow = self.find_start_of_line(pagenum, srow)
+        line = bytearray()
+        # add all rows of the logical line
+        for therow in self.pages[pagenum].row[srow-1:self.height]:
+            line += bytearray(pair[0] for pair in therow.buf[:therow.end])
+            # continue so long as the line wraps
+            if not therow.wrap:
+                break
+            # wrap before end of line means LF
+            if therow.end < self.width:
+                line += b'\n'
+        return bytes(line)
+
+    def get_logical_line_from(self, pagenum, srow, prompt_row, left, right):
+        """Get bytearray of the contents of the logical line, adapted for INPUT."""
+        # INPUT: the prompt starts at the beginning of a logical line
+        # but the row may have moved up: this happens on line 24
+        # in this case we need to move up to the start of the logical line
+        prompt_row = self.find_start_of_line(pagenum, prompt_row)
+        # find start of logical line
+        srow = self.find_start_of_line(pagenum, srow)
+        line = bytearray()
+        # INPUT returns empty string if enter pressed below prompt row
+        if srow <= prompt_row:
+            # add all rows of the logical line
+            for crow in range(srow, self.height+1):
+                therow = self.pages[pagenum].row[crow-1]
+                # exclude prompt, if any; only go from furthest_left to furthest_right
+                if crow == prompt_row:
+                    rowpairs = therow.buf[:therow.end][left-1:right-1]
+                else:
+                    rowpairs = therow.buf[:therow.end]
+                # get characters from char/attr pairs and convert to bytearray
+                line += bytearray(pair[0] for pair in rowpairs)
+                if not therow.wrap:
+                    break
+                # wrap before end of line means LF
+                if therow.end < self.width:
+                    line += b'\n'
+        return bytes(line)
