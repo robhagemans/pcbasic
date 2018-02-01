@@ -628,6 +628,8 @@ class Screen(object):
         """Clear text and graphics on given (inclusive) text row range."""
         for r in self.apage.row[start-1:stop]:
             r.clear(self.attr)
+            # can't we just do this in row.clear?
+            r.wrap = False
         if not self.mode.is_text_mode:
             x0, y0, x1, y1 = self.text_to_pixel_area(start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
@@ -641,9 +643,6 @@ class Screen(object):
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
-        # can't we just do this in row.clear?
-        for r in self.apage.row[start_row-1:stop_row]:
-            r.wrap = False
         self.clear_rows(start_row, stop_row)
         # ensure the cursor is shown in the right position
         self.set_pos(start_row, 1)
