@@ -276,88 +276,102 @@ class Editor(object):
                 crow += 1
                 ccol = 1
 
-    def delete(self, crow, ccol):
+    def delete(self, row, col):
         """Delete the character (single/double width) at the current position."""
-        width = self._screen.text.get_charwidth(self._screen.apagenum, crow, ccol)
+        width = self._screen.text.get_charwidth(self._screen.apagenum, row, col)
         if width == 1:
             # we're on an sbcs byte.
-            self._delete_sbcs_char(crow, ccol)
+            self._delete_sbcs_char(row, col)
         elif width == 2:
             # we're on a lead byte, delete this and the next.
-            self._delete_sbcs_char(crow, ccol)
-            self._delete_sbcs_char(crow, ccol)
+            self._delete_sbcs_char(row, col)
+            self._delete_sbcs_char(row, col)
         elif width == 0:
             # we're on a trail byte, delete the previous and this.
-            logging.debug('DBCS trail byte delete at %d, %d.', crow, ccol)
-            self._delete_sbcs_char(crow, ccol-1)
-            self._delete_sbcs_char(crow, ccol-1)
+            logging.debug('DBCS trail byte delete at %d, %d.', row, col)
+            self._delete_sbcs_char(row, col-1)
+            self._delete_sbcs_char(row, col-1)
 
-    def _delete_sbcs_char(self, crow, ccol):
+    def _delete_sbcs_char(self, row, col):
         """Delete a single-byte character at the current position."""
+        if row > 1 and col >= self._screen.apage.row[row-1].end and self._screen.apage.row[row-1].wrap:
+            # row was an LF-ending row & we're deleting past the LF
+            self._delete_sbcs_char_lf(row, col)
+        elif col <= self._screen.apage.row[row-1].end:
+            # row not ending with LF
+            self._delete_sbcs_char_no_lf(row, col)
+
+    def _delete_sbcs_char_lf(self, crow, ccol):
+        """Delete a single-byte character at the current position, row ending with LF."""
         save_col = ccol
         thepage = self._screen.apage
         therow = thepage.row[crow-1]
         width = self._screen.mode.width
-        if crow > 1 and ccol >= therow.end and therow.wrap:
-            # row was an LF-ending row & we're deleting past the LF
-            nextrow = thepage.row[crow]
-            # replace everything after the delete location with
-            # stuff from the next row
-            therow.buf[ccol-1:] = nextrow.buf[:width-ccol+1]
-            therow.end = min(max(therow.end, ccol) + nextrow.end, width)
-            # and continue on the following rows as long as we wrap.
-            while crow < self._screen.scroll_area.bottom and nextrow.wrap:
-                nextrow2 = thepage.row[crow+1]
-                nextrow.buf = (nextrow.buf[width-ccol+1:] +
-                               nextrow2.buf[:width-ccol+1])
-                nextrow.end = min(nextrow.end + nextrow2.end, width)
+        # row was an LF-ending row & we're deleting past the LF
+        nextrow = thepage.row[crow]
+        # replace everything after the delete location with
+        # stuff from the next row
+        therow.buf[ccol-1:] = nextrow.buf[:width-ccol+1]
+        therow.end = min(max(therow.end, ccol) + nextrow.end, width)
+        # and continue on the following rows as long as we wrap.
+        while crow < self._screen.scroll_area.bottom and nextrow.wrap:
+            nextrow2 = thepage.row[crow+1]
+            nextrow.buf = (nextrow.buf[width-ccol+1:] +
+                           nextrow2.buf[:width-ccol+1])
+            nextrow.end = min(nextrow.end + nextrow2.end, width)
+            crow += 1
+            therow, nextrow = thepage.row[crow-1], thepage.row[crow]
+        # replenish last row with empty space
+        nextrow.buf = (nextrow.buf[width-ccol+1:] +
+                       [(' ', self._screen.attr)] * (width-ccol+1))
+        # adjust the row end
+        nextrow.end -= width - ccol
+        # redraw the full logical line from the original position onwards
+        self._screen.redraw_row(save_col-1, self._screen.current_row)
+        # if last row was empty, scroll up.
+        if nextrow.end <= 0:
+            nextrow.end = 0
+            ccol += 1
+            therow.wrap = False
+            self._screen.scroll(crow+1)
+
+    def _delete_sbcs_char_no_lf(self, crow, ccol):
+        """Delete a single-byte character at the current position, row not ending with LF."""
+        save_col = ccol
+        thepage = self._screen.apage
+        therow = thepage.row[crow-1]
+        width = self._screen.mode.width
+        # row not ending with LF
+        while True:
+            if (therow.end < width or crow == self._screen.scroll_area.bottom
+                    or not therow.wrap):
+                # no knock on to next row, just delete the char
+                del therow.buf[ccol-1]
+                # and replenish the buffer at the end of the line
+                therow.buf.insert(therow.end-1, (' ', self._screen.attr))
+                break
+            else:
+                # wrap and end[row-1]==width
+                nextrow = thepage.row[crow]
+                # delete the char and replenish from next row
+                del therow.buf[ccol-1]
+                therow.buf.insert(therow.end-1, nextrow.buf[0])
+                # then move on to the next row and delete the first char
                 crow += 1
                 therow, nextrow = thepage.row[crow-1], thepage.row[crow]
-            # replenish last row with empty space
-            nextrow.buf = (nextrow.buf[width-ccol+1:] +
-                           [(' ', self._screen.attr)] * (width-ccol+1))
-            # adjust the row end
-            nextrow.end -= width - ccol
-            # redraw the full logical line from the original position onwards
-            self._screen.redraw_row(save_col-1, self._screen.current_row)
-            # if last row was empty, scroll up.
-            if nextrow.end <= 0:
-                nextrow.end = 0
-                ccol += 1
-                therow.wrap = False
-                self._screen.scroll(crow+1)
-        elif ccol <= therow.end:
-            # row not ending with LF
-            while True:
-                if (therow.end < width or crow == self._screen.scroll_area.bottom
-                        or not therow.wrap):
-                    # no knock on to next row, just delete the char
-                    del therow.buf[ccol-1]
-                    # and replenish the buffer at the end of the line
-                    therow.buf.insert(therow.end-1, (' ', self._screen.attr))
-                    break
-                else:
-                    # wrap and end[row-1]==width
-                    nextrow = thepage.row[crow]
-                    # delete the char and replenish from next row
-                    del therow.buf[ccol-1]
-                    therow.buf.insert(therow.end-1, nextrow.buf[0])
-                    # then move on to the next row and delete the first char
-                    crow += 1
-                    therow, nextrow = thepage.row[crow-1], thepage.row[crow]
-                    ccol = 1
-            # redraw the full logical line
-            # this works from *global* row onwards
-            self._screen.redraw_row(save_col-1, self._screen.current_row)
-            # change the row end
-            # this works on *local* row (last row edited)
-            if therow.end > 0:
-                therow.end -= 1
-            else:
-                # if there was nothing on the line, scroll the next line up.
-                self._screen.scroll(crow)
-                if crow > 1:
-                    thepage.row[crow-2].wrap = False
+                ccol = 1
+        # redraw the full logical line
+        # this works from *global* row onwards
+        self._screen.redraw_row(save_col-1, self._screen.current_row)
+        # change the row end
+        # this works on *local* row (last row edited)
+        if therow.end > 0:
+            therow.end -= 1
+        else:
+            # if there was nothing on the line, scroll the next line up.
+            self._screen.scroll(crow)
+            if crow > 1:
+                thepage.row[crow-2].wrap = False
 
     def clear_line(self, the_row, from_col=1):
         """Clear whole logical line (ESC), leaving prompt."""
