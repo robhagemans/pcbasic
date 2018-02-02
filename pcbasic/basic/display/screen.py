@@ -151,7 +151,7 @@ class Screen(object):
         self._glyphs = font.GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
         # build the screen buffer
         self.text = TextBuffer(self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
-                               (self.mode.font_height >= 14), self.codepage)
+                               self.codepage, do_fullwidth=(self.mode.font_height >= 14))
         if not self.mode.is_text_mode:
             self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
                                     self.mode.num_pages, self.mode.bitsperpixel)

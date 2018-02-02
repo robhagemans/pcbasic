@@ -40,99 +40,98 @@ class TextRow(object):
 class TextPage(object):
     """Buffer for a screen page."""
 
-    def __init__(self, battr, bwidth, bheight, pagenum, do_dbcs, codepage):
+    def __init__(self, battr, bwidth, bheight, codepage, do_fullwidth):
         """Initialise the screen buffer to given dimensions."""
         self.row = [TextRow(battr, bwidth) for _ in xrange(bheight)]
         self.width = bwidth
         self.height = bheight
-        self.pagenum = pagenum
-        self.do_dbcs = do_dbcs
-        self.codepage = codepage
+        self._dbcs_enabled = codepage.dbcs and do_fullwidth
+        self._codepage = codepage
 
-    def put_char_attr(self, crow, ccol, c, cattr, one_only=False, force=False):
+    def put_char_attr(self, row, col, c, cattr, one_only=False, force=False):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
         # update the screen buffer
-        self.row[crow-1].buf[ccol-1] = (c, cattr)
+        self.row[row-1].buf[col-1] = (c, cattr)
         # mark the replaced char for refreshing
-        start, stop = ccol, ccol+1
-        self.row[crow-1].double[ccol-1] = 0
+        start, stop = col, col+1
+        self.row[row-1].double[col-1] = 0
         # mark out sbcs and dbcs characters
-        if self.codepage.dbcs and self.do_dbcs:
-            orig_col = ccol
+        if self._dbcs_enabled:
+            orig_col = col
             # replace chars from here until necessary to update double-width chars
-            therow = self.row[crow-1]
+            therow = self.row[row-1]
             # replacing a trail byte? take one step back
             # previous char could be a lead byte? take a step back
-            if (ccol > 1 and therow.double[ccol-2] != 2 and
-                    (therow.buf[ccol-1][0] in self.codepage.trail or
-                     therow.buf[ccol-2][0] in self.codepage.lead)):
-                ccol -= 1
+            if (col > 1 and therow.double[col-2] != 2 and
+                    (therow.buf[col-1][0] in self._codepage.trail or
+                     therow.buf[col-2][0] in self._codepage.lead)):
+                col -= 1
                 start -= 1
             # check all dbcs characters between here until it doesn't matter anymore
-            while ccol < self.width:
-                c = therow.buf[ccol-1][0]
-                d = therow.buf[ccol][0]
-                if (c in self.codepage.lead and
-                        d in self.codepage.trail):
-                    if (therow.double[ccol-1] == 1 and
-                            therow.double[ccol] == 2 and ccol > orig_col):
+            while col < self.width:
+                c = therow.buf[col-1][0]
+                d = therow.buf[col][0]
+                if (c in self._codepage.lead and
+                        d in self._codepage.trail):
+                    if (therow.double[col-1] == 1 and
+                            therow.double[col] == 2 and col > orig_col):
                         break
-                    therow.double[ccol-1] = 1
-                    therow.double[ccol] = 2
-                    start, stop = min(start, ccol), max(stop, ccol+2)
-                    ccol += 2
+                    therow.double[col-1] = 1
+                    therow.double[col] = 2
+                    start, stop = min(start, col), max(stop, col+2)
+                    col += 2
                 else:
-                    if therow.double[ccol-1] == 0 and ccol > orig_col:
+                    if therow.double[col-1] == 0 and col > orig_col:
                         break
-                    therow.double[ccol-1] = 0
-                    start, stop = min(start, ccol), max(stop, ccol+1)
-                    ccol += 1
-                if (ccol >= self.width or
-                        (one_only and ccol > orig_col)):
+                    therow.double[col-1] = 0
+                    start, stop = min(start, col), max(stop, col+1)
+                    col += 1
+                if (col >= self.width or
+                        (one_only and col > orig_col)):
                     break
             # check for box drawing
-            if self.codepage.box_protect:
-                ccol = start-2
+            if self._codepage.box_protect:
+                col = start-2
                 connecting = 0
                 bset = -1
-                while ccol < stop+2 and ccol < self.width:
-                    c = therow.buf[ccol-1][0]
-                    d = therow.buf[ccol][0]
-                    if bset > -1 and self.codepage.connects(c, d, bset):
+                while col < stop+2 and col < self.width:
+                    c = therow.buf[col-1][0]
+                    d = therow.buf[col][0]
+                    if bset > -1 and self._codepage.connects(c, d, bset):
                         connecting += 1
                     else:
                         connecting = 0
                         bset = -1
                     if bset == -1:
                         for b in (0, 1):
-                            if self.codepage.connects(c, d, b):
+                            if self._codepage.connects(c, d, b):
                                 bset = b
                                 connecting = 1
                     if connecting >= 2:
-                        therow.double[ccol] = 0
-                        therow.double[ccol-1] = 0
-                        therow.double[ccol-2] = 0
-                        start = min(start, ccol-1)
-                        if ccol > 2 and therow.double[ccol-3] == 1:
-                            therow.double[ccol-3] = 0
-                            start = min(start, ccol-2)
-                        if (ccol < self.width-1 and
-                                therow.double[ccol+1] == 2):
-                            therow.double[ccol+1] = 0
-                            stop = max(stop, ccol+2)
-                    ccol += 1
+                        therow.double[col] = 0
+                        therow.double[col-1] = 0
+                        therow.double[col-2] = 0
+                        start = min(start, col-1)
+                        if col > 2 and therow.double[col-3] == 1:
+                            therow.double[col-3] = 0
+                            start = min(start, col-2)
+                        if (col < self.width-1 and
+                                therow.double[col+1] == 2):
+                            therow.double[col+1] = 0
+                            stop = max(stop, col+2)
+                    col += 1
         return start, stop
 
 
 class TextBuffer(object):
     """Buffer for text on all screen pages."""
 
-    def __init__(self, battr, bwidth, bheight, bpages, do_dbcs, codepage):
+    def __init__(self, attr, width, height, num_pages, codepage, do_fullwidth):
         """Initialise the screen buffer to given pages and dimensions."""
-        self.pages = [TextPage(battr, bwidth, bheight, num, do_dbcs, codepage)
-                      for num in range(bpages)]
-        self.width = bwidth
-        self.height = bheight
+        self.pages = [TextPage(attr, width, height, codepage, do_fullwidth)
+                      for _ in range(num_pages)]
+        self.width = width
+        self.height = height
 
     def copy_page(self, src, dst):
         """Copy source to destination page."""
@@ -143,13 +142,13 @@ class TextBuffer(object):
             dstrow.end = srcrow.end
             dstrow.wrap = srcrow.wrap
 
-    def get_char(self, pagenum, crow, ccol):
+    def get_char(self, pagenum, row, col):
         """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
-        return ord(self.pages[pagenum].row[crow-1].buf[ccol-1][0])
+        return ord(self.pages[pagenum].row[row-1].buf[col-1][0])
 
-    def get_attr(self, pagenum, crow, ccol):
+    def get_attr(self, pagenum, row, col):
         """Retrieve attribute from the screen."""
-        return self.pages[pagenum].row[crow-1].buf[ccol-1][1]
+        return self.pages[pagenum].row[row-1].buf[col-1][1]
 
     def get_charwidth(self, pagenum, row, col):
         """Retrieve DBCS character width in bytes."""
@@ -252,10 +251,10 @@ class TextBuffer(object):
         # INPUT returns empty string if enter pressed below prompt row
         if srow <= prompt_row:
             # add all rows of the logical line
-            for crow in range(srow, self.height+1):
-                therow = self.pages[pagenum].row[crow-1]
+            for row in range(srow, self.height+1):
+                therow = self.pages[pagenum].row[row-1]
                 # exclude prompt, if any; only go from furthest_left to furthest_right
-                if crow == prompt_row:
+                if row == prompt_row:
                     rowpairs = therow.buf[:therow.end][left-1:right-1]
                 else:
                     rowpairs = therow.buf[:therow.end]
