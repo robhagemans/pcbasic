@@ -21,9 +21,10 @@ from ..base import signals
 # Many internet sources say this should be 0xC0--0xDF. However, that would
 # exclude the shading characters. It appears to be traced back to a mistake in
 # IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
-CARRY_COL_9_CHARS = [chr(c) for c in range(0xb0, 0xdf+1)]
+CARRY_COL_9_CHARS = tuple(chr(_c) for _c in range(0xb0, 0xdf+1))
 # ascii codepoints for which to repeat row 8 in row 9 (box drawing)
-CARRY_ROW_9_CHARS = [chr(c) for c in range(0xb0, 0xdf+1)]
+CARRY_ROW_9_CHARS = tuple(chr(_c) for _c in range(0xb0, 0xdf+1))
+
 
 # The glyphs below are extracted from Henrique Peron's CPIDOS v3.0,
 # CPIDOS is distributed with FreeDOS at
@@ -31,7 +32,7 @@ CARRY_ROW_9_CHARS = [chr(c) for c in range(0xb0, 0xdf+1)]
 #   http://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/dos/cpi/
 # CPIDOS is Copyright (C) 2002-2011 by Henrique Peron (hperon@terra.com.br)
 # and licensed under the GNU GPL version 2 or later.
-DEFAULT_FONT = {chr(i): v.decode('hex') for i, v in enumerate((
+DEFAULT_FONT = {chr(_i): _v.decode('hex') for _i, _v in enumerate((
     '0000000000000000', '7e81a581bd99817e', '7effdbffc3e7ff7e', '6cfefefe7c381000',
     '10387cfe7c381000', '387c38fefed61038', '10387cfefe7c1038', '0000183c3c180000',
     'ffffe7c3c3e7ffff', '003c664242663c00', 'ffc399bdbd99c3ff', '0f070f7dcccccc78',
@@ -240,27 +241,27 @@ class GlyphCache(object):
         if self._mode.is_text_mode:
             # force rebuilding the character by deleting and requesting
             del self._glyphs[chr(ordval)]
-            self.submit_char(chr(ordval))
+            self._submit_char(chr(ordval))
 
-    def submit_char(self, char):
+    def _submit_char(self, char):
         """Rebuild glyph and send to interface."""
         mask = self._fonts[self._mode.font_height].build_glyph(
                 char, self._mode.font_width*2, self._mode.font_height)
         self._glyphs[char] = mask
         if self._mode.is_text_mode:
             self._queues.video.put(signals.Event(
-                    signals.VIDEO_BUILD_GLYPHS, {self._codepage.to_unicode(c, u'\0'): mask}))
+                    signals.VIDEO_BUILD_GLYPHS, {self._codepage.to_unicode(char, u'\0'): mask}))
 
     def check_char(self, char):
         """Submit glyph if needed."""
         if self._mode.is_text_mode and char not in self._glyphs:
-            self.submit_char(char)
+            self._submit_char(char)
 
     if numpy:
         def get_sprite(self, row, col, char, fore, back):
             """Return a sprite for a given character."""
             if char not in self._glyphs:
-                self.submit_char(char)
+                self._submit_char(char)
             mask = self._glyphs[char]
             # set background
             glyph = numpy.full(mask.shape, back)
@@ -273,7 +274,7 @@ class GlyphCache(object):
         def get_sprite(self, row, col, char, fore, back):
             """Return a sprite for a given character."""
             if char not in self._glyphs:
-                self.submit_char(char)
+                self._submit_char(char)
             mask = self._glyphs[char]
             glyph = [[(fore if bit else back) for bit in row] for row in mask]
             x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height
