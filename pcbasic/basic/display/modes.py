@@ -458,11 +458,13 @@ class TextMode(VideoMode):
         for i in xrange(num_bytes):
             page = (addr+i) // self.page_size
             offset = (addr+i) % self.page_size
-            ccol = (offset % (self.width*2)) // 2
-            crow = offset // (self.width*2)
+            ccol = 1 + (offset % (self.width*2)) // 2
+            crow = 1 + offset // (self.width*2)
             try:
-                c = screen.text.pages[page].row[crow].buf[ccol][(addr+i)%2]
-                mem_bytes[i] = c if (addr+i)%2==1 else ord(c)
+                if (addr+i) % 2:
+                    mem_bytes[i] = screen.text.get_attr(page, crow, ccol)
+                else:
+                    mem_bytes[i] = screen.text.get_char(page, crow, ccol)
             except IndexError:
                 pass
         return mem_bytes
@@ -470,26 +472,27 @@ class TextMode(VideoMode):
     def set_memory(self, screen, addr, mem_bytes):
         """Set bytes in textmode video memory."""
         addr -= self.video_segment*0x10
-        last_row = -1
+        last_row = 0
         for i in xrange(len(mem_bytes)):
             page = (addr+i) // self.page_size
             offset = (addr+i) % self.page_size
-            ccol = (offset % (self.width*2)) // 2
-            crow = offset // (self.width*2)
+            ccol = 1 + (offset % (self.width*2)) // 2
+            crow = 1 + offset // (self.width*2)
             try:
-                c, a = screen.text.pages[page].row[crow].buf[ccol]
-                if (addr+i)%2 == 0:
-                    c = chr(mem_bytes[i])
-                else:
+                if (addr+i) % 2:
+                    c = screen.text.get_char(page, crow, ccol)
                     a = mem_bytes[i]
-                screen.text.put_char_attr(page, crow+1, ccol+1, c, a)
+                else:
+                    c = mem_bytes[i]
+                    a = screen.text.get_attr(page, crow, ccol)
+                screen.text.put_char_attr(page, crow, ccol, chr(c), a)
                 if last_row >= 0 and last_row != crow:
                     # set suppress_cli to true to avoid echoing to text terminal
-                    screen.refresh_range(page, last_row+1, 1, self.width, suppress_cli=True)
+                    screen.refresh_range(page, last_row, 1, self.width, suppress_cli=True)
             except IndexError:
                 pass
             last_row = crow
-        if last_row >= 0 and last_row < 25 and page >= 0 and page < self.num_pages:
+        if last_row >= 1 and last_row <= self.height and page >= 0 and page < self.num_pages:
             screen.refresh_range(page, last_row+1, 1, self.width, suppress_cli=True)
 
 
