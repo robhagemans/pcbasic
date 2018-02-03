@@ -126,8 +126,8 @@ class Font(object):
             face = bytearray(self._fontdict[c])
         except KeyError:
             logging.debug(
-                    u'%s [%s] not represented in font, replacing with blank glyph.',
-                    c, repr(c))
+                    b'code point [%s] not represented in font, replacing with blank glyph.',
+                    repr(c))
             face = bytearray(int(self._height))
         # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
         code_height = 8 if req_height == 9 else req_height
@@ -137,8 +137,8 @@ class Font(object):
         if force_double or force_single:
             # i.e. we need a double-width char but got single or v.v.
             logging.debug(
-                    u'Incorrect glyph width for %s [%s]: %d-pixel requested, %d-pixel found.',
-                    c, repr(c), req_width, code_width)
+                    b'Incorrect glyph width for code point [%s]: %d-pixel requested, %d-pixel found.',
+                    repr(c), req_width, code_width)
         return _unpack_glyph(
                 face, code_height, code_width, req_height, req_width,
                 force_double, force_single,
