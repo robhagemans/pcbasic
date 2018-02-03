@@ -121,9 +121,9 @@ class Codepage(object):
         """Convert codepage string to unicode string."""
         return Converter(self, preserve_control, box_protect).to_unicode(cps, flush=True)
 
-    def get_converter(self, preserve_control=False, box_protect=None):
+    def get_converter(self, preserve_control=False):
         """Get converter from codepage to unicode."""
-        return Converter(self, preserve_control, box_protect)
+        return Converter(self, preserve_control, self.box_protect)
 
 
 class CodecStream(object):

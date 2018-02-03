@@ -513,8 +513,8 @@ class Screen(object):
         self.current_row, self.current_col = row, col
         # set halfwidth/fullwidth cursor
         # move left if we end up on dbcs trail byte
-        if not self.text.get_charwidth(self.apagenum, self.current_row, self.current_col):
-            self.current_col -= 1
+        #if not self.text.get_charwidth(self.apagenum, self.current_row, self.current_col):
+        #    self.current_col -= 1
         width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
         self.cursor.set_width(width)
         # set the cursor's attribute to that of the current location
@@ -527,14 +527,11 @@ class Screen(object):
     ###########################################################################
 
     def put_char_attr(self, pagenum, crow, ccol, c, cattr,
-                            one_only=False, suppress_cli=False, force=False):
+                            one_only=False, suppress_cli=False):
         """Put a byte to the screen, redrawing as necessary."""
         if not self.mode.is_text_mode:
             cattr = cattr & 0xf
-            # always force drawing of spaces, it may have been overdrawn
-            if c == ' ':
-                force = True
-        start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr, one_only, force)
+        start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr, one_only)
         # update the screen
         self.refresh_range(pagenum, crow, start, stop-1, suppress_cli)
 
@@ -570,7 +567,7 @@ class Screen(object):
                 # redrawing changes colour attributes to current foreground (cf. GW)
                 # don't update all dbcs chars behind at each put
                 self.put_char_attr(self.apagenum, crow, i+1,
-                        therow.buf[i][0], self.attr, one_only=True, force=True)
+                        therow.buf[i][0], self.attr, one_only=True)
             if (wrap and therow.wrap and
                     crow >= 0 and crow < self.text.height-1):
                 crow += 1

@@ -36,6 +36,13 @@ class TextRow(object):
         self.double = self.double[:scol-1] + [0] * (self.width - scol + 1)
         self.end = min(self.end, scol-1)
 
+    def recalculate_dbcs(self, converter):
+        """Recalculate DBCS buffer."""
+        # just do the whole row
+        sequences = converter.mark(b''.join(entry[0] for entry in self.buf), flush=True)
+        flags = ((0,) if len(seq) == 1 else (1, 2) for seq in sequences)
+        self.double = [entry for flag in flags for entry in flag]
+
 
 class TextPage(object):
     """Buffer for a screen page."""
@@ -47,86 +54,25 @@ class TextPage(object):
         self.height = height
         self._dbcs_enabled = codepage.dbcs and do_fullwidth
         self._codepage = codepage
+        self._conv = self._codepage.get_converter(preserve_control=False)
 
-    def put_char_attr(self, row, col, c, attr, one_only=False, force=False):
+    def put_char_attr(self, row, col, c, attr, one_only=False):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
         # update the screen buffer
         self.row[row-1].buf[col-1] = (c, attr)
         self.row[row-1].double[col-1] = 0
         if self._dbcs_enabled:
             # mark out replaced char and changed following dbcs characters to be redrawn
-            return self._recalculate_dbcs_from(row, col, one_only, force)
+            return self._recalculate_dbcs_from(row, col, one_only)
         else:
             # mark the replaced char to be redrawn
             return col, col+1
 
-    def _recalculate_dbcs_from(self, row, col, one_only, force):
-        """Recalculate DBCS buffer starting from given byte."""
-        start, stop = col, col+1
-        orig_col = col
-        # replace chars from here until necessary to update double-width chars
-        therow = self.row[row-1]
-        # replacing a trail byte? take one step back
-        # previous char could be a lead byte? take a step back
-        if (col > 1 and therow.double[col-2] != 2 and
-                (therow.buf[col-1][0] in self._codepage.trail or
-                 therow.buf[col-2][0] in self._codepage.lead)):
-            col -= 1
-            start -= 1
-        # check all dbcs characters between here until it doesn't matter anymore
-        while col < self.width:
-            c = therow.buf[col-1][0]
-            d = therow.buf[col][0]
-            if (c in self._codepage.lead and
-                    d in self._codepage.trail):
-                if (therow.double[col-1] == 1 and
-                        therow.double[col] == 2 and col > orig_col):
-                    break
-                therow.double[col-1] = 1
-                therow.double[col] = 2
-                start, stop = min(start, col), max(stop, col+2)
-                col += 2
-            else:
-                if therow.double[col-1] == 0 and col > orig_col:
-                    break
-                therow.double[col-1] = 0
-                start, stop = min(start, col), max(stop, col+1)
-                col += 1
-            if (col >= self.width or
-                    (one_only and col > orig_col)):
-                break
-        # check for box drawing
-        if self._codepage.box_protect:
-            col = start-2
-            connecting = 0
-            bset = -1
-            while col < stop+2 and col < self.width:
-                c = therow.buf[col-1][0]
-                d = therow.buf[col][0]
-                if bset > -1 and self._codepage.connects(c, d, bset):
-                    connecting += 1
-                else:
-                    connecting = 0
-                    bset = -1
-                if bset == -1:
-                    for b in (0, 1):
-                        if self._codepage.connects(c, d, b):
-                            bset = b
-                            connecting = 1
-                if connecting >= 2:
-                    therow.double[col] = 0
-                    therow.double[col-1] = 0
-                    therow.double[col-2] = 0
-                    start = min(start, col-1)
-                    if col > 2 and therow.double[col-3] == 1:
-                        therow.double[col-3] = 0
-                        start = min(start, col-2)
-                    if (col < self.width-1 and
-                            therow.double[col+1] == 2):
-                        therow.double[col+1] = 0
-                        stop = max(stop, col+2)
-                col += 1
-        return start, stop
+    def _recalculate_dbcs_from(self, row, col, one_only):
+        """Recalculate DBCS buffer."""
+        # just do the whole row
+        self.row[row-1].recalculate_dbcs(self._conv)
+        return 1, self.width
 
 
 class TextBuffer(object):
@@ -173,12 +119,13 @@ class TextBuffer(object):
             da = therow.buf[col]
             char, attr = ca[0] + da[0], da[1]
             # do we need to set this here?
-            therow.double[col-1] = 1
-            therow.double[col] = 2
+            #therow.double[col-1] = 1
+            #therow.double[col] = 2
         elif therow.double[col-1] == 0:
             ca = therow.buf[col-1]
             char, attr = ca[0], ca[1]
         else:
+            char, attr = '\0', 0
             logging.debug('DBCS buffer corrupted at %d, %d (%d)', row, col, therow.double[col-1])
         return char, attr
 
