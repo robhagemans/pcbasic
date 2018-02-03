@@ -21,16 +21,14 @@ class PixelBuffer(object):
 
     def __init__(self, bwidth, bheight, bpages, bitsperpixel):
         """Initialise the graphics buffer to given pages and dimensions."""
-        self.pages = [ PixelPage(bwidth, bheight, num, bitsperpixel) for num in range(bpages)]
+        self.pages = [PixelPage(bwidth, bheight, num, bitsperpixel) for num in range(bpages)]
         self.width = bwidth
         self.height = bheight
 
     def copy_page(self, src, dst):
         """Copy source to destination page."""
-        for x in range(self.height):
-            dstrow = self.pages[dst].row[x]
-            srcrow = self.pages[src].row[x]
-            dstrow.buf[:] = srcrow.buf[:]
+        self.pages[dst].buffer[:] = self.pages[src].buffer[:]
+
 
 class PixelPage(object):
     """Buffer for a screen page."""
