@@ -272,8 +272,8 @@ class Screen(object):
         self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
                 (self.current_row, self.current_col)))
         if self.mode.is_text_mode:
-            fore, _, _, _ = self.mode.split_attr(
-                self.apage.row[self.current_row-1].buf[self.current_col-1][1] & 0xf)
+            attr = self.text.get_attr(self.apagenum, self.current_row, self.current_col)
+            fore, _, _, _ = self.mode.split_attr(attr & 0xf)
         else:
             fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
@@ -523,15 +523,15 @@ class Screen(object):
 
     ###########################################################################
 
-    def put_char_attr(self, pagenum, crow, ccol, c, cattr, one_only=False, suppress_cli=False):
+    def put_char_attr(self, pagenum, row, col, c, attr, one_only=False, suppress_cli=False):
         """Put a byte to the screen, redrawing as necessary."""
         if not self.mode.is_text_mode:
-            cattr = cattr & 0xf
-        start, stop = self.text.put_char_attr(pagenum, crow, ccol, c, cattr)
+            attr = attr & 0xf
+        start, stop = self.text.put_char_attr(pagenum, row, col, c, attr)
         if one_only:
             stop = start
         # update the screen
-        self.refresh_range(pagenum, crow, start, stop, suppress_cli)
+        self.refresh_range(pagenum, row, start, stop, suppress_cli)
 
     ###########################################################################
 
@@ -557,18 +557,16 @@ class Screen(object):
                 self.queues.video.put(signals.Event(
                         signals.VIDEO_PUT_RECT, (self.apagenum, x0, y0, x1, y1, sprite)))
 
-    def redraw_row(self, start, crow, wrap=True):
+    def redraw_row(self, start, row, wrap=True):
         """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
         while True:
-            therow = self.apage.row[crow-1]
-            for i in range(start, therow.end):
+            for i in range(start, self.apage.row[row-1].end):
                 # redrawing changes colour attributes to current foreground (cf. GW)
                 # don't update all dbcs chars behind at each put
-                self.put_char_attr(self.apagenum, crow, i+1,
-                        therow.buf[i][0], self.attr, one_only=True)
-            if (wrap and therow.wrap and
-                    crow >= 0 and crow < self.text.height-1):
-                crow += 1
+                char = chr(self.text.get_char(self.apagenum, row, i+1))
+                self.put_char_attr(self.apagenum, row, i+1, char, self.attr, one_only=True)
+            if (wrap and self.apage.row[row-1].wrap and row >= 0 and row < self.text.height-1):
+                row += 1
                 start = 0
             else:
                 break
@@ -714,28 +712,26 @@ class Screen(object):
 
     def clear_text_at(self, x, y):
         """Remove the character covering a single pixel."""
-        fx, fy = self.mode.font_width, self.mode.font_height
-        cymax, cxmax = self.mode.height-1, self.mode.width-1
-        cx, cy = x // fx, y // fy
-        if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
-            self.apage.row[cy].buf[cx] = (' ', self.attr)
+        row = 1 + y // self.mode.font_height
+        col = 1 + x // self.mode.font_width
+        if col >= 1 and row >= 1 and col <= self.mode.width and row <= self.mode.height:
+            self.text.put_char_attr(self.apagenum, row, col, b' ', self.attr)
         fore, back, blink, underline = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
-                (self.apagenum, cy+1, cx+1, u' ', False,
-                             fore, back, blink, underline, True)))
+                (self.apagenum, row, col, u' ', False, fore, back, blink, underline, True)))
 
-    #MOVE to TextBuffer? replace with graphics_to_text_loc v.v.?
     def clear_text_area(self, x0, y0, x1, y1):
-        """Remove all characters from the textbuffer on a rectangle of the graphics screen."""
-        fx, fy = self.mode.font_width, self.mode.font_height
-        cymax, cxmax = self.mode.height-1, self.mode.width-1
-        cx0 = min(cxmax, max(0, x0 // fx))
-        cy0 = min(cymax, max(0, y0 // fy))
-        cx1 = min(cxmax, max(0, x1 // fx))
-        cy1 = min(cymax, max(0, y1 // fy))
-        for r in range(cy0, cy1+1):
-            self.apage.row[r].buf[cx0:cx1+1] = [
-                (' ', self.attr)] * (cx1 - cx0 + 1)
+        """Remove all characters from the text buffer on a rectangle of the graphics screen."""
+        row0, col0, row1, col1 = self.pixel_to_text_area(x0, y0, x1, y1)
+        self.text.clear_area(self.apagenum, row0, col0, row1, col1, self.attr)
+
+    def pixel_to_text_area(self, x0, y0, x1, y1):
+        """Convert area from text buffer to area for pixel buffer."""
+        col0 = min(self.mode.width, max(1, 1 + x0 // self.mode.font_width))
+        row0 = min(self.mode.height, max(1, 1 + y0 // self.mode.font_height))
+        col1 = min(self.mode.width, max(1, 1 + x1 // self.mode.font_width))
+        row1 = min(self.mode.height, max(1, 1 + y1 // self.mode.font_height))
+        return row0, col0, row1, col1
 
     def text_to_pixel_area(self, row0, col0, row1, col1):
         """Convert area from text buffer to area for pixel buffer."""

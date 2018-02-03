@@ -92,6 +92,11 @@ class TextBuffer(object):
             dstrow.end = srcrow.end
             dstrow.wrap = srcrow.wrap
 
+    def clear_area(self, pagenum, row0, col0, row1, col1, attr):
+        """Clear a rectangular area of the screen."""
+        for r in range(row0-1, row1):
+            self.pages[pagenum].row[r].buf[col0-1:col1] = [(b' ', attr)] * (col1 - col0 + 1)
+
     def put_char_attr(self, pagenum, row, col, c, attr):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
         return self.pages[pagenum].row[row-1].put_char_attr(col, c, attr)
