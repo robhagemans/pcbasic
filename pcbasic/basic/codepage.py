@@ -109,7 +109,7 @@ class Codepage(object):
 
     def str_to_unicode(self, cps, preserve_control=False, box_protect=True):
         """Convert codepage string to unicode string."""
-        return Converter(self, preserve_control, box_protect).to_unicode(cps)
+        return Converter(self, preserve_control, box_protect).to_unicode(cps, flush=True)
 
     def get_converter(self, preserve_control=False, box_protect=None):
         """Get converter from codepage to unicode."""
@@ -194,26 +194,23 @@ class Converter(object):
         self.bset = -1
         self.last = b''
 
-    def to_unicode(self, s):
-        """Process codepage string, returning unicode string when ready."""
+    def mark(self, s, flush=False):
+        """Process codepage string, returning list of grouped code sequences when ready."""
         if not self.dbcs:
             # stateless if not dbcs
-            return u''.join([ (c.decode('ascii', errors='ignore')
-                                if (self.preserve_control and c in CONTROL)
-                                else self.cp.to_unicode(c))
-                            for c in s ])
+            return list(s)
         else:
-            out = []
-            # remove any already printed naked lead-byte first
-            if self.buf:
-                out.append(u'\b'*len(self.buf))
-            # process the string
-            for c in s:
-                out += self.process(c)
-            # any naked lead-byte or boxable dbcs left will be printed (but don't flush buffers!)
-            if self.buf:
-                out.append(self.cp.to_unicode(self.buf))
-            return u''.join(out)
+            unistr = [seq for c in s for seq in self._process(c)]
+            if flush:
+                unistr += self.flush()
+            return unistr
+
+    def to_unicode(self, s, flush=False):
+        """Process codepage string, returning unicode string when ready."""
+        return u''.join([(seq.decode('ascii', errors='ignore')
+                                if (self.preserve_control and seq in CONTROL)
+                                else self.cp.to_unicode(seq))
+                        for seq in self.mark(s, flush)])
 
     def flush(self, num=None):
         """Empty buffer and return contents."""
@@ -222,45 +219,45 @@ class Converter(object):
             num = len(self.buf)
         if self.buf:
             # can be one or two-byte sequence in self.buf
-            out.append(self.cp.to_unicode(self.buf[:num]))
+            out.append(self.buf[:num])
         self.buf = self.buf[num:]
         return out
 
-    def process(self, c):
+    def _process(self, c):
         """Process a single char, returning unicode char sequences when ready """
         if not self.box_protect:
-            return self.process_nobox(c)
+            return self._process_nobox(c)
         out = []
         if self.preserve_control and c in CONTROL:
             # control char; flush buffer as SBCS and add control char unchanged
-            out += self.flush() + [c.decode('ascii', errors='ignore')]
+            out += self.flush() + [c]
             self.bset = -1
             self.last = b''
         elif self.bset == -1:
             if not self.buf:
-                out += self.process_case0(c)
+                out += self._process_case0(c)
             elif len(self.buf) == 1:
-                out += self.process_case1(c)
+                out += self._process_case1(c)
             elif len(self.buf) == 2:
-                out += self.process_case2(c)
+                out += self._process_case2(c)
             else:
                 # not allowed
                 logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
         elif len(self.buf) == 2:
-            out += self.process_case3(c)
+            out += self._process_case3(c)
         elif not self.buf:
-            out += self.process_case4(c)
+            out += self._process_case4(c)
         else:
             # not allowed
             logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
         return out
 
-    def process_nobox(self, c):
+    def _process_nobox(self, c):
         """Process a single char, no box drawing protection """
         out = []
         if self.preserve_control and c in CONTROL:
             # control char; flush buffer as SBCS and add control char unchanged
-            out += self.flush() + [c.decode('ascii', errors='ignore')]
+            out += self.flush() + [c]
             return out
         elif self.buf:
             if c in self.cp.trail:
@@ -274,25 +271,25 @@ class Converter(object):
         if c in self.cp.lead:
             self.buf = c
         else:
-            out.append(self.cp.to_unicode(c))
+            out.append(c)
         return out
 
-    def process_case0(self, c):
+    def _process_case0(self, c):
         """Process a single char with box drawing protection; case 0, starting point """
         out = []
         if c not in self.cp.lead:
-            out.append(self.cp.to_unicode(c))
+            out.append(c)
             # goes to case 0
         else:
             self.buf += c
             # goes to case 1
         return out
 
-    def process_case1(self, c):
+    def _process_case1(self, c):
         """Process a single char with box drawing protection; case 1 """
         out = []
         if c not in self.cp.trail:
-            out += self.flush() + [self.cp.to_unicode(c)]
+            out += self.flush() + [c]
             # goes to case 0
         else:
             for bset in (0, 1):
@@ -307,11 +304,11 @@ class Converter(object):
                 # goes to case 2
         return out
 
-    def process_case2(self, c):
+    def _process_case2(self, c):
         """Process a single char with box drawing protection; case 2 """
         out = []
         if c not in self.cp.lead:
-            out += self.flush() + [self.cp.to_unicode(c)]
+            out += self.flush() + [c]
             # goes to case 0
         else:
             for bset in (0, 1):
@@ -329,15 +326,15 @@ class Converter(object):
                 # goes to case 1
         return out
 
-    def process_case3(self, c):
+    def _process_case3(self, c):
         """Process a single char with box drawing protection; case 3 """
         out = []
         if c not in self.cp.lead:
-            out += self.flush() + [self.cp.to_unicode(c)]
+            out += self.flush() + [c]
         elif self.cp.connects(self.buf[-1], c, self.bset):
             self.last = self.buf[-1]
             # output box drawing
-            out += self.flush(1) + self.flush(1) + [self.cp.to_unicode(c)]
+            out += self.flush(1) + self.flush(1) + [c]
             # goes to case 4
         else:
             out += self.flush()
@@ -346,15 +343,15 @@ class Converter(object):
             # goes to case 1
         return out
 
-    def process_case4(self, c):
+    def _process_case4(self, c):
         """Process a single char with box drawing protection; case 4, continuing box drawing """
         out = []
         if c not in self.cp.lead:
-            out.append(self.cp.to_unicode(c))
+            out.append(c)
             # goes to case 0
         elif self.cp.connects(self.last, c, self.bset):
             self.last = c
-            out.append(self.cp.to_unicode(c))
+            out.append(c)
             # goes to case 4
         else:
             self.buf += c
