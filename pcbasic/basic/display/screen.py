@@ -604,7 +604,7 @@ class Screen(object):
             # can't we just do this in row.clear?
             r.wrap = False
         if not self.mode.is_text_mode:
-            x0, y0, x1, y1 = self.text_to_pixel_area(start, 1, stop, self.mode.width)
+            x0, y0, x1, y1 = self.mode.text_to_pixel_area(start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
             self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
         _, back, _, _ = self.mode.split_attr(self.attr)
@@ -656,9 +656,9 @@ class Screen(object):
         # sync buffers with the new screen reality:
         self.text.scroll_up(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
-            sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line+1, 1,
+            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(from_line+1, 1,
                 self.scroll_area.bottom, self.mode.width)
-            tx0, ty0, _, _ = self.text_to_pixel_area(from_line, 1,
+            tx0, ty0, _, _ = self.mode.text_to_pixel_area(from_line, 1,
                 self.scroll_area.bottom-1, self.mode.width)
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
@@ -672,9 +672,9 @@ class Screen(object):
         # sync buffers with the new screen reality:
         self.text.scroll_down(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
-            sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line, 1,
+            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(from_line, 1,
                 self.scroll_area.bottom-1, self.mode.width)
-            tx0, ty0, _, _ = self.text_to_pixel_area(from_line+1, 1,
+            tx0, ty0, _, _ = self.mode.text_to_pixel_area(from_line+1, 1,
                 self.scroll_area.bottom, self.mode.width)
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
@@ -703,17 +703,16 @@ class Screen(object):
         """Retrieve bytes from video memory."""
         return self.mode.get_memory(self, addr, num_bytes)
 
-    def set_memory(self, addr, bytes):
+    def set_memory(self, addr, bytestr):
         """Set bytes in video memory."""
-        self.mode.set_memory(self, addr, bytes)
+        self.mode.set_memory(self, addr, bytestr)
 
     ###########################################################################
     # text/graphics interaction
 
     def clear_text_at(self, x, y):
         """Remove the character covering a single pixel."""
-        row = 1 + y // self.mode.font_height
-        col = 1 + x // self.mode.font_width
+        row, col = self.mode.pixel_to_text_pos(x, y)
         if col >= 1 and row >= 1 and col <= self.mode.width and row <= self.mode.height:
             self.text.put_char_attr(self.apagenum, row, col, b' ', self.attr)
         fore, back, blink, underline = self.mode.split_attr(self.attr)
@@ -722,22 +721,8 @@ class Screen(object):
 
     def clear_text_area(self, x0, y0, x1, y1):
         """Remove all characters from the text buffer on a rectangle of the graphics screen."""
-        row0, col0, row1, col1 = self.pixel_to_text_area(x0, y0, x1, y1)
+        row0, col0, row1, col1 = self.mode.pixel_to_text_area(x0, y0, x1, y1)
         self.text.clear_area(self.apagenum, row0, col0, row1, col1, self.attr)
-
-    def pixel_to_text_area(self, x0, y0, x1, y1):
-        """Convert area from text buffer to area for pixel buffer."""
-        col0 = min(self.mode.width, max(1, 1 + x0 // self.mode.font_width))
-        row0 = min(self.mode.height, max(1, 1 + y0 // self.mode.font_height))
-        col1 = min(self.mode.width, max(1, 1 + x1 // self.mode.font_width))
-        row1 = min(self.mode.height, max(1, 1 + y1 // self.mode.font_height))
-        return row0, col0, row1, col1
-
-    def text_to_pixel_area(self, row0, col0, row1, col1):
-        """Convert area from text buffer to area for pixel buffer."""
-        # area bounds are all inclusive
-        return ((col0-1)*self.mode.font_width, (row0-1)*self.mode.font_height,
-                (col1-col0+1)*self.mode.font_width-1, (row1-row0+1)*self.mode.font_height-1)
 
     ###########################################################################
     # graphics primitives

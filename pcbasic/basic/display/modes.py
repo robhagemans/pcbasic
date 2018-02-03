@@ -421,6 +421,24 @@ class VideoMode(object):
         underline = False
         return fore, back, blink, underline
 
+    def pixel_to_text_pos(self, x, y):
+        """Convert pixel position to text position."""
+        return 1 + y // self.font_height, 1 + x // self.font_width
+
+    def pixel_to_text_area(self, x0, y0, x1, y1):
+        """Convert from pixel area to text area."""
+        col0 = min(self.width, max(1, 1 + x0 // self.font_width))
+        row0 = min(self.height, max(1, 1 + y0 // self.font_height))
+        col1 = min(self.width, max(1, 1 + x1 // self.font_width))
+        row1 = min(self.height, max(1, 1 + y1 // self.font_height))
+        return row0, col0, row1, col1
+
+    def text_to_pixel_area(self, row0, col0, row1, col1):
+        """Convert area text area to pixel area."""
+        # area bounds are all inclusive
+        return ((col0-1) * self.font_width, (row0-1) * self.font_height,
+                (col1-col0+1) * self.font_width-1, (row1-row0+1) * self.font_height-1)
+
     def get_all_memory(self, screen):
         """Obtain a copy of all video memory."""
         return self.get_memory(screen, self.video_segment*0x10, self.page_size*self.num_pages)
