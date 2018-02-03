@@ -482,7 +482,7 @@ class TextMode(VideoMode):
                     c = chr(mem_bytes[i])
                 else:
                     a = mem_bytes[i]
-                screen.text.pages[page].put_char_attr(crow+1, ccol+1, c, a)
+                screen.text.put_char_attr(page, crow+1, ccol+1, c, a)
                 if last_row >= 0 and last_row != crow:
                     # set suppress_cli to true to avoid echoing to text terminal
                     screen.refresh_range(page, last_row+1, 1, self.width, suppress_cli=True)

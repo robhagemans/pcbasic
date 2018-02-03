@@ -8,18 +8,18 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
-#######################################################################################
-# text buffer
 
 class TextRow(object):
     """Buffer for a single row of the screen."""
 
-    def __init__(self, attr, width):
+    def __init__(self, attr, width, conv, dbcs_enabled):
         """Set up screen row empty and unwrapped."""
         self.width = width
         self.clear(attr)
         # line continues on next row (either LF or word wrap happened)
         self.wrap = False
+        self._dbcs_enabled = dbcs_enabled
+        self._conv = conv
 
     def clear(self, attr):
         """Clear the screen row buffer. Leave wrap untouched."""
@@ -36,10 +36,16 @@ class TextRow(object):
         self.double = self.double[:scol-1] + [0] * (self.width - scol + 1)
         self.end = min(self.end, scol-1)
 
-    def recalculate_dbcs(self, converter, col):
-        """Recalculate DBCS buffer."""
-        # just do the whole row
-        sequences = converter.mark(b''.join(entry[0] for entry in self.buf), flush=True)
+    def put_char_attr(self, col, c, attr):
+        """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
+        # update the screen buffer
+        self.buf[col-1] = (c, attr)
+        self.double[col-1] = 0
+        # for sbcs codepages we're done now
+        if not self._dbcs_enabled:
+            return col, col
+        # mark out replaced char and changed following dbcs characters to be redrawn
+        sequences = self._conv.mark(b''.join(entry[0] for entry in self.buf), flush=True)
         flags = ((0,) if len(seq) == 1 else (1, 2) for seq in sequences)
         old_double = self.double
         self.double = [entry for flag in flags for entry in flag]
@@ -54,29 +60,15 @@ class TextRow(object):
             start -= 1
         return min(col, start), max(col, stop)
 
+
 class TextPage(object):
     """Buffer for a screen page."""
 
-    def __init__(self, attr, width, height, codepage, do_fullwidth):
+    def __init__(self, attr, width, height, conv, dbcs_enabled):
         """Initialise the screen buffer to given dimensions."""
-        self.row = [TextRow(attr, width) for _ in xrange(height)]
+        self.row = [TextRow(attr, width, conv, dbcs_enabled) for _ in xrange(height)]
         self.width = width
         self.height = height
-        self._dbcs_enabled = codepage.dbcs and do_fullwidth
-        self._codepage = codepage
-        self._conv = self._codepage.get_converter(preserve_control=False)
-
-    def put_char_attr(self, row, col, c, attr):
-        """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
-        # update the screen buffer
-        self.row[row-1].buf[col-1] = (c, attr)
-        self.row[row-1].double[col-1] = 0
-        if self._dbcs_enabled:
-            # mark out replaced char and changed following dbcs characters to be redrawn
-            return self.row[row-1].recalculate_dbcs(self._conv, col)
-        else:
-            # mark the replaced char to be redrawn
-            return col, col
 
 
 class TextBuffer(object):
@@ -84,7 +76,9 @@ class TextBuffer(object):
 
     def __init__(self, attr, width, height, num_pages, codepage, do_fullwidth):
         """Initialise the screen buffer to given pages and dimensions."""
-        self.pages = [TextPage(attr, width, height, codepage, do_fullwidth)
+        self._dbcs_enabled = codepage.dbcs and do_fullwidth
+        self._conv = codepage.get_converter(preserve_control=False)
+        self.pages = [TextPage(attr, width, height, self._conv, self._dbcs_enabled)
                       for _ in range(num_pages)]
         self.width = width
         self.height = height
@@ -97,6 +91,22 @@ class TextBuffer(object):
             dstrow.buf[:] = srcrow.buf[:]
             dstrow.end = srcrow.end
             dstrow.wrap = srcrow.wrap
+
+    def put_char_attr(self, pagenum, row, col, c, attr):
+        """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
+        return self.pages[pagenum].row[row-1].put_char_attr(col, c, attr)
+
+    def scroll_up(self, pagenum, from_line, bottom, attr):
+        """Scroll up."""
+        self.pages[pagenum].row.insert(bottom,
+                TextRow(attr, self.width, self._conv, self._dbcs_enabled))
+        del self.pages[pagenum].row[from_line-1]
+
+    def scroll_down(self, pagenum, from_line, bottom, attr):
+        """Scroll down."""
+        self.pages[pagenum].row.insert(from_line - 1,
+                TextRow(attr, self.width, self._conv, self._dbcs_enabled))
+        del self.pages[pagenum].row[bottom-1]
 
     def get_char(self, pagenum, row, col):
         """Retrieve a byte from the screen (SBCS or DBCS half-char)."""

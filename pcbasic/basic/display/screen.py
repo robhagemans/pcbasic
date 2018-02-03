@@ -512,9 +512,6 @@ class Screen(object):
         """Move the cursor to a new position."""
         self.current_row, self.current_col = row, col
         # set halfwidth/fullwidth cursor
-        # move left if we end up on dbcs trail byte
-        #if not self.text.get_charwidth(self.apagenum, self.current_row, self.current_col):
-        #    self.current_col -= 1
         width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
         self.cursor.set_width(width)
         # set the cursor's attribute to that of the current location
@@ -530,7 +527,7 @@ class Screen(object):
         """Put a byte to the screen, redrawing as necessary."""
         if not self.mode.is_text_mode:
             cattr = cattr & 0xf
-        start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr)
+        start, stop = self.text.put_char_attr(pagenum, crow, ccol, c, cattr)
         if one_only:
             stop = start
         # update the screen
@@ -656,18 +653,16 @@ class Screen(object):
         _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_SCROLL_UP,
                     (from_line, self.scroll_area.bottom, back)))
-        # sync buffers with the new screen reality:
         if self.current_row > from_line:
             self.current_row -= 1
-        self.apage.row.insert(self.scroll_area.bottom,
-                              TextRow(self.attr, self.mode.width))
+        # sync buffers with the new screen reality:
+        self.text.scroll_up(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
             sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line+1, 1,
                 self.scroll_area.bottom, self.mode.width)
             tx0, ty0, _, _ = self.text_to_pixel_area(from_line, 1,
                 self.scroll_area.bottom-1, self.mode.width)
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
-        del self.apage.row[from_line-1]
 
     def scroll_down(self, from_line):
         """Scroll the scroll region down by one line, starting at from_line."""
@@ -677,14 +672,13 @@ class Screen(object):
         if self.current_row >= from_line:
             self.current_row += 1
         # sync buffers with the new screen reality:
-        self.apage.row.insert(from_line - 1, TextRow(self.attr, self.mode.width))
+        self.text.scroll_down(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
             sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line, 1,
                 self.scroll_area.bottom-1, self.mode.width)
             tx0, ty0, _, _ = self.text_to_pixel_area(from_line+1, 1,
                 self.scroll_area.bottom, self.mode.width)
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
-        del self.apage.row[self.scroll_area.bottom-1]
 
     ###########################################################################
     # vpage text retrieval
