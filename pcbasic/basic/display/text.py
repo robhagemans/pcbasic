@@ -235,3 +235,50 @@ class TextBuffer(object):
                 if therow.end < self.width:
                     line += b'\n'
         return bytes(line)
+
+    ###########################################################################
+    # delete
+
+    def delete_char_lf(self, pagenum, row, col, bottom, attr):
+        """Delete a single-byte character at the current position, row ending with LF."""
+        # replace everything after the delete location with
+        # stuff from the next row
+        therow = self.pages[pagenum].row[row-1]
+        nextrow = self.pages[pagenum].row[row]
+        therow.buf[col-1:] = nextrow.buf[:self.width-col+1]
+        therow.end = min(max(therow.end, col) + nextrow.end, self.width)
+        # and continue on the following rows as long as we wrap.
+        while row < bottom and nextrow.wrap:
+            nextrow2 = self.pages[pagenum].row[row+1]
+            nextrow.buf = (nextrow.buf[self.width-col+1:] + nextrow2.buf[:self.width-col+1])
+            nextrow.end = min(nextrow.end + nextrow2.end, self.width)
+            row += 1
+            therow, nextrow = self.pages[pagenum].row[row-1], self.pages[pagenum].row[row]
+        # replenish last row with empty space
+        nextrow.buf = (nextrow.buf[self.width-col+1:] + [(b' ', attr)] * (self.width-col+1))
+        # adjust the row end
+        nextrow.end -= self.width - col
+        return row, col
+
+    def delete_char_no_lf(self, pagenum, row, col, bottom, attr):
+        """Delete a single-byte character at the current position, row not ending with LF."""
+        therow = self.pages[pagenum].row[row-1]
+        while True:
+            if (therow.end < self.width or row == bottom
+                    or not therow.wrap):
+                # no knock on to next row, just delete the char
+                del therow.buf[col-1]
+                # and replenish the buffer at the end of the line
+                therow.buf.insert(therow.end-1, (b' ', attr))
+                break
+            else:
+                # wrap and end[row-1]==width
+                nextrow = self.pages[pagenum].row[row]
+                # delete the char and replenish from next row
+                del therow.buf[col-1]
+                therow.buf.insert(therow.end-1, nextrow.buf[0])
+                # then move on to the next row and delete the first char
+                row += 1
+                therow, nextrow = self.pages[pagenum].row[row-1], self.pages[pagenum].row[row]
+                col = 1
+        return row, col

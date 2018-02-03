@@ -679,6 +679,63 @@ class Screen(object):
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
     ###########################################################################
+    # delete
+
+    def delete_fullchar(self, row, col):
+        """Delete the character (single/double width) at the current position."""
+        width = self.text.get_charwidth(self.apagenum, row, col)
+        if width == 1:
+            # we're on an sbcs byte.
+            self._delete_sbcs_char(row, col)
+        elif width == 2:
+            # we're on a lead byte, delete this and the next.
+            self._delete_sbcs_char(row, col)
+            self._delete_sbcs_char(row, col)
+        elif width == 0:
+            # we're on a trail byte, delete the previous and this.
+            logging.debug('DBCS trail byte delete at %d, %d.', row, col)
+            self._delete_sbcs_char(row, col-1)
+            self._delete_sbcs_char(row, col-1)
+
+    def _delete_sbcs_char(self, row, col):
+        """Delete a single-byte character at the current position."""
+        if row > 1 and col >= self.apage.row[row-1].end and self.apage.row[row-1].wrap:
+            # row was an LF-ending row & we're deleting past the LF
+            self._delete_sbcs_char_lf(row, col)
+        elif col <= self.apage.row[row-1].end:
+            # row not ending with LF
+            self._delete_sbcs_char_no_lf(row, col)
+
+    def _delete_sbcs_char_lf(self, row, col):
+        """Delete a single-byte character at the current position, row ending with LF."""
+        row, col = self.text.delete_char_lf(
+                self.apagenum, row, col, self.scroll_area.bottom, self.attr)
+        # redraw the full logical line from the original position onwards
+        self.redraw_row(col-1, self.current_row)
+        # if last row was empty, scroll up.
+        if self.apage.row[row].end <= 0:
+            self.apage.row[row].end = 0
+            self.apage.row[row-1].wrap = False
+            self.scroll(row+1)
+
+    def _delete_sbcs_char_no_lf(self, row, col):
+        """Delete a single-byte character at the current position, row not ending with LF."""
+        row, col = self.text.delete_char_no_lf(
+                self.apagenum, row, col, self.scroll_area.bottom, self.attr)
+        # redraw the full logical line
+        # this works from current row onwards
+        self.redraw_row(col-1, self.current_row)
+        # change the row end
+        # this works on last row edited
+        if self.apage.row[row-1].end > 0:
+            self.apage.row[row-1].end -= 1
+        else:
+            # if there was nothing on the line, scroll the next line up.
+            self.scroll(row)
+            if row > 1:
+                self.apage.row[row-2].wrap = False
+
+    ###########################################################################
     # vpage text retrieval
 
     def print_screen(self, target_file):
