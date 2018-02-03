@@ -46,14 +46,13 @@ class TextRow(object):
         # find the first and last changed columns, to be able to redraw
         diff = [old != new for old, new in zip(old_double, self.double)]
         if True in diff:
-            start, stop = diff.index(True) + 1, len(diff) - diff[::-1].index(True) + 1
+            start, stop = diff.index(True) + 1, len(diff) - diff[::-1].index(True)
         else:
-            start, stop = col, col + 1
+            start, stop = col, col
         # if the tail byte has changed, the lead byte needs to be redrawn as well
         if self.double[start-1] == 2:
             start -= 1
-        start, stop = min(col, start), max(col+1, stop)
-        return start, stop
+        return min(col, start), max(col, stop)
 
 class TextPage(object):
     """Buffer for a screen page."""
@@ -77,7 +76,7 @@ class TextPage(object):
             return self.row[row-1].recalculate_dbcs(self._conv, col)
         else:
             # mark the replaced char to be redrawn
-            return col, col + 1
+            return col, col
 
 
 class TextBuffer(object):

@@ -526,16 +526,15 @@ class Screen(object):
 
     ###########################################################################
 
-    def put_char_attr(self, pagenum, crow, ccol, c, cattr,
-                            one_only=False, suppress_cli=False):
+    def put_char_attr(self, pagenum, crow, ccol, c, cattr, one_only=False, suppress_cli=False):
         """Put a byte to the screen, redrawing as necessary."""
         if not self.mode.is_text_mode:
             cattr = cattr & 0xf
         start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr)
         if one_only:
-            stop = start + 1
+            stop = start
         # update the screen
-        self.refresh_range(pagenum, crow, start, stop-1, suppress_cli)
+        self.refresh_range(pagenum, crow, start, stop, suppress_cli)
 
     ###########################################################################
 
