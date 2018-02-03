@@ -531,7 +531,9 @@ class Screen(object):
         """Put a byte to the screen, redrawing as necessary."""
         if not self.mode.is_text_mode:
             cattr = cattr & 0xf
-        start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr, one_only)
+        start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr)
+        if one_only:
+            stop = start + 1
         # update the screen
         self.refresh_range(pagenum, crow, start, stop-1, suppress_cli)
 

@@ -36,13 +36,24 @@ class TextRow(object):
         self.double = self.double[:scol-1] + [0] * (self.width - scol + 1)
         self.end = min(self.end, scol-1)
 
-    def recalculate_dbcs(self, converter):
+    def recalculate_dbcs(self, converter, col):
         """Recalculate DBCS buffer."""
         # just do the whole row
         sequences = converter.mark(b''.join(entry[0] for entry in self.buf), flush=True)
         flags = ((0,) if len(seq) == 1 else (1, 2) for seq in sequences)
+        old_double = self.double
         self.double = [entry for flag in flags for entry in flag]
-
+        # find the first and last changed columns, to be able to redraw
+        diff = [old != new for old, new in zip(old_double, self.double)]
+        if True in diff:
+            start, stop = diff.index(True) + 1, len(diff) - diff[::-1].index(True) + 1
+        else:
+            start, stop = col, col + 1
+        # if the tail byte has changed, the lead byte needs to be redrawn as well
+        if self.double[start-1] == 2:
+            start -= 1
+        start, stop = min(col, start), max(col+1, stop)
+        return start, stop
 
 class TextPage(object):
     """Buffer for a screen page."""
@@ -56,23 +67,17 @@ class TextPage(object):
         self._codepage = codepage
         self._conv = self._codepage.get_converter(preserve_control=False)
 
-    def put_char_attr(self, row, col, c, attr, one_only=False):
+    def put_char_attr(self, row, col, c, attr):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
         # update the screen buffer
         self.row[row-1].buf[col-1] = (c, attr)
         self.row[row-1].double[col-1] = 0
         if self._dbcs_enabled:
             # mark out replaced char and changed following dbcs characters to be redrawn
-            return self._recalculate_dbcs_from(row, col, one_only)
+            return self.row[row-1].recalculate_dbcs(self._conv, col)
         else:
             # mark the replaced char to be redrawn
-            return col, col+1
-
-    def _recalculate_dbcs_from(self, row, col, one_only):
-        """Recalculate DBCS buffer."""
-        # just do the whole row
-        self.row[row-1].recalculate_dbcs(self._conv)
-        return 1, self.width
+            return col, col + 1
 
 
 class TextBuffer(object):
@@ -118,9 +123,6 @@ class TextBuffer(object):
             ca = therow.buf[col-1]
             da = therow.buf[col]
             char, attr = ca[0] + da[0], da[1]
-            # do we need to set this here?
-            #therow.double[col-1] = 1
-            #therow.double[col] = 2
         elif therow.double[col-1] == 0:
             ca = therow.buf[col-1]
             char, attr = ca[0], ca[1]
