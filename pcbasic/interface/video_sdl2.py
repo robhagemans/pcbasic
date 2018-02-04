@@ -650,7 +650,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         new_y0, new_y1 = (from_line-1)*self.font_height, (scroll_height-1)*self.font_height
         old_y0, old_y1 = from_line*self.font_height, scroll_height*self.font_height
         pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
-        pixels[x0:x1, new_y1:old_y1] = numpy.zeros((x1-x0, old_y1-new_y1))
+        pixels[x0:x1, new_y1:old_y1] = numpy.full((x1-x0, old_y1-new_y1), back_attr, dtype=int)
         self.screen_changed = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
@@ -661,7 +661,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         old_y0, old_y1 = (from_line-1)*self.font_height, (scroll_height-1)*self.font_height
         new_y0, new_y1 = from_line*self.font_height, scroll_height*self.font_height
         pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
-        pixels[x0:x1, old_y0:new_y0] = numpy.zeros((x1-x0, new_y0-old_y0))
+        pixels[x0:x1, old_y0:new_y0] = numpy.full((x1-x0, new_y0-old_y0), back_attr, dtype=int)
         self.screen_changed = True
 
     def put_glyph(
