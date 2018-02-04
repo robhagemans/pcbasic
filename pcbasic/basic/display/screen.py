@@ -696,12 +696,12 @@ class Screen(object):
     def delete_fullchar(self):
         """Delete the character (single/double width) at the current position."""
         row, col = self.current_row, self.current_col
-        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
-        if width == 0:
+        cwidth = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
+        if cwidth == 0:
             logging.debug('DBCS trail byte delete at %d, %d.', self.current_row, self.current_col)
             self.set_pos(self.current_row, self.current_col-1)
-            width = 2
-        text = self.text.get_logical_line(self.apagenum, self.current_row)
+            cwidth = 2
+        text = self.text.get_logical_line(self.apagenum, self.current_row, self.current_col)
         lastrow = self.text.find_end_of_line(self.apagenum, self.current_row)
         if self.current_col > self.apage.row[self.current_row-1].end:
             # past the end. if this row ended with LF, attach next row and scroll further rows up
@@ -709,17 +709,13 @@ class Screen(object):
             if not self.apage.row[self.current_row-1].wrap:
                 return
             # else: LF case; scroll up without changing attributes
-            self.apage.row[self.current_row-1].wrap = self.apage.row[self.current_row-2].wrap
+            self.apage.row[self.current_row-1].wrap = self.apage.row[self.current_row].wrap
             self.scroll(self.current_row + 1)
             # redraw from the LF
-            start = text.find(b'\n') + 1
-            if start == 0:
-                logging.debug('Wrap buffer corrupted')
-            self._rewrite_for_delete(text[start:] + b' ' * width)
+            self._rewrite_for_delete(text[1:] + b' ' * cwidth)
         else:
-            start = self.current_col + width - 1
             # rewrite the contents (with the current attribute!)
-            self._rewrite_for_delete(text[start:] + b' ' * width)
+            self._rewrite_for_delete(text[cwidth:] + b' ' * cwidth)
             # if last row was empty, scroll up.
             if self.apage.row[lastrow-1].end == 0 and self.apage.row[lastrow-2].wrap:
                 self.apage.row[lastrow-2].wrap = False
@@ -738,8 +734,13 @@ class Screen(object):
                 self.put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
                 self.set_pos(self.current_row, self.current_col+1)
         else:
-            # adjust row end
-            self.apage.row[self.current_row-1].end = self.current_col-2
+            # we're on the position after the additional space
+            if self.current_col == 1:
+                self.current_row -= 1
+                self.apage.row[self.current_row-1].end = self.mode.width - 1
+            else:
+                # adjust row end
+                self.apage.row[self.current_row-1].end = self.current_col - 2
 
     ###########################################################################
     # vpage text retrieval

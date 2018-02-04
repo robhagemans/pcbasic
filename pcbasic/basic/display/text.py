@@ -192,20 +192,26 @@ class TextBuffer(object):
             srow += 1
         return srow
 
-    def get_logical_line(self, pagenum, srow):
+    def get_logical_line(self, pagenum, start_row, from_column=None):
         """Get bytearray of the contents of the logical line."""
         # find start of logical line
-        srow = self.find_start_of_line(pagenum, srow)
+        if from_column is None:
+            srow, scol = self.find_start_of_line(pagenum, start_row), 1
+        else:
+            srow, scol = start_row, from_column
         line = bytearray()
         # add all rows of the logical line
-        for therow in self.pages[pagenum].row[srow-1:self.height]:
-            line += bytearray(pair[0] for pair in therow.buf[:therow.end])
+        for row in range(srow, self.height+1):
+            therow = self.pages[pagenum].row[row-1]
+            line += bytearray(pair[0] for pair in therow.buf[scol-1:therow.end])
             # continue so long as the line wraps
             if not therow.wrap:
                 break
             # wrap before end of line means LF
             if therow.end < self.width:
                 line += b'\n'
+            # all further lines taken from start
+            scol = 1
         return bytes(line)
 
     def get_logical_line_from(self, pagenum, srow, prompt_row, left, right):
