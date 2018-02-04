@@ -790,7 +790,7 @@ class CGAMode(GraphicsMode):
     def set_memory(self, screen, addr, byte_array):
         """Set bytes in CGA memory."""
         for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array)):
-            screen.put_interval(page, x, y,
+            screen.drawing.put_interval(page, x, y,
                 bytes_to_interval(byte_array[ofs:ofs+length], self.ppb))
 
     def get_memory(self, screen, addr, num_bytes):
@@ -798,7 +798,7 @@ class CGAMode(GraphicsMode):
         byte_array = bytearray(num_bytes)
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
             byte_array[ofs:ofs+length] = interval_to_bytes(
-                screen.get_interval(page, x, y, length*self.ppb), self.ppb)
+                screen.pixels.pages[page].get_interval(x, y, length*self.ppb), self.ppb)
         return byte_array
 
     def sprite_size_to_record(self, dx, dy):
@@ -892,7 +892,7 @@ class EGAMode(GraphicsMode):
             return byte_array
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
             byte_array[ofs:ofs+length] = interval_to_bytes(
-                screen.get_interval(page, x, y, length*self.ppb),
+                screen.pixels.pages[page].get_interval(x, y, length*self.ppb),
                 self.ppb, plane)
         return byte_array
 
@@ -907,7 +907,7 @@ class EGAMode(GraphicsMode):
         if mask == 0:
             return
         for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array)):
-            screen.put_interval(page, x, y,
+            screen.drawing.put_interval(page, x, y,
                 bytes_to_interval(byte_array[ofs:ofs+length], self.ppb, mask), mask)
 
     sprite_to_array = sprite_to_array_ega
@@ -972,7 +972,7 @@ class Tandy6Mode(GraphicsMode):
         for parity in (0, 1):
             for page, x, y, ofs, length in walk_memory(self, addr, num_bytes, 2):
                 hbytes[parity][ofs:ofs+length] = interval_to_bytes(
-                    screen.get_interval(page, x, y, length*self.ppb*2),
+                    screen.pixels.pages[page].get_interval(x, y, length*self.ppb*2),
                     self.ppb*2, parity ^ (addr%2))
         # resulting array may be too long by one byte, so cut to size
         return [item for pair in zip(*hbytes) for item in pair] [:num_bytes]
@@ -985,7 +985,7 @@ class Tandy6Mode(GraphicsMode):
         for parity in (0, 1):
             mask = 2 ** (parity^(addr%2))
             for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array), 2):
-                screen.put_interval(page, x, y,
+                screen.drawing.put_interval(page, x, y,
                     bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self.ppb, mask),
                     mask)
 

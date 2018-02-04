@@ -63,7 +63,7 @@ class Screen(object):
         self.fonts = {height: font.Font(height, font_dict) for height, font_dict in fonts.iteritems()}
         # function key macros
         self.bottom_bar = BottomBar()
-        self.drawing = graphics.Drawing(self, input_methods, values, memory)
+        self.drawing = graphics.Drawing(self, input_methods, self._values, self._memory)
         self.palette = Palette(self.queues, self.mode, self.capabilities, self._memory)
         # initialise a fresh textmode screen
         self.set_mode_(self.mode, 0, 1, 0, 0)
@@ -305,7 +305,6 @@ class Screen(object):
             raise error.BASICError(error.IFC)
         self.vpagenum = new_vpagenum
         self.apagenum = new_apagenum
-        self.vpage = self.text.pages[new_vpagenum]
         self.apage = self.text.pages[new_apagenum]
         self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
 
@@ -826,85 +825,6 @@ class Screen(object):
         self.mode.set_memory(self, addr, bytestr)
 
     ###########################################################################
-    # text/graphics interaction
-
-    def clear_text_at(self, x, y):
-        """Remove the character covering a single pixel."""
-        row, col = self.mode.pixel_to_text_pos(x, y)
-        if col >= 1 and row >= 1 and col <= self.mode.width and row <= self.mode.height:
-            self.text.put_char_attr(self.apagenum, row, col, b' ', self.attr)
-        fore, back, blink, underline = self.mode.split_attr(self.attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
-                (self.apagenum, row, col, u' ', False, fore, back, blink, underline, True)))
-
-    def clear_text_area(self, x0, y0, x1, y1):
-        """Remove all characters from the text buffer on a rectangle of the graphics screen."""
-        row0, col0, row1, col1 = self.mode.pixel_to_text_area(x0, y0, x1, y1)
-        self.text.clear_area(self.apagenum, row0, col0, row1, col1, self.attr)
-
-    ###########################################################################
-    # graphics primitives
-
-    def put_pixel(self, x, y, index, pagenum=None):
-        """Put a pixel on the screen; empty character buffer."""
-        if pagenum is None:
-            pagenum = self.apagenum
-        if self.graph_view.contains(x, y):
-            self.pixels.pages[pagenum].put_pixel(x, y, index)
-            self.queues.video.put(signals.Event(signals.VIDEO_PUT_PIXEL, (pagenum, x, y, index)))
-            self.clear_text_at(x, y)
-
-    def get_pixel(self, x, y, pagenum=None):
-        """Return the attribute a pixel on the screen."""
-        if pagenum is None:
-            pagenum = self.apagenum
-        return self.pixels.pages[pagenum].get_pixel(x, y)
-
-    def get_interval(self, pagenum, x, y, length):
-        """Read a scanline interval into a list of attributes."""
-        return self.pixels.pages[pagenum].get_interval(x, y, length)
-
-    def put_interval(self, pagenum, x, y, colours, mask=0xff):
-        """Write a list of attributes to a scanline interval."""
-        x, y, colours = self.graph_view.clip_list(x, y, colours)
-        newcolours = self.pixels.pages[pagenum].put_interval(x, y, colours, mask)
-        self.queues.video.put(signals.Event(signals.VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours)))
-        self.clear_text_area(x, y, x+len(colours), y)
-
-    def fill_interval(self, x0, x1, y, index):
-        """Fill a scanline interval in a solid attribute."""
-        x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
-        self.pixels.pages[self.apagenum].fill_interval(x0, x1, y, index)
-        self.queues.video.put(signals.Event(signals.VIDEO_FILL_INTERVAL,
-                        (self.apagenum, x0, x1, y, index)))
-        self.clear_text_area(x0, y, x1, y)
-
-    def get_until(self, x0, x1, y, c):
-        """Get the attribute values of a scanline interval."""
-        return self.pixels.pages[self.apagenum].get_until(x0, x1, y, c)
-
-    def get_rect(self, x0, y0, x1, y1):
-        """Read a screen rect into an [y][x] array of attributes."""
-        return self.pixels.pages[self.apagenum].get_rect(x0, y0, x1, y1)
-
-    def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
-        """Apply an [y][x] array of attributes onto a screen rect."""
-        x0, y0, x1, y1, sprite = self.graph_view.clip_area(x0, y0, x1, y1, sprite)
-        rect = self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1,
-                                                        sprite, operation_token)
-        self.queues.video.put(signals.Event(signals.VIDEO_PUT_RECT,
-                              (self.apagenum, x0, y0, x1, y1, rect)))
-        self.clear_text_area(x0, y0, x1, y1)
-
-    def fill_rect(self, x0, y0, x1, y1, index):
-        """Fill a rectangle in a solid attribute."""
-        x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
-        self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, index)
-        self.queues.video.put(signals.Event(signals.VIDEO_FILL_RECT,
-                                (self.apagenum, x0, y0, x1, y1, index)))
-        self.clear_text_area(x0, y0, x1, y1)
-
-    ###########################################################################
     # callbacks
 
     # SCREEN statement
@@ -1067,7 +987,7 @@ class Screen(object):
         elif val == 1:
             # clear the graphics viewport
             if not self.mode.is_text_mode:
-                self.fill_rect(*self.graph_view.get(), index=(self.attr >> 4) & 0x7)
+                self.drawing.fill_rect(*self.graph_view.get(), index=(self.attr >> 4) & 0x7)
             self.drawing.reset()
         elif val == 2:
             self.clear_view()
@@ -1188,7 +1108,7 @@ class Screen(object):
             if x < 0 or x >= self.mode.pixel_width or y < 0 or y >= self.mode.pixel_height:
                 point = -1
             else:
-                point = self.get_pixel(x, y)
+                point = self.drawing.get_pixel(x, y)
             return self._values.new_integer().from_int(point)
 
     def pmap_(self, args):
