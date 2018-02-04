@@ -1087,6 +1087,59 @@ class Drawing(object):
         if goback:
             self.last_point = x0, y0
 
+    ### POINT and PMAP
+
+    def point_(self, args):
+        """POINT (1 argument): Return current coordinate (2 arguments): Return the attribute of a pixel."""
+        arg0 = next(args)
+        arg1 = next(args)
+        if arg1 is None:
+            arg0 = values.to_integer(arg0)
+            fn = values.to_int(arg0)
+            error.range_check(0, 3, fn)
+            list(args)
+            if self._mode.is_text_mode:
+                return self._values.new_single()
+            if fn in (0, 1):
+                point = self.last_point[fn]
+            elif fn in (2, 3):
+                point = self.get_window_logical(*self.last_point)[fn - 2]
+            return self._values.new_single().from_value(point)
+        else:
+            if self._mode.is_text_mode:
+                raise error.BASICError(error.IFC)
+            arg1 = values.pass_number(arg1)
+            list(args)
+            x, y = values.to_single(arg0).to_value(), values.to_single(arg1).to_value()
+            x, y = self._graph_view.coords(*self.get_window_physical(x, y))
+            if x < 0 or x >= self._mode.pixel_width or y < 0 or y >= self._mode.pixel_height:
+                point = -1
+            else:
+                point = self.get_pixel(x, y)
+            return self._values.new_integer().from_int(point)
+
+    def pmap_(self, args):
+        """PMAP: convert between logical and physical coordinates."""
+        # create a new Single for the return value
+        coord = values.to_single(next(args))
+        mode = values.to_integer(next(args))
+        list(args)
+        mode = mode.to_int()
+        error.range_check(0, 3, mode)
+        if self._mode.is_text_mode:
+            if mode in (2, 3):
+                values.to_integer(coord)
+            value = 0
+        elif mode == 0:
+            value, _ = self.get_window_physical(values.to_single(coord).to_value(), 0.)
+        elif mode == 1:
+            _, value = self.get_window_physical(0., values.to_single(coord).to_value())
+        elif mode == 2:
+            value, _ = self.get_window_logical(values.to_integer(coord).to_int(), 0)
+        elif mode == 3:
+            _, value = self.get_window_logical(0, values.to_integer(coord).to_int())
+        return self._values.new_single().from_value(value)
+
 
 def tile_to_interval(x0, x1, y, tile):
     """Convert a tile to a list of attributes."""
