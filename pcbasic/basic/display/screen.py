@@ -681,59 +681,53 @@ class Screen(object):
     ###########################################################################
     # delete
 
-    def delete_fullchar(self, row, col):
+    def delete_fullchar(self):
         """Delete the character (single/double width) at the current position."""
-        width = self.text.get_charwidth(self.apagenum, row, col)
-        if width == 1:
-            # we're on an sbcs byte.
-            self._delete_sbcs_char(row, col)
-        elif width == 2:
-            # we're on a lead byte, delete this and the next.
-            self._delete_sbcs_char(row, col)
-            self._delete_sbcs_char(row, col)
-        elif width == 0:
-            # we're on a trail byte, delete the previous and this.
-            logging.debug('DBCS trail byte delete at %d, %d.', row, col)
-            self._delete_sbcs_char(row, col-1)
-            self._delete_sbcs_char(row, col-1)
-
-    def _delete_sbcs_char(self, row, col):
-        """Delete a single-byte character at the current position."""
-        if row > 1 and col >= self.apage.row[row-1].end and self.apage.row[row-1].wrap:
-            # row was an LF-ending row & we're deleting past the LF
-            self._delete_sbcs_char_lf(row, col)
-        elif col <= self.apage.row[row-1].end:
-            # row not ending with LF
-            self._delete_sbcs_char_no_lf(row, col)
-
-    def _delete_sbcs_char_lf(self, row, col):
-        """Delete a single-byte character at the current position, row ending with LF."""
-        row, col = self.text.delete_char_lf(
-                self.apagenum, row, col, self.scroll_area.bottom, self.attr)
-        # redraw the full logical line from the original position onwards
-        self.redraw_row(col-1, self.current_row)
-        # if last row was empty, scroll up.
-        if self.apage.row[row].end <= 0:
-            self.apage.row[row].end = 0
-            self.apage.row[row-1].wrap = False
-            self.scroll(row+1)
-
-    def _delete_sbcs_char_no_lf(self, row, col):
-        """Delete a single-byte character at the current position, row not ending with LF."""
-        row, col = self.text.delete_char_no_lf(
-                self.apagenum, row, col, self.scroll_area.bottom, self.attr)
-        # redraw the full logical line
-        # this works from current row onwards
-        self.redraw_row(col-1, self.current_row)
-        # change the row end
-        # this works on last row edited
-        if self.apage.row[row-1].end > 0:
-            self.apage.row[row-1].end -= 1
+        row, col = self.current_row, self.current_col
+        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
+        if width == 0:
+            logging.debug('DBCS trail byte delete at %d, %d.', self.current_row, self.current_col)
+            self.set_pos(self.current_row, self.current_col-1)
+            width = 2
+        text = self.text.get_logical_line(self.apagenum, self.current_row)
+        lastrow = self.text.find_end_of_line(self.apagenum, self.current_row)
+        if self.current_col > self.apage.row[self.current_row-1].end:
+            # past the end. if this row ended with LF, attach next row and scroll further rows up
+            # if not, do nothing
+            if not self.apage.row[self.current_row-1].wrap:
+                return
+            # else: LF case; scroll up without changing attributes
+            self.apage.row[self.current_row-1].wrap = self.apage.row[self.current_row-2].wrap
+            self.scroll(self.current_row + 1)
+            # redraw from the LF
+            start = text.find(b'\n') + 1
+            if start == 0:
+                logging.debug('Wrap buffer corrupted')
+            self._rewrite_for_delete(text[start:] + b' ' * width)
         else:
-            # if there was nothing on the line, scroll the next line up.
-            self.scroll(row)
-            if row > 1:
-                self.apage.row[row-2].wrap = False
+            start = self.current_col + width - 1
+            # rewrite the contents (with the current attribute!)
+            self._rewrite_for_delete(text[start:] + b' ' * width)
+            # if last row was empty, scroll up.
+            if self.apage.row[lastrow-1].end == 0 and self.apage.row[lastrow-2].wrap:
+                self.apage.row[lastrow-2].wrap = False
+                self.scroll(lastrow)
+        # restore original position
+        self.set_pos(row, col)
+
+    def _rewrite_for_delete(self, text):
+        """Rewrite text contents (with the current attribute)."""
+        for c in text:
+            if c == b'\n':
+                self.put_char_attr(self.apagenum, self.current_row, self.current_col, b' ', self.attr)
+                self.apage.row[self.current_row-1].end = self.current_col-1
+                break
+            else:
+                self.put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
+                self.set_pos(self.current_row, self.current_col+1)
+        else:
+            # adjust row end
+            self.apage.row[self.current_row-1].end = self.current_col-2
 
     ###########################################################################
     # vpage text retrieval

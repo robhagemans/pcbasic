@@ -208,7 +208,7 @@ class Editor(object):
                 elif d in (ea.INSERT, ea.CTRL_r):
                     self.set_overwrite_mode(not self._overwrite_mode)
                 elif d in (ea.DELETE, ea.CTRL_BACKSPACE):
-                    self._screen.delete_fullchar(row, col)
+                    self._screen.delete_fullchar()
                 elif d in (ea.HOME, ea.CTRL_k):
                     self._screen.set_pos(1, 1)
                 elif d in (ea.END, ea.CTRL_n):
@@ -293,7 +293,7 @@ class Editor(object):
         elif ccol != start_col or self._screen.current_row != start_row:
             ccol -= 1
         self._screen.set_pos(crow, max(1, ccol))
-        self._screen.delete_fullchar(crow, ccol)
+        self._screen.delete_fullchar()
 
     def tab(self):
         """Jump to next 8-position tab stop (TAB)."""
