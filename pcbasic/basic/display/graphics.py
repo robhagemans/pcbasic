@@ -116,19 +116,20 @@ class Drawing(object):
         self._mode = None
         self._text = None
         self._pixels = None
-        self._graph_view = None
+        self.graph_view = None
         self._apagenum = None
         self.last_point = None
         self.last_attr = None
         self.draw_scale = None
         self.draw_angle = None
 
-    def init_mode(self, mode, text, pixels, graph_view):
+    def init_mode(self, mode, text, pixels):
         """Initialise for new graphics mode."""
         self._mode = mode
         self._text = text
         self._pixels = pixels
-        self._graph_view = graph_view
+        # set graphics viewport
+        self.graph_view = GraphicsViewPort(self._mode.pixel_width, self._mode.pixel_height)
         self.unset_window()
         self.reset()
 
@@ -136,7 +137,7 @@ class Drawing(object):
         """Reset graphics state."""
         if self._mode.is_text_mode:
             return
-        self.last_point = self._graph_view.get_mid()
+        self.last_point = self.graph_view.get_mid()
         self.last_attr = self._mode.attr
         self.draw_scale = 4
         self.draw_angle = 0
@@ -184,7 +185,7 @@ class Drawing(object):
         """Put a pixel on the screen; empty character buffer."""
         if pagenum is None:
             pagenum = self._apagenum
-        if self._graph_view.contains(x, y):
+        if self.graph_view.contains(x, y):
             self._pixels.pages[pagenum].put_pixel(x, y, index)
             self._queues.video.put(signals.Event(signals.VIDEO_PUT_PIXEL, (pagenum, x, y, index)))
             self.clear_text_at(x, y)
@@ -201,14 +202,14 @@ class Drawing(object):
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
-        x, y, colours = self._graph_view.clip_list(x, y, colours)
+        x, y, colours = self.graph_view.clip_list(x, y, colours)
         newcolours = self._pixels.pages[pagenum].put_interval(x, y, colours, mask)
         self._queues.video.put(signals.Event(signals.VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours)))
         self.clear_text_area(x, y, x+len(colours), y)
 
     def fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
-        x0, x1, y = self._graph_view.clip_interval(x0, x1, y)
+        x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
         self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
         self._queues.video.put(signals.Event(signals.VIDEO_FILL_INTERVAL,
                         (self._apagenum, x0, x1, y, index)))
@@ -224,7 +225,7 @@ class Drawing(object):
 
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """Apply an [y][x] array of attributes onto a screen rect."""
-        x0, y0, x1, y1, sprite = self._graph_view.clip_area(x0, y0, x1, y1, sprite)
+        x0, y0, x1, y1, sprite = self.graph_view.clip_area(x0, y0, x1, y1, sprite)
         rect = self._pixels.pages[self._apagenum].put_rect(x0, y0, x1, y1,
                                                         sprite, operation_token)
         self._queues.video.put(signals.Event(signals.VIDEO_PUT_RECT,
@@ -233,7 +234,7 @@ class Drawing(object):
 
     def fill_rect(self, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
-        x0, y0, x1, y1 = self._graph_view.clip_rect(x0, y0, x1, y1)
+        x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
         self._pixels.pages[self._apagenum].fill_rect(x0, y0, x1, y1, index)
         self._queues.video.put(signals.Event(signals.VIDEO_FILL_RECT,
                                 (self._apagenum, x0, y0, x1, y1, index)))
@@ -264,22 +265,22 @@ class Drawing(object):
     def set_view(self, x0, y0, x1, y1, absolute, fill, border):
         """Set the graphics viewport and optionally draw a box (VIEW)."""
         # first unset the viewport so that we can draw the box
-        self._graph_view.unset()
+        self.graph_view.unset()
         if fill is not None:
             self.draw_box_filled(x0, y0, x1, y1, fill)
             self.last_attr = fill
         if border is not None:
             self.draw_box(x0-1, y0-1, x1+1, y1+1, border)
             self.last_attr = border
-        self._graph_view.set(x0, y0, x1, y1, absolute)
-        self.last_point = self._graph_view.get_mid()
+        self.graph_view.set(x0, y0, x1, y1, absolute)
+        self.last_point = self.graph_view.get_mid()
         if self.window_bounds is not None:
             self.set_window(*self.window_bounds)
 
     def unset_view(self):
         """Unset the graphics viewport."""
-        self._graph_view.unset()
-        self.last_point = self._graph_view.get_mid()
+        self.graph_view.unset()
+        self.last_point = self.graph_view.get_mid()
         if self.window_bounds is not None:
             self.set_window(*self.window_bounds)
 
@@ -308,7 +309,7 @@ class Drawing(object):
             fx0, fx1 = fx1, fx0
         if cartesian:
             fy0, fy1 = fy1, fy0
-        left, top, right, bottom = self._graph_view.get()
+        left, top, right, bottom = self.graph_view.get()
         x0, y0 = 0., 0.
         x1, y1 = float(right-left), float(bottom-top)
         scalex = (x1-x0) / (fx1-fx0)
@@ -389,7 +390,7 @@ class Drawing(object):
             c = values.to_int(c)
             error.range_check(0, 255, c)
         list(args)
-        x, y = self._graph_view.coords(*self.get_window_physical(x, y, step))
+        x, y = self.graph_view.coords(*self.get_window_physical(x, y, step))
         c = self.get_attr_index(c)
         self.put_pixel(x, y, c)
         self.last_attr = c
@@ -419,10 +420,10 @@ class Drawing(object):
         else:
             pattern = values.to_int(pattern)
         if coord0 != (None, None, None):
-            x0, y0 = self._graph_view.coords(*self.get_window_physical(*coord0))
+            x0, y0 = self.graph_view.coords(*self.get_window_physical(*coord0))
         else:
             x0, y0 = self.last_point
-        x1, y1 = self._graph_view.coords(*self.get_window_physical(*coord1))
+        x1, y1 = self.graph_view.coords(*self.get_window_physical(*coord1))
         c = self.get_attr_index(c)
         if not shape:
             self.draw_line(x0, y0, x1, y1, c, pattern)
@@ -567,7 +568,7 @@ class Drawing(object):
         if aspect is not None:
             aspect = values.to_single(aspect).to_value()
         list(args)
-        x0, y0 = self._graph_view.coords(*self.get_window_physical(x, y, step))
+        x0, y0 = self.graph_view.coords(*self.get_window_physical(x, y, step))
         if c is None:
             c = -1
         else:
@@ -777,8 +778,8 @@ class Drawing(object):
             back = self._mode.build_tile(bytearray(background)) if background else None
         else:
             tile, back = [[c]*8], None
-        bound_x0, bound_y0, bound_x1, bound_y1 = self._graph_view.get()
-        x, y = self._graph_view.coords(*self.get_window_physical(*lcoord))
+        bound_x0, bound_y0, bound_x1, bound_y1 = self.graph_view.get()
+        x, y = self.graph_view.coords(*self.get_window_physical(*lcoord))
         line_seed = [(x, x, y, 0)]
         # paint nothing if seed is out of bounds
         if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
@@ -865,7 +866,7 @@ class Drawing(object):
             raise error.BASICError(error.IFC)
         elif array_name[-1] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
-        x0, y0 = self._graph_view.coords(*self.get_window_physical(x0, y0))
+        x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
         self.last_point = x0, y0
         try:
             byte_array = self._memory.arrays.view_full_buffer(array_name)
@@ -887,7 +888,7 @@ class Drawing(object):
         if self._mode.name == '640x200x4':
             x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
-        vx0, vy0, vx1, vy1 = self._graph_view.get()
+        vx0, vy0, vx1, vy1 = self.graph_view.get()
         error.range_check(vx0, vx1, x0, x1)
         error.range_check(vy0, vy1, y0, y1)
         # apply the sprite to the screen
@@ -907,8 +908,8 @@ class Drawing(object):
             raise error.BASICError(error.IFC)
         elif array_name[-1] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
-        x0, y0 = self._graph_view.coords(*self.get_window_physical(x0, y0))
-        x1, y1 = self._graph_view.coords(*self.get_window_physical(*lcoord1))
+        x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
+        x1, y1 = self.graph_view.coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
         try:
             byte_array = self._memory.arrays.view_full_buffer(array_name)
@@ -921,7 +922,7 @@ class Drawing(object):
         if self._mode.name == '640x200x4':
             x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
-        vx0, vy0, vx1, vy1 = self._graph_view.get()
+        vx0, vy0, vx1, vy1 = self.graph_view.get()
         error.range_check(vx0, vx1, x0, x1)
         error.range_check(vy0, vy1, y0, y1)
         # set size record
@@ -1111,7 +1112,7 @@ class Drawing(object):
             arg1 = values.pass_number(arg1)
             list(args)
             x, y = values.to_single(arg0).to_value(), values.to_single(arg1).to_value()
-            x, y = self._graph_view.coords(*self.get_window_physical(x, y))
+            x, y = self.graph_view.coords(*self.get_window_physical(x, y))
             if x < 0 or x >= self._mode.pixel_width or y < 0 or y >= self._mode.pixel_height:
                 point = -1
             else:

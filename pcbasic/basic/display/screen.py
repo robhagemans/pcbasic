@@ -159,9 +159,6 @@ class Screen(object):
             self.pixels = None
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
-        # set graphics viewport
-        self.graph_view = graphics.GraphicsViewPort(
-                self.mode.pixel_width, self.mode.pixel_height)
         # initialise the palette
         self.palette.init_mode(self.mode)
         # set the cursor attribute
@@ -174,7 +171,7 @@ class Screen(object):
         if save_mem:
             self.mode.set_all_memory(self, save_mem)
         # center graphics cursor, reset window, etc.
-        self.drawing.init_mode(self.mode, self.text, self.pixels, self.graph_view)
+        self.drawing.init_mode(self.mode, self.text, self.pixels)
         self.drawing.set_attr(self.attr)
         # redraw key line
         self.bottom_bar.redraw(self)
@@ -977,7 +974,7 @@ class Screen(object):
             error.throw_if(self.capabilities == 'tandy')
             error.range_check(0, 2, val)
         else:
-            if self.graph_view.is_set():
+            if self.drawing.graph_view.is_set():
                 val = 1
             elif self.scroll_area.active:
                 val = 2
@@ -992,7 +989,7 @@ class Screen(object):
         elif val == 1:
             # clear the graphics viewport
             if not self.mode.is_text_mode:
-                self.drawing.fill_rect(*self.graph_view.get(), index=(self.attr >> 4) & 0x7)
+                self.drawing.fill_rect(*self.drawing.graph_view.get(), index=(self.attr >> 4) & 0x7)
             self.drawing.reset()
         elif val == 2:
             self.clear_view()
