@@ -459,11 +459,23 @@ class Screen(object):
         self._check_pos(scroll_ok)
 
     def incr_pos(self):
-        """Increase the current position by one."""
-        # skip dbcs trail byte
-        row, col = self.current_row, self.current_col
-        width = self.text.get_charwidth(self.apagenum, row, col) or 1
-        self.set_pos(row, col + width, scroll_ok=False)
+        """Increase the current position by a char width."""
+        # on a trail byte: just go one to the right
+        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col) or 1
+        self.set_pos(self.current_row, self.current_col + width, scroll_ok=False)
+
+    def decr_pos(self):
+        """Decrease the current position by a char width."""
+        # previous is trail byte: go two to the left
+        # lead byte: go three to the left
+        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col-1)
+        if width == 0:
+            skip = 2
+        elif width == 2:
+            skip = 3
+        else:
+            skip = 1
+        self.set_pos(self.current_row, self.current_col - skip, scroll_ok=False)
 
     def _check_pos(self, scroll_ok=True):
         """Check if we have crossed the screen boundaries and move as needed."""

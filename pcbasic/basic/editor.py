@@ -200,7 +200,7 @@ class Editor(object):
                 elif d in (ea.RIGHT, ea.CTRL_BACKSLASH):
                     self._screen.incr_pos()
                 elif d in (ea.LEFT, ea.CTRL_RIGHTBRACKET):
-                    self._screen.set_pos(row, col - 1, scroll_ok=False)
+                    self._screen.decr_pos()
                 elif d in (ea.CTRL_RIGHT, ea.CTRL_f):
                     self.skip_word_right()
                 elif d in (ea.CTRL_LEFT, ea.CTRL_b):
@@ -284,15 +284,11 @@ class Editor(object):
 
     def backspace(self, start_row, start_col):
         """Delete the char to the left (BACKSPACE)."""
-        crow, ccol = self._screen.current_row, self._screen.current_col
-        # don't backspace through prompt
-        if ccol == 1:
-            if crow > 1 and self._screen.apage.row[crow-2].wrap:
-                ccol = self._screen.mode.width
-                crow -= 1
-        elif ccol != start_col or self._screen.current_row != start_row:
-            ccol -= 1
-        self._screen.set_pos(crow, max(1, ccol))
+        row, col = self._screen.current_row, self._screen.current_col
+        # don't backspace through prompt or through start of logical line
+        if ((col == 1 and row > 1 and self._screen.apage.row[row-2].wrap) or
+                (col != start_col or row != start_row)):
+            self._screen.decr_pos()
         self._screen.delete_fullchar()
 
     def tab(self):
