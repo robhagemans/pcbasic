@@ -264,7 +264,7 @@ class GlyphCache(object):
                 self._submit_char(char)
             mask = self._glyphs[char]
             # set background
-            glyph = numpy.full(mask.shape, back)
+            glyph = numpy.full(mask.shape, back, dtype=int)
             # stamp foreground mask
             glyph[mask] = fore
             x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height
