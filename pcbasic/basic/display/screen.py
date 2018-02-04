@@ -63,7 +63,7 @@ class Screen(object):
         self.fonts = {height: font.Font(height, font_dict) for height, font_dict in fonts.iteritems()}
         # function key macros
         self.bottom_bar = BottomBar()
-        self.drawing = graphics.Drawing(self, input_methods, self._values, self._memory)
+        self.drawing = graphics.Drawing(self.queues, input_methods, self._values, self._memory)
         self.palette = Palette(self.queues, self.mode, self.capabilities, self._memory)
         # initialise a fresh textmode screen
         self.set_mode_(self.mode, 0, 1, 0, 0)
@@ -155,6 +155,8 @@ class Screen(object):
         if not self.mode.is_text_mode:
             self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
                                     self.mode.num_pages, self.mode.bitsperpixel)
+        else:
+            self.pixels = None
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics viewport
@@ -172,7 +174,8 @@ class Screen(object):
         if save_mem:
             self.mode.set_all_memory(self, save_mem)
         # center graphics cursor, reset window, etc.
-        self.drawing.init_mode()
+        self.drawing.init_mode(self.mode, self.text, self.pixels, self.graph_view)
+        self.drawing.set_attr(self.attr)
         # redraw key line
         self.bottom_bar.redraw(self)
         # initialise text viewport & move cursor home
@@ -306,11 +309,13 @@ class Screen(object):
         self.vpagenum = new_vpagenum
         self.apagenum = new_apagenum
         self.apage = self.text.pages[new_apagenum]
+        self.drawing.set_page(new_apagenum)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
 
     def set_attr(self, attr):
         """Set the default attribute."""
         self.attr = attr
+        self.drawing.set_attr(attr)
         if not self.mode.is_text_mode and self.mode.cursor_index is None:
             fore, _, _, _ = self.mode.split_attr(attr)
             self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))

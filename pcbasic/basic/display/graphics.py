@@ -104,11 +104,10 @@ class GraphicsViewPort(object):
 class Drawing(object):
     """Graphical drawing operations."""
 
-    def __init__(self, screen, input_methods, values, memory):
+    def __init__(self, queues, input_methods, values, memory):
         """Initialise graphics object."""
         # for apagenum and attr
-        self.screen = screen
-        self._queues = self.screen.queues
+        self._queues = queues
         self._values = values
         self._memory = memory
         # for wait() in paint_
@@ -118,14 +117,18 @@ class Drawing(object):
         self._text = None
         self._pixels = None
         self._graph_view = None
+        self._apagenum = None
+        self.last_point = None
+        self.last_attr = None
+        self.draw_scale = None
+        self.draw_angle = None
 
-    def init_mode(self):
+    def init_mode(self, mode, text, pixels, graph_view):
         """Initialise for new graphics mode."""
-        self._mode = self.screen.mode
-        self._text = self.screen.text
-        if not self._mode.is_text_mode:
-            self._pixels = self.screen.pixels
-        self._graph_view = self.screen.graph_view
+        self._mode = mode
+        self._text = text
+        self._pixels = pixels
+        self._graph_view = graph_view
         self.unset_window()
         self.reset()
 
@@ -138,13 +141,21 @@ class Drawing(object):
         self.draw_scale = 4
         self.draw_angle = 0
 
+    def set_attr(self, attr):
+        """Set the current attribute."""
+        self._attr = attr
+
+    def set_page(self, apagenum):
+        """Set the active page."""
+        self._apagenum = apagenum
+
     ### attributes
 
     def get_attr_index(self, c):
         """Get the index of the specified attribute."""
         if c == -1:
             # foreground; graphics 'background' attrib is always 0
-            c = self.screen.attr & 0xf
+            c = self._attr & 0xf
         else:
             c = min(self._mode.num_attr-1, max(0, c))
         return c
@@ -156,23 +167,23 @@ class Drawing(object):
         row, col = self._mode.pixel_to_text_pos(x, y)
         # use attr = 0 ?
         if col >= 1 and row >= 1 and col <= self._mode.width and row <= self._mode.height:
-            self._text.put_char_attr(self.screen.apagenum, row, col, b' ', self.screen.attr)
-        fore, back, blink, underline = self._mode.split_attr(self.screen.attr)
+            self._text.put_char_attr(self._apagenum, row, col, b' ', self._attr)
+        fore, back, blink, underline = self._mode.split_attr(self._attr)
         self._queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
-                (self.screen.apagenum, row, col, u' ', False, fore, back, blink, underline, True)))
+                (self._apagenum, row, col, u' ', False, fore, back, blink, underline, True)))
 
     def clear_text_area(self, x0, y0, x1, y1):
         """Remove all characters from the text buffer on a rectangle of the graphics screen."""
         row0, col0, row1, col1 = self._mode.pixel_to_text_area(x0, y0, x1, y1)
         # use attr = 0 ? pagenum parameter? are we actually sending anything to the queue?
-        self._text.clear_area(self.screen.apagenum, row0, col0, row1, col1, self.screen.attr)
+        self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
 
     ### graphics primitives
 
     def put_pixel(self, x, y, index, pagenum=None):
         """Put a pixel on the screen; empty character buffer."""
         if pagenum is None:
-            pagenum = self.screen.apagenum
+            pagenum = self._apagenum
         if self._graph_view.contains(x, y):
             self._pixels.pages[pagenum].put_pixel(x, y, index)
             self._queues.video.put(signals.Event(signals.VIDEO_PUT_PIXEL, (pagenum, x, y, index)))
@@ -181,7 +192,7 @@ class Drawing(object):
     def get_pixel(self, x, y, pagenum=None):
         """Return the attribute a pixel on the screen."""
         if pagenum is None:
-            pagenum = self.screen.apagenum
+            pagenum = self._apagenum
         return self._pixels.pages[pagenum].get_pixel(x, y)
 
     def get_interval(self, pagenum, x, y, length):
@@ -198,34 +209,34 @@ class Drawing(object):
     def fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
         x0, x1, y = self._graph_view.clip_interval(x0, x1, y)
-        self._pixels.pages[self.screen.apagenum].fill_interval(x0, x1, y, index)
+        self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
         self._queues.video.put(signals.Event(signals.VIDEO_FILL_INTERVAL,
-                        (self.screen.apagenum, x0, x1, y, index)))
+                        (self._apagenum, x0, x1, y, index)))
         self.clear_text_area(x0, y, x1, y)
 
     def get_until(self, x0, x1, y, c):
         """Get the attribute values of a scanline interval."""
-        return self._pixels.pages[self.screen.apagenum].get_until(x0, x1, y, c)
+        return self._pixels.pages[self._apagenum].get_until(x0, x1, y, c)
 
     def get_rect(self, x0, y0, x1, y1):
         """Read a screen rect into an [y][x] array of attributes."""
-        return self._pixels.pages[self.screen.apagenum].get_rect(x0, y0, x1, y1)
+        return self._pixels.pages[self._apagenum].get_rect(x0, y0, x1, y1)
 
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """Apply an [y][x] array of attributes onto a screen rect."""
         x0, y0, x1, y1, sprite = self._graph_view.clip_area(x0, y0, x1, y1, sprite)
-        rect = self._pixels.pages[self.screen.apagenum].put_rect(x0, y0, x1, y1,
+        rect = self._pixels.pages[self._apagenum].put_rect(x0, y0, x1, y1,
                                                         sprite, operation_token)
         self._queues.video.put(signals.Event(signals.VIDEO_PUT_RECT,
-                              (self.screen.apagenum, x0, y0, x1, y1, rect)))
+                              (self._apagenum, x0, y0, x1, y1, rect)))
         self.clear_text_area(x0, y0, x1, y1)
 
     def fill_rect(self, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         x0, y0, x1, y1 = self._graph_view.clip_rect(x0, y0, x1, y1)
-        self._pixels.pages[self.screen.apagenum].fill_rect(x0, y0, x1, y1, index)
+        self._pixels.pages[self._apagenum].fill_rect(x0, y0, x1, y1, index)
         self._queues.video.put(signals.Event(signals.VIDEO_FILL_RECT,
-                                (self.screen.apagenum, x0, y0, x1, y1, index)))
+                                (self._apagenum, x0, y0, x1, y1, index)))
         self.clear_text_area(x0, y0, x1, y1)
 
     ## VIEW graphics viewport
@@ -802,7 +813,7 @@ class Drawing(object):
                 self.fill_interval(x_left, x_right, y, tile[0][0])
             else:
                 interval = tile_to_interval(x_left, x_right, y, tile)
-                self.put_interval(self.screen.apagenum, x_left, y, interval)
+                self.put_interval(self._apagenum, x_left, y, interval)
             # allow interrupting the paint
             if y%4 == 0:
                 self._input_methods.wait()
