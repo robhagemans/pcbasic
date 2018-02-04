@@ -187,7 +187,7 @@ class Editor(object):
                     self.tab()
                 elif d == b'\n':
                     # CTRL+ENTER, CTRL+J
-                    self.line_feed()
+                    self._screen.line_feed()
                 elif d == ea.ESCAPE:
                     # ESC, CTRL+[
                     self.clear_line(row, furthest_left)
@@ -212,7 +212,7 @@ class Editor(object):
                 elif d in (ea.HOME, ea.CTRL_k):
                     self._screen.set_pos(1, 1)
                 elif d in (ea.END, ea.CTRL_n):
-                    self.end()
+                    self._screen.move_to_end()
                 elif d in (ea.CTRL_HOME, ea.CTRL_l):
                     self._screen.clear_view()
                 elif d == ea.CTRL_PRINT:
@@ -251,15 +251,14 @@ class Editor(object):
     def clear_line(self, the_row, from_col=1):
         """Clear whole logical line (ESC), leaving prompt."""
         self._screen.clear_from(
-                self._screen.text.find_start_of_line(self._screen.apagenum, the_row),
-                from_col)
+                self._screen.text.find_start_of_line(self._screen.apagenum, the_row), from_col)
 
     def backspace(self, start_row, start_col):
         """Delete the char to the left (BACKSPACE)."""
         row, col = self._screen.current_row, self._screen.current_col
+        start_row = self._screen.text.find_start_of_line(self._screen.apagenum, row)
         # don't backspace through prompt or through start of logical line
-        if ((col == 1 and row > 1 and self._screen.apage.row[row-2].wrap) or
-                (col != start_col or row != start_row)):
+        if ((col == 1 and row > start_row) or (col != start_col or row != start_row)):
             self._screen.decr_pos()
         self._screen.delete_fullchar()
 
@@ -272,36 +271,6 @@ class Editor(object):
         else:
             self._screen.insert_fullchars(row, col, b' ' * 8, self._screen.attr)
             self._screen.set_pos(row, newcol)
-
-    def end(self):
-        """Jump to end of logical line; follow wraps (END)."""
-        crow = self._screen.text.find_end_of_line(
-                self._screen.apagenum, self._screen.current_row)
-        if self._screen.apage.row[crow-1].end == self._screen.mode.width:
-            self._screen.set_pos(crow, self._screen.apage.row[crow-1].end)
-            self._screen.overflow = True
-        else:
-            self._screen.set_pos(crow, self._screen.apage.row[crow-1].end+1)
-
-    def line_feed(self):
-        """Move the remainder of the line to the next row and wrap (LF)."""
-        crow, ccol = self._screen.current_row, self._screen.current_col
-        if ccol < self._screen.apage.row[crow-1].end:
-            self._screen.insert_fullchars(
-                    crow, ccol, b' ' * (self._screen.mode.width-ccol+1), self._screen.attr)
-            self._screen.apage.row[crow-1].end = ccol - 1
-        else:
-            while (self._screen.apage.row[crow-1].wrap and
-                    crow < self._screen.scroll_area.bottom):
-                crow += 1
-            if crow >= self._screen.scroll_area.bottom:
-                self._screen.scroll()
-            # self._screen.current_row has changed, don't use crow
-            if self._screen.current_row < self._screen.mode.height:
-                self._screen.scroll_down(self._screen.current_row+1)
-        # LF connects lines like word wrap
-        self._screen.apage.row[self._screen.current_row-1].wrap = True
-        self._screen.set_pos(self._screen.current_row+1, 1)
 
     def skip_word_right(self):
         """Skip one word to the right (CTRL+RIGHT)."""

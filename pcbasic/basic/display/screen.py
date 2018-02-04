@@ -533,6 +533,15 @@ class Screen(object):
         self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
                 (self.current_row, self.current_col)))
 
+    def move_to_end(self):
+        """Jump to end of logical line; follow wraps (END)."""
+        row = self.text.find_end_of_line(self.apagenum, self.current_row)
+        if self.apage.row[row-1].end == self.mode.width:
+            self.set_pos(row, self.apage.row[row-1].end)
+            self.overflow = True
+        else:
+            self.set_pos(row, self.apage.row[row-1].end+1)
+
     ###########################################################################
 
     def put_char_attr(self, pagenum, row, col, c, attr, one_only=False, suppress_cli=False):
@@ -768,6 +777,24 @@ class Screen(object):
                     col = 1
             col += 1
         self._redraw_row(start_col-1, start_row)
+
+    def line_feed(self):
+        """Move the remainder of the line to the next row and wrap (LF)."""
+        row, col = self.current_row, self.current_col
+        if col < self.apage.row[row-1].end:
+            self.insert_fullchars(row, col, b' ' * (self.mode.width-col+1), self.attr)
+            self.apage.row[row-1].end = col - 1
+        else:
+            while (self.apage.row[row-1].wrap and row < self.scroll_area.bottom):
+                row += 1
+            if row >= self.scroll_area.bottom:
+                self.scroll()
+            # self.current_row has changed, don't use row var
+            if self.current_row < self.mode.height:
+                self.scroll_down(self.current_row+1)
+        # LF connects lines like word wrap
+        self.apage.row[self.current_row-1].wrap = True
+        self.set_pos(self.current_row+1, 1)
 
     ###########################################################################
     # vpage text retrieval
