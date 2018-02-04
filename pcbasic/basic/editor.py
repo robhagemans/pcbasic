@@ -228,12 +228,8 @@ class Editor(object):
                         # ignore eascii by this point, but not dbcs
                         if d[0] not in (b'\0', b'\r'):
                             if not self._overwrite_mode:
-                                for c in d:
-                                    self.insert(self._screen.current_row, col, c, self._screen.attr)
-                                    col += 1
-                                # row and col have changed
-                                self._screen.redraw_row(
-                                        self._screen.current_col-1, self._screen.current_row)
+                                self._screen.insert_fullchars(
+                                        self._screen.current_row, col, d, self._screen.attr)
                                 self._screen.set_pos(self._screen.current_row,
                                         self._screen.current_col + len(d))
                             else:
@@ -251,30 +247,6 @@ class Editor(object):
         if new_overwrite != self._overwrite_mode:
             self._overwrite_mode = new_overwrite
             self._screen.cursor.set_default_shape(new_overwrite)
-
-    def insert(self, crow, ccol, c, cattr):
-        """Insert a single byte at the current position."""
-        while True:
-            therow = self._screen.apage.row[crow-1]
-            therow.buf.insert(ccol-1, (c, cattr))
-            if therow.end < self._screen.mode.width:
-                therow.buf.pop()
-                if therow.end > ccol-1:
-                    therow.end += 1
-                else:
-                    therow.end = ccol
-                break
-            else:
-                if crow == self._screen.scroll_area.bottom:
-                    self._screen.scroll()
-                    # this is not the global row which is changed by scroll()
-                    crow -= 1
-                if not therow.wrap and crow < self._screen.mode.height:
-                    self._screen.scroll_down(crow+1)
-                    therow.wrap = True
-                c, cattr = therow.buf.pop()
-                crow += 1
-                ccol = 1
 
     def clear_line(self, the_row, from_col=1):
         """Clear whole logical line (ESC), leaving prompt."""
@@ -298,9 +270,7 @@ class Editor(object):
         if self._overwrite_mode:
             self._screen.set_pos(row, newcol, scroll_ok=False)
         else:
-            for _ in range(8):
-                self.insert(row, col, ' ', self._screen.attr)
-            self._screen.redraw_row(col - 1, row)
+            self._screen.insert_fullchars(row, col, b' ' * 8, self._screen.attr)
             self._screen.set_pos(row, newcol)
 
     def end(self):
@@ -317,9 +287,8 @@ class Editor(object):
         """Move the remainder of the line to the next row and wrap (LF)."""
         crow, ccol = self._screen.current_row, self._screen.current_col
         if ccol < self._screen.apage.row[crow-1].end:
-            for _ in range(self._screen.mode.width - ccol + 1):
-                self.insert(crow, ccol, ' ', self._screen.attr)
-            self._screen.redraw_row(ccol - 1, crow)
+            self._screen.insert_fullchars(
+                    crow, ccol, b' ' * (self._screen.mode.width-ccol+1), self._screen.attr)
             self._screen.apage.row[crow-1].end = ccol - 1
         else:
             while (self._screen.apage.row[crow-1].wrap and

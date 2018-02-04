@@ -283,9 +283,9 @@ class Screen(object):
         self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
         # redraw the text screen and rebuild text buffers in video plugin
         for pagenum in range(self.mode.num_pages):
-            for crow in range(self.mode.height):
+            for row in range(self.mode.height):
                 # suppress_cli=True means 'suppress echo on cli'
-                self.refresh_range(pagenum, crow+1, 1, self.mode.width,
+                self.refresh_range(pagenum, row+1, 1, self.mode.width,
                                    suppress_cli=True, text_only=True)
             # redraw graphics
             if not self.mode.is_text_mode:
@@ -547,14 +547,14 @@ class Screen(object):
 
     ###########################################################################
 
-    def refresh_range(self, pagenum, crow, start, stop, suppress_cli=False, text_only=False):
+    def refresh_range(self, pagenum, row, start, stop, suppress_cli=False, text_only=False):
         """Redraw a section of a screen row, assuming DBCS buffer has been set."""
-        therow = self.text.pages[pagenum].row[crow-1]
-        ccol = start
-        while ccol <= stop:
-            r, c = crow, ccol
-            char, attr = self.text.get_fullchar_attr(pagenum, crow, ccol)
-            ccol += len(char)
+        therow = self.text.pages[pagenum].row[row-1]
+        col = start
+        while col <= stop:
+            r, c = row, col
+            char, attr = self.text.get_fullchar_attr(pagenum, row, col)
+            col += len(char)
             # ensure glyph is stored
             self._glyphs.check_char(char)
             fore, back, blink, underline = self.mode.split_attr(attr)
@@ -569,7 +569,7 @@ class Screen(object):
                 self.queues.video.put(signals.Event(
                         signals.VIDEO_PUT_RECT, (self.apagenum, x0, y0, x1, y1, sprite)))
 
-    def redraw_row(self, start, row, wrap=True):
+    def _redraw_row(self, start, row, wrap=True):
         """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
         while True:
             for i in range(start, self.apage.row[row-1].end):
@@ -586,12 +586,12 @@ class Screen(object):
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
         self.apage.row[srow-1].clear_from(scol, self.attr)
-        crow = srow
+        row = srow
         # can use self.text.find_end_of_line
-        while self.apage.row[crow-1].wrap:
-            crow += 1
-            self.apage.row[crow-1].clear(self.attr)
-        for r in range(crow, srow, -1):
+        while self.apage.row[row-1].wrap:
+            row += 1
+            self.apage.row[row-1].clear(self.attr)
+        for r in range(row, srow, -1):
             self.apage.row[r-1].wrap = False
             self.scroll(r)
         therow = self.apage.row[srow-1]
@@ -600,7 +600,7 @@ class Screen(object):
         save_end = therow.end
         therow.end = self.mode.width
         if scol > 1:
-            self.redraw_row(scol-1, srow)
+            self._redraw_row(scol-1, srow)
         else:
             # inelegant: we're clearing the text buffer for a second time now
             self.clear_rows(srow, srow)
@@ -691,7 +691,7 @@ class Screen(object):
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
     ###########################################################################
-    # delete
+    # console operations
 
     def delete_fullchar(self):
         """Delete the character (single/double width) at the current position."""
@@ -741,6 +741,33 @@ class Screen(object):
             else:
                 # adjust row end
                 self.apage.row[self.current_row-1].end = self.current_col - 2
+
+    def insert_fullchars(self, row, col, sequence, attr):
+        """Insert one or more single- or double-width characters at the current position."""
+        start_row, start_col = row, col
+        for c in sequence:
+            while True:
+                therow = self.apage.row[row-1]
+                therow.buf.insert(col-1, (c, attr))
+                if therow.end < self.mode.width:
+                    therow.buf.pop()
+                    if therow.end > col-1:
+                        therow.end += 1
+                    else:
+                        therow.end = col
+                    break
+                else:
+                    if row == self.scroll_area.bottom:
+                        self.scroll()
+                        row -= 1
+                    if not therow.wrap and row < self.mode.height:
+                        self.scroll_down(row+1)
+                        therow.wrap = True
+                    c, attr = therow.buf.pop()
+                    row += 1
+                    col = 1
+            col += 1
+        self._redraw_row(start_col-1, start_row)
 
     ###########################################################################
     # vpage text retrieval
