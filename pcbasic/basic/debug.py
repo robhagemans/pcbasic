@@ -59,13 +59,14 @@ class BaseDebugger(object):
 
     def _repr_screen(self):
         """Return a string representation of the screen buffer."""
-        horiz_bar = ('  +' + '-'*self._session.screen.mode.width + '+')
+        screen = self._session.screen
+        horiz_bar = ('  +' + '-'*screen.mode.width + '+')
         i = 0
         lastwrap = False
         row_strs = [
             '==== Screen ='.ljust(100, '='),
             horiz_bar]
-        for row in self._session.screen.apage.row:
+        for row in screen.text.pages[screen.apagenum].row:
             s = [ c[0] for c in row.buf ]
             i += 1
             outstr = '{0:2}'.format(i)

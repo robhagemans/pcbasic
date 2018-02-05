@@ -734,7 +734,7 @@ class Session(object):
             self.screen.write(prompt)
             # disconnect the wrap between line with the prompt and previous line
             if self.screen.current_row > 1:
-                self.screen.apage.row[self.screen.current_row-2].wrap = False
+                self.screen.text.pages[self.screen.apagenum].row[self.screen.current_row-2].wrap = False
             line = self.editor.wait_screenline(write_endl=newline)
             inputstream = devices.InputTextFile(line)
             # read the values and group them and the separators

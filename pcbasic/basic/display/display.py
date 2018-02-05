@@ -62,7 +62,7 @@ class BottomBar(object):
                 c, reverse = self._contents[i]
                 a = reverse_attr if reverse else screen.attr
                 screen.put_char_attr(screen.apagenum, key_row, i+1, c, a, suppress_cli=True)
-            screen.apage.row[key_row-1].end = screen.mode.width
+            screen.text.pages[screen.apagenum].row[key_row-1].end = screen.mode.width
 
 
 #######################################################################################

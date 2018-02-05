@@ -270,11 +270,6 @@ class Screen(object):
 
     ###########################################################################
 
-    @property
-    def apage(self):
-        """Active page object."""
-        return self.text.pages[self.apagenum]
-
     def set_page(self, new_vpagenum, new_apagenum):
         """Set active page & visible page, counting from 0."""
         if new_vpagenum is None:
@@ -357,7 +352,7 @@ class Screen(object):
             self.redirect.write(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
         last = ''
         # if our line wrapped at the end before, it doesn't anymore
-        self.apage.row[self.current_row-1].wrap = False
+        self.text.pages[self.apagenum].row[self.current_row-1].wrap = False
         for c in s:
             row, col = self.current_row, self.current_col
             if c == '\t':
@@ -370,11 +365,11 @@ class Screen(object):
                 # exclude CR/LF
                 if last != '\r':
                     # LF connects lines like word wrap
-                    self.apage.row[row-1].wrap = True
+                    self.text.pages[self.apagenum].row[row-1].wrap = True
                     self.set_pos(row + 1, 1, scroll_ok)
             elif c == '\r':
                 # CR
-                self.apage.row[row-1].wrap = False
+                self.text.pages[self.apagenum].row[row-1].wrap = False
                 self.set_pos(row + 1, 1, scroll_ok)
             elif c == '\a':
                 # BEL
@@ -422,7 +417,7 @@ class Screen(object):
             self.write_line()
         # remove wrap after 80-column program line
         if len(line) == self.mode.width and self.current_row > 2:
-            self.apage.row[self.current_row-3].wrap = False
+            self.text.pages[self.apagenum].row[self.current_row-3].wrap = False
 
     def write_char(self, c, do_scroll_down=False):
         """Put one character at the current position."""
@@ -437,8 +432,8 @@ class Screen(object):
         # put the character
         self.put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
         # adjust end of line marker
-        if (self.current_col > self.apage.row[self.current_row-1].end):
-            self.apage.row[self.current_row-1].end = self.current_col
+        if (self.current_col > self.text.pages[self.apagenum].row[self.current_row-1].end):
+            self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col
         # move cursor. if on col 80, only move cursor to the next row
         # when the char is printed
         if self.current_col < self.mode.width:
@@ -453,7 +448,7 @@ class Screen(object):
         if self.current_col > self.mode.width:
             if self.current_row < self.mode.height:
                 # wrap line
-                self.apage.row[self.current_row-1].wrap = True
+                self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
                 if do_scroll_down:
                     # scroll down (make space by shifting the next rows down)
                     if self.current_row < self.scroll_area.bottom:
@@ -470,7 +465,7 @@ class Screen(object):
             self._check_pos(scroll_ok=True)
             self.set_pos(self.current_row + 1, 1)
         # ensure line above doesn't wrap
-        self.apage.row[self.current_row-2].wrap = False
+        self.text.pages[self.apagenum].row[self.current_row-2].wrap = False
 
     ###########################################################################
     # cursor position
@@ -561,11 +556,11 @@ class Screen(object):
     def move_to_end(self):
         """Jump to end of logical line; follow wraps (END)."""
         row = self.text.find_end_of_line(self.apagenum, self.current_row)
-        if self.apage.row[row-1].end == self.mode.width:
-            self.set_pos(row, self.apage.row[row-1].end)
+        if self.text.pages[self.apagenum].row[row-1].end == self.mode.width:
+            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end)
             self.overflow = True
         else:
-            self.set_pos(row, self.apage.row[row-1].end+1)
+            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end+1)
 
     ###########################################################################
 
@@ -606,12 +601,12 @@ class Screen(object):
     def _redraw_row(self, start, row, wrap=True):
         """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
         while True:
-            for i in range(start, self.apage.row[row-1].end):
+            for i in range(start, self.text.pages[self.apagenum].row[row-1].end):
                 # redrawing changes colour attributes to current foreground (cf. GW)
                 # don't update all dbcs chars behind at each put
                 char = chr(self.text.get_char(self.apagenum, row, i+1))
                 self.put_char_attr(self.apagenum, row, i+1, char, self.attr, one_only=True)
-            if (wrap and self.apage.row[row-1].wrap and row >= 0 and row < self.text.height-1):
+            if (wrap and self.text.pages[self.apagenum].row[row-1].wrap and row >= 0 and row < self.text.height-1):
                 row += 1
                 start = 0
             else:
@@ -619,16 +614,16 @@ class Screen(object):
 
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
-        self.apage.row[srow-1].clear_from(scol, self.attr)
+        self.text.pages[self.apagenum].row[srow-1].clear_from(scol, self.attr)
         row = srow
         # can use self.text.find_end_of_line
-        while self.apage.row[row-1].wrap:
+        while self.text.pages[self.apagenum].row[row-1].wrap:
             row += 1
-            self.apage.row[row-1].clear(self.attr)
+            self.text.pages[self.apagenum].row[row-1].clear(self.attr)
         for r in range(row, srow, -1):
-            self.apage.row[r-1].wrap = False
+            self.text.pages[self.apagenum].row[r-1].wrap = False
             self.scroll(r)
-        therow = self.apage.row[srow-1]
+        therow = self.text.pages[self.apagenum].row[srow-1]
         therow.wrap = False
         self.set_pos(srow, scol)
         save_end = therow.end
@@ -645,7 +640,7 @@ class Screen(object):
 
     def clear_rows(self, start, stop):
         """Clear text and graphics on given (inclusive) text row range."""
-        for r in self.apage.row[start-1:stop]:
+        for r in self.text.pages[self.apagenum].row[start-1:stop]:
             r.clear(self.attr)
             # can't we just do this in row.clear?
             r.wrap = False
@@ -737,13 +732,13 @@ class Screen(object):
             cwidth = 2
         text = self.text.get_logical_line(self.apagenum, self.current_row, self.current_col)
         lastrow = self.text.find_end_of_line(self.apagenum, self.current_row)
-        if self.current_col > self.apage.row[self.current_row-1].end:
+        if self.current_col > self.text.pages[self.apagenum].row[self.current_row-1].end:
             # past the end. if this row ended with LF, attach next row and scroll further rows up
             # if not, do nothing
-            if not self.apage.row[self.current_row-1].wrap:
+            if not self.text.pages[self.apagenum].row[self.current_row-1].wrap:
                 return
             # else: LF case; scroll up without changing attributes
-            self.apage.row[self.current_row-1].wrap = self.apage.row[self.current_row].wrap
+            self.text.pages[self.apagenum].row[self.current_row-1].wrap = self.text.pages[self.apagenum].row[self.current_row].wrap
             self.scroll(self.current_row + 1)
             # redraw from the LF
             self._rewrite_for_delete(text[1:] + b' ' * cwidth)
@@ -751,8 +746,8 @@ class Screen(object):
             # rewrite the contents (with the current attribute!)
             self._rewrite_for_delete(text[cwidth:] + b' ' * cwidth)
             # if last row was empty, scroll up.
-            if self.apage.row[lastrow-1].end == 0 and self.apage.row[lastrow-2].wrap:
-                self.apage.row[lastrow-2].wrap = False
+            if self.text.pages[self.apagenum].row[lastrow-1].end == 0 and self.text.pages[self.apagenum].row[lastrow-2].wrap:
+                self.text.pages[self.apagenum].row[lastrow-2].wrap = False
                 self.scroll(lastrow)
         # restore original position
         self.set_pos(row, col)
@@ -762,7 +757,7 @@ class Screen(object):
         for c in text:
             if c == b'\n':
                 self.put_char_attr(self.apagenum, self.current_row, self.current_col, b' ', self.attr)
-                self.apage.row[self.current_row-1].end = self.current_col-1
+                self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col-1
                 break
             else:
                 self.put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
@@ -771,17 +766,17 @@ class Screen(object):
             # we're on the position after the additional space
             if self.current_col == 1:
                 self.current_row -= 1
-                self.apage.row[self.current_row-1].end = self.mode.width - 1
+                self.text.pages[self.apagenum].row[self.current_row-1].end = self.mode.width - 1
             else:
                 # adjust row end
-                self.apage.row[self.current_row-1].end = self.current_col - 2
+                self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col - 2
 
     def insert_fullchars(self, row, col, sequence, attr):
         """Insert one or more single- or double-width characters at the current position."""
         start_row, start_col = row, col
         for c in sequence:
             while True:
-                therow = self.apage.row[row-1]
+                therow = self.text.pages[self.apagenum].row[row-1]
                 therow.buf.insert(col-1, (c, attr))
                 if therow.end < self.mode.width:
                     therow.buf.pop()
@@ -806,11 +801,11 @@ class Screen(object):
     def line_feed(self):
         """Move the remainder of the line to the next row and wrap (LF)."""
         row, col = self.current_row, self.current_col
-        if col < self.apage.row[row-1].end:
+        if col < self.text.pages[self.apagenum].row[row-1].end:
             self.insert_fullchars(row, col, b' ' * (self.mode.width-col+1), self.attr)
-            self.apage.row[row-1].end = col - 1
+            self.text.pages[self.apagenum].row[row-1].end = col - 1
         else:
-            while (self.apage.row[row-1].wrap and row < self.scroll_area.bottom):
+            while (self.text.pages[self.apagenum].row[row-1].wrap and row < self.scroll_area.bottom):
                 row += 1
             if row >= self.scroll_area.bottom:
                 self.scroll()
@@ -818,7 +813,7 @@ class Screen(object):
             if self.current_row < self.mode.height:
                 self.scroll_down(self.current_row+1)
         # LF connects lines like word wrap
-        self.apage.row[self.current_row-1].wrap = True
+        self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
         self.set_pos(self.current_row+1, 1)
 
     ###########################################################################
