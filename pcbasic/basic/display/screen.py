@@ -32,15 +32,12 @@ class Screen(object):
         self.queues = queues
         self._values = values
         self._memory = memory
-        self.codepage = codepage
         # needed for printing \a
         self.sound = sound
         # output redirection
         self.redirect = redirect
         # low level settings
-        self.video = Video(
-                capabilities, monitor, mono_tint, cga_low,
-                screen_aspect, video_mem_size)
+        self.video = Video(capabilities, monitor, mono_tint, cga_low, screen_aspect, video_mem_size)
         self.capabilities = self.video.capabilities
         # video mode settings
         self._mode_nr, self.colorswitch, self.apagenum, self.vpagenum = 0, 1, 0, 0
@@ -50,23 +47,33 @@ class Screen(object):
         self.attr = 7
         # border attribute
         self.border_attr = 0
+        # text screen
+        self._init_textscreen(self.queues, self.mode, self.capabilities, fonts, codepage)
+        # graphics operations
+        self.drawing = graphics.Drawing(self.queues, input_methods, self._values, self._memory)
+        # colour palette
+        self.palette = Palette(self.queues, self.mode, self.capabilities, self._memory)
+        # initialise a fresh textmode screen
+        self._set_mode(self.mode, 0, 1, 0, 0)
+
+    def _init_textscreen(self, queues, mode, capabilities, fonts, codepage):
+        """Initialise text-related members."""
+        self.codepage = codepage
         # cursor
-        self.cursor = Cursor(self.queues, self.mode, self.capabilities)
+        self.cursor = Cursor(queues, mode, capabilities)
         # current row and column
         # overflow: true if we're on 80 but should be on 81
         self.current_row, self.current_col, self.overflow = 1, 1, False
         # text viewport parameters
-        self.scroll_area = ScrollArea(self.mode)
+        self.scroll_area = ScrollArea(mode)
         # writing on bottom row is allowed
         self._bottom_row_allowed = False
         # prepare fonts
-        self.fonts = {height: font.Font(height, font_dict) for height, font_dict in fonts.iteritems()}
+        self.fonts = {
+                height: font.Font(height, font_dict)
+                for height, font_dict in fonts.iteritems()}
         # function key macros
         self.bottom_bar = BottomBar()
-        self.drawing = graphics.Drawing(self.queues, input_methods, self._values, self._memory)
-        self.palette = Palette(self.queues, self.mode, self.capabilities, self._memory)
-        # initialise a fresh textmode screen
-        self.set_mode_(self.mode, 0, 1, 0, 0)
 
     ###########################################################################
     # video modes
@@ -107,7 +114,7 @@ class Screen(object):
                 (info.is_text_mode and not self.mode.is_text_mode) or
                 (info.width != self.mode.width) or
                 (new_colorswitch != self.colorswitch) or force_reset):
-            self.set_mode_(
+            self._set_mode(
                     info, new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase)
         else:
             # only switch pages
@@ -115,7 +122,7 @@ class Screen(object):
                 raise error.BASICError(error.IFC)
             self.set_page(new_vpagenum, new_apagenum)
 
-    def set_mode_(self, spec, new_mode, new_colorswitch,
+    def _set_mode(self, spec, new_mode, new_colorswitch,
                  new_apagenum, new_vpagenum, erase=True):
         """Change the video mode, colourburst, visible or active page."""
         # preserve memory if erase==0; don't distingush erase==1 and erase==2
@@ -147,39 +154,41 @@ class Screen(object):
             self.set_border(0)
         # set the screen mode parameters
         self.mode, self._mode_nr = spec, new_mode
-        # set up glyph cache and preload halfwidth glyphs (i.e. single-byte code points)
-        self._glyphs = font.GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
-        # build the screen buffer
-        self.text = TextBuffer(self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
-                               self.codepage, do_fullwidth=(self.mode.font_height >= 14))
+        # initialise the palette
+        self.palette.init_mode(self.mode)
+        # set the colorswitch
+        self._init_mode_colorburst(new_colorswitch)
+        # initialise pixel buffers
         if not self.mode.is_text_mode:
             self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
                                     self.mode.num_pages, self.mode.bitsperpixel)
         else:
             self.pixels = None
-        # set active page & visible page, counting from 0.
-        self.set_page(new_vpagenum, new_apagenum)
-        # initialise the palette
-        self.palette.init_mode(self.mode)
-        # set the cursor attribute
-        if not self.mode.is_text_mode:
-            fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
-            self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
-        # set the colorswitch
-        self._init_mode_colorburst(new_colorswitch)
+        # initialise text screen
+        self._init_mode_textscreen()
         # restore emulated video memory in new mode
         if save_mem:
             self.mode.set_all_memory(self, save_mem)
+        # set active page & visible page, counting from 0.
+        self.set_page(new_vpagenum, new_apagenum)
         # center graphics cursor, reset window, etc.
         self.drawing.init_mode(self.mode, self.text, self.pixels)
         self.drawing.set_attr(self.attr)
+
+    def _init_mode_textscreen(self):
+        """Reset the text screen for new video mode."""
+        # set up glyph cache and preload halfwidth glyphs (i.e. single-byte code points)
+        self._glyphs = font.GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
+        # build the screen buffer
+        self.text = TextBuffer(self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
+                               self.codepage, do_fullwidth=(self.mode.font_height >= 14))
         # redraw key line
         self.bottom_bar.redraw(self)
         # initialise text viewport & move cursor home
         self.scroll_area.init_mode(self.mode)
         self.set_pos(self.scroll_area.top, 1)
         # rebuild the cursor
-        self.cursor.init_mode(self.mode)
+        self.cursor.init_mode(self.mode, self.attr)
 
     def set_width(self, to_width):
         """Set the character width of the screen, reset pages and change modes."""
@@ -295,6 +304,11 @@ class Screen(object):
 
     ###########################################################################
 
+    @property
+    def apage(self):
+        """Active page object."""
+        return self.text.pages[self.apagenum]
+
     def set_page(self, new_vpagenum, new_apagenum):
         """Set active page & visible page, counting from 0."""
         if new_vpagenum is None:
@@ -305,7 +319,6 @@ class Screen(object):
             raise error.BASICError(error.IFC)
         self.vpagenum = new_vpagenum
         self.apagenum = new_apagenum
-        self.apage = self.text.pages[new_apagenum]
         self.drawing.set_page(new_apagenum)
         self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
 

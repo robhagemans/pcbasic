@@ -189,14 +189,17 @@ class Cursor(object):
         self.width = self._mode.font_width
         self._height = self._mode.font_height
 
-    def init_mode(self, mode):
+    def init_mode(self, mode, attr):
         """Change the cursor for a new screen mode."""
         self._mode = mode
         self.width = mode.font_width
         self._height = mode.font_height
+        # set the cursor attribute
+        if not mode.is_text_mode:
+            fore, _, _, _ = mode.split_attr(mode.cursor_index or attr)
+            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
         # cursor width starts out as single char
         self.set_default_shape(True)
-        #self.reset_attr()
         self.reset_visibility()
 
     def reset_attr(self, new_attr):
