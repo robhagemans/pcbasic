@@ -56,25 +56,6 @@ class Screen(object):
         # initialise a fresh textmode screen
         self._set_mode(self.mode, 0, 1, 0, 0)
 
-    def _init_textscreen(self, queues, mode, capabilities, fonts, codepage):
-        """Initialise text-related members."""
-        self.codepage = codepage
-        # cursor
-        self.cursor = Cursor(queues, mode, capabilities)
-        # current row and column
-        # overflow: true if we're on 80 but should be on 81
-        self.current_row, self.current_col, self.overflow = 1, 1, False
-        # text viewport parameters
-        self.scroll_area = ScrollArea(mode)
-        # writing on bottom row is allowed
-        self._bottom_row_allowed = False
-        # prepare fonts
-        self.fonts = {
-                height: font.Font(height, font_dict)
-                for height, font_dict in fonts.iteritems()}
-        # function key macros
-        self.bottom_bar = BottomBar()
-
     ###########################################################################
     # video modes
 
@@ -174,21 +155,6 @@ class Screen(object):
         # center graphics cursor, reset window, etc.
         self.drawing.init_mode(self.mode, self.text, self.pixels)
         self.drawing.set_attr(self.attr)
-
-    def _init_mode_textscreen(self):
-        """Reset the text screen for new video mode."""
-        # set up glyph cache and preload halfwidth glyphs (i.e. single-byte code points)
-        self._glyphs = font.GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
-        # build the screen buffer
-        self.text = TextBuffer(self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
-                               self.codepage, do_fullwidth=(self.mode.font_height >= 14))
-        # redraw key line
-        self.bottom_bar.redraw(self)
-        # initialise text viewport & move cursor home
-        self.scroll_area.init_mode(self.mode)
-        self.set_pos(self.scroll_area.top, 1)
-        # rebuild the cursor
-        self.cursor.init_mode(self.mode, self.attr)
 
     def set_width(self, to_width):
         """Set the character width of the screen, reset pages and change modes."""
@@ -337,7 +303,52 @@ class Screen(object):
         self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
 
     ###########################################################################
-    # screen read/write
+    # memory operations
+
+    def get_memory(self, addr, num_bytes):
+        """Retrieve bytes from video memory."""
+        return self.mode.get_memory(self, addr, num_bytes)
+
+    def set_memory(self, addr, bytestr):
+        """Set bytes in video memory."""
+        self.mode.set_memory(self, addr, bytestr)
+
+    ###########################################################################
+    # text screen
+
+    def _init_textscreen(self, queues, mode, capabilities, fonts, codepage):
+        """Initialise text-related members."""
+        self.codepage = codepage
+        # cursor
+        self.cursor = Cursor(queues, mode, capabilities)
+        # current row and column
+        # overflow: true if we're on 80 but should be on 81
+        self.current_row, self.current_col, self.overflow = 1, 1, False
+        # text viewport parameters
+        self.scroll_area = ScrollArea(mode)
+        # writing on bottom row is allowed
+        self._bottom_row_allowed = False
+        # prepare fonts
+        self.fonts = {
+                height: font.Font(height, font_dict)
+                for height, font_dict in fonts.iteritems()}
+        # function key macros
+        self.bottom_bar = BottomBar()
+
+    def _init_mode_textscreen(self):
+        """Reset the text screen for new video mode."""
+        # set up glyph cache and preload halfwidth glyphs (i.e. single-byte code points)
+        self._glyphs = font.GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
+        # build the screen buffer
+        self.text = TextBuffer(self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
+                               self.codepage, do_fullwidth=(self.mode.font_height >= 14))
+        # redraw key line
+        self.bottom_bar.redraw(self)
+        # initialise text viewport & move cursor home
+        self.scroll_area.init_mode(self.mode)
+        self.set_pos(self.scroll_area.top, 1)
+        # rebuild the cursor
+        self.cursor.init_mode(self.mode, self.attr)
 
     def write(self, s, scroll_ok=True, do_echo=True):
         """Write a string to the screen at the current position."""
@@ -829,17 +840,6 @@ class Screen(object):
                 signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)))
 
     ###########################################################################
-    # memory operations
-
-    def get_memory(self, addr, num_bytes):
-        """Retrieve bytes from video memory."""
-        return self.mode.get_memory(self, addr, num_bytes)
-
-    def set_memory(self, addr, bytestr):
-        """Set bytes in video memory."""
-        self.mode.set_memory(self, addr, bytestr)
-
-    ###########################################################################
     # callbacks
 
     # SCREEN statement
@@ -1006,6 +1006,9 @@ class Screen(object):
             self.drawing.reset()
         elif val == 2:
             self.clear_view()
+
+    ###########################################################################
+    # text screen callbacks
 
     def locate_(self, args):
         """LOCATE: Set cursor position, shape and visibility."""
