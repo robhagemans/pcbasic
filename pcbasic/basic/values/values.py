@@ -690,7 +690,7 @@ def pow(left, right):
             isinstance(left, numbers.Double) or isinstance(right, numbers.Double)):
         return _call_float_function(lambda a, b: a**b, left.to_double(), right.to_double())
     elif isinstance(right, numbers.Integer):
-        return left.to_single().ipow_int(right)
+        return left.to_single().clone().ipow_int(right)
     else:
         return _call_float_function(lambda a, b: a**b, left.to_single(), right.to_single())
 
