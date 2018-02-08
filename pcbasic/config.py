@@ -532,6 +532,7 @@ class Settings(object):
             'copy_paste': self.get('copy-paste'),
             'pen': self.get('pen'),
             'icon': ICON,
+            'wait': self.get('wait'),
             }
 
     def get_audio_parameters(self):
@@ -545,12 +546,20 @@ class Settings(object):
             state_name = os.path.join(state_path, state_name)
         return state_name
 
+    def has_interface(self):
+        return self.get('interface') != 'none'
+
     def get_interfaces(self):
         """Return name of interface plugin."""
         interface = self.get('interface')
-        if interface == 'none':
-            return None
         return interface or 'graphical', self.get('sound-engine')
+
+    def get_interface_parameters(self):
+        """Return dictionary of interface parameters."""
+        iface_params = dict(zip(('interface_name', 'audio_name'), self.get_interfaces()))
+        iface_params.update(self.get_video_parameters())
+        iface_params.update(self.get_audio_parameters())
+        return iface_params
 
     def get_launch_parameters(self):
         """Return a dictionary of launch parameters."""
@@ -570,7 +579,6 @@ class Settings(object):
             if self.get('quit'):
                 commands.append('SYSTEM')
         launch_params = {
-            'wait': self.get('wait'),
             'prog': self.get('run') or self.get('load') or self.get(0),
             'resume': self.get('resume'),
             'state_file': self.get_state_file(),

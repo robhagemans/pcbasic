@@ -11,7 +11,6 @@ import logging
 import pkg_resources
 import platform
 import traceback
-import threading
 import subprocess
 
 # set locale - this is necessary for curses and *maybe* for clipboard handling
@@ -63,7 +62,7 @@ def run(*arguments):
         elif command == 'convert':
             # convert and exit
             convert(settings)
-        elif settings.get_interfaces():
+        elif settings.has_interface():
             # start an interpreter session with interface
             launch_session(settings)
         else:
@@ -125,54 +124,32 @@ def convert(settings):
 
 def launch_session(settings):
     """Start an interactive interpreter session."""
-    from . import interface
+    from .interface import Interface, InitFailed
     try:
-        # initialise queues
-        iface = interface.Interface(
-                    *settings.get_interfaces(),
-                    video_params=settings.get_video_parameters(),
-                    audio_params=settings.get_audio_parameters())
-    except interface.InitFailed:
+        Interface(**settings.get_interface_parameters()).launch(
+                run_session, **settings.get_launch_parameters())
+    except InitFailed:
         logging.error('Failed to initialise interface.')
-        return
-    thread = threading.Thread(
-                target=run_session,
-                args=(iface,),
-                kwargs=settings.get_launch_parameters())
-    try:
-        # launch the BASIC thread
-        thread.start()
-        # run the interface
-        iface.run()
-    finally:
-        iface.quit_input()
-        thread.join()
 
-def run_session(iface=None, resume=False, state_file=None, wait=False,
+def run_session(interface=None, resume=False, state_file=None,
                 prog=None, commands=(), **session_params):
     """Run an interactive BASIC session."""
+    if resume:
+        session = state.zunpickle(state_file).attach(interface)
+    else:
+        session = basic.Session(interface, **session_params)
     try:
-        if resume:
-            session = state.zunpickle(state_file).attach(iface)
-        else:
-            session = basic.Session(iface, **session_params)
-        try:
-            if prog:
-                session.load_program(prog)
-            for cmd in commands:
-                session.execute(cmd)
-            session.interact()
-        except basic.Exit:
-            # SYSTEM called during launch
-            pass
-        finally:
-            state.zpickle(session, state_file)
-            session.close()
+        if prog:
+            session.load_program(prog)
+        for cmd in commands:
+            session.execute(cmd)
+        session.interact()
+    except basic.Exit:
+        # SYSTEM called during launch
+        pass
     finally:
-        if iface:
-            if wait:
-                iface.pause('Press a key to close window')
-            iface.quit_output()
+        state.zpickle(session, state_file)
+        session.close()
 
 
 if __name__ == "__main__":

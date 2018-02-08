@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import Queue
 import time
 import logging
+import threading
 
 from ..basic.base import signals
 
@@ -19,17 +20,41 @@ class Interface(object):
     # millisecond delay
     delay = 12
 
-    def __init__(self, interface_name, audio_name, video_params, audio_params):
+    def __init__(self, interface_name, audio_name, wait=False, **kwargs):
         """Initialise interface."""
         self._input_queue = Queue.Queue()
         self._video_queue = Queue.Queue()
         self._audio_queue = Queue.Queue()
-        self._video = _get_video_plugin(self._input_queue, self._video_queue, interface_name, **video_params)
-        self._audio = _get_audio_plugin(self._audio_queue, audio_name or interface_name, **audio_params)
+        self._wait = wait
+        self._video = _get_video_plugin(
+                self._input_queue, self._video_queue, interface_name, **kwargs)
+        self._audio = _get_audio_plugin(
+                self._audio_queue, audio_name or interface_name, **kwargs)
 
     def get_queues(self):
         """Retrieve interface queues."""
         return self._input_queue, self._video_queue, self._audio_queue
+
+    def launch(self, target, **kwargs):
+        """Start an interactive interpreter session."""
+        thread = threading.Thread(target=self._thread_runner, args=(target,), kwargs=kwargs)
+        try:
+            # launch the BASIC thread
+            thread.start()
+            # run the interface
+            self.run()
+        finally:
+            self.quit_input()
+            thread.join()
+
+    def _thread_runner(self, target, **kwargs):
+        """Session runner."""
+        try:
+            target(interface=self, **kwargs)
+        finally:
+            if self._wait:
+                self.pause('Press a key to close window')
+            self.quit_output()
 
     def run(self):
         """Start the main interface event loop."""
@@ -275,7 +300,7 @@ class VideoPlugin(object):
 audio_plugins = {}
 
 
-def _get_audio_plugin(audio_queue, interface_name):
+def _get_audio_plugin(audio_queue, interface_name, **kwargs):
     """Find and initialise audio plugin for given interface."""
     for plugin_class in audio_plugins[interface_name]:
         try:
