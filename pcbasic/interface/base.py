@@ -77,7 +77,7 @@ class Interface(object):
         self._video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
         while True:
             signal = self._input_queue.get()
-            if signal.event_type in (signals.KEYB_DOWN, signals.KEYB_QUIT):
+            if signal.event_type in (signals.KEYB_DOWN, signals.STREAM_DOWN, signals.KEYB_QUIT):
                 break
 
     def quit_input(self):
