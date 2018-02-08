@@ -48,7 +48,7 @@ class Session(object):
             syntax=u'advanced', pcjr_term=u'', shell=u'',
             output_file=None, append=False, input_file=None,
             codepage=None, box_protect=True,
-            video=u'vga', font=u'freedos',
+            video=u'vga', font={},
             monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
             text_width=80, video_memory=262144, cga_low=False,
             keys=u'', double=False,

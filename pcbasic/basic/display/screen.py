@@ -324,6 +324,7 @@ class Screen(object):
         # writing on bottom row is allowed
         self._bottom_row_allowed = False
         # prepare fonts
+        fonts = fonts or {8: {}, 14: {}, 16: {}}
         self.fonts = {
                 height: font.Font(height, font_dict)
                 for height, font_dict in fonts.iteritems()}
