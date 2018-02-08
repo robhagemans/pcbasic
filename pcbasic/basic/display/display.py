@@ -1,482 +1,81 @@
 """
 PC-BASIC - display.py
-Text and graphics buffer, cursor and screen operations
+Display helper classes
 
 (c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
-import logging
 import struct
-
-try:
-    import numpy
-except ImportError:
-    numpy = None
 
 from ..base import signals
 from ..base import error
-from ..base import tokens as tk
-from . import modes
 from .. import values
 
 
-###############################################################################
-# screen buffer
+#######################################################################################
+# function key macro guide
 
-class TextRow(object):
-    """Buffer for a single row of the screen."""
+class BottomBar(object):
+    """Key guide bar at bottom line."""
 
-    def __init__(self, battr, bwidth):
-        """Set up screen row empty and unwrapped."""
-        # screen buffer, initialised to spaces, dim white on black
-        self.buf = [(' ', battr)] * bwidth
-        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
-        self.double = [ 0 ] * bwidth
-        # last non-whitespace character
-        self.end = 0
-        # line continues on next row (either LF or word wrap happened)
-        self.wrap = False
+    def __init__(self):
+        """Initialise bottom bar."""
+        # use 80 here independent of screen width
+        # we store everything in a buffer and only show what fits
+        self.clear()
+        self.visible = False
 
-    def clear(self, battr):
-        """Clear the screen row buffer. Leave wrap untouched."""
-        bwidth = len(self.buf)
-        self.buf = [(' ', battr)] * bwidth
-        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
-        self.double = [ 0 ] * bwidth
-        # last non-whitespace character
-        self.end = 0
+    def clear(self):
+        """Clear the contents."""
+        self._contents = [(b' ', 0)] * 80
 
+    def write(self, s, col, reverse):
+        """Write chars on virtual bottom bar."""
+        for i, c in enumerate(s):
+            self._contents[col + i] = (c, reverse)
 
-class TextPage(object):
-    """Buffer for a screen page."""
+    def show(self, on, screen):
+        """Switch bottom bar visibility."""
+        # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
+        error.throw_if(on and screen.scroll_area.bottom == screen.mode.height)
+        self.visible, was_visible = on, self.visible
+        if self.visible != was_visible:
+            self.redraw(screen)
 
-    def __init__(self, battr, bwidth, bheight, pagenum, do_dbcs, codepage):
-        """Initialise the screen buffer to given dimensions."""
-        self.row = [TextRow(battr, bwidth) for _ in xrange(bheight)]
-        self.width = bwidth
-        self.height = bheight
-        self.pagenum = pagenum
-        self.do_dbcs = do_dbcs
-        self.codepage = codepage
-
-    def get_char_attr(self, crow, ccol, want_attr):
-        """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
-        ca = self.row[crow-1].buf[ccol-1][want_attr]
-        return ca if want_attr else ord(ca)
-
-    def put_char_attr(self, crow, ccol, c, cattr, one_only=False, force=False):
-        """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
-        # update the screen buffer
-        self.row[crow-1].buf[ccol-1] = (c, cattr)
-        # mark the replaced char for refreshing
-        start, stop = ccol, ccol+1
-        self.row[crow-1].double[ccol-1] = 0
-        # mark out sbcs and dbcs characters
-        if self.codepage.dbcs and self.do_dbcs:
-            orig_col = ccol
-            # replace chars from here until necessary to update double-width chars
-            therow = self.row[crow-1]
-            # replacing a trail byte? take one step back
-            # previous char could be a lead byte? take a step back
-            if (ccol > 1 and therow.double[ccol-2] != 2 and
-                    (therow.buf[ccol-1][0] in self.codepage.trail or
-                     therow.buf[ccol-2][0] in self.codepage.lead)):
-                ccol -= 1
-                start -= 1
-            # check all dbcs characters between here until it doesn't matter anymore
-            while ccol < self.width:
-                c = therow.buf[ccol-1][0]
-                d = therow.buf[ccol][0]
-                if (c in self.codepage.lead and
-                        d in self.codepage.trail):
-                    if (therow.double[ccol-1] == 1 and
-                            therow.double[ccol] == 2 and ccol > orig_col):
-                        break
-                    therow.double[ccol-1] = 1
-                    therow.double[ccol] = 2
-                    start, stop = min(start, ccol), max(stop, ccol+2)
-                    ccol += 2
-                else:
-                    if therow.double[ccol-1] == 0 and ccol > orig_col:
-                        break
-                    therow.double[ccol-1] = 0
-                    start, stop = min(start, ccol), max(stop, ccol+1)
-                    ccol += 1
-                if (ccol >= self.width or
-                        (one_only and ccol > orig_col)):
-                    break
-            # check for box drawing
-            if self.codepage.box_protect:
-                ccol = start-2
-                connecting = 0
-                bset = -1
-                while ccol < stop+2 and ccol < self.width:
-                    c = therow.buf[ccol-1][0]
-                    d = therow.buf[ccol][0]
-                    if bset > -1 and self.codepage.connects(c, d, bset):
-                        connecting += 1
-                    else:
-                        connecting = 0
-                        bset = -1
-                    if bset == -1:
-                        for b in (0, 1):
-                            if self.codepage.connects(c, d, b):
-                                bset = b
-                                connecting = 1
-                    if connecting >= 2:
-                        therow.double[ccol] = 0
-                        therow.double[ccol-1] = 0
-                        therow.double[ccol-2] = 0
-                        start = min(start, ccol-1)
-                        if ccol > 2 and therow.double[ccol-3] == 1:
-                            therow.double[ccol-3] = 0
-                            start = min(start, ccol-2)
-                        if (ccol < self.width-1 and
-                                therow.double[ccol+1] == 2):
-                            therow.double[ccol+1] = 0
-                            stop = max(stop, ccol+2)
-                    ccol += 1
-        return start, stop
-
-class TextBuffer(object):
-    """Buffer for text on all screen pages."""
-
-    def __init__(self, battr, bwidth, bheight, bpages, do_dbcs, codepage):
-        """Initialise the screen buffer to given pages and dimensions."""
-        self.pages = [TextPage(battr, bwidth, bheight, num, do_dbcs, codepage)
-                      for num in range(bpages)]
-        self.width = bwidth
-        self.height = bheight
-
-    def copy_page(self, src, dst):
-        """Copy source to destination page."""
-        for x in range(self.height):
-            dstrow = self.pages[dst].row[x]
-            srcrow = self.pages[src].row[x]
-            dstrow.buf[:] = srcrow.buf[:]
-            dstrow.end = srcrow.end
-            dstrow.wrap = srcrow.wrap
-
-
-class PixelBuffer(object):
-    """Buffer for graphics on all screen pages."""
-
-    def __init__(self, bwidth, bheight, bpages, bitsperpixel):
-        """Initialise the graphics buffer to given pages and dimensions."""
-        self.pages = [ PixelPage(bwidth, bheight, num, bitsperpixel) for num in range(bpages)]
-        self.width = bwidth
-        self.height = bheight
-
-    def copy_page(self, src, dst):
-        """Copy source to destination page."""
-        for x in range(self.height):
-            dstrow = self.pages[dst].row[x]
-            srcrow = self.pages[src].row[x]
-            dstrow.buf[:] = srcrow.buf[:]
-
-class PixelPage(object):
-    """Buffer for a screen page."""
-
-    def __init__(self, bwidth, bheight, pagenum, bitsperpixel):
-        """Initialise the screen buffer to given dimensions."""
-        if numpy:
-            self.buffer = numpy.zeros((bheight, bwidth), dtype=numpy.int8)
-        else:
-            self.buffer = [[0]*bwidth for _ in range(bheight)]
-        self.width = bwidth
-        self.height = bheight
-        self.pagenum = pagenum
-        self.bitsperpixel = bitsperpixel
-        self.init_operations()
-
-    def __getstate__(self):
-        """Pickle the page."""
-        pagedict = self.__dict__.copy()
-        # lambdas can't be pickled
-        pagedict['operations'] = None
-        return pagedict
-
-    def __setstate__(self, pagedict):
-        """Initialise from pickled page."""
-        self.__dict__.update(pagedict)
-        self.init_operations()
-
-    def put_pixel(self, x, y, attr):
-        """Put a pixel in the buffer."""
-        try:
-            self.buffer[y][x] = attr
-        except IndexError:
-            pass
-
-    def get_pixel(self, x, y):
-        """Get attribute of a pixel in the buffer."""
-        try:
-            return self.buffer[y][x]
-        except IndexError:
-            return 0
-
-    def fill_interval(self, x0, x1, y, attr):
-        """Write a list of attributes to a scanline interval."""
-        try:
-            self.buffer[y][x0:x1+1] = [attr]*(x1-x0+1)
-        except IndexError:
-            pass
-
-    if numpy:
-        def init_operations(self):
-            """Initialise operations closures."""
-            self.operations = {
-                tk.PSET: lambda x, y: x.__setitem__(slice(len(x)), y),
-                tk.PRESET: lambda x, y: x.__setitem__(slice(len(x)), y.__xor__((1<<self.bitsperpixel) - 1)),
-                tk.AND: lambda x, y: x.__iand__(y),
-                tk.OR: lambda x, y: x.__ior__(y),
-                tk.XOR: lambda x, y: x.__ixor__(y),
-            }
-
-        def put_interval(self, x, y, colours, mask=0xff):
-            """Write a list of attributes to a scanline interval."""
-            colours = numpy.array(colours).astype(int)
-            inv_mask = 0xff ^ mask
-            colours &= mask
-            try:
-                self.buffer[y, x:x+len(colours)] &= inv_mask
-                self.buffer[y, x:x+len(colours)] |= colours
-                return self.buffer[y, x:x+len(colours)]
-            except IndexError:
-                return numpy.zeros(len(colours), dtype=numpy.int8)
-
-        def get_interval(self, x, y, length):
-            """Return *view of* attributes of a scanline interval."""
-            try:
-                return self.buffer[y, x:x+length]
-            except IndexError:
-                return numpy.zeros(length, dtype=numpy.int8)
-
-        def fill_rect(self, x0, y0, x1, y1, attr):
-            """Apply solid attribute to an area."""
-            if (x1 < x0) or (y1 < y0):
-                return
-            try:
-                self.buffer[y0:y1+1, x0:x1+1].fill(attr)
-            except IndexError:
-                pass
-
-        def put_rect(self, x0, y0, x1, y1, array, operation_token):
-            """Apply numpy array [y][x] of attributes to an area."""
-            if (x1 < x0) or (y1 < y0):
-                return
-            try:
-                self.operations[operation_token](self.buffer[y0:y1+1, x0:x1+1], numpy.asarray(array))
-                return self.buffer[y0:y1+1, x0:x1+1]
-            except IndexError:
-                return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
-
-        def get_rect(self, x0, y0, x1, y1):
-            """Get *copy of* numpy array [y][x] of target area."""
-            try:
-                # our only user in module graphics needs a copy, so copy.
-                return numpy.array(self.buffer[y0:y1+1, x0:x1+1])
-            except IndexError:
-                return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
-
-        def move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
-            """Move pixels from an area to another, replacing with attribute 0."""
-            w, h = sx1-sx0+1, sy1-sy0+1
-            area = numpy.array(self.buffer[sy0:sy1+1, sx0:sx1+1])
-            self.buffer[sy0:sy1+1, sx0:sx1+1] = numpy.zeros((h, w), dtype=numpy.int8)
-            self.buffer[ty0:ty0+h, tx0:tx0+w] = area
-
-        def get_until(self, x0, x1, y, c):
-            """Get the attribute values of a scanline interval [x0, x1-1]."""
-            if x0 == x1:
-                return []
-            toright = x1 > x0
-            if not toright:
-                x0, x1 = x1+1, x0+1
-            try:
-                arr = self.buffer[y, x0:x1]
-            except IndexError:
-                return []
-            found = numpy.where(arr == c)
-            if len(found[0]) > 0:
-                if toright:
-                    arr = arr[:found[0][0]]
-                else:
-                    arr = arr[found[0][-1]+1:]
-            return list(arr.flatten())
-
-    else:
-        def init_operations(self):
-            """Initialise operations closures."""
-            self.operations = {
-                tk.PSET: lambda x, y: y,
-                tk.PRESET: lambda x, y: y ^ ((1<<self.bitsperpixel)-1),
-                tk.AND: lambda x, y: x & y,
-                tk.OR: lambda x, y: x | y,
-                tk.XOR: lambda x, y: x ^ y,
-            }
-
-        def put_interval(self, x, y, colours, mask=0xff):
-            """Write a list of attributes to a scanline interval."""
-            if mask != 0xff:
-                inv_mask = 0xff ^ mask
-                self.buffer[y][x:x+len(colours)] = [(c & mask) |
-                                                (self.buffer[y][x+i] & inv_mask)
-                                                for i,c in enumerate(colours)]
-            return self.buffer[y][x:x+len(colours)]
-
-        def get_interval(self, x, y, length):
-            """Return *view of* attributes of a scanline interval."""
-            try:
-                return self.buffer[y][x:x+length]
-            except IndexError:
-                return [0] * length
-
-        def fill_rect(self, x0, y0, x1, y1, attr):
-            """Apply solid attribute to an area."""
-            if (x1 < x0) or (y1 < y0):
-                return
-            try:
-                for y in range(y0, y1+1):
-                    self.buffer[y][x0:x1+1] = [attr] * (x1-x0+1)
-            except IndexError:
-                pass
-
-        def put_rect(self, x0, y0, x1, y1, array, operation_token):
-            """Apply 2d list [y][x] of attributes to an area."""
-            if (x1 < x0) or (y1 < y0):
-                return
-            try:
-                for y in range(y0, y1+1):
-                    self.buffer[y][x0:x1+1] = [
-                        [self.operations[operation_token](a, b)
-                        for a, b in zip(self.buffer[y][x0:x1+1], array)]]
-                return [self.buffer[y][x0:x1+1] for y in range(y0, y1+1)]
-            except IndexError:
-                return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
-
-        def get_rect(self, x0, y0, x1, y1):
-            """Get *copy of* 2d list [y][x] of target area."""
-            try:
-                return [self.buffer[y][x0:x1+1] for y in range(y0, y1+1)]
-            except IndexError:
-                return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
-
-        def move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
-            """Move pixels from an area to another, replacing with attribute 0."""
-            for y in range(0, sy1-sy0+1):
-                row = self.buffer[sy0+y][sx0:sx1+1]
-                self.buffer[sy0+y][sx0:sx1+1] = [0] * (sx1-sx0+1)
-                self.buffer[ty0+y][tx0:tx0+(sx1-sx0+1)] = row
-
-        def get_until(self, x0, x1, y, c):
-            """Get the attribute values of a scanline interval [x0, x1-1]."""
-            if x0 == x1:
-                return []
-            toright = x1 > x0
-            if not toright:
-                x0, x1 = x1+1, x0+1
-            try:
-                index = self.buffer[y][x0:x1].index(c)
-            except ValueError:
-                index = x1-x0
-            return self.buffer[y][x0:x0+index]
-
-
-###############################################################################
-# function key macros
-
-
-class FunctionKeyMacros(object):
-    """Handles display of function-key macro strings."""
-
-    # on the keys line 25, what characters to replace & with which
-    _replace_chars = {
-        '\x07': '\x0e',    '\x08': '\xfe',    '\x09': '\x1a',    '\x0A': '\x1b',
-        '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
-        '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19'}
-
-    def __init__(self, keyboard, screen, syntax):
-        """Initialise user-definable key list."""
-        self._keyboard = keyboard
-        self._screen = screen
-        self._num_fn_keys = (12 if syntax == 'tandy' else 10)
-        self.keys_visible = False
-
-    def list_keys(self):
-        """Print a list of the function key macros."""
-        for i in range(self._num_fn_keys):
-            text = self._keyboard.get_macro(i)
-            text = ''.join(self._replace_chars.get(s, s) for s in text)
-            self._screen.write_line('F%d %s' % (i+1, text))
-
-    def show_keys(self, do_show):
-        """Show/hide the function keys line on the active page."""
-        key_row = self._screen.mode.height
-        self._screen.clear_rows(key_row, key_row)
+    def redraw(self, screen):
+        """Redraw bottom bar if visible, clear if not."""
+        key_row = screen.mode.height
         # Keys will only be visible on the active page at which KEY ON was given,
         # and only deleted on page at which KEY OFF given.
-        if not do_show:
-            self.keys_visible = False
+        screen.clear_rows(key_row, key_row)
+        if not screen.mode.is_text_mode:
+            reverse_attr = screen.attr
+        elif (screen.attr >> 4) & 0x7 == 0:
+            reverse_attr = 0x70
         else:
-            self.keys_visible = True
-            for i in range(self._screen.mode.width / 8):
-                text = self._keyboard.get_macro(i)[:6]
-                kcol = 1 + 8*i
-                self._write_for_keys(str(i+1)[-1], kcol, self._screen.attr)
-                if not self._screen.mode.is_text_mode:
-                    self._write_for_keys(text, kcol+1, self._screen.attr)
-                else:
-                    if (self._screen.attr>>4) & 0x7 == 0:
-                        self._write_for_keys(text, kcol+1, 0x70)
-                    else:
-                        self._write_for_keys(text, kcol+1, 0x07)
-            self._screen.apage.row[24].end = self._screen.mode.width
-
-    def redraw_keys(self):
-        """Redraw key macro line if visible."""
-        if self.keys_visible:
-            self.show_keys(True)
-
-    def _write_for_keys(self, s, col, cattr):
-        """Write chars on the keys line; no echo, some character replacements."""
-        for i, c in enumerate(s):
-            self._screen.put_char_attr(self._screen.apagenum, 25, col+i,
-                    self._replace_chars.get(c, c), cattr, for_keys=True)
-
-    def set(self, num, macro):
-        """Set macro for given function key."""
-        # NUL terminates macro string, rest is ignored
-        # macro starting with NUL is empty macro
-        self._keyboard.set_macro(num, macro)
-        self.redraw_keys()
-
-    def key_(self, args):
-        """KEY: show/hide/list macros."""
-        command, = args
-        if command == tk.ON:
-            # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
-            error.throw_if(self._screen.scroll_height == 25)
-            if not self.keys_visible:
-                self.show_keys(True)
-        elif command == tk.OFF:
-            if self.keys_visible:
-                self.show_keys(False)
-        elif command == tk.LIST:
-            self.list_keys()
+            reverse_attr = 0x07
+        if self.visible:
+            # always show only complete 8-character cells
+            # this matters on pcjr/tandy width=20 mode
+            for i in range((screen.mode.width//8) * 8):
+                c, reverse = self._contents[i]
+                a = reverse_attr if reverse else screen.attr
+                screen.put_char_attr(screen.apagenum, key_row, i+1, c, a, suppress_cli=True)
+            screen.text.pages[screen.apagenum].row[key_row-1].end = screen.mode.width
 
 
-###############################################################################
+#######################################################################################
 # palette
 
 class Palette(object):
     """Colour palette."""
 
-    def __init__(self, mode, capabilities, memory):
+    def __init__(self, queues, mode, capabilities, memory):
         """Initialise palette."""
         self.capabilities = capabilities
         self._memory = memory
+        self._queues = queues
         self.mode = mode
         self.set_all(mode.palette, check_mode=False)
 
@@ -494,7 +93,7 @@ class Palette(object):
         self.rgb_palette[index] = mode.colours[colour]
         if mode.colours1:
             self.rgb_palette1[index] = mode.colours1[colour]
-        self.mode.screen.queues.video.put(
+        self._queues.video.put(
             signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
 
     def get_entry(self, index):
@@ -511,7 +110,7 @@ class Palette(object):
             self.rgb_palette1 = [self.mode.colours1[i] for i in self.palette]
         else:
             self.rgb_palette1 = None
-        self.mode.screen.queues.video.put(
+        self._queues.video.put(
             signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
 
     def mode_allows_palette(self, mode):
@@ -569,15 +168,17 @@ class Palette(object):
         self.set_all(new_palette)
 
 
-###############################################################################
+#######################################################################################
 # cursor
 
 class Cursor(object):
     """Manage the cursor."""
 
-    def __init__(self, screen):
+    def __init__(self, queues, mode, capabilities):
         """Initialise the cursor."""
-        self.screen = screen
+        self._queues = queues
+        self._mode = mode
+        self._capabilities = capabilities
         # are we in parse mode? invisible unless visible_run is True
         self.default_visible = True
         # cursor visible in parse mode? user override
@@ -585,27 +186,30 @@ class Cursor(object):
         # cursor shape
         self.from_line = 0
         self.to_line = 0
-        self.width = screen.mode.font_width
-        self.height = screen.mode.font_height
+        self.width = self._mode.font_width
+        self._height = self._mode.font_height
 
-    def init_mode(self, mode):
+    def init_mode(self, mode, attr):
         """Change the cursor for a new screen mode."""
+        self._mode = mode
         self.width = mode.font_width
-        self.height = mode.font_height
+        self._height = mode.font_height
+        # set the cursor attribute
+        if not mode.is_text_mode:
+            fore, _, _, _ = mode.split_attr(mode.cursor_index or attr)
+            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
+        # cursor width starts out as single char
         self.set_default_shape(True)
-        self.reset_attr()
+        self.reset_visibility()
 
-    def reset_attr(self):
-        """Set the text cursor attribute to that of the current location."""
-        if self.screen.mode.is_text_mode:
-            fore, _, _, _ = self.screen.split_attr(self.screen.apage.row[
-                    self.screen.current_row-1].buf[
-                    self.screen.current_col-1][1] & 0xf)
-            self.screen.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
+    def reset_attr(self, new_attr):
+        """Set the text cursor attribute."""
+        if self._mode.is_text_mode:
+            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, new_attr))
 
     def show(self, do_show):
         """Force cursor to be visible/invisible."""
-        self.screen.queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, do_show))
+        self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, do_show))
 
     def set_visibility(self, visible_run):
         """Set cursor visibility when a program is being run."""
@@ -618,19 +222,18 @@ class Cursor(object):
         visible = self.default_visible
         # unless forced to be visible
         # in graphics mode, we can't force the cursor to be visible on execute.
-        if self.screen.mode.is_text_mode:
+        if self._mode.is_text_mode:
             visible = visible or self.visible_run
-        self.screen.queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, visible))
+        self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, visible))
 
     def set_shape(self, from_line, to_line):
         """Set the cursor shape."""
         # A block from from_line to to_line in 8-line modes.
         # Use compatibility algo in higher resolutions
-        mode = self.screen.mode
-        fx, fy = self.width, self.height
+        fx, fy = self.width, self._height
         # do all text modes with >8 pixels have an ega-cursor?
-        if self.screen.capabilities in (
-            'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules'):
+        if self._capabilities in (
+                'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules'):
             # odd treatment of cursors on EGA machines,
             # presumably for backward compatibility
             # the following algorithm is based on DOSBox source int10_char.cpp
@@ -658,35 +261,93 @@ class Cursor(object):
                                 to_line -= 1
         self.from_line = max(0, min(from_line, fy-1))
         self.to_line = max(0, min(to_line, fy-1))
-        self.screen.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
+        self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
                             (self.width, fy, self.from_line, self.to_line)))
-        self.reset_attr()
 
     def set_default_shape(self, overwrite_shape):
         """Set the cursor to one of two default shapes."""
         if overwrite_shape:
-            if not self.screen.mode.is_text_mode:
+            if not self._mode.is_text_mode:
                 # always a block cursor in graphics mode
-                self.set_shape(0, self.height-1)
-            elif self.screen.capabilities == 'ega':
+                self.set_shape(0, self._height-1)
+            elif self._capabilities == 'ega':
                 # EGA cursor is on second last line
-                self.set_shape(self.height-2, self.height-2)
-            elif self.height == 9:
+                self.set_shape(self._height-2, self._height-2)
+            elif self._height == 9:
                 # Tandy 9-pixel fonts; cursor on 8th
-                self.set_shape(self.height-2, self.height-2)
+                self.set_shape(self._height-2, self._height-2)
             else:
                 # other cards have cursor on last line
-                self.set_shape(self.height-1, self.height-1)
+                self.set_shape(self._height-1, self._height-1)
         else:
             # half-block cursor for insert
-            self.set_shape(self.height//2, self.height-1)
+            self.set_shape(self._height//2, self._height-1)
 
     def set_width(self, num_chars):
         """Set the cursor with to num_chars characters."""
-        new_width = num_chars * self.screen.mode.font_width
+        new_width = num_chars * self._mode.font_width
         # update cursor shape to new width if necessary
         if new_width != self.width:
             self.width = new_width
-            self.screen.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
-                    (self.width, self.height, self.from_line, self.to_line)))
-            self.reset_attr()
+            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
+                    (self.width, self._height, self.from_line, self.to_line)))
+
+
+###############################################################################
+# text viewport / scroll area
+
+class ScrollArea(object):
+    """Text viewport / scroll area."""
+
+    def __init__(self, mode):
+        """Initialise the scroll area."""
+        self._height = mode.height
+        self.unset()
+
+    def init_mode(self, mode):
+        """Initialise the scroll area for new screen mode."""
+        self._height = mode.height
+        if self._bottom == self._height:
+            # tandy/pcjr special case: VIEW PRINT to 25 is preserved
+            self.set(1, self._height)
+        else:
+            self.unset()
+
+    @property
+    def active(self):
+        """A viewport has been set."""
+        return self._active
+
+    @property
+    def bounds(self):
+        """Return viewport bounds."""
+        return self._top, self._bottom
+
+    @property
+    def top(self):
+        """Return viewport top bound."""
+        return self._top
+
+    @property
+    def bottom(self):
+        """Return viewport bottom bound."""
+        return self._bottom
+
+    def set(self, start, stop):
+        """Set the scroll area."""
+        self._active = True
+        # _top and _bottom are inclusive and count rows from 1
+        self._top = start
+        self._bottom = stop
+        #  need this:
+        #set_pos(start, 1)
+        #  or this:
+        #self.overflow = False
+        #self._move_cursor(start, 1)
+
+    def unset(self):
+        """Unset scroll area."""
+        # there is only one VIEW PRINT setting across all pages.
+        # scroll area normally excludes the bottom bar
+        self.set(1, self._height - 1)
+        self._active = False

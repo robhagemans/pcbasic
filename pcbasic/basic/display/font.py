@@ -14,10 +14,90 @@ try:
 except ImportError:
     numpy = None
 
+from ..base import signals
 
-DEFAULT_FONT = {
-    u'\x00': '\x00\x00\x00\x00\x00\x00\x00\x00', u'\u2302': '\x00\x00\x108l\xc6\xc6\xfe', u'\u266a': '?3?00p\xf0\xe0', u'\u2191': '\x18<~\x18\x18\x18\x18\x00', u'\u2502': '\x18\x18\x18\x18\x18\x18\x18\x18', u'\u2195': '\x18<~\x18\x18~<\x18', u'\u2558': '\x18\x18\x1f\x18\x1f\x00\x00\x00', u' ': '\x00\x00\x00\x00\x00\x00\x00\x00', u'\xa3': '8ld\xf0``f\xfc', u'$': '\x00\x18>`<\x06|\x18', u'\xa7': '>a<ff<\x86|', u'\u03a9': '\x008l\xc6\xc6l(\xee', u'(': '\x00\x0c\x18000\x18\x0c', u'\xab': '\x00\x00\x003f\xccf3', u',': '\x00\x00\x00\x00\x00\x18\x180', u'\u03b1': '\x00\x00\x00v\xdc\xc8\xdcv', u'0': '\x008l\xc6\xd6\xc6l8', u'\u03b5': '\x00\x00\x00|\xc6p\xc6|', u'4': '\x00\x1c<l\xcc\xfe\x0c\x1e', u'\xb7': '\x00\x00\x00\x00\x18\x00\x00\x00', u'8': '\x00|\xc6\xc6|\xc6\xc6|', u'\xbb': '\x00\x00\x00\xccf3f\xcc', u'\u255e': '\x18\x18\x1f\x18\x1f\x18\x18\x18', u'<': '\x00\x06\x0c\x180\x18\x0c\x06', u'\xbf': '\x000\x0000`\xc6|', u'@': '\x00|\xc6\xde\xde\xde\xc0x', u'D': '\x00\xf8lfffl\xf8', u'\xc7': '<f\xc0\xc0f<\x18p', u'\u2660': '\x108|\xfe\xfe|\x108', u'H': '\x00\xc6\xc6\xc6\xfe\xc6\xc6\xc6', u'\u20a7': '\xf8\xcc\xcc\xfa\xc6\xcf\xc6\xc7', u'L': '\x00\xf0```bf\xfe', u'P': '\x00\xfcff|``\xf0', u'\u2552': '\x00\x00\x1f\x18\x1f\x18\x18\x18', u'T': '\x00~~Z\x18\x18\x18<', u'\u2556': '\x00\x00\x00\x00\xfe666', u'\u25d9': '\xff\xc3\x99\xbd\xbd\x99\xc3\xff', u'X': '\x00\xc6\xc6l8l\xc6\xc6', u'\u255a': '6670?\x00\x00\x00', u'\\': '\x00\xc0`0\x18\x0c\x06\x02', u'\xdf': 'x\xcc\xd8\xcc\xc6\xc6\xcc\x00', u'\u2264': '\x00\x0c\x180\x18\x0c\x00~', u'`': '0\x18\x0c\x00\x00\x00\x00\x00', u'\u2219': '\x00\x00\x00\x00\x18\x18\x00\x00', u'd': '\x00\x1c\x0c|\xcc\xcc\xccv', u'\xe7': '\x00|\xc6\xc0\xc6|\x18p', u'\u2510': '\x00\x00\x00\x00\xf8\x18\x18\x18', u'h': '\x00\xe0`lvff\xe6', u'\xeb': '\x00\xc6\x00|\xc6\xfe\xc0|', u'\u2566': '\x00\x00\xff\x00\xf7666', u'l': '\x008\x18\x18\x18\x18\x18<', u'\xef': '\x00f\x008\x18\x18\x18<', u'p': '\x00\x00\x00\xdcf|`\xf0', u'\xf3': '\x0c\x18\x00|\xc6\xc6\xc6|', u't': '\x0000\xfc006\x1c', u'\xf7': '\x00\x00\x18\x00~\x00\x18\x00', u'\u2666': '\x108|\xfe|8\x10\x00', u'x': '\x00\x00\x00\xc6l8l\xc6', u'\xfb': 'x\xcc\x00\xcc\xcc\xcc\xccv', u'|': '\x00\x18\x18\x18\x18\x18\x18\x18', u'\xff': '\x00\xc6\x00\xc6\xc6~\x06\xfc', u'\u263c': '\x18\xdb<\xe7\xe7<\xdb\x18', u'\u256a': '\x18\x18\xff\x18\xff\x18\x18\x18', u'\u2562': '6666\xf6666', u'\u0192': '\x0e\x1b\x18<\x18\x18\xd8p', u'\u2591': '"\x88"\x88"\x88"\x88', u'\u221f': '\x00\x00\xc0\xc0\xc0\xfe\x00\x00', u'\u25c4': '\x02\x0e>\xfe>\x0e\x02\x00', u'\u2321': '\x18\x18\x18\x18\x18\xd8\xd8p', u'\xa0': '\x00\x00\x00\x00\x00\x00\x00\x00', u'#': '\x00ll\xfel\xfell', u"'": '\x00\x18\x180\x00\x00\x00\x00', u'\u03a6': '\x00\x10|\xd6\xd6\xd6|\x10', u'+': '\x00\x00\x18\x18~\x18\x18\x00', u'\xac': '\x00\x00\x00\xfe\x06\x06\x00\x00', u'/': '\x00\x06\x0c\x180`\xc0\x80', u'\xb0': '\x008ll8\x00\x00\x00', u'3': '\x00|\xc6\x06<\x06\xc6|', u'\u25b2': '\x00\x18<~\xff\xff\x00\x00', u'7': '\x00\xfe\xc6\x0c\x18000', u';': '\x00\x18\x18\x00\x00\x18\x180', u'\u25ba': '\x80\xe0\xf8\xfe\xf8\xe0\x80\x00', u'\xbc': 'c\xe6lz6j\xdf\x06', u'?': '\x00|\xc6\x0c\x18\x18\x00\x18', u'C': '\x00<f\xc0\xc0\xc0f<', u'\xc4': '\xc6\x108l\xc6\xfe\xc6\xc6', u'G': '\x00<f\xc0\xc0\xcef:', u'\u03c6': '\x00\x00\x00\\\xd6\xd6|\x10', u'K': '\x00\xe6flxlf\xe6', u'\u263b': '~\xff\xdb\xff\xc3\xe7\xff~', u'O': '\x00|\xc6\xc6\xc6\xc6\xc6|', u'\u2551': '66666666', u'S': '\x00<f0\x18\x0cf<', u'\u2022': '\x00\x00\x18<<\x18\x00\x00', u'\u2555': '\x00\x00\xf8\x18\xf8\x18\x18\x18', u'W': '\x00\xc6\xc6\xc6\xd6\xd6\xfel', u'\u2559': '6666?\x00\x00\x00', u'[': '\x00<00000<', u'\u255d': '66\xf6\x06\xfe\x00\x00\x00', u'\xdc': '\xc6\x00\xc6\xc6\xc6\xc6\xc6|', u'_': '\x00\x00\x00\x00\x00\x00\x00\xff', u'\u2561': '\x18\x18\xf8\x18\xf8\x18\x18\x18', u'\xe0': '`0\x00x\x0c|\xccv', u'c': '\x00\x00\x00|\xc6\xc0\xc6|', u'\u2565': '\x00\x00\x00\x00\xff666', u'\xe4': '\x00\xcc\x00x\x0c|\xccv', u'g': '\x00\x00\x00v\xcc|\x0c\xf8', u'\u2569': '66\xf7\x00\xff\x00\x00\x00', u'\xe8': '0\x18\x00|\xc6\xfe\xc0|', u'k': '\x00\xe0`flxl\xe6', u'\xec': '0\x18\x008\x18\x18\x18<', u'o': '\x00\x00\x00|\xc6\xc6\xc6|', u'\u2590': '\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f', u's': '\x00\x00\x00~\xc0|\x06\xfc', u'\xf4': '8l\x00|\xc6\xc6\xc6|', u'w': '\x00\x00\x00\xc6\xd6\xd6\xfel', u'{': '\x00\x0e\x18\x18p\x18\x18\x0e', u'\xfc': '\x00\xcc\x00\xcc\xcc\xcc\xccv', u'\u207f': '\x00l6666\x00\x00', u'\u2500': '\x00\x00\x00\x00\xff\x00\x00\x00', u'\u2248': '\x00\x00v\xdc\x00v\xdc\x00', u'\u2193': '\x18\x18\x18\x18~<\x18\x00', u'\u250c': '\x00\x00\x00\x00\x1f\x18\x18\x18', u'\u2310': '\x00\x00\x00\xfe\xc0\xc0\x00\x00', u'\u0393': '\x00\xfeb````\xf0', u'\u2192': '\x00\x18\x0c\xfe\x0c\x18\x00\x00', u'\u2514': '\x18\x18\x18\x18\x1f\x00\x00\x00', u'\u2518': '\x18\x18\x18\x18\xf8\x00\x00\x00', u'\u221a': '\x0f\x0c\x0c\x0c\xecl<\x1c', u'\u251c': '\x18\x18\x18\x18\x1f\x18\x18\x18', u'\u221e': '\x00\x00~\xdb\xdb~\x00\x00', u'\xa1': '\x00\x18\x00\x18\x18<<\x18', u'\u2320': '\x0e\x1b\x1b\x18\x18\x18\x18\x18', u'\u03a3': '\x00\xfe\xc6`0`\xc6\xfe', u'"': '\x00ff$\x00\x00\x00\x00', u'\xa5': 'ff<~\x18~\x18\x18', u'\u2524': '\x18\x18\x18\x18\xf8\x18\x18\x18', u'&': '\x008l8v\xdc\xccv', u'*': '\x00\x00f<\xff<f\x00', u'\u252c': '\x00\x00\x00\x00\xff\x18\x18\x18', u'.': '\x00\x00\x00\x00\x00\x00\x18\x18', u'\xb1': '\x00\x18\x18~\x18\x18\x00~', u'2': '\x00|\xc6\x06\x1c0f\xfe', u'\xb5': '\x00\x00\x00fff|\xc0', u'\u2534': '\x18\x18\x18\x18\xff\x00\x00\x00', u'6': '\x008`\xc0\xfc\xc6\xc6|', u':': '\x00\x00\x18\x18\x00\x00\x18\x18', u'\xbd': 'c\xe6l~3f\xcc\x0f', u'\u253c': '\x18\x18\x18\x18\xff\x18\x18\x18', u'>': '\x00`0\x18\x0c\x180`', u'\u2261': '\x00\x00\xfe\x00\xfe\x00\xfe\x00', u'\u03c3': '\x00\x00\x00~\xd8\xd8\xd8p', u'B': '\x00\xfcff|ff\xfc', u'\xc5': '8l8|\xc6\xfe\xc6\xc6', u'\u2665': 'l\xfe\xfe\xfe|8\x10\x00', u'F': '\x00\xfebhxh`\xf0', u'\xc9': '\x0c\x18\xfe\xc0\xf8\xc0\xc0\xfe', u'\u25cb': '\x00<fBBf<\x00', u'J': '\x00\x1e\x0c\x0c\x0c\xcc\xccx', u'\u2663': '8|8\xfe\xfe\xd6\x108', u'N': '\x00\xc6\xe6\xf6\xde\xce\xc6\xc6', u'\xd1': 'v\xdc\x00\xe6\xf6\xde\xce\xc6', u'\u2550': '\x00\x00\xff\x00\xff\x00\x00\x00', u'R': '\x00\xfcff|lf\xe6', u'\u2554': '\x00\x00?07666', u'V': '\x00\xc6\xc6\xc6\xc6\xc6l8', u'\u2265': '\x000\x18\x0c\x180\x00~', u'Z': '\x00\xfe\xc6\x8c\x182f\xfe', u'\u255c': '6666\xfe\x00\x00\x00', u'^': '\x108l\x00\x00\x00\x00\x00', u'\xe1': '\x180\x00x\x0c|\xccv', u'\u2560': '66707666', u'b': '\x00\xe0`|fff\xdc', u'\xe5': '8l8x\x0c|\xccv', u'\u2564': '\x00\x00\xff\x00\xff\x18\x18\x18', u'f': '\x00<f`\xf8``\xf0', u'\xe9': '\x0c\x18\x00|\xc6\xfe\xc0|', u'\u2568': '6666\xff\x00\x00\x00', u'j': '\x00\x06\x00\x06\x06\x06f<', u'\xed': '\x0c\x18\x008\x18\x18\x18<', u'\u256c': '66\xf7\x00\xf7666', u'n': '\x00\x00\x00\xdcffff', u'\xf1': 'v\xdc\x00\xdcffff', u'r': '\x00\x00\x00\xdcv``\xf0', u'v': '\x00\x00\x00\xc6\xc6\xc6l8', u'\xf9': '`0\x00\xcc\xcc\xcc\xccv', u'z': '\x00\x00\x00~\x0c\x180~', u'\u266b': '\x7fc\x7fccg\xe6\xc0', u'\u2592': 'U\xaaU\xaaU\xaaU\xaa', u'~': 'v\xdc\x00\x00\x00\x00\x00\x00', u'\u2580': '\xff\xff\xff\xff\x00\x00\x00\x00', u'\u2584': '\x00\x00\x00\x00\xff\xff\xff\xff', u'\u2640': '<fff<\x18~\x18', u'\u2588': '\xff\xff\xff\xff\xff\xff\xff\xff', u'\u258c': '\xf0\xf0\xf0\xf0\xf0\xf0\xf0\xf0', u'\u2190': '\x000`\xfe`0\x00\x00', u'\u2642': '\x0f\x07\x0f}\xcc\xcc\xccx', u'\u2194': '\x00$f\xfff$\x00\x00', u'\u203c': 'fffff\x00f\x00', u'\u0398': '\x00|\xc6\xc6\xfe\xc6\xc6|', u'!': '\x00\x18<<\x18\x18\x00\x18', u'\u25a0': '\x00\x00<<<<\x00\x00', u'\xa2': '\x18\x18~\xc0\xc0~\x18\x18', u'%': '\x00\x00\xc6\xcc\x180f\xc6', u')': '\x000\x18\x0c\x0c\x0c\x180', u'\u21a8': '\x18<~\x18~<\x18\xff', u'\xaa': '\x00<ll6\x00~\x00', u'-': '\x00\x00\x00\x00~\x00\x00\x00', u'\u25ac': '\x00\x00\x00\x00~~~\x00', u'1': '\x00\x188\x18\x18\x18\x18~', u'\xb2': '\x00x\x0c\x180|\x00\x00', u'5': '\x00\xfe\xc0\xc0\xfc\x06\xc6|', u'\u03b4': '\x00<`8|\xc6\xc6|', u'\xb6': '\x7f\xdb\xdb{\x1b\x1b\x1b\x00', u'9': '\x00|\xc6\xc6~\x06\x0cx', u'\xba': '\x008ll8\x00|\x00', u'=': '\x00\x00\x00~\x00\x00~\x00', u'\u25bc': '\x00\xff\xff~<\x18\x00\x00', u'A': '\x008l\xc6\xfe\xc6\xc6\xc6', u'\u03c0': '\x00\x00\x00\xfellll', u'E': '\x00\xfebhxhb\xfe', u'\u03c4': '\x00\x00\x00\xfe006\x1c', u'\xc6': '\x00>l\xcc\xfe\xcc\xcc\xce', u'I': '\x00<\x18\x18\x18\x18\x18<', u'M': '\x00\xc6\xee\xfe\xfe\xd6\xc6\xc6', u'\u263a': '~\x81\xa5\x81\xbd\x99\x81~', u'Q': '\x00|\xc6\xc6\xc6\xce|\x0e', u'\u2553': '\x00\x00\x00\x00?666', u'U': '\x00\xc6\xc6\xc6\xc6\xc6\xc6|', u'\u2557': '\x00\x00\xfe\x06\xf6666', u'\xd6': '\xc6\x008l\xc6\xc6l8', u'Y': '\x00fff<\x18\x18<', u'\u25d8': '\xff\xff\xe7\xc3\xc3\xe7\xff\xff', u'\u255b': '\x18\x18\xf8\x18\xf8\x00\x00\x00', u']': '\x00<\x0c\x0c\x0c\x0c\x0c<', u'\u255f': '66667666', u'a': '\x00\x00\x00x\x0c|\xccv', u'\u2563': '66\xf6\x06\xf6666', u'\xe2': '8l\x00x\x0c|\xccv', u'e': '\x00\x00\x00|\xc6\xfe\xc0|', u'\u2567': '\x18\x18\xff\x00\xff\x00\x00\x00', u'\xe6': '\x00\x00\x00\xec6~\xd8n', u'i': '\x00\x18\x008\x18\x18\x18<', u'\u256b': '6666\xff666', u'\xea': '8l\x00|\xc6\xfe\xc0|', u'm': '\x00\x00\x00\xec\xfe\xd6\xd6\xd6', u'\xee': '8l\x008\x18\x18\x18<', u'q': '\x00\x00\x00v\xcc|\x0c\x1e', u'\u2229': '\x00|\xc6\xc6\xc6\xc6\xc6\x00', u'\xf2': '0\x18\x00|\xc6\xc6\xc6|', u'u': '\x00\x00\x00\xcc\xcc\xcc\xccv', u'\xf6': '\x00\xc6\x00|\xc6\xc6\xc6|', u'y': '\x00\x00\x00\xc6\xc6~\x06\xfc', u'\u2593': 'w\xddw\xddw\xddw\xdd', u'\xfa': '\x180\x00\xcc\xcc\xcc\xccv', u'}': '\x00p\x18\x18\x0e\x18\x18p'
-}
+
+# ascii codepoints for which to repeat column 8 in column 9 (box drawing)
+# Many internet sources say this should be 0xC0--0xDF. However, that would
+# exclude the shading characters. It appears to be traced back to a mistake in
+# IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
+CARRY_COL_9_CHARS = tuple(chr(_c) for _c in range(0xb0, 0xdf+1))
+# ascii codepoints for which to repeat row 8 in row 9 (box drawing)
+CARRY_ROW_9_CHARS = tuple(chr(_c) for _c in range(0xb0, 0xdf+1))
+
+
+# The glyphs below are extracted from Henrique Peron's CPIDOS v3.0,
+# CPIDOS is distributed with FreeDOS at
+#   http://www.freedos.org/software/?prog=cpidos
+#   http://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/dos/cpi/
+# CPIDOS is Copyright (C) 2002-2011 by Henrique Peron (hperon@terra.com.br)
+# and licensed under the GNU GPL version 2 or later.
+DEFAULT_FONT = {chr(_i): _v.decode('hex') for _i, _v in enumerate((
+    '0000000000000000', '7e81a581bd99817e', '7effdbffc3e7ff7e', '6cfefefe7c381000',
+    '10387cfe7c381000', '387c38fefed61038', '10387cfefe7c1038', '0000183c3c180000',
+    'ffffe7c3c3e7ffff', '003c664242663c00', 'ffc399bdbd99c3ff', '0f070f7dcccccc78',
+    '3c6666663c187e18', '3f333f303070f0e0', '7f637f636367e6c0', '18db3ce7e73cdb18',
+    '80e0f8fef8e08000', '020e3efe3e0e0200', '183c7e18187e3c18', '6666666666006600',
+    '7fdbdb7b1b1b1b00', '3e613c66663c867c', '000000007e7e7e00', '183c7e187e3c18ff',
+    '183c7e1818181800', '181818187e3c1800', '00180cfe0c180000', '003060fe60300000',
+    '0000c0c0c0fe0000', '002466ff66240000', '00183c7effff0000', '00ffff7e3c180000',
+    '0000000000000000', '00183c3c18180018', '0066662400000000', '006c6cfe6cfe6c6c',
+    '00183e603c067c18', '0000c6cc183066c6', '00386c3876dccc76', '0018183000000000',
+    '000c18303030180c', '0030180c0c0c1830', '0000663cff3c6600', '000018187e181800',
+    '0000000000181830', '000000007e000000', '0000000000001818', '00060c183060c080',
+    '00386cc6d6c66c38', '001838181818187e', '007cc6061c3066fe', '007cc6063c06c67c',
+    '001c3c6cccfe0c1e', '00fec0c0fc06c67c', '003860c0fcc6c67c', '00fec60c18303030',
+    '007cc6c67cc6c67c', '007cc6c67e060c78', '0000181800001818', '0018180000181830',
+    '00060c1830180c06', '0000007e00007e00', '006030180c183060', '007cc60c18180018',
+    '007cc6dededec078', '00386cc6fec6c6c6', '00fc66667c6666fc', '003c66c0c0c0663c',
+    '00f86c6666666cf8', '00fe6268786862fe', '00fe6268786860f0', '003c66c0c0ce663a',
+    '00c6c6c6fec6c6c6', '003c18181818183c', '001e0c0c0ccccc78', '00e6666c786c66e6',
+    '00f06060606266fe', '00c6eefefed6c6c6', '00c6e6f6decec6c6', '007cc6c6c6c6c67c',
+    '00fc66667c6060f0', '007cc6c6c6ce7c0e', '00fc66667c6c66e6', '003c6630180c663c',
+    '007e7e5a1818183c', '00c6c6c6c6c6c67c', '00c6c6c6c6c66c38', '00c6c6c6d6d6fe6c',
+    '00c6c66c386cc6c6', '006666663c18183c', '00fec68c183266fe', '003c30303030303c',
+    '00c06030180c0602', '003c0c0c0c0c0c3c', '10386c0000000000', '00000000000000ff',
+    '30180c0000000000', '000000780c7ccc76', '00e0607c666666dc', '0000007cc6c0c67c',
+    '001c0c7ccccccc76', '0000007cc6fec07c', '003c6660f86060f0', '00000076cc7c0cf8',
+    '00e0606c766666e6', '001800381818183c', '000600060606663c', '00e060666c786ce6',
+    '003818181818183c', '000000ecfed6d6d6', '000000dc66666666', '0000007cc6c6c67c',
+    '000000dc667c60f0', '00000076cc7c0c1e', '000000dc766060f0', '0000007ec07c06fc',
+    '003030fc3030361c', '000000cccccccc76', '000000c6c6c66c38', '000000c6d6d6fe6c',
+    '000000c66c386cc6', '000000c6c67e06fc', '0000007e0c18307e', '000e18187018180e',
+    '0018181818181818', '007018180e181870', '76dc000000000000', '000010386cc6c6fe',
+    '3c66c0c0663c1870', '00cc00cccccccc76', '0c18007cc6fec07c', '386c00780c7ccc76',
+    '00cc00780c7ccc76', '603000780c7ccc76', '386c38780c7ccc76', '007cc6c0c67c1870',
+    '386c007cc6fec07c', '00c6007cc6fec07c', '3018007cc6fec07c', '006600381818183c',
+    '386c00381818183c', '301800381818183c', 'c610386cc6fec6c6', '386c387cc6fec6c6',
+    '0c18fec0f8c0c0fe', '000000ec367ed86e', '003e6cccfeccccce', '386c007cc6c6c67c',
+    '00c6007cc6c6c67c', '3018007cc6c6c67c', '78cc00cccccccc76', '603000cccccccc76',
+    '00c600c6c67e06fc', 'c600386cc6c66c38', 'c600c6c6c6c6c67c', '18187ec0c07e1818',
+    '386c64f0606066fc', '66663c7e187e1818', 'f8ccccfac6cfc6c7', '0e1b183c1818d870',
+    '183000780c7ccc76', '0c1800381818183c', '0c18007cc6c6c67c', '183000cccccccc76',
+    '76dc00dc66666666', '76dc00e6f6decec6', '003c6c6c36007e00', '00386c6c38007c00',
+    '003000303060c67c', '000000fec0c00000', '000000fe06060000', '63e66c7e3366cc0f',
+    '63e66c7a366adf06', '00180018183c3c18', '0000003366cc6633', '000000cc663366cc',
+    '2288228822882288', '55aa55aa55aa55aa', '77dd77dd77dd77dd', '1818181818181818',
+    '18181818f8181818', '1818f818f8181818', '36363636f6363636', '00000000fe363636',
+    '0000f818f8181818', '3636f606f6363636', '3636363636363636', '0000fe06f6363636',
+    '3636f606fe000000', '36363636fe000000', '1818f818f8000000', '00000000f8181818',
+    '181818181f000000', '18181818ff000000', '00000000ff181818', '181818181f181818',
+    '00000000ff000000', '18181818ff181818', '18181f181f181818', '3636363637363636',
+    '363637303f000000', '00003f3037363636', '3636f700ff000000', '0000ff00f7363636',
+    '3636373037363636', '0000ff00ff000000', '3636f700f7363636', '1818ff00ff000000',
+    '36363636ff000000', '0000ff00ff181818', '00000000ff363636', '363636363f000000',
+    '18181f181f000000', '00001f181f181818', '000000003f363636', '36363636ff363636',
+    '1818ff18ff181818', '18181818f8000000', '000000001f181818', 'ffffffffffffffff',
+    '00000000ffffffff', 'f0f0f0f0f0f0f0f0', '0f0f0f0f0f0f0f0f', 'ffffffff00000000',
+    '00000076dcc8dc76', '78ccd8ccc6c6cc00', '00fe6260606060f0', '000000fe6c6c6c6c',
+    '00fec6603060c6fe', '0000007ed8d8d870', '0000006666667cc0', '000000fe3030361c',
+    '00107cd6d6d67c10', '007cc6c6fec6c67c', '00386cc6c66c28ee', '003c60387cc6c67c',
+    '00007edbdb7e0000', '0000005cd6d67c10', '0000007cc670c67c', '007cc6c6c6c6c600',
+    '0000fe00fe00fe00', '0018187e1818007e', '0030180c1830007e', '000c1830180c007e',
+    '0e1b1b1818181818', '1818181818d8d870', '000018007e001800', '000076dc0076dc00',
+    '00386c6c38000000', '0000000018180000', '0000000018000000', '0f0c0c0cec6c3c1c',
+    '006c363636360000', '00780c18307c0000', '00003c3c3c3c0000', '0000000000000000',
+))}
 
 
 class Font(object):
@@ -25,75 +105,178 @@ class Font(object):
 
     def __init__(self, height, fontdict={}):
         """Initialise the font."""
-        self.height = height
+        self._height = height
         if height == 8 and not fontdict:
             fontdict = DEFAULT_FONT
-        self.fontdict = fontdict
+        self._fontdict = fontdict
 
-    def build_glyph(self, c, req_width, req_height, carry_col_9, carry_row_9):
-        """Build a glyph for the given unicode character."""
-        # req_width can be 8, 9 (SBCS), 16, 18 (DBCS) only
-        req_width_base = req_width if req_width <= 9 else req_width // 2
+    def get_byte(self, charvalue, offset):
+        """Get byte sequency for character."""
+        return ord(self._fontdict[chr(charvalue)][offset])
+
+    def set_byte(self, charvalue, offset, byte):
+        """Set byte sequency for character."""
+        old = self._fontdict[chr(charvalue)]
+        self._fontdict[chr(charvalue)] = old[:offset%8] + byte + old[offset%8+1:]
+        #self.screen.rebuild_glyph(charvalue)
+
+    def build_glyph(self, c, req_width, req_height):
+        """Build a glyph for the given codepage character."""
         try:
-            face = bytearray(self.fontdict[c])
+            face = bytearray(self._fontdict[c])
         except KeyError:
-            logging.debug(u'%s [%s] not represented in font, replacing with blank glyph.', c, repr(c))
-            face = bytearray(int(self.height))
+            logging.debug(
+                    b'code point [%s] not represented in font, replacing with blank glyph.',
+                    repr(c))
+            face = bytearray(int(self._height))
         # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
         code_height = 8 if req_height == 9 else req_height
-        code_width = (8*len(face))//code_height
-        force_double = req_width >= code_width*2
-        force_single = code_width >= (req_width-1)*2
+        code_width = (8 * len(face)) // code_height
+        force_double = req_width >= code_width * 2
+        force_single = code_width >= (req_width-1) * 2
         if force_double or force_single:
             # i.e. we need a double-width char but got single or v.v.
-            logging.debug(u'Incorrect glyph width for %s [%s]: %d-pixel requested, %d-pixel found.', c, repr(c), req_width, code_width)
-        if numpy:
-            glyph = numpy.unpackbits(face, axis=0).reshape((code_height, code_width)).astype(bool)
-            # repeat last rows (e.g. for 9-bit high chars)
-            if req_height > glyph.shape[0]:
-                if carry_row_9:
-                    repeat_row = glyph[-1]
-                else:
-                    repeat_row = numpy.zeros((1, code_width), dtype = numpy.uint8)
-                while req_height > glyph.shape[0]:
-                    glyph = numpy.vstack((glyph, repeat_row))
-            if force_double:
-                glyph = glyph.repeat(2, axis=1)
-            elif force_single:
-                glyph = glyph[:, ::2]
-            # repeat last cols (e.g. for 9-bit wide chars)
-            if req_width > glyph.shape[1]:
-                if carry_col_9:
-                    repeat_col = numpy.atleast_2d(glyph[:,-1]).T
-                else:
-                    repeat_col = numpy.zeros((code_height, 1), dtype = numpy.uint8)
-                while req_width > glyph.shape[1]:
-                    glyph = numpy.hstack((glyph, repeat_col))
-        else:
-            # if our code glyph is too wide for request, we need to make space
-            start_width = req_width*2 if force_single else req_width
-            glyph = [ [False]*start_width for _ in range(req_height) ]
-            for yy in range(code_height):
-                for half in range(code_width//8):
-                    line = face[yy*(code_width//8)+half]
-                    for xx in range(8):
-                        if (line >> (7-xx)) & 1 == 1:
-                            glyph[yy][half*8 + xx] = True
-                # halve the width if code width incorrect
-                if force_single:
-                    glyph[yy] = glyph[yy][::2]
-                # MDA/VGA 9-bit characters
-                # carry_col_9 will be ignored for double-width glyphs
-                if carry_col_9 and req_width == 9:
-                    glyph[yy][8] = glyph[yy][7]
-            # tandy 9-bit high characters
-            if carry_row_9 and req_height == 9:
-                for xx in range(8):
-                    glyph[8][xx] = glyph[7][xx]
-            # double the width if code width incorrect
-            if force_double:
-                for yy in range(code_height):
-                    for xx in range(req_width_base, -1, -1):
-                        glyph[yy][2*xx+1] = glyph[yy][xx]
-                        glyph[yy][2*xx] = glyph[yy][xx]
+            logging.debug(
+                    b'Incorrect glyph width for code point [%s]: %d-pixel requested, %d-pixel found.',
+                    repr(c), req_width, code_width)
+        return _unpack_glyph(
+                face, code_height, code_width, req_height, req_width,
+                force_double, force_single,
+                c in CARRY_COL_9_CHARS, c in CARRY_ROW_9_CHARS)
+
+if numpy:
+
+    def _unpack_glyph(
+            face, code_height, code_width, req_height, req_width,
+            force_double, force_single, carry_col_9, carry_row_9):
+        """Convert byte list to glyph pixels, numpy implementation."""
+        glyph = numpy.unpackbits(face, axis=0).reshape((code_height, code_width)).astype(bool)
+        # repeat last rows (e.g. for 9-bit high chars)
+        if req_height > glyph.shape[0]:
+            if carry_row_9:
+                repeat_row = glyph[-1]
+            else:
+                repeat_row = numpy.zeros((1, code_width), dtype=numpy.uint8)
+            while req_height > glyph.shape[0]:
+                glyph = numpy.vstack((glyph, repeat_row))
+        if force_double:
+            glyph = glyph.repeat(2, axis=1)
+        elif force_single:
+            glyph = glyph[:, ::2]
+        # repeat last cols (e.g. for 9-bit wide chars)
+        if req_width > glyph.shape[1]:
+            if carry_col_9:
+                repeat_col = numpy.atleast_2d(glyph[:,-1]).T
+            else:
+                repeat_col = numpy.zeros((code_height, 1), dtype=numpy.uint8)
+            while req_width > glyph.shape[1]:
+                glyph = numpy.hstack((glyph, repeat_col))
         return glyph
+
+else:
+
+    def _unpack_glyph(
+            face, code_height, code_width, req_height, req_width,
+            force_double, force_single, carry_col_9, carry_row_9):
+        """Convert byte list to glyph pixels, non-numpy implementation."""
+        # req_width can be 8, 9 (SBCS), 16, 18 (DBCS) only
+        req_width_base = req_width if req_width <= 9 else req_width // 2
+        # if our code glyph is too wide for request, we need to make space
+        start_width = req_width*2 if force_single else req_width
+        glyph = [ [False]*start_width for _ in range(req_height) ]
+        for yy in range(code_height):
+            for half in range(code_width//8):
+                line = face[yy*(code_width//8)+half]
+                for xx in range(8):
+                    if (line >> (7-xx)) & 1 == 1:
+                        glyph[yy][half*8 + xx] = True
+            # halve the width if code width incorrect
+            if force_single:
+                glyph[yy] = glyph[yy][::2]
+            # MDA/VGA 9-bit characters
+            # carry_col_9 will be ignored for double-width glyphs
+            if carry_col_9 and req_width == 9:
+                glyph[yy][8] = glyph[yy][7]
+        # tandy 9-bit high characters
+        if carry_row_9 and req_height == 9:
+            for xx in range(8):
+                glyph[8][xx] = glyph[7][xx]
+        # double the width if code width incorrect
+        if force_double:
+            for yy in range(code_height):
+                for xx in range(req_width_base, -1, -1):
+                    glyph[yy][2*xx+1] = glyph[yy][xx]
+                    glyph[yy][2*xx] = glyph[yy][xx]
+        return glyph
+
+
+#######################################################################################
+# glyph cache
+
+class GlyphCache(object):
+
+    def __init__(self, mode, fonts, codepage, queues):
+        """Initialise glyph set."""
+        self._queues = queues
+        self._mode = mode
+        self._fonts = fonts
+        self._codepage = codepage
+        # preload SBCS glyphs
+        self._glyphs = {
+            c: self._fonts[mode.font_height].build_glyph(c, mode.font_width, mode.font_height)
+            for c in map(chr, range(256))
+        }
+        self.submit()
+
+    def submit(self):
+        """Send glyph dict to interface."""
+        if self._mode.is_text_mode:
+            # send glyphs to signals; copy is necessary
+            # as dict may change here while the other thread is working on it
+            self._queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
+                    {self._codepage.to_unicode(k, u'\0'): v for k, v in self._glyphs.iteritems()}))
+
+    def rebuild_glyph(self, ordval):
+        """Rebuild a text-mode character after POKE."""
+        if self._mode.is_text_mode:
+            # force rebuilding the character by deleting and requesting
+            del self._glyphs[chr(ordval)]
+            self._submit_char(chr(ordval))
+
+    def _submit_char(self, char):
+        """Rebuild glyph and send to interface."""
+        mask = self._fonts[self._mode.font_height].build_glyph(
+                char, self._mode.font_width*2, self._mode.font_height)
+        self._glyphs[char] = mask
+        if self._mode.is_text_mode:
+            self._queues.video.put(signals.Event(
+                    signals.VIDEO_BUILD_GLYPHS, {self._codepage.to_unicode(char, u'\0'): mask}))
+
+    def check_char(self, char):
+        """Submit glyph if needed."""
+        if self._mode.is_text_mode and char not in self._glyphs:
+            self._submit_char(char)
+
+    if numpy:
+        def get_sprite(self, row, col, char, fore, back):
+            """Return a sprite for a given character."""
+            if char not in self._glyphs:
+                self._submit_char(char)
+            mask = self._glyphs[char]
+            # set background
+            glyph = numpy.full(mask.shape, back, dtype=int)
+            # stamp foreground mask
+            glyph[mask] = fore
+            x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height
+            x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
+            return x0, y0, x1, y1, glyph
+    else:
+        def get_sprite(self, row, col, char, fore, back):
+            """Return a sprite for a given character."""
+            if char not in self._glyphs:
+                self._submit_char(char)
+            mask = self._glyphs[char]
+            glyph = [[(fore if bit else back) for bit in row] for row in mask]
+            x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height
+            x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
+            return x0, y0, x1, y1, glyph

@@ -537,7 +537,9 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.canvas[self.apagenum].set_clip(None)
         self.screen_changed = True
 
-    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
+    def put_glyph(
+            self, pagenum, row, col, cp, is_fullwidth,
+            fore, back, blink, underline, suppress_cli):
         """Put a single-byte character at a given position."""
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
@@ -556,7 +558,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 if '\0' not in self.glyph_dict:
                     logging.error('No glyph received for code point 0')
                     return
-                logging.warning('No glyph received for code point %s', cp.encode('hex'))
+                logging.warning('No glyph received for code point %s', hex(ord(cp)))
                 glyph = self.glyph_dict['\0']
             if glyph.get_palette_at(0) != bg:
                 glyph.set_palette_at(0, bg)

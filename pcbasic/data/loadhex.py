@@ -49,7 +49,12 @@ def read_fonts(codepage_dict, font_families, warn):
             fonts[height].fix_missing(unicode_needed, fonts[16])
     if 8 in fonts:
         fonts[9] = fonts[8]
-    return {height: font.fontdict for height, font in fonts.iteritems()}
+    # convert keys from unicode to codepage
+    fonts = {
+        height: {c: font._fontdict[uc] for c, uc in codepage_dict.iteritems() if uc in font._fontdict}
+        for height, font in fonts.iteritems()
+    }
+    return {height: font for height, font in fonts.iteritems()}
 
 
 class FontLoader(object):
@@ -58,11 +63,11 @@ class FontLoader(object):
     def __init__(self, height):
         """Initialise the font."""
         self._height = height
-        self.fontdict = {}
+        self._fontdict = {}
 
     def load_hex(self, hex_resources, unicode_needed, substitutes, warn=True):
         """Load a set of overlaying unifont .hex files."""
-        self.fontdict = {}
+        self._fontdict = {}
         all_needed = unicode_needed | set(substitutes)
         for hexres in reversed(hex_resources):
             if hexres is None:
@@ -85,7 +90,7 @@ class FontLoader(object):
                     if c not in all_needed:
                         continue
                     # skip chars we already have
-                    if (c in self.fontdict):
+                    if (c in self._fontdict):
                         continue
                     # string must be 32-byte or 16-byte; cut to required font size
                     if len(fonthex) < 32:
@@ -94,15 +99,15 @@ class FontLoader(object):
                         fonthex = fonthex[:2*self._height]
                     else:
                         fonthex = fonthex[:4*self._height]
-                    self.fontdict[c] = fonthex.decode('hex')
+                    self._fontdict[c] = fonthex.decode('hex')
                 except Exception as e:
                     logging.warning('Could not parse line in font file: %s', repr(line))
         # substitute code points
-        self.fontdict.update({old: self.fontdict[new]
+        self._fontdict.update({old: self._fontdict[new]
                 for (new, old) in substitutes.iteritems()
-                if new in self.fontdict})
+                if new in self._fontdict})
         # char 0 should always be defined and empty
-        self.fontdict[u'\0'] = '\0'*self._height
+        self._fontdict[u'\0'] = b'\0' * self._height
         self._combine_glyphs(unicode_needed)
         # in debug mode, check if we have all needed glyphs
         if warn:
@@ -112,24 +117,24 @@ class FontLoader(object):
     def _combine_glyphs(self, unicode_needed):
         """Fix missing grapheme clusters by combining components."""
         for cluster in unicode_needed:
-            if cluster not in self.fontdict:
+            if cluster not in self._fontdict:
                 # try to combine grapheme clusters first
                 if len(cluster) > 1:
                     # combine strings
                     clusterglyph = bytearray(self._height)
                     try:
                         for c in cluster:
-                            for y, row in enumerate(self.fontdict[c]):
+                            for y, row in enumerate(self._fontdict[c]):
                                 clusterglyph[y] |= ord(row)
                     except KeyError as e:
                         logging.debug('Could not combine grapheme cluster %s, missing %s [%s]',
                             cluster, repr(c), c)
-                    self.fontdict[cluster] = str(clusterglyph)
+                    self._fontdict[cluster] = str(clusterglyph)
 
     def _warn_missing(self, unicode_needed, max_warnings=3):
         """Check if we have all needed glyphs."""
         # fontdict: unicode char -> glyph
-        missing = unicode_needed - set(self.fontdict)
+        missing = unicode_needed - set(self._fontdict)
         warnings = 0
         for u in missing:
             warnings += 1
@@ -143,14 +148,14 @@ class FontLoader(object):
         if self._height == 16:
             return
         for c in unicode_needed:
-            if c not in self.fontdict:
+            if c not in self._fontdict:
                 # try to construct from 16-bit font
                 try:
                     s16 = list(font16.fontdict[c])
                     start = (16 - self._height) // 2
                     if len(s16) == 16:
-                        self.fontdict[c] = ''.join([s16[i] for i in range(start, 16-start)])
+                        self._fontdict[c] = ''.join([s16[i] for i in range(start, 16-start)])
                     else:
-                        self.fontdict[c] = ''.join([s16[i] for i in range(start*2, 32-start*2)])
+                        self._fontdict[c] = ''.join([s16[i] for i in range(start*2, 32-start*2)])
                 except (KeyError, AttributeError) as e:
-                    self.fontdict[c] = '\0'*self._height
+                    self._fontdict[c] = b'\0' * self._height

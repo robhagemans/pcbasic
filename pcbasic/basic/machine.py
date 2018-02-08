@@ -435,19 +435,19 @@ class Memory(object):
 
     def _get_video_memory(self, addr):
         """Retrieve a byte from video memory."""
-        return self.screen.mode.get_memory(addr, 1)[0]
+        return self.screen.get_memory(addr, 1)[0]
 
     def _set_video_memory(self, addr, val):
         """Set a byte in video memory."""
-        return self.screen.mode.set_memory(addr, [val])
+        return self.screen.set_memory(addr, [val])
 
     def _get_video_memory_block(self, addr, length):
         """Retrieve a contiguous block of bytes from video memory."""
-        return bytearray(self.screen.mode.get_memory(addr, length))
+        return bytearray(self.screen.get_memory(addr, length))
 
     def _set_video_memory_block(self, addr, some_bytes):
         """Set a contiguous block of bytes in video memory."""
-        self.screen.mode.set_memory(addr, some_bytes)
+        self.screen.set_memory(addr, some_bytes)
 
     ###############################################################################
 
@@ -479,8 +479,7 @@ class Memory(object):
             char = addr // 8
             if char > 127 or char<0:
                 return -1
-            return ord(self.font_8.fontdict[
-                    self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
+            return self.font_8.get_byte(char, addr%8)
 
     def _get_font_memory(self, addr):
         """Retrieve RAM font data."""
@@ -488,8 +487,7 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return -1
-        return ord(self.font_8.fontdict[
-                self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
+        return self.font_8.get_byte(char, addr%8)
 
     def _set_font_memory(self, addr, value):
         """Retrieve RAM font data."""
@@ -497,11 +495,8 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return
-        uc = self.screen.codepage.to_unicode(chr(char))
-        if uc:
-            old = self.font_8.fontdict[uc]
-            self.font_8.fontdict[uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
-            self.screen.rebuild_glyph(char)
+        self.font_8.set_byte(char, addr%8, value)
+        self.screen.rebuild_glyph(char)
 
     #################################################################################
 
@@ -644,7 +639,7 @@ class Memory(object):
         elif addr == 1126:
             if self.screen.mode.name == '320x200x4':
                 return (self.screen.palette.get_entry(0)
-                        + 32 * self.screen.cga4_palette_num)
+                        + 32 * self.screen.video.cga4_palette_num)
             elif self.screen.mode.is_text_mode:
                 return self.screen.border_attr % 16
                 # not implemented: + 16 "if current color specified through

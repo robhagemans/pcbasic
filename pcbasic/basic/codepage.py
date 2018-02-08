@@ -18,11 +18,21 @@ PRINTABLE_ASCII = map(chr, range(0x20, 0x7F))
 
 # on the terminal, these values are not shown as special graphic chars but as their normal effect
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
-CONTROL = ('\x07', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x1C', '\x1D', '\x1E', '\x1F')
+CONTROL = (b'\x07', b'\x09', b'\x0A', b'\x0B', b'\x0C', b'\x0D', b'\x1C', b'\x1D', b'\x1E', b'\x1F')
 
 # default is codepage 437
 DEFAULT_CODEPAGE = {chr(i): c for i, c in enumerate(
-    u'\x00\u263a\u263b\u2665\u2666\u2663\u2660\u2022\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b\u263c\u25ba\u25c4\u2195\u203c\xb6\xa7\u25ac\u21a8\u2191\u2193\u2192\u2190\u221f\u2194\u25b2\u25bc !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u2302\xc7\xfc\xe9\xe2\xe4\xe0\xe5\xe7\xea\xeb\xe8\xef\xee\xec\xc4\xc5\xc9\xe6\xc6\xf4\xf6\xf2\xfb\xf9\xff\xd6\xdc\xa2\xa3\xa5\u20a7\u0192\xe1\xed\xf3\xfa\xf1\xd1\xaa\xba\xbf\u2310\xac\xbd\xbc\xa1\xab\xbb\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556\u2555\u2563\u2551\u2557\u255d\u255c\u255b\u2510\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u2567\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b\u256a\u2518\u250c\u2588\u2584\u258c\u2590\u2580\u03b1\xdf\u0393\u03c0\u03a3\u03c3\xb5\u03c4\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229\u2261\xb1\u2265\u2264\u2320\u2321\xf7\u2248\xb0\u2219\xb7\u221a\u207f\xb2\u25a0\xa0'
+    u'\x00\u263a\u263b\u2665\u2666\u2663\u2660\u2022\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b'
+    u'\u263c\u25ba\u25c4\u2195\u203c\xb6\xa7\u25ac\u21a8\u2191\u2193\u2192\u2190\u221f\u2194\u25b2'
+    u'\u25bc!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrst'
+    u'uvwxyz{|}~\u2302\xc7\xfc\xe9\xe2\xe4\xe0\xe5\xe7\xea\xeb\xe8\xef\xee\xec\xc4\xc5\xc9\xe6\xc6'
+    u'\xf4\xf6\xf2\xfb\xf9\xff\xd6\xdc\xa2\xa3\xa5\u20a7\u0192\xe1\xed\xf3\xfa\xf1\xd1\xaa\xba\xbf'
+    u'\u2310\xac\xbd\xbc\xa1\xab\xbb\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556\u2555\u2563'
+    u'\u2551\u2557\u255d\u255c\u255b\u2510\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f\u255a'
+    u'\u2554\u2569\u2566\u2560\u2550\u256c\u2567\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b'
+    u'\u256a\u2518\u250c\u2588\u2584\u258c\u2590\u2580\u03b1\xdf\u0393\u03c0\u03a3\u03c3\xb5\u03c4'
+    u'\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229\u2261\xb1\u2265\u2264\u2320\u2321\xf7\u2248'
+    u'\xb0\u2219\xb7\u221a\u207f\xb2\u25a0\xa0'
 )}
 
 
@@ -109,11 +119,11 @@ class Codepage(object):
 
     def str_to_unicode(self, cps, preserve_control=False, box_protect=True):
         """Convert codepage string to unicode string."""
-        return Converter(self, preserve_control, box_protect).to_unicode(cps)
+        return Converter(self, preserve_control, box_protect).to_unicode(cps, flush=True)
 
-    def get_converter(self, preserve_control=False, box_protect=None):
+    def get_converter(self, preserve_control=False):
         """Get converter from codepage to unicode."""
-        return Converter(self, preserve_control, box_protect)
+        return Converter(self, preserve_control, self.box_protect)
 
 
 class CodecStream(object):
@@ -129,7 +139,7 @@ class CodecStream(object):
     def write(self, s):
         """Write to codec stream."""
         self._stream.write(self._uniconv.to_unicode(bytes(s)).encode(
-                    self._encoding, b'replace'))
+                    self._encoding, 'replace'))
 
 
 ########################################
@@ -183,184 +193,181 @@ class Converter(object):
 
     def __init__(self, codepage, preserve_control=False, box_protect=None):
         """Initialise with empty buffer."""
-        self.cp = codepage
-        self.buf = ''
-        self.preserve_control = preserve_control
+        self._cp = codepage
+        # hold one or two bytes
+        # lead byte without trail byte, or box-protectable dbcs
+        self._buf = b''
+        self._preserve_control = preserve_control
         # may override box protection defaults
-        self.box_protect = box_protect or self.cp.box_protect
-        self.dbcs = self.cp.dbcs
-        self.bset = -1
-        self.last = ''
+        self._box_protect = box_protect or self._cp.box_protect
+        self._dbcs = self._cp.dbcs
+        self._bset = -1
+        self._last = b''
 
-    def to_unicode(self, s):
-        """Process codepage string, returning unicode string when ready."""
-        if not self.dbcs:
+    def mark(self, s, flush=False):
+        """Process codepage string, returning list of grouped code sequences when ready."""
+        if not self._dbcs:
             # stateless if not dbcs
-            return u''.join([ (c.decode('ascii', errors='ignore')
-                                if (self.preserve_control and c in CONTROL)
-                                else self.cp.to_unicode(c))
-                            for c in s ])
+            return list(s)
         else:
-            out = u''
-            # remove any naked lead-byte first
-            if self.buf:
-                out += u'\b'*len(self.buf)
-            # process the string
-            for c in s:
-                out += self.process(c)
-            # any naked lead-byte or boxable dbcs left will be printed (but don't flush buffers!)
-            if self.buf:
-                out += self.cp.to_unicode(self.buf)
-            return out
+            unistr = [seq for c in s for seq in self._process(c)]
+            if flush:
+                unistr += self._flush()
+            return unistr
 
-    def flush(self, num=None):
+    def to_unicode(self, s, flush=False):
+        """Process codepage string, returning unicode string when ready."""
+        return u''.join([(seq.decode('ascii', errors='ignore')
+                                if (self._preserve_control and seq in CONTROL)
+                                else self._cp.to_unicode(seq))
+                        for seq in self.mark(s, flush)])
+
+    def _flush(self, num=None):
         """Empty buffer and return contents."""
-        out = u''
+        out = []
         if num is None:
-            num = len(self.buf)
-        if self.buf:
-            # can be one or two-byte sequence in self.buf
-            out = self.cp.to_unicode(self.buf[:num])
-        self.buf = self.buf[num:]
+            num = len(self._buf)
+        if self._buf:
+            # can be one or two-byte sequence in self._buf
+            out.append(self._buf[:num])
+        self._buf = self._buf[num:]
         return out
 
-    def process(self, c):
+    def _process(self, c):
         """Process a single char, returning unicode char sequences when ready """
-        if not self.box_protect:
-            return self.process_nobox(c)
-        out = u''
-        if self.preserve_control and c in CONTROL:
+        if not self._box_protect:
+            return self._process_nobox(c)
+        out = []
+        if self._preserve_control and c in CONTROL:
             # control char; flush buffer as SBCS and add control char unchanged
-            out += self.flush() + c
-            self.bset = -1
-            self.last = ''
-        elif self.bset == -1:
-            if not self.buf:
-                out += self.process_case0(c)
-            elif len(self.buf) == 1:
-                out += self.process_case1(c)
-            elif len(self.buf) == 2:
-                out += self.process_case2(c)
+            out += self._flush() + [c]
+            self._bset = -1
+            self._last = b''
+        elif self._bset == -1:
+            if not self._buf:
+                out += self._process_case0(c)
+            elif len(self._buf) == 1:
+                out += self._process_case1(c)
+            elif len(self._buf) == 2:
+                out += self._process_case2(c)
             else:
                 # not allowed
-                logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
-        elif len(self.buf) == 2:
-            out += self.process_case3(c)
-        elif not self.buf:
-            out += self.process_case4(c)
+                logging.debug(b'DBCS buffer corrupted: %d %s', self._bset, repr(self._buf))
+        elif len(self._buf) == 2:
+            out += self._process_case3(c)
+        elif not self._buf:
+            out += self._process_case4(c)
         else:
             # not allowed
-            logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
+            logging.debug(b'DBCS buffer corrupted: %d %s', self._bset, repr(self._buf))
         return out
 
-    def process_nobox(self, c):
+    def _process_nobox(self, c):
         """Process a single char, no box drawing protection """
-        out = u''
-        if self.preserve_control and c in CONTROL:
+        out = []
+        if self._preserve_control and c in CONTROL:
             # control char; flush buffer as SBCS and add control char unchanged
-            out += self.flush() + c.decode('ascii', errors='ignore')
+            out += self._flush() + [c]
             return out
-        elif self.buf:
-            if c in self.cp.trail:
+        elif self._buf:
+            if c in self._cp.trail:
                 # add a DBCS character
-                self.buf += c
-                out += self.flush()
+                self._buf += c
+                out += self._flush()
                 return out
             else:
                 # flush buffer
-                out += self.flush()
-        if c in self.cp.lead:
-            self.buf = c
+                out += self._flush()
+        if c in self._cp.lead:
+            self._buf = c
         else:
-            out += self.cp.to_unicode(c)
+            out.append(c)
         return out
 
-    def process_case0(self, c):
+    def _process_case0(self, c):
         """Process a single char with box drawing protection; case 0, starting point """
-        out = u''
-        if c not in self.cp.lead:
-            out += self.cp.to_unicode(c)
+        out = []
+        if c not in self._cp.lead:
+            out.append(c)
             # goes to case 0
         else:
-            self.buf += c
+            self._buf += c
             # goes to case 1
         return out
 
-    def process_case1(self, c):
+    def _process_case1(self, c):
         """Process a single char with box drawing protection; case 1 """
-        out = u''
-        if c not in self.cp.trail:
-            out += self.flush() + self.cp.to_unicode(c)
+        out = []
+        if c not in self._cp.trail:
+            out += self._flush() + [c]
             # goes to case 0
         else:
             for bset in (0, 1):
-                if self.cp.connects(self.buf, c, bset):
-                    self.bset = bset
-                    self.buf += c
+                if self._cp.connects(self._buf, c, bset):
+                    self._bset = bset
+                    self._buf += c
                     break
                     # goes to case 3
             else:
                 # no connection
-                self.buf += c
+                self._buf += c
                 # goes to case 2
         return out
 
-    def process_case2(self, c):
+    def _process_case2(self, c):
         """Process a single char with box drawing protection; case 2 """
-        out = u''
-        if c not in self.cp.lead:
-            out += self.flush() + self.cp.to_unicode(c)
+        out = []
+        if c not in self._cp.lead:
+            out += self._flush() + [c]
             # goes to case 0
         else:
             for bset in (0, 1):
-                if self.cp.connects(self.buf[-1], c, bset):
-                    self.bset = bset
+                if self._cp.connects(self._buf[-1], c, bset):
+                    self._bset = bset
                     # take out only first byte
-                    out += self.flush(1)
-                    self.buf += c
+                    out += self._flush(1)
+                    self._buf += c
                     break
                     # goes to case 3
             else:
                 # no connection found
-                out += self.flush()
-                self.buf += c
+                out += self._flush()
+                self._buf += c
                 # goes to case 1
         return out
 
-    def process_case3(self, c):
+    def _process_case3(self, c):
         """Process a single char with box drawing protection; case 3 """
-        out = u''
-        if c not in self.cp.lead:
-            out += self.flush() + self.cp.to_unicode(c)
-        elif self.cp.connects(self.buf[-1], c, self.bset):
-            self.last = self.buf[-1]
+        out = []
+        if c not in self._cp.lead:
+            out += self._flush() + [c]
+        elif self._cp.connects(self._buf[-1], c, self._bset):
+            self._last = self._buf[-1]
             # output box drawing
-            out += self.flush(1) + self.flush(1) + self.cp.to_unicode(c)
+            out += self._flush(1) + self._flush(1) + [c]
             # goes to case 4
         else:
-            out += self.flush()
-            self.buf = c
-            self.bset = -1
+            out += self._flush()
+            self._buf = c
+            self._bset = -1
             # goes to case 1
         return out
 
-    def process_case4(self, c):
+    def _process_case4(self, c):
         """Process a single char with box drawing protection; case 4, continuing box drawing """
-        out = u''
-        if c not in self.cp.lead:
-            out += self.cp.to_unicode(c)
+        out = []
+        if c not in self._cp.lead:
+            out.append(c)
             # goes to case 0
-        elif self.cp.connects(self.last, c, self.bset):
-            self.last = c
-            out += self.cp.to_unicode(c)
+        elif self._cp.connects(self._last, c, self._bset):
+            self._last = c
+            out.append(c)
             # goes to case 4
         else:
-            self.buf += c
-            self.bset = -1
+            self._buf += c
+            self._bset = -1
             # goes to case 1
         return out
-
-
 
 
 ##################################################

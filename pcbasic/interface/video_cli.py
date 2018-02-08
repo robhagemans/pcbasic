@@ -118,7 +118,9 @@ class VideoCLI(base.VideoPlugin):
     ###############################################################################
 
 
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, for_keys):
+    def put_glyph(
+            self, pagenum, row, col, char, is_fullwidth,
+            fore, back, blink, underline, suppress_cli):
         """Put a character at a given position."""
         if char == u'\0':
             char = u' '
@@ -127,7 +129,7 @@ class VideoCLI(base.VideoPlugin):
             self.text[pagenum][row-1][col] = u''
         if self.vpagenum != pagenum:
             return
-        if for_keys:
+        if suppress_cli:
             return
         self._update_position(row, col)
         sys.stdout.write(char.encode(encoding, 'replace'))
