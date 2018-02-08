@@ -13,7 +13,6 @@ import platform
 import traceback
 import threading
 import subprocess
-from Queue import Queue
 
 # set locale - this is necessary for curses and *maybe* for clipboard handling
 # there's only one locale setting so best to do it all upfront here
