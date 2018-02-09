@@ -602,9 +602,7 @@ class Files(object):
         locks = disk.Locks()
         # disk devices
         self._internal_disk = disk.DiskDevice(
-                b'', None, u'',
-                locks, codepage,
-                input_methods, utf8, universal)
+                b'', None, u'', locks, codepage, input_methods, utf8, universal)
         for letter in self.drive_letters:
             if not mount_dict:
                 mount_dict = {}
@@ -613,9 +611,7 @@ class Files(object):
             else:
                 path, cwd = None, u''
             self._devices[letter + b':'] = disk.DiskDevice(
-                    letter, path, cwd,
-                    locks, codepage,
-                    input_methods, utf8, universal)
+                    letter, path, cwd, locks, codepage, input_methods, utf8, universal)
         self._current_device = current_device.upper()
 
     def _get_diskdevice_and_path(self, path):

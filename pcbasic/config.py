@@ -502,6 +502,7 @@ class Settings(object):
             'max_list_line': 65535 if not self.get('strict-hidden-lines') else 65530,
             'allow_protect': self.get('strict-protect'),
             'allow_code_poke': self.get('allow-code-poke'),
+            'rebuild_offsets': not self.get('convert'),
             # max available memory to BASIC (set by /m)
             'max_memory': min(max_list) or 65534,
             # maximum record length (-s)

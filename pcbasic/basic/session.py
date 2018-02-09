@@ -100,12 +100,12 @@ class Session(object):
         self.input_redirection.attach(self.queues.inputs)
         return self
 
-    def load_program(self, prog, rebuild_dict=True):
+    def load_program(self, prog):
         """Load a program from native or BASIC file."""
         self.start()
         with self._handle_exceptions():
             with self.files.open_internal(prog, filetype='ABP', mode='I') as progfile:
-                self.program.load(progfile, rebuild_dict=rebuild_dict)
+                self.program.load(progfile)
 
     def save_program(self, prog, filetype):
         """Save a program to native or BASIC file."""
@@ -206,7 +206,7 @@ class Session(object):
             utf8=False, universal=True, stdio=True,
             ignore_caps=True, ctrl_c_is_break=True,
             max_list_line=65535, allow_protect=False,
-            allow_code_poke=False, max_memory=65534,
+            allow_code_poke=False, rebuild_offsets=True, max_memory=65534,
             max_reclen=128, max_files=3, reserved_memory=3429,
             temp_dir=u'', extension=None,
             debug=False, catch_exceptions='basic',
@@ -246,7 +246,7 @@ class Session(object):
         bytecode = codestream.TokenisedStream(self.memory.code_start)
         self.program = program.Program(
                 self.tokeniser, self.lister, max_list_line, allow_protect,
-                allow_code_poke, self.memory, bytecode)
+                allow_code_poke, self.memory, bytecode, rebuild_offsets)
         # register all data segment users
         self.memory.set_buffers(self.program)
         ######################################################################

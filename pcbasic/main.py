@@ -83,7 +83,7 @@ def convert(settings):
     mode, name_in, name_out = settings.get_converter_parameters()
     session = basic.Session(**settings.get_session_parameters())
     try:
-        session.load_program(name_in, rebuild_dict=False)
+        session.load_program(name_in)
         session.save_program(name_out, filetype=mode)
     except basic.BASICError as e:
         logging.error(e.message)
