@@ -44,7 +44,155 @@ class Session(object):
     ###########################################################################
     # public interface methods
 
-    def __init__(self, iface=None,
+    def __init__(self, interface=None, **kwargs):
+        """Set up session object."""
+        self.interface = interface
+        self._kwargs = kwargs
+        self._is_init = False
+
+    def __enter__(self):
+        """Context guard."""
+        self.start()
+        return self
+
+    def __exit__(self, dummy_1, dummy_2, dummy_3):
+        """Context guard."""
+        self.close()
+
+    def __getstate__(self):
+        """Pickle the session."""
+        pickle_dict = self.__dict__.copy()
+        pickle_dict['interface'] = None
+        return pickle_dict
+
+    def __setstate__(self, pickle_dict):
+        """Unpickle and resume the session."""
+        self.__dict__.update(pickle_dict)
+        # re-assign callbacks (not picklable)
+        self.parser.init_callbacks(self)
+        # reopen keyboard, in case we quit because it was closed
+        self.keyboard._input_closed = False
+        # suppress double prompt
+        if not self.interpreter._parse_mode:
+            self._prompt = False
+
+    def start(self):
+        """Start the session."""
+        if not self._is_init:
+            self._is_init = True
+            self._initialise(**self._kwargs)
+
+    def attach(self, interface=None):
+        """Attach interface to interpreter session."""
+        self.interface = interface
+        self.start()
+        if self.interface:
+            self.queues.set(*self.interface.get_queues())
+            # rebuild the screen
+            self.screen.rebuild()
+            # rebuild audio queues
+            self.sound.rebuild()
+        else:
+            # use dummy video & audio queues if not provided
+            # but an input queue shouls be operational for redirects
+            self.queues.set(inputs=Queue.Queue())
+        # attach input queue to redirects
+        self.input_redirection.attach(self.queues.inputs)
+        return self
+
+    def load_program(self, prog, rebuild_dict=True):
+        """Load a program from native or BASIC file."""
+        self.start()
+        with self._handle_exceptions():
+            with self.files.open_internal(prog, filetype='ABP', mode='I') as progfile:
+                self.program.load(progfile, rebuild_dict=rebuild_dict)
+
+    def save_program(self, prog, filetype):
+        """Save a program to native or BASIC file."""
+        self.start()
+        with self._handle_exceptions():
+            with self.files.open_internal(prog, filetype=filetype, mode='O') as progfile:
+                self.program.save(progfile)
+
+    def execute(self, command):
+        """Execute a BASIC statement."""
+        self.start()
+        for cmd in command.splitlines():
+            if isinstance(cmd, unicode):
+                cmd = self.codepage.str_from_unicode(cmd)
+            with self._handle_exceptions():
+                self._store_line(cmd)
+                self.interpreter.loop()
+
+    def evaluate(self, expression):
+        """Evaluate a BASIC expression."""
+        self.start()
+        if isinstance(expression, unicode):
+            expression = self.codepage.str_from_unicode(expression)
+        with self._handle_exceptions():
+            # attach print token so tokeniser has a whole statement to work with
+            tokens = self.tokeniser.tokenise_line(b'?' + expression)
+            # skip : and print token and parse expression
+            tokens.read(2)
+            return self.parser.parse_expression(tokens).to_value()
+        return None
+
+    def set_variable(self, name, value):
+        """Set a variable in memory."""
+        self.start()
+        if isinstance(name, unicode):
+            name = name.encode('ascii')
+        name = name.upper()
+        if isinstance(value, unicode):
+            value = self.codepage.str_from_unicode(value)
+        elif isinstance(value, bool):
+            value = -1 if value else 0
+        if '(' in name:
+            name = name.split('(', 1)[0]
+            self.arrays.from_list(value, name)
+        else:
+            self.memory.set_variable(name, [], self.values.from_value(value, name[-1]))
+
+    def get_variable(self, name):
+        """Get a variable in memory."""
+        self.start()
+        if isinstance(name, unicode):
+            name = name.encode('ascii')
+        name = name.upper()
+        if '(' in name:
+            name = name.split('(', 1)[0]
+            return self.arrays.to_list(name)
+        else:
+            return self.memory.get_variable(name, []).to_value()
+
+    def interact(self):
+        """Interactive interpreter session."""
+        self.start()
+        while True:
+            try:
+                with self._handle_exceptions():
+                    self.interpreter.loop()
+                    if self._auto_mode:
+                        self._auto_step()
+                    else:
+                        self._show_prompt()
+                        # input loop, checks events
+                        line = self.editor.wait_screenline(from_start=True)
+                        self._prompt = not self._store_line(line)
+            except error.Exit:
+                break
+
+    def close(self):
+        """Close the session."""
+        if self._is_init:
+            # close files if we opened any
+            self.files.close_all()
+            self.files.close_devices()
+
+    ###########################################################################
+    # implementation
+
+    def _initialise(self,
             syntax=u'advanced', pcjr_term=u'', shell=u'',
             output_file=None, append=False, input_file=None,
             codepage=None, box_protect=True,
@@ -104,9 +252,9 @@ class Session(object):
         ######################################################################
         # console
         ######################################################################
-        if iface:
+        if self.interface:
             # connect to interface queues
-            self.queues = signals.InterfaceQueues(*iface.get_queues())
+            self.queues = signals.InterfaceQueues(*self.interface.get_queues())
         else:
             # no interface; use dummy queues
             self.queues = signals.InterfaceQueues(inputs=Queue.Queue())
@@ -212,131 +360,6 @@ class Session(object):
         self.machine = machine.MachinePorts(self)
         # build function table (depends on Memory having been initialised)
         self.parser.init_callbacks(self)
-
-
-    def __enter__(self):
-        """Context guard."""
-        return self
-
-    def __exit__(self, dummy_1, dummy_2, dummy_3):
-        """Context guard."""
-        self.close()
-
-    def __getstate__(self):
-        """Pickle the session."""
-        pickle_dict = self.__dict__.copy()
-        return pickle_dict
-
-    def __setstate__(self, pickle_dict):
-        """Unpickle and resume the session."""
-        self.__dict__.update(pickle_dict)
-        # re-assign callbacks (not picklable)
-        self.parser.init_callbacks(self)
-        # reopen keyboard, in case we quit because it was closed
-        self.keyboard._input_closed = False
-        # suppress double prompt
-        if not self.interpreter._parse_mode:
-            self._prompt = False
-
-    def attach(self, iface=None):
-        """Attach interface to interpreter session."""
-        if iface:
-            self.queues.set(*iface.get_queues())
-            # rebuild the screen
-            self.screen.rebuild()
-            # rebuild audio queues
-            self.sound.rebuild()
-        else:
-            # use dummy video & audio queues if not provided
-            # but an input queue shouls be operational for redirects
-            self.queues.set(inputs=Queue.Queue())
-        # attach input queue to redirects
-        self.input_redirection.attach(self.queues.inputs)
-        return self
-
-    def load_program(self, prog, rebuild_dict=True):
-        """Load a program from native or BASIC file."""
-        with self._handle_exceptions():
-            with self.files.open_internal(prog, filetype='ABP', mode='I') as progfile:
-                self.program.load(progfile, rebuild_dict=rebuild_dict)
-
-    def save_program(self, prog, filetype):
-        """Save a program to native or BASIC file."""
-        with self._handle_exceptions():
-            with self.files.open_internal(prog, filetype=filetype, mode='O') as progfile:
-                self.program.save(progfile)
-
-    def execute(self, command):
-        """Execute a BASIC statement."""
-        for cmd in command.splitlines():
-            if isinstance(cmd, unicode):
-                cmd = self.codepage.str_from_unicode(cmd)
-            with self._handle_exceptions():
-                self._store_line(cmd)
-                self.interpreter.loop()
-
-    def evaluate(self, expression):
-        """Evaluate a BASIC expression."""
-        if isinstance(expression, unicode):
-            expression = self.codepage.str_from_unicode(expression)
-        with self._handle_exceptions():
-            # attach print token so tokeniser has a whole statement to work with
-            tokens = self.tokeniser.tokenise_line(b'?' + expression)
-            # skip : and print token and parse expression
-            tokens.read(2)
-            return self.parser.parse_expression(tokens).to_value()
-        return None
-
-    def set_variable(self, name, value):
-        """Set a variable in memory."""
-        if isinstance(name, unicode):
-            name = name.encode('ascii')
-        name = name.upper()
-        if isinstance(value, unicode):
-            value = self.codepage.str_from_unicode(value)
-        elif isinstance(value, bool):
-            value = -1 if value else 0
-        if '(' in name:
-            name = name.split('(', 1)[0]
-            self.arrays.from_list(value, name)
-        else:
-            self.memory.set_variable(name, [], self.values.from_value(value, name[-1]))
-
-    def get_variable(self, name):
-        """Get a variable in memory."""
-        if isinstance(name, unicode):
-            name = name.encode('ascii')
-        name = name.upper()
-        if '(' in name:
-            name = name.split('(', 1)[0]
-            return self.arrays.to_list(name)
-        else:
-            return self.memory.get_variable(name, []).to_value()
-
-    def interact(self):
-        """Interactive interpreter session."""
-        while True:
-            try:
-                with self._handle_exceptions():
-                    self.interpreter.loop()
-                    if self._auto_mode:
-                        self._auto_step()
-                    else:
-                        self._show_prompt()
-                        # input loop, checks events
-                        line = self.editor.wait_screenline(from_start=True)
-                        self._prompt = not self._store_line(line)
-            except error.Exit:
-                break
-
-    def close(self):
-        """Close the session."""
-        # close files if we opened any
-        self.files.close_all()
-        self.files.close_devices()
-
-    ###########################################################################
-    # implementation
 
     def _show_prompt(self):
         """Show the Ok or EDIT prompt, unless suppressed."""

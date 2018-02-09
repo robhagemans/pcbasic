@@ -134,22 +134,17 @@ def launch_session(settings):
 def run_session(interface=None, resume=False, state_file=None,
                 prog=None, commands=(), **session_params):
     """Run an interactive BASIC session."""
-    if resume:
-        session = state.zunpickle(state_file).attach(interface)
-    else:
-        session = basic.Session(interface, **session_params)
-    try:
-        if prog:
-            session.load_program(prog)
-        for cmd in commands:
-            session.execute(cmd)
-        session.interact()
-    except basic.Exit:
-        # SYSTEM called during launch
-        pass
-    finally:
-        state.zpickle(session, state_file)
-        session.close()
+    with basic.Session(interface, **session_params) as s:
+        with state.manage_state(s, state_file, resume) as session:
+            try:
+                if prog:
+                    session.load_program(prog)
+                for cmd in commands:
+                    session.execute(cmd)
+                session.interact()
+            except basic.Exit:
+                # SYSTEM called during launch
+                pass
 
 
 if __name__ == "__main__":
