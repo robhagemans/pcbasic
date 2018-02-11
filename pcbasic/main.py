@@ -114,16 +114,12 @@ def run_session(interface=None, resume=False, state_file=None,
     """Run an interactive BASIC session."""
     with basic.Session(interface, **session_params) as s:
         with state.manage_state(s, state_file, resume) as session:
-            try:
-                if prog:
-                    prog_name = session.bind_file(prog)
-                    session.execute('LOAD "%s"' % (prog_name,))
-                for cmd in commands:
-                    session.execute(cmd)
-                session.interact()
-            except basic.Exit:
-                # SYSTEM called during launch
-                pass
+            if prog:
+                prog_name = session.bind_file(prog)
+                session.execute('LOAD "%s"' % (prog_name,))
+            for cmd in commands:
+                session.execute(cmd)
+            session.interact()
 
 
 if __name__ == "__main__":

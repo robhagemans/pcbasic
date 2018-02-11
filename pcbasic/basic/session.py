@@ -55,9 +55,12 @@ class Session(object):
         self.start()
         return self
 
-    def __exit__(self, dummy_1, dummy_2, dummy_3):
+    def __exit__(self, ex_type, ex_val, tb):
         """Context guard."""
         self.close()
+        # catch Exit and Break events
+        if ex_type in (error.Exit, error.Break):
+            return True
 
     def __getstate__(self):
         """Pickle the session."""
@@ -162,18 +165,15 @@ class Session(object):
         """Interactive interpreter session."""
         self.start()
         while True:
-            try:
-                with self._handle_exceptions():
-                    self.interpreter.loop()
-                    if self._auto_mode:
-                        self._auto_step()
-                    else:
-                        self._show_prompt()
-                        # input loop, checks events
-                        line = self.editor.wait_screenline(from_start=True)
-                        self._prompt = not self._store_line(line)
-            except error.Exit:
-                break
+            with self._handle_exceptions():
+                self.interpreter.loop()
+                if self._auto_mode:
+                    self._auto_step()
+                else:
+                    self._show_prompt()
+                    # input loop, checks events
+                    line = self.editor.wait_screenline(from_start=True)
+                    self._prompt = not self._store_line(line)
 
     def close(self):
         """Close the session."""
