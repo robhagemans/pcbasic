@@ -166,7 +166,7 @@ class BaseDebugger(object):
         self._session.interpreter.set_pointer(False)
         # create crash log file
         logname = datetime.now().strftime('pcbasic-crash-%Y%m%d-')
-        logfile = tempfile.NamedTemporaryFile(suffix='.log', prefix=logname, dir=config.state_path, delete=False)
+        logfile = tempfile.NamedTemporaryFile(suffix='.log', prefix=logname, dir=config.STATE_PATH, delete=False)
         # construct the message
         message = [
             (0x70, 'EXCEPTION\n'),
