@@ -50,6 +50,7 @@ else:
 # @: target drive for bundled programs
 program_path = os.path.join(state_path, u'bundled_programs')
 
+
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
     l = logging.getLogger(__name__)
@@ -155,7 +156,7 @@ class Settings(object):
             },
         u'pcjr': {
             u'syntax': u'pcjr',
-            u'pcjr-term': '@:\PCTERM.BAS',
+            u'pcjr-term': os.path.join(program_path, 'PCTERM.BAS'),
             u'video': u'pcjr',
             u'font': u'vga',
             u'codepage': u'437',

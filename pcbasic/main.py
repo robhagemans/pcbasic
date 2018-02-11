@@ -5,6 +5,8 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
+import io
+import os
 import sys
 import locale
 import logging
@@ -81,12 +83,22 @@ def show_version(settings):
 def convert(settings):
     """Perform file format conversion."""
     mode, name_in, name_out = settings.get_converter_parameters()
-    session = basic.Session(**settings.get_session_parameters())
-    try:
-        session.load_program(name_in)
-        session.save_program(name_out, filetype=mode)
-    except basic.BASICError as e:
-        logging.error(e.message)
+    with basic.Session(**settings.get_session_parameters()) as session:
+        try:
+            # if the native file doesn't exist, treat as BASIC file spec
+            if not name_in or os.path.isfile(name_in):
+                # use io.BytesIO buffer for seekability
+                name_in = session.bind_file(name_in or io.BytesIO(sys.stdin.read()))
+            session.execute(b'LOAD "%s"' % (name_in,))
+            if (not name_out or not os.path.dirname(name_out)
+                    or os.path.isdir(os.path.dirname(name_out))):
+                name_out = session.bind_file(name_out or sys.stdout)
+            save_cmd = b'SAVE "%s"' % (name_out,)
+            if mode.upper() in (b'A', b'P'):
+                save_cmd += b',%s' % (mode,)
+            session.execute(save_cmd)
+        except basic.BASICError as e:
+            logging.error(e.message)
 
 def launch_session(settings):
     """Start an interactive interpreter session."""
@@ -104,7 +116,8 @@ def run_session(interface=None, resume=False, state_file=None,
         with state.manage_state(s, state_file, resume) as session:
             try:
                 if prog:
-                    session.load_program(prog)
+                    prog_name = session.bind_file(prog)
+                    session.execute('LOAD "%s"' % (prog_name,))
                 for cmd in commands:
                     session.execute(cmd)
                 session.interact()
