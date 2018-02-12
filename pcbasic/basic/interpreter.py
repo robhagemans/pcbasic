@@ -18,11 +18,11 @@ from . import values
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, debugger, input_methods, screen, files, sound,
+    def __init__(self, debugger, queues, screen, files, sound,
                 values, memory, program, parser, basic_events):
         """Initialise interpreter."""
         self._debugger = debugger
-        self._input_methods = input_methods
+        self._queues = queues
         self._basic_events = basic_events
         self._values = values
         self._memory = memory
@@ -66,7 +66,7 @@ class Interpreter(object):
         """Parse from the current pointer in current codestream."""
         while True:
             # check input and BASIC events. may raise Break, Reset or Exit
-            self._input_methods.check_events(self._basic_events.enabled)
+            self._queues.check_events(self._basic_events.enabled)
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()

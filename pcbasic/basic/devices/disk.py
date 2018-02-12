@@ -103,7 +103,7 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, locks, codepage, input_methods, utf8, universal):
+    def __init__(self, letter, path, cwd, locks, codepage, queues, utf8, universal):
         """Initialise a disk device."""
         self.letter = letter
         # mount root
@@ -117,7 +117,7 @@ class DiskDevice(object):
         # code page for file system names and text file conversion
         self.codepage = codepage
         # for wait() during FILES
-        self.input_methods = input_methods
+        self.queues = queues
         # text file settings
         self.utf8 = utf8
         self.universal = universal
@@ -365,7 +365,7 @@ class DiskDevice(object):
             output = output[num:]
             screen.write_line(line)
             # allow to break during dir listing & show names flowing on screen
-            self.input_methods.wait()
+            self.queues.wait()
         screen.write_line(b' %d Bytes free' % self.get_free())
 
     def get_free(self):
@@ -393,11 +393,11 @@ class DiskDevice(object):
 class InternalDiskDevice(DiskDevice):
     """Internal disk device for special operations."""
 
-    def __init__(self, letter, path, cwd, locks, codepage, input_methods, utf8, universal):
+    def __init__(self, letter, path, cwd, locks, codepage, queues, utf8, universal):
         """Initialise internal disk."""
         self._bound_files = {}
         DiskDevice.__init__(
-                self, letter, path, cwd, locks, codepage, input_methods, utf8, universal)
+                self, letter, path, cwd, locks, codepage, queues, utf8, universal)
 
     def bind(self, file_name_or_object, name):
         """Bind a native file name or object to an internal name."""

@@ -35,7 +35,7 @@ class Files(object):
     """File manager."""
 
     def __init__(
-            self, values, memory, input_methods, keyboard, screen,
+            self, values, memory, queues, keyboard, screen,
             max_files, max_reclen, serial_buffer_size,
             device_params, current_device, mount_dict,
             print_trigger, temp_dir,
@@ -48,7 +48,7 @@ class Files(object):
         self.max_files = max_files
         self.max_reclen = max_reclen
         self._init_devices(
-                values, input_methods,
+                values, queues,
                 screen, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
@@ -111,7 +111,7 @@ class Files(object):
     ###########################################################################
     # device management
 
-    def _init_devices(self, values, input_methods, screen, keyboard,
+    def _init_devices(self, values, queues, screen, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_in_size, utf8, universal):
         """Initialise devices."""
@@ -127,10 +127,10 @@ class Files(object):
             # serial devices
             b'COM1:': ports.COMDevice(
                         device_params.get(b'COM1:', None),
-                        input_methods, serial_in_size),
+                        queues, serial_in_size),
             b'COM2:': ports.COMDevice(
                         device_params.get(b'COM2:', None),
-                        input_methods, serial_in_size),
+                        queues, serial_in_size),
             # parallel devices - LPT1: must always be available
             b'LPT1:': parports.LPTDevice(
                         device_params.get(b'LPT1:', None), devicebase.nullstream(),
@@ -148,7 +148,7 @@ class Files(object):
         self.lpt1_file = self._devices[b'LPT1:'].device_file
         # disks
         self._init_disk_devices(
-                input_methods, mount_dict, current_device,
+                queues, mount_dict, current_device,
                 screen.codepage, utf8, universal)
 
     def close_devices(self):
@@ -560,7 +560,7 @@ class Files(object):
     drive_letters = b'@' + string.ascii_uppercase
 
     def _init_disk_devices(
-            self, input_methods, mount_dict, current_device,
+            self, queues, mount_dict, current_device,
             codepage, utf8, universal):
         """Initialise disk devices."""
         # disk file locks
@@ -576,7 +576,7 @@ class Files(object):
             # treat device @: separately - internal disk
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
             self._devices[letter + b':'] = disk_class(
-                    letter, path, cwd, locks, codepage, input_methods, utf8, universal)
+                    letter, path, cwd, locks, codepage, queues, utf8, universal)
         self._current_device = current_device.upper()
 
     def _get_diskdevice_and_path(self, path):

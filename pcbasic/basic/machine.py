@@ -225,7 +225,7 @@ class MachinePorts(object):
         error.range_check(0, 255, xorer)
         list(args)
         while (self.inp(addr) ^ xorer) & ander == 0:
-            self.session.input_methods.wait()
+            self.session.queues.wait()
 
 
 ###############################################################################

@@ -94,11 +94,24 @@ class NullQueue(object):
         pass
 
 
-class InterfaceQueues(object):
-    """Interface queue set."""
+class EventQueues(object):
+    """Manage interface queues."""
 
-    def __init__(self, inputs=None, video=None, audio=None):
+    tick = 0.006
+    max_video_qsize = 500
+    max_audio_qsize = 20
+
+    def __init__(self, values, ctrl_c_is_break, inputs=None, video=None, audio=None):
         """Initialise; default is NullQueues."""
+        self._values = values
+        # input signal handlers
+        self._handlers = []
+        # pause-key halts everything until another keypress
+        self._pause = False
+        # treat ctrl+c as break interrupt
+        self._ctrl_c_is_break = ctrl_c_is_break
+        # F12 replacement events
+        self._f12_active = False
         self.set(inputs, video, audio)
 
     def set(self, inputs=None, video=None, audio=None):
@@ -109,35 +122,16 @@ class InterfaceQueues(object):
 
     def __getstate__(self):
         """Don't pickle queues."""
-        return {}
+        pickle_dict = self.__dict__.copy()
+        pickle_dict['inputs'] = None
+        pickle_dict['video'] = None
+        pickle_dict['audio'] = None
+        return pickle_dict
 
-    def __setstate__(self, dummy_pickle_dict):
+    def __setstate__(self, pickle_dict):
         """Set to null queues on unpickling."""
+        self.__dict__.update(pickle_dict)
         self.set()
-
-
-##############################################################################
-# queue handler / main event loop
-
-class EventHandler(object):
-    """Manage input queue."""
-
-    tick = 0.006
-    max_video_qsize = 500
-    max_audio_qsize = 20
-
-    def __init__(self, queues, values, ctrl_c_is_break):
-        """Initialise event triggers."""
-        self._values = values
-        self._queues = queues
-        # input signal handlers
-        self._handlers = []
-        # pause-key halts everything until another keypress
-        self._pause = False
-        # treat ctrl+c as break interrupt
-        self._ctrl_c_is_break = ctrl_c_is_break
-        # F12 replacement events
-        self._f12_active = False
 
     def add_handler(self, handler):
         """Add an input handler."""
@@ -151,12 +145,12 @@ class EventHandler(object):
     def check_events(self, event_check_input=()):
         """Main event cycle."""
         # avoid screen lockups if video queue fills up
-        if self._queues.video.qsize() > self.max_video_qsize:
+        if self.video.qsize() > self.max_video_qsize:
             # note that this really slows down screen writing
             # because it triggers a sleep() in the video backend
-            self._queues.video.join()
-        if self._queues.audio.qsize() > self.max_audio_qsize:
-            self._queues.audio.join()
+            self.video.join()
+        if self.audio.qsize() > self.max_audio_qsize:
+            self.audio.join()
         self._check_input(event_check_input)
 
     def _check_input(self, event_check_input):
@@ -164,7 +158,7 @@ class EventHandler(object):
         while True:
             # pop input queues
             try:
-                signal = self._queues.inputs.get(False)
+                signal = self.inputs.get(False)
             except Queue.Empty:
                 if self._pause:
                     continue
@@ -173,7 +167,7 @@ class EventHandler(object):
                     for e in event_check_input:
                         e.check_input(signals.Event(None))
                     break
-            self._queues.inputs.task_done()
+            self.inputs.task_done()
             # effect replacements
             self._replace_inputs(signal)
             # handle input events

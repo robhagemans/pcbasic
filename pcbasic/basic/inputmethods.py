@@ -205,7 +205,7 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, input_methods, values, codepage, queues, keystring, ignore_caps):
+    def __init__(self, queues, values, codepage, keystring, ignore_caps):
         """Initilise keyboard state."""
         self._values = values
         # key queue (holds bytes)
@@ -223,8 +223,8 @@ class Keyboard(object):
         self.buf.insert(self.codepage.str_from_unicode(keystring), check_full=False)
         # redirected input stream has closed
         self._input_closed = False
-        # input_methods is needed for wait() in wait_char()
-        self.input_methods = input_methods
+        # needed for wait() in wait_char()
+        self._queues = queues
 
     def check_input(self, signal):
         """Handle keyboard input signals and clipboard paste."""
@@ -268,7 +268,7 @@ class Keyboard(object):
     def get_char(self, expand=True):
         """Read any keystroke, nonblocking."""
         # wait a tick to reduce CPU load in loops
-        self.input_methods.wait()
+        self._queues.wait()
         return self.buf.getc(expand)
 
     def inkey_(self, args):
@@ -280,7 +280,7 @@ class Keyboard(object):
     def wait_char(self):
         """Wait for character, then return it but don't drop from queue."""
         while self.buf.is_empty() and not self._input_closed:
-            self.input_methods.wait()
+            self._queues.wait()
         return self.buf.peek()
 
     def get_char_block(self):

@@ -101,22 +101,20 @@ class Implementation(object):
         ######################################################################
         # console
         ######################################################################
+        # set up input event handler
         # no interface yet; use dummy queues
-        self.queues = eventcycle.InterfaceQueues(inputs=Queue.Queue())
+        self.queues = eventcycle.EventQueues(self.values, ctrl_c_is_break, inputs=Queue.Queue())
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
                 self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
-        # set up input event handler
-        self.input_methods = eventcycle.EventHandler(
-                self.queues, self.values, ctrl_c_is_break)
         # initialise sound queue
-        self.sound = sound.Sound(self.queues, self.values, self.input_methods, syntax)
+        self.sound = sound.Sound(self.queues, self.values, syntax)
         # Sound is needed for the beeps on \a
         # EventHandler is needed for wait() in graphics
         self.screen = display.Screen(
-                self.queues, self.values, self.input_methods,
+                self.queues, self.values, self.queues,
                 self.memory, text_width, video_memory, video, monitor,
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
@@ -125,8 +123,8 @@ class Implementation(object):
         self.values.set_handler(values.FloatErrorHandler(self.screen))
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
         # EventHandler needed for wait() only
-        self.keyboard = inputmethods.Keyboard(self.input_methods, self.values,
-                self.codepage, self.queues, keys, ignore_caps)
+        self.keyboard = inputmethods.Keyboard(
+                self.queues, self.values, self.codepage, keys, ignore_caps)
         self.pen = inputmethods.Pen()
         self.stick = inputmethods.Stick(self.values)
         ######################################################################
@@ -136,16 +134,13 @@ class Implementation(object):
         # DataSegment needed for COMn and disk FIELD buffers
         # EventCycle needed for wait()
         self.files = devices.Files(
-                self.values, self.memory,
-                self.input_methods, self.keyboard, self.screen,
+                self.values, self.memory, self.queues, self.keyboard, self.screen,
                 max_files, max_reclen, serial_buffer_size,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir,
                 utf8, universal)
         # set up the SHELL command
-        self.shell = dos.get_shell_manager(
-                self.keyboard, self.screen,
-                self.codepage, shell, syntax)
+        self.shell = dos.get_shell_manager(self.keyboard, self.screen, self.codepage, shell, syntax)
         # set up environment
         self.environment = dos.Environment(self.values)
         # initialise random number generator
@@ -157,11 +152,11 @@ class Implementation(object):
         ######################################################################
         # clipboard and print screen handler
         clip_handler = inputmethods.ScreenCopyHandler(self.screen, self.files.lpt1_file)
-        self.input_methods.add_handler(clip_handler)
+        self.queues.add_handler(clip_handler)
         # keyboard, pen and stick
-        self.input_methods.add_handler(self.keyboard)
-        self.input_methods.add_handler(self.pen)
-        self.input_methods.add_handler(self.stick)
+        self.queues.add_handler(self.keyboard)
+        self.queues.add_handler(self.pen)
+        self.queues.add_handler(self.stick)
         # set up BASIC event handlers
         self.basic_events = basicevents.BasicEvents(
                 self.values, self.sound, self.clock, self.files,
@@ -189,7 +184,7 @@ class Implementation(object):
         self.debugger = dbg.get_debugger(self, bool(debug), debug, catch_exceptions)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
-                self.debugger, self.input_methods, self.screen, self.files, self.sound,
+                self.debugger, self.queues, self.screen, self.files, self.sound,
                 self.values, self.memory, self.program, self.parser, self.basic_events)
         # PLAY parser
         self.play_parser = sound.PlayParser(self.sound, self.memory, self.values)
@@ -519,7 +514,7 @@ class Implementation(object):
             for l in lines:
                 # flow of listing is visible on screen
                 # and interruptible
-                self.input_methods.wait()
+                self.queues.wait()
                 # LIST on screen is slightly different from just writing
                 self.screen.list_line(l)
         # return to direct mode
