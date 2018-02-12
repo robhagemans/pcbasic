@@ -197,7 +197,8 @@ class Implementation(object):
                 self.screen, self.keyboard, self.screen.fonts[8],
                 self.interpreter, peek_values, syntax)
         # initialise machine ports
-        self.machine = machine.MachinePorts(self)
+        self.machine = machine.MachinePorts(
+                self.queues, self.values, self.screen, self.keyboard, self.stick, self.files)
         # build function table (depends on Memory having been initialised)
         self.parser.init_callbacks(self)
 

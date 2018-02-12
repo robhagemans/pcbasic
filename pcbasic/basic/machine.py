@@ -23,17 +23,19 @@ class MachinePorts(object):
     #  use 100./255. for 100ms.
     joystick_time_factor = 75. / 255.
 
-    def __init__(self, session):
+    def __init__(self, queues, values, screen, keyboard, stick, files):
         """Initialise machine ports."""
-        self.session = session
-        self._values = self.session.values
+        self._values = values
+        self._queues = queues
+        self._keyboard = keyboard
+        self._stick = stick
+        self._screen = screen
         # parallel port base address:
         # http://retired.beyondlogic.org/spp/parallel.htm
         # 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
         # 378h - 37Fh  Usual Address For LPT 1
         # 278h - 27Fh  Usual Address For LPT 2
-        dev = self.session.files
-        self.lpt_device = [dev.get_device('LPT1:'), dev.get_device('LPT2:')]
+        self.lpt_device = [files.get_device('LPT1:'), files.get_device('LPT2:')]
         # serial port base address:
         # http://www.petesqbsite.com/sections/tutorials/zines/qbnews/9-com_ports.txt
         #            COM1             &H3F8
@@ -41,7 +43,7 @@ class MachinePorts(object):
         #            COM3             &H3E8 (not implemented)
         #            COM4             &H2E8 (not implemented)
         self.com_base = {0x3f8: 0, 0x2f8: 1}
-        self.com_device = [dev.get_device('COM1:'), dev.get_device('COM2:')]
+        self.com_device = [files.get_device('COM1:'), files.get_device('COM2:')]
         self.com_enable_baud_write = [False, False]
         self.com_baud_divisor = [0, 0]
         self.com_break = [False, False]
@@ -64,8 +66,8 @@ class MachinePorts(object):
 
     def inp(self, port):
         """Get the value in an emulated machine port."""
-        keyboard = self.session.keyboard
-        stick = self.session.stick
+        keyboard = self._keyboard
+        stick = self._stick
         # keyboard
         if port == 0x60:
             return keyboard.last_scancode
@@ -142,18 +144,18 @@ class MachinePorts(object):
         list(args)
         if addr == 0x201:
             # game port reset
-            self.session.stick.reset_decay()
+            self._stick.reset_decay()
         elif addr == 0x3c5:
             # officially, requires OUT &H3C4, 2 first (not implemented)
-            self.session.screen.mode.set_plane_mask(val)
+            self._screen.mode.set_plane_mask(val)
         elif addr == 0x3cf:
             # officially, requires OUT &H3CE, 4 first (not implemented)
-            self.session.screen.mode.set_plane(val)
+            self._screen.mode.set_plane(val)
         elif addr == 0x3d8:
             #OUT &H3D8,&H1A: REM enable color burst
             #OUT &H3D8,&H1E: REM disable color burst
             # 0x1a == 0001 1010     0x1e == 0001 1110
-            self.session.screen.set_colorburst(val & 4 == 0)
+            self._screen.set_colorburst(val & 4 == 0)
         elif addr in (0x378, 0x37A, 0x278, 0x27A):
             # parallel port output ports
             # http://www.aaroncake.net/electronics/qblpt.htm
@@ -225,7 +227,7 @@ class MachinePorts(object):
         error.range_check(0, 255, xorer)
         list(args)
         while (self.inp(addr) ^ xorer) & ander == 0:
-            self.session.queues.wait()
+            self._queues.wait()
 
 
 ###############################################################################
