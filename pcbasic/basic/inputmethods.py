@@ -7,9 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import datetime
-import logging
-import time
-import Queue
 
 from .base import error
 from .base import scancode
@@ -21,177 +18,21 @@ from . import values
 
 
 # bit flags for modifier keys
-toggle = {
+# sticky modifiers
+TOGGLE = {
     scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,
     scancode.NUMLOCK: 0x20, scancode.SCROLLOCK: 0x10}
-modifier = {
+# nonsticky modifiers
+MODIFIER = {
     scancode.ALT: 0x8, scancode.CTRL: 0x4,
     scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
 
 # default function key eascii codes for KEY autotext.
-function_key = {
+FUNCTION_KEY = {
     ea.F1: 0, ea.F2: 1, ea.F3: 2, ea.F4: 3,
     ea.F5: 4, ea.F6: 5, ea.F7: 6, ea.F8: 7,
     ea.F9: 8, ea.F10: 9, ea.F11: 10, ea.F12: 11}
 
-# F12 emulator home-key
-# also f12+b -> ctrl+break
-home_key_replacements_scancode = {
-    scancode.LEFT: (scancode.KP4, u'4'),
-    scancode.RIGHT: (scancode.KP6, u'6'),
-    scancode.UP: (scancode.KP8, u'8'),
-    scancode.DOWN: (scancode.KP2, u'2'),
-    # catch numbers by scancode, not eACSII
-    # becasue the eASCII for Alt+number is different and that
-    # will break inserting Alt+keypad numbers as Alt+F12+numbers
-    scancode.N0: (scancode.KP0, u'0'),
-    scancode.N1: (scancode.KP1, u'1'),
-    scancode.N2: (scancode.KP2, u'2'),
-    scancode.N3: (scancode.KP3, u'3'),
-    scancode.N4: (scancode.KP4, u'4'),
-    scancode.N5: (scancode.KP5, u'5'),
-    scancode.N6: (scancode.KP6, u'6'),
-    scancode.N7: (scancode.KP7, u'7'),
-    scancode.N8: (scancode.KP8, u'8'),
-    scancode.N9: (scancode.KP9, u'9'),
-}
-
-home_key_replacements_eascii = {
-    u'+': (scancode.KPPLUS, u'+'),
-    u'-': (scancode.KPMINUS, u'-'),
-    u'P': (scancode.BREAK, u''),
-    u'N': (scancode.NUMLOCK, u''),
-    u'S': (scancode.SCROLLOCK, u''),
-    u'C': (scancode.CAPSLOCK, u''),
-    u'H': (scancode.PRINT, u''),
-    # ctrl+H
-    u'\x08': (scancode.PRINT, uea.CTRL_PRINT),
-}
-
-
-
-class InputMethods(object):
-    """Manage input queue."""
-
-    tick = 0.006
-    max_video_qsize = 500
-    max_audio_qsize = 20
-
-    def __init__(self, queues, values, ctrl_c_is_break):
-        """Initialise event triggers."""
-        self._values = values
-        self._queues = queues
-        # input signal handlers
-        self._handlers = []
-        # pause-key halts everything until another keypress
-        self._pause = False
-        # treat ctrl+c as break interrupt
-        self._ctrl_c_is_break = ctrl_c_is_break
-        # F12 replacement events
-        self._f12_active = False
-
-    def add_handler(self, handler):
-        """Add an input handler."""
-        self._handlers.append(handler)
-
-    def wait(self):
-        """Wait and check events."""
-        time.sleep(self.tick)
-        self.check_events()
-
-    def check_events(self, event_check_input=()):
-        """Main event cycle."""
-        # avoid screen lockups if video queue fills up
-        if self._queues.video.qsize() > self.max_video_qsize:
-            # note that this really slows down screen writing
-            # because it triggers a sleep() in the video backend
-            self._queues.video.join()
-        if self._queues.audio.qsize() > self.max_audio_qsize:
-            self._queues.audio.join()
-        self._check_input(event_check_input)
-
-    def _check_input(self, event_check_input):
-        """Handle input events."""
-        while True:
-            # pop input queues
-            try:
-                signal = self._queues.inputs.get(False)
-            except Queue.Empty:
-                if self._pause:
-                    continue
-                else:
-                    # we still need to handle basic events: not all are inputs
-                    for e in event_check_input:
-                        e.check_input(signals.Event(None))
-                    break
-            self._queues.inputs.task_done()
-            # effect replacements
-            self._replace_inputs(signal)
-            # handle input events
-            for handle_input in (
-                        [self._handle_non_trappable_interrupts] +
-                        [e.check_input for e in event_check_input] +
-                        [self._handle_trappable_interrupts] +
-                        [e.check_input for e in self._handlers]):
-                if handle_input(signal):
-                    break
-
-    def _handle_non_trappable_interrupts(self, signal):
-        """Handle non-trappable interrupts (before BASIC events)."""
-        # process input events
-        if signal.event_type == signals.KEYB_QUIT:
-            raise error.Exit()
-        # exit pause mode on keyboard hit; swallow key
-        elif signal.event_type in (
-                    signals.KEYB_CHAR, signals.KEYB_DOWN, signals.STREAM_DOWN,
-                    signals.STREAM_CHAR, signals.CLIP_PASTE):
-            if self._pause:
-                self._pause = False
-                return True
-        return False
-
-    def _handle_trappable_interrupts(self, signal):
-        """Handle trappable interrupts (after BASIC events)."""
-        # handle special key combinations
-        if signal.event_type == signals.KEYB_DOWN:
-            c, scan, mod = signal.params
-            if (scan == scancode.DELETE and
-                    scancode.CTRL in mod and scancode.ALT in mod):
-                # ctrl-alt-del: if not captured by the OS, reset the emulator
-                # meaning exit and delete state. This is useful on android.
-                raise error.Reset()
-            elif scan in (scancode.BREAK, scancode.SCROLLOCK) and scancode.CTRL in mod:
-                raise error.Break()
-            # pause key handling
-            # to ensure this key remains trappable
-            elif (scan == scancode.BREAK or
-                    (scan == scancode.NUMLOCK and scancode.CTRL in mod)):
-                self._pause = True
-                return True
-        return False
-
-    def _replace_inputs(self, signal):
-        """Input event replacements."""
-        if signal.event_type == signals.KEYB_DOWN:
-            c, scan, mod = signal.params
-            if (self._ctrl_c_is_break and c == uea.CTRL_c):
-                # replace ctrl+c with ctrl+break if option is enabled
-                signal.params = u'', scancode.BREAK, [scancode.CTRL]
-            elif scan == scancode.F12:
-                # F12 emulator "home key"
-                self._f12_active = True
-                signal.event_type = None
-            elif self._f12_active:
-                # F12 replacements
-                if c.upper() == u'B':
-                    # f12+b -> ctrl+break
-                    signal.params = u'', scancode.BREAK, [scancode.CTRL]
-                else:
-                    scan, c = home_key_replacements_scancode.get(scan, (scan, c))
-                    scan, c = home_key_replacements_eascii.get(c.upper(), (scan, c))
-                    signal.params = c, scan, mod
-        elif (signal.event_type == signals.KEYB_UP) and (signal.params[0] == scancode.F12):
-            self._f12_active = False
 
 
 ###############################################################################
@@ -291,9 +132,9 @@ class KeyboardBuffer(object):
             c = ''
         if c:
             self.start = (self.start + 1) % self.ring_length
-        if not expand or c not in function_key:
+        if not expand or c not in FUNCTION_KEY:
             return c
-        self.expansion_vessel = list(self.key_replace[function_key[c]])
+        self.expansion_vessel = list(self.key_replace[FUNCTION_KEY[c]])
         try:
             return self.expansion_vessel.pop(0)
         except IndexError:
@@ -457,14 +298,14 @@ class Keyboard(object):
             self.last_scancode = scan
         # update ephemeral modifier status at every keypress
         # mods is a list of scancodes; OR together the known modifiers
-        self.mod &= ~(modifier[scancode.CTRL] | modifier[scancode.ALT] |
-                    modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])
+        self.mod &= ~(MODIFIER[scancode.CTRL] | MODIFIER[scancode.ALT] |
+                    MODIFIER[scancode.LSHIFT] | MODIFIER[scancode.RSHIFT])
         for m in mods:
-            self.mod |= modifier.get(m, 0)
+            self.mod |= MODIFIER.get(m, 0)
         # set toggle-key modifier status
         # these are triggered by keydown events
         try:
-            self.mod ^= toggle[scan]
+            self.mod ^= TOGGLE[scan]
         except KeyError:
             pass
         # alt+keypad ascii replacement
@@ -474,7 +315,7 @@ class Keyboard(object):
                 return
             except KeyError:
                 pass
-        if (self.mod & toggle[scancode.CAPSLOCK]
+        if (self.mod & TOGGLE[scancode.CAPSLOCK]
                 and not self.ignore_caps and len(c) == 1):
             c = c.swapcase()
         self.buf.insert_keypress(self.codepage.from_unicode(c), scan, self.mod, check_full)
@@ -485,7 +326,7 @@ class Keyboard(object):
             self.last_scancode = 0x80 + scan
         try:
             # switch off ephemeral modifiers
-            self.mod &= ~modifier[scan]
+            self.mod &= ~MODIFIER[scan]
         except KeyError:
            pass
         # ALT+keycode

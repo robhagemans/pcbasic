@@ -17,7 +17,8 @@ from .base import tokens as tk
 from .base import signals
 from .base import codestream
 from . import converter
-from . import events
+from . import eventcycle
+from . import basicevents
 from . import program
 from . import display
 from . import editor
@@ -101,19 +102,19 @@ class Implementation(object):
         # console
         ######################################################################
         # no interface yet; use dummy queues
-        self.queues = signals.InterfaceQueues(inputs=Queue.Queue())
+        self.queues = eventcycle.InterfaceQueues(inputs=Queue.Queue())
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
                 self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
         # set up input event handler
-        self.input_methods = inputmethods.InputMethods(
+        self.input_methods = eventcycle.EventHandler(
                 self.queues, self.values, ctrl_c_is_break)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.input_methods, syntax)
         # Sound is needed for the beeps on \a
-        # InputMethods is needed for wait() in graphics
+        # EventHandler is needed for wait() in graphics
         self.screen = display.Screen(
                 self.queues, self.values, self.input_methods,
                 self.memory, text_width, video_memory, video, monitor,
@@ -123,7 +124,7 @@ class Implementation(object):
         # initilise floating-point error message stream
         self.values.set_handler(values.FloatErrorHandler(self.screen))
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
-        # InputMethods needed for wait() only
+        # EventHandler needed for wait() only
         self.keyboard = inputmethods.Keyboard(self.input_methods, self.values,
                 self.codepage, self.queues, keys, ignore_caps)
         self.pen = inputmethods.Pen()
@@ -133,7 +134,7 @@ class Implementation(object):
         ######################################################################
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
-        # InputMethods needed for wait()
+        # EventCycle needed for wait()
         self.files = devices.Files(
                 self.values, self.memory,
                 self.input_methods, self.keyboard, self.screen,
@@ -162,7 +163,7 @@ class Implementation(object):
         self.input_methods.add_handler(self.pen)
         self.input_methods.add_handler(self.stick)
         # set up BASIC event handlers
-        self.basic_events = events.BasicEvents(
+        self.basic_events = basicevents.BasicEvents(
                 self.values, self.sound, self.clock, self.files,
                 self.screen, self.program, syntax)
         ######################################################################

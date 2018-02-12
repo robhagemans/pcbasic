@@ -1,5 +1,5 @@
 """
-PC-BASIC - events.py
+PC-BASIC - basicevents.py
 Handlers for BASIC events
 
 (c) 2013--2018 Rob Hagemans
