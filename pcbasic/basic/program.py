@@ -19,7 +19,7 @@ class Program(object):
     """BASIC program."""
 
     def __init__(self, tokeniser, lister, max_list_line,
-                allow_protect, allow_code_poke, memory, bytecode):
+                allow_protect, allow_code_poke, memory, bytecode, rebuild_offsets):
         """Initialise program."""
         self._memory = memory
         # program bytecode buffer
@@ -28,6 +28,7 @@ class Program(object):
         self.max_list_line = max_list_line
         self.allow_protect = allow_protect
         self.allow_code_poke = allow_code_poke
+        self._rebuild_offsets = rebuild_offsets
         # to be set when file memory is initialised
         self.code_start = memory.code_start
         # for detokenise_line()
@@ -86,15 +87,16 @@ class Program(object):
             offsets.append(scanpos)
         self.line_numbers[65536] = scanpos
         # rebuild offsets
-        self.bytecode.seek(0)
-        last = 0
-        for pos in offsets:
-            self.bytecode.read(1)
-            self.bytecode.write(struct.pack('<H', self.code_start + 1 + pos))
-            self.bytecode.read(pos - last - 3)
-            last = pos
-        # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
-        self.bytecode.write('\0\0\0')
+        if self._rebuild_offsets:
+            self.bytecode.seek(0)
+            last = 0
+            for pos in offsets:
+                self.bytecode.read(1)
+                self.bytecode.write(struct.pack('<H', self.code_start + 1 + pos))
+                self.bytecode.read(pos - last - 3)
+                last = pos
+            # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
+            self.bytecode.write('\0\0\0')
 
     def update_line_dict(self, pos, afterpos, length, deleteable, beyond):
         """Update line number dictionary after deleting lines."""
@@ -285,7 +287,7 @@ class Program(object):
         self.line_numbers.update(new_lines)
         return old_to_new
 
-    def load(self, g, rebuild_dict=True):
+    def load(self, g):
         """Load program from ascii, bytecode or protected stream."""
         self.erase()
         if g.filetype == 'B':
@@ -304,7 +306,7 @@ class Program(object):
         else:
             logging.debug("Incorrect file type '%s' on LOAD", g.filetype)
         # rebuild line number dict and offsets
-        if rebuild_dict and g.filetype != 'A':
+        if g.filetype != 'A':
             self.rebuild_line_dict()
         self.code_size = self.bytecode.tell()
 

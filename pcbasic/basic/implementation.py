@@ -1,6 +1,6 @@
 """
-PC-BASIC - session.py
-Session class and main interpreter loop
+PC-BASIC - implementation.py
+Top-level implementation and main interpreter loop
 
 (c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import sys
 import logging
-import platform
 import io
 import Queue
 from contextlib import contextmanager
@@ -38,13 +37,10 @@ from . import devices
 from . import extensions
 
 
-class Session(object):
-    """Interpreter session."""
+class Implementation(object):
+    """Interpreter session, implementation class."""
 
-    ###########################################################################
-    # public interface methods
-
-    def __init__(self, iface=None,
+    def __init__(self,
             syntax=u'advanced', pcjr_term=u'', shell=u'',
             output_file=None, append=False, input_file=None,
             codepage=None, box_protect=True,
@@ -58,7 +54,7 @@ class Session(object):
             utf8=False, universal=True, stdio=True,
             ignore_caps=True, ctrl_c_is_break=True,
             max_list_line=65535, allow_protect=False,
-            allow_code_poke=False, max_memory=65534,
+            allow_code_poke=False, rebuild_offsets=True, max_memory=65534,
             max_reclen=128, max_files=3, reserved_memory=3429,
             temp_dir=u'', extension=None,
             debug=False, catch_exceptions='basic',
@@ -98,18 +94,14 @@ class Session(object):
         bytecode = codestream.TokenisedStream(self.memory.code_start)
         self.program = program.Program(
                 self.tokeniser, self.lister, max_list_line, allow_protect,
-                allow_code_poke, self.memory, bytecode)
+                allow_code_poke, self.memory, bytecode, rebuild_offsets)
         # register all data segment users
         self.memory.set_buffers(self.program)
         ######################################################################
         # console
         ######################################################################
-        if iface:
-            # connect to interface queues
-            self.queues = signals.InterfaceQueues(*iface.get_queues())
-        else:
-            # no interface; use dummy queues
-            self.queues = signals.InterfaceQueues(inputs=Queue.Queue())
+        # no interface yet; use dummy queues
+        self.queues = signals.InterfaceQueues(inputs=Queue.Queue())
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O redirection
@@ -213,18 +205,10 @@ class Session(object):
         # build function table (depends on Memory having been initialised)
         self.parser.init_callbacks(self)
 
-
-    def __enter__(self):
-        """Context guard."""
-        return self
-
-    def __exit__(self, dummy_1, dummy_2, dummy_3):
-        """Context guard."""
-        self.close()
-
     def __getstate__(self):
         """Pickle the session."""
         pickle_dict = self.__dict__.copy()
+        pickle_dict['interface'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
@@ -238,10 +222,10 @@ class Session(object):
         if not self.interpreter._parse_mode:
             self._prompt = False
 
-    def attach(self, iface=None):
+    def attach_interface(self, interface=None):
         """Attach interface to interpreter session."""
-        if iface:
-            self.queues.set(*iface.get_queues())
+        if interface:
+            self.queues.set(*interface.get_queues())
             # rebuild the screen
             self.screen.rebuild()
             # rebuild audio queues
@@ -252,33 +236,21 @@ class Session(object):
             self.queues.set(inputs=Queue.Queue())
         # attach input queue to redirects
         self.input_redirection.attach(self.queues.inputs)
-        return self
 
-    def load_program(self, prog, rebuild_dict=True):
-        """Load a program from native or BASIC file."""
-        with self._handle_exceptions():
-            with self.files.open_internal(prog, filetype='ABP', mode='I') as progfile:
-                self.program.load(progfile, rebuild_dict=rebuild_dict)
-
-    def save_program(self, prog, filetype):
-        """Save a program to native or BASIC file."""
-        with self._handle_exceptions():
-            with self.files.open_internal(prog, filetype=filetype, mode='O') as progfile:
-                self.program.save(progfile)
+    def bind_file(self, file_name_or_object, name=None):
+        """Bind a native file name or Python stream to a BASIC file name."""
+        name = name or hex(id(file_name_or_object))
+        self.files.get_device(b'@:').bind(file_name_or_object, name)
+        return b'@:' + name
 
     def execute(self, command):
         """Execute a BASIC statement."""
-        for cmd in command.splitlines():
-            if isinstance(cmd, unicode):
-                cmd = self.codepage.str_from_unicode(cmd)
-            with self._handle_exceptions():
-                self._store_line(cmd)
-                self.interpreter.loop()
+        with self._handle_exceptions():
+            self._store_line(command)
+            self.interpreter.loop()
 
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
-        if isinstance(expression, unicode):
-            expression = self.codepage.str_from_unicode(expression)
         with self._handle_exceptions():
             # attach print token so tokeniser has a whole statement to work with
             tokens = self.tokeniser.tokenise_line(b'?' + expression)
@@ -289,23 +261,19 @@ class Session(object):
 
     def set_variable(self, name, value):
         """Set a variable in memory."""
-        if isinstance(name, unicode):
-            name = name.encode('ascii')
         name = name.upper()
         if isinstance(value, unicode):
             value = self.codepage.str_from_unicode(value)
         elif isinstance(value, bool):
             value = -1 if value else 0
-        if '(' in name:
-            name = name.split('(', 1)[0]
+        if b'(' in name:
+            name = name.split(b'(', 1)[0]
             self.arrays.from_list(value, name)
         else:
             self.memory.set_variable(name, [], self.values.from_value(value, name[-1]))
 
     def get_variable(self, name):
         """Get a variable in memory."""
-        if isinstance(name, unicode):
-            name = name.encode('ascii')
         name = name.upper()
         if '(' in name:
             name = name.split('(', 1)[0]
@@ -316,27 +284,21 @@ class Session(object):
     def interact(self):
         """Interactive interpreter session."""
         while True:
-            try:
-                with self._handle_exceptions():
-                    self.interpreter.loop()
-                    if self._auto_mode:
-                        self._auto_step()
-                    else:
-                        self._show_prompt()
-                        # input loop, checks events
-                        line = self.editor.wait_screenline(from_start=True)
-                        self._prompt = not self._store_line(line)
-            except error.Exit:
-                break
+            with self._handle_exceptions():
+                self.interpreter.loop()
+                if self._auto_mode:
+                    self._auto_step()
+                else:
+                    self._show_prompt()
+                    # input loop, checks events
+                    line = self.editor.wait_screenline(from_start=True)
+                    self._prompt = not self._store_line(line)
 
     def close(self):
         """Close the session."""
         # close files if we opened any
         self.files.close_all()
         self.files.close_devices()
-
-    ###########################################################################
-    # implementation
 
     def _show_prompt(self):
         """Show the Ok or EDIT prompt, unless suppressed."""
@@ -522,8 +484,9 @@ class Session(object):
             # on Tandy, raises Internal Error
             # and deletes the program currently in memory
             raise error.BASICError(error.INTERNAL_ERROR)
-        with self.files.open_internal(
-                self._term_program, filetype='ABP', mode='I') as progfile:
+        # terminal program for TERM command
+        prog = self.bind_file(self._term_program)
+        with self.files.open(0, prog, filetype='ABP', mode='I') as progfile:
             self.program.load(progfile)
         self.interpreter.error_handle_mode = False
         self.interpreter.clear_stacks_and_pointers()

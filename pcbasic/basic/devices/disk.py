@@ -170,6 +170,7 @@ class DiskDevice(object):
     def open(self, number, filespec, filetype, mode, access, lock,
                    reclen, seg, offset, length, field):
         """Open a file on a disk drive."""
+        # parse the file spec to a definite name
         if not self.path:
             # undefined disk drive: path not found
             raise error.BASICError(error.PATH_NOT_FOUND)
@@ -185,24 +186,25 @@ class DiskDevice(object):
             # random files: try to open matching file
             # if it doesn't exist, use an all-caps 8.3 file name
             name = self._native_path(filespec, defext, name_err=None)
+        # handle locks, open stream and create file object
         # don't open output or append files more than once
         if mode in (b'O', b'A'):
             self.check_file_not_open(name)
         # obtain a lock
-        if filetype == 'D':
+        if filetype == b'D':
             self.locks.acquire(name, number, lock, access)
         try:
             # open the underlying stream
             fhandle = self._open_stream(name, mode, access)
             # apply the BASIC file wrapper
-            f = self.create_file_object(fhandle, filetype, mode, name, number,
-                    access, lock, field, reclen,
-                    seg, offset, length)
+            f = self.create_file_object(
+                    fhandle, filetype, mode, name, number,
+                    access, lock, field, reclen, seg, offset, length)
             # register file as open
             self.locks.open_file(number, f)
             return f
         except Exception:
-            if filetype == 'D':
+            if filetype == b'D':
                 self.locks.release(number)
             self.locks.close_file(number)
             raise
@@ -219,11 +221,11 @@ class DiskDevice(object):
             # OUTPUT mode files are created anyway since they're opened with wb
             if ((mode == b'A' or (mode == b'R' and access in (b'RW', b'R'))) and
                     not os.path.exists(name)):
-                open(name, b'wb').close()
+                open(name, 'wb').close()
             if mode == b'A':
                 # APPEND mode is only valid for text files (which are seekable);
                 # first cut off EOF byte, if any.
-                f = open(name, b'r+b')
+                f = open(name, 'r+b')
                 try:
                     f.seek(-1, 2)
                     if f.read(1) == b'\x1a':
@@ -386,6 +388,36 @@ class DiskDevice(object):
             except AttributeError as e:
                 # only disk files have a name, so ignore
                 pass
+
+
+class InternalDiskDevice(DiskDevice):
+    """Internal disk device for special operations."""
+
+    def __init__(self, letter, path, cwd, locks, codepage, input_methods, utf8, universal):
+        """Initialise internal disk."""
+        self._bound_files = {}
+        DiskDevice.__init__(
+                self, letter, path, cwd, locks, codepage, input_methods, utf8, universal)
+
+    def bind(self, file_name_or_object, name):
+        """Bind a native file name or object to an internal name."""
+        self._bound_files[name] = file_name_or_object
+
+    def open(self, number, filespec, filetype, mode, access, lock,
+                   reclen, seg, offset, length, field):
+        """Open a file on the internal disk drive."""
+        if filespec in self._bound_files:
+            bound_file = self._bound_files[filespec]
+            try:
+                if isinstance(bound_file, basestring):
+                    bound_file = open(self._bound_files[filespec], self.access_modes[mode])
+                return self.create_file_object(bound_file, filetype, mode)
+            except EnvironmentError as e:
+                handle_oserror(e)
+        else:
+            return DiskDevice.open(
+                    self, number, filespec, filetype, mode, access, lock,
+                    reclen, seg, offset, length, field)
 
 
 ###############################################################################

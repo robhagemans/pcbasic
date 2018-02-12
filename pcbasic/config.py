@@ -32,23 +32,24 @@ from . import data
 
 MIN_PYTHON_VERSION = (2, 7, 12)
 
-basename = u'pcbasic-dev'
+BASENAME = u'pcbasic-dev'
 # user configuration and state directories
-_home_dir = os.path.expanduser(u'~')
+HOME_DIR = os.path.expanduser(u'~')
 if platform.system() == b'Windows':
-    user_config_dir = os.path.join(os.getenv(u'APPDATA'), basename)
-    state_path = user_config_dir
+    USER_CONFIG_DIR = os.path.join(os.getenv(u'APPDATA'), BASENAME)
+    STATE_PATH = USER_CONFIG_DIR
 elif platform.system() == b'Darwin':
-    user_config_dir = os.path.join(_home_dir, u'Library', u'Application Support', basename)
-    state_path = user_config_dir
+    USER_CONFIG_DIR = os.path.join(HOME_DIR, u'Library', u'Application Support', BASENAME)
+    STATE_PATH = USER_CONFIG_DIR
 else:
-    _xdg_data_home = os.environ.get(u'XDG_DATA_HOME') or os.path.join(_home_dir, u'.local', u'share')
-    _xdg_config_home = os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(_home_dir, u'.config')
-    user_config_dir = os.path.join(_xdg_config_home, basename)
-    state_path = os.path.join(_xdg_data_home, basename)
+    USER_CONFIG_DIR = os.path.join(
+        os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(HOME_DIR, u'.config'), BASENAME)
+    STATE_PATH = os.path.join(
+        os.environ.get(u'XDG_DATA_HOME') or os.path.join(HOME_DIR, u'.local', u'share'), BASENAME)
 
 # @: target drive for bundled programs
-program_path = os.path.join(state_path, u'bundled_programs')
+PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
+
 
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
@@ -104,10 +105,10 @@ def safe_split(s, sep):
         s1 = u''
     return s0, s1
 
-def store_bundled_programs(program_path):
+def store_bundled_programs(PROGRAM_PATH):
     """Retrieve contents of BASIC programs."""
     for name in PROGRAMS:
-        with open(os.path.join(program_path, name), 'wb') as f:
+        with open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
             f.write(data.read_program_file(name))
 
 
@@ -155,7 +156,7 @@ class Settings(object):
             },
         u'pcjr': {
             u'syntax': u'pcjr',
-            u'pcjr-term': '@:\PCTERM.BAS',
+            u'pcjr-term': os.path.join(PROGRAM_PATH, 'PCTERM.BAS'),
             u'video': u'pcjr',
             u'font': u'vga',
             u'codepage': u'437',
@@ -211,7 +212,7 @@ class Settings(object):
 
     # user and local config files
     config_name = u'PCBASIC.INI'
-    user_config_path = os.path.join(user_config_dir, config_name)
+    user_config_path = os.path.join(USER_CONFIG_DIR, config_name)
 
     # save-state file name
     state_name = 'pcbasic.session'
@@ -361,20 +362,20 @@ class Settings(object):
         self._logger = get_logger(logfile)
         self._temp_dir = temp_dir
         # create state path if needed
-        if not os.path.exists(state_path):
-            os.makedirs(state_path)
+        if not os.path.exists(STATE_PATH):
+            os.makedirs(STATE_PATH)
         # create user config file if needed
         if not os.path.exists(self.user_config_path):
             try:
-                os.makedirs(user_config_dir)
+                os.makedirs(USER_CONFIG_DIR)
             except OSError:
                 pass
             self.build_default_config_file(self.user_config_path)
         # create @: drive if not present
-        if not os.path.exists(program_path):
-            os.makedirs(program_path)
+        if not os.path.exists(PROGRAM_PATH):
+            os.makedirs(PROGRAM_PATH)
             # unpack bundled programs
-            store_bundled_programs(program_path)
+            store_bundled_programs(PROGRAM_PATH)
         # store options in options dictionary
         self._options = self._retrieve_options(self.uargv)
         # prepare global logger for use by main program
@@ -502,6 +503,7 @@ class Settings(object):
             'max_list_line': 65535 if not self.get('strict-hidden-lines') else 65530,
             'allow_protect': self.get('strict-protect'),
             'allow_code_poke': self.get('allow-code-poke'),
+            'rebuild_offsets': not self.get('convert'),
             # max available memory to BASIC (set by /m)
             'max_memory': min(max_list) or 65534,
             # maximum record length (-s)
@@ -543,7 +545,7 @@ class Settings(object):
         """Name of state file"""
         state_name = self.get('state') or self.state_name
         if not os.path.exists(state_name):
-            state_name = os.path.join(state_path, state_name)
+            state_name = os.path.join(STATE_PATH, state_name)
         return state_name
 
     def has_interface(self):
@@ -634,7 +636,7 @@ class Settings(object):
         else:
             mount_dict[b'Z'] = (os.getcwdu(), u'')
         # directory for bundled BASIC programs accessible through @:
-        mount_dict[b'@'] = (program_path, u'')
+        mount_dict[b'@'] = (PROGRAM_PATH, u'')
         # build mount dictionary
         mount_list = self.get('mount', get_default)
         if mount_list:

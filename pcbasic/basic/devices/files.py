@@ -90,41 +90,6 @@ class Files(object):
             self.files[number] = new_file
         return new_file
 
-    def open_internal(self, filespec, filetype, mode):
-        """If the specified file exists, open it; if not, try as BASIC file spec. Do not register in files dict."""
-        if not filespec:
-            return self._open_stdio(filetype, mode)
-        try:
-            # first try exact file name
-            return self._internal_disk.create_file_object(
-                    open(os.path.expandvars(os.path.expanduser(filespec)),
-                         self._internal_disk.access_modes[mode]),
-                    filetype, mode)
-        except EnvironmentError as e:
-            # otherwise, accept capitalised versions and default extension
-            return self.open(0, filespec, filetype, mode)
-
-    def _open_null(self, filetype, mode):
-        """Open a null file object. Do not register in files dict."""
-        return devicebase.TextFileBase(devicebase.nullstream(), filetype, mode)
-
-    def _open_stdio(self, filetype, mode):
-        """Open a file object on standard IO. Do not register in files dict."""
-        # OS-specific stdin/stdout selection
-        # no stdin/stdout access allowed on packaged apps in OSX
-        if platform.system() == b'Darwin':
-            return self._open_null(filetype, mode)
-        try:
-            if mode == 'I':
-                # use io.BytesIO buffer for seekability
-                in_buffer = io.BytesIO(sys.stdin.read())
-                return self._internal_disk.create_file_object(in_buffer, filetype, mode)
-            else:
-                return self._internal_disk.create_file_object(sys.stdout, filetype, mode)
-        except EnvironmentError as e:
-            logging.warning('Could not open standard I/O: %s', e)
-            return self._open_null(filetype, mode)
-
     def get(self, num, mode='IOAR', not_open=error.BAD_FILE_NUMBER):
         """Get the file object for a file number and check allowed mode."""
         if (num < 1):
@@ -601,10 +566,6 @@ class Files(object):
         # disk file locks
         locks = disk.Locks()
         # disk devices
-        self._internal_disk = disk.DiskDevice(
-                b'', None, u'',
-                locks, codepage,
-                input_methods, utf8, universal)
         for letter in self.drive_letters:
             if not mount_dict:
                 mount_dict = {}
@@ -612,10 +573,10 @@ class Files(object):
                 path, cwd = mount_dict[letter]
             else:
                 path, cwd = None, u''
-            self._devices[letter + b':'] = disk.DiskDevice(
-                    letter, path, cwd,
-                    locks, codepage,
-                    input_methods, utf8, universal)
+            # treat device @: separately - internal disk
+            disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
+            self._devices[letter + b':'] = disk_class(
+                    letter, path, cwd, locks, codepage, input_methods, utf8, universal)
         self._current_device = current_device.upper()
 
     def _get_diskdevice_and_path(self, path):
