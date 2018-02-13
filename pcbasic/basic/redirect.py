@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import threading
 import logging
-import Queue
 import sys
 import platform
 
@@ -16,7 +15,7 @@ from .base import signals
 from . import codepage as cp
 
 
-def get_redirection(codepage, stdio, input_file, output_file, append, queue):
+def get_redirection(codepage, stdio, input_file, output_file, append):
     """Initialise redirection objects."""
     if stdio:
         stdout_stream = cp.CodecStream(
@@ -31,10 +30,10 @@ def get_redirection(codepage, stdio, input_file, output_file, append, queue):
             input_stream = open(input_file, b'rb')
         except EnvironmentError as e:
             logging.warning(u'Could not open input file %s: %s', input_file, e.strerror)
-    input_redirection = InputRedirection(
-            [(input_stream, False, None),
-            (stdin_stream, platform.system() != 'Windows' and sys.stdin.isatty(), sys.stdin.encoding)],
-            codepage, queue)
+    input_redirection = InputRedirection([
+            (input_stream, False, None),
+            (stdin_stream, platform.system() != 'Windows' and sys.stdin.isatty(), sys.stdin.encoding)
+            ], codepage)
     return input_redirection, output_redirection
 
 
@@ -69,14 +68,12 @@ class OutputRedirection(object):
             self._output_echos.append(stream)
 
 
-
 class InputRedirection(object):
     """Manage I/O redirection."""
 
-    def __init__(self, input_list, codepage, queue):
+    def __init__(self, input_list, codepage):
         """Initialise redirects."""
         self._codepage = codepage
-        self._sources = []
         self._input_streams = []
         self._lfcrs = []
         self._encodings = []
@@ -85,7 +82,6 @@ class InputRedirection(object):
                 self._input_streams.append(f)
                 self._lfcrs.append(lfcr)
                 self._encodings.append(encoding)
-        self.attach(queue)
 
     def attach(self, queue):
         """Attach input queue and start stream reader threads."""
@@ -98,20 +94,6 @@ class InputRedirection(object):
             thread = threading.Thread(target=self._process_input, args=(s, queue, encoding, lfcr))
             thread.daemon = True
             thread.start()
-            self._sources.append(queue)
-
-    def __getstate__(self):
-        """Pickler."""
-        pickle_dict = self.__dict__
-        # don't pickle the queues
-        del pickle_dict['_sources']
-        return pickle_dict
-
-    def __setstate__(self, pickle_dict):
-        """Unpickler."""
-        # don't pickle the queues
-        self.__dict__ = pickle_dict
-        self._sources = []
 
     def _process_input(self, stream, queue, encoding, lfcr):
         """Process input from stream."""

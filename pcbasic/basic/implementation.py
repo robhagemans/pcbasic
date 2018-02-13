@@ -108,7 +108,7 @@ class Implementation(object):
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
-                self.codepage, stdio, input_file, output_file, append, self.queues.inputs)
+                self.codepage, stdio, input_file, output_file, append)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, syntax)
         # Sound is needed for the beeps on \a
