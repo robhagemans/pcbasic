@@ -10,6 +10,10 @@ import threading
 import logging
 import sys
 import platform
+import select
+import time
+import fcntl, termios
+import array
 
 from .base import signals
 from . import codepage as cp
@@ -71,6 +75,8 @@ class OutputRedirection(object):
 class InputRedirection(object):
     """Manage I/O redirection."""
 
+    tick = 0.006
+
     def __init__(self, input_list, codepage):
         """Initialise redirects."""
         self._codepage = codepage
@@ -95,17 +101,29 @@ class InputRedirection(object):
             thread.daemon = True
             thread.start()
 
+    # this works for everything on unix, and sockets on Windows
+    # for windows: detect if stdin, then use msvcrt.kbhit() and msvcrt.getch()
+    #    else assume it's a file and just drain-read?
     def _process_input(self, stream, queue, encoding, lfcr):
         """Process input from stream."""
+        sock_size = array.array('i', [0])
         while True:
-            # blocking read
-            instr = stream.readline().replace('\r\n', '\r')
-            if lfcr:
-                instr = instr.replace('\n', '\r')
+            time.sleep(self.tick)
+            instr = []
+            while select.select([stream], [], [], 0)[0]:
+                fcntl.ioctl(stream, termios.FIONREAD, sock_size)
+                count = sock_size[0]
+                c = stream.read(count)
+                if not c:
+                    # input stream is closed, stop the thread
+                    queue.put(signals.Event(signals.STREAM_CLOSED))
+                    return b''.join(instr)
+                instr.append(c)
             if not instr:
-                # input stream is closed, stop the thread
-                queue.put(signals.Event(signals.STREAM_CLOSED))
-                return
+                continue
+            instr = b''.join(instr).replace(b'\r\n', b'\r')
+            if lfcr:
+                instr = instr.replace(b'\n', b'\r')
             if encoding:
                 queue.put(signals.Event(signals.STREAM_CHAR,
                         (instr.decode(encoding, b'replace'),) ))
