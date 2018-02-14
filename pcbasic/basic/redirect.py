@@ -117,24 +117,18 @@ class InputRedirection(object):
     #    else assume it's a file and just drain-read?
     def _process_input(self, stream, queue, encoding, lfcr):
         """Process input from stream."""
-        sock_size = array.array('i', [0])
         while True:
             time.sleep(self.tick)
             if not self._active:
                 continue
-            instr = []
-            while select.select([stream], [], [], 0)[0]:
-                fcntl.ioctl(stream, termios.FIONREAD, sock_size)
-                count = sock_size[0]
-                c = stream.read(count)
-                if not c:
-                    # input stream is closed, stop the thread
-                    queue.put(signals.Event(signals.STREAM_CLOSED))
-                    return b''.join(instr)
-                instr.append(c)
-            if not instr:
+            instr = _get_chars(stream)
+            if instr is None:
+                # input stream is closed, stop the thread
+                queue.put(signals.Event(signals.STREAM_CLOSED))
+                return
+            elif not instr:
                 continue
-            instr = b''.join(instr).replace(b'\r\n', b'\r')
+            instr = instr.replace(b'\r\n', b'\r')
             if lfcr:
                 instr = instr.replace(b'\n', b'\r')
             if encoding:
@@ -145,3 +139,16 @@ class InputRedirection(object):
                 # but the keyboard functions use unicode
                 queue.put(signals.Event(signals.STREAM_CHAR,
                         (self._codepage.str_to_unicode(instr, preserve_control=True),) ))
+
+def _get_chars(stream):
+    """Get characters from unix stream, nonblocking."""
+    instr = []
+    sock_size = array.array('i', [0])
+    while select.select([stream], [], [], 0)[0]:
+        fcntl.ioctl(stream, termios.FIONREAD, sock_size)
+        count = sock_size[0]
+        c = stream.read(count)
+        if not c:
+            return None
+        instr.append(c)
+    return b''.join(instr)
