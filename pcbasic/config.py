@@ -79,7 +79,7 @@ def get_unicode_argv():
         argv = [argv[i] for i in xrange(argc.value)]
         # clip off the python interpreter call, if we use it
         # anything that didn't get included in sys.argv is not for us either
-        argv = argv[len(sys.argv):]
+        argv = argv[-len(sys.argv):]
         return argv
     else:
         # the official parameter should be LC_CTYPE but that's None in my locale
