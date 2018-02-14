@@ -10,11 +10,16 @@ import threading
 import logging
 import sys
 import platform
-import select
 import time
-import fcntl, termios
-import array
 from contextlib import contextmanager
+
+if platform.system() == 'Windows':
+    import msvcrt
+else:
+    import select
+    import fcntl
+    import termios
+    import array
 
 from .base import signals
 from . import codepage as cp
@@ -117,11 +122,18 @@ class InputRedirection(object):
     #    else assume it's a file and just drain-read?
     def _process_input(self, stream, queue, encoding, lfcr):
         """Process input from stream."""
+        if platform.system() == 'Windows':
+            if stream == sys.stdin:
+                get_chars = _get_chars_windows_console
+            else:
+                get_chars = _get_chars_file
+        else:
+            get_chars = _get_chars
         while True:
             time.sleep(self.tick)
             if not self._active:
                 continue
-            instr = _get_chars(stream)
+            instr = get_chars(stream)
             if instr is None:
                 # input stream is closed, stop the thread
                 queue.put(signals.Event(signals.STREAM_CLOSED))
@@ -140,15 +152,40 @@ class InputRedirection(object):
                 queue.put(signals.Event(signals.STREAM_CHAR,
                         (self._codepage.str_to_unicode(instr, preserve_control=True),) ))
 
+
+##############################################################################
+# non-blocking character read
+
 def _get_chars(stream):
     """Get characters from unix stream, nonblocking."""
     instr = []
+    # output buffer for ioctl call
     sock_size = array.array('i', [0])
+    # while buffer has characters/lines to read
     while select.select([stream], [], [], 0)[0]:
+        # find number of bytes available
         fcntl.ioctl(stream, termios.FIONREAD, sock_size)
         count = sock_size[0]
+        # and read them all
         c = stream.read(count)
         if not c:
             return None
         instr.append(c)
     return b''.join(instr)
+
+def _get_chars_windows_console(dummy_stream):
+    """Get characters from windows console, nonblocking."""
+    instr = []
+    # get characters while keyboard buffer has them available
+    # this does not echo
+    while msvcrt.kbhit():
+        c = msvcrt.getch()
+        if not c:
+            return None
+        instr.append(c)
+    return b''.join(instr)
+
+def _get_chars_file(stream):
+    """Get characters from file."""
+    # just read the whole file and be done with it
+    return stream.read() or None
