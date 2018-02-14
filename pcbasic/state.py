@@ -24,8 +24,10 @@ def manage_state(session, state_file, do_resume):
     """Resume a session if requested; save upon exit"""
     if do_resume:
         session = zunpickle(state_file).attach(session.interface)
-    yield session
-    zpickle(session, state_file)
+    try:
+        yield session
+    finally:
+        zpickle(session, state_file)
 
 
 def unpickle_file(name, mode, pos):

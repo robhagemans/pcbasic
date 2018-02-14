@@ -14,6 +14,7 @@ import select
 import time
 import fcntl, termios
 import array
+from contextlib import contextmanager
 
 from .base import signals
 from . import codepage as cp
@@ -79,6 +80,7 @@ class InputRedirection(object):
 
     def __init__(self, input_list, codepage):
         """Initialise redirects."""
+        self._active = True
         self._codepage = codepage
         self._input_streams = []
         self._lfcrs = []
@@ -88,6 +90,15 @@ class InputRedirection(object):
                 self._input_streams.append(f)
                 self._lfcrs.append(lfcr)
                 self._encodings.append(encoding)
+
+    @contextmanager
+    def activate(self):
+        """Grab and release input stream."""
+        self._active = True
+        try:
+            yield
+        finally:
+            self._active = False
 
     def attach(self, queue):
         """Attach input queue and start stream reader threads."""
@@ -109,6 +120,8 @@ class InputRedirection(object):
         sock_size = array.array('i', [0])
         while True:
             time.sleep(self.tick)
+            if not self._active:
+                continue
             instr = []
             while select.select([stream], [], [], 0)[0]:
                 fcntl.ioctl(stream, termios.FIONREAD, sock_size)
