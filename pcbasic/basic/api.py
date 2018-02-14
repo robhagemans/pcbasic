@@ -54,17 +54,19 @@ class Session(object):
     def execute(self, command):
         """Execute a BASIC statement."""
         self.start()
-        for cmd in command.splitlines():
-            if isinstance(cmd, unicode):
-                cmd = self._impl.codepage.str_from_unicode(cmd)
-            self._impl.execute(cmd)
+        with self._impl.input_redirection.activate():
+            for cmd in command.splitlines():
+                if isinstance(cmd, unicode):
+                    cmd = self._impl.codepage.str_from_unicode(cmd)
+                self._impl.execute(cmd)
 
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
         self.start()
-        if isinstance(expression, unicode):
-            expression = self._impl.codepage.str_from_unicode(expression)
-        return self._impl.evaluate(expression)
+        with self._impl.input_redirection.activate():
+            if isinstance(expression, unicode):
+                expression = self._impl.codepage.str_from_unicode(expression)
+            return self._impl.evaluate(expression)
 
     def set_variable(self, name, value):
         """Set a variable in memory."""
@@ -84,7 +86,8 @@ class Session(object):
     def interact(self):
         """Interactive interpreter session."""
         self.start()
-        self._impl.interact()
+        with self._impl.input_redirection.activate():
+            self._impl.interact()
 
     def close(self):
         """Close the session."""

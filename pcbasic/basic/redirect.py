@@ -10,6 +10,16 @@ import threading
 import logging
 import sys
 import platform
+import time
+from contextlib import contextmanager
+
+if platform.system() == 'Windows':
+    import msvcrt
+else:
+    import select
+    import fcntl
+    import termios
+    import array
 
 from .base import signals
 from . import codepage as cp
@@ -71,8 +81,11 @@ class OutputRedirection(object):
 class InputRedirection(object):
     """Manage I/O redirection."""
 
+    tick = 0.006
+
     def __init__(self, input_list, codepage):
         """Initialise redirects."""
+        self._active = True
         self._codepage = codepage
         self._input_streams = []
         self._lfcrs = []
@@ -82,6 +95,15 @@ class InputRedirection(object):
                 self._input_streams.append(f)
                 self._lfcrs.append(lfcr)
                 self._encodings.append(encoding)
+
+    @contextmanager
+    def activate(self):
+        """Grab and release input stream."""
+        self._active = True
+        try:
+            yield
+        finally:
+            self._active = False
 
     def attach(self, queue):
         """Attach input queue and start stream reader threads."""
@@ -95,17 +117,32 @@ class InputRedirection(object):
             thread.daemon = True
             thread.start()
 
+    # this works for everything on unix, and sockets on Windows
+    # for windows: detect if stdin, then use msvcrt.kbhit() and msvcrt.getch()
+    #    else assume it's a file and just drain-read?
     def _process_input(self, stream, queue, encoding, lfcr):
         """Process input from stream."""
+        if platform.system() == 'Windows':
+            if stream == sys.stdin:
+                get_chars = _get_chars_windows_console
+            else:
+                get_chars = _get_chars_file
+        else:
+            get_chars = _get_chars
         while True:
-            # blocking read
-            instr = stream.readline().replace('\r\n', '\r')
-            if lfcr:
-                instr = instr.replace('\n', '\r')
-            if not instr:
+            time.sleep(self.tick)
+            if not self._active:
+                continue
+            instr = get_chars(stream)
+            if instr is None:
                 # input stream is closed, stop the thread
                 queue.put(signals.Event(signals.STREAM_CLOSED))
                 return
+            elif not instr:
+                continue
+            instr = instr.replace(b'\r\n', b'\r')
+            if lfcr:
+                instr = instr.replace(b'\n', b'\r')
             if encoding:
                 queue.put(signals.Event(signals.STREAM_CHAR,
                         (instr.decode(encoding, b'replace'),) ))
@@ -114,3 +151,41 @@ class InputRedirection(object):
                 # but the keyboard functions use unicode
                 queue.put(signals.Event(signals.STREAM_CHAR,
                         (self._codepage.str_to_unicode(instr, preserve_control=True),) ))
+
+
+##############################################################################
+# non-blocking character read
+
+def _get_chars(stream):
+    """Get characters from unix stream, nonblocking."""
+    instr = []
+    # output buffer for ioctl call
+    sock_size = array.array('i', [0])
+    # while buffer has characters/lines to read
+    while select.select([stream], [], [], 0)[0]:
+        # find number of bytes available
+        fcntl.ioctl(stream, termios.FIONREAD, sock_size)
+        count = sock_size[0]
+        # and read them all
+        c = stream.read(count)
+        if not c:
+            return None
+        instr.append(c)
+    return b''.join(instr)
+
+def _get_chars_windows_console(dummy_stream):
+    """Get characters from windows console, nonblocking."""
+    instr = []
+    # get characters while keyboard buffer has them available
+    # this does not echo
+    while msvcrt.kbhit():
+        c = msvcrt.getch()
+        if not c:
+            return None
+        instr.append(c)
+    return b''.join(instr)
+
+def _get_chars_file(stream):
+    """Get characters from file."""
+    # just read the whole file and be done with it
+    return stream.read() or None
