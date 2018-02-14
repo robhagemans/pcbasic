@@ -204,9 +204,7 @@ class Implementation(object):
 
     def __getstate__(self):
         """Pickle the session."""
-        pickle_dict = self.__dict__.copy()
-        pickle_dict['interface'] = None
-        return pickle_dict
+        return self.__dict__
 
     def __setstate__(self, pickle_dict):
         """Unpickle and resume the session."""

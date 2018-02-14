@@ -33,6 +33,16 @@ class Session(object):
         if ex_type in (error.Exit, error.Break):
             return True
 
+    def __getstate__(self):
+        """Pickle the session."""
+        pickle_dict = self.__dict__.copy()
+        pickle_dict['interface'] = None
+        return pickle_dict
+
+    def __setstate__(self, pickle_dict):
+        """Unpickle and resume the session."""
+        self.__dict__.update(pickle_dict)
+
     def start(self):
         """Start the session."""
         if not self._impl:
