@@ -61,14 +61,14 @@ class KeyboardBuffer(object):
         self._ring_length = ring_length
         self._start = 0
 
-    def append(self, cp_c, scancode, modifier, check_full=True):
+    def append(self, cp_c, scancode, check_full=True):
         """Append a single keystroke with eascii/codepage, scancode, modifier."""
         if cp_c:
             if check_full and len(self._buffer) >= self._ring_length:
                 # emit a sound signal when buffer is full (and we care)
                 self._queues.audio.put(signals.Event(signals.AUDIO_TONE, FULL_TONE))
             else:
-                self._buffer.append((cp_c, scancode, modifier))
+                self._buffer.append((cp_c, scancode))
 
     def getc(self):
         """Read a keystroke as eascii/codepage."""
@@ -121,7 +121,7 @@ class KeyboardBuffer(object):
             # marker of buffer position
             return b'\x0d', 0
         try:
-            return self._buffer[index][0:2]
+            return self._buffer[index]
         except IndexError:
             return b'\0\0', 0
 
@@ -130,7 +130,7 @@ class KeyboardBuffer(object):
         index = self._ring_index(index)
         if index < self._ring_length:
             try:
-                self._buffer[index] = (c, scan, None)
+                self._buffer[index] = (c, scan)
             except IndexError:
                 pass
 
@@ -141,7 +141,7 @@ class KeyboardBuffer(object):
         start_index = self._ring_index(start)
         stop_index = self._ring_index(stop)
         self._buffer = self._buffer[start_index:] + self._buffer[:stop_index]
-        self._buffer += [(b'\0\0', None, None)]*(length - len(self._buffer))
+        self._buffer += [(b'\0\0', None)]*(length - len(self._buffer))
         self._start = start
 
 
@@ -182,7 +182,7 @@ class Keyboard(object):
         # pre-inserted keystrings
         self._codepage = codepage
         for ea_char in _split_eascii(self._codepage.str_from_unicode(keystring)):
-            self.buf.append(ea_char, None, None, check_full=False)
+            self.buf.append(ea_char, None, check_full=False)
         # stream buffer
         self._stream_buffer = deque()
         # redirected input stream has closed
@@ -240,7 +240,7 @@ class Keyboard(object):
         if (self.mod & TOGGLE[scancode.CAPSLOCK]
                 and not self._ignore_caps and len(c) == 1):
             c = c.swapcase()
-        self.buf.append(self._codepage.from_unicode(c), scan, self.mod, check_full)
+        self.buf.append(self._codepage.from_unicode(c), scan, check_full)
 
     def _key_up(self, scan):
         """Insert a key-up event."""
@@ -256,7 +256,7 @@ class Keyboard(object):
             char = chr(int(self.keypad_ascii)%256)
             if char == b'\0':
                 char = b'\0\0'
-            self.buf.append(char, None, None, check_full=True)
+            self.buf.append(char, None, check_full=True)
             self.keypad_ascii = b''
 
     def _stream_chars(self, us):
