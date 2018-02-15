@@ -225,6 +225,8 @@ class Keyboard(object):
         # needed for wait() in wait_char()
         self._queues = queues
 
+    # event handler
+
     def check_input(self, signal):
         """Handle keyboard input signals and clipboard paste."""
         if signal.event_type == signals.KEYB_DOWN:
@@ -242,50 +244,6 @@ class Keyboard(object):
         else:
             return False
         return True
-
-    def set_macro(self, num, macro):
-        """Set macro for given function key."""
-        # NUL terminates macro string, rest is ignored
-        # macro starting with NUL is empty macro
-        self.buf.key_replace[num-1] = macro.split('\0', 1)[0]
-
-    def get_macro(self, num):
-        """Get macro for given function key."""
-        return self.buf.key_replace[num]
-
-    def wait_char(self):
-        """Wait for character, then return it but don't drop from queue."""
-        while self.buf.is_empty() and not self._input_closed:
-            self._queues.wait()
-        return self.buf.peek()
-
-    def inkey_(self, args):
-        """INKEY$: read one byte; nonblocking."""
-        list(args)
-        self._queues.wait()
-        inkey = self.buf.getc()
-        return self._values.new_string().from_str(inkey)
-
-    def read_bytes_kybd_file(self, num):
-        """Read num bytes; for KYBD: files; blocking."""
-        word = []
-        for _ in range(num):
-            self.wait_char()
-            word.append(self.buf.getc(expand=False))
-        return word
-
-    def get_fullchar(self, expand=True):
-        """Read one (sbcs or dbcs) full character; nonblocking."""
-        c = self.buf.getc()
-        # insert dbcs chars from keyboard buffer two bytes at a time
-        if (c in self.codepage.lead and self.buf.peek() in self.codepage.trail):
-            c += self.buf.getc()
-        return c
-
-    def get_fullchar_block(self, expand=True):
-        """Read one (sbcs or dbcs) full character; blocking."""
-        self.wait_char()
-        return self.get_fullchar(expand)
 
     def insert_chars(self, us, check_full=True):
         """Insert eascii/unicode string into keyboard buffer."""
@@ -339,6 +297,54 @@ class Keyboard(object):
     def close_input(self):
         """Signal that input stream has closed."""
         self._input_closed = True
+
+    # macros
+
+    def set_macro(self, num, macro):
+        """Set macro for given function key."""
+        # NUL terminates macro string, rest is ignored
+        # macro starting with NUL is empty macro
+        self.buf.key_replace[num-1] = macro.split('\0', 1)[0]
+
+    def get_macro(self, num):
+        """Get macro for given function key."""
+        return self.buf.key_replace[num]
+
+    # character retrieval
+
+    def wait_char(self):
+        """Wait for character, then return it but don't drop from queue."""
+        while self.buf.is_empty() and not self._input_closed:
+            self._queues.wait()
+        return self.buf.peek()
+
+    def inkey_(self, args):
+        """INKEY$: read one byte; nonblocking."""
+        list(args)
+        self._queues.wait()
+        inkey = self.buf.getc()
+        return self._values.new_string().from_str(inkey)
+
+    def read_bytes_kybd_file(self, num):
+        """Read num bytes; for KYBD: files; blocking."""
+        word = []
+        for _ in range(num):
+            self.wait_char()
+            word.append(self.buf.getc(expand=False))
+        return word
+
+    def get_fullchar(self, expand=True):
+        """Read one (sbcs or dbcs) full character; nonblocking."""
+        c = self.buf.getc()
+        # insert dbcs chars from keyboard buffer two bytes at a time
+        if (c in self.codepage.lead and self.buf.peek() in self.codepage.trail):
+            c += self.buf.getc()
+        return c
+
+    def get_fullchar_block(self, expand=True):
+        """Read one (sbcs or dbcs) full character; blocking."""
+        self.wait_char()
+        return self.get_fullchar(expand)
 
 
 ###############################################################################
