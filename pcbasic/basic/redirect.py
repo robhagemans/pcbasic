@@ -22,7 +22,6 @@ else:
     import array
 
 from .base import signals
-from . import codepage
 
 
 class RedirectedIO(object):
@@ -68,7 +67,7 @@ class RedirectedIO(object):
         """Attach input queue and stdio and start stream reader threads."""
         if stdio and not self._stdio:
             self._stdio = True
-            self._output_echos.append(codepage.CodecStream(
+            self._output_echos.append(OutputStreamWrapper(
                         sys.stdout, self._codepage, sys.stdout.encoding or 'utf-8'))
             lfcr = platform.system() != 'Windows' and sys.stdin.isatty()
             self._input_streams.append(InputStreamWrapper(
@@ -106,6 +105,23 @@ class RedirectedIO(object):
                 return
             elif instr:
                 queue.put(signals.Event(signals.STREAM_CHAR, (instr,)))
+
+
+
+class OutputStreamWrapper(object):
+    """Converter stream wrapper."""
+
+    def __init__(self, stream, codepage, encoding):
+        """Set up codec."""
+        self._encoding = encoding
+        # converter with DBCS lead-byte buffer for utf8 output redirection
+        self._uniconv = codepage.get_converter(preserve_control=True)
+        self._stream = stream
+
+    def write(self, s):
+        """Write to codec stream."""
+        self._stream.write(self._uniconv.to_unicode(bytes(s)).encode(
+                    self._encoding, 'replace'))
 
 
 class InputStreamWrapper(object):
