@@ -85,7 +85,7 @@ class KeyboardBuffer(object):
         self.buffer = []
         self.ring_length = ring_length
         self.start = 0
-        # expansion buffer for keyboard macros; also used for DBCS
+        # expansion buffer for keyboard macros
         # expansion vessel holds codepage chars
         self.expansion_vessel = []
         self._queues = queues
@@ -257,35 +257,39 @@ class Keyboard(object):
         """Get macro for given function key."""
         return self.buf.key_replace[num]
 
-    def read_chars(self, num):
-        """Read num keystrokes, blocking."""
-        word = []
-        for _ in range(num):
-            word.append(self.get_char_block())
-        return word
-
-    def get_char(self, expand=True):
-        """Read any keystroke, nonblocking."""
-        # wait a tick to reduce CPU load in loops
-        self._queues.wait()
-        return self.buf.getc(expand)
-
-    def inkey_(self, args):
-        """INKEY$: read a keystroke."""
-        list(args)
-        inkey = self.get_char()
-        return self._values.new_string().from_str(inkey)
-
     def wait_char(self):
         """Wait for character, then return it but don't drop from queue."""
         while self.buf.is_empty() and not self._input_closed:
             self._queues.wait()
         return self.buf.peek()
 
-    def get_char_block(self):
-        """Read any keystroke, blocking."""
+    def inkey_(self, args):
+        """INKEY$: read one byte; nonblocking."""
+        list(args)
+        self._queues.wait()
+        inkey = self.buf.getc()
+        return self._values.new_string().from_str(inkey)
+
+    def read_bytes_kybd_file(self, num):
+        """Read num bytes; for KYBD: files; blocking."""
+        word = []
+        for _ in range(num):
+            self.wait_char()
+            word.append(self.buf.getc(expand=False))
+        return word
+
+    def get_fullchar(self, expand=True):
+        """Read one (sbcs or dbcs) full character; nonblocking."""
+        c = self.buf.getc()
+        # insert dbcs chars from keyboard buffer two bytes at a time
+        if (c in self.codepage.lead and self.buf.peek() in self.codepage.trail):
+            c += self.buf.getc()
+        return c
+
+    def get_fullchar_block(self, expand=True):
+        """Read one (sbcs or dbcs) full character; blocking."""
         self.wait_char()
-        return self.buf.getc()
+        return self.get_fullchar(expand)
 
     def insert_chars(self, us, check_full=True):
         """Insert eascii/unicode string into keyboard buffer."""

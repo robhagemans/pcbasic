@@ -522,7 +522,7 @@ class KYBDFile(TextFileBase):
         chars = b''
         while len(chars) < n:
             chars += b''.join(b'\0' if c in self._input_replace else c if len(c) == 1 else b''
-                              for c in self._keyboard.read_chars(n-len(chars)))
+                              for c in self._keyboard.read_bytes_kybd_file(n-len(chars)))
         return chars
 
     def read(self, n=1):
@@ -532,7 +532,7 @@ class KYBDFile(TextFileBase):
             # note that we need string length, not list length
             # as read_chars can return multi-byte eascii codes
             chars += b''.join(self._input_replace.get(c, c)
-                              for c in self._keyboard.read_chars(n-len(chars)))
+                              for c in self._keyboard.read_bytes_kybd_file(n-len(chars)))
         return chars
 
     def lof(self):

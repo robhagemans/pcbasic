@@ -157,12 +157,8 @@ class Editor(object):
                     furthest_right = max(col, furthest_right)
                     if col == self._screen.mode.width and self._screen.overflow:
                         furthest_right += 1
-                # wait_char returns one e-ASCII code
-                d = self._keyboard.get_char_block()
-                # insert dbcs chars from keyboard buffer two bytes at a time
-                if (d in self._keyboard.codepage.lead and
-                        self._keyboard.buf.peek() in self._keyboard.codepage.trail):
-                    d += self._keyboard.buf.getc()
+                # get one e-ASCII or dbcs code
+                d = self._keyboard.get_fullchar_block()
                 if not d:
                     # input stream closed
                     raise error.Exit()
