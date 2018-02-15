@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import datetime
+from collections import deque
 
 from .base import error
 from .base import scancode
@@ -100,17 +101,6 @@ class KeyboardBuffer(object):
         """True if no keystrokes in buffer."""
         return len(self.buffer) == 0 and len(self.expansion_vessel) == 0
 
-    def insert(self, cp_s, check_full=True):
-        """Append a string of e-ascii/codepage as keystrokes. Does not trigger events (we have no scancodes)."""
-        d = ''
-        for c in cp_s:
-            if d or c != '\0':
-                self.insert_keypress(d+c, None, None, check_full)
-                d = ''
-            elif c == '\0':
-                # eascii code is \0 plus one char
-                d = c
-
     def insert_keypress(self, cp_c, scancode, modifier, check_full=True):
         """Append a single keystroke with eascii/codepage, scancode, modifier."""
         if cp_c:
@@ -129,7 +119,7 @@ class KeyboardBuffer(object):
         try:
             c = self.buffer.pop(0)[0]
         except IndexError:
-            c = ''
+            c = b''
         if c:
             self.start = (self.start + 1) % self.ring_length
         if not expand or c not in FUNCTION_KEY:
@@ -147,7 +137,7 @@ class KeyboardBuffer(object):
         try:
             return self.buffer[0][0]
         except IndexError:
-            return ''
+            return b''
 
     def peek_scancodes(self):
         """Show keystrokes in keyboard buffer as scancode."""
@@ -172,11 +162,11 @@ class KeyboardBuffer(object):
         index = self.ring_index(index)
         if index == self.ring_length:
             # marker of buffer position
-            return '\x0d', 0
+            return b'\x0d', 0
         try:
             return self.buffer[index][0:2]
         except IndexError:
-            return '\0\0', 0
+            return b'\0\0', 0
 
     def ring_write(self, index, c, scan):
         """Write character at position i in ring as eascii/codepage."""
@@ -194,12 +184,25 @@ class KeyboardBuffer(object):
         start_index = self.ring_index(start)
         stop_index = self.ring_index(stop)
         self.buffer = self.buffer[start_index:] + self.buffer[:stop_index]
-        self.buffer += [('\0\0', None, None)]*(length - len(self.buffer))
+        self.buffer += [(b'\0\0', None, None)]*(length - len(self.buffer))
         self.start = start
 
 
 ###############################################################################
 # keyboard operations
+
+
+def _split_eascii(cp_s):
+    """Split a string of e-ascii/codepage into keystrokes."""
+    d = ''
+    for c in cp_s:
+        if d or c != b'\0':
+            yield d + c
+            d = ''
+        elif c == b'\0':
+            # eascii code is \0 plus one char
+            d = c
+
 
 class Keyboard(object):
     """Keyboard handling."""
@@ -219,7 +222,10 @@ class Keyboard(object):
         self.ignore_caps = ignore_caps
         # pre-inserted keystrings
         self.codepage = codepage
-        self.buf.insert(self.codepage.str_from_unicode(keystring), check_full=False)
+        for ea_char in _split_eascii(self.codepage.str_from_unicode(keystring)):
+            self.buf.insert_keypress(ea_char, None, None, check_full=False)
+        # stream buffer
+        self._stream_buffer = deque()
         # redirected input stream has closed
         self._input_closed = False
         # needed for wait() in wait_char()
@@ -236,18 +242,19 @@ class Keyboard(object):
             self.key_up(*signal.params)
         elif signal.event_type == signals.STREAM_CHAR:
             # params is a unicode sequence
-            self.insert_chars(*signal.params, check_full=False)
+            self.stream_chars(*signal.params)
         elif signal.event_type == signals.STREAM_CLOSED:
             self.close_input()
         elif signal.event_type == signals.CLIP_PASTE:
-            self.insert_chars(*signal.params, check_full=False)
+            self.stream_chars(*signal.params)
         else:
             return False
         return True
 
-    def insert_chars(self, us, check_full=True):
-        """Insert eascii/unicode string into keyboard buffer."""
-        self.buf.insert(self.codepage.str_from_unicode(us), check_full)
+    def stream_chars(self, us):
+        """Insert eascii/unicode string into stream buffer."""
+        for ea_char in _split_eascii(self.codepage.str_from_unicode(us)):
+            self._stream_buffer.append(ea_char)
 
     def key_down(self, c, scan, mods, check_full=True):
         """Insert a key-down event by eascii/unicode, scancode and modifiers."""
@@ -289,10 +296,10 @@ class Keyboard(object):
         # ALT+keycode
         if scan == scancode.ALT and self.keypad_ascii:
             char = chr(int(self.keypad_ascii)%256)
-            if char == '\0':
-                char = '\0\0'
-            self.buf.insert(char, check_full=True)
-            self.keypad_ascii = ''
+            if char == b'\0':
+                char = b'\0\0'
+            self.buf.insert_keypress(char, None, None, check_full=True)
+            self.keypad_ascii = b''
 
     def close_input(self):
         """Signal that input stream has closed."""
@@ -312,33 +319,41 @@ class Keyboard(object):
 
     # character retrieval
 
-    def wait_char(self):
+    def wait_char(self, keyboard_only=False):
         """Wait for character, then return it but don't drop from queue."""
-        while self.buf.is_empty() and not self._input_closed:
+        # if input stream has closed, don't wait but return empty
+        # which will tell the Editor to close
+        # except if we're waiting for KYBD: input
+        while self.buf.is_empty() and (keyboard_only or not self._input_closed):
             self._queues.wait()
         return self.buf.peek()
 
     def inkey_(self, args):
-        """INKEY$: read one byte; nonblocking."""
+        """INKEY$: read one byte from keyboard or stream; nonblocking."""
         list(args)
         self._queues.wait()
-        inkey = self.buf.getc()
+        inkey = self.buf.getc() or (self._stream_buffer.popleft() if self._stream_buffer else b'')
         return self._values.new_string().from_str(inkey)
 
     def read_bytes_kybd_file(self, num):
-        """Read num bytes; for KYBD: files; blocking."""
+        """Read num bytes from keyboard only; for KYBD: files; blocking."""
         word = []
         for _ in range(num):
-            self.wait_char()
+            self.wait_char(keyboard_only=True)
             word.append(self.buf.getc(expand=False))
         return word
 
     def get_fullchar(self, expand=True):
         """Read one (sbcs or dbcs) full character; nonblocking."""
-        c = self.buf.getc()
+        c = self.buf.getc(expand)
         # insert dbcs chars from keyboard buffer two bytes at a time
         if (c in self.codepage.lead and self.buf.peek() in self.codepage.trail):
-            c += self.buf.getc()
+            c += self.buf.getc(expand)
+        if not c and self._stream_buffer:
+            c = self._stream_buffer.popleft()
+            if (c in self.codepage.lead and self._stream_buffer and
+                        self._stream_buffer[0] in self.codepage.trail):
+                c += self._stream_buffer.popleft()
         return c
 
     def get_fullchar_block(self, expand=True):
