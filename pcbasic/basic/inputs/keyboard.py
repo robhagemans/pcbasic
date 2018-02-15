@@ -20,6 +20,7 @@ from ..base.eascii import as_unicode as uea
 TOGGLE = {
     scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,
     scancode.NUMLOCK: 0x20, scancode.SCROLLOCK: 0x10}
+
 # nonsticky modifiers
 MODIFIER = {
     scancode.ALT: 0x8, scancode.CTRL: 0x4,
@@ -35,7 +36,15 @@ FUNCTION_KEY = {
 KEYPAD = {
     scancode.KP0: b'0', scancode.KP1: b'1', scancode.KP2: b'2', scancode.KP3: b'3',
     scancode.KP4: b'4', scancode.KP5: b'5', scancode.KP6: b'6', scancode.KP7: b'7',
-    scancode.KP8: b'8', scancode.KP9: b'9' }
+    scancode.KP8: b'8', scancode.KP9: b'9'}
+
+# function-key macros
+DEFAULT_MACROS = (
+    b'LIST ', b'RUN\r', b'LOAD"', b'SAVE"', b'CONT\r', b',"LPT1:"\r',
+    b'TRON\r', b'TROFF\r', b'KEY ', b'SCREEN 0,0,0\r', b'', b'')
+
+# short beep (0.1s at 800Hz) emitted if buffer is full
+FULL_TONE = (0, 800, 0.01, 1, False, 15)
 
 
 ###############################################################################
@@ -43,13 +52,6 @@ KEYPAD = {
 
 class KeyboardBuffer(object):
     """Quirky emulated ring buffer for keystrokes."""
-
-    _default_macros = (
-        b'LIST ', b'RUN\r', b'LOAD"', b'SAVE"', b'CONT\r', b',"LPT1:"\r',
-        b'TRON\r', b'TROFF\r', b'KEY ', b'SCREEN 0,0,0\r', b'', b'')
-
-    # short beep (0.1s at 800Hz) emitted if buffer is full
-    _full_tone = signals.Event(signals.AUDIO_TONE, [0, 800, 0.01, 1, False, 15])
 
     def __init__(self, queues, ring_length):
         """Initialise to given length."""
@@ -62,14 +64,14 @@ class KeyboardBuffer(object):
         # expansion vessel holds codepage chars
         self._expansion_vessel = []
         # f-key macros
-        self.key_replace = list(self._default_macros)
+        self.key_replace = list(DEFAULT_MACROS)
 
     def append(self, cp_c, scancode, modifier, check_full=True):
         """Append a single keystroke with eascii/codepage, scancode, modifier."""
         if cp_c:
             if check_full and len(self._buffer) >= self._ring_length:
                 # emit a sound signal when buffer is full (and we care)
-                self._queues.audio.put(self._full_tone)
+                self._queues.audio.put(signals.Event(signals.AUDIO_TONE, FULL_TONE))
             else:
                 self._buffer.append((cp_c, scancode, modifier))
 
