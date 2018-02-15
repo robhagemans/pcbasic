@@ -53,26 +53,18 @@ class KeyboardBuffer(object):
 
     def __init__(self, queues, ring_length):
         """Initialise to given length."""
+        self._queues = queues
         # buffer holds tuples (eascii/codepage, scancode, modifier)
         self._buffer = []
         self._ring_length = ring_length
-        self.start = 0
+        self._start = 0
         # expansion buffer for keyboard macros
         # expansion vessel holds codepage chars
         self._expansion_vessel = []
-        self._queues = queues
         # f-key macros
         self.key_replace = list(self._default_macros)
 
-    def length(self):
-        """Return the number of keystrokes in the buffer."""
-        return min(self._ring_length, len(self._buffer))
-
-    def is_empty(self):
-        """True if no keystrokes in buffer."""
-        return len(self._buffer) == 0 and len(self._expansion_vessel) == 0
-
-    def insert_keypress(self, cp_c, scancode, modifier, check_full=True):
+    def append(self, cp_c, scancode, modifier, check_full=True):
         """Append a single keystroke with eascii/codepage, scancode, modifier."""
         if cp_c:
             if check_full and len(self._buffer) >= self._ring_length:
@@ -92,7 +84,7 @@ class KeyboardBuffer(object):
         except IndexError:
             c = b''
         if c:
-            self.start = (self.start + 1) % self._ring_length
+            self._start = (self._start + 1) % self._ring_length
         if not expand or c not in FUNCTION_KEY:
             return c
         self._expansion_vessel = list(self.key_replace[FUNCTION_KEY[c]])
@@ -110,13 +102,29 @@ class KeyboardBuffer(object):
         except IndexError:
             return b''
 
+    @property
+    def empty(self):
+        """True if no keystrokes in buffer."""
+        return len(self._buffer) == 0 and len(self._expansion_vessel) == 0
+
+    @property
+    def length(self):
+        """Return the number of keystrokes in the buffer."""
+        return min(self._ring_length, len(self._buffer))
+
+    @property
+    def start(self):
+        """Ring buffer starting index."""
+        return self._start
+
+    @property
     def stop(self):
         """Ring buffer stopping index."""
-        return (self.start + self.length()) % self._ring_length
+        return (self._start + self.length) % self._ring_length
 
     def _ring_index(self, index):
         """Get index for ring position."""
-        index -= self.start
+        index -= self._start
         if index < 0:
             index += self._ring_length + 1
         return index
@@ -149,7 +157,7 @@ class KeyboardBuffer(object):
         stop_index = self._ring_index(stop)
         self._buffer = self._buffer[start_index:] + self._buffer[:stop_index]
         self._buffer += [(b'\0\0', None, None)]*(length - len(self._buffer))
-        self.start = start
+        self._start = start
 
 
 ###############################################################################
@@ -187,7 +195,7 @@ class Keyboard(object):
         # pre-inserted keystrings
         self._codepage = codepage
         for ea_char in _split_eascii(self._codepage.str_from_unicode(keystring)):
-            self.buf.insert_keypress(ea_char, None, None, check_full=False)
+            self.buf.append(ea_char, None, None, check_full=False)
         # stream buffer
         self._stream_buffer = deque()
         # redirected input stream has closed
@@ -241,7 +249,7 @@ class Keyboard(object):
         if (self.mod & TOGGLE[scancode.CAPSLOCK]
                 and not self._ignore_caps and len(c) == 1):
             c = c.swapcase()
-        self.buf.insert_keypress(self._codepage.from_unicode(c), scan, self.mod, check_full)
+        self.buf.append(self._codepage.from_unicode(c), scan, self.mod, check_full)
 
     def _key_up(self, scan):
         """Insert a key-up event."""
@@ -257,7 +265,7 @@ class Keyboard(object):
             char = chr(int(self.keypad_ascii)%256)
             if char == b'\0':
                 char = b'\0\0'
-            self.buf.insert_keypress(char, None, None, check_full=True)
+            self.buf.append(char, None, None, check_full=True)
             self.keypad_ascii = b''
 
     def _stream_chars(self, us):
@@ -288,7 +296,7 @@ class Keyboard(object):
         # if input stream has closed, don't wait but return empty
         # which will tell the Editor to close
         # except if we're waiting for KYBD: input
-        while self.buf.is_empty() and (keyboard_only or not self._input_closed):
+        while self.buf.empty and (keyboard_only or not self._input_closed):
             self._queues.wait()
         return self.buf.peek()
 
