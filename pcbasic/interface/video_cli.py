@@ -94,7 +94,7 @@ class VideoCLI(base.VideoPlugin):
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
                 self.input_queue.put(signals.Event(
-                                        signals.STREAM_DOWN, (uc, sc, [])))
+                                        signals.KEYB_DOWN, (uc, sc, [])))
                 if sc == scancode.F12:
                     self.f12_active = True
                 else:

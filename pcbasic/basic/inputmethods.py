@@ -227,17 +227,13 @@ class Keyboard(object):
 
     def check_input(self, signal):
         """Handle keyboard input signals and clipboard paste."""
-        if signal.event_type == signals.KEYB_CHAR:
-            # params is a unicode sequence
-            self.insert_chars(*signal.params)
-        elif signal.event_type == signals.KEYB_DOWN:
+        if signal.event_type == signals.KEYB_DOWN:
             # params is e-ASCII/unicode character sequence, scancode, modifier
             self.key_down(*signal.params)
-        elif signal.event_type == signals.STREAM_DOWN:
-            self.key_down(*signal.params, check_full=False)
         elif signal.event_type == signals.KEYB_UP:
             self.key_up(*signal.params)
         elif signal.event_type == signals.STREAM_CHAR:
+            # params is a unicode sequence
             self.insert_chars(*signal.params, check_full=False)
         elif signal.event_type == signals.STREAM_CLOSED:
             self.close_input()

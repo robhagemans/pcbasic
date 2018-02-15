@@ -77,7 +77,7 @@ class Interface(object):
         self._video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
         while True:
             signal = self._input_queue.get()
-            if signal.event_type in (signals.KEYB_DOWN, signals.STREAM_DOWN, signals.KEYB_QUIT):
+            if signal.event_type in (signals.KEYB_DOWN, signals.KEYB_QUIT):
                 break
 
     def quit_input(self):
@@ -270,7 +270,7 @@ class VideoPlugin(object):
         """Scroll the screen down between from_line and scroll_height."""
 
     def put_glyph(
-            self, pagenum, row, col, cp, is_fullwidth, 
+            self, pagenum, row, col, cp, is_fullwidth,
             fore, back, blink, underline, suppress_cli):
         """Put a character at a given position."""
 
