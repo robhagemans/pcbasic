@@ -22,7 +22,7 @@ else:
     import array
 
 from .base import signals
-from . import codepage as cp
+from . import codepage
 
 
 class RedirectedIO(object):
@@ -36,12 +36,10 @@ class RedirectedIO(object):
         self._input_file = input_file
         self._output_file = output_file
         self._append = append
+        self._codepage = codepage
         # input
         self._active = False
-        self._codepage = codepage
         self._input_streams = []
-        self._lfcrs = []
-        self._encodings = []
         # output
         self._output_echos = []
 
@@ -70,19 +68,17 @@ class RedirectedIO(object):
         """Attach input queue and stdio and start stream reader threads."""
         if stdio and not self._stdio:
             self._stdio = True
-            self._output_echos.append(
-                        cp.CodecStream(sys.stdout, self._codepage, sys.stdout.encoding or b'utf-8'))
-            self._input_streams.append(sys.stdin)
-            self._lfcrs.append(platform.system() != 'Windows' and sys.stdin.isatty())
-            self._encodings.append(sys.stdin.encoding)
+            self._output_echos.append(codepage.CodecStream(
+                        sys.stdout, self._codepage, sys.stdout.encoding or 'utf-8'))
+            lfcr = platform.system() != 'Windows' and sys.stdin.isatty()
+            self._input_streams.append(InputStreamWrapper(
+                        sys.stdin, self._codepage, sys.stdin.encoding, lfcr))
         if self._input_file:
             try:
-                self._input_streams.append(open(self._input_file, 'rb'))
+                self._input_streams.append(InputStreamWrapper(
+                        open(self._input_file, 'rb'), self._codepage, None, False))
             except EnvironmentError as e:
                 logging.warning(u'Could not open input file %s: %s', self._input_file, e.strerror)
-            else:
-                self._lfcrs.append(False)
-                self._encodings.append(None)
         if self._output_file:
             mode = 'ab' if self._append else 'wb'
             try:
@@ -91,43 +87,60 @@ class RedirectedIO(object):
             except EnvironmentError as e:
                 logging.warning(u'Could not open output file %s: %s', self._output_file, e.strerror)
         # launch a daemon thread for each source
-        for s, encoding, lfcr in zip(self._input_streams, self._encodings, self._lfcrs):
+        for stream in self._input_streams:
             # launch a thread to allow nonblocking reads on both Windows and Unix
-            thread = threading.Thread(target=self._process_input, args=(s, queue, encoding, lfcr))
+            thread = threading.Thread(target=self._process_input, args=(stream, queue))
             thread.daemon = True
             thread.start()
 
-    def _process_input(self, stream, queue, encoding, lfcr):
+    def _process_input(self, stream, queue):
         """Process input from stream."""
-        if platform.system() == 'Windows':
-            if stream == sys.stdin:
-                get_chars = _get_chars_windows_console
-            else:
-                get_chars = _get_chars_file
-        else:
-            get_chars = _get_chars
         while True:
             time.sleep(self.tick)
             if not self._active:
                 continue
-            instr = get_chars(stream)
+            instr = stream.read()
             if instr is None:
                 # input stream is closed, stop the thread
                 queue.put(signals.Event(signals.STREAM_CLOSED))
                 return
-            elif not instr:
-                continue
-            instr = instr.replace(b'\r\n', b'\r')
-            if lfcr:
-                instr = instr.replace(b'\n', b'\r')
-            if encoding:
-                queue.put(signals.Event(signals.STREAM_CHAR,
-                        (instr.decode(encoding, b'replace'),) ))
+            elif instr:
+                queue.put(signals.Event(signals.STREAM_CHAR, (instr,)))
+
+
+class InputStreamWrapper(object):
+    """Converter and non-blocking input wrapper."""
+
+    def __init__(self, stream, codepage, encoding, lfcr):
+        """Set up codec."""
+        self._codepage = codepage
+        self._encoding = encoding
+        self._lfcr = lfcr
+        self._stream = stream
+        # we need non-blocking readers to be able to deactivate the thread
+        if platform.system() == 'Windows':
+            if self._stream == sys.stdin:
+                self._get_chars = _get_chars_windows_console
             else:
-                # raw input means it's already in the BASIC codepage
-                # but the keyboard functions use unicode
-                queue.put(signals.Event(signals.STREAM_CHAR,
-                        (self._codepage.str_to_unicode(instr, preserve_control=True),) ))
+                self._get_chars = _get_chars_file
+        else:
+            self._get_chars = _get_chars
+
+    def read(self):
+        """Read all chars available; nonblocking; returns unicode."""
+        s = self._get_chars(self._stream)
+        if s is None:
+            return s
+        s = s.replace(b'\r\n', b'\r')
+        if self._lfcr:
+            s = s.replace(b'\n', b'\r')
+        if self._encoding:
+            return s.decode(self._encoding, 'replace')
+        else:
+            # raw input means it's already in the BASIC codepage
+            # but the keyboard functions use unicode
+            # for input, don't use lead-byte buffering beyond the convert call
+            return self._codepage.str_to_unicode(s, preserve_control=True)
 
 
 ##############################################################################
