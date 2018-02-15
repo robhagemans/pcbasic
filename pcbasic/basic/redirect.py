@@ -25,45 +25,25 @@ from .base import signals
 from . import codepage as cp
 
 
-def get_redirection(codepage, stdio, input_file, output_file, append):
-    """Initialise redirection objects."""
-    if stdio:
-        stdout_stream = cp.CodecStream(
-                sys.stdout, codepage, sys.stdout.encoding or b'utf-8')
-        stdin_stream = sys.stdin
-    else:
-        stdout_stream, stdin_stream = None, None
-    output_redirection = OutputRedirection(output_file, append, stdout_stream)
-    input_stream = None
-    if input_file:
-        try:
-            input_stream = open(input_file, b'rb')
-        except EnvironmentError as e:
-            logging.warning(u'Could not open input file %s: %s', input_file, e.strerror)
-    input_redirection = InputRedirection([
-            (input_stream, False, None),
-            (stdin_stream, platform.system() != 'Windows' and sys.stdin.isatty(), sys.stdin.encoding)
-            ], codepage)
-    return input_redirection, output_redirection
+class RedirectedIO(object):
+    """Manage I/O redirection to files, printers and stdio."""
 
+    tick = 0.006
 
-class OutputRedirection(object):
-    """Manage I/O redirection."""
-
-    def __init__(self, option_output, append, filter_stream):
+    def __init__(self, codepage, input_file, output_file, append):
         """Initialise redirects."""
-        # redirect output to file or printer
+        self._stdio = False
+        self._input_file = input_file
+        self._output_file = output_file
+        self._append = append
+        # input
+        self._active = False
+        self._codepage = codepage
+        self._input_streams = []
+        self._lfcrs = []
+        self._encodings = []
+        # output
         self._output_echos = []
-        # filter interface depends on redirection output
-        if filter_stream:
-            self._output_echos.append(filter_stream)
-        if option_output:
-            mode = b'ab' if append else b'wb'
-            try:
-                # raw codepage output to file
-                self._output_echos.append(open(option_output, mode))
-            except EnvironmentError as e:
-                logging.warning(u'Could not open output file %s: %s', option_output, e.strerror)
 
     def write(self, s):
         """Write a string/bytearray to all redirected outputs."""
@@ -77,25 +57,6 @@ class OutputRedirection(object):
         else:
             self._output_echos.append(stream)
 
-
-class InputRedirection(object):
-    """Manage I/O redirection."""
-
-    tick = 0.006
-
-    def __init__(self, input_list, codepage):
-        """Initialise redirects."""
-        self._active = True
-        self._codepage = codepage
-        self._input_streams = []
-        self._lfcrs = []
-        self._encodings = []
-        for f, lfcr, encoding in input_list:
-            if f:
-                self._input_streams.append(f)
-                self._lfcrs.append(lfcr)
-                self._encodings.append(encoding)
-
     @contextmanager
     def activate(self):
         """Grab and release input stream."""
@@ -105,11 +66,30 @@ class InputRedirection(object):
         finally:
             self._active = False
 
-    def attach(self, queue):
-        """Attach input queue and start stream reader threads."""
-        # allow None as well as empty list
-        if not self._input_streams:
-            return
+    def attach(self, queue, stdio):
+        """Attach input queue and stdio and start stream reader threads."""
+        if stdio and not self._stdio:
+            self._stdio = True
+            self._output_echos.append(
+                        cp.CodecStream(sys.stdout, self._codepage, sys.stdout.encoding or b'utf-8'))
+            self._input_streams.append(sys.stdin)
+            self._lfcrs.append(platform.system() != 'Windows' and sys.stdin.isatty())
+            self._encodings.append(sys.stdin.encoding)
+        if self._input_file:
+            try:
+                self._input_streams.append(open(self._input_file, 'rb'))
+            except EnvironmentError as e:
+                logging.warning(u'Could not open input file %s: %s', self._input_file, e.strerror)
+            else:
+                self._lfcrs.append(False)
+                self._encodings.append(None)
+        if self._output_file:
+            mode = 'ab' if self._append else 'wb'
+            try:
+                # raw codepage output to file
+                self._output_echos.append(open(self._output_file, mode))
+            except EnvironmentError as e:
+                logging.warning(u'Could not open output file %s: %s', self._output_file, e.strerror)
         # launch a daemon thread for each source
         for s, encoding, lfcr in zip(self._input_streams, self._encodings, self._lfcrs):
             # launch a thread to allow nonblocking reads on both Windows and Unix
@@ -117,9 +97,6 @@ class InputRedirection(object):
             thread.daemon = True
             thread.start()
 
-    # this works for everything on unix, and sockets on Windows
-    # for windows: detect if stdin, then use msvcrt.kbhit() and msvcrt.getch()
-    #    else assume it's a file and just drain-read?
     def _process_input(self, stream, queue, encoding, lfcr):
         """Process input from stream."""
         if platform.system() == 'Windows':
@@ -158,6 +135,7 @@ class InputRedirection(object):
 
 def _get_chars(stream):
     """Get characters from unix stream, nonblocking."""
+    # this works for everything on unix, and sockets on Windows
     instr = []
     # output buffer for ioctl call
     sock_size = array.array('i', [0])

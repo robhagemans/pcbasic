@@ -75,6 +75,8 @@ class Implementation(object):
         # terminal program for TERM command
         self._term_program = pcjr_term
         self._reraise = (not catch_exceptions or catch_exceptions == 'none')
+        # redirect parameters
+        self._stdio = stdio
         ######################################################################
         # data segment
         ######################################################################
@@ -107,8 +109,9 @@ class Implementation(object):
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O redirection
-        self.input_redirection, self.output_redirection = redirect.get_redirection(
-                self.codepage, stdio, input_file, output_file, append)
+        self.input_redirection = redirect.RedirectedIO(
+                self.codepage, input_file, output_file, append)
+        self.output_redirection = self.input_redirection
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, syntax)
         # Sound is needed for the beeps on \a
@@ -230,7 +233,8 @@ class Implementation(object):
             # but an input queue shouls be operational for redirects
             self.queues.set(inputs=Queue.Queue())
         # attach input queue to redirects
-        self.input_redirection.attach(self.queues.inputs)
+        self.input_redirection.attach(
+            self.queues.inputs, self._stdio and not interface)
 
     def bind_file(self, file_name_or_object, name=None):
         """Bind a native file name or Python stream to a BASIC file name."""
