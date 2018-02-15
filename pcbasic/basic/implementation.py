@@ -22,7 +22,7 @@ from . import basicevents
 from . import program
 from . import display
 from . import editor
-from . import inputmethods
+from . import inputs
 from . import debug as dbg
 from . import clock
 from . import dos
@@ -126,10 +126,10 @@ class Implementation(object):
         self.values.set_handler(values.FloatErrorHandler(self.screen))
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
         # EventHandler needed for wait() only
-        self.keyboard = inputmethods.Keyboard(
+        self.keyboard = inputs.Keyboard(
                 self.queues, self.values, self.codepage, keys, ignore_caps)
-        self.pen = inputmethods.Pen()
-        self.stick = inputmethods.Stick(self.values)
+        self.pen = inputs.Pen()
+        self.stick = inputs.Stick(self.values)
         ######################################################################
         # devices
         ######################################################################
@@ -154,7 +154,7 @@ class Implementation(object):
         # register input event handlers
         ######################################################################
         # clipboard and print screen handler
-        clip_handler = inputmethods.ScreenCopyHandler(self.screen, self.files.lpt1_file)
+        clip_handler = inputs.ScreenCopyHandler(self.screen, self.files.lpt1_file)
         self.queues.add_handler(clip_handler)
         # keyboard, pen and stick
         self.queues.add_handler(self.keyboard)
