@@ -34,6 +34,12 @@ FUNCTION_KEY = {
     ea.F5: 4, ea.F6: 5, ea.F7: 6, ea.F8: 7,
     ea.F9: 8, ea.F10: 9, ea.F11: 10, ea.F12: 11}
 
+# numeric keypad
+KEYPAD = {
+    scancode.KP0: b'0', scancode.KP1: b'1', scancode.KP2: b'2', scancode.KP3: b'3',
+    scancode.KP4: b'4', scancode.KP5: b'5', scancode.KP6: b'6', scancode.KP7: b'7',
+    scancode.KP8: b'8', scancode.KP9: b'9' }
+
 
 
 ###############################################################################
@@ -74,8 +80,8 @@ class KeyboardBuffer(object):
     """Quirky emulated ring buffer for keystrokes."""
 
     _default_macros = (
-        'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
-        'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '')
+        b'LIST ', b'RUN\r', b'LOAD"', b'SAVE"', b'CONT\r', b',"LPT1:"\r',
+        b'TRON\r', b'TROFF\r', b'KEY ', b'SCREEN 0,0,0\r', b'', b'')
 
     # short beep (0.1s at 800Hz) emitted if buffer is full
     _full_tone = signals.Event(signals.AUDIO_TONE, [0, 800, 0.01, 1, False, 15])
@@ -83,50 +89,50 @@ class KeyboardBuffer(object):
     def __init__(self, queues, ring_length):
         """Initialise to given length."""
         # buffer holds tuples (eascii/codepage, scancode, modifier)
-        self.buffer = []
-        self.ring_length = ring_length
+        self._buffer = []
+        self._ring_length = ring_length
         self.start = 0
         # expansion buffer for keyboard macros
         # expansion vessel holds codepage chars
-        self.expansion_vessel = []
+        self._expansion_vessel = []
         self._queues = queues
         # f-key macros
         self.key_replace = list(self._default_macros)
 
     def length(self):
         """Return the number of keystrokes in the buffer."""
-        return min(self.ring_length, len(self.buffer))
+        return min(self._ring_length, len(self._buffer))
 
     def is_empty(self):
         """True if no keystrokes in buffer."""
-        return len(self.buffer) == 0 and len(self.expansion_vessel) == 0
+        return len(self._buffer) == 0 and len(self._expansion_vessel) == 0
 
     def insert_keypress(self, cp_c, scancode, modifier, check_full=True):
         """Append a single keystroke with eascii/codepage, scancode, modifier."""
         if cp_c:
-            if check_full and len(self.buffer) >= self.ring_length:
+            if check_full and len(self._buffer) >= self._ring_length:
                 # emit a sound signal when buffer is full (and we care)
                 self._queues.audio.put(self._full_tone)
             else:
-                self.buffer.append((cp_c, scancode, modifier))
+                self._buffer.append((cp_c, scancode, modifier))
 
     def getc(self, expand=True):
         """Read a keystroke as eascii/codepage."""
         try:
-            return self.expansion_vessel.pop(0)
+            return self._expansion_vessel.pop(0)
         except IndexError:
             pass
         try:
-            c = self.buffer.pop(0)[0]
+            c = self._buffer.pop(0)[0]
         except IndexError:
             c = b''
         if c:
-            self.start = (self.start + 1) % self.ring_length
+            self.start = (self.start + 1) % self._ring_length
         if not expand or c not in FUNCTION_KEY:
             return c
-        self.expansion_vessel = list(self.key_replace[FUNCTION_KEY[c]])
+        self._expansion_vessel = list(self.key_replace[FUNCTION_KEY[c]])
         try:
-            return self.expansion_vessel.pop(0)
+            return self._expansion_vessel.pop(0)
         except IndexError:
             # function macro has been redefined as empty: return scancode
             # e.g. KEY 1, "" enables catching F1 with INKEY$
@@ -135,56 +141,49 @@ class KeyboardBuffer(object):
     def peek(self):
         """Show top keystroke in keyboard buffer as eascii/codepage."""
         try:
-            return self.buffer[0][0]
+            return self._buffer[0][0]
         except IndexError:
             return b''
 
-    def peek_scancodes(self):
-        """Show keystrokes in keyboard buffer as scancode."""
-        try:
-            return [element[1] for element in self.buffer]
-        except IndexError:
-            return []
-
     def stop(self):
         """Ring buffer stopping index."""
-        return (self.start + self.length()) % self.ring_length
+        return (self.start + self.length()) % self._ring_length
 
-    def ring_index(self, index):
+    def _ring_index(self, index):
         """Get index for ring position."""
         index -= self.start
         if index < 0:
-            index += self.ring_length + 1
+            index += self._ring_length + 1
         return index
 
     def ring_read(self, index):
         """Read character at position i in ring as eascii/codepage."""
-        index = self.ring_index(index)
-        if index == self.ring_length:
+        index = self._ring_index(index)
+        if index == self._ring_length:
             # marker of buffer position
             return b'\x0d', 0
         try:
-            return self.buffer[index][0:2]
+            return self._buffer[index][0:2]
         except IndexError:
             return b'\0\0', 0
 
     def ring_write(self, index, c, scan):
         """Write character at position i in ring as eascii/codepage."""
-        index = self.ring_index(index)
-        if index < self.ring_length:
+        index = self._ring_index(index)
+        if index < self._ring_length:
             try:
-                self.buffer[index] = (c, scan, None)
+                self._buffer[index] = (c, scan, None)
             except IndexError:
                 pass
 
     def ring_set_boundaries(self, start, stop):
         """Set start and stop index."""
-        length = (stop - start) % self.ring_length
+        length = (stop - start) % self._ring_length
         # rotate buffer to account for new start and stop
-        start_index = self.ring_index(start)
-        stop_index = self.ring_index(stop)
-        self.buffer = self.buffer[start_index:] + self.buffer[:stop_index]
-        self.buffer += [(b'\0\0', None, None)]*(length - len(self.buffer))
+        start_index = self._ring_index(start)
+        stop_index = self._ring_index(stop)
+        self._buffer = self._buffer[start_index:] + self._buffer[:stop_index]
+        self._buffer += [(b'\0\0', None, None)]*(length - len(self._buffer))
         self.start = start
 
 
@@ -219,10 +218,10 @@ class Keyboard(object):
         # store for alt+keypad ascii insertion
         self.keypad_ascii = ''
         # ignore caps lock, let OS handle it
-        self.ignore_caps = ignore_caps
+        self._ignore_caps = ignore_caps
         # pre-inserted keystrings
-        self.codepage = codepage
-        for ea_char in _split_eascii(self.codepage.str_from_unicode(keystring)):
+        self._codepage = codepage
+        for ea_char in _split_eascii(self._codepage.str_from_unicode(keystring)):
             self.buf.insert_keypress(ea_char, None, None, check_full=False)
         # stream buffer
         self._stream_buffer = deque()
@@ -237,26 +236,21 @@ class Keyboard(object):
         """Handle keyboard input signals and clipboard paste."""
         if signal.event_type == signals.KEYB_DOWN:
             # params is e-ASCII/unicode character sequence, scancode, modifier
-            self.key_down(*signal.params)
+            self._key_down(*signal.params)
         elif signal.event_type == signals.KEYB_UP:
-            self.key_up(*signal.params)
+            self._key_up(*signal.params)
         elif signal.event_type == signals.STREAM_CHAR:
             # params is a unicode sequence
-            self.stream_chars(*signal.params)
+            self._stream_chars(*signal.params)
         elif signal.event_type == signals.STREAM_CLOSED:
-            self.close_input()
+            self._close_input()
         elif signal.event_type == signals.CLIP_PASTE:
-            self.stream_chars(*signal.params)
+            self._stream_chars(*signal.params)
         else:
             return False
         return True
 
-    def stream_chars(self, us):
-        """Insert eascii/unicode string into stream buffer."""
-        for ea_char in _split_eascii(self.codepage.str_from_unicode(us)):
-            self._stream_buffer.append(ea_char)
-
-    def key_down(self, c, scan, mods, check_full=True):
+    def _key_down(self, c, scan, mods, check_full=True):
         """Insert a key-down event by eascii/unicode, scancode and modifiers."""
         if scan is not None:
             self.last_scancode = scan
@@ -275,16 +269,16 @@ class Keyboard(object):
         # alt+keypad ascii replacement
         if (scancode.ALT in mods):
             try:
-                self.keypad_ascii += scancode.keypad[scan]
+                self.keypad_ascii += KEYPAD[scan]
                 return
             except KeyError:
                 pass
         if (self.mod & TOGGLE[scancode.CAPSLOCK]
-                and not self.ignore_caps and len(c) == 1):
+                and not self._ignore_caps and len(c) == 1):
             c = c.swapcase()
-        self.buf.insert_keypress(self.codepage.from_unicode(c), scan, self.mod, check_full)
+        self.buf.insert_keypress(self._codepage.from_unicode(c), scan, self.mod, check_full)
 
-    def key_up(self, scan):
+    def _key_up(self, scan):
         """Insert a key-up event."""
         if scan is not None:
             self.last_scancode = 0x80 + scan
@@ -301,7 +295,12 @@ class Keyboard(object):
             self.buf.insert_keypress(char, None, None, check_full=True)
             self.keypad_ascii = b''
 
-    def close_input(self):
+    def _stream_chars(self, us):
+        """Insert eascii/unicode string into stream buffer."""
+        for ea_char in _split_eascii(self._codepage.str_from_unicode(us)):
+            self._stream_buffer.append(ea_char)
+
+    def _close_input(self):
         """Signal that input stream has closed."""
         self._input_closed = True
 
@@ -311,7 +310,7 @@ class Keyboard(object):
         """Set macro for given function key."""
         # NUL terminates macro string, rest is ignored
         # macro starting with NUL is empty macro
-        self.buf.key_replace[num-1] = macro.split('\0', 1)[0]
+        self.buf.key_replace[num-1] = macro.split(b'\0', 1)[0]
 
     def get_macro(self, num):
         """Get macro for given function key."""
@@ -347,12 +346,12 @@ class Keyboard(object):
         """Read one (sbcs or dbcs) full character; nonblocking."""
         c = self.buf.getc(expand)
         # insert dbcs chars from keyboard buffer two bytes at a time
-        if (c in self.codepage.lead and self.buf.peek() in self.codepage.trail):
+        if (c in self._codepage.lead and self.buf.peek() in self._codepage.trail):
             c += self.buf.getc(expand)
         if not c and self._stream_buffer:
             c = self._stream_buffer.popleft()
-            if (c in self.codepage.lead and self._stream_buffer and
-                        self._stream_buffer[0] in self.codepage.trail):
+            if (c in self._codepage.lead and self._stream_buffer and
+                        self._stream_buffer[0] in self._codepage.trail):
                 c += self._stream_buffer.popleft()
         return c
 
