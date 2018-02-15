@@ -233,8 +233,7 @@ class Implementation(object):
             # but an input queue shouls be operational for redirects
             self.queues.set(inputs=Queue.Queue())
         # attach input queue to redirects
-        self.input_redirection.attach(
-            self.queues.inputs, self._stdio and not interface)
+        self.input_redirection.attach(self.queues, self._stdio and not interface)
 
     def bind_file(self, file_name_or_object, name=None):
         """Bind a native file name or Python stream to a BASIC file name."""

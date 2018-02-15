@@ -52,7 +52,7 @@ class ScreenCopyHandler(object):
         self._lpt1_file = lpt1_file
 
     def check_input(self, signal):
-        """Handle pen-related input signals."""
+        """Handle input signals."""
         if signal.event_type == signals.CLIP_COPY:
             self._screen.copy_clipboard(*signal.params)
             return True
@@ -155,7 +155,6 @@ class KeyboardBuffer(object):
             return [element[1] for element in self.buffer]
         except IndexError:
             return []
-
 
     def stop(self):
         """Ring buffer stopping index."""

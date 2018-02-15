@@ -63,8 +63,9 @@ class RedirectedIO(object):
         finally:
             self._active = False
 
-    def attach(self, queue, stdio):
+    def attach(self, queues, stdio):
         """Attach input queue and stdio and start stream reader threads."""
+        queue = queues.inputs
         if stdio and not self._stdio:
             self._stdio = True
             self._output_echos.append(OutputStreamWrapper(
@@ -105,7 +106,6 @@ class RedirectedIO(object):
                 return
             elif instr:
                 queue.put(signals.Event(signals.STREAM_CHAR, (instr,)))
-
 
 
 class OutputStreamWrapper(object):
