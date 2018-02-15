@@ -60,11 +60,6 @@ class KeyboardBuffer(object):
         self._buffer = []
         self._ring_length = ring_length
         self._start = 0
-        # expansion buffer for keyboard macros
-        # expansion vessel holds codepage chars
-        self._expansion_vessel = []
-        # f-key macros
-        self.key_replace = list(DEFAULT_MACROS)
 
     def append(self, cp_c, scancode, modifier, check_full=True):
         """Append a single keystroke with eascii/codepage, scancode, modifier."""
@@ -75,27 +70,15 @@ class KeyboardBuffer(object):
             else:
                 self._buffer.append((cp_c, scancode, modifier))
 
-    def getc(self, expand=True):
+    def getc(self):
         """Read a keystroke as eascii/codepage."""
-        try:
-            return self._expansion_vessel.pop(0)
-        except IndexError:
-            pass
         try:
             c = self._buffer.pop(0)[0]
         except IndexError:
             c = b''
         if c:
             self._start = (self._start + 1) % self._ring_length
-        if not expand or c not in FUNCTION_KEY:
-            return c
-        self._expansion_vessel = list(self.key_replace[FUNCTION_KEY[c]])
-        try:
-            return self._expansion_vessel.pop(0)
-        except IndexError:
-            # function macro has been redefined as empty: return scancode
-            # e.g. KEY 1, "" enables catching F1 with INKEY$
-            return c
+        return c
 
     def peek(self):
         """Show top keystroke in keyboard buffer as eascii/codepage."""
@@ -107,7 +90,7 @@ class KeyboardBuffer(object):
     @property
     def empty(self):
         """True if no keystrokes in buffer."""
-        return len(self._buffer) == 0 and len(self._expansion_vessel) == 0
+        return not self._buffer
 
     @property
     def length(self):
@@ -184,6 +167,8 @@ class Keyboard(object):
     def __init__(self, queues, values, codepage, keystring, ignore_caps):
         """Initilise keyboard state."""
         self._values = values
+        # needed for wait() in wait_char()
+        self._queues = queues
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(queues, 15)
         # INP(&H60) scancode
@@ -202,8 +187,11 @@ class Keyboard(object):
         self._stream_buffer = deque()
         # redirected input stream has closed
         self._input_closed = False
-        # needed for wait() in wait_char()
-        self._queues = queues
+        # expansion buffer for keyboard macros
+        # expansion vessel holds codepage chars
+        self._expansion_vessel = []
+        # f-key macros
+        self._key_replace = list(DEFAULT_MACROS)
 
     # event handler
 
@@ -233,8 +221,9 @@ class Keyboard(object):
         # mods is a list of scancodes; OR together the known modifiers
         self.mod &= ~(MODIFIER[scancode.CTRL] | MODIFIER[scancode.ALT] |
                     MODIFIER[scancode.LSHIFT] | MODIFIER[scancode.RSHIFT])
-        for m in mods:
-            self.mod |= MODIFIER.get(m, 0)
+        if mods:
+            for m in mods:
+                self.mod |= MODIFIER.get(m, 0)
         # set toggle-key modifier status
         # these are triggered by keydown events
         try:
@@ -285,11 +274,11 @@ class Keyboard(object):
         """Set macro for given function key."""
         # NUL terminates macro string, rest is ignored
         # macro starting with NUL is empty macro
-        self.buf.key_replace[num-1] = macro.split(b'\0', 1)[0]
+        self._key_replace[num-1] = macro.split(b'\0', 1)[0]
 
     def get_macro(self, num):
         """Get macro for given function key."""
-        return self.buf.key_replace[num]
+        return self._key_replace[num]
 
     # character retrieval
 
@@ -298,15 +287,34 @@ class Keyboard(object):
         # if input stream has closed, don't wait but return empty
         # which will tell the Editor to close
         # except if we're waiting for KYBD: input
-        while self.buf.empty and (keyboard_only or not self._input_closed):
+        while (not self._expansion_vessel) and (self.buf.empty) and (
+                    keyboard_only or not self._input_closed):
             self._queues.wait()
         return self.buf.peek()
+
+    def _read_byte(self, expand=True):
+        """Read one byte from keyboard buffer, expanding macros if required."""
+        try:
+            return self._expansion_vessel.pop(0)
+        except IndexError:
+            pass
+        c = self.buf.getc()
+        if not expand or c not in FUNCTION_KEY:
+            return c
+        # function key macro expansion
+        self._expansion_vessel = list(self._key_replace[FUNCTION_KEY[c]])
+        try:
+            return self._expansion_vessel.pop(0)
+        except IndexError:
+            # function macro has been redefined as empty: return scancode
+            # e.g. KEY 1, "" enables catching F1 with INKEY$
+            return c
 
     def inkey_(self, args):
         """INKEY$: read one byte from keyboard or stream; nonblocking."""
         list(args)
         self._queues.wait()
-        inkey = self.buf.getc() or (self._stream_buffer.popleft() if self._stream_buffer else b'')
+        inkey = self._read_byte() or (self._stream_buffer.popleft() if self._stream_buffer else b'')
         return self._values.new_string().from_str(inkey)
 
     def read_bytes_kybd_file(self, num):
@@ -314,15 +322,15 @@ class Keyboard(object):
         word = []
         for _ in range(num):
             self.wait_char(keyboard_only=True)
-            word.append(self.buf.getc(expand=False))
+            word.append(self._read_byte(expand=False))
         return word
 
     def get_fullchar(self, expand=True):
         """Read one (sbcs or dbcs) full character; nonblocking."""
-        c = self.buf.getc(expand)
+        c = self._read_byte(expand)
         # insert dbcs chars from keyboard buffer two bytes at a time
         if (c in self._codepage.lead and self.buf.peek() in self._codepage.trail):
-            c += self.buf.getc(expand)
+            c += self._read_byte(expand)
         if not c and self._stream_buffer:
             c = self._stream_buffer.popleft()
             if (c in self._codepage.lead and self._stream_buffer and
