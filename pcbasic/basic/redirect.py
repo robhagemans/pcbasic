@@ -150,6 +150,7 @@ def _get_chars(stream):
     """Get characters from unix stream, nonblocking."""
     # this works for everything on unix, and sockets on Windows
     instr = []
+    closed = False
     # output buffer for ioctl call
     sock_size = array.array('i', [0])
     # while buffer has characters/lines to read
@@ -160,8 +161,11 @@ def _get_chars(stream):
         # and read them all
         c = stream.read(count)
         if not c:
-            return None
+            closed = True
+            break
         instr.append(c)
+    if not instr and closed:
+        return None
     return b''.join(instr)
 
 def _get_chars_windows_console(dummy_stream):
