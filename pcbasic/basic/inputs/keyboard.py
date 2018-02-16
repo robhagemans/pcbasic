@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from collections import deque
+from contextlib import contextmanager
 
 from ..base import error
 from ..base import scancode
@@ -53,20 +54,29 @@ FULL_TONE = (0, 800, 0.01, 1, False, 15)
 class KeyboardBuffer(object):
     """Quirky emulated ring buffer for keystrokes."""
 
-    def __init__(self, queues, ring_length):
+    def __init__(self, queues, ring_length, check_full):
         """Initialise to given length."""
         self._queues = queues
         # buffer holds tuples (eascii/codepage, scancode, modifier)
         self._buffer = [(b'\0\0', 0)] * ring_length
         self._ring_length = ring_length
         self._start = ring_length
+        # check if ring is full
+        self._check_full = check_full
 
-    def append(self, cp_c, scan, check_full=True):
+    @contextmanager
+    def ignore_limit(self):
+        """Enable/diable buffer limit check."""
+        save, self._check_full = self._check_full, False
+        yield
+        self._check_full = save
+
+    def append(self, cp_c, scan):
         """Append a single keystroke with eascii/codepage, scancode, modifier."""
         # if check_full is off, we pretend the ring buffer is infinite
         # this is for inserting keystrokes and pasting text into the emulator
         if cp_c:
-            if check_full and len(self._buffer) - self._start >= self._ring_length-1:
+            if self._check_full and len(self._buffer) - self._start >= self._ring_length-1:
                 # when buffer is full, GW-BASIC inserts a \r at the end but doesn't count it
                 self._buffer[self._start-1] = (b'\r', scancode.RETURN)
                 # emit a sound signal; keystroke is dropped
@@ -170,13 +180,13 @@ def _split_eascii(cp_s):
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, queues, values, codepage, keystring, ignore_caps):
+    def __init__(self, queues, values, codepage, keystring, ignore_caps, check_full):
         """Initilise keyboard state."""
         self._values = values
         # needed for wait() in wait_char()
         self._queues = queues
-        # key queue (holds bytes)
-        self.buf = KeyboardBuffer(queues, 16)
+        # key queue (holds bytes); ring buffer of length 16
+        self.buf = KeyboardBuffer(queues, 16, check_full)
         # INP(&H60) scancode
         self.last_scancode = 0
         # active status of caps, num, scroll, alt, ctrl, shift modifiers
@@ -187,8 +197,9 @@ class Keyboard(object):
         self._ignore_caps = ignore_caps
         # pre-inserted keystrings
         self._codepage = codepage
-        for ea_char in _split_eascii(self._codepage.str_from_unicode(keystring)):
-            self.buf.append(ea_char, None, check_full=False)
+        with self.buf.ignore_limit():
+            for ea_char in _split_eascii(self._codepage.str_from_unicode(keystring)):
+                self.buf.append(ea_char, None)
         # stream buffer
         self._stream_buffer = deque()
         # redirected input stream has closed
@@ -219,7 +230,7 @@ class Keyboard(object):
             return False
         return True
 
-    def _key_down(self, c, scan, mods, check_full=True):
+    def _key_down(self, c, scan, mods):
         """Insert a key-down event by eascii/unicode, scancode and modifiers."""
         if scan is not None:
             self.last_scancode = scan
@@ -246,7 +257,7 @@ class Keyboard(object):
         if (self.mod & TOGGLE[scancode.CAPSLOCK]
                 and not self._ignore_caps and len(c) == 1):
             c = c.swapcase()
-        self.buf.append(self._codepage.from_unicode(c), scan, check_full)
+        self.buf.append(self._codepage.from_unicode(c), scan)
 
     def _key_up(self, scan):
         """Insert a key-up event."""
@@ -262,7 +273,7 @@ class Keyboard(object):
             char = chr(int(self.keypad_ascii)%256)
             if char == b'\0':
                 char = b'\0\0'
-            self.buf.append(char, None, check_full=True)
+            self.buf.append(char, None)
             self.keypad_ascii = b''
 
     def _stream_chars(self, us):

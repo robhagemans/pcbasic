@@ -515,6 +515,8 @@ class Settings(object):
             'peek_values': peek_values,
             'extension': self.get('extension'),
             'catch_exceptions': self.get('catch-exceptions'),
+            # ignore key buffer in console-based interfaces, to allow pasting text in console
+            'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses')
         }
 
     def get_video_parameters(self):

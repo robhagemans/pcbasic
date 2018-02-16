@@ -43,22 +43,20 @@ class Implementation(object):
 
     def __init__(self,
             syntax=u'advanced', pcjr_term=u'', shell=u'',
-            output_file=None, append=False, input_file=None,
+            output_file=None, append=False, input_file=None, stdio=True,
             codepage=None, box_protect=True,
-            video=u'vga', font={},
-            monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
-            text_width=80, video_memory=262144, cga_low=False,
-            keys=u'', double=False,
+            video=u'vga', monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
+            font={}, text_width=80, video_memory=262144, cga_low=False,
+            double=False,
             peek_values=None, device_params=None,
-            current_device='Z', mount_dict=None,
-            print_trigger='close', serial_buffer_size=128,
-            utf8=False, universal=True, stdio=True,
-            ignore_caps=True, ctrl_c_is_break=True,
+            current_device='Z', mount_dict=None, utf8=False, universal=True,
+            print_trigger='close',
+            keys=u'', check_keybuffer_full=True, ignore_caps=True, ctrl_c_is_break=True,
             max_list_line=65535, allow_protect=False,
-            allow_code_poke=False, rebuild_offsets=True, max_memory=65534,
-            max_reclen=128, max_files=3, reserved_memory=3429,
-            temp_dir=u'', extension=None,
-            debug=False, catch_exceptions='basic',
+            allow_code_poke=False, rebuild_offsets=True,
+            max_memory=65534, reserved_memory=3429,
+            serial_buffer_size=128, max_reclen=128, max_files=3,
+            temp_dir=u'', extension=None, debug=False, catch_exceptions='basic',
             ):
         """Initialise the interpreter session."""
         ######################################################################
@@ -127,7 +125,7 @@ class Implementation(object):
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
         # EventHandler needed for wait() only
         self.keyboard = inputs.Keyboard(
-                self.queues, self.values, self.codepage, keys, ignore_caps)
+                self.queues, self.values, self.codepage, keys, ignore_caps, check_keybuffer_full)
         self.pen = inputs.Pen()
         self.stick = inputs.Stick(self.values)
         ######################################################################
