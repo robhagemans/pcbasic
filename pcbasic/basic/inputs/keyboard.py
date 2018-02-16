@@ -57,14 +57,14 @@ class KeyboardBuffer(object):
         """Initialise to given length."""
         self._queues = queues
         # buffer holds tuples (eascii/codepage, scancode, modifier)
-        self._buffer = []
+        self._buffer = [(b'\0\0', 0)] * ring_length
         self._ring_length = ring_length
-        self._start = 0
+        self._start = ring_length
 
     def append(self, cp_c, scancode, check_full=True):
         """Append a single keystroke with eascii/codepage, scancode, modifier."""
         if cp_c:
-            if check_full and len(self._buffer) >= self._ring_length:
+            if check_full and len(self._buffer) - self._start >= self._ring_length:
                 # emit a sound signal when buffer is full (and we care)
                 self._queues.audio.put(signals.Event(signals.AUDIO_TONE, FULL_TONE))
             else:
@@ -73,76 +73,80 @@ class KeyboardBuffer(object):
     def getc(self):
         """Read a keystroke as eascii/codepage."""
         try:
-            c = self._buffer.pop(0)[0]
+            c = self._buffer[self._start][0]
         except IndexError:
             c = b''
-        if c:
-            self._start = (self._start + 1) % self._ring_length
+        else:
+            self._start += 1
         return c
 
     def peek(self):
         """Show top keystroke in keyboard buffer as eascii/codepage."""
         try:
-            return self._buffer[0][0]
+            return self._buffer[self._start][0]
         except IndexError:
             return b''
 
-    @property
-    def empty(self):
-        """True if no keystrokes in buffer."""
-        return not self._buffer
+    def _ring_index(self, index):
+        """Get index for ring position."""
+        diff = len(self._buffer) % self._ring_length - index
+        offset = len(self._buffer) - diff
+        if diff <= 0:
+            offset -= self._ring_length
+        return offset
 
     @property
     def length(self):
         """Return the number of keystrokes in the buffer."""
-        return min(self._ring_length, len(self._buffer))
+        return min(self._ring_length, len(self._buffer) - self._start)
+
+    @property
+    def empty(self):
+        """True if no keystrokes in buffer."""
+        return self._start >= len(self._buffer)
 
     @property
     def start(self):
         """Ring buffer starting index."""
-        return self._start
+        return self._start % self._ring_length
 
     @property
     def stop(self):
         """Ring buffer stopping index."""
         return (self._start + self.length) % self._ring_length
 
-    def _ring_index(self, index):
-        """Get index for ring position."""
-        index -= self._start
-        if index < 0:
-            index += self._ring_length + 1
-        return index
-
     def ring_read(self, index):
         """Read character at position i in ring as eascii/codepage."""
-        index = self._ring_index(index)
-        if index == self._ring_length:
-            # marker of buffer position
-            return b'\x0d', 0
-        try:
-            return self._buffer[index]
-        except IndexError:
-            return b'\0\0', 0
+        return self._buffer[self._ring_index(index)]
 
     def ring_write(self, index, c, scan):
         """Write character at position i in ring as eascii/codepage."""
-        index = self._ring_index(index)
-        if index < self._ring_length:
-            try:
-                self._buffer[index] = (c, scan)
-            except IndexError:
-                pass
+        self._buffer[self._ring_index(index)] = (c, scan)
 
-    def ring_set_boundaries(self, start, stop):
+    def ring_set_boundaries(self, newstart, newstop):
         """Set start and stop index."""
-        length = (stop - start) % self._ring_length
+        length = (newstop - newstart) % self._ring_length
         # rotate buffer to account for new start and stop
-        start_index = self._ring_index(start)
-        stop_index = self._ring_index(stop)
-        self._buffer = self._buffer[start_index:] + self._buffer[:stop_index]
-        self._buffer += [(b'\0\0', None)]*(length - len(self._buffer))
+        # these are between length - ring_length and length
+        start_index = self._ring_index(newstart)
+        stop_index = self._ring_index(newstop)
+        start = self._ring_index(self._start)
+        # drop any extended buffer beyond ring limits
+        self._buffer = self._buffer[:self._start + self._ring_length]
+        # cut to ring limits, we should be exactly the right size
+        start -= len(self._buffer) - self._ring_length
+        self._buffer = self._buffer[-self._ring_length:]
+        # rotate so that the stop index is at the end
+        shift = len(self._buffer[start+length:])
+        self._buffer = self._buffer[start+length:] + self._buffer[:start+length]
+        start += shift
+        start = start % self._ring_length
+        # insert zeros before buffer to get the correct modulo
+        while start % self._ring_length != newstart:
+            start += 1
+            self._buffer = [(b'\0\0', 0)] + self._buffer
         self._start = start
+
 
 
 ###############################################################################
@@ -170,7 +174,7 @@ class Keyboard(object):
         # needed for wait() in wait_char()
         self._queues = queues
         # key queue (holds bytes)
-        self.buf = KeyboardBuffer(queues, 15)
+        self.buf = KeyboardBuffer(queues, 16)
         # INP(&H60) scancode
         self.last_scancode = 0
         # active status of caps, num, scroll, alt, ctrl, shift modifiers
