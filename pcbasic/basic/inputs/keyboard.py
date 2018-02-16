@@ -48,7 +48,7 @@ FULL_TONE = (0, 800, 0.01, 1, False, 15)
 
 
 ###############################################################################
-# keyboard queue
+# keyboard ring buffer
 
 class KeyboardBuffer(object):
     """Quirky emulated ring buffer for keystrokes."""
@@ -61,14 +61,18 @@ class KeyboardBuffer(object):
         self._ring_length = ring_length
         self._start = ring_length
 
-    def append(self, cp_c, scancode, check_full=True):
+    def append(self, cp_c, scan, check_full=True):
         """Append a single keystroke with eascii/codepage, scancode, modifier."""
+        # if check_full is off, we pretend the ring buffer is infinite
+        # this is for inserting keystrokes and pasting text into the emulator
         if cp_c:
-            if check_full and len(self._buffer) - self._start >= self._ring_length:
-                # emit a sound signal when buffer is full (and we care)
+            if check_full and len(self._buffer) - self._start >= self._ring_length-1:
+                # when buffer is full, GW-BASIC inserts a \r at the end but doesn't count it
+                self._buffer[self._start-1] = (b'\r', scancode.RETURN)
+                # emit a sound signal; keystroke is dropped
                 self._queues.audio.put(signals.Event(signals.AUDIO_TONE, FULL_TONE))
             else:
-                self._buffer.append((cp_c, scancode))
+                self._buffer.append((cp_c, scan))
 
     def getc(self):
         """Read a keystroke as eascii/codepage."""
@@ -148,10 +152,8 @@ class KeyboardBuffer(object):
         self._start = start
 
 
-
 ###############################################################################
 # keyboard operations
-
 
 def _split_eascii(cp_s):
     """Split a string of e-ascii/codepage into keystrokes."""
