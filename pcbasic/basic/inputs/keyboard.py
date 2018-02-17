@@ -305,9 +305,8 @@ class Keyboard(object):
         # which will tell the Editor to close
         # except if we're waiting for KYBD: input
         while (not self._expansion_vessel) and (self.buf.empty) and (
-                    keyboard_only or not self._input_closed):
+                    keyboard_only or (not self._input_closed and not self._stream_buffer)):
             self._queues.wait()
-        return self.buf.peek()
 
     def _read_byte(self, expand=True):
         """Read one byte from keyboard buffer, expanding macros if required."""
@@ -330,9 +329,15 @@ class Keyboard(object):
     def inkey_(self, args):
         """INKEY$: read one byte from keyboard or stream; nonblocking."""
         list(args)
+        # wait a tick to reduce load in loops
         self._queues.wait()
         inkey = self._read_byte() or (self._stream_buffer.popleft() if self._stream_buffer else b'')
         return self._values.new_string().from_str(inkey)
+
+    def peek_byte_kybd_file(self):
+        """Peek from keyboard only; for KYBD: files; blocking."""
+        self.wait_char(keyboard_only=True)
+        return self.buf.peek()
 
     def read_bytes_kybd_file(self, num):
         """Read num bytes from keyboard only; for KYBD: files; blocking."""
