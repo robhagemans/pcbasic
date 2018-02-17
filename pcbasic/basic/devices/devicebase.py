@@ -545,10 +545,10 @@ class KYBDFile(TextFileBase):
 
     def eof(self):
         """KYBD only EOF if ^Z is read."""
-        if self.mode in ('A', 'O'):
+        if self.mode in (b'A', b'O'):
             return False
         # blocking peek
-        return (self._keyboard.wait_char() == '\x1a')
+        return (self._keyboard.peek_byte_kybd_file() == b'\x1a')
 
     def set_width(self, new_width=255):
         """Setting width on KYBD device (not files) changes screen width."""

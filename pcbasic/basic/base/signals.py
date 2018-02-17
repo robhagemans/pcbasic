@@ -71,8 +71,6 @@ VIDEO_SET_CLIPBOARD_TEXT = 30
 # input queue signals
 # quit interpreter
 KEYB_QUIT = 0
-# insert character
-KEYB_CHAR = 4
 # insert keydown
 KEYB_DOWN = 5
 # insert keyup
@@ -81,8 +79,6 @@ KEYB_UP = 6
 STREAM_CHAR = 7
 # redirect or stdio closed
 STREAM_CLOSED = 8
-# insert keydown, bypassing buffer limit
-STREAM_DOWN = 9
 # light pen events
 PEN_DOWN = 101
 PEN_UP = 102

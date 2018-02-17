@@ -186,8 +186,7 @@ class EventQueues(object):
             raise error.Exit()
         # exit pause mode on keyboard hit; swallow key
         elif signal.event_type in (
-                    signals.KEYB_CHAR, signals.KEYB_DOWN, signals.STREAM_DOWN,
-                    signals.STREAM_CHAR, signals.CLIP_PASTE):
+                    signals.KEYB_DOWN, signals.STREAM_CHAR, signals.CLIP_PASTE):
             if self._pause:
                 self._pause = False
                 return True

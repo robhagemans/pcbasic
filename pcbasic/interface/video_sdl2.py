@@ -359,8 +359,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # the text input event follows the key down event immediately
         elif self.last_down is None:
             # no key down event waiting: other input method
-            self.input_queue.put(signals.Event(
-                                    signals.KEYB_CHAR, (c, )))
+            self.input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
         else:
             eascii, scan, mod, ts = self.last_down
             if ts == event.text.timestamp:
@@ -369,7 +368,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                     # filter out chars being sent with alt+key on Linux
                     if scancode.ALT not in mod:
                         # with IME, the text is sent together with the final Enter keypress.
-                        self.input_queue.put(signals.Event(signals.KEYB_CHAR, (c, )))
+                        self.input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
                     else:
                         # final keypress such as space, CR have IME meaning, we should ignore them
                         self.input_queue.put(signals.Event(signals.KEYB_DOWN, (eascii, scan, mod)))
@@ -380,7 +379,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 # previous keypress has no corresponding textinput
                 self._flush_keypress()
                 # current textinput has no corresponding keypress
-                self.input_queue.put(signals.Event(signals.KEYB_CHAR, (c, )))
+                self.input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
             self.last_down = None
 
 

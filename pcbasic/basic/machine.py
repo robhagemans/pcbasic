@@ -567,9 +567,9 @@ class Memory(object):
             return (self.keyboard.buf.start*2 + self.key_buffer_offset) // 256
         elif addr == 1052:
             # ring buffer ends at n + 1023
-            return (self.keyboard.buf.stop()*2 + self.key_buffer_offset) % 256
+            return (self.keyboard.buf.stop*2 + self.key_buffer_offset) % 256
         elif addr == 1053:
-            return (self.keyboard.buf.stop()*2 + self.key_buffer_offset) // 256
+            return (self.keyboard.buf.stop*2 + self.key_buffer_offset) // 256
         elif addr in range(1024+self.key_buffer_offset, 1024+self.key_buffer_offset+32):
             index = (addr-1024-self.key_buffer_offset)//2
             odd = (addr-1024-self.key_buffer_offset)%2
@@ -660,7 +660,7 @@ class Memory(object):
             # keyboard ring buffer starts at n+1024; lowest 1054
             self.keyboard.buf.ring_set_boundaries(
                     (value - self.key_buffer_offset) // 2,
-                    self.keyboard.buf.stop())
+                    self.keyboard.buf.stop)
         elif addr == 1052:
             # ring buffer ends at n + 1023
             self.keyboard.buf.ring_set_boundaries(

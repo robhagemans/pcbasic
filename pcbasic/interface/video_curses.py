@@ -178,7 +178,7 @@ class VideoCurses(base.VideoPlugin):
         for c in u:
             #check_full=False to allow pasting chunks of text
             self.input_queue.put(signals.Event(
-                                    signals.STREAM_DOWN, (c, None, [])))
+                                    signals.KEYB_DOWN, (c, None, [])))
             self._unset_f12()
 
     def _unset_f12(self):
