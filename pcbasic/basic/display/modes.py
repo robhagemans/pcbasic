@@ -67,7 +67,7 @@ COLOURS64 = (
 
 
 ###############################################################################
-# Low level video (mainly about colours)
+# Low level video (mainly about colours; mode object factory)
 
 class Video(object):
     """Low-level display operations."""
@@ -480,9 +480,9 @@ class TextMode(VideoMode):
             crow = 1 + offset // (self.width*2)
             try:
                 if (addr+i) % 2:
-                    mem_bytes[i] = screen.text.get_attr(page, crow, ccol)
+                    mem_bytes[i] = screen.text_screen.text.get_attr(page, crow, ccol)
                 else:
-                    mem_bytes[i] = screen.text.get_char(page, crow, ccol)
+                    mem_bytes[i] = screen.text_screen.text.get_char(page, crow, ccol)
             except IndexError:
                 pass
         return mem_bytes
@@ -498,20 +498,20 @@ class TextMode(VideoMode):
             crow = 1 + offset // (self.width*2)
             try:
                 if (addr+i) % 2:
-                    c = screen.text.get_char(page, crow, ccol)
+                    c = screen.text_screen.text.get_char(page, crow, ccol)
                     a = mem_bytes[i]
                 else:
                     c = mem_bytes[i]
-                    a = screen.text.get_attr(page, crow, ccol)
-                screen.text.put_char_attr(page, crow, ccol, chr(c), a)
+                    a = screen.text_screen.text.get_attr(page, crow, ccol)
+                screen.text_screen.text.put_char_attr(page, crow, ccol, chr(c), a)
                 if last_row >= 0 and last_row != crow:
                     # set suppress_cli to true to avoid echoing to text terminal
-                    screen.refresh_range(page, last_row, 1, self.width, suppress_cli=True)
+                    screen.text_screen.refresh_range(page, last_row, 1, self.width, suppress_cli=True)
             except IndexError:
                 pass
             last_row = crow
         if last_row >= 1 and last_row <= self.height and page >= 0 and page < self.num_pages:
-            screen.refresh_range(page, last_row+1, 1, self.width, suppress_cli=True)
+            screen.text_screen.refresh_range(page, last_row+1, 1, self.width, suppress_cli=True)
 
 
 class MonoTextMode(TextMode):

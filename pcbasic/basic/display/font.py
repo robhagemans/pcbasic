@@ -226,7 +226,7 @@ class GlyphCache(object):
             c: self._fonts[mode.font_height].build_glyph(c, mode.font_width, mode.font_height)
             for c in map(chr, range(256))
         }
-        self.submit()
+        #self.submit()
 
     def submit(self):
         """Send glyph dict to interface."""

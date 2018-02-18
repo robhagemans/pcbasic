@@ -102,11 +102,11 @@ class SCRNDevice(Device):
 
     allowed_modes = 'OR'
 
-    def __init__(self, screen):
+    def __init__(self, display):
         """Initialise screen device."""
         # open a master file on the screen
         Device.__init__(self)
-        self.device_file = SCRNFile(screen)
+        self.device_file = SCRNFile(display)
 
 
 class KYBDDevice(Device):
@@ -114,11 +114,11 @@ class KYBDDevice(Device):
 
     allowed_modes = 'IR'
 
-    def __init__(self, keyboard, screen):
+    def __init__(self, keyboard, display):
         """Initialise keyboard device."""
         # open a master file on the keyboard
         Device.__init__(self)
-        self.device_file = KYBDFile(keyboard, screen)
+        self.device_file = KYBDFile(keyboard, display)
 
 
 #################################################################################
@@ -495,7 +495,7 @@ class KYBDFile(TextFileBase):
 
     col = 0
 
-    def __init__(self, keyboard, screen):
+    def __init__(self, keyboard, display):
         """Initialise keyboard file."""
         # use mode = 'A' to avoid needing a first char from nullstream
         TextFileBase.__init__(self, nullstream(), filetype='D', mode='A')
@@ -504,13 +504,13 @@ class KYBDFile(TextFileBase):
         self._input_last = ''
         self._keyboard = keyboard
         # screen needed for width settings on KYBD: master file
-        self._screen = screen
+        self._display = display
         # on master-file devices, this is the master file.
         self._is_master = True
 
     def open_clone(self, filetype, mode, reclen=128):
         """Clone device file."""
-        inst = KYBDFile(self._keyboard, self._screen)
+        inst = KYBDFile(self._keyboard, self._display)
         inst.mode = mode
         inst.reclen = reclen
         inst.filetype = filetype
@@ -553,7 +553,7 @@ class KYBDFile(TextFileBase):
     def set_width(self, new_width=255):
         """Setting width on KYBD device (not files) changes screen width."""
         if self._is_master:
-            self._screen.set_width(new_width)
+            self._display.set_width(new_width)
 
     input_entry = input_entry_realtime
 
@@ -564,11 +564,13 @@ class SCRNFile(RawFile):
     """SCRN: file, allows writing to the screen as a text file.
         SCRN: files work as a wrapper text file."""
 
-    def __init__(self, screen):
+    def __init__(self, display):
         """Initialise screen file."""
         RawFile.__init__(self, nullstream(), filetype='D', mode='O')
+        # need display object as WIDTH can change graphics mode
+        self._display = display
         # screen member is public, needed by print_
-        self.screen = screen
+        self.screen = display.text_screen
         self._width = self.screen.mode.width
         self._col = self.screen.current_col
         # on master-file devices, this is the master file.
@@ -576,7 +578,7 @@ class SCRNFile(RawFile):
 
     def open_clone(self, filetype, mode, reclen=128):
         """Clone screen file."""
-        inst = SCRNFile(self.screen)
+        inst = SCRNFile(self._display)
         inst.mode = mode
         inst.reclen = reclen
         inst.filetype = filetype
@@ -647,14 +649,14 @@ class SCRNFile(RawFile):
     def width(self):
         """Return (virtual) screen width."""
         if self._is_master:
-            return self.screen.mode.width
+            return self._display.mode.width
         else:
             return self._width
 
     def set_width(self, new_width=255):
         """Set (virtual) screen width."""
         if self._is_master:
-            self.screen.set_width(new_width)
+            self._display.set_width(new_width)
         else:
             self._width = new_width
 

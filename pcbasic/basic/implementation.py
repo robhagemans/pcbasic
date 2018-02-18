@@ -113,13 +113,15 @@ class Implementation(object):
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, syntax)
         # Sound is needed for the beeps on \a
-        # EventHandler is needed for wait() in graphics
-        self.screen = display.Screen(
+        # InputMethods is needed for wait() in graphics
+        self.display = display.Display(
                 self.queues, self.values, self.queues,
                 self.memory, text_width, video_memory, video, monitor,
                 self.sound, self.output_redirection,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font)
+        self.screen = self.display.text_screen
+        self.drawing = self.display.drawing
         # initilise floating-point error message stream
         self.values.set_handler(values.FloatErrorHandler(self.screen))
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
@@ -135,7 +137,7 @@ class Implementation(object):
         # DataSegment needed for COMn and disk FIELD buffers
         # EventCycle needed for wait()
         self.files = devices.Files(
-                self.values, self.memory, self.queues, self.keyboard, self.screen,
+                self.values, self.memory, self.queues, self.keyboard, self.display,
                 max_files, max_reclen, serial_buffer_size,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir,
@@ -195,11 +197,11 @@ class Implementation(object):
         # set up non-data segment memory
         self.all_memory = machine.Memory(
                 self.values, self.memory, self.files,
-                self.screen, self.keyboard, self.screen.fonts[8],
+                self.display, self.keyboard, self.screen.fonts[8],
                 self.interpreter, peek_values, syntax)
         # initialise machine ports
         self.machine = machine.MachinePorts(
-                self.queues, self.values, self.screen, self.keyboard, self.stick, self.files)
+                self.queues, self.values, self.display, self.keyboard, self.stick, self.files)
         # build function table (depends on Memory having been initialised)
         self.parser.init_callbacks(self)
 
@@ -223,7 +225,7 @@ class Implementation(object):
         if interface:
             self.queues.set(*interface.get_queues())
             # rebuild the screen
-            self.screen.rebuild()
+            self.display.rebuild()
             # rebuild audio queues
             self.sound.rebuild()
         else:
@@ -426,7 +428,7 @@ class Implementation(object):
             video_size = next(args)
             if video_size is not None:
                 video_size = values.round(video_size).to_value()
-                self.screen.set_video_memory_size(video_size)
+                self.display.set_video_memory_size(video_size)
             # execute any remaining parsing steps
             next(args)
         except StopIteration:
@@ -452,7 +454,7 @@ class Implementation(object):
         # reset PLAY state
         self.play_parser.reset()
         # reset DRAW state (angle, scale) and current graphics position
-        self.screen.drawing.reset()
+        self.drawing.reset()
         # reset random number generator
         self.randomiser.clear()
         # reset stacks & pointers

@@ -6,4 +6,4 @@ Text and graphics buffer, cursor and screen operations
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .screen import Screen
+from .display import Display
