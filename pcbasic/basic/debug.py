@@ -16,7 +16,6 @@ import struct
 import tempfile
 import subprocess
 
-from ..version import __version__
 from .base import error
 from . import values
 

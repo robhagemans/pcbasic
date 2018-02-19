@@ -40,7 +40,6 @@ from . import values
 from . import parser
 from . import devices
 from . import extensions
-from .. import config
 from ..version import __version__
 
 
@@ -62,7 +61,8 @@ class Implementation(object):
             allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429,
             serial_buffer_size=128, max_reclen=128, max_files=3,
-            temp_dir=u'', extension=None, debug=False, debug_options=None, catch_exceptions='basic',
+            temp_dir=u'', debug=False, debug_dir=u'', debug_options=None,
+            extension=None, catch_exceptions='basic',
             ):
         """Initialise the interpreter session."""
         ######################################################################
@@ -85,6 +85,8 @@ class Implementation(object):
         self._allow_crash = (catch_exceptions != u'all')
         # keep a copy of arguments (for error logging)
         self._debug_uargv = debug_options
+        # directory for crash logs
+        self._debug_dir = debug_dir
         ######################################################################
         # data segment
         ######################################################################
@@ -255,7 +257,8 @@ class Implementation(object):
         self.interpreter.set_pointer(False)
         # create crash log file
         logname = datetime.now().strftime('pcbasic-crash-%Y%m%d-')
-        logfile = tempfile.NamedTemporaryFile(suffix='.log', prefix=logname, dir=config.STATE_PATH, delete=False)
+        logfile = tempfile.NamedTemporaryFile(
+                suffix='.log', prefix=logname, dir=self._debug_dir, delete=False)
         # construct the message
         message = [
             (0x70, 'EXCEPTION\n'),
