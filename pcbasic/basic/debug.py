@@ -215,16 +215,15 @@ class BaseDebugger(object):
         crashlog.append('==== Options ='.ljust(100, '='))
         crashlog.append(repr(self._uargv))
         # clear screen for modal message
-        screen = self._session.screen
         # choose attributes - this should be readable on VGA, MDA, PCjr etc.
-        screen.screen(0, 0, 0, 0, new_width=80)
-        screen.set_attr(0x17)
-        screen.set_border(1)
-        screen.clear()
+        self._session.display.screen(0, 0, 0, 0, new_width=80)
+        self._session.display.set_attr(0x17)
+        self._session.display.set_border(1)
+        self._session.display.text_screen.clear()
         # show message on screen
         for attr, text in message:
-            screen.set_attr(attr)
-            screen.write(text.replace('\n', '\r'))
+            self._session.display.set_attr(attr)
+            self._session.display.text_screen.write(text.replace('\n', '\r'))
         # write crash log
         with logfile as f:
             f.write('\n'.join(crashlog))

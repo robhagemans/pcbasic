@@ -35,7 +35,7 @@ class Files(object):
     """File manager."""
 
     def __init__(
-            self, values, memory, queues, keyboard, screen,
+            self, values, memory, queues, keyboard, display,
             max_files, max_reclen, serial_buffer_size,
             device_params, current_device, mount_dict,
             print_trigger, temp_dir,
@@ -49,7 +49,7 @@ class Files(object):
         self.max_reclen = max_reclen
         self._init_devices(
                 values, queues,
-                screen, keyboard,
+                display, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)
@@ -111,19 +111,20 @@ class Files(object):
     ###########################################################################
     # device management
 
-    def _init_devices(self, values, queues, screen, keyboard,
+    def _init_devices(self, values, queues, display, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_in_size, utf8, universal):
         """Initialise devices."""
         # screen device, for files_()
-        self._screen = screen
+        self._screen = display.text_screen
+        codepage = self._screen.codepage
         device_params = device_params or {}
         self._devices = {
-            b'SCRN:': devicebase.SCRNDevice(screen),
-            # KYBD: device needs screen as it can set the screen width
-            b'KYBD:': devicebase.KYBDDevice(keyboard, screen),
-            # cassette: needs screen to display Found and Skipped messages
-            b'CAS1:': cassette.CASDevice(device_params.get(b'CAS1:', None), screen),
+            b'SCRN:': devicebase.SCRNDevice(display),
+            # KYBD: device needs display as it can set the screen width
+            b'KYBD:': devicebase.KYBDDevice(keyboard, display),
+            # cassette: needs text screen to display Found and Skipped messages
+            b'CAS1:': cassette.CASDevice(device_params.get(b'CAS1:', None), self._screen),
             # serial devices
             b'COM1:': ports.COMDevice(
                         device_params.get(b'COM1:', None),
@@ -134,13 +135,13 @@ class Files(object):
             # parallel devices - LPT1: must always be available
             b'LPT1:': parports.LPTDevice(
                         device_params.get(b'LPT1:', None), devicebase.nullstream(),
-                        print_trigger, screen.codepage, temp_dir),
+                        print_trigger, codepage, temp_dir),
             b'LPT2:': parports.LPTDevice(
                         device_params.get(b'LPT2:', None), None,
-                        print_trigger, screen.codepage, temp_dir),
+                        print_trigger, codepage, temp_dir),
             b'LPT3:': parports.LPTDevice(
                         device_params.get(b'LPT3:', None), None,
-                        print_trigger, screen.codepage, temp_dir),
+                        print_trigger, codepage, temp_dir),
         }
         # device files
         self.scrn_file = self._devices[b'SCRN:'].device_file
@@ -148,8 +149,7 @@ class Files(object):
         self.lpt1_file = self._devices[b'LPT1:'].device_file
         # disks
         self._init_disk_devices(
-                queues, mount_dict, current_device,
-                screen.codepage, utf8, universal)
+                queues, mount_dict, current_device, codepage, utf8, universal)
 
     def close_devices(self):
         """Close device master files."""

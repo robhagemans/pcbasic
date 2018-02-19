@@ -23,13 +23,13 @@ class MachinePorts(object):
     #  use 100./255. for 100ms.
     joystick_time_factor = 75. / 255.
 
-    def __init__(self, queues, values, screen, keyboard, stick, files):
+    def __init__(self, queues, values, display, keyboard, stick, files):
         """Initialise machine ports."""
         self._values = values
         self._queues = queues
         self._keyboard = keyboard
         self._stick = stick
-        self._screen = screen
+        self._display = display
         # parallel port base address:
         # http://retired.beyondlogic.org/spp/parallel.htm
         # 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
@@ -147,15 +147,15 @@ class MachinePorts(object):
             self._stick.reset_decay()
         elif addr == 0x3c5:
             # officially, requires OUT &H3C4, 2 first (not implemented)
-            self._screen.mode.set_plane_mask(val)
+            self._display.mode.set_plane_mask(val)
         elif addr == 0x3cf:
             # officially, requires OUT &H3CE, 4 first (not implemented)
-            self._screen.mode.set_plane(val)
+            self._display.mode.set_plane(val)
         elif addr == 0x3d8:
             #OUT &H3D8,&H1A: REM enable color burst
             #OUT &H3D8,&H1E: REM disable color burst
             # 0x1a == 0001 1010     0x1e == 0001 1110
-            self._screen.set_colorburst(val & 4 == 0)
+            self._display.set_colorburst(val & 4 == 0)
         elif addr in (0x378, 0x37A, 0x278, 0x27A):
             # parallel port output ports
             # http://www.aaroncake.net/electronics/qblpt.htm
@@ -251,7 +251,7 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, values, data_memory, files, screen, keyboard,
+    def __init__(self, values, data_memory, files, display, keyboard,
                 font_8, interpreter, peek_values, syntax):
         """Initialise memory."""
         self._values = values
@@ -261,7 +261,8 @@ class Memory(object):
         # files access for BLOAD and BSAVE
         self._files = files
         # screen access needed for video memory
-        self.screen = screen
+        self.display = display
+        self.screen = display.text_screen
         # keyboard buffer access
         self.keyboard = keyboard
         # interpreter, for runmode check
@@ -437,19 +438,19 @@ class Memory(object):
 
     def _get_video_memory(self, addr):
         """Retrieve a byte from video memory."""
-        return self.screen.get_memory(addr, 1)[0]
+        return self.display.get_memory(addr, 1)[0]
 
     def _set_video_memory(self, addr, val):
         """Set a byte in video memory."""
-        return self.screen.set_memory(addr, [val])
+        return self.display.set_memory(addr, [val])
 
     def _get_video_memory_block(self, addr, length):
         """Retrieve a contiguous block of bytes from video memory."""
-        return bytearray(self.screen.get_memory(addr, length))
+        return bytearray(self.display.get_memory(addr, length))
 
     def _set_video_memory_block(self, addr, some_bytes):
         """Set a contiguous block of bytes in video memory."""
-        self.screen.set_memory(addr, some_bytes)
+        self.display.set_memory(addr, some_bytes)
 
     ###############################################################################
 
@@ -519,7 +520,7 @@ class Memory(object):
             return self.ram_font_segment // 256
         # 1040 monitor type
         elif addr == 1040:
-            if self.screen.monitor == 'mono':
+            if self.display.video.monitor == 'mono':
                 # mono
                 return 48 + 6
             else:
@@ -584,13 +585,13 @@ class Memory(object):
         # 1097 screen mode number
         elif addr == 1097:
             # these are the low-level mode numbers used by mode switching interrupt
-            cval = self.screen.colorswitch % 2
-            if self.screen.mode.is_text_mode:
-                if (self.screen.capabilities in ('mda', 'ega_mono') and
-                        self.screen.mode.width == 80):
+            cval = self.display.colorswitch % 2
+            if self.display.mode.is_text_mode:
+                if (self.display.capabilities in ('mda', 'ega_mono') and
+                        self.display.mode.width == 80):
                     return 7
-                return (self.screen.mode.width == 40)*2 + cval
-            elif self.screen.mode.name == '320x200x4':
+                return (self.display.mode.width == 40)*2 + cval
+            elif self.display.mode.name == '320x200x4':
                 return 4 + cval
             else:
                 mode_num = {'640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
@@ -599,20 +600,20 @@ class Memory(object):
                     '320x200x4pcjr': 4 }
                     # '720x348x2': ? # hercules - unknown
                 try:
-                    return mode_num[self.screen.mode.name]
+                    return mode_num[self.display.mode.name]
                 except KeyError:
                     return 0xff
         # 1098, 1099 screen width
         elif addr == 1098:
-            return self.screen.mode.width % 256
+            return self.display.mode.width % 256
         elif addr == 1099:
-            return self.screen.mode.width // 256
+            return self.display.mode.width // 256
         # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
         # 1102, 1103 zero (PCmag says graphics page buffer offset)
         elif addr == 1100:
-            return self.screen.mode.page_size % 256
+            return self.display.mode.page_size % 256
         elif addr == 1101:
-            return self.screen.mode.page_size // 256
+            return self.display.mode.page_size // 256
         # 1104 + 2*n (cursor column of page n) - 1
         # 1105 + 2*n (cursor row of page n) - 1
         # we only keep track of one row,col position
@@ -627,23 +628,23 @@ class Memory(object):
             return self.screen.cursor.from_line
         # 1122 visual page number
         elif addr == 1122:
-            return self.screen.vpagenum
+            return self.display.vpagenum
         # 1125 screen mode info
         elif addr == 1125:
             # bit 0: only in text mode?
             # bit 2: should this be colorswitch or colorburst_is_enabled?
-            return ((self.screen.mode.width == 80) * 1 +
-                    (not self.screen.mode.is_text_mode) * 2 +
-                     self.screen.colorswitch * 4 + 8 +
-                     (self.screen.mode.name == '640x200x2') * 16 +
+            return ((self.display.mode.width == 80) * 1 +
+                    (not self.display.mode.is_text_mode) * 2 +
+                     self.display.colorswitch * 4 + 8 +
+                     (self.display.mode.name == '640x200x2') * 16 +
                      self.blink_enabled * 32)
         # 1126 color
         elif addr == 1126:
-            if self.screen.mode.name == '320x200x4':
-                return (self.screen.palette.get_entry(0)
-                        + 32 * self.screen.video.cga4_palette_num)
-            elif self.screen.mode.is_text_mode:
-                return self.screen.border_attr % 16
+            if self.display.mode.name == '320x200x4':
+                return (self.display.palette.get_entry(0)
+                        + 32 * self.display.video.cga4_palette_num)
+            elif self.display.mode.is_text_mode:
+                return self.display.border_attr % 16
                 # not implemented: + 16 "if current color specified through
                 # COLOR f,b with f in [0,15] and b > 7
         # 1296, 1297: zero (PCmag says data segment address)
