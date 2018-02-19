@@ -112,6 +112,10 @@ class TextScreen(object):
                                 self.mode.pixel_width-1, self.mode.pixel_height-1,
                                 self.pixels.pages[pagenum].buffer)))
 
+    def __str__(self):
+        """Return a string representation of the screen buffer (for debugging)."""
+        return str(self.text)
+
     ##########################################################################
 
     def write(self, s, scroll_ok=True, do_echo=True):

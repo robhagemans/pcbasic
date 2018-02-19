@@ -15,6 +15,7 @@ from .base import tokens as tk
 from . import values
 from . import converter
 
+
 class Program(object):
     """BASIC program."""
 
@@ -34,6 +35,29 @@ class Program(object):
         # for detokenise_line()
         self.tokeniser = tokeniser
         self.lister = lister
+
+    def __str__(self):
+        """Return a marked-up hex dump of the program (for debugging)."""
+        code = self.bytecode.getvalue()
+        offset_val, p = 0, 0
+        output = []
+        for key in sorted(self.line_numbers.keys())[1:]:
+            offset, linum = code[p+1:p+3], code[p+3:p+5]
+            last_offset = offset_val
+            offset_val = (struct.unpack('<H', offset)[0]
+                                    - (self.code_start + 1))
+            linum_val, = struct.unpack('<H', linum)
+            output.append(
+                (code[p:p+1].encode('hex') + ' ' +
+                offset.encode('hex') + ' (+%03d) ' +
+                code[p+3:p+5].encode('hex') + ' [%05d] ' +
+                code[p+5:self.line_numbers[key]].encode('hex')) %
+                                        (offset_val - last_offset, linum_val))
+            p = self.line_numbers[key]
+        output.append(code[p:p+1].encode('hex') + ' ' +
+                    code[p+1:p+3].encode('hex') + ' (ENDS) ' +
+                    code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex'))
+        return '\n'.join(output)
 
     def size(self):
         """Size of code space """

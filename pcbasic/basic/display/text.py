@@ -83,6 +83,29 @@ class TextBuffer(object):
         self.width = width
         self.height = height
 
+    def __str__(self):
+        """Return a string representation of the screen buffer (for debugging)."""
+        horiz_bar = ('  +' + '-' * self.width + '+')
+        lastwrap = False
+        row_strs = []
+        for num, page in enumerate(self.pages):
+            row_strs += [horiz_bar]
+            for i, row in enumerate(page.row):
+                s = [ c[0] for c in row.buf ]
+                outstr = '{0:2}'.format(i)
+                if lastwrap:
+                    outstr += ('\\')
+                else:
+                    outstr += ('|')
+                outstr += (''.join(s))
+                if row.wrap:
+                    row_strs.append(outstr + '\\ {0:2}'.format(row.end))
+                else:
+                    row_strs.append(outstr + '| {0:2}'.format(row.end))
+                lastwrap = row.wrap
+            row_strs.append(horiz_bar)
+        return '\n'.join(row_strs)
+
     def copy_page(self, src, dst):
         """Copy source to destination page."""
         for x in range(self.height):
