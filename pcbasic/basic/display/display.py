@@ -362,6 +362,7 @@ class Display(object):
         """Set the default attribute."""
         self.attr = attr
         self.drawing.set_attr(attr)
+        self.text_screen.set_attr(attr)
         if not self.mode.is_text_mode and self.mode.cursor_index is None:
             fore, _, _, _ = self.mode.split_attr(attr)
             self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
