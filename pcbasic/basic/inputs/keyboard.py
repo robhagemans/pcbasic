@@ -248,7 +248,7 @@ class Keyboard(object):
         except KeyError:
             pass
         # alt+keypad ascii replacement
-        if (scancode.ALT in mods):
+        if mods and (scancode.ALT in mods):
             try:
                 self.keypad_ascii += KEYPAD[scan]
                 return
