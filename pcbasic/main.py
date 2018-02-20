@@ -109,10 +109,11 @@ def launch_session(settings):
     except InitFailed:
         logging.error('Failed to initialise interface.')
 
-def run_session(interface=None, resume=False, state_file=None,
+def run_session(interface=None, resume=False, debug=False, state_file=None,
                 prog=None, commands=(), **session_params):
     """Run an interactive BASIC session."""
-    with basic.Session(interface, **session_params) as s:
+    Session = basic.DebugSession if debug else basic.Session
+    with Session(interface, **session_params) as s:
         with state.manage_state(s, state_file, resume) as session:
             if prog:
                 prog_name = session.bind_file(prog)

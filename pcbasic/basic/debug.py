@@ -18,14 +18,8 @@ import subprocess
 
 from .base import error
 from . import values
+from . import api
 
-
-def get_debugger(session, option_debug):
-    """Create debugger."""
-    if option_debug:
-        return Debugger(session)
-    else:
-        return BaseDebugger(session)
 
 def show_platform_info():
     """Show information about operating system and installed modules."""
@@ -67,26 +61,23 @@ class DebugException(Exception):
         return self.__doc__
 
 
-class BaseDebugger(object):
-    """Only debug uncaught exceptions."""
-
-    def __init__(self, session):
-        """Initialise debugger."""
-
-    def debug_step(self, token):
-        """Dummy debug step."""
-
-
-class Debugger(BaseDebugger):
+class DebugSession(api.Session):
     """Debugging helper."""
 
-    def __init__(self, session):
+    def __init__(self, *args, **kwargs):
         """Initialise debugger."""
-        BaseDebugger.__init__(self, session)
-        self._do_trace = False
-        self._session = session
-        self._watch_list = []
-        session.extensions.add(self)
+        api.Session.__init__(self, *args, **kwargs)
+
+    def start(self):
+        """Start the session."""
+        if not self._impl:
+            api.Session.start(self)
+            # register as an extension
+            self._impl.extensions.add(self)
+            # replace dummy debugging step
+            self._impl.interpreter.step = self.debug_step
+            self._do_trace = False
+            self._watch_list = []
 
     def debug_step(self, token):
         """Execute traces and watches on a program step."""
@@ -98,7 +89,7 @@ class Debugger(BaseDebugger):
             outstr += ' %s = ' % str(expr)
             outs.seek(2)
             try:
-                val = self._session.parser.expression_parser.parse(outs)
+                val = self._impl.parser.expression_parser.parse(outs)
                 if isinstance(val, values.String):
                     outstr += '"%s"' % val.to_str()
                 else:
@@ -118,7 +109,7 @@ class Debugger(BaseDebugger):
             '    _%s: %s' % (
                 n.upper(), getattr(self, n).__doc__)
                 for n in dir(self)
-                    if '_' not in n and callable(getattr(self, n))
+                    if '_' not in n and callable(getattr(self, n)) and n not in dir(api.Session)
             ))
 
     def crash(self):
@@ -126,7 +117,7 @@ class Debugger(BaseDebugger):
         try:
             raise DebugException()
         except DebugException as e:
-            self._session.blue_screen(e)
+            self._impl.blue_screen(e)
 
     def restart(self):
         """Ctrl+Alt+Delete."""
@@ -150,30 +141,30 @@ class Debugger(BaseDebugger):
 
     def watch(self, expr):
         """Add an expression to the watch list."""
-        outs = self._session.tokeniser.tokenise_line('?'+expr)
+        outs = self._impl.tokeniser.tokenise_line(b'?' + expr)
         self._watch_list.append((expr, outs))
 
     def showvariables(self):
         """Dump all variables to the log."""
         repr_vars = '\n'.join((
             '==== Scalars ='.ljust(100, '='),
-            str(self._session.scalars),
+            str(self._impl.scalars),
             '==== Arrays ='.ljust(100, '='),
-            str(self._session.arrays),
+            str(self._impl.arrays),
             '==== Strings ='.ljust(100, '='),
-            str(self._session.strings),
+            str(self._impl.strings),
         ))
         for s in repr_vars.split('\n'):
             logging.debug(s)
 
     def showscreen(self):
         """Copy the screen buffer to the log."""
-        for s in str(self._session.display.text_screen).split('\n'):
+        for s in str(self._impl.display.text_screen).split('\n'):
             logging.debug(s)
 
     def showprogram(self):
         """Write a marked-up hex dump of the program to the log."""
-        for s in str(self._session.program).split('\n'):
+        for s in str(self._impl.program).split('\n'):
             logging.debug(s)
 
     def showplatform(self):

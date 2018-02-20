@@ -27,7 +27,6 @@ from . import program
 from . import display
 from . import editor
 from . import inputs
-from . import debug as dbg
 from . import clock
 from . import dos
 from . import memory
@@ -61,7 +60,7 @@ class Implementation(object):
             allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429,
             serial_buffer_size=128, max_reclen=128, max_files=3,
-            temp_dir=u'', debug=False, debug_dir=u'', debug_options=None,
+            temp_dir=u'', debug_dir=u'', debug_options=None,
             extension=None, catch_exceptions='basic',
             ):
         """Initialise the interpreter session."""
@@ -195,11 +194,9 @@ class Implementation(object):
         ######################################################################
         # initialise the parser
         self.parser = parser.Parser(self.values, self.memory, syntax)
-        # set up debugger
-        self.debugger = dbg.get_debugger(self, bool(debug))
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
-                self.debugger, self.queues, self.screen, self.files, self.sound,
+                self.queues, self.screen, self.files, self.sound,
                 self.values, self.memory, self.program, self.parser, self.basic_events)
         # PLAY parser
         self.play_parser = sound.PlayParser(self.sound, self.memory, self.values)
