@@ -463,7 +463,9 @@ class Settings(object):
         codepage_dict = data.read_codepage(self.get('codepage'))
         return {
             'syntax': self.get('syntax'),
-            'debug': self.uargv if self.get('debug') else None,
+            'debug': self.get('debug'),
+            'debug_options': self.uargv,
+            'debug_dir': STATE_PATH,
             'output_file': self.get(b'output'),
             'append': self.get(b'append'),
             'input_file': self.get(b'input'),

@@ -18,10 +18,9 @@ from . import values
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, debugger, queues, screen, files, sound,
+    def __init__(self, queues, screen, files, sound,
                 values, memory, program, parser, basic_events):
         """Initialise interpreter."""
-        self._debugger = debugger
         self._queues = queues
         self._basic_events = basic_events
         self._values = values
@@ -52,6 +51,20 @@ class Interpreter(object):
         self.input_mode = False
         # interpreter is executing a command (needs Screen)
         self.set_parse_mode(False)
+        # additional operations on program step (debugging)
+        self.step = lambda token: None
+
+    def __getstate__(self):
+        """Pickle."""
+        pickle_dict = self.__dict__.copy()
+        # functions can't be pickled
+        pickle_dict['step'] = None
+        return pickle_dict
+
+    def __setstate__(self, pickle_dict):
+        """Unpickle."""
+        self.__dict__.update(pickle_dict)
+        self.step = lambda token: None
 
     def _init_error_trapping(self):
         """Initialise error trapping."""
@@ -89,7 +102,7 @@ class Interpreter(object):
                     if self.tron:
                         linenum = struct.unpack_from('<H', token, 2)
                         self._screen.write('[%i]' % linenum)
-                    self._debugger.debug_step(token)
+                    self.step(token)
                 elif c != ':':
                     ins.seek(-len(c), 1)
                 self.parser.parse_statement(ins)
