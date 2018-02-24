@@ -23,7 +23,6 @@ class Session(object):
 
     def __enter__(self):
         """Context guard."""
-        self.start()
         return self
 
     def __exit__(self, ex_type, ex_val, tb):
