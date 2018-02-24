@@ -20,10 +20,10 @@ with open(path.join(here, 'docsrc', 'description.txt'), encoding='utf-8') as f:
 with open(path.join(here, 'docsrc', 'tagline.txt'), encoding='utf-8') as f:
     description = f.read()
 
-# NOTE that this is OK because we try-import all non-standard modules
-# this would fail on install if __init__ imported required non-standard packages
-from pcbasic import __version__
-version_string = __version__
+# obtain metadata
+with open(path.join(here, 'pcbasic', 'basic', 'version.py'), encoding='utf-8') as f:
+    for line in f:
+        exec(line)
 
 
 ###############################################################################
@@ -71,13 +71,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='pcbasic',
-    version=version_string,
+    version=VERSION,
     description=description,
     long_description=long_description,
-    url='http://pc-basic.org',
-    author='Rob Hagemans',
-    author_email='robhagemans@yahoo.co.uk',
-    license='GPLv3',
+    url=URL,
+    author=AUTHOR,
+    author_email=EMAIL,
+    license=LICENCE,
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[

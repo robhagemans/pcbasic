@@ -6,9 +6,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from .api import Session
-from .version import VERSION
+from .version import VERSION as __version__
 from .debug import DebugSession
 from .base.error import *
 from .base import signals, scancode, eascii
-
-__version__ = VERSION.decode('ascii')

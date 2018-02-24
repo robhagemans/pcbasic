@@ -44,7 +44,7 @@ from . import extensions
 
 GREETING = (
     b'KEY ON:PRINT "%s %s":PRINT "%s":PRINT USING "##### Bytes free"; FRE(0)'
-    % (NAME, VERSION, COPYRIGHT)
+    % tuple(s.encode('ascii') for s in (NAME, VERSION, COPYRIGHT))
 )
 
 
