@@ -90,8 +90,8 @@ class BasicEvents(object):
             self.enabled.add(handler)
             handler.stopped = False
         elif command_char == tk.OFF:
-            # this is needed to make serial events work correctly
-            # FIXME: I don't understand why
+            # we seem to need to keep ComHandler around to make serial events work correctly
+            # i.e. apparently they can be triggered when switched off - I don't understand why
             if not isinstance(handler, ComHandler):
                 self.enabled.discard(handler)
         elif command_char == tk.STOP:

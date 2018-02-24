@@ -85,8 +85,8 @@ class COMDevice(devicebase.Device):
             raise
         self._file = COMFile(self._serial, field, lf, self._serial_in_size, self._queues)
         # inherit width settings from device file
+        # note that these seem unused for COM files
         self._file.width = self.device_file.width
-        # FIXME: is this ever anything but 1? what uses it? on LPT it's LPOS, but on COM?
         self._file.col = self.device_file.col
         return self._file
 
