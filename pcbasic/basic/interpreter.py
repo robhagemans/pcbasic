@@ -145,6 +145,7 @@ class Interpreter(object):
                 self._program.bytecode.skip_to(tk.END_STATEMENT)
                 pos = self._program.bytecode.tell()
             self.stop = pos
+        self._screen.start_line()
         self._screen.write(e.get_message(self._program.get_line_number(pos)))
         self.set_parse_mode(False)
         self.input_mode = False
