@@ -273,7 +273,7 @@ class Editor(object):
         crow, ccol = self._screen.current_row, self._screen.current_col
         # find non-alphanumeric chars
         while True:
-            c = self._screen.text.get_char(self._screen.apagenum, crow, ccol)
+            c = chr(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
             if (c not in string.digits + string.ascii_letters):
                 break
             ccol += 1
@@ -285,7 +285,7 @@ class Editor(object):
                 ccol = 1
         # find alphanumeric chars
         while True:
-            c = self._screen.text.get_char(self._screen.apagenum, crow, ccol)
+            c = chr(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
             if (c in string.digits + string.ascii_letters):
                 break
             ccol += 1
@@ -309,7 +309,7 @@ class Editor(object):
                     return
                 crow -= 1
                 ccol = self._screen.mode.width
-            c = self._screen.text.get_char(self._screen.apagenum, crow, ccol)
+            c = chr(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
             if (c in string.digits + string.ascii_letters):
                 break
         # find non-alphanumeric chars
@@ -321,7 +321,7 @@ class Editor(object):
                     break
                 crow -= 1
                 ccol = self._screen.mode.width
-            c = self._screen.text.get_char(self._screen.apagenum, crow, ccol)
+            c = chr(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
             if (c not in string.digits + string.ascii_letters):
                 break
         self._screen.set_pos(last_row, last_col)
