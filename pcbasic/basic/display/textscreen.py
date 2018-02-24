@@ -40,6 +40,8 @@ class TextScreen(object):
         # writing on bottom row is allowed
         self._bottom_row_allowed = False
         # prepare fonts
+        if not fonts:
+            fonts = {8: {}}
         self.fonts = {
                 height: font.Font(height, font_dict)
                 for height, font_dict in fonts.iteritems()}

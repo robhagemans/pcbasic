@@ -103,7 +103,7 @@ DEFAULT_FONT = {chr(_i): _v.decode('hex') for _i, _v in enumerate((
 class Font(object):
     """Single-height bitfont."""
 
-    def __init__(self, height, fontdict={}):
+    def __init__(self, height=8, fontdict=None):
         """Initialise the font."""
         self._height = height
         if height == 8 and not fontdict:
