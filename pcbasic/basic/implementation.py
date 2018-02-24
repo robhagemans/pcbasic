@@ -16,7 +16,7 @@ import traceback
 from contextlib import contextmanager
 from datetime import datetime
 
-from .version import __version__
+from .version import VERSION
 from .base import error
 from .base import tokens as tk
 from .base import signals
@@ -260,7 +260,7 @@ class Implementation(object):
         message = [
             (0x70, 'EXCEPTION\n'),
             (0x17, 'version   '),
-            (0x1f, __version__),
+            (0x1f, VERSION),
             (0x17, '\npython    '),
             (0x1f, platform.python_version()),
             (0x17, '\nplatform  '),

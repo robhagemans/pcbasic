@@ -117,7 +117,7 @@ def run_session(interface=None, resume=False, debug=False, state_file=None,
         with state.manage_state(s, state_file, resume) as session:
             if prog:
                 prog_name = session.bind_file(prog)
-                session.execute('LOAD "%s"' % (prog_name,))
+                session.execute(b'LOAD "%s"' % (prog_name,))
             for cmd in commands:
                 session.execute(cmd)
             session.interact()

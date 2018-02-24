@@ -11,5 +11,5 @@ This file is released under the GNU GPL version 3 or later.
 import os
 __path__ = [os.path.abspath(e) for e in __path__]
 
-from .basic import Session, __version__, __copyright__
+from .basic import Session, __version__
 from .main import main, run
