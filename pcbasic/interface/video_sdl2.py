@@ -11,6 +11,7 @@ import ctypes
 import os
 import sys
 import platform
+from collections import Counter
 
 # on Windows, set environment variable to point to SDL2 DLL location
 if platform.system() == 'Windows':
@@ -119,6 +120,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self._do_create_window(*self._find_display_size(640, 400, self.border_width))
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self.display)
+        # workaround for duplicated keypresses after Alt (at least on Ubuntu Unity)
+        self._alt_counter = Counter()
 
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
@@ -288,6 +291,15 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """Handle key-down event."""
         # get scancode
         scan = scan_to_scan.get(e.key.keysym.scancode, None)
+        # workaround: on some Ubuntu systems with Unity, the Alt key activates the HUD
+        # after that, every alt keypress is reported twice (down-ALT down-ALT ... up-ALT)
+        # and every alt+X keypress becomes down-ALT down-X down-X ... up-X ... up-ALT
+        if self._alt_counter[scancode.ALT] or scan == scancode.ALT:
+            self._alt_counter[scan] += 1
+            # after double-ALT, ignore every second keypress
+            if self._alt_counter[scan] > 1 and (
+                    not(self._alt_counter[scan] % 2) or scan == scancode.ALT):
+                return
         # get modifiers
         mod = [s for m, s in mod_to_scan.iteritems() if e.key.keysym.mod & m]
         # get eascii
@@ -336,13 +348,18 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def _handle_key_up(self, e):
         """Handle key-up event."""
+        scan = scan_to_scan[e.key.keysym.scancode]
+        # reset ALT workaround counter
+        if scan == scancode.ALT:
+            self._alt_counter = Counter()
+        # check for emulator key
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self.clipboard.stop()
             self.f11_active = False
         # last key released gets remembered
         try:
             self.input_queue.put(signals.Event(
-                    signals.KEYB_UP, (scan_to_scan[e.key.keysym.scancode],)))
+                    signals.KEYB_UP, (scan,)))
         except KeyError:
             pass
 

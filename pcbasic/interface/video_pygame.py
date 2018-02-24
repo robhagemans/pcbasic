@@ -150,6 +150,8 @@ class VideoPygame(video_graphical.VideoGraphical):
             key_to_scan[pygame.K_RALT] = scancode.ALT
             mod_to_scan[pygame.KMOD_RALT] = scancode.ALT
         self.clipboard_handler = get_clipboard_handler()
+        # buffer for perceived alt key status, for use by workarounds
+        self._alt_key_down = None
 
     def __exit__(self, type, value, traceback):
         """Close the pygame interface."""
@@ -190,7 +192,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 self._handle_key_down(event)
-            if event.type == pygame.KEYUP:
+            elif event.type == pygame.KEYUP:
                 self._handle_key_up(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # copy, paste and pen may be on the same button, so no elifs
@@ -243,6 +245,14 @@ class VideoPygame(video_graphical.VideoGraphical):
         scan = key_to_scan.get(e.key, None)
         # get modifiers
         mod = [s for m, s in mod_to_scan.iteritems() if e.mod & m]
+        # compensate for missing l-alt down events (needed at least on Ubuntu Unity)
+        if (e.mod & pygame.KMOD_LALT) and not self._alt_key_down:
+            # insert an alt keydown event before the alt-modified keydown
+            fake_event = pygame.event.Event(
+                    pygame.KEYDOWN, scancode=0, key=pygame.K_LALT, unicode=u'', mod=0)
+            self._handle_key_down(fake_event)
+        if e.key == pygame.K_LALT:
+            self._alt_key_down = True
         # get eascii
         try:
             if e.mod & pygame.KMOD_LALT or (not self.altgr and e.mod & pygame.KMOD_RALT):
@@ -288,7 +298,20 @@ class VideoPygame(video_graphical.VideoGraphical):
 
     def _handle_key_up(self, e):
         """Handle key-up event."""
-        if e.key == pygame.K_F11:
+        # compensate for missing l-alt down events (needed at least on Ubuntu Unity)
+        if (e.key == pygame.K_LALT or e.mod & pygame.KMOD_LALT) and not self._alt_key_down:
+            # insert an alt keydown event before the alt-modified keydown
+            fake_event = pygame.event.Event(
+                    pygame.KEYDOWN, scancode=0, key=pygame.K_LALT, unicode=u'', mod=0)
+            self._handle_key_down(fake_event)
+            if e.key != pygame.K_LALT:
+                # insert a keydown before the keyup
+                if not hasattr(e, 'unicode'):
+                    e.unicode = u''
+                self._handle_key_down(e)
+        if e.key == pygame.K_LALT:
+            self._alt_key_down = False
+        elif e.key == pygame.K_F11:
             self.clipboard.stop()
             self.f11_active = False
         # last key released gets remembered
