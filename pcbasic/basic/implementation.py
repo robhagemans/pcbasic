@@ -16,7 +16,7 @@ import traceback
 from contextlib import contextmanager
 from datetime import datetime
 
-from .version import VERSION
+from .version import NAME, VERSION, COPYRIGHT
 from .base import error
 from .base import tokens as tk
 from .base import signals
@@ -42,6 +42,12 @@ from . import devices
 from . import extensions
 
 
+GREETING = (
+    b'KEY ON:PRINT "%s %s":PRINT "%s":PRINT USING "##### Bytes free"; FRE(0)'
+    % (NAME, VERSION, COPYRIGHT)
+)
+
+
 class Implementation(object):
     """Interpreter session, implementation class."""
 
@@ -61,7 +67,7 @@ class Implementation(object):
             max_memory=65534, reserved_memory=3429,
             serial_buffer_size=128, max_reclen=128, max_files=3,
             temp_dir=u'', debug_dir=u'', debug_options=None,
-            extension=None, catch_exceptions='basic',
+            extension=None, catch_exceptions='basic', greeting=True,
             ):
         """Initialise the interpreter session."""
         ######################################################################
@@ -80,6 +86,8 @@ class Implementation(object):
         self._reraise = (not catch_exceptions or catch_exceptions == 'none')
         # redirect parameters
         self._stdio = stdio
+        # option to suppress greeting
+        self._greeting = greeting
         # allow non-BASIC exceptions to be passed to caller (for testing)
         self._allow_crash = (catch_exceptions != u'all')
         # keep a copy of arguments (for error logging)
@@ -347,6 +355,8 @@ class Implementation(object):
 
     def execute(self, command):
         """Execute a BASIC statement."""
+        # don't greet if an interactive session is opened afterwards
+        self._greeting = False
         with self._handle_exceptions():
             self._store_line(command)
             self.interpreter.loop()
@@ -385,6 +395,9 @@ class Implementation(object):
 
     def interact(self):
         """Interactive interpreter session."""
+        # greet at most once per session: execute() will switch off greeting
+        if self._greeting:
+            self.execute(GREETING)
         while True:
             with self._handle_exceptions():
                 self.interpreter.loop()

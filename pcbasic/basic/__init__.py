@@ -6,7 +6,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from .api import Session
-from .version import *
+from .version import VERSION
 from .debug import DebugSession
 from .base.error import *
 from .base import signals, scancode, eascii

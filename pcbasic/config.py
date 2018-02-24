@@ -25,7 +25,7 @@ if platform.system() == b'Windows':
     import ctypes.wintypes
     import win32api
 
-from .basic import __version__, GREETING
+from .basic import VERSION
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from . import data
 
@@ -518,7 +518,9 @@ class Settings(object):
             'extension': self.get('extension'),
             'catch_exceptions': self.get('catch-exceptions'),
             # ignore key buffer in console-based interfaces, to allow pasting text in console
-            'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses')
+            'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses'),
+            # following GW, don't write greeting for redirected input or command-line filter run
+            'greeting': (not self.get('input') and not self.get('interface') == 'none'),
         }
 
     def get_video_parameters(self):
@@ -574,10 +576,7 @@ class Settings(object):
         if not self.get('resume'):
             run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
             cmd = self.get('exec')
-            # following GW, don't write greeting for redirected input
-            # or command-line filter run
-            if (not run and not cmd and not self.get('input') and not self.get('interface') == 'none'):
-                commands.append(GREETING)
+            # note that executing commands (or RUN) will suppress greeting
             if cmd:
                 commands.append(cmd)
             if run:
@@ -924,7 +923,7 @@ class Settings(object):
         u"[pcbasic]\n"
         u"# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
         u"# See the documentation or run pcbasic -h for a list of available options.\n"
-        u"# for example (for version '%s'):\n" % __version__)
+        u"# for example (for version '%s'):\n" % VERSION)
         footer = (
         u"\n\n# To add presets, create a section header between brackets and put the \n"
         u"# options you need below it, like this:\n"

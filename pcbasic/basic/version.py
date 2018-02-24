@@ -8,8 +8,3 @@ This file is released under the GNU GPL version 3 or later.
 NAME = b'PC-BASIC'
 VERSION = b'16.12.0rc0'
 COPYRIGHT = b'(C) Copyright 2013--2018 Rob Hagemans.'
-
-GREETING = (
-    b'KEY ON:PRINT "%s %s":PRINT "%s":PRINT USING "##### Bytes free"; FRE(0)'
-    % (NAME, VERSION, COPYRIGHT)
-)
