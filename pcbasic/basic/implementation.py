@@ -16,6 +16,7 @@ import traceback
 from contextlib import contextmanager
 from datetime import datetime
 
+from .version import __version__
 from .base import error
 from .base import tokens as tk
 from .base import signals
@@ -39,7 +40,6 @@ from . import values
 from . import parser
 from . import devices
 from . import extensions
-from ..version import __version__
 
 
 class Implementation(object):

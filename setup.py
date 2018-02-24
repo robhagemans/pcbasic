@@ -22,7 +22,7 @@ with open(path.join(here, 'docsrc', 'tagline.txt'), encoding='utf-8') as f:
 
 # NOTE that this is OK because we try-import all non-standard modules
 # this would fail on install if __init__ imported required non-standard packages
-from pcbasic.version import __version__
+from pcbasic import __version__
 version_string = __version__
 
 

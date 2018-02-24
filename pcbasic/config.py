@@ -25,8 +25,8 @@ if platform.system() == b'Windows':
     import ctypes.wintypes
     import win32api
 
-from .version import __version__, GREETING, ICON
-from .data import CODEPAGES, FONTS, PROGRAMS
+from .basic import __version__, GREETING
+from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from . import data
 
 

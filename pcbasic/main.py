@@ -18,11 +18,11 @@ import traceback
 # NOTE that this affects str.upper() etc.
 locale.setlocale(locale.LC_ALL, '')
 
-from .version import __version__
 from . import ansipipe
 from . import basic
 from . import state
 from . import config
+from .basic import __version__
 
 
 def main(*arguments):
