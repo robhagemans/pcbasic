@@ -4,8 +4,17 @@ import re
 from cStringIO import StringIO
 import gzip
 import os
+from os import path
+
+
+# obtain metadata without importing the package (to avoid breaking setup)
+with open(path.join(
+        path.abspath(path.dirname(__file__)),
+        '..', 'pcbasic', 'basic', 'metadata.py')) as f:
+    exec(f.read())
 
 basepath = os.path.dirname(os.path.realpath(__file__))
+
 
 def html_to_man(html):
     def massage(text):
@@ -46,8 +55,8 @@ def html_to_man(html):
 
 
 def makeman():
-    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % open(basepath + '/tagline.txt', mode='r').read()
-    desc_html = '<h3>Description</h2><p>%s</p>\n' % open(basepath + '/description.txt', mode='r').read()
+    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % DESCRIPTION
+    desc_html = '<h3>Description</h2><p>%s</p>\n' % LONG_DESCRIPTION
     options_html = open(basepath + '/options.html', mode='r').read()
     examples_html = open(basepath + '/examples.html', mode='r').read()
     more_html = open(basepath + '/moreman.html', mode='r').read()

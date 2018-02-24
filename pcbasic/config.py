@@ -25,7 +25,7 @@ if platform.system() == b'Windows':
     import ctypes.wintypes
     import win32api
 
-from .basic.version import VERSION
+from .basic.metadata import VERSION
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from . import data
 

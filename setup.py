@@ -12,18 +12,11 @@ This file is released under the GNU GPL version 3 or later.
 from codecs import open
 from os import path
 
-here = path.abspath(path.dirname(__file__))
-
-with open(path.join(here, 'docsrc', 'description.txt'), encoding='utf-8') as f:
-    long_description = f.read()
-
-with open(path.join(here, 'docsrc', 'tagline.txt'), encoding='utf-8') as f:
-    description = f.read()
-
-# obtain metadata
-with open(path.join(here, 'pcbasic', 'basic', 'version.py'), encoding='utf-8') as f:
-    for line in f:
-        exec(line)
+# obtain metadata without importing the package (to avoid breaking setup)
+with open(path.join(
+        path.abspath(path.dirname(__file__)),
+        'pcbasic', 'basic', 'metadata.py'), encoding='utf-8') as f:
+    exec(f.read())
 
 
 ###############################################################################
@@ -72,8 +65,8 @@ from setuptools import setup, find_packages
 setup(
     name='pcbasic',
     version=VERSION,
-    description=description,
-    long_description=long_description,
+    description=DESCRIPTION,
+    long_description=LONG_DESCRIPTION,
     url=URL,
     author=AUTHOR,
     author_email=EMAIL,

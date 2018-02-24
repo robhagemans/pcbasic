@@ -16,7 +16,7 @@ import traceback
 from contextlib import contextmanager
 from datetime import datetime
 
-from .version import NAME, VERSION, COPYRIGHT
+from .metadata import NAME, VERSION, COPYRIGHT
 from .base import error
 from .base import tokens as tk
 from .base import signals

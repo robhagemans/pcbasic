@@ -7,6 +7,7 @@ import os
 
 basepath = os.path.dirname(os.path.realpath(__file__))
 
+
 class TextBlock(object):
 
     def __init__(self, indent, content, break_after=0):
