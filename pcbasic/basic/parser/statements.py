@@ -780,6 +780,7 @@ class Parser(object):
             yield ins.require_read(('A', 'a', 'P', 'p'))
         else:
             yield None
+        ins.require_end()
 
     def _parse_list(self, ins):
         """Parse LIST syntax."""
