@@ -667,9 +667,13 @@ class Files(object):
         elif pathmask is None:
             pathmask = b''
         dev, path = self._get_diskdevice_and_path(pathmask)
-        lines = dev.files(path, num_cols=self._screen.mode.width//20)
-        for i, line in enumerate(lines):
-            self._screen.write_line(line)
-            if not (i % 4):
+        header, output = dev.files(path)
+        num_cols = self._screen.mode.width//20
+        self._screen.write_line(header)
+        for i, cols in enumerate(output[j:j+num_cols] for j in xrange(0, len(output), num_cols)):
+            self._screen.write_line(b' '.join(cols))
+            if not (i%4):
                 # allow to break during dir listing & show names flowing on screen
                 self._queues.wait()
+            i += 1
+        self._screen.write_line(b' %d Bytes free' % dev.get_free())

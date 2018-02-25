@@ -323,8 +323,8 @@ class DiskDevice(object):
         """Rename a file or directory."""
         safe(os.rename, oldname, newname)
 
-    def files(self, pathmask, num_cols):
-        """Write directory listing to console."""
+    def files(self, pathmask):
+        """Get directory listing."""
         # forward slashes - file not found
         # GW-BASIC sometimes allows leading or trailing slashes
         # and then does weird things I don't understand.
@@ -354,14 +354,10 @@ class DiskDevice(object):
         if not dirs and not fils:
             raise error.BASICError(error.FILE_NOT_FOUND)
         # format and print contents
-        output = ([join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
-                  [join_dosname(t, e, padding=True) + b'     ' for t, e in fils])
-        lines = [self.letter + b':\\' + b'\\'.join(dir_elems)]
-        while len(output) > 0:
-            lines.append(b' '.join(output[:num_cols]))
-            output = output[num_cols:]
-        lines.append(b' %d Bytes free' % self.get_free())
-        return lines
+        output = (
+                [join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
+                [join_dosname(t, e, padding=True) + b'     ' for t, e in fils])
+        return self.letter + b':\\' + b'\\'.join(dir_elems), output
 
     def get_free(self):
         """Return the number of free bytes on the drive."""
