@@ -355,13 +355,10 @@ class DiskDevice(object):
         elif mask == b'..':
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-2:][0])]
         else:
-            all_names = safe(os.listdir, path)
             dirs, fils = self._get_dirs_files(path)
             # filter according to mask
             dirs = filter_names(path, dirs + [b'.', b'..'], mask)
             fils = filter_names(path, fils, mask)
-        if not dirs and not fils:
-            raise error.BASICError(error.FILE_NOT_FOUND)
         # format and print contents
         return (
             [join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
@@ -445,7 +442,7 @@ class InternalDiskDevice(DiskDevice):
         if self.path:
             return DiskDevice._split_pathmask(self, pathmask)
         else:
-            return u'', u'', pathmask
+            return u'', u'', pathmask.upper() or b'*.*'
 
     def _get_dirs_files(self, path):
         """get native filenames for native path."""
@@ -456,6 +453,19 @@ class InternalDiskDevice(DiskDevice):
         files += [filename_from_unicode(n) for n in self._bound_files]
         return dirs, files
 
+    def get_cwd(self):
+        """Return the current working directory in DOS format."""
+        if self.path:
+            return DiskDevice.get_cwd(self)
+        else:
+            return self.letter + b':\\'
+
+    def get_free(self):
+        """Return the number of free bytes on the drive."""
+        if self.path:
+            return DiskDevice.get_free(self)
+        else:
+            return 0
 
 ###############################################################################
 # Locks

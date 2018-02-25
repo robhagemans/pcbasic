@@ -673,6 +673,8 @@ class Files(object):
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
         self._screen.write_line(dev.get_cwd())
+        if not output:
+            raise error.BASICError(error.FILE_NOT_FOUND)
         # output files
         for i, cols in enumerate(output[j:j+num_cols] for j in xrange(0, len(output), num_cols)):
             self._screen.write_line(b' '.join(cols))
