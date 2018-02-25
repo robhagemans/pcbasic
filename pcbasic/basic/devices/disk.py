@@ -324,19 +324,31 @@ class DiskDevice(object):
         """Rename a file or directory."""
         safe(os.rename, oldname, newname)
 
-    def listdir(self, pathmask):
-        """Get directory listing."""
+    def _split_pathmask(self, pathmask):
+        """Split pathmask into path and mask."""
+        if not self.path:
+            # undefined disk drive: file not found
+            raise error.BASICError(error.FILE_NOT_FOUND)
         # forward slashes - file not found
         # GW-BASIC sometimes allows leading or trailing slashes
         # and then does weird things I don't understand.
         if b'/' in bytes(pathmask):
             raise error.BASICError(error.FILE_NOT_FOUND)
-        if not self.path:
-            # undefined disk drive: file not found
-            raise error.BASICError(error.FILE_NOT_FOUND)
         drivepath, relpath, mask = self._native_path_elements(pathmask, path_err=error.FILE_NOT_FOUND)
         path = os.path.join(drivepath, relpath)
         mask = mask.upper() or b'*.*'
+        return path, relpath, mask
+
+    def _get_dirs_files(self, path):
+        """get native filenames for native path."""
+        all_names = safe(os.listdir, path)
+        dirs = [filename_from_unicode(n) for n in all_names if os.path.isdir(os.path.join(path, n))]
+        fils = [filename_from_unicode(n) for n in all_names if not os.path.isdir(os.path.join(path, n))]
+        return dirs, fils
+
+    def listdir(self, pathmask):
+        """Get directory listing."""
+        path, relpath, mask = self._split_pathmask(pathmask)
         fils = []
         if mask == b'.':
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-1:][0])]
@@ -344,8 +356,7 @@ class DiskDevice(object):
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-2:][0])]
         else:
             all_names = safe(os.listdir, path)
-            dirs = [filename_from_unicode(n) for n in all_names if os.path.isdir(os.path.join(path, n))]
-            fils = [filename_from_unicode(n) for n in all_names if not os.path.isdir(os.path.join(path, n))]
+            dirs, fils = self._get_dirs_files(path)
             # filter according to mask
             dirs = filter_names(path, dirs + [b'.', b'..'], mask)
             fils = filter_names(path, fils, mask)
@@ -408,7 +419,7 @@ class InternalDiskDevice(DiskDevice):
                     break
             else:
                 # unlikely
-                logging.error('All internal disk ids used')
+                logging.error('No internal bound-file names available')
                 raise error.BASICError(error.TOO_MANY_FILES)
         self._bound_files[name] = file_name_or_object
         return b'%s:%s' % (self.letter, name)
@@ -428,6 +439,22 @@ class InternalDiskDevice(DiskDevice):
             return DiskDevice.open(
                     self, number, filespec, filetype, mode, access, lock,
                     reclen, seg, offset, length, field)
+
+    def _split_pathmask(self, pathmask):
+        """Split pathmask into path and mask."""
+        if self.path:
+            return DiskDevice._split_pathmask(self, pathmask)
+        else:
+            return u'', u'', pathmask
+
+    def _get_dirs_files(self, path):
+        """get native filenames for native path."""
+        if self.path:
+            dirs, files = DiskDevice._get_dirs_files(self, path)
+        else:
+            dirs, files = [], []
+        files += [filename_from_unicode(n) for n in self._bound_files]
+        return dirs, files
 
 
 ###############################################################################
