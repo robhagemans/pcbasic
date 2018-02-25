@@ -43,6 +43,8 @@ class Files(object):
             print_trigger, temp_dir,
             utf8, universal):
         """Initialise files."""
+        # for wait() in files_
+        self._queues = queues
         self._values = values
         self._memory = memory
         self._fields = self._memory.fields
@@ -150,8 +152,7 @@ class Files(object):
         self.kybd_file = self._devices[b'KYBD:'].device_file
         self.lpt1_file = self._devices[b'LPT1:'].device_file
         # disks
-        self._init_disk_devices(
-                queues, mount_dict, current_device, codepage, utf8, universal)
+        self._init_disk_devices(mount_dict, current_device, codepage, utf8, universal)
 
     def close_devices(self):
         """Close device master files."""
@@ -562,7 +563,7 @@ class Files(object):
     drive_letters = b'@' + string.ascii_uppercase
 
     def _init_disk_devices(
-            self, queues, mount_dict, current_device,
+            self, mount_dict, current_device,
             codepage, utf8, universal):
         """Initialise disk devices."""
         # use None to request default mounts, use {} for no mounts
@@ -581,7 +582,7 @@ class Files(object):
             # treat device @: separately - internal disk
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
             self._devices[letter + b':'] = disk_class(
-                    letter, path, cwd, locks, codepage, queues, utf8, universal)
+                    letter, path, cwd, locks, codepage, utf8, universal)
         self._current_device = current_device.upper()
 
     def _get_diskdevice_and_path(self, path):
@@ -666,4 +667,9 @@ class Files(object):
         elif pathmask is None:
             pathmask = b''
         dev, path = self._get_diskdevice_and_path(pathmask)
-        dev.files(self._screen, path)
+        lines = dev.files(path, num_cols=self._screen.mode.width//20)
+        for i, line in enumerate(lines):
+            self._screen.write_line(line)
+            if not (i % 4):
+                # allow to break during dir listing & show names flowing on screen
+                self._queues.wait()

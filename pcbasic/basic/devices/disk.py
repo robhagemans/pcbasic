@@ -103,7 +103,7 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, locks, codepage, queues, utf8, universal):
+    def __init__(self, letter, path, cwd, locks, codepage, utf8, universal):
         """Initialise a disk device."""
         self.letter = letter
         # mount root
@@ -116,8 +116,6 @@ class DiskDevice(object):
         self.locks = locks
         # code page for file system names and text file conversion
         self.codepage = codepage
-        # for wait() during FILES
-        self.queues = queues
         # text file settings
         self.utf8 = utf8
         self.universal = universal
@@ -325,7 +323,7 @@ class DiskDevice(object):
         """Rename a file or directory."""
         safe(os.rename, oldname, newname)
 
-    def files(self, screen, pathmask):
+    def files(self, pathmask, num_cols):
         """Write directory listing to console."""
         # forward slashes - file not found
         # GW-BASIC sometimes allows leading or trailing slashes
@@ -341,7 +339,6 @@ class DiskDevice(object):
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
         dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
-        screen.write_line(self.letter + b':\\' + b'\\'.join(dir_elems))
         fils = []
         if mask == b'.':
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-1:][0])]
@@ -359,14 +356,12 @@ class DiskDevice(object):
         # format and print contents
         output = ([join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
                   [join_dosname(t, e, padding=True) + b'     ' for t, e in fils])
-        num = screen.mode.width // 20
+        lines = [self.letter + b':\\' + b'\\'.join(dir_elems)]
         while len(output) > 0:
-            line = b' '.join(output[:num])
-            output = output[num:]
-            screen.write_line(line)
-            # allow to break during dir listing & show names flowing on screen
-            self.queues.wait()
-        screen.write_line(b' %d Bytes free' % self.get_free())
+            lines.append(b' '.join(output[:num_cols]))
+            output = output[num_cols:]
+        lines.append(b' %d Bytes free' % self.get_free())
+        return lines
 
     def get_free(self):
         """Return the number of free bytes on the drive."""
@@ -393,11 +388,11 @@ class DiskDevice(object):
 class InternalDiskDevice(DiskDevice):
     """Internal disk device for special operations."""
 
-    def __init__(self, letter, path, cwd, locks, codepage, queues, utf8, universal):
+    def __init__(self, letter, path, cwd, locks, codepage, utf8, universal):
         """Initialise internal disk."""
         self._bound_files = {}
         DiskDevice.__init__(
-                self, letter, path, cwd, locks, codepage, queues, utf8, universal)
+                self, letter, path, cwd, locks, codepage, utf8, universal)
 
     def bind(self, file_name_or_object, name):
         """Bind a native file name or object to an internal name."""
