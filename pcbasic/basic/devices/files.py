@@ -667,9 +667,13 @@ class Files(object):
         elif pathmask is None:
             pathmask = b''
         dev, path = self._get_diskdevice_and_path(pathmask)
-        header, output = dev.files(path)
+        # retrieve files first (to ensure correct path/file not found errors)
+        output = dev.listdir(path)
         num_cols = self._screen.mode.width//20
-        self._screen.write_line(header)
+        # output working dir in DOS format
+        # NOTE: this is always the current dir, not the one being listed
+        self._screen.write_line(dev.get_cwd())
+        # output files
         for i, cols in enumerate(output[j:j+num_cols] for j in xrange(0, len(output), num_cols)):
             self._screen.write_line(b' '.join(cols))
             if not (i%4):

@@ -323,7 +323,7 @@ class DiskDevice(object):
         """Rename a file or directory."""
         safe(os.rename, oldname, newname)
 
-    def files(self, pathmask):
+    def listdir(self, pathmask):
         """Get directory listing."""
         # forward slashes - file not found
         # GW-BASIC sometimes allows leading or trailing slashes
@@ -336,12 +336,6 @@ class DiskDevice(object):
         drivepath, relpath, mask = self._native_path_elements(pathmask, path_err=error.FILE_NOT_FOUND)
         path = os.path.join(drivepath, relpath)
         mask = mask.upper() or b'*.*'
-        # output working dir in DOS format
-        # NOTE: this is always the current dir, not the one being listed
-        if self.cwd:
-            dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
-        else:
-            dir_elems = []
         fils = []
         if mask == b'.':
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-1:][0])]
@@ -357,10 +351,20 @@ class DiskDevice(object):
         if not dirs and not fils:
             raise error.BASICError(error.FILE_NOT_FOUND)
         # format and print contents
-        output = (
-                [join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
-                [join_dosname(t, e, padding=True) + b'     ' for t, e in fils])
-        return self.letter + b':\\' + b'\\'.join(dir_elems), output
+        return (
+            [join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
+            [join_dosname(t, e, padding=True) + b'     ' for t, e in fils]
+        )
+
+    def get_cwd(self):
+        """Return the current working directory in DOS format."""
+        drivepath, relpath, _ = self._native_path_elements(b'', path_err=error.FILE_NOT_FOUND)
+        path = os.path.join(drivepath, relpath)
+        if self.cwd:
+            dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
+        else:
+            dir_elems = []
+        return self.letter + b':\\' + b'\\'.join(dir_elems)
 
     def get_free(self):
         """Return the number of free bytes on the drive."""
@@ -390,8 +394,7 @@ class InternalDiskDevice(DiskDevice):
     def __init__(self, letter, path, cwd, locks, codepage, utf8, universal):
         """Initialise internal disk."""
         self._bound_files = {}
-        DiskDevice.__init__(
-                self, letter, path, cwd, locks, codepage, utf8, universal)
+        DiskDevice.__init__(self, letter, path, cwd, locks, codepage, utf8, universal)
 
     def bind(self, file_name_or_object, name):
         """Bind a native file name or object to an internal name."""
