@@ -88,12 +88,12 @@ def convert(settings):
             # if the native file doesn't exist, treat as BASIC file spec
             if not name_in or os.path.isfile(name_in):
                 # use io.BytesIO buffer for seekability
-                name_in = session.bind_file(name_in or io.BytesIO(sys.stdin.read()))
-            session.execute(b'LOAD "%s"' % (name_in,))
+                infile = session.bind_file(name_in or io.BytesIO(sys.stdin.read()))
+            session.execute(b'LOAD "%s"' % (infile,))
             if (not name_out or not os.path.dirname(name_out)
                     or os.path.isdir(os.path.dirname(name_out))):
-                name_out = session.bind_file(name_out or sys.stdout)
-            save_cmd = b'SAVE "%s"' % (name_out,)
+                outfile = session.bind_file(name_out or sys.stdout)
+            save_cmd = b'SAVE "%s"' % (outfile,)
             if mode.upper() in (b'A', b'P'):
                 save_cmd += b',%s' % (mode,)
             session.execute(save_cmd)
@@ -116,8 +116,8 @@ def run_session(interface=None, resume=False, debug=False, state_file=None,
     with Session(interface, **session_params) as s:
         with state.manage_state(s, state_file, resume) as session:
             if prog:
-                prog_name = session.bind_file(prog)
-                session.execute(b'LOAD "%s"' % (prog_name,))
+                with session.bind_file(prog) as progfile:
+                    session.execute(b'LOAD "%s"' % (progfile,))
             for cmd in commands:
                 session.execute(cmd)
             session.interact()

@@ -397,6 +397,37 @@ class DiskDevice(object):
                 pass
 
 
+class BoundFile(object):
+    """Bound internal file."""
+
+    def __init__(self, device, file_name_or_object, name):
+        self._device = device
+        self._file = file_name_or_object
+        self._name = name
+
+    def __enter__(self):
+        """Context guard."""
+        return self
+
+    def __exit__(self, *dummies):
+        """Context guard."""
+        self._device.unbind(self._name)
+
+    def get_stream(self, mode):
+        """Get a native stream for the bound file."""
+        try:
+            if isinstance(self._file, basestring):
+                return open(self._file, self._device.access_modes[mode])
+            else:
+                return self._file
+        except EnvironmentError as e:
+            handle_oserror(e)
+
+    def __str__(self):
+        """Get BASIC file name."""
+        return b'%s:%s' % (self._device.letter, self._name)
+
+
 class InternalDiskDevice(DiskDevice):
     """Internal disk device for special operations."""
 
@@ -418,18 +449,20 @@ class InternalDiskDevice(DiskDevice):
                 # unlikely
                 logging.error('No internal bound-file names available')
                 raise error.BASICError(error.TOO_MANY_FILES)
-        self._bound_files[name] = file_name_or_object
-        return b'%s:%s' % (self.letter, name)
+        self._bound_files[name] = BoundFile(self, file_name_or_object, name)
+        return self._bound_files[name]
+
+    def unbind(self, name):
+        """Unbind bound file."""
+        del self._bound_files[name]
 
     def open(self, number, filespec, filetype, mode, access, lock,
                    reclen, seg, offset, length, field):
         """Open a file on the internal disk drive."""
         if filespec in self._bound_files:
-            bound_file = self._bound_files[filespec]
+            fhandle = self._bound_files[filespec].get_stream(mode)
             try:
-                if isinstance(bound_file, basestring):
-                    bound_file = open(self._bound_files[filespec], self.access_modes[mode])
-                return self.create_file_object(bound_file, filetype, mode)
+                return self.create_file_object(fhandle, filetype, mode)
             except EnvironmentError as e:
                 handle_oserror(e)
         else:
