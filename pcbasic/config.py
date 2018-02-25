@@ -463,7 +463,6 @@ class Settings(object):
         codepage_dict = data.read_codepage(self.get('codepage'))
         return {
             'syntax': self.get('syntax'),
-            'debug': self.get('debug'),
             'debug_options': self.uargv,
             'debug_dir': STATE_PATH,
             'output_file': self.get(b'output'),
@@ -588,6 +587,7 @@ class Settings(object):
             'resume': self.get('resume'),
             'state_file': self.get_state_file(),
             'commands': commands,
+            'debug': self.get('debug'),
             }
         launch_params.update(self.get_session_parameters())
         return launch_params
