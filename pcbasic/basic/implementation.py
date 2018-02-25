@@ -268,7 +268,7 @@ class Implementation(object):
         message = [
             (0x70, 'EXCEPTION\n'),
             (0x17, 'version   '),
-            (0x1f, VERSION),
+            (0x1f, VERSION.encode('ascii')),
             (0x17, '\npython    '),
             (0x1f, platform.python_version()),
             (0x17, '\nplatform  '),
@@ -330,7 +330,7 @@ class Implementation(object):
             self.display.text_screen.write(text.replace('\n', '\r'))
         # write crash log
         with logfile as f:
-            f.write('\n'.join(crashlog))
+            f.write(b'\n'.join(crashlog))
 
     def attach_interface(self, interface=None):
         """Attach interface to interpreter session."""
