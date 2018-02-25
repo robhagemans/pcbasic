@@ -27,6 +27,8 @@ from . import parports
 # MS-DOS device files
 DOS_DEVICE_FILES = (b'AUX', b'CON', b'NUL', b'PRN')
 
+# default mount dictionary
+DEFAULT_MOUNTS = {b'Z': (os.getcwdu(), u'')}
 
 ############################################################################
 # General file manipulation
@@ -563,6 +565,9 @@ class Files(object):
             self, queues, mount_dict, current_device,
             codepage, utf8, universal):
         """Initialise disk devices."""
+        # use None to request default mounts, use {} for no mounts
+        if mount_dict is None:
+            mount_dict = DEFAULT_MOUNTS
         # disk file locks
         locks = disk.Locks()
         # disk devices
