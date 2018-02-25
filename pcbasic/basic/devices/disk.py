@@ -338,7 +338,10 @@ class DiskDevice(object):
         mask = mask.upper() or b'*.*'
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
-        dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
+        if self.cwd:
+            dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
+        else:
+            dir_elems = []
         fils = []
         if mask == b'.':
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-1:][0])]
