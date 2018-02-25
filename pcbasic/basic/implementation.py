@@ -52,18 +52,16 @@ class Implementation(object):
     """Interpreter session, implementation class."""
 
     def __init__(self,
-            syntax=u'advanced', term=u'', shell=u'',
+            syntax=u'advanced', double=False, term=u'', shell=u'',
             output_file=None, append=False, input_file=None, stdio=True,
-            codepage=None, box_protect=True,
-            video=u'cga', monitor=u'rgb', mono_tint=(0, 255, 0), aspect_ratio=(4, 3),
-            font=None, text_width=80, video_memory=262144, cga_low=False,
-            double=False,
+            codepage=None, box_protect=True, font=None, text_width=80,
+            video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3), mono_tint=(0, 255, 0), cga_low=False,
             devices=None, current_device=u'Z:', mount=None, utf8=False, universal=True,
             print_trigger='close',
-            keys=u'', check_keybuffer_full=True, ignore_caps=True, ctrl_c_is_break=True,
+            keys=u'', check_keybuffer_full=True, ctrl_c_is_break=True,
             max_list_line=65535, allow_protect=False,
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
-            max_memory=65534, reserved_memory=3429,
+            max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
             temp_dir=u'', debug_dir=u'', debug_options=None,
             extension=None, catch_exceptions='basic', greeting=True,
@@ -145,7 +143,7 @@ class Implementation(object):
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
         # EventHandler needed for wait() only
         self.keyboard = inputs.Keyboard(
-                self.queues, self.values, self.codepage, keys, ignore_caps, check_keybuffer_full)
+                self.queues, self.values, self.codepage, keys, check_keybuffer_full)
         self.pen = inputs.Pen()
         self.stick = inputs.Stick(self.values)
         ######################################################################

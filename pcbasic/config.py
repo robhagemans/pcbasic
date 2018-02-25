@@ -25,7 +25,7 @@ if platform.system() == b'Windows':
     import ctypes.wintypes
     import win32api
 
-from .basic.metadata import VERSION
+from .basic.metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from . import data
 
@@ -268,8 +268,7 @@ class Settings(object):
                         u'ansi', u'curses', u'pygame', u'sdl2'), },
         u'sound-engine': {
             u'type': u'string', u'default': u'',
-            u'choices': (u'', u'none',
-                        u'beep', u'portaudio', u'pygame', u'sdl2'), },
+            u'choices': (u'', u'none', u'beep', u'portaudio', u'pygame', u'sdl2'), },
         u'load': {u'type': u'string', u'default': u'', },
         u'run': {u'type': u'string', u'default': u'',  },
         u'convert': {u'type': u'string', u'default': u'', },
@@ -298,7 +297,6 @@ class Settings(object):
         u'debug': {u'type': u'bool', u'default': False,},
         u'strict-hidden-lines': {u'type': u'bool', u'default': False,},
         u'strict-protect': {u'type': u'bool', u'default': False,},
-        u'capture-caps': {u'type': u'bool', u'default': False,},
         u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
         u'resume': {u'type': u'bool', u'default': False,},
         u'strict-newline': {u'type': u'bool', u'default': False,},
@@ -308,8 +306,9 @@ class Settings(object):
         u'pcjr-term': {u'type': u'string', u'default': u'',},
         u'video': {
             u'type': u'string', u'default': 'vga',
-            u'choices': (u'vga', u'ega', u'cga', u'cga_old', u'mda', u'pcjr', u'tandy',
-                         u'hercules', u'olivetti'), },
+            u'choices': (
+                u'vga', u'ega', u'cga', u'cga_old', u'mda',
+                u'pcjr', u'tandy', u'hercules', u'olivetti'), },
         u'map-drives': {u'type': u'bool', u'default': False,},
         u'cga-low': {u'type': u'bool', u'default': False,},
         u'nobox': {u'type': u'bool', u'default': False,},
@@ -318,15 +317,18 @@ class Settings(object):
         u'pen': {
             u'type': u'string', u'default': u'left',
             u'choices': (u'left', u'middle', u'right', u'none',), },
-        u'copy-paste': {u'type': u'string', u'list': 2, u'default': [u'left', u'middle'],
-                       u'choices': (u'left', u'middle', u'right', u'none',),},
+        u'copy-paste': {
+            u'type': u'string', u'list': 2, u'default': [u'left', u'middle'],
+            u'choices': (u'left', u'middle', u'right', u'none',),},
         u'state': {u'type': u'string', u'default': u'',},
         u'mono-tint': {u'type': u'int', u'list': 3, u'default': [255, 255, 255],},
         u'monitor': {
             u'type': u'string', u'choices': (u'rgb', u'composite', u'mono'),
             u'default': u'rgb',},
         u'aspect': {u'type': u'int', u'list': 2, u'default': [4, 3],},
-        u'scaling': {u'type': u'string', u'choices':(u'smooth', u'native', u'crisp'), u'default': u'smooth',},
+        u'scaling': {
+            u'type': u'string', u'choices':(u'smooth', u'native', u'crisp'),
+            u'default': u'smooth',},
         u'version': {u'type': u'bool', u'default': False,},
         u'config': {u'type': u'string', u'default': u'',},
         u'logfile': {u'type': u'string', u'default': u'',},
@@ -334,17 +336,19 @@ class Settings(object):
         u'max-memory': {u'type': u'int', u'list': -2, u'default': [65534, 4096]},
         u'allow-code-poke': {u'type': u'bool', u'default': False,},
         u'reserved-memory': {u'type': u'int', u'default': 3429,},
-        u'caption': {u'type': u'string', u'default': 'PC-BASIC',},
+        u'caption': {u'type': u'string', u'default': NAME,},
         u'text-width': {u'type': u'int', u'choices':(40, 80), u'default': 80,},
         u'video-memory': {u'type': u'int', u'default': 262144,},
         u'shell': {u'type': u'string', u'default': u'',},
-        u'print-trigger': {u'type': u'string', u'choices':(u'close', u'page', u'line'), u'default': u'close',},
+        u'print-trigger': {
+            u'type': u'string', u'choices':(u'close', u'page', u'line'), u'default': u'close',},
         u'altgr': {u'type': u'bool', u'default': True,},
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': 'Z'},
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
-        u'catch-exceptions': {u'type': u'string', u'choices':(u'none', u'basic', u'all'), u'default': u'all'},
+        u'catch-exceptions': {
+            u'type': u'string', u'choices':(u'none', u'basic', u'all'), u'default': u'all'},
     }
 
 
@@ -498,7 +502,6 @@ class Settings(object):
             # attach to standard I/O if no interface (for filter interface)
             'stdio': True,
             # keyboard settings
-            'ignore_caps': not self.get('capture-caps'),
             'ctrl_c_is_break': self.get('ctrl-c-break'),
             # program parameters
             'max_list_line': 65535 if not self.get('strict-hidden-lines') else 65530,

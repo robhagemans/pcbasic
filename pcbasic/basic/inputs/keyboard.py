@@ -180,7 +180,7 @@ def _split_eascii(cp_s):
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, queues, values, codepage, keystring, ignore_caps, check_full):
+    def __init__(self, queues, values, codepage, keystring, check_full):
         """Initilise keyboard state."""
         self._values = values
         # needed for wait() in wait_char()
@@ -194,7 +194,8 @@ class Keyboard(object):
         # store for alt+keypad ascii insertion
         self.keypad_ascii = ''
         # ignore caps lock, let OS handle it
-        self._ignore_caps = ignore_caps
+        # this is now switched off hard-coded, but logic remains for now
+        self._ignore_caps = True
         # pre-inserted keystrings
         self._codepage = codepage
         with self.buf.ignore_limit():
