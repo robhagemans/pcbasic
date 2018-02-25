@@ -17,6 +17,7 @@ import re
 import platform
 import locale
 import struct
+import random
 if platform.system() == b'Windows':
     import win32api
     import ctypes
@@ -396,9 +397,21 @@ class InternalDiskDevice(DiskDevice):
         self._bound_files = {}
         DiskDevice.__init__(self, letter, path, cwd, locks, codepage, utf8, universal)
 
-    def bind(self, file_name_or_object, name):
+    def bind(self, file_name_or_object, name=None):
         """Bind a native file name or object to an internal name."""
+        if not name:
+            # get unused 7-hexit string
+            num_ids = 0x10000000
+            for _ in xrange(num_ids):
+                name = (b'#%07x' % random.randint(0, num_ids)).upper()
+                if name not in self._bound_files:
+                    break
+            else:
+                # unlikely
+                logging.error('All internal disk ids used')
+                raise error.BASICError(error.TOO_MANY_FILES)
         self._bound_files[name] = file_name_or_object
+        return b'%s:%s' % (self.letter, name)
 
     def open(self, number, filespec, filetype, mode, access, lock,
                    reclen, seg, offset, length, field):

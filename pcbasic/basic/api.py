@@ -58,7 +58,7 @@ class Session(object):
     def bind_file(self, file_name_or_object, name=None):
         """Bind a native file name or Python stream to a BASIC file name."""
         self.start()
-        return self._impl.bind_file(file_name_or_object, name)
+        return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
 
     def execute(self, command):
         """Execute a BASIC statement."""

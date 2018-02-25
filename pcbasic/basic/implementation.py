@@ -347,12 +347,6 @@ class Implementation(object):
         # attach input queue to redirects
         self.input_redirection.attach(self.queues, self._stdio and not interface)
 
-    def bind_file(self, file_name_or_object, name=None):
-        """Bind a native file name or Python stream to a BASIC file name."""
-        name = name or hex(id(file_name_or_object))
-        self.files.get_device(b'@:').bind(file_name_or_object, name)
-        return b'@:' + name
-
     def execute(self, command):
         """Execute a BASIC statement."""
         # don't greet if an interactive session is opened afterwards
@@ -601,7 +595,7 @@ class Implementation(object):
             # and deletes the program currently in memory
             raise error.BASICError(error.INTERNAL_ERROR)
         # terminal program for TERM command
-        prog = self.bind_file(self._term_program)
+        prog = self.files.get_device(b'@:').bind(self._term_program)
         with self.files.open(0, prog, filetype='ABP', mode='I') as progfile:
             self.program.load(progfile)
         self.interpreter.error_handle_mode = False
