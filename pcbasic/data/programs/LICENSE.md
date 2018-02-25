@@ -1,6 +1,7 @@
-Licence terms for PCTERM.BAS
-============================
-PCTERM.BAS Copyright (c) 2015, 2016 Rob Hagemans.  
+Licence terms for bundled BASIC programs
+========================================
+
+PCTERM.BAS and BASIC Demo Programs Copyright (c) 2015--2018 Rob Hagemans
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
