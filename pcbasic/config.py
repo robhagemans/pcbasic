@@ -473,7 +473,7 @@ class Settings(object):
             'box_protect': not self.get('nobox'),
             'monitor': self.get('monitor'),
             # screen settings
-            'screen_aspect': (3072, 2000) if self.get('video') == 'tandy' else (4, 3),
+            'aspect_ratio': (3072, 2000) if self.get('video') == 'tandy' else (4, 3),
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
             'cga_low': self.get('cga-low'),
@@ -482,13 +482,13 @@ class Settings(object):
             # inserted keystrokes
             'keys': self.get('keys').encode('utf-8').decode('string_escape').decode('utf-8'),
             # find program for PCjr TERM command
-            'pcjr_term': pcjr_term,
+            'term': pcjr_term,
             'shell': self.get('shell'),
             'double': self.get('double'),
             # device settings
-            'device_params': device_params,
+            'devices': device_params,
             'current_device': current_device,
-            'mount_dict': mount_dict,
+            'mount': mount_dict,
             'print_trigger': self.get('print-trigger'),
             'temp_dir': self._temp_dir,
             'serial_buffer_size': self.get('serial-buffer-size'),

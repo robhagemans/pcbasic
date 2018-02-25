@@ -76,7 +76,7 @@ class Files(object):
         self.files = {}
 
     def open(self, number, description, filetype, mode='I', access='R', lock='',
-                  reclen=128, seg=0, offset=0, length=0):
+                reclen=128, seg=0, offset=0, length=0):
         """Open a file on a device specified by description."""
         if (not description) or (number < 0) or (number > self.max_files):
             # bad file number; also for name='', for some reason
@@ -115,7 +115,8 @@ class Files(object):
     ###########################################################################
     # device management
 
-    def _init_devices(self, values, queues, display, keyboard,
+    def _init_devices(
+                self, values, queues, display, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_in_size, utf8, universal):
         """Initialise devices."""
@@ -130,22 +131,16 @@ class Files(object):
             # cassette: needs text screen to display Found and Skipped messages
             b'CAS1:': cassette.CASDevice(device_params.get(b'CAS1:', None), self._screen),
             # serial devices
-            b'COM1:': ports.COMDevice(
-                        device_params.get(b'COM1:', None),
-                        queues, serial_in_size),
-            b'COM2:': ports.COMDevice(
-                        device_params.get(b'COM2:', None),
-                        queues, serial_in_size),
+            b'COM1:': ports.COMDevice(device_params.get(b'COM1:', None), queues, serial_in_size),
+            b'COM2:': ports.COMDevice(device_params.get(b'COM2:', None), queues, serial_in_size),
             # parallel devices - LPT1: must always be available
             b'LPT1:': parports.LPTDevice(
                         device_params.get(b'LPT1:', None), devicebase.nullstream(),
                         print_trigger, codepage, temp_dir),
             b'LPT2:': parports.LPTDevice(
-                        device_params.get(b'LPT2:', None), None,
-                        print_trigger, codepage, temp_dir),
+                        device_params.get(b'LPT2:', None), None, print_trigger, codepage, temp_dir),
             b'LPT3:': parports.LPTDevice(
-                        device_params.get(b'LPT3:', None), None,
-                        print_trigger, codepage, temp_dir),
+                        device_params.get(b'LPT3:', None), None, print_trigger, codepage, temp_dir),
         }
         # device files
         self.scrn_file = self._devices[b'SCRN:'].device_file
@@ -583,7 +578,10 @@ class Files(object):
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
             self._devices[letter + b':'] = disk_class(
                     letter, path, cwd, locks, codepage, utf8, universal)
-        self._current_device = current_device.upper()
+        # allow upper or lower case, unicode or str, with or without :
+        if isinstance(current_device, unicode):
+            current_device = current_device.encode('ascii')
+        self._current_device = current_device.split(b':')[0].upper()
 
     def _get_diskdevice_and_path(self, path):
         """Return the disk device and remaining path for given file spec."""

@@ -21,6 +21,7 @@ from .base import error
 from .base import tokens as tk
 from .base import signals
 from .base import codestream
+from .devices import Files, InputTextFile
 from . import converter
 from . import eventcycle
 from . import basicevents
@@ -38,7 +39,6 @@ from . import redirect
 from . import codepage as cp
 from . import values
 from . import parser
-from . import devices
 from . import extensions
 
 
@@ -52,18 +52,17 @@ class Implementation(object):
     """Interpreter session, implementation class."""
 
     def __init__(self,
-            syntax=u'advanced', pcjr_term=u'', shell=u'',
+            syntax=u'advanced', term=u'', shell=u'',
             output_file=None, append=False, input_file=None, stdio=True,
             codepage=None, box_protect=True,
-            video=u'cga', monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
+            video=u'cga', monitor=u'rgb', mono_tint=(0, 255, 0), aspect_ratio=(4, 3),
             font=None, text_width=80, video_memory=262144, cga_low=False,
             double=False,
-            peek_values=None, device_params=None,
-            current_device='Z', mount_dict=None, utf8=False, universal=True,
+            devices=None, current_device=u'Z:', mount=None, utf8=False, universal=True,
             print_trigger='close',
             keys=u'', check_keybuffer_full=True, ignore_caps=True, ctrl_c_is_break=True,
             max_list_line=65535, allow_protect=False,
-            allow_code_poke=False, rebuild_offsets=True,
+            peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429,
             serial_buffer_size=128, max_reclen=128, max_files=3,
             temp_dir=u'', debug_dir=u'', debug_options=None,
@@ -82,7 +81,7 @@ class Implementation(object):
         # syntax error prompt and EDIT
         self._edit_prompt = False
         # terminal program for TERM command
-        self._term_program = pcjr_term
+        self._term_program = term
         self._reraise = (not catch_exceptions or catch_exceptions == 'none')
         # redirect parameters
         self._stdio = stdio
@@ -137,7 +136,7 @@ class Implementation(object):
                 self.queues, self.values, self.queues,
                 self.memory, text_width, video_memory, video, monitor,
                 self.sound, self.output_redirection,
-                cga_low, mono_tint, screen_aspect,
+                cga_low, mono_tint, aspect_ratio,
                 self.codepage, font)
         self.screen = self.display.text_screen
         self.drawing = self.display.drawing
@@ -155,10 +154,10 @@ class Implementation(object):
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # EventCycle needed for wait()
-        self.files = devices.Files(
+        self.files = Files(
                 self.values, self.memory, self.queues, self.keyboard, self.display,
                 max_files, max_reclen, serial_buffer_size,
-                device_params, current_device, mount_dict,
+                devices, current_device, mount,
                 print_trigger, temp_dir,
                 utf8, universal)
         # set up the SHELL command
@@ -809,7 +808,7 @@ class Implementation(object):
             if self.screen.current_row > 1:
                 self.screen.text.pages[self.screen.apagenum].row[self.screen.current_row-2].wrap = False
             line = self.editor.wait_screenline(write_endl=newline)
-            inputstream = devices.InputTextFile(line)
+            inputstream = InputTextFile(line)
             # read the values and group them and the separators
             var, values, seps = [], [], []
             for name, indices in readvar:
