@@ -72,7 +72,7 @@ COLOURS64 = (
 class Video(object):
     """Low-level display operations."""
 
-    def __init__(self, capabilities, monitor, mono_tint, cga_low, aspect, video_mem_size):
+    def __init__(self, capabilities, monitor, mono_tint, low_intensity, aspect, video_mem_size):
         """Initialise colour sets."""
         # public members - used by VideoMode
         # video adapter type - cga, ega, etc
@@ -99,7 +99,7 @@ class Video(object):
         if capabilities in ('pcjr', 'tandy'):
             # pcjr does not have mode 5
             self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
-        elif cga_low:
+        elif low_intensity:
             self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
         else:
             self.cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}

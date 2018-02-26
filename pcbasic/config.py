@@ -480,7 +480,7 @@ class Settings(object):
             'aspect_ratio': (3072, 2000) if self.get('video') == 'tandy' else (4, 3),
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
-            'cga_low': self.get('cga-low'),
+            'low_intensity': self.get('cga-low'),
             'mono_tint': self.get('mono-tint'),
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes

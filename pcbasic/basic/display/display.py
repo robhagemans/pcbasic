@@ -130,13 +130,14 @@ class Display(object):
 
     def __init__(self, queues, values, input_methods, memory,
                 initial_width, video_mem_size, capabilities, monitor, sound, redirect,
-                cga_low, mono_tint, screen_aspect, codepage, fonts):
+                low_intensity, mono_tint, screen_aspect, codepage, fonts):
         """Initialise the display."""
         self.queues = queues
         self._values = values
         self._memory = memory
         # low level settings
-        self.video = Video(capabilities, monitor, mono_tint, cga_low, screen_aspect, video_mem_size)
+        self.video = Video(
+                capabilities, monitor, mono_tint, low_intensity, screen_aspect, video_mem_size)
         self.capabilities = self.video.capabilities
         # video mode settings
         self._mode_nr, self.colorswitch, self.apagenum, self.vpagenum = 0, 1, 0, 0

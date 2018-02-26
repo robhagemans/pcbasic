@@ -55,7 +55,8 @@ class Implementation(object):
             syntax=u'advanced', double=False, term=u'', shell=u'',
             output_file=None, append=False, input_file=None, stdio=True,
             codepage=None, box_protect=True, font=None, text_width=80,
-            video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3), mono_tint=(0, 255, 0), cga_low=False,
+            video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3),
+            mono_tint=(0, 255, 0), low_intensity=False,
             devices=None, current_device=u'Z:', mount=None, utf8=False, universal=True,
             print_trigger='close',
             keys=u'', check_keybuffer_full=True, ctrl_c_is_break=True,
@@ -134,7 +135,7 @@ class Implementation(object):
                 self.queues, self.values, self.queues,
                 self.memory, text_width, video_memory, video, monitor,
                 self.sound, self.output_redirection,
-                cga_low, mono_tint, aspect_ratio,
+                low_intensity, mono_tint, aspect_ratio,
                 self.codepage, font)
         self.screen = self.display.text_screen
         self.drawing = self.display.drawing
