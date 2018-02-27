@@ -543,7 +543,6 @@ class Parser(object):
                 yield True
             else:
                 yield False
-            ins.require_end()
         else:
             yield None
 
