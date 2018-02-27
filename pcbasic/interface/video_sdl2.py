@@ -62,8 +62,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # border attribute
         self.border_attr = 0
         # palette and colours
-        # composite colour artifacts
-        self.composite_artifacts = False
+        # composite colour artifacts are active
+        self._composite = False
         # update cycle
         # refresh cycle parameters
         self._cycle = 0
@@ -434,7 +434,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def _do_flip(self):
         """Draw the canvas to the screen."""
         sdl2.SDL_FillRect(self.work_surface, None, self.border_attr)
-        if self.composite_artifacts:
+        if self._composite:
             self.work_pixels[:] = video_graphical.apply_composite_artifacts(
                             self.pixels[self.vpagenum], 4//self.bitsperpixel)
             sdl2.SDL_SetSurfacePalette(self.work_surface, self.composite_palette)
@@ -547,10 +547,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.glyph_dict = {u'\0': numpy.zeros((self.font_width, self.font_height))}
         self.num_pages = mode_info.num_pages
         self.mode_has_blink = mode_info.has_blink
-        self.mode_has_artifacts = False
         if not self.text_mode:
             self.bitsperpixel = mode_info.bitsperpixel
-            self.mode_has_artifacts = mode_info.supports_artifacts
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
         self._resize_display(*self._find_display_size(
@@ -620,10 +618,9 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.border_attr = attr
         self.screen_changed = True
 
-    def set_colorburst(self, on, rgb_palette, rgb_palette1):
-        """Change the NTSC colorburst setting."""
-        self.set_palette(rgb_palette, rgb_palette1)
-        self.composite_artifacts = on and self.mode_has_artifacts and self.composite_monitor
+    def set_composite(self, on):
+        """Enable/disable composite artifacts."""
+        self._composite = on
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""

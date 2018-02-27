@@ -57,12 +57,8 @@ class VideoGraphical(base.VideoPlugin):
         self.nokill = kwargs.get('nokill', False)
         # window caption/title
         self.caption = kwargs.get('caption', '')
-        # if no composite palette available for this card, ignore.
-        self.composite_monitor = kwargs.get('composite_monitor', False)
         # video card to emulate (only used for composite)
         self.composite_card = kwargs.get('composite_card')
-        # don't try composite unless our video card supports it
-        self.composite_monitor = self.composite_monitor and self.composite_card in composite_640
         # the following attributes must be overridden by child classes
         # size of display
         self.physical_size = ()

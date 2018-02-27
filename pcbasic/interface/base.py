@@ -205,8 +205,8 @@ class VideoPlugin(object):
                 self.copy_page(*signal.params)
             elif signal.event_type == signals.VIDEO_SET_BORDER_ATTR:
                 self.set_border_attr(signal.params)
-            elif signal.event_type == signals.VIDEO_SET_COLORBURST:
-                self.set_colorburst(*signal.params)
+            elif signal.event_type == signals.VIDEO_SET_COMPOSITE:
+                self.set_composite(*signal.params)
             elif signal.event_type == signals.VIDEO_BUILD_GLYPHS:
                 self.build_glyphs(signal.params)
             elif signal.event_type == signals.VIDEO_PUT_PIXEL:
@@ -242,9 +242,9 @@ class VideoPlugin(object):
     def set_border_attr(self, attr):
         """Change the border attribute."""
 
-    def set_colorburst(self, on, rgb_palette, rgb_palette1):
-        """Change the NTSC colorburst setting."""
-
+    def set_composite(self, on):
+        """Enable/disable composite artifacts."""
+        
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
 

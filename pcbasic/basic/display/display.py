@@ -307,11 +307,15 @@ class Display(object):
     def set_colorburst(self, on=True):
         """Set the composite colorburst bit."""
         colorburst = self.video.set_colorburst(on, is_cga=(self.mode.name == '320x200x4'))
+        composite_artifacts = (colorburst and (not self.mode.is_text_mode) and
+                self.video.monitor == 'composite' and self.mode.supports_artifacts)
+        # don't try composite unless our video card supports it
+        composite_artifacts = composite_artifacts and self.capabilities in modes.COMPOSITE
         # reset the palette to reflect the new mono or mode-5 situation
+        # this sends the signal to the interface as well
         self.palette.init_mode(self.mode)
         # this is only needed because composite artifacts are implemented in the interface
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_COLORBURST, (colorburst,
-                            self.palette.rgb_palette, self.palette.rgb_palette1)))
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_COMPOSITE, (composite_artifacts,)))
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""

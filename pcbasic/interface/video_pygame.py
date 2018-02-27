@@ -64,7 +64,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.border_attr = 0
         # palette and colours
         # composite colour artifacts
-        self.composite_artifacts = False
+        self._composite = False
         # working palette - attribute index in blue channel
         self.work_palette = [(0, 0, index) for index in range(256)]
         # display palettes for blink states 0, 1
@@ -371,7 +371,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self._draw_cursor(workscreen)
         if self.clipboard.active():
             create_feedback(workscreen, self.clipboard.selection_rect)
-        if self.composite_artifacts:
+        if self._composite:
             screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
             screen.set_palette(self.composite_640_palette)
         else:
@@ -439,10 +439,8 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.font_width = mode_info.font_width
         self.num_pages = mode_info.num_pages
         self.mode_has_blink = mode_info.has_blink
-        self.mode_has_artifacts = False
         if not self.text_mode:
             self.bitsperpixel = mode_info.bitsperpixel
-            self.mode_has_artifacts = mode_info.supports_artifacts
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
         self._resize_display(*self._find_display_size(
@@ -491,10 +489,9 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.border_attr = attr
         self.screen_changed = True
 
-    def set_colorburst(self, on, rgb_palette, rgb_palette1):
-        """Change the NTSC colorburst setting."""
-        self.set_palette(rgb_palette, rgb_palette1)
-        self.composite_artifacts = on and self.mode_has_artifacts and self.composite_monitor
+    def set_composite(self, on):
+        """Enable/disable composite artifacts."""
+        self._composite = on
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
