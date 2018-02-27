@@ -75,11 +75,11 @@ class DebugSession(api.Session):
             # register as an extension
             self._impl.extensions.add(self)
             # replace dummy debugging step
-            self._impl.interpreter.step = self.debug_step
+            self._impl.interpreter.step = self._debug_step
             self._do_trace = False
             self._watch_list = []
 
-    def debug_step(self, token):
+    def _debug_step(self, token):
         """Execute traces and watches on a program step."""
         outstr = ''
         if self._do_trace:
@@ -100,6 +100,11 @@ class DebugSession(api.Session):
         if outstr:
             logging.debug(outstr)
 
+    def _handle_exception(self, e):
+        """Handle exception during debugging."""
+        logging.debug(b'%s %s', type(e), bytes(e))
+        traceback.print_tb(sys.exc_info()[2])
+
     ###########################################################################
     # debugging commands
 
@@ -118,6 +123,18 @@ class DebugSession(api.Session):
             raise DebugException()
         except DebugException as e:
             self._impl.blue_screen(e)
+
+    def python(self, cmd):
+        """Execute any Python code."""
+        buf = io.BytesIO()
+        save_stdout = sys.stdout
+        sys.stdout = buf
+        try:
+            exec(cmd)
+        except Exception as e:
+            self._handle_exception(e)
+        sys.stdout = save_stdout
+        logging.debug(buf.getvalue()[:-1]) # exclude \n
 
     def restart(self):
         """Ctrl+Alt+Delete."""
