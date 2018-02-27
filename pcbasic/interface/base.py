@@ -142,6 +142,30 @@ class VideoPlugin(object):
         self.screen_changed = False
         self.input_queue = input_queue
         self.video_queue = video_queue
+        self._handlers = {
+            signals.VIDEO_SET_MODE: self.set_mode,
+            signals.VIDEO_PUT_GLYPH: self.put_glyph,
+            signals.VIDEO_CLEAR_ROWS: self.clear_rows,
+            signals.VIDEO_SCROLL_UP: self.scroll_up,
+            signals.VIDEO_SCROLL_DOWN: self.scroll_down,
+            signals.VIDEO_SET_PALETTE: self.set_palette,
+            signals.VIDEO_SET_CURSOR_SHAPE: self.set_cursor_shape,
+            signals.VIDEO_SET_CURSOR_ATTR: self.set_cursor_attr,
+            signals.VIDEO_SHOW_CURSOR: self.show_cursor,
+            signals.VIDEO_MOVE_CURSOR: self.move_cursor,
+            signals.VIDEO_SET_PAGE: self.set_page,
+            signals.VIDEO_COPY_PAGE: self.copy_page,
+            signals.VIDEO_SET_BORDER_ATTR: self.set_border_attr,
+            signals.VIDEO_SET_COMPOSITE: self.set_composite,
+            signals.VIDEO_BUILD_GLYPHS: self.build_glyphs,
+            signals.VIDEO_PUT_PIXEL: self.put_pixel,
+            signals.VIDEO_PUT_INTERVAL: self.put_interval,
+            signals.VIDEO_FILL_INTERVAL: self.fill_interval,
+            signals.VIDEO_PUT_RECT: self.put_rect,
+            signals.VIDEO_FILL_RECT: self.fill_rect,
+            signals.VIDEO_SET_CAPTION: self.set_caption_message,
+            signals.VIDEO_SET_CLIPBOARD_TEXT: self.set_clipboard_text,
+        }
 
     def __exit__(self, type, value, traceback):
         """Close the interface."""
@@ -179,50 +203,11 @@ class VideoPlugin(object):
             if signal.event_type == signals.VIDEO_QUIT:
                 # close thread after task_done
                 alive = False
-            elif signal.event_type == signals.VIDEO_SET_MODE:
-                self.set_mode(*signal.params)
-            elif signal.event_type == signals.VIDEO_PUT_GLYPH:
-                self.put_glyph(*signal.params)
-            elif signal.event_type == signals.VIDEO_CLEAR_ROWS:
-                self.clear_rows(*signal.params)
-            elif signal.event_type == signals.VIDEO_SCROLL_UP:
-                self.scroll_up(*signal.params)
-            elif signal.event_type == signals.VIDEO_SCROLL_DOWN:
-                self.scroll_down(*signal.params)
-            elif signal.event_type == signals.VIDEO_SET_PALETTE:
-                self.set_palette(*signal.params)
-            elif signal.event_type == signals.VIDEO_SET_CURSOR_SHAPE:
-                self.set_cursor_shape(*signal.params)
-            elif signal.event_type == signals.VIDEO_SET_CURSOR_ATTR:
-                self.set_cursor_attr(*signal.params)
-            elif signal.event_type == signals.VIDEO_SHOW_CURSOR:
-                self.show_cursor(*signal.params)
-            elif signal.event_type == signals.VIDEO_MOVE_CURSOR:
-                self.move_cursor(*signal.params)
-            elif signal.event_type == signals.VIDEO_SET_PAGE:
-                self.set_page(*signal.params)
-            elif signal.event_type == signals.VIDEO_COPY_PAGE:
-                self.copy_page(*signal.params)
-            elif signal.event_type == signals.VIDEO_SET_BORDER_ATTR:
-                self.set_border_attr(*signal.params)
-            elif signal.event_type == signals.VIDEO_SET_COMPOSITE:
-                self.set_composite(*signal.params)
-            elif signal.event_type == signals.VIDEO_BUILD_GLYPHS:
-                self.build_glyphs(*signal.params)
-            elif signal.event_type == signals.VIDEO_PUT_PIXEL:
-                self.put_pixel(*signal.params)
-            elif signal.event_type == signals.VIDEO_PUT_INTERVAL:
-                self.put_interval(*signal.params)
-            elif signal.event_type == signals.VIDEO_FILL_INTERVAL:
-                self.fill_interval(*signal.params)
-            elif signal.event_type == signals.VIDEO_PUT_RECT:
-                self.put_rect(*signal.params)
-            elif signal.event_type == signals.VIDEO_FILL_RECT:
-                self.fill_rect(*signal.params)
-            elif signal.event_type == signals.VIDEO_SET_CAPTION:
-                self.set_caption_message(*signal.params)
-            elif signal.event_type == signals.VIDEO_SET_CLIPBOARD_TEXT:
-                self.set_clipboard_text(*signal.params)
+            else:
+                try:
+                    self._handlers[signal.event_type](*signal.params)
+                except KeyError:
+                    pass
             self.video_queue.task_done()
 
     # signal handlers
