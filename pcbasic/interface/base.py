@@ -73,8 +73,8 @@ class Interface(object):
 
     def pause(self, message):
         """Pause and wait for a key."""
-        self._video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, message))
-        self._video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
+        self._video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (message,)))
+        self._video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (False,)))
         while True:
             signal = self._input_queue.get()
             if signal.event_type in (signals.KEYB_DOWN, signals.KEYB_QUIT):
@@ -180,7 +180,7 @@ class VideoPlugin(object):
                 # close thread after task_done
                 alive = False
             elif signal.event_type == signals.VIDEO_SET_MODE:
-                self.set_mode(signal.params)
+                self.set_mode(*signal.params)
             elif signal.event_type == signals.VIDEO_PUT_GLYPH:
                 self.put_glyph(*signal.params)
             elif signal.event_type == signals.VIDEO_CLEAR_ROWS:
@@ -194,9 +194,9 @@ class VideoPlugin(object):
             elif signal.event_type == signals.VIDEO_SET_CURSOR_SHAPE:
                 self.set_cursor_shape(*signal.params)
             elif signal.event_type == signals.VIDEO_SET_CURSOR_ATTR:
-                self.set_cursor_attr(signal.params)
+                self.set_cursor_attr(*signal.params)
             elif signal.event_type == signals.VIDEO_SHOW_CURSOR:
-                self.show_cursor(signal.params)
+                self.show_cursor(*signal.params)
             elif signal.event_type == signals.VIDEO_MOVE_CURSOR:
                 self.move_cursor(*signal.params)
             elif signal.event_type == signals.VIDEO_SET_PAGE:
@@ -204,11 +204,11 @@ class VideoPlugin(object):
             elif signal.event_type == signals.VIDEO_COPY_PAGE:
                 self.copy_page(*signal.params)
             elif signal.event_type == signals.VIDEO_SET_BORDER_ATTR:
-                self.set_border_attr(signal.params)
+                self.set_border_attr(*signal.params)
             elif signal.event_type == signals.VIDEO_SET_COMPOSITE:
                 self.set_composite(*signal.params)
             elif signal.event_type == signals.VIDEO_BUILD_GLYPHS:
-                self.build_glyphs(signal.params)
+                self.build_glyphs(*signal.params)
             elif signal.event_type == signals.VIDEO_PUT_PIXEL:
                 self.put_pixel(*signal.params)
             elif signal.event_type == signals.VIDEO_PUT_INTERVAL:
@@ -220,7 +220,7 @@ class VideoPlugin(object):
             elif signal.event_type == signals.VIDEO_FILL_RECT:
                 self.fill_rect(*signal.params)
             elif signal.event_type == signals.VIDEO_SET_CAPTION:
-                self.set_caption_message(signal.params)
+                self.set_caption_message(*signal.params)
             elif signal.event_type == signals.VIDEO_SET_CLIPBOARD_TEXT:
                 self.set_clipboard_text(*signal.params)
             self.video_queue.task_done()
@@ -244,7 +244,7 @@ class VideoPlugin(object):
 
     def set_composite(self, on, composite_colors):
         """Enable/disable composite artifacts."""
-        
+
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
 
@@ -355,7 +355,7 @@ class AudioPlugin(object):
                 # close thread
                 self.alive = False
             elif signal.event_type == signals.AUDIO_PERSIST:
-                self.persist(signal.params)
+                self.persist(*signal.params)
             elif signal.event_type == signals.AUDIO_TONE:
                 self.tone(*signal.params)
             elif signal.event_type == signals.AUDIO_NOISE:

@@ -186,7 +186,7 @@ class Sound(object):
 
     def persist(self, flag):
         """Set mixer persistence flag (runmode)."""
-        self._queues.audio.put(signals.Event(signals.AUDIO_PERSIST, flag))
+        self._queues.audio.put(signals.Event(signals.AUDIO_PERSIST, (flag,)))
 
     def rebuild(self):
         """Rebuild tone queues."""

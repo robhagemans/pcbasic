@@ -100,7 +100,7 @@ class TextScreen(object):
             fore, _, _, _ = self.mode.split_attr(attr & 0xf)
         else:
             fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (fore,)))
         self.cursor.reset_visibility()
         # redraw the text screen and rebuild text buffers in video plugin
         for pagenum in range(self.mode.num_pages):
