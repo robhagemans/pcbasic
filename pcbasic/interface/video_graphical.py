@@ -14,6 +14,11 @@ try:
 except ImportError:
     numpy = None
 
+from . import base
+from ..basic.base import signals
+from ..basic.base import scancode
+
+
 if platform.system() == 'Windows':
     # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
     # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
@@ -24,19 +29,24 @@ if platform.system() == 'Windows':
         # old versions of Windows don't have this in user32.dll
         pass
 
-from . import base
-
-from ..basic.base import signals
-from ..basic.base import scancode
 
 # percentage of the screen to leave unused for window decorations etc.
-display_slack = 15
+DISPLAY_SLACK = 15
 
 
+def apply_composite_artifacts(src_array, pixels=4):
+    """Process the canvas to apply composite colour artifacts."""
+    width, height = src_array.shape
+    s = [None]*pixels
+    for p in range(pixels):
+        s[p] = src_array[p:width:pixels]&(4//pixels)
+    for p in range(1,pixels):
+        s[0] = s[0]*2 + s[p]
+    return numpy.repeat(s[0], pixels, axis=0)
 
 
 class VideoGraphical(base.VideoPlugin):
-    """Graphical video plugin, base class """
+    """Graphical video plugin, base class."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise video plugin parameters."""
@@ -66,10 +76,6 @@ class VideoGraphical(base.VideoPlugin):
         self.window_width = None
         self.window_height = None
 
-
-    ###########################################################################
-    # miscellaneous helper functions
-
     def _normalise_pos(self, x, y):
         """Convert physical to logical coordinates within screen bounds."""
         if not self.size:
@@ -91,7 +97,7 @@ class VideoGraphical(base.VideoPlugin):
         if not self.force_native_pixel:
             # this assumes actual display aspect ratio is wider than 4:3
             # scale y to fit screen
-            canvas_y = (1 - display_slack/100.) * (
+            canvas_y = (1 - DISPLAY_SLACK/100.) * (
                         self.physical_size[1] // int(1 + border_width/100.))
             # scale x to match aspect ratio
             canvas_x = (canvas_y * self.aspect[0]) / self.aspect[1]
@@ -104,9 +110,9 @@ class VideoGraphical(base.VideoPlugin):
             pixel_y = int(canvas_y * (1 + border_width/100.))
             # leave part of the screen either direction unused
             # to account for task bars, window decorations, etc.
-            xmult = max(1, int((100.-display_slack) *
+            xmult = max(1, int((100.-DISPLAY_SLACK) *
                                         self.physical_size[0] / (100.*pixel_x)))
-            ymult = max(1, int((100.-display_slack) *
+            ymult = max(1, int((100.-DISPLAY_SLACK) *
                                         self.physical_size[1] / (100.*pixel_y)))
             # find the multipliers mx <= xmult, my <= ymult
             # such that mx * pixel_x / my * pixel_y
@@ -158,6 +164,7 @@ class EnvironmentCache(object):
     def __del__(self):
         """Clean up the cache."""
         self.close()
+
 
 class ClipboardInterface(object):
     """Clipboard user interface."""
@@ -280,14 +287,3 @@ class ClipboardInterface(object):
         elif scan == scancode.DOWN:
             # move selection head down
             self.move(self.select_stop[0]+1, self.select_stop[1])
-
-
-def apply_composite_artifacts(src_array, pixels=4):
-    """Process the canvas to apply composite colour artifacts."""
-    width, height = src_array.shape
-    s = [None]*pixels
-    for p in range(pixels):
-        s[p] = src_array[p:width:pixels]&(4//pixels)
-    for p in range(1,pixels):
-        s[0] = s[0]*2 + s[p]
-    return numpy.repeat(s[0], pixels, axis=0)
