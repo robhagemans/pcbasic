@@ -128,19 +128,14 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # set clipboard handler to SDL2
         self.clipboard_handler = get_clipboard_handler()
         # display palettes for blink states 0, 1
-        self.show_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
+        self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
+        self._saved_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         # get physical screen dimensions (needs to be called before set_mode)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
         self.move_cursor(1, 1)
         self.set_page(0, 0)
         # set_mode should be first event on queue
-        # support for CGA composite
-        self.composite_palette = sdl2.SDL_AllocPalette(256)
-        composite_colors = video_graphical.composite_640.get(
-                self.composite_card, video_graphical.composite_640['cga'])
-        colors = (sdl2.SDL_Color * 256)(*[sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in composite_colors])
-        sdl2.SDL_SetPaletteColors(self.composite_palette, colors, 0, 256)
         # check if we can honour scaling=smooth
         if self.smooth:
             # pointer to the zoomed surface
@@ -176,9 +171,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_FreeSurface(self.work_surface)
             sdl2.SDL_FreeSurface(self.overlay)
             # free palettes
-            for p in self.show_palette:
+            for p in self._palette + self._saved_palette:
                 sdl2.SDL_FreePalette(p)
-            sdl2.SDL_FreePalette(self.composite_palette)
             # close IME
             sdl2.SDL_StopTextInput()
             # close SDL2
@@ -437,10 +431,9 @@ class VideoSDL2(video_graphical.VideoGraphical):
         if self._composite:
             self.work_pixels[:] = video_graphical.apply_composite_artifacts(
                             self.pixels[self.vpagenum], 4//self.bitsperpixel)
-            sdl2.SDL_SetSurfacePalette(self.work_surface, self.composite_palette)
         else:
             self.work_pixels[:] = self.pixels[self.vpagenum]
-            sdl2.SDL_SetSurfacePalette(self.work_surface, self.show_palette[self.blink_state])
+        sdl2.SDL_SetSurfacePalette(self.work_surface, self._palette[self.blink_state])
         # apply cursor to work surface
         self._show_cursor(True)
         # convert 8-bit work surface to (usually) 32-bit display surface format
@@ -609,8 +602,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
             show_palette_1 += [b]*self.num_fore_attrs
         colors_0 = (sdl2.SDL_Color * 256)(*(sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in show_palette_0))
         colors_1 = (sdl2.SDL_Color * 256)(*(sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in show_palette_1))
-        sdl2.SDL_SetPaletteColors(self.show_palette[0], colors_0, 0, 256)
-        sdl2.SDL_SetPaletteColors(self.show_palette[1], colors_1, 0, 256)
+        sdl2.SDL_SetPaletteColors(self._palette[0], colors_0, 0, 256)
+        sdl2.SDL_SetPaletteColors(self._palette[1], colors_1, 0, 256)
         self.screen_changed = True
 
     def set_border_attr(self, attr):
@@ -618,9 +611,16 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.border_attr = attr
         self.screen_changed = True
 
-    def set_composite(self, on):
+    def set_composite(self, on, composite_colors):
         """Enable/disable composite artifacts."""
+        if on != self._composite:
+            self._palette, self._saved_palette = self._saved_palette, self._palette
+        if on:
+            colors = (sdl2.SDL_Color * 256)(*[sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in composite_colors])
+            sdl2.SDL_SetPaletteColors(self._palette[0], colors, 0, 256)
+            sdl2.SDL_SetPaletteColors(self._palette[1], colors, 0, 256)
         self._composite = on
+        self.screen_changed = True
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""

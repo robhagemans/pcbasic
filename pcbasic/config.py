@@ -537,8 +537,6 @@ class Settings(object):
             'nokill': self.get('nokill'),
             'altgr': self.get('altgr'),
             'caption': self.get('caption'),
-            'composite_monitor': (self.get('monitor') == 'composite'),
-            'composite_card': self.get('video'),
             'copy_paste': self.get('copy-paste'),
             'pen': self.get('pen'),
             'icon': ICON,

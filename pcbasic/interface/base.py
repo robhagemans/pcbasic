@@ -242,7 +242,7 @@ class VideoPlugin(object):
     def set_border_attr(self, attr):
         """Change the border attribute."""
 
-    def set_composite(self, on):
+    def set_composite(self, on, composite_colors):
         """Enable/disable composite artifacts."""
         
     def clear_rows(self, back_attr, start, stop):

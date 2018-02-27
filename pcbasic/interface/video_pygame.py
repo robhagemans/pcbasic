@@ -68,13 +68,8 @@ class VideoPygame(video_graphical.VideoGraphical):
         # working palette - attribute index in blue channel
         self.work_palette = [(0, 0, index) for index in range(256)]
         # display palettes for blink states 0, 1
-        self.show_palette = [None, None]
-        # composite palette
-        try:
-            self.composite_640_palette = video_graphical.composite_640[
-                                                            self.composite_card]
-        except KeyError:
-            self.composite_640_palette = video_graphical.composite_640['cga']
+        self._palette = [None, None]
+        self._saved_palette = [None, None]
         # text attributes supported
         self.mode_has_blink = True
         # update cycle
@@ -373,9 +368,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             create_feedback(workscreen, self.clipboard.selection_rect)
         if self._composite:
             screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
-            screen.set_palette(self.composite_640_palette)
-        else:
-            screen.set_palette(self.show_palette[self.blink_state])
+        screen.set_palette(self._palette[self.blink_state])
         if self.smooth:
             pygame.transform.smoothscale(screen.convert(self.display),
                                          self.display.get_size(), self.display)
@@ -478,10 +471,10 @@ class VideoPygame(video_graphical.VideoGraphical):
         # fill up the 8-bit palette with all combinations we need
         # blink states: 0 light up, 1 light down
         # bottom 128 are non-blink, top 128 blink to background
-        self.show_palette[0] = rgb_palette_0[:self.num_fore_attrs] * (256//self.num_fore_attrs)
-        self.show_palette[1] = rgb_palette_1[:self.num_fore_attrs] * (128//self.num_fore_attrs)
+        self._palette[0] = rgb_palette_0[:self.num_fore_attrs] * (256//self.num_fore_attrs)
+        self._palette[1] = rgb_palette_1[:self.num_fore_attrs] * (128//self.num_fore_attrs)
         for b in rgb_palette_1[:self.num_back_attrs] * (128//self.num_fore_attrs//self.num_back_attrs):
-            self.show_palette[1] += [b]*self.num_fore_attrs
+            self._palette[1] += [b]*self.num_fore_attrs
         self.screen_changed = True
 
     def set_border_attr(self, attr):
@@ -489,9 +482,14 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.border_attr = attr
         self.screen_changed = True
 
-    def set_composite(self, on):
+    def set_composite(self, on, composite_colors):
         """Enable/disable composite artifacts."""
+        if on != self._composite:
+            self._palette, self._saved_palette = self._saved_palette, self._palette
+        if on:
+            self._palette = [composite_colors] * 2
         self._composite = on
+        self.screen_changed = True
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
