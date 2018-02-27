@@ -325,6 +325,10 @@ class Program(object):
             converter.unprotect(g, self.bytecode)
         elif g.filetype == 'A':
             # assume ASCII file
+            # erase() only writes the terminator
+            # so we need to get rid of the old code which is still in memory
+            # or it'll end up after the new code in memory
+            self.bytecode.truncate()
             # anything but numbers or whitespace: Direct Statement in File
             self.merge(g)
         else:
