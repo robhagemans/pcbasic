@@ -557,14 +557,27 @@ class Settings(object):
     def has_interface(self):
         return self.get('interface') != 'none'
 
-    def get_interfaces(self):
-        """Return name of interface plugin."""
-        interface = self.get('interface')
-        return interface or 'graphical', self.get('sound-engine')
-
     def get_interface_parameters(self):
         """Return dictionary of interface parameters."""
-        iface_params = dict(zip(('interface_name', 'audio_name'), self.get_interfaces()))
+        interface = self.get('interface')
+        # categorical interfaces
+        categories = {
+            # (video, audio), in order of preference
+            'text': (('curses', ''), ('ansi', '')),
+            'graphical': (('sdl2', 'sdl2'), ('pygame', 'pygame')),
+        }
+        if not interface:
+            # default: try graphical first, then text, then cli
+            iface_list = categories['graphical'] + categories['text'] + (('cli', ''),)
+        else:
+            try:
+                iface_list = categories[interface]
+            except KeyError:
+                iface_list = ((interface, interface),)
+        iface_params = {
+            'try_interfaces': iface_list,
+            'audio_override': self.get('sound-engine'),
+        }
         iface_params.update(self.get_video_parameters())
         iface_params.update(self.get_audio_parameters())
         return iface_params

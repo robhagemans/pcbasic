@@ -56,7 +56,7 @@ class AudioPortAudio(base.AudioPlugin):
     # one wavelength at 37 Hz is 1192 samples at 44100 Hz
     chunk_length = 1192 * 4
 
-    def __init__(self, audio_queue):
+    def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not pyaudio:
             logging.warning('PyAudio module not found. Failed to initialise PortAudio audio plugin.')

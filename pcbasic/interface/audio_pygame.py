@@ -45,7 +45,7 @@ class AudioPygame(base.AudioPlugin):
     # to avoid high-ish cpu load from the sound server.
     quiet_quit = 10000
 
-    def __init__(self, audio_queue):
+    def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not pygame:
             logging.warning('PyGame module not found. Failed to initialise PyGame audio plugin.')

@@ -23,16 +23,25 @@ class Interface(object):
     # millisecond delay
     delay = 12
 
-    def __init__(self, interface_name, audio_name, wait=False, **kwargs):
+    def __init__(self, try_interfaces, audio_override=None, wait=False, **kwargs):
         """Initialise interface."""
         self._input_queue = Queue.Queue()
         self._video_queue = Queue.Queue()
         self._audio_queue = Queue.Queue()
         self._wait = wait
-        self._video = _get_video_plugin(
-                self._input_queue, self._video_queue, interface_name, **kwargs)
-        self._audio = _get_audio_plugin(
-                self._audio_queue, audio_name or interface_name, **kwargs)
+        self._video, self._audio = None, None
+        for video, audio in try_interfaces:
+            self._video = _init_video_plugin(video, self._input_queue, self._video_queue, **kwargs)
+            if self._video:
+                break
+        else:
+            # video plugin is necessary, fail without it
+            logging.error('Failed to initialise any video plugin.')
+            raise InitFailed()
+        self._audio = _init_audio_plugin(audio_override or audio, self._audio_queue, **kwargs)
+        if not self._audio:
+            # audio fallback to no-plugin
+            self._audio = AudioPlugin(self._audio_queue, **kwargs)
 
     def get_queues(self):
         """Retrieve interface queues."""
@@ -120,28 +129,20 @@ video_plugins = {}
 def video_plugin(name):
     """Decorator to register video plugin class."""
     def decorated_plugin(cls):
-        video_plugins[name] = ((cls,), None)
+        video_plugins[name] = cls
         return cls
     return decorated_plugin
 
-def _get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
-    """Find and initialise video plugin for given interface."""
-    while True:
-        # select interface
-        plugins, fallback = video_plugins[interface_name]
-        for plugin_class in plugins:
-            try:
-                plugin = plugin_class(input_queue, video_queue, **kwargs)
-            except InitFailed:
-                logging.debug('Could not initialise video plugin "%s".', plugin_class.__name__)
-            else:
-                return plugin
-        if fallback:
-            logging.info('Could not initialise %s interface. Falling back to %s interface.', interface_name, fallback)
-            interface_name = fallback
-        else:
-            logging.info('Could not initialise %s interface.', interface_name)
-            raise InitFailed()
+def _init_video_plugin(name, *args, **kwargs):
+    """Retieve and initialise plugin."""
+    try:
+        return video_plugins[name](*args, **kwargs)
+    except KeyError:
+        if name and name != 'none':
+            logging.error('Unknown video plugin: `%s`.', name)
+    except InitFailed as e:
+        logging.info('Could not initialise `%s` video plugin: %s.', name, e)
+    return None
 
 
 class VideoPlugin(object):
@@ -306,28 +307,26 @@ audio_plugins = {}
 def audio_plugin(name):
     """Decorator to register audio plugin class."""
     def decorated_plugin(cls):
-        audio_plugins[name] = (cls, AudioPlugin)
+        audio_plugins[name] = cls
         return cls
     return decorated_plugin
 
-def _get_audio_plugin(audio_queue, interface_name, **kwargs):
-    """Find and initialise audio plugin for given interface."""
-    if interface_name not in audio_plugins:
-        return AudioPlugin(audio_queue)
-    for plugin_class in audio_plugins[interface_name]:
-        try:
-            plugin = plugin_class(audio_queue)
-        except InitFailed:
-            logging.debug('Could not initialise audio plugin "%s".', plugin_class.__name__)
-        else:
-            return plugin
-    raise InitFailed()
+def _init_audio_plugin(name, *args, **kwargs):
+    """Retieve and initialise plugin."""
+    try:
+        return audio_plugins[name](*args, **kwargs)
+    except KeyError:
+        if name and name != 'none':
+            logging.error('Unknown audio plugin: `%s`.', name)
+    except InitFailed as e:
+        logging.info('Could not initialise `%s` audio plugin: %s.', name, e)
+    return None
 
 
 class AudioPlugin(object):
     """Base class for audio interface plugins."""
 
-    def __init__(self, audio_queue):
+    def __init__(self, audio_queue, **kwargs):
         """Setup the audio interface and start the event handling thread."""
         # sound generators for sounds not played yet
         # if not None, something is playing

@@ -28,7 +28,7 @@ from . import base
 class AudioBeep(base.AudioPlugin):
     """Audio plugin based on the PC speaker."""
 
-    def __init__(self, audio_queue):
+    def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if platform.system() == 'Windows':
             self.beeper = WinBeeper
