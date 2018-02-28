@@ -70,7 +70,7 @@ class VideoCurses(base.VideoPlugin):
         self._encoding = locale.getpreferredencoding()
         self.curses_init = False
         if not curses:
-            raise base.InitFailed()
+            raise base.InitFailed('`Module `curses` not found')
         # set the ESC-key delay to 25 ms unless otherwise set
         # set_escdelay seems to be unavailable on python curses.
         if not os.environ.has_key('ESCDELAY'):

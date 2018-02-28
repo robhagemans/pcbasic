@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
-import logging
 import Queue
 from collections import deque
 from contextlib import contextmanager
@@ -59,11 +58,9 @@ class AudioPortAudio(base.AudioPlugin):
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not pyaudio:
-            logging.warning('PyAudio module not found. Failed to initialise PortAudio audio plugin.')
-            raise base.InitFailed()
+            raise base.InitFailed('Module `pyaudio` not found')
         if not numpy:
-            logging.warning('NumPy module not found. Failed to initialise PortAudio audio plugin.')
-            raise base.InitFailed()
+            raise base.InitFailed('Module `numpy` not found')
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice

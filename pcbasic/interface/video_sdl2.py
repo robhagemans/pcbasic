@@ -53,11 +53,9 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise SDL2 interface."""
         if not sdl2:
-            logging.debug('PySDL2 module not found.')
-            raise base.InitFailed()
+            raise base.InitFailed('Module `sdl2` not found')
         if not numpy:
-            logging.debug('NumPy module not found.')
-            raise base.InitFailed()
+            raise base.InitFailed('Module `numpy` not found')
         video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
         # display & border
         # border attribute
@@ -104,11 +102,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # initialise SDL
         if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):
             # SDL not initialised correctly
-            logging.error('Could not initialise SDL2: %s', sdl2.SDL_GetError())
             # reset the environment variable
             # to not throw PyGame off if we try that later
             self._env.close()
-            raise base.InitFailed()
+            raise base.InitFailed('Could not initialise SDL2: %s' % sdl2.SDL_GetError())
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
         self.physical_size = display_mode.w, display_mode.h

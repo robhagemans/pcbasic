@@ -37,8 +37,7 @@ class Interface(object):
                 break
         else:
             # video plugin is necessary, fail without it
-            logging.error('Failed to initialise any video plugin.')
-            raise InitFailed()
+            raise InitFailed('Failed to initialise any video plugin.')
         self._audio = audio_plugins.create(
                     audio_override or audio, self._audio_queue, **kwargs)
         if not self._audio:
@@ -121,12 +120,19 @@ class Interface(object):
 class InitFailed(Exception):
     """Initialisation failed."""
 
+    def __init__(self, message=''):
+        self._message = message
+
+    def __str__(self):
+        return self._message
+
 
 class PluginRegister(object):
     """Plugin register."""
 
-    def __init__(self):
+    def __init__(self, name=''):
         """Initialise plugin register."""
+        self._name = name
         self._plugins = {}
 
     def register(self, name):
@@ -146,16 +152,16 @@ class PluginRegister(object):
             return self._plugins[name](*args, **kwargs)
         except KeyError:
             if name and name != 'none':
-                logging.error('Unknown plugin: `%s`.', name)
+                logging.error('Unknown %s plugin `%s`', self._name, name)
         except InitFailed as e:
-            logging.info('Could not initialise `%s` plugin: %s.', name, e)
+            logging.info('Could not initialise %s plugin `%s`: %s', self._name, name, str(e))
         return None
 
 
 ###############################################################################
 # video plugin
 
-video_plugins = PluginRegister()
+video_plugins = PluginRegister('video')
 
 class VideoPlugin(object):
     """Base class for display/input interface plugins."""
@@ -313,7 +319,7 @@ class VideoPlugin(object):
 ###############################################################################
 # audio plugin
 
-audio_plugins = PluginRegister()
+audio_plugins = PluginRegister('audio')
 
 
 class AudioPlugin(object):

@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 
-import logging
 import Queue
 from collections import deque
 
@@ -48,14 +47,11 @@ class AudioPygame(base.AudioPlugin):
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not pygame:
-            logging.warning('PyGame module not found. Failed to initialise PyGame audio plugin.')
-            raise base.InitFailed()
+            raise base.InitFailed('Module `pygame` not found')
         if not numpy:
-            logging.warning('NumPy module not found. Failed to initialise PyGame audio plugin.')
-            raise base.InitFailed()
+            raise base.InitFailed('Mdoule `numpy` not found')
         if not mixer:
-            logging.warning('PyGame mixer module not found. Failed to initialise PyGame audio plugin.')
-            raise base.InitFailed()
+            raise base.InitFailed('Module `mixer` not found')
         # this must be called before pygame.init() in the video plugin
         mixer.pre_init(synthesiser.sample_rate, -synthesiser.sample_bits, channels=1, buffer=1024) #4096
         # synthesisers

@@ -45,11 +45,9 @@ class AudioSDL2(base.AudioPlugin):
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not sdl2:
-            logging.warning('SDL2 module not found. Failed to initialise SDL2 audio plugin.')
-            raise base.InitFailed()
+            raise base.InitFailed('Module `sdl2` not found')
         if not numpy:
-            logging.warning('NumPy module not found. Failed to initialise SDL2 audio plugin.')
-            raise base.InitFailed()
+            raise base.InitFailed('Module `numpy` module not found')
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice

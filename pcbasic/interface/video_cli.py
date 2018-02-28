@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import time
-import logging
 import threading
 import Queue
 import platform
@@ -42,8 +41,7 @@ class VideoCLI(base.VideoPlugin):
         """Initialise command-line interface."""
         try:
             if platform.system() not in (b'Darwin',  b'Windows') and not sys.stdin.isatty():
-                logging.warning('Text-based interface requires a terminal as input device.')
-                raise base.InitFailed()
+                raise base.InitFailed('Text-based interface requires a terminal (tty).')
         except AttributeError:
             pass
         base.VideoPlugin.__init__(self, input_queue, video_queue)

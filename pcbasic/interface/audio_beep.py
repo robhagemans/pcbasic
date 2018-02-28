@@ -38,7 +38,7 @@ class AudioBeep(base.AudioPlugin):
             else:
                 self.beeper = Beeper
         if not self.beeper.ok():
-            raise base.InitFailed()
+            raise base.InitFailed('Beeper not supported')
         # sound generators for each voice
         self.generators = [deque(), deque(), deque(), deque()]
         base.AudioPlugin.__init__(self, audio_queue)
