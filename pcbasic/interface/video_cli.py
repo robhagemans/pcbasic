@@ -41,8 +41,7 @@ class VideoCLI(base.VideoPlugin):
         """Initialise command-line interface."""
         try:
             if platform.system() not in (b'Darwin',  b'Windows') and not sys.stdin.isatty():
-                logging.warning('Input device is not a terminal. '
-                                'Could not initialise text-based interface.')
+                logging.warning('Text-based interface requires a terminal as input device.')
                 raise base.InitFailed()
         except AttributeError:
             pass

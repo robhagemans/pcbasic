@@ -26,8 +26,7 @@ from .audio_portaudio import AudioPortAudio
 
 video_plugins.update({
     # interface_name: ((video_plugin_name, ...), fallback)
-    'none': ((VideoPlugin,), None),
-    'cli': ((VideoCLI,), 'none'),
+    'cli': ((VideoCLI,), None),
     'text': ((VideoCurses, VideoANSI), 'cli'),
     'graphical':  ((VideoSDL2, VideoPygame,), 'text'),
     # force a particular plugin to be used

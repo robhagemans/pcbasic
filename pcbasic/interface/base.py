@@ -133,6 +133,7 @@ def _get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
             logging.info('Could not initialise %s interface. Falling back to %s interface.', interface_name, fallback)
             interface_name = fallback
         else:
+            logging.info('Could not initialise %s interface.', interface_name)
             raise InitFailed()
 
 
