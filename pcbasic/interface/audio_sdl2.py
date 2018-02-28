@@ -38,7 +38,7 @@ min_samples_buffer = 2*callback_chunk_length
 ##############################################################################
 # plugin
 
-@base.audio_plugin('sdl2')
+@base.audio_plugins.register('sdl2')
 class AudioSDL2(base.AudioPlugin):
     """SDL2-based audio plugin."""
 

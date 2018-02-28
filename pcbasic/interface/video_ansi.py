@@ -15,7 +15,7 @@ from .video_cli import encoding
 from . import ansi
 
 
-@base.video_plugin('ansi')
+@base.video_plugins.register('ansi')
 class VideoANSI(video_cli.VideoCLI):
     """Text interface implemented with ANSI escape sequences."""
 

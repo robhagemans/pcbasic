@@ -48,7 +48,7 @@ def suppress_output():
     os.close(null_fds[1])
 
 
-@base.audio_plugin('portaudio')
+@base.audio_plugins.register('portaudio')
 class AudioPortAudio(base.AudioPlugin):
     """SDL2-based audio plugin."""
 

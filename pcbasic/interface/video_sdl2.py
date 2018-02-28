@@ -46,7 +46,7 @@ from . import base
 from . import video_graphical
 
 
-@base.video_plugin('sdl2')
+@base.video_plugins.register('sdl2')
 class VideoSDL2(video_graphical.VideoGraphical):
     """SDL2-based graphical interface."""
 

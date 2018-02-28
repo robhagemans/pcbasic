@@ -34,7 +34,7 @@ else:
     eof = uea.CTRL_d
 
 
-@base.video_plugin('cli')
+@base.video_plugins.register('cli')
 class VideoCLI(base.VideoPlugin):
     """Command-line interface."""
 
