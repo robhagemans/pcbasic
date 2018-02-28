@@ -93,32 +93,32 @@ class AudioSDL2(base.AudioPlugin):
     def hush(self):
         """Stop sound."""
         for voice in range(4):
-            self.next_tone[voice] = None
+            self._next_tone[voice] = None
             while self.generators[voice]:
                 self.generators[voice].popleft()
         sdl2.SDL_LockAudioDevice(self.dev)
         self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
         sdl2.SDL_UnlockAudioDevice(self.dev)
 
-    def work(self):
+    def _work(self):
         """Replenish sample buffer."""
         for voice in range(4):
             if len(self.samples[voice]) > min_samples_buffer:
                 # nothing to do
                 continue
             while True:
-                if self.next_tone[voice] is None or self.next_tone[voice].loop:
+                if self._next_tone[voice] is None or self._next_tone[voice].loop:
                     try:
                         # looping tone will be interrupted by any new tone appearing in the generator queue
-                        self.next_tone[voice] = self.generators[voice].popleft()
+                        self._next_tone[voice] = self.generators[voice].popleft()
                     except IndexError:
-                        if self.next_tone[voice] is None:
+                        if self._next_tone[voice] is None:
                             current_chunk = None
                             break
-                current_chunk = self.next_tone[voice].build_chunk(chunk_length)
+                current_chunk = self._next_tone[voice].build_chunk(chunk_length)
                 if current_chunk is not None:
                     break
-                self.next_tone[voice] = None
+                self._next_tone[voice] = None
             if current_chunk is not None:
                 # append chunk to samples list
                 # lock to ensure callback doesn't try to access the list too

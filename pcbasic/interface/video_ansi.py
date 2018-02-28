@@ -58,7 +58,7 @@ class VideoANSI(video_cli.VideoCLI):
         self.logger.disabled = False
         self._term_echo()
 
-    def _check_display(self):
+    def _work(self):
         """Handle screen and interface events."""
         if self.cursor_visible and self.last_pos != (self.cursor_row, self.cursor_col):
             sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))

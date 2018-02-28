@@ -51,21 +51,21 @@ class AudioBeep(base.AudioPlugin):
     def hush(self):
         """Stop sound."""
         for voice in range(4):
-            self.next_tone[voice] = None
+            self._next_tone[voice] = None
             while self.generators[voice]:
                 self.generators[voice].popleft()
         self.beeper.hush()
 
-    def work(self):
+    def _work(self):
         """Replenish sample buffer."""
         for voice in range(4):
-            if self.next_tone[voice] is None or self.next_tone[voice].loop:
+            if self._next_tone[voice] is None or self._next_tone[voice].loop:
                 try:
-                    self.next_tone[voice] = self.generators[voice].popleft()
+                    self._next_tone[voice] = self.generators[voice].popleft()
                 except IndexError:
-                    if self.next_tone[voice] is None:
+                    if self._next_tone[voice] is None:
                         continue
-            self.next_tone[voice] = self.next_tone[voice].emit()
+            self._next_tone[voice] = self._next_tone[voice].emit()
 
 
 class Beeper(object):

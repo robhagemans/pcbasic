@@ -178,41 +178,46 @@ class VideoPlugin(object):
         """Final initialisation."""
         return self
 
+    # called by Interface
+
     def cycle(self):
         """Video/input event cycle."""
         if self.alive:
-            self.alive = self._drain_video_queue()
+            self._drain_queue()
         if self.alive:
-            self._check_display()
+            self._work()
             self._check_input()
 
     def sleep(self, ms):
         """Sleep a tick"""
         time.sleep(ms/1000.)
 
-    def _check_display(self):
-        """Display update cycle."""
+    # private methods
 
-    def _check_input(self):
-        """Input devices update cycle."""
-
-    def _drain_video_queue(self):
+    def _drain_queue(self):
         """Drain signal queue."""
-        alive = True
-        while alive:
+        while True:
             try:
                 signal = self.video_queue.get(False)
             except Queue.Empty:
                 return True
             if signal.event_type == signals.VIDEO_QUIT:
                 # close thread after task_done
-                alive = False
+                self.alive = False
             else:
                 try:
                     self._handlers[signal.event_type](*signal.params)
                 except KeyError:
                     pass
             self.video_queue.task_done()
+
+    # plugin overrides
+
+    def _work(self):
+        """Display update cycle."""
+
+    def _check_input(self):
+        """Input devices update cycle."""
 
     # signal handlers
 
@@ -310,7 +315,7 @@ class AudioPlugin(object):
         """Setup the audio interface and start the event handling thread."""
         # sound generators for sounds not played yet
         # if not None, something is playing
-        self.next_tone = [None, None, None, None]
+        self._next_tone = [None, None, None, None]
         self.alive = True
         self.playing = False
         self.audio_queue = audio_queue
@@ -322,13 +327,17 @@ class AudioPlugin(object):
         """Perform any necessary initialisations."""
         return self
 
+    # called by Interface
+
     def cycle(self):
         """Audio event cycle."""
         if self.alive:
             self._drain_queue()
         if self.alive:
-            self.playing = self.next_tone != [None, None, None, None]
-            self.work()
+            self.playing = self._next_tone != [None, None, None, None]
+            self._work()
+
+    # private methods
 
     def _drain_queue(self):
         """Drain audio queue."""
@@ -350,8 +359,12 @@ class AudioPlugin(object):
             elif signal.event_type == signals.AUDIO_NOISE:
                 self.noise(*signal.params)
 
-    def work(self):
+    # plugin overrides
+
+    def _work(self):
         """Play some of the sounds queued."""
+
+    # signal handlers
 
     def hush(self):
         """Be quiet."""

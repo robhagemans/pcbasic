@@ -324,7 +324,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         """Sleep a tick to avoid hogging the cpu."""
         pygame.time.wait(ms)
 
-    def _check_display(self):
+    def _work(self):
         """Check screen and blink events; update screen if necessary."""
         if not self._has_window:
             return

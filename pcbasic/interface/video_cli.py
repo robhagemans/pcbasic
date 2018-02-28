@@ -72,7 +72,7 @@ class VideoCLI(base.VideoPlugin):
         if self.last_col and self.cursor_col != self.last_col:
             sys.stdout.write('\n')
 
-    def _check_display(self):
+    def _work(self):
         """Display update cycle."""
         self._update_position()
 

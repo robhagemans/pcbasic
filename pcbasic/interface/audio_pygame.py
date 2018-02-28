@@ -95,13 +95,13 @@ class AudioPygame(base.AudioPlugin):
         """Stop sound."""
         for voice in range(4):
             self._stop_channel(voice)
-            self.next_tone[voice] = None
+            self._next_tone[voice] = None
             while self.generators[voice]:
                 self.generators[voice].popleft()
 
-    def work(self):
+    def _work(self):
         """Replenish sample buffer."""
-        if (sum(len(q) for q in self.generators) == 0 and self.next_tone == [None, None, None, None]):
+        if (sum(len(q) for q in self.generators) == 0 and self._next_tone == [None, None, None, None]):
             # check if mixer can be quit
             self._check_quit()
             return
@@ -111,17 +111,17 @@ class AudioPygame(base.AudioPlugin):
                 # nothing to do
                 continue
             while True:
-                if self.next_tone[voice] is None or self.next_tone[voice].loop:
+                if self._next_tone[voice] is None or self._next_tone[voice].loop:
                     try:
-                        self.next_tone[voice] = self.generators[voice].popleft()
+                        self._next_tone[voice] = self.generators[voice].popleft()
                     except IndexError:
-                        if self.next_tone[voice] is None:
+                        if self._next_tone[voice] is None:
                             current_chunk = None
                             break
-                current_chunk = self.next_tone[voice].build_chunk(chunk_length)
+                current_chunk = self._next_tone[voice].build_chunk(chunk_length)
                 if current_chunk is not None:
                     break
-                self.next_tone[voice] = None
+                self._next_tone[voice] = None
             if current_chunk is not None:
                 # enqueue chunk in mixer
                 snd = pygame.sndarray.make_sound(current_chunk)
@@ -129,7 +129,7 @@ class AudioPygame(base.AudioPlugin):
 
     def _check_quit(self):
         """Quit the mixer if not running a program and sound quiet for a while."""
-        if self.next_tone != [None, None, None, None]:
+        if self._next_tone != [None, None, None, None]:
             self.quiet_ticks = 0
         else:
             self.quiet_ticks += 1

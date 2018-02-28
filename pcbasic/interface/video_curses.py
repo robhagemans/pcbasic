@@ -132,7 +132,7 @@ class VideoCurses(base.VideoPlugin):
             curses.echo()
             curses.endwin()
 
-    def _check_display(self):
+    def _work(self):
         """Handle screen and interface events."""
         if self.cursor_visible:
             self.window.move(self.cursor_row-1, self.cursor_col-1)
