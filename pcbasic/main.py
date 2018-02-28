@@ -23,7 +23,7 @@ from . import basic
 from . import state
 from . import config
 from .basic import __version__
-
+from .interface import Interface, InitFailed
 
 def main(*arguments):
     """Wrapper for run() to deal with Ctrl-C, stdio and pipes."""
@@ -102,7 +102,6 @@ def convert(settings):
 
 def launch_session(settings):
     """Start an interactive interpreter session."""
-    from .interface import Interface, InitFailed
     try:
         Interface(**settings.get_interface_parameters()).launch(
                 run_session, **settings.get_launch_parameters())
