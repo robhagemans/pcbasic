@@ -59,6 +59,7 @@ if curses:
     }
 
 
+@base.video_plugin('curses')
 class VideoCurses(base.VideoPlugin):
     """Curses-based text interface."""
 

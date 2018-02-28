@@ -117,6 +117,13 @@ class InitFailed(Exception):
 video_plugins = {}
 
 
+def video_plugin(name):
+    """Decorator to register video plugin class."""
+    def decorated_plugin(cls):
+        video_plugins[name] = ((cls,), None)
+        return cls
+    return decorated_plugin
+
 def _get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
     """Find and initialise video plugin for given interface."""
     while True:
@@ -296,8 +303,17 @@ class VideoPlugin(object):
 audio_plugins = {}
 
 
+def audio_plugin(name):
+    """Decorator to register audio plugin class."""
+    def decorated_plugin(cls):
+        audio_plugins[name] = (cls, AudioPlugin)
+        return cls
+    return decorated_plugin
+
 def _get_audio_plugin(audio_queue, interface_name, **kwargs):
     """Find and initialise audio plugin for given interface."""
+    if interface_name not in audio_plugins:
+        return AudioPlugin(audio_queue)
     for plugin_class in audio_plugins[interface_name]:
         try:
             plugin = plugin_class(audio_queue)

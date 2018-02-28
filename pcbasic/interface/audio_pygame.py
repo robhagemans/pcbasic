@@ -37,6 +37,7 @@ chunk_length = 1192 * 4
 ##############################################################################
 # plugin
 
+@base.audio_plugin('pygame')
 class AudioPygame(base.AudioPlugin):
     """Pygame-based audio plugin."""
 

@@ -29,6 +29,7 @@ from . import base
 from . import video_graphical
 
 
+@base.video_plugin('pygame')
 class VideoPygame(video_graphical.VideoGraphical):
     """Pygame-based graphical interface."""
 

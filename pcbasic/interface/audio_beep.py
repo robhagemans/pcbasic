@@ -24,6 +24,7 @@ from ..basic.base import signals
 from . import base
 
 
+@base.audio_plugin('beep')
 class AudioBeep(base.AudioPlugin):
     """Audio plugin based on the PC speaker."""
 
