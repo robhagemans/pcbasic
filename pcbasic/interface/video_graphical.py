@@ -33,6 +33,9 @@ if platform.system() == 'Windows':
 # percentage of the screen to leave unused for window decorations etc.
 DISPLAY_SLACK = 15
 
+# message displayed when Alt-F4 inhibited
+NOKILL_MESSAGE = u'to exit type <CTRL+BREAK> <ESC> SYSTEM'
+
 
 def apply_composite_artifacts(src_array, pixels=4):
     """Process the canvas to apply composite colour artifacts."""
@@ -66,7 +69,7 @@ class VideoGraphical(base.VideoPlugin):
         # ignore ALT+F4 and window X button
         self.nokill = kwargs.get('nokill', False)
         # window caption/title
-        self.caption = kwargs.get('caption', '')
+        self.caption = kwargs.get('caption', u'')
         # the following attributes must be overridden by child classes
         # size of display
         self.physical_size = ()

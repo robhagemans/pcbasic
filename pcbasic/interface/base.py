@@ -13,6 +13,9 @@ import threading
 
 from ..basic.base import signals
 
+# message displayed when wiating to close
+WAIT_MESSAGE = u'Press a key to close window'
+
 
 class Interface(object):
     """User interface for PC-BASIC session."""
@@ -53,7 +56,7 @@ class Interface(object):
             target(interface=self, **kwargs)
         finally:
             if self._wait:
-                self.pause('Press a key to close window')
+                self.pause(WAIT_MESSAGE)
             self.quit_output()
 
     def run(self):

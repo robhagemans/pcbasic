@@ -198,7 +198,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         if self.fullscreen:
              flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
         sdl2.SDL_DestroyWindow(self.display)
-        self.display = sdl2.SDL_CreateWindow(self.caption,
+        self.display = sdl2.SDL_CreateWindow(self.caption.encode('utf-8'),
                     sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED,
                     width, height, flags)
         self._set_icon()
@@ -276,7 +276,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                     sdl2.SDL_SetModState(sdl2.SDL_GetModState() & ~sdl2.KMOD_ALT)
             elif event.type == sdl2.SDL_QUIT:
                 if self.nokill:
-                    self.set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
+                    self.set_caption_message(video_graphical.NOKILL_MESSAGE)
                 else:
                     self.input_queue.put(signals.Event(signals.KEYB_QUIT))
         self._flush_keypress()
@@ -581,8 +581,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
-        title = self.caption + (' - ' + msg if msg else '')
-        sdl2.SDL_SetWindowTitle(self.display, title)
+        title = self.caption + (u' - ' + msg if msg else u'')
+        sdl2.SDL_SetWindowTitle(self.display, title.encode('utf-8'))
 
     def set_clipboard_text(self, text, mouse):
         """Put text on the clipboard."""

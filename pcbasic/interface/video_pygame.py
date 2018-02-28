@@ -116,7 +116,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         if self.smooth and self.display.get_bitsize() < 24:
             logging.warning("Smooth scaling not available on this display (depth %d < 24)", self.display.get_bitsize())
             self.smooth = False
-        pygame.display.set_caption(self.caption)
+        pygame.display.set_caption(self.caption.encode('utf-8'))
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
@@ -230,7 +230,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 self._resize_display(event.w, event.h)
             elif event.type == pygame.QUIT:
                 if self.nokill:
-                    self.set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
+                    self.set_caption_message(video_graphical.NOKILL_MESSAGE)
                 else:
                     self.input_queue.put(signals.Event(signals.KEYB_QUIT))
 
@@ -454,10 +454,8 @@ class VideoPygame(video_graphical.VideoGraphical):
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
-        if msg:
-            pygame.display.set_caption(self.caption + ' - ' + msg)
-        else:
-            pygame.display.set_caption(self.caption)
+        title = self.caption + (u' - ' + msg if msg else u'')
+        pygame.display.set_caption(title.encode('utf-8'))
 
     def set_clipboard_text(self, text, mouse):
         """Put text on the clipboard."""
@@ -637,6 +635,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         pygame.surfarray.pixels2d(self.canvas[pagenum].subsurface(
             pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))[:] = numpy.array(array).T
         self.screen_changed = True
+
 
 ###############################################################################
 # clipboard handling
