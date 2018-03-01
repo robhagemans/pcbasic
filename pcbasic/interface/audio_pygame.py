@@ -2,7 +2,7 @@
 PC-BASIC - audio_pygame.py
 Sound interface based on PyGame
 
-(c) 2013, 2014, 2015, 2016 Rob Hagemans
+(c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -29,8 +29,9 @@ from ..basic.base import signals
 from . import base
 from . import synthesiser
 
+
 # one wavelength at 37 Hz is 1192 samples at 44100 Hz
-chunk_length = 1192 * 4
+CHUNK_LENGTH = 1192 * 4
 
 
 ##############################################################################
@@ -115,7 +116,7 @@ class AudioPygame(base.AudioPlugin):
                         if self._next_tone[voice] is None:
                             current_chunk = None
                             break
-                current_chunk = self._next_tone[voice].build_chunk(chunk_length)
+                current_chunk = self._next_tone[voice].build_chunk(CHUNK_LENGTH)
                 if current_chunk is not None:
                     break
                 self._next_tone[voice] = None

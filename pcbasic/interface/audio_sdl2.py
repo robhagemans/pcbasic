@@ -2,7 +2,7 @@
 PC-BASIC - audio_sdl2.py
 Sound interface based on SDL2
 
-(c) 2015, 2016 Rob Hagemans
+(c) 2015--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -29,10 +29,11 @@ from . import synthesiser
 
 # approximate generator chunk length
 # one wavelength at 37 Hz is 1192 samples at 44100 Hz
-chunk_length = 1192 * 4
-
-callback_chunk_length = 2048
-min_samples_buffer = 2*callback_chunk_length
+CHUNK_LENGTH = 1192 * 4
+# length of chunks to be consumed by callback
+CALLBACK_CHUNK_LENGTH = 2048
+# number of samples below which to replenish the buffer
+MIN_SAMPLES_BUFFER = 2*CALLBACK_CHUNK_LENGTH
 
 
 ##############################################################################
@@ -60,7 +61,7 @@ class AudioSDL2(base.AudioPlugin):
         # samples are 16-bit signed ints
         self.audiospec.format = sdl2.AUDIO_S16SYS
         self.audiospec.channels = 1
-        self.audiospec.samples = callback_chunk_length
+        self.audiospec.samples = CALLBACK_CHUNK_LENGTH
         self.audiospec.callback = sdl2.SDL_AudioCallback(self._get_next_chunk)
         self.dev = None
         base.AudioPlugin.__init__(self, audio_queue)
@@ -102,7 +103,7 @@ class AudioSDL2(base.AudioPlugin):
     def _work(self):
         """Replenish sample buffer."""
         for voice in range(4):
-            if len(self.samples[voice]) > min_samples_buffer:
+            if len(self.samples[voice]) > MIN_SAMPLES_BUFFER:
                 # nothing to do
                 continue
             while True:
@@ -114,7 +115,7 @@ class AudioSDL2(base.AudioPlugin):
                         if self._next_tone[voice] is None:
                             current_chunk = None
                             break
-                current_chunk = self._next_tone[voice].build_chunk(chunk_length)
+                current_chunk = self._next_tone[voice].build_chunk(CHUNK_LENGTH)
                 if current_chunk is not None:
                     break
                 self._next_tone[voice] = None
