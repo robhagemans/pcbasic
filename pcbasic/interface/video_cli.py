@@ -84,19 +84,19 @@ class VideoCLI(base.VideoPlugin):
                 break
             if uc == eof:
                 # ctrl-D (unix) / ctrl-Z (windows)
-                self.input_queue.put(signals.Event(signals.KEYB_QUIT))
+                self._input_queue.put(signals.Event(signals.KEYB_QUIT))
             elif uc == u'\x7f':
                 # backspace
-                self.input_queue.put(signals.Event(signals.KEYB_DOWN,
+                self._input_queue.put(signals.Event(signals.KEYB_DOWN,
                                         (uea.BACKSPACE, scancode.BACKSPACE, [])))
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
-                self.input_queue.put(signals.Event(
+                self._input_queue.put(signals.Event(
                                         signals.KEYB_DOWN, (uc, sc, [])))
                 if sc == scancode.F12:
                     self.f12_active = True
                 else:
-                    self.input_queue.put(signals.Event(
+                    self._input_queue.put(signals.Event(
                                             signals.KEYB_UP, (scancode.F12,)))
                     self.f12_active = False
 

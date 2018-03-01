@@ -152,7 +152,7 @@ class VideoCurses(base.VideoPlugin):
             else:
                 if i == curses.KEY_BREAK:
                     # this is fickle, on many terminals doesn't work
-                    self.input_queue.put(signals.Event(
+                    self._input_queue.put(signals.Event(
                                             signals.KEYB_DOWN,
                                             (u'', scancode.BREAK, [scancode.CTRL])))
                 elif i == curses.KEY_RESIZE:
@@ -167,7 +167,7 @@ class VideoCurses(base.VideoPlugin):
                 scan = curses_to_scan.get(i, None)
                 c = curses_to_eascii.get(i, '')
                 if scan or c:
-                    self.input_queue.put(signals.Event(
+                    self._input_queue.put(signals.Event(
                                             signals.KEYB_DOWN, (c, scan, [])))
                     if i == curses.KEY_F12:
                         self.f12_active = True
@@ -178,14 +178,14 @@ class VideoCurses(base.VideoPlugin):
         # then handle these one by one
         for c in u:
             #check_full=False to allow pasting chunks of text
-            self.input_queue.put(signals.Event(
+            self._input_queue.put(signals.Event(
                                     signals.KEYB_DOWN, (c, None, [])))
             self._unset_f12()
 
     def _unset_f12(self):
         """Deactivate F12 """
         if self.f12_active:
-            self.input_queue.put(signals.Event(
+            self._input_queue.put(signals.Event(
                                     signals.KEYB_UP, (scancode.F12,)))
             self.f12_active = False
 

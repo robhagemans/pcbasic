@@ -77,11 +77,11 @@ class Interface(object):
                     # ensure both queues are drained
                     self._video.cycle()
                     self._audio.cycle()
-                    if not self._audio.playing and not self._video.busy:
+                    if not self._audio.busy and not self._video.busy:
                         # nothing to do, come back later
                         self._video.sleep(self.delay)
                     else:
-                        # tiny delay; significantly reduces cpu load when playing audio or blinking video
+                        # tiny delay; significantly reduces cpu load when playing audio or blinking
                         self._video.sleep(1)
 
     def pause(self, message):
@@ -170,8 +170,8 @@ class VideoPlugin(object):
         """Setup the interface."""
         self.alive = True
         self.busy = False
-        self.input_queue = input_queue
-        self.video_queue = video_queue
+        self._input_queue = input_queue
+        self._video_queue = video_queue
         self._handlers = {
             signals.VIDEO_SET_MODE: self.set_mode,
             signals.VIDEO_PUT_GLYPH: self.put_glyph,
@@ -217,7 +217,7 @@ class VideoPlugin(object):
         """Drain signal queue."""
         while True:
             try:
-                signal = self.video_queue.get(False)
+                signal = self._video_queue.get(False)
             except Queue.Empty:
                 return True
             if signal.event_type == signals.VIDEO_QUIT:
@@ -228,7 +228,7 @@ class VideoPlugin(object):
                     self._handlers[signal.event_type](*signal.params)
                 except KeyError:
                     pass
-            self.video_queue.task_done()
+            self._video_queue.task_done()
 
     # plugin overrides
 
@@ -331,17 +331,20 @@ class AudioPlugin(object):
         # if not None, something is playing
         self._next_tone = [None, None, None, None]
         self.alive = True
-        self.playing = False
-        self.audio_queue = audio_queue
+        self._audio_queue = audio_queue
 
     # called by Interface
+
+    @property
+    def busy(self):
+        """Something is playing."""
+        return self._next_tone != [None, None, None, None]
 
     def cycle(self):
         """Audio event cycle."""
         if self.alive:
             self._drain_queue()
         if self.alive:
-            self.playing = self._next_tone != [None, None, None, None]
             self._work()
 
     # private methods
@@ -350,10 +353,10 @@ class AudioPlugin(object):
         """Drain audio queue."""
         while True:
             try:
-                signal = self.audio_queue.get(False)
+                signal = self._audio_queue.get(False)
             except Queue.Empty:
                 return
-            self.audio_queue.task_done()
+            self._audio_queue.task_done()
             if signal.event_type == signals.AUDIO_STOP:
                 self.hush()
             elif signal.event_type == signals.AUDIO_QUIT:
