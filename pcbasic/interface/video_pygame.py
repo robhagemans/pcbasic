@@ -274,6 +274,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 self._resize_display(*self._find_display_size(
                                 self.size[0], self.size[1], self.border_width))
             self.clipboard.handle_key(scan, c)
+            self.screen_changed = True
         else:
             # double NUL characters, as single NUL signals e-ASCII
             if c == u'\0':
@@ -305,6 +306,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             self._alt_key_down = False
         elif e.key == pygame.K_F11:
             self.clipboard.stop()
+            self.screen_changed = True
             self.f11_active = False
         # last key released gets remembered
         try:
@@ -444,8 +446,9 @@ class VideoPygame(video_graphical.VideoGraphical):
         for i in range(self.num_pages):
             self.canvas[i].set_palette(self.work_palette)
         # initialise clipboard
-        self.clipboard = video_graphical.ClipboardInterface(self,
-                mode_info.width, mode_info.height)
+        self.clipboard = video_graphical.ClipboardInterface(
+                self.clipboard_handler, self.input_queue,
+                mode_info.width, mode_info.height, self.font_width, self.font_height, self.size)
         self.screen_changed = True
         self._has_window = True
 

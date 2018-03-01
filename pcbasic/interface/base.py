@@ -197,13 +197,6 @@ class VideoPlugin(object):
             signals.VIDEO_SET_CLIPBOARD_TEXT: self.set_clipboard_text,
         }
 
-    def __exit__(self, type, value, traceback):
-        """Close the interface."""
-
-    def __enter__(self):
-        """Final initialisation."""
-        return self
-
     # called by Interface
 
     def cycle(self):
@@ -238,6 +231,13 @@ class VideoPlugin(object):
             self.video_queue.task_done()
 
     # plugin overrides
+
+    def __exit__(self, type, value, traceback):
+        """Close the interface."""
+
+    def __enter__(self):
+        """Final initialisation."""
+        return self
 
     def _work(self):
         """Display update cycle."""
@@ -334,13 +334,6 @@ class AudioPlugin(object):
         self.playing = False
         self.audio_queue = audio_queue
 
-    def __exit__(self, type, value, traceback):
-        """Close the audio interface."""
-
-    def __enter__(self):
-        """Perform any necessary initialisations."""
-        return self
-
     # called by Interface
 
     def cycle(self):
@@ -374,6 +367,13 @@ class AudioPlugin(object):
                 self.noise(*signal.params)
 
     # plugin overrides
+
+    def __exit__(self, type, value, traceback):
+        """Close the audio interface."""
+
+    def __enter__(self):
+        """Perform any necessary initialisations."""
+        return self
 
     def _work(self):
         """Play some of the sounds queued."""

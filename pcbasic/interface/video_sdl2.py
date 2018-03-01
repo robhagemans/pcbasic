@@ -140,10 +140,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
             self.zoomed = None
             pixelformat = self.display_surface.contents.format
             if pixelformat.contents.BitsPerPixel != 32:
-                logging.warning('Smooth scaling not available on this display of %d-bit colour depth: needs 32-bit', self.display_surface.format.contents.BitsPerPixel)
+                logging.warning('Smooth scaling not available: need 32-bit colour, have %d-bit.',
+                        self.display_surface.format.contents.BitsPerPixel)
                 self.smooth = False
             if not hasattr(sdl2, 'sdlgfx'):
-                logging.warning('Smooth scaling not available: SDL_GFX extension not found.')
+                logging.warning('Smooth scaling not available: `sdlgfx` extension not found.')
                 self.smooth = False
         # available joysticks
         num_joysticks = sdl2.SDL_NumJoysticks()
@@ -249,7 +250,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 self.input_queue.put(signals.Event(signals.PEN_MOVED, pos))
                 if self.clipboard.active():
                     self.clipboard.move(1 + pos[1] // self.font_height,
-                           1 + (pos[0]+self.font_width//2) // self.font_width)
+                            1 + (pos[0]+self.font_width//2) // self.font_width)
+                    self.screen_changed = True
             elif event.type == sdl2.SDL_JOYBUTTONDOWN:
                 self.input_queue.put(signals.Event(signals.STICK_DOWN,
                                     (event.jbutton.which, event.jbutton.button)))
@@ -321,6 +323,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             self.clipboard.start(self.cursor_row, self.cursor_col)
         elif self.f11_active:
             self.clipboard.handle_key(scan, c)
+            self.screen_changed = True
         else:
             # keep scancode in buffer
             # to combine with text event
@@ -347,6 +350,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # check for emulator key
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self.clipboard.stop()
+            self.screen_changed = True
             self.f11_active = False
         # last key released gets remembered
         try:
@@ -572,8 +576,9 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.overlay = sdl2.SDL_ConvertSurface(self.work_surface, pixelformat, 0)
         sdl2.SDL_SetSurfaceBlendMode(self.overlay, sdl2.SDL_BLENDMODE_ADD)
         # initialise clipboard
-        self.clipboard = video_graphical.ClipboardInterface(self,
-                mode_info.width, mode_info.height)
+        self.clipboard = video_graphical.ClipboardInterface(
+                self.clipboard_handler, self.input_queue,
+                mode_info.width, mode_info.height, self.font_width, self.font_height, self.size)
         self.screen_changed = True
         self._has_window = True
 

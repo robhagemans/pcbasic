@@ -172,18 +172,19 @@ class EnvironmentCache(object):
 class ClipboardInterface(object):
     """Clipboard user interface."""
 
-    def __init__(self, videoplugin, width, height):
+    def __init__(self, clipboard_handler, input_queue, width, height, font_width, font_height, size):
         """Initialise clipboard feedback handler."""
+        self._input_queue = input_queue
         self._active = False
         self.select_start = None
         self.select_stop = None
         self.selection_rect = None
         self.width = width
         self.height = height
-        self.font_width = videoplugin.font_width
-        self.font_height = videoplugin.font_height
-        self.size = videoplugin.size
-        self.videoplugin = videoplugin
+        self.font_width = font_width
+        self.font_height = font_height
+        self.size = size
+        self._clipboard_handler = clipboard_handler
 
     def active(self):
         """True if clipboard mode is active."""
@@ -212,7 +213,6 @@ class ClipboardInterface(object):
         self.select_start = None
         self.select_stop = None
         self.selection_rect = None
-        self.videoplugin.screen_changed = True
 
     def copy(self, mouse=False):
         """Copy screen characters from selection into clipboard."""
@@ -223,12 +223,12 @@ class ClipboardInterface(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        self.videoplugin.input_queue.put(signals.Event(signals.CLIP_COPY,
+        self._input_queue.put(signals.Event(signals.CLIP_COPY,
                 (start[0], start[1], stop[0], stop[1], mouse)))
 
     def paste(self, text):
         """Paste from clipboard into keyboard buffer."""
-        self.videoplugin.input_queue.put(signals.Event(signals.CLIP_PASTE, (text,)))
+        self._input_queue.put(signals.Event(signals.CLIP_PASTE, (text,)))
 
     def move(self, r, c):
         """Move the head of the selection and update feedback."""
@@ -263,7 +263,6 @@ class ClipboardInterface(object):
                       self.size[0], rect_bot - rect_top - 2*self.font_height),
                 (0, rect_bot - self.font_height,
                       rect_right, self.font_height)]
-        self.videoplugin.screen_changed = True
 
     def handle_key(self, scan, c):
         """Handle keyboard clipboard commands."""
@@ -272,7 +271,7 @@ class ClipboardInterface(object):
         if c.upper() == u'C':
             self.copy()
         elif c.upper() == u'V':
-            text = self.videoplugin.clipboard_handler.paste(mouse=False)
+            text = self._clipboard_handler.paste(mouse=False)
             self.paste(text)
         elif c.upper() == u'A':
             # select all
