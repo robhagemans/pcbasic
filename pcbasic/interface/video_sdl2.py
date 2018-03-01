@@ -46,6 +46,328 @@ from . import base
 from . import video_graphical
 
 
+###############################################################################
+# keyboard codes
+
+if sdl2:
+    # these are PC keyboard scancodes
+    SCAN_TO_SCAN = {
+        # top row
+        sdl2.SDL_SCANCODE_ESCAPE: scancode.ESCAPE, sdl2.SDL_SCANCODE_1: scancode.N1,
+        sdl2.SDL_SCANCODE_2: scancode.N2, sdl2.SDL_SCANCODE_3: scancode.N3,
+        sdl2.SDL_SCANCODE_4: scancode.N4, sdl2.SDL_SCANCODE_5: scancode.N5,
+        sdl2.SDL_SCANCODE_6: scancode.N6, sdl2.SDL_SCANCODE_7: scancode.N7,
+        sdl2.SDL_SCANCODE_8: scancode.N8, sdl2.SDL_SCANCODE_9: scancode.N9,
+        sdl2.SDL_SCANCODE_0: scancode.N0, sdl2.SDL_SCANCODE_MINUS: scancode.MINUS,
+        sdl2.SDL_SCANCODE_EQUALS: scancode.EQUALS,
+        sdl2.SDL_SCANCODE_BACKSPACE: scancode.BACKSPACE,
+        # row 1
+        sdl2.SDL_SCANCODE_TAB: scancode.TAB, sdl2.SDL_SCANCODE_Q: scancode.q,
+        sdl2.SDL_SCANCODE_W: scancode.w, sdl2.SDL_SCANCODE_E: scancode.e, sdl2.SDL_SCANCODE_R: scancode.r,
+        sdl2.SDL_SCANCODE_T: scancode.t, sdl2.SDL_SCANCODE_Y: scancode.y, sdl2.SDL_SCANCODE_U: scancode.u,
+        sdl2.SDL_SCANCODE_I: scancode.i, sdl2.SDL_SCANCODE_O: scancode.o, sdl2.SDL_SCANCODE_P: scancode.p,
+        sdl2.SDL_SCANCODE_LEFTBRACKET: scancode.LEFTBRACKET,
+        sdl2.SDL_SCANCODE_RIGHTBRACKET: scancode.RIGHTBRACKET,
+        sdl2.SDL_SCANCODE_RETURN: scancode.RETURN, sdl2.SDL_SCANCODE_KP_ENTER: scancode.RETURN,
+        # row 2
+        sdl2.SDL_SCANCODE_RCTRL: scancode.CTRL, sdl2.SDL_SCANCODE_LCTRL: scancode.CTRL,
+        sdl2.SDL_SCANCODE_A: scancode.a, sdl2.SDL_SCANCODE_S: scancode.s, sdl2.SDL_SCANCODE_D: scancode.d,
+        sdl2.SDL_SCANCODE_F: scancode.f, sdl2.SDL_SCANCODE_G: scancode.g, sdl2.SDL_SCANCODE_H: scancode.h,
+        sdl2.SDL_SCANCODE_J: scancode.j, sdl2.SDL_SCANCODE_K: scancode.k, sdl2.SDL_SCANCODE_L: scancode.l,
+        sdl2.SDL_SCANCODE_SEMICOLON: scancode.SEMICOLON, sdl2.SDL_SCANCODE_APOSTROPHE: scancode.QUOTE,
+        sdl2.SDL_SCANCODE_GRAVE: scancode.BACKQUOTE,
+        # row 3
+        sdl2.SDL_SCANCODE_LSHIFT: scancode.LSHIFT,
+        sdl2.SDL_SCANCODE_BACKSLASH: scancode.BACKSLASH,
+        sdl2.SDL_SCANCODE_Z: scancode.z, sdl2.SDL_SCANCODE_X: scancode.x, sdl2.SDL_SCANCODE_C: scancode.c,
+        sdl2.SDL_SCANCODE_V: scancode.v, sdl2.SDL_SCANCODE_B: scancode.b, sdl2.SDL_SCANCODE_N: scancode.n,
+        sdl2.SDL_SCANCODE_M: scancode.m, sdl2.SDL_SCANCODE_COMMA: scancode.COMMA,
+        sdl2.SDL_SCANCODE_PERIOD: scancode.PERIOD, sdl2.SDL_SCANCODE_SLASH: scancode.SLASH,
+        sdl2.SDL_SCANCODE_RSHIFT: scancode.RSHIFT,
+        sdl2.SDL_SCANCODE_SYSREQ: scancode.SYSREQ,
+        sdl2.SDL_SCANCODE_LALT: scancode.ALT,
+        sdl2.SDL_SCANCODE_SPACE: scancode.SPACE, sdl2.SDL_SCANCODE_CAPSLOCK: scancode.CAPSLOCK,
+        # function keys
+        sdl2.SDL_SCANCODE_F1: scancode.F1, sdl2.SDL_SCANCODE_F2: scancode.F2,
+        sdl2.SDL_SCANCODE_F3: scancode.F3, sdl2.SDL_SCANCODE_F4: scancode.F4,
+        sdl2.SDL_SCANCODE_F5: scancode.F5, sdl2.SDL_SCANCODE_F6: scancode.F6,
+        sdl2.SDL_SCANCODE_F7: scancode.F7, sdl2.SDL_SCANCODE_F8: scancode.F8,
+        sdl2.SDL_SCANCODE_F9: scancode.F9, sdl2.SDL_SCANCODE_F10: scancode.F10,
+        sdl2.SDL_SCANCODE_F11: scancode.F11, sdl2.SDL_SCANCODE_F12: scancode.F12,
+        # top of keypad
+        sdl2.SDL_SCANCODE_NUMLOCKCLEAR: scancode.NUMLOCK,
+        sdl2.SDL_SCANCODE_SCROLLLOCK: scancode.SCROLLOCK,
+        sdl2.SDL_SCANCODE_PAUSE: scancode.BREAK,
+        # keypad
+        sdl2.SDL_SCANCODE_KP_MULTIPLY: scancode.KPTIMES,
+        sdl2.SDL_SCANCODE_PRINTSCREEN: scancode.PRINT,
+        sdl2.SDL_SCANCODE_KP_7: scancode.KP7,
+        sdl2.SDL_SCANCODE_HOME: scancode.HOME,
+        sdl2.SDL_SCANCODE_KP_8: scancode.KP8,
+        sdl2.SDL_SCANCODE_UP: scancode.UP,
+        sdl2.SDL_SCANCODE_KP_9: scancode.KP9,
+        sdl2.SDL_SCANCODE_PAGEUP: scancode.PAGEUP,
+        sdl2.SDL_SCANCODE_KP_MINUS: scancode.KPMINUS,
+        sdl2.SDL_SCANCODE_KP_4: scancode.KP4,
+        sdl2.SDL_SCANCODE_LEFT: scancode.LEFT,
+        sdl2.SDL_SCANCODE_KP_5: scancode.KP5,
+        sdl2.SDL_SCANCODE_KP_6: scancode.KP6,
+        sdl2.SDL_SCANCODE_RIGHT: scancode.RIGHT,
+        sdl2.SDL_SCANCODE_KP_PLUS: scancode.KPPLUS,
+        sdl2.SDL_SCANCODE_KP_1: scancode.KP1,
+        sdl2.SDL_SCANCODE_END: scancode.END,
+        sdl2.SDL_SCANCODE_KP_2: scancode.KP2,
+        sdl2.SDL_SCANCODE_DOWN: scancode.DOWN,
+        sdl2.SDL_SCANCODE_KP_3: scancode.KP3,
+        sdl2.SDL_SCANCODE_PAGEDOWN: scancode.PAGEDOWN,
+        sdl2.SDL_SCANCODE_KP_0: scancode.KP0,
+        sdl2.SDL_SCANCODE_INSERT: scancode.INSERT,
+        sdl2.SDL_SCANCODE_KP_PERIOD: scancode.KPPOINT,
+        sdl2.SDL_SCANCODE_DELETE: scancode.DELETE,
+        # extensions
+        sdl2.SDL_SCANCODE_NONUSBACKSLASH: scancode.INT1,
+        # windows keys
+        sdl2.SDL_SCANCODE_LGUI: scancode.LSUPER,
+        sdl2.SDL_SCANCODE_RGUI: scancode.RSUPER,
+        sdl2.SDL_SCANCODE_MENU: scancode.MENU,
+        # Japanese keyboards
+        # mapping to SDL scancodes unknown
+        #HIRAGANA_KATAKANA = 0x70
+        # backslash/underscore on Japanese keyboard
+        #INT3 = 0x73
+        #HENKAN = 0x79
+        # this is a guess based on https://wiki.libsdl.org/SDL_Scancode
+        # and http://www.quadibloc.com/comp/scan.htm
+        sdl2.SDL_SCANCODE_LANG4: scancode.MUHENKAN,
+        sdl2.SDL_SCANCODE_LANG5: scancode.ZENKAKU_HANKAKU,
+        sdl2.SDL_SCANCODE_INTERNATIONAL3: scancode.INT4,
+        # Korean keyboards
+        sdl2.SDL_SCANCODE_LANG2: scancode.HANJA,
+        sdl2.SDL_SCANCODE_LANG1: scancode.HAN_YEONG,
+    }
+
+    KEY_TO_EASCII = {
+        sdl2.SDLK_F1: uea.F1,
+        sdl2.SDLK_F2: uea.F2,
+        sdl2.SDLK_F3: uea.F3,
+        sdl2.SDLK_F4: uea.F4,
+        sdl2.SDLK_F5: uea.F5,
+        sdl2.SDLK_F6: uea.F6,
+        sdl2.SDLK_F7: uea.F7,
+        sdl2.SDLK_F8: uea.F8,
+        sdl2.SDLK_F9: uea.F9,
+        sdl2.SDLK_F10: uea.F10,
+        sdl2.SDLK_F11: uea.F11,
+        sdl2.SDLK_F12: uea.F12,
+        sdl2.SDLK_HOME: uea.HOME,
+        sdl2.SDLK_UP: uea.UP,
+        sdl2.SDLK_PAGEUP: uea.PAGEUP,
+        sdl2.SDLK_LEFT: uea.LEFT,
+        sdl2.SDLK_RIGHT: uea.RIGHT,
+        sdl2.SDLK_END: uea.END,
+        sdl2.SDLK_DOWN: uea.DOWN,
+        sdl2.SDLK_PAGEDOWN: uea.PAGEDOWN,
+        sdl2.SDLK_ESCAPE: uea.ESCAPE,
+        sdl2.SDLK_BACKSPACE: uea.BACKSPACE,
+        sdl2.SDLK_TAB: uea.TAB,
+        sdl2.SDLK_RETURN: uea.RETURN,
+        sdl2.SDLK_KP_ENTER: uea.RETURN,
+        sdl2.SDLK_SPACE: uea.SPACE,
+        sdl2.SDLK_INSERT: uea.INSERT,
+        sdl2.SDLK_DELETE: uea.DELETE,
+    }
+
+    SHIFT_KEY_TO_EASCII = {
+        sdl2.SDLK_F1: uea.SHIFT_F1,
+        sdl2.SDLK_F2: uea.SHIFT_F2,
+        sdl2.SDLK_F3: uea.SHIFT_F3,
+        sdl2.SDLK_F4: uea.SHIFT_F4,
+        sdl2.SDLK_F5: uea.SHIFT_F5,
+        sdl2.SDLK_F6: uea.SHIFT_F6,
+        sdl2.SDLK_F7: uea.SHIFT_F7,
+        sdl2.SDLK_F8: uea.SHIFT_F8,
+        sdl2.SDLK_F9: uea.SHIFT_F9,
+        sdl2.SDLK_F10: uea.SHIFT_F10,
+        sdl2.SDLK_F11: uea.SHIFT_F11,
+        sdl2.SDLK_F12: uea.SHIFT_F12,
+        sdl2.SDLK_HOME: uea.SHIFT_HOME,
+        sdl2.SDLK_UP: uea.SHIFT_UP,
+        sdl2.SDLK_PAGEUP: uea.SHIFT_PAGEUP,
+        sdl2.SDLK_LEFT: uea.SHIFT_LEFT,
+        sdl2.SDLK_RIGHT: uea.SHIFT_RIGHT,
+        sdl2.SDLK_END: uea.SHIFT_END,
+        sdl2.SDLK_DOWN: uea.SHIFT_DOWN,
+        sdl2.SDLK_PAGEDOWN: uea.SHIFT_PAGEDOWN,
+        sdl2.SDLK_ESCAPE: uea.SHIFT_ESCAPE,
+        sdl2.SDLK_BACKSPACE: uea.SHIFT_BACKSPACE,
+        sdl2.SDLK_TAB: uea.SHIFT_TAB,
+        sdl2.SDLK_RETURN: uea.SHIFT_RETURN,
+        sdl2.SDLK_KP_ENTER: uea.SHIFT_RETURN,
+        sdl2.SDLK_SPACE: uea.SHIFT_SPACE,
+        sdl2.SDLK_INSERT: uea.SHIFT_INSERT,
+        sdl2.SDLK_DELETE: uea.SHIFT_DELETE,
+        sdl2.SDLK_KP_5: uea.SHIFT_KP5,
+    }
+
+    CTRL_KEY_TO_EASCII = {
+        sdl2.SDLK_F1: uea.CTRL_F1,
+        sdl2.SDLK_F2: uea.CTRL_F2,
+        sdl2.SDLK_F3: uea.CTRL_F3,
+        sdl2.SDLK_F4: uea.CTRL_F4,
+        sdl2.SDLK_F5: uea.CTRL_F5,
+        sdl2.SDLK_F6: uea.CTRL_F6,
+        sdl2.SDLK_F7: uea.CTRL_F7,
+        sdl2.SDLK_F8: uea.CTRL_F8,
+        sdl2.SDLK_F9: uea.CTRL_F9,
+        sdl2.SDLK_F10: uea.CTRL_F10,
+        sdl2.SDLK_F11: uea.CTRL_F11,
+        sdl2.SDLK_F12: uea.CTRL_F12,
+        sdl2.SDLK_HOME: uea.CTRL_HOME,
+        sdl2.SDLK_PAGEUP: uea.CTRL_PAGEUP,
+        sdl2.SDLK_LEFT: uea.CTRL_LEFT,
+        sdl2.SDLK_RIGHT: uea.CTRL_RIGHT,
+        sdl2.SDLK_END: uea.CTRL_END,
+        sdl2.SDLK_PAGEDOWN: uea.CTRL_PAGEDOWN,
+        sdl2.SDLK_ESCAPE: uea.CTRL_ESCAPE,
+        sdl2.SDLK_BACKSPACE: uea.CTRL_BACKSPACE,
+        sdl2.SDLK_TAB: uea.CTRL_TAB,
+        sdl2.SDLK_RETURN: uea.CTRL_RETURN,
+        sdl2.SDLK_KP_ENTER: uea.CTRL_RETURN,
+        sdl2.SDLK_SPACE: uea.CTRL_SPACE,
+        sdl2.SDLK_PRINTSCREEN: uea.CTRL_PRINT,
+        sdl2.SDLK_2: uea.CTRL_2,
+        sdl2.SDLK_6: uea.CTRL_6,
+        sdl2.SDLK_MINUS: uea.CTRL_MINUS,
+    }
+
+    ALT_SCAN_TO_EASCII = {
+        sdl2.SDL_SCANCODE_1: uea.ALT_1,
+        sdl2.SDL_SCANCODE_2: uea.ALT_2,
+        sdl2.SDL_SCANCODE_3: uea.ALT_3,
+        sdl2.SDL_SCANCODE_4: uea.ALT_4,
+        sdl2.SDL_SCANCODE_5: uea.ALT_5,
+        sdl2.SDL_SCANCODE_6: uea.ALT_6,
+        sdl2.SDL_SCANCODE_7: uea.ALT_7,
+        sdl2.SDL_SCANCODE_8: uea.ALT_8,
+        sdl2.SDL_SCANCODE_9: uea.ALT_9,
+        sdl2.SDL_SCANCODE_0: uea.ALT_0,
+        sdl2.SDL_SCANCODE_MINUS: uea.ALT_MINUS,
+        sdl2.SDL_SCANCODE_EQUALS: uea.ALT_EQUALS,
+        sdl2.SDL_SCANCODE_Q: uea.ALT_q,
+        sdl2.SDL_SCANCODE_W: uea.ALT_w,
+        sdl2.SDL_SCANCODE_E: uea.ALT_e,
+        sdl2.SDL_SCANCODE_R: uea.ALT_r,
+        sdl2.SDL_SCANCODE_T: uea.ALT_t,
+        sdl2.SDL_SCANCODE_Y: uea.ALT_y,
+        sdl2.SDL_SCANCODE_U: uea.ALT_u,
+        sdl2.SDL_SCANCODE_I: uea.ALT_i,
+        sdl2.SDL_SCANCODE_O: uea.ALT_o,
+        sdl2.SDL_SCANCODE_P: uea.ALT_p,
+        sdl2.SDL_SCANCODE_A: uea.ALT_a,
+        sdl2.SDL_SCANCODE_S: uea.ALT_s,
+        sdl2.SDL_SCANCODE_D: uea.ALT_d,
+        sdl2.SDL_SCANCODE_F: uea.ALT_f,
+        sdl2.SDL_SCANCODE_G: uea.ALT_g,
+        sdl2.SDL_SCANCODE_H: uea.ALT_h,
+        sdl2.SDL_SCANCODE_J: uea.ALT_j,
+        sdl2.SDL_SCANCODE_K: uea.ALT_k,
+        sdl2.SDL_SCANCODE_L: uea.ALT_l,
+        sdl2.SDL_SCANCODE_Z: uea.ALT_z,
+        sdl2.SDL_SCANCODE_X: uea.ALT_x,
+        sdl2.SDL_SCANCODE_C: uea.ALT_c,
+        sdl2.SDL_SCANCODE_V: uea.ALT_v,
+        sdl2.SDL_SCANCODE_B: uea.ALT_b,
+        sdl2.SDL_SCANCODE_N: uea.ALT_n,
+        sdl2.SDL_SCANCODE_M: uea.ALT_m,
+        sdl2.SDL_SCANCODE_F1: uea.ALT_F1,
+        sdl2.SDL_SCANCODE_F2: uea.ALT_F2,
+        sdl2.SDL_SCANCODE_F3: uea.ALT_F3,
+        sdl2.SDL_SCANCODE_F4: uea.ALT_F4,
+        sdl2.SDL_SCANCODE_F5: uea.ALT_F5,
+        sdl2.SDL_SCANCODE_F6: uea.ALT_F6,
+        sdl2.SDL_SCANCODE_F7: uea.ALT_F7,
+        sdl2.SDL_SCANCODE_F8: uea.ALT_F8,
+        sdl2.SDL_SCANCODE_F9: uea.ALT_F9,
+        sdl2.SDL_SCANCODE_F10: uea.ALT_F10,
+        sdl2.SDL_SCANCODE_F11: uea.ALT_F11,
+        sdl2.SDL_SCANCODE_F12: uea.ALT_F12,
+        sdl2.SDL_SCANCODE_BACKSPACE: uea.ALT_BACKSPACE,
+        sdl2.SDL_SCANCODE_TAB: uea.ALT_TAB,
+        sdl2.SDL_SCANCODE_RETURN: uea.ALT_RETURN,
+        sdl2.SDL_SCANCODE_KP_ENTER: uea.ALT_RETURN,
+        sdl2.SDL_SCANCODE_SPACE: uea.ALT_SPACE,
+        sdl2.SDL_SCANCODE_PRINTSCREEN: uea.ALT_PRINT,
+        sdl2.SDL_SCANCODE_KP_5: uea.ALT_KP5,
+    }
+
+    MOD_TO_SCAN = {
+        sdl2.KMOD_LSHIFT: scancode.LSHIFT,
+        sdl2.KMOD_RSHIFT: scancode.RSHIFT,
+        sdl2.KMOD_LCTRL: scancode.CTRL,
+        sdl2.KMOD_RCTRL: scancode.CTRL,
+        sdl2.KMOD_LALT: scancode.ALT,
+    }
+
+
+###############################################################################
+# clipboard handling
+
+
+class SDL2Clipboard(clipboard.Clipboard):
+    """Clipboard handling interface using SDL2."""
+
+    def __init__(self):
+        """Initialise the clipboard handler."""
+        self.ok = (sdl2 is not None)
+
+    def copy(self, text, mouse=False):
+        """Put unicode text on clipboard."""
+        sdl2.SDL_SetClipboardText(text.encode('utf-8', errors='replace'))
+
+    def paste(self, mouse=False):
+        """Return unicode text from clipboard."""
+        text = sdl2.SDL_GetClipboardText()
+        if text is None:
+            return u''
+        return text.decode('utf-8', 'replace').replace('\r\n', '\n').replace('\n', '\r')
+
+
+def _get_clipboard_handler():
+    """Get a working Clipboard handler object."""
+    # only use the SDL clipboard on Windows or Linus if xclip/xsel not available
+    if platform.system() == 'Darwin':
+        handler = clipboard.MacClipboard()
+    elif platform.system() != 'Windows' and clipboard.XClipboard().ok:
+        handler = clipboard.XClipboard()
+    else:
+        handler = SDL2Clipboard()
+    if not handler.ok:
+        logging.warning('Clipboard copy and paste not available.')
+        handler = clipboard.Clipboard()
+    return handler
+
+
+###############################################################################
+
+
+def _pixels2d(source):
+    """Creates a 2D pixel array view of the passed 8-bit surface."""
+    # limited, specialised version of pysdl2.ext.pixels2d by Marcus von Appen
+    # original is CC0 public domain with zlib fallback licence
+    # https://bitbucket.org/marcusva/py-sdl2
+    psurface = source
+    strides = (psurface.pitch, 1)
+    srcsize = psurface.h * psurface.pitch
+    shape = psurface.h, psurface.w
+    pxbuf = ctypes.cast(psurface.pixels,
+                        ctypes.POINTER(ctypes.c_ubyte * srcsize)).contents
+    # NOTE: transpose() brings it on [x][y] form - we may prefer [y][x] instead
+    return numpy.ndarray(shape, numpy.uint8, pxbuf, 0, strides, "C").transpose()
+
+
+###############################################################################
+# video plugin
+
 @base.video_plugins.register('sdl2')
 class VideoSDL2(video_graphical.VideoGraphical):
     """SDL2-based graphical interface."""
@@ -88,8 +410,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.f11_active = False
         self.altgr = kwargs['altgr']
         if not self.altgr:
-            scan_to_scan[sdl2.SDL_SCANCODE_RALT] = scancode.ALT
-            mod_to_scan[sdl2.KMOD_RALT] = scancode.ALT
+            SCAN_TO_SCAN[sdl2.SDL_SCANCODE_RALT] = scancode.ALT
+            MOD_TO_SCAN[sdl2.KMOD_RALT] = scancode.ALT
         # keep params for enter
         self.kwargs = kwargs
         # we need a set_mode call to be really up and running
@@ -124,7 +446,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
         # set clipboard handler to SDL2
-        self.clipboard_handler = get_clipboard_handler()
+        self.clipboard_handler = _get_clipboard_handler()
         # display palettes for blink states 0, 1
         self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         self._saved_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
@@ -181,7 +503,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """Set the icon on the SDL window."""
         mask = numpy.array(self.icon).T.repeat(2, 0).repeat(2, 1)
         icon = sdl2.SDL_CreateRGBSurface(0, mask.shape[0], mask.shape[1], 8, 0, 0, 0, 0)
-        pixels2d(icon.contents)[:] = mask
+        _pixels2d(icon.contents)[:] = mask
         # icon palette (black & white)
         icon_palette = sdl2.SDL_AllocPalette(256)
         icon_colors = [ sdl2.SDL_Color(x, x, x, 255) for x in [0, 255] + [255]*254 ]
@@ -284,7 +606,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def _handle_key_down(self, e):
         """Handle key-down event."""
         # get scancode
-        scan = scan_to_scan.get(e.key.keysym.scancode, None)
+        scan = SCAN_TO_SCAN.get(e.key.keysym.scancode, None)
         # workaround: on some Ubuntu systems with Unity, the Alt key activates the HUD
         # after that, every alt keypress is reported twice (down-ALT down-ALT ... up-ALT)
         # and every alt+X keypress becomes down-ALT down-X down-X ... up-X ... up-ALT
@@ -295,17 +617,17 @@ class VideoSDL2(video_graphical.VideoGraphical):
                     not(self._alt_counter[scan] % 2) or scan == scancode.ALT):
                 return
         # get modifiers
-        mod = [s for m, s in mod_to_scan.iteritems() if e.key.keysym.mod & m]
+        mod = [s for m, s in MOD_TO_SCAN.iteritems() if e.key.keysym.mod & m]
         # get eascii
         try:
             if e.key.keysym.mod & sdl2.KMOD_LALT or (not self.altgr and e.key.keysym.mod & sdl2.KMOD_RALT):
-                c = alt_scan_to_eascii[e.key.keysym.scancode]
+                c = ALT_SCAN_TO_EASCII[e.key.keysym.scancode]
             elif e.key.keysym.mod & sdl2.KMOD_CTRL:
-                c = ctrl_key_to_eascii[e.key.keysym.sym]
+                c = CTRL_KEY_TO_EASCII[e.key.keysym.sym]
             elif e.key.keysym.mod & sdl2.KMOD_SHIFT:
-                c = shift_key_to_eascii[e.key.keysym.sym]
+                c = SHIFT_KEY_TO_EASCII[e.key.keysym.sym]
             else:
-                c = key_to_eascii[e.key.keysym.sym]
+                c = KEY_TO_EASCII[e.key.keysym.sym]
         except KeyError:
             # try control+letter -> control codes
             key = e.key.keysym.sym
@@ -343,7 +665,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def _handle_key_up(self, e):
         """Handle key-up event."""
-        scan = scan_to_scan[e.key.keysym.scancode]
+        scan = SCAN_TO_SCAN[e.key.keysym.scancode]
         # reset ALT workaround counter
         if scan == scancode.ALT:
             self._alt_counter = Counter()
@@ -538,7 +860,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.font_height = mode_info.font_height
         self.font_width = mode_info.font_width
         # prebuilt glyphs
-        # NOTE: [x][y] format - change this if we change pixels2d
+        # NOTE: [x][y] format - change this if we change _pixels2d
         self.glyph_dict = {u'\0': numpy.zeros((self.font_width, self.font_height))}
         self.num_pages = mode_info.num_pages
         self.mode_has_blink = mode_info.has_blink
@@ -557,7 +879,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_CreateRGBSurface(0, canvas_width, canvas_height, 8, 0, 0, 0, 0)
             for _ in range(self.num_pages)]
         self.pixels = [
-                pixels2d(canvas.contents)
+                _pixels2d(canvas.contents)
                 for canvas in self.canvas]
         # create work surface for border and composite
         self.border_x = int(canvas_width * self.border_width // 200)
@@ -567,7 +889,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         sdl2.SDL_FreeSurface(self.work_surface)
         self.work_surface = sdl2.SDL_CreateRGBSurface(
                                 0, work_width, work_height, 8, 0, 0, 0, 0)
-        self.work_pixels = pixels2d(self.work_surface.contents)[
+        self.work_pixels = _pixels2d(self.work_surface.contents)[
                 self.border_x : work_width-self.border_x,
                 self.border_y : work_height-self.border_y]
         # create overlay for clipboard selection feedback
@@ -700,7 +1022,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             except KeyError:
                 logging.error('No glyph received for code point 0')
                 return
-        # pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
+        # _pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
         glyph_width = glyph.shape[0]
         # changle glyph color by numpy scalar mult (is there a better way?)
         self.pixels[pagenum][
@@ -716,7 +1038,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def build_glyphs(self, new_dict):
         """Build a dict of glyphs for use in text mode."""
         for char, glyph in new_dict.iteritems():
-            # transpose because pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
+            # transpose because _pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
             self.glyph_dict[char] = numpy.asarray(glyph).T
 
     def set_cursor_shape(self, width, height, from_line, to_line):
@@ -755,319 +1077,3 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # reference the destination area
         self.pixels[pagenum][x0:x1+1, y0:y1+1] = numpy.array(array).T
         self.screen_changed = True
-
-
-###############################################################################
-# clipboard handling
-
-
-class SDL2Clipboard(clipboard.Clipboard):
-    """Clipboard handling interface using SDL2."""
-
-    def __init__(self):
-        """Initialise the clipboard handler."""
-        self.ok = (sdl2 is not None)
-
-    def copy(self, text, mouse=False):
-        """Put unicode text on clipboard."""
-        sdl2.SDL_SetClipboardText(text.encode('utf-8', errors='replace'))
-
-    def paste(self, mouse=False):
-        """Return unicode text from clipboard."""
-        text = sdl2.SDL_GetClipboardText()
-        if text is None:
-            return u''
-        return text.decode('utf-8', 'replace').replace('\r\n', '\n').replace('\n', '\r')
-
-
-def get_clipboard_handler():
-    """Get a working Clipboard handler object."""
-    # only use the SDL clipboard on Windows or Linus if xclip/xsel not available
-    if platform.system() == 'Darwin':
-        handler = clipboard.MacClipboard()
-    elif platform.system() != 'Windows' and clipboard.XClipboard().ok:
-        handler = clipboard.XClipboard()
-    else:
-        handler = SDL2Clipboard()
-    if not handler.ok:
-        logging.warning('Clipboard copy and paste not available.')
-        handler = clipboard.Clipboard()
-    return handler
-
-
-###############################################################################
-
-
-def pixels2d(source):
-    """Creates a 2D pixel array from the passed 8-bit surface."""
-    # limited, specialised version of pysdl2.ext.pixels2d by Marcus von Appen
-    # original is CC0 public domain with zlib fallback licence
-    # https://bitbucket.org/marcusva/py-sdl2
-    psurface = source
-    strides = (psurface.pitch, 1)
-    srcsize = psurface.h * psurface.pitch
-    shape = psurface.h, psurface.w
-    pxbuf = ctypes.cast(psurface.pixels,
-                        ctypes.POINTER(ctypes.c_ubyte * srcsize)).contents
-    # NOTE: transpose() brings it on [x][y] form - we may prefer [y][x] instead
-    return numpy.ndarray(shape, numpy.uint8, pxbuf, 0, strides, "C").transpose()
-
-
-if sdl2:
-    # these are PC keyboard scancodes
-    scan_to_scan = {
-        # top row
-        sdl2.SDL_SCANCODE_ESCAPE: scancode.ESCAPE, sdl2.SDL_SCANCODE_1: scancode.N1,
-        sdl2.SDL_SCANCODE_2: scancode.N2, sdl2.SDL_SCANCODE_3: scancode.N3,
-        sdl2.SDL_SCANCODE_4: scancode.N4, sdl2.SDL_SCANCODE_5: scancode.N5,
-        sdl2.SDL_SCANCODE_6: scancode.N6, sdl2.SDL_SCANCODE_7: scancode.N7,
-        sdl2.SDL_SCANCODE_8: scancode.N8, sdl2.SDL_SCANCODE_9: scancode.N9,
-        sdl2.SDL_SCANCODE_0: scancode.N0, sdl2.SDL_SCANCODE_MINUS: scancode.MINUS,
-        sdl2.SDL_SCANCODE_EQUALS: scancode.EQUALS,
-        sdl2.SDL_SCANCODE_BACKSPACE: scancode.BACKSPACE,
-        # row 1
-        sdl2.SDL_SCANCODE_TAB: scancode.TAB, sdl2.SDL_SCANCODE_Q: scancode.q,
-        sdl2.SDL_SCANCODE_W: scancode.w, sdl2.SDL_SCANCODE_E: scancode.e, sdl2.SDL_SCANCODE_R: scancode.r,
-        sdl2.SDL_SCANCODE_T: scancode.t, sdl2.SDL_SCANCODE_Y: scancode.y, sdl2.SDL_SCANCODE_U: scancode.u,
-        sdl2.SDL_SCANCODE_I: scancode.i, sdl2.SDL_SCANCODE_O: scancode.o, sdl2.SDL_SCANCODE_P: scancode.p,
-        sdl2.SDL_SCANCODE_LEFTBRACKET: scancode.LEFTBRACKET,
-        sdl2.SDL_SCANCODE_RIGHTBRACKET: scancode.RIGHTBRACKET,
-        sdl2.SDL_SCANCODE_RETURN: scancode.RETURN, sdl2.SDL_SCANCODE_KP_ENTER: scancode.RETURN,
-        # row 2
-        sdl2.SDL_SCANCODE_RCTRL: scancode.CTRL, sdl2.SDL_SCANCODE_LCTRL: scancode.CTRL,
-        sdl2.SDL_SCANCODE_A: scancode.a, sdl2.SDL_SCANCODE_S: scancode.s, sdl2.SDL_SCANCODE_D: scancode.d,
-        sdl2.SDL_SCANCODE_F: scancode.f, sdl2.SDL_SCANCODE_G: scancode.g, sdl2.SDL_SCANCODE_H: scancode.h,
-        sdl2.SDL_SCANCODE_J: scancode.j, sdl2.SDL_SCANCODE_K: scancode.k, sdl2.SDL_SCANCODE_L: scancode.l,
-        sdl2.SDL_SCANCODE_SEMICOLON: scancode.SEMICOLON, sdl2.SDL_SCANCODE_APOSTROPHE: scancode.QUOTE,
-        sdl2.SDL_SCANCODE_GRAVE: scancode.BACKQUOTE,
-        # row 3
-        sdl2.SDL_SCANCODE_LSHIFT: scancode.LSHIFT,
-        sdl2.SDL_SCANCODE_BACKSLASH: scancode.BACKSLASH,
-        sdl2.SDL_SCANCODE_Z: scancode.z, sdl2.SDL_SCANCODE_X: scancode.x, sdl2.SDL_SCANCODE_C: scancode.c,
-        sdl2.SDL_SCANCODE_V: scancode.v, sdl2.SDL_SCANCODE_B: scancode.b, sdl2.SDL_SCANCODE_N: scancode.n,
-        sdl2.SDL_SCANCODE_M: scancode.m, sdl2.SDL_SCANCODE_COMMA: scancode.COMMA,
-        sdl2.SDL_SCANCODE_PERIOD: scancode.PERIOD, sdl2.SDL_SCANCODE_SLASH: scancode.SLASH,
-        sdl2.SDL_SCANCODE_RSHIFT: scancode.RSHIFT,
-        sdl2.SDL_SCANCODE_SYSREQ: scancode.SYSREQ,
-        sdl2.SDL_SCANCODE_LALT: scancode.ALT,
-        sdl2.SDL_SCANCODE_SPACE: scancode.SPACE, sdl2.SDL_SCANCODE_CAPSLOCK: scancode.CAPSLOCK,
-        # function keys
-        sdl2.SDL_SCANCODE_F1: scancode.F1, sdl2.SDL_SCANCODE_F2: scancode.F2,
-        sdl2.SDL_SCANCODE_F3: scancode.F3, sdl2.SDL_SCANCODE_F4: scancode.F4,
-        sdl2.SDL_SCANCODE_F5: scancode.F5, sdl2.SDL_SCANCODE_F6: scancode.F6,
-        sdl2.SDL_SCANCODE_F7: scancode.F7, sdl2.SDL_SCANCODE_F8: scancode.F8,
-        sdl2.SDL_SCANCODE_F9: scancode.F9, sdl2.SDL_SCANCODE_F10: scancode.F10,
-        sdl2.SDL_SCANCODE_F11: scancode.F11, sdl2.SDL_SCANCODE_F12: scancode.F12,
-        # top of keypad
-        sdl2.SDL_SCANCODE_NUMLOCKCLEAR: scancode.NUMLOCK,
-        sdl2.SDL_SCANCODE_SCROLLLOCK: scancode.SCROLLOCK,
-        sdl2.SDL_SCANCODE_PAUSE: scancode.BREAK,
-        # keypad
-        sdl2.SDL_SCANCODE_KP_MULTIPLY: scancode.KPTIMES,
-        sdl2.SDL_SCANCODE_PRINTSCREEN: scancode.PRINT,
-        sdl2.SDL_SCANCODE_KP_7: scancode.KP7,
-        sdl2.SDL_SCANCODE_HOME: scancode.HOME,
-        sdl2.SDL_SCANCODE_KP_8: scancode.KP8,
-        sdl2.SDL_SCANCODE_UP: scancode.UP,
-        sdl2.SDL_SCANCODE_KP_9: scancode.KP9,
-        sdl2.SDL_SCANCODE_PAGEUP: scancode.PAGEUP,
-        sdl2.SDL_SCANCODE_KP_MINUS: scancode.KPMINUS,
-        sdl2.SDL_SCANCODE_KP_4: scancode.KP4,
-        sdl2.SDL_SCANCODE_LEFT: scancode.LEFT,
-        sdl2.SDL_SCANCODE_KP_5: scancode.KP5,
-        sdl2.SDL_SCANCODE_KP_6: scancode.KP6,
-        sdl2.SDL_SCANCODE_RIGHT: scancode.RIGHT,
-        sdl2.SDL_SCANCODE_KP_PLUS: scancode.KPPLUS,
-        sdl2.SDL_SCANCODE_KP_1: scancode.KP1,
-        sdl2.SDL_SCANCODE_END: scancode.END,
-        sdl2.SDL_SCANCODE_KP_2: scancode.KP2,
-        sdl2.SDL_SCANCODE_DOWN: scancode.DOWN,
-        sdl2.SDL_SCANCODE_KP_3: scancode.KP3,
-        sdl2.SDL_SCANCODE_PAGEDOWN: scancode.PAGEDOWN,
-        sdl2.SDL_SCANCODE_KP_0: scancode.KP0,
-        sdl2.SDL_SCANCODE_INSERT: scancode.INSERT,
-        sdl2.SDL_SCANCODE_KP_PERIOD: scancode.KPPOINT,
-        sdl2.SDL_SCANCODE_DELETE: scancode.DELETE,
-        # extensions
-        sdl2.SDL_SCANCODE_NONUSBACKSLASH: scancode.INT1,
-        # windows keys
-        sdl2.SDL_SCANCODE_LGUI: scancode.LSUPER,
-        sdl2.SDL_SCANCODE_RGUI: scancode.RSUPER,
-        sdl2.SDL_SCANCODE_MENU: scancode.MENU,
-        # Japanese keyboards
-        # mapping to SDL scancodes unknown
-        #HIRAGANA_KATAKANA = 0x70
-        # backslash/underscore on Japanese keyboard
-        #INT3 = 0x73
-        #HENKAN = 0x79
-        # this is a guess based on https://wiki.libsdl.org/SDL_Scancode
-        # and http://www.quadibloc.com/comp/scan.htm
-        sdl2.SDL_SCANCODE_LANG4: scancode.MUHENKAN,
-        sdl2.SDL_SCANCODE_LANG5: scancode.ZENKAKU_HANKAKU,
-        sdl2.SDL_SCANCODE_INTERNATIONAL3: scancode.INT4,
-        # Korean keyboards
-        sdl2.SDL_SCANCODE_LANG2: scancode.HANJA,
-        sdl2.SDL_SCANCODE_LANG1: scancode.HAN_YEONG,
-    }
-
-    key_to_eascii = {
-        sdl2.SDLK_F1: uea.F1,
-        sdl2.SDLK_F2: uea.F2,
-        sdl2.SDLK_F3: uea.F3,
-        sdl2.SDLK_F4: uea.F4,
-        sdl2.SDLK_F5: uea.F5,
-        sdl2.SDLK_F6: uea.F6,
-        sdl2.SDLK_F7: uea.F7,
-        sdl2.SDLK_F8: uea.F8,
-        sdl2.SDLK_F9: uea.F9,
-        sdl2.SDLK_F10: uea.F10,
-        sdl2.SDLK_F11: uea.F11,
-        sdl2.SDLK_F12: uea.F12,
-        sdl2.SDLK_HOME: uea.HOME,
-        sdl2.SDLK_UP: uea.UP,
-        sdl2.SDLK_PAGEUP: uea.PAGEUP,
-        sdl2.SDLK_LEFT: uea.LEFT,
-        sdl2.SDLK_RIGHT: uea.RIGHT,
-        sdl2.SDLK_END: uea.END,
-        sdl2.SDLK_DOWN: uea.DOWN,
-        sdl2.SDLK_PAGEDOWN: uea.PAGEDOWN,
-        sdl2.SDLK_ESCAPE: uea.ESCAPE,
-        sdl2.SDLK_BACKSPACE: uea.BACKSPACE,
-        sdl2.SDLK_TAB: uea.TAB,
-        sdl2.SDLK_RETURN: uea.RETURN,
-        sdl2.SDLK_KP_ENTER: uea.RETURN,
-        sdl2.SDLK_SPACE: uea.SPACE,
-        sdl2.SDLK_INSERT: uea.INSERT,
-        sdl2.SDLK_DELETE: uea.DELETE,
-    }
-
-    shift_key_to_eascii = {
-        sdl2.SDLK_F1: uea.SHIFT_F1,
-        sdl2.SDLK_F2: uea.SHIFT_F2,
-        sdl2.SDLK_F3: uea.SHIFT_F3,
-        sdl2.SDLK_F4: uea.SHIFT_F4,
-        sdl2.SDLK_F5: uea.SHIFT_F5,
-        sdl2.SDLK_F6: uea.SHIFT_F6,
-        sdl2.SDLK_F7: uea.SHIFT_F7,
-        sdl2.SDLK_F8: uea.SHIFT_F8,
-        sdl2.SDLK_F9: uea.SHIFT_F9,
-        sdl2.SDLK_F10: uea.SHIFT_F10,
-        sdl2.SDLK_F11: uea.SHIFT_F11,
-        sdl2.SDLK_F12: uea.SHIFT_F12,
-        sdl2.SDLK_HOME: uea.SHIFT_HOME,
-        sdl2.SDLK_UP: uea.SHIFT_UP,
-        sdl2.SDLK_PAGEUP: uea.SHIFT_PAGEUP,
-        sdl2.SDLK_LEFT: uea.SHIFT_LEFT,
-        sdl2.SDLK_RIGHT: uea.SHIFT_RIGHT,
-        sdl2.SDLK_END: uea.SHIFT_END,
-        sdl2.SDLK_DOWN: uea.SHIFT_DOWN,
-        sdl2.SDLK_PAGEDOWN: uea.SHIFT_PAGEDOWN,
-        sdl2.SDLK_ESCAPE: uea.SHIFT_ESCAPE,
-        sdl2.SDLK_BACKSPACE: uea.SHIFT_BACKSPACE,
-        sdl2.SDLK_TAB: uea.SHIFT_TAB,
-        sdl2.SDLK_RETURN: uea.SHIFT_RETURN,
-        sdl2.SDLK_KP_ENTER: uea.SHIFT_RETURN,
-        sdl2.SDLK_SPACE: uea.SHIFT_SPACE,
-        sdl2.SDLK_INSERT: uea.SHIFT_INSERT,
-        sdl2.SDLK_DELETE: uea.SHIFT_DELETE,
-        sdl2.SDLK_KP_5: uea.SHIFT_KP5,
-    }
-
-    ctrl_key_to_eascii = {
-        sdl2.SDLK_F1: uea.CTRL_F1,
-        sdl2.SDLK_F2: uea.CTRL_F2,
-        sdl2.SDLK_F3: uea.CTRL_F3,
-        sdl2.SDLK_F4: uea.CTRL_F4,
-        sdl2.SDLK_F5: uea.CTRL_F5,
-        sdl2.SDLK_F6: uea.CTRL_F6,
-        sdl2.SDLK_F7: uea.CTRL_F7,
-        sdl2.SDLK_F8: uea.CTRL_F8,
-        sdl2.SDLK_F9: uea.CTRL_F9,
-        sdl2.SDLK_F10: uea.CTRL_F10,
-        sdl2.SDLK_F11: uea.CTRL_F11,
-        sdl2.SDLK_F12: uea.CTRL_F12,
-        sdl2.SDLK_HOME: uea.CTRL_HOME,
-        sdl2.SDLK_PAGEUP: uea.CTRL_PAGEUP,
-        sdl2.SDLK_LEFT: uea.CTRL_LEFT,
-        sdl2.SDLK_RIGHT: uea.CTRL_RIGHT,
-        sdl2.SDLK_END: uea.CTRL_END,
-        sdl2.SDLK_PAGEDOWN: uea.CTRL_PAGEDOWN,
-        sdl2.SDLK_ESCAPE: uea.CTRL_ESCAPE,
-        sdl2.SDLK_BACKSPACE: uea.CTRL_BACKSPACE,
-        sdl2.SDLK_TAB: uea.CTRL_TAB,
-        sdl2.SDLK_RETURN: uea.CTRL_RETURN,
-        sdl2.SDLK_KP_ENTER: uea.CTRL_RETURN,
-        sdl2.SDLK_SPACE: uea.CTRL_SPACE,
-        sdl2.SDLK_PRINTSCREEN: uea.CTRL_PRINT,
-        sdl2.SDLK_2: uea.CTRL_2,
-        sdl2.SDLK_6: uea.CTRL_6,
-        sdl2.SDLK_MINUS: uea.CTRL_MINUS,
-    }
-
-    alt_scan_to_eascii = {
-        sdl2.SDL_SCANCODE_1: uea.ALT_1,
-        sdl2.SDL_SCANCODE_2: uea.ALT_2,
-        sdl2.SDL_SCANCODE_3: uea.ALT_3,
-        sdl2.SDL_SCANCODE_4: uea.ALT_4,
-        sdl2.SDL_SCANCODE_5: uea.ALT_5,
-        sdl2.SDL_SCANCODE_6: uea.ALT_6,
-        sdl2.SDL_SCANCODE_7: uea.ALT_7,
-        sdl2.SDL_SCANCODE_8: uea.ALT_8,
-        sdl2.SDL_SCANCODE_9: uea.ALT_9,
-        sdl2.SDL_SCANCODE_0: uea.ALT_0,
-        sdl2.SDL_SCANCODE_MINUS: uea.ALT_MINUS,
-        sdl2.SDL_SCANCODE_EQUALS: uea.ALT_EQUALS,
-        sdl2.SDL_SCANCODE_Q: uea.ALT_q,
-        sdl2.SDL_SCANCODE_W: uea.ALT_w,
-        sdl2.SDL_SCANCODE_E: uea.ALT_e,
-        sdl2.SDL_SCANCODE_R: uea.ALT_r,
-        sdl2.SDL_SCANCODE_T: uea.ALT_t,
-        sdl2.SDL_SCANCODE_Y: uea.ALT_y,
-        sdl2.SDL_SCANCODE_U: uea.ALT_u,
-        sdl2.SDL_SCANCODE_I: uea.ALT_i,
-        sdl2.SDL_SCANCODE_O: uea.ALT_o,
-        sdl2.SDL_SCANCODE_P: uea.ALT_p,
-        sdl2.SDL_SCANCODE_A: uea.ALT_a,
-        sdl2.SDL_SCANCODE_S: uea.ALT_s,
-        sdl2.SDL_SCANCODE_D: uea.ALT_d,
-        sdl2.SDL_SCANCODE_F: uea.ALT_f,
-        sdl2.SDL_SCANCODE_G: uea.ALT_g,
-        sdl2.SDL_SCANCODE_H: uea.ALT_h,
-        sdl2.SDL_SCANCODE_J: uea.ALT_j,
-        sdl2.SDL_SCANCODE_K: uea.ALT_k,
-        sdl2.SDL_SCANCODE_L: uea.ALT_l,
-        sdl2.SDL_SCANCODE_Z: uea.ALT_z,
-        sdl2.SDL_SCANCODE_X: uea.ALT_x,
-        sdl2.SDL_SCANCODE_C: uea.ALT_c,
-        sdl2.SDL_SCANCODE_V: uea.ALT_v,
-        sdl2.SDL_SCANCODE_B: uea.ALT_b,
-        sdl2.SDL_SCANCODE_N: uea.ALT_n,
-        sdl2.SDL_SCANCODE_M: uea.ALT_m,
-        sdl2.SDL_SCANCODE_F1: uea.ALT_F1,
-        sdl2.SDL_SCANCODE_F2: uea.ALT_F2,
-        sdl2.SDL_SCANCODE_F3: uea.ALT_F3,
-        sdl2.SDL_SCANCODE_F4: uea.ALT_F4,
-        sdl2.SDL_SCANCODE_F5: uea.ALT_F5,
-        sdl2.SDL_SCANCODE_F6: uea.ALT_F6,
-        sdl2.SDL_SCANCODE_F7: uea.ALT_F7,
-        sdl2.SDL_SCANCODE_F8: uea.ALT_F8,
-        sdl2.SDL_SCANCODE_F9: uea.ALT_F9,
-        sdl2.SDL_SCANCODE_F10: uea.ALT_F10,
-        sdl2.SDL_SCANCODE_F11: uea.ALT_F11,
-        sdl2.SDL_SCANCODE_F12: uea.ALT_F12,
-        sdl2.SDL_SCANCODE_BACKSPACE: uea.ALT_BACKSPACE,
-        sdl2.SDL_SCANCODE_TAB: uea.ALT_TAB,
-        sdl2.SDL_SCANCODE_RETURN: uea.ALT_RETURN,
-        sdl2.SDL_SCANCODE_KP_ENTER: uea.ALT_RETURN,
-        sdl2.SDL_SCANCODE_SPACE: uea.ALT_SPACE,
-        sdl2.SDL_SCANCODE_PRINTSCREEN: uea.ALT_PRINT,
-        sdl2.SDL_SCANCODE_KP_5: uea.ALT_KP5,
-    }
-
-    mod_to_scan = {
-        sdl2.KMOD_LSHIFT: scancode.LSHIFT,
-        sdl2.KMOD_RSHIFT: scancode.RSHIFT,
-        sdl2.KMOD_LCTRL: scancode.CTRL,
-        sdl2.KMOD_RCTRL: scancode.CTRL,
-        sdl2.KMOD_LALT: scancode.ALT,
-    }
