@@ -72,7 +72,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.mode_has_blink = True
         # update cycle
         # update flag
-        self.screen_changed = False
+        self.busy = False
         # refresh cycle parameters
         self._cycle = 0
         self.last_cycle = 0
@@ -274,7 +274,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 self._resize_display(*self._find_display_size(
                                 self.size[0], self.size[1], self.border_width))
             self.clipboard.handle_key(scan, c)
-            self.screen_changed = True
+            self.busy = True
         else:
             # double NUL characters, as single NUL signals e-ASCII
             if c == u'\0':
@@ -306,7 +306,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             self._alt_key_down = False
         elif e.key == pygame.K_F11:
             self.clipboard.stop()
-            self.screen_changed = True
+            self.busy = True
             self.f11_active = False
         # last key released gets remembered
         try:
@@ -331,20 +331,20 @@ class VideoPygame(video_graphical.VideoGraphical):
         if self.mode_has_blink:
             self.blink_state = 0 if self._cycle < self.blink_cycles * 2 else 1
             if self._cycle % self.blink_cycles == 0:
-                self.screen_changed = True
+                self.busy = True
         if self.cursor_visible and (
                 (self.cursor_row != self.last_row) or
                 (self.cursor_col != self.last_col)):
-            self.screen_changed = True
+            self.busy = True
         tock = pygame.time.get_ticks()
         if (tock - self.last_cycle) >= (self._cycle_time/self.blink_cycles):
             self.last_cycle = tock
             self._cycle += 1
             if self._cycle == self.blink_cycles*4:
                 self._cycle = 0
-        if self.screen_changed:
+        if self.busy:
             self._do_flip()
-            self.screen_changed = False
+            self.busy = False
 
     def _do_flip(self):
         """Draw the canvas to the screen."""
@@ -417,7 +417,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.display = pygame.display.set_mode((width, height), flags)
         self.window_width, self.window_height = width, height
         # load display if requested
-        self.screen_changed = True
+        self.busy = True
 
 
     ###########################################################################
@@ -449,7 +449,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.clipboard = video_graphical.ClipboardInterface(
                 self.clipboard_handler, self.input_queue,
                 mode_info.width, mode_info.height, self.font_width, self.font_height, self.size)
-        self.screen_changed = True
+        self.busy = True
         self._has_window = True
 
     def set_caption_message(self, msg):
@@ -473,12 +473,12 @@ class VideoPygame(video_graphical.VideoGraphical):
         self._palette[1] = rgb_palette_1[:self.num_fore_attrs] * (128//self.num_fore_attrs)
         for b in rgb_palette_1[:self.num_back_attrs] * (128//self.num_fore_attrs//self.num_back_attrs):
             self._palette[1] += [b]*self.num_fore_attrs
-        self.screen_changed = True
+        self.busy = True
 
     def set_border_attr(self, attr):
         """Change the border attribute."""
         self.border_attr = attr
-        self.screen_changed = True
+        self.busy = True
 
     def set_composite(self, on, composite_colors):
         """Enable/disable composite artifacts."""
@@ -487,7 +487,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         if on:
             self._palette = [composite_colors] * 2
         self._composite = on
-        self.screen_changed = True
+        self.busy = True
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
@@ -495,22 +495,22 @@ class VideoPygame(video_graphical.VideoGraphical):
         scroll_area = pygame.Rect(0, (start-1)*self.font_height,
                                   self.size[0], (stop-start+1)*self.font_height)
         self.canvas[self.apagenum].fill(bg, scroll_area)
-        self.screen_changed = True
+        self.busy = True
 
     def set_page(self, vpage, apage):
         """Set the visible and active page."""
         self.vpagenum, self.apagenum = vpage, apage
-        self.screen_changed = True
+        self.busy = True
 
     def copy_page(self, src, dst):
         """Copy source to destination page."""
         self.canvas[dst].blit(self.canvas[src], (0, 0))
-        self.screen_changed = True
+        self.busy = True
 
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on
-        self.screen_changed = True
+        self.busy = True
 
     def move_cursor(self, crow, ccol):
         """Move the cursor to a new position."""
@@ -536,7 +536,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                                    0, (scroll_height-1) * self.font_height,
                                    self.size[0], self.font_height))
         self.canvas[self.apagenum].set_clip(None)
-        self.screen_changed = True
+        self.busy = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
@@ -551,7 +551,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                                     0, (from_line-1) * self.font_height,
                                     self.size[0], self.font_height))
         self.canvas[self.apagenum].set_clip(None)
-        self.screen_changed = True
+        self.busy = True
 
     def put_glyph(
             self, pagenum, row, col, cp, is_fullwidth,
@@ -584,7 +584,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         if underline:
             self.canvas[pagenum].fill(color, (x0, y0 + self.font_height - 1,
                                                             self.font_width, 1))
-        self.screen_changed = True
+        self.busy = True
 
     def build_glyphs(self, new_dict):
         """Build a dict of glyphs for use in text mode."""
@@ -601,31 +601,31 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.cursor.fill(bg)
         self.cursor.fill(color, (0, from_line, width,
                                     min(to_line-from_line+1, height-from_line)))
-        self.screen_changed = True
+        self.busy = True
 
     def put_pixel(self, pagenum, x, y, index):
         """Put a pixel on the screen; callback to empty character buffer."""
         self.canvas[pagenum].set_at((x,y), index)
-        self.screen_changed = True
+        self.busy = True
 
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
         self.canvas[pagenum].fill(index, rect)
-        self.screen_changed = True
+        self.busy = True
 
     def fill_interval(self, pagenum, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
         dx = x1 - x0 + 1
         self.canvas[pagenum].fill(index, (x0, y, dx, 1))
-        self.screen_changed = True
+        self.busy = True
 
     def put_interval(self, pagenum, x, y, colours):
         """Write a list of attributes to a scanline interval."""
         # reference the interval on the canvas
         pygame.surfarray.pixels2d(self.canvas[pagenum]
                 )[x:x+len(colours), y] = numpy.array(colours).astype(int)
-        self.screen_changed = True
+        self.busy = True
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attribytes to an area."""
@@ -634,7 +634,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         # reference the destination area
         pygame.surfarray.pixels2d(self.canvas[pagenum].subsurface(
             pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))[:] = numpy.array(array).T
-        self.screen_changed = True
+        self.busy = True
 
 
 ###############################################################################

@@ -529,7 +529,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                     width, height, flags)
         self._set_icon()
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
-        self.screen_changed = True
+        self.busy = True
         self.window_width, self.window_height = width, height
 
 
@@ -578,7 +578,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 if self._clipboard_interface.active():
                     self._clipboard_interface.move(1 + pos[1] // self.font_height,
                             1 + (pos[0]+self.font_width//2) // self.font_width)
-                    self.screen_changed = True
+                    self.busy = True
             elif event.type == sdl2.SDL_JOYBUTTONDOWN:
                 self.input_queue.put(signals.Event(signals.STICK_DOWN,
                                     (event.jbutton.which, event.jbutton.button)))
@@ -651,7 +651,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             self._clipboard_interface.start(self.cursor_row, self.cursor_col)
         elif self._f11_active:
             self._clipboard_interface.handle_key(scan, c)
-            self.screen_changed = True
+            self.busy = True
         else:
             # keep scancode in buffer
             # to combine with text event
@@ -677,7 +677,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # check for emulator key
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self._clipboard_interface.stop()
-            self.screen_changed = True
+            self.busy = True
             self._f11_active = False
         # last key released gets remembered
         try:
@@ -737,20 +737,20 @@ class VideoSDL2(video_graphical.VideoGraphical):
         if self.mode_has_blink:
             self.blink_state = 0 if self._cycle < BLINK_CYCLES * 2 else 1
             if self._cycle % BLINK_CYCLES == 0:
-                self.screen_changed = True
+                self.busy = True
         if self._cursor_visible and (
                 (self.cursor_row != self._last_row) or
                 (self.cursor_col != self._last_col)):
-            self.screen_changed = True
+            self.busy = True
         tock = sdl2.SDL_GetTicks()
         if (tock - self._last_tick) >= (CYCLE_TIME/BLINK_CYCLES):
             self._last_tick = tock
             self._cycle += 1
             if self._cycle == BLINK_CYCLES * 4:
                 self._cycle = 0
-            if self.screen_changed:
+            if self.busy:
                 self._do_flip()
-                self.screen_changed = False
+                self.busy = False
 
     def _do_flip(self):
         """Draw the canvas to the screen."""
@@ -848,7 +848,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
         self.window_width, self.window_height = w.value, h.value
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
-        self.screen_changed = True
+        self.busy = True
 
 
     ###########################################################################
@@ -902,7 +902,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self._clipboard_interface = video_graphical.ClipboardInterface(
                 self._clipboard_handler, self.input_queue,
                 mode_info.width, mode_info.height, self.font_width, self.font_height, self.size)
-        self.screen_changed = True
+        self.busy = True
         self._has_window = True
 
     def set_caption_message(self, msg):
@@ -930,12 +930,12 @@ class VideoSDL2(video_graphical.VideoGraphical):
         colors_1 = (sdl2.SDL_Color * 256)(*(sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in show_palette_1))
         sdl2.SDL_SetPaletteColors(self._palette[0], colors_0, 0, 256)
         sdl2.SDL_SetPaletteColors(self._palette[1], colors_1, 0, 256)
-        self.screen_changed = True
+        self.busy = True
 
     def set_border_attr(self, attr):
         """Change the border attribute."""
         self._border_attr = attr
-        self.screen_changed = True
+        self.busy = True
 
     def set_composite(self, on, composite_colors):
         """Enable/disable composite artifacts."""
@@ -946,7 +946,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_SetPaletteColors(self._palette[0], colors, 0, 256)
             sdl2.SDL_SetPaletteColors(self._palette[1], colors, 0, 256)
         self._composite = on
-        self.screen_changed = True
+        self.busy = True
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
@@ -954,24 +954,24 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 0, (start-1)*self.font_height,
                 self.size[0], (stop-start+1)*self.font_height)
         sdl2.SDL_FillRect(self.canvas[self.apagenum], scroll_area, back_attr)
-        self.screen_changed = True
+        self.busy = True
 
     def set_page(self, vpage, apage):
         """Set the visible and active page."""
         self.vpagenum, self.apagenum = vpage, apage
-        self.screen_changed = True
+        self.busy = True
 
     def copy_page(self, src, dst):
         """Copy source to destination page."""
         self.pixels[dst][:] = self.pixels[src][:]
         # alternative:
         # sdl2.SDL_BlitSurface(self.canvas[src], None, self.canvas[dst], None)
-        self.screen_changed = True
+        self.busy = True
 
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
         self._cursor_visible = cursor_on
-        self.screen_changed = True
+        self.busy = True
 
     def move_cursor(self, crow, ccol):
         """Move the cursor to a new position."""
@@ -990,7 +990,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         old_y0, old_y1 = from_line*self.font_height, scroll_height*self.font_height
         pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
         pixels[x0:x1, new_y1:old_y1] = numpy.full((x1-x0, old_y1-new_y1), back_attr, dtype=int)
-        self.screen_changed = True
+        self.busy = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
@@ -1001,7 +1001,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         new_y0, new_y1 = from_line*self.font_height, scroll_height*self.font_height
         pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
         pixels[x0:x1, old_y0:new_y0] = numpy.full((x1-x0, new_y0-old_y0), back_attr, dtype=int)
-        self.screen_changed = True
+        self.busy = True
 
     def put_glyph(
             self, pagenum, row, col, cp, is_fullwidth,
@@ -1034,7 +1034,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 self.canvas[self.apagenum],
                 sdl2.SDL_Rect(x0, y0 + self.font_height - 1, glyph_width, 1),
                 attr)
-        self.screen_changed = True
+        self.busy = True
 
     def build_glyphs(self, new_dict):
         """Build a dict of glyphs for use in text mode."""
@@ -1051,25 +1051,25 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def put_pixel(self, pagenum, x, y, index):
         """Put a pixel on the screen; callback to empty character buffer."""
         self.pixels[pagenum][x, y] = index
-        self.screen_changed = True
+        self.busy = True
 
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         rect = sdl2.SDL_Rect(x0, y0, x1-x0+1, y1-y0+1)
         sdl2.SDL_FillRect(self.canvas[pagenum], rect, index)
-        self.screen_changed = True
+        self.busy = True
 
     def fill_interval(self, pagenum, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
         rect = sdl2.SDL_Rect(x0, y, x1-x0+1, 1)
         sdl2.SDL_FillRect(self.canvas[pagenum], rect, index)
-        self.screen_changed = True
+        self.busy = True
 
     def put_interval(self, pagenum, x, y, colours):
         """Write a list of attributes to a scanline interval."""
         # reference the interval on the canvas
         self.pixels[pagenum][x:x+len(colours), y] = numpy.array(colours).astype(int)
-        self.screen_changed = True
+        self.busy = True
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attribytes to an area."""
@@ -1077,4 +1077,4 @@ class VideoSDL2(video_graphical.VideoGraphical):
             return
         # reference the destination area
         self.pixels[pagenum][x0:x1+1, y0:y1+1] = numpy.array(array).T
-        self.screen_changed = True
+        self.busy = True

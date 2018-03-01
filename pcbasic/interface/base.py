@@ -77,7 +77,7 @@ class Interface(object):
                     # ensure both queues are drained
                     self._video.cycle()
                     self._audio.cycle()
-                    if not self._audio.playing and not self._video.screen_changed:
+                    if not self._audio.playing and not self._video.busy:
                         # nothing to do, come back later
                         self._video.sleep(self.delay)
                     else:
@@ -169,7 +169,7 @@ class VideoPlugin(object):
     def __init__(self, input_queue, video_queue, **kwargs):
         """Setup the interface."""
         self.alive = True
-        self.screen_changed = False
+        self.busy = False
         self.input_queue = input_queue
         self.video_queue = video_queue
         self._handlers = {
