@@ -36,6 +36,12 @@ class VideoPygame(video_graphical.VideoGraphical):
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise pygame interface."""
         video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
+        # request smooth scaling
+        self.smooth = kwargs.get('smooth', False)
+        # ignore ALT+F4 and window X button
+        self.nokill = kwargs.get('nokill', False)
+        # window caption/title
+        self.caption = kwargs.get('caption', u'')
         self._has_window = False
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:

@@ -64,12 +64,6 @@ class VideoGraphical(base.VideoPlugin):
         self.border_width = kwargs.get('border_width', 0)
         # start in fullscreen mode
         self.fullscreen = kwargs.get('fullscreen', False)
-        # request smooth scaling
-        self.smooth = kwargs.get('smooth', False)
-        # ignore ALT+F4 and window X button
-        self.nokill = kwargs.get('nokill', False)
-        # window caption/title
-        self.caption = kwargs.get('caption', u'')
         # the following attributes must be overridden by child classes
         # size of display
         self.physical_size = ()
@@ -86,8 +80,8 @@ class VideoGraphical(base.VideoPlugin):
             return 0, 0
         border_x = int(self.size[0] * self.border_width / 200.)
         border_y = int(self.size[1] * self.border_width / 200.)
-        xscale = self.window_width / (1.*(self.size[0]+2*border_x))
-        yscale = self.window_height / (1.*(self.size[1]+2*border_y))
+        xscale = self.window_width / float(self.size[0] + 2*border_x)
+        yscale = self.window_height / float(self.size[1] + 2*border_y)
         xpos = min(self.size[0]-1, max(0, int(x//xscale - border_x)))
         ypos = min(self.size[1]-1, max(0, int(y//yscale - border_y)))
         return xpos, ypos
@@ -100,8 +94,7 @@ class VideoGraphical(base.VideoPlugin):
         if not self.force_native_pixel:
             # this assumes actual display aspect ratio is wider than 4:3
             # scale y to fit screen
-            canvas_y = (1 - DISPLAY_SLACK/100.) * (
-                        self.physical_size[1] // int(1 + border_width/100.))
+            canvas_y = (1-DISPLAY_SLACK/100.) * (self.physical_size[1] // int(1+border_width/100.))
             # scale x to match aspect ratio
             canvas_x = (canvas_y * self.aspect[0]) / self.aspect[1]
             # add back border
@@ -113,21 +106,19 @@ class VideoGraphical(base.VideoPlugin):
             pixel_y = int(canvas_y * (1 + border_width/100.))
             # leave part of the screen either direction unused
             # to account for task bars, window decorations, etc.
-            xmult = max(1, int((100.-DISPLAY_SLACK) *
-                                        self.physical_size[0] / (100.*pixel_x)))
-            ymult = max(1, int((100.-DISPLAY_SLACK) *
-                                        self.physical_size[1] / (100.*pixel_y)))
+            xmult = max(1, int((100.-DISPLAY_SLACK) * self.physical_size[0] / (100.*pixel_x)))
+            ymult = max(1, int((100.-DISPLAY_SLACK) * self.physical_size[1] / (100.*pixel_y)))
             # find the multipliers mx <= xmult, my <= ymult
             # such that mx * pixel_x / my * pixel_y
             # is multiplicatively closest to aspect[0] / aspect[1]
-            target = self.aspect[0]/(1.0*self.aspect[1])
-            current = xmult*canvas_x / (1.0*ymult*canvas_y)
+            target = self.aspect[0] / (1.0 * self.aspect[1])
+            current = xmult * canvas_x / (1.0 * ymult * canvas_y)
             # find the absolute multiplicative distance (always > 1)
             best = max(current, target) / min(current, target)
             apx = xmult, ymult
             for mx in range(1, xmult+1):
-                my = min(ymult,
-                         int(round(mx*canvas_x*self.aspect[1] / (1.0*canvas_y*self.aspect[0]))))
+                my = min(
+                    ymult, int(round(mx*canvas_x*self.aspect[1] / (1.0*canvas_y*self.aspect[0]))))
                 current = mx*pixel_x / (1.0*my*pixel_y)
                 dist = max(current, target) / min(current, target)
                 # prefer larger multipliers if distance is equal
@@ -223,8 +214,8 @@ class ClipboardInterface(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        self._input_queue.put(signals.Event(signals.CLIP_COPY,
-                (start[0], start[1], stop[0], stop[1], mouse)))
+        self._input_queue.put(signals.Event(
+                signals.CLIP_COPY, (start[0], start[1], stop[0], stop[1], mouse)))
 
     def paste(self, text):
         """Paste from clipboard into keyboard buffer."""
@@ -252,17 +243,14 @@ class ClipboardInterface(object):
         rect_bot = stop[0] * self.font_height
         if start[0] == stop[0]:
             # single row selection
-            self.selection_rect = [(rect_left, rect_top,
-                                    rect_right-rect_left, rect_bot-rect_top)]
+            self.selection_rect = [(rect_left, rect_top, rect_right-rect_left, rect_bot-rect_top)]
         else:
             # multi-row selection
             self.selection_rect = [
-                (rect_left, rect_top,
-                      self.size[0]-rect_left, self.font_height),
-                (0, rect_top + self.font_height,
-                      self.size[0], rect_bot - rect_top - 2*self.font_height),
-                (0, rect_bot - self.font_height,
-                      rect_right, self.font_height)]
+                (rect_left, rect_top, self.size[0]-rect_left, self.font_height),
+                (0, rect_top+self.font_height, self.size[0], rect_bot-rect_top-2*self.font_height),
+                (0, rect_bot-self.font_height, rect_right, self.font_height)
+            ]
 
     def handle_key(self, scan, c):
         """Handle keyboard clipboard commands."""
