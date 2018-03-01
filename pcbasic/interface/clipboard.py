@@ -2,7 +2,7 @@
 PC-BASIC - clipboard.py
 Clipboard handling
 
-(c) 2013, 2014, 2015, 2016 Rob Hagemans
+(c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -67,8 +67,7 @@ class XClipboard(Clipboard):
         if mouse:
             output = subprocess.check_output((self._command, '-o'))
         else:
-            output = subprocess.check_output(
-                                [self._command, '-o'] + self._notmouse)
+            output = subprocess.check_output([self._command, '-o'] + self._notmouse)
         return (output.decode(encoding, 'replace')
                 .replace('\r\n','\r').replace('\n', '\r'))
 
@@ -76,11 +75,9 @@ class XClipboard(Clipboard):
         """Put unicode text on clipboard."""
         try:
             if mouse:
-                p = subprocess.Popen((self._command, '-i'),
-                                     stdin=subprocess.PIPE)
+                p = subprocess.Popen((self._command, '-i'), stdin=subprocess.PIPE)
             else:
-                p = subprocess.Popen([self._command, '-i'] + self._notmouse,
-                                     stdin=subprocess.PIPE)
+                p = subprocess.Popen([self._command, '-i'] + self._notmouse, stdin=subprocess.PIPE)
             p.communicate(text.encode(encoding, 'replace'))
         except subprocess.CalledProcessError:
             pass
