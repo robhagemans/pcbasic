@@ -134,11 +134,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 self._input_queue.put(signals.Event(signals.STICK_MOVED,
                                                       (joy, axis, 128)))
         # mouse setups
-        buttons = { 'left': 1, 'middle': 2, 'right': 3, 'none': -1 }
-        copy_paste = kwargs.get('copy-paste', ('left', 'middle'))
-        self.mousebutton_copy = buttons[copy_paste[0]]
-        self.mousebutton_paste = buttons[copy_paste[1]]
-        self.mousebutton_pen = buttons[kwargs.get('pen', 'right')]
+        self._mouse_clip = kwargs.get('mouse_clipboard', True)
         self.move_cursor(0, 0)
         self.set_page(0, 0)
         # set_mode shoul dbe first event on queue
@@ -189,23 +185,23 @@ class VideoPygame(video_graphical.VideoGraphical):
             elif event.type == pygame.KEYUP:
                 self._handle_key_up(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # copy, paste and pen may be on the same button, so no elifs
-                if event.button == self.mousebutton_copy:
-                    # LEFT button: copy
-                    pos = self._normalise_pos(*event.pos)
-                    self.clipboard.start(1 + pos[1] // self.font_height,
-                            1 + (pos[0]+self.font_width//2) // self.font_width)
-                if event.button == self.mousebutton_paste:
-                    # MIDDLE button: paste
-                    text = self.clipboard_handler.paste(mouse=True)
-                    self.clipboard.paste(text)
-                if event.button == self.mousebutton_pen:
+                if self._mouse_clip:
+                    if event.button == 1:
+                        # LEFT button: copy
+                        pos = self._normalise_pos(*event.pos)
+                        self.clipboard.start(1 + pos[1] // self.font_height,
+                                1 + (pos[0]+self.font_width//2) // self.font_width)
+                    elif event.button == 2:
+                        # MIDDLE button: paste
+                        text = self.clipboard_handler.paste(mouse=True)
+                        self.clipboard.paste(text)
+                if event.button == 1:
                     # right mouse button is a pen press
                     self._input_queue.put(signals.Event(signals.PEN_DOWN,
                                                 self._normalise_pos(*event.pos)))
             elif event.type == pygame.MOUSEBUTTONUP:
                 self._input_queue.put(signals.Event(signals.PEN_UP))
-                if event.button == self.mousebutton_copy:
+                if self._mouse_clip and event.button == 1:
                     self.clipboard.copy(mouse=True)
                     self.clipboard.stop()
             elif event.type == pygame.MOUSEMOTION:

@@ -413,14 +413,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # load the icon
         self._icon = kwargs['icon']
         # mouse setups
-        buttons = {
-            'left': sdl2.SDL_BUTTON_LEFT, 'middle': sdl2.SDL_BUTTON_MIDDLE,
-            'right': sdl2.SDL_BUTTON_RIGHT, 'none': None
-        }
-        copy_paste = kwargs.get('copy-paste', ('left', 'middle'))
-        self._mousebutton_copy = buttons[copy_paste[0]]
-        self._mousebutton_paste = buttons[copy_paste[1]]
-        self._mousebutton_pen = buttons[kwargs.get('pen', 'right')]
+        self._mouse_clip = kwargs.get('mouse_clipboard', True)
         # keyboard setup
         self._f11_active = False
         # we need a set_mode call to be really up and running
@@ -560,21 +553,21 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 self.set_caption_message(event.text.text)
             elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
                 pos = self._normalise_pos(event.button.x, event.button.y)
-                # copy, paste and pen may be on the same button, so no elifs
-                if event.button.button == self._mousebutton_copy:
-                    # LEFT button: copy
-                    self._clipboard_interface.start(1 + pos[1] // self.font_height,
-                            1 + (pos[0]+self.font_width//2) // self.font_width)
-                if event.button.button == self._mousebutton_paste:
-                    # MIDDLE button: paste
-                    text = self._clipboard_handler.paste(mouse=True)
-                    self._clipboard_interface.paste(text)
-                if event.button.button == self._mousebutton_pen:
+                if self._mouse_clip:
+                    if event.button.button == sdl2.SDL_BUTTON_LEFT:
+                        # LEFT button: copy
+                        self._clipboard_interface.start(1 + pos[1] // self.font_height,
+                                1 + (pos[0]+self.font_width//2) // self.font_width)
+                    elif event.button.button == sdl2.SDL_BUTTON_MIDDLE:
+                        # MIDDLE button: paste
+                        text = self._clipboard_handler.paste(mouse=True)
+                        self._clipboard_interface.paste(text)
+                if event.button.button == sdl2.SDL_BUTTON_LEFT:
                     # right mouse button is a pen press
                     self._input_queue.put(signals.Event(signals.PEN_DOWN, pos))
             elif event.type == sdl2.SDL_MOUSEBUTTONUP:
                 self._input_queue.put(signals.Event(signals.PEN_UP))
-                if event.button.button == self._mousebutton_copy:
+                if self._mouse_clip and event.button.button == sdl2.SDL_BUTTON_LEFT:
                     self._clipboard_interface.copy(mouse=True)
                     self._clipboard_interface.stop()
             elif event.type == sdl2.SDL_MOUSEMOTION:

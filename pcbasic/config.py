@@ -314,12 +314,7 @@ class Settings(object):
         u'nobox': {u'type': u'bool', u'default': False,},
         u'utf8': {u'type': u'bool', u'default': False,},
         u'border': {u'type': u'int', u'default': 5,},
-        u'pen': {
-            u'type': u'string', u'default': u'left',
-            u'choices': (u'left', u'middle', u'right', u'none',), },
-        u'copy-paste': {
-            u'type': u'string', u'list': 2, u'default': [u'left', u'middle'],
-            u'choices': (u'left', u'middle', u'right', u'none',),},
+        u'mouse-clipboard': {u'type': u'bool', u'default': True,},
         u'state': {u'type': u'string', u'default': u'',},
         u'mono-tint': {u'type': u'int', u'list': 3, u'default': [255, 255, 255],},
         u'monitor': {
@@ -534,8 +529,7 @@ class Settings(object):
             'fullscreen': self.get('fullscreen'),
             'alt_f4_quits': not self.get('nokill'),
             'caption': self.get('caption'),
-            'copy_paste': self.get('copy-paste'),
-            'pen': self.get('pen'),
+            'mouse_clipboard': self.get('mouse-clipboard'),
             'icon': ICON,
             'wait': self.get('wait'),
             }
