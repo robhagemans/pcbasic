@@ -37,9 +37,9 @@ class VideoPygame(video_graphical.VideoGraphical):
         """Initialise pygame interface."""
         video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
         # request smooth scaling
-        self.smooth = kwargs.get('smooth', False)
+        self._smooth = kwargs.get('scaling', None) == 'smooth'
         # ignore ALT+F4 and window X button
-        self.nokill = kwargs.get('nokill', False)
+        self._nokill = kwargs.get('alt_f4_quits', True) == False
         # window caption/title
         self.caption = kwargs.get('caption', u'')
         self._has_window = False
@@ -116,9 +116,9 @@ class VideoPygame(video_graphical.VideoGraphical):
         except pygame.error as e:
             self._close_pygame()
             raise base.InitFailed('Could not initialise display: %s' % e)
-        if self.smooth and self.display.get_bitsize() < 24:
+        if self._smooth and self.display.get_bitsize() < 24:
             logging.warning("Smooth scaling not available on this display (depth %d < 24)", self.display.get_bitsize())
-            self.smooth = False
+            self._smooth = False
         pygame.display.set_caption(self.caption.encode('utf-8'))
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
@@ -228,7 +228,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 self.fullscreen = False
                 self._resize_display(event.w, event.h)
             elif event.type == pygame.QUIT:
-                if self.nokill:
+                if self._nokill:
                     self.set_caption_message(video_graphical.NOKILL_MESSAGE)
                 else:
                     self._input_queue.put(signals.Event(signals.KEYB_QUIT))
@@ -370,7 +370,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         if self._composite:
             screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
         screen.set_palette(self._palette[self.blink_state])
-        if self.smooth:
+        if self._smooth:
             pygame.transform.smoothscale(screen.convert(self.display),
                                          self.display.get_size(), self.display)
         else:

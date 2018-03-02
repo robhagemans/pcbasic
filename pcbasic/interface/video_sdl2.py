@@ -391,11 +391,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
             raise base.InitFailed('Module `numpy` not found')
         video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
         # request smooth scaling
-        self.smooth = kwargs.get('smooth', False)
+        self._smooth = kwargs.get('scaling', None) == 'smooth'
         # ignore ALT+F4 and window X button
-        self.nokill = kwargs.get('nokill', False)
+        self._nokill = kwargs.get('alt_f4_quits', True) == False
         # window caption/title
-        self.caption = kwargs.get('caption', u'')
+        self._caption = kwargs.get('caption', u'')
         # display & border
         # border attribute
         self._border_attr = 0
@@ -468,17 +468,17 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.set_page(0, 0)
         # set_mode should be first event on queue
         # check if we can honour scaling=smooth
-        if self.smooth:
+        if self._smooth:
             # pointer to the zoomed surface
             self.zoomed = None
             pixelformat = self._display_surface.contents.format
             if pixelformat.contents.BitsPerPixel != 32:
                 logging.warning('Smooth scaling not available: need 32-bit colour, have %d-bit.',
                         self._display_surface.format.contents.BitsPerPixel)
-                self.smooth = False
+                self._smooth = False
             if not hasattr(sdl2, 'sdlgfx'):
                 logging.warning('Smooth scaling not available: `sdlgfx` extension not found.')
-                self.smooth = False
+                self._smooth = False
         # available joysticks
         num_joysticks = sdl2.SDL_NumJoysticks()
         for j in range(num_joysticks):
@@ -529,7 +529,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         if self.fullscreen:
              flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
         sdl2.SDL_DestroyWindow(self._display)
-        self._display = sdl2.SDL_CreateWindow(self.caption.encode('utf-8'),
+        self._display = sdl2.SDL_CreateWindow(self._caption.encode('utf-8'),
                     sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED,
                     width, height, flags)
         self._set_icon()
@@ -607,7 +607,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                         sdl2.SDL_WINDOWEVENT_FOCUS_GAINED):
                     sdl2.SDL_SetModState(sdl2.SDL_GetModState() & ~sdl2.KMOD_ALT)
             elif event.type == sdl2.SDL_QUIT:
-                if self.nokill:
+                if self._nokill:
                     self.set_caption_message(video_graphical.NOKILL_MESSAGE)
                 else:
                     self._input_queue.put(signals.Event(signals.KEYB_QUIT))
@@ -774,7 +774,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         pixelformat = self._display_surface.contents.format
         conv = sdl2.SDL_ConvertSurface(self._work_surface, pixelformat, 0)
         # scale converted surface and blit onto display
-        if not self.smooth:
+        if not self._smooth:
             sdl2.SDL_BlitScaled(conv, None, self._display_surface, None)
         else:
             # smooth-scale converted surface
@@ -914,7 +914,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
-        title = self.caption + (u' - ' + msg if msg else u'')
+        title = self._caption + (u' - ' + msg if msg else u'')
         sdl2.SDL_SetWindowTitle(self._display, title.encode('utf-8'))
 
     def set_clipboard_text(self, text, mouse):

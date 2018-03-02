@@ -527,13 +527,12 @@ class Settings(object):
     def get_video_parameters(self):
         """Return a dictionary of parameters for the video plugin."""
         return {
-            'force_display_size': self.get('dimensions'),
-            'aspect': self.get('aspect'),
+            'dimensions': self.get('dimensions'),
+            'aspect_ratio': self.get('aspect'),
             'border_width': self.get('border'),
-            'force_native_pixel': (self.get('scaling') == 'native'),
+            'scaling': self.get('scaling'),
             'fullscreen': self.get('fullscreen'),
-            'smooth': (self.get('scaling') == 'smooth'),
-            'nokill': self.get('nokill'),
+            'alt_f4_quits': not self.get('nokill'),
             'caption': self.get('caption'),
             'copy_paste': self.get('copy-paste'),
             'pen': self.get('pen'),

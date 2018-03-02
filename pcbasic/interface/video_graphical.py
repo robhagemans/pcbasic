@@ -55,11 +55,11 @@ class VideoGraphical(base.VideoPlugin):
         """Initialise video plugin parameters."""
         base.VideoPlugin.__init__(self, input_queue, video_queue)
         # use native pixel sizes
-        self.force_native_pixel = kwargs.get('force_native_pixel', False)
+        self._force_native_pixel = kwargs.get('scaling', None) == 'native'
         # display dimensions
-        self.force_display_size = kwargs.get('force_display_size', None)
+        self._force_display_size = kwargs.get('dimensions', None)
         # aspect ratio
-        self.aspect = kwargs.get('aspect', (4, 3))
+        self._aspect = kwargs.get('aspect_ratio', (4, 3))
         # border width percentage
         self.border_width = kwargs.get('border_width', 0)
         # start in fullscreen mode
@@ -89,14 +89,14 @@ class VideoGraphical(base.VideoPlugin):
     def _find_display_size(self, canvas_x, canvas_y, border_width):
         """Determine the optimal size for the display."""
         # comply with requested size unless we're fullscreening
-        if self.force_display_size and not self.fullscreen:
-            return self.force_display_size
-        if not self.force_native_pixel:
+        if self._force_display_size and not self.fullscreen:
+            return self._force_display_size
+        if not self._force_native_pixel:
             # this assumes actual display aspect ratio is wider than 4:3
             # scale y to fit screen
             canvas_y = (1-DISPLAY_SLACK/100.) * (self.physical_size[1] // int(1+border_width/100.))
             # scale x to match aspect ratio
-            canvas_x = (canvas_y * self.aspect[0]) / self.aspect[1]
+            canvas_x = (canvas_y * self._aspect[0]) / self._aspect[1]
             # add back border
             pixel_x = int(canvas_x * (1 + border_width/100.))
             pixel_y = int(canvas_y * (1 + border_width/100.))
@@ -111,14 +111,14 @@ class VideoGraphical(base.VideoPlugin):
             # find the multipliers mx <= xmult, my <= ymult
             # such that mx * pixel_x / my * pixel_y
             # is multiplicatively closest to aspect[0] / aspect[1]
-            target = self.aspect[0] / (1.0 * self.aspect[1])
+            target = self._aspect[0] / (1.0 * self._aspect[1])
             current = xmult * canvas_x / (1.0 * ymult * canvas_y)
             # find the absolute multiplicative distance (always > 1)
             best = max(current, target) / min(current, target)
             apx = xmult, ymult
             for mx in range(1, xmult+1):
                 my = min(
-                    ymult, int(round(mx*canvas_x*self.aspect[1] / (1.0*canvas_y*self.aspect[0]))))
+                    ymult, int(round(mx*canvas_x*self._aspect[1] / (1.0*canvas_y*self._aspect[0]))))
                 current = mx*pixel_x / (1.0*my*pixel_y)
                 dist = max(current, target) / min(current, target)
                 # prefer larger multipliers if distance is equal
