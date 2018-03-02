@@ -95,6 +95,8 @@ if sdl2:
         sdl2.SDL_SCANCODE_RSHIFT: scancode.RSHIFT,
         sdl2.SDL_SCANCODE_SYSREQ: scancode.SYSREQ,
         sdl2.SDL_SCANCODE_LALT: scancode.ALT,
+        # don't catch right-Alt as it may inhibit AltGr on Windows
+        # sdl2.SDL_SCANCODE_RALT: scancode.ALT,
         sdl2.SDL_SCANCODE_SPACE: scancode.SPACE, sdl2.SDL_SCANCODE_CAPSLOCK: scancode.CAPSLOCK,
         # function keys
         sdl2.SDL_SCANCODE_F1: scancode.F1, sdl2.SDL_SCANCODE_F2: scancode.F2,
@@ -315,6 +317,8 @@ if sdl2:
         sdl2.KMOD_LCTRL: scancode.CTRL,
         sdl2.KMOD_RCTRL: scancode.CTRL,
         sdl2.KMOD_LALT: scancode.ALT,
+        # don't catch right-Alt as it may inhibit AltGr on Windows
+        #sdl2.KMOD_RALT: scancode.ALT,
     }
 
 
@@ -419,11 +423,6 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self._mousebutton_pen = buttons[kwargs.get('pen', 'right')]
         # keyboard setup
         self._f11_active = False
-        self._altgr = kwargs['altgr']
-        # FIXME: change to global
-        if not self._altgr:
-            SCAN_TO_SCAN[sdl2.SDL_SCANCODE_RALT] = scancode.ALT
-            MOD_TO_SCAN[sdl2.KMOD_RALT] = scancode.ALT
         # we need a set_mode call to be really up and running
         self._has_window = False
         # ensure the correct SDL2 video driver is chosen for Windows
@@ -631,21 +630,20 @@ class VideoSDL2(video_graphical.VideoGraphical):
         mod = [s for m, s in MOD_TO_SCAN.iteritems() if e.key.keysym.mod & m]
         # get eascii
         try:
-            if e.key.keysym.mod & sdl2.KMOD_LALT or (
-                        not self._altgr and e.key.keysym.mod & sdl2.KMOD_RALT):
+            if scancode.ALT in mod:
                 c = ALT_SCAN_TO_EASCII[e.key.keysym.scancode]
-            elif e.key.keysym.mod & sdl2.KMOD_CTRL:
+            elif scancode.CTRL in mod:
                 c = CTRL_KEY_TO_EASCII[e.key.keysym.sym]
-            elif e.key.keysym.mod & sdl2.KMOD_SHIFT:
+            elif scancode.LSHIFT in mod or scancode.RSHIFT in mod:
                 c = SHIFT_KEY_TO_EASCII[e.key.keysym.sym]
             else:
                 c = KEY_TO_EASCII[e.key.keysym.sym]
         except KeyError:
             # try control+letter -> control codes
             key = e.key.keysym.sym
-            if e.key.keysym.mod & sdl2.KMOD_CTRL and key >= ord('a') and key <= ord('z'):
+            if scancode.CTRL in mod and key >= ord('a') and key <= ord('z'):
                 c = unichr(key - ord('a') + 1)
-            elif e.key.keysym.mod & sdl2.KMOD_CTRL and key >= ord('[') and key <= ord('_'):
+            elif scancode.CTRL in mod and key >= ord('[') and key <= ord('_'):
                 c = unichr(key - ord('A') + 1)
             else:
                 c = u''
@@ -676,7 +674,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def _handle_key_up(self, e):
         """Handle key-up event."""
-        scan = SCAN_TO_SCAN[e.key.keysym.scancode]
+        try:
+            scan = SCAN_TO_SCAN[e.key.keysym.scancode]
+        except KeyError:
+            return
         # reset ALT workaround counter
         if scan == scancode.ALT:
             self._alt_counter = Counter()

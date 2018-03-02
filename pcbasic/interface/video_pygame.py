@@ -143,10 +143,6 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.set_page(0, 0)
         # set_mode shoul dbe first event on queue
         self.f11_active = False
-        self.altgr = kwargs['altgr']
-        if not self.altgr:
-            key_to_scan[pygame.K_RALT] = scancode.ALT
-            mod_to_scan[pygame.KMOD_RALT] = scancode.ALT
         self.clipboard_handler = get_clipboard_handler()
         # buffer for perceived alt key status, for use by workarounds
         self._alt_key_down = None
@@ -253,7 +249,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             self._alt_key_down = True
         # get eascii
         try:
-            if e.mod & pygame.KMOD_LALT or (not self.altgr and e.mod & pygame.KMOD_RALT):
+            if e.mod & pygame.KMOD_LALT:
                 c = alt_key_to_eascii[e.key]
             elif e.mod & pygame.KMOD_CTRL:
                 c = ctrl_key_to_eascii[e.key]
@@ -770,6 +766,8 @@ if pygame:
         pygame.K_RSHIFT: scancode.RSHIFT, pygame.K_PRINT: scancode.PRINT,
         pygame.K_SYSREQ: scancode.SYSREQ,
         pygame.K_LALT: scancode.ALT,
+        # don't catch right-Alt as it may inhibit AltGr on Windows
+        #pygame.K_RALT: scancode.ALT,
         pygame.K_SPACE: scancode.SPACE, pygame.K_CAPSLOCK: scancode.CAPSLOCK,
         # function key row
         pygame.K_F1: scancode.F1, pygame.K_F2: scancode.F2,
@@ -962,6 +960,8 @@ if pygame:
         pygame.KMOD_LCTRL: scancode.CTRL,
         pygame.KMOD_RCTRL: scancode.CTRL,
         pygame.KMOD_LALT: scancode.ALT,
+        # don't catch right-Alt as it may inhibit AltGr on Windows
+        #pygame.KMOD_RALT: scancode.ALT,
     }
 
     key_to_eascii_num = {

@@ -342,7 +342,6 @@ class Settings(object):
         u'shell': {u'type': u'string', u'default': u'',},
         u'print-trigger': {
             u'type': u'string', u'choices':(u'close', u'page', u'line'), u'default': u'close',},
-        u'altgr': {u'type': u'bool', u'default': True,},
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': 'Z'},
@@ -535,7 +534,6 @@ class Settings(object):
             'fullscreen': self.get('fullscreen'),
             'smooth': (self.get('scaling') == 'smooth'),
             'nokill': self.get('nokill'),
-            'altgr': self.get('altgr'),
             'caption': self.get('caption'),
             'copy_paste': self.get('copy-paste'),
             'pen': self.get('pen'),
