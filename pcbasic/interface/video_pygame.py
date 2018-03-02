@@ -105,7 +105,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         display_info = pygame.display.Info()
         self.physical_size = display_info.current_w, display_info.current_h
         # determine initial display size
-        self.display_size = self._find_display_size(640, 480, self.border_width)
+        self.display_size = self._find_display_size(640, 480)
         self._set_icon(kwargs['icon'])
         # first set the screen non-resizeable, to trick things like maximus into not full-screening
         # I hate it when applications do this ;)
@@ -269,8 +269,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             # F11+f to toggle fullscreen mode
             if e.key == pygame.K_f:
                 self.fullscreen = not self.fullscreen
-                self._resize_display(*self._find_display_size(
-                                self.size[0], self.size[1], self.border_width))
+                self._resize_display(*self._find_display_size(*self.size))
             self.clipboard.handle_key(scan, c)
             self.busy = True
         else:
@@ -347,12 +346,10 @@ class VideoPygame(video_graphical.VideoGraphical):
     def _do_flip(self):
         """Draw the canvas to the screen."""
         # create the screen that will be stretched onto the display
-        border_x = int(self.size[0] * self.border_width / 200.)
-        border_y = int(self.size[1] * self.border_width / 200.)
+        border_x, border_y = self.border_start()
         # surface depth and flags match those of canvas
-        screen = pygame.Surface((self.size[0] + 2*border_x,
-                                 self.size[1] + 2*border_y),
-                                 0, self.canvas[self.vpagenum])
+        screen = pygame.Surface(
+            (self.size[0] + 2*border_x, self.size[1] + 2*border_y), 0, self.canvas[self.vpagenum])
         screen.set_palette(self.work_palette)
         # border colour
         border_colour = pygame.Color(0, 0, self.border_attr % self.num_fore_attrs)
@@ -433,8 +430,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             self.bitsperpixel = mode_info.bitsperpixel
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
-        self._resize_display(*self._find_display_size(
-                                self.size[0], self.size[1], self.border_width))
+        self._resize_display(*self._find_display_size(*self.size))
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height,
                               0, self.font_height)

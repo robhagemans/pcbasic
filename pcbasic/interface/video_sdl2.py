@@ -440,7 +440,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
         self._display = None
         self._work_surface = None
-        self._do_create_window(*self._find_display_size(640, 400, self.border_width))
+        self._do_create_window(*self._find_display_size(640, 400))
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self._display)
         # workaround for duplicated keypresses after Alt (at least on Ubuntu Unity)
@@ -692,8 +692,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             # F11+f to toggle fullscreen mode
             if c.upper() == u'F':
                 self.fullscreen = not self.fullscreen
-                self._do_create_window(*self._find_display_size(
-                                self.size[0], self.size[1], self.border_width))
+                self._do_create_window(*self._find_display_size(*self.size))
             self._clipboard_interface.handle_key(None, c)
         # the text input event follows the key down event immediately
         elif self._last_down is None:
@@ -771,9 +770,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_BlitScaled(conv, None, self._display_surface, None)
         else:
             # smooth-scale converted surface
-            w, h = self.window_width, self.window_height
-            zoomx = ctypes.c_double(w/(self.size[0] + 2.0*self.border_x))
-            zoomy = ctypes.c_double(h/(self.size[1] + 2.0*self.border_y))
+            scalex, scaley = self.scale()
+            zoomx, zoomy = ctypes.c_double(scalex), ctypes.c_double(scaley)
             # only free the surface just before zoomSurface needs to re-allocate
             # so that the memory block is highly likely to be easily available
             # this seems to avoid unpredictable delays
@@ -831,7 +829,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         maximised = sdl2.SDL_GetWindowFlags(self._display) & sdl2.SDL_WINDOW_MAXIMIZED
         # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
         # detect if window is very large compared to screen; force maximise if so.
-        to_maximised = (width >= 0.95*self.physical_size[0] and height >= 0.9*self.physical_size[1])
+        to_maximised = self.is_maximal(width, height)
         if not maximised:
             if to_maximised:
                 # force maximise for large windows
@@ -869,30 +867,23 @@ class VideoSDL2(video_graphical.VideoGraphical):
             self.bitsperpixel = mode_info.bitsperpixel
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
-        self._resize_display(*self._find_display_size(
-                                self.size[0], self.size[1], self.border_width))
+        self._resize_display(*self._find_display_size(*self.size))
         # set standard cursor
-        self.set_cursor_shape(self.font_width, self.font_height,
-                              0, self.font_height)
+        self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # screen pages
         canvas_width, canvas_height = self.size
         self.canvas = [
-            sdl2.SDL_CreateRGBSurface(0, canvas_width, canvas_height, 8, 0, 0, 0, 0)
-            for _ in range(self.num_pages)]
-        self.pixels = [
-                _pixels2d(canvas.contents)
-                for canvas in self.canvas]
+                sdl2.SDL_CreateRGBSurface(0, canvas_width, canvas_height, 8, 0, 0, 0, 0)
+                for _ in range(self.num_pages)]
+        self.pixels = [_pixels2d(canvas.contents) for canvas in self.canvas]
         # create work surface for border and composite
-        self.border_x = int(canvas_width * self.border_width // 200)
-        self.border_y = int(canvas_height * self.border_width // 200)
-        work_width = canvas_width + 2*self.border_x
-        work_height = canvas_height + 2*self.border_y
+        self.border_x, self.border_y = self.border_start()
+        work_width = canvas_width + 2 * self.border_x
+        work_height = canvas_height + 2 * self.border_y
         sdl2.SDL_FreeSurface(self._work_surface)
-        self._work_surface = sdl2.SDL_CreateRGBSurface(
-                                0, work_width, work_height, 8, 0, 0, 0, 0)
+        self._work_surface = sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
         self._work_pixels = _pixels2d(self._work_surface.contents)[
-                self.border_x : work_width-self.border_x,
-                self.border_y : work_height-self.border_y]
+                self.border_x:work_width-self.border_x, self.border_y:work_height-self.border_y]
         # create overlay for clipboard selection feedback
         # use convertsurface to create a copy of the display surface format
         pixelformat = self._display_surface.contents.format

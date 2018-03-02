@@ -61,11 +61,11 @@ class VideoGraphical(base.VideoPlugin):
         # aspect ratio
         self._aspect = kwargs.get('aspect_ratio', (4, 3))
         # border width percentage
-        self.border_width = kwargs.get('border_width', 0)
+        self._border_width = kwargs.get('border_width', 0)
         # start in fullscreen mode
         self.fullscreen = kwargs.get('fullscreen', False)
         # the following attributes must be overridden by child classes
-        # size of display
+        # size of screen
         self.physical_size = ()
         # size of canvas
         self.size = ()
@@ -78,15 +78,15 @@ class VideoGraphical(base.VideoPlugin):
         if not self.size:
             # window not initialised
             return 0, 0
-        border_x = int(self.size[0] * self.border_width / 200.)
-        border_y = int(self.size[1] * self.border_width / 200.)
+        border_x = int(self.size[0] * self._border_width / 200.)
+        border_y = int(self.size[1] * self._border_width / 200.)
         xscale = self.window_width / float(self.size[0] + 2*border_x)
         yscale = self.window_height / float(self.size[1] + 2*border_y)
         xpos = min(self.size[0]-1, max(0, int(x//xscale - border_x)))
         ypos = min(self.size[1]-1, max(0, int(y//yscale - border_y)))
         return xpos, ypos
 
-    def _find_display_size(self, canvas_x, canvas_y, border_width):
+    def _find_display_size(self, canvas_x, canvas_y):
         """Determine the optimal size for the display."""
         # comply with requested size unless we're fullscreening
         if self._force_display_size and not self.fullscreen:
@@ -94,16 +94,17 @@ class VideoGraphical(base.VideoPlugin):
         if not self._force_native_pixel:
             # this assumes actual display aspect ratio is wider than 4:3
             # scale y to fit screen
-            canvas_y = (1-DISPLAY_SLACK/100.) * (self.physical_size[1] // int(1+border_width/100.))
+            canvas_y = (1-DISPLAY_SLACK/100.) * (
+                    self.physical_size[1] // int(1+self._border_width/100.))
             # scale x to match aspect ratio
             canvas_x = (canvas_y * self._aspect[0]) / self._aspect[1]
             # add back border
-            pixel_x = int(canvas_x * (1 + border_width/100.))
-            pixel_y = int(canvas_y * (1 + border_width/100.))
+            pixel_x = int(canvas_x * (1 + self._border_width/100.))
+            pixel_y = int(canvas_y * (1 + self._border_width/100.))
             return pixel_x, pixel_y
         else:
-            pixel_x = int(canvas_x * (1 + border_width/100.))
-            pixel_y = int(canvas_y * (1 + border_width/100.))
+            pixel_x = int(canvas_x * (1 + self._border_width/100.))
+            pixel_y = int(canvas_y * (1 + self._border_width/100.))
             # leave part of the screen either direction unused
             # to account for task bars, window decorations, etc.
             xmult = max(1, int((100.-DISPLAY_SLACK) * self.physical_size[0] / (100.*pixel_x)))
@@ -126,6 +127,23 @@ class VideoGraphical(base.VideoPlugin):
                     best = dist
                     apx = mx, my
             return apx[0] * pixel_x, apx[1] * pixel_y
+
+    def scale(self):
+        """Get scale factors from logical to window size."""
+        border_x, border_y = self.border_start()
+        return (
+            self.window_width / (self.size[0] + 2.0*border_x),
+            self.window_height / (self.size[1] + 2.0*border_y))
+
+    def border_start(self):
+        """Top left physical coordinates of canvas."""
+        return (
+            int(self.size[0] * self._border_width / 200.),
+            int(self.size[1] * self._border_width / 200.))
+
+    def is_maximal(self, width, height):
+        """Compare dimensions to threshold for maximising."""
+        return (width >= 0.95*self.physical_size[0] and height >= 0.9*self.physical_size[1])
 
 
 class EnvironmentCache(object):
