@@ -507,17 +507,21 @@
                     Connect to a Windows, LPR or CUPS printer. If
                     <code><var>printer_name</var></code> is not specified, the default
                     printer is used. <br />
-                    <code><var>trigger</var></code> sets the trigger
-                    to flush the print buffer to the printer:
+                    The printer is activated when a file open to it is closed,
+                    a program terminates or PC-BASIC exits. Note that, unlike <code>LPT1:</code>,
+                    printers connected to <code>LPT2:</code> or <code>LPT3:</code>
+                    do <em>not</em> get activated when a program terminates.
+                    If specified, <code><var>trigger</var></code> sets an additional trigger
+                    to activate the printer:
                     <dl class="compact">
                         <dt><code><b>line</b></code>
-                        <dd>The printer is activated after every line break.</dd>
+                        <dd>After every line break.</dd>
                         <dt><code><b>page</b></code>
-                        <dd>The printer is activated after every page break.</dd>
+                        <dd>After every page break.</dd>
                         <dt><code><b>close</b></code>
-                        <dd>The printer is activated only when PC-BASIC exits.</dd>
+                        <dd>No additional trigger</dd>
                     </dl>
-                    Default is <code><b>close</b></code>.
+                    The default behaviour is that of <code><b>close</b></code>.
                 </dd>
 
                 <dt><code><b>FILE:</b><var>file_name</var></code></dt>
