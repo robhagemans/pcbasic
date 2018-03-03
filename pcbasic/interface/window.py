@@ -1,6 +1,6 @@
 """
-PC-BASIC - video_graphical.py
-Graphical interface utility classes
+PC-BASIC - window.py
+Graphical interface common utilities
 
 (c) 2015--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.

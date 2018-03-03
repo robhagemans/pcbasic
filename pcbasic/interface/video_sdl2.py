@@ -41,9 +41,10 @@ except ImportError:
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from . import clipboard
 from . import base
-from . import video_graphical
+from . import window
+from . import clipboard
+
 
 ###############################################################################
 # video settings
@@ -434,7 +435,7 @@ class VideoSDL2(base.VideoPlugin):
             raise base.InitFailed('Could not initialise SDL2: %s' % sdl2.SDL_GetError())
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
-        self._window_sizer = video_graphical.WindowSizer(display_mode.w, display_mode.h, **kwargs)
+        self._window_sizer = window.WindowSizer(display_mode.w, display_mode.h, **kwargs)
         # create the window initially as 640*400 black
         # "NOTE: You should not expect to be able to create a window, render,
         #        or receive events on any thread other than the main one"
@@ -757,7 +758,7 @@ class VideoSDL2(base.VideoPlugin):
         """Draw the canvas to the screen."""
         sdl2.SDL_FillRect(self._work_surface, None, self._border_attr)
         if self._composite:
-            self._work_pixels[:] = video_graphical.apply_composite_artifacts(
+            self._work_pixels[:] = window.apply_composite_artifacts(
                             self.pixels[self.vpagenum], 4//self.bitsperpixel)
         else:
             self._work_pixels[:] = self.pixels[self.vpagenum]

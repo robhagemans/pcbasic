@@ -26,7 +26,7 @@ from ..basic.base.eascii import as_unicode as uea
 
 from . import clipboard
 from . import base
-from . import video_graphical
+from . import window
 
 
 @base.video_plugins.register('pygame')
@@ -104,7 +104,7 @@ class VideoPygame(base.VideoPlugin):
         self.joysticks = []
         # get physical screen dimensions (needs to be called before set_mode)
         display_info = pygame.display.Info()
-        self._window_sizer = video_graphical.WindowSizer(
+        self._window_sizer = window.WindowSizer(
                 display_info.current_w, display_info.current_h, **kwargs)
         # determine initial display size
         self.display_size = self._window_sizer.find_display_size(640, 400)
@@ -968,7 +968,7 @@ def apply_composite_artifacts(screen, pixels=4):
     """Process the canvas to apply composite colour artifacts."""
     src_array = pygame.surfarray.array2d(screen)
     return pygame.surfarray.make_surface(
-                    video_graphical.apply_composite_artifacts(src_array, pixels))
+                    window.apply_composite_artifacts(src_array, pixels))
 
 
 def glyph_to_surface(glyph):
