@@ -41,6 +41,7 @@ except ImportError:
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
+from ..data.resources import ICON
 from . import base
 from . import window
 from . import clipboard
@@ -384,7 +385,12 @@ def _pixels2d(psurface):
 class VideoSDL2(base.VideoPlugin):
     """SDL2-based graphical interface."""
 
-    def __init__(self, input_queue, video_queue, **kwargs):
+    def __init__(
+            self, input_queue, video_queue,
+            caption=u'', icon=ICON,
+            scaling=None, dimensions=None, aspect_ratio=(4, 3), border_width=0, fullscreen=False,
+            alt_f4_quits=True, mouse_clipboard=True,
+            **kwargs):
         """Initialise SDL2 interface."""
         if not sdl2:
             raise base.InitFailed('Module `sdl2` not found')
@@ -392,13 +398,13 @@ class VideoSDL2(base.VideoPlugin):
             raise base.InitFailed('Module `numpy` not found')
         base.VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
-        self._smooth = kwargs.get('scaling', None) == 'smooth'
+        self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
-        self._nokill = kwargs.get('alt_f4_quits', True) == False
+        self._nokill = not alt_f4_quits
         # window caption/title
-        self._caption = kwargs.get('caption', u'')
+        self._caption = caption
         # start in fullscreen mode if True
-        self._fullscreen = kwargs.get('fullscreen', False)
+        self._fullscreen = fullscreen
         # display & border
         # border attribute
         self._border_attr = 0
@@ -414,9 +420,9 @@ class VideoSDL2(base.VideoPlugin):
         # cursor is visible
         self._cursor_visible = True
         # load the icon
-        self._icon = kwargs['icon']
+        self._icon = icon
         # mouse setups
-        self._mouse_clip = kwargs.get('mouse_clipboard', True)
+        self._mouse_clip = mouse_clipboard
         # keyboard setup
         self._f11_active = False
         # we need a set_mode call to be really up and running
@@ -435,7 +441,9 @@ class VideoSDL2(base.VideoPlugin):
             raise base.InitFailed('Could not initialise SDL2: %s' % sdl2.SDL_GetError())
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
-        self._window_sizer = window.WindowSizer(display_mode.w, display_mode.h, **kwargs)
+        self._window_sizer = window.WindowSizer(
+                display_mode.w, display_mode.h,
+                scaling, dimensions, aspect_ratio, border_width, fullscreen)
         # create the window initially as 640*400 black
         # "NOTE: You should not expect to be able to create a window, render,
         #        or receive events on any thread other than the main one"
