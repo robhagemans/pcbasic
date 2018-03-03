@@ -436,9 +436,10 @@ class Settings(object):
                 value = None
         return value
 
-    def get_session_parameters(self):
+    @property
+    def session_params(self):
         """Return a dictionary of parameters for the Session object."""
-        current_device, mount_dict = self.get_drives(False)
+        current_device, mount_dict = self._get_drives(False)
         if self.get('resume'):
             return {}
         pcjr_term = self.get('pcjr-term')
@@ -455,7 +456,7 @@ class Settings(object):
         max_list = self.get('max-memory')
         max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
         max_list[0] = max_list[0] or max_list[1]
-        current_device, mount_dict = self.get_drives()
+        current_device, mount_dict = self._get_drives()
         codepage_dict = data.read_codepage(self.get('codepage'))
         return {
             'syntax': self.get('syntax'),
@@ -514,7 +515,7 @@ class Settings(object):
             'greeting': (not self.get('input') and not self.get('interface') == 'none'),
         }
 
-    def get_video_parameters(self):
+    def _get_video_parameters(self):
         """Return a dictionary of parameters for the video plugin."""
         return {
             'dimensions': self.get('dimensions'),
@@ -529,22 +530,25 @@ class Settings(object):
             'wait': self.get('wait'),
             }
 
-    def get_audio_parameters(self):
+    def _get_audio_parameters(self):
         """Return a dictionary of parameters for the audio plugin."""
         return {}
 
-    def get_state_file(self):
+    def _get_state_file(self):
         """Name of state file"""
         state_name = self.get('state') or self.state_name
         if not os.path.exists(state_name):
             state_name = os.path.join(STATE_PATH, state_name)
         return state_name
 
-    def has_interface(self):
+    @property
+    def interface(self):
+        """Run with interface."""
         return self.get('interface') != 'none'
 
-    def get_interface_parameters(self):
-        """Return dictionary of interface parameters."""
+    @property
+    def iface_params(self):
+        """Dict of interface parameters."""
         interface = self.get('interface')
         # categorical interfaces
         categories = {
@@ -564,12 +568,13 @@ class Settings(object):
             'try_interfaces': iface_list,
             'audio_override': self.get('sound-engine'),
         }
-        iface_params.update(self.get_video_parameters())
-        iface_params.update(self.get_audio_parameters())
+        iface_params.update(self._get_video_parameters())
+        iface_params.update(self._get_audio_parameters())
         return iface_params
 
-    def get_launch_parameters(self):
-        """Return a dictionary of launch parameters."""
+    @property
+    def launch_params(self):
+        """Dict of launch parameters."""
         # build list of commands to execute on session startup
         commands = []
         if not self.get('resume'):
@@ -585,21 +590,22 @@ class Settings(object):
         launch_params = {
             'prog': self.get('run') or self.get('load') or self.get(0),
             'resume': self.get('resume'),
-            'state_file': self.get_state_file(),
+            'state_file': self._get_state_file(),
             'commands': commands,
             'debug': self.get('debug'),
             }
-        launch_params.update(self.get_session_parameters())
+        launch_params.update(self.session_params)
         return launch_params
 
-    def get_guard_parameters(self):
-        """get exception guard parameters."""
+    @property
+    def guard_params(self):
+        """Dict of exception guard parameters."""
         return {
             'uargv': self.uargv,
             'log_dir': STATE_PATH,
             }
 
-    def get_drives(self, get_default=True):
+    def _get_drives(self, get_default=True):
         """Assign disk locations to disk devices."""
         mount_dict = {}
         # always get current device
@@ -664,7 +670,8 @@ class Settings(object):
                     logging.warning(u'Could not mount %s: %s', a, unicode(e))
         return current_device, mount_dict
 
-    def get_converter_parameters(self):
+    @property
+    def conv_params(self):
         """Get parameters for file conversion."""
         # conversion output
         # first arg, if given, is mode; second arg, if given, is outfile
@@ -675,16 +682,25 @@ class Settings(object):
         name_out = self.get(1)
         return mode, name_in, name_out
 
-    def get_command(self):
-        """Get operating mode."""
-        if self.get('version'):
-            return 'version'
-        elif self.get('help'):
-            # in help mode, print usage and exit
-            return 'help'
-        elif self.get('convert'):
-            return 'convert'
-        return None
+    @property
+    def version(self):
+        """Version operating mode."""
+        return self.get('version')
+
+    @property
+    def help(self):
+        """Help operating mode."""
+        return self.get('help')
+
+    @property
+    def convert(self):
+        """Converter operating mode."""
+        return self.get('convert')
+
+    @property
+    def debug(self):
+        """Debugging mode."""
+        return self.get('debug')
 
     def _append_short_args(self, args, key, value):
         """Append short arguments and value to dict."""
