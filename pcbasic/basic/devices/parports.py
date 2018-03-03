@@ -90,47 +90,36 @@ class LPTFile(devicebase.TextFileBase):
 
     def __init__(self, stream, filetype='D'):
         """Initialise LPTn."""
-        devicebase.TextFileBase.__init__(self, io.BytesIO(), filetype, mode='A')
+        devicebase.TextFileBase.__init__(self, stream, filetype, mode='A')
         # width=255 means line wrap
         self.width = 255
         self.col = 1
-        self.output_stream = stream
 
     def flush(self):
-        """Flush the printer buffer to the underlying stream."""
-        if self.fhandle:
-            val = self.fhandle.getvalue()
-            self.output_stream.write(val)
-            self.fhandle.seek(0)
-            self.fhandle.truncate()
+        """Flush the buffer to the underlying stream."""
 
     def write(self, s, can_break=True):
         """Write a string to the printer buffer."""
-        for c in str(s):
-            if can_break and self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
-                self.fhandle.write('\r\n')
-                self.flush()
+        for c in bytes(s):
+            # width 255 means wrapping enabled
+            if can_break and self.col >= self.width and self.width != 255:
+                self.fhandle.write(b'\r\n')
                 self.col = 1
-            if c in ('\n', '\r', '\f'):
-                # don't replace CR or LF with CRLF when writing to files
-                self.fhandle.write(c)
-                self.flush()
+            # don't replace CR or LF with CRLF
+            self.fhandle.write(c)
+            if c in (b'\n', b'\r', b'\f'):
                 self.col = 1
-            elif c == '\b':   # BACKSPACE
+            elif c == b'\b':
                 if self.col > 1:
                     self.col -= 1
-                    self.fhandle.seek(-1, 1)
-                    self.fhandle.truncate()
             else:
-                self.fhandle.write(c)
-                # nonprinting characters including tabs are not counted for WIDTH
-                # for lpt1 and files , nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
+                # nonprinting characters including tabs are not counted for LPOS
                 if ord(c) >= 32:
                     self.col += 1
 
-    def write_line(self, s=''):
+    def write_line(self, s=b''):
         """Write string or bytearray and newline to file."""
-        self.write(str(s) + '\r\n')
+        self.write(bytes(s) + b'\r\n')
 
     def lof(self):
         """LOF: bad file mode """
@@ -146,16 +135,12 @@ class LPTFile(devicebase.TextFileBase):
 
     def do_print(self):
         """Actually print, reset column position."""
-        self.flush()
-        self.output_stream.flush()
+        self.fhandle.flush()
         self.col = 1
 
     def close(self):
         """Close the printer device and actually print the output."""
-        self.flush()
-        self.output_stream.flush()
-        self.fhandle.close()
-        self.fhandle = None
+        self.do_print()
 
 
 class ParallelStream(object):
