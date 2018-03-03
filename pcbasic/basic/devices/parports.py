@@ -67,17 +67,19 @@ class LPTDevice(devicebase.Device):
             self.stream = printer.get_printer_stream(val, codepage, temp_dir)
         elif val:
             logging.warning('Could not attach %s to LPT device', arg)
+        # width settings are the same across all LPT files
+        self.device_settings = devicebase.DeviceSettings()
+        # default width is 80
+        # width=255 means line wrap
+        self.device_settings.width = 80
         if self.stream:
-            self.device_file = LPTFile(self.stream)
+            self.device_file = LPTFile(self.stream, self.device_settings)
 
     def open(self, number, param, filetype, mode, access, lock,
                    reclen, seg, offset, length, fiekd):
         """Open a file on LPTn: """
-        f = LPTFile(self.stream)
-        # inherit width settings from device file
-        f.width = self.device_file.width
-        f.col = self.device_file.col
-        return f
+        # shared position/width settings across files
+        return LPTFile(self.stream, self.device_settings)
 
     def available(self):
         """Device is available."""
@@ -87,12 +89,14 @@ class LPTDevice(devicebase.Device):
 class LPTFile(devicebase.TextFileBase):
     """LPTn: device - line printer or parallel port."""
 
-    def __init__(self, stream, filetype='D'):
+    def __init__(self, stream, settings):
         """Initialise LPTn."""
-        devicebase.TextFileBase.__init__(self, stream, filetype, mode='A')
-        # width=255 means line wrap
-        self.width = 80
-        self.col = 1
+        self._settings = settings
+        devicebase.TextFileBase.__init__(self, stream, filetype='D', mode='A')
+
+    def set_width(self, new_width=255):
+        """Set file width."""
+        self._settings.width = new_width
 
     def flush(self):
         """Flush the buffer to the underlying stream."""
@@ -101,20 +105,21 @@ class LPTFile(devicebase.TextFileBase):
         """Write a string to the printer buffer."""
         for c in bytes(s):
             # width 255 means wrapping enabled
-            if can_break and self.col >= self.width and self.width != 255:
+            if can_break and self._settings.width != 255 and (
+                    self._settings.col >= self._settings.width):
                 self.fhandle.write(b'\r\n')
-                self.col = 0
+                self._settings.col = 0
             # don't replace CR or LF with CRLF
             self.fhandle.write(c)
             if c in (b'\n', b'\r', b'\f'):
-                self.col = 1
+                self._settings.col = 1
             elif c == b'\b':
-                if self.col > 1:
-                    self.col -= 1
+                if self._settings.col > 1:
+                    self._settings.col -= 1
             else:
                 # nonprinting characters including tabs are not counted for LPOS
                 if ord(c) >= 32:
-                    self.col += 1
+                    self._settings.col += 1
 
     def write_line(self, s=b''):
         """Write string or bytearray and newline to file."""
@@ -135,7 +140,7 @@ class LPTFile(devicebase.TextFileBase):
     def do_print(self):
         """Actually print, reset column position."""
         self.fhandle.flush()
-        self.col = 1
+        self._settings.col = 1
 
     def close(self):
         """Close the printer device and actually print the output."""

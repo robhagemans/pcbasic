@@ -501,7 +501,7 @@ class Files(object):
         printer = self._devices['LPT%d:' % max(1, num)]
         col = 1
         if printer.device_file:
-            col = printer.device_file.col
+            col = printer.device_settings.col
         return self._values.new_integer().from_int(col)
 
     def input_(self, args):
