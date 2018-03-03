@@ -91,7 +91,7 @@ class LPTFile(devicebase.TextFileBase):
         """Initialise LPTn."""
         devicebase.TextFileBase.__init__(self, stream, filetype, mode='A')
         # width=255 means line wrap
-        self.width = 255
+        self.width = 80
         self.col = 1
 
     def flush(self):
@@ -103,7 +103,7 @@ class LPTFile(devicebase.TextFileBase):
             # width 255 means wrapping enabled
             if can_break and self.col >= self.width and self.width != 255:
                 self.fhandle.write(b'\r\n')
-                self.col = 1
+                self.col = 0
             # don't replace CR or LF with CRLF
             self.fhandle.write(c)
             if c in (b'\n', b'\r', b'\f'):
