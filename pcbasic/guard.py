@@ -16,6 +16,7 @@ from datetime import datetime
 from contextlib import contextmanager
 
 from basic.metadata import VERSION
+from basic.base import error
 
 
 LOG_PATTERN = u'pcbasic-crash-%Y%m%d-'
@@ -44,6 +45,8 @@ class ExceptionGuard(object):
         """Crash context guard."""
         try:
             yield
+        except (error.Exit, error.Reset):
+            raise
         except BaseException:
             self._impl = session._impl
             if not self._bluescreen(*sys.exc_info()):
