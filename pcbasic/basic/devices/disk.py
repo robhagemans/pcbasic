@@ -296,8 +296,7 @@ class DiskDevice(object):
         # return absolute path to file
         path = os.path.join(drivepath, relpath)
         if name:
-            path = os.path.join(path,
-                match_filename(name, defext, path, name_err, isdir))
+            path = os.path.join(path, match_filename(name, defext, path, name_err, isdir))
         # get full normalised path
         return os.path.abspath(path)
 
@@ -1008,7 +1007,7 @@ def match_filename(name, defext, path, name_err, isdir):
     # LongFileName.     (1) LongFileName. (2) LongFileName (3) LONGFILE
     # LongFileName..    (1) LongFileName.. (2) [does not try LONGFILE.. - not allowable]
     # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
-    if b'.' not in name:
+    if defext and b'.' not in name:
         name += b'.' + defext
     elif name[-1] == b'.' and b'.' not in name[:-1]:
         # ends in single dot; first try with dot
