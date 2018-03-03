@@ -287,7 +287,7 @@ class Values(object):
 @float_safe
 def round(x):
     """Round to nearest whole number without converting to int."""
-    return x.to_float().iround()
+    return pass_number(x).to_float().iround()
 
 
 ###############################################################################
@@ -426,36 +426,36 @@ def lt(left, right):
 
 def not_(num):
     """Bitwise NOT, -x-1."""
-    return num._values.new_integer().from_int(~num.to_int())
+    return num._values.new_integer().from_int(~to_integer(num).to_int())
 
 def and_(left, right):
     """Bitwise AND."""
     return left._values.new_integer().from_int(
-        left.to_integer().to_int(unsigned=True) & right.to_integer().to_int(unsigned=True),
+        to_integer(left).to_int(unsigned=True) & to_integer(right).to_int(unsigned=True),
         unsigned=True)
 
 def or_(left, right):
     """Bitwise OR."""
     return left._values.new_integer().from_int(
-        left.to_integer().to_int(unsigned=True) | right.to_integer().to_int(unsigned=True),
+        to_integer(left).to_int(unsigned=True) | to_integer(right).to_int(unsigned=True),
         unsigned=True)
 
 def xor_(left, right):
     """Bitwise XOR."""
     return left._values.new_integer().from_int(
-        left.to_integer().to_int(unsigned=True) ^ right.to_integer().to_int(unsigned=True),
+        to_integer(left).to_int(unsigned=True) ^ to_integer(right).to_int(unsigned=True),
         unsigned=True)
 
 def eqv_(left, right):
     """Bitwise equivalence."""
     return left._values.new_integer().from_int(
-        ~(left.to_integer().to_int(unsigned=True) ^ right.to_integer().to_int(unsigned=True)),
+        ~(to_integer(left).to_int(unsigned=True) ^ to_integer(right).to_int(unsigned=True)),
         unsigned=True)
 
 def imp_(left, right):
     """Bitwise implication."""
     return left._values.new_integer().from_int(
-        (~left.to_integer().to_int(unsigned=True)) | right.to_integer().to_int(unsigned=True),
+        (~to_integer(left).to_int(unsigned=True)) | right.to_integer().to_int(unsigned=True),
         unsigned=True)
 
 
@@ -689,11 +689,11 @@ def pow(left, right):
     """Left^right."""
     if left._values.double_math and (
             isinstance(left, numbers.Double) or isinstance(right, numbers.Double)):
-        return _call_float_function(lambda a, b: a**b, left.to_double(), right.to_double())
+        return _call_float_function(lambda a, b: a**b, to_double(left), to_double(right))
     elif isinstance(right, numbers.Integer):
         return left.to_single().clone().ipow_int(right)
     else:
-        return _call_float_function(lambda a, b: a**b, left.to_single(), right.to_single())
+        return _call_float_function(lambda a, b: a**b, to_single(left), to_single(right))
 
 @float_safe
 def add(left, right):
@@ -720,7 +720,9 @@ def sub(left, right):
 @float_safe
 def mul(left, right):
     """Left*right."""
-    if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
+    if isinstance(left, strings.String) or isinstance(right, strings.String):
+        raise error.BASICError(error.TYPE_MISMATCH)
+    elif isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
         return left.to_double().clone().imul(right.to_double())
     else:
         return left.to_single().clone().imul(right.to_single())
@@ -728,7 +730,9 @@ def mul(left, right):
 @float_safe
 def div(left, right):
     """Left/right."""
-    if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
+    if isinstance(left, strings.String) or isinstance(right, strings.String):
+        raise error.BASICError(error.TYPE_MISMATCH)
+    elif isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
         return left.to_double().clone().idiv(right.to_double())
     else:
         return left.to_single().clone().idiv(right.to_single())
@@ -736,12 +740,12 @@ def div(left, right):
 @float_safe
 def intdiv(left, right):
     """Left\\right."""
-    return left.to_integer().clone().idiv_int(right.to_integer())
+    return to_integer(left).clone().idiv_int(to_integer(right))
 
 @float_safe
 def mod_(left, right):
     """Left modulo right."""
-    return left.to_integer().clone().imod(right.to_integer())
+    return to_integer(left).clone().imod(to_integer(right))
 
 
 # conversions to type
