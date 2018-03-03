@@ -986,7 +986,12 @@ def match_dosname(dosname, path, isdir):
     # find other case combinations, if present
     # also match training single dot to no dots
     trunk, ext = split_dosname(dosname)
-    for f in sorted(os.listdir(path)):
+    try:
+        all_names = sorted(os.listdir(path))
+    except EnvironmentError:
+        # report no match if listdir fails
+        return None
+    for f in all_names:
         if split_dosname(f) == (trunk, ext) and istype(path, f, isdir):
             return f
     return None
