@@ -14,7 +14,7 @@ import platform
 from collections import Counter
 
 # on Windows, set environment variable to point to SDL2 DLL location
-if platform.system() == 'Windows':
+if platform.system() == 'Windows' and 'PYSDL2_DLL_PATH' not in os.environ:
     if hasattr(sys, 'frozen'):
         # we're a package: get the directory of the packaged executable
         # (__file__ is undefined in pyinstaller packages)

@@ -19,7 +19,7 @@ from ..basic.base.eascii import as_unicode as uea
 from ..basic.base import signals
 
 from .video import VideoPlugin
-from .base import video_plugins, InitFailed, EnvironmentCache
+from .base import video_plugins, InitFailed
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
