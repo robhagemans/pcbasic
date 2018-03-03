@@ -22,6 +22,7 @@ from . import ansipipe
 from . import basic
 from . import state
 from . import config
+from .guard import ExceptionGuard, NOGUARD
 from .basic import __version__
 from .interface import Interface, InitFailed
 
@@ -53,22 +54,21 @@ def run(*arguments):
     with config.TemporaryDirectory(prefix='pcbasic-') as temp_dir:
         # get settings and prepare logging
         settings = config.Settings(temp_dir, arguments)
-        command = settings.get_command()
-        if command == 'version':
+        if settings.version:
             # print version and exit
             show_version(settings)
-        elif command == 'help':
+        elif settings.help:
             # print usage and exit
             show_usage()
-        elif command == 'convert':
+        elif settings.convert:
             # convert and exit
             convert(settings)
-        elif settings.has_interface():
+        elif settings.interface:
             # start an interpreter session with interface
             launch_session(settings)
         else:
             # start an interpreter session with standard i/o
-            run_session(**settings.get_launch_parameters())
+            run_session(**settings.launch_params)
 
 def show_usage():
     """Show usage description."""
@@ -77,14 +77,14 @@ def show_usage():
 def show_version(settings):
     """Show version with optional debugging details."""
     sys.stdout.write(__version__ + '\n')
-    if settings.get('debug'):
+    if settings.debug:
         from pcbasic.basic import debug
         debug.show_platform_info()
 
 def convert(settings):
     """Perform file format conversion."""
-    mode, name_in, name_out = settings.get_converter_parameters()
-    with basic.Session(**settings.get_session_parameters()) as session:
+    mode, name_in, name_out = settings.conv_params
+    with basic.Session(**settings.session_params) as session:
         try:
             # if the native file doesn't exist, treat as BASIC file spec
             if not name_in or os.path.isfile(name_in):
@@ -103,24 +103,27 @@ def convert(settings):
 
 def launch_session(settings):
     """Start an interactive interpreter session."""
+    guard = ExceptionGuard(**settings.guard_params)
     try:
-        Interface(**settings.get_interface_parameters()).launch(
-                run_session, **settings.get_launch_parameters())
+        Interface(guard, **settings.iface_params).launch(run_session, **settings.launch_params)
     except InitFailed as e:
         logging.error(e)
 
-def run_session(interface=None, resume=False, debug=False, state_file=None,
-                prog=None, commands=(), **session_params):
+def run_session(
+        interface=None, guard=NOGUARD,
+        resume=False, debug=False, state_file=None,
+        prog=None, commands=(), **session_params):
     """Run an interactive BASIC session."""
     Session = basic.DebugSession if debug else basic.Session
     with Session(interface, **session_params) as s:
         with state.manage_state(s, state_file, resume) as session:
-            if prog:
-                with session.bind_file(prog) as progfile:
-                    session.execute(b'LOAD "%s"' % (progfile,))
-            for cmd in commands:
-                session.execute(cmd)
-            session.interact()
+            with guard.protect(interface, session):
+                if prog:
+                    with session.bind_file(prog) as progfile:
+                        session.execute(b'LOAD "%s"' % (progfile,))
+                for cmd in commands:
+                    session.execute(cmd)
+                session.interact()
 
 
 if __name__ == "__main__":

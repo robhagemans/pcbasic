@@ -22,12 +22,13 @@ DELAY = 12
 class Interface(object):
     """User interface for PC-BASIC session."""
 
-    def __init__(self, try_interfaces, audio_override=None, wait=False, **kwargs):
+    def __init__(self, guard=None, try_interfaces=(), audio_override=None, wait=False, **kwargs):
         """Initialise interface."""
         self._input_queue = Queue.Queue()
         self._video_queue = Queue.Queue()
         self._audio_queue = Queue.Queue()
         self._wait = wait
+        self._guard = guard
         self._video, self._audio = None, None
         for video in try_interfaces:
             try:
@@ -73,7 +74,7 @@ class Interface(object):
     def _thread_runner(self, target, **kwargs):
         """Session runner."""
         try:
-            target(interface=self, **kwargs)
+            target(interface=self, guard=self._guard, **kwargs)
         finally:
             if self._wait:
                 self.pause(WAIT_MESSAGE)

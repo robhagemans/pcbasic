@@ -7,14 +7,10 @@ This file is released under the GNU GPL version 3 or later.
 """
 import io
 import os
-import sys
 import Queue
 import logging
 import platform
-import tempfile
-import traceback
 from contextlib import contextmanager
-from datetime import datetime
 
 from .metadata import NAME, VERSION, COPYRIGHT
 from .base import error
@@ -64,8 +60,7 @@ class Implementation(object):
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
-            temp_dir=u'', debug_dir=u'', debug_options=None,
-            extension=None, catch_exceptions='basic', greeting=True,
+            temp_dir=u'', extension=None, greeting=True,
             ):
         """Initialise the interpreter session."""
         ######################################################################
@@ -81,17 +76,10 @@ class Implementation(object):
         self._edit_prompt = False
         # terminal program for TERM command
         self._term_program = term
-        self._reraise = (not catch_exceptions or catch_exceptions == 'none')
         # redirect parameters
         self._stdio = stdio
         # option to suppress greeting
         self._greeting = greeting
-        # allow non-BASIC exceptions to be passed to caller (for testing)
-        self._allow_crash = (catch_exceptions != u'all')
-        # keep a copy of arguments (for error logging)
-        self._debug_uargv = debug_options
-        # directory for crash logs
-        self._debug_dir = debug_dir
         ######################################################################
         # data segment
         ######################################################################
@@ -234,101 +222,6 @@ class Implementation(object):
         # suppress double prompt
         if not self.interpreter._parse_mode:
             self._prompt = False
-
-    def blue_screen(self, e):
-        """Display a modal exception message."""
-        # log the standard python error
-        if self._allow_crash:
-            # e.g. so that testing script records them.
-            raise e
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        stack = traceback.extract_tb(exc_traceback)
-        logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
-        # obtain statement being executed
-        if self.interpreter.run_mode:
-            codestream = self.program.bytecode
-            bytepos = codestream.tell() - 1
-            from_line = self.program.get_line_number(bytepos)
-            codestream.seek(self.program.line_numbers[from_line]+1)
-            _, output, textpos = self.lister.detokenise_line(codestream, bytepos)
-            code_line = str(output)
-        else:
-            self.interpreter.direct_line.seek(0)
-            code_line = str(self.lister.detokenise_compound_statement(
-                    self.interpreter.direct_line)[0])
-        # stop program execution
-        self.interpreter.set_pointer(False)
-        # create crash log file
-        logname = datetime.now().strftime('pcbasic-crash-%Y%m%d-')
-        logfile = tempfile.NamedTemporaryFile(
-                suffix='.log', prefix=logname, dir=self._debug_dir, delete=False)
-        # construct the message
-        message = [
-            (0x70, 'EXCEPTION\n'),
-            (0x17, 'version   '),
-            (0x1f, VERSION.encode('ascii')),
-            (0x17, '\npython    '),
-            (0x1f, platform.python_version()),
-            (0x17, '\nplatform  '),
-            (0x1f, platform.platform()),
-            (0x17, '\nstatement '),
-            (0x1f, code_line + '\n\n'),
-        ] + [
-            (0x1f, '{0}:{1}, {2}\n'.format(os.path.split(s[0])[-1], s[1], s[2]))
-            for s in stack[-4:]
-        ] + [
-            (0x1f,  '{0}:'.format(exc_type.__name__)),
-            (0x17,  ' {0}\n\n'.format(str(exc_value))),
-            (0x70,  'This is a bug in PC-BASIC.\n'),
-            (0x17,  'Sorry about that. Please file a bug report at\n  '),
-            (0x1f,  'https://github.com/robhagemans/pcbasic/issues'),
-            (0x17,  '\nPlease include the messages above and '),
-            (0x17,  'as much information as you can about what you were doing and how this happened. '),
-            (0x17,  'If possible, please attach the log file\n  '),
-            (0x1f,  logfile.name.encode('ascii', errors='replace')),
-            (0x17,  '\nThis file contains detailed information about your program and this crash.\n'),
-            (0x17,  'Thank you!\n'),
-            (0x07,  ''),
-        ]
-        # create crash log
-        crashlog = [
-            'PC-BASIC crash log',
-            '=' * 100,
-            ''.join(text for _, text in message),
-            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
-            '==== Screen Pages ='.ljust(100, '='),
-            str(self.display.text_screen),
-            '==== Scalars ='.ljust(100, '='),
-            str(self.scalars),
-            '==== Arrays ='.ljust(100, '='),
-            str(self.arrays),
-            '==== Strings ='.ljust(100, '='),
-            str(self.strings),
-            '==== Program Buffer ='.ljust(100, '='),
-            str(self.program),
-        ]
-        self.program.bytecode.seek(1)
-        crashlog.append('==== Program ='.ljust(100, '='))
-        while True:
-            _, line, _ = self.lister.detokenise_line(self.program.bytecode)
-            if not line:
-                break
-            crashlog.append(str(line))
-        crashlog.append('==== Options ='.ljust(100, '='))
-        crashlog.append(repr(self._debug_uargv))
-        # clear screen for modal message
-        # choose attributes - this should be readable on VGA, MDA, PCjr etc.
-        self.display.screen(0, 0, 0, 0, new_width=80)
-        self.display.set_attr(0x17)
-        self.display.set_border(1)
-        self.display.text_screen.clear()
-        # show message on screen
-        for attr, text in message:
-            self.display.set_attr(attr)
-            self.display.text_screen.write(text.replace('\n', '\r'))
-        # write crash log
-        with logfile as f:
-            f.write(b'\n'.join(crashlog))
 
     def attach_interface(self, interface=None):
         """Attach interface to interpreter session."""
@@ -485,12 +378,8 @@ class Implementation(object):
         except error.BASICError as e:
             self._handle_error(e)
             self._prompt = True
-            if self._reraise:
-                raise
         except error.Exit:
             raise
-        except Exception as e:
-            self.blue_screen(e)
 
     def _handle_error(self, e):
         """Handle a BASIC error through error message."""
