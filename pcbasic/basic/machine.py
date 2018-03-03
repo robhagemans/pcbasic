@@ -9,9 +9,15 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 import logging
 
+from .metadata import NAME, VERSION, COPYRIGHT
 from .base import error
 from . import values
 from . import devices
+
+
+# ROM copyright notice
+NOTICE = bytearray(b'%s %s\r%s\r' %
+            tuple(_.encode('ascii', 'ignore') for _ in (NAME, VERSION, COPYRIGHT)))
 
 
 ###############################################################################
@@ -476,11 +482,18 @@ class Memory(object):
             if self._syntax == 'pcjr':
                 return 0xfd
             return 0xff
+        elif addr >= 0xe00e and addr < 0xe00e + 80:
+            # version & copyright info instead of IBM BIOS copyright notice
+            pos = addr - 0xe00e
+            try:
+                return NOTICE[pos]
+            except IndexError:
+                return -1
         else:
             # ROM font
             addr -= self.rom_font_addr
             char = addr // 8
-            if char > 127 or char<0:
+            if char > 127 or char < 0:
                 return -1
             return self.font_8.get_byte(char, addr%8)
 
