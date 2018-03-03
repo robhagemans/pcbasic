@@ -33,16 +33,27 @@ class Interface(object):
         self._audio_queue = Queue.Queue()
         self._wait = wait
         self._video, self._audio = None, None
-        for video, audio in try_interfaces:
-            self._video = video_plugins.create(
-                    video, self._input_queue, self._video_queue, **kwargs)
+        for video in try_interfaces:
+            try:
+                self._video = video_plugins[video](self._input_queue, self._video_queue, **kwargs)
+            except KeyError:
+                logging.error('Unknown video plugin `%s`', video)
+            except InitFailed as e:
+                logging.info('Could not initialise video plugin `%s`: %s', video, str(e))
             if self._video:
                 break
         else:
             # video plugin is necessary, fail without it
             raise InitFailed('Failed to initialise any video plugin.')
-        self._audio = audio_plugins.create(
-                    audio_override or audio, self._audio_queue, **kwargs)
+        audio = audio_override or video
+        try:
+            self._audio = audio_plugins[audio](self._audio_queue, **kwargs)
+        except KeyError:
+            # ignore if an interface has no audio, but not if an override doesn't exist
+            if audio_override and audio_override != 'none':
+                logging.error('Unknown audio plugin `%s`', audio)
+        except InitFailed as e:
+            logging.info('Could not initialise audio plugin `%s`: %s', audio, str(e))
         if not self._audio:
             # audio fallback to no-plugin
             self._audio = AudioPlugin(self._audio_queue, **kwargs)
@@ -133,9 +144,8 @@ class InitFailed(Exception):
 class PluginRegister(object):
     """Plugin register."""
 
-    def __init__(self, name=''):
+    def __init__(self):
         """Initialise plugin register."""
-        self._name = name
         self._plugins = {}
 
     def register(self, name):
@@ -145,20 +155,9 @@ class PluginRegister(object):
             return cls
         return decorated_plugin
 
-    def get(self, name):
+    def __getitem__(self, name):
         """Retrieve plugin."""
         return self._plugins[name]
-
-    def create(self, name, *args, **kwargs):
-        """Retieve and initialise plugin."""
-        try:
-            return self._plugins[name](*args, **kwargs)
-        except KeyError:
-            if name and name != 'none':
-                logging.error('Unknown %s plugin `%s`', self._name, name)
-        except InitFailed as e:
-            logging.info('Could not initialise %s plugin `%s`: %s', self._name, name, str(e))
-        return None
 
 
 class EnvironmentCache(object):
@@ -196,7 +195,7 @@ class EnvironmentCache(object):
 ###############################################################################
 # video plugin
 
-video_plugins = PluginRegister('video')
+video_plugins = PluginRegister()
 
 class VideoPlugin(object):
     """Base class for display/input interface plugins."""
@@ -354,7 +353,7 @@ class VideoPlugin(object):
 ###############################################################################
 # audio plugin
 
-audio_plugins = PluginRegister('audio')
+audio_plugins = PluginRegister()
 
 
 class AudioPlugin(object):

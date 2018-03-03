@@ -268,7 +268,7 @@ class Settings(object):
                         u'ansi', u'curses', u'pygame', u'sdl2'), },
         u'sound-engine': {
             u'type': u'string', u'default': u'',
-            u'choices': (u'', u'none', u'beep', u'portaudio', u'pygame', u'sdl2'), },
+            u'choices': (u'', u'none', u'beep', u'portaudio'), },
         u'load': {u'type': u'string', u'default': u'', },
         u'run': {u'type': u'string', u'default': u'',  },
         u'convert': {u'type': u'string', u'default': u'', },
@@ -554,17 +554,17 @@ class Settings(object):
         # categorical interfaces
         categories = {
             # (video, audio), in order of preference
-            'text': (('curses', ''), ('ansi', '')),
-            'graphical': (('sdl2', 'sdl2'), ('pygame', 'pygame')),
+            'text': ('curses', 'ansi'),
+            'graphical': ('sdl2', 'pygame'),
         }
         if not interface:
             # default: try graphical first, then text, then cli
-            iface_list = categories['graphical'] + categories['text'] + (('cli', ''),)
+            iface_list = categories['graphical'] + categories['text'] + ('cli',)
         else:
             try:
                 iface_list = categories[interface]
             except KeyError:
-                iface_list = ((interface, interface),)
+                iface_list = (interface,)
         iface_params = {
             'try_interfaces': iface_list,
             'audio_override': self.get('sound-engine'),
