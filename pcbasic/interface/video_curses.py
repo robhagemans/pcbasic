@@ -63,7 +63,7 @@ if curses:
 class VideoCurses(base.VideoPlugin):
     """Curses-based text interface."""
 
-    def __init__(self, input_queue, video_queue, **kwargs):
+    def __init__(self, input_queue, video_queue, caption=u'', border_width=0, **kwargs):
         """Initialise the text interface."""
         base.VideoPlugin.__init__(self, input_queue, video_queue)
         # we need to ensure setlocale() has been run first to allow unicode input
@@ -85,8 +85,6 @@ class VideoCurses(base.VideoPlugin):
         curses.start_color()
         self.screen.clear()
         self.height, self.width = 25, 80
-        # border width percentage
-        border_width = kwargs.get('border_width', 0)
         self.border_y = int(round((self.height * border_width)/200.))
         self.border_x = int(round((self.width * border_width)/200.))
         self.underlay = curses.newwin(
@@ -97,7 +95,7 @@ class VideoCurses(base.VideoPlugin):
         self.window.scrollok(False)
         self.can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
                               and curses.COLOR_PAIRS > 128)
-        self.caption = kwargs.get('caption', '')
+        self.caption = caption
         sys.stdout.write(ansi.SET_TITLE % self.caption)
         sys.stdout.flush()
         self._set_default_colours(16)

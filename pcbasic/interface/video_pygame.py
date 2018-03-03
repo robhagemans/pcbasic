@@ -23,6 +23,7 @@ except ImportError:
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
+from ..data.resources import ICON
 
 from . import clipboard
 from . import base
@@ -33,17 +34,22 @@ from . import window
 class VideoPygame(base.VideoPlugin):
     """Pygame-based graphical interface."""
 
-    def __init__(self, input_queue, video_queue, **kwargs):
+    def __init__(
+            self, input_queue, video_queue,
+            caption=u'', icon=ICON,
+            scaling=None, dimensions=None, aspect_ratio=(4, 3), border_width=0, fullscreen=False,
+            alt_f4_quits=True, mouse_clipboard=True,
+            **kwargs):
         """Initialise pygame interface."""
         base.VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
-        self._smooth = kwargs.get('scaling', None) == 'smooth'
+        self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
-        self._nokill = kwargs.get('alt_f4_quits', True) == False
+        self._nokill = not alt_f4_quits
         # window caption/title
-        self.caption = kwargs.get('caption', u'')
+        self.caption = caption
         # start in fullscreen mode
-        self.fullscreen = kwargs.get('fullscreen', False)
+        self.fullscreen = fullscreen
         self._has_window = False
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
@@ -105,10 +111,11 @@ class VideoPygame(base.VideoPlugin):
         # get physical screen dimensions (needs to be called before set_mode)
         display_info = pygame.display.Info()
         self._window_sizer = window.WindowSizer(
-                display_info.current_w, display_info.current_h, **kwargs)
+                display_info.current_w, display_info.current_h,
+                scaling, dimensions, aspect_ratio, border_width, fullscreen)
         # determine initial display size
         self.display_size = self._window_sizer.find_display_size(640, 400)
-        self._set_icon(kwargs['icon'])
+        self._set_icon(icon)
         try:
             self._resize_display(*self.display_size)
         except pygame.error as e:
@@ -132,7 +139,7 @@ class VideoPygame(base.VideoPlugin):
             for axis in (0, 1):
                 self._input_queue.put(signals.Event(signals.STICK_MOVED, (joy, axis, 128)))
         # mouse setups
-        self._mouse_clip = kwargs.get('mouse_clipboard', True)
+        self._mouse_clip = mouse_clipboard
         self.move_cursor(0, 0)
         self.set_page(0, 0)
         # set_mode should be first event on queue
