@@ -422,7 +422,7 @@ class VideoSDL2(base.VideoPlugin):
         self._has_window = False
         # ensure the correct SDL2 video driver is chosen for Windows
         # since this gets messed up if we also import pygame
-        self._env = video_graphical.EnvironmentCache()
+        self._env = base.EnvironmentCache()
         if platform.system() == 'Windows':
             self._env.set('SDL_VIDEODRIVER', 'windows')
         # initialise SDL
@@ -603,7 +603,7 @@ class VideoSDL2(base.VideoPlugin):
                     sdl2.SDL_SetModState(sdl2.SDL_GetModState() & ~sdl2.KMOD_ALT)
             elif event.type == sdl2.SDL_QUIT:
                 if self._nokill:
-                    self.set_caption_message(video_graphical.NOKILL_MESSAGE)
+                    self.set_caption_message(base.NOKILL_MESSAGE)
                 else:
                     self._input_queue.put(signals.Event(signals.KEYB_QUIT))
         self._flush_keypress()
@@ -893,7 +893,7 @@ class VideoSDL2(base.VideoPlugin):
         self.overlay = sdl2.SDL_ConvertSurface(self._work_surface, pixelformat, 0)
         sdl2.SDL_SetSurfaceBlendMode(self.overlay, sdl2.SDL_BLENDMODE_ADD)
         # initialise clipboard
-        self._clipboard_interface = video_graphical.ClipboardInterface(
+        self._clipboard_interface = clipboard.ClipboardInterface(
                 self._clipboard_handler, self._input_queue,
                 mode_info.width, mode_info.height, self.font_width, self.font_height, self.size)
         self.busy = True

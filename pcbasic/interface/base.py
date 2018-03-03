@@ -10,11 +10,14 @@ import Queue
 import time
 import logging
 import threading
+import os
 
 from ..basic.base import signals
 
 # message displayed when wiating to close
 WAIT_MESSAGE = u'Press a key to close window'
+# message displayed when Alt-F4 inhibited
+NOKILL_MESSAGE = u'to exit type <CTRL+BREAK> <ESC> SYSTEM'
 
 
 class Interface(object):
@@ -156,6 +159,38 @@ class PluginRegister(object):
         except InitFailed as e:
             logging.info('Could not initialise %s plugin `%s`: %s', self._name, name, str(e))
         return None
+
+
+class EnvironmentCache(object):
+    """ Set environment variables for temporary use and clean up nicely."""
+
+    def __init__(self):
+        """Create the environment cache."""
+        self._saved = {}
+
+    def set(self, key, value):
+        """Set an environment variable and save the original value in the cache."""
+        if key in self._saved:
+            self.reset(key)
+        self._saved[key] = os.environ.get(key)
+        os.environ[key] = value
+
+    def reset(self, key):
+        """Restore the original value for an environment variable."""
+        cached = self._saved.pop(key, None)
+        if cached is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = cached
+
+    def close(self):
+        """Restore all environment variables."""
+        for key in self._saved.keys():
+            self.reset(key)
+
+    def __del__(self):
+        """Clean up the cache."""
+        self.close()
 
 
 ###############################################################################

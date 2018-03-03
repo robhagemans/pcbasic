@@ -54,7 +54,7 @@ class VideoPygame(base.VideoPlugin):
         # pygame sets this on import, but if we've tried SDL2 we've had to
         # reset this value
         # ensure window is centred
-        self._env = video_graphical.EnvironmentCache()
+        self._env = base.EnvironmentCache()
         self._env.set('SDL_VIDEO_CENTERED', '1')
         pygame.init()
         try:
@@ -223,7 +223,7 @@ class VideoPygame(base.VideoPlugin):
                 self._resize_display(event.w, event.h)
             elif event.type == pygame.QUIT:
                 if self._nokill:
-                    self.set_caption_message(video_graphical.NOKILL_MESSAGE)
+                    self.set_caption_message(base.NOKILL_MESSAGE)
                 else:
                     self._input_queue.put(signals.Event(signals.KEYB_QUIT))
 
@@ -438,7 +438,7 @@ class VideoPygame(base.VideoPlugin):
         for i in range(self.num_pages):
             self.canvas[i].set_palette(self.work_palette)
         # initialise clipboard
-        self.clipboard = video_graphical.ClipboardInterface(
+        self.clipboard = clipboard.ClipboardInterface(
                 self.clipboard_handler, self._input_queue,
                 mode_info.width, mode_info.height, self.font_width, self.font_height, self.size)
         self.busy = True
