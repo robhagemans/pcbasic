@@ -248,6 +248,9 @@ class Interpreter(object):
 
     def set_pointer(self, new_runmode, pos=None):
         """Set program pointer to the given codestream and position."""
+        # flush lpt1 on entering interactive mode
+        if self.run_mode and not new_runmode:
+            self._files.lpt1_file.do_print()
         self.run_mode = new_runmode
         # events are active in run mode
         self._basic_events.set_active(new_runmode)

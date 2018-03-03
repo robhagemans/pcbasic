@@ -144,6 +144,12 @@ class LPTFile(devicebase.TextFileBase):
         """EOF: bad file mode """
         raise error.BASICError(error.BAD_FILE_MODE)
 
+    def do_print(self):
+        """Actually print, reset column position."""
+        self.flush()
+        self.output_stream.flush()
+        self.col = 1
+
     def close(self):
         """Close the printer device and actually print the output."""
         self.flush()
