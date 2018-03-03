@@ -67,11 +67,8 @@ class LPTDevice(devicebase.Device):
             self.stream = printer.get_printer_stream(val, codepage, temp_dir)
         elif val:
             logging.warning('Could not attach %s to LPT device', arg)
-        # width settings are the same across all LPT files
+        # column counter is the same across all LPT files
         self.device_settings = devicebase.DeviceSettings()
-        # default width is 80
-        # width=255 means line wrap
-        self.device_settings.width = 80
         if self.stream:
             self.device_file = LPTFile(self.stream, self.device_settings)
 
@@ -93,10 +90,13 @@ class LPTFile(devicebase.TextFileBase):
         """Initialise LPTn."""
         self._settings = settings
         devicebase.TextFileBase.__init__(self, stream, filetype='D', mode='A')
+        # default width is 80
+        # width=255 means line wrap
+        self.width = 80
 
     def set_width(self, new_width=255):
         """Set file width."""
-        self._settings.width = new_width
+        self.width = new_width
 
     def flush(self):
         """Flush the buffer to the underlying stream."""
@@ -105,8 +105,8 @@ class LPTFile(devicebase.TextFileBase):
         """Write a string to the printer buffer."""
         for c in bytes(s):
             # width 255 means wrapping enabled
-            if can_break and self._settings.width != 255 and (
-                    self._settings.col >= self._settings.width):
+            if can_break and self.width != 255 and (
+                    self._settings.col >= self.width):
                 self.fhandle.write(b'\r\n')
                 self._settings.col = 0
             # don't replace CR or LF with CRLF
