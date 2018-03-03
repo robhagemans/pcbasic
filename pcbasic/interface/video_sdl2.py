@@ -54,8 +54,10 @@ from . import clipboard
 # refresh cycle parameters
 # number of cycles to change blink state
 BLINK_CYCLES = 5
-# ms duration of a cycle
-CYCLE_TIME = 120
+# ms duration of a blink
+BLINK_TIME = 120
+CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
+
 
 
 ###############################################################################
@@ -750,11 +752,10 @@ class VideoSDL2(VideoPlugin):
             if self._cycle % BLINK_CYCLES == 0:
                 self.busy = True
         if self._cursor_visible and (
-                (self.cursor_row != self._last_row) or
-                (self.cursor_col != self._last_col)):
+                (self.cursor_row != self._last_row) or (self.cursor_col != self._last_col)):
             self.busy = True
         tock = sdl2.SDL_GetTicks()
-        if (tock - self._last_tick) >= (CYCLE_TIME/BLINK_CYCLES):
+        if tock - self._last_tick >= CYCLE_TIME:
             self._last_tick = tock
             self._cycle += 1
             if self._cycle == BLINK_CYCLES * 4:
@@ -928,10 +929,13 @@ class VideoSDL2(VideoPlugin):
         # bottom 128 are non-blink, top 128 blink to background
         show_palette_0 = rgb_palette_0[:self.num_fore_attrs] * (256//self.num_fore_attrs)
         show_palette_1 = rgb_palette_1[:self.num_fore_attrs] * (128//self.num_fore_attrs)
-        for b in rgb_palette_1[:self.num_back_attrs] * (128//self.num_fore_attrs//self.num_back_attrs):
+        for b in rgb_palette_1[:self.num_back_attrs] * (
+                128 // self.num_fore_attrs // self.num_back_attrs):
             show_palette_1 += [b]*self.num_fore_attrs
-        colors_0 = (sdl2.SDL_Color * 256)(*(sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in show_palette_0))
-        colors_1 = (sdl2.SDL_Color * 256)(*(sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in show_palette_1))
+        colors_0 = (sdl2.SDL_Color * 256)(*(
+                sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in show_palette_0))
+        colors_1 = (sdl2.SDL_Color * 256)(*(
+                sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in show_palette_1))
         sdl2.SDL_SetPaletteColors(self._palette[0], colors_0, 0, 256)
         sdl2.SDL_SetPaletteColors(self._palette[1], colors_1, 0, 256)
         self.busy = True
@@ -946,7 +950,8 @@ class VideoSDL2(VideoPlugin):
         if on != self._composite:
             self._palette, self._saved_palette = self._saved_palette, self._palette
         if on:
-            colors = (sdl2.SDL_Color * 256)(*[sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in composite_colors])
+            colors = (sdl2.SDL_Color * 256)(*(
+                    sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in composite_colors))
             sdl2.SDL_SetPaletteColors(self._palette[0], colors, 0, 256)
             sdl2.SDL_SetPaletteColors(self._palette[1], colors, 0, 256)
         self._composite = on
@@ -955,8 +960,7 @@ class VideoSDL2(VideoPlugin):
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
         scroll_area = sdl2.SDL_Rect(
-                0, (start-1)*self.font_height,
-                self.size[0], (stop-start+1)*self.font_height)
+                0, (start-1)*self.font_height, self.size[0], (stop-start+1)*self.font_height)
         sdl2.SDL_FillRect(self.canvas[self.apagenum], scroll_area, back_attr)
         self.busy = True
 
@@ -1043,7 +1047,8 @@ class VideoSDL2(VideoPlugin):
     def build_glyphs(self, new_dict):
         """Build a dict of glyphs for use in text mode."""
         for char, glyph in new_dict.iteritems():
-            # transpose because _pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
+            # transpose because _pixels2d uses column-major mode and hence [x][y] indexing
+            # (we can change this)
             self.glyph_dict[char] = numpy.asarray(glyph).T
 
     def set_cursor_shape(self, width, height, from_line, to_line):

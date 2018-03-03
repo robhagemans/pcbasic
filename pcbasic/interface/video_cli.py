@@ -19,18 +19,19 @@ from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 
-encoding = sys.stdin.encoding or 'utf-8'
-
 if platform.system() == 'Windows':
     from .. import ansipipe
     tty = ansipipe
     termios = ansipipe
     # Ctrl+Z to exit
-    eof = uea.CTRL_z
+    EOF = uea.CTRL_z
 else:
     import tty, termios
     # Ctrl+D to exit
-    eof = uea.CTRL_d
+    EOF = uea.CTRL_d
+
+
+ENCODING = sys.stdin.encoding or 'utf-8'
 
 
 @video_plugins.register('cli')
@@ -82,7 +83,7 @@ class VideoCLI(VideoPlugin):
             uc, sc = self.input_handler.get_key()
             if not uc and not sc:
                 break
-            if uc == eof:
+            if uc == EOF:
                 # ctrl-D (unix) / ctrl-Z (windows)
                 self._input_queue.put(signals.Event(signals.KEYB_QUIT))
             elif uc == u'\x7f':
@@ -130,7 +131,7 @@ class VideoCLI(VideoPlugin):
         if suppress_cli:
             return
         self._update_position(row, col)
-        sys.stdout.write(char.encode(encoding, 'replace'))
+        sys.stdout.write(char.encode(ENCODING, 'replace'))
         sys.stdout.flush()
         self.last_col += 2 if is_fullwidth else 1
 
@@ -183,7 +184,7 @@ class VideoCLI(VideoPlugin):
 
     def _redraw_row(self, row):
         """Draw the stored text in a row."""
-        rowtext = u''.join(self.text[self.vpagenum][row-1]).encode(encoding, 'replace')
+        rowtext = u''.join(self.text[self.vpagenum][row-1]).encode(ENCODING, 'replace')
         sys.stdout.write(rowtext)
         sys.stdout.write(ansi.MOVE_LEFT * len(rowtext))
         sys.stdout.flush()
@@ -271,7 +272,7 @@ class InputHandlerCLI(object):
             else:
                 # return the first recognised encoding sequence
                 try:
-                    return s.decode(encoding), None
+                    return s.decode(ENCODING), None
                 except UnicodeDecodeError:
                     pass
             # give time for the queue to fill up
@@ -284,7 +285,7 @@ class InputHandlerCLI(object):
             s += c
         # no sequence or decodable string found
         # decode as good as it gets
-        return s.decode(encoding, errors='replace'), None
+        return s.decode(ENCODING, errors='replace'), None
 
 
 

@@ -15,11 +15,12 @@ from .base import InitFailed, video_plugins, audio_plugins, WAIT_MESSAGE
 from .audio import AudioPlugin
 
 
+# millisecond delay
+DELAY = 12
+
+
 class Interface(object):
     """User interface for PC-BASIC session."""
-
-    # millisecond delay
-    delay = 12
 
     def __init__(self, try_interfaces, audio_override=None, wait=False, **kwargs):
         """Initialise interface."""
@@ -88,7 +89,7 @@ class Interface(object):
                     self._audio.cycle()
                     if not self._audio.busy and not self._video.busy:
                         # nothing to do, come back later
-                        self._video.sleep(self.delay)
+                        self._video.sleep(DELAY)
                     else:
                         # tiny delay; significantly reduces cpu load when playing audio or blinking
                         self._video.sleep(1)

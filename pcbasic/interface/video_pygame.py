@@ -29,6 +29,14 @@ from . import clipboard
 from . import window
 
 
+# refresh cycle parameters
+# number of cycles to change blink state
+BLINK_CYCLES = 5
+# ms duration of a blink
+BLINK_TIME = 120
+CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
+
+
 @video_plugins.register('pygame')
 class VideoPygame(VideoPlugin):
     """Pygame-based graphical interface."""
@@ -89,8 +97,6 @@ class VideoPygame(VideoPlugin):
         # refresh cycle parameters
         self._cycle = 0
         self.last_cycle = 0
-        self._cycle_time = 120
-        self.blink_cycles = 5
         # cursor
         # cursor shape
         self.cursor = None
@@ -330,18 +336,17 @@ class VideoPygame(VideoPlugin):
             return
         self.blink_state = 0
         if self.mode_has_blink:
-            self.blink_state = 0 if self._cycle < self.blink_cycles * 2 else 1
-            if self._cycle % self.blink_cycles == 0:
+            self.blink_state = 0 if self._cycle < BLINK_CYCLES * 2 else 1
+            if self._cycle % BLINK_CYCLES == 0:
                 self.busy = True
         if self.cursor_visible and (
-                (self.cursor_row != self.last_row) or
-                (self.cursor_col != self.last_col)):
+                (self.cursor_row != self.last_row) or (self.cursor_col != self.last_col)):
             self.busy = True
         tock = pygame.time.get_ticks()
-        if (tock - self.last_cycle) >= (self._cycle_time/self.blink_cycles):
+        if tock - self.last_cycle >= CYCLE_TIME:
             self.last_cycle = tock
             self._cycle += 1
-            if self._cycle == self.blink_cycles*4:
+            if self._cycle == BLINK_CYCLES * 4:
                 self._cycle = 0
         if self.busy:
             self._do_flip()
@@ -387,7 +392,7 @@ class VideoPygame(VideoPlugin):
                 self.cursor_width, self.font_height)
         if self.text_mode:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
-            if self._cycle/self.blink_cycles in (1, 3):
+            if self._cycle / BLINK_CYCLES in (1, 3):
                 screen.blit(self.cursor, (
                         (self.cursor_col-1) * self.font_width,
                         (self.cursor_row-1) * self.font_height) )

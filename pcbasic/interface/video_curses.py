@@ -26,9 +26,11 @@ from .base import video_plugins, InitFailed
 from . import ansi
 
 
+ENCODING = locale.getpreferredencoding()
+
 if curses:
     # curses keycodes
-    curses_to_scan = {
+    CURSES_TO_SCAN = {
         curses.KEY_F1: scancode.F1, curses.KEY_F2: scancode.F2,
         curses.KEY_F3: scancode.F3, curses.KEY_F4: scancode.F4,
         curses.KEY_F5: scancode.F5, curses.KEY_F6: scancode.F6,
@@ -43,7 +45,7 @@ if curses:
         curses.KEY_BACKSPACE: scancode.BACKSPACE,
         curses.KEY_PRINT: scancode.PRINT, curses.KEY_CANCEL: scancode.ESCAPE,
     }
-    curses_to_eascii = {
+    CURSES_TO_EASCII = {
         curses.KEY_F1: uea.F1, curses.KEY_F2: uea.F2,
         curses.KEY_F3: uea.F3, curses.KEY_F4: uea.F4,
         curses.KEY_F5: uea.F5, curses.KEY_F6: uea.F6,
@@ -68,7 +70,6 @@ class VideoCurses(VideoPlugin):
         """Initialise the text interface."""
         VideoPlugin.__init__(self, input_queue, video_queue)
         # we need to ensure setlocale() has been run first to allow unicode input
-        self._encoding = locale.getpreferredencoding()
         self.curses_init = False
         if not curses:
             raise InitFailed('`Module `curses` not found')
@@ -162,8 +163,8 @@ class VideoCurses(VideoPlugin):
                 # utf-8 sequence or a pasted utf-8 string, neither of which
                 # can contain special characters.
                 # however, if that does occur, this won't work correctly.
-                scan = curses_to_scan.get(i, None)
-                c = curses_to_eascii.get(i, '')
+                scan = CURSES_TO_SCAN.get(i, None)
+                c = CURSES_TO_EASCII.get(i, '')
                 if scan or c:
                     self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, [])))
                     if i == curses.KEY_F12:
@@ -171,7 +172,7 @@ class VideoCurses(VideoPlugin):
                     else:
                         self._unset_f12()
         # convert into unicode chars
-        u = s.decode(self._encoding, 'replace')
+        u = s.decode(ENCODING, 'replace')
         # then handle these one by one
         for c in u:
             #check_full=False to allow pasting chunks of text
@@ -204,8 +205,8 @@ class VideoCurses(VideoPlugin):
         for row, textrow in enumerate(self.text[self.vpagenum]):
             for col, charattr in enumerate(textrow):
                 try:
-                    self.window.addstr(row, col, charattr[0].encode(
-                                self._encoding, 'replace'), charattr[1])
+                    self.window.addstr(
+                            row, col, charattr[0].encode(ENCODING, 'replace'), charattr[1])
                 except curses.error:
                     pass
         if self.cursor_visible:
@@ -362,8 +363,7 @@ class VideoCurses(VideoPlugin):
                 self.last_colour = colour
                 self.window.bkgdset(' ', colour)
             try:
-                self.window.addstr(row-1, col-1, c.encode(
-                        self._encoding, 'replace'), colour)
+                self.window.addstr(row-1, col-1, c.encode(ENCODING, 'replace'), colour)
             except curses.error:
                 pass
 
