@@ -13,8 +13,6 @@ try:
 except ImportError:
     numpy = None
 
-from . import base
-
 
 if platform.system() == 'Windows':
     # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
@@ -33,7 +31,7 @@ DISPLAY_SLACK = 15
 
 def apply_composite_artifacts(src_array, pixels=4):
     """Process the canvas to apply composite colour artifacts."""
-    width, height = src_array.shape
+    width, _ = src_array.shape
     s = [None] * pixels
     for p in range(pixels):
         s[p] = src_array[p:width:pixels] & (4//pixels)

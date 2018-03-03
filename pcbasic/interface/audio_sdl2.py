@@ -9,7 +9,6 @@ This file is released under the GNU GPL version 3 or later.
 # see e.g. http://toomanyideas.net/2014/pysdl2-playing-a-sound-from-a-wav-file.html
 
 import logging
-import Queue
 from collections import deque
 
 try:
@@ -22,8 +21,8 @@ try:
 except ImportError:
     numpy = None
 
-from ..basic.base import signals
-from . import base
+from .audio import AudioPlugin
+from .base import audio_plugins, InitFailed
 from . import synthesiser
 
 
@@ -39,16 +38,16 @@ MIN_SAMPLES_BUFFER = 2*CALLBACK_CHUNK_LENGTH
 ##############################################################################
 # plugin
 
-@base.audio_plugins.register('sdl2')
-class AudioSDL2(base.AudioPlugin):
+@audio_plugins.register('sdl2')
+class AudioSDL2(AudioPlugin):
     """SDL2-based audio plugin."""
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not sdl2:
-            raise base.InitFailed('Module `sdl2` not found')
+            raise InitFailed('Module `sdl2` not found')
         if not numpy:
-            raise base.InitFailed('Module `numpy` module not found')
+            raise InitFailed('Module `numpy` module not found')
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
@@ -64,7 +63,7 @@ class AudioSDL2(base.AudioPlugin):
         self.audiospec.samples = CALLBACK_CHUNK_LENGTH
         self.audiospec.callback = sdl2.SDL_AudioCallback(self._get_next_chunk)
         self.dev = None
-        base.AudioPlugin.__init__(self, audio_queue)
+        AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
@@ -75,7 +74,7 @@ class AudioSDL2(base.AudioPlugin):
             logging.warning('Could not open audio device: %s', sdl2.SDL_GetError())
         # unpause the audio device
         sdl2.SDL_PauseAudioDevice(self.dev, 0)
-        return base.AudioPlugin.__enter__(self)
+        return AudioPlugin.__enter__(self)
 
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""
@@ -109,7 +108,8 @@ class AudioSDL2(base.AudioPlugin):
             while True:
                 if self._next_tone[voice] is None or self._next_tone[voice].loop:
                     try:
-                        # looping tone will be interrupted by any new tone appearing in the generator queue
+                        # looping tone will be interrupted
+                        # by any new tone appearing in the generator queue
                         self._next_tone[voice] = self.generators[voice].popleft()
                     except IndexError:
                         if self._next_tone[voice] is None:

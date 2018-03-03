@@ -1,5 +1,5 @@
 """
-PC-BASIC - audio_portaudio.py
+PC-BASIC - interface.audio_portaudio
 Sound interface based on PortAudio
 
 (c) 2015--2018 Rob Hagemans
@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
-import Queue
 from collections import deque
 from contextlib import contextmanager
 
@@ -21,8 +20,8 @@ try:
 except ImportError:
     numpy = None
 
-from ..basic.base import signals
-from . import base
+from .audio import AudioPlugin
+from .base import audio_plugins, InitFailed
 from . import synthesiser
 
 
@@ -31,7 +30,7 @@ def suppress_output():
     """Suppress stdout and stderr messages from linked library."""
     # http://stackoverflow.com/questions/977840/redirecting-fortran-called-via-f2py-output-in-python/978264#978264
     # open file descriptors to /dev/null
-    null_fds = [os.open(os.devnull, os.O_RDWR) for x in xrange(2)]
+    null_fds = [os.open(os.devnull, os.O_RDWR) for _ in xrange(2)]
     # save the file descriptors for /dev/stdout and /dev/stderr
     save = os.dup(1), os.dup(2)
     # put /dev/null fds on 1 (stdout) and 2 (stderr)
@@ -47,8 +46,8 @@ def suppress_output():
     os.close(null_fds[1])
 
 
-@base.audio_plugins.register('portaudio')
-class AudioPortAudio(base.AudioPlugin):
+@audio_plugins.register('portaudio')
+class AudioPortAudio(AudioPlugin):
     """SDL2-based audio plugin."""
 
     # approximate generator chunk length
@@ -58,9 +57,9 @@ class AudioPortAudio(base.AudioPlugin):
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not pyaudio:
-            raise base.InitFailed('Module `pyaudio` not found')
+            raise InitFailed('Module `pyaudio` not found')
         if not numpy:
-            raise base.InitFailed('Module `numpy` not found')
+            raise InitFailed('Module `numpy` not found')
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
@@ -68,7 +67,7 @@ class AudioPortAudio(base.AudioPlugin):
         # buffer of samples; drained by callback, replenished by _play_sound
         self._samples = [numpy.array([], numpy.int16) for _ in range(4)]
         self._dev = None
-        base.AudioPlugin.__init__(self, audio_queue)
+        AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
@@ -83,14 +82,14 @@ class AudioPortAudio(base.AudioPlugin):
                     frames_per_buffer=bufsize,
                     stream_callback=self._get_next_chunk)
             self._stream.start_stream()
-            base.AudioPlugin.__enter__(self)
+            AudioPlugin.__enter__(self)
 
     def __exit__(self, type, value, traceback):
         """Close down PortAudio."""
         self._stream.stop_stream()
         self._stream.close()
         self._dev.terminate()
-        return base.AudioPlugin.__exit__(self, type, value, traceback)
+        return AudioPlugin.__exit__(self, type, value, traceback)
 
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""
@@ -122,7 +121,8 @@ class AudioPortAudio(base.AudioPlugin):
             while True:
                 if self._next_tone[voice] is None or self._next_tone[voice].loop:
                     try:
-                        # looping tone will be interrupted by any new tone appearing in the generator queue
+                        # looping tone will be interrupted
+                        # by any new tone appearing in the generator queue
                         self._next_tone[voice] = self.generators[voice].popleft()
                     except IndexError:
                         if self._next_tone[voice] is None:

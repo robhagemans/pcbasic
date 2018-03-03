@@ -26,7 +26,8 @@ else:
     mixer = None
 
 from ..basic.base import signals
-from . import base
+from .audio import AudioPlugin
+from .base import audio_plugins, InitFailed
 from . import synthesiser
 
 
@@ -37,8 +38,8 @@ CHUNK_LENGTH = 1192 * 4
 ##############################################################################
 # plugin
 
-@base.audio_plugins.register('pygame')
-class AudioPygame(base.AudioPlugin):
+@audio_plugins.register('pygame')
+class AudioPygame(AudioPlugin):
     """Pygame-based audio plugin."""
 
     # quit sound server after quiet period of quiet_quit ticks
@@ -48,11 +49,11 @@ class AudioPygame(base.AudioPlugin):
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not pygame:
-            raise base.InitFailed('Module `pygame` not found')
+            raise InitFailed('Module `pygame` not found')
         if not numpy:
-            raise base.InitFailed('Mdoule `numpy` not found')
+            raise InitFailed('Mdoule `numpy` not found')
         if not mixer:
-            raise base.InitFailed('Module `mixer` not found')
+            raise InitFailed('Module `mixer` not found')
         # this must be called before pygame.init() in the video plugin
         mixer.pre_init(synthesiser.sample_rate, -synthesiser.sample_bits, channels=1, buffer=1024) #4096
         # synthesisers
@@ -63,14 +64,14 @@ class AudioPygame(base.AudioPlugin):
         self._persist = False
         # keep track of quiet time to shut down mixer after a while
         self.quiet_ticks = 0
-        base.AudioPlugin.__init__(self, audio_queue)
+        AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
         # initialise mixer as silent
         # this is necessary to be able to set channels to mono
         mixer.quit()
-        return base.AudioPlugin.__enter__(self)
+        return AudioPlugin.__enter__(self)
 
     def persist(self, do_persist):
         """Allow or disallow mixer to quit."""

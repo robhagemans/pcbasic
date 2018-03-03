@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 import platform
-import os
 
 try:
     import pygame
@@ -24,14 +23,14 @@ from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
-
+from .video import VideoPlugin
+from .base import video_plugins, InitFailed, EnvironmentCache, NOKILL_MESSAGE
 from . import clipboard
-from . import base
 from . import window
 
 
-@base.video_plugins.register('pygame')
-class VideoPygame(base.VideoPlugin):
+@video_plugins.register('pygame')
+class VideoPygame(VideoPlugin):
     """Pygame-based graphical interface."""
 
     def __init__(
@@ -41,7 +40,7 @@ class VideoPygame(base.VideoPlugin):
             alt_f4_quits=True, mouse_clipboard=True,
             **kwargs):
         """Initialise pygame interface."""
-        base.VideoPlugin.__init__(self, input_queue, video_queue)
+        VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
         self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
@@ -53,14 +52,14 @@ class VideoPygame(base.VideoPlugin):
         self._has_window = False
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
-            raise base.InitFailed('Module `pygame` not found')
+            raise InitFailed('Module `pygame` not found')
         if not numpy:
-            raise base.InitFailed('Module `numpy` not found')
+            raise InitFailed('Module `numpy` not found')
         # ensure we have the correct video driver for SDL 1.2
         # pygame sets this on import, but if we've tried SDL2 we've had to
         # reset this value
         # ensure window is centred
-        self._env = base.EnvironmentCache()
+        self._env = EnvironmentCache()
         self._env.set('SDL_VIDEO_CENTERED', '1')
         pygame.init()
         try:
@@ -68,7 +67,7 @@ class VideoPygame(base.VideoPlugin):
             pygame.display.get_driver()
         except pygame.error as e:
             self._close_pygame()
-            raise base.InitFailed('No suitable display driver: %s' % e)
+            raise InitFailed('No suitable display driver: %s' % e)
         # display & border
         # display buffer
         self.canvas = []
@@ -120,7 +119,7 @@ class VideoPygame(base.VideoPlugin):
             self._resize_display(*self.display_size)
         except pygame.error as e:
             self._close_pygame()
-            raise base.InitFailed('Could not initialise display: %s' % e)
+            raise InitFailed('Could not initialise display: %s' % e)
         if self._smooth and self.display.get_bitsize() < 24:
             logging.warning(
                     'Smooth scaling not available on this display (depth %d < 24)',
@@ -150,7 +149,7 @@ class VideoPygame(base.VideoPlugin):
 
     def __exit__(self, type, value, traceback):
         """Close the pygame interface."""
-        base.VideoPlugin.__exit__(self, type, value, traceback)
+        VideoPlugin.__exit__(self, type, value, traceback)
         self._close_pygame()
 
     def _close_pygame(self):
@@ -230,7 +229,7 @@ class VideoPygame(base.VideoPlugin):
                 self._resize_display(event.w, event.h)
             elif event.type == pygame.QUIT:
                 if self._nokill:
-                    self.set_caption_message(base.NOKILL_MESSAGE)
+                    self.set_caption_message(NOKILL_MESSAGE)
                 else:
                     self._input_queue.put(signals.Event(signals.KEYB_QUIT))
 

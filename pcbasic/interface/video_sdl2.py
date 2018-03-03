@@ -42,7 +42,8 @@ from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
-from . import base
+from .video import VideoPlugin
+from .base import video_plugins, InitFailed, EnvironmentCache, NOKILL_MESSAGE
 from . import window
 from . import clipboard
 
@@ -381,8 +382,8 @@ def _pixels2d(psurface):
 ###############################################################################
 # video plugin
 
-@base.video_plugins.register('sdl2')
-class VideoSDL2(base.VideoPlugin):
+@video_plugins.register('sdl2')
+class VideoSDL2(VideoPlugin):
     """SDL2-based graphical interface."""
 
     def __init__(
@@ -393,10 +394,10 @@ class VideoSDL2(base.VideoPlugin):
             **kwargs):
         """Initialise SDL2 interface."""
         if not sdl2:
-            raise base.InitFailed('Module `sdl2` not found')
+            raise InitFailed('Module `sdl2` not found')
         if not numpy:
-            raise base.InitFailed('Module `numpy` not found')
-        base.VideoPlugin.__init__(self, input_queue, video_queue)
+            raise InitFailed('Module `numpy` not found')
+        VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
         self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
@@ -429,7 +430,7 @@ class VideoSDL2(base.VideoPlugin):
         self._has_window = False
         # ensure the correct SDL2 video driver is chosen for Windows
         # since this gets messed up if we also import pygame
-        self._env = base.EnvironmentCache()
+        self._env = EnvironmentCache()
         if platform.system() == 'Windows':
             self._env.set('SDL_VIDEODRIVER', 'windows')
         # initialise SDL
@@ -438,7 +439,7 @@ class VideoSDL2(base.VideoPlugin):
             # reset the environment variable
             # to not throw PyGame off if we try that later
             self._env.close()
-            raise base.InitFailed('Could not initialise SDL2: %s' % sdl2.SDL_GetError())
+            raise InitFailed('Could not initialise SDL2: %s' % sdl2.SDL_GetError())
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
         self._window_sizer = window.WindowSizer(
@@ -492,11 +493,11 @@ class VideoSDL2(base.VideoPlugin):
                 self._input_queue.put(signals.Event(signals.STICK_MOVED, (j, axis, 128)))
         # enable IME
         sdl2.SDL_StartTextInput()
-        return base.VideoPlugin.__enter__(self)
+        return VideoPlugin.__enter__(self)
 
     def __exit__(self, type, value, traceback):
         """Close the SDL2 interface."""
-        base.VideoPlugin.__exit__(self, type, value, traceback)
+        VideoPlugin.__exit__(self, type, value, traceback)
         if sdl2 and numpy and self._has_window:
             # free windows
             sdl2.SDL_DestroyWindow(self._display)
@@ -612,7 +613,7 @@ class VideoSDL2(base.VideoPlugin):
                     sdl2.SDL_SetModState(sdl2.SDL_GetModState() & ~sdl2.KMOD_ALT)
             elif event.type == sdl2.SDL_QUIT:
                 if self._nokill:
-                    self.set_caption_message(base.NOKILL_MESSAGE)
+                    self.set_caption_message(NOKILL_MESSAGE)
                 else:
                     self._input_queue.put(signals.Event(signals.KEYB_QUIT))
         self._flush_keypress()

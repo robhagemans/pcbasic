@@ -18,7 +18,8 @@ from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..basic.base import signals
 
-from . import base
+from .video import VideoPlugin
+from .base import video_plugins, InitFailed, EnvironmentCache
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
@@ -59,18 +60,18 @@ if curses:
     }
 
 
-@base.video_plugins.register('curses')
-class VideoCurses(base.VideoPlugin):
+@video_plugins.register('curses')
+class VideoCurses(VideoPlugin):
     """Curses-based text interface."""
 
     def __init__(self, input_queue, video_queue, caption=u'', border_width=0, **kwargs):
         """Initialise the text interface."""
-        base.VideoPlugin.__init__(self, input_queue, video_queue)
+        VideoPlugin.__init__(self, input_queue, video_queue)
         # we need to ensure setlocale() has been run first to allow unicode input
         self._encoding = locale.getpreferredencoding()
         self.curses_init = False
         if not curses:
-            raise base.InitFailed('`Module `curses` not found')
+            raise InitFailed('`Module `curses` not found')
         # set the ESC-key delay to 25 ms unless otherwise set
         # set_escdelay seems to be unavailable on python curses.
         if not os.environ.has_key('ESCDELAY'):
@@ -119,7 +120,7 @@ class VideoCurses(base.VideoPlugin):
 
     def __exit__(self, type, value, traceback):
         """Close the curses interface."""
-        base.VideoPlugin.__exit__(self, type, value, traceback)
+        VideoPlugin.__exit__(self, type, value, traceback)
         if self.curses_init:
             # restore original terminal size
             self._resize(*self.orig_size)

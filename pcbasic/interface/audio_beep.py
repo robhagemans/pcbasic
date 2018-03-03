@@ -13,18 +13,19 @@ from collections import deque
 import time
 import sys
 
-if platform.system() == 'Windows':
-    import winsound
-    fcntl = None
-else:
+if platform.system() != 'Windows':
     import fcntl
     winsound = None
+else:
+    import winsound
+    fcntl = None
 
-from ..basic.base import signals
-from . import base
+from .audio import AudioPlugin
+from .base import audio_plugins, InitFailed
 
-@base.audio_plugins.register('beep')
-class AudioBeep(base.AudioPlugin):
+
+@audio_plugins.register('beep')
+class AudioBeep(AudioPlugin):
     """Audio plugin based on the PC speaker."""
 
     def __init__(self, audio_queue, **kwargs):
@@ -37,10 +38,10 @@ class AudioBeep(base.AudioPlugin):
             else:
                 self.beeper = Beeper
         if not self.beeper.ok():
-            raise base.InitFailed('Beeper not supported')
+            raise InitFailed('Beeper not supported')
         # sound generators for each voice
         self.generators = [deque(), deque(), deque(), deque()]
-        base.AudioPlugin.__init__(self, audio_queue)
+        AudioPlugin.__init__(self, audio_queue)
 
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""

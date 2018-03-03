@@ -9,13 +9,14 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import logging
 
-from . import base
+from .video import VideoPlugin
+from .base import video_plugins
 from . import video_cli
 from .video_cli import encoding
 from . import ansi
 
 
-@base.video_plugins.register('ansi')
+@video_plugins.register('ansi')
 class VideoANSI(video_cli.VideoCLI):
     """Text interface implemented with ANSI escape sequences."""
 
@@ -49,7 +50,7 @@ class VideoANSI(video_cli.VideoCLI):
 
     def __exit__(self, type, value, traceback):
         """Close the text interface."""
-        base.VideoPlugin.__exit__(self, type, value, traceback)
+        VideoPlugin.__exit__(self, type, value, traceback)
         sys.stdout.write(ansi.SET_COLOUR % 0)
         sys.stdout.write(ansi.CLEAR_SCREEN)
         sys.stdout.write(ansi.MOVE_CURSOR % (1, 1))
