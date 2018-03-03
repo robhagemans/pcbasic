@@ -56,7 +56,7 @@ class AudioSDL2(AudioPlugin):
         self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
         # SDL AudioDevice and specifications
         self.audiospec = sdl2.SDL_AudioSpec(0, 0, 0, 0)
-        self.audiospec.freq = synthesiser.sample_rate
+        self.audiospec.freq = synthesiser.SAMPLE_RATE
         # samples are 16-bit signed ints
         self.audiospec.format = sdl2.AUDIO_S16SYS
         self.audiospec.channels = 1
@@ -79,12 +79,12 @@ class AudioSDL2(AudioPlugin):
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""
         self.generators[voice].append(synthesiser.SoundGenerator(
-                    self.signal_sources[voice], synthesiser.feedback_tone,
+                    self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
                     frequency, duration, fill, loop, volume))
 
     def noise(self, source, frequency, duration, fill, loop, volume):
         """Enqueue a noise."""
-        feedback = synthesiser.feedback_noise if source else synthesiser.feedback_periodic
+        feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
         self.generators[3].append(synthesiser.SoundGenerator(
                     self.signal_sources[3], feedback,
                     frequency, duration, fill, loop, volume))

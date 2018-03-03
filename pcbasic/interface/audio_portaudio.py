@@ -25,6 +25,12 @@ from .base import audio_plugins, InitFailed
 from . import synthesiser
 
 
+# approximate generator chunk length
+# one wavelength at 37 Hz is 1192 samples at 44100 Hz
+CHUNK_LENGTH = 1192 * 4
+# buffer size in sample frames
+BUFSIZE = 1024
+
 @contextmanager
 def suppress_output():
     """Suppress stdout and stderr messages from linked library."""
@@ -50,10 +56,6 @@ def suppress_output():
 class AudioPortAudio(AudioPlugin):
     """SDL2-based audio plugin."""
 
-    # approximate generator chunk length
-    # one wavelength at 37 Hz is 1192 samples at 44100 Hz
-    chunk_length = 1192 * 4
-
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not pyaudio:
@@ -74,13 +76,11 @@ class AudioPortAudio(AudioPlugin):
         with suppress_output():
             self._dev = pyaudio.PyAudio()
             sample_format = self._dev.get_format_from_width(2)
-            bufsize = 1024
-            self._min_samples_buffer = 2*bufsize
+            self._min_samples_buffer = 2 * BUFSIZE
             #self._samples = [numpy.zeros(bufsize*2, numpy.int16) for _ in range(4)]
-            self._stream = self._dev.open(format=sample_format, channels=1,
-                    rate=synthesiser.sample_rate, output=True,
-                    frames_per_buffer=bufsize,
-                    stream_callback=self._get_next_chunk)
+            self._stream = self._dev.open(
+                    format=sample_format, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
+                    frames_per_buffer=BUFSIZE, stream_callback=self._get_next_chunk)
             self._stream.start_stream()
             AudioPlugin.__enter__(self)
 
@@ -94,12 +94,12 @@ class AudioPortAudio(AudioPlugin):
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""
         self.generators[voice].append(synthesiser.SoundGenerator(
-                    self.signal_sources[voice], synthesiser.feedback_tone,
+                    self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
                     frequency, duration, fill, loop, volume))
 
     def noise(self, source, frequency, duration, fill, loop, volume):
         """Enqueue a noise."""
-        feedback = synthesiser.feedback_noise if source else synthesiser.feedback_periodic
+        feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
         self.generators[3].append(synthesiser.SoundGenerator(
                     self.signal_sources[3], feedback,
                     frequency, duration, fill, loop, volume))
@@ -128,7 +128,7 @@ class AudioPortAudio(AudioPlugin):
                         if self._next_tone[voice] is None:
                             current_chunk = None
                             break
-                current_chunk = self._next_tone[voice].build_chunk(self.chunk_length)
+                current_chunk = self._next_tone[voice].build_chunk(CHUNK_LENGTH)
                 if current_chunk is not None:
                     break
                 self._next_tone[voice] = None

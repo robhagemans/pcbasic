@@ -33,7 +33,11 @@ from . import synthesiser
 
 # one wavelength at 37 Hz is 1192 samples at 44100 Hz
 CHUNK_LENGTH = 1192 * 4
-
+# quit sound server after quiet period of QUIET_QUIT ticks
+# to avoid high-ish cpu load from the sound server.
+QUIET_QUIT = 10000
+# buffer size in sample frames
+BUFSIZE = 1024 #4096
 
 ##############################################################################
 # plugin
@@ -42,9 +46,6 @@ CHUNK_LENGTH = 1192 * 4
 class AudioPygame(AudioPlugin):
     """Pygame-based audio plugin."""
 
-    # quit sound server after quiet period of quiet_quit ticks
-    # to avoid high-ish cpu load from the sound server.
-    quiet_quit = 10000
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
@@ -55,7 +56,8 @@ class AudioPygame(AudioPlugin):
         if not mixer:
             raise InitFailed('Module `mixer` not found')
         # this must be called before pygame.init() in the video plugin
-        mixer.pre_init(synthesiser.sample_rate, -synthesiser.sample_bits, channels=1, buffer=1024) #4096
+        mixer.pre_init(
+                synthesiser.SAMPLE_RATE, -synthesiser.SAMPLE_BITS, channels=1, buffer=BUFSIZE)
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
@@ -80,12 +82,12 @@ class AudioPygame(AudioPlugin):
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""
         self.generators[voice].append(synthesiser.SoundGenerator(
-                    self.signal_sources[voice], synthesiser.feedback_tone,
+                    self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
                     frequency, duration, fill, loop, volume))
 
     def noise(self, source, frequency, duration, fill, loop, volume):
         """Enqueue a noise."""
-        feedback = synthesiser.feedback_noise if source else synthesiser.feedback_periodic
+        feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
         self.generators[3].append(synthesiser.SoundGenerator(
                     self.signal_sources[3], feedback,
                     frequency, duration, fill, loop, volume))
@@ -100,7 +102,8 @@ class AudioPygame(AudioPlugin):
 
     def _work(self):
         """Replenish sample buffer."""
-        if (sum(len(q) for q in self.generators) == 0 and self._next_tone == [None, None, None, None]):
+        if (sum(len(q) for q in self.generators) == 0 and
+                    self._next_tone == [None, None, None, None]):
             # check if mixer can be quit
             self._check_quit()
             return
@@ -132,7 +135,7 @@ class AudioPygame(AudioPlugin):
             self.quiet_ticks = 0
         else:
             self.quiet_ticks += 1
-            if not self._persist and self.quiet_ticks > self.quiet_quit:
+            if not self._persist and self.quiet_ticks > QUIET_QUIT:
                 # mixer is quiet and we're not running a program.
                 # quit to reduce pulseaudio cpu load
                 # this takes quite a while and leads to missed frames...
