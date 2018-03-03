@@ -30,18 +30,20 @@ from . import video_graphical
 
 
 @base.video_plugins.register('pygame')
-class VideoPygame(video_graphical.VideoGraphical):
+class VideoPygame(base.VideoPlugin):
     """Pygame-based graphical interface."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise pygame interface."""
-        video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
+        base.VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
         self._smooth = kwargs.get('scaling', None) == 'smooth'
         # ignore ALT+F4 and window X button
         self._nokill = kwargs.get('alt_f4_quits', True) == False
         # window caption/title
         self.caption = kwargs.get('caption', u'')
+        # start in fullscreen mode
+        self.fullscreen = kwargs.get('fullscreen', False)
         self._has_window = False
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
@@ -100,12 +102,12 @@ class VideoPygame(video_graphical.VideoGraphical):
         # joystick and mouse
         # available joysticks
         self.joysticks = []
-        #
         # get physical screen dimensions (needs to be called before set_mode)
         display_info = pygame.display.Info()
-        self.physical_size = display_info.current_w, display_info.current_h
+        self._window_sizer = video_graphical.WindowSizer(
+                display_info.current_w, display_info.current_h, **kwargs)
         # determine initial display size
-        self.display_size = self._find_display_size(640, 480)
+        self.display_size = self._window_sizer.find_display_size(640, 480)
         self._set_icon(kwargs['icon'])
         # first set the screen non-resizeable, to trick things like maximus into not full-screening
         # I hate it when applications do this ;)
@@ -117,7 +119,9 @@ class VideoPygame(video_graphical.VideoGraphical):
             self._close_pygame()
             raise base.InitFailed('Could not initialise display: %s' % e)
         if self._smooth and self.display.get_bitsize() < 24:
-            logging.warning("Smooth scaling not available on this display (depth %d < 24)", self.display.get_bitsize())
+            logging.warning(
+                    'Smooth scaling not available on this display (depth %d < 24)',
+                    self.display.get_bitsize())
             self._smooth = False
         pygame.display.set_caption(self.caption.encode('utf-8'))
         pygame.key.set_repeat(500, 24)
@@ -188,7 +192,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 if self._mouse_clip:
                     if event.button == 1:
                         # LEFT button: copy
-                        pos = self._normalise_pos(*event.pos)
+                        pos = self._window_sizer.normalise_pos(*event.pos)
                         self.clipboard.start(1 + pos[1] // self.font_height,
                                 1 + (pos[0]+self.font_width//2) // self.font_width)
                     elif event.button == 2:
@@ -198,14 +202,14 @@ class VideoPygame(video_graphical.VideoGraphical):
                 if event.button == 1:
                     # right mouse button is a pen press
                     self._input_queue.put(signals.Event(signals.PEN_DOWN,
-                                                self._normalise_pos(*event.pos)))
+                                                self._window_sizer.normalise_pos(*event.pos)))
             elif event.type == pygame.MOUSEBUTTONUP:
                 self._input_queue.put(signals.Event(signals.PEN_UP))
                 if self._mouse_clip and event.button == 1:
                     self.clipboard.copy(mouse=True)
                     self.clipboard.stop()
             elif event.type == pygame.MOUSEMOTION:
-                pos = self._normalise_pos(*event.pos)
+                pos = self._window_sizer.normalise_pos(*event.pos)
                 self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
                 if self.clipboard.active():
                     self.clipboard.move(1 + pos[1] // self.font_height,
@@ -269,7 +273,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             # F11+f to toggle fullscreen mode
             if e.key == pygame.K_f:
                 self.fullscreen = not self.fullscreen
-                self._resize_display(*self._find_display_size(*self.size))
+                self._resize_display(*self._window_sizer.find_display_size(*self.size))
             self.clipboard.handle_key(scan, c)
             self.busy = True
         else:
@@ -346,7 +350,7 @@ class VideoPygame(video_graphical.VideoGraphical):
     def _do_flip(self):
         """Draw the canvas to the screen."""
         # create the screen that will be stretched onto the display
-        border_x, border_y = self.border_start()
+        border_x, border_y = self._window_sizer.border_start()
         # surface depth and flags match those of canvas
         screen = pygame.Surface(
             (self.size[0] + 2*border_x, self.size[1] + 2*border_y), 0, self.canvas[self.vpagenum])
@@ -410,7 +414,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         if self.fullscreen:
             flags |= pygame.FULLSCREEN | pygame.NOFRAME
         self.display = pygame.display.set_mode((width, height), flags)
-        self.window_width, self.window_height = width, height
+        self._window_sizer.window_size = width, height
         # load display if requested
         self.busy = True
 
@@ -430,7 +434,8 @@ class VideoPygame(video_graphical.VideoGraphical):
             self.bitsperpixel = mode_info.bitsperpixel
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
-        self._resize_display(*self._find_display_size(*self.size))
+        self._window_sizer.size = self.size
+        self._resize_display(*self._window_sizer.find_display_size(*self.size))
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height,
                               0, self.font_height)

@@ -380,7 +380,7 @@ def _pixels2d(psurface):
 # video plugin
 
 @base.video_plugins.register('sdl2')
-class VideoSDL2(video_graphical.VideoGraphical):
+class VideoSDL2(base.VideoPlugin):
     """SDL2-based graphical interface."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
@@ -389,13 +389,15 @@ class VideoSDL2(video_graphical.VideoGraphical):
             raise base.InitFailed('Module `sdl2` not found')
         if not numpy:
             raise base.InitFailed('Module `numpy` not found')
-        video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
+        base.VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
         self._smooth = kwargs.get('scaling', None) == 'smooth'
         # ignore ALT+F4 and window X button
         self._nokill = kwargs.get('alt_f4_quits', True) == False
         # window caption/title
         self._caption = kwargs.get('caption', u'')
+        # start in fullscreen mode if True
+        self._fullscreen = kwargs.get('fullscreen', False)
         # display & border
         # border attribute
         self._border_attr = 0
@@ -432,7 +434,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             raise base.InitFailed('Could not initialise SDL2: %s' % sdl2.SDL_GetError())
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
-        self.physical_size = display_mode.w, display_mode.h
+        self._window_sizer = video_graphical.WindowSizer(display_mode.w, display_mode.h, **kwargs)
         # create the window initially as 640*400 black
         # "NOTE: You should not expect to be able to create a window, render,
         #        or receive events on any thread other than the main one"
@@ -440,7 +442,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
         self._display = None
         self._work_surface = None
-        self._do_create_window(*self._find_display_size(640, 400))
+        self._do_create_window(*self._window_sizer.find_display_size(640, 400))
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self._display)
         # workaround for duplicated keypresses after Alt (at least on Ubuntu Unity)
@@ -481,7 +483,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 self._input_queue.put(signals.Event(signals.STICK_MOVED, (j, axis, 128)))
         # enable IME
         sdl2.SDL_StartTextInput()
-        return video_graphical.VideoGraphical.__enter__(self)
+        return base.VideoPlugin.__enter__(self)
 
     def __exit__(self, type, value, traceback):
         """Close the SDL2 interface."""
@@ -519,7 +521,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def _do_create_window(self, width, height):
         """Create a new SDL window """
         flags = sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN
-        if self.fullscreen:
+        if self._fullscreen:
              flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
         sdl2.SDL_DestroyWindow(self._display)
         self._display = sdl2.SDL_CreateWindow(self._caption.encode('utf-8'),
@@ -527,8 +529,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
                     width, height, flags)
         self._set_icon()
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
+        self._window_sizer.window_size = width, height
         self.busy = True
-        self.window_width, self.window_height = width, height
 
 
     ###########################################################################
@@ -552,7 +554,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             elif event.type == sdl2.SDL_TEXTEDITING:
                 self.set_caption_message(event.text.text)
             elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
-                pos = self._normalise_pos(event.button.x, event.button.y)
+                pos = self._window_sizer.normalise_pos(event.button.x, event.button.y)
                 if self._mouse_clip:
                     if event.button.button == sdl2.SDL_BUTTON_LEFT:
                         # LEFT button: copy
@@ -571,7 +573,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                     self._clipboard_interface.copy(mouse=True)
                     self._clipboard_interface.stop()
             elif event.type == sdl2.SDL_MOUSEMOTION:
-                pos = self._normalise_pos(event.motion.x, event.motion.y)
+                pos = self._window_sizer.normalise_pos(event.motion.x, event.motion.y)
                 self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
                 if self._clipboard_interface.active():
                     self._clipboard_interface.move(1 + pos[1] // self.font_height,
@@ -691,8 +693,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         if self._f11_active:
             # F11+f to toggle fullscreen mode
             if c.upper() == u'F':
-                self.fullscreen = not self.fullscreen
-                self._do_create_window(*self._find_display_size(*self.size))
+                self._fullscreen = not self._fullscreen
+                self._do_create_window(*self._window_sizer.find_display_size(*self.size))
             self._clipboard_interface.handle_key(None, c)
         # the text input event follows the key down event immediately
         elif self._last_down is None:
@@ -770,7 +772,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_BlitScaled(conv, None, self._display_surface, None)
         else:
             # smooth-scale converted surface
-            scalex, scaley = self.scale()
+            scalex, scaley = self._window_sizer.scale()
             zoomx, zoomy = ctypes.c_double(scalex), ctypes.c_double(scaley)
             # only free the surface just before zoomSurface needs to re-allocate
             # so that the memory block is highly likely to be easily available
@@ -829,7 +831,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         maximised = sdl2.SDL_GetWindowFlags(self._display) & sdl2.SDL_WINDOW_MAXIMIZED
         # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
         # detect if window is very large compared to screen; force maximise if so.
-        to_maximised = self.is_maximal(width, height)
+        to_maximised = self._window_sizer.is_maximal(width, height)
         if not maximised:
             if to_maximised:
                 # force maximise for large windows
@@ -844,7 +846,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # get window size
         w, h = ctypes.c_int(), ctypes.c_int()
         sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
-        self.window_width, self.window_height = w.value, h.value
+        self._window_sizer.window_size = w.value, h.value
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         self.busy = True
 
@@ -867,7 +869,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
             self.bitsperpixel = mode_info.bitsperpixel
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
-        self._resize_display(*self._find_display_size(*self.size))
+        self._window_sizer.size = self.size
+        self._resize_display(*self._window_sizer.find_display_size(*self.size))
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # screen pages
@@ -877,7 +880,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 for _ in range(self.num_pages)]
         self.pixels = [_pixels2d(canvas.contents) for canvas in self.canvas]
         # create work surface for border and composite
-        self.border_x, self.border_y = self.border_start()
+        self.border_x, self.border_y = self._window_sizer.border_start()
         work_width = canvas_width + 2 * self.border_x
         work_height = canvas_height + 2 * self.border_y
         sdl2.SDL_FreeSurface(self._work_surface)
