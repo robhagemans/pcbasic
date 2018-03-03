@@ -66,15 +66,6 @@
             Allow programs to <code><a href="#POKE">POKE</a></code> into code memory.
         </dd>
 
-        <dt id="--altgr">
-            <code><b>--altgr</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            If <code><b>True</b></code> (default), interpret the right
-            <kbd>Alt</kbd> key as <kbd>Alt Gr</kbd> instead of <kbd>Alt</kbd>.
-            The left <kbd>Alt</kbd> key is always seen as <kbd>Alt</kbd>.
-        </dd>
-
         <dt id="--append">
             <code><b>--append</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
@@ -330,13 +321,12 @@
             <code><b>--run</b></code> and <code><b>--load</b></code>.
         </dd>
 
-        <dt id="--copy-paste">
-            <code><b>--copy-paste=</b><var>copy_button</var><b>,</b><var>paste_button</var></code>
+        <dt id="--mouse-clipboard">
+            <code><b>--mouse-clipboard</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
         <dd>
-            Choose the mouse buttons for clipboard operations.
-            <code><var>copy_button</var></code> and <code><var>paste_button</var></code> are
-            chosen from <code><b>left</b></code>,<code><b>middle</b></code>,<code><b>right</b></code>,<code><b>none</b></code>.
+            Enable clipboard operations with the mouse. If <code><b>True</b></code> (default),
+            select text with the left mouse button to copy and paste with the middle mouse button.
         </dd>
 
         <dt id="--ctrl-c-break">
@@ -740,15 +730,6 @@
             <samp><var>val</var></samp>.
         </dd>
 
-        <dt id="--pen">
-            <code><b>--pen=</b>{<b>left</b>|<b>middle</b>|<b>right</b>|<b>none</b>}</code>
-        </dt>
-        <dd>
-            Set the mouse button for light pen emulation. Default is <code><b>left</b></code>.
-            If set to <code><b>none</b></code>, light pen emulation is switched off.
-            On Android, <code><b>left</b></code> means touch input.
-        </dd>
-
         <dt id="--preset">
             <code><b>--preset=</b><var>option_block</var></code>
         </dt>
@@ -866,7 +847,7 @@
         </dd>
 
         <dt id="--sound-engine">
-            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b>|<b>sdl2</b>|<b>pygame</b>|<b>portaudio</b>]</code>
+            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b><b>portaudio</b>]</code>
         </dt>
         <dd>
             Choose the engine to use for audio output. If omitted, the
@@ -880,10 +861,6 @@
                 <dd>Use the built-in speaker.</dd>
                 <dt><code><b>portaudio</b></code></dt>
                 <dd>Use the PortAudio sound generator.</dd>
-                <dt><code><b>sdl2</b></code></dt>
-                <dd>Use the SDL2 sound generator.</dd>
-                <dt><code><b>pygame</b></code></dt>
-                <dd>Use the PyGame sound generator.</dd>
             </dl>
         </dd>
 

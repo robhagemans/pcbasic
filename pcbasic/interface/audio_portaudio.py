@@ -1,14 +1,12 @@
 """
-PC-BASIC - audio_portaudio.py
+PC-BASIC - interface.audio_portaudio
 Sound interface based on PortAudio
 
-(c) 2015, 2016 Rob Hagemans
+(c) 2015--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
 import os
-import logging
-import Queue
 from collections import deque
 from contextlib import contextmanager
 
@@ -22,17 +20,23 @@ try:
 except ImportError:
     numpy = None
 
-from ..basic.base import signals
-from . import base
+from .audio import AudioPlugin
+from .base import audio_plugins, InitFailed
 from . import synthesiser
 
+
+# approximate generator chunk length
+# one wavelength at 37 Hz is 1192 samples at 44100 Hz
+CHUNK_LENGTH = 1192 * 4
+# buffer size in sample frames
+BUFSIZE = 1024
 
 @contextmanager
 def suppress_output():
     """Suppress stdout and stderr messages from linked library."""
     # http://stackoverflow.com/questions/977840/redirecting-fortran-called-via-f2py-output-in-python/978264#978264
     # open file descriptors to /dev/null
-    null_fds = [os.open(os.devnull, os.O_RDWR) for x in xrange(2)]
+    null_fds = [os.open(os.devnull, os.O_RDWR) for _ in xrange(2)]
     # save the file descriptors for /dev/stdout and /dev/stderr
     save = os.dup(1), os.dup(2)
     # put /dev/null fds on 1 (stdout) and 2 (stderr)
@@ -48,21 +52,16 @@ def suppress_output():
     os.close(null_fds[1])
 
 
-class AudioPortAudio(base.AudioPlugin):
+@audio_plugins.register('portaudio')
+class AudioPortAudio(AudioPlugin):
     """SDL2-based audio plugin."""
 
-    # approximate generator chunk length
-    # one wavelength at 37 Hz is 1192 samples at 44100 Hz
-    chunk_length = 1192 * 4
-
-    def __init__(self, audio_queue):
+    def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not pyaudio:
-            logging.warning('PyAudio module not found. Failed to initialise PortAudio audio plugin.')
-            raise base.InitFailed()
+            raise InitFailed('Module `pyaudio` not found')
         if not numpy:
-            logging.warning('NumPy module not found. Failed to initialise PortAudio audio plugin.')
-            raise base.InitFailed()
+            raise InitFailed('Module `numpy` not found')
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
@@ -70,39 +69,37 @@ class AudioPortAudio(base.AudioPlugin):
         # buffer of samples; drained by callback, replenished by _play_sound
         self._samples = [numpy.array([], numpy.int16) for _ in range(4)]
         self._dev = None
-        base.AudioPlugin.__init__(self, audio_queue)
+        AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
         with suppress_output():
             self._dev = pyaudio.PyAudio()
             sample_format = self._dev.get_format_from_width(2)
-            bufsize = 1024
-            self._min_samples_buffer = 2*bufsize
+            self._min_samples_buffer = 2 * BUFSIZE
             #self._samples = [numpy.zeros(bufsize*2, numpy.int16) for _ in range(4)]
-            self._stream = self._dev.open(format=sample_format, channels=1,
-                    rate=synthesiser.sample_rate, output=True,
-                    frames_per_buffer=bufsize,
-                    stream_callback=self._get_next_chunk)
+            self._stream = self._dev.open(
+                    format=sample_format, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
+                    frames_per_buffer=BUFSIZE, stream_callback=self._get_next_chunk)
             self._stream.start_stream()
-            base.AudioPlugin.__enter__(self)
+            AudioPlugin.__enter__(self)
 
     def __exit__(self, type, value, traceback):
         """Close down PortAudio."""
         self._stream.stop_stream()
         self._stream.close()
         self._dev.terminate()
-        return base.AudioPlugin.__exit__(self, type, value, traceback)
+        return AudioPlugin.__exit__(self, type, value, traceback)
 
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""
         self.generators[voice].append(synthesiser.SoundGenerator(
-                    self.signal_sources[voice], synthesiser.feedback_tone,
+                    self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
                     frequency, duration, fill, loop, volume))
 
     def noise(self, source, frequency, duration, fill, loop, volume):
         """Enqueue a noise."""
-        feedback = synthesiser.feedback_noise if source else synthesiser.feedback_periodic
+        feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
         self.generators[3].append(synthesiser.SoundGenerator(
                     self.signal_sources[3], feedback,
                     frequency, duration, fill, loop, volume))
@@ -110,30 +107,31 @@ class AudioPortAudio(base.AudioPlugin):
     def hush(self):
         """Stop sound."""
         for voice in range(4):
-            self.next_tone[voice] = None
+            self._next_tone[voice] = None
             while self.generators[voice]:
                 self.generators[voice].popleft()
         self._samples = [numpy.array([], numpy.int16) for _ in range(4)]
 
-    def work(self):
+    def _work(self):
         """Replenish sample buffer."""
         for voice in range(4):
             if len(self._samples[voice]) > self._min_samples_buffer:
                 # nothing to do
                 continue
             while True:
-                if self.next_tone[voice] is None or self.next_tone[voice].loop:
+                if self._next_tone[voice] is None or self._next_tone[voice].loop:
                     try:
-                        # looping tone will be interrupted by any new tone appearing in the generator queue
-                        self.next_tone[voice] = self.generators[voice].popleft()
+                        # looping tone will be interrupted
+                        # by any new tone appearing in the generator queue
+                        self._next_tone[voice] = self.generators[voice].popleft()
                     except IndexError:
-                        if self.next_tone[voice] is None:
+                        if self._next_tone[voice] is None:
                             current_chunk = None
                             break
-                current_chunk = self.next_tone[voice].build_chunk(self.chunk_length)
+                current_chunk = self._next_tone[voice].build_chunk(CHUNK_LENGTH)
                 if current_chunk is not None:
                     break
-                self.next_tone[voice] = None
+                self._next_tone[voice] = None
             if current_chunk is not None:
                 # append chunk to samples list
                 # should lock to ensure callback doesn't try to access the list too?

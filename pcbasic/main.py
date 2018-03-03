@@ -23,6 +23,7 @@ from . import basic
 from . import state
 from . import config
 from .basic import __version__
+from .interface import Interface, InitFailed
 
 
 def main(*arguments):
@@ -102,12 +103,11 @@ def convert(settings):
 
 def launch_session(settings):
     """Start an interactive interpreter session."""
-    from .interface import Interface, InitFailed
     try:
         Interface(**settings.get_interface_parameters()).launch(
                 run_session, **settings.get_launch_parameters())
-    except InitFailed:
-        logging.error('Failed to initialise interface.')
+    except InitFailed as e:
+        logging.error(e)
 
 def run_session(interface=None, resume=False, debug=False, state_file=None,
                 prog=None, commands=(), **session_params):

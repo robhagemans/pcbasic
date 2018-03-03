@@ -92,7 +92,7 @@ class Cursor(object):
         # set the cursor attribute
         if not mode.is_text_mode:
             fore, _, _, _ = mode.split_attr(mode.cursor_index or attr)
-            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
+            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (fore,)))
         # cursor width starts out as single char
         self.set_default_shape(True)
         self.reset_visibility()
@@ -100,11 +100,11 @@ class Cursor(object):
     def reset_attr(self, new_attr):
         """Set the text cursor attribute."""
         if self._mode.is_text_mode:
-            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, new_attr))
+            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (new_attr,)))
 
     def show(self, do_show):
         """Force cursor to be visible/invisible."""
-        self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, do_show))
+        self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (do_show,)))
 
     def set_visibility(self, visible_run):
         """Set cursor visibility when a program is being run."""
@@ -119,7 +119,7 @@ class Cursor(object):
         # in graphics mode, we can't force the cursor to be visible on execute.
         if self._mode.is_text_mode:
             visible = visible or self.visible_run
-        self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, visible))
+        self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (visible,)))
 
     def set_shape(self, from_line, to_line):
         """Set the cursor shape."""

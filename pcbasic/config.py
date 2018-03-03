@@ -268,7 +268,7 @@ class Settings(object):
                         u'ansi', u'curses', u'pygame', u'sdl2'), },
         u'sound-engine': {
             u'type': u'string', u'default': u'',
-            u'choices': (u'', u'none', u'beep', u'portaudio', u'pygame', u'sdl2'), },
+            u'choices': (u'', u'none', u'beep', u'portaudio'), },
         u'load': {u'type': u'string', u'default': u'', },
         u'run': {u'type': u'string', u'default': u'',  },
         u'convert': {u'type': u'string', u'default': u'', },
@@ -314,12 +314,7 @@ class Settings(object):
         u'nobox': {u'type': u'bool', u'default': False,},
         u'utf8': {u'type': u'bool', u'default': False,},
         u'border': {u'type': u'int', u'default': 5,},
-        u'pen': {
-            u'type': u'string', u'default': u'left',
-            u'choices': (u'left', u'middle', u'right', u'none',), },
-        u'copy-paste': {
-            u'type': u'string', u'list': 2, u'default': [u'left', u'middle'],
-            u'choices': (u'left', u'middle', u'right', u'none',),},
+        u'mouse-clipboard': {u'type': u'bool', u'default': True,},
         u'state': {u'type': u'string', u'default': u'',},
         u'mono-tint': {u'type': u'int', u'list': 3, u'default': [255, 255, 255],},
         u'monitor': {
@@ -342,7 +337,6 @@ class Settings(object):
         u'shell': {u'type': u'string', u'default': u'',},
         u'print-trigger': {
             u'type': u'string', u'choices':(u'close', u'page', u'line'), u'default': u'close',},
-        u'altgr': {u'type': u'bool', u'default': True,},
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': 'Z'},
@@ -528,19 +522,14 @@ class Settings(object):
     def get_video_parameters(self):
         """Return a dictionary of parameters for the video plugin."""
         return {
-            'force_display_size': self.get('dimensions'),
-            'aspect': self.get('aspect'),
+            'dimensions': self.get('dimensions'),
+            'aspect_ratio': self.get('aspect'),
             'border_width': self.get('border'),
-            'force_native_pixel': (self.get('scaling') == 'native'),
+            'scaling': self.get('scaling'),
             'fullscreen': self.get('fullscreen'),
-            'smooth': (self.get('scaling') == 'smooth'),
-            'nokill': self.get('nokill'),
-            'altgr': self.get('altgr'),
+            'alt_f4_quits': not self.get('nokill'),
             'caption': self.get('caption'),
-            'composite_monitor': (self.get('monitor') == 'composite'),
-            'composite_card': self.get('video'),
-            'copy_paste': self.get('copy-paste'),
-            'pen': self.get('pen'),
+            'mouse_clipboard': self.get('mouse-clipboard'),
             'icon': ICON,
             'wait': self.get('wait'),
             }
@@ -559,14 +548,27 @@ class Settings(object):
     def has_interface(self):
         return self.get('interface') != 'none'
 
-    def get_interfaces(self):
-        """Return name of interface plugin."""
-        interface = self.get('interface')
-        return interface or 'graphical', self.get('sound-engine')
-
     def get_interface_parameters(self):
         """Return dictionary of interface parameters."""
-        iface_params = dict(zip(('interface_name', 'audio_name'), self.get_interfaces()))
+        interface = self.get('interface')
+        # categorical interfaces
+        categories = {
+            # (video, audio), in order of preference
+            'text': ('curses', 'ansi'),
+            'graphical': ('sdl2', 'pygame'),
+        }
+        if not interface:
+            # default: try graphical first, then text, then cli
+            iface_list = categories['graphical'] + categories['text'] + ('cli',)
+        else:
+            try:
+                iface_list = categories[interface]
+            except KeyError:
+                iface_list = (interface,)
+        iface_params = {
+            'try_interfaces': iface_list,
+            'audio_override': self.get('sound-engine'),
+        }
         iface_params.update(self.get_video_parameters())
         iface_params.update(self.get_audio_parameters())
         return iface_params

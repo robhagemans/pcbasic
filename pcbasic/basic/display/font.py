@@ -234,7 +234,7 @@ class GlyphCache(object):
             # send glyphs to signals; copy is necessary
             # as dict may change here while the other thread is working on it
             self._queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                    {self._codepage.to_unicode(k, u'\0'): v for k, v in self._glyphs.iteritems()}))
+                ({self._codepage.to_unicode(k, u'\0'): v for k, v in self._glyphs.iteritems()},)))
 
     def rebuild_glyph(self, ordval):
         """Rebuild a text-mode character after POKE."""
@@ -250,7 +250,7 @@ class GlyphCache(object):
         self._glyphs[char] = mask
         if self._mode.is_text_mode:
             self._queues.video.put(signals.Event(
-                    signals.VIDEO_BUILD_GLYPHS, {self._codepage.to_unicode(char, u'\0'): mask}))
+                    signals.VIDEO_BUILD_GLYPHS, ({self._codepage.to_unicode(char, u'\0'): mask},)))
 
     def check_char(self, char):
         """Submit glyph if needed."""

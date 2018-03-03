@@ -2,25 +2,27 @@
 PC-BASIC - video_ansi.py
 Text interface implementation for Unix
 
-(c) 2013, 2014, 2015, 2016 Rob Hagemans
+(c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
 import sys
 import logging
 
-from . import base
+from .video import VideoPlugin
+from .base import video_plugins
 from . import video_cli
-from .video_cli import encoding
+from .video_cli import ENCODING
 from . import ansi
 
 
+@video_plugins.register('ansi')
 class VideoANSI(video_cli.VideoCLI):
     """Text interface implemented with ANSI escape sequences."""
 
-    def __init__(self, input_queue, video_queue, **kwargs):
+    def __init__(self, input_queue, video_queue, caption=u'', **kwargs):
         """Initialise the text interface."""
-        self.caption = kwargs.get('caption', '')
+        self.caption = caption
         self.set_caption_message('')
         # cursor is visible
         self.cursor_visible = True
@@ -39,7 +41,7 @@ class VideoANSI(video_cli.VideoCLI):
         self.height = 25
         self.width = 80
         self._set_default_colours(16)
-        video_cli.VideoCLI.__init__(self, input_queue, video_queue, **kwargs)
+        video_cli.VideoCLI.__init__(self, input_queue, video_queue)
         self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
         # prevent logger from defacing the screen
         self.logger = logging.getLogger()
@@ -48,7 +50,7 @@ class VideoANSI(video_cli.VideoCLI):
 
     def __exit__(self, type, value, traceback):
         """Close the text interface."""
-        base.VideoPlugin.__exit__(self, type, value, traceback)
+        VideoPlugin.__exit__(self, type, value, traceback)
         sys.stdout.write(ansi.SET_COLOUR % 0)
         sys.stdout.write(ansi.CLEAR_SCREEN)
         sys.stdout.write(ansi.MOVE_CURSOR % (1, 1))
@@ -58,7 +60,7 @@ class VideoANSI(video_cli.VideoCLI):
         self.logger.disabled = False
         self._term_echo()
 
-    def _check_display(self):
+    def _work(self):
         """Handle screen and interface events."""
         if self.cursor_visible and self.last_pos != (self.cursor_row, self.cursor_col):
             sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
@@ -72,7 +74,7 @@ class VideoANSI(video_cli.VideoCLI):
             sys.stdout.write(ansi.MOVE_CURSOR % (row+1, 1))
             for col, charattr in enumerate(textrow):
                 self._set_attributes(*charattr[1])
-                sys.stdout.write(charattr[0].encode(encoding, 'replace'))
+                sys.stdout.write(charattr[0].encode(ENCODING, 'replace'))
         sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
         sys.stdout.flush()
 
@@ -189,7 +191,7 @@ class VideoANSI(video_cli.VideoCLI):
             return
         sys.stdout.write(ansi.MOVE_CURSOR % (row, col))
         self._set_attributes(fore, back, blink, underline)
-        sys.stdout.write(char.encode(encoding, 'replace'))
+        sys.stdout.write(char.encode(ENCODING, 'replace'))
         if is_fullwidth:
             sys.stdout.write(' ')
         sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))

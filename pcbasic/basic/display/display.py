@@ -222,7 +222,7 @@ class Display(object):
         # illegal fn call if we don't have a font for this mode
         self.text_screen.check_font_available(spec)
         # if we made it here we're ready to commit to the new mode
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, spec))
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, (spec,)))
         # switching to another text mode (width-only change)
         width_only = (self.mode.is_text_mode and spec.is_text_mode)
         # attribute and border persist on width-only change
@@ -308,10 +308,16 @@ class Display(object):
         """Set the composite colorburst bit."""
         colorburst = self.video.set_colorburst(on, is_cga=(self.mode.name == '320x200x4'))
         # reset the palette to reflect the new mono or mode-5 situation
+        # this sends the signal to the interface as well
         self.palette.init_mode(self.mode)
-        # this is only needed because composite artifacts are implemented in the interface
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_COLORBURST, (colorburst,
-                            self.palette.rgb_palette, self.palette.rgb_palette1)))
+        # don't try composite unless our video card supports it
+        if self.capabilities in modes.COMPOSITE:
+            composite_artifacts = (colorburst and self.video.monitor == 'composite' and
+                        (not self.mode.is_text_mode) and self.mode.supports_artifacts)
+            # this is only needed because composite artifacts are implemented in the interface
+            self.queues.video.put(signals.Event(
+                    signals.VIDEO_SET_COMPOSITE,
+                    (composite_artifacts, modes.COMPOSITE[self.capabilities])))
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
@@ -332,14 +338,14 @@ class Display(object):
     def rebuild(self):
         """Completely resubmit the screen to the interface."""
         # set the screen mode
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, self.mode))
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, (self.mode,)))
         # set the visible and active pages
         self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
         # rebuild palette
         self.palette.set_all(self.palette.palette, check_mode=False)
         # set the border
         fore, _, _, _ = self.mode.split_attr(self.border_attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
         self.text_screen.rebuild()
 
 
@@ -366,13 +372,13 @@ class Display(object):
         self.text_screen.set_attr(attr)
         if not self.mode.is_text_mode and self.mode.cursor_index is None:
             fore, _, _, _ = self.mode.split_attr(attr)
-            self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
+            self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (fore,)))
 
     def set_border(self, attr):
         """Set the border attribute."""
         self.border_attr = attr
         fore, _, _, _ = self.mode.split_attr(attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
 
     ###########################################################################
     # memory operations
