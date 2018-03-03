@@ -42,7 +42,7 @@ class LPTDevice(devicebase.Device):
     # in GW-BASIC, FIELD gives a FIELD OVERFLOW; we get BAD FILE MODE.
     allowed_modes = 'OR'
 
-    def __init__(self, arg, default_stream, flush_trigger, codepage, temp_dir):
+    def __init__(self, arg, default_stream, codepage, temp_dir):
         """Initialise LPTn: device."""
         devicebase.Device.__init__(self)
         addr, val = devicebase.parse_protocol_string(arg)
@@ -63,11 +63,12 @@ class LPTDevice(devicebase.Device):
             self.stream = StdIOParallelStream(crlf)
         elif addr == 'PRINTER' or (val and not addr):
             # 'PRINTER' is default
+            # name:parameters (LINE, PAGE, ...)
             self.stream = printer.get_printer_stream(val, codepage, temp_dir)
         elif val:
             logging.warning('Could not attach %s to LPT device', arg)
         if self.stream:
-            self.device_file = LPTFile(self.stream, flush_trigger)
+            self.device_file = LPTFile(self.stream)
 
     def open(self, number, param, filetype, mode, access, lock,
                    reclen, seg, offset, length):
@@ -87,14 +88,13 @@ class LPTDevice(devicebase.Device):
 class LPTFile(devicebase.TextFileBase):
     """LPTn: device - line printer or parallel port."""
 
-    def __init__(self, stream, filetype='D', flush_trigger='close'):
+    def __init__(self, stream, filetype='D'):
         """Initialise LPTn."""
         devicebase.TextFileBase.__init__(self, io.BytesIO(), filetype, mode='A')
         # width=255 means line wrap
         self.width = 255
         self.col = 1
         self.output_stream = stream
-        self.flush_trigger = flush_trigger
 
     def flush(self):
         """Flush the printer buffer to the underlying stream."""
@@ -116,9 +116,6 @@ class LPTFile(devicebase.TextFileBase):
                 self.fhandle.write(c)
                 self.flush()
                 self.col = 1
-                # do the actual printing if we're on a short trigger
-                if (self.flush_trigger == 'line' and c == '\n') or (self.flush_trigger == 'page' and c == '\f'):
-                    self.output_stream.flush()
             elif c == '\b':   # BACKSPACE
                 if self.col > 1:
                     self.col -= 1

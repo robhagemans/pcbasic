@@ -54,7 +54,6 @@ class Implementation(object):
             video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3),
             mono_tint=(0, 255, 0), low_intensity=False,
             devices=None, current_device=u'Z:', mount=None, utf8=False, universal=True,
-            print_trigger='close',
             keys=u'', check_keybuffer_full=True, ctrl_c_is_break=True,
             max_list_line=65535, allow_protect=False,
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
@@ -144,9 +143,7 @@ class Implementation(object):
         self.files = Files(
                 self.values, self.memory, self.queues, self.keyboard, self.display,
                 max_files, max_reclen, serial_buffer_size,
-                devices, current_device, mount,
-                print_trigger, temp_dir,
-                utf8, universal)
+                devices, current_device, mount, temp_dir, utf8, universal)
         # set up the SHELL command
         self.shell = dos.get_shell_manager(self.keyboard, self.screen, self.codepage, shell, syntax)
         # set up environment

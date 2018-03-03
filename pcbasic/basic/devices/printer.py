@@ -22,19 +22,35 @@ if platform.system() == 'Windows':
         win32print = None
 
 
+# flush triggers
+TRIGGERS = {'page': '\f', 'line': '\n', 'close': None, '': None}
+
+
 class PrinterStreamBase(io.BytesIO):
     """Base stream for printing."""
 
-    def __init__(self, printer_name, codepage):
+    def __init__(self, printer_name, flush_trigger, codepage):
         """Initialise the printer stream."""
         self.printer_name = printer_name
         self.codepage = codepage
+        # flush_trigger can be a char or a code word
+        self._flush_trigger = TRIGGERS.get(flush_trigger.lower(), flush_trigger)
         io.BytesIO.__init__(self)
 
     def close(self):
         """Close the printer stream."""
         self.flush()
         self._wait()
+
+    def write(self, s):
+        """Write to printer stream."""
+        print_list = s.split(self._flush_trigger) if self._flush_trigger else [s]
+        for i, chunk in enumerate(print_list):
+            if i > 0:
+                self.flush()
+                io.BytesIO.write(self, self._flush_trigger + chunk)
+            else:
+                io.BytesIO.write(self, chunk)
 
     def flush(self):
         """Flush the printer buffer to a printer."""
@@ -64,24 +80,27 @@ class PrinterStreamBase(io.BytesIO):
 
 def get_printer_stream(val, codepage, temp_dir):
     """Return the appropriate printer stream for this platform."""
+    options = val.split(':')
+    printer_name = options[0]
+    flush_trigger = (options[1:] or [''])[0]
     if platform.system() == 'Windows':
         if win32print:
-            return WindowsPrinterStream(val, codepage, temp_dir)
+            return WindowsPrinterStream(temp_dir, printer_name, flush_trigger, codepage)
         else:
             logging.warning('Could not find win32print module. Printing is disabled.')
-            return PrinterStreamBase(val, codepage)
+            return PrinterStreamBase(printer_name, flush_trigger, codepage)
     elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
-        return PAPSPrinterStream(val, codepage)
+        return PAPSPrinterStream(printer_name, flush_trigger, codepage)
     else:
-        return CUPSPrinterStream(val, codepage)
+        return CUPSPrinterStream(printer_name, flush_trigger, codepage)
 
 
 class WindowsPrinterStream(PrinterStreamBase):
     """Stream that prints to Windows printer."""
 
-    def __init__(self, printer_name, codepage, temp_dir):
+    def __init__(self, temp_dir, printer_name, flush_trigger, codepage):
         """Initialise Windows printer stream."""
-        PrinterStreamBase.__init__(self, printer_name, codepage)
+        PrinterStreamBase.__init__(self, printer_name, flush_trigger, codepage)
         # temp file in temp dir
         self._printfile = os.path.join(temp_dir, 'pcbasic_print.txt')
         # handle for last printing process
@@ -150,7 +169,6 @@ class CUPSPrinterStream(PrinterStreamBase):
             options += '-P ' + self.printer_name
         if printbuf != '':
             # cups defaults to 10 cpi, 6 lpi.
-            pr = subprocess.Popen('lpr %s' % options, shell=True,
-                                  stdin=subprocess.PIPE)
+            pr = subprocess.Popen('lpr %s' % options, shell=True, stdin=subprocess.PIPE)
             pr.stdin.write(printbuf)
             pr.stdin.close()

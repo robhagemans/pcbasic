@@ -40,8 +40,7 @@ class Files(object):
             self, values, memory, queues, keyboard, display,
             max_files, max_reclen, serial_buffer_size,
             device_params, current_device, mount_dict,
-            print_trigger, temp_dir,
-            utf8, universal):
+            temp_dir, utf8, universal):
         """Initialise files."""
         # for wait() in files_
         self._queues = queues
@@ -55,7 +54,7 @@ class Files(object):
                 values, queues,
                 display, keyboard,
                 device_params, current_device, mount_dict,
-                print_trigger, temp_dir, serial_buffer_size,
+                temp_dir, serial_buffer_size,
                 utf8, universal)
 
     ###########################################################################
@@ -118,7 +117,7 @@ class Files(object):
     def _init_devices(
                 self, values, queues, display, keyboard,
                 device_params, current_device, mount_dict,
-                print_trigger, temp_dir, serial_in_size, utf8, universal):
+                temp_dir, serial_in_size, utf8, universal):
         """Initialise devices."""
         # screen device, for files_()
         self._screen = display.text_screen
@@ -136,11 +135,11 @@ class Files(object):
             # parallel devices - LPT1: must always be available
             b'LPT1:': parports.LPTDevice(
                         device_params.get(b'LPT1:', None), devicebase.nullstream(),
-                        print_trigger, codepage, temp_dir),
+                        codepage, temp_dir),
             b'LPT2:': parports.LPTDevice(
-                        device_params.get(b'LPT2:', None), None, print_trigger, codepage, temp_dir),
+                        device_params.get(b'LPT2:', None), None, codepage, temp_dir),
             b'LPT3:': parports.LPTDevice(
-                        device_params.get(b'LPT3:', None), None, print_trigger, codepage, temp_dir),
+                        device_params.get(b'LPT3:', None), None, codepage, temp_dir),
         }
         # device files
         self.scrn_file = self._devices[b'SCRN:'].device_file

@@ -502,11 +502,22 @@
             <code><var>type</var><b>:</b><var>value</var></code> can be
             <dl>
 
-                <dt><code><b>PRINTER:</b><var>printer_name</var></code></dt>
+                <dt><code><b>PRINTER:</b>[<var>printer_name</var>][<b>:</b><var>trigger</var>]</code></dt>
                 <dd>
                     Connect to a Windows, LPR or CUPS printer. If
                     <code><var>printer_name</var></code> is not specified, the default
-                    printer is used.
+                    printer is used. <br />
+                    <code><var>trigger</var></code> sets the trigger
+                    to flush the print buffer to the printer:
+                    <dl class="compact">
+                        <dt><code><b>line</b></code>
+                        <dd>The printer is activated after every line break.</dd>
+                        <dt><code><b>page</b></code>
+                        <dd>The printer is activated after every page break.</dd>
+                        <dt><code><b>close</b></code>
+                        <dd>The printer is activated only when PC-BASIC exits.</dd>
+                    </dl>
+                    Default is <code><b>close</b></code>.
                 </dd>
 
                 <dt><code><b>FILE:</b><var>file_name</var></code></dt>
@@ -715,22 +726,6 @@
             like <code class="block">[this]</code> <code><b>--preset=this</b></code> will load all
             settings defined in that section. Available presets depend on your
             configuration file. See the <a href="#presets">list of default presets</a> in the User's Guide.
-        </dd>
-
-        <dt id="--print-trigger">
-            <code><b>--print-trigger=</b>{<b>line</b>|<b>page</b>|<b>close</b>}</code>
-        </dt>
-        <dd>
-            Set the trigger to flush the print buffer to the printer.
-            <dl class="compact">
-                <dt><code><b>line</b></code>
-                <dd>The printer is activated after every line break.</dd>
-                <dt><code><b>page</b></code>
-                <dd>The printer is activated after every page break.</dd>
-                <dt><code><b>close</b></code>
-                <dd>The printer is activated only when PC-BASIC exits.</dd>
-            </dl>
-            Default is <code><b>close</b></code>.
         </dd>
 
         <dt  id="--quit">

@@ -335,8 +335,6 @@ class Settings(object):
         u'text-width': {u'type': u'int', u'choices':(40, 80), u'default': 80,},
         u'video-memory': {u'type': u'int', u'default': 262144,},
         u'shell': {u'type': u'string', u'default': u'',},
-        u'print-trigger': {
-            u'type': u'string', u'choices':(u'close', u'page', u'line'), u'default': u'close',},
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': 'Z'},
@@ -484,7 +482,6 @@ class Settings(object):
             'devices': device_params,
             'current_device': current_device,
             'mount': mount_dict,
-            'print_trigger': self.get('print-trigger'),
             'temp_dir': self._temp_dir,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
