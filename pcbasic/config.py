@@ -461,8 +461,6 @@ class Settings(object):
         codepage_dict = data.read_codepage(self.get('codepage'))
         return {
             'syntax': self.get('syntax'),
-            'debug_options': self.uargv,
-            'debug_dir': STATE_PATH,
             'output_file': self.get(b'output'),
             'append': self.get(b'append'),
             'input_file': self.get(b'input'),
@@ -596,6 +594,13 @@ class Settings(object):
             }
         launch_params.update(self.get_session_parameters())
         return launch_params
+
+    def get_guard_parameters(self):
+        """get exception guard parameters."""
+        return {
+            'uargv': self.uargv,
+            'log_dir': STATE_PATH,
+            }
 
     def get_drives(self, get_default=True):
         """Assign disk locations to disk devices."""

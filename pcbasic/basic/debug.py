@@ -55,8 +55,10 @@ def show_platform_info():
                 logging.info('%s: --', tool)
 
 
-class DebugException(Exception):
+class DebugException(BaseException):
     """Test exception for debugging purposes"""
+    # inherit from BaseException to circumvent extension manager catching Exception
+
     def __str__(self):
         return self.__doc__
 
@@ -119,10 +121,7 @@ class DebugSession(api.Session):
 
     def crash(self):
         """Simulate a crash."""
-        try:
-            raise DebugException()
-        except DebugException as e:
-            self._impl.blue_screen(e)
+        raise DebugException()
 
     def python(self, cmd):
         """Execute any Python code."""

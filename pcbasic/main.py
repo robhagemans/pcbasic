@@ -22,6 +22,7 @@ from . import ansipipe
 from . import basic
 from . import state
 from . import config
+from .guard import ExceptionGuard, NOGUARD
 from .basic import __version__
 from .interface import Interface, InitFailed
 
@@ -103,24 +104,26 @@ def convert(settings):
 
 def launch_session(settings):
     """Start an interactive interpreter session."""
+    guard = ExceptionGuard(**settings.get_guard_parameters())
     try:
-        Interface(**settings.get_interface_parameters()).launch(
+        Interface(guard, **settings.get_interface_parameters()).launch(
                 run_session, **settings.get_launch_parameters())
     except InitFailed as e:
         logging.error(e)
 
-def run_session(interface=None, resume=False, debug=False, state_file=None,
+def run_session(interface=None, guard=NOGUARD, resume=False, debug=False, state_file=None,
                 prog=None, commands=(), **session_params):
     """Run an interactive BASIC session."""
     Session = basic.DebugSession if debug else basic.Session
     with Session(interface, **session_params) as s:
         with state.manage_state(s, state_file, resume) as session:
-            if prog:
-                with session.bind_file(prog) as progfile:
-                    session.execute(b'LOAD "%s"' % (progfile,))
-            for cmd in commands:
-                session.execute(cmd)
-            session.interact()
+            with guard.protect(interface, session):
+                if prog:
+                    with session.bind_file(prog) as progfile:
+                        session.execute(b'LOAD "%s"' % (progfile,))
+                for cmd in commands:
+                    session.execute(cmd)
+                session.interact()
 
 
 if __name__ == "__main__":
