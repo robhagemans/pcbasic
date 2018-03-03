@@ -30,6 +30,7 @@ DOS_DEVICE_FILES = (b'AUX', b'CON', b'NUL', b'PRN')
 # default mount dictionary
 DEFAULT_MOUNTS = {b'Z': (os.getcwdu(), u'')}
 
+
 ############################################################################
 # General file manipulation
 
