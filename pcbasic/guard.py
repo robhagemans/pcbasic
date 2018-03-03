@@ -38,17 +38,13 @@ class ExceptionGuard(object):
         """Initialise crash guard."""
         self._uargv = uargv
         self._log_dir = log_dir
-        print self
 
     @contextmanager
     def protect(self, interface, session):
         """Crash context guard."""
-        print 8
         try:
-            print 9
             yield
         except BaseException:
-            print 'here'
             self._impl = session._impl
             if not self._bluescreen(*sys.exc_info()):
                 raise
