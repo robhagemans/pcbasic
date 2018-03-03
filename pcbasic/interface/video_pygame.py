@@ -107,13 +107,9 @@ class VideoPygame(base.VideoPlugin):
         self._window_sizer = video_graphical.WindowSizer(
                 display_info.current_w, display_info.current_h, **kwargs)
         # determine initial display size
-        self.display_size = self._window_sizer.find_display_size(640, 480)
+        self.display_size = self._window_sizer.find_display_size(640, 400)
         self._set_icon(kwargs['icon'])
-        # first set the screen non-resizeable, to trick things like maximus into not full-screening
-        # I hate it when applications do this ;)
         try:
-            if not self.fullscreen:
-                pygame.display.set_mode(self.display_size, 0)
             self._resize_display(*self.display_size)
         except pygame.error as e:
             self._close_pygame()
@@ -128,20 +124,18 @@ class VideoPygame(base.VideoPlugin):
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
         pygame.joystick.init()
-        self.joysticks = [pygame.joystick.Joystick(x)
-                            for x in range(pygame.joystick.get_count())]
+        self.joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
         for j in self.joysticks:
             j.init()
         # if a joystick is present, its axes report 128 for mid, not 0
         for joy in range(len(self.joysticks)):
             for axis in (0, 1):
-                self._input_queue.put(signals.Event(signals.STICK_MOVED,
-                                                      (joy, axis, 128)))
+                self._input_queue.put(signals.Event(signals.STICK_MOVED, (joy, axis, 128)))
         # mouse setups
         self._mouse_clip = kwargs.get('mouse_clipboard', True)
         self.move_cursor(0, 0)
         self.set_page(0, 0)
-        # set_mode shoul dbe first event on queue
+        # set_mode should be first event on queue
         self.f11_active = False
         self.clipboard_handler = get_clipboard_handler()
         # buffer for perceived alt key status, for use by workarounds
@@ -380,11 +374,10 @@ class VideoPygame(base.VideoPlugin):
         if not self.cursor_visible or self.vpagenum != self.apagenum:
             return
         # copy screen under cursor
-        self.under_top_left = (  (self.cursor_col-1) * self.font_width,
-                                 (self.cursor_row-1) * self.font_height)
+        self.under_top_left = (
+                (self.cursor_col-1) * self.font_width, (self.cursor_row-1) * self.font_height)
         under_char_area = pygame.Rect(
-                (self.cursor_col-1) * self.font_width,
-                (self.cursor_row-1) * self.font_height,
+                (self.cursor_col-1) * self.font_width, (self.cursor_row-1) * self.font_height,
                 self.cursor_width, self.font_height)
         if self.text_mode:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
@@ -470,7 +463,8 @@ class VideoPygame(base.VideoPlugin):
         # bottom 128 are non-blink, top 128 blink to background
         self._palette[0] = rgb_palette_0[:self.num_fore_attrs] * (256//self.num_fore_attrs)
         self._palette[1] = rgb_palette_1[:self.num_fore_attrs] * (128//self.num_fore_attrs)
-        for b in rgb_palette_1[:self.num_back_attrs] * (128//self.num_fore_attrs//self.num_back_attrs):
+        for b in rgb_palette_1[:self.num_back_attrs] * (
+                    128 // self.num_fore_attrs // self.num_back_attrs):
             self._palette[1] += [b]*self.num_fore_attrs
         self.busy = True
 
@@ -491,8 +485,8 @@ class VideoPygame(base.VideoPlugin):
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
         bg = (0, 0, back_attr)
-        scroll_area = pygame.Rect(0, (start-1)*self.font_height,
-                                  self.size[0], (stop-start+1)*self.font_height)
+        scroll_area = pygame.Rect(
+                0, (start-1)*self.font_height, self.size[0], (stop-start+1)*self.font_height)
         self.canvas[self.apagenum].fill(bg, scroll_area)
         self.busy = True
 
@@ -518,8 +512,7 @@ class VideoPygame(base.VideoPlugin):
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
         self.cursor_attr = attr % self.num_fore_attrs
-        self.cursor.set_palette_at(254,
-                            pygame.Color(0, self.cursor_attr, self.cursor_attr))
+        self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
@@ -532,8 +525,7 @@ class VideoPygame(base.VideoPlugin):
         # empty new line
         bg = (0, 0, back_attr)
         self.canvas[self.apagenum].fill(bg, (
-                                   0, (scroll_height-1) * self.font_height,
-                                   self.size[0], self.font_height))
+                0, (scroll_height-1) * self.font_height, self.size[0], self.font_height))
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
@@ -547,8 +539,7 @@ class VideoPygame(base.VideoPlugin):
         # empty new line
         bg = (0, 0, back_attr)
         self.canvas[self.apagenum].fill(bg, (
-                                    0, (from_line-1) * self.font_height,
-                                    self.size[0], self.font_height))
+                0, (from_line-1) * self.font_height, self.size[0], self.font_height))
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
@@ -564,8 +555,7 @@ class VideoPygame(base.VideoPlugin):
         x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
         if cp == '\0':
             # guaranteed to be blank, saves time on some BLOADs
-            self.canvas[pagenum].fill(bg,
-                                    (x0, y0, self.font_width, self.font_height))
+            self.canvas[pagenum].fill(bg, (x0, y0, self.font_width, self.font_height))
         else:
             try:
                 glyph = self.glyph_dict[cp]
@@ -581,8 +571,7 @@ class VideoPygame(base.VideoPlugin):
                 glyph.set_palette_at(1, color)
             self.canvas[pagenum].blit(glyph, (x0, y0))
         if underline:
-            self.canvas[pagenum].fill(color, (x0, y0 + self.font_height - 1,
-                                                            self.font_width, 1))
+            self.canvas[pagenum].fill(color, (x0, y0 + self.font_height - 1, self.font_width, 1))
         self.busy = True
 
     def build_glyphs(self, new_dict):
@@ -598,8 +587,7 @@ class VideoPygame(base.VideoPlugin):
         color, bg = 254, 255
         self.cursor.set_colorkey(bg)
         self.cursor.fill(bg)
-        self.cursor.fill(color, (0, from_line, width,
-                                    min(to_line-from_line+1, height-from_line)))
+        self.cursor.fill(color, (0, from_line, width, min(to_line-from_line+1, height-from_line)))
         self.busy = True
 
     def put_pixel(self, pagenum, x, y, index):
@@ -666,7 +654,8 @@ class PygameClipboard(clipboard.Clipboard):
             if platform.system() == 'Windows':
                 # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
                 # but give it a utf-8 MIME type, because that's how Windows likes it
-                pygame.scrap.put('text/plain;charset=utf-8', text.encode('utf-16le', 'replace') + '\0\0')
+                pygame.scrap.put(
+                        'text/plain;charset=utf-8', text.encode('utf-16le', 'replace') + '\0\0')
             else:
                 pygame.scrap.put(pygame.SCRAP_TEXT, text.encode('utf-8', 'replace'))
         except KeyError:
