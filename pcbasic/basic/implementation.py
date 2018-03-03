@@ -60,7 +60,7 @@ class Implementation(object):
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
-            temp_dir=u'', extension=None, catch_exceptions='basic', greeting=True,
+            temp_dir=u'', extension=None, greeting=True,
             ):
         """Initialise the interpreter session."""
         ######################################################################
@@ -76,7 +76,6 @@ class Implementation(object):
         self._edit_prompt = False
         # terminal program for TERM command
         self._term_program = term
-        self._reraise = (not catch_exceptions or catch_exceptions == 'none')
         # redirect parameters
         self._stdio = stdio
         # option to suppress greeting
@@ -379,8 +378,6 @@ class Implementation(object):
         except error.BASICError as e:
             self._handle_error(e)
             self._prompt = True
-            if self._reraise:
-                raise
         except error.Exit:
             raise
 

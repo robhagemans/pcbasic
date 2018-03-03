@@ -341,8 +341,6 @@ class Settings(object):
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': 'Z'},
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
-        u'catch-exceptions': {
-            u'type': u'string', u'choices':(u'none', u'basic', u'all'), u'default': u'all'},
     }
 
 
@@ -510,7 +508,6 @@ class Settings(object):
             'reserved_memory': self.get('reserved-memory'),
             'peek_values': peek_values,
             'extension': self.get('extension'),
-            'catch_exceptions': self.get('catch-exceptions'),
             # ignore key buffer in console-based interfaces, to allow pasting text in console
             'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses'),
             # following GW, don't write greeting for redirected input or command-line filter run
