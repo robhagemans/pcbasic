@@ -71,10 +71,9 @@ class LPTDevice(devicebase.Device):
             self.device_file = LPTFile(self.stream)
 
     def open(self, number, param, filetype, mode, access, lock,
-                   reclen, seg, offset, length):
+                   reclen, seg, offset, length, fiekd):
         """Open a file on LPTn: """
-        # don't trigger flushes on LPT files, just on the device directly
-        f = LPTFile(self.stream, 'close')
+        f = LPTFile(self.stream)
         # inherit width settings from device file
         f.width = self.device_file.width
         f.col = self.device_file.col

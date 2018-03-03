@@ -88,8 +88,9 @@ class Files(object):
         # get the field buffer
         field = self._fields[number] if number else None
         # open the file on the device
-        new_file = device.open(number, dev_param, filetype, mode, access, lock,
-                               reclen, seg, offset, length, field)
+        new_file = device.open(
+                number, dev_param, filetype, mode, access, lock,
+                reclen, seg, offset, length, field)
         if number:
             self.files[number] = new_file
         return new_file
