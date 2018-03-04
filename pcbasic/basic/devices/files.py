@@ -499,10 +499,13 @@ class Files(object):
         num = values.to_int(num)
         error.range_check(0, 3, num)
         printer = self._devices['LPT%d:' % max(1, num)]
-        col = 1
-        if printer.device_file:
-            col = printer.device_settings.col
-        return self._values.new_integer().from_int(col)
+        col = printer.device_settings.col
+        # follow weird GW-BASIC behaviour
+        # this is reported as 1 if it equals the DEVICE's width plus one
+        # even if it then continues until the FILE's width afterwards
+        if printer.device_file and col == printer.device_file.width + 1:
+            col = 1
+        return self._values.new_integer().from_int(col % 256)
 
     def input_(self, args):
         """INPUT$: read num chars from file."""
