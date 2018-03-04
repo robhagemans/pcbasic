@@ -23,10 +23,9 @@ with open(path.join(
 # implement build_docs command
 # see http://seasonofcode.com/posts/how-to-add-custom-build-steps-and-commands-to-setup-py.html
 
-import distutils.cmd
 import setuptools.command.build_py
+import distutils.cmd
 
-import docsrc.prepare
 
 class BuildDocCommand(distutils.cmd.Command):
     """ Command to build the documentation."""
@@ -36,7 +35,8 @@ class BuildDocCommand(distutils.cmd.Command):
 
     def run(self):
         """ Run build_docs command. """
-        docsrc.prepare.build_docs()
+        from .docsrc.prepare import build_docs
+        build_docs()
 
     def initialize_options(self):
         """ Set default values for options. """
@@ -52,7 +52,8 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
 
     def run(self):
         """ Run build_py command. """
-        self.run_command('build_docs')
+        # build_docs should not be in build but in sdist!
+        #self.run_command('build_docs')
         setuptools.command.build_py.build_py.run(self)
 
 
@@ -95,7 +96,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['sdl2', 'numpy', 'pyserial', 'pexpect'] + platform_specific_requirements,
+    install_requires=['PySDL2', 'numpy', 'pyserial', 'pexpect'] + platform_specific_requirements,
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -107,8 +108,12 @@ setup(
     },
 
     package_data={
-        'pcbasic': ['*.BAS', '*.ucp', '*.hex', '*.txt', '*.md'],
+        'pcbasic': [
+                '*.txt', '*.md', 'pcbasic/*.txt', 'pcbasic/data/codepages/*',
+                'pcbasic/data/fonts/*', 'pcbasic/data/programs/*'],
     },
+    include_package_data=True,
+
     entry_points={
         'console_scripts': [
             'pcbasic=pcbasic:main',
