@@ -67,18 +67,16 @@ class LPTDevice(devicebase.Device):
             self.stream = printer.get_printer_stream(val, codepage, temp_dir)
         elif val:
             logging.warning('Could not attach %s to LPT device', arg)
+        # column counter is the same across all LPT files
+        self.device_settings = devicebase.DeviceSettings()
         if self.stream:
-            self.device_file = LPTFile(self.stream)
+            self.device_file = LPTFile(self.stream, self.device_settings)
 
     def open(self, number, param, filetype, mode, access, lock,
-                   reclen, seg, offset, length):
+                   reclen, seg, offset, length, fiekd):
         """Open a file on LPTn: """
-        # don't trigger flushes on LPT files, just on the device directly
-        f = LPTFile(self.stream, 'close')
-        # inherit width settings from device file
-        f.width = self.device_file.width
-        f.col = self.device_file.col
-        return f
+        # shared position/width settings across files
+        return LPTFile(self.stream, self.device_settings, bug=True)
 
     def available(self):
         """Device is available."""
@@ -88,49 +86,55 @@ class LPTDevice(devicebase.Device):
 class LPTFile(devicebase.TextFileBase):
     """LPTn: device - line printer or parallel port."""
 
-    def __init__(self, stream, filetype='D'):
+    def __init__(self, stream, settings, bug=False):
         """Initialise LPTn."""
-        devicebase.TextFileBase.__init__(self, io.BytesIO(), filetype, mode='A')
+        # GW-BASIC quirk - different LPOS behaviour on LPRINT and LPT1 files
+        self._bug = bug
+        self._settings = settings
+        devicebase.TextFileBase.__init__(self, stream, filetype='D', mode='A')
+        # default width is 80
         # width=255 means line wrap
-        self.width = 255
-        self.col = 1
-        self.output_stream = stream
+        self.width = 80
+        # we need to keep these in sync as self .col is accessed by Formatter (and others)
+        # we can't make col a @property as the TextFileBase init tries to set it to a number
+        self.col = self._settings.col
+
+    def set_width(self, new_width=255):
+        """Set file width."""
+        self.width = new_width
 
     def flush(self):
-        """Flush the printer buffer to the underlying stream."""
-        if self.fhandle:
-            val = self.fhandle.getvalue()
-            self.output_stream.write(val)
-            self.fhandle.seek(0)
-            self.fhandle.truncate()
+        """Flush the buffer to the underlying stream."""
 
     def write(self, s, can_break=True):
         """Write a string to the printer buffer."""
-        for c in str(s):
-            if can_break and self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
-                self.fhandle.write('\r\n')
-                self.flush()
-                self.col = 1
-            if c in ('\n', '\r', '\f'):
-                # don't replace CR or LF with CRLF when writing to files
-                self.fhandle.write(c)
-                self.flush()
-                self.col = 1
-            elif c == '\b':   # BACKSPACE
-                if self.col > 1:
-                    self.col -= 1
-                    self.fhandle.seek(-1, 1)
-                    self.fhandle.truncate()
+        for c in bytes(s):
+            # don't replace CR or LF with CRLF
+            self.fhandle.write(c)
+            # col reverts to 1 on CR (\r) and LF (\n) but not FF (\f)
+            if c in (b'\n', b'\r'):
+                self._settings.col = 1
+            elif c == b'\b':
+                if self._settings.col > 1:
+                    self._settings.col -= 1
             else:
-                self.fhandle.write(c)
-                # nonprinting characters including tabs are not counted for WIDTH
-                # for lpt1 and files , nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
+                # nonprinting characters including tabs are not counted for LPOS
                 if ord(c) >= 32:
-                    self.col += 1
+                    self._settings.col += 1
+            # width 255 means wrapping enabled
+            if can_break and self.width != 255:
+                if self._settings.col > self.width:
+                    self.fhandle.write(b'\r\n')
+                    # GW-BASIC quirk: on LPT1 files the LPOS goes to width+1, then wraps to 2
+                    if not self._bug:
+                        self._settings.col = 1
+                    elif self._settings.col > self.width + 1:
+                        self._settings.col = 2
+        self.col = self._settings.col
 
-    def write_line(self, s=''):
+    def write_line(self, s=b''):
         """Write string or bytearray and newline to file."""
-        self.write(str(s) + '\r\n')
+        self.write(bytes(s) + b'\r\n')
 
     def lof(self):
         """LOF: bad file mode """
@@ -146,16 +150,13 @@ class LPTFile(devicebase.TextFileBase):
 
     def do_print(self):
         """Actually print, reset column position."""
-        self.flush()
-        self.output_stream.flush()
+        self.fhandle.flush()
+        self._settings.col = 1
         self.col = 1
 
     def close(self):
         """Close the printer device and actually print the output."""
-        self.flush()
-        self.output_stream.flush()
-        self.fhandle.close()
-        self.fhandle = None
+        self.do_print()
 
 
 class ParallelStream(object):

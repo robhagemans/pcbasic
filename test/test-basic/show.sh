@@ -5,5 +5,5 @@ for file in *
 do
     echo
     echo "$file --------------------------------------------------------------------------"
-    colordiff "$file" "../output/$file"
+    colordiff "../output/$file" "$file"
 done
