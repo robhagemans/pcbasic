@@ -1,7 +1,9 @@
 include README.md
 include LICENSE.md
 include CONTRIBUTING.md
-incluse THANKS.md
+include THANKS.md
 include INSTALL.md
 include GPL3.txt
 include doc/*
+include pcbasic/data/*/*
+prune test

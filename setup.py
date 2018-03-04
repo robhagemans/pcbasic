@@ -89,7 +89,7 @@ setup(
     ],
 
     keywords='emulator interpreter basic retro legacy gwbasic basica pcjr tandy',
-    packages=find_packages(exclude=['doc', 'test', 'docsrc', 'packaging', 'patches']),
+    packages=find_packages(exclude=['doc', 'test', 'docsrc', 'packaging']),
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
