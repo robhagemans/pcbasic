@@ -65,10 +65,7 @@ the platform for which they are needed; the other tools are optional.
 |-------------------------------------------|-------------------|-------------|---------------------------------
 | `lpr`                                     | OSX, Linux, other | essential   | printing to CUPS printers
 | `paps`                                    | OSX, Linux, other | recommended | improved Unicode support for CUPS printing
-| `pbcopy`                                  | OSX               | essential   | clipboard operation
-| `pbpaste`                                 | OSX               | essential   | clipboard operation
-| `xsel`                                    | Linux, other      | optional    | more intuitive clipboard operation
-| `xclip`                                   | Linux, other      | optional    | more intuitive clipboard operation (alternative to `xsel`)
+| `pbcopy`  and  `pbpaste`                  | OSX               | optional    | clipboard operation with PyGame
 | `beep`                                    | OSX, Linux, other | optional    | sound in cli/text interface
 
 
@@ -77,7 +74,7 @@ The Python distribution of PC-BASIC described above contains precompiled documen
 If you wish to use the source code as-is in the Git repo,
 you'll need to build these yourself. Compiling the documentation requires the Python modules
 [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3) and [`markdown`](https://pypi.python.org/pypi/Markdown).
-You'll also need [`git`](https://git-scm.com/), [`setuptools`](https://pypi.python.org/pypi/setuptools) and all the PC-BASIC dependencies listed above.
+You'll also need [`git`](https://git-scm.com/) and all the PC-BASIC dependencies listed above.
 
 
 1. Clone the repo from GitHub

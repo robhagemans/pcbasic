@@ -59,7 +59,6 @@ BLINK_TIME = 120
 CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
 
 
-
 ###############################################################################
 # keyboard codes
 
@@ -347,26 +346,10 @@ class SDL2Clipboard(clipboard.Clipboard):
         text = sdl2.SDL_GetClipboardText()
         if text is None:
             return u''
-        return text.decode('utf-8', 'replace').replace('\r\n', '\n').replace('\n', '\r')
-
-
-def _get_clipboard_handler():
-    """Get a working Clipboard handler object."""
-    # only use the SDL clipboard on Windows or Linus if xclip/xsel not available
-    if platform.system() == 'Darwin':
-        handler = clipboard.MacClipboard()
-    elif platform.system() != 'Windows' and clipboard.XClipboard().ok:
-        handler = clipboard.XClipboard()
-    else:
-        handler = SDL2Clipboard()
-    if not handler.ok:
-        logging.warning('Clipboard copy and paste not available.')
-        handler = clipboard.Clipboard()
-    return handler
+        return text.decode('utf-8', 'replace').replace(u'\r\n', u'\n').replace(u'\n', u'\r')
 
 
 ###############################################################################
-
 
 def _pixels2d(psurface):
     """Creates a 2D pixel array view of the passed 8-bit surface."""
@@ -464,7 +447,7 @@ class VideoSDL2(VideoPlugin):
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
         # set clipboard handler to SDL2
-        self._clipboard_handler = _get_clipboard_handler()
+        self._clipboard_handler = SDL2Clipboard()
         # display palettes for blink states 0, 1
         self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         self._saved_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
