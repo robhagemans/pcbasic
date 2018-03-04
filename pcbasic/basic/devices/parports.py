@@ -125,8 +125,10 @@ class LPTFile(devicebase.TextFileBase):
                     self._settings.col -= 1
             else:
                 # nonprinting characters including tabs are not counted for LPOS
-                if ord(c) >= 32 or not self._settings.col:
+                if ord(c) >= 32:
                     self._settings.col += 1
+            if not self._settings.col:
+                self._settings.col = 1
             if self._bug and self._settings.col == self.width + 2:
                 self._settings.col = 2
         self.col = self._settings.col
