@@ -94,7 +94,7 @@ def get_number_tokens(fors):
         word += fors.read(2)
         if word[-1] != c:
             fors.seek(-len(word), 1)
-            return '', 0, 0
+            return '', 0, 0, False
         if c == '*':
             digits_before += 2
             if util.peek(fors) == '$':
@@ -125,7 +125,7 @@ def get_number_tokens(fors):
                 break
     if digits_before + decimals == 0:
         fors.seek(-len(word), 1)
-        return '', 0, 0
+        return '', 0, 0, comma
     # post characters
     if util.peek(fors, 4) == '^^^^':
         word += fors.read(4)
