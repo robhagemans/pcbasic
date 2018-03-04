@@ -16,11 +16,12 @@ from datetime import datetime
 from contextlib import contextmanager
 
 from basic.metadata import VERSION
-from basic.base import error
+from basic.base import error, signals
 
 
 LOG_PATTERN = u'pcbasic-crash-%Y%m%d-'
-PAUSE_MESSAGE = u'Fatal error. Press a key to terminate'
+PAUSE_MESSAGE = u'Fatal error. Press a key to close this window'
+
 
 class NoGuard(object):
     """Null context manager."""
@@ -80,7 +81,7 @@ class ExceptionGuard(object):
                 suffix='.log', prefix=logname, dir=self._log_dir, delete=False)
         # construct the message
         message = [
-            (0x70, 'EXCEPTION\n'),
+            (0x70, 'FATAL ERROR\n'),
             (0x17, 'version   '),
             (0x1f, VERSION.encode('ascii')),
             (0x17, '\npython    '),
@@ -96,15 +97,18 @@ class ExceptionGuard(object):
             (0x1f,  '{0}:'.format(exc_type.__name__)),
             (0x17,  ' {0}\n\n'.format(str(exc_value))),
             (0x70,  'This is a bug in PC-BASIC.\n'),
-            (0x17,  'Sorry about that. Please file a bug report at\n  '),
+            (0x17,  'Sorry about that. '),
+            (0x17,  'To help improve PC-BASIC, '),
+            (0x70,  'please file a bug report'),
+            (0x17,  ' at\n  '),
             (0x1f,  'https://github.com/robhagemans/pcbasic/issues'),
             (0x17,  '\nPlease include the messages above and '),
             (0x17,  'as much information as you can about what you were doing and how this happened. '),
             (0x17,  'If possible, please attach the log file\n  '),
             (0x1f,  logfile.name.encode('ascii', errors='replace')),
-            (0x17,  '\nThis file contains detailed information about your program and this crash.\n'),
-            (0x17,  'Thank you!\n'),
-            (0x07,  ''),
+            (0x17,  '\nThank you!\n\n'),
+            (0x70,  'This message has been copied onto the clipboard. You can paste it with Ctrl-V.'),
+            (0x17, '\n\nPress a key to close this window.\n'),
         ]
         # create crash log
         crashlog = [
@@ -143,6 +147,11 @@ class ExceptionGuard(object):
             self._impl.display.set_attr(attr)
             self._impl.display.text_screen.write(text.replace('\n', '\r'))
         # write crash log
+        crashlog = b'\n'.join(crashlog)
         with logfile as f:
-            f.write(b'\n'.join(crashlog))
+            f.write(crashlog)
+        # put on clipboard
+        # note that log contains raw non-ascii bytes. don't risk codepage logic here, use cp437
+        self._impl.queues.video.put(signals.Event(
+                signals.VIDEO_SET_CLIPBOARD_TEXT, (crashlog.decode('cp437', 'replace'), False)))
         return True
