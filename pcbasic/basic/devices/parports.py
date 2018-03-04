@@ -109,12 +109,6 @@ class LPTFile(devicebase.TextFileBase):
     def write(self, s, can_break=True):
         """Write a string to the printer buffer."""
         for c in bytes(s):
-            # width 255 means wrapping enabled
-            if can_break and self.width != 255 and self._settings.col >= self.width:
-                self.fhandle.write(b'\r\n')
-                # GW-BASIC quirk: on LPT1 files the LPOS goes to width+1
-                if not self._bug:
-                    self._settings.col = 0
             # don't replace CR or LF with CRLF
             self.fhandle.write(c)
             # col reverts to 1 on CR (\r) and LF (\n) but not FF (\f)
@@ -127,10 +121,15 @@ class LPTFile(devicebase.TextFileBase):
                 # nonprinting characters including tabs are not counted for LPOS
                 if ord(c) >= 32:
                     self._settings.col += 1
-            if not self._settings.col:
-                self._settings.col = 1
-            if self._bug and self._settings.col == self.width + 2:
-                self._settings.col = 2
+            # width 255 means wrapping enabled
+            if can_break and self.width != 255:
+                if self._settings.col > self.width:
+                    self.fhandle.write(b'\r\n')
+                    # GW-BASIC quirk: on LPT1 files the LPOS goes to width+1, then wraps to 2
+                    if not self._bug:
+                        self._settings.col = 1
+                    elif self._settings.col > self.width + 1:
+                        self._settings.col = 2
         self.col = self._settings.col
 
     def write_line(self, s=b''):
