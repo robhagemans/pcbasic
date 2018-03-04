@@ -76,7 +76,7 @@ class LPTDevice(devicebase.Device):
                    reclen, seg, offset, length, fiekd):
         """Open a file on LPTn: """
         # shared position/width settings across files
-        return LPTFile(self.stream, self.device_settings)
+        return LPTFile(self.stream, self.device_settings, bug=True)
 
     def available(self):
         """Device is available."""
@@ -86,13 +86,18 @@ class LPTDevice(devicebase.Device):
 class LPTFile(devicebase.TextFileBase):
     """LPTn: device - line printer or parallel port."""
 
-    def __init__(self, stream, settings):
+    def __init__(self, stream, settings, bug=False):
         """Initialise LPTn."""
+        # GW-BASIC quirk - different LPOS behaviour on LPRINT and LPT1 files
+        self._bug = bug
         self._settings = settings
         devicebase.TextFileBase.__init__(self, stream, filetype='D', mode='A')
         # default width is 80
         # width=255 means line wrap
         self.width = 80
+        # we need to keep these in sync as self .col is accessed by Formatter (and others)
+        # we can't make col a @property as the TextFileBase init tries to set it to a number
+        self.col = self._settings.col
 
     def set_width(self, new_width=255):
         """Set file width."""
@@ -105,21 +110,26 @@ class LPTFile(devicebase.TextFileBase):
         """Write a string to the printer buffer."""
         for c in bytes(s):
             # width 255 means wrapping enabled
-            if can_break and self.width != 255 and (
-                    self._settings.col >= self.width):
+            if can_break and self.width != 255 and self._settings.col >= self.width:
                 self.fhandle.write(b'\r\n')
-                self._settings.col = 0
+                # GW-BASIC quirk: on LPT1 files the LPOS goes to width+1
+                if not self._bug:
+                    self._settings.col = 0
             # don't replace CR or LF with CRLF
             self.fhandle.write(c)
-            if c in (b'\n', b'\r', b'\f'):
+            # col reverts to 1 on CR (\r) and LF (\n) but not FF (\f)
+            if c in (b'\n', b'\r'):
                 self._settings.col = 1
             elif c == b'\b':
                 if self._settings.col > 1:
                     self._settings.col -= 1
             else:
                 # nonprinting characters including tabs are not counted for LPOS
-                if ord(c) >= 32:
+                if ord(c) >= 32 or not self._settings.col:
                     self._settings.col += 1
+            if self._bug and self._settings.col == self.width + 2:
+                self._settings.col = 2
+        self.col = self._settings.col
 
     def write_line(self, s=b''):
         """Write string or bytearray and newline to file."""
@@ -141,6 +151,7 @@ class LPTFile(devicebase.TextFileBase):
         """Actually print, reset column position."""
         self.fhandle.flush()
         self._settings.col = 1
+        self.col = 1
 
     def close(self):
         """Close the printer device and actually print the output."""
