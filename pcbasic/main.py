@@ -5,26 +5,26 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
+import io
+import os
 import sys
 import locale
 import logging
 import pkg_resources
-import platform
 import traceback
-import threading
-import subprocess
-from Queue import Queue
 
 # set locale - this is necessary for curses and *maybe* for clipboard handling
 # there's only one locale setting so best to do it all upfront here
 # NOTE that this affects str.upper() etc.
 locale.setlocale(locale.LC_ALL, '')
 
-from .version import __version__
 from . import ansipipe
 from . import basic
 from . import state
 from . import config
+from .guard import ExceptionGuard, NOGUARD
+from .basic import __version__
+from .interface import Interface, InitFailed
 
 
 def main(*arguments):
@@ -54,22 +54,21 @@ def run(*arguments):
     with config.TemporaryDirectory(prefix='pcbasic-') as temp_dir:
         # get settings and prepare logging
         settings = config.Settings(temp_dir, arguments)
-        command = settings.get_command()
-        if command == 'version':
+        if settings.version:
             # print version and exit
             show_version(settings)
-        elif command == 'help':
+        elif settings.help:
             # print usage and exit
             show_usage()
-        elif command == 'convert':
+        elif settings.convert:
             # convert and exit
             convert(settings)
-        elif settings.get_interfaces():
+        elif settings.interface:
             # start an interpreter session with interface
             launch_session(settings)
         else:
             # start an interpreter session with standard i/o
-            run_session(**settings.get_launch_parameters())
+            run_session(**settings.launch_params)
 
 def show_usage():
     """Show usage description."""
@@ -78,102 +77,53 @@ def show_usage():
 def show_version(settings):
     """Show version with optional debugging details."""
     sys.stdout.write(__version__ + '\n')
-    if settings.get('debug'):
-        show_platform_info()
-
-def show_platform_info():
-    """Show information about operating system and installed modules."""
-    logging.info('\nPLATFORM')
-    logging.info('os: %s %s %s', platform.system(), platform.processor(), platform.version())
-    logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
-    logging.info('\nMODULES')
-    # try numpy before pygame to avoid strange ImportError on FreeBSD
-    modules = ('numpy', 'win32api', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
-    for module in modules:
-        try:
-            m = __import__(module)
-        except ImportError:
-            logging.info('%s: --', module)
-        else:
-            for version_attr in ('__version__', 'version', 'VERSION'):
-                try:
-                    version = getattr(m, version_attr)
-                    logging.info('%s: %s', module, version)
-                    break
-                except AttributeError:
-                    pass
-            else:
-                logging.info('%s: available', module)
-    if platform.system() != 'Windows':
-        logging.info('\nEXTERNAL TOOLS')
-        tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
-        for tool in tools:
-            try:
-                location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
-                logging.info('%s: %s', tool, location)
-            except Exception as e:
-                logging.info('%s: --', tool)
+    if settings.debug:
+        from pcbasic.basic import debug
+        debug.show_platform_info()
 
 def convert(settings):
     """Perform file format conversion."""
-    mode, name_in, name_out = settings.get_converter_parameters()
-    session = basic.Session(**settings.get_session_parameters())
-    try:
-        session.load_program(name_in, rebuild_dict=False)
-        session.save_program(name_out, filetype=mode)
-    except basic.BASICError as e:
-        logging.error(e.message)
+    mode, name_in, name_out = settings.conv_params
+    with basic.Session(**settings.session_params) as session:
+        try:
+            # if the native file doesn't exist, treat as BASIC file spec
+            if not name_in or os.path.isfile(name_in):
+                # use io.BytesIO buffer for seekability
+                infile = session.bind_file(name_in or io.BytesIO(sys.stdin.read()))
+            session.execute(b'LOAD "%s"' % (infile,))
+            if (not name_out or not os.path.dirname(name_out)
+                    or os.path.isdir(os.path.dirname(name_out))):
+                outfile = session.bind_file(name_out or sys.stdout)
+            save_cmd = b'SAVE "%s"' % (outfile,)
+            if mode.upper() in (b'A', b'P'):
+                save_cmd += b',%s' % (mode,)
+            session.execute(save_cmd)
+        except basic.BASICError as e:
+            logging.error(e.message)
 
 def launch_session(settings):
     """Start an interactive interpreter session."""
-    from . import interface
+    guard = ExceptionGuard(**settings.guard_params)
     try:
-        # initialise queues
-        iface = interface.Interface(
-                    *settings.get_interfaces(),
-                    video_params=settings.get_video_parameters(),
-                    audio_params=settings.get_audio_parameters())
-    except interface.InitFailed:
-        logging.error('Failed to initialise interface.')
-        return
-    thread = threading.Thread(
-                target=run_session,
-                args=(iface,),
-                kwargs=settings.get_launch_parameters())
-    try:
-        # launch the BASIC thread
-        thread.start()
-        # run the interface
-        iface.run()
-    finally:
-        iface.quit_input()
-        thread.join()
+        Interface(guard, **settings.iface_params).launch(run_session, **settings.launch_params)
+    except InitFailed as e:
+        logging.error(e)
 
-def run_session(iface=None, resume=False, state_file=None, wait=False,
-                prog=None, commands=(), **session_params):
+def run_session(
+        interface=None, guard=NOGUARD,
+        resume=False, debug=False, state_file=None,
+        prog=None, commands=(), **session_params):
     """Run an interactive BASIC session."""
-    try:
-        if resume:
-            session = state.zunpickle(state_file).attach(iface)
-        else:
-            session = basic.Session(iface, **session_params)
-        try:
-            if prog:
-                session.load_program(prog)
-            for cmd in commands:
-                session.execute(cmd)
-            session.interact()
-        except basic.Exit:
-            # SYSTEM called during launch
-            pass
-        finally:
-            state.zpickle(session, state_file)
-            session.close()
-    finally:
-        if iface:
-            if wait:
-                iface.pause('Press a key to close window')
-            iface.quit_output()
+    Session = basic.DebugSession if debug else basic.Session
+    with Session(interface, **session_params) as s:
+        with state.manage_state(s, state_file, resume) as session:
+            with guard.protect(interface, session):
+                if prog:
+                    with session.bind_file(prog) as progfile:
+                        session.execute(b'LOAD "%s"' % (progfile,))
+                for cmd in commands:
+                    session.execute(cmd)
+                session.interact()
 
 
 if __name__ == "__main__":

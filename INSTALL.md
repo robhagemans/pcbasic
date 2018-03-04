@@ -1,3 +1,7 @@
+### Installing PC-BASIC from the source distribution
+These instructions cover the steps needed to install PC-BASIC from the source TGZ distribution
+or directly from the Git repository.
+
 #### You probably don't need to read this file ####
 General installation instructions for PC-BASIC can be found in `README.md`.
 The instructions there cover the most common platforms and use cases. If the
@@ -29,11 +33,9 @@ On **Windows**, first install Python 2.7 from the web site linked on top. Most d
 
 If you require access to a physical parallel port, download PyParallel from the web site linked above.
 
-Download `launcher.exe` from the [ANSI|pipe release page](http://github.com/robhagemans/ansipipe/releases/) and place it in the directory where `setup.py` is located.
-You can now run pc-basic with the command `launcher python -m pcbasic`. Without ANSI|pipe, PC-BASIC will run but you will
+The binary [ANSI|pipe](http://github.com/robhagemans/ansipipe/) executable `launcher.exe` is included with the source distribution.
+Please ensure the binary is placed in the directory where `setup.py` is located. You can now run PC-BASIC with the command `launcher python -m pcbasic`. Without ANSI|pipe, PC-BASIC will run but you will
 be unable to use the text-based interfaces (options `-t` and `-b`) as they will print only gibberish on the console.
-
-The ANSI|pipe C source is included with PC-BASIC; if you prefer this to downloading the launcher binary, you can compile it from source by running `winbuild.bat`. You will need a working C compiler (MinGW or Microsoft Visual C++) on your system.
 
 On **OSX**, there are several versions of Python 2.7 and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts or Homebrew.
 
@@ -56,7 +58,8 @@ Note that PyParallel is not available from the Fedora and FreeBSD repos. PyParal
 
 #### External tools ####
 On Linux, OSX and other Unix-like systems, PC-BASIC can employ the following
-external command-line tools:
+external command-line tools. The essential tools in this list are part of a standard system on
+the platform for which they are needed; the other tools are optional.
 
 | Tool                                      | OS                | Status      | Used for
 |-------------------------------------------|-------------------|-------------|---------------------------------
@@ -69,15 +72,15 @@ external command-line tools:
 | `beep`                                    | OSX, Linux, other | optional    | sound in cli/text interface
 
 
-#### Building from source ####
+#### Building from GitHub source repository ####
 The Python distribution of PC-BASIC described above contains precompiled documentation and Windows binaries for SDL2, SDL2_gfx and ANSI|pipe.
-If you wish to use the source code as-is in the GitHub repo,
+If you wish to use the source code as-is in the Git repo,
 you'll need to build these yourself. Compiling the documentation requires the Python modules
 [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3) and [`markdown`](https://pypi.python.org/pypi/Markdown).
 You'll also need [`git`](https://git-scm.com/), [`setuptools`](https://pypi.python.org/pypi/setuptools) and all the PC-BASIC dependencies listed above.
 
 
-1. Clone the github repo
+1. Clone the repo from GitHub
 
         git clone --recursive https://github.com/robhagemans/pcbasic.git
 
@@ -90,7 +93,6 @@ You'll also need [`git`](https://git-scm.com/), [`setuptools`](https://pypi.pyth
         python -m pcbasic
 
 
-The `--recursive` option is necessary to pull the `ansipipe` submodule; if you omit the option, you will have to get the submodule separately.
 To build the supporting binaries for Windows, please refer to the compilation instructions for [SDL2](https://www.libsdl.org/), [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) and [ANSI|pipe](http://github.com/robhagemans/ansipipe/). You will need a C compiler such as [MinGW](http://mingw.org/) or [Microsoft Visual Studio](https://www.visualstudio.com/).
 
 
@@ -114,54 +116,9 @@ for those who prefer to use the MinGW GCC compiler, follow these steps:
 4. Place `sdl2.dll` and `sdl2_gfx.dll` in the `pcbasic\interface` directory.  
 
 
-#### Installing with Pygame ####
-This section covers workarounds for several issues you may run into when using [PyGame](http://pygame.org/).
+#### Installing with PyGame ####
+The preferred graphical interface is SDL2. However, a PyGame interface is also available.
 
-The 1.9.1 release of PyGame, as currently standard on some distributions, unfortunately still contains a few bugs that
-have already been resolved in the upstream PyGame code. This section documents workarounds for these bugs that can be used
-until a newer build of PyGame is released with major distributions.
-
-##### X11 clipboard #####
-PyGame copy & paste does not work correctly on X11-based systems.
-If you run into this, install one of the [`xsel`](http://www.vergenet.net/~conrad/software/xsel/) or
-[`xclip`](https://sourceforge.net/projects/xclip/)  utilities and PC-BASIC will work around the issue.
-
-##### Joystick debugging messages ####
-A few debugging messages have been left in the production code for joystick handling.
-The result is an annoying stream of debug messages on the console that occurs when you use a joystick.
-If this bothers you, you will need to install PyGame from source; see below.
-
-##### Segmentation fault #####
-Occasionally, you may run into a crash with the following error message:
-
-    Fatal Python error: (pygame parachute) Segmentation Fault
-    Aborted (core dumped)
-
-Unfortunately, the only workaround that I know of is to install PyGame from current development sources.
-
-##### Installing PyGame from current development sources #####
-
-1. Install dependencies. These are the packages I needed on Ubuntu 15.04:
-
-        sudo apt-get install mercurial libpython-dev python-numpy ffmpeg libsdl1.2-dev libsdl-ttf2.0-dev libsdl-font1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev libportmidi-dev libswscale-dev libavformat-dev libftgl-dev libsmpeg-dev
-
-
-2. Make a working directory for your build, change into it and get the source
-
-        hg clone https://bitbucket.org/pygame/pygame
-
-3. Configure
-
-        ./configure
-
-    The script will notify you if you're missing dependencies.
-
-4. Compile
-
-        make
-
-5. Install into your `/usr/local` tree
-
-        sudo make install
-
-See also the [PyGame source repository on BitBucket](https://bitbucket.org/pygame/pygame/wiki/VersionControl).
+The 1.9.1 release of PyGame, currently still standard on some distributions (e.g. Ubuntu 16.04 LTS),
+unfortunately contains a few bugs that have been resolved in newer releases. Please use the latest
+PyGame release from pygame.org, or install with `pip install pygame`.

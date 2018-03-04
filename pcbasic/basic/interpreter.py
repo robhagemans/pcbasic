@@ -18,11 +18,10 @@ from . import values
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, debugger, input_methods, screen, files, sound,
+    def __init__(self, queues, screen, files, sound,
                 values, memory, program, parser, basic_events):
         """Initialise interpreter."""
-        self._debugger = debugger
-        self._input_methods = input_methods
+        self._queues = queues
         self._basic_events = basic_events
         self._values = values
         self._memory = memory
@@ -52,6 +51,20 @@ class Interpreter(object):
         self.input_mode = False
         # interpreter is executing a command (needs Screen)
         self.set_parse_mode(False)
+        # additional operations on program step (debugging)
+        self.step = lambda token: None
+
+    def __getstate__(self):
+        """Pickle."""
+        pickle_dict = self.__dict__.copy()
+        # functions can't be pickled
+        pickle_dict['step'] = None
+        return pickle_dict
+
+    def __setstate__(self, pickle_dict):
+        """Unpickle."""
+        self.__dict__.update(pickle_dict)
+        self.step = lambda token: None
 
     def _init_error_trapping(self):
         """Initialise error trapping."""
@@ -66,7 +79,7 @@ class Interpreter(object):
         """Parse from the current pointer in current codestream."""
         while True:
             # check input and BASIC events. may raise Break, Reset or Exit
-            self._input_methods.check_events(self._basic_events.enabled)
+            self._queues.check_events(self._basic_events.enabled)
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()
@@ -89,7 +102,7 @@ class Interpreter(object):
                     if self.tron:
                         linenum = struct.unpack_from('<H', token, 2)
                         self._screen.write('[%i]' % linenum)
-                    self._debugger.debug_step(token)
+                    self.step(token)
                 elif c != ':':
                     ins.seek(-len(c), 1)
                 self.parser.parse_statement(ins)
@@ -132,7 +145,8 @@ class Interpreter(object):
                 self._program.bytecode.skip_to(tk.END_STATEMENT)
                 pos = self._program.bytecode.tell()
             self.stop = pos
-        self._screen.write_error_message(e.message, self._program.get_line_number(pos))
+        self._screen.start_line()
+        self._screen.write(e.get_message(self._program.get_line_number(pos)))
         self.set_parse_mode(False)
         self.input_mode = False
         self.parser.redo_on_break = False
@@ -234,6 +248,9 @@ class Interpreter(object):
 
     def set_pointer(self, new_runmode, pos=None):
         """Set program pointer to the given codestream and position."""
+        # flush lpt1 on entering interactive mode
+        if self.run_mode and not new_runmode:
+            self._files.lpt1_file.do_print()
         self.run_mode = new_runmode
         # events are active in run mode
         self._basic_events.set_active(new_runmode)

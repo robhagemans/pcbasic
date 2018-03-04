@@ -1,0 +1,6 @@
+5 OPEN "output.txt" for output as 1
+10 LPRINT "hi";:PRINT#1, LPOS(0):LPRINT
+20 LPRINT CHR$(8);"hi";:PRINT#1, LPOS(0):LPRINT
+30 LPRINT "hi";CHR$(8);"hi";:PRINT#1, LPOS(0)  :LPRINT
+40 LPRINT "hi";CHR$(8);:PRINT#1, LPOS(0):LPRINT
+

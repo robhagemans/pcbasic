@@ -1,0 +1,4 @@
+#!/bin/sh
+gnome-terminal -x sh -c "stty -icrnl; netcat -lk localhost 22222;"
+../pcbasic.sh --com1=socket:localhost:22222 -e='open "com1:300,e,7,1,cs0,ds0" as 1:get#1,4' --debug
+#./pcbasic.sh --com1=socket:localhost:22222 -e='open "com1:" as 1' --debug

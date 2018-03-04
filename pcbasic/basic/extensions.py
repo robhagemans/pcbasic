@@ -30,11 +30,13 @@ class Extensions(object):
         pickle_dict = self.__dict__.copy()
         # modules can't be pickled
         pickle_dict['_ext_funcs'] = None
+        pickle_dict['step'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
+        self.step = lambda: None
 
     def add(self, ext):
         """Add an extension."""

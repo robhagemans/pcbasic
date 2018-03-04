@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 import sys
 import os
+from os import path
 import shutil
 from cStringIO import StringIO
 from datetime import datetime
@@ -11,9 +12,15 @@ import markdown
 from markdown.extensions.toc import TocExtension
 import markdown.extensions.headerid
 
-from pcbasic import __version__
+
+# obtain metadata without importing the package (to avoid breaking setup)
+with open(path.join(
+        path.abspath(path.dirname(__file__)),
+        '..', 'pcbasic', 'basic', 'metadata.py')) as f:
+    exec(f.read())
 
 basepath = os.path.dirname(os.path.realpath(__file__))
+
 
 def mdtohtml(md_file, outf, prefix='', baselevel=1):
     with codecs.open(md_file, 'r', 'utf-8') as inf:
@@ -135,7 +142,7 @@ def makedoc(header=None, output=None, embedded_style=True):
     toc = StringIO()
     maketoc(predoc, toc)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    version = __version__
+    version = VERSION
     subheader_html = '<header>\n<h1>PC-BASIC {0} documentation</h1>\n<small>Last updated {1}.</small>\n</header>\n'.format(version, now)
     header_html = open(header, 'r').read()
     with open(output, 'w') as outf:

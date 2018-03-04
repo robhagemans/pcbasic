@@ -2,14 +2,13 @@
 PC-BASIC - audio_sdl2.py
 Sound interface based on SDL2
 
-(c) 2015, 2016 Rob Hagemans
+(c) 2015--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
 # see e.g. http://toomanyideas.net/2014/pysdl2-playing-a-sound-from-a-wav-file.html
 
 import logging
-import Queue
 from collections import deque
 
 try:
@@ -22,33 +21,33 @@ try:
 except ImportError:
     numpy = None
 
-from ..basic.base import signals
-from . import base
+from .audio import AudioPlugin
+from .base import audio_plugins, InitFailed
 from . import synthesiser
 
 
 # approximate generator chunk length
 # one wavelength at 37 Hz is 1192 samples at 44100 Hz
-chunk_length = 1192 * 4
-
-callback_chunk_length = 2048
-min_samples_buffer = 2*callback_chunk_length
+CHUNK_LENGTH = 1192 * 4
+# length of chunks to be consumed by callback
+CALLBACK_CHUNK_LENGTH = 2048
+# number of samples below which to replenish the buffer
+MIN_SAMPLES_BUFFER = 2*CALLBACK_CHUNK_LENGTH
 
 
 ##############################################################################
 # plugin
 
-class AudioSDL2(base.AudioPlugin):
+@audio_plugins.register('sdl2')
+class AudioSDL2(AudioPlugin):
     """SDL2-based audio plugin."""
 
-    def __init__(self, audio_queue):
+    def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not sdl2:
-            logging.warning('SDL2 module not found. Failed to initialise SDL2 audio plugin.')
-            raise base.InitFailed()
+            raise InitFailed('Module `sdl2` not found')
         if not numpy:
-            logging.warning('NumPy module not found. Failed to initialise SDL2 audio plugin.')
-            raise base.InitFailed()
+            raise InitFailed('Module `numpy` module not found')
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
@@ -57,14 +56,14 @@ class AudioSDL2(base.AudioPlugin):
         self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
         # SDL AudioDevice and specifications
         self.audiospec = sdl2.SDL_AudioSpec(0, 0, 0, 0)
-        self.audiospec.freq = synthesiser.sample_rate
+        self.audiospec.freq = synthesiser.SAMPLE_RATE
         # samples are 16-bit signed ints
         self.audiospec.format = sdl2.AUDIO_S16SYS
         self.audiospec.channels = 1
-        self.audiospec.samples = callback_chunk_length
+        self.audiospec.samples = CALLBACK_CHUNK_LENGTH
         self.audiospec.callback = sdl2.SDL_AudioCallback(self._get_next_chunk)
         self.dev = None
-        base.AudioPlugin.__init__(self, audio_queue)
+        AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
@@ -75,17 +74,17 @@ class AudioSDL2(base.AudioPlugin):
             logging.warning('Could not open audio device: %s', sdl2.SDL_GetError())
         # unpause the audio device
         sdl2.SDL_PauseAudioDevice(self.dev, 0)
-        return base.AudioPlugin.__enter__(self)
+        return AudioPlugin.__enter__(self)
 
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""
         self.generators[voice].append(synthesiser.SoundGenerator(
-                    self.signal_sources[voice], synthesiser.feedback_tone,
+                    self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
                     frequency, duration, fill, loop, volume))
 
     def noise(self, source, frequency, duration, fill, loop, volume):
         """Enqueue a noise."""
-        feedback = synthesiser.feedback_noise if source else synthesiser.feedback_periodic
+        feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
         self.generators[3].append(synthesiser.SoundGenerator(
                     self.signal_sources[3], feedback,
                     frequency, duration, fill, loop, volume))
@@ -93,32 +92,33 @@ class AudioSDL2(base.AudioPlugin):
     def hush(self):
         """Stop sound."""
         for voice in range(4):
-            self.next_tone[voice] = None
+            self._next_tone[voice] = None
             while self.generators[voice]:
                 self.generators[voice].popleft()
         sdl2.SDL_LockAudioDevice(self.dev)
         self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
         sdl2.SDL_UnlockAudioDevice(self.dev)
 
-    def work(self):
+    def _work(self):
         """Replenish sample buffer."""
         for voice in range(4):
-            if len(self.samples[voice]) > min_samples_buffer:
+            if len(self.samples[voice]) > MIN_SAMPLES_BUFFER:
                 # nothing to do
                 continue
             while True:
-                if self.next_tone[voice] is None or self.next_tone[voice].loop:
+                if self._next_tone[voice] is None or self._next_tone[voice].loop:
                     try:
-                        # looping tone will be interrupted by any new tone appearing in the generator queue
-                        self.next_tone[voice] = self.generators[voice].popleft()
+                        # looping tone will be interrupted
+                        # by any new tone appearing in the generator queue
+                        self._next_tone[voice] = self.generators[voice].popleft()
                     except IndexError:
-                        if self.next_tone[voice] is None:
+                        if self._next_tone[voice] is None:
                             current_chunk = None
                             break
-                current_chunk = self.next_tone[voice].build_chunk(chunk_length)
+                current_chunk = self._next_tone[voice].build_chunk(CHUNK_LENGTH)
                 if current_chunk is not None:
                     break
-                self.next_tone[voice] = None
+                self._next_tone[voice] = None
             if current_chunk is not None:
                 # append chunk to samples list
                 # lock to ensure callback doesn't try to access the list too

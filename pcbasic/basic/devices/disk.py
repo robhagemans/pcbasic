@@ -17,6 +17,7 @@ import re
 import platform
 import locale
 import struct
+import random
 if platform.system() == b'Windows':
     import win32api
     import ctypes
@@ -103,7 +104,7 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, locks, codepage, input_methods, utf8, universal):
+    def __init__(self, letter, path, cwd, locks, codepage, utf8, universal):
         """Initialise a disk device."""
         self.letter = letter
         # mount root
@@ -116,8 +117,6 @@ class DiskDevice(object):
         self.locks = locks
         # code page for file system names and text file conversion
         self.codepage = codepage
-        # for wait() during FILES
-        self.input_methods = input_methods
         # text file settings
         self.utf8 = utf8
         self.universal = universal
@@ -170,6 +169,7 @@ class DiskDevice(object):
     def open(self, number, filespec, filetype, mode, access, lock,
                    reclen, seg, offset, length, field):
         """Open a file on a disk drive."""
+        # parse the file spec to a definite name
         if not self.path:
             # undefined disk drive: path not found
             raise error.BASICError(error.PATH_NOT_FOUND)
@@ -185,24 +185,25 @@ class DiskDevice(object):
             # random files: try to open matching file
             # if it doesn't exist, use an all-caps 8.3 file name
             name = self._native_path(filespec, defext, name_err=None)
+        # handle locks, open stream and create file object
         # don't open output or append files more than once
         if mode in (b'O', b'A'):
             self.check_file_not_open(name)
         # obtain a lock
-        if filetype == 'D':
+        if filetype == b'D':
             self.locks.acquire(name, number, lock, access)
         try:
             # open the underlying stream
             fhandle = self._open_stream(name, mode, access)
             # apply the BASIC file wrapper
-            f = self.create_file_object(fhandle, filetype, mode, name, number,
-                    access, lock, field, reclen,
-                    seg, offset, length)
+            f = self.create_file_object(
+                    fhandle, filetype, mode, name, number,
+                    access, lock, field, reclen, seg, offset, length)
             # register file as open
             self.locks.open_file(number, f)
             return f
         except Exception:
-            if filetype == 'D':
+            if filetype == b'D':
                 self.locks.release(number)
             self.locks.close_file(number)
             raise
@@ -219,11 +220,11 @@ class DiskDevice(object):
             # OUTPUT mode files are created anyway since they're opened with wb
             if ((mode == b'A' or (mode == b'R' and access in (b'RW', b'R'))) and
                     not os.path.exists(name)):
-                open(name, b'wb').close()
+                open(name, 'wb').close()
             if mode == b'A':
                 # APPEND mode is only valid for text files (which are seekable);
                 # first cut off EOF byte, if any.
-                f = open(name, b'r+b')
+                f = open(name, 'r+b')
                 try:
                     f.seek(-1, 2)
                     if f.read(1) == b'\x1a':
@@ -295,8 +296,7 @@ class DiskDevice(object):
         # return absolute path to file
         path = os.path.join(drivepath, relpath)
         if name:
-            path = os.path.join(path,
-                match_filename(name, defext, path, name_err, isdir))
+            path = os.path.join(path, match_filename(name, defext, path, name_err, isdir))
         # get full normalised path
         return os.path.abspath(path)
 
@@ -323,48 +323,56 @@ class DiskDevice(object):
         """Rename a file or directory."""
         safe(os.rename, oldname, newname)
 
-    def files(self, screen, pathmask):
-        """Write directory listing to console."""
+    def _split_pathmask(self, pathmask):
+        """Split pathmask into path and mask."""
+        if not self.path:
+            # undefined disk drive: file not found
+            raise error.BASICError(error.FILE_NOT_FOUND)
         # forward slashes - file not found
         # GW-BASIC sometimes allows leading or trailing slashes
         # and then does weird things I don't understand.
         if b'/' in bytes(pathmask):
             raise error.BASICError(error.FILE_NOT_FOUND)
-        if not self.path:
-            # undefined disk drive: file not found
-            raise error.BASICError(error.FILE_NOT_FOUND)
         drivepath, relpath, mask = self._native_path_elements(pathmask, path_err=error.FILE_NOT_FOUND)
         path = os.path.join(drivepath, relpath)
         mask = mask.upper() or b'*.*'
-        # output working dir in DOS format
-        # NOTE: this is always the current dir, not the one being listed
-        dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
-        screen.write_line(self.letter + b':\\' + b'\\'.join(dir_elems))
+        return path, relpath, mask
+
+    def _get_dirs_files(self, path):
+        """get native filenames for native path."""
+        all_names = safe(os.listdir, path)
+        dirs = [filename_from_unicode(n) for n in all_names if os.path.isdir(os.path.join(path, n))]
+        fils = [filename_from_unicode(n) for n in all_names if not os.path.isdir(os.path.join(path, n))]
+        return dirs, fils
+
+    def listdir(self, pathmask):
+        """Get directory listing."""
+        path, relpath, mask = self._split_pathmask(pathmask)
         fils = []
         if mask == b'.':
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-1:][0])]
         elif mask == b'..':
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-2:][0])]
         else:
-            all_names = safe(os.listdir, path)
-            dirs = [filename_from_unicode(n) for n in all_names if os.path.isdir(os.path.join(path, n))]
-            fils = [filename_from_unicode(n) for n in all_names if not os.path.isdir(os.path.join(path, n))]
+            dirs, fils = self._get_dirs_files(path)
             # filter according to mask
             dirs = filter_names(path, dirs + [b'.', b'..'], mask)
             fils = filter_names(path, fils, mask)
-        if not dirs and not fils:
-            raise error.BASICError(error.FILE_NOT_FOUND)
         # format and print contents
-        output = ([join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
-                  [join_dosname(t, e, padding=True) + b'     ' for t, e in fils])
-        num = screen.mode.width // 20
-        while len(output) > 0:
-            line = b' '.join(output[:num])
-            output = output[num:]
-            screen.write_line(line)
-            # allow to break during dir listing & show names flowing on screen
-            self.input_methods.wait()
-        screen.write_line(b' %d Bytes free' % self.get_free())
+        return (
+            [join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
+            [join_dosname(t, e, padding=True) + b'     ' for t, e in fils]
+        )
+
+    def get_cwd(self):
+        """Return the current working directory in DOS format."""
+        drivepath, relpath, _ = self._native_path_elements(b'', path_err=error.FILE_NOT_FOUND)
+        path = os.path.join(drivepath, relpath)
+        if self.cwd:
+            dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
+        else:
+            dir_elems = []
+        return self.letter + b':\\' + b'\\'.join(dir_elems)
 
     def get_free(self):
         """Return the number of free bytes on the drive."""
@@ -387,6 +395,109 @@ class DiskDevice(object):
                 # only disk files have a name, so ignore
                 pass
 
+
+class BoundFile(object):
+    """Bound internal file."""
+
+    def __init__(self, device, file_name_or_object, name):
+        self._device = device
+        self._file = file_name_or_object
+        self._name = name
+
+    def __enter__(self):
+        """Context guard."""
+        return self
+
+    def __exit__(self, *dummies):
+        """Context guard."""
+        self._device.unbind(self._name)
+
+    def get_stream(self, mode):
+        """Get a native stream for the bound file."""
+        try:
+            if isinstance(self._file, basestring):
+                return open(self._file, self._device.access_modes[mode])
+            else:
+                return self._file
+        except EnvironmentError as e:
+            handle_oserror(e)
+
+    def __str__(self):
+        """Get BASIC file name."""
+        return b'%s:%s' % (self._device.letter, self._name)
+
+
+class InternalDiskDevice(DiskDevice):
+    """Internal disk device for special operations."""
+
+    def __init__(self, letter, path, cwd, locks, codepage, utf8, universal):
+        """Initialise internal disk."""
+        self._bound_files = {}
+        DiskDevice.__init__(self, letter, path, cwd, locks, codepage, utf8, universal)
+
+    def bind(self, file_name_or_object, name=None):
+        """Bind a native file name or object to an internal name."""
+        if not name:
+            # get unused 7-hexit string
+            num_ids = 0x10000000
+            for _ in xrange(num_ids):
+                name = (b'#%07x' % random.randint(0, num_ids)).upper()
+                if name not in self._bound_files:
+                    break
+            else:
+                # unlikely
+                logging.error('No internal bound-file names available')
+                raise error.BASICError(error.TOO_MANY_FILES)
+        self._bound_files[name] = BoundFile(self, file_name_or_object, name)
+        return self._bound_files[name]
+
+    def unbind(self, name):
+        """Unbind bound file."""
+        del self._bound_files[name]
+
+    def open(self, number, filespec, filetype, mode, access, lock,
+                   reclen, seg, offset, length, field):
+        """Open a file on the internal disk drive."""
+        if filespec in self._bound_files:
+            fhandle = self._bound_files[filespec].get_stream(mode)
+            try:
+                return self.create_file_object(fhandle, filetype, mode)
+            except EnvironmentError as e:
+                handle_oserror(e)
+        else:
+            return DiskDevice.open(
+                    self, number, filespec, filetype, mode, access, lock,
+                    reclen, seg, offset, length, field)
+
+    def _split_pathmask(self, pathmask):
+        """Split pathmask into path and mask."""
+        if self.path:
+            return DiskDevice._split_pathmask(self, pathmask)
+        else:
+            return u'', u'', pathmask.upper() or b'*.*'
+
+    def _get_dirs_files(self, path):
+        """get native filenames for native path."""
+        if self.path:
+            dirs, files = DiskDevice._get_dirs_files(self, path)
+        else:
+            dirs, files = [], []
+        files += [filename_from_unicode(n) for n in self._bound_files]
+        return dirs, files
+
+    def get_cwd(self):
+        """Return the current working directory in DOS format."""
+        if self.path:
+            return DiskDevice.get_cwd(self)
+        else:
+            return self.letter + b':\\'
+
+    def get_free(self):
+        """Return the number of free bytes on the drive."""
+        if self.path:
+            return DiskDevice.get_free(self)
+        else:
+            return 0
 
 ###############################################################################
 # Locks
@@ -874,7 +985,12 @@ def match_dosname(dosname, path, isdir):
     # find other case combinations, if present
     # also match training single dot to no dots
     trunk, ext = split_dosname(dosname)
-    for f in sorted(os.listdir(path)):
+    try:
+        all_names = sorted(os.listdir(path))
+    except EnvironmentError:
+        # report no match if listdir fails
+        return None
+    for f in all_names:
         if split_dosname(f) == (trunk, ext) and istype(path, f, isdir):
             return f
     return None
@@ -891,7 +1007,7 @@ def match_filename(name, defext, path, name_err, isdir):
     # LongFileName.     (1) LongFileName. (2) LongFileName (3) LONGFILE
     # LongFileName..    (1) LongFileName.. (2) [does not try LONGFILE.. - not allowable]
     # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
-    if b'.' not in name:
+    if defext and b'.' not in name:
         name += b'.' + defext
     elif name[-1] == b'.' and b'.' not in name[:-1]:
         # ends in single dot; first try with dot

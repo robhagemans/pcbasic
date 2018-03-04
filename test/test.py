@@ -49,6 +49,7 @@ def suppress_stdio(do_suppress):
 
 
 args = sys.argv[1:]
+basedir = os.path.join('.', 'test-basic')
 
 do_suppress = '--loud' not in args
 
@@ -66,9 +67,8 @@ else:
     cov = None
 
 if not args or '--all' in args:
-    args = [f for f in sorted(os.listdir('.'))
-            if os.path.isdir(f) and os.path.isdir(os.path.join(f, 'model'))]
-
+    args = [f for f in sorted(os.listdir(basedir))
+            if os.path.isdir(os.path.join(basedir, f)) and os.path.isdir(os.path.join(basedir, f, 'model'))]
 
 numtests = 0
 failed = []
@@ -80,21 +80,23 @@ import pcbasic
 start_time = time.time()
 start_clock = time.clock()
 
+args = [os.path.basename(n) for n in args]
 
 for name in args:
     print '\033[00;37mRunning test \033[01m%s \033[00;37m.. ' % name,
-    if not os.path.isdir(name):
+    dirname = os.path.join(basedir, name)
+    if not os.path.isdir(dirname):
         print '\033[01;31mno such test.\033[00;37m'
         continue
-    output_dir = os.path.join(name, 'output')
-    model_dir = os.path.join(name, 'model')
-    known_dir = os.path.join(name, 'known')
+    output_dir = os.path.join(dirname, 'output')
+    model_dir = os.path.join(dirname, 'model')
+    known_dir = os.path.join(dirname, 'known')
     if os.path.isdir(output_dir):
         shutil.rmtree(output_dir)
     os.mkdir(output_dir)
-    for filename in os.listdir(name):
-        if os.path.isfile(os.path.join(name, filename)):
-            shutil.copy(os.path.join(name, filename), os.path.join(output_dir, filename))
+    for filename in os.listdir(dirname):
+        if os.path.isfile(os.path.join(dirname, filename)):
+            shutil.copy(os.path.join(dirname, filename), os.path.join(output_dir, filename))
     top = os.getcwd()
     os.chdir(output_dir)
     sys.stdout.flush()
@@ -105,7 +107,7 @@ for name in args:
     with suppress_stdio(do_suppress):
         crash = None
         try:
-            pcbasic.run('--interface=none', '--catch-exceptions=basic')
+            pcbasic.run('--interface=none')
         except Exception as e:
             crash = e
             traceback.print_tb(sys.exc_info()[2])
@@ -118,14 +120,14 @@ for name in args:
         for f in files:
             filename = os.path.join(path[len(model_dir)+1:], f)
             if (not is_same(os.path.join(output_dir, filename), os.path.join(model_dir, filename))
-                    and not os.path.isfile(os.path.join(name, filename))):
+                    and not os.path.isfile(os.path.join(dirname, filename))):
                 failfiles.append(filename)
                 known = os.path.isdir(known_dir) and is_same(os.path.join(output_dir, filename), os.path.join(known_dir, filename))
                 passed = False
     for path, dirs, files in os.walk(output_dir):
         for f in files:
             filename = os.path.join(path[len(output_dir)+1:], f)
-            if (not os.path.isfile(os.path.join(model_dir, filename)) and not os.path.isfile(os.path.join(name, filename))):
+            if (not os.path.isfile(os.path.join(model_dir, filename)) and not os.path.isfile(os.path.join(dirname, filename))):
                 failfiles.append(filename)
                 passed = False
                 known = False

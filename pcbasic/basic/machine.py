@@ -9,9 +9,15 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 import logging
 
+from .metadata import NAME, VERSION, COPYRIGHT
 from .base import error
 from . import values
 from . import devices
+
+
+# ROM copyright notice
+NOTICE = bytearray(b'%s %s\r%s\r' %
+            tuple(_.encode('ascii', 'ignore') for _ in (NAME, VERSION, COPYRIGHT)))
 
 
 ###############################################################################
@@ -23,17 +29,19 @@ class MachinePorts(object):
     #  use 100./255. for 100ms.
     joystick_time_factor = 75. / 255.
 
-    def __init__(self, session):
+    def __init__(self, queues, values, display, keyboard, stick, files):
         """Initialise machine ports."""
-        self.session = session
-        self._values = self.session.values
+        self._values = values
+        self._queues = queues
+        self._keyboard = keyboard
+        self._stick = stick
+        self._display = display
         # parallel port base address:
         # http://retired.beyondlogic.org/spp/parallel.htm
         # 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
         # 378h - 37Fh  Usual Address For LPT 1
         # 278h - 27Fh  Usual Address For LPT 2
-        dev = self.session.files
-        self.lpt_device = [dev.get_device('LPT1:'), dev.get_device('LPT2:')]
+        self.lpt_device = [files.get_device('LPT1:'), files.get_device('LPT2:')]
         # serial port base address:
         # http://www.petesqbsite.com/sections/tutorials/zines/qbnews/9-com_ports.txt
         #            COM1             &H3F8
@@ -41,7 +49,7 @@ class MachinePorts(object):
         #            COM3             &H3E8 (not implemented)
         #            COM4             &H2E8 (not implemented)
         self.com_base = {0x3f8: 0, 0x2f8: 1}
-        self.com_device = [dev.get_device('COM1:'), dev.get_device('COM2:')]
+        self.com_device = [files.get_device('COM1:'), files.get_device('COM2:')]
         self.com_enable_baud_write = [False, False]
         self.com_baud_divisor = [0, 0]
         self.com_break = [False, False]
@@ -64,8 +72,8 @@ class MachinePorts(object):
 
     def inp(self, port):
         """Get the value in an emulated machine port."""
-        keyboard = self.session.keyboard
-        stick = self.session.stick
+        keyboard = self._keyboard
+        stick = self._stick
         # keyboard
         if port == 0x60:
             return keyboard.last_scancode
@@ -142,18 +150,18 @@ class MachinePorts(object):
         list(args)
         if addr == 0x201:
             # game port reset
-            self.session.stick.reset_decay()
+            self._stick.reset_decay()
         elif addr == 0x3c5:
             # officially, requires OUT &H3C4, 2 first (not implemented)
-            self.session.screen.mode.set_plane_mask(val)
+            self._display.mode.set_plane_mask(val)
         elif addr == 0x3cf:
             # officially, requires OUT &H3CE, 4 first (not implemented)
-            self.session.screen.mode.set_plane(val)
+            self._display.mode.set_plane(val)
         elif addr == 0x3d8:
             #OUT &H3D8,&H1A: REM enable color burst
             #OUT &H3D8,&H1E: REM disable color burst
             # 0x1a == 0001 1010     0x1e == 0001 1110
-            self.session.screen.set_colorburst(val & 4 == 0)
+            self._display.set_colorburst(val & 4 == 0)
         elif addr in (0x378, 0x37A, 0x278, 0x27A):
             # parallel port output ports
             # http://www.aaroncake.net/electronics/qblpt.htm
@@ -225,7 +233,7 @@ class MachinePorts(object):
         error.range_check(0, 255, xorer)
         list(args)
         while (self.inp(addr) ^ xorer) & ander == 0:
-            self.session.input_methods.wait()
+            self._queues.wait()
 
 
 ###############################################################################
@@ -249,7 +257,7 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, values, data_memory, files, screen, keyboard,
+    def __init__(self, values, data_memory, files, display, keyboard,
                 font_8, interpreter, peek_values, syntax):
         """Initialise memory."""
         self._values = values
@@ -259,7 +267,8 @@ class Memory(object):
         # files access for BLOAD and BSAVE
         self._files = files
         # screen access needed for video memory
-        self.screen = screen
+        self.display = display
+        self.screen = display.text_screen
         # keyboard buffer access
         self.keyboard = keyboard
         # interpreter, for runmode check
@@ -435,19 +444,19 @@ class Memory(object):
 
     def _get_video_memory(self, addr):
         """Retrieve a byte from video memory."""
-        return self.screen.mode.get_memory(addr, 1)[0]
+        return self.display.get_memory(addr, 1)[0]
 
     def _set_video_memory(self, addr, val):
         """Set a byte in video memory."""
-        return self.screen.mode.set_memory(addr, [val])
+        return self.display.set_memory(addr, [val])
 
     def _get_video_memory_block(self, addr, length):
         """Retrieve a contiguous block of bytes from video memory."""
-        return bytearray(self.screen.mode.get_memory(addr, length))
+        return bytearray(self.display.get_memory(addr, length))
 
     def _set_video_memory_block(self, addr, some_bytes):
         """Set a contiguous block of bytes in video memory."""
-        self.screen.mode.set_memory(addr, some_bytes)
+        self.display.set_memory(addr, some_bytes)
 
     ###############################################################################
 
@@ -473,14 +482,20 @@ class Memory(object):
             if self._syntax == 'pcjr':
                 return 0xfd
             return 0xff
+        elif addr >= 0xe00e and addr < 0xe00e + 80:
+            # version & copyright info instead of IBM BIOS copyright notice
+            pos = addr - 0xe00e
+            try:
+                return NOTICE[pos]
+            except IndexError:
+                return -1
         else:
             # ROM font
             addr -= self.rom_font_addr
             char = addr // 8
-            if char > 127 or char<0:
+            if char > 127 or char < 0:
                 return -1
-            return ord(self.font_8.fontdict[
-                    self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
+            return self.font_8.get_byte(char, addr%8)
 
     def _get_font_memory(self, addr):
         """Retrieve RAM font data."""
@@ -488,8 +503,7 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return -1
-        return ord(self.font_8.fontdict[
-                self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
+        return self.font_8.get_byte(char, addr%8)
 
     def _set_font_memory(self, addr, value):
         """Retrieve RAM font data."""
@@ -497,11 +511,8 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return
-        uc = self.screen.codepage.to_unicode(chr(char))
-        if uc:
-            old = self.font_8.fontdict[uc]
-            self.font_8.fontdict[uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
-            self.screen.rebuild_glyph(char)
+        self.font_8.set_byte(char, addr%8, value)
+        self.screen.rebuild_glyph(char)
 
     #################################################################################
 
@@ -522,7 +533,7 @@ class Memory(object):
             return self.ram_font_segment // 256
         # 1040 monitor type
         elif addr == 1040:
-            if self.screen.monitor == 'mono':
+            if self.display.video.monitor == 'mono':
                 # mono
                 return 48 + 6
             else:
@@ -570,9 +581,9 @@ class Memory(object):
             return (self.keyboard.buf.start*2 + self.key_buffer_offset) // 256
         elif addr == 1052:
             # ring buffer ends at n + 1023
-            return (self.keyboard.buf.stop()*2 + self.key_buffer_offset) % 256
+            return (self.keyboard.buf.stop*2 + self.key_buffer_offset) % 256
         elif addr == 1053:
-            return (self.keyboard.buf.stop()*2 + self.key_buffer_offset) // 256
+            return (self.keyboard.buf.stop*2 + self.key_buffer_offset) // 256
         elif addr in range(1024+self.key_buffer_offset, 1024+self.key_buffer_offset+32):
             index = (addr-1024-self.key_buffer_offset)//2
             odd = (addr-1024-self.key_buffer_offset)%2
@@ -587,13 +598,13 @@ class Memory(object):
         # 1097 screen mode number
         elif addr == 1097:
             # these are the low-level mode numbers used by mode switching interrupt
-            cval = self.screen.colorswitch % 2
-            if self.screen.mode.is_text_mode:
-                if (self.screen.capabilities in ('mda', 'ega_mono') and
-                        self.screen.mode.width == 80):
+            cval = self.display.colorswitch % 2
+            if self.display.mode.is_text_mode:
+                if (self.display.capabilities in ('mda', 'ega_mono') and
+                        self.display.mode.width == 80):
                     return 7
-                return (self.screen.mode.width == 40)*2 + cval
-            elif self.screen.mode.name == '320x200x4':
+                return (self.display.mode.width == 40)*2 + cval
+            elif self.display.mode.name == '320x200x4':
                 return 4 + cval
             else:
                 mode_num = {'640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
@@ -602,20 +613,20 @@ class Memory(object):
                     '320x200x4pcjr': 4 }
                     # '720x348x2': ? # hercules - unknown
                 try:
-                    return mode_num[self.screen.mode.name]
+                    return mode_num[self.display.mode.name]
                 except KeyError:
                     return 0xff
         # 1098, 1099 screen width
         elif addr == 1098:
-            return self.screen.mode.width % 256
+            return self.display.mode.width % 256
         elif addr == 1099:
-            return self.screen.mode.width // 256
+            return self.display.mode.width // 256
         # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
         # 1102, 1103 zero (PCmag says graphics page buffer offset)
         elif addr == 1100:
-            return self.screen.mode.page_size % 256
+            return self.display.mode.page_size % 256
         elif addr == 1101:
-            return self.screen.mode.page_size // 256
+            return self.display.mode.page_size // 256
         # 1104 + 2*n (cursor column of page n) - 1
         # 1105 + 2*n (cursor row of page n) - 1
         # we only keep track of one row,col position
@@ -630,23 +641,23 @@ class Memory(object):
             return self.screen.cursor.from_line
         # 1122 visual page number
         elif addr == 1122:
-            return self.screen.vpagenum
+            return self.display.vpagenum
         # 1125 screen mode info
         elif addr == 1125:
             # bit 0: only in text mode?
             # bit 2: should this be colorswitch or colorburst_is_enabled?
-            return ((self.screen.mode.width == 80) * 1 +
-                    (not self.screen.mode.is_text_mode) * 2 +
-                     self.screen.colorswitch * 4 + 8 +
-                     (self.screen.mode.name == '640x200x2') * 16 +
+            return ((self.display.mode.width == 80) * 1 +
+                    (not self.display.mode.is_text_mode) * 2 +
+                     self.display.colorswitch * 4 + 8 +
+                     (self.display.mode.name == '640x200x2') * 16 +
                      self.blink_enabled * 32)
         # 1126 color
         elif addr == 1126:
-            if self.screen.mode.name == '320x200x4':
-                return (self.screen.palette.get_entry(0)
-                        + 32 * self.screen.cga4_palette_num)
-            elif self.screen.mode.is_text_mode:
-                return self.screen.border_attr % 16
+            if self.display.mode.name == '320x200x4':
+                return (self.display.palette.get_entry(0)
+                        + 32 * self.display.video.cga4_palette_num)
+            elif self.display.mode.is_text_mode:
+                return self.display.border_attr % 16
                 # not implemented: + 16 "if current color specified through
                 # COLOR f,b with f in [0,15] and b > 7
         # 1296, 1297: zero (PCmag says data segment address)
@@ -663,7 +674,7 @@ class Memory(object):
             # keyboard ring buffer starts at n+1024; lowest 1054
             self.keyboard.buf.ring_set_boundaries(
                     (value - self.key_buffer_offset) // 2,
-                    self.keyboard.buf.stop())
+                    self.keyboard.buf.stop)
         elif addr == 1052:
             # ring buffer ends at n + 1023
             self.keyboard.buf.ring_set_boundaries(

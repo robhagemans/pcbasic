@@ -1,81 +1,11 @@
 """
 PC-BASIC - signals.py
-Queues and signals for communication between interpreter and interface
+Signals for communication between interpreter and interface
 
 (c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
-import Queue
-
-
-###############################################################################
-# queues
-
-def save_queue(q):
-    """Get list of queue tasks."""
-    qlist = []
-    while True:
-        try:
-            qlist.append(q.get(False))
-            q.task_done()
-        except Queue.Empty:
-            break
-    return qlist
-
-def load_queue(q, qlist):
-    """Initialise queue from list of tasks."""
-    for item in qlist:
-        q.put(item)
-
-
-class NullQueue(object):
-    """Dummy implementation of Queue interface."""
-    def __init__(self, maxsize=0):
-        pass
-    def qsize(self):
-        return 0
-    def empty(self):
-        return True
-    def full(self):
-        return False
-    def put(self, item, block=False, timeout=False):
-        pass
-    def put_nowait(self, item):
-        pass
-    def get(self, block=False, timeout=False):
-        # we're ignoring block
-        raise Queue.Empty
-    def task_done(self):
-        pass
-    def join(self):
-        pass
-
-
-class InterfaceQueues(object):
-    """Interface queue set."""
-
-    def __init__(self, inputs=None, video=None, audio=None):
-        """Initialise; default is NullQueues."""
-        self.set(inputs, video, audio)
-
-    def set(self, inputs=None, video=None, audio=None):
-        """Set; default is NullQueues."""
-        self.inputs = inputs or NullQueue()
-        self.video = video or NullQueue()
-        self.audio = audio or NullQueue()
-
-    def __getstate__(self):
-        """Don't pickle queues."""
-        return {}
-
-    def __setstate__(self, dummy_pickle_dict):
-        """Set to null queues on unpickling."""
-        self.set()
-
-
-###############################################################################
-# signals
 
 class Event(object):
     """Signal object for input, video or audio queue."""
@@ -115,8 +45,8 @@ VIDEO_CLEAR_ROWS = 10
 # scroll
 VIDEO_SCROLL_UP = 11
 VIDEO_SCROLL_DOWN = 12
-# set colorburst
-VIDEO_SET_COLORBURST = 13
+# enable/disable composite artifacts
+VIDEO_SET_COMPOSITE = 13
 # show/hide cursor
 VIDEO_SHOW_CURSOR = 14
 # set palette
@@ -141,8 +71,6 @@ VIDEO_SET_CLIPBOARD_TEXT = 30
 # input queue signals
 # quit interpreter
 KEYB_QUIT = 0
-# insert character
-KEYB_CHAR = 4
 # insert keydown
 KEYB_DOWN = 5
 # insert keyup
@@ -151,8 +79,6 @@ KEYB_UP = 6
 STREAM_CHAR = 7
 # redirect or stdio closed
 STREAM_CLOSED = 8
-# insert keydown, bypassing buffer limit
-STREAM_DOWN = 9
 # light pen events
 PEN_DOWN = 101
 PEN_UP = 102

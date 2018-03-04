@@ -152,7 +152,7 @@ class WindowsShell(ShellBase):
                 continue
             try:
                 # expand=False suppresses key macros
-                c = self.keyboard.get_char(expand=False)
+                c = self.keyboard.get_fullchar(expand=False)
             except error.Break:
                 pass
             if c in (b'\r', b'\n'):

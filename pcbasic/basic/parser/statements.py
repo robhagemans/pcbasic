@@ -322,16 +322,16 @@ class Parser(object):
             tk.LOAD: session.load_,
             tk.MERGE: session.merge_,
             tk.SAVE: session.save_,
-            tk.COLOR: session.screen.color_,
-            tk.CLS: session.screen.cls_,
+            tk.COLOR: session.display.color_,
+            tk.CLS: session.display.cls_,
             tk.MOTOR: session.files.motor_,
             tk.BSAVE: session.all_memory.bsave_,
             tk.BLOAD: session.all_memory.bload_,
             tk.SOUND: session.sound.sound_,
             tk.BEEP: session.sound.beep_,
-            tk.PSET: session.screen.drawing.pset_,
-            tk.PRESET: session.screen.drawing.preset_,
-            tk.SCREEN: session.screen.screen_,
+            tk.PSET: session.drawing.pset_,
+            tk.PRESET: session.drawing.preset_,
+            tk.SCREEN: session.display.screen_,
             tk.LOCATE: session.screen.locate_,
             tk.FILES: session.files.files_,
             tk.FIELD: session.files.field_,
@@ -342,10 +342,10 @@ class Parser(object):
             tk.CHAIN: session.chain_,
             tk.DATE: session.clock.date_,
             tk.TIME: session.clock.time_,
-            tk.PAINT: session.screen.drawing.paint_,
+            tk.PAINT: session.drawing.paint_,
             tk.COM: session.basic_events.com_,
-            tk.CIRCLE: session.screen.drawing.circle_,
-            tk.DRAW: session.screen.drawing.draw_,
+            tk.CIRCLE: session.drawing.circle_,
+            tk.DRAW: session.drawing.draw_,
             tk.TIMER: session.basic_events.timer_,
             tk.IOCTL: session.files.ioctl_statement_,
             tk.CHDIR: session.files.chdir_,
@@ -353,9 +353,9 @@ class Parser(object):
             tk.RMDIR: session.files.rmdir_,
             tk.SHELL: session.shell_,
             tk.ENVIRON: session.environment.environ_statement_,
-            tk.WINDOW: session.screen.drawing.window_,
+            tk.WINDOW: session.drawing.window_,
             tk.LCOPY: session.files.lcopy_,
-            tk.PCOPY: session.screen.pcopy_,
+            tk.PCOPY: session.display.pcopy_,
             tk.LOCK: session.files.lock_,
             tk.UNLOCK: session.files.unlock_,
             tk.MID: session.memory.mid_,
@@ -374,24 +374,24 @@ class Parser(object):
             tk.DEF + tk.USR: session.all_memory.def_usr_,
             tk.DEF: session.all_memory.def_seg_,
             tk.LINE + tk.INPUT: session.line_input_,
-            tk.LINE: session.screen.drawing.line_,
-            tk.KEY + tk.ON: session.screen.fkey_macros.key_,
-            tk.KEY + tk.OFF: session.screen.fkey_macros.key_,
-            tk.KEY + tk.LIST: session.screen.fkey_macros.key_,
+            tk.LINE: session.drawing.line_,
+            tk.KEY + tk.ON: session.fkey_macros.key_,
+            tk.KEY + tk.OFF: session.fkey_macros.key_,
+            tk.KEY + tk.LIST: session.fkey_macros.key_,
             tk.KEY + '(': session.basic_events.key_,
             tk.KEY: session.key_,
-            tk.PUT + '(': session.screen.drawing.put_,
+            tk.PUT + '(': session.drawing.put_,
             tk.PUT: session.files.put_,
-            tk.GET + '(': session.screen.drawing.get_,
+            tk.GET + '(': session.drawing.get_,
             tk.GET: session.files.get_,
             tk.PLAY + tk.ON: session.basic_events.play_,
             tk.PLAY + tk.OFF: session.basic_events.play_,
             tk.PLAY + tk.STOP: session.basic_events.play_,
             tk.PLAY: session.play_parser.play_,
             tk.VIEW + tk.PRINT: session.screen.view_print_,
-            tk.VIEW: session.screen.drawing.view_,
-            tk.PALETTE + tk.USING: session.screen.palette.palette_using_,
-            tk.PALETTE: session.screen.palette.palette_,
+            tk.VIEW: session.drawing.view_,
+            tk.PALETTE + tk.USING: session.display.palette.palette_using_,
+            tk.PALETTE: session.display.palette.palette_,
             tk.STRIG + tk.ON: session.stick.strig_statement_,
             tk.STRIG + tk.OFF: session.stick.strig_statement_,
             tk.STRIG: session.basic_events.strig_,
@@ -543,7 +543,6 @@ class Parser(object):
                 yield True
             else:
                 yield False
-            ins.require_end()
         else:
             yield None
 
@@ -780,6 +779,7 @@ class Parser(object):
             yield ins.require_read(('A', 'a', 'P', 'p'))
         else:
             yield None
+        ins.require_end()
 
     def _parse_list(self, ins):
         """Parse LIST syntax."""

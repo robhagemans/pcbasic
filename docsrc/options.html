@@ -66,15 +66,6 @@
             Allow programs to <code><a href="#POKE">POKE</a></code> into code memory.
         </dd>
 
-        <dt id="--altgr">
-            <code><b>--altgr</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            If <code><b>True</b></code> (default), interpret the right
-            <kbd>Alt</kbd> key as <kbd>Alt Gr</kbd> instead of <kbd>Alt</kbd>.
-            The left <kbd>Alt</kbd> key is always seen as <kbd>Alt</kbd>.
-        </dd>
-
         <dt id="--append">
             <code><b>--append</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
@@ -119,15 +110,6 @@
             Default <code><var>title</var></code> is <em>PC-BASIC</em>.
         </dd>
 
-        <dt id="--capture-caps">
-            <code><b>--capture-caps</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            Let PC-BASIC handle the <kbd>Caps Lock</kbd> key. This
-            may or may not interfere with the operating system's own handling of that key.
-            Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
-        </dd>
-
         <dt id="--cas1">
             <code><b>--cas1=</b><var>type</var><b>:</b><var>value</var></code>
         </dt>
@@ -148,30 +130,6 @@
                 </dd>
 
             </dl>
-        </dd>
-
-        <dt id="--catch-exceptions">
-            <code><b>--catch-exceptions=</b>[<b>none</b>,<b>basic</b>,<b>all</b>]</code>
-        </dt>
-        <dd>
-            <em>Developer option - use only if you know what you're doing. </em><br />
-            Determine which exceptions to catch. Uncaught exceptions terminate PC-BASIC
-            whereas caught exceptions lead to an error message.
-            <dl>
-                <dt><code><b>none</b></code></dt>
-                <dd>
-                    Don't catch exceptions or BASIC errors.
-                </dd>
-                <dt><code><b>basic</b></code></dt>
-                <dd>
-                    Catch BASIC errors but not other exceptions.
-                </dd>
-                <dt><code><b>all</b></code></dt>
-                <dd>
-                    Catch BASIC errors and other exceptions.
-                </dd>
-            </dl>
-            Default is <code><b>all</b></code>.
         </dd>
 
         <dt id="--cga-low">
@@ -339,13 +297,12 @@
             <code><b>--run</b></code> and <code><b>--load</b></code>.
         </dd>
 
-        <dt id="--copy-paste">
-            <code><b>--copy-paste=</b><var>copy_button</var><b>,</b><var>paste_button</var></code>
+        <dt id="--mouse-clipboard">
+            <code><b>--mouse-clipboard</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
         <dd>
-            Choose the mouse buttons for clipboard operations.
-            <code><var>copy_button</var></code> and <code><var>paste_button</var></code> are
-            chosen from <code><b>left</b></code>,<code><b>middle</b></code>,<code><b>right</b></code>,<code><b>none</b></code>.
+            Enable clipboard operations with the mouse. If <code><b>True</b></code> (default),
+            select text with the left mouse button to copy and paste with the middle mouse button.
         </dd>
 
         <dt id="--ctrl-c-break">
@@ -545,11 +502,26 @@
             <code><var>type</var><b>:</b><var>value</var></code> can be
             <dl>
 
-                <dt><code><b>PRINTER:</b><var>printer_name</var></code></dt>
+                <dt><code><b>PRINTER:</b>[<var>printer_name</var>][<b>:</b><var>trigger</var>]</code></dt>
                 <dd>
                     Connect to a Windows, LPR or CUPS printer. If
                     <code><var>printer_name</var></code> is not specified, the default
-                    printer is used.
+                    printer is used. <br />
+                    The printer is activated when a file open to it is closed,
+                    a program terminates or PC-BASIC exits. Note that, unlike <code>LPT1:</code>,
+                    printers connected to <code>LPT2:</code> or <code>LPT3:</code>
+                    do <em>not</em> get activated when a program terminates.
+                    If specified, <code><var>trigger</var></code> sets an additional trigger
+                    to activate the printer:
+                    <dl class="compact">
+                        <dt><code><b>line</b></code>
+                        <dd>After every line break.</dd>
+                        <dt><code><b>page</b></code>
+                        <dd>After every page break.</dd>
+                        <dt><code><b>close</b></code>
+                        <dd>No additional trigger</dd>
+                    </dl>
+                    The default behaviour is that of <code><b>close</b></code>.
                 </dd>
 
                 <dt><code><b>FILE:</b><var>file_name</var></code></dt>
@@ -749,15 +721,6 @@
             <samp><var>val</var></samp>.
         </dd>
 
-        <dt id="--pen">
-            <code><b>--pen=</b>{<b>left</b>|<b>middle</b>|<b>right</b>|<b>none</b>}</code>
-        </dt>
-        <dd>
-            Set the mouse button for light pen emulation. Default is <code><b>left</b></code>.
-            If set to <code><b>none</b></code>, light pen emulation is switched off.
-            On Android, <code><b>left</b></code> means touch input.
-        </dd>
-
         <dt id="--preset">
             <code><b>--preset=</b><var>option_block</var></code>
         </dt>
@@ -767,22 +730,6 @@
             like <code class="block">[this]</code> <code><b>--preset=this</b></code> will load all
             settings defined in that section. Available presets depend on your
             configuration file. See the <a href="#presets">list of default presets</a> in the User's Guide.
-        </dd>
-
-        <dt id="--print-trigger">
-            <code><b>--print-trigger=</b>{<b>line</b>|<b>page</b>|<b>close</b>}</code>
-        </dt>
-        <dd>
-            Set the trigger to flush the print buffer to the printer.
-            <dl class="compact">
-                <dt><code><b>line</b></code>
-                <dd>The printer is activated after every line break.</dd>
-                <dt><code><b>page</b></code>
-                <dd>The printer is activated after every page break.</dd>
-                <dt><code><b>close</b></code>
-                <dd>The printer is activated only when PC-BASIC exits.</dd>
-            </dl>
-            Default is <code><b>close</b></code>.
         </dd>
 
         <dt  id="--quit">
@@ -875,7 +822,7 @@
         </dd>
 
         <dt id="--sound-engine">
-            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b>|<b>sdl2</b>|<b>pygame</b>|<b>portaudio</b>]</code>
+            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b><b>portaudio</b>]</code>
         </dt>
         <dd>
             Choose the engine to use for audio output. If omitted, the
@@ -889,10 +836,6 @@
                 <dd>Use the built-in speaker.</dd>
                 <dt><code><b>portaudio</b></code></dt>
                 <dd>Use the PortAudio sound generator.</dd>
-                <dt><code><b>sdl2</b></code></dt>
-                <dd>Use the SDL2 sound generator.</dd>
-                <dt><code><b>pygame</b></code></dt>
-                <dd>Use the PyGame sound generator.</dd>
             </dl>
         </dd>
 

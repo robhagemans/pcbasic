@@ -12,18 +12,11 @@ This file is released under the GNU GPL version 3 or later.
 from codecs import open
 from os import path
 
-here = path.abspath(path.dirname(__file__))
-
-with open(path.join(here, 'docsrc', 'description.txt'), encoding='utf-8') as f:
-    long_description = f.read()
-
-with open(path.join(here, 'docsrc', 'tagline.txt'), encoding='utf-8') as f:
-    description = f.read()
-
-# NOTE that this is OK because we try-import all non-standard modules
-# this would fail on install if __init__ imported required non-standard packages
-from pcbasic.version import __version__
-version_string = __version__
+# obtain metadata without importing the package (to avoid breaking setup)
+with open(path.join(
+        path.abspath(path.dirname(__file__)),
+        'pcbasic', 'basic', 'metadata.py'), encoding='utf-8') as f:
+    exec(f.read())
 
 
 ###############################################################################
@@ -71,13 +64,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='pcbasic',
-    version=version_string,
-    description=description,
-    long_description=long_description,
-    url='http://pc-basic.org',
-    author='Rob Hagemans',
-    author_email='robhagemans@yahoo.co.uk',
-    license='GPLv3',
+    version=VERSION,
+    description=DESCRIPTION,
+    long_description=LONG_DESCRIPTION,
+    url=URL,
+    author=AUTHOR,
+    author_email=EMAIL,
+    license=LICENCE,
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[

@@ -25,30 +25,31 @@ if platform.system() == b'Windows':
     import ctypes.wintypes
     import win32api
 
-from .version import __version__, GREETING, ICON
-from .data import CODEPAGES, FONTS, PROGRAMS
+from .basic.metadata import VERSION, NAME
+from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from . import data
 
 
 MIN_PYTHON_VERSION = (2, 7, 12)
 
-basename = u'pcbasic-dev'
+BASENAME = u'pcbasic-dev'
 # user configuration and state directories
-_home_dir = os.path.expanduser(u'~')
+HOME_DIR = os.path.expanduser(u'~')
 if platform.system() == b'Windows':
-    user_config_dir = os.path.join(os.getenv(u'APPDATA'), basename)
-    state_path = user_config_dir
+    USER_CONFIG_DIR = os.path.join(os.getenv(u'APPDATA'), BASENAME)
+    STATE_PATH = USER_CONFIG_DIR
 elif platform.system() == b'Darwin':
-    user_config_dir = os.path.join(_home_dir, u'Library', u'Application Support', basename)
-    state_path = user_config_dir
+    USER_CONFIG_DIR = os.path.join(HOME_DIR, u'Library', u'Application Support', BASENAME)
+    STATE_PATH = USER_CONFIG_DIR
 else:
-    _xdg_data_home = os.environ.get(u'XDG_DATA_HOME') or os.path.join(_home_dir, u'.local', u'share')
-    _xdg_config_home = os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(_home_dir, u'.config')
-    user_config_dir = os.path.join(_xdg_config_home, basename)
-    state_path = os.path.join(_xdg_data_home, basename)
+    USER_CONFIG_DIR = os.path.join(
+        os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(HOME_DIR, u'.config'), BASENAME)
+    STATE_PATH = os.path.join(
+        os.environ.get(u'XDG_DATA_HOME') or os.path.join(HOME_DIR, u'.local', u'share'), BASENAME)
 
 # @: target drive for bundled programs
-program_path = os.path.join(state_path, u'bundled_programs')
+PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
+
 
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
@@ -104,10 +105,10 @@ def safe_split(s, sep):
         s1 = u''
     return s0, s1
 
-def store_bundled_programs(program_path):
+def store_bundled_programs(PROGRAM_PATH):
     """Retrieve contents of BASIC programs."""
     for name in PROGRAMS:
-        with open(os.path.join(program_path, name), 'wb') as f:
+        with open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
             f.write(data.read_program_file(name))
 
 
@@ -155,7 +156,7 @@ class Settings(object):
             },
         u'pcjr': {
             u'syntax': u'pcjr',
-            u'pcjr-term': '@:\PCTERM.BAS',
+            u'pcjr-term': os.path.join(PROGRAM_PATH, 'PCTERM.BAS'),
             u'video': u'pcjr',
             u'font': u'vga',
             u'codepage': u'437',
@@ -211,7 +212,7 @@ class Settings(object):
 
     # user and local config files
     config_name = u'PCBASIC.INI'
-    user_config_path = os.path.join(user_config_dir, config_name)
+    user_config_path = os.path.join(USER_CONFIG_DIR, config_name)
 
     # save-state file name
     state_name = 'pcbasic.session'
@@ -267,8 +268,7 @@ class Settings(object):
                         u'ansi', u'curses', u'pygame', u'sdl2'), },
         u'sound-engine': {
             u'type': u'string', u'default': u'',
-            u'choices': (u'', u'none',
-                        u'beep', u'portaudio', u'pygame', u'sdl2'), },
+            u'choices': (u'', u'none', u'beep', u'portaudio'), },
         u'load': {u'type': u'string', u'default': u'', },
         u'run': {u'type': u'string', u'default': u'',  },
         u'convert': {u'type': u'string', u'default': u'', },
@@ -297,7 +297,6 @@ class Settings(object):
         u'debug': {u'type': u'bool', u'default': False,},
         u'strict-hidden-lines': {u'type': u'bool', u'default': False,},
         u'strict-protect': {u'type': u'bool', u'default': False,},
-        u'capture-caps': {u'type': u'bool', u'default': False,},
         u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
         u'resume': {u'type': u'bool', u'default': False,},
         u'strict-newline': {u'type': u'bool', u'default': False,},
@@ -307,25 +306,24 @@ class Settings(object):
         u'pcjr-term': {u'type': u'string', u'default': u'',},
         u'video': {
             u'type': u'string', u'default': 'vga',
-            u'choices': (u'vga', u'ega', u'cga', u'cga_old', u'mda', u'pcjr', u'tandy',
-                         u'hercules', u'olivetti'), },
+            u'choices': (
+                u'vga', u'ega', u'cga', u'cga_old', u'mda',
+                u'pcjr', u'tandy', u'hercules', u'olivetti'), },
         u'map-drives': {u'type': u'bool', u'default': False,},
         u'cga-low': {u'type': u'bool', u'default': False,},
         u'nobox': {u'type': u'bool', u'default': False,},
         u'utf8': {u'type': u'bool', u'default': False,},
         u'border': {u'type': u'int', u'default': 5,},
-        u'pen': {
-            u'type': u'string', u'default': u'left',
-            u'choices': (u'left', u'middle', u'right', u'none',), },
-        u'copy-paste': {u'type': u'string', u'list': 2, u'default': [u'left', u'middle'],
-                       u'choices': (u'left', u'middle', u'right', u'none',),},
+        u'mouse-clipboard': {u'type': u'bool', u'default': True,},
         u'state': {u'type': u'string', u'default': u'',},
         u'mono-tint': {u'type': u'int', u'list': 3, u'default': [255, 255, 255],},
         u'monitor': {
             u'type': u'string', u'choices': (u'rgb', u'composite', u'mono'),
             u'default': u'rgb',},
         u'aspect': {u'type': u'int', u'list': 2, u'default': [4, 3],},
-        u'scaling': {u'type': u'string', u'choices':(u'smooth', u'native', u'crisp'), u'default': u'smooth',},
+        u'scaling': {
+            u'type': u'string', u'choices':(u'smooth', u'native', u'crisp'),
+            u'default': u'smooth',},
         u'version': {u'type': u'bool', u'default': False,},
         u'config': {u'type': u'string', u'default': u'',},
         u'logfile': {u'type': u'string', u'default': u'',},
@@ -333,17 +331,14 @@ class Settings(object):
         u'max-memory': {u'type': u'int', u'list': -2, u'default': [65534, 4096]},
         u'allow-code-poke': {u'type': u'bool', u'default': False,},
         u'reserved-memory': {u'type': u'int', u'default': 3429,},
-        u'caption': {u'type': u'string', u'default': 'PC-BASIC',},
+        u'caption': {u'type': u'string', u'default': NAME,},
         u'text-width': {u'type': u'int', u'choices':(40, 80), u'default': 80,},
         u'video-memory': {u'type': u'int', u'default': 262144,},
         u'shell': {u'type': u'string', u'default': u'',},
-        u'print-trigger': {u'type': u'string', u'choices':(u'close', u'page', u'line'), u'default': u'close',},
-        u'altgr': {u'type': u'bool', u'default': True,},
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': 'Z'},
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
-        u'catch-exceptions': {u'type': u'string', u'choices':(u'none', u'basic', u'all'), u'default': u'all'},
     }
 
 
@@ -361,20 +356,20 @@ class Settings(object):
         self._logger = get_logger(logfile)
         self._temp_dir = temp_dir
         # create state path if needed
-        if not os.path.exists(state_path):
-            os.makedirs(state_path)
+        if not os.path.exists(STATE_PATH):
+            os.makedirs(STATE_PATH)
         # create user config file if needed
         if not os.path.exists(self.user_config_path):
             try:
-                os.makedirs(user_config_dir)
+                os.makedirs(USER_CONFIG_DIR)
             except OSError:
                 pass
             self.build_default_config_file(self.user_config_path)
         # create @: drive if not present
-        if not os.path.exists(program_path):
-            os.makedirs(program_path)
+        if not os.path.exists(PROGRAM_PATH):
+            os.makedirs(PROGRAM_PATH)
             # unpack bundled programs
-            store_bundled_programs(program_path)
+            store_bundled_programs(PROGRAM_PATH)
         # store options in options dictionary
         self._options = self._retrieve_options(self.uargv)
         # prepare global logger for use by main program
@@ -439,9 +434,10 @@ class Settings(object):
                 value = None
         return value
 
-    def get_session_parameters(self):
+    @property
+    def session_params(self):
         """Return a dictionary of parameters for the Session object."""
-        current_device, mount_dict = self.get_drives(False)
+        current_device, mount_dict = self._get_drives(False)
         if self.get('resume'):
             return {}
         pcjr_term = self.get('pcjr-term')
@@ -458,11 +454,10 @@ class Settings(object):
         max_list = self.get('max-memory')
         max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
         max_list[0] = max_list[0] or max_list[1]
-        current_device, mount_dict = self.get_drives()
+        current_device, mount_dict = self._get_drives()
         codepage_dict = data.read_codepage(self.get('codepage'))
         return {
             'syntax': self.get('syntax'),
-            'debug': self.uargv if self.get('debug') else None,
             'output_file': self.get(b'output'),
             'append': self.get(b'append'),
             'input_file': self.get(b'input'),
@@ -471,37 +466,36 @@ class Settings(object):
             'box_protect': not self.get('nobox'),
             'monitor': self.get('monitor'),
             # screen settings
-            'screen_aspect': (3072, 2000) if self.get('video') == 'tandy' else (4, 3),
+            'aspect_ratio': (3072, 2000) if self.get('video') == 'tandy' else (4, 3),
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
-            'cga_low': self.get('cga-low'),
+            'low_intensity': self.get('cga-low'),
             'mono_tint': self.get('mono-tint'),
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
             'keys': self.get('keys').encode('utf-8').decode('string_escape').decode('utf-8'),
             # find program for PCjr TERM command
-            'pcjr_term': pcjr_term,
+            'term': pcjr_term,
             'shell': self.get('shell'),
             'double': self.get('double'),
             # device settings
-            'device_params': device_params,
+            'devices': device_params,
             'current_device': current_device,
-            'mount_dict': mount_dict,
-            'print_trigger': self.get('print-trigger'),
+            'mount': mount_dict,
             'temp_dir': self._temp_dir,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
             'utf8': self.get('utf8'),
             'universal': not self.get('strict-newline'),
-            # attach to standard I/O (for filter interface)
-            'stdio': (self.get(b'interface') == u'none'),
+            # attach to standard I/O if no interface (for filter interface)
+            'stdio': True,
             # keyboard settings
-            'ignore_caps': not self.get('capture-caps'),
             'ctrl_c_is_break': self.get('ctrl-c-break'),
             # program parameters
             'max_list_line': 65535 if not self.get('strict-hidden-lines') else 65530,
             'allow_protect': self.get('strict-protect'),
             'allow_code_poke': self.get('allow-code-poke'),
+            'rebuild_offsets': not self.get('convert'),
             # max available memory to BASIC (set by /m)
             'max_memory': min(max_list) or 65534,
             # maximum record length (-s)
@@ -512,57 +506,78 @@ class Settings(object):
             'reserved_memory': self.get('reserved-memory'),
             'peek_values': peek_values,
             'extension': self.get('extension'),
-            'catch_exceptions': self.get('catch-exceptions'),
+            # ignore key buffer in console-based interfaces, to allow pasting text in console
+            'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses'),
+            # following GW, don't write greeting for redirected input or command-line filter run
+            'greeting': (not self.get('input') and not self.get('interface') == 'none'),
         }
 
-    def get_video_parameters(self):
+    def _get_video_parameters(self):
         """Return a dictionary of parameters for the video plugin."""
         return {
-            'force_display_size': self.get('dimensions'),
-            'aspect': self.get('aspect'),
+            'dimensions': self.get('dimensions'),
+            'aspect_ratio': self.get('aspect'),
             'border_width': self.get('border'),
-            'force_native_pixel': (self.get('scaling') == 'native'),
+            'scaling': self.get('scaling'),
             'fullscreen': self.get('fullscreen'),
-            'smooth': (self.get('scaling') == 'smooth'),
-            'nokill': self.get('nokill'),
-            'altgr': self.get('altgr'),
+            'alt_f4_quits': not self.get('nokill'),
             'caption': self.get('caption'),
-            'composite_monitor': (self.get('monitor') == 'composite'),
-            'composite_card': self.get('video'),
-            'copy_paste': self.get('copy-paste'),
-            'pen': self.get('pen'),
+            'mouse_clipboard': self.get('mouse-clipboard'),
             'icon': ICON,
+            'wait': self.get('wait'),
             }
 
-    def get_audio_parameters(self):
+    def _get_audio_parameters(self):
         """Return a dictionary of parameters for the audio plugin."""
         return {}
 
-    def get_state_file(self):
+    def _get_state_file(self):
         """Name of state file"""
         state_name = self.get('state') or self.state_name
         if not os.path.exists(state_name):
-            state_name = os.path.join(state_path, state_name)
+            state_name = os.path.join(STATE_PATH, state_name)
         return state_name
 
-    def get_interfaces(self):
-        """Return name of interface plugin."""
-        interface = self.get('interface')
-        if interface == 'none':
-            return None
-        return interface or 'graphical', self.get('sound-engine')
+    @property
+    def interface(self):
+        """Run with interface."""
+        return self.get('interface') != 'none'
 
-    def get_launch_parameters(self):
-        """Return a dictionary of launch parameters."""
+    @property
+    def iface_params(self):
+        """Dict of interface parameters."""
+        interface = self.get('interface')
+        # categorical interfaces
+        categories = {
+            # (video, audio), in order of preference
+            'text': ('curses', 'ansi'),
+            'graphical': ('sdl2', 'pygame'),
+        }
+        if not interface:
+            # default: try graphical first, then text, then cli
+            iface_list = categories['graphical'] + categories['text'] + ('cli',)
+        else:
+            try:
+                iface_list = categories[interface]
+            except KeyError:
+                iface_list = (interface,)
+        iface_params = {
+            'try_interfaces': iface_list,
+            'audio_override': self.get('sound-engine'),
+        }
+        iface_params.update(self._get_video_parameters())
+        iface_params.update(self._get_audio_parameters())
+        return iface_params
+
+    @property
+    def launch_params(self):
+        """Dict of launch parameters."""
         # build list of commands to execute on session startup
         commands = []
         if not self.get('resume'):
             run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
             cmd = self.get('exec')
-            # following GW, don't write greeting for redirected input
-            # or command-line filter run
-            if (not run and not cmd and not self.get('input') and not self.get('interface') == 'none'):
-                commands.append(GREETING)
+            # note that executing commands (or RUN) will suppress greeting
             if cmd:
                 commands.append(cmd)
             if run:
@@ -570,16 +585,24 @@ class Settings(object):
             if self.get('quit'):
                 commands.append('SYSTEM')
         launch_params = {
-            'wait': self.get('wait'),
             'prog': self.get('run') or self.get('load') or self.get(0),
             'resume': self.get('resume'),
-            'state_file': self.get_state_file(),
+            'state_file': self._get_state_file(),
             'commands': commands,
+            'debug': self.get('debug'),
             }
-        launch_params.update(self.get_session_parameters())
+        launch_params.update(self.session_params)
         return launch_params
 
-    def get_drives(self, get_default=True):
+    @property
+    def guard_params(self):
+        """Dict of exception guard parameters."""
+        return {
+            'uargv': self.uargv,
+            'log_dir': STATE_PATH,
+            }
+
+    def _get_drives(self, get_default=True):
         """Assign disk locations to disk devices."""
         mount_dict = {}
         # always get current device
@@ -626,7 +649,7 @@ class Settings(object):
         else:
             mount_dict[b'Z'] = (os.getcwdu(), u'')
         # directory for bundled BASIC programs accessible through @:
-        mount_dict[b'@'] = (program_path, u'')
+        mount_dict[b'@'] = (PROGRAM_PATH, u'')
         # build mount dictionary
         mount_list = self.get('mount', get_default)
         if mount_list:
@@ -644,7 +667,8 @@ class Settings(object):
                     logging.warning(u'Could not mount %s: %s', a, unicode(e))
         return current_device, mount_dict
 
-    def get_converter_parameters(self):
+    @property
+    def conv_params(self):
         """Get parameters for file conversion."""
         # conversion output
         # first arg, if given, is mode; second arg, if given, is outfile
@@ -655,16 +679,25 @@ class Settings(object):
         name_out = self.get(1)
         return mode, name_in, name_out
 
-    def get_command(self):
-        """Get operating mode."""
-        if self.get('version'):
-            return 'version'
-        elif self.get('help'):
-            # in help mode, print usage and exit
-            return 'help'
-        elif self.get('convert'):
-            return 'convert'
-        return None
+    @property
+    def version(self):
+        """Version operating mode."""
+        return self.get('version')
+
+    @property
+    def help(self):
+        """Help operating mode."""
+        return self.get('help')
+
+    @property
+    def convert(self):
+        """Converter operating mode."""
+        return self.get('convert')
+
+    @property
+    def debug(self):
+        """Debugging mode."""
+        return self.get('debug')
 
     def _append_short_args(self, args, key, value):
         """Append short arguments and value to dict."""
@@ -910,7 +943,7 @@ class Settings(object):
         u"[pcbasic]\n"
         u"# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
         u"# See the documentation or run pcbasic -h for a list of available options.\n"
-        u"# for example (for version '%s'):\n" % __version__)
+        u"# for example (for version '%s'):\n" % VERSION)
         footer = (
         u"\n\n# To add presets, create a section header between brackets and put the \n"
         u"# options you need below it, like this:\n"

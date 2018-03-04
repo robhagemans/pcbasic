@@ -6,7 +6,4 @@ USAGE.txt
 doc/
 build/
 dist/
-test/.coverage
-test/htmlcov
-test/gwbasicdir
 pcbasic.egg-info/

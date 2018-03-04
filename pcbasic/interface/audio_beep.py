@@ -2,7 +2,7 @@
 PC-BASIC - audio_beep.py
 Sound implementation through the linux beep utility
 
-(c) 2013, 2014, 2015, 2016 Rob Hagemans
+(c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -13,21 +13,22 @@ from collections import deque
 import time
 import sys
 
-if platform.system() == 'Windows':
-    import winsound
-    fcntl = None
-else:
+if platform.system() != 'Windows':
     import fcntl
     winsound = None
+else:
+    import winsound
+    fcntl = None
 
-from ..basic.base import signals
-from . import base
+from .audio import AudioPlugin
+from .base import audio_plugins, InitFailed
 
 
-class AudioBeep(base.AudioPlugin):
+@audio_plugins.register('beep')
+class AudioBeep(AudioPlugin):
     """Audio plugin based on the PC speaker."""
 
-    def __init__(self, audio_queue):
+    def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if platform.system() == 'Windows':
             self.beeper = WinBeeper
@@ -37,10 +38,10 @@ class AudioBeep(base.AudioPlugin):
             else:
                 self.beeper = Beeper
         if not self.beeper.ok():
-            raise base.InitFailed()
+            raise InitFailed('Beeper not supported')
         # sound generators for each voice
         self.generators = [deque(), deque(), deque(), deque()]
-        base.AudioPlugin.__init__(self, audio_queue)
+        AudioPlugin.__init__(self, audio_queue)
 
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""
@@ -51,21 +52,21 @@ class AudioBeep(base.AudioPlugin):
     def hush(self):
         """Stop sound."""
         for voice in range(4):
-            self.next_tone[voice] = None
+            self._next_tone[voice] = None
             while self.generators[voice]:
                 self.generators[voice].popleft()
         self.beeper.hush()
 
-    def work(self):
+    def _work(self):
         """Replenish sample buffer."""
         for voice in range(4):
-            if self.next_tone[voice] is None or self.next_tone[voice].loop:
+            if self._next_tone[voice] is None or self._next_tone[voice].loop:
                 try:
-                    self.next_tone[voice] = self.generators[voice].popleft()
+                    self._next_tone[voice] = self.generators[voice].popleft()
                 except IndexError:
-                    if self.next_tone[voice] is None:
+                    if self._next_tone[voice] is None:
                         continue
-            self.next_tone[voice] = self.next_tone[voice].emit()
+            self._next_tone[voice] = self._next_tone[voice].emit()
 
 
 class Beeper(object):

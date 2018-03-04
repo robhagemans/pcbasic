@@ -24,12 +24,11 @@ class Sound(object):
     # base frequency for noise source
     _base_freq = 3579545./1024.
 
-    def __init__(self, queues, values, input_methods, syntax):
+    def __init__(self, queues, values, syntax):
         """Initialise sound queue."""
         # for wait() and queues
         self._queues = queues
         self._values = values
-        self._input_methods = input_methods
         # Tandy/PCjr noise generator
         # frequency for noise sources
         self.noise_freq = [self._base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
@@ -162,12 +161,12 @@ class Sound(object):
         while (self.queue_length(0) > wait_length or
                 self.queue_length(1) > wait_length or
                 self.queue_length(2) > wait_length):
-            self._input_methods.wait()
+            self._queues.wait()
 
     def wait_all_music(self):
         """Wait until all music (not noise) has finished playing."""
         while (self.is_playing(0) or self.is_playing(1) or self.is_playing(2)):
-            self._input_methods.wait()
+            self._queues.wait()
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""
@@ -187,7 +186,7 @@ class Sound(object):
 
     def persist(self, flag):
         """Set mixer persistence flag (runmode)."""
-        self._queues.audio.put(signals.Event(signals.AUDIO_PERSIST, flag))
+        self._queues.audio.put(signals.Event(signals.AUDIO_PERSIST, (flag,)))
 
     def rebuild(self):
         """Rebuild tone queues."""

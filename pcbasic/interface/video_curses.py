@@ -2,7 +2,7 @@
 PC-BASIC - video_curses.py
 Text interface implementation for Unix
 
-(c) 2013, 2014, 2015, 2016 Rob Hagemans
+(c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -18,16 +18,19 @@ from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..basic.base import signals
 
-from . import base
+from .video import VideoPlugin
+from .base import video_plugins, InitFailed
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
 from . import ansi
 
 
+ENCODING = locale.getpreferredencoding()
+
 if curses:
     # curses keycodes
-    curses_to_scan = {
+    CURSES_TO_SCAN = {
         curses.KEY_F1: scancode.F1, curses.KEY_F2: scancode.F2,
         curses.KEY_F3: scancode.F3, curses.KEY_F4: scancode.F4,
         curses.KEY_F5: scancode.F5, curses.KEY_F6: scancode.F6,
@@ -42,7 +45,7 @@ if curses:
         curses.KEY_BACKSPACE: scancode.BACKSPACE,
         curses.KEY_PRINT: scancode.PRINT, curses.KEY_CANCEL: scancode.ESCAPE,
     }
-    curses_to_eascii = {
+    CURSES_TO_EASCII = {
         curses.KEY_F1: uea.F1, curses.KEY_F2: uea.F2,
         curses.KEY_F3: uea.F3, curses.KEY_F4: uea.F4,
         curses.KEY_F5: uea.F5, curses.KEY_F6: uea.F6,
@@ -59,17 +62,17 @@ if curses:
     }
 
 
-class VideoCurses(base.VideoPlugin):
+@video_plugins.register('curses')
+class VideoCurses(VideoPlugin):
     """Curses-based text interface."""
 
-    def __init__(self, input_queue, video_queue, **kwargs):
+    def __init__(self, input_queue, video_queue, caption=u'', border_width=0, **kwargs):
         """Initialise the text interface."""
-        base.VideoPlugin.__init__(self, input_queue, video_queue)
+        VideoPlugin.__init__(self, input_queue, video_queue)
         # we need to ensure setlocale() has been run first to allow unicode input
-        self._encoding = locale.getpreferredencoding()
         self.curses_init = False
         if not curses:
-            raise base.InitFailed()
+            raise InitFailed('`Module `curses` not found')
         # set the ESC-key delay to 25 ms unless otherwise set
         # set_escdelay seems to be unavailable on python curses.
         if not os.environ.has_key('ESCDELAY'):
@@ -84,8 +87,6 @@ class VideoCurses(base.VideoPlugin):
         curses.start_color()
         self.screen.clear()
         self.height, self.width = 25, 80
-        # border width percentage
-        border_width = kwargs.get('border_width', 0)
         self.border_y = int(round((self.height * border_width)/200.))
         self.border_x = int(round((self.width * border_width)/200.))
         self.underlay = curses.newwin(
@@ -96,7 +97,7 @@ class VideoCurses(base.VideoPlugin):
         self.window.scrollok(False)
         self.can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
                               and curses.COLOR_PAIRS > 128)
-        self.caption = kwargs.get('caption', '')
+        self.caption = caption
         sys.stdout.write(ansi.SET_TITLE % self.caption)
         sys.stdout.flush()
         self._set_default_colours(16)
@@ -120,7 +121,7 @@ class VideoCurses(base.VideoPlugin):
 
     def __exit__(self, type, value, traceback):
         """Close the curses interface."""
-        base.VideoPlugin.__exit__(self, type, value, traceback)
+        VideoPlugin.__exit__(self, type, value, traceback)
         if self.curses_init:
             # restore original terminal size
             self._resize(*self.orig_size)
@@ -132,7 +133,7 @@ class VideoCurses(base.VideoPlugin):
             curses.echo()
             curses.endwin()
 
-    def _check_display(self):
+    def _work(self):
         """Handle screen and interface events."""
         if self.cursor_visible:
             self.window.move(self.cursor_row-1, self.cursor_col-1)
@@ -151,9 +152,8 @@ class VideoCurses(base.VideoPlugin):
             else:
                 if i == curses.KEY_BREAK:
                     # this is fickle, on many terminals doesn't work
-                    self.input_queue.put(signals.Event(
-                                            signals.KEYB_DOWN,
-                                            (u'', scancode.BREAK, [scancode.CTRL])))
+                    self._input_queue.put(signals.Event(
+                            signals.KEYB_DOWN, (u'', scancode.BREAK, [scancode.CTRL])))
                 elif i == curses.KEY_RESIZE:
                     self._resize(self.height, self.width)
                 # scancode, insert here and now
@@ -163,29 +163,26 @@ class VideoCurses(base.VideoPlugin):
                 # utf-8 sequence or a pasted utf-8 string, neither of which
                 # can contain special characters.
                 # however, if that does occur, this won't work correctly.
-                scan = curses_to_scan.get(i, None)
-                c = curses_to_eascii.get(i, '')
+                scan = CURSES_TO_SCAN.get(i, None)
+                c = CURSES_TO_EASCII.get(i, '')
                 if scan or c:
-                    self.input_queue.put(signals.Event(
-                                            signals.KEYB_DOWN, (c, scan, [])))
+                    self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, [])))
                     if i == curses.KEY_F12:
                         self.f12_active = True
                     else:
                         self._unset_f12()
         # convert into unicode chars
-        u = s.decode(self._encoding, 'replace')
+        u = s.decode(ENCODING, 'replace')
         # then handle these one by one
         for c in u:
             #check_full=False to allow pasting chunks of text
-            self.input_queue.put(signals.Event(
-                                    signals.STREAM_DOWN, (c, None, [])))
+            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, [])))
             self._unset_f12()
 
     def _unset_f12(self):
         """Deactivate F12 """
         if self.f12_active:
-            self.input_queue.put(signals.Event(
-                                    signals.KEYB_UP, (scancode.F12,)))
+            self._input_queue.put(signals.Event(signals.KEYB_UP, (scancode.F12,)))
             self.f12_active = False
 
     def _resize(self, height, width):
@@ -208,8 +205,8 @@ class VideoCurses(base.VideoPlugin):
         for row, textrow in enumerate(self.text[self.vpagenum]):
             for col, charattr in enumerate(textrow):
                 try:
-                    self.window.addstr(row, col, charattr[0].encode(
-                                self._encoding, 'replace'), charattr[1])
+                    self.window.addstr(
+                            row, col, charattr[0].encode(ENCODING, 'replace'), charattr[1])
                 except curses.error:
                     pass
         if self.cursor_visible:
@@ -351,7 +348,9 @@ class VideoCurses(base.VideoPlugin):
             self.cursor_shape = 1
         curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
-    def put_glyph(self, pagenum, row, col, c, is_fullwidth, fore, back, blink, underline, for_keys):
+    def put_glyph(
+            self, pagenum, row, col, c, is_fullwidth,
+            fore, back, blink, underline, suppress_cli):
         """Put a character at a given position."""
         if c == u'\0':
             c = u' '
@@ -364,8 +363,7 @@ class VideoCurses(base.VideoPlugin):
                 self.last_colour = colour
                 self.window.bkgdset(' ', colour)
             try:
-                self.window.addstr(row-1, col-1, c.encode(
-                        self._encoding, 'replace'), colour)
+                self.window.addstr(row-1, col-1, c.encode(ENCODING, 'replace'), colour)
             except curses.error:
                 pass
 

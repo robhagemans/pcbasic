@@ -1,1 +1,4 @@
-*/output/
+.coverage
+html-cov/
+test-basic/*/output/
+test-basic/gwbasicdir

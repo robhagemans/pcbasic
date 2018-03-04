@@ -47,11 +47,11 @@ class COMDevice(devicebase.Device):
 
     allowed_modes = 'IOAR'
 
-    def __init__(self, arg, input_methods, serial_in_size):
+    def __init__(self, arg, queues, serial_in_size):
         """Initialise COMn: device."""
         devicebase.Device.__init__(self)
         # for wait()
-        self._input_methods = input_methods
+        self._queues = queues
         self._serial_in_size = serial_in_size
         self._serial = None
         self._url = ''
@@ -83,10 +83,10 @@ class COMDevice(devicebase.Device):
         except Exception:
             self.close()
             raise
-        self._file = COMFile(self._serial, field, lf, self._serial_in_size, self._input_methods)
+        self._file = COMFile(self._serial, field, lf, self._serial_in_size, self._queues)
         # inherit width settings from device file
+        # note that these seem unused for COM files
         self._file.width = self.device_file.width
-        # FIXME: is this ever anything but 1? what uses it? on LPT it's LPOS, but on COM?
         self._file.col = self.device_file.col
         return self._file
 
@@ -233,7 +233,7 @@ class COMDevice(devicebase.Device):
             have_dsr = have_dsr and self._serial.dsr
             have_cts = have_cd and self._serial.cd
             # give CPU some time off
-            self._input_methods.wait()
+            self._queues.wait()
         # only check for status if timeouts are set > 0
         # http://www.electro-tech-online.com/threads/qbasic-serial-port-control.19286/
         # https://measurementsensors.honeywell.com/ProductDocuments/Instruments/008-0385-00.pdf
@@ -289,13 +289,13 @@ class COMDevice(devicebase.Device):
 class COMFile(devicebase.TextFileBase):
     """COMn: device - serial port."""
 
-    def __init__(self, stream, field, linefeed, serial_in_size, input_methods):
+    def __init__(self, stream, field, linefeed, serial_in_size, queues):
         """Initialise COMn: file."""
         # prevent readahead by providing non-empty first char
         # we're ignoring self.char and self.next_char in this class
         devicebase.TextFileBase.__init__(self, stream, b'D', b'R', first_char=b'DUMMY')
         self.next_char = ''
-        self._input_methods = input_methods
+        self._queues = queues
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self._field = field
         self._linefeed = linefeed
@@ -312,7 +312,7 @@ class COMFile(devicebase.TextFileBase):
 
     def read_raw(self, num=-1):
         """Read num characters as string."""
-        self._input_methods.wait()
+        self._queues.wait()
         s, c = [], b''
         while not (num > -1 and len(s) >= num):
             c, self.last = self.fhandle.read(1), c

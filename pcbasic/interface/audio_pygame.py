@@ -2,12 +2,11 @@
 PC-BASIC - audio_pygame.py
 Sound interface based on PyGame
 
-(c) 2013, 2014, 2015, 2016 Rob Hagemans
+(c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
 
-import logging
 import Queue
 from collections import deque
 
@@ -27,36 +26,38 @@ else:
     mixer = None
 
 from ..basic.base import signals
-from . import base
+from .audio import AudioPlugin
+from .base import audio_plugins, InitFailed
 from . import synthesiser
 
-# one wavelength at 37 Hz is 1192 samples at 44100 Hz
-chunk_length = 1192 * 4
 
+# one wavelength at 37 Hz is 1192 samples at 44100 Hz
+CHUNK_LENGTH = 1192 * 4
+# quit sound server after quiet period of QUIET_QUIT ticks
+# to avoid high-ish cpu load from the sound server.
+QUIET_QUIT = 10000
+# buffer size in sample frames
+BUFSIZE = 1024 #4096
 
 ##############################################################################
 # plugin
 
-class AudioPygame(base.AudioPlugin):
+@audio_plugins.register('pygame')
+class AudioPygame(AudioPlugin):
     """Pygame-based audio plugin."""
 
-    # quit sound server after quiet period of quiet_quit ticks
-    # to avoid high-ish cpu load from the sound server.
-    quiet_quit = 10000
 
-    def __init__(self, audio_queue):
+    def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
         if not pygame:
-            logging.warning('PyGame module not found. Failed to initialise PyGame audio plugin.')
-            raise base.InitFailed()
+            raise InitFailed('Module `pygame` not found')
         if not numpy:
-            logging.warning('NumPy module not found. Failed to initialise PyGame audio plugin.')
-            raise base.InitFailed()
+            raise InitFailed('Mdoule `numpy` not found')
         if not mixer:
-            logging.warning('PyGame mixer module not found. Failed to initialise PyGame audio plugin.')
-            raise base.InitFailed()
+            raise InitFailed('Module `mixer` not found')
         # this must be called before pygame.init() in the video plugin
-        mixer.pre_init(synthesiser.sample_rate, -synthesiser.sample_bits, channels=1, buffer=1024) #4096
+        mixer.pre_init(
+                synthesiser.SAMPLE_RATE, -synthesiser.SAMPLE_BITS, channels=1, buffer=BUFSIZE)
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
@@ -65,14 +66,14 @@ class AudioPygame(base.AudioPlugin):
         self._persist = False
         # keep track of quiet time to shut down mixer after a while
         self.quiet_ticks = 0
-        base.AudioPlugin.__init__(self, audio_queue)
+        AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
         # initialise mixer as silent
         # this is necessary to be able to set channels to mono
         mixer.quit()
-        return base.AudioPlugin.__enter__(self)
+        return AudioPlugin.__enter__(self)
 
     def persist(self, do_persist):
         """Allow or disallow mixer to quit."""
@@ -81,12 +82,12 @@ class AudioPygame(base.AudioPlugin):
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""
         self.generators[voice].append(synthesiser.SoundGenerator(
-                    self.signal_sources[voice], synthesiser.feedback_tone,
+                    self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
                     frequency, duration, fill, loop, volume))
 
     def noise(self, source, frequency, duration, fill, loop, volume):
         """Enqueue a noise."""
-        feedback = synthesiser.feedback_noise if source else synthesiser.feedback_periodic
+        feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
         self.generators[3].append(synthesiser.SoundGenerator(
                     self.signal_sources[3], feedback,
                     frequency, duration, fill, loop, volume))
@@ -95,13 +96,14 @@ class AudioPygame(base.AudioPlugin):
         """Stop sound."""
         for voice in range(4):
             self._stop_channel(voice)
-            self.next_tone[voice] = None
+            self._next_tone[voice] = None
             while self.generators[voice]:
                 self.generators[voice].popleft()
 
-    def work(self):
+    def _work(self):
         """Replenish sample buffer."""
-        if (sum(len(q) for q in self.generators) == 0 and self.next_tone == [None, None, None, None]):
+        if (sum(len(q) for q in self.generators) == 0 and
+                    self._next_tone == [None, None, None, None]):
             # check if mixer can be quit
             self._check_quit()
             return
@@ -111,17 +113,17 @@ class AudioPygame(base.AudioPlugin):
                 # nothing to do
                 continue
             while True:
-                if self.next_tone[voice] is None or self.next_tone[voice].loop:
+                if self._next_tone[voice] is None or self._next_tone[voice].loop:
                     try:
-                        self.next_tone[voice] = self.generators[voice].popleft()
+                        self._next_tone[voice] = self.generators[voice].popleft()
                     except IndexError:
-                        if self.next_tone[voice] is None:
+                        if self._next_tone[voice] is None:
                             current_chunk = None
                             break
-                current_chunk = self.next_tone[voice].build_chunk(chunk_length)
+                current_chunk = self._next_tone[voice].build_chunk(CHUNK_LENGTH)
                 if current_chunk is not None:
                     break
-                self.next_tone[voice] = None
+                self._next_tone[voice] = None
             if current_chunk is not None:
                 # enqueue chunk in mixer
                 snd = pygame.sndarray.make_sound(current_chunk)
@@ -129,11 +131,11 @@ class AudioPygame(base.AudioPlugin):
 
     def _check_quit(self):
         """Quit the mixer if not running a program and sound quiet for a while."""
-        if self.next_tone != [None, None, None, None]:
+        if self._next_tone != [None, None, None, None]:
             self.quiet_ticks = 0
         else:
             self.quiet_ticks += 1
-            if not self._persist and self.quiet_ticks > self.quiet_quit:
+            if not self._persist and self.quiet_ticks > QUIET_QUIT:
                 # mixer is quiet and we're not running a program.
                 # quit to reduce pulseaudio cpu load
                 # this takes quite a while and leads to missed frames...
