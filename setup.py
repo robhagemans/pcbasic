@@ -61,6 +61,13 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
 # see https://github.com/pypa/sampleproject
 
 from setuptools import setup, find_packages
+import platform
+
+# list of packages needed only for the present platform
+platform_specific_requirements = []
+if platform.system() == 'Windows':
+    platform_specific_requirements.append('pywin32')
+
 
 setup(
     name='pcbasic',
@@ -88,16 +95,16 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['sdl2', 'numpy', 'pyserial', 'pexpect'],
+    install_requires=['sdl2', 'numpy', 'pyserial', 'pexpect'] + platform_specific_requirements,
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
     # $ pip install -e .[dev,test]
-    #extras_require={
-    #    'dev': ['check-manifest'],
-    #    'test': ['coverage'],
-    #},
+    extras_require={
+        'dev': ['lxml', 'markdown', 'pylint', 'coverage'],
+        'full': ['pygame', 'pyaudio'],
+    },
 
     package_data={
         'pcbasic': ['*.BAS', '*.ucp', '*.hex', '*.txt', '*.md'],

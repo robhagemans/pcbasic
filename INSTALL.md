@@ -74,6 +74,7 @@ The Python distribution of PC-BASIC described above contains precompiled documen
 If you wish to use the source code as-is in the Git repo,
 you'll need to build these yourself. Compiling the documentation requires the Python modules
 [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3) and [`markdown`](https://pypi.python.org/pypi/Markdown).
+Testing additionally requires [`pylint`](https://pypi.python.org/pypi/pylint/1.7.6) and [`coverage`](https://pypi.python.org/pypi/coverage).
 You'll also need [`git`](https://git-scm.com/) and all the PC-BASIC dependencies listed above.
 
 
