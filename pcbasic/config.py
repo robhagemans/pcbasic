@@ -32,7 +32,10 @@ from . import data
 
 MIN_PYTHON_VERSION = (2, 7, 12)
 
-BASENAME = u'pcbasic-dev'
+# base directory name
+MAJOR_VERSION = u'.'.join(VERSION.split(u'.')[:2])
+BASENAME = u'pcbasic-{0}'.format(MAJOR_VERSION)
+
 # user configuration and state directories
 HOME_DIR = os.path.expanduser(u'~')
 if platform.system() == b'Windows':
