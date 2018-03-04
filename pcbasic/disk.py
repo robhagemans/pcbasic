@@ -14,6 +14,7 @@ import errno
 import logging
 import string
 from fnmatch import fnmatch
+import locale
 
 import plat
 if plat.system == 'Windows':
@@ -33,6 +34,9 @@ import devices
 import unicodepage
 # to be abled to set current-device to CAS1
 import cassette
+
+
+ENCODING = locale.getpreferredencoding()
 
 
 # GW-BASIC FILE CONTROL BLOCK structure:
@@ -294,7 +298,7 @@ if plat.system == 'Windows':
         try:
             # gets the short name if it exists, keeps long name otherwise
             path_and_name = win32api.GetShortPathName(path_and_longname)
-        except Exception:
+        except Exception as e:
             # something went wrong - keep long name (happens for swap file)
             # this should be a WindowsError which is an OSError
             # but it often is a pywintypes.error
@@ -348,18 +352,26 @@ def match_dosname(dosname, path, isdir, find_case):
     if not find_case:
         return None
     # for case-sensitive filenames: find other case combinations, if present
-    for f in sorted(os.listdir(path)):
+    try:
+        all_names = sorted(os.listdir(path))
+    except EnvironmentError:
+        # report no match if listdir fails
+        return None
+    for f in all_names:
         if f.upper() == dosname and istype(path, f, isdir):
             return f
     return None
 
 def match_filename(name, defext, path, name_err, isdir, find_case=True):
     """ Find or create a matching native file name for a given BASIC name. """
+    # convert to byte string in locale encoding
+    unicode_name = unicodepage.UTF8Converter().to_utf8(name).decode('utf-8', 'replace')
+    local_name = unicode_name.encode(ENCODING, 'replace')
     # check if the name exists as-is; should also match Windows short names.
     # EXCEPT if default extension is not empty, in which case
     # default extension must be found first. Necessary for GW compatibility.
-    if not defext and istype(path, name, isdir):
-        return name
+    if not defext and istype(path, local_name, isdir):
+        return local_name
     # try to match dossified names with default extension
     dosname = dossify(name, defext)
     fullname = match_dosname(dosname, path, isdir, find_case)
@@ -613,6 +625,7 @@ class DiskDevice(object):
         num = state.console_state.screen.mode.width // 20
         while len(output) > 0:
             line = ' '.join(output[:num])
+            line = unicodepage.str_from_utf8(line.decode(ENCODING, 'replace').encode('utf-8', 'replace'))
             output = output[num:]
             console.write_line(line)
             # allow to break during dir listing & show names flowing on screen
