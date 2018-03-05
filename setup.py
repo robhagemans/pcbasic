@@ -23,7 +23,7 @@ with open(path.join(
 # implement build_docs command
 # see http://seasonofcode.com/posts/how-to-add-custom-build-steps-and-commands-to-setup-py.html
 
-import setuptools.command.build_py
+import setuptools.command.sdist
 import distutils.cmd
 
 
@@ -35,7 +35,7 @@ class BuildDocCommand(distutils.cmd.Command):
 
     def run(self):
         """ Run build_docs command. """
-        from .docsrc.prepare import build_docs
+        from docsrc.prepare import build_docs
         build_docs()
 
     def initialize_options(self):
@@ -47,14 +47,13 @@ class BuildDocCommand(distutils.cmd.Command):
         pass
 
 
-class BuildPyCommand(setuptools.command.build_py.build_py):
-    """ Custom build command. """
+class SDistCommand(setuptools.command.sdist.sdist):
+    """ Custom sdist command. """
 
     def run(self):
-        """ Run build_py command. """
-        # build_docs should not be in build but in sdist!
-        #self.run_command('build_docs')
-        setuptools.command.build_py.build_py.run(self)
+        """ Run sdist command. """
+        self.run_command('build_docs')
+        setuptools.command.sdist.sdist.run(self)
 
 
 ###############################################################################
@@ -133,7 +132,7 @@ setup(
 
     cmdclass={
         'build_docs': BuildDocCommand,
-        'build_py': BuildPyCommand,
+        'sdist': SDistCommand,
     },
 
     # cx_Freeze options
