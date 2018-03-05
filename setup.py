@@ -62,6 +62,7 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
 # see https://github.com/pypa/sampleproject
 
 from setuptools import setup, find_packages
+#from cx_Freeze import setup, Executable
 import platform
 
 # list of packages needed only for the present platform
@@ -71,6 +72,9 @@ if platform.system() == 'Windows':
 
 
 setup(
+
+    # metadata
+
     name='pcbasic',
     version=VERSION,
     description=DESCRIPTION,
@@ -84,47 +88,61 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: End Users/Desktop',
+        'Intended Audience :: Developers',
         'Topic :: System :: Emulators',
+        'Topic :: Software Development :: Interpreters',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 2.7',
     ],
 
     keywords='emulator interpreter basic retro legacy gwbasic basica pcjr tandy',
+
+    # contents
+
     packages=find_packages(exclude=['doc', 'test', 'docsrc', 'packaging']),
-
-    # List run-time dependencies here.  These will be installed by pip when
-    # your project is installed. For an analysis of "install_requires" vs pip's
-    # requirements files see:
-    # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['PySDL2', 'numpy', 'pyserial', 'pexpect'] + platform_specific_requirements,
-
-    # List additional groups of dependencies here (e.g. development
-    # dependencies). You can install these using the following syntax,
-    # for example:
-    # $ pip install -e .[dev,test]
-    extras_require={
-        'dev': ['lxml', 'markdown', 'pylint', 'coverage'],
-        'full': ['pygame', 'pyaudio'],
-    },
 
     package_data={
         'pcbasic': [
                 '*.txt', '*.md', 'pcbasic/*.txt', 'pcbasic/data/codepages/*',
                 'pcbasic/data/fonts/*', 'pcbasic/data/programs/*'],
     },
+
     include_package_data=True,
 
-    entry_points={
-        'console_scripts': [
-            'pcbasic=pcbasic:main',
-        ],
-        'gui_scripts': [
-            'pcbasic=pcbasic:main',
-        ],
+    # requirements
 
+    # need a Python-2 that's 2.7.12 or better
+    python_requires='~=2.7.12',
+
+    install_requires=['PySDL2', 'numpy', 'pyserial', 'pexpect'] + platform_specific_requirements,
+
+    # use e.g. pip install -e .[dev,full]
+    extras_require={
+        'dev': ['lxml', 'markdown', 'pylint', 'coverage'],
+        'full': ['pygame', 'pyaudio'],
     },
+
+    # launchers
+
+    entry_points={
+        'console_scripts': ['pcbasic=pcbasic:main'],
+        'gui_scripts': ['pcbasic=pcbasic:main'],
+    },
+
+    # setup commands
+
     cmdclass={
         'build_docs': BuildDocCommand,
         'build_py': BuildPyCommand,
     },
+
+    # cx_Freeze options
+    #
+    # options={'build_exe': {
+    #             'packages': ['numpy'],
+    #             'excludes': ['tkinter', 'tcltk', 'nose', 'PIL', 'PyQt4', 'scipy', 'pygame'],
+    #             #'optimize': 2,
+    #             },
+    #         },
+    # executables = [Executable('run.py', base=None)],
 )
