@@ -64,10 +64,12 @@ from setuptools import setup, find_packages
 #from cx_Freeze import setup, Executable
 import platform
 
-# list of packages needed only for the present platform
+# platform-specific settings
 platform_specific_requirements = []
+gui_scripts = []
 if platform.system() == 'Windows':
     platform_specific_requirements.append('pywin32')
+    gui_scripts = ['pcbasicw=pcbasic:main']
 
 
 setup(
@@ -125,7 +127,7 @@ setup(
 
     entry_points={
         'console_scripts': ['pcbasic=pcbasic:main'],
-        'gui_scripts': ['pcbasic=pcbasic:main'],
+        'gui_scripts': gui_scripts,
     },
 
     # setup commands
