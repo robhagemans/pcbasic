@@ -7,4 +7,5 @@ include GPL3.txt
 include doc/*
 include pcbasic/data/*/*
 include pcbasic/USAGE.txt
+include pcbasic/lib/*
 prune test

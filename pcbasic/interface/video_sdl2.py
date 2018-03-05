@@ -20,8 +20,9 @@ if platform.system() == 'Windows' and 'PYSDL2_DLL_PATH' not in os.environ:
         # (__file__ is undefined in pyinstaller packages)
         os.environ['PYSDL2_DLL_PATH'] = os.path.dirname(sys.executable)
     else:
-        # unpackaged: get the directory of the video_sdl2 module
-        os.environ['PYSDL2_DLL_PATH'] = os.path.dirname(os.path.realpath(__file__))
+        # unpackaged: get the directory of the video_sdl2 module in ../lib
+        os.environ['PYSDL2_DLL_PATH'] = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), '..', 'lib')
 
 try:
     import sdl2

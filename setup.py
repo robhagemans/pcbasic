@@ -65,12 +65,12 @@ from setuptools import setup, find_packages
 import platform
 
 # platform-specific settings
-platform_specific_requirements = []
-gui_scripts = []
 if platform.system() == 'Windows':
-    platform_specific_requirements.append('pywin32')
+    platform_specific_requirements = ['pywin32']
     gui_scripts = ['pcbasicw=pcbasic:main']
-
+else:
+    platform_specific_requirements = ['pexpect']
+    gui_scripts = []
 
 setup(
 
@@ -102,10 +102,14 @@ setup(
 
     packages=find_packages(exclude=['doc', 'test', 'docsrc', 'packaging']),
 
+    # rule of thumb for sdist: package_data specifies what gets *installed*,
+    # but manifest specifies what gets *included* in the archive in the first place
     package_data={
         'pcbasic': [
                 '*.txt', '*.md', 'pcbasic/*.txt', 'pcbasic/data/codepages/*',
-                'pcbasic/data/fonts/*', 'pcbasic/data/programs/*'],
+                'pcbasic/data/fonts/*', 'pcbasic/data/programs/*',
+                'pcbasic/lib/*',
+            ],
     },
 
     include_package_data=True,
@@ -115,7 +119,7 @@ setup(
     # need a Python-2 that's 2.7.12 or better
     python_requires='~=2.7.12',
 
-    install_requires=['PySDL2', 'numpy', 'pyserial', 'pexpect'] + platform_specific_requirements,
+    install_requires=['PySDL2', 'numpy', 'pyserial'] + platform_specific_requirements,
 
     # use e.g. pip install -e .[dev,full]
     extras_require={
