@@ -6,4 +6,4 @@ Parser
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .statements import *
+from .statements import Parser

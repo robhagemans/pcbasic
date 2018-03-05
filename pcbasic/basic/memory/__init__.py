@@ -6,4 +6,4 @@ Data segment
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .memory import *
+from .memory import Field, DataSegment
