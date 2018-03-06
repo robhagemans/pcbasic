@@ -67,9 +67,11 @@ import platform
 # platform-specific settings
 if platform.system() == 'Windows':
     platform_specific_requirements = ['pywin32']
+    console_scripts = ['pcbasic=pcbasic:winmain']
     gui_scripts = ['pcbasicw=pcbasic:main']
 else:
     platform_specific_requirements = ['pexpect']
+    console_scripts = ['pcbasic=pcbasic:main']
     gui_scripts = []
 
 setup(
@@ -130,7 +132,7 @@ setup(
     # launchers
 
     entry_points={
-        'console_scripts': ['pcbasic=pcbasic:main'],
+        'console_scripts': console_scripts,
         'gui_scripts': gui_scripts,
     },
 
