@@ -49,32 +49,35 @@ class ExceptionGuard(object):
         except (error.Exit, error.Reset):
             raise
         except BaseException:
-            self._impl = session._impl
-            if not self._bluescreen(*sys.exc_info()):
+            if not self._bluescreen(session._impl, interface, *sys.exc_info()):
                 raise
             interface.pause(PAUSE_MESSAGE)
 
-    def _bluescreen(self, exc_type, exc_value, exc_traceback):
+    def _bluescreen(self, impl, iface, exc_type, exc_value, exc_traceback):
         """Display modal message"""
-        if not self._impl:
+        if not impl:
             return False
+        if iface:
+            iface_name = '%s, %s' % (type(iface._video).__name__, type(iface._audio).__name__)
+        else:
+            iface_name = '--'
         # log the standard python error
         stack = traceback.extract_tb(exc_traceback)
         logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         # obtain statement being executed
-        if self._impl.interpreter.run_mode:
-            codestream = self._impl.program.bytecode
+        if impl.interpreter.run_mode:
+            codestream = impl.program.bytecode
             bytepos = codestream.tell() - 1
-            from_line = self._impl.program.get_line_number(bytepos)
-            codestream.seek(self._impl.program.line_numbers[from_line]+1)
-            _, output, textpos = self._impl.lister.detokenise_line(codestream, bytepos)
+            from_line = impl.program.get_line_number(bytepos)
+            codestream.seek(impl.program.line_numbers[from_line]+1)
+            _, output, textpos = impl.lister.detokenise_line(codestream, bytepos)
             code_line = str(output)
         else:
-            self._impl.interpreter.direct_line.seek(0)
-            code_line = str(self._impl.lister.detokenise_compound_statement(
-                    self._impl.interpreter.direct_line)[0])
+            impl.interpreter.direct_line.seek(0)
+            code_line = str(impl.lister.detokenise_compound_statement(
+                    impl.interpreter.direct_line)[0])
         # stop program execution
-        self._impl.interpreter.set_pointer(False)
+        impl.interpreter.set_pointer(False)
         # create crash log file
         logname = datetime.now().strftime(LOG_PATTERN)
         logfile = tempfile.NamedTemporaryFile(
@@ -88,6 +91,8 @@ class ExceptionGuard(object):
             (0x1f, platform.python_version()),
             (0x17, '\nplatform  '),
             (0x1f, platform.platform()),
+            (0x17, '\ninterface '),
+            (0x1f, iface_name),
             (0x17, '\nstatement '),
             (0x1f, code_line + '\n\n'),
         ] + [
@@ -117,20 +122,20 @@ class ExceptionGuard(object):
             ''.join(text for _, text in message),
             ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
             '==== Screen Pages ='.ljust(100, '='),
-            str(self._impl.display.text_screen),
+            str(impl.display.text_screen),
             '==== Scalars ='.ljust(100, '='),
-            str(self._impl.scalars),
+            str(impl.scalars),
             '==== Arrays ='.ljust(100, '='),
-            str(self._impl.arrays),
+            str(impl.arrays),
             '==== Strings ='.ljust(100, '='),
-            str(self._impl.strings),
+            str(impl.strings),
             '==== Program Buffer ='.ljust(100, '='),
-            str(self._impl.program),
+            str(impl.program),
         ]
-        self._impl.program.bytecode.seek(1)
+        impl.program.bytecode.seek(1)
         crashlog.append('==== Program ='.ljust(100, '='))
         while True:
-            _, line, _ = self._impl.lister.detokenise_line(self._impl.program.bytecode)
+            _, line, _ = impl.lister.detokenise_line(impl.program.bytecode)
             if not line:
                 break
             crashlog.append(str(line))
@@ -138,20 +143,20 @@ class ExceptionGuard(object):
         crashlog.append(repr(self._uargv))
         # clear screen for modal message
         # choose attributes - this should be readable on VGA, MDA, PCjr etc.
-        self._impl.display.screen(0, 0, 0, 0, new_width=80)
-        self._impl.display.set_attr(0x17)
-        self._impl.display.set_border(1)
-        self._impl.display.text_screen.clear()
+        impl.display.screen(0, 0, 0, 0, new_width=80)
+        impl.display.set_attr(0x17)
+        impl.display.set_border(1)
+        impl.display.text_screen.clear()
         # show message on screen
         for attr, text in message:
-            self._impl.display.set_attr(attr)
-            self._impl.display.text_screen.write(text.replace('\n', '\r'))
+            impl.display.set_attr(attr)
+            impl.display.text_screen.write(text.replace('\n', '\r'))
         # write crash log
         crashlog = b'\n'.join(crashlog)
         with logfile as f:
             f.write(crashlog)
         # put on clipboard
         # note that log contains raw non-ascii bytes. don't risk codepage logic here, use cp437
-        self._impl.queues.video.put(signals.Event(
+        impl.queues.video.put(signals.Event(
                 signals.VIDEO_SET_CLIPBOARD_TEXT, (crashlog.decode('cp437', 'replace'), False)))
         return True
