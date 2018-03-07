@@ -6,9 +6,11 @@ Interface class
 This file is released under the GNU GPL version 3 or later.
 """
 
+import sys
 import Queue
 import threading
 import logging
+import traceback
 
 from ..basic.base import signals
 from .base import InitFailed, video_plugins, audio_plugins, WAIT_MESSAGE
@@ -67,6 +69,9 @@ class Interface(object):
             thread.start()
             # run the interface
             self.run()
+        except Exception as e:
+            logging.error('Fatal error in interface')
+            logging.error(''.join(traceback.format_exception(*sys.exc_info())))
         finally:
             self.quit_input()
             thread.join()
