@@ -1,6 +1,5 @@
 ### Installing PC-BASIC from the source distribution
-These instructions cover the steps needed to install the development version of PC-BASIC from the source TGZ distribution
-or directly from the Git repository.
+These instructions cover the steps needed to install the development version of PC-BASIC from source.
 
 #### You probably don't need to read this file ####
 General installation instructions for PC-BASIC can be found in `README.md`.
@@ -8,8 +7,7 @@ The instructions there cover the most common platforms and use cases. If the
 options described there are not applicable or you prefer to install from source,
 please consult the notes below.
 
-#### Installation from the Python distribution ####
-Download the Python distribution of PC-BASIC and unpack the TGZ archive.
+#### Required packages ####
 The following packages are needed or recommended when installing PC-BASIC from the Python distribution:
 
 | Package                                                                           | OS                 | Status       | Used for
@@ -21,56 +19,38 @@ The following packages are needed or recommended when installing PC-BASIC from t
 | [NumPy](https://sourceforge.net/projects/numpy/files/)                            | all                | recommended  | sound and graphics
 | [PySerial 3.4](https://pypi.python.org/pypi/pyserial)                             | all                | optional     | physical or emulated serial port access
 | [PyParallel 0.2](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/) | Windows, Linux     | optional     | physical parallel port access
-| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)                  | OSX, Linux, other  | optional     | `SHELL` command
+| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)                  | Mac, Linux, Unix   | optional     | `SHELL` command
 | [PyGame 1.9.3](http://www.pygame.org)                                             | all                | optional     | sound and graphics (PyGame interface)
 | [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                            | all                | experimental | sound (PortAudio engine)
 
-In this list, _other_ refers to operating systems other than Windows, Linux or OSX.
 
-On **Windows**, first install Python 2.7 from the web site linked on top. Most dependencies can then be installed with `pip`:
+Once you have a working Python installation, most dependencies can be installed with `pip`:
 
-        pip install pypiwin32 pysdl2 numpy pygame pyaudio pyserial
+        pip install pypiwin32 pysdl2 numpy pygame pyaudio pyserial pexpect
 
-If you require access to a physical parallel port, download PyParallel from the web site linked above.
+`setuptools` and `pip` are included with Python. If you require access to a physical parallel port,
+download PyParallel from the web site linked above. This is only supported on Windows and Linux.
+However, since most modern machines do not actually have parallel ports, you probably don't need it.
+PyParallel is _not_ needed for printing to a CUPS or Windows printer.
 
-The binary [ANSI|pipe](http://github.com/robhagemans/ansipipe/) executable `launcher.exe` is included with the source distribution.
-Please ensure the binary is placed in the directory where `setup.py` is located. You can now run PC-BASIC with the command `launcher python -m pcbasic`. Without ANSI|pipe, PC-BASIC will run but you will
-be unable to use the text-based interfaces (options `-t` and `-b`) as they will print only gibberish on the console.
+To use the graphical interface, you will also need to install the [`SDL2`](https://www.libsdl.org/download-2.0.php) library, which is _not_ included in the `pysdl2` package. Install the library in your OS's standard location. On Windows, you can alternatively place `sdl2.dll` in the `pcbasic\lib` directory.
 
-On **OSX**, there are several versions of Python 2.7 and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts or Homebrew.
-
-On **Linux distributions with APT or DNF** (including Debian, Ubuntu, Mint and Fedora), the install script will automatically install dependencies if it is run with root privileges.
-
-The install script can also be used on **other Unix** systems or when not installing as root. The dependencies can often be installed through your package manager. For example, on Debian-based systems:
-
-        sudo apt-get install python2.7 python-sdl2 python-numpy python-serial python-pexpect python-parallel
-
-On Fedora:
-
-        sudo dnf install python pysdl2 numpy pyserial python-pexpect
-
-On FreeBSD:
-
-        sudo pkg install python27 py27-sdl2 py27-numpy py27-serial py27-pexpect
-
-Note that PyParallel is not available from the Fedora and FreeBSD repos. PyParallel does not support BSD; on Fedora, you'll need to install from source if you need access to physical parallel ports. However, since most modern machines do not actually have parallel ports, you probably don't need it. PyParallel is _not_ needed for printing to a CUPS or Windows printer.
-
+The binary [ANSI|pipe](http://github.com/robhagemans/ansipipe/) executable `ansipipe-launcher.exe` is included with the source distribution in `pcbasic\lib`. Please use `pcbasic.bat` to start PC-BASIC with ANSI|pipe. Without it, PC-BASIC will run but you will be unable to use the text-based interfaces (options `-t` and `-b`) as they will print only gibberish on the console.
 
 #### External tools ####
-On Linux, OSX and other Unix-like systems, PC-BASIC can employ the following
-external command-line tools. The essential tools in this list are part of a standard system on
-the platform for which they are needed; the other tools are optional.
+On Unix systems, PC-BASIC can employ the following
+external command-line tools.
 
 | Tool                                      | OS                | Status      | Used for
 |-------------------------------------------|-------------------|-------------|---------------------------------
-| `lpr`                                     | OSX, Linux, other | essential   | printing to CUPS printers
-| `paps`                                    | OSX, Linux, other | recommended | improved Unicode support for CUPS printing
-| `pbcopy`  and  `pbpaste`                  | OSX               | optional    | clipboard operation with PyGame
-| `beep`                                    | OSX, Linux, other | optional    | sound in cli/text interface
+| `lpr`                                     | Mac, Linux, Unix  | essential   | printing to CUPS printers
+| `paps`                                    | Mac, Linux, Unix  | recommended | improved Unicode support for CUPS printing
+| `pbcopy`  and  `pbpaste`                  | Mac               | optional    | clipboard operation with PyGame
+| `beep`                                    | Mac, Linux, Unix  | optional    | sound in cli/text interface
 
 
 #### Building from GitHub source repository ####
-The Python distribution of PC-BASIC described above contains precompiled documentation and Windows binaries for SDL2, SDL2_gfx and ANSI|pipe.
+The Python distribution of PC-BASIC contains precompiled documentation files.
 If you wish to use the source code as-is in the Git repo,
 you'll need to build these yourself. Compiling the documentation requires the Python modules
 [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3) and [`markdown`](https://pypi.python.org/pypi/Markdown).
@@ -111,7 +91,7 @@ for those who prefer to use the MinGW GCC compiler, follow these steps:
         make
         gcc -shared -o SDL2_gfx.dll *.o SDL2.dll
 
-4. Place `sdl2.dll` and `sdl2_gfx.dll` in the `pcbasic\interface` directory.  
+4. Place `sdl2.dll` and `sdl2_gfx.dll` in the `pcbasic\lib` directory.  
 
 
 #### Installing with PyGame ####
