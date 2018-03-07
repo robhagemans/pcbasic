@@ -10,11 +10,11 @@ import logging
 import sys
 import os
 import datetime
-import platform
 import io
+from contextlib import contextmanager
 
-# kbhit() also appears in video_none.py
-if platform.system() == 'Windows':
+# kbhit() also appears in parports.py
+if sys.platform == 'win32':
     from msvcrt import kbhit
 else:
     import select
@@ -39,6 +39,22 @@ from .. import values
 from . import devicebase
 
 
+@contextmanager
+def safe_serial(err=error.DEVICE_IO_ERROR):
+    """Error-conversion wrapper for serial ports."""
+    try:
+        yield
+    except (EnvironmentError, SerialException) as e:
+        logging.error('COM port error: %s', e)
+        # not sure what GW-BASIC would throw here but DEVICE_IO_ERROR seems to fit
+        raise error.BASICError(err)
+    except ValueError as e:
+        # it seems this has happened with SocketSerial 2, may be solved in version 3
+        logging.debug('ValueError from serial module: %s', e)
+        logging.error('COM port error: %s', e)
+        raise error.BASICError(err)
+
+
 ###############################################################################
 # COM ports
 
@@ -53,7 +69,6 @@ class COMDevice(devicebase.Device):
         # for wait()
         self._queues = queues
         self._serial_in_size = serial_in_size
-        self._serial = None
         self._url = ''
         self._spec = arg
         self._serial = self._init_serial(arg)
@@ -72,12 +87,7 @@ class COMDevice(devicebase.Device):
         if self._file and self._file.is_open:
             raise error.BASICError(error.FILE_ALREADY_OPEN)
         else:
-            try:
-                self._open_serial(rs, cs, ds, cd)
-            except EnvironmentError as e:
-                # device timeout
-                logging.debug("Serial exception: %s", e)
-                raise error.BASICError(error.DEVICE_TIMEOUT)
+            self._open_serial(rs, cs, ds, cd)
         try:
             self.set_params(speed, parity, bytesize, stop)
         except Exception:
@@ -162,7 +172,8 @@ class COMDevice(devicebase.Device):
 
     def char_waiting(self):
         """Whether a char is present in buffer. For ON COM(n)."""
-        return self._serial and self._serial.in_waiting
+        with safe_serial():
+            return self._serial and self._serial.in_waiting
 
     ##########################################################################
 
@@ -214,24 +225,27 @@ class COMDevice(devicebase.Device):
     def _open_serial(self, rs=False, cs=1000, ds=1000, cd=0):
         """Open the serial connection."""
         self._check_open()
-        # handshake
+        # handshake - report as timeout if it fails
         # by default, RTS is up, DTR down
         # RTS can be suppressed, DTR only accessible through machine ports
         # https://lbpe.wikispaces.com/AccessingSerialPort
         if not rs:
-            self._serial.rts = True
+            with safe_serial(error.DEVICE_TIMEOUT):
+                self._serial.rts = True
         now = datetime.datetime.now()
         timeout_cts = now + datetime.timedelta(microseconds=cs)
         timeout_dsr = now + datetime.timedelta(microseconds=ds)
         timeout_cd = now + datetime.timedelta(microseconds=cd)
-        have_cts, have_dsr, have_cd = self._serial.cts, self._serial.dsr, self._serial.cd
+        with safe_serial(error.DEVICE_TIMEOUT):
+            have_cts, have_dsr, have_cd = self._serial.cts, self._serial.dsr, self._serial.cd
         while ((now < timeout_cts and not have_cts) and
                 (now < timeout_dsr and not have_dsr) and
                 (now < timeout_cd and not have_cd)):
             now = datetime.datetime.now()
-            have_cts = have_cts and self._serial.cts
-            have_dsr = have_dsr and self._serial.dsr
-            have_cts = have_cd and self._serial.cd
+            with safe_serial(error.DEVICE_TIMEOUT):
+                have_cts = have_cts and self._serial.cts
+                have_dsr = have_dsr and self._serial.dsr
+                have_cts = have_cd and self._serial.cd
             # give CPU some time off
             self._queues.wait()
         # only check for status if timeouts are set > 0
@@ -245,32 +259,36 @@ class COMDevice(devicebase.Device):
     def set_params(self, speed, parity, bytesize, stop):
         """Set serial port connection parameters."""
         self._check_open()
-        self._serial.baudrate = speed
-        self._serial.parity = parity
-        self._serial.bytesize = bytesize
-        self._serial.stopbits = stop
+        with safe_serial(error.DEVICE_FAULT):
+            self._serial.baudrate = speed
+            self._serial.parity = parity
+            self._serial.bytesize = bytesize
+            self._serial.stopbits = stop
 
     def get_params(self):
         """Get serial port connection parameters."""
         self._check_open()
-        return (self._serial.baudrate, self._serial.parity,
-                self._serial.bytesize, self._serial.stopbits)
+        with safe_serial(error.DEVICE_FAULT):
+            return (self._serial.baudrate, self._serial.parity,
+                    self._serial.bytesize, self._serial.stopbits)
 
     def set_pins(self, rts=None, dtr=None, brk=None):
         """Set signal pins."""
         self._check_open()
-        if rts is not None:
-            self._serial.rts = rts
-        if dtr is not None:
-            self._serial.dtr = dtr
-        if brk is not None:
-            self._serial.break_condition = brk
+        with safe_serial(error.DEVICE_FAULT):
+            if rts is not None:
+                self._serial.rts = rts
+            if dtr is not None:
+                self._serial.dtr = dtr
+            if brk is not None:
+                self._serial.break_condition = brk
 
     def get_pins(self):
         """Get signal pins."""
         self._check_open()
-        return (self._serial.cd, self._serial.ri,
-                self._serial.dsr, self._serial.cts)
+        with safe_serial(error.DEVICE_FAULT):
+            return (self._serial.cd, self._serial.ri,
+                    self._serial.dsr, self._serial.cts)
 
     def close(self):
         """Close the serial connection."""
@@ -280,8 +298,10 @@ class COMDevice(devicebase.Device):
     def io_waiting(self):
         """ Find out whether bytes are waiting for input or output. """
         self._check_open()
-        # socketserial has no out_waiting, though Serial does
-        return self._serial.in_waiting > 0, self._serial.out_waiting > 0
+        # no idea what the appropriate BASIC error would be
+        with safe_serial(error.DEVICE_FAULT):
+            # socketserial has no out_waiting, though Serial does
+            return self._serial.in_waiting > 0, self._serial.out_waiting > 0
 
 
 ###############################################################################
@@ -315,7 +335,8 @@ class COMFile(devicebase.TextFileBase):
         self._queues.wait()
         s, c = [], b''
         while not (num > -1 and len(s) >= num):
-            c, self.last = self.fhandle.read(1), c
+            with safe_serial():
+                c, self.last = self.fhandle.read(1), c
             if c:
                 s.append(c)
         return b''.join(s)
@@ -350,12 +371,10 @@ class COMFile(devicebase.TextFileBase):
 
     def write(self, s):
         """Write string to port."""
-        try:
-            if self._linefeed:
-                s = s.replace(b'\r', b'\r\n')
+        if self._linefeed:
+            s = s.replace(b'\r', b'\r\n')
+        with safe_serial():
             self.fhandle.write(s)
-        except (EnvironmentError, ValueError) as e:
-            raise error.BASICError(error.DEVICE_IO_ERROR)
 
     def get(self, num):
         """Read a record - GET."""
@@ -369,7 +388,8 @@ class COMFile(devicebase.TextFileBase):
 
     def loc(self):
         """LOC: Returns number of chars waiting to be read."""
-        return self.fhandle.in_waiting
+        with safe_serial():
+            return self.fhandle.in_waiting
 
     def eof(self):
         """EOF: no chars waiting."""
@@ -378,7 +398,8 @@ class COMFile(devicebase.TextFileBase):
 
     def lof(self):
         """Returns number of bytes free in buffer."""
-        return max(0, self._serial_in_size - self.fhandle.in_waiting)
+        with safe_serial():
+            return max(0, self._serial_in_size - self.fhandle.in_waiting)
 
     input_entry = devicebase.input_entry_realtime
 
@@ -419,6 +440,8 @@ class SerialStdIO(object):
     def read(self, num=1):
         """Non-blocking read of up to `num` chars from stdin."""
         s = []
+        # note that kbhit assumes keyboard
+        # so won't work with redirects on Windows
         while kbhit() and len(s) < num:
             c = sys.stdin.read(1)
             if self._crlf and c == '\n':

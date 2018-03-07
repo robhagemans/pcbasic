@@ -8,23 +8,12 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 import sys
-import platform
 import io
 
 try:
     import parallel
 except Exception:
     parallel = None
-
-# kbhit() also appears in video_none.py
-if platform.system() == 'Windows':
-    from msvcrt import kbhit
-else:
-    import select
-
-    def kbhit():
-        """Return whether a character is ready to be read from the keyboard."""
-        return select.select([sys.stdin], [], [], 0)[0] != []
 
 from ..base import error
 from . import devicebase
