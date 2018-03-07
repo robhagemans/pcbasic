@@ -24,11 +24,10 @@ If you find bugs, please [open an issue on GitHub](https://github.com/robhageman
 
 
 #### Installation ####
-Packaged distributions can be downloaded from one of the following locations:  
+Packaged distributions of the _stable version_ can be downloaded from one of the following locations:  
 
 - [PC-BASIC releases on GitHub](https://github.com/robhagemans/pcbasic/releases)  
 - [PC-BASIC releases on SourceForge](https://sourceforge.net/projects/pcbasic/files/)  
-- [PC-BASIC releases on PyPI](https://pypi.org/project/pcbasic/)
 
 On **Windows**:  
 
@@ -40,12 +39,19 @@ On **Mac**:
 - mount the disk image  
 - to start, double click the PC-BASIC app  
 
-On **any platform**:  
+On **Linux** and **other Unix**:  
+
+- untar the archive  
+- run `sudo ./install.sh`. You may be asked to install further dependencies through your OS's package management system.  
+- to start, click PC-BASIC in your Applications menu or run `pcbasic` on the command line.  
+
+The _development version_ can be obtained from [PyPI](https://pypi.org/project/pcbasic/).
+This is a command-line procedure for all platforms:  
 
 - `pip install pcbasic`
-- run `pcbasic` on the command line.  
+- `pcbasic`
 
-If the options above are not applicable or you prefer to install from source, please
+If the options above are not applicable or you prefer to install from the repository source by yourself: please
 consult [`INSTALL.md`](https://github.com/robhagemans/pcbasic/blob/master/INSTALL.md) for detailed instructions.
 
 

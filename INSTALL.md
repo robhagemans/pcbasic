@@ -1,5 +1,5 @@
 ### Installing PC-BASIC from the source distribution
-These instructions cover the steps needed to install PC-BASIC from the source TGZ distribution
+These instructions cover the steps needed to install the development version of PC-BASIC from the source TGZ distribution
 or directly from the Git repository.
 
 #### You probably don't need to read this file ####
