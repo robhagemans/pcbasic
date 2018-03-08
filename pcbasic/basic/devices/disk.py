@@ -282,38 +282,41 @@ class DiskDevice(object):
         # get full normalised path
         return os.path.abspath(path)
 
-    def chdir(self, name):
+    def chdir(self, dos_path):
         """Change working directory to given BASIC path."""
         # get drive path and relative path
-        dpath, rpath, _ = self._name_conv.native_path_elements(
-                name, error.PATH_NOT_FOUND, self._native_root, self._mixed_cwd, join_name=True)
+        _, native_relpath, _ = self._name_conv.native_path_elements(
+                dos_path, error.PATH_NOT_FOUND, self._native_root, self._mixed_cwd, join_name=True)
         # set cwd for the specified drive
-        self._mixed_cwd = rpath
+        #FIXME - now it's native?
+        self._mixed_cwd = native_relpath
 
-    def mkdir(self, name):
+    def mkdir(self, dos_path):
         """Create directory at given BASIC path."""
-        safe(os.mkdir, self._find_native_path(name, name_err=None, isdir=True))
+        safe(os.mkdir, self._find_native_path(dos_path, name_err=None, isdir=True))
 
-    def rmdir(self, name):
+    def rmdir(self, dos_path):
         """Remove directory at given BASIC path."""
-        safe(os.rmdir, self._find_native_path(name, name_err=error.PATH_NOT_FOUND, isdir=True))
+        safe(os.rmdir, self._find_native_path(dos_path, name_err=error.PATH_NOT_FOUND, isdir=True))
 
-    def kill(self, path):
+    def kill(self, dos_path):
         """Remove regular file at given native path."""
-        path = self._find_native_path(path, name_err=error.FILE_NOT_FOUND, isdir=False)
+        native_path = self._find_native_path(dos_path, name_err=error.FILE_NOT_FOUND, isdir=False)
         # don't delete open files
-        self._check_file_not_open(path)
-        safe(os.remove, path)
+        self._check_file_not_open(native_path)
+        safe(os.remove, native_path)
 
-    def rename(self, oldpath, newpath):
+    def rename(self, old_dospath, new_dospath):
         """Rename a file or directory."""
-        old_native = self._find_native_path(oldpath, name_err=error.FILE_NOT_FOUND, isdir=False)
-        new_native = self._find_native_path(newpath, name_err=None, isdir=False)
-        if os.path.exists(new_native):
+        old_native_path = self._find_native_path(
+                old_dospath, name_err=error.FILE_NOT_FOUND, isdir=False)
+        new_native_path = self._find_native_path(
+                new_dospath, name_err=None, isdir=False)
+        if os.path.exists(new_native_path):
             raise error.BASICError(error.FILE_ALREADY_EXISTS)
-        safe(os.rename, old_native, new_native)
+        safe(os.rename, old_native_path, new_native_path)
 
-    def _split_pathmask(self, pathmask):
+    def _split_pathmask(self, dos_pathmask):
         """Split pathmask into path and mask."""
         if not self._native_root:
             # undefined disk drive: file not found
@@ -321,22 +324,23 @@ class DiskDevice(object):
         # forward slashes - file not found
         # GW-BASIC sometimes allows leading or trailing slashes
         # and then does weird things I don't understand.
-        if b'/' in bytes(pathmask):
+        if b'/' in dos_pathmask:
             raise error.BASICError(error.FILE_NOT_FOUND)
-        drivepath, relpath, mask = self._name_conv.native_path_elements(
-                pathmask, error.FILE_NOT_FOUND, self._native_root, self._mixed_cwd)
-        path = os.path.join(drivepath, relpath)
-        mask = mask.upper() or b'*.*'
-        return path, relpath, mask
+        drivepath, native_relpath, native_mask = self._name_conv.native_path_elements(
+                dos_pathmask, error.FILE_NOT_FOUND, self._native_root, self._mixed_cwd)
+        native_path = os.path.join(drivepath, native_relpath)
+        #FIXME - pure ascii doesn't necessarily make sense here, use codepage?
+        dos_mask = native_mask.upper().encode(b'ascii', b'replace') or b'*.*'
+        return native_path, native_relpath, dos_mask
 
-    def _get_dirs_files(self, path):
+    def _get_dirs_files(self, native_path):
         """get native filenames for native path."""
-        all_names = safe(os.listdir, path)
-        dirs = [dosnames.filename_from_unicode(n)
-                for n in all_names if os.path.isdir(os.path.join(path, n))]
-        fils = [dosnames.filename_from_unicode(n)
-                for n in all_names if not os.path.isdir(os.path.join(path, n))]
-        return dirs, fils
+        all_names = safe(os.listdir, native_path)
+        dos_dirs = [dosnames.filename_from_unicode(n)
+                for n in all_names if os.path.isdir(os.path.join(native_path, n))]
+        dos_fils = [dosnames.filename_from_unicode(n)
+                for n in all_names if not os.path.isdir(os.path.join(native_path, n))]
+        return dos_dirs, dos_fils
 
     def listdir(self, pathmask):
         """Get directory listing."""
@@ -357,14 +361,15 @@ class DiskDevice(object):
             [dosnames.join_dosname(t, e, padding=True) + b'     ' for t, e in fils]
         )
 
+    #FIXME - mixed_cwd is a mess
     def get_cwd(self):
         """Return the current working directory in DOS format."""
         drivepath, relpath, _ = self._name_conv.native_path_elements(
                 b'', error.FILE_NOT_FOUND, self._native_root, self._mixed_cwd)
-        path = os.path.join(drivepath, relpath)
+        native_path = os.path.join(drivepath, relpath)
         if self._mixed_cwd:
             dir_elems = [
-                    dosnames.join_dosname(*dosnames.short_name(path, e))
+                    dosnames.join_dosname(*dosnames.short_name(native_path, e))
                     for e in self._mixed_cwd.split(os.sep)]
         else:
             dir_elems = []
@@ -387,11 +392,11 @@ class DiskDevice(object):
         native_name = self._find_native_path(dospath, name_err=error.FILE_NOT_FOUND, isdir=False)
         return self._check_file_not_open(native_name)
 
-    def _check_file_not_open(self, native_name):
+    def _check_file_not_open(self, native_path):
         """Raise an error if the file is open."""
         for f in self._locks.open_files.values():
             try:
-                if native_name == f.name:
+                if native_path == f.name:
                     raise error.BASICError(error.FILE_ALREADY_OPEN)
             except AttributeError as e:
                 # only disk files have a name, so ignore
