@@ -122,20 +122,29 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, locks, codepage, utf8, universal):
+    def __init__(self, letter, path, dos_cwd, locks, codepage, utf8, universal):
         """Initialise a disk device."""
         # DOS drive letter
         self.letter = letter
-        # current DOS working directory on this drive
-        # this is a DOS relative path, no drive letter; including leading \\
-        # stored with os.sep but given using backslash separators
-        self._mixed_cwd = os.path.join(*cwd.split(u'\\'))
         # mount root: this is a native filesystem path, using os.sep
         self._native_root = path
-        self._locks = locks
         # code page for file system names and text file conversion
         self._codepage = codepage
         self._name_conv = dosnames.NameConverter(codepage)
+        # current DOS working directory on this drive
+        # this is a DOS relative path, no drive letter; including leading \\
+        # stored with os.sep but given using backslash separators
+        self._native_cwd = u''
+        if self._native_root:
+            try:
+                _, self._native_cwd, _ = self._name_conv.native_path_elements(
+                        dos_cwd, error.PATH_NOT_FOUND, self._native_root, u'', join_name=True)
+            except error.BASICError:
+                logging.warning(
+                    'Could not open working directory %s on drive %s:. Using drive root instead.',
+                    dos_cwd, letter)
+
+        self._locks = locks
         # text file settings
         self._utf8 = utf8
         self._universal = universal
@@ -274,7 +283,7 @@ class DiskDevice(object):
         # substitute drives and cwds
         # always use Path Not Found error if not found at this stage
         drivepath, relpath, name = self._name_conv.native_path_elements(
-                path, error.PATH_NOT_FOUND, self._native_root, self._mixed_cwd)
+                path, error.PATH_NOT_FOUND, self._native_root, self._native_cwd)
         # return absolute path to file
         path = os.path.join(drivepath, relpath)
         if name:
@@ -286,10 +295,9 @@ class DiskDevice(object):
         """Change working directory to given BASIC path."""
         # get drive path and relative path
         _, native_relpath, _ = self._name_conv.native_path_elements(
-                dos_path, error.PATH_NOT_FOUND, self._native_root, self._mixed_cwd, join_name=True)
+                dos_path, error.PATH_NOT_FOUND, self._native_root, self._native_cwd, join_name=True)
         # set cwd for the specified drive
-        #FIXME - now it's native?
-        self._mixed_cwd = native_relpath
+        self._native_cwd = native_relpath
 
     def mkdir(self, dos_path):
         """Create directory at given BASIC path."""
@@ -327,7 +335,7 @@ class DiskDevice(object):
         if b'/' in dos_pathmask:
             raise error.BASICError(error.FILE_NOT_FOUND)
         drivepath, native_relpath, native_mask = self._name_conv.native_path_elements(
-                dos_pathmask, error.FILE_NOT_FOUND, self._native_root, self._mixed_cwd)
+                dos_pathmask, error.FILE_NOT_FOUND, self._native_root, self._native_cwd)
         native_path = os.path.join(drivepath, native_relpath)
         #FIXME - pure ascii doesn't necessarily make sense here, use codepage?
         dos_mask = native_mask.upper().encode(b'ascii', b'replace') or b'*.*'
@@ -361,18 +369,16 @@ class DiskDevice(object):
             [dosnames.join_dosname(t, e, padding=True) + b'     ' for t, e in fils]
         )
 
-    #FIXME - mixed_cwd is a mess
     def get_cwd(self):
         """Return the current working directory in DOS format."""
         drivepath, relpath, _ = self._name_conv.native_path_elements(
-                b'', error.FILE_NOT_FOUND, self._native_root, self._mixed_cwd)
+                b'', error.FILE_NOT_FOUND, self._native_root, self._native_cwd)
         native_path = os.path.join(drivepath, relpath)
-        if self._mixed_cwd:
-            dir_elems = [
-                    dosnames.join_dosname(*dosnames.short_name(native_path, e))
-                    for e in self._mixed_cwd.split(os.sep)]
-        else:
-            dir_elems = []
+        dir_elems = []
+        if self._native_cwd:
+            for e in self._native_cwd.split(os.sep):
+                dir_elems.append(dosnames.join_dosname(*dosnames.short_name(native_path, e)))
+                native_path += os.sep + e
         return self.letter + b':\\' + b'\\'.join(dir_elems)
 
     def get_free(self):

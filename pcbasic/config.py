@@ -657,8 +657,9 @@ class Settings(object):
                 # the last one that's specified will stick
                 try:
                     letter, path = a.split(u':', 1)
-                    letter = letter.encode(b'ascii', errors=b'replace').upper()
-                    path = os.path.realpath(path)
+                    letter = letter.encode('ascii', errors='replace').upper()
+                    # take abspath first to ensure unicode, realpath gives bytes for u'.'
+                    path = os.path.realpath(os.path.abspath(path))
                     if not os.path.isdir(path):
                         logging.warning(u'Could not mount %s', a)
                     else:
