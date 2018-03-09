@@ -1,3 +1,10 @@
+"""
+PC-BASIC - winsi
+DLL interface for ANSI escape sequences on Windows (formerly ansipipe)
+
+(c) 2018 Rob Hagemans
+This file is released under the GNU GPL version 3 or later.
+"""
 
 import sys
 
@@ -82,6 +89,7 @@ if sys.platform == 'win32' and sys.stdin.isatty():
 
     atexit.register(_close)
 
+    ##########################################################################
 
     # minimal replacements for tty.setraw() and termios.tcsa
     # using ansipipe-only escape sequences
