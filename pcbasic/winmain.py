@@ -48,7 +48,9 @@ def winmain():
         # instead just encode in utf-8 and make our main entry point assume that on Windows
         # note that all this would be much easier if we didn't go though anispipe launcher
         args = [arg.encode('utf-8') for arg in args]
-        os.chdir('..')
+        # needed if called from repo source without pythonpath set
+        # don't do os.chdir ans we need it for z: 
+        sys.path.append(os.path.join(startdir, '..'))
         subprocess.call([launcher, sys.executable, '-m', 'pcbasic'] + args[1:])
     else:
         from .main import main
