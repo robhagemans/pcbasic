@@ -54,13 +54,15 @@ class XClipboard(Clipboard):
     def __init__(self):
         """Check for presence of xsel or xclip."""
         check = "command -v %s >/dev/null 2>&1"
-        if subprocess.call(check % 'xsel', shell=True) == 0:
-            self._command = 'xsel'
-            self._notmouse = ['-b']
-            self.ok = True
-        elif subprocess.call(check % 'xclip', shell=True) == 0:
+        if subprocess.call(check % 'xclip', shell=True) == 0:
             self._command = 'xclip'
             self._notmouse = ['-selection', 'clipboard']
+            self.ok = True
+        elif subprocess.call(check % 'xsel', shell=True) == 0:
+            # note that xsl has a bug that makes chromium/atom hang on paste
+            # https://github.com/electron/electron/issues/3116
+            self._command = 'xsel'
+            self._notmouse = ['-b']
             self.ok = True
         else:
             self.ok = False
@@ -71,8 +73,7 @@ class XClipboard(Clipboard):
             output = subprocess.check_output((self._command, '-o'))
         else:
             output = subprocess.check_output([self._command, '-o'] + self._notmouse)
-        return (output.decode(ENCODING, 'replace')
-                .replace('\r\n','\r').replace('\n', '\r'))
+        return (output.decode(ENCODING, 'replace').replace('\r\n','\r').replace('\n', '\r'))
 
     def copy(self, text, mouse=False):
         """Put unicode text on clipboard."""

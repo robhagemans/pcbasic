@@ -1,6 +1,6 @@
 
 NAME = u'PC-BASIC'
-VERSION = u'16.12.0rc0'
+VERSION = u'2.0.dev2'
 COPYRIGHT = u'(C) Copyright 2013--2018 Rob Hagemans.'
 LICENCE = u'GPLv3'
 AUTHOR = u'Rob Hagemans'

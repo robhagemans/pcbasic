@@ -24,34 +24,21 @@ If you find bugs, please [open an issue on GitHub](https://github.com/robhageman
 
 
 #### Installation ####
-Packaged distributions can be downloaded from one of the following locations:  
+The _stable release_ is preferred for desktop use. It can be downloaded from one of the following locations:  
 
 - [PC-BASIC releases on GitHub](https://github.com/robhagemans/pcbasic/releases)  
 - [PC-BASIC releases on SourceForge](https://sourceforge.net/projects/pcbasic/files/)  
 
-On **Windows**:  
+Installers are provided in the form of a Windows `.exe` and a Mac OS `.dmg` which can be installed in the usual way for those platforms. For Linux and other Unix-based systems, a `.tgz` archive is provided which includes an install script. Please consult the documentation inside the package for further instructions.
 
-- run the installer  
-- to start, click PC-BASIC in your Start menu  
+Python users can obtain _development releases_ from [PyPI](https://pypi.org/project/pcbasic/) through `pip install pcbasic`.
 
-On **Mac**:  
-
-- mount the disk image  
-- to start, double click the PC-BASIC app  
-
-On **Linux** and **other Unix**:  
-
-- untar the archive  
-- run `sudo ./install.sh`. You may be asked to install further dependencies through your OS's package management system.  
-- to start, click PC-BASIC in your Applications menu or run `pcbasic` on the command line.  
-
-If the options above are not applicable or you prefer to install from source, please
+If the options above are not applicable or if you prefer to install from the repository source by yourself: please
 consult [`INSTALL.md`](https://github.com/robhagemans/pcbasic/blob/master/INSTALL.md) for detailed instructions.
 
 
 #### BASIC survival kit ####
-Click on the PC-BASIC application icon or run `pcbasic` on the Windows, OSX or Linux command
-line and PC-BASIC will start in direct mode with no program loaded. The default emulation target is
+Click on the PC-BASIC application icon or run `pcbasic` on the command prompt to start PC-BASIC. The default emulation target is
 GW-BASIC 3.23 on a generic IBM-compatible PC with a VGA video card.  
 
 PC-BASIC starts in direct mode, a 1980s-style interface operated by executing
@@ -59,10 +46,10 @@ BASIC commands directly. There is no menu, nor are there any of the visual clues
 that we've come to expect of modern software.  
 
 A few essential commands to help you get around:  
-`LOAD "PROGRAM"` loads the program file named `PROGRAM.BAS` into memory, but does not run it yet.  
+`LOAD "PROGRAM"` loads the program file named `PROGRAM.BAS` into memory.  
 `LIST` displays the BASIC code of the current program.  
 `RUN` starts the current program.  
-`SAVE "PROGRAM",A` saves the current program to a human-readable text file named `PROGRAM.BAS`.  
+`SAVE "PROGRAM",A` saves the current program to a text file named `PROGRAM.BAS`.  
 `NEW` immediately deletes the current program from memory.  
 `SYSTEM` exits PC-BASIC immediately, discarding any unsaved program or data.  
 
@@ -71,12 +58,12 @@ to interrupt a running program and return to direct mode.
 
 
 #### Program location ####
-By default, PC-BASIC looks for programs in your home folder.  
+If started through the start-menu shortcut, PC-BASIC looks for programs in the shortcut's start-in folder. By default, this will be your home folder.
 
 - On **Windows**, this is usually a folder with your user name, located under `C:\Users\`. You can find this folder in Windows Explorer by typing `%USERPROFILE%` in the address bar.
 - On **Mac** and **Linux** this is the directory `~/`.
 
-See [the documentation on accessing your drives](http://pc-basic.org/doc#mounting) for more information.
+If started from the command prompt, PC-BASIC looks for programs in the current working directory. See [the documentation on accessing your drives](http://pc-basic.org/doc#mounting) for more information.
 
 
 #### Configuration ####
@@ -88,20 +75,10 @@ You can supply options to change PC-BASIC's behaviour by editing the configurati
 | Mac        | `~/Library/Application Support/pcbasic/PCBASIC.INI`  
 | Linux      | `~/.config/pcbasic/PCBASIC.INI`  
 
-For example, to start with the emulation target set to Tandy 1000 GW-BASIC, include the following line under `[pcbasic]` in the configuration file:
-
-    preset=tandy
-
 A default configuration file will be created the first time you run PC-BASIC. See the comments in that file or consult the [documentation](http://pc-basic.org/doc#settings) for more information and example options.
 
-If you start PC-BASIC from the command prompt (on Windows this is the `C:\>` prompt), you can supply configuration options directly. For example:  
+If you start PC-BASIC from the command prompt (on Windows this is the `C:\>` prompt), you can supply configuration options directly. Run `pcbasic -h` on the command prompt to see a list of available command-line options.  
 
-`pcbasic PROGRAM.BAS` runs the program file named `PROGRAM.BAS` directly.  
-`pcbasic --preset=tandy` starts with the emulation target set to Tandy GW-BASIC on a Tandy 1000.  
-`pcbasic --preset=pcjr` starts with the emulation target set to Cartridge BASIC on an IBM PCjr.  
-`pcbasic -h` shows all available command line options.  
-
-If you use PC-BASIC from the command prompt on Windows, make sure you run the `pcbasic.com` binary. You will not see any output if you call the `pcbasic.exe` binary.
 
 #### External resources ####
 The following pages have GW-BASIC program downloads, lots of information and further links.  

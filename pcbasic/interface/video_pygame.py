@@ -701,11 +701,9 @@ class PygameClipboard(clipboard.Clipboard):
 
 def get_clipboard_handler():
     """Get a working Clipboard handler object."""
-    # Pygame.Scrap doesn't work on OSX and is buggy on Linux; avoid if we can
+    # Pygame.Scrap doesn't work on OSX
     if platform.system() == 'Darwin':
         handler = clipboard.MacClipboard()
-    elif platform.system() != 'Windows' and clipboard.XClipboard().ok:
-        handler = clipboard.XClipboard()
     else:
         handler = PygameClipboard()
     if not handler.ok:

@@ -23,10 +23,9 @@ with open(path.join(
 # implement build_docs command
 # see http://seasonofcode.com/posts/how-to-add-custom-build-steps-and-commands-to-setup-py.html
 
+import setuptools.command.sdist
 import distutils.cmd
-import setuptools.command.build_py
 
-import docsrc.prepare
 
 class BuildDocCommand(distutils.cmd.Command):
     """ Command to build the documentation."""
@@ -36,7 +35,8 @@ class BuildDocCommand(distutils.cmd.Command):
 
     def run(self):
         """ Run build_docs command. """
-        docsrc.prepare.build_docs()
+        from docsrc.prepare import build_docs
+        build_docs()
 
     def initialize_options(self):
         """ Set default values for options. """
@@ -47,13 +47,13 @@ class BuildDocCommand(distutils.cmd.Command):
         pass
 
 
-class BuildPyCommand(setuptools.command.build_py.build_py):
-    """ Custom build command. """
+class SDistCommand(setuptools.command.sdist.sdist):
+    """ Custom sdist command. """
 
     def run(self):
-        """ Run build_py command. """
+        """ Run sdist command. """
         self.run_command('build_docs')
-        setuptools.command.build_py.build_py.run(self)
+        setuptools.command.sdist.sdist.run(self)
 
 
 ###############################################################################
@@ -61,8 +61,23 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
 # see https://github.com/pypa/sampleproject
 
 from setuptools import setup, find_packages
+#from cx_Freeze import setup, Executable
+import platform
+
+# platform-specific settings
+if platform.system() == 'Windows':
+    platform_specific_requirements = ['pywin32']
+    console_scripts = ['pcbasic=pcbasic:winmain']
+    gui_scripts = ['pcbasicw=pcbasic:main']
+else:
+    platform_specific_requirements = ['pexpect']
+    console_scripts = ['pcbasic=pcbasic:main']
+    gui_scripts = []
 
 setup(
+
+    # metadata
+
     name='pcbasic',
     version=VERSION,
     description=DESCRIPTION,
@@ -76,43 +91,65 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: End Users/Desktop',
+        'Intended Audience :: Developers',
         'Topic :: System :: Emulators',
+        'Topic :: Software Development :: Interpreters',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 2.7',
     ],
 
     keywords='emulator interpreter basic retro legacy gwbasic basica pcjr tandy',
-    packages=find_packages(exclude=['doc', 'test', 'docsrc', 'packaging', 'patches']),
 
-    # List run-time dependencies here.  These will be installed by pip when
-    # your project is installed. For an analysis of "install_requires" vs pip's
-    # requirements files see:
-    # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['sdl2', 'numpy', 'pyserial', 'pexpect'],
+    # contents
 
-    # List additional groups of dependencies here (e.g. development
-    # dependencies). You can install these using the following syntax,
-    # for example:
-    # $ pip install -e .[dev,test]
-    #extras_require={
-    #    'dev': ['check-manifest'],
-    #    'test': ['coverage'],
-    #},
+    packages=find_packages(exclude=['doc', 'test', 'docsrc', 'packaging']),
 
+    # rule of thumb for sdist: package_data specifies what gets *installed*,
+    # but manifest specifies what gets *included* in the archive in the first place
     package_data={
-        'pcbasic': ['*.BAS', '*.ucp', '*.hex', '*.txt', '*.md'],
+        'pcbasic': [
+                '*.txt', '*.md', 'pcbasic/*.txt', 'pcbasic/data/codepages/*',
+                'pcbasic/data/fonts/*', 'pcbasic/data/programs/*',
+                'pcbasic/lib/*',
+            ],
     },
-    entry_points={
-        'console_scripts': [
-            'pcbasic=pcbasic:main',
-        ],
-        'gui_scripts': [
-            'pcbasic=pcbasic:main',
-        ],
 
+    include_package_data=True,
+
+    # requirements
+
+    # need a Python-2 that's 2.7.12 or better
+    python_requires='~=2.7.12',
+
+    install_requires=['PySDL2', 'numpy', 'pyserial'] + platform_specific_requirements,
+
+    # use e.g. pip install -e .[dev,full]
+    extras_require={
+        'dev': ['lxml', 'markdown', 'pylint', 'coverage'],
+        'full': ['pygame', 'pyaudio'],
     },
+
+    # launchers
+
+    entry_points={
+        'console_scripts': console_scripts,
+        'gui_scripts': gui_scripts,
+    },
+
+    # setup commands
+
     cmdclass={
         'build_docs': BuildDocCommand,
-        'build_py': BuildPyCommand,
+        'sdist': SDistCommand,
     },
+
+    # cx_Freeze options
+    #
+    # options={'build_exe': {
+    #             'packages': ['numpy'],
+    #             'excludes': ['tkinter', 'tcltk', 'nose', 'PIL', 'PyQt4', 'scipy', 'pygame'],
+    #             #'optimize': 2,
+    #             },
+    #         },
+    # executables = [Executable('run.py', base=None)],
 )

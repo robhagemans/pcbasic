@@ -12,9 +12,8 @@ See LICENSE.md or http://opensource.org/licenses/mit-license.php
 
 import os
 import sys
-import platform
 
-if platform.system() == 'Windows':
+if sys.platform == 'win32':
     pid = os.getpid()
 
     # construct named pipe names

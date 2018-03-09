@@ -20,8 +20,9 @@ if platform.system() == 'Windows' and 'PYSDL2_DLL_PATH' not in os.environ:
         # (__file__ is undefined in pyinstaller packages)
         os.environ['PYSDL2_DLL_PATH'] = os.path.dirname(sys.executable)
     else:
-        # unpackaged: get the directory of the video_sdl2 module
-        os.environ['PYSDL2_DLL_PATH'] = os.path.dirname(os.path.realpath(__file__))
+        # unpackaged: get the directory of the video_sdl2 module in ../lib
+        os.environ['PYSDL2_DLL_PATH'] = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), '..', 'lib')
 
 try:
     import sdl2
@@ -57,7 +58,6 @@ BLINK_CYCLES = 5
 # ms duration of a blink
 BLINK_TIME = 120
 CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
-
 
 
 ###############################################################################
@@ -347,26 +347,10 @@ class SDL2Clipboard(clipboard.Clipboard):
         text = sdl2.SDL_GetClipboardText()
         if text is None:
             return u''
-        return text.decode('utf-8', 'replace').replace('\r\n', '\n').replace('\n', '\r')
-
-
-def _get_clipboard_handler():
-    """Get a working Clipboard handler object."""
-    # only use the SDL clipboard on Windows or Linus if xclip/xsel not available
-    if platform.system() == 'Darwin':
-        handler = clipboard.MacClipboard()
-    elif platform.system() != 'Windows' and clipboard.XClipboard().ok:
-        handler = clipboard.XClipboard()
-    else:
-        handler = SDL2Clipboard()
-    if not handler.ok:
-        logging.warning('Clipboard copy and paste not available.')
-        handler = clipboard.Clipboard()
-    return handler
+        return text.decode('utf-8', 'replace').replace(u'\r\n', u'\n').replace(u'\n', u'\r')
 
 
 ###############################################################################
-
 
 def _pixels2d(psurface):
     """Creates a 2D pixel array view of the passed 8-bit surface."""
@@ -464,7 +448,7 @@ class VideoSDL2(VideoPlugin):
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
         # set clipboard handler to SDL2
-        self._clipboard_handler = _get_clipboard_handler()
+        self._clipboard_handler = SDL2Clipboard()
         # display palettes for blink states 0, 1
         self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         self._saved_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]

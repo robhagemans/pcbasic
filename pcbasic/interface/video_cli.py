@@ -33,6 +33,30 @@ else:
 
 ENCODING = sys.stdin.encoding or 'utf-8'
 
+# escape sequence to scancode
+ESC_TO_SCAN = {
+    ansi.F1: scancode.F1,  ansi.F2: scancode.F2,  ansi.F3: scancode.F3,  ansi.F4: scancode.F4,
+    ansi.F1_OLD: scancode.F1,  ansi.F2_OLD: scancode.F2,  ansi.F3_OLD: scancode.F3,
+    ansi.F4_OLD: scancode.F4,  ansi.F5: scancode.F5,  ansi.F6: scancode.F6,  ansi.F7: scancode.F7,
+    ansi.F8: scancode.F8,  ansi.F9: scancode.F9,  ansi.F10: scancode.F10,  ansi.F11: scancode.F11,
+    ansi.F12: scancode.F12,  ansi.END: scancode.END,  ansi.END2: scancode.END,
+    ansi.HOME: scancode.HOME,  ansi.HOME2: scancode.HOME,  ansi.UP: scancode.UP,
+    ansi.DOWN: scancode.DOWN,  ansi.RIGHT: scancode.RIGHT,  ansi.LEFT: scancode.LEFT,
+    ansi.INSERT: scancode.INSERT,  ansi.DELETE: scancode.DELETE,  ansi.PAGEUP: scancode.PAGEUP,
+    ansi.PAGEDOWN: scancode.PAGEDOWN,
+    }
+
+# escape sequence to e-ASCII
+ESC_TO_EASCII = {
+    ansi.F1: uea.F1,  ansi.F2: uea.F2,  ansi.F3: uea.F3,  ansi.F4: uea.F4,  ansi.F1_OLD: uea.F1,
+    ansi.F2_OLD: uea.F2,  ansi.F3_OLD: uea.F3,  ansi.F4_OLD: uea.F4,  ansi.F5: uea.F5,
+    ansi.F6: uea.F6,  ansi.F7: uea.F7,  ansi.F8: uea.F8,  ansi.F9: uea.F9,  ansi.F10: uea.F10,
+    ansi.F11: uea.F11,  ansi.F12: uea.F12,  ansi.END: uea.END,  ansi.END2: uea.END,
+    ansi.HOME: uea.HOME,  ansi.HOME2: uea.HOME,  ansi.UP: uea.UP,  ansi.DOWN: uea.DOWN,
+    ansi.RIGHT: uea.RIGHT,  ansi.LEFT: uea.LEFT,  ansi.INSERT: uea.INSERT,
+    ansi.DELETE: uea.DELETE,  ansi.PAGEUP: uea.PAGEUP,  ansi.PAGEDOWN: uea.PAGEDOWN,
+    }
+
 
 @video_plugins.register('cli')
 class VideoCLI(VideoPlugin):
@@ -265,8 +289,8 @@ class InputHandlerCLI(object):
         while (more > 0) and (cutoff > 0):
             if esc:
                 # return the first recognised escape sequence
-                uc = esc_to_eascii.get(s, '')
-                scan = esc_to_scan.get(s, None)
+                uc = ESC_TO_EASCII.get(s, '')
+                scan = ESC_TO_SCAN.get(s, None)
                 if uc or scan:
                     return uc, scan
             else:
@@ -286,68 +310,3 @@ class InputHandlerCLI(object):
         # no sequence or decodable string found
         # decode as good as it gets
         return s.decode(ENCODING, errors='replace'), None
-
-
-
-# escape sequence to scancode dictionary
-esc_to_scan = {
-    ansi.F1: scancode.F1,
-    ansi.F2: scancode.F2,
-    ansi.F3: scancode.F3,
-    ansi.F4: scancode.F4,
-    ansi.F1_OLD: scancode.F1,
-    ansi.F2_OLD: scancode.F2,
-    ansi.F3_OLD: scancode.F3,
-    ansi.F4_OLD: scancode.F4,
-    ansi.F5: scancode.F5,
-    ansi.F6: scancode.F6,
-    ansi.F7: scancode.F7,
-    ansi.F8: scancode.F8,
-    ansi.F9: scancode.F9,
-    ansi.F10: scancode.F10,
-    ansi.F11: scancode.F11,
-    ansi.F12: scancode.F12,
-    ansi.END: scancode.END,
-    ansi.END2: scancode.END,
-    ansi.HOME: scancode.HOME,
-    ansi.HOME2: scancode.HOME,
-    ansi.UP: scancode.UP,
-    ansi.DOWN: scancode.DOWN,
-    ansi.RIGHT: scancode.RIGHT,
-    ansi.LEFT: scancode.LEFT,
-    ansi.INSERT: scancode.INSERT,
-    ansi.DELETE: scancode.DELETE,
-    ansi.PAGEUP: scancode.PAGEUP,
-    ansi.PAGEDOWN: scancode.PAGEDOWN,
-    }
-
-esc_to_eascii = {
-    ansi.F1: uea.F1,
-    ansi.F2: uea.F2,
-    ansi.F3: uea.F3,
-    ansi.F4: uea.F4,
-    ansi.F1_OLD: uea.F1,
-    ansi.F2_OLD: uea.F2,
-    ansi.F3_OLD: uea.F3,
-    ansi.F4_OLD: uea.F4,
-    ansi.F5: uea.F5,
-    ansi.F6: uea.F6,
-    ansi.F7: uea.F7,
-    ansi.F8: uea.F8,
-    ansi.F9: uea.F9,
-    ansi.F10: uea.F10,
-    ansi.F11: uea.F11,
-    ansi.F12: uea.F12,
-    ansi.END: uea.END,
-    ansi.END2: uea.END,
-    ansi.HOME: uea.HOME,
-    ansi.HOME2: uea.HOME,
-    ansi.UP: uea.UP,
-    ansi.DOWN: uea.DOWN,
-    ansi.RIGHT: uea.RIGHT,
-    ansi.LEFT: uea.LEFT,
-    ansi.INSERT: uea.INSERT,
-    ansi.DELETE: uea.DELETE,
-    ansi.PAGEUP: uea.PAGEUP,
-    ansi.PAGEDOWN: uea.PAGEDOWN,
-    }

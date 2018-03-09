@@ -21,8 +21,7 @@ import pkg_resources
 from collections import deque
 
 if platform.system() == b'Windows':
-    import ctypes
-    import ctypes.wintypes
+    # can use ctypes instead?
     import win32api
 
 from .basic.metadata import VERSION, NAME
@@ -32,7 +31,10 @@ from . import data
 
 MIN_PYTHON_VERSION = (2, 7, 12)
 
-BASENAME = u'pcbasic-dev'
+# base directory name
+MAJOR_VERSION = u'.'.join(VERSION.split(u'.')[:2])
+BASENAME = u'pcbasic-{0}'.format(MAJOR_VERSION)
+
 # user configuration and state directories
 HOME_DIR = os.path.expanduser(u'~')
 if platform.system() == b'Windows':
@@ -63,29 +65,6 @@ def get_logger(logfile=None):
     h.setFormatter(logging.Formatter(u'%(levelname)s: %(message)s'))
     l.addHandler(h)
     return l
-
-def get_unicode_argv():
-    """Convert command-line arguments to unicode."""
-    if platform.system() == b'Windows':
-        # see http://code.activestate.com/recipes/572200-get-sysargv-with-unicode-characters-under-windows/
-        GetCommandLineW = ctypes.cdll.kernel32.GetCommandLineW
-        GetCommandLineW.argtypes = []
-        GetCommandLineW.restype = ctypes.wintypes.LPCWSTR
-        cmd = GetCommandLineW()
-        argc = ctypes.c_int(0)
-        CommandLineToArgvW = ctypes.windll.shell32.CommandLineToArgvW
-        CommandLineToArgvW.argtypes = [ctypes.wintypes.LPCWSTR, ctypes.POINTER(ctypes.c_int)]
-        CommandLineToArgvW.restype = ctypes.POINTER(ctypes.wintypes.LPWSTR)
-        argv = CommandLineToArgvW(cmd, ctypes.byref(argc))
-        argv = [argv[i] for i in xrange(argc.value)]
-        # clip off the python interpreter call, if we use it
-        # anything that didn't get included in sys.argv is not for us either
-        argv = argv[-len(sys.argv):]
-        return argv
-    else:
-        # the official parameter should be LC_CTYPE but that's None in my locale
-        # on windows, this would only work if the mbcs CP_ACP includes the characters we need
-        return [arg.decode(locale.getpreferredencoding()) for arg in sys.argv]
 
 def append_arg(args, key, value):
     """Update a single list-type argument by appending a value."""
@@ -344,10 +323,10 @@ class Settings(object):
 
     def __init__(self, temp_dir, arguments):
         """Initialise settings."""
-        # convert arguments to unicode using preferred encoding
-        self.uargv = [''] + list(arguments) if arguments else get_unicode_argv()
+        # arguments should be unicode
+        self._uargv = list(arguments or ())
         # first parse a logfile argument, if any
-        for args in self.uargv:
+        for args in self._uargv:
             if args[:9] == u'--logfile':
                 logfile = args[10:]
                 break
@@ -371,7 +350,7 @@ class Settings(object):
             # unpack bundled programs
             store_bundled_programs(PROGRAM_PATH)
         # store options in options dictionary
-        self._options = self._retrieve_options(self.uargv)
+        self._options = self._retrieve_options(self._uargv)
         # prepare global logger for use by main program
         self._prepare_logging()
         # initial validations
@@ -399,7 +378,7 @@ class Settings(object):
     def _retrieve_options(self, uargv):
         """Retrieve command line and option file options."""
         # convert command line arguments to string dictionary form
-        remaining = self._get_arguments(uargv[1:])
+        remaining = self._get_arguments(uargv)
         # unpack any packages
         package = self._parse_package(remaining)
         # get preset groups from specified config file
@@ -598,7 +577,7 @@ class Settings(object):
     def guard_params(self):
         """Dict of exception guard parameters."""
         return {
-            'uargv': self.uargv,
+            'uargv': self._uargv,
             'log_dir': STATE_PATH,
             }
 

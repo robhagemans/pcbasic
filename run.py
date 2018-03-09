@@ -7,5 +7,9 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
-from pcbasic import main
+import sys
+if sys.platform == 'win32':
+    from pcbasic import winmain as main
+else:
+    from pcbasic import main
 main()

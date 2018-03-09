@@ -46,7 +46,7 @@ def show_platform_info():
                 logging.info('%s: available', module)
     if platform.system() != 'Windows':
         logging.info('\nEXTERNAL TOOLS')
-        tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
+        tools = ('lpr', 'paps', 'beep', 'pbcopy', 'pbpaste')
         for tool in tools:
             try:
                 location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')

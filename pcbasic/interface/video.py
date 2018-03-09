@@ -69,15 +69,16 @@ class VideoPlugin(object):
                 signal = self._video_queue.get(False)
             except Queue.Empty:
                 return True
+            # putting task_done before the execution avoids hanging on join() after an exception
+            self._video_queue.task_done()
             if signal.event_type == signals.VIDEO_QUIT:
-                # close thread after task_done
+                # close thread
                 self.alive = False
             else:
                 try:
                     self._handlers[signal.event_type](*signal.params)
                 except KeyError:
                     pass
-            self._video_queue.task_done()
 
     # plugin overrides
 
