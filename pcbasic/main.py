@@ -28,12 +28,6 @@ from .interface import Interface, InitFailed
 
 def main(*arguments):
     """Wrapper for run() to deal with argv encodings, Ctrl-C, stdio and pipes."""
-    if not arguments:
-        # - the official parameter should be LC_CTYPE but that's None in my locale
-        # - on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-        #   instead we should run through winmain() which does the dirty work
-        encoding = locale.getpreferredencoding()
-        arguments = (arg.decode(encoding) for arg in sys.argv[1:])
     try:
         run(*arguments)
     except KeyboardInterrupt:
