@@ -7,8 +7,10 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import Queue
+import os
 
 from .base import error
+from .devices import NameWrapper
 from . import implementation
 
 
@@ -60,7 +62,13 @@ class Session(object):
         self.start()
         if isinstance(name, unicode):
             name = self._impl.codepage.str_from_unicode(name)
-        return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
+        # if a file name, resolve
+        if not isinstance(file_name_or_object, basestring) or os.path.isfile(file_name_or_object):
+            return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
+        # not resolved, try as internal name
+        if isinstance(file_name_or_object, unicode):
+            return NameWrapper(self._impl.codepage.str_from_unicode(file_name_or_object))
+        return NameWrapper(file_name_or_object)
 
     def execute(self, command):
         """Execute a BASIC statement."""

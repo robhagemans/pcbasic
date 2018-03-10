@@ -400,6 +400,7 @@ class BoundFile(object):
     """Bound internal file."""
 
     def __init__(self, device, file_name_or_object, name):
+        """Initialise."""
         self._device = device
         self._file = file_name_or_object
         self._name = name
@@ -425,6 +426,25 @@ class BoundFile(object):
     def __str__(self):
         """Get BASIC file name."""
         return b'%s:%s' % (self._device.letter, self._name)
+
+
+class NameWrapper(object):
+    """Use normal file name as return value from bind_file."""
+
+    def __init__(self, name):
+        """Initialise."""
+        self._file = name
+
+    def __enter__(self):
+        """Context guard."""
+        return self
+
+    def __exit__(self, *dummies):
+        """Context guard."""
+
+    def __str__(self):
+        """Get BASIC file name."""
+        return self._file
 
 
 class InternalDiskDevice(DiskDevice):
