@@ -112,9 +112,10 @@ class ExceptionGuard(object):
             (0x17,  'If possible, please attach the log file\n  '),
             (0x1f,  logfile.name.encode('ascii', errors='replace')),
             (0x17,  '\nThank you!\n\n'),
-            (0x70,  'This message has been copied onto the clipboard. You can paste it with Ctrl-V.'),
-            (0x17, '\n\nPress a key to close this window.\n'),
+            (0x17,  'Press a key to close this window.'),
         ]
+        bottom = (0x70,
+            'This message has been copied onto the clipboard. You can paste it with Ctrl-V.')
         # create crash log
         crashlog = [
             'PC-BASIC crash log',
@@ -151,6 +152,10 @@ class ExceptionGuard(object):
         for attr, text in message:
             impl.display.set_attr(attr)
             impl.display.text_screen.write(text.replace('\n', '\r'))
+        impl.display.text_screen._bottom_row_allowed = True
+        impl.display.text_screen.set_pos(25, 1)
+        impl.display.set_attr(bottom[0])
+        impl.display.text_screen.write(bottom[1])
         # write crash log
         crashlog = b'\n'.join(crashlog)
         with logfile as f:
