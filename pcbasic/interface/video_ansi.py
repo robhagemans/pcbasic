@@ -62,10 +62,6 @@ class VideoANSI(video_cli.VideoCLI):
 
     def _work(self):
         """Handle screen and interface events."""
-        if self.cursor_visible and self.last_pos != (self.cursor_row, self.cursor_col):
-            sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
-            sys.stdout.flush()
-            self.last_pos = (self.cursor_row, self.cursor_col)
 
     def _redraw(self):
         """Redraw the screen."""
@@ -147,9 +143,11 @@ class VideoANSI(video_cli.VideoCLI):
             self.last_pos = (self.cursor_row, self.cursor_col)
             sys.stdout.flush()
 
-    def move_cursor(self, crow, ccol):
+    def move_cursor(self, row, col):
         """Move the cursor to a new position."""
-        self.cursor_row, self.cursor_col = crow, ccol
+        if (row, col) != (self.cursor_row, self.cursor_col):
+            self.cursor_row, self.cursor_col = row, col
+            sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
@@ -189,13 +187,13 @@ class VideoANSI(video_cli.VideoCLI):
             self.text[pagenum][row-1][col] = u'', (fore, back, blink, underline)
         if self.vpagenum != pagenum:
             return
-        sys.stdout.write(ansi.MOVE_CURSOR % (row, col))
+        if (row, col) != (self.cursor_row, self.cursor_col):
+            sys.stdout.write(ansi.MOVE_CURSOR % (row, col))
         self._set_attributes(fore, back, blink, underline)
         sys.stdout.write(char.encode(ENCODING, 'replace'))
         if is_fullwidth:
             sys.stdout.write(' ')
-        sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
-        self.last_pos = (self.cursor_row, self.cursor_col)
+        self.cursor_row, self.cursor_col = row, col+1
         sys.stdout.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
