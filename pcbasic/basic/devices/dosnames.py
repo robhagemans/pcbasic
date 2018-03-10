@@ -32,20 +32,25 @@ class NameConverter(object):
         if not native_root:
             # this drive letter is not available (not mounted)
             raise error.BASICError(error.PATH_NOT_FOUND)
-        ####
-        # get path below drive letter
-        dospath = self._codepage.str_to_unicode(dospath, box_protect=False)
-        dospath_elements = dospath.split(u'\\')
+        # split to path elements
+        dospath_elements = dospath.split(b'\\')
+        # strip whitespace
+        dospath_elements = [e.strip() for e in dospath_elements]
+        # convert to unicode
+        dospath_elements = [
+            self._codepage.str_to_unicode(e, box_protect=False)
+            for e in dospath_elements]
+        # construct path relative to root
+
         if dospath and dospath[0] == u'\\':
             # absolute path specified
             elements = dospath_elements
         else:
             elements = native_cwd.split(os.sep) + dospath_elements
-        # strip whitespace
-        elements = [e.strip() for e in elements]
         ####
         # parse internal .. and . (like normpath but with \\ and dosnames)
         elements = dos_normpath(elements)
+
         # prepend drive root path to allow filename matching
         path = native_root
         baselen = len(path) + (path[-1] != os.sep)
