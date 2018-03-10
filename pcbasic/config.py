@@ -347,7 +347,6 @@ class Settings(object):
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
     }
 
-
     def __init__(self, temp_dir, arguments):
         """Initialise settings."""
         # arguments should be unicode
@@ -403,7 +402,17 @@ class Settings(object):
                 loglevel = logging.DEBUG
             else:
                 loglevel = logging.INFO
-        logging.basicConfig(format=formatstr, level=loglevel, filename=logfile, datefmt='%H:%M:%S')
+        # o dear o dear what a horrible API
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            root_logger.removeHandler(handler)
+        root_logger.setLevel(loglevel)
+        if logfile:
+            handler = logging.FileHandler(logfile, mode=b'w')
+        else:
+            handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(fmt=formatstr, datefmt='%H:%M:%S'))
+        root_logger.addHandler(handler)
 
     def _retrieve_options(self, uargv):
         """Retrieve command line and option file options."""

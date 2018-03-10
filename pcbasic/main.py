@@ -22,7 +22,7 @@ from . import basic
 from . import state
 from . import config
 from .guard import ExceptionGuard, NOGUARD
-from .basic import __version__
+from .basic import __version__, debug
 from .interface import Interface, InitFailed
 
 
@@ -77,7 +77,6 @@ def show_version(settings):
     """Show version with optional debugging details."""
     sys.stdout.write(__version__ + '\n')
     if settings.debug:
-        from pcbasic.basic import debug
         debug.show_platform_info()
 
 def convert(settings):
