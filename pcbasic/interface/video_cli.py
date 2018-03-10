@@ -112,17 +112,15 @@ class VideoCLI(VideoPlugin):
                 self._input_queue.put(signals.Event(signals.KEYB_QUIT))
             elif uc == u'\x7f':
                 # backspace
-                self._input_queue.put(signals.Event(signals.KEYB_DOWN,
-                                        (uea.BACKSPACE, scancode.BACKSPACE, [])))
+                self._input_queue.put(
+                        signals.Event(signals.KEYB_DOWN, (uea.BACKSPACE, scancode.BACKSPACE, [])))
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
-                self._input_queue.put(signals.Event(
-                                        signals.KEYB_DOWN, (uc, sc, [])))
+                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (uc, sc, [])))
                 if sc == scancode.F12:
                     self.f12_active = True
                 else:
-                    self._input_queue.put(signals.Event(
-                                            signals.KEYB_UP, (scancode.F12,)))
+                    self._input_queue.put(signals.Event(signals.KEYB_UP, (scancode.F12,)))
                     self.f12_active = False
 
     def _term_echo(self, on=True):
@@ -235,11 +233,13 @@ class VideoCLI(VideoPlugin):
             # show what's on the line where we are.
             self._redraw_row(self.cursor_row)
         if col != self.last_col:
-            sys.stdout.write(ansi.MOVE_N_LEFT % (self.last_col-col))
-            sys.stdout.write(ansi.MOVE_N_RIGHT % (col-self.last_col))
-            sys.stdout.flush()
+            if self.last_col > col:
+                sys.stdout.write(ansi.MOVE_N_LEFT % (self.last_col-col))
+                sys.stdout.flush()
+            elif self.last_col < col:
+                sys.stdout.write(ansi.MOVE_N_RIGHT % (col-self.last_col))
+                sys.stdout.flush()
             self.last_col = col
-
 
 
 ###############################################################################
