@@ -25,28 +25,30 @@ class NameConverter(object):
         self._codepage = codepage
 
     def native_path_elements(
-            self, path_without_drive, path_err,
-            native_root, native_cwd, join_name=False):
+            self, dospath, path_err, native_root, native_cwd, join_name=False):
         """Return list of elements of the native path for a given BASIC path."""
-        path_without_drive = self._codepage.str_to_unicode(
-                bytes(path_without_drive), box_protect=False)
-        if u'/' in path_without_drive:
+        if b'/' in dospath:
             # bad file number - this is what GW produces here
             raise error.BASICError(error.BAD_FILE_NUMBER)
         if not native_root:
             # this drive letter is not available (not mounted)
             raise error.BASICError(error.PATH_NOT_FOUND)
+        ####
         # get path below drive letter
-        if path_without_drive and path_without_drive[0] == u'\\':
+        dospath = self._codepage.str_to_unicode(dospath, box_protect=False)
+        dospath_elements = dospath.split(u'\\')
+        if dospath and dospath[0] == u'\\':
             # absolute path specified
-            elements = path_without_drive.split(u'\\')
+            elements = dospath_elements
         else:
-            elements = native_cwd.split(os.sep) + path_without_drive.split(u'\\')
+            elements = native_cwd.split(os.sep) + dospath_elements
         # strip whitespace
         elements = [e.strip() for e in elements]
+        ####
         # whatever's after the last \\ is the name of the subject file or dir
         # if the path ends in \\, there's no name
         name = u'' if (join_name or not elements) else elements.pop()
+        ####
         # parse internal .. and . (like normpath but with \\ and dosnames)
         elements = dos_normpath(elements)
         # prepend drive root path to allow filename matching
@@ -59,6 +61,7 @@ class NameConverter(object):
                 # find a matching directory for every step in the path;
                 # append found name to path
                 path = os.path.join(path, match_filename(e, b'', path, name_err=path_err, isdir=True))
+        ####
         # return drive root path, relative path, file name
         return path[:baselen], path[baselen:], name
 
