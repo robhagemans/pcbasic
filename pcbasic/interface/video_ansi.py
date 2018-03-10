@@ -145,6 +145,7 @@ class VideoANSI(video_cli.VideoCLI):
         if (row, col) != (self.cursor_row, self.cursor_col):
             self.cursor_row, self.cursor_col = row, col
             sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
+            sys.stdout.flush()
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
