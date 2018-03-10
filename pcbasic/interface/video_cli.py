@@ -110,20 +110,17 @@ class VideoCLI(VideoTextBase):
         """Initialise command-line interface."""
         VideoTextBase.__init__(self, input_queue, video_queue)
         # current row and column for cursor
-        self.cursor_row = 1
-        self.cursor_col = 1
+        self._cursor_row, self._cursor_col = 1, 1
         # last row and column printed on
-        self.last_row = None
-        self.last_col = None
+        self._last_row, self._last_col = None, None
         # text buffer
-        self.num_pages = 1
-        self.vpagenum, self.apagenum = 0, 0
-        self.text = [[[u' ']*80 for _ in range(25)]]
+        self._vpagenum, self._apagenum = 0, 0
+        self._text = [[[u' '] * 80 for _ in range(25)]]
 
     def __exit__(self, type, value, traceback):
         """Close command-line interface."""
         try:
-            if self.last_col and self.cursor_col != self.last_col:
+            if self._last_col and self._cursor_col != self._last_col:
                 sys.stdout.write('\n')
         finally:
             VideoTextBase.__exit__(self, type, value, traceback)
@@ -140,68 +137,73 @@ class VideoCLI(VideoTextBase):
         """Put a character at a given position."""
         if char == u'\0':
             char = u' '
-        self.text[pagenum][row-1][col-1] = char
+        self._text[pagenum][row-1][col-1] = char
         if is_fullwidth:
-            self.text[pagenum][row-1][col] = u''
-        if self.vpagenum != pagenum:
+            self._text[pagenum][row-1][col] = u''
+        if self._vpagenum != pagenum:
             return
         if suppress_cli:
             return
         self._update_position(row, col)
         sys.stdout.write(char.encode(ENCODING, 'replace'))
         sys.stdout.flush()
-        self.last_col += 2 if is_fullwidth else 1
+        self._last_col += 2 if is_fullwidth else 1
 
-    def move_cursor(self, crow, ccol):
+    def move_cursor(self, row, col):
         """Move the cursor to a new position."""
-        self.cursor_row, self.cursor_col = crow, ccol
+        self._cursor_row, self._cursor_col = row, col
 
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
-        self.text[self.apagenum][start-1:stop] = [
-            [u' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
-        if (start <= self.cursor_row and stop >= self.cursor_row and
-                    self.vpagenum == self.apagenum):
-            self._update_position(self.cursor_row, 1)
+        self._text[self._apagenum][start-1:stop] = [
+                [u' '] * len(self._text[self._apagenum][0])
+                for _ in range(start-1, stop)
+            ]
+        if (self._vpagenum == self._apagenum and
+                start <= self._cursor_row and stop >= self._cursor_row):
+            self._update_position(self._cursor_row, 1)
             sys.stdout.write(ansi.CLEAR_LINE)
             sys.stdout.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
-        self.text[self.apagenum][from_line-1:scroll_height] = (
-                self.text[self.apagenum][from_line:scroll_height]
-                + [[u' ']*len(self.text[self.apagenum][0])])
-        if self.vpagenum != self.apagenum:
+        self._text[self._apagenum][from_line-1:scroll_height] = (
+                self._text[self._apagenum][from_line:scroll_height]
+                + [[u' '] * len(self._text[self._apagenum][0])]
+            )
+        if self._vpagenum != self._apagenum:
             return
         sys.stdout.write('\r\n')
         sys.stdout.flush()
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
-        self.text[self.apagenum][from_line-1:scroll_height] = (
-                [[u' ']*len(self.text[self.apagenum][0])] +
-                self.text[self.apagenum][from_line-1:scroll_height-1])
+        self._text[self._apagenum][from_line-1:scroll_height] = (
+                [[u' '] * len(self._text[self._apagenum][0])] +
+                self._text[self._apagenum][from_line-1:scroll_height-1]
+            )
 
     def set_mode(self, mode_info):
         """Initialise video mode """
-        self.num_pages = mode_info.num_pages
-        self.text = [[[u' ']*mode_info.width for _ in range(mode_info.height)]
-                                            for _ in range(self.num_pages)]
+        self._text = [
+                [[u' '] * mode_info.width for _ in range(mode_info.height)]
+                for _ in range(mode_info.num_pages)
+            ]
 
     def set_page(self, new_vpagenum, new_apagenum):
         """Set visible and active page."""
-        self.vpagenum, self.apagenum = new_vpagenum, new_apagenum
-        self._redraw_row(self.cursor_row)
+        self._vpagenum, self._apagenum = new_vpagenum, new_apagenum
+        self._redraw_row(self._cursor_row)
 
     def copy_page(self, src, dst):
         """Copy screen pages."""
-        self.text[dst] = [row[:] for row in self.text[src]]
-        if dst == self.vpagenum:
-            self._redraw_row(self.cursor_row)
+        self._text[dst] = [row[:] for row in self._text[src]]
+        if dst == self._vpagenum:
+            self._redraw_row(self._cursor_row)
 
     def _redraw_row(self, row):
         """Draw the stored text in a row."""
-        rowtext = u''.join(self.text[self.vpagenum][row-1]).encode(ENCODING, 'replace')
+        rowtext = u''.join(self._text[self._vpagenum][row-1]).encode(ENCODING, 'replace')
         sys.stdout.write(rowtext)
         sys.stdout.write(ansi.MOVE_N_LEFT % len(rowtext))
         sys.stdout.flush()
@@ -209,32 +211,32 @@ class VideoCLI(VideoTextBase):
     def _update_position(self, row=None, col=None):
         """Update screen for new cursor position."""
         # this happens on resume
-        if self.last_row is None:
-            self.last_row = self.cursor_row
-            self._redraw_row(self.cursor_row)
-        if self.last_col is None:
-            self.last_col = self.cursor_col
+        if self._last_row is None:
+            self._last_row = self._cursor_row
+            self._redraw_row(self._cursor_row)
+        if self._last_col is None:
+            self._last_col = self._cursor_col
         # allow updating without moving the cursor
         if row is None:
-            row = self.cursor_row
+            row = self._cursor_row
         if col is None:
-            col = self.cursor_col
+            col = self._cursor_col
         # move cursor if necessary
-        if row != self.last_row:
+        if row != self._last_row:
             sys.stdout.write('\r\n')
             sys.stdout.flush()
-            self.last_col = 1
-            self.last_row = row
+            self._last_col = 1
+            self._last_row = row
             # show what's on the line where we are.
-            self._redraw_row(self.cursor_row)
-        if col != self.last_col:
-            if self.last_col > col:
-                sys.stdout.write(ansi.MOVE_N_LEFT % (self.last_col-col))
+            self._redraw_row(self._cursor_row)
+        if col != self._last_col:
+            if self._last_col > col:
+                sys.stdout.write(ansi.MOVE_N_LEFT % (self._last_col-col))
                 sys.stdout.flush()
-            elif self.last_col < col:
-                sys.stdout.write(ansi.MOVE_N_RIGHT % (col-self.last_col))
+            elif self._last_col < col:
+                sys.stdout.write(ansi.MOVE_N_RIGHT % (col-self._last_col))
                 sys.stdout.flush()
-            self.last_col = col
+            self._last_col = col
 
 
 ###############################################################################
@@ -249,11 +251,12 @@ class InputHandlerCLI(object):
     def __init__(self, queue):
         """Start the keyboard reader."""
         self._input_queue = queue
+        self._f12_active = False
         self._launch_thread()
 
     def _launch_thread(self):
         """Start the keyboard reader thread."""
-        self.stdin_q = Queue.Queue()
+        self._stdin_q = Queue.Queue()
         t = threading.Thread(target=self._read_stdin)
         t.daemon = True
         t.start()
@@ -261,14 +264,14 @@ class InputHandlerCLI(object):
     def _read_stdin(self):
         """Wait for stdin and put any input on the queue."""
         while True:
-            self.stdin_q.put(sys.stdin.read(1))
+            self._stdin_q.put(sys.stdin.read(1))
             # don't be a hog
             time.sleep(0.0001)
 
     def _getc(self):
         """Read character from keyboard, non-blocking."""
         try:
-            return self.stdin_q.get_nowait()
+            return self._stdin_q.get_nowait()
         except Queue.Empty:
             return ''
 
@@ -276,7 +279,7 @@ class InputHandlerCLI(object):
         """Handle keyboard events."""
         while True:
             # s is one unicode char or one scancode
-            uc, sc = self.get_key()
+            uc, sc = self._get_key()
             if not uc and not sc:
                 break
             if uc == EOF:
@@ -289,8 +292,14 @@ class InputHandlerCLI(object):
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
                 self._input_queue.put(signals.Event(signals.KEYB_DOWN, (uc, sc, [])))
+                # this is needed since we don't send key-up events at all otherwise
+                if sc == scancode.F12:
+                    self._f12_active = True
+                elif self._f12_active:
+                    self._input_queue.put(signals.Event(signals.KEYB_UP, (scancode.F12,)))
+                    self._f12_active = False
 
-    def get_key(self):
+    def _get_key(self):
         """Retrieve one scancode sequence or one unicode char from keyboard."""
         s = self._getc()
         if s == '':
