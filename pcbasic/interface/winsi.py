@@ -12,6 +12,7 @@ if sys.platform == 'win32' and sys.stdin.isatty():
     import ctypes
     import atexit
     import os
+    import logging
 
     if hasattr(sys, 'frozen'):
         # we're a package: get the directory of the packaged executable
@@ -20,7 +21,11 @@ if sys.platform == 'win32' and sys.stdin.isatty():
     else:
         DLLPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'lib')
 
-    dll = ctypes.CDLL(os.path.join(DLLPATH, 'winsi.dll'))
+    try:
+        dll = ctypes.CDLL(os.path.join(DLLPATH, 'winsi.dll'))
+    except OSError as e:
+        logging.error('Failed to link winsi.dll: %s', e)
+        raise ImportError('Failed to link winsi.dll: %s' % e)
 
     BUFFER_LENGTH = 1024
     BUFFER = ctypes.create_string_buffer(BUFFER_LENGTH)

@@ -20,12 +20,16 @@ from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 
 if platform.system() == 'Windows':
-    from . import winsi
+    try:
+        from . import winsi
+    except ImportError:
+        winsi = None
     tty = winsi
     termios = winsi
     # Ctrl+Z to exit
     EOF = uea.CTRL_z
 else:
+    winsi = True
     import tty, termios
     # Ctrl+D to exit
     EOF = uea.CTRL_d
@@ -68,6 +72,8 @@ class VideoTextBase(VideoPlugin):
                 raise InitFailed('Text-based interface requires a terminal (tty).')
         except AttributeError:
             pass
+        if not winsi:
+            raise InitFailed('Module `winsi` not found.')
         VideoPlugin.__init__(self, input_queue, video_queue)
         self._term_echo_on = True
         self._term_attr = None
