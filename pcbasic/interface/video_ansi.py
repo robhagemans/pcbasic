@@ -17,11 +17,12 @@ from . import ansi
 
 
 @video_plugins.register('ansi')
-class VideoANSI(video_cli.VideoCLI):
+class VideoANSI(video_cli.VideoTextBase):
     """Text interface implemented with ANSI escape sequences."""
 
     def __init__(self, input_queue, video_queue, caption=u'', **kwargs):
         """Initialise the text interface."""
+        video_cli.VideoTextBase.__init__(self, input_queue, video_queue)
         self.caption = caption
         self.set_caption_message('')
         # cursor is visible
@@ -33,39 +34,38 @@ class VideoANSI(video_cli.VideoCLI):
         self.cursor_col = 1
         # last used colour attributes
         self.last_attributes = None
-        # last position
-        self.last_pos = None
         # text and colour buffer
         self.num_pages = 1
         self.vpagenum, self.apagenum = 0, 0
         self.height = 25
         self.width = 80
         self._set_default_colours(16)
-        video_cli.VideoCLI.__init__(self, input_queue, video_queue)
         self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
-        # prevent logger from defacing the screen
         self.logger = logging.getLogger()
+        sys.stdout.flush()
+
+    def __enter__(self):
+        """Open ANSI interface."""
+        video_cli.VideoTextBase.__enter__(self)
+        # prevent logger from defacing the screen
         if logging.getLogger().handlers[0].stream.name == sys.stderr.name:
             self.logger.disabled = True
 
     def __exit__(self, type, value, traceback):
-        """Close the text interface."""
-        VideoPlugin.__exit__(self, type, value, traceback)
-        sys.stdout.write(ansi.SET_COLOUR % 0)
-        sys.stdout.write(ansi.CLEAR_SCREEN)
-        sys.stdout.write(ansi.MOVE_CURSOR % (1, 1))
-        self.show_cursor(True)
-        sys.stdout.flush()
-        # re-enable logger
-        self.logger.disabled = False
-        self._term_echo()
+        """Close ANSI interface."""
+        try:
+            sys.stdout.write(ansi.SET_COLOUR % 0)
+            sys.stdout.write(ansi.CLEAR_SCREEN)
+            sys.stdout.write(ansi.MOVE_CURSOR % (1, 1))
+            self.show_cursor(True)
+            sys.stdout.flush()
+            # re-enable logger
+            self.logger.disabled = False
+        finally:
+            video_cli.VideoTextBase.__exit__(self, type, value, traceback)
 
     def _work(self):
         """Handle screen and interface events."""
-        if self.cursor_visible and self.last_pos != (self.cursor_row, self.cursor_col):
-            sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
-            sys.stdout.flush()
-            self.last_pos = (self.cursor_row, self.cursor_col)
 
     def _redraw(self):
         """Redraw the screen."""
@@ -144,12 +144,14 @@ class VideoANSI(video_cli.VideoCLI):
                 sys.stdout.write(ansi.MOVE_CURSOR % (r, 1))
                 sys.stdout.write(ansi.CLEAR_LINE)
             sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
-            self.last_pos = (self.cursor_row, self.cursor_col)
             sys.stdout.flush()
 
-    def move_cursor(self, crow, ccol):
+    def move_cursor(self, row, col):
         """Move the cursor to a new position."""
-        self.cursor_row, self.cursor_col = crow, ccol
+        if (row, col) != (self.cursor_row, self.cursor_col):
+            self.cursor_row, self.cursor_col = row, col
+            sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
+            sys.stdout.flush()
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
@@ -164,7 +166,6 @@ class VideoANSI(video_cli.VideoCLI):
         else:
             # force move when made visible again
             sys.stdout.write(ansi.HIDE_CURSOR)
-            self.last_pos = None
         sys.stdout.flush()
 
     def set_cursor_shape(self, width, height, from_line, to_line):
@@ -189,13 +190,13 @@ class VideoANSI(video_cli.VideoCLI):
             self.text[pagenum][row-1][col] = u'', (fore, back, blink, underline)
         if self.vpagenum != pagenum:
             return
-        sys.stdout.write(ansi.MOVE_CURSOR % (row, col))
+        if (row, col) != (self.cursor_row, self.cursor_col):
+            sys.stdout.write(ansi.MOVE_CURSOR % (row, col))
         self._set_attributes(fore, back, blink, underline)
         sys.stdout.write(char.encode(ENCODING, 'replace'))
         if is_fullwidth:
             sys.stdout.write(' ')
-        sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
-        self.last_pos = (self.cursor_row, self.cursor_col)
+        self.cursor_row, self.cursor_col = row, col+1
         sys.stdout.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):

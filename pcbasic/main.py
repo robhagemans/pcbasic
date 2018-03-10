@@ -18,24 +18,16 @@ import traceback
 # NOTE that this affects str.upper() etc.
 locale.setlocale(locale.LC_ALL, '')
 
-from . import ansipipe
 from . import basic
 from . import state
 from . import config
 from .guard import ExceptionGuard, NOGUARD
-from .basic import __version__
+from .basic import __version__, debug
 from .interface import Interface, InitFailed
 
 
 def main(*arguments):
     """Wrapper for run() to deal with argv encodings, Ctrl-C, stdio and pipes."""
-    if not arguments:
-        # - the official parameter should be LC_CTYPE but that's None in my locale
-        # - on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-        #   instead we should run through winmain() which does the dirty work
-        #   and then calls main() with utf-8 encoding
-        encoding = 'utf-8' if sys.platform == 'win32' else locale.getpreferredencoding()
-        arguments = (arg.decode(encoding) for arg in sys.argv[1:])
     try:
         run(*arguments)
     except KeyboardInterrupt:
@@ -85,7 +77,6 @@ def show_version(settings):
     """Show version with optional debugging details."""
     sys.stdout.write(__version__ + '\n')
     if settings.debug:
-        from pcbasic.basic import debug
         debug.show_platform_info()
 
 def convert(settings):

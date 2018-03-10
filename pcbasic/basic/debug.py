@@ -15,6 +15,7 @@ import platform
 import struct
 import tempfile
 import subprocess
+import importlib
 
 from .base import error
 from . import values
@@ -28,17 +29,19 @@ def show_platform_info():
     logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
     logging.info('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
-    modules = ('numpy', 'win32api', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
+    modules = (
+        'numpy', 'win32api', 'pcbasic.interface.winsi', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
     for module in modules:
         try:
-            m = __import__(module)
+            m = importlib.import_module(module)
         except ImportError:
             logging.info('%s: --', module)
         else:
             for version_attr in ('__version__', 'version', 'VERSION'):
                 try:
+                    name = module.split('.')[-1]
                     version = getattr(m, version_attr)
-                    logging.info('%s: %s', module, version)
+                    logging.info('%s: %s', name, version)
                     break
                 except AttributeError:
                     pass

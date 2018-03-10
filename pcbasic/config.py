@@ -91,6 +91,33 @@ def store_bundled_programs(PROGRAM_PATH):
             f.write(data.read_program_file(name))
 
 
+def get_unicode_argv():
+    """Convert command-line arguments to unicode."""
+    if sys.platform == 'win32':
+        # we need to go to the Windows API as argv may not be in a full unicode encoding
+        # note that this will not be necessary in Python 3 where sys.argv is unicode
+        # http://code.activestate.com/recipes/572200-get-sysargv-with-unicode-characters-under-windows/
+        from ctypes import cdll, windll, POINTER, c_int, byref
+        from ctypes.wintypes import LPCWSTR, LPWSTR
+        GetCommandLineW = cdll.kernel32.GetCommandLineW
+        GetCommandLineW.argtypes = []
+        GetCommandLineW.restype = LPCWSTR
+        cmd = GetCommandLineW()
+        argc = c_int(0)
+        CommandLineToArgvW = windll.shell32.CommandLineToArgvW
+        CommandLineToArgvW.argtypes = [LPCWSTR, POINTER(c_int)]
+        CommandLineToArgvW.restype = POINTER(LPWSTR)
+        argv = CommandLineToArgvW(cmd, byref(argc))
+        argv = [argv[i] for i in xrange(argc.value)]
+        # clip off the python interpreter call, if we use it
+        # anything that didn't get included in sys.argv is not for us either
+        argv = argv[-len(sys.argv):]
+        return argv
+    else:
+        # the official parameter should be LC_CTYPE but that's None in my locale
+        # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
+        return [arg.decode(locale.getpreferredencoding()) for arg in sys.argv]
+
 class TemporaryDirectory():
     """Temporary directory context guard like in Python 3 tempfile."""
 
@@ -320,11 +347,13 @@ class Settings(object):
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
     }
 
-
     def __init__(self, temp_dir, arguments):
         """Initialise settings."""
         # arguments should be unicode
-        self._uargv = list(arguments or ())
+        if not arguments:
+            self._uargv = get_unicode_argv()[1:]
+        else:
+            self._uargv = list(arguments)
         # first parse a logfile argument, if any
         for args in self._uargv:
             if args[:9] == u'--logfile':
@@ -373,7 +402,17 @@ class Settings(object):
                 loglevel = logging.DEBUG
             else:
                 loglevel = logging.INFO
-        logging.basicConfig(format=formatstr, level=loglevel, filename=logfile, datefmt='%H:%M:%S')
+        # o dear o dear what a horrible API
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            root_logger.removeHandler(handler)
+        root_logger.setLevel(loglevel)
+        if logfile:
+            handler = logging.FileHandler(logfile, mode=b'w')
+        else:
+            handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(fmt=formatstr, datefmt='%H:%M:%S'))
+        root_logger.addHandler(handler)
 
     def _retrieve_options(self, uargv):
         """Retrieve command line and option file options."""

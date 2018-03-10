@@ -15,4 +15,3 @@ __path__ = [os.path.abspath(e) for e in __path__]
 
 from .basic import Session, metadata, __version__
 from .main import run, main
-from .winmain import winmain

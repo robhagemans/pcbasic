@@ -46,6 +46,9 @@ SET_COLOUR = b'\x1B[%im'
 SET_TITLE = b'\x1B]2;%s\a'
 MOVE_RIGHT = b'\x1B[C'
 MOVE_LEFT = b'\x1B[D'
+MOVE_N_RIGHT = b'\x1B[%iC'
+MOVE_N_LEFT = b'\x1B[%iD'
+
 
 # keystrokes
 F1 = b'\x1BOP'
