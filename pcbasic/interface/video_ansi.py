@@ -33,8 +33,6 @@ class VideoANSI(video_cli.VideoCLI):
         self.cursor_col = 1
         # last used colour attributes
         self.last_attributes = None
-        # last position
-        self.last_pos = None
         # text and colour buffer
         self.num_pages = 1
         self.vpagenum, self.apagenum = 0, 0
@@ -140,7 +138,6 @@ class VideoANSI(video_cli.VideoCLI):
                 sys.stdout.write(ansi.MOVE_CURSOR % (r, 1))
                 sys.stdout.write(ansi.CLEAR_LINE)
             sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
-            self.last_pos = (self.cursor_row, self.cursor_col)
             sys.stdout.flush()
 
     def move_cursor(self, row, col):
@@ -162,7 +159,6 @@ class VideoANSI(video_cli.VideoCLI):
         else:
             # force move when made visible again
             sys.stdout.write(ansi.HIDE_CURSOR)
-            self.last_pos = None
         sys.stdout.flush()
 
     def set_cursor_shape(self, width, height, from_line, to_line):
