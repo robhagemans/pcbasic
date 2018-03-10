@@ -138,9 +138,7 @@ class VideoCLI(VideoTextBase):
 
     ###############################################################################
 
-    def put_glyph(
-            self, pagenum, row, col, char, is_fullwidth,
-            fore, back, blink, underline, suppress_cli):
+    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""
         if char == u'\0':
             char = u' '

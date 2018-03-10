@@ -995,9 +995,7 @@ class VideoSDL2(VideoPlugin):
         pixels[x0:x1, old_y0:new_y0] = numpy.full((x1-x0, new_y0-old_y0), back_attr, dtype=int)
         self.busy = True
 
-    def put_glyph(
-            self, pagenum, row, col, cp, is_fullwidth,
-            fore, back, blink, underline, suppress_cli):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing

@@ -554,9 +554,7 @@ class VideoPygame(VideoPlugin):
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
-    def put_glyph(
-            self, pagenum, row, col, cp, is_fullwidth,
-            fore, back, blink, underline, suppress_cli):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline):
         """Put a single-byte character at a given position."""
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
