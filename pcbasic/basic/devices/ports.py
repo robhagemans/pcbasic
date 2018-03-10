@@ -27,12 +27,13 @@ try:
     import serial
     # use the old VERSION constant as __version__ not defined in v2
     if serial.VERSION < '3':
-        logging.warning('PySerial version %s found but >= 3.0.0 required.', serial.VERSION)
-        raise ImportError
+        raise ImportError('PySerial version %s found but >= 3.0.0 required.' % serial.VERSION)
     from serial import SerialException, serialutil
-except Exception:
+    logging_msg = ''
+except Exception as e:
     serial = None
     SerialException = IOError
+    logging_msg = str(e)
 
 from ..base import error
 from .. import values
@@ -185,23 +186,27 @@ class COMDevice(devicebase.Device):
                 pass
             elif addr == 'STDIO' or (not addr and val.upper() == 'STDIO'):
                 return SerialStdIO(val.upper() == 'CRLF')
-            elif addr in ('SOCKET', 'RFC2217'):
-                # throws ValueError if too many :s, caught below
-                host, socket = val.split(':')
-                url = '%s://%s:%s' % (addr.lower(), host, socket)
-                stream = serial.serial_for_url(url, timeout=0, do_not_open=True)
-                # monkey-patch serial object as SocketSerial does not have this property
-                stream.out_waiting = 0
-                return stream
-            elif addr == 'PORT':
-                # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
-                return serial.serial_for_url(val, timeout=0, do_not_open=True)
             else:
-                raise ValueError('Invalid protocol `%s`' % (addr,))
+                if not serial:
+                    logging.warning(
+                            'Could not attach %s to COM device. Module `serial` not available: %s',
+                            spec, logging_msg)
+                    return None
+                if addr in ('SOCKET', 'RFC2217'):
+                    # throws ValueError if too many :s, caught below
+                    host, socket = val.split(':')
+                    url = '%s://%s:%s' % (addr.lower(), host, socket)
+                    stream = serial.serial_for_url(url, timeout=0, do_not_open=True)
+                    # monkey-patch serial object as SocketSerial does not have this property
+                    stream.out_waiting = 0
+                    return stream
+                elif addr == 'PORT':
+                    # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
+                    return serial.serial_for_url(val, timeout=0, do_not_open=True)
+                else:
+                    raise ValueError('Invalid protocol `%s`' % (addr,))
         except (ValueError, EnvironmentError) as e:
             logging.warning('Could not attach %s to COM device: %s', spec, e)
-        except AttributeError as e:
-            logging.warning('Serial module not available. Could not attach %s to COM device: %s.', spec, e)
         return None
 
     def __getstate__(self):

@@ -7,7 +7,9 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import sys
-__version__ = '0.1'
+
+# ansipipe version
+__version__ = '1.3.0'
 
 if sys.platform == 'win32' and sys.stdin.isatty():
     import ctypes
@@ -25,7 +27,6 @@ if sys.platform == 'win32' and sys.stdin.isatty():
     try:
         dll = ctypes.CDLL(os.path.join(DLLPATH, 'winsi.dll'))
     except OSError as e:
-        logging.error('Failed to link winsi.dll: %s', e)
         raise ImportError('Failed to link winsi.dll: %s' % e)
 
     BUFFER_LENGTH = 1024

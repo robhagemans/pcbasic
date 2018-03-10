@@ -73,7 +73,7 @@ class VideoTextBase(VideoPlugin):
         except AttributeError:
             pass
         if not winsi:
-            raise InitFailed('Module `winsi` not found.')
+            raise InitFailed('Module `winsi.dll` not found.')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # start the stdin thread for non-blocking reads
         self._input_handler = InputHandlerCLI(input_queue)
