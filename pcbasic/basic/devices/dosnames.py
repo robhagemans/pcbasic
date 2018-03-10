@@ -63,7 +63,7 @@ class NameConverter(object):
                 path = os.path.join(path, match_filename(e, b'', path, name_err=path_err, isdir=True))
         ####
         # return drive root path, relative path, file name
-        return path[:baselen], path[baselen:], name
+        return path[baselen:], name
 
 
 def dos_normpath(elements):

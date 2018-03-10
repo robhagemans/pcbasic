@@ -137,7 +137,7 @@ class DiskDevice(object):
         self._native_cwd = u''
         if self._native_root:
             try:
-                _, self._native_cwd, _ = self._name_conv.native_path_elements(
+                self._native_cwd, _ = self._name_conv.native_path_elements(
                         dos_cwd, error.PATH_NOT_FOUND, self._native_root, u'', join_name=True)
             except error.BASICError:
                 logging.warning(
@@ -282,10 +282,10 @@ class DiskDevice(object):
         """
         # substitute drives and cwds
         # always use Path Not Found error if not found at this stage
-        drivepath, relpath, name = self._name_conv.native_path_elements(
+        native_relpath, name = self._name_conv.native_path_elements(
                 path, error.PATH_NOT_FOUND, self._native_root, self._native_cwd)
         # return absolute path to file
-        path = os.path.join(drivepath, relpath)
+        path = os.path.join(self._native_root, native_relpath)
         if name:
             path = os.path.join(path, dosnames.match_filename(name, defext, path, name_err, isdir))
         # get full normalised path
@@ -294,7 +294,7 @@ class DiskDevice(object):
     def chdir(self, dos_path):
         """Change working directory to given BASIC path."""
         # get drive path and relative path
-        _, native_relpath, _ = self._name_conv.native_path_elements(
+        native_relpath, _ = self._name_conv.native_path_elements(
                 dos_path, error.PATH_NOT_FOUND, self._native_root, self._native_cwd, join_name=True)
         # set cwd for the specified drive
         self._native_cwd = native_relpath
@@ -334,9 +334,9 @@ class DiskDevice(object):
         # and then does weird things I don't understand.
         if b'/' in dos_pathmask:
             raise error.BASICError(error.FILE_NOT_FOUND)
-        drivepath, native_relpath, native_mask = self._name_conv.native_path_elements(
+        native_relpath, native_mask = self._name_conv.native_path_elements(
                 dos_pathmask, error.FILE_NOT_FOUND, self._native_root, self._native_cwd)
-        native_path = os.path.join(drivepath, native_relpath)
+        native_path = os.path.join(self._native_root, native_relpath)
         #FIXME - pure ascii doesn't necessarily make sense here, use codepage?
         dos_mask = native_mask.upper().encode(b'ascii', b'replace') or b'*.*'
         return native_path, native_relpath, dos_mask
@@ -371,9 +371,9 @@ class DiskDevice(object):
 
     def get_cwd(self):
         """Return the current working directory in DOS format."""
-        drivepath, relpath, _ = self._name_conv.native_path_elements(
+        native_relpath, _ = self._name_conv.native_path_elements(
                 b'', error.FILE_NOT_FOUND, self._native_root, self._native_cwd)
-        native_path = os.path.join(drivepath, relpath)
+        native_path = os.path.join(self._native_root, native_relpath)
         dir_elems = []
         if self._native_cwd:
             for e in self._native_cwd.split(os.sep):
