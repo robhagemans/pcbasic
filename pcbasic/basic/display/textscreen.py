@@ -105,9 +105,7 @@ class TextScreen(object):
         # redraw the text screen and rebuild text buffers in video plugin
         for pagenum in range(self.mode.num_pages):
             for row in range(self.mode.height):
-                # suppress_cli=True means 'suppress echo on cli'
-                self.refresh_range(pagenum, row+1, 1, self.mode.width,
-                                   suppress_cli=True, text_only=True)
+                self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
             # redraw graphics
             if not self.mode.is_text_mode:
                 self.queues.video.put(signals.Event(signals.VIDEO_PUT_RECT, (pagenum, 0, 0,
@@ -339,7 +337,7 @@ class TextScreen(object):
 
     ###########################################################################
 
-    def put_char_attr(self, pagenum, row, col, c, attr, one_only=False, suppress_cli=False):
+    def put_char_attr(self, pagenum, row, col, c, attr, one_only=False):
         """Put a byte to the screen, redrawing as necessary."""
         if not self.mode.is_text_mode:
             attr = attr & 0xf
@@ -347,11 +345,11 @@ class TextScreen(object):
         if one_only:
             stop = start
         # update the screen
-        self.refresh_range(pagenum, row, start, stop, suppress_cli)
+        self.refresh_range(pagenum, row, start, stop)
 
     ###########################################################################
 
-    def refresh_range(self, pagenum, row, start, stop, suppress_cli=False, text_only=False):
+    def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Redraw a section of a screen row, assuming DBCS buffer has been set."""
         therow = self.text.pages[pagenum].row[row-1]
         col = start
@@ -364,7 +362,7 @@ class TextScreen(object):
             fore, back, blink, underline = self.mode.split_attr(attr)
             self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH, (
                     pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
-                    len(char) > 1, fore, back, blink, underline, suppress_cli
+                    len(char) > 1, fore, back, blink, underline,
             )))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer

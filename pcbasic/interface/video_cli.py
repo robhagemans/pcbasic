@@ -73,7 +73,7 @@ class VideoTextBase(VideoPlugin):
         except AttributeError:
             pass
         if not winsi:
-            raise InitFailed('Module `winsi` not found.')
+            raise InitFailed('Module `winsi.dll` not found.')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # start the stdin thread for non-blocking reads
         self._input_handler = InputHandlerCLI(input_queue)
@@ -109,10 +109,14 @@ class VideoCLI(VideoTextBase):
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise command-line interface."""
         VideoTextBase.__init__(self, input_queue, video_queue)
-        # current row and column for cursor
-        self._cursor_row, self._cursor_col = 1, 1
-        # last row and column printed on
-        self._last_row, self._last_col = None, None
+        # current row and column where the cursor should be
+        # keep cursor_row and last_row unset at the start to avoid printing extra line on resume
+        # as it will see a move frm whatever we set it at here to the actusl cursor row
+        self._cursor_row, self._cursor_col = None, 1
+        # current actual print column
+        self._col = 1
+        # cursor row on last cycle
+        self._last_row = None
         # text buffer
         self._vpagenum, self._apagenum = 0, 0
         self._text = [[[u' '] * 80 for _ in range(25)]]
@@ -120,37 +124,43 @@ class VideoCLI(VideoTextBase):
     def __exit__(self, type, value, traceback):
         """Close command-line interface."""
         try:
-            if self._last_col and self._cursor_col != self._last_col:
-                sys.stdout.write('\n')
+            if self._col != 1:
+                sys.stdout.write(b'\r\n')
         finally:
             VideoTextBase.__exit__(self, type, value, traceback)
 
     def _work(self):
         """Display update cycle."""
-        self._update_position()
+        # update cursor row only if it's changed from last work-cycle
+        # or if actual printing takes place on the new cursor row
+        if self._cursor_row != self._last_row or self._cursor_col != self._col:
+            self._update_position(self._cursor_row, self._cursor_col)
 
     ###############################################################################
 
-    def put_glyph(
-            self, pagenum, row, col, char, is_fullwidth,
-            fore, back, blink, underline, suppress_cli):
+    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""
         if char == u'\0':
             char = u' '
         self._text[pagenum][row-1][col-1] = char
         if is_fullwidth:
             self._text[pagenum][row-1][col] = u''
-        if self._vpagenum != pagenum:
-            return
-        if suppress_cli:
-            return
-        self._update_position(row, col)
-        sys.stdout.write(char.encode(ENCODING, 'replace'))
-        sys.stdout.flush()
-        self._last_col += 2 if is_fullwidth else 1
+        # show the character only if it's on the cursor row
+        if self._vpagenum == pagenum and row == self._cursor_row:
+            # may have to update row!
+            if row != self._last_row or col != self._col:
+                self._update_position(row, col)
+            sys.stdout.write(char.encode(ENCODING, 'replace'))
+            sys.stdout.flush()
+            self._col = (col+2) if is_fullwidth else (col+1)
+        # the terminal cursor has moved, so we'll need to move it back later
+        # if that's not where we want to be
+        # but often it is anyway
 
     def move_cursor(self, row, col):
         """Move the cursor to a new position."""
+        # update cursor row only if it's changed from last work-cycle
+        # or if actual printing takes place on the new cursor row
         self._cursor_row, self._cursor_col = row, col
 
     def clear_rows(self, back_attr, start, stop):
@@ -203,40 +213,37 @@ class VideoCLI(VideoTextBase):
 
     def _redraw_row(self, row):
         """Draw the stored text in a row."""
-        rowtext = u''.join(self._text[self._vpagenum][row-1]).encode(ENCODING, 'replace')
-        sys.stdout.write(rowtext)
-        sys.stdout.write(ansi.MOVE_N_LEFT % len(rowtext))
+        if not row:
+            return
+        self._update_col(1)
+        rowtext = (u''.join(self._text[self._vpagenum][row-1]))
+        sys.stdout.write(rowtext.encode(ENCODING, 'replace').replace('\0', ' '))
+        self._col = len(self._text[self._vpagenum][row-1])+1
         sys.stdout.flush()
 
-    def _update_position(self, row=None, col=None):
-        """Update screen for new cursor position."""
-        # this happens on resume
-        if self._last_row is None:
-            self._last_row = self._cursor_row
-            self._redraw_row(self._cursor_row)
-        if self._last_col is None:
-            self._last_col = self._cursor_col
-        # allow updating without moving the cursor
-        if row is None:
-            row = self._cursor_row
-        if col is None:
-            col = self._cursor_col
+    def _update_position(self, row, col):
+        """Move terminal print location."""
         # move cursor if necessary
-        if row != self._last_row:
-            sys.stdout.write('\r\n')
-            sys.stdout.flush()
-            self._last_col = 1
+        if row and row != self._last_row:
+            if self._last_row:
+                sys.stdout.write(b'\r\n')
+                sys.stdout.flush()
+                self._col = 1
             self._last_row = row
             # show what's on the line where we are.
-            self._redraw_row(self._cursor_row)
-        if col != self._last_col:
-            if self._last_col > col:
-                sys.stdout.write(ansi.MOVE_N_LEFT % (self._last_col-col))
+            self._redraw_row(row)
+        self._update_col(col)
+
+    def _update_col(self, col):
+        """Move terminal print column."""
+        if col != self._col:
+            if self._col > col:
+                sys.stdout.write(ansi.MOVE_N_LEFT % (self._col-col))
                 sys.stdout.flush()
-            elif self._last_col < col:
-                sys.stdout.write(ansi.MOVE_N_RIGHT % (col-self._last_col))
+            elif self._col < col:
+                sys.stdout.write(ansi.MOVE_N_RIGHT % (col-self._col))
                 sys.stdout.flush()
-            self._last_col = col
+            self._col = col
 
 
 ###############################################################################
