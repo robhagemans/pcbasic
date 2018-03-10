@@ -110,13 +110,13 @@ class VideoCLI(VideoTextBase):
         """Initialise command-line interface."""
         VideoTextBase.__init__(self, input_queue, video_queue)
         # current row and column where the cursor should be
-        self._cursor_row, self._cursor_col = 1, 1
+        # keep cursor_row and last_row unset at the start to avoid printing extra line on resume
+        # as it will see a move frm whatever we set it at here to the actusl cursor row
+        self._cursor_row, self._cursor_col = None, 1
         # current actual print column
         self._col = 1
         # cursor row on last cycle
-        self._last_row = 1
-        # actual terminal cursor is visible
-        self._visible = True
+        self._last_row = None
         # text buffer
         self._vpagenum, self._apagenum = 0, 0
         self._text = [[[u' '] * 80 for _ in range(25)]]
@@ -215,6 +215,8 @@ class VideoCLI(VideoTextBase):
 
     def _redraw_row(self, row):
         """Draw the stored text in a row."""
+        if not row:
+            return
         self._update_col(1)
         rowtext = (u''.join(self._text[self._vpagenum][row-1])
                 .encode(ENCODING, 'replace').replace('\0', ' '))
@@ -225,10 +227,11 @@ class VideoCLI(VideoTextBase):
     def _update_position(self, row, col):
         """Move terminal print location."""
         # move cursor if necessary
-        if row != self._last_row:
-            sys.stdout.write(b'\r\n')
-            sys.stdout.flush()
-            self._col = 1
+        if row and row != self._last_row:
+            if self._last_row:
+                sys.stdout.write(b'\r\n')
+                sys.stdout.flush()
+                self._col = 1
             self._last_row = row
             # show what's on the line where we are.
             self._redraw_row(row)
