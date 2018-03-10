@@ -58,9 +58,8 @@ ESC_TO_EASCII = {
     }
 
 
-@video_plugins.register('cli')
-class VideoCLI(VideoPlugin):
-    """Command-line interface."""
+class VideoTextBase(VideoPlugin):
+    """Text-based interface."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise command-line interface."""
@@ -96,9 +95,6 @@ class VideoCLI(VideoPlugin):
         if self.last_col and self.cursor_col != self.last_col:
             sys.stdout.write('\n')
 
-    def _work(self):
-        """Display update cycle."""
-        self._update_position()
 
     def _check_input(self):
         """Handle keyboard events."""
@@ -136,8 +132,16 @@ class VideoCLI(VideoPlugin):
         sys.stdout.flush()
         return previous
 
-    ###############################################################################
 
+@video_plugins.register('cli')
+class VideoCLI(VideoTextBase):
+    """Command-line interface."""
+
+    def _work(self):
+        """Display update cycle."""
+        self._update_position()
+
+    ###############################################################################
 
     def put_glyph(
             self, pagenum, row, col, char, is_fullwidth,

@@ -17,7 +17,7 @@ from . import ansi
 
 
 @video_plugins.register('ansi')
-class VideoANSI(video_cli.VideoCLI):
+class VideoANSI(video_cli.VideoTextBase):
     """Text interface implemented with ANSI escape sequences."""
 
     def __init__(self, input_queue, video_queue, caption=u'', **kwargs):
@@ -39,7 +39,7 @@ class VideoANSI(video_cli.VideoCLI):
         self.height = 25
         self.width = 80
         self._set_default_colours(16)
-        video_cli.VideoCLI.__init__(self, input_queue, video_queue)
+        video_cli.VideoTextBase.__init__(self, input_queue, video_queue)
         self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
         # prevent logger from defacing the screen
         self.logger = logging.getLogger()
