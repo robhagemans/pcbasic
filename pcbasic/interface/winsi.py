@@ -41,51 +41,46 @@ if sys.platform == 'win32' and sys.stdin.isatty():
     _write.argtypes = [ctypes.POINTER(ctypes.c_char)]
     _write.restype = None
 
-    def read(num=-1):
-        if num == -1:
-            # save some space at the end as it may return multibyte sequences
-            num = BUFFER_LENGTH-10
-        _read(BUFFER, num)
-        return BUFFER.value
-
-    log = open('winsi.log', 'w')
 
     class _WinsiWrapper(object):
+
+        encoding = 'utf-8'
 
         def __init__(self, wrapped_stream):
             self._wrapped_stream = wrapped_stream
 
-        #FIXME this actually dpesn't work
         def __getattr__(self, attr):
-            return self._wrapped_stream.__getattr__(attr)
+            return getattr(self._wrapped_stream, attr)
+
+
+    class _WinsiInputWrapper(_WinsiWrapper):
+
+        def __init__(self, wrapped_stream):
+            _WinsiWrapper.__init__(self, wrapped_stream)
+            self._multichar_buffer = []
 
         def read(self, num=-1):
             if num == -1:
                 # save some space at the end as it may return multibyte sequences
                 num = BUFFER_LENGTH-10
-            _read(BUFFER, num)
-            return BUFFER.value
+            n_to_read = max(0, num - len(self._multichar_buffer))
+            if n_to_read:
+                _read(BUFFER, n_to_read)
+                self._multichar_buffer.extend(BUFFER.value)
+            out, self._multichar_buffer = self._multichar_buffer[:num], self._multichar_buffer[num:]
+            return b''.join(out)
+
+
+    class _WinsiOutputWrapper(_WinsiWrapper):
 
         def write(self, s):
-            log.write(repr(s)+'\n')
             _write(s)
-
-        def isatty(self):
-            return True
-
-        def fileno(self):
-            return self._wrapped_stream.fileno()
-
-        def flush(self):
-            self._wrapped_stream.flush()
-
-        encoding = 'utf-8'
 
 
     _init()
 
-    sys.stdout, _stdout = _WinsiWrapper(sys.stdout), sys.stdout
-    sys.stdin, _stdin = _WinsiWrapper(sys.stdin), sys.stdin
+    sys.stdout, _stdout = _WinsiOutputWrapper(sys.stdout), sys.stdout
+    sys.stdin, _stdin = _WinsiInputWrapper(sys.stdin), sys.stdin
 
     atexit.register(_close)
 
