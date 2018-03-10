@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import sys
+__version__ = '0.1'
 
 if sys.platform == 'win32' and sys.stdin.isatty():
     import ctypes
