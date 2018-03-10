@@ -22,6 +22,7 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def __init__(self, input_queue, video_queue, caption=u'', **kwargs):
         """Initialise the text interface."""
+        video_cli.VideoTextBase.__init__(self, input_queue, video_queue)
         self.caption = caption
         self.set_caption_message('')
         # cursor is visible
@@ -39,24 +40,29 @@ class VideoANSI(video_cli.VideoTextBase):
         self.height = 25
         self.width = 80
         self._set_default_colours(16)
-        video_cli.VideoTextBase.__init__(self, input_queue, video_queue)
         self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
-        # prevent logger from defacing the screen
         self.logger = logging.getLogger()
+        sys.stdout.flush()
+
+    def __enter__(self):
+        """Open ANSI interface."""
+        video_cli.VideoTextBase.__enter__(self)
+        # prevent logger from defacing the screen
         if logging.getLogger().handlers[0].stream.name == sys.stderr.name:
             self.logger.disabled = True
 
     def __exit__(self, type, value, traceback):
-        """Close the text interface."""
-        VideoPlugin.__exit__(self, type, value, traceback)
-        sys.stdout.write(ansi.SET_COLOUR % 0)
-        sys.stdout.write(ansi.CLEAR_SCREEN)
-        sys.stdout.write(ansi.MOVE_CURSOR % (1, 1))
-        self.show_cursor(True)
-        sys.stdout.flush()
-        # re-enable logger
-        self.logger.disabled = False
-        self._term_echo()
+        """Close ANSI interface."""
+        try:
+            sys.stdout.write(ansi.SET_COLOUR % 0)
+            sys.stdout.write(ansi.CLEAR_SCREEN)
+            sys.stdout.write(ansi.MOVE_CURSOR % (1, 1))
+            self.show_cursor(True)
+            sys.stdout.flush()
+            # re-enable logger
+            self.logger.disabled = False
+        finally:
+            video_cli.VideoTextBase.__exit__(self, type, value, traceback)
 
     def _work(self):
         """Handle screen and interface events."""

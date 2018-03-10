@@ -66,7 +66,7 @@ class VideoTextBase(VideoPlugin):
     """Text-based interface."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
-        """Initialise command-line interface."""
+        """Initialise text-based interface."""
         try:
             if platform.system() not in (b'Darwin',  b'Windows') and not sys.stdin.isatty():
                 raise InitFailed('Text-based interface requires a terminal (tty).')
@@ -75,13 +75,40 @@ class VideoTextBase(VideoPlugin):
         if not winsi:
             raise InitFailed('Module `winsi` not found.')
         VideoPlugin.__init__(self, input_queue, video_queue)
-        self._term_echo_on = True
-        self._term_attr = None
-        self._term_echo(False)
         # start the stdin thread for non-blocking reads
-        self.input_handler = InputHandlerCLI()
-        # cursor is visible
-        self.cursor_visible = True
+        self._input_handler = InputHandlerCLI(input_queue)
+        # terminal attributes (for setraw)
+        self._term_attr = None
+
+    def __enter__(self):
+        """Open text-based interface."""
+        VideoPlugin.__enter__(self)
+        fd = sys.stdin.fileno()
+        self._term_attr = termios.tcgetattr(fd)
+        # raw terminal - no echo, by the character rather than by the line
+        tty.setraw(fd)
+        sys.stdout.flush()
+
+    def __exit__(self, exc_type, value, traceback):
+        """Close text-based interface."""
+        try:
+            termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, self._term_attr)
+            sys.stdout.flush()
+        finally:
+            VideoPlugin.__exit__(self, exc_type, value, traceback)
+
+    def _check_input(self):
+        """Handle keyboard events."""
+        self._input_handler.drain_queue()
+
+
+@video_plugins.register('cli')
+class VideoCLI(VideoTextBase):
+    """Command-line interface."""
+
+    def __init__(self, input_queue, video_queue, **kwargs):
+        """Initialise command-line interface."""
+        VideoTextBase.__init__(self, input_queue, video_queue)
         # current row and column for cursor
         self.cursor_row = 1
         self.cursor_col = 1
@@ -92,56 +119,14 @@ class VideoTextBase(VideoPlugin):
         self.num_pages = 1
         self.vpagenum, self.apagenum = 0, 0
         self.text = [[[u' ']*80 for _ in range(25)]]
-        self.f12_active = False
 
     def __exit__(self, type, value, traceback):
         """Close command-line interface."""
-        VideoPlugin.__exit__(self, type, value, traceback)
-        self._term_echo()
-        if self.last_col and self.cursor_col != self.last_col:
-            sys.stdout.write('\n')
-
-
-    def _check_input(self):
-        """Handle keyboard events."""
-        while True:
-            # s is one unicode char or one scancode
-            uc, sc = self.input_handler.get_key()
-            if not uc and not sc:
-                break
-            if uc == EOF:
-                # ctrl-D (unix) / ctrl-Z (windows)
-                self._input_queue.put(signals.Event(signals.KEYB_QUIT))
-            elif uc == u'\x7f':
-                # backspace
-                self._input_queue.put(
-                        signals.Event(signals.KEYB_DOWN, (uea.BACKSPACE, scancode.BACKSPACE, [])))
-            elif sc or uc:
-                # check_full=False to allow pasting chunks of text
-                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (uc, sc, [])))
-                if sc == scancode.F12:
-                    self.f12_active = True
-                else:
-                    self._input_queue.put(signals.Event(signals.KEYB_UP, (scancode.F12,)))
-                    self.f12_active = False
-
-    def _term_echo(self, on=True):
-        """Set/unset raw terminal attributes."""
-        # sets raw terminal - no echo, by the character rather than by the line
-        fd = sys.stdin.fileno()
-        if (not on) and self._term_echo_on:
-            self._term_attr = termios.tcgetattr(fd)
-            tty.setraw(fd)
-        elif not self._term_echo_on and self._term_attr is not None:
-            termios.tcsetattr(fd, termios.TCSADRAIN, self._term_attr)
-        previous, self._term_echo_on = self._term_echo_on, on
-        sys.stdout.flush()
-        return previous
-
-
-@video_plugins.register('cli')
-class VideoCLI(VideoTextBase):
-    """Command-line interface."""
+        try:
+            if self.last_col and self.cursor_col != self.last_col:
+                sys.stdout.write('\n')
+        finally:
+            VideoTextBase.__exit__(self, type, value, traceback)
 
     def _work(self):
         """Display update cycle."""
@@ -261,8 +246,9 @@ class InputHandlerCLI(object):
     # * sys.stdin.read(1) is a blocking read
     # * we need this to work on Windows as well as Unix, so select() won't do.
 
-    def __init__(self):
+    def __init__(self, queue):
         """Start the keyboard reader."""
+        self._input_queue = queue
         self._launch_thread()
 
     def _launch_thread(self):
@@ -285,6 +271,24 @@ class InputHandlerCLI(object):
             return self.stdin_q.get_nowait()
         except Queue.Empty:
             return ''
+
+    def drain_queue(self):
+        """Handle keyboard events."""
+        while True:
+            # s is one unicode char or one scancode
+            uc, sc = self.get_key()
+            if not uc and not sc:
+                break
+            if uc == EOF:
+                # ctrl-D (unix) / ctrl-Z (windows)
+                self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+            elif uc == u'\x7f':
+                # backspace
+                self._input_queue.put(
+                        signals.Event(signals.KEYB_DOWN, (uea.BACKSPACE, scancode.BACKSPACE, [])))
+            elif sc or uc:
+                # check_full=False to allow pasting chunks of text
+                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (uc, sc, [])))
 
     def get_key(self):
         """Retrieve one scancode sequence or one unicode char from keyboard."""
