@@ -24,8 +24,7 @@ class NameConverter(object):
         """Initialise converter."""
         self._codepage = codepage
 
-    def native_path_elements(
-            self, dospath, path_err, native_root, native_cwd, join_name=False):
+    def native_path_elements(self, dospath, path_err, native_root, native_cwd):
         """Return list of elements of the native path for a given BASIC path."""
         if b'/' in dospath:
             # bad file number - this is what GW produces here
@@ -45,26 +44,33 @@ class NameConverter(object):
         # strip whitespace
         elements = [e.strip() for e in elements]
         ####
-        # whatever's after the last \\ is the name of the subject file or dir
-        # if the path ends in \\, there's no name
-        name = u'' if (join_name or not elements) else elements.pop()
-        ####
         # parse internal .. and . (like normpath but with \\ and dosnames)
         elements = dos_normpath(elements)
         # prepend drive root path to allow filename matching
         path = native_root
         baselen = len(path) + (path[-1] != os.sep)
         # find the native matches for each step in the path
-        for e in elements:
+        for dos_elem in elements:
             # skip double slashes
-            if e:
+            if dos_elem:
                 # find a matching directory for every step in the path;
+                native_elem = match_filename(dos_elem, b'', path, name_err=path_err, isdir=True)
                 # append found name to path
-                path = os.path.join(path, match_filename(e, b'', path, name_err=path_err, isdir=True))
+                path = os.path.join(path, native_elem)
         ####
         # return drive root path, relative path, file name
-        return path[baselen:], name
+        return path[baselen:]
 
+
+def dos_split(dospath):
+    """Get dirname, basename from the DOS path."""
+    rsplit = dospath.rsplit(b'\\', 1)
+    if len(rsplit) == 2:
+        # at least one slash; if ends with slash, basename will be empty
+        return rsplit[0], rsplit[-1]
+    else:
+        # no slash; dirname empty
+        return b'', dospath
 
 def dos_normpath(elements):
     """Parse internal .. and . in list (like normpath)."""
