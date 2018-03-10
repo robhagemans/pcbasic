@@ -18,7 +18,6 @@ import traceback
 # NOTE that this affects str.upper() etc.
 locale.setlocale(locale.LC_ALL, '')
 
-from . import ansipipe
 from . import basic
 from . import state
 from . import config
@@ -33,8 +32,7 @@ def main(*arguments):
         # - the official parameter should be LC_CTYPE but that's None in my locale
         # - on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
         #   instead we should run through winmain() which does the dirty work
-        #   and then calls main() with utf-8 encoding
-        encoding = 'utf-8' if sys.platform == 'win32' else locale.getpreferredencoding()
+        encoding = locale.getpreferredencoding()
         arguments = (arg.decode(encoding) for arg in sys.argv[1:])
     try:
         run(*arguments)

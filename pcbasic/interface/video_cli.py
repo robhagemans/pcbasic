@@ -20,9 +20,9 @@ from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 
 if platform.system() == 'Windows':
-    from .. import ansipipe
-    tty = ansipipe
-    termios = ansipipe
+    from . import winsi
+    tty = winsi
+    termios = winsi
     # Ctrl+Z to exit
     EOF = uea.CTRL_z
 else:

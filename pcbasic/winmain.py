@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import os
 import subprocess
-
+from .main import main
 
 def get_unicode_argv():
     """Convert Windows command-line arguments to unicode."""
@@ -36,22 +36,7 @@ def get_unicode_argv():
 def winmain():
     """Windows console entry point."""
     if sys.platform != 'win32':
-        from .main import main
         main()
-    args = get_unicode_argv()
-    startdir = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-    launcher = os.path.join(startdir, 'lib', 'ansipipe-launcher.exe')
-    if os.path.isfile(launcher):
-        # subprocess.call is not unicode-aware in Python 2
-        # https://stackoverflow.com/questions/1910275/unicode-filenames-on-windows-with-python-subprocess-popen
-        # see also https://gist.github.com/vaab/2ad7051fc193167f15f85ef573e54eb9 for a workaround
-        # instead just encode in utf-8 and make our main entry point assume that on Windows
-        # note that all this would be much easier if we didn't go though anispipe launcher
-        args = [arg.encode('utf-8') for arg in args]
-        # needed if called from repo source without pythonpath set
-        # don't do os.chdir ans we need it for z: 
-        sys.path.append(os.path.join(startdir, '..'))
-        subprocess.call([launcher, sys.executable, '-m', 'pcbasic'] + args[1:])
     else:
-        from .main import main
-        main(*args)
+        args = get_unicode_argv()
+        main(*args[1:])
