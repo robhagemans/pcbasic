@@ -218,10 +218,9 @@ class VideoCLI(VideoTextBase):
         if not row:
             return
         self._update_col(1)
-        rowtext = (u''.join(self._text[self._vpagenum][row-1])
-                .encode(ENCODING, 'replace').replace('\0', ' '))
-        sys.stdout.write(rowtext)
-        self._col = len(rowtext)+1
+        rowtext = (u''.join(self._text[self._vpagenum][row-1]))
+        sys.stdout.write(rowtext.encode(ENCODING, 'replace').replace('\0', ' '))
+        self._col = len(self._text[self._vpagenum][row-1])+1
         sys.stdout.flush()
 
     def _update_position(self, row, col):
