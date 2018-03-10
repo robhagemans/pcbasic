@@ -24,8 +24,8 @@ class NameConverter(object):
         """Initialise converter."""
         self._codepage = codepage
 
-    def native_path_elements(self, dospath, path_err, native_root, native_cwd):
-        """Return list of elements of the native path for a given BASIC path."""
+    def native_relpath(self, dospath, path_err, native_root, native_cwd):
+        """Return the native path for a given BASIC path, relative to the root."""
         if b'/' in dospath:
             # bad file number - this is what GW produces here
             raise error.BASICError(error.BAD_FILE_NUMBER)

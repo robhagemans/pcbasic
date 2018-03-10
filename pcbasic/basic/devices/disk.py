@@ -137,7 +137,7 @@ class DiskDevice(object):
         self._native_cwd = u''
         if self._native_root:
             try:
-                self._native_cwd = self._name_conv.native_path_elements(
+                self._native_cwd = self._name_conv.native_relpath(
                         dos_cwd, error.PATH_NOT_FOUND, self._native_root, native_cwd=u'')
             except error.BASICError:
                 logging.warning(
@@ -270,7 +270,7 @@ class DiskDevice(object):
     def _find_native_path(
             self, path, defext=b'', name_err=error.FILE_NOT_FOUND, isdir=False):
         """\
-            Find os-native path to match the given BASIC path.
+            Find os-native path to match the given BASIC path; apply default extension.
 
             path: bytes             requested DOS path to file on this device
             defext: bytes           default extension, to apply if no dot in basename
@@ -282,7 +282,7 @@ class DiskDevice(object):
         # substitute drives and cwds
         # always use Path Not Found error if not found at this stage
         dos_dirname, name = dosnames.dos_split(path)
-        native_relpath = self._name_conv.native_path_elements(
+        native_relpath = self._name_conv.native_relpath(
                 dos_dirname, error.PATH_NOT_FOUND, self._native_root, self._native_cwd)
         # return absolute path to file
         path = os.path.join(self._native_root, native_relpath)
@@ -294,7 +294,7 @@ class DiskDevice(object):
     def chdir(self, dos_path):
         """Change working directory to given BASIC path."""
         # get drive path and relative path
-        native_relpath = self._name_conv.native_path_elements(
+        native_relpath = self._name_conv.native_relpath(
                 dos_path, error.PATH_NOT_FOUND, self._native_root, self._native_cwd)
         # set cwd for the specified drive
         self._native_cwd = native_relpath
@@ -335,7 +335,7 @@ class DiskDevice(object):
         if b'/' in dos_pathmask:
             raise error.BASICError(error.FILE_NOT_FOUND)
         dos_path, dos_mask = dosnames.dos_split(dos_pathmask)
-        native_relpath = self._name_conv.native_path_elements(
+        native_relpath = self._name_conv.native_relpath(
                 dos_path, error.FILE_NOT_FOUND, self._native_root, self._native_cwd)
         native_path = os.path.join(self._native_root, native_relpath)
         return native_path, native_relpath, dos_mask
