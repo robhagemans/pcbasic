@@ -10,22 +10,24 @@ This file is released under the GNU GPL version 3 or later.
 # Disk devices
 
 import os
-import errno
-import logging
-import string
+import re
 import sys
+import errno
+import string
 import locale
 import struct
 import random
 import ntpath
+import logging
+
 if sys.platform == 'win32':
     import ctypes
+    from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD
 
 from ..base.bytestream import ByteStream
 from ..base import error
 from .. import values
 from . import devicebase
-from . import dosnames
 
 
 # GW-BASIC FILE CONTROL BLOCK structure:
@@ -88,6 +90,12 @@ OS_ERROR = {
     errno.ENOTEMPTY: error.PATH_FILE_ACCESS_ERROR,
 }
 
+# allowable characters in DOS file name
+# GW-BASIC also allows 0x7F and up, but replaces accented chars with unaccented
+# based on CHCP code page, which may differ from display codepage in COUNTRY.SYS
+# this is complex and leads to unpredictable results depending on host platform.
+ALLOWABLE_CHARS = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~")
+
 
 ##############################################################################
 # exception handling
@@ -107,6 +115,131 @@ def handle_oserror(e):
         logging.error(u'Unmapped environment exception: %d', e.errno)
         basic_err = error.DEVICE_IO_ERROR
     raise error.BASICError(basic_err)
+
+
+##############################################################################
+# short filenames
+
+if sys.platform == 'win32':
+    _GetShortPathName = ctypes.windll.kernel32.GetShortPathNameW
+    _GetShortPathName.argtypes = [LPCWSTR, LPWSTR, DWORD]
+
+    def get_short_pathname(native_path):
+        """Return Windows short path name or None if not available."""
+        try:
+            length = _GetShortPathName(native_path, LPWSTR(0), DWORD(0))
+            wbuffer = ctypes.create_unicode_buffer(length)
+            _GetShortPathName(native_path, wbuffer, DWORD(length))
+        except Exception as e:
+            # something went wrong - this should be a WindowsError which is an OSError
+            # but not clear
+            return None
+        else:
+            # can also be None in wbuffer.value if error
+            return wbuffer.value
+
+else:
+    def get_short_pathname(native_path):
+        """Return Windows short path name or None if not available."""
+        return None
+
+
+##############################################################################
+# dos path and filename utilities
+
+def dos_splitext(dos_name):
+    """Return trunk and extension excluding the dot."""
+    # take whatever comes after first dot as extension
+    # and whatever comes before first dot as trunk
+    # differs from ntpath.splitext:
+    # - does not include . in extension; no extension equals ending in .
+    # - dotfiles are trunks starting with . in ntpath but extensions here.
+    elements = dos_name.split(b'.', 1)
+    if len(elements) == 1:
+        trunk, ext = elements[0], ''
+    else:
+        trunk, ext = elements
+    return trunk, ext
+
+def dos_normalise_name(dos_name):
+    """Convert dosname into bytes uppercase 8.3."""
+    # a normalised DOS-name is all-uppercase, no leading or trailing spaces, and
+    # 1) . or ..; or
+    # 2) 0--8 allowable characters followed by one dot followed by 0--3 allowable characters; or
+    # 3) 1--8 allowable characters with no dots
+    #
+    # don't try to split special directory names
+    if dos_name in (b'.', b'..'):
+        return dos_name
+    # convert to all uppercase
+    dos_name = dos_name.upper()
+    # split into trunk and extension
+    trunk, ext = dos_splitext(dos_name)
+    # truncate to 8.3
+    trunk, ext = trunk[:8], ext[:3]
+    if ext:
+        ext = b'.' + ext
+    norm_name = trunk + ext
+    return norm_name
+
+def dos_is_legal_name(dos_name):
+    """Check if a (bytes) name is a legal DOS name."""
+    if dos_name in (b'.', b'..'):
+        return True
+    trunk, ext = dos_splitext(dos_name)
+    return (
+            # enforce lengths
+            (len(trunk) <= 8 and len(ext) <= 3) and
+            # no leading or trailing spaces
+            (trunk == trunk.strip() and ext == ext.strip()) and
+            # enforce allowable characters
+            ((set(trunk) | set(ext)) <= ALLOWABLE_CHARS)
+        )
+
+def dos_to_native_name(native_path, dosname, isdir):
+    """Find a matching native file name for a given normalised DOS name."""
+    try:
+        uni_name = dosname.decode(b'ascii')
+    except UnicodeDecodeError:
+        # non-ascii characters are not allowable for DOS filenames, no match
+        return None
+    # check if the 8.3 uppercase exists, prefer if so
+    if istype(native_path, uni_name, isdir):
+        return uni_name
+    # otherwise try in lexicographic order
+    try:
+        all_names = os.listdir(native_path)
+    except EnvironmentError:
+        # report no match if listdir fails
+        return None
+    for f in sorted(all_names):
+        # we won't match non-ascii anyway
+        try:
+            ascii_name = f.encode(b'ascii')
+        except UnicodeEncodeError:
+            continue
+        # don't match long names or non-legal dos names
+        if dos_is_legal_name(ascii_name):
+            try_name = dos_normalise_name(ascii_name)
+            if try_name == dosname and istype(native_path, f, isdir):
+                return f
+    return None
+
+def dos_name_matches(name, mask):
+    """Whether native name element matches DOS wildcard mask."""
+    # convert wildcard mask to regexp
+    regexp = '\A'
+    for c in mask.upper():
+        if c == '?':
+            regexp += '.'
+        elif c == '*':
+            # we won't need to match newlines, so dot is fine
+            regexp += '.*'
+        else:
+            regexp += re.escape(c)
+    regexp += '\Z'
+    cregexp = re.compile(regexp)
+    return cregexp.match(name.upper()) is not None
 
 
 ##############################################################################
@@ -459,20 +592,20 @@ class DiskDevice(object):
             # ends in single dot; first try with dot
             # but if it doesn't exist, base everything off dotless name
             uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
-            if dosnames.istype(native_path, uni_name, isdir):
+            if istype(native_path, uni_name, isdir):
                 return uni_name
             dos_name = dos_name[:-1]
         # check if the name exists as-is; should also match Windows short names.
         uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
-        if dosnames.istype(native_path, uni_name, isdir):
+        if istype(native_path, uni_name, isdir):
             return uni_name
         # original name does not exist; try matching dos-names or create one
         # normalise to 8.3
-        norm_name = dosnames.normalise_dosname(dos_name)
+        norm_name = dos_normalise_name(dos_name)
         # check for non-legal characters & spaces (but clip off overlong names)
-        if not dosnames.is_legal_dosname(norm_name):
+        if not dos_is_legal_name(norm_name):
             raise error.BASICError(error.BAD_FILE_NAME)
-        fullname = dosnames.match_dosname(native_path, norm_name, isdir)
+        fullname = dos_to_native_name(native_path, norm_name, isdir)
         if fullname:
             return fullname
         # not found
@@ -487,7 +620,7 @@ class DiskDevice(object):
         native_path = os.path.join(native_dirpath, native_name)
         # get the short name if it exists, keep long name otherwise
         if sys.platform == 'win32':
-            native_path = dosnames.GetShortPathName(native_path) or native_path
+            native_path = get_short_pathname(native_path) or native_path
         native_name = os.path.basename(native_path)
         # see if we have a legal dos name that matches
         try:
@@ -495,12 +628,12 @@ class DiskDevice(object):
         except UnicodeEncodeError:
             pass
         else:
-            if dosnames.is_legal_dosname(ascii_name):
-                return dosnames.normalise_dosname(ascii_name)
+            if dos_is_legal_name(ascii_name):
+                return dos_normalise_name(ascii_name)
         # convert to codepage
         cp_name = self._codepage.str_from_unicode(native_name, errors='replace')
         # clip overlong & mark as shortened
-        trunk, ext = dosnames.dos_splitext(cp_name)
+        trunk, ext = dos_splitext(cp_name)
         if len(trunk) > 8:
             trunk = trunk[:7] + b'+'
         if len(ext) > 3:
@@ -510,14 +643,30 @@ class DiskDevice(object):
     def _filter_names(self, native_dirpath, native_names, dos_mask):
         """Apply case-insensitive filename filter to display names."""
         dos_mask = dos_mask or b'*.*'
-        trunkmask, extmask = dosnames.dos_splitext(dos_mask)
+        trunkmask, extmask = dos_splitext(dos_mask)
         all_files = (self._get_dos_display_name(native_dirpath, name) for name in native_names)
-        split = [dosnames.dos_splitext(dos_name) for dos_name in all_files]
+        split = [dos_splitext(dos_name) for dos_name in all_files]
         return sorted(
                 (trunk, ext) for (trunk, ext) in split
-                if dosnames.match_wildcard(trunk, trunkmask) and dosnames.match_wildcard(ext, extmask)
+                if dos_name_matches(trunk, trunkmask) and dos_name_matches(ext, extmask)
             )
 
+
+##############################################################################
+# Native path utilities
+
+def istype(native_path, native_name, isdir):
+    """Return whether a file exists and is a directory or regular."""
+    name = os.path.join(native_path, native_name)
+    try:
+        return os.path.isdir(name) if isdir else os.path.isfile(name)
+    except TypeError:
+        # happens for name == u'\0'
+        return False
+
+
+##############################################################################
+# Internal disk and bound files
 
 class BoundFile(object):
     """Bound internal file."""

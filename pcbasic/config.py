@@ -18,14 +18,12 @@ import shutil
 import platform
 import pkg_resources
 import string
-
 from collections import deque
 
-if platform.system() == b'Windows':
+if sys.platform == 'win32':
     import ctypes
     import ctypes.wintypes
-    from .basic.devices.dosnames import GetShortPathName
-
+    from .basic.devices.disk import get_short_pathname
 
 from .basic.metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
@@ -619,7 +617,7 @@ class Settings(object):
                 for letter in string.uppercase:
                     try:
                         os.chdir(letter + b':')
-                        cwd = GetShortPathName(os.getcwdu()) or os.getcwdu()
+                        cwd = get_short_pathname(os.getcwdu()) or os.getcwdu()
                     except EnvironmentError:
                         # doesn't exist or can't access, do not mount this drive
                         pass
