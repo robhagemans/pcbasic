@@ -207,11 +207,11 @@ class DiskDevice(object):
             defext = b''
         # translate the file name to something DOS-ish if necessary
         if mode == b'I':
-            native_name = self._find_native_path(filespec, defext)
+            native_name = self._find_native_path(filespec, defext, isdir=False, create=False)
         else:
             # random files: try to open matching file
             # if it doesn't exist, use an all-caps 8.3 file name
-            native_name = self._find_native_path(filespec, defext, name_err=None)
+            native_name = self._find_native_path(filespec, defext, isdir=False, create=True)
         # handle locks, open stream and create file object
         # don't open output or append files more than once
         if mode in (b'O', b'A'):
@@ -297,22 +297,19 @@ class DiskDevice(object):
         for dos_elem in dospath_elements:
             # find a matching directory for every step in the path;
             native_elem = self._name_conv.match_filename(
-                    dos_elem, b'', path, name_err=error.PATH_NOT_FOUND, isdir=True)
+                    path, dos_elem, defext=b'', isdir=True, create=False)
             # append found name to path
             path = os.path.join(path, native_elem)
         # return relative path only
         return path[root_len:]
 
-    def _find_native_path(
-            self, path, defext=b'', name_err=error.FILE_NOT_FOUND, isdir=False):
+    def _find_native_path(self, path, defext, isdir, create):
         """\
             Find os-native path to match the given BASIC path; apply default extension.
-
             path: bytes             requested DOS path to file on this device
             defext: bytes           default extension, to apply if no dot in basename
-            name_err: int or None   if set, checks existence of matched basename
-                                    and raises the proposed error if not.
-                                    otherwise, can create a new name for the proposed DOS name.
+            create: bool            allow creating a new name for the proposed DOS name
+                                    if not, throw if matched basename does not exist
             isdir: bool             basename should refer to a directory
         """
         # substitute drives and cwds
@@ -323,7 +320,7 @@ class DiskDevice(object):
         path = os.path.join(self._native_root, native_relpath)
         if name:
             path = os.path.join(
-                    path, self._name_conv.match_filename(name, defext, path, name_err, isdir))
+                    path, self._name_conv.match_filename(path, name, defext, isdir, create))
         # get full normalised path
         return os.path.abspath(path)
 
@@ -336,25 +333,23 @@ class DiskDevice(object):
 
     def mkdir(self, dos_path):
         """Create directory at given BASIC path."""
-        safe(os.mkdir, self._find_native_path(dos_path, name_err=None, isdir=True))
+        safe(os.mkdir, self._find_native_path(dos_path, defext=b'', isdir=True, create=True))
 
     def rmdir(self, dos_path):
         """Remove directory at given BASIC path."""
-        safe(os.rmdir, self._find_native_path(dos_path, name_err=error.PATH_NOT_FOUND, isdir=True))
+        safe(os.rmdir, self._find_native_path(dos_path, defext=b'', isdir=True, create=False))
 
     def kill(self, dos_path):
         """Remove regular file at given native path."""
-        native_path = self._find_native_path(dos_path, name_err=error.FILE_NOT_FOUND, isdir=False)
+        native_path = self._find_native_path(dos_path, defext=b'', isdir=False, create=False)
         # don't delete open files
         self._check_file_not_open(native_path)
         safe(os.remove, native_path)
 
     def rename(self, old_dospath, new_dospath):
         """Rename a file or directory."""
-        old_native_path = self._find_native_path(
-                old_dospath, name_err=error.FILE_NOT_FOUND, isdir=False)
-        new_native_path = self._find_native_path(
-                new_dospath, name_err=None, isdir=False)
+        old_native_path = self._find_native_path(old_dospath, defext=b'', isdir=False, create=False)
+        new_native_path = self._find_native_path(new_dospath, defext=b'', isdir=False, create=True)
         if os.path.exists(new_native_path):
             raise error.BASICError(error.FILE_ALREADY_EXISTS)
         safe(os.rename, old_native_path, new_native_path)
@@ -428,7 +423,7 @@ class DiskDevice(object):
     def require_file_exists_and_not_open(self, dospath):
         """Raise an error if the file is open or does not exist."""
         # this checks for existence if name_err is set
-        native_name = self._find_native_path(dospath, name_err=error.FILE_NOT_FOUND, isdir=False)
+        native_name = self._find_native_path(dospath, defext=b'', isdir=False, create=False)
         return self._check_file_not_open(native_name)
 
     def _check_file_not_open(self, native_path):

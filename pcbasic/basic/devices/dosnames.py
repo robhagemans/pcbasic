@@ -25,7 +25,7 @@ class NameConverter(object):
         """Initialise converter."""
         self._codepage = codepage
 
-    def match_filename(self, name, defext, path, name_err, isdir):
+    def match_filename(self, path, name, defext, isdir, create):
         """Find or create a matching native file name for a given BASIC name."""
         # if the name contains a dot, do not apply the default extension
         # to maintain GW-BASIC compatibility, a trailing single dot matches the name
@@ -40,6 +40,7 @@ class NameConverter(object):
         #
         # don't accept leading or trailing whitespace (internal whitespace should be preserved)
         # note that DosBox removes internal whitespace, but MS-DOS does not
+        name_err = error.PATH_NOT_FOUND if isdir else error.FILE_NOT_FOUND
         if name != name.strip():
             raise error.BASICError(name_err)
         if defext and b'.' not in name:
@@ -65,7 +66,7 @@ class NameConverter(object):
         if fullname:
             return fullname
         # not found
-        if not name_err:
+        if create:
             # create a new filename
             return dosname
         else:
