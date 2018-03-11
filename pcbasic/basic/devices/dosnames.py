@@ -32,18 +32,18 @@ class NameConverter(object):
         if not native_root:
             # this drive letter is not available (not mounted)
             raise error.BASICError(error.PATH_NOT_FOUND)
-        # parse internal .. and . and double slashes
-        dospath = dos_normpath(dospath)
         # find starting directory
         if dospath and dospath[0] == b'\\':
             # absolute path specified
             cwd = []
         else:
             cwd = native_cwd.split(os.sep)
-        # parse leading . and .. in relative path
+        # parse internal .. and . and double slashes
+        dospath = dos_normpath(dospath)
+        # parse leading . and .. and double slashes in relative path
         # if at root, just drop leading dots (this is what GW-BASIC does at drive root)
         dospath_elements = dospath.split(b'\\')
-        while dospath_elements and dospath_elements[0] in (b'.', b'..'):
+        while dospath_elements and dospath_elements[0] in (b'', b'.', b'..'):
             if dospath_elements[0] == b'..':
                 cwd = cwd[:-1]
             dospath_elements = dospath_elements[1:]
@@ -52,11 +52,10 @@ class NameConverter(object):
         root_len = len(native_root) + (native_root[-1] != os.sep)
         # find the native matches for each step in the path
         for dos_elem in dospath_elements:
-            if dos_elem:
-                # find a matching directory for every step in the path;
-                native_elem = self.match_filename(dos_elem, b'', path, name_err=path_err, isdir=True)
-                # append found name to path
-                path = os.path.join(path, native_elem)
+            # find a matching directory for every step in the path;
+            native_elem = self.match_filename(dos_elem, b'', path, name_err=path_err, isdir=True)
+            # append found name to path
+            path = os.path.join(path, native_elem)
         # return relative path only
         return path[root_len:]
 
