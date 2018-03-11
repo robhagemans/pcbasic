@@ -195,15 +195,6 @@ def match_dosname(native_path, dosname, isdir):
                 return f
     return None
 
-def join_dosname(trunk, ext, padding=False):
-    """Join trunk and extension into (bytes) file name."""
-    if ext or not trunk:
-        ext = b'.' + ext
-    if padding:
-        return trunk.ljust(8) + ext.ljust(4)
-    else:
-        return trunk + ext
-
 def match_wildcard(name, mask):
     """Whether native name element matches DOS wildcard mask."""
     # convert wildcard mask to regexp

@@ -401,8 +401,8 @@ class DiskDevice(object):
             fils = self._name_conv.filter_names(native_path, fils, dos_mask)
         # format and print contents
         return (
-            [dosnames.join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
-            [dosnames.join_dosname(t, e, padding=True) + b'     ' for t, e in fils]
+            [t.ljust(8) + (b'.' if e or not t else b' ') + e.ljust(3) + b'<DIR>' for t, e in dirs] +
+            [t.ljust(8) + (b'.' if e or not t else b' ') + e.ljust(3) + b'     ' for t, e in fils]
         )
 
     def get_cwd(self):
