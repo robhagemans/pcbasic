@@ -34,8 +34,6 @@ class NameConverter(object):
             raise error.BASICError(error.PATH_NOT_FOUND)
         # split to path elements
         dospath_elements = dospath.split(b'\\')
-        # strip whitespace
-        dospath_elements = [e.strip() for e in dospath_elements]
         # parse internal .. and . (like normpath but with \\ and dosnames)
         dospath_elements = dos_normpath(dospath_elements)
         # construct path relative to root
@@ -49,7 +47,6 @@ class NameConverter(object):
             if dospath_elements[0] == b'..':
                 cwd = cwd[:-1]
             dospath_elements = dospath_elements[1:]
-        ####
         # prepend drive root path to allow filename matching
         path = os.path.join(native_root, *cwd)
         root_len = len(native_root) + (native_root[-1] != os.sep)
@@ -76,6 +73,11 @@ class NameConverter(object):
         # LongFileName.     (1) LongFileName. (2) LongFileName (3) LONGFILE
         # LongFileName..    (1) LongFileName.. (2) [does not try LONGFILE.. - not allowable]
         # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
+        #
+        # don't accept leading or trailing whitespace (internal whitespace should be preserved)
+        # note that DosBox removes internal whitespace, but MS-DOS does not
+        if name != name.strip():
+            raise error.BASICError(name_err)
         if defext and b'.' not in name:
             name += b'.' + defext
         elif name[-1] == b'.' and b'.' not in name[:-1]:
