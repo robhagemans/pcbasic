@@ -195,10 +195,6 @@ def match_dosname(native_path, dosname, isdir):
                 return f
     return None
 
-
-##############################################################################
-# dos path operations
-
 def join_dosname(trunk, ext, padding=False):
     """Join trunk and extension into (bytes) file name."""
     if ext or not trunk:
@@ -207,69 +203,6 @@ def join_dosname(trunk, ext, padding=False):
         return trunk.ljust(8) + ext.ljust(4)
     else:
         return trunk + ext
-
-##############################################################################
-
-
-if sys.platform == 'win32':
-    def short_name(path, longname):
-        """Get bytes Windows short name or fake it."""
-        path_and_longname = os.path.join(path, longname)
-        try:
-            # gets the short name if it exists, keeps long name otherwise
-            path_and_name = win32api.GetShortPathName(path_and_longname)
-        except Exception:
-            # something went wrong - keep long name (happens for swap file)
-            # this should be a WindowsError which is an OSError
-            # but it often is a pywintypes.error
-            path_and_name = path_and_longname
-        # last element of path is name
-        name = path_and_name.split(os.sep)[-1]
-        # if we still have a long name, shorten it now
-        return split_dosname(name, mark_shortened=True)
-else:
-    def short_name(dummy_path, longname):
-        """Get bytes Windows short name or fake it."""
-        # path is only needed on Windows
-        return split_dosname(longname, mark_shortened=True)
-
-# deprecate
-def split_dosname(name, mark_shortened=False):
-    """Convert unicode name into bytes uppercase 8.3 tuple; apply default extension."""
-    # convert to all uppercase, no leading or trailing spaces
-    # replace non-ascii characters with question marks
-    name = name.encode(b'ascii', errors=b'replace').strip().upper()
-    # don't try to split special directory names
-    if name == b'.':
-        return b'', b''
-    elif name == b'..':
-        return b'', b'.'
-    # take whatever comes after first dot as extension
-    # and whatever comes before first dot as trunk
-    elements = name.split(b'.', 1)
-    if len(elements) == 1:
-        trunk, ext = elements[0], ''
-    else:
-        trunk, ext = elements
-    # truncate to 8.3
-    strunk, sext = trunk[:8], ext[:3]
-    # mark shortened file names with a + sign
-    # this is used in FILES
-    if mark_shortened:
-        if strunk != trunk:
-            strunk = strunk[:7] + b'+'
-        if sext != ext:
-            sext = sext[:2] + b'+'
-    return strunk, sext
-
-def istype(native_path, native_name, isdir):
-    """Return whether a file exists and is a directory or regular."""
-    name = os.path.join(native_path, native_name)
-    try:
-        return os.path.isdir(name) if isdir else os.path.isfile(name)
-    except TypeError:
-        # happens for name == u'\0'
-        return False
 
 def match_wildcard(name, mask):
     """Whether native name element matches DOS wildcard mask."""
@@ -287,7 +220,14 @@ def match_wildcard(name, mask):
     cregexp = re.compile(regexp)
     return cregexp.match(name.upper()) is not None
 
-def filename_from_unicode(name):
-    """Replace disallowed characters in filename with ?."""
-    name_str = name.encode(b'ascii', b'replace')
-    return b''.join(c if c in ALLOWABLE_CHARS | set(b'.') else b'?' for c in name_str)
+##############################################################################
+# native path operations
+
+def istype(native_path, native_name, isdir):
+    """Return whether a file exists and is a directory or regular."""
+    name = os.path.join(native_path, native_name)
+    try:
+        return os.path.isdir(name) if isdir else os.path.isfile(name)
+    except TypeError:
+        # happens for name == u'\0'
+        return False
