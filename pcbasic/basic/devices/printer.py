@@ -8,18 +8,53 @@ This file is released under the GNU GPL version 3 or later.
 
 import subprocess
 import logging
-import platform
+import sys
 import os
 import io
 
-if platform.system() == 'Windows':
-    try:
-        import win32print
-        import win32com
-        import win32com.shell.shell
-        import win32event
-    except ImportError:
-        win32print = None
+
+if sys.platform == 'win32':
+    import ctypes
+    from ctypes.wintypes import DWORD, HINSTANCE, HANDLE, HKEY, BOOL
+
+    def get_default_printer():
+        """Get the Windows default printer name."""
+        try:
+            _GetDefaultPrinterW = ctypes.WinDLL('winspool.drv').GetDefaultPrinterW
+            length = DWORD()
+            ret = _GetDefaultPrinterW(None, ctypes.byref(length))
+            name = ctypes.create_unicode_buffer(length.value)
+            ret = _GetDefaultPrinterW(name, ctypes.byref(length))
+            return name.value
+        except EnvironmentError as e:
+            logging.error('Could not get default printer: %s', e)
+            return u''
+
+    class SHELLEXECUTEINFO(ctypes.Structure):
+        _fields_ = (
+            ('cbSize', DWORD),
+            ('fMask', ctypes.c_ulong),
+            ('hwnd', HANDLE),
+            ('lpVerb', ctypes.c_char_p),
+            ('lpFile', ctypes.c_char_p),
+            ('lpParameters', ctypes.c_char_p),
+            ('lpDirectory', ctypes.c_char_p),
+            ('nShow', ctypes.c_int),
+            ('hInstApp', HINSTANCE),
+            ('lpIDList', ctypes.c_void_p),
+            ('lpClass', ctypes.c_char_p),
+            ('hKeyClass', HKEY),
+            ('dwHotKey', DWORD),
+            ('hIconOrMonitor', HANDLE),
+            ('hProcess', HANDLE),
+        )
+
+    SEE_MASK_NOCLOSEPROCESS = 0x00000040
+    SEE_MASK_NOASYNC = 0x00000100
+
+    _ShellExecuteEx = ctypes.windll.shell32.ShellExecuteEx
+    _ShellExecuteEx.restype = BOOL
+    _WaitForSingleObject = ctypes.windll.kernel32.WaitForSingleObject
 
 
 # flush triggers
@@ -86,12 +121,8 @@ def get_printer_stream(val, codepage, temp_dir):
     options = val.split(b':')
     printer_name = options[0]
     flush_trigger = (options[1:] or [''])[0]
-    if platform.system() == 'Windows':
-        if win32print:
-            return WindowsPrinterStream(temp_dir, printer_name, flush_trigger, codepage)
-        else:
-            logging.warning(b'Could not find win32print module. Printing is disabled.')
-            return PrinterStreamBase(printer_name, flush_trigger, codepage)
+    if sys.platform == 'win32':
+        return WindowsPrinterStream(temp_dir, printer_name, flush_trigger, codepage)
     elif subprocess.call(b'command -v paps >/dev/null 2>&1', shell=True) == 0:
         return PAPSPrinterStream(printer_name, flush_trigger, codepage)
     else:
@@ -112,28 +143,33 @@ class WindowsPrinterStream(PrinterStreamBase):
     def _line_print(self, printbuf):
         """Print the buffer to a Windows printer."""
         if self.printer_name == b'' or self.printer_name == b'default':
-            self.printer_name = win32print.GetDefaultPrinter()
+            self.printer_name = get_default_printer()
         # open a file in our PC-BASIC temporary directory
         # this will get cleaned up on exit
         with open(self._printfile, 'wb') as f:
             # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
             f.write(b'\xef\xbb\xbf')
             f.write(printbuf)
-        # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
         try:
-            resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64,
-                            lpVerb='printto', lpFile=self._printfile,
-                            lpParameters='"%s"' % self.printer_name)
-            self.handle = resdict['hProcess']
-        except OSError as e:
-            logging.warning(b'Error while printing: %s', bytes(e))
+            sei = SHELLEXECUTEINFO()
+            sei.cbSize = ctypes.sizeof(sei)
+            sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC
+            sei.lpVerb = 'printto'
+            sei.lpFile = self._printfile
+            sei.lpParameters = '"%s"' % self.printer_name
+            sei.hProcess = HANDLE()
+            _ShellExecuteEx(ctypes.byref(sei))
+            self.handle = sei.hProcess
+        except EnvironmentError as e:
+            logging.error(b'Error while printing: %s', e)
             self.handle = -1
 
     def _wait(self):
         """Give printing process some time to complete."""
         try:
-            win32event.WaitForSingleObject(self.handle, 1000)
-        except OSError:
+            _WaitForSingleObject(self.handle, DWORD(1000))
+        except EnvironmentError as e:
+            logging.warning('Windows error: %s', e)
             pass
 
 

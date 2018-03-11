@@ -14,7 +14,6 @@ The following packages are needed or recommended when installing PC-BASIC from t
 |-----------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
 | [Python 2.7.12](https://www.python.org/downloads/release/python-2712/)            | all                | required     |
 | [Setuptools](https://pypi.python.org/pypi/setuptools)                             | all                | required     |
-| [PyWin32](https://sourceforge.net/projects/pywin32/)                              | Windows            | required     |
 | [PySDL2](https://pysdl2.readthedocs.org/en/latest/)                               | all                | recommended  | sound and graphics
 | [NumPy](https://sourceforge.net/projects/numpy/files/)                            | all                | recommended  | sound and graphics
 | [PySerial 3.4](https://pypi.python.org/pypi/pyserial)                             | all                | optional     | physical or emulated serial port access
@@ -35,17 +34,19 @@ PyParallel is _not_ needed for printing to a CUPS or Windows printer.
 
 To use the graphical interface, you will also need to install the [`SDL2`](https://www.libsdl.org/download-2.0.php) library, which is _not_ included in the `pysdl2` package. Install the library in your OS's standard location. On Windows, you can alternatively place `sdl2.dll` in the `pcbasic\lib` directory.
 
-The binary [ANSI|pipe](http://github.com/robhagemans/ansipipe/) executable `ansipipe-launcher.exe` is included with the source distribution in `pcbasic\lib`. Please use `pcbasic.bat` to start PC-BASIC with ANSI|pipe. Without it, PC-BASIC will run but you will be unable to use the text-based interfaces (options `-t` and `-b`) as they will print only gibberish on the console.
+To use the text-based interfaces, you will need the [ANSI|pipe](http://github.com/robhagemans/ansipipe/releases) library `winsi.dll`.
+Place the DLL in the `pcbasic\lib` directory.
+
 
 #### External tools ####
-On Unix systems, PC-BASIC can employ the following
-external command-line tools.
+PC-BASIC employs the following external command-line tools, if available:
 
 | Tool                                      | OS                | Status      | Used for
 |-------------------------------------------|-------------------|-------------|---------------------------------
-| `lpr`                                     | Mac, Linux, Unix  | essential   | printing to CUPS printers
-| `paps`                                    | Mac, Linux, Unix  | recommended | improved Unicode support for CUPS printing
-| `pbcopy`  and  `pbpaste`                  | Mac               | optional    | clipboard operation with PyGame
+| `notepad.exe`                             | Windows           | essential   | printing
+| `lpr`                                     | Mac, Linux, Unix  | essential   | printing
+| `paps`                                    | Mac, Linux, Unix  | recommended | improved Unicode support for printing
+| `pbcopy`  and  `pbpaste`                  | Mac               | optional    | clipboard operation (PyGame interface)
 | `beep`                                    | Mac, Linux, Unix  | optional    | sound in cli/text interface
 
 

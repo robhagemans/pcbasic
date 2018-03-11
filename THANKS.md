@@ -28,7 +28,6 @@ PC-BASIC depends on the following open-source projects:
   * [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/)
   * [PySDL2](https://pysdl2.readthedocs.org/en/latest/)
   * [NumPy](http://www.numpy.org)
-  * [Python for Windows Extensions (PyWin32)](https://sourceforge.net/projects/pywin32/)
   * [PySerial](http://pyserial.sourceforge.net/pyserial.html)
   * [PExpect](http://pexpect.readthedocs.org/en/latest/)
   * [ANSI|pipe](https://github.com/robhagemans/ansipipe)

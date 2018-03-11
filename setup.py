@@ -62,11 +62,11 @@ class SDistCommand(setuptools.command.sdist.sdist):
 
 from setuptools import setup, find_packages
 #from cx_Freeze import setup, Executable
-import platform
+import sys
 
 # platform-specific settings
-if platform.system() == 'Windows':
-    platform_specific_requirements = ['pywin32']
+if sys.platform == 'win32':
+    platform_specific_requirements = []
     console_scripts = ['pcbasic=pcbasic:main']
     gui_scripts = ['pcbasicw=pcbasic:main']
 else:
