@@ -287,7 +287,8 @@ class DiskDevice(object):
         # return absolute path to file
         path = os.path.join(self._native_root, native_relpath)
         if name:
-            path = os.path.join(path, dosnames.match_filename(name, defext, path, name_err, isdir))
+            path = os.path.join(
+                    path, self._name_conv.match_filename(name, defext, path, name_err, isdir))
         # get full normalised path
         return os.path.abspath(path)
 

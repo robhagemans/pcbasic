@@ -50,60 +50,60 @@ class NameConverter(object):
                 cwd = cwd[:-1]
             dospath_elements = dospath_elements[1:]
         ####
-        # convert to unicode
-        elements = [self._codepage.str_to_unicode(e, box_protect=False) for e in dospath_elements]
         # prepend drive root path to allow filename matching
         path = os.path.join(native_root, *cwd)
         root_len = len(native_root) + (native_root[-1] != os.sep)
         # find the native matches for each step in the path
-        for dos_elem in elements:
+        for dos_elem in dospath_elements:
             # skip double slashes
             if dos_elem:
                 # find a matching directory for every step in the path;
-                native_elem = match_filename(dos_elem, b'', path, name_err=path_err, isdir=True)
+                native_elem = self.match_filename(dos_elem, b'', path, name_err=path_err, isdir=True)
                 # append found name to path
                 path = os.path.join(path, native_elem)
         # return relative path only
         return path[root_len:]
 
-def match_filename(name, defext, path, name_err, isdir):
-    """Find or create a matching native file name for a given BASIC name."""
-    # if the name contains a dot, do not apply the default extension
-    # to maintain GW-BASIC compatibility, a trailing single dot matches the name
-    # with no dots as well as the name with a single dot.
-    # file names with more than one dot are not affected.
-    # file spec         attempted matches
-    # LongFileName      (1) LongFileName.BAS (2) LONGFILE.BAS
-    # LongFileName.bas  (1) LongFileName.bas (2) LONGFILE.BAS
-    # LongFileName.     (1) LongFileName. (2) LongFileName (3) LONGFILE
-    # LongFileName..    (1) LongFileName.. (2) [does not try LONGFILE.. - not allowable]
-    # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
-    if defext and b'.' not in name:
-        name += b'.' + defext
-    elif name[-1] == b'.' and b'.' not in name[:-1]:
-        # ends in single dot; first try with dot
-        # but if it doesn't exist, base everything off dotless name
+    def match_filename(self, name, defext, path, name_err, isdir):
+        """Find or create a matching native file name for a given BASIC name."""
+        # if the name contains a dot, do not apply the default extension
+        # to maintain GW-BASIC compatibility, a trailing single dot matches the name
+        # with no dots as well as the name with a single dot.
+        # file names with more than one dot are not affected.
+        # file spec         attempted matches
+        # LongFileName      (1) LongFileName.BAS (2) LONGFILE.BAS
+        # LongFileName.bas  (1) LongFileName.bas (2) LONGFILE.BAS
+        # LongFileName.     (1) LongFileName. (2) LongFileName (3) LONGFILE
+        # LongFileName..    (1) LongFileName.. (2) [does not try LONGFILE.. - not allowable]
+        # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
+        if defext and b'.' not in name:
+            name += b'.' + defext
+        elif name[-1] == b'.' and b'.' not in name[:-1]:
+            # ends in single dot; first try with dot
+            # but if it doesn't exist, base everything off dotless name
+            if istype(path, name, isdir):
+                return name
+            name = name[:-1]
+        # convert from codepage to unicode
+        name = self._codepage.str_to_unicode(name, box_protect=False)
+        # check if the name exists as-is; should also match Windows short names.
         if istype(path, name, isdir):
             return name
-        name = name[:-1]
-    # check if the name exists as-is; should also match Windows short names.
-    if istype(path, name, isdir):
-        return name
-    # try to match dossified names
-    trunk, ext = split_dosname(name)
-    # enforce allowable characters
-    if (set(trunk) | set(ext)) - ALLOWABLE_CHARS:
-        raise error.BASICError(error.BAD_FILE_NAME)
-    dosname = join_dosname(trunk, ext)
-    fullname = _match_dosname(dosname, path, isdir)
-    if fullname:
-        return fullname
-    # not found
-    if not name_err:
-        # create a new filename
-        return dosname
-    else:
-        raise error.BASICError(name_err)
+        # try to match dossified names
+        trunk, ext = split_dosname(name)
+        # enforce allowable characters
+        if (set(trunk) | set(ext)) - ALLOWABLE_CHARS:
+            raise error.BASICError(error.BAD_FILE_NAME)
+        dosname = join_dosname(trunk, ext)
+        fullname = _match_dosname(dosname, path, isdir)
+        if fullname:
+            return fullname
+        # not found
+        if not name_err:
+            # create a new filename
+            return dosname
+        else:
+            raise error.BASICError(name_err)
 
 def _match_dosname(dosname, path, isdir):
     """Find a matching native file name for a given 8.3 ascii DOS name."""
