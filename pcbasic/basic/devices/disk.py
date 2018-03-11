@@ -138,7 +138,7 @@ class DiskDevice(object):
         self._native_cwd = u''
         if self._native_root:
             try:
-                self._native_cwd = self._native_relpath(dos_cwd, error.PATH_NOT_FOUND)
+                self._native_cwd = self._native_relpath(dos_cwd)
             except error.BASICError:
                 logging.warning(
                     'Could not open working directory %s on drive %s:. Using drive root instead.',
@@ -267,7 +267,7 @@ class DiskDevice(object):
             # bad file number, which is what GW throws for open chr$(0)
             raise error.BASICError(error.BAD_FILE_NUMBER)
 
-    def _native_relpath(self, dospath, path_err):
+    def _native_relpath(self, dospath):
         """Return the native path for a given BASIC path, relative to the root."""
         if b'/' in dospath:
             # bad file number - this is what GW produces here
@@ -297,7 +297,7 @@ class DiskDevice(object):
         for dos_elem in dospath_elements:
             # find a matching directory for every step in the path;
             native_elem = self._name_conv.match_filename(
-                    dos_elem, b'', path, name_err=path_err, isdir=True)
+                    dos_elem, b'', path, name_err=error.PATH_NOT_FOUND, isdir=True)
             # append found name to path
             path = os.path.join(path, native_elem)
         # return relative path only
@@ -318,7 +318,7 @@ class DiskDevice(object):
         # substitute drives and cwds
         # always use Path Not Found error if not found at this stage
         dos_dirname, name = ntpath.split(path)
-        native_relpath = self._native_relpath(dos_dirname, error.PATH_NOT_FOUND)
+        native_relpath = self._native_relpath(dos_dirname)
         # return absolute path to file
         path = os.path.join(self._native_root, native_relpath)
         if name:
@@ -330,7 +330,7 @@ class DiskDevice(object):
     def chdir(self, dos_path):
         """Change working directory to given BASIC path."""
         # get drive path and relative path
-        native_relpath = self._native_relpath(dos_path, error.PATH_NOT_FOUND)
+        native_relpath = self._native_relpath(dos_path)
         # set cwd for the specified drive
         self._native_cwd = native_relpath
 
@@ -361,16 +361,18 @@ class DiskDevice(object):
 
     def _split_pathmask(self, dos_pathmask):
         """Split pathmask into path and mask."""
-        if not self._native_root:
-            # undefined disk drive: file not found
-            raise error.BASICError(error.FILE_NOT_FOUND)
         # forward slashes - file not found
         # GW-BASIC sometimes allows leading or trailing slashes
         # and then does weird things I don't understand.
         if b'/' in dos_pathmask:
             raise error.BASICError(error.FILE_NOT_FOUND)
+        # note that ntpath would otherwise accept / as \\
         dos_path, dos_mask = ntpath.split(dos_pathmask)
-        native_relpath = self._native_relpath(dos_path, error.FILE_NOT_FOUND)
+        try:
+            native_relpath = self._native_relpath(dos_path)
+        except error.BASICError as e:
+            # any path name problem in FILES: GW-BASIC throws file not found
+            raise error.BASICError(error.FILE_NOT_FOUND)
         native_path = os.path.join(self._native_root, native_relpath)
         return native_path, native_relpath, dos_mask
 
