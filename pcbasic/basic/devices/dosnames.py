@@ -57,8 +57,11 @@ class NameConverter(object):
         if istype(native_path, uni_name, isdir):
             return uni_name
         # original name does not exist; try matching dos-names or create one
-        # try to match dossified names
-        norm_name = normalise_dosname(dos_name, enforce=True)
+        # normalise to 8.3
+        norm_name = normalise_dosname(dos_name)
+        # check for non-legal characters & spaces (but clip off overlong names)
+        if not is_legal_dosname(norm_name):
+            raise error.BASICError(error.BAD_FILE_NAME)
         fullname = match_dosname(native_path, norm_name, isdir)
         if fullname:
             return fullname
@@ -70,7 +73,7 @@ class NameConverter(object):
             raise error.BASICError(name_err)
 
 
-def normalise_dosname(dos_name, enforce):
+def normalise_dosname(dos_name):
     """Convert dosname into bytes uppercase 8.3."""
     # a normalised DOS-name is all-uppercase, no leading or trailing spaces, and
     # 1) . or ..; or
@@ -91,16 +94,27 @@ def normalise_dosname(dos_name, enforce):
         trunk, ext = elements
     # truncate to 8.3
     trunk, ext = trunk[:8], ext[:3]
-    if enforce:
-        # no leading or trailing spaces
-        if trunk != trunk.strip() or ext != ext.strip():
-            raise error.BASICError(error.BAD_FILE_NAME)
-        # enforce allowable characters
-        if (set(trunk) | set(ext)) - ALLOWABLE_CHARS:
-            raise error.BASICError(error.BAD_FILE_NAME)
     if ext:
         ext = b'.' + ext
-    return trunk + ext
+    norm_name = trunk + ext
+    return norm_name
+
+def is_legal_dosname(dos_name):
+    """Check if a (bytes) name is a legal DOS name."""
+    if dos_name in (b'.', b'..'):
+        return True
+    # splitext includes the dot for the extension
+    trunk, ext = ntpath.splitext(dos_name)
+    if ext.startswith(b'.'):
+        ext = ext[1:]
+    return (
+            # enforce lengths
+            (trunk and len(trunk) <= 8 and len(ext) <= 3) and
+            # no leading or trailing spaces
+            (trunk == trunk.strip() and ext == ext.strip()) and
+            # enforce allowable characters
+            ((set(trunk) | set(ext)) <= ALLOWABLE_CHARS)
+        )
 
 def match_dosname(native_path, dosname, isdir):
     """Find a matching native file name for a given normalised DOS name."""
@@ -119,12 +133,16 @@ def match_dosname(native_path, dosname, isdir):
         # report no match if listdir fails
         return None
     for f in sorted(all_names):
+        # we won't match non-ascii anyway
         try:
-            try_name = normalise_dosname(f.encode(b'ascii'), enforce=False)
+            ascii_name = f.encode(b'ascii')
+        except UnicodeEncodeError:
+            continue
+        # don't match long names or non-legal dos names
+        if is_legal_dosname(ascii_name):
+            try_name = normalise_dosname(ascii_name)
             if try_name == dosname and istype(native_path, f, isdir):
                 return f
-        except UnicodeEncodeError:
-            pass
     return None
 
 
@@ -228,8 +246,11 @@ def filter_names(path, files_list, mask=b'*.*'):
     """Apply filename filter to short version of names."""
     all_files = [short_name(path, name.decode(b'ascii')) for name in files_list]
     # apply mask separately to trunk and extension, dos-style.
+    trunkmask, extmask = ntpath.splitext(mask)
+    # splitext includes the leading dot
+    if extmask.startswith(b'.'):
+        extmask = extmask[1:]
     # hide dotfiles
-    trunkmask, extmask = split_dosname(mask)
     return sorted([(t, e) for (t, e) in all_files
         if (match_wildcard(t, trunkmask) and match_wildcard(e, extmask) and
             (t or not e or e == b'.'))])
