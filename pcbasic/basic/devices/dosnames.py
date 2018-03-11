@@ -25,7 +25,7 @@ class NameConverter(object):
         """Initialise converter."""
         self._codepage = codepage
 
-    def get_native_name(self, path, name, defext, isdir, create):
+    def get_native_name(self, native_path, dos_name, defext, isdir, create):
         """Find or create a matching native file name for a given BASIC name."""
         # if the name contains a dot, do not apply the default extension
         # to maintain GW-BASIC compatibility, a trailing single dot matches the name
@@ -41,58 +41,90 @@ class NameConverter(object):
         # don't accept leading or trailing whitespace (internal whitespace should be preserved)
         # note that DosBox removes internal whitespace, but MS-DOS does not
         name_err = error.PATH_NOT_FOUND if isdir else error.FILE_NOT_FOUND
-        if name != name.strip():
+        if dos_name != dos_name.strip():
             raise error.BASICError(name_err)
-        if defext and b'.' not in name:
-            name += b'.' + defext
-        elif name[-1] == b'.' and b'.' not in name[:-1]:
+        if defext and b'.' not in dos_name:
+            dos_name += b'.' + defext
+        elif dos_name[-1] == b'.' and b'.' not in dos_name[:-1]:
             # ends in single dot; first try with dot
             # but if it doesn't exist, base everything off dotless name
-            if istype(path, name, isdir):
-                return name
-            name = name[:-1]
-        # convert from codepage to unicode
-        name = self._codepage.str_to_unicode(name, box_protect=False)
+            uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
+            if istype(native_path, uni_name, isdir):
+                return uni_name
+            dos_name = dos_name[:-1]
         # check if the name exists as-is; should also match Windows short names.
-        if istype(path, name, isdir):
-            return name
+        uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
+        if istype(native_path, uni_name, isdir):
+            return uni_name
+        # original name does not exist; try matching dos-names or create one
         # try to match dossified names
-        trunk, ext = split_dosname(name)
-        # enforce allowable characters
-        if (set(trunk) | set(ext)) - ALLOWABLE_CHARS:
-            raise error.BASICError(error.BAD_FILE_NAME)
-        dosname = join_dosname(trunk, ext)
-        fullname = _match_dosname(dosname, path, isdir)
+        norm_name = normalise_dosname(dos_name, enforce=True)
+        fullname = match_dosname(native_path, norm_name, isdir)
         if fullname:
             return fullname
         # not found
         if create:
             # create a new filename
-            return dosname
+            return norm_name.decode(b'ascii')
         else:
             raise error.BASICError(name_err)
 
-def _match_dosname(dosname, path, isdir):
-    """Find a matching native file name for a given 8.3 ascii DOS name."""
+
+def normalise_dosname(dos_name, enforce):
+    """Convert dosname into bytes uppercase 8.3."""
+    # a normalised DOS-name is all-uppercase, no leading or trailing spaces, and
+    # 1) . or ..; or
+    # 2) 1--8 allowable characters followed by one dot followed by 1--3 characters; or
+    # 3) 1--8 allowable characters with no dots
+    #
+    # don't try to split special directory names
+    if dos_name in (b'.', b'..'):
+        return dos_name
+    # convert to all uppercase
+    dos_name = dos_name.upper()
+    # take whatever comes after first dot as extension
+    # and whatever comes before first dot as trunk
+    elements = dos_name.split(b'.', 1)
+    if len(elements) == 1:
+        trunk, ext = elements[0], ''
+    else:
+        trunk, ext = elements
+    # truncate to 8.3
+    trunk, ext = trunk[:8], ext[:3]
+    if enforce:
+        # no leading or trailing spaces
+        if trunk != trunk.strip() or ext != ext.strip():
+            raise error.BASICError(error.BAD_FILE_NAME)
+        # enforce allowable characters
+        if (set(trunk) | set(ext)) - ALLOWABLE_CHARS:
+            raise error.BASICError(error.BAD_FILE_NAME)
+    if ext:
+        ext = b'.' + ext
+    return trunk + ext
+
+def match_dosname(native_path, dosname, isdir):
+    """Find a matching native file name for a given normalised DOS name."""
     try:
-        dosname = dosname.decode(b'ascii')
+        uni_name = dosname.decode(b'ascii')
     except UnicodeDecodeError:
-        # non-ascii characters are not allowable for DOS filenames
+        # non-ascii characters are not allowable for DOS filenames, no match
         return None
-    # check if the dossified name exists as-is
-    if istype(path, dosname, isdir):
-        return dosname
-    # find other case combinations, if present
-    # also match training single dot to no dots
-    trunk, ext = split_dosname(dosname)
+    # check if the 8.3 uppercase exists, prefer if so
+    if istype(native_path, uni_name, isdir):
+        return uni_name
+    # otherwise try in lexicographic order
     try:
-        all_names = sorted(os.listdir(path))
+        all_names = os.listdir(native_path)
     except EnvironmentError:
         # report no match if listdir fails
         return None
-    for f in all_names:
-        if split_dosname(f) == (trunk, ext) and istype(path, f, isdir):
-            return f
+    for f in sorted(all_names):
+        try:
+            try_name = normalise_dosname(f.encode(b'ascii'), enforce=False)
+            if try_name == dosname and istype(native_path, f, isdir):
+                return f
+        except UnicodeEncodeError:
+            pass
     return None
 
 
@@ -133,6 +165,7 @@ else:
         # path is only needed on Windows
         return split_dosname(longname, mark_shortened=True)
 
+# deprecate
 def split_dosname(name, mark_shortened=False):
     """Convert unicode name into bytes uppercase 8.3 tuple; apply default extension."""
     # convert to all uppercase, no leading or trailing spaces
@@ -161,13 +194,13 @@ def split_dosname(name, mark_shortened=False):
             sext = sext[:2] + b'+'
     return strunk, sext
 
-def istype(path, native_name, isdir):
+def istype(native_path, native_name, isdir):
     """Return whether a file exists and is a directory or regular."""
-    name = os.path.join(path, native_name)
+    name = os.path.join(native_path, native_name)
     try:
         return os.path.isdir(name) if isdir else os.path.isfile(name)
     except TypeError:
-        # happens for name = '\0'
+        # happens for name == u'\0'
         return False
 
 def match_wildcard(name, mask):
