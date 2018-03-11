@@ -3,7 +3,7 @@ import os
 import re
 import string
 import sys
-from ntpath import normpath as dos_normpath, split as dos_split
+import ntpath
 
 from ..base import error
 
@@ -24,41 +24,6 @@ class NameConverter(object):
     def __init__(self, codepage):
         """Initialise converter."""
         self._codepage = codepage
-
-    def native_relpath(self, dospath, path_err, native_root, native_cwd):
-        """Return the native path for a given BASIC path, relative to the root."""
-        if b'/' in dospath:
-            # bad file number - this is what GW produces here
-            raise error.BASICError(error.BAD_FILE_NUMBER)
-        if not native_root:
-            # this drive letter is not available (not mounted)
-            raise error.BASICError(error.PATH_NOT_FOUND)
-        # find starting directory
-        if dospath and dospath[0] == b'\\':
-            # absolute path specified
-            cwd = []
-        else:
-            cwd = native_cwd.split(os.sep)
-        # parse internal .. and . and double slashes
-        dospath = dos_normpath(dospath)
-        # parse leading . and .. and double slashes in relative path
-        # if at root, just drop leading dots (this is what GW-BASIC does at drive root)
-        dospath_elements = dospath.split(b'\\')
-        while dospath_elements and dospath_elements[0] in (b'', b'.', b'..'):
-            if dospath_elements[0] == b'..':
-                cwd = cwd[:-1]
-            dospath_elements = dospath_elements[1:]
-        # prepend drive root path to allow filename matching
-        path = os.path.join(native_root, *cwd)
-        root_len = len(native_root) + (native_root[-1] != os.sep)
-        # find the native matches for each step in the path
-        for dos_elem in dospath_elements:
-            # find a matching directory for every step in the path;
-            native_elem = self.match_filename(dos_elem, b'', path, name_err=path_err, isdir=True)
-            # append found name to path
-            path = os.path.join(path, native_elem)
-        # return relative path only
-        return path[root_len:]
 
     def match_filename(self, name, defext, path, name_err, isdir):
         """Find or create a matching native file name for a given BASIC name."""

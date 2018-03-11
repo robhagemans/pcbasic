@@ -17,6 +17,7 @@ import sys
 import locale
 import struct
 import random
+import ntpath
 if sys.platform == 'win32':
     import win32api
     import ctypes
@@ -137,7 +138,7 @@ class DiskDevice(object):
         self._native_cwd = u''
         if self._native_root:
             try:
-                self._native_cwd = self._name_conv.native_relpath(
+                self._native_cwd = self._native_relpath(
                         dos_cwd, error.PATH_NOT_FOUND, self._native_root, native_cwd=u'')
             except error.BASICError:
                 logging.warning(
@@ -267,6 +268,42 @@ class DiskDevice(object):
             # bad file number, which is what GW throws for open chr$(0)
             raise error.BASICError(error.BAD_FILE_NUMBER)
 
+    def _native_relpath(self, dospath, path_err, native_root, native_cwd):
+        """Return the native path for a given BASIC path, relative to the root."""
+        if b'/' in dospath:
+            # bad file number - this is what GW produces here
+            raise error.BASICError(error.BAD_FILE_NUMBER)
+        if not native_root:
+            # this drive letter is not available (not mounted)
+            raise error.BASICError(error.PATH_NOT_FOUND)
+        # find starting directory
+        if dospath and dospath[0] == b'\\':
+            # absolute path specified
+            cwd = []
+        else:
+            cwd = native_cwd.split(os.sep)
+        # parse internal .. and . and double slashes
+        dospath = ntpath.normpath(dospath)
+        # parse leading . and .. and double slashes in relative path
+        # if at root, just drop leading dots (this is what GW-BASIC does at drive root)
+        dospath_elements = dospath.split(b'\\')
+        while dospath_elements and dospath_elements[0] in (b'', b'.', b'..'):
+            if dospath_elements[0] == b'..':
+                cwd = cwd[:-1]
+            dospath_elements = dospath_elements[1:]
+        # prepend drive root path to allow filename matching
+        path = os.path.join(native_root, *cwd)
+        root_len = len(native_root) + (native_root[-1] != os.sep)
+        # find the native matches for each step in the path
+        for dos_elem in dospath_elements:
+            # find a matching directory for every step in the path;
+            native_elem = self._name_conv.match_filename(
+                    dos_elem, b'', path, name_err=path_err, isdir=True)
+            # append found name to path
+            path = os.path.join(path, native_elem)
+        # return relative path only
+        return path[root_len:]
+
     def _find_native_path(
             self, path, defext=b'', name_err=error.FILE_NOT_FOUND, isdir=False):
         """\
@@ -281,8 +318,8 @@ class DiskDevice(object):
         """
         # substitute drives and cwds
         # always use Path Not Found error if not found at this stage
-        dos_dirname, name = dosnames.dos_split(path)
-        native_relpath = self._name_conv.native_relpath(
+        dos_dirname, name = ntpath.split(path)
+        native_relpath = self._native_relpath(
                 dos_dirname, error.PATH_NOT_FOUND, self._native_root, self._native_cwd)
         # return absolute path to file
         path = os.path.join(self._native_root, native_relpath)
@@ -295,7 +332,7 @@ class DiskDevice(object):
     def chdir(self, dos_path):
         """Change working directory to given BASIC path."""
         # get drive path and relative path
-        native_relpath = self._name_conv.native_relpath(
+        native_relpath = self._native_relpath(
                 dos_path, error.PATH_NOT_FOUND, self._native_root, self._native_cwd)
         # set cwd for the specified drive
         self._native_cwd = native_relpath
@@ -335,8 +372,8 @@ class DiskDevice(object):
         # and then does weird things I don't understand.
         if b'/' in dos_pathmask:
             raise error.BASICError(error.FILE_NOT_FOUND)
-        dos_path, dos_mask = dosnames.dos_split(dos_pathmask)
-        native_relpath = self._name_conv.native_relpath(
+        dos_path, dos_mask = ntpath.split(dos_pathmask)
+        native_relpath = self._native_relpath(
                 dos_path, error.FILE_NOT_FOUND, self._native_root, self._native_cwd)
         native_path = os.path.join(self._native_root, native_relpath)
         return native_path, native_relpath, dos_mask
