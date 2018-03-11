@@ -4,8 +4,12 @@ import re
 import string
 import sys
 import ntpath
+
 if sys.platform == 'win32':
-    import win32api
+    import ctypes
+    from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD
+    GetShortPathName = ctypes.windll.kernel32.GetShortPathNameW
+    GetShortPathName.argtypes = [LPCWSTR, LPWSTR, DWORD]
 
 from ..base import error
 
@@ -80,8 +84,13 @@ class NameConverter(object):
         # get the short name if it exists, keep long name otherwise
         if sys.platform == 'win32':
             try:
-                native_path = win32api.GetShortPathName(native_path)
-            except Exception:
+                length = GetShortPathName(native_path, LPWSTR(0), DWORD(0))
+                wbuffer = ctypes.create_unicode_buffer(length)
+                length = GetShortPathName(native_path, wbuffer, DWORD(length))
+                # returns None if error
+                if wbuffer.value:
+                    native_path = wbuffer.value
+            except Exception as e:
                 # something went wrong - keep long name (happens for swap file or non-Windows)
                 # this should be a WindowsError which is an OSError
                 # but it often is a pywintypes.error
