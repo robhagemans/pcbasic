@@ -4,6 +4,8 @@ import re
 import string
 import sys
 import ntpath
+if sys.platform == 'win32':
+    import win32api
 
 from ..base import error
 
