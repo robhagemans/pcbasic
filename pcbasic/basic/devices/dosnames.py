@@ -96,12 +96,12 @@ class NameConverter(object):
         # convert to codepage
         cp_name = self._codepage.str_from_unicode(native_name)
         # clip overlong & mark as shortened
-        trunk, ext_inc_dot = ntpath.splitext(cp_name)
+        trunk, ext = dos_splitext(cp_name)
         if len(trunk) > 8:
             trunk = trunk[:7] + b'+'
-        if len(ext_inc_dot) > 4:
-            ext_inc_dot = ext_inc_dot[:3] + b'+'
-        return trunk + ext_inc_dot
+        if len(ext) > 3:
+            ext = ext[:2] + b'+'
+        return trunk + (b'.' if ext or not trunk else b'') + ext
 
     def filter_names(self, native_dirpath, native_names, dos_mask):
         """Apply case-insensitive filename filter to display names."""
@@ -111,26 +111,29 @@ class NameConverter(object):
         split = [dos_splitext(dos_name) for dos_name in all_files]
         return sorted(
                 (trunk, ext) for (trunk, ext) in split
-                if (match_wildcard(trunk, trunkmask) and match_wildcard(ext, extmask) and
-                        # this matches . and ..
-                        (trunk or not ext or ext == b'.')
-                )
+                if match_wildcard(trunk, trunkmask) and match_wildcard(ext, extmask)
             )
 
 
 def dos_splitext(dos_name):
     """Return trunk and extension excluding the dot."""
-    trunk, ext = ntpath.splitext(dos_name)
-    # ntpath.splitext includes the leading dot
-    if ext.startswith(b'.'):
-        ext = ext[1:]
+    # take whatever comes after first dot as extension
+    # and whatever comes before first dot as trunk
+    # differs from ntpath.splitext:
+    # - does not include . in extension; no extension equals ending in .
+    # - dotfiles are trunks starting with . in ntpath but extensions here.
+    elements = dos_name.split(b'.', 1)
+    if len(elements) == 1:
+        trunk, ext = elements[0], ''
+    else:
+        trunk, ext = elements
     return trunk, ext
 
 def normalise_dosname(dos_name):
     """Convert dosname into bytes uppercase 8.3."""
     # a normalised DOS-name is all-uppercase, no leading or trailing spaces, and
     # 1) . or ..; or
-    # 2) 1--8 allowable characters followed by one dot followed by 1--3 characters; or
+    # 2) 0--8 allowable characters followed by one dot followed by 0--3 allowable characters; or
     # 3) 1--8 allowable characters with no dots
     #
     # don't try to split special directory names
@@ -138,13 +141,8 @@ def normalise_dosname(dos_name):
         return dos_name
     # convert to all uppercase
     dos_name = dos_name.upper()
-    # take whatever comes after first dot as extension
-    # and whatever comes before first dot as trunk
-    elements = dos_name.split(b'.', 1)
-    if len(elements) == 1:
-        trunk, ext = elements[0], ''
-    else:
-        trunk, ext = elements
+    # split into trunk and extension
+    trunk, ext = dos_splitext(dos_name)
     # truncate to 8.3
     trunk, ext = trunk[:8], ext[:3]
     if ext:
@@ -159,7 +157,7 @@ def is_legal_dosname(dos_name):
     trunk, ext = dos_splitext(dos_name)
     return (
             # enforce lengths
-            (trunk and len(trunk) <= 8 and len(ext) <= 3) and
+            (len(trunk) <= 8 and len(ext) <= 3) and
             # no leading or trailing spaces
             (trunk == trunk.strip() and ext == ext.strip()) and
             # enforce allowable characters

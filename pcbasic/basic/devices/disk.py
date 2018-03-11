@@ -376,30 +376,23 @@ class DiskDevice(object):
     def _get_dirs_files(self, native_path):
         """Get native filenames for native path."""
         all_names = safe(os.listdir, native_path)
-        dos_dirs = [n for n in all_names if os.path.isdir(os.path.join(native_path, n))]
-        dos_fils = [n for n in all_names if not os.path.isdir(os.path.join(native_path, n))]
-        return dos_dirs, dos_fils
+        dirs = [n for n in all_names if os.path.isdir(os.path.join(native_path, n))]
+        fils = [n for n in all_names if not os.path.isdir(os.path.join(native_path, n))]
+        return dirs, fils
 
     def listdir(self, pathmask):
         """Get directory listing."""
         native_path, native_relpath, dos_mask = self._split_pathmask(pathmask)
         fils = []
-        if dos_mask == b'.':
-            #parent = os.path.join(native_path, u'..')
-            #this_name = os.path.basename(native_path)
-            #dirs = [dosnames.dos_splitext(self._name_conv.get_dos_display_name(parent, this_name))]
-            dirs = [(u'', u'')]
-        elif dos_mask == b'..':
-            #grandparent = os.path.join(native_path, u'..', u'..')
-            #parent_name = os.path.basename(os.path.abspath(os.path.join(native_path, u'..')))
-            #dirs = [dosnames.dos_splitext(self._name_conv.get_dos_display_name(grandparent, parent_name))]
+        if dos_mask in (b'.', b'..'):
+            # following GW, we just show a single dot if asked for either . or ..
             dirs = [(u'', u'')]
         else:
             dirs, fils = self._get_dirs_files(native_path)
             # filter according to mask
             dirs = self._name_conv.filter_names(native_path, dirs + [u'.', u'..'], dos_mask)
             fils = self._name_conv.filter_names(native_path, fils, dos_mask)
-        # format and print contents
+        # format contents
         return (
             [t.ljust(8) + (b'.' if e or not t else b' ') + e.ljust(3) + b'<DIR>' for t, e in dirs] +
             [t.ljust(8) + (b'.' if e or not t else b' ') + e.ljust(3) + b'     ' for t, e in fils]
