@@ -138,7 +138,7 @@ class DiskDevice(object):
         self._native_cwd = u''
         if self._native_root:
             try:
-                self._native_cwd = self._native_relpath(dos_cwd)
+                self._native_cwd = self._get_native_reldir(dos_cwd)
             except error.BASICError:
                 logging.warning(
                     'Could not open working directory %s on drive %s:. Using drive root instead.',
@@ -207,11 +207,11 @@ class DiskDevice(object):
             defext = b''
         # translate the file name to something DOS-ish if necessary
         if mode == b'I':
-            native_name = self._find_native_path(filespec, defext, isdir=False, create=False)
+            native_name = self._get_native_abspath(filespec, defext, isdir=False, create=False)
         else:
             # random files: try to open matching file
             # if it doesn't exist, use an all-caps 8.3 file name
-            native_name = self._find_native_path(filespec, defext, isdir=False, create=True)
+            native_name = self._get_native_abspath(filespec, defext, isdir=False, create=True)
         # handle locks, open stream and create file object
         # don't open output or append files more than once
         if mode in (b'O', b'A'):
@@ -267,8 +267,8 @@ class DiskDevice(object):
             # bad file number, which is what GW throws for open chr$(0)
             raise error.BASICError(error.BAD_FILE_NUMBER)
 
-    def _native_relpath(self, dospath):
-        """Return the native path for a given BASIC path, relative to the root."""
+    def _get_native_reldir(self, dospath):
+        """Return the native dir path for a given BASIC dir path, relative to the root."""
         if b'/' in dospath:
             # bad file number - this is what GW produces here
             raise error.BASICError(error.BAD_FILE_NUMBER)
@@ -296,14 +296,14 @@ class DiskDevice(object):
         # find the native matches for each step in the path
         for dos_elem in dospath_elements:
             # find a matching directory for every step in the path;
-            native_elem = self._name_conv.match_filename(
+            native_elem = self._name_conv.get_native_name(
                     path, dos_elem, defext=b'', isdir=True, create=False)
             # append found name to path
             path = os.path.join(path, native_elem)
         # return relative path only
         return path[root_len:]
 
-    def _find_native_path(self, path, defext, isdir, create):
+    def _get_native_abspath(self, path, defext, isdir, create):
         """\
             Find os-native path to match the given BASIC path; apply default extension.
             path: bytes             requested DOS path to file on this device
@@ -315,41 +315,43 @@ class DiskDevice(object):
         # substitute drives and cwds
         # always use Path Not Found error if not found at this stage
         dos_dirname, name = ntpath.split(path)
-        native_relpath = self._native_relpath(dos_dirname)
+        native_relpath = self._get_native_reldir(dos_dirname)
         # return absolute path to file
         path = os.path.join(self._native_root, native_relpath)
         if name:
             path = os.path.join(
-                    path, self._name_conv.match_filename(path, name, defext, isdir, create))
+                    path, self._name_conv.get_native_name(path, name, defext, isdir, create))
         # get full normalised path
         return os.path.abspath(path)
 
     def chdir(self, dos_path):
         """Change working directory to given BASIC path."""
         # get drive path and relative path
-        native_relpath = self._native_relpath(dos_path)
+        native_relpath = self._get_native_reldir(dos_path)
         # set cwd for the specified drive
         self._native_cwd = native_relpath
 
     def mkdir(self, dos_path):
         """Create directory at given BASIC path."""
-        safe(os.mkdir, self._find_native_path(dos_path, defext=b'', isdir=True, create=True))
+        safe(os.mkdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=True))
 
     def rmdir(self, dos_path):
         """Remove directory at given BASIC path."""
-        safe(os.rmdir, self._find_native_path(dos_path, defext=b'', isdir=True, create=False))
+        safe(os.rmdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=False))
 
     def kill(self, dos_path):
         """Remove regular file at given native path."""
-        native_path = self._find_native_path(dos_path, defext=b'', isdir=False, create=False)
+        native_path = self._get_native_abspath(dos_path, defext=b'', isdir=False, create=False)
         # don't delete open files
         self._check_file_not_open(native_path)
         safe(os.remove, native_path)
 
     def rename(self, old_dospath, new_dospath):
         """Rename a file or directory."""
-        old_native_path = self._find_native_path(old_dospath, defext=b'', isdir=False, create=False)
-        new_native_path = self._find_native_path(new_dospath, defext=b'', isdir=False, create=True)
+        old_native_path = self._get_native_abspath(
+                old_dospath, defext=b'', isdir=False, create=False)
+        new_native_path = self._get_native_abspath(
+                new_dospath, defext=b'', isdir=False, create=True)
         if os.path.exists(new_native_path):
             raise error.BASICError(error.FILE_ALREADY_EXISTS)
         safe(os.rename, old_native_path, new_native_path)
@@ -364,7 +366,7 @@ class DiskDevice(object):
         # note that ntpath would otherwise accept / as \\
         dos_path, dos_mask = ntpath.split(dos_pathmask)
         try:
-            native_relpath = self._native_relpath(dos_path)
+            native_relpath = self._get_native_reldir(dos_path)
         except error.BASICError as e:
             # any path name problem in FILES: GW-BASIC throws file not found
             raise error.BASICError(error.FILE_NOT_FOUND)
@@ -423,7 +425,7 @@ class DiskDevice(object):
     def require_file_exists_and_not_open(self, dospath):
         """Raise an error if the file is open or does not exist."""
         # this checks for existence if name_err is set
-        native_name = self._find_native_path(dospath, defext=b'', isdir=False, create=False)
+        native_name = self._get_native_abspath(dospath, defext=b'', isdir=False, create=False)
         return self._check_file_not_open(native_name)
 
     def _check_file_not_open(self, native_path):

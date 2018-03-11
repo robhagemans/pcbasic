@@ -25,7 +25,7 @@ class NameConverter(object):
         """Initialise converter."""
         self._codepage = codepage
 
-    def match_filename(self, path, name, defext, isdir, create):
+    def get_native_name(self, path, name, defext, isdir, create):
         """Find or create a matching native file name for a given BASIC name."""
         # if the name contains a dot, do not apply the default extension
         # to maintain GW-BASIC compatibility, a trailing single dot matches the name
