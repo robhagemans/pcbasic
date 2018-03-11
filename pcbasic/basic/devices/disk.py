@@ -19,7 +19,6 @@ import struct
 import random
 import ntpath
 if sys.platform == 'win32':
-    import win32api
     import ctypes
 
 from ..base.bytestream import ByteStream

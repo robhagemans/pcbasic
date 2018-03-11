@@ -17,13 +17,15 @@ import tempfile
 import shutil
 import platform
 import pkg_resources
+import string
 
 from collections import deque
 
 if platform.system() == b'Windows':
     import ctypes
     import ctypes.wintypes
-    import win32api
+    from .basic.devices.dosnames import GetShortPathName
+
 
 from .basic.metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
@@ -608,25 +610,23 @@ class Settings(object):
         # always get current device
         current_device = self.get('current-device')
         if self.get('map-drives', get_default):
-            if platform.system() == b'Windows':
+            if sys.platform == 'win32':
                 # get all drives in use by windows
                 # if started from CMD.EXE, get the 'current working dir' for each drive
                 # if not in CMD.EXE, there's only one cwd
                 current_device = os.path.abspath(os.getcwdu()).split(u':')[0].encode('ascii')
                 save_current = os.getcwdu()
-                for letter in win32api.GetLogicalDriveStrings().split(u':\\\0')[:-1]:
+                for letter in string.uppercase:
                     try:
-                        os.chdir(letter + u':')
-                        cwd = win32api.GetShortPathName(os.getcwdu())
-                    except Exception:
-                        # something went wrong, do not mount this drive
-                        # this is often a pywintypes.error rather than a WindowsError
+                        os.chdir(letter + b':')
+                        cwd = GetShortPathName(os.getcwdu()) or os.getcwdu()
+                    except EnvironmentError:
+                        # doesn't exist or can't access, do not mount this drive
                         pass
                     else:
                         # must not start with \\
                         path, cwd = cwd[:3], cwd[3:]
-                        bletter = letter.encode(b'ascii')
-                        mount_dict[bletter] = (path, cwd)
+                        mount_dict[letter] = (path, cwd)
                 os.chdir(save_current)
             else:
                 cwd = os.getcwdu()

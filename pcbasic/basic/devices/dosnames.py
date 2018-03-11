@@ -8,8 +8,22 @@ import ntpath
 if sys.platform == 'win32':
     import ctypes
     from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD
-    GetShortPathName = ctypes.windll.kernel32.GetShortPathNameW
-    GetShortPathName.argtypes = [LPCWSTR, LPWSTR, DWORD]
+    _GetShortPathName = ctypes.windll.kernel32.GetShortPathNameW
+    _GetShortPathName.argtypes = [LPCWSTR, LPWSTR, DWORD]
+
+    def GetShortPathName(native_path):
+        """Retrieve Windows short path name."""
+        try:
+            length = _GetShortPathName(native_path, LPWSTR(0), DWORD(0))
+            wbuffer = ctypes.create_unicode_buffer(length)
+            _GetShortPathName(native_path, wbuffer, DWORD(length))
+        except Exception as e:
+            # something went wrong - this should be a WindowsError which is an OSError
+            # but not clear
+            return None
+        else:
+            # can also be None in wbuffer.value if error
+            return wbuffer.value
 
 from ..base import error
 
@@ -83,18 +97,7 @@ class NameConverter(object):
         native_path = os.path.join(native_dirpath, native_name)
         # get the short name if it exists, keep long name otherwise
         if sys.platform == 'win32':
-            try:
-                length = GetShortPathName(native_path, LPWSTR(0), DWORD(0))
-                wbuffer = ctypes.create_unicode_buffer(length)
-                length = GetShortPathName(native_path, wbuffer, DWORD(length))
-                # returns None if error
-                if wbuffer.value:
-                    native_path = wbuffer.value
-            except Exception as e:
-                # something went wrong - keep long name (happens for swap file or non-Windows)
-                # this should be a WindowsError which is an OSError
-                # but it often is a pywintypes.error
-                pass
+            native_path = GetShortPathName(native_path) or native_path
         native_name = os.path.basename(native_path)
         # see if we have a legal dos name that matches
         try:
