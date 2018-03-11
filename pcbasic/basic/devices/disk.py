@@ -374,27 +374,31 @@ class DiskDevice(object):
         return native_path, native_relpath, dos_mask
 
     def _get_dirs_files(self, native_path):
-        """get native filenames for native path."""
+        """Get native filenames for native path."""
         all_names = safe(os.listdir, native_path)
-        dos_dirs = [dosnames.filename_from_unicode(n)
-                for n in all_names if os.path.isdir(os.path.join(native_path, n))]
-        dos_fils = [dosnames.filename_from_unicode(n)
-                for n in all_names if not os.path.isdir(os.path.join(native_path, n))]
+        dos_dirs = [n for n in all_names if os.path.isdir(os.path.join(native_path, n))]
+        dos_fils = [n for n in all_names if not os.path.isdir(os.path.join(native_path, n))]
         return dos_dirs, dos_fils
 
     def listdir(self, pathmask):
         """Get directory listing."""
-        path, relpath, mask = self._split_pathmask(pathmask)
+        native_path, native_relpath, dos_mask = self._split_pathmask(pathmask)
         fils = []
-        if mask == b'.':
-            dirs = [dosnames.split_dosname((os.sep + relpath).split(os.sep)[-1:][0])]
-        elif mask == b'..':
-            dirs = [dosnames.split_dosname((os.sep + relpath).split(os.sep)[-2:][0])]
+        if dos_mask == b'.':
+            #parent = os.path.join(native_path, u'..')
+            #this_name = os.path.basename(native_path)
+            #dirs = [dosnames.dos_splitext(self._name_conv.get_dos_display_name(parent, this_name))]
+            dirs = [(u'', u'')]
+        elif dos_mask == b'..':
+            #grandparent = os.path.join(native_path, u'..', u'..')
+            #parent_name = os.path.basename(os.path.abspath(os.path.join(native_path, u'..')))
+            #dirs = [dosnames.dos_splitext(self._name_conv.get_dos_display_name(grandparent, parent_name))]
+            dirs = [(u'', u'')]
         else:
-            dirs, fils = self._get_dirs_files(path)
+            dirs, fils = self._get_dirs_files(native_path)
             # filter according to mask
-            dirs = dosnames.filter_names(path, dirs + [b'.', b'..'], mask)
-            fils = dosnames.filter_names(path, fils, mask)
+            dirs = self._name_conv.filter_names(native_path, dirs + [u'.', u'..'], dos_mask)
+            fils = self._name_conv.filter_names(native_path, fils, dos_mask)
         # format and print contents
         return (
             [dosnames.join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
@@ -407,7 +411,7 @@ class DiskDevice(object):
         dir_elems = []
         if self._native_cwd:
             for e in self._native_cwd.split(os.sep):
-                dir_elems.append(dosnames.join_dosname(*dosnames.short_name(native_path, e)))
+                dir_elems.append(self._name_conv.get_dos_display_name(native_path, e))
                 native_path += os.sep + e
         return self.letter + b':\\' + b'\\'.join(dir_elems)
 
@@ -525,7 +529,7 @@ class InternalDiskDevice(DiskDevice):
             dirs, files = DiskDevice._get_dirs_files(self, path)
         else:
             dirs, files = [], []
-        files += [dosnames.filename_from_unicode(n) for n in self._bound_files]
+        files += self._bound_files.keys()
         return dirs, files
 
     def get_cwd(self):

@@ -72,6 +72,59 @@ class NameConverter(object):
         else:
             raise error.BASICError(name_err)
 
+    def get_dos_display_name(self, native_dirpath, native_name):
+        """Convert native name to short name or (not normalised or even legal) dos-style name."""
+        native_path = os.path.join(native_dirpath, native_name)
+        # get the short name if it exists, keep long name otherwise
+        if sys.platform == 'win32':
+            try:
+                native_path = win32api.GetShortPathName(native_path)
+            except Exception:
+                # something went wrong - keep long name (happens for swap file or non-Windows)
+                # this should be a WindowsError which is an OSError
+                # but it often is a pywintypes.error
+                pass
+        native_name = os.path.basename(native_path)
+        # see if we have a legal dos name that matches
+        try:
+            ascii_name = native_name.encode('ascii')
+        except UnicodeEncodeError:
+            pass
+        else:
+            if is_legal_dosname(ascii_name):
+                return normalise_dosname(ascii_name)
+        # convert to codepage
+        cp_name = self._codepage.str_from_unicode(native_name)
+        # clip overlong & mark as shortened
+        trunk, ext_inc_dot = ntpath.splitext(cp_name)
+        if len(trunk) > 8:
+            trunk = trunk[:7] + b'+'
+        if len(ext_inc_dot) > 4:
+            ext_inc_dot = ext_inc_dot[:3] + b'+'
+        return trunk + ext_inc_dot
+
+    def filter_names(self, native_dirpath, native_names, dos_mask):
+        """Apply case-insensitive filename filter to display names."""
+        dos_mask = dos_mask or b'*.*'
+        trunkmask, extmask = dos_splitext(dos_mask)
+        all_files = (self.get_dos_display_name(native_dirpath, name) for name in native_names)
+        split = [dos_splitext(dos_name) for dos_name in all_files]
+        return sorted(
+                (trunk, ext) for (trunk, ext) in split
+                if (match_wildcard(trunk, trunkmask) and match_wildcard(ext, extmask) and
+                        # this matches . and ..
+                        (trunk or not ext or ext == b'.')
+                )
+            )
+
+
+def dos_splitext(dos_name):
+    """Return trunk and extension excluding the dot."""
+    trunk, ext = ntpath.splitext(dos_name)
+    # ntpath.splitext includes the leading dot
+    if ext.startswith(b'.'):
+        ext = ext[1:]
+    return trunk, ext
 
 def normalise_dosname(dos_name):
     """Convert dosname into bytes uppercase 8.3."""
@@ -103,10 +156,7 @@ def is_legal_dosname(dos_name):
     """Check if a (bytes) name is a legal DOS name."""
     if dos_name in (b'.', b'..'):
         return True
-    # splitext includes the dot for the extension
-    trunk, ext = ntpath.splitext(dos_name)
-    if ext.startswith(b'.'):
-        ext = ext[1:]
+    trunk, ext = dos_splitext(dos_name)
     return (
             # enforce lengths
             (trunk and len(trunk) <= 8 and len(ext) <= 3) and
@@ -222,10 +272,10 @@ def istype(native_path, native_name, isdir):
         return False
 
 def match_wildcard(name, mask):
-    """Whether filename name matches DOS wildcard mask."""
+    """Whether native name element matches DOS wildcard mask."""
     # convert wildcard mask to regexp
     regexp = '\A'
-    for c in mask:
+    for c in mask.upper():
         if c == '?':
             regexp += '.'
         elif c == '*':
@@ -235,22 +285,9 @@ def match_wildcard(name, mask):
             regexp += re.escape(c)
     regexp += '\Z'
     cregexp = re.compile(regexp)
-    return cregexp.match(name) is not None
+    return cregexp.match(name.upper()) is not None
 
 def filename_from_unicode(name):
     """Replace disallowed characters in filename with ?."""
     name_str = name.encode(b'ascii', b'replace')
     return b''.join(c if c in ALLOWABLE_CHARS | set(b'.') else b'?' for c in name_str)
-
-def filter_names(path, files_list, mask=b'*.*'):
-    """Apply filename filter to short version of names."""
-    all_files = [short_name(path, name.decode(b'ascii')) for name in files_list]
-    # apply mask separately to trunk and extension, dos-style.
-    trunkmask, extmask = ntpath.splitext(mask)
-    # splitext includes the leading dot
-    if extmask.startswith(b'.'):
-        extmask = extmask[1:]
-    # hide dotfiles
-    return sorted([(t, e) for (t, e) in all_files
-        if (match_wildcard(t, trunkmask) and match_wildcard(e, extmask) and
-            (t or not e or e == b'.'))])
