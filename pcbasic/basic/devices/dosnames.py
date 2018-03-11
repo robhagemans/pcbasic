@@ -36,24 +36,25 @@ class NameConverter(object):
         dospath_elements = dospath.split(b'\\')
         # strip whitespace
         dospath_elements = [e.strip() for e in dospath_elements]
-        # convert to unicode
-        dospath_elements = [
-            self._codepage.str_to_unicode(e, box_protect=False)
-            for e in dospath_elements]
-        # construct path relative to root
-
-        if dospath and dospath[0] == u'\\':
-            # absolute path specified
-            elements = dospath_elements
-        else:
-            elements = native_cwd.split(os.sep) + dospath_elements
-        ####
         # parse internal .. and . (like normpath but with \\ and dosnames)
-        elements = dos_normpath(elements)
-
+        dospath_elements = dos_normpath(dospath_elements)
+        # construct path relative to root
+        if dospath and dospath[0] == b'\\':
+            # absolute path specified
+            cwd = []
+        else:
+            cwd = native_cwd.split(os.sep)
+        # drop leading . and .. (this is what GW-BASIC does at drive root)
+        while dospath_elements and dospath_elements[0] in ('.', '..'):
+            if dospath_elements[0] == '..':
+                cwd = cwd[:-1]
+            dospath_elements = dospath_elements[1:]
+        ####
+        # convert to unicode
+        elements = [self._codepage.str_to_unicode(e, box_protect=False) for e in dospath_elements]
         # prepend drive root path to allow filename matching
-        path = native_root
-        baselen = len(path) + (path[-1] != os.sep)
+        path = os.path.join(native_root, *cwd)
+        root_len = len(native_root) + (native_root[-1] != os.sep)
         # find the native matches for each step in the path
         for dos_elem in elements:
             # skip double slashes
@@ -62,9 +63,8 @@ class NameConverter(object):
                 native_elem = match_filename(dos_elem, b'', path, name_err=path_err, isdir=True)
                 # append found name to path
                 path = os.path.join(path, native_elem)
-        ####
-        # return drive root path, relative path, file name
-        return path[baselen:]
+        # return relative path only
+        return path[root_len:]
 
 
 def dos_split(dospath):
@@ -79,16 +79,14 @@ def dos_split(dospath):
 
 def dos_normpath(elements):
     """Parse internal .. and . in list (like normpath)."""
-    # drop leading . and .. (this is what GW-BASIC does at drive root)
     i = 0
     while i < len(elements):
         if elements[i] == u'.':
             del elements[i]
-        elif elements[i] == u'..':
+        elif elements[i] == u'..' and i > 0:
             del elements[i]
-            if i > 0:
-                del elements[i-1]
-                i -= 1
+            del elements[i-1]
+            i -= 1
         else:
             i += 1
     return elements
