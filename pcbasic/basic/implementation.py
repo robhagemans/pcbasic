@@ -145,7 +145,8 @@ class Implementation(object):
                 max_files, max_reclen, serial_buffer_size,
                 devices, current_device, mount, temp_dir, utf8, universal)
         # set up the SHELL command
-        self.shell = dos.get_shell_manager(self.keyboard, self.screen, self.codepage, shell, syntax)
+        self.shell = dos.get_shell_manager(
+                self.queues, self.keyboard, self.screen, self.codepage, shell, syntax)
         # set up environment
         self.environment = dos.Environment(self.values)
         # initialise random number generator

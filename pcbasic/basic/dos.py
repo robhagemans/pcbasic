@@ -70,16 +70,16 @@ class Environment(object):
 #########################################
 # shell
 
-def get_shell_manager(keyboard, screen, codepage, shell_command, syntax):
+def get_shell_manager(queues, keyboard, screen, codepage, shell_command, syntax):
     """Return a new shell manager object."""
     if syntax == 'pcjr':
         return ErrorShell()
     if shell_command:
         if platform.system() == 'Windows':
-            return WindowsShell(keyboard, screen, codepage, shell_command)
+            return WindowsShell(queues, keyboard, screen, codepage, shell_command)
         else:
             try:
-                return Shell(keyboard, screen, codepage, shell_command)
+                return Shell(queues, keyboard, screen, codepage, shell_command)
             except InitFailed:
                 logging.warning('Pexpect module not found. SHELL statement disabled.')
     return ShellBase()
@@ -104,8 +104,9 @@ class ErrorShell(ShellBase):
 class WindowsShell(ShellBase):
     """Launcher for Windows CMD shell."""
 
-    def __init__(self, keyboard, screen, codepage, shell_command):
+    def __init__(self, queues, keyboard, screen, codepage, shell_command):
         """Initialise the shell."""
+        self._queues = queues
         self.keyboard = keyboard
         self.screen = screen
         self.command = shell_command
@@ -141,6 +142,7 @@ class WindowsShell(ShellBase):
         errp.start()
         word = b''
         while p.poll() is None or shell_output:
+            self._queues.wait()
             if shell_output:
                 lines, shell_output[:] = b''.join(shell_output).split('\r\n'), []
                 last = lines.pop()
@@ -177,10 +179,11 @@ class WindowsShell(ShellBase):
 class Shell(ShellBase):
     """Launcher for Unix shell."""
 
-    def __init__(self, keyboard, screen, codepage, shell_command):
+    def __init__(self, queues, keyboard, screen, codepage, shell_command):
         """Initialise the shell."""
         if not pexpect:
             raise InitFailed()
+        self._queues = queues
         self.keyboard = keyboard
         self.screen = screen
         self.command = shell_command
@@ -194,9 +197,10 @@ class Shell(ShellBase):
             cmd += u' -c "' + self.codepage.str_to_unicode(command) + u'"'
         p = pexpect.spawn(cmd.encode(self._encoding))
         while True:
+            self._queues.wait()
             try:
                 # expand=False suppresses key macros
-                c = self.keyboard.get_char(expand=False)
+                c = self.keyboard.get_fullchar(expand=False)
             except error.Break:
                 # ignore ctrl+break in SHELL
                 pass
