@@ -130,7 +130,6 @@ class DiskDevice(object):
         self._native_root = path
         # code page for file system names and text file conversion
         self._codepage = codepage
-        self._name_conv = dosnames.NameConverter(codepage)
         # current DOS working directory on this drive
         # this is a DOS relative path, no drive letter; including leading \\
         # stored with os.sep but given using backslash separators
@@ -295,7 +294,7 @@ class DiskDevice(object):
         # find the native matches for each step in the path
         for dos_elem in dospath_elements:
             # find a matching directory for every step in the path;
-            native_elem = self._name_conv.get_native_name(
+            native_elem = self._get_native_name(
                     path, dos_elem, defext=b'', isdir=True, create=False)
             # append found name to path
             path = os.path.join(path, native_elem)
@@ -318,8 +317,7 @@ class DiskDevice(object):
         # return absolute path to file
         path = os.path.join(self._native_root, native_relpath)
         if name:
-            path = os.path.join(
-                    path, self._name_conv.get_native_name(path, name, defext, isdir, create))
+            path = os.path.join(path, self._get_native_name(path, name, defext, isdir, create))
         # get full normalised path
         return os.path.abspath(path)
 
@@ -389,8 +387,8 @@ class DiskDevice(object):
         else:
             dirs, fils = self._get_dirs_files(native_path)
             # filter according to mask
-            dirs = self._name_conv.filter_names(native_path, dirs + [u'.', u'..'], dos_mask)
-            fils = self._name_conv.filter_names(native_path, fils, dos_mask)
+            dirs = self._filter_names(native_path, dirs + [u'.', u'..'], dos_mask)
+            fils = self._filter_names(native_path, fils, dos_mask)
         # format contents
         return (
             [t.ljust(8) + (b'.' if e or not t else b' ') + e.ljust(3) + b'<DIR>' for t, e in dirs] +
@@ -403,7 +401,7 @@ class DiskDevice(object):
         dir_elems = []
         if self._native_cwd:
             for e in self._native_cwd.split(os.sep):
-                dir_elems.append(self._name_conv.get_dos_display_name(native_path, e))
+                dir_elems.append(self._get_dos_display_name(native_path, e))
                 native_path += os.sep + e
         return self.letter + b':\\' + b'\\'.join(dir_elems)
 
@@ -433,6 +431,92 @@ class DiskDevice(object):
             except AttributeError as e:
                 # only disk files have a name, so ignore
                 pass
+
+    ##########################################################################
+    # DOS and native name conversion
+
+    def _get_native_name(self, native_path, dos_name, defext, isdir, create):
+        """Find or create a matching native file name for a given BASIC name."""
+        # if the name contains a dot, do not apply the default extension
+        # to maintain GW-BASIC compatibility, a trailing single dot matches the name
+        # with no dots as well as the name with a single dot.
+        # file names with more than one dot are not affected.
+        # file spec         attempted matches
+        # LongFileName      (1) LongFileName.BAS (2) LONGFILE.BAS
+        # LongFileName.bas  (1) LongFileName.bas (2) LONGFILE.BAS
+        # LongFileName.     (1) LongFileName. (2) LongFileName (3) LONGFILE
+        # LongFileName..    (1) LongFileName.. (2) [does not try LONGFILE.. - not allowable]
+        # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
+        #
+        # don't accept leading or trailing whitespace (internal whitespace should be preserved)
+        # note that DosBox removes internal whitespace, but MS-DOS does not
+        name_err = error.PATH_NOT_FOUND if isdir else error.FILE_NOT_FOUND
+        if dos_name != dos_name.strip():
+            raise error.BASICError(name_err)
+        if defext and b'.' not in dos_name:
+            dos_name += b'.' + defext
+        elif dos_name[-1] == b'.' and b'.' not in dos_name[:-1]:
+            # ends in single dot; first try with dot
+            # but if it doesn't exist, base everything off dotless name
+            uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
+            if dosnames.istype(native_path, uni_name, isdir):
+                return uni_name
+            dos_name = dos_name[:-1]
+        # check if the name exists as-is; should also match Windows short names.
+        uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
+        if dosnames.istype(native_path, uni_name, isdir):
+            return uni_name
+        # original name does not exist; try matching dos-names or create one
+        # normalise to 8.3
+        norm_name = dosnames.normalise_dosname(dos_name)
+        # check for non-legal characters & spaces (but clip off overlong names)
+        if not dosnames.is_legal_dosname(norm_name):
+            raise error.BASICError(error.BAD_FILE_NAME)
+        fullname = dosnames.match_dosname(native_path, norm_name, isdir)
+        if fullname:
+            return fullname
+        # not found
+        if create:
+            # create a new filename
+            return norm_name.decode(b'ascii')
+        else:
+            raise error.BASICError(name_err)
+
+    def _get_dos_display_name(self, native_dirpath, native_name):
+        """Convert native name to short name or (not normalised or even legal) dos-style name."""
+        native_path = os.path.join(native_dirpath, native_name)
+        # get the short name if it exists, keep long name otherwise
+        if sys.platform == 'win32':
+            native_path = dosnames.GetShortPathName(native_path) or native_path
+        native_name = os.path.basename(native_path)
+        # see if we have a legal dos name that matches
+        try:
+            ascii_name = native_name.encode('ascii')
+        except UnicodeEncodeError:
+            pass
+        else:
+            if dosnames.is_legal_dosname(ascii_name):
+                return dosnames.normalise_dosname(ascii_name)
+        # convert to codepage
+        cp_name = self._codepage.str_from_unicode(native_name, errors='replace')
+        # clip overlong & mark as shortened
+        trunk, ext = dosnames.dos_splitext(cp_name)
+        if len(trunk) > 8:
+            trunk = trunk[:7] + b'+'
+        if len(ext) > 3:
+            ext = ext[:2] + b'+'
+        return trunk + (b'.' if ext or not trunk else b'') + ext
+
+    def _filter_names(self, native_dirpath, native_names, dos_mask):
+        """Apply case-insensitive filename filter to display names."""
+        dos_mask = dos_mask or b'*.*'
+        trunkmask, extmask = dosnames.dos_splitext(dos_mask)
+        all_files = (self._get_dos_display_name(native_dirpath, name) for name in native_names)
+        split = [dosnames.dos_splitext(dos_name) for dos_name in all_files]
+        return sorted(
+                (trunk, ext) for (trunk, ext) in split
+                if dosnames.match_wildcard(trunk, trunkmask) and dosnames.match_wildcard(ext, extmask)
+            )
 
 
 class BoundFile(object):
