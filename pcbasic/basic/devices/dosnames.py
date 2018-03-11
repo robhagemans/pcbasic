@@ -3,6 +3,7 @@ import os
 import re
 import string
 import sys
+from ntpath import normpath as dos_normpath, split as dos_split
 
 from ..base import error
 
@@ -131,31 +132,6 @@ def _match_dosname(dosname, path, isdir):
 
 ##############################################################################
 # dos path operations
-
-def dos_split(dospath):
-    """Get dirname, basename from the DOS path."""
-    rsplit = dospath.rsplit(b'\\', 1)
-    if len(rsplit) == 2:
-        # at least one slash; if ends with slash, basename will be empty
-        return rsplit[0], rsplit[-1]
-    else:
-        # no slash; dirname empty
-        return b'', dospath
-
-def dos_normpath(dospath):
-    """Parse internal .. and . (like normpath but don't accept /)."""
-    elements = dospath.split(b'\\')
-    i = 0
-    while i < len(elements):
-        if (elements[i] == b'.') or (i > 0 and not elements[i]):
-            del elements[i]
-        elif elements[i] == b'..' and i > 0:
-            del elements[i]
-            del elements[i-1]
-            i -= 1
-        else:
-            i += 1
-    return b'\\'.join(elements)
 
 def join_dosname(trunk, ext, padding=False):
     """Join trunk and extension into (bytes) file name."""
