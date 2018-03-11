@@ -45,8 +45,8 @@ class NameConverter(object):
         else:
             cwd = native_cwd.split(os.sep)
         # drop leading . and .. (this is what GW-BASIC does at drive root)
-        while dospath_elements and dospath_elements[0] in ('.', '..'):
-            if dospath_elements[0] == '..':
+        while dospath_elements and dospath_elements[0] in (b'.', b'..'):
+            if dospath_elements[0] == b'..':
                 cwd = cwd[:-1]
             dospath_elements = dospath_elements[1:]
         ####
@@ -81,9 +81,9 @@ def dos_normpath(elements):
     """Parse internal .. and . in list (like normpath)."""
     i = 0
     while i < len(elements):
-        if elements[i] == u'.':
+        if elements[i] == b'.':
             del elements[i]
-        elif elements[i] == u'..' and i > 0:
+        elif elements[i] == b'..' and i > 0:
             del elements[i]
             del elements[i-1]
             i -= 1
