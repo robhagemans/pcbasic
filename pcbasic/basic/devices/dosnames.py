@@ -94,7 +94,7 @@ class NameConverter(object):
             if is_legal_dosname(ascii_name):
                 return normalise_dosname(ascii_name)
         # convert to codepage
-        cp_name = self._codepage.str_from_unicode(native_name)
+        cp_name = self._codepage.str_from_unicode(native_name, errors='replace')
         # clip overlong & mark as shortened
         trunk, ext = dos_splitext(cp_name)
         if len(trunk) > 8:
