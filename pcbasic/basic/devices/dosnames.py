@@ -32,17 +32,17 @@ class NameConverter(object):
         if not native_root:
             # this drive letter is not available (not mounted)
             raise error.BASICError(error.PATH_NOT_FOUND)
-        # split to path elements
-        dospath_elements = dospath.split(b'\\')
-        # parse internal .. and . (like normpath but with \\ and dosnames)
-        dospath_elements = dos_normpath(dospath_elements)
-        # construct path relative to root
+        # parse internal .. and . and double slashes
+        dospath = dos_normpath(dospath)
+        # find starting directory
         if dospath and dospath[0] == b'\\':
             # absolute path specified
             cwd = []
         else:
             cwd = native_cwd.split(os.sep)
-        # drop leading . and .. (this is what GW-BASIC does at drive root)
+        # parse leading . and .. in relative path
+        # if at root, just drop leading dots (this is what GW-BASIC does at drive root)
+        dospath_elements = dospath.split(b'\\')
         while dospath_elements and dospath_elements[0] in (b'.', b'..'):
             if dospath_elements[0] == b'..':
                 cwd = cwd[:-1]
@@ -52,7 +52,6 @@ class NameConverter(object):
         root_len = len(native_root) + (native_root[-1] != os.sep)
         # find the native matches for each step in the path
         for dos_elem in dospath_elements:
-            # skip double slashes
             if dos_elem:
                 # find a matching directory for every step in the path;
                 native_elem = self.match_filename(dos_elem, b'', path, name_err=path_err, isdir=True)
@@ -144,11 +143,12 @@ def dos_split(dospath):
         # no slash; dirname empty
         return b'', dospath
 
-def dos_normpath(elements):
-    """Parse internal .. and . in list (like normpath)."""
+def dos_normpath(dospath):
+    """Parse internal .. and . (like normpath but don't accept /)."""
+    elements = dospath.split(b'\\')
     i = 0
     while i < len(elements):
-        if elements[i] == b'.':
+        if (elements[i] == b'.') or (i > 0 and not elements[i]):
             del elements[i]
         elif elements[i] == b'..' and i > 0:
             del elements[i]
@@ -156,7 +156,7 @@ def dos_normpath(elements):
             i -= 1
         else:
             i += 1
-    return elements
+    return b'\\'.join(elements)
 
 def join_dosname(trunk, ext, padding=False):
     """Join trunk and extension into (bytes) file name."""
