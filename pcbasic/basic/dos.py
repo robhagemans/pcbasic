@@ -13,6 +13,7 @@ import logging
 import threading
 import time
 import locale
+import shlex
 from collections import deque
 
 from .base import error
@@ -143,7 +144,7 @@ class BaseShell(object):
             cmd = self._command_pattern % (self._shell, self._codepage.str_to_unicode(command))
         try:
             p = subprocess.Popen(
-                    cmd.encode(ENCODING).split(), shell=False,
+                    shlex.split(cmd.encode(ENCODING)), shell=False,
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
