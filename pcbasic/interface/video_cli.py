@@ -36,6 +36,7 @@ else:
 
 
 ENCODING = sys.stdin.encoding or 'utf-8'
+ENCODING = 'utf-8' if ENCODING == 'cp65001' else ENCODING
 
 # escape sequence to scancode
 ESC_TO_SCAN = {

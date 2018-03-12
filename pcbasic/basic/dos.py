@@ -12,7 +12,6 @@ import subprocess
 import logging
 import threading
 import time
-import locale
 import shlex
 from collections import deque
 
@@ -24,7 +23,11 @@ from . import values
 DELAY = 0.001
 
 # the shell's encoding
-ENCODING = locale.getpreferredencoding()
+# strange to use sys.stdin but locale.getpreferredencoding() is definitely wrong on Windows
+# whereas this seems to work if started from console
+# - but does this work if launched from a pythonw link? no
+ENCODING = sys.stdin.encoding or 'utf-8'
+ENCODING = 'utf-8' if ENCODING == 'cp65001' else ENCODING
 
 
 class InitFailed(Exception):
