@@ -7,20 +7,23 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import sys
 import subprocess
 import logging
 import threading
 import time
 import locale
-import platform
-
-try:
-    import pexpect
-except ImportError:
-    pexpect = None
+from collections import deque
 
 from .base import error
 from . import values
+
+
+# delay for input threads, in seconds
+DELAY = 0.001
+
+# the shell's encoding
+ENCODING = locale.getpreferredencoding()
 
 
 class InitFailed(Exception):
@@ -70,19 +73,19 @@ class Environment(object):
 #########################################
 # shell
 
-def get_shell_manager(queues, keyboard, screen, codepage, shell_command, syntax):
+def get_shell_manager(queues, keyboard, screen, codepage, shell, syntax):
     """Return a new shell manager object."""
+    # move to shell_ generator
     if syntax == 'pcjr':
         return ErrorShell()
-    if shell_command:
-        if platform.system() == 'Windows':
-            return WindowsShell(queues, keyboard, screen, codepage, shell_command)
+    try:
+        if sys.platform == 'win32':
+            return WindowsShell(queues, keyboard, screen, codepage, shell)
         else:
-            try:
-                return Shell(queues, keyboard, screen, codepage, shell_command)
-            except InitFailed:
-                logging.warning('Pexpect module not found. SHELL statement disabled.')
-    return ShellBase()
+            return UnixShell(queues, keyboard, screen, codepage, shell)
+    except InitFailed as e:
+        #logging.warning(e)
+        return ShellBase()
 
 
 class ShellBase(object):
@@ -93,6 +96,7 @@ class ShellBase(object):
         logging.warning(b'SHELL statement disabled.')
 
 
+# remove
 class ErrorShell(ShellBase):
     """Launcher to throw IFC."""
 
@@ -106,6 +110,8 @@ class WindowsShell(ShellBase):
 
     def __init__(self, queues, keyboard, screen, codepage, shell_command):
         """Initialise the shell."""
+        if not shell_command:
+            raise InitFailed()
         self._queues = queues
         self.keyboard = keyboard
         self.screen = screen
@@ -124,7 +130,7 @@ class WindowsShell(ShellBase):
                 shell_output.append(c)
             else:
                 # don't hog cpu, sleep 1 ms
-                time.sleep(0.001)
+                time.sleep(DELAY)
 
     def launch(self, command):
         """Run a SHELL subprocess."""
@@ -142,7 +148,6 @@ class WindowsShell(ShellBase):
         errp.start()
         word = b''
         while p.poll() is None or shell_output:
-            self._queues.wait()
             if shell_output:
                 lines, shell_output[:] = b''.join(shell_output).split('\r\n'), []
                 last = lines.pop()
@@ -153,6 +158,7 @@ class WindowsShell(ShellBase):
                 # drain output then break
                 continue
             try:
+                self._queues.wait()
                 # expand=False suppresses key macros
                 c = self.keyboard.get_fullchar(expand=False)
             except error.Break:
@@ -176,56 +182,101 @@ class WindowsShell(ShellBase):
                 self.screen.write(c)
 
 
-class Shell(ShellBase):
+class UnixShell(ShellBase):
     """Launcher for Unix shell."""
 
-    def __init__(self, queues, keyboard, screen, codepage, shell_command):
+    _command_pattern = u'%s -c "%s"'
+    _eol = b'\n'
+
+    def __init__(self, queues, keyboard, screen, codepage, shell):
         """Initialise the shell."""
-        if not pexpect:
+        if not shell:
             raise InitFailed()
+        # need shell=True, command seems to be a shell feature
+        # shouldn't we check for existence of an executable instead?
+        # since below we run with shell=False
+        if subprocess.call(b'command -v %s >/dev/null 2>&1' % (shell,), shell=True) != 0:
+            raise InitFailed()
+        self._shell = shell
         self._queues = queues
-        self.keyboard = keyboard
-        self.screen = screen
-        self.command = shell_command
-        self.codepage = codepage
-        self._encoding = locale.getpreferredencoding()
+        self._keyboard = keyboard
+        self._screen = screen
+        self._codepage = codepage
+
+    def _process_stdout(self, stream, output):
+        """Retrieve SHELL output and write to console."""
+        while True:
+            # blocking read
+            c = stream.read(1)
+            if c:
+                # don't access screen in this thread
+                # the other thread already does
+                output.append(c)
+            else:
+                # don't hog cpu, sleep 1 ms
+                time.sleep(DELAY)
 
     def launch(self, command):
         """Run a SHELL subprocess."""
-        cmd = self.command
+        shell_output = deque()
+        shell_cerr = deque()
+        cmd = self._shell
         if command:
-            cmd += u' -c "' + self.codepage.str_to_unicode(command) + u'"'
-        p = pexpect.spawn(cmd.encode(self._encoding))
-        while True:
-            self._queues.wait()
+            cmd = self._command_pattern % (self._shell, self._codepage.str_to_unicode(command))
+        p = subprocess.Popen(
+                cmd.encode(ENCODING).split(), shell=False,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        outp = threading.Thread(target=self._process_stdout, args=(p.stdout, shell_output))
+        # daemonise or join later?
+        outp.daemon = True
+        outp.start()
+        errp = threading.Thread(target=self._process_stdout, args=(p.stderr, shell_cerr))
+        errp.daemon = True
+        errp.start()
+        word = []
+        while p.poll() is None or shell_output or shell_cerr:
+            self._show_output(shell_output)
+            self._show_output(shell_cerr)
+            if p.poll() is not None:
+                # drain output then break
+                continue
             try:
+                self._queues.wait()
                 # expand=False suppresses key macros
-                c = self.keyboard.get_fullchar(expand=False)
+                c = self._keyboard.get_fullchar(expand=False)
             except error.Break:
-                # ignore ctrl+break in SHELL
                 pass
-            if c == b'\b':
-                p.send(b'\x7f')
-            elif c < b' ':
-                p.send(c.encode(self._encoding))
-            elif c != b'':
-                c = self.codepage.to_unicode(c).encode(self._encoding)
-                p.send(c)
-            while True:
-                try:
-                    c = p.read_nonblocking(1, timeout=0).decode(self._encoding)
-                except:
-                    c = u''
-                if c == u'' or c == u'\n':
-                    break
-                elif c == u'\r':
-                    self.screen.write_line()
-                elif c == u'\b':
-                    if self.screen.current_col != 1:
-                        self.screen.set_pos(
-                                self.screen.current_row,
-                                self.screen.current_col-1)
-                else:
-                    self.screen.write(self.codepage.from_unicode(c))
-            if c == u'' and not p.isalive():
-                return
+            if not c:
+                continue
+            elif c in (b'\r', b'\n'):
+                # send line-buffered input to pipe
+                # windows - needs to move cursor to overwrite echo here?
+                self._send_input(p.stdin, word)
+                word = []
+                # below is not in windows version
+                self._screen.write_line()
+            elif c == b'\b':
+                # handle backspace
+                if word:
+                    word.pop()
+                    self._screen.write(b'\x1D \x1D')
+            elif not c.startswith(b'\0'):
+                # exclude e-ascii (arrow keys not implemented)
+                word.append(c)
+                self._screen.write(c)
+
+    def _send_input(self, pipe, word):
+        """Write keyboard input to pipe."""
+        bytes_word = b''.join(word) + self._eol
+        unicode_word = self._codepage.str_to_unicode(bytes_word, preserve_control=True)
+        pipe.write(unicode_word.encode(ENCODING))
+
+    def _show_output(self, shell_output):
+        """Write shell output to screen."""
+        if shell_output:
+            lines = []
+            while shell_output:
+                lines.append(shell_output.popleft())
+            lines = b''.join(lines).split(self._eol)
+            lines = [self._codepage.str_from_unicode(l.decode(ENCODING)) for l in lines]
+            self._screen.write('\r'.join(lines))

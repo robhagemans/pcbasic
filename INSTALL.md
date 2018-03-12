@@ -18,16 +18,16 @@ The following packages are needed or recommended when installing PC-BASIC from t
 | [NumPy](https://sourceforge.net/projects/numpy/files/)                            | all                | recommended  | sound and graphics
 | [PySerial 3.4](https://pypi.python.org/pypi/pyserial)                             | all                | optional     | physical or emulated serial port access
 | [PyParallel 0.2](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/) | Windows, Linux     | optional     | physical parallel port access
-| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)                  | Mac, Linux, Unix   | optional     | `SHELL` command
 | [PyGame 1.9.3](http://www.pygame.org)                                             | all                | optional     | sound and graphics (PyGame interface)
 | [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                            | all                | experimental | sound (PortAudio engine)
 
 
+`setuptools` and `pip` are included with Python.
 Once you have a working Python installation, most dependencies can be installed with `pip`:
 
-        pip install pypiwin32 pysdl2 numpy pygame pyaudio pyserial pexpect
+        pip install pysdl2 numpy pygame pyaudio pyserial
 
-`setuptools` and `pip` are included with Python. If you require access to a physical parallel port,
+If you require access to a physical parallel port,
 download PyParallel from the web site linked above. This is only supported on Windows and Linux.
 However, since most modern machines do not actually have parallel ports, you probably don't need it.
 PyParallel is _not_ needed for printing to a CUPS or Windows printer.

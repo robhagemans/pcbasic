@@ -30,8 +30,7 @@ def show_platform_info():
     logging.info('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
     modules = (
-        'numpy', 'pcbasic.interface.winsi', 'sdl2', 'pygame', 'curses',
-        'pexpect', 'serial', 'parallel')
+        'numpy', 'pcbasic.interface.winsi', 'sdl2', 'pygame', 'curses', 'serial', 'parallel')
     for module in modules:
         try:
             m = importlib.import_module(module)

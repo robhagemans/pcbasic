@@ -70,7 +70,7 @@ if sys.platform == 'win32':
     console_scripts = ['pcbasic=pcbasic:main']
     gui_scripts = ['pcbasicw=pcbasic:main']
 else:
-    platform_specific_requirements = ['pexpect']
+    platform_specific_requirements = []
     console_scripts = ['pcbasic=pcbasic:main']
     gui_scripts = []
 
