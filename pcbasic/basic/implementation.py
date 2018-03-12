@@ -146,7 +146,7 @@ class Implementation(object):
                 devices, current_device, mount, temp_dir, utf8, universal)
         # set up the SHELL command
         self.shell = dos.get_shell_manager(
-                self.queues, self.keyboard, self.screen, self.codepage, shell, syntax)
+                self.queues, self.keyboard, self.screen, self.codepage, shell)
         # set up environment
         self.environment = dos.Environment(self.values)
         # initialise random number generator

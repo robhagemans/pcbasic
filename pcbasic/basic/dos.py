@@ -28,6 +28,10 @@ ENCODING = locale.getpreferredencoding()
 
 class InitFailed(Exception):
     """Shell object initialisation failed."""
+    def __init__(self, msg=u''):
+        self._msg = msg
+    def __str__(self):
+        return self._msg
 
 
 #########################################
@@ -73,54 +77,44 @@ class Environment(object):
 #########################################
 # shell
 
-def get_shell_manager(queues, keyboard, screen, codepage, shell, syntax):
+def get_shell_manager(*args, **kwargs):
     """Return a new shell manager object."""
     # move to shell_ generator
-    if syntax == 'pcjr':
-        return ErrorShell()
     try:
         if sys.platform == 'win32':
-            return WindowsShell(queues, keyboard, screen, codepage, shell)
+            return WindowsShell(*args, **kwargs)
         else:
-            return UnixShell(queues, keyboard, screen, codepage, shell)
+            return UnixShell(*args, **kwargs)
     except InitFailed as e:
-        #logging.warning(e)
-        return ShellBase()
+        return NoShell(warn=e)
 
 
-class ShellBase(object):
-    """Launcher for command shell."""
+class NoShell(object):
+    """Launcher to throw IFC for emulation targets with no DOS."""
 
-    def launch(self, command):
-        """Launch the shell."""
-        logging.warning(b'SHELL statement disabled.')
-
-
-# remove
-class ErrorShell(ShellBase):
-    """Launcher to throw IFC."""
+    def __init__(self, warn=None, *args, **kwargs):
+        """Initialise the shell."""
+        self._warn = warn
 
     def launch(self, command):
         """Launch the shell."""
+        if self._warn:
+            logging.warning(b'SHELL statement not enabled: %s', self._warn)
         raise error.BASICError(error.IFC)
 
 
-class UnixShell(ShellBase):
-    """Launcher for Unix shell."""
+class BaseShell(object):
+    """Launcher for command shell."""
 
-    _command_pattern = u'%s -c "%s"'
+    # these should be overridden
+    _command_pattern = u'%s -c %s'
     _eol = b'\n'
     _echoes = False
 
     def __init__(self, queues, keyboard, screen, codepage, shell):
         """Initialise the shell."""
         if not shell:
-            raise InitFailed()
-        # need shell=True, command seems to be a shell feature
-        # shouldn't we check for existence of an executable instead?
-        # since below we run with shell=False
-        if subprocess.call(b'command -v %s >/dev/null 2>&1' % (shell,), shell=True) != 0:
-            raise InitFailed()
+            raise InitFailed('No command interpreter (shell) specified.')
         self._shell = shell
         self._queues = queues
         self._keyboard = keyboard
@@ -147,9 +141,13 @@ class UnixShell(ShellBase):
         cmd = self._shell
         if command:
             cmd = self._command_pattern % (self._shell, self._codepage.str_to_unicode(command))
-        p = subprocess.Popen(
-                cmd.encode(ENCODING).split(), shell=False,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            p = subprocess.Popen(
+                    cmd.encode(ENCODING).split(), shell=False,
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except (EnvironmentError, UnicodeEncodeError) as e:
+            logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
+            raise error.BASICError(error.IFC)
         outp = threading.Thread(target=self._process_stdout, args=(p.stdout, shell_output))
         # daemonise or join later?
         outp.daemon = True
@@ -197,7 +195,7 @@ class UnixShell(ShellBase):
         """Write keyboard input to pipe."""
         bytes_word = b''.join(word) + self._eol
         unicode_word = self._codepage.str_to_unicode(bytes_word, preserve_control=True)
-        pipe.write(unicode_word.encode(ENCODING))
+        pipe.write(unicode_word.encode(ENCODING, errors='replace'))
 
     def _show_output(self, shell_output):
         """Write shell output to screen."""
@@ -206,23 +204,22 @@ class UnixShell(ShellBase):
             while shell_output:
                 lines.append(shell_output.popleft())
             lines = b''.join(lines).split(self._eol)
-            lines = [self._codepage.str_from_unicode(l.decode(ENCODING)) for l in lines]
+            lines = (l.decode(ENCODING, errors='replace') for l in lines)
+            lines = (self._codepage.str_from_unicode(l, errors='replace') for l in lines)
             self._screen.write('\r'.join(lines))
+
+
+class UnixShell(BaseShell):
+    """Launcher for Unix shell."""
+
+    _command_pattern = u"%s -c '%s'"
+    _eol = b'\n'
+    _echoes = False
 
 
 class WindowsShell(UnixShell):
     """Launcher for Windows shell."""
 
-    _command_pattern = u'%s /C "%s"'
+    _command_pattern = u'%s /C %s'
     _eol = b'\r\n'
     _echoes = True
-
-    def __init__(self, queues, keyboard, screen, codepage, shell):
-        """Initialise the shell."""
-        if not shell:
-            raise InitFailed()
-        self._shell = shell
-        self._queues = queues
-        self._keyboard = keyboard
-        self._screen = screen
-        self._codepage = codepage
