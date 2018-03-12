@@ -24,6 +24,13 @@ else:
 from .base import signals
 
 
+STDOUT_ENCODING = sys.stdout.encoding or 'utf-8'
+STDOUT_ENCODING = 'utf-8' if STDOUT_ENCODING == 'cp65001' else STDOUT_ENCODING
+
+STDIN_ENCODING = sys.stdin.encoding or 'utf-8'
+STDIN_ENCODING = 'utf-8' if STDIN_ENCODING == 'cp65001' else STDIN_ENCODING
+
+
 class RedirectedIO(object):
     """Manage I/O redirection to files, printers and stdio."""
 
@@ -69,10 +76,10 @@ class RedirectedIO(object):
         if stdio and not self._stdio:
             self._stdio = True
             self._output_echos.append(OutputStreamWrapper(
-                        sys.stdout, self._codepage, sys.stdout.encoding or 'utf-8'))
+                        sys.stdout, self._codepage, STDOUT_ENCODING))
             lfcr = platform.system() != 'Windows' and sys.stdin.isatty()
             self._input_streams.append(InputStreamWrapper(
-                        sys.stdin, self._codepage, sys.stdin.encoding, lfcr))
+                        sys.stdin, self._codepage, STDIN_ENCODING, lfcr))
         if self._input_file:
             try:
                 self._input_streams.append(InputStreamWrapper(
