@@ -8,12 +8,12 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import sys
-import subprocess
 import logging
 import threading
 import time
 import shlex
 from collections import deque
+from subprocess import Popen, PIPE
 
 from .base import error
 from . import values
@@ -146,9 +146,7 @@ class BaseShell(object):
         if command:
             cmd += [self._command_pattern, self._codepage.str_to_unicode(command)]
         try:
-            p = subprocess.Popen(
-                    cmd, shell=False,
-                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = Popen(cmd, shell=False, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
             raise error.BASICError(error.IFC)
