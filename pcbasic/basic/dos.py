@@ -111,8 +111,8 @@ class BaseShell(object):
     """Launcher for command shell."""
 
     # these should be overridden
-    _command_pattern = u'%s -c %s'
-    _eol = b'\n'
+    _command_pattern = u''
+    _eol = b''
     _echoes = False
 
     def __init__(self, queues, keyboard, screen, codepage, shell):
@@ -142,12 +142,12 @@ class BaseShell(object):
         """Run a SHELL subprocess."""
         shell_output = deque()
         shell_cerr = deque()
-        cmd = self._shell
+        cmd = [e.decode('utf-8') for e in shlex.split(self._shell.encode('utf-8'))]
         if command:
-            cmd = self._command_pattern % (self._shell, self._codepage.str_to_unicode(command))
+            cmd += [self._command_pattern, self._codepage.str_to_unicode(command)]
         try:
             p = subprocess.Popen(
-                    shlex.split(cmd.encode(ENCODING)), shell=False,
+                    cmd, shell=False,
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
@@ -216,7 +216,7 @@ class BaseShell(object):
 class UnixShell(BaseShell):
     """Launcher for Unix shell."""
 
-    _command_pattern = u"%s -c '%s'"
+    _command_pattern = u'-c'
     _eol = b'\n'
     _echoes = False
 
@@ -224,6 +224,6 @@ class UnixShell(BaseShell):
 class WindowsShell(UnixShell):
     """Launcher for Windows shell."""
 
-    _command_pattern = u'%s /C %s'
+    _command_pattern = u'/C'
     _eol = b'\r\n'
     _echoes = True
