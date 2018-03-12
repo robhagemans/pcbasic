@@ -105,88 +105,12 @@ class ErrorShell(ShellBase):
         raise error.BASICError(error.IFC)
 
 
-class WindowsShell(ShellBase):
-    """Launcher for Windows CMD shell."""
-
-    def __init__(self, queues, keyboard, screen, codepage, shell_command):
-        """Initialise the shell."""
-        if not shell_command:
-            raise InitFailed()
-        self._queues = queues
-        self.keyboard = keyboard
-        self.screen = screen
-        self.command = shell_command
-        self.codepage = codepage
-        self._encoding = locale.getpreferredencoding()
-
-    def _process_stdout(self, stream, shell_output):
-        """Retrieve SHELL output and write to console."""
-        while True:
-            # blocking read
-            c = stream.read(1)
-            if c:
-                # don't access screen in this thread
-                # the other thread already does
-                shell_output.append(c)
-            else:
-                # don't hog cpu, sleep 1 ms
-                time.sleep(DELAY)
-
-    def launch(self, command):
-        """Run a SHELL subprocess."""
-        shell_output = []
-        cmd = self.command
-        if command:
-            cmd += u' /C ' + self.codepage.str_to_unicode(command)
-        p = subprocess.Popen(cmd.encode(self._encoding).split(), stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        outp = threading.Thread(target=self._process_stdout, args=(p.stdout, shell_output))
-        outp.daemon = True
-        outp.start()
-        errp = threading.Thread(target=self._process_stdout, args=(p.stderr, shell_output))
-        errp.daemon = True
-        errp.start()
-        word = b''
-        while p.poll() is None or shell_output:
-            if shell_output:
-                lines, shell_output[:] = b''.join(shell_output).split('\r\n'), []
-                last = lines.pop()
-                for line in lines:
-                    self.screen.write_line(self.codepage.str_from_unicode(line.decode(self._encoding)))
-                self.screen.write(self.codepage.str_from_unicode(last.decode(self._encoding)))
-            if p.poll() is not None:
-                # drain output then break
-                continue
-            try:
-                self._queues.wait()
-                # expand=False suppresses key macros
-                c = self.keyboard.get_fullchar(expand=False)
-            except error.Break:
-                pass
-            if c in (b'\r', b'\n'):
-                # shift the cursor left so that CMD.EXE's echo can overwrite
-                # the command that's already there. Note that Wine's CMD.EXE
-                # doesn't echo the command, so it's overwritten by the output...
-                self.screen.write(b'\x1D' * len(word))
-                p.stdin.write(self.codepage.str_to_unicode(word + b'\r\n', preserve_control=True).encode(self._encoding))
-                word = b''
-            elif c == b'\b':
-                # handle backspace
-                if word:
-                    word = word[:-1]
-                    self.screen.write(b'\x1D \x1D')
-            elif c != b'':
-                # only send to pipe when enter is pressed
-                # needed for Wine and to handle backspace properly
-                word += c
-                self.screen.write(c)
-
-
 class UnixShell(ShellBase):
     """Launcher for Unix shell."""
 
     _command_pattern = u'%s -c "%s"'
     _eol = b'\n'
+    _echoes = False
 
     def __init__(self, queues, keyboard, screen, codepage, shell):
         """Initialise the shell."""
@@ -249,12 +173,16 @@ class UnixShell(ShellBase):
             if not c:
                 continue
             elif c in (b'\r', b'\n'):
+                n_chars = len(word)
+                # shift the cursor left so that CMD.EXE's echo can overwrite
+                # the command that's already there.
+                if self._echoes:
+                    self._screen.write(b'\x1D' * len(word))
+                else:
+                    self._screen.write_line()
                 # send line-buffered input to pipe
-                # windows - needs to move cursor to overwrite echo here?
                 self._send_input(p.stdin, word)
                 word = []
-                # below is not in windows version
-                self._screen.write_line()
             elif c == b'\b':
                 # handle backspace
                 if word:
@@ -280,3 +208,21 @@ class UnixShell(ShellBase):
             lines = b''.join(lines).split(self._eol)
             lines = [self._codepage.str_from_unicode(l.decode(ENCODING)) for l in lines]
             self._screen.write('\r'.join(lines))
+
+
+class WindowsShell(UnixShell):
+    """Launcher for Windows shell."""
+
+    _command_pattern = u'%s /C "%s"'
+    _eol = b'\r\n'
+    _echoes = True
+
+    def __init__(self, queues, keyboard, screen, codepage, shell):
+        """Initialise the shell."""
+        if not shell:
+            raise InitFailed()
+        self._shell = shell
+        self._queues = queues
+        self._keyboard = keyboard
+        self._screen = screen
+        self._codepage = codepage
