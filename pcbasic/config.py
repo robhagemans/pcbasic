@@ -20,7 +20,9 @@ import pkg_resources
 import string
 from collections import deque
 
-if sys.platform == 'win32':
+WIN32 = sys.platform == 'win32'
+
+if WIN32:
     import ctypes
     import ctypes.wintypes
     from .basic.devices.disk import get_short_pathname
@@ -38,10 +40,10 @@ BASENAME = u'pcbasic-{0}'.format(MAJOR_VERSION)
 
 # user configuration and state directories
 HOME_DIR = os.path.expanduser(u'~')
-if platform.system() == b'Windows':
+if WIN32:
     USER_CONFIG_DIR = os.path.join(os.getenv(u'APPDATA'), BASENAME)
     STATE_PATH = USER_CONFIG_DIR
-elif platform.system() == b'Darwin':
+elif sys.platform == 'darwin':
     USER_CONFIG_DIR = os.path.join(HOME_DIR, u'Library', u'Application Support', BASENAME)
     STATE_PATH = USER_CONFIG_DIR
 else:
@@ -94,7 +96,7 @@ def store_bundled_programs(PROGRAM_PATH):
 
 def get_unicode_argv():
     """Convert command-line arguments to unicode."""
-    if sys.platform == 'win32':
+    if WIN32:
         # we need to go to the Windows API as argv may not be in a full unicode encoding
         # note that this will not be necessary in Python 3 where sys.argv is unicode
         # http://code.activestate.com/recipes/572200-get-sysargv-with-unicode-characters-under-windows/
@@ -628,7 +630,7 @@ class Settings(object):
         # always get current device
         current_device = self.get('current-device')
         if self.get('map-drives', get_default):
-            if sys.platform == 'win32':
+            if WIN32:
                 # get all drives in use by windows
                 # if started from CMD.EXE, get the 'current working dir' for each drive
                 # if not in CMD.EXE, there's only one cwd

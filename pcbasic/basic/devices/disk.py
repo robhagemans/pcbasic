@@ -20,7 +20,9 @@ import random
 import ntpath
 import logging
 
-if sys.platform == 'win32':
+WIN32 = sys.platform == 'win32'
+
+if WIN32:
     import ctypes
     from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD
 
@@ -120,7 +122,7 @@ def handle_oserror(e):
 ##############################################################################
 # short filenames
 
-if sys.platform == 'win32':
+if WIN32:
     _GetShortPathName = ctypes.windll.kernel32.GetShortPathNameW
     _GetShortPathName.argtypes = [LPCWSTR, LPWSTR, DWORD]
 
@@ -540,7 +542,7 @@ class DiskDevice(object):
 
     def get_free(self):
         """Return the number of free bytes on the drive."""
-        if sys.platform == 'win32':
+        if WIN32:
             free_bytes = ctypes.c_ulonglong(0)
             ctypes.windll.kernel32.GetDiskFreeSpaceExW(
                     ctypes.c_wchar_p(self._native_root), None, None, ctypes.pointer(free_bytes))
@@ -620,7 +622,7 @@ class DiskDevice(object):
         """Convert native name to short name or (not normalised or even legal) dos-style name."""
         native_path = os.path.join(native_dirpath, native_name)
         # get the short name if it exists, keep long name otherwise
-        if sys.platform == 'win32':
+        if WIN32:
             native_path = get_short_pathname(native_path) or native_path
         native_name = os.path.basename(native_path)
         # see if we have a legal dos name that matches

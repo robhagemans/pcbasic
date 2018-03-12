@@ -8,17 +8,18 @@ This file is released under the GNU GPL version 3 or later.
 
 import threading
 import subprocess
-import platform
 from collections import deque
 import time
 import sys
 
-if platform.system() != 'Windows':
-    import fcntl
-    winsound = None
-else:
+WIN32 = sys.platform == 'win32'
+
+if WIN32:
     import winsound
     fcntl = None
+else:
+    import fcntl
+    winsound = None
 
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
@@ -30,7 +31,7 @@ class AudioBeep(AudioPlugin):
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
-        if platform.system() == 'Windows':
+        if WIN32:
             self.beeper = WinBeeper
         else:
             if LinuxBeeper.ok():
@@ -85,8 +86,7 @@ class Beeper(object):
         """This beeper is supported."""
         # Windows not supported as there's no beep utility anyway
         # and we can't run the test below on CMD
-        return (platform.system() != 'Windows' and
-            subprocess.call('command -v beep >/dev/null 2>&1', shell=True) == 0)
+        return (not WIN32 and subprocess.call('command -v beep >/dev/null 2>&1', shell=True) == 0)
 
     @staticmethod
     def hush():

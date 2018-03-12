@@ -6,7 +6,7 @@ Graphical interface common utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
-import platform
+import sys
 
 try:
     import numpy
@@ -14,7 +14,7 @@ except ImportError:
     numpy = None
 
 
-if platform.system() == 'Windows':
+if sys.platform == 'win32':
     # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
     # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
     import ctypes

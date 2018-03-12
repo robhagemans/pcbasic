@@ -9,11 +9,12 @@ This file is released under the GNU GPL version 3 or later.
 import threading
 import logging
 import sys
-import platform
 import time
 from contextlib import contextmanager
 
-if platform.system() == 'Windows':
+WIN32 = sys.platform == 'win32'
+
+if WIN32:
     import msvcrt
 else:
     import select
@@ -77,7 +78,7 @@ class RedirectedIO(object):
             self._stdio = True
             self._output_echos.append(OutputStreamWrapper(
                         sys.stdout, self._codepage, STDOUT_ENCODING))
-            lfcr = platform.system() != 'Windows' and sys.stdin.isatty()
+            lfcr = WIN32 and sys.stdin.isatty()
             self._input_streams.append(InputStreamWrapper(
                         sys.stdin, self._codepage, STDIN_ENCODING, lfcr))
         if self._input_file:
@@ -140,7 +141,7 @@ class InputStreamWrapper(object):
         self._lfcr = lfcr
         self._stream = stream
         # we need non-blocking readers to be able to deactivate the thread
-        if platform.system() == 'Windows':
+        if WIN32:
             if self._stream == sys.stdin:
                 self._get_chars = _get_chars_windows_console
             else:

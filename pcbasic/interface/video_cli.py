@@ -10,7 +10,6 @@ import sys
 import time
 import threading
 import Queue
-import platform
 
 from . import ansi
 from .video import VideoPlugin
@@ -19,7 +18,7 @@ from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 
-if platform.system() == 'Windows':
+if sys.platform == 'win32':
     try:
         from . import winsi
     except ImportError:
@@ -29,8 +28,9 @@ if platform.system() == 'Windows':
     # Ctrl+Z to exit
     EOF = uea.CTRL_z
 else:
-    winsi = True
     import tty, termios
+    # don't need it
+    winsi = True
     # Ctrl+D to exit
     EOF = uea.CTRL_d
 
@@ -68,12 +68,9 @@ class VideoTextBase(VideoPlugin):
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise text-based interface."""
-        try:
-            if platform.system() not in (b'Darwin',  b'Windows') and not sys.stdin.isatty():
-                raise InitFailed('Text-based interface requires a terminal (tty).')
-        except AttributeError:
-            pass
-        if not winsi:
+        if not sys.stdin.isatty():
+            raise InitFailed('Not a terminal (tty).')
+        elif not winsi:
             raise InitFailed('Module `winsi.dll` not found.')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # start the stdin thread for non-blocking reads

@@ -9,7 +9,6 @@ import io
 import os
 import Queue
 import logging
-import platform
 from contextlib import contextmanager
 
 from .metadata import NAME, VERSION, COPYRIGHT
