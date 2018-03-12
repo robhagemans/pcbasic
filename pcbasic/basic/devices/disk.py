@@ -546,7 +546,7 @@ class DiskDevice(object):
                     ctypes.c_wchar_p(self._native_root), None, None, ctypes.pointer(free_bytes))
             return free_bytes.value
         else:
-            st = os.statvfs(self._native_root.encode(locale.getpreferredencoding()))
+            st = os.statvfs(self._native_root)
             return st.f_bavail * st.f_frsize
 
     def require_file_exists_and_not_open(self, dospath):
