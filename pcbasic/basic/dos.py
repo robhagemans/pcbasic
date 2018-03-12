@@ -11,7 +11,7 @@ import sys
 import logging
 import threading
 import time
-import shlex
+import re
 from collections import deque
 from subprocess import Popen, PIPE
 
@@ -28,6 +28,10 @@ DELAY = 0.001
 # - but does this work if launched from a pythonw link? no
 ENCODING = sys.stdin.encoding or 'utf-8'
 ENCODING = 'utf-8' if ENCODING == 'cp65001' else ENCODING
+
+
+def split_quoted(line, split_by=u'\s', quote=u'"'):
+    return re.findall(ur'[^%s%s][^%s]*|%s.+?"' % (quote, split_by, split_by, quote), line)
 
 
 class InitFailed(Exception):
@@ -142,7 +146,7 @@ class BaseShell(object):
         """Run a SHELL subprocess."""
         shell_output = deque()
         shell_cerr = deque()
-        cmd = [e.decode('utf-8') for e in shlex.split(self._shell.encode('utf-8'))]
+        cmd = split_quoted(self._shell)
         if command:
             cmd += [self._command_pattern, self._codepage.str_to_unicode(command)]
         try:
