@@ -131,7 +131,7 @@ class VideoPygame(VideoPlugin):
                     'Smooth scaling not available on this display (depth %d < 24)',
                     self.display.get_bitsize())
             self._smooth = False
-        pygame.display.set_caption(self.caption.encode('utf-8'))
+        pygame.display.set_caption(self.caption.encode('utf-8', 'replace'))
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
@@ -458,7 +458,7 @@ class VideoPygame(VideoPlugin):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         title = self.caption + (u' - ' + msg if msg else u'')
-        pygame.display.set_caption(title.encode('utf-8'))
+        pygame.display.set_caption(title.encode('utf-8', 'replace'))
 
     def set_clipboard_text(self, text, mouse):
         """Put text on the clipboard."""

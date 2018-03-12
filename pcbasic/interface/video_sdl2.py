@@ -520,7 +520,7 @@ class VideoSDL2(VideoPlugin):
         if self._fullscreen:
              flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
         sdl2.SDL_DestroyWindow(self._display)
-        self._display = sdl2.SDL_CreateWindow(self._caption.encode('utf-8'),
+        self._display = sdl2.SDL_CreateWindow(self._caption.encode('utf-8', errors='replace'),
                     sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED,
                     width, height, flags)
         self._set_icon()
@@ -685,7 +685,7 @@ class VideoSDL2(VideoPlugin):
 
     def _handle_text_input(self, event):
         """Handle text-input event."""
-        c = event.text.text.decode('utf-8')
+        c = event.text.text.decode('utf-8', errors='replace')
         if self._f11_active:
             # F11+f to toggle fullscreen mode
             if c.upper() == u'F':
@@ -897,7 +897,7 @@ class VideoSDL2(VideoPlugin):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         title = self._caption + (u' - ' + msg if msg else u'')
-        sdl2.SDL_SetWindowTitle(self._display, title.encode('utf-8'))
+        sdl2.SDL_SetWindowTitle(self._display, title.encode('utf-8', errors='replace'))
 
     def set_clipboard_text(self, text, mouse):
         """Put text on the clipboard."""

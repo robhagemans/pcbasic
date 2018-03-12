@@ -117,7 +117,7 @@ def get_unicode_argv():
     else:
         # the official parameter should be LC_CTYPE but that's None in my locale
         # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-        return [arg.decode(locale.getpreferredencoding()) for arg in sys.argv]
+        return [arg.decode(locale.getpreferredencoding(), errors='replace') for arg in sys.argv]
 
 class TemporaryDirectory():
     """Temporary directory context guard like in Python 3 tempfile."""
@@ -492,7 +492,8 @@ class Settings(object):
             'mono_tint': self.get('mono-tint'),
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
-            'keys': self.get('keys').encode('utf-8').decode('string_escape').decode('utf-8'),
+            'keys': self.get('keys').encode('utf-8', 'replace')
+                        .decode('string_escape').decode('utf-8', 'replace'),
             # find program for PCjr TERM command
             'term': pcjr_term,
             'shell': self.get('shell'),
@@ -631,7 +632,6 @@ class Settings(object):
                 # get all drives in use by windows
                 # if started from CMD.EXE, get the 'current working dir' for each drive
                 # if not in CMD.EXE, there's only one cwd
-                current_device = os.path.abspath(os.getcwdu()).split(u':')[0].encode('ascii')
                 save_current = os.getcwdu()
                 for letter in string.uppercase:
                     try:
@@ -645,6 +645,11 @@ class Settings(object):
                         path, cwd = cwd[:3], cwd[3:]
                         mount_dict[letter] = (path, cwd)
                 os.chdir(save_current)
+                try:
+                    current_device = os.path.abspath(save_current).split(u':')[0].encode('ascii')
+                except UnicodeEncodeError:
+                    # fallback in case of some error
+                    current_device = mount_dict.keys()[0]
             else:
                 cwd = os.getcwdu()
                 home = os.path.expanduser(u'~')

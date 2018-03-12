@@ -611,7 +611,8 @@ class DiskDevice(object):
         # not found
         if create:
             # create a new filename
-            return norm_name.decode(b'ascii')
+            # we should have only ascii due to dos_is_legal_name check above
+            return norm_name.decode(b'ascii', errors='replace')
         else:
             raise error.BASICError(name_err)
 
@@ -1156,7 +1157,7 @@ class TextFile(CRLFTextFileBase):
         else:
             s = self._read_line_universal()
         if self._codepage is not None and s is not None:
-            s = self._codepage.str_from_unicode(s.decode(b'utf-8'))
+            s = self._codepage.str_from_unicode(s.decode(b'utf-8', errors='replace'))
         return s
 
     def lock(self, start, stop):
