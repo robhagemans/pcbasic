@@ -81,17 +81,17 @@ def show_version(settings):
 
 def convert(settings):
     """Perform file format conversion."""
-    mode, name_in, name_out = settings.conv_params
+    mode, infile, outfile = settings.conv_params
     with basic.Session(**settings.session_params) as session:
         try:
             # if the native file doesn't exist, treat as BASIC file spec
-            if not name_in or os.path.isfile(name_in):
+            if not infile or os.path.isfile(infile):
                 # use io.BytesIO buffer for seekability
-                infile = session.bind_file(name_in or io.BytesIO(sys.stdin.read()))
+                infile = session.bind_file(infile or io.BytesIO(sys.stdin.read()))
             session.execute(b'LOAD "%s"' % (infile,))
-            if (not name_out or not os.path.dirname(name_out)
-                    or os.path.isdir(os.path.dirname(name_out))):
-                outfile = session.bind_file(name_out or sys.stdout)
+            if (not outfile or not os.path.dirname(outfile)
+                    or os.path.isdir(os.path.dirname(outfile))):
+                outfile = session.bind_file(outfile or sys.stdout)
             save_cmd = b'SAVE "%s"' % (outfile,)
             if mode.upper() in (b'A', b'P'):
                 save_cmd += b',%s' % (mode,)
