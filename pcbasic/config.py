@@ -20,15 +20,10 @@ import pkg_resources
 import string
 from collections import deque
 
-WIN32 = sys.platform == 'win32'
-
-if WIN32:
-    import ctypes
-    import ctypes.wintypes
-    from .basic.devices.disk import get_short_pathname
-
 from .basic.metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
+from .compat import WIN32, get_short_pathname, get_unicode_argv
+from .compat import USER_CONFIG_HOME, USER_DATA_HOME
 from . import data
 
 
@@ -39,18 +34,8 @@ MAJOR_VERSION = u'.'.join(VERSION.split(u'.')[:2])
 BASENAME = u'pcbasic-{0}'.format(MAJOR_VERSION)
 
 # user configuration and state directories
-HOME_DIR = os.path.expanduser(u'~')
-if WIN32:
-    USER_CONFIG_DIR = os.path.join(os.getenv(u'APPDATA'), BASENAME)
-    STATE_PATH = USER_CONFIG_DIR
-elif sys.platform == 'darwin':
-    USER_CONFIG_DIR = os.path.join(HOME_DIR, u'Library', u'Application Support', BASENAME)
-    STATE_PATH = USER_CONFIG_DIR
-else:
-    USER_CONFIG_DIR = os.path.join(
-        os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(HOME_DIR, u'.config'), BASENAME)
-    STATE_PATH = os.path.join(
-        os.environ.get(u'XDG_DATA_HOME') or os.path.join(HOME_DIR, u'.local', u'share'), BASENAME)
+USER_CONFIG_DIR = os.path.join(USER_CONFIG_HOME, BASENAME)
+STATE_PATH = os.path.join(USER_DATA_HOME, BASENAME)
 
 # @: target drive for bundled programs
 PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
@@ -93,33 +78,6 @@ def store_bundled_programs(PROGRAM_PATH):
         with open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
             f.write(data.read_program_file(name))
 
-
-def get_unicode_argv():
-    """Convert command-line arguments to unicode."""
-    if WIN32:
-        # we need to go to the Windows API as argv may not be in a full unicode encoding
-        # note that this will not be necessary in Python 3 where sys.argv is unicode
-        # http://code.activestate.com/recipes/572200-get-sysargv-with-unicode-characters-under-windows/
-        from ctypes import cdll, windll, POINTER, c_int, byref
-        from ctypes.wintypes import LPCWSTR, LPWSTR
-        GetCommandLineW = cdll.kernel32.GetCommandLineW
-        GetCommandLineW.argtypes = []
-        GetCommandLineW.restype = LPCWSTR
-        cmd = GetCommandLineW()
-        argc = c_int(0)
-        CommandLineToArgvW = windll.shell32.CommandLineToArgvW
-        CommandLineToArgvW.argtypes = [LPCWSTR, POINTER(c_int)]
-        CommandLineToArgvW.restype = POINTER(LPWSTR)
-        argv = CommandLineToArgvW(cmd, byref(argc))
-        argv = [argv[i] for i in xrange(argc.value)]
-        # clip off the python interpreter call, if we use it
-        # anything that didn't get included in sys.argv is not for us either
-        argv = argv[-len(sys.argv):]
-        return argv
-    else:
-        # the official parameter should be LC_CTYPE but that's None in my locale
-        # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-        return [arg.decode(locale.getpreferredencoding(), errors='replace') for arg in sys.argv]
 
 class TemporaryDirectory():
     """Temporary directory context guard like in Python 3 tempfile."""

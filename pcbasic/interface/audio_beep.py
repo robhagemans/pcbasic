@@ -12,7 +12,7 @@ from collections import deque
 import time
 import sys
 
-WIN32 = sys.platform == 'win32'
+from ..compat import WIN32
 
 if WIN32:
     import winsound

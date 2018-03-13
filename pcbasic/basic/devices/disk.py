@@ -14,20 +14,14 @@ import re
 import sys
 import errno
 import string
-import locale
 import struct
 import random
 import ntpath
 import logging
 
-WIN32 = sys.platform == 'win32'
-
-if WIN32:
-    import ctypes
-    from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD
-
 from ..base.bytestream import ByteStream
 from ..base import error
+from ...compat import get_short_pathname, get_free_bytes
 from .. import values
 from . import devicebase
 
@@ -117,33 +111,6 @@ def handle_oserror(e):
         logging.error(u'Unmapped environment exception: %d', e.errno)
         basic_err = error.DEVICE_IO_ERROR
     raise error.BASICError(basic_err)
-
-
-##############################################################################
-# short filenames
-
-if WIN32:
-    _GetShortPathName = ctypes.windll.kernel32.GetShortPathNameW
-    _GetShortPathName.argtypes = [LPCWSTR, LPWSTR, DWORD]
-
-    def get_short_pathname(native_path):
-        """Return Windows short path name or None if not available."""
-        try:
-            length = _GetShortPathName(native_path, LPWSTR(0), DWORD(0))
-            wbuffer = ctypes.create_unicode_buffer(length)
-            _GetShortPathName(native_path, wbuffer, DWORD(length))
-        except Exception as e:
-            # something went wrong - this should be a WindowsError which is an OSError
-            # but not clear
-            return None
-        else:
-            # can also be None in wbuffer.value if error
-            return wbuffer.value
-
-else:
-    def get_short_pathname(native_path):
-        """Return Windows short path name or None if not available."""
-        return None
 
 
 ##############################################################################
@@ -542,14 +509,7 @@ class DiskDevice(object):
 
     def get_free(self):
         """Return the number of free bytes on the drive."""
-        if WIN32:
-            free_bytes = ctypes.c_ulonglong(0)
-            ctypes.windll.kernel32.GetDiskFreeSpaceExW(
-                    ctypes.c_wchar_p(self._native_root), None, None, ctypes.pointer(free_bytes))
-            return free_bytes.value
-        else:
-            st = os.statvfs(self._native_root)
-            return st.f_bavail * st.f_frsize
+        return get_free_bytes(self._native_root)
 
     def require_file_exists_and_not_open(self, dospath):
         """Raise an error if the file is open or does not exist."""
@@ -622,8 +582,7 @@ class DiskDevice(object):
         """Convert native name to short name or (not normalised or even legal) dos-style name."""
         native_path = os.path.join(native_dirpath, native_name)
         # get the short name if it exists, keep long name otherwise
-        if WIN32:
-            native_path = get_short_pathname(native_path) or native_path
+        native_path = get_short_pathname(native_path) or native_path
         native_name = os.path.basename(native_path)
         # see if we have a legal dos name that matches
         try:

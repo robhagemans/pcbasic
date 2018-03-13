@@ -15,6 +15,7 @@ import re
 from collections import deque
 from subprocess import Popen, PIPE
 
+from ..compat import WIN32, STDIN_ENCODING
 from .base import error
 from . import values
 
@@ -26,11 +27,11 @@ DELAY = 0.001
 # strange to use sys.stdin but locale.getpreferredencoding() is definitely wrong on Windows
 # whereas this seems to work if started from console
 # - but does this work if launched from a pythonw link? no
-ENCODING = sys.stdin.encoding or 'utf-8'
-ENCODING = 'utf-8' if ENCODING == 'cp65001' else ENCODING
+ENCODING = STDIN_ENCODING
 
 
 def split_quoted(line, split_by=u'\s', quote=u'"'):
+    """Split by separators, preserving quoted blocks."""
     return re.findall(ur'[^%s%s][^%s]*|%s.+?"' % (quote, split_by, split_by, quote), line)
 
 
@@ -89,7 +90,7 @@ def get_shell_manager(*args, **kwargs):
     """Return a new shell manager object."""
     # move to shell_ generator
     try:
-        if sys.platform == 'win32':
+        if WIN32:
             return WindowsShell(*args, **kwargs)
         else:
             return UnixShell(*args, **kwargs)

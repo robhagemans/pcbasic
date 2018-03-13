@@ -17,10 +17,11 @@ from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
+from ..compat import WIN32, STDIN_ENCODING
 
-if sys.platform == 'win32':
+if WIN32:
     try:
-        from . import winsi
+        from ..compat import winsi
     except ImportError:
         winsi = None
     tty = winsi
@@ -35,8 +36,7 @@ else:
     EOF = uea.CTRL_d
 
 
-ENCODING = sys.stdin.encoding or 'utf-8'
-ENCODING = 'utf-8' if ENCODING == 'cp65001' else ENCODING
+ENCODING = STDIN_ENCODING
 
 # escape sequence to scancode
 ESC_TO_SCAN = {

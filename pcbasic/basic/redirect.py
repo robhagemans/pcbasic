@@ -12,7 +12,7 @@ import sys
 import time
 from contextlib import contextmanager
 
-WIN32 = sys.platform == 'win32'
+from ..compat import WIN32, STDOUT_ENCODING, STDIN_ENCODING
 
 if WIN32:
     import msvcrt
@@ -23,13 +23,6 @@ else:
     import array
 
 from .base import signals
-
-
-STDOUT_ENCODING = sys.stdout.encoding or 'utf-8'
-STDOUT_ENCODING = 'utf-8' if STDOUT_ENCODING == 'cp65001' else STDOUT_ENCODING
-
-STDIN_ENCODING = sys.stdin.encoding or 'utf-8'
-STDIN_ENCODING = 'utf-8' if STDIN_ENCODING == 'cp65001' else STDIN_ENCODING
 
 
 class RedirectedIO(object):

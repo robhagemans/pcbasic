@@ -13,17 +13,11 @@ try:
 except ImportError:
     numpy = None
 
+from ..compat import set_dpi_aware
 
-if sys.platform == 'win32':
-    # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
-    # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
-    import ctypes
-    try:
-        ctypes.windll.user32.SetProcessDPIAware()
-    except AttributeError:
-        # old versions of Windows don't have this in user32.dll
-        pass
 
+# Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
+set_dpi_aware()
 
 # percentage of the screen to leave unused for window decorations etc.
 DISPLAY_SLACK = 15
