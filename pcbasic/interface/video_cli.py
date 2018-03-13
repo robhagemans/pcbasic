@@ -17,26 +17,13 @@ from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from ..compat import WIN32, STDIN_ENCODING
+from ..compat import UEOF, encoding
 
-if WIN32:
-    try:
-        from ..compat import winsi
-    except ImportError:
-        winsi = None
-    tty = winsi
-    termios = winsi
-    # Ctrl+Z to exit
-    EOF = uea.CTRL_z
-else:
-    import tty, termios
-    # don't need it
-    winsi = True
-    # Ctrl+D to exit
-    EOF = uea.CTRL_d
+try:
+    from ..compat import winsi
+except ImportError:
+    winsi = None
 
-
-ENCODING = STDIN_ENCODING
 
 # escape sequence to scancode
 ESC_TO_SCAN = {
@@ -73,6 +60,8 @@ class VideoTextBase(VideoPlugin):
         elif not winsi:
             raise InitFailed('Module `winsi.dll` not found.')
         VideoPlugin.__init__(self, input_queue, video_queue)
+        # start winsi
+        winsi.enable_ansi_console()
         # start the stdin thread for non-blocking reads
         self._input_handler = InputHandlerCLI(input_queue)
         # terminal attributes (for setraw)
@@ -82,15 +71,15 @@ class VideoTextBase(VideoPlugin):
         """Open text-based interface."""
         VideoPlugin.__enter__(self)
         fd = sys.stdin.fileno()
-        self._term_attr = termios.tcgetattr(fd)
+        self._term_attr = winsi.tcgetattr(fd)
         # raw terminal - no echo, by the character rather than by the line
-        tty.setraw(fd)
+        winsi.setraw(fd)
         sys.stdout.flush()
 
     def __exit__(self, exc_type, value, traceback):
         """Close text-based interface."""
         try:
-            termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, self._term_attr)
+            winsi.tcsetattr(sys.stdin.fileno(), winsi.TCSADRAIN, self._term_attr)
             sys.stdout.flush()
         finally:
             VideoPlugin.__exit__(self, exc_type, value, traceback)
@@ -148,7 +137,7 @@ class VideoCLI(VideoTextBase):
             # may have to update row!
             if row != self._last_row or col != self._col:
                 self._update_position(row, col)
-            sys.stdout.write(char.encode(ENCODING, 'replace'))
+            sys.stdout.write(char.encode(encoding(sys.stdin), 'replace'))
             sys.stdout.flush()
             self._col = (col+2) if is_fullwidth else (col+1)
         # the terminal cursor has moved, so we'll need to move it back later
@@ -215,7 +204,7 @@ class VideoCLI(VideoTextBase):
             return
         self._update_col(1)
         rowtext = (u''.join(self._text[self._vpagenum][row-1]))
-        sys.stdout.write(rowtext.encode(ENCODING, 'replace').replace('\0', ' '))
+        sys.stdout.write(rowtext.encode(encoding(sys.stdin), 'replace').replace('\0', ' '))
         self._col = len(self._text[self._vpagenum][row-1])+1
         sys.stdout.flush()
 
@@ -287,7 +276,7 @@ class InputHandlerCLI(object):
             uc, sc = self._get_key()
             if not uc and not sc:
                 break
-            if uc == EOF:
+            if uc == UEOF:
                 # ctrl-D (unix) / ctrl-Z (windows)
                 self._input_queue.put(signals.Event(signals.KEYB_QUIT))
             elif uc == u'\x7f':
@@ -324,7 +313,7 @@ class InputHandlerCLI(object):
             else:
                 # return the first recognised encoding sequence
                 try:
-                    return s.decode(ENCODING), None
+                    return s.decode(encoding(sys.stdin)), None
                 except UnicodeDecodeError:
                     pass
             # give time for the queue to fill up
@@ -337,4 +326,4 @@ class InputHandlerCLI(object):
             s += c
         # no sequence or decodable string found
         # decode as good as it gets
-        return s.decode(ENCODING, errors='replace'), None
+        return s.decode(encoding(sys.stdin), errors='replace'), None

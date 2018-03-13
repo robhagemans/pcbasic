@@ -11,7 +11,27 @@ import sys
 # ansipipe version
 __version__ = '1.3.0'
 
-if sys.platform == 'win32' and sys.stdin.isatty():
+if sys.platform != 'win32':
+    from termios import tcsetattr, tcgetattr, TCSADRAIN, ONLCR, ECHO, ICRNL
+    from tty import setraw
+
+    def enable_ansi_console():
+        """Initialise ANSI console."""
+
+elif not sys.stdin.isatty():
+    def setraw(fd, dummy=None):
+        """ Set raw terminal mode (Windows stub). """
+
+    def tcsetattr(fd, dummy, attr):
+        """ Set terminal attributes (Windows stub). """
+
+    def tcgetattr(fd):
+        """ Get terminal attributes (Windows stub). """
+
+    def enable_ansi_console():
+        """Initialise ANSI console."""
+
+else:
     import ctypes
     import atexit
     import os
@@ -84,12 +104,13 @@ if sys.platform == 'win32' and sys.stdin.isatty():
             _write(s)
 
 
-    _init()
-
-    sys.stdout, _stdout = _WinsiOutputWrapper(sys.stdout), sys.stdout
-    sys.stdin, _stdin = _WinsiInputWrapper(sys.stdin), sys.stdin
-
-    atexit.register(_close)
+    def enable_ansi_console():
+        """Initialise ANSI console."""
+        global _stdin, _stdout
+        _init()
+        sys.stdout, _stdout = _WinsiOutputWrapper(sys.stdout), sys.stdout
+        sys.stdin, _stdin = _WinsiInputWrapper(sys.stdin), sys.stdin
+        atexit.register(_close)
 
     ##########################################################################
 
@@ -109,6 +130,7 @@ if sys.platform == 'win32' and sys.stdin.isatty():
 
     def tcsetattr(fd, dummy, attr):
         """ Set terminal attributes (Windows stub). """
+        global termios_state
         if (fd == sys.stdin.fileno()):
             num = 254
             sys.stdout.write('\x1b]%d;ECHO\x07' % (num + (attr & ECHO != 0)))

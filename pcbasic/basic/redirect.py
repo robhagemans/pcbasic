@@ -12,7 +12,7 @@ import sys
 import time
 from contextlib import contextmanager
 
-from ..compat import WIN32, STDOUT_ENCODING, STDIN_ENCODING
+from ..compat import WIN32, encoding
 
 if WIN32:
     import msvcrt
@@ -70,10 +70,10 @@ class RedirectedIO(object):
         if stdio and not self._stdio:
             self._stdio = True
             self._output_echos.append(OutputStreamWrapper(
-                        sys.stdout, self._codepage, STDOUT_ENCODING))
+                        sys.stdout, self._codepage, encoding(sys.stdout)))
             lfcr = WIN32 and sys.stdin.isatty()
             self._input_streams.append(InputStreamWrapper(
-                        sys.stdin, self._codepage, STDIN_ENCODING, lfcr))
+                        sys.stdin, self._codepage, encoding(sys.stdin), lfcr))
         if self._input_file:
             try:
                 self._input_streams.append(InputStreamWrapper(

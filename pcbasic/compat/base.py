@@ -15,11 +15,21 @@ MACOS = sys.platform == 'darwin'
 
 # encodings
 
-STDOUT_ENCODING = sys.stdout.encoding or 'utf-8'
-STDOUT_ENCODING = 'utf-8' if STDOUT_ENCODING == 'cp65001' else STDOUT_ENCODING
+def encoding(stream):
+    """Get encoding of a standard stream, fallback to UTF-8."""
+    enc = stream.encoding
+    return 'utf-8' if (not enc or enc == 'cp65001') else enc
 
-STDIN_ENCODING = sys.stdin.encoding or 'utf-8'
-STDIN_ENCODING = 'utf-8' if STDIN_ENCODING == 'cp65001' else STDIN_ENCODING
+# conventions
+if WIN32:
+    # ctrl+Z
+    EOF = b'\x1A'
+    UEOF = u'\x1A'
+else:
+    # ctrl+D
+    EOF = b'\x04'
+    UEOF = u'\x04'
+
 
 # user configuration and state directories
 HOME_DIR = os.path.expanduser(u'~')

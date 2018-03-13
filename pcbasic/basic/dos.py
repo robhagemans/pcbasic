@@ -15,7 +15,7 @@ import re
 from collections import deque
 from subprocess import Popen, PIPE
 
-from ..compat import WIN32, STDIN_ENCODING
+from ..compat import WIN32, encoding
 from .base import error
 from . import values
 
@@ -27,7 +27,8 @@ DELAY = 0.001
 # strange to use sys.stdin but locale.getpreferredencoding() is definitely wrong on Windows
 # whereas this seems to work if started from console
 # - but does this work if launched from a pythonw link? no
-ENCODING = STDIN_ENCODING
+# also doesn't necessarily work with winsi...
+ENCODING = encoding(sys.stdin)
 
 
 def split_quoted(line, split_by=u'\s', quote=u'"'):
