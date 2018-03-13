@@ -9,9 +9,10 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import sys
 import ctypes
-from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD
+import logging
+import threading
+from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD, HINSTANCE, HANDLE, HKEY, BOOL
 from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong, byref
-
 
 # key pressed on keyboard
 
@@ -80,3 +81,82 @@ def get_unicode_argv():
     # anything that didn't get included in sys.argv is not for us either
     argv = argv[-len(sys.argv):]
     return argv
+
+# printing
+
+class SHELLEXECUTEINFO(ctypes.Structure):
+    _fields_ = (
+        ('cbSize', DWORD),
+        ('fMask', ctypes.c_ulong),
+        ('hwnd', HANDLE),
+        ('lpVerb', ctypes.c_char_p),
+        ('lpFile', ctypes.c_char_p),
+        ('lpParameters', ctypes.c_char_p),
+        ('lpDirectory', ctypes.c_char_p),
+        ('nShow', ctypes.c_int),
+        ('hInstApp', HINSTANCE),
+        ('lpIDList', ctypes.c_void_p),
+        ('lpClass', ctypes.c_char_p),
+        ('hKeyClass', HKEY),
+        ('dwHotKey', DWORD),
+        ('hIconOrMonitor', HANDLE),
+        ('hProcess', HANDLE),
+    )
+
+SEE_MASK_NOCLOSEPROCESS = 0x00000040
+SEE_MASK_NOASYNC = 0x00000100
+
+_ShellExecuteEx = ctypes.windll.shell32.ShellExecuteEx
+_ShellExecuteEx.restype = BOOL
+_WaitForSingleObject = ctypes.windll.kernel32.WaitForSingleObject
+
+
+def get_default_printer():
+    """Get the Windows default printer name."""
+    try:
+        _GetDefaultPrinterW = ctypes.WinDLL('winspool.drv').GetDefaultPrinterW
+        length = DWORD()
+        ret = _GetDefaultPrinterW(None, ctypes.byref(length))
+        name = ctypes.create_unicode_buffer(length.value)
+        ret = _GetDefaultPrinterW(name, ctypes.byref(length))
+        return name.value
+    except EnvironmentError as e:
+        logging.error('Could not get default printer: %s', e)
+        return u''
+
+PRINTER_TIMEOUT_MS=1000
+
+def _wait_for_process(handle):
+    """Give printing process some time to complete."""
+    try:
+        _WaitForSingleObject(handle, DWORD(PRINTER_TIMEOUT_MS))
+    except EnvironmentError as e:
+        logging.warning('Windows error: %s', e)
+
+def line_print(printbuf, printer, tempdir):
+    """Print the buffer to a Windows printer."""
+    if not printer or printer == b'default':
+        printer = get_default_printer()
+    if printbuf:
+        # open a file in our PC-BASIC temporary directory
+        # this will get cleaned up on exit
+        printfile = os.path.join(tempdir, u'pcbasic_print.txt')
+        with open(printfile, 'wb') as f:
+            # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
+            f.write(b'\xef\xbb\xbf')
+            f.write(printbuf)
+        sei = SHELLEXECUTEINFO()
+        sei.cbSize = ctypes.sizeof(sei)
+        sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC
+        sei.lpVerb = 'printto'
+        sei.lpFile = printfile
+        sei.lpParameters = '"%s"' % printer
+        sei.hProcess = HANDLE()
+        try:
+            _ShellExecuteEx(ctypes.byref(sei))
+        except EnvironmentError as e:
+            logging.error(b'Error while printing: %s', e)
+        else:
+            # launch non-daemon thread to wait for handle
+            # to ensure we don't lose the print if triggered on exit
+            threading.Thread(target=_wait_for_process, args=(sei.hProcess)).start()
