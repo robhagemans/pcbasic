@@ -13,6 +13,7 @@ import threading
 import time
 import re
 from collections import deque
+import subprocess
 from subprocess import Popen, PIPE
 
 from ..compat import WIN32, SHELL_ENCODING
@@ -144,8 +145,16 @@ class BaseShell(object):
         cmd = split_quoted(self._shell)
         if command:
             cmd += [self._command_pattern, self._codepage.str_to_unicode(command)]
+        # avoid CMD window popping up in front on Windows
+        startupinfo = None
+        if WIN32:
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= 1  # STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = 0 # SW_HIDE
         try:
-            p = Popen(cmd, shell=False, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            p = Popen(
+                    cmd, shell=False, stdin=PIPE, stdout=PIPE, stderr=PIPE,
+                    startupinfo=startupinfo)
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
             raise error.BASICError(error.IFC)

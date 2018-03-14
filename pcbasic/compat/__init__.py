@@ -10,6 +10,8 @@ from .base import WIN32, MACOS, USER_CONFIG_HOME, USER_DATA_HOME
 from .base import EOF, UEOF
 
 if WIN32:
+    #import winsi
+    from . import win_subprocess
     from .win32 import set_dpi_aware, key_pressed, line_print
     from .win32 import get_free_bytes, get_short_pathname, get_unicode_argv
     from .win32 import SHELL_ENCODING
