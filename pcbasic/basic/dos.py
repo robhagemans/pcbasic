@@ -15,20 +15,13 @@ import re
 from collections import deque
 from subprocess import Popen, PIPE
 
-from ..compat import WIN32, encoding
+from ..compat import WIN32, SHELL_ENCODING
 from .base import error
 from . import values
 
 
 # delay for input threads, in seconds
 DELAY = 0.001
-
-# the shell's encoding
-# strange to use sys.stdin but locale.getpreferredencoding() is definitely wrong on Windows
-# whereas this seems to work if started from console
-# - but does this work if launched from a pythonw link? no
-# also doesn't necessarily work with winsi...
-ENCODING = encoding(sys.stdin)
 
 
 def split_quoted(line, split_by=u'\s', quote=u'"'):
@@ -203,7 +196,7 @@ class BaseShell(object):
         """Write keyboard input to pipe."""
         bytes_word = b''.join(word) + self._eol
         unicode_word = self._codepage.str_to_unicode(bytes_word, preserve_control=True)
-        pipe.write(unicode_word.encode(ENCODING, errors='replace'))
+        pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
 
     def _show_output(self, shell_output):
         """Write shell output to screen."""
@@ -212,7 +205,7 @@ class BaseShell(object):
             while shell_output:
                 lines.append(shell_output.popleft())
             lines = b''.join(lines).split(self._eol)
-            lines = (l.decode(ENCODING, errors='replace') for l in lines)
+            lines = (l.decode(SHELL_ENCODING, errors='replace') for l in lines)
             lines = (self._codepage.str_from_unicode(l, errors='replace') for l in lines)
             self._screen.write('\r'.join(lines))
 

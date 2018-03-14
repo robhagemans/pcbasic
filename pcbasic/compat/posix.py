@@ -19,8 +19,11 @@ import locale
 import select
 import subprocess
 
+
 ##############################################################################
 # various
+
+SHELL_ENCODING = sys.stdin.encoding
 
 def key_pressed():
     """Return whether a character is ready to be read from the keyboard."""

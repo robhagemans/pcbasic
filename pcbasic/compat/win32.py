@@ -9,13 +9,52 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import sys
 import ctypes
+import codecs
 import logging
 import threading
 from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD, HINSTANCE, HANDLE, HKEY, BOOL
 from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong, byref
 
-# key pressed on keyboard
 
+##############################################################################
+# cmd.exe encoding
+
+# register cp65001 as an alias for utf-8
+codecs.register(lambda name: codecs.lookup('utf-8') if name == 'cp65001' else None)
+
+# original stdin codepage - this needs to be done before winsi is loaded
+_CONSOLE_ENCODING = sys.stdin.encoding
+# there's also an ACP codepage - this seems to be locale.getpreferredencoding()
+#_ACP_ENCODING = 'cp' + str(cdll.kernel32.GetACP())
+
+# get OEM codepage - the one used when cmd is launched from a non-console application
+HKEY_LOCAL_MACHINE = 0x80000002
+KEY_QUERY_VALUE = 0x0001
+
+def _get_oem_encoding():
+    """Get Windows OEM codepage."""
+    hkey = HKEY()
+    windll.advapi32.RegOpenKeyExW(
+        HKEY_LOCAL_MACHINE, LPWSTR(u"SYSTEM\\CurrentControlSet\\Control\\Nls\\CodePage"),
+        DWORD(0), DWORD(KEY_QUERY_VALUE), byref(hkey))
+    strval = ctypes.create_unicode_buffer(255)
+    # key HKLM SYSTEM\\CurrentControlSet\\Control\\Nls\\CodePage value OEMCP
+    size = DWORD(0)
+    windll.advapi32.RegQueryValueExW(hkey, LPWSTR(u"OEMCP"), DWORD(0), None, None, byref(size))
+    windll.advapi32.RegQueryValueExW(hkey, LPWSTR(u"OEMCP"), DWORD(0), None, byref(strval), byref(size))
+    windll.advapi32.RegCloseKey(hkey)
+    return 'cp' + strval.value
+
+
+# if starting from a console, shell will inherit its codepage
+# if starting from the gui (stdin.encoding == None), we're using OEM codepage
+SHELL_ENCODING = _CONSOLE_ENCODING or _get_oem_encoding()
+
+
+##############################################################################
+# various
+
+# key pressed on keyboard
 from msvcrt import kbhit as key_pressed
 
 # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
@@ -28,6 +67,9 @@ except AttributeError:
     def set_dpi_aware():
         """Enable HiDPI awareness."""
         pass
+
+##############################################################################
+# file system
 
 # free space
 
@@ -82,6 +124,7 @@ def get_unicode_argv():
     argv = argv[-len(sys.argv):]
     return argv
 
+##############################################################################
 # printing
 
 class SHELLEXECUTEINFO(ctypes.Structure):

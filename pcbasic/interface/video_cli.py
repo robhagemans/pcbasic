@@ -17,7 +17,7 @@ from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from ..compat import UEOF, encoding
+from ..compat import UEOF
 
 try:
     from ..compat import winsi
@@ -137,7 +137,7 @@ class VideoCLI(VideoTextBase):
             # may have to update row!
             if row != self._last_row or col != self._col:
                 self._update_position(row, col)
-            sys.stdout.write(char.encode(encoding(sys.stdin), 'replace'))
+            sys.stdout.write(char.encode(sys.stdin.encoding, 'replace'))
             sys.stdout.flush()
             self._col = (col+2) if is_fullwidth else (col+1)
         # the terminal cursor has moved, so we'll need to move it back later
@@ -204,7 +204,7 @@ class VideoCLI(VideoTextBase):
             return
         self._update_col(1)
         rowtext = (u''.join(self._text[self._vpagenum][row-1]))
-        sys.stdout.write(rowtext.encode(encoding(sys.stdin), 'replace').replace('\0', ' '))
+        sys.stdout.write(rowtext.encode(sys.stdin.encoding, 'replace').replace('\0', ' '))
         self._col = len(self._text[self._vpagenum][row-1])+1
         sys.stdout.flush()
 
@@ -313,7 +313,7 @@ class InputHandlerCLI(object):
             else:
                 # return the first recognised encoding sequence
                 try:
-                    return s.decode(encoding(sys.stdin)), None
+                    return s.decode(sys.stdin.encoding), None
                 except UnicodeDecodeError:
                     pass
             # give time for the queue to fill up
@@ -326,4 +326,4 @@ class InputHandlerCLI(object):
             s += c
         # no sequence or decodable string found
         # decode as good as it gets
-        return s.decode(encoding(sys.stdin), errors='replace'), None
+        return s.decode(sys.stdin.encoding, errors='replace'), None

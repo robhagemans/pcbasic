@@ -13,7 +13,6 @@ from .video import VideoPlugin
 from .base import video_plugins
 from . import video_cli
 from . import ansi
-from ..compat import encoding
 
 
 @video_plugins.register('ansi')
@@ -74,7 +73,7 @@ class VideoANSI(video_cli.VideoTextBase):
             sys.stdout.write(ansi.MOVE_CURSOR % (row+1, 1))
             for col, charattr in enumerate(textrow):
                 self._set_attributes(*charattr[1])
-                sys.stdout.write(charattr[0].encode(encoding(sys.stdin), 'replace'))
+                sys.stdout.write(charattr[0].encode(sys.stdin.encoding, 'replace'))
         sys.stdout.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
         sys.stdout.flush()
 
@@ -191,7 +190,7 @@ class VideoANSI(video_cli.VideoTextBase):
         if (row, col) != (self.cursor_row, self.cursor_col):
             sys.stdout.write(ansi.MOVE_CURSOR % (row, col))
         self._set_attributes(fore, back, blink, underline)
-        sys.stdout.write(char.encode(encoding(sys.stdin), 'replace'))
+        sys.stdout.write(char.encode(sys.stdin.encoding, 'replace'))
         if is_fullwidth:
             sys.stdout.write(' ')
         self.cursor_row, self.cursor_col = row, col+1

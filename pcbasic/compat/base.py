@@ -9,16 +9,11 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import sys
 
+
 # platform constants
 WIN32 = sys.platform == 'win32'
 MACOS = sys.platform == 'darwin'
 
-# encodings
-
-def encoding(stream):
-    """Get encoding of a standard stream, fallback to UTF-8."""
-    enc = stream.encoding
-    return 'utf-8' if (not enc or enc == 'cp65001') else enc
 
 # conventions
 if WIN32:

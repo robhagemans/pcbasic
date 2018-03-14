@@ -12,7 +12,7 @@ import sys
 import time
 from contextlib import contextmanager
 
-from ..compat import WIN32, encoding
+from ..compat import WIN32
 
 if WIN32:
     import msvcrt
@@ -70,10 +70,10 @@ class RedirectedIO(object):
         if stdio and not self._stdio:
             self._stdio = True
             self._output_echos.append(OutputStreamWrapper(
-                        sys.stdout, self._codepage, encoding(sys.stdout)))
+                        sys.stdout, self._codepage, sys.stdout.encoding))
             lfcr = WIN32 and sys.stdin.isatty()
             self._input_streams.append(InputStreamWrapper(
-                        sys.stdin, self._codepage, encoding(sys.stdin), lfcr))
+                        sys.stdin, self._codepage, sys.stdin.encoding, lfcr))
         if self._input_file:
             try:
                 self._input_streams.append(InputStreamWrapper(
@@ -114,7 +114,7 @@ class OutputStreamWrapper(object):
 
     def __init__(self, stream, codepage, encoding):
         """Set up codec."""
-        self._encoding = encoding
+        self._encoding = encoding or 'utf-8'
         # converter with DBCS lead-byte buffer for utf8 output redirection
         self._uniconv = codepage.get_converter(preserve_control=True)
         self._stream = stream
@@ -130,7 +130,7 @@ class InputStreamWrapper(object):
     def __init__(self, stream, codepage, encoding, lfcr):
         """Set up codec."""
         self._codepage = codepage
-        self._encoding = encoding
+        self._encoding = encoding or 'utf-8'
         self._lfcr = lfcr
         self._stream = stream
         # we need non-blocking readers to be able to deactivate the thread
