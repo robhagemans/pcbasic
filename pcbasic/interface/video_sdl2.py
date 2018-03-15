@@ -20,7 +20,8 @@ except ImportError:
 from ..compat import WIN32, BASE_DIR
 
 # on Windows, set environment variable to point to SDL2 DLL location
-if WIN32 and 'PYSDL2_DLL_PATH' not in os.environ:
+if (WIN32 and 'PYSDL2_DLL_PATH' not in os.environ and
+        os.path.isfile(os.path.join(BASE_DIR, 'lib', 'sdl2.dll'))):
     os.environ['PYSDL2_DLL_PATH'] = os.path.join(BASE_DIR, 'lib')
 
 try:

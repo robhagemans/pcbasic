@@ -33,4 +33,4 @@ if hasattr(sys, 'frozen'):
     # (__file__ is undefined in pyinstaller packages)
     BASE_DIR = os.path.dirname(sys.executable)
 else:
-    BASE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
+    BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
