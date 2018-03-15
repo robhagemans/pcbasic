@@ -12,16 +12,16 @@ import os
 import sys
 from collections import Counter
 
+try:
+    import numpy
+except ImportError:
+    numpy = None
+
+from ..compat import WIN32, BASE_DIR
+
 # on Windows, set environment variable to point to SDL2 DLL location
-if sys.platform == 'win32' and 'PYSDL2_DLL_PATH' not in os.environ:
-    if hasattr(sys, 'frozen'):
-        # we're a package: get the directory of the packaged executable
-        # (__file__ is undefined in pyinstaller packages)
-        os.environ['PYSDL2_DLL_PATH'] = os.path.dirname(sys.executable)
-    else:
-        # unpackaged: get the directory of the video_sdl2 module in ../lib
-        os.environ['PYSDL2_DLL_PATH'] = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), '..', 'lib')
+if WIN32 and 'PYSDL2_DLL_PATH' not in os.environ:
+    os.environ['PYSDL2_DLL_PATH'] = os.path.join(BASE_DIR, 'lib')
 
 try:
     import sdl2
@@ -32,11 +32,6 @@ try:
     import sdl2.sdlgfx
 except ImportError:
     pass
-
-try:
-    import numpy
-except ImportError:
-    numpy = None
 
 from ..basic.base import signals
 from ..basic.base import scancode

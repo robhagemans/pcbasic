@@ -6,7 +6,7 @@ Cross-platform compatibility utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .base import WIN32, MACOS, USER_CONFIG_HOME, USER_DATA_HOME
+from .base import WIN32, MACOS, USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR
 from .winsi import WINSI, enable_ansi_console, set_raw_console, unset_raw_console
 
 if WIN32:

@@ -8,24 +8,19 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 
+from .base import WIN32, BASE_DIR
+
 ORIG_STDIN_ENCODING = sys.stdin.encoding
 ORIG_STDOUT_ENCODING = sys.stdout.encoding
 
-WINSI = sys.platform == 'win32' and sys.stdin.isatty()
+WINSI = WIN32 and sys.stdin.isatty()
 
 if WINSI:
     import ctypes
     import os
 
-    if hasattr(sys, 'frozen'):
-        # we're a package: get the directory of the packaged executable
-        # (__file__ is undefined in pyinstaller packages)
-        DLLPATH = os.path.dirname(sys.executable)
-    else:
-        DLLPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'lib')
-
     try:
-        _dll = ctypes.CDLL(os.path.join(DLLPATH, 'winsi.dll'))
+        _dll = ctypes.CDLL(os.path.join(BASE_DIR, 'lib', 'winsi.dll'))
     except OSError as e:
         WINSI = False
 
@@ -117,7 +112,7 @@ if WINSI:
         sys.stdout.flush()
 
 else:
-    if sys.platform != 'win32':
+    if not WIN32:
         import termios
         import tty
 
