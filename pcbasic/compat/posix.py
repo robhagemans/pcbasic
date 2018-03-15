@@ -5,13 +5,6 @@ Interface for Unix-like system calls
 (c) 2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-"""
-PC-BASIC - win32
-DLL interface for Windows system libraries
-
-(c) 2018 Rob Hagemans
-This file is released under the GNU GPL version 3 or later.
-"""
 
 import os
 import sys

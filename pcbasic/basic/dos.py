@@ -24,18 +24,31 @@ from . import values
 # delay for input threads, in seconds
 DELAY = 0.001
 
+if WIN32:
+    # cmd.exe conventions, should also be used by other shells
+    SHELL_COMMAND_SWITCH = u'/C'
+    # the shell echoes its input
+    SHELL_ECHOES = True
+    # CRLF end-of-line
+    EOL = b'\r\n'
+    # avoid haveing an empty CMD window popping up in front of ours
+    HIDE_WINDOW = subprocess.STARTUPINFO()
+    HIDE_WINDOW.dwFlags |= 1  # STARTF_USESHOWWINDOW
+    HIDE_WINDOW.wShowWindow = 0 # SW_HIDE
+else:
+    # sh conventions, standard on Unix
+    SHELL_COMMAND_SWITCH = u'-c'
+    # the does not echo its input
+    SHELL_ECHOES = False
+    # LF end-of-line
+    EOL = b'\n'
+    # not needed on Unix
+    HIDE_WINDOW = None
+
 
 def split_quoted(line, split_by=u'\s', quote=u'"'):
     """Split by separators, preserving quoted blocks."""
     return re.findall(ur'[^%s%s][^%s]*|%s.+?"' % (quote, split_by, split_by, quote), line)
-
-
-class InitFailed(Exception):
-    """Shell object initialisation failed."""
-    def __init__(self, msg=u''):
-        self._msg = msg
-    def __str__(self):
-        return self._msg
 
 
 #########################################
@@ -81,44 +94,11 @@ class Environment(object):
 #########################################
 # shell
 
-def get_shell_manager(*args, **kwargs):
-    """Return a new shell manager object."""
-    # move to shell_ generator
-    try:
-        if WIN32:
-            return WindowsShell(*args, **kwargs)
-        else:
-            return UnixShell(*args, **kwargs)
-    except InitFailed as e:
-        return NoShell(warn=e)
-
-
-class NoShell(object):
-    """Launcher to throw IFC for emulation targets with no DOS."""
-
-    def __init__(self, warn=None, *args, **kwargs):
-        """Initialise the shell."""
-        self._warn = warn
-
-    def launch(self, command):
-        """Launch the shell."""
-        if self._warn:
-            logging.warning(b'SHELL statement not enabled: %s', self._warn)
-        raise error.BASICError(error.IFC)
-
-
-class BaseShell(object):
+class Shell(object):
     """Launcher for command shell."""
-
-    # these should be overridden
-    _command_pattern = u''
-    _eol = b''
-    _echoes = False
 
     def __init__(self, queues, keyboard, screen, codepage, shell):
         """Initialise the shell."""
-        if not shell:
-            raise InitFailed('No command interpreter (shell) specified.')
         self._shell = shell
         self._queues = queues
         self._keyboard = keyboard
@@ -140,21 +120,17 @@ class BaseShell(object):
 
     def launch(self, command):
         """Run a SHELL subprocess."""
+        if not self._shell:
+            logging.warning(b'SHELL statement not enabled: %s', self._warn)
+            raise error.BASICError(error.IFC)
         shell_output = deque()
         shell_cerr = deque()
         cmd = split_quoted(self._shell)
         if command:
-            cmd += [self._command_pattern, self._codepage.str_to_unicode(command)]
-        # avoid CMD window popping up in front on Windows
-        startupinfo = None
-        if WIN32:
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= 1  # STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = 0 # SW_HIDE
+            cmd += [SHELL_COMMAND_SWITCH, self._codepage.str_to_unicode(command)]
         try:
             p = Popen(
-                    cmd, shell=False, stdin=PIPE, stdout=PIPE, stderr=PIPE,
-                    startupinfo=startupinfo)
+                    cmd, shell=False, stdin=PIPE, stdout=PIPE, stderr=PIPE, startupinfo=HIDE_WINDOW)
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
             raise error.BASICError(error.IFC)
@@ -184,7 +160,7 @@ class BaseShell(object):
                 n_chars = len(word)
                 # shift the cursor left so that CMD.EXE's echo can overwrite
                 # the command that's already there.
-                if self._echoes:
+                if SHELL_ECHOES:
                     self._screen.write(b'\x1D' * len(word))
                 else:
                     self._screen.write_line()
@@ -203,7 +179,7 @@ class BaseShell(object):
 
     def _send_input(self, pipe, word):
         """Write keyboard input to pipe."""
-        bytes_word = b''.join(word) + self._eol
+        bytes_word = b''.join(word) + EOL
         unicode_word = self._codepage.str_to_unicode(bytes_word, preserve_control=True)
         pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
 
@@ -213,23 +189,7 @@ class BaseShell(object):
             lines = []
             while shell_output:
                 lines.append(shell_output.popleft())
-            lines = b''.join(lines).split(self._eol)
+            lines = b''.join(lines).split(EOL)
             lines = (l.decode(SHELL_ENCODING, errors='replace') for l in lines)
             lines = (self._codepage.str_from_unicode(l, errors='replace') for l in lines)
             self._screen.write('\r'.join(lines))
-
-
-class UnixShell(BaseShell):
-    """Launcher for Unix shell."""
-
-    _command_pattern = u'-c'
-    _eol = b'\n'
-    _echoes = False
-
-
-class WindowsShell(UnixShell):
-    """Launcher for Windows shell."""
-
-    _command_pattern = u'/C'
-    _eol = b'\r\n'
-    _echoes = True
