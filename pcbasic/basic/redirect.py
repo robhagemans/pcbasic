@@ -71,7 +71,7 @@ class RedirectedIO(object):
             self._stdio = True
             self._output_echos.append(OutputStreamWrapper(
                         sys.stdout, self._codepage, sys.stdout.encoding))
-            lfcr = WIN32 and sys.stdin.isatty()
+            lfcr = not WIN32 and sys.stdin.isatty()
             self._input_streams.append(InputStreamWrapper(
                         sys.stdin, self._codepage, sys.stdin.encoding, lfcr))
         if self._input_file:
