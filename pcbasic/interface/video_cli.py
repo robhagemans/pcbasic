@@ -17,12 +17,7 @@ from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from ..compat import UEOF
-
-try:
-    from ..compat import winsi
-except ImportError:
-    winsi = None
+from ..compat import UEOF, WINSI, enable_ansi_console, set_raw_console, unset_raw_console
 
 
 # escape sequence to scancode
@@ -57,30 +52,24 @@ class VideoTextBase(VideoPlugin):
         """Initialise text-based interface."""
         if not sys.stdin.isatty():
             raise InitFailed('Not a terminal (tty).')
-        elif not winsi:
+        elif not WINSI:
             raise InitFailed('Module `winsi.dll` not found.')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # start winsi
-        winsi.enable_ansi_console()
+        enable_ansi_console()
         # start the stdin thread for non-blocking reads
         self._input_handler = InputHandlerCLI(input_queue)
-        # terminal attributes (for setraw)
-        self._term_attr = None
 
     def __enter__(self):
         """Open text-based interface."""
         VideoPlugin.__enter__(self)
         fd = sys.stdin.fileno()
-        self._term_attr = winsi.tcgetattr(fd)
-        # raw terminal - no echo, by the character rather than by the line
-        winsi.setraw(fd)
-        sys.stdout.flush()
+        set_raw_console()
 
     def __exit__(self, exc_type, value, traceback):
         """Close text-based interface."""
         try:
-            winsi.tcsetattr(sys.stdin.fileno(), winsi.TCSADRAIN, self._term_attr)
-            sys.stdout.flush()
+            unset_raw_console()
         finally:
             VideoPlugin.__exit__(self, exc_type, value, traceback)
 

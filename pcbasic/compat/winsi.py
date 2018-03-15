@@ -8,34 +8,14 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 
-# ansipipe version
-__version__ = '1.3.0'
+ORIG_STDIN_ENCODING = sys.stdin.encoding
+ORIG_STDOUT_ENCODING = sys.stdout.encoding
 
-if sys.platform != 'win32':
-    from termios import tcsetattr, tcgetattr, TCSADRAIN, ONLCR, ECHO, ICRNL
-    from tty import setraw
+WINSI = sys.platform == 'win32' and sys.stdin.isatty()
 
-    def enable_ansi_console():
-        """Initialise ANSI console."""
-
-elif not sys.stdin.isatty():
-    def setraw(fd, dummy=None):
-        """ Set raw terminal mode (Windows stub). """
-
-    def tcsetattr(fd, dummy, attr):
-        """ Set terminal attributes (Windows stub). """
-
-    def tcgetattr(fd):
-        """ Get terminal attributes (Windows stub). """
-
-    def enable_ansi_console():
-        """Initialise ANSI console."""
-
-else:
+if WINSI:
     import ctypes
-    import atexit
     import os
-    import logging
 
     if hasattr(sys, 'frozen'):
         # we're a package: get the directory of the packaged executable
@@ -45,26 +25,30 @@ else:
         DLLPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'lib')
 
     try:
-        dll = ctypes.CDLL(os.path.join(DLLPATH, 'winsi.dll'))
+        _dll = ctypes.CDLL(os.path.join(DLLPATH, 'winsi.dll'))
     except OSError as e:
-        raise ImportError('Failed to link winsi.dll: %s' % e)
+        WINSI = False
+
+if WINSI:
+    import atexit
+    import logging
 
     BUFFER_LENGTH = 1024
     BUFFER = ctypes.create_string_buffer(BUFFER_LENGTH)
 
-    _init = dll.winsi_init
+    _init = _dll.winsi_init
     _init.argtypes = []
     _init.restype = None
 
-    _close = dll.winsi_close
+    _close = _dll.winsi_close
     _close.argtypes = []
     _close.restype = None
 
-    _read = dll.winsi_read
+    _read = _dll.winsi_read
     _read.argtypes = [ctypes.POINTER(ctypes.c_char), ctypes.c_long]
     _read.restype = ctypes.c_long
 
-    _write = dll.winsi_write
+    _write = _dll.winsi_write
     _write.argtypes = [ctypes.POINTER(ctypes.c_char)]
     _write.restype = None
 
@@ -113,34 +97,55 @@ else:
         atexit.register(_close)
 
     ##########################################################################
-
     # minimal replacements for tty.setraw() and termios.tcsa
     # using ansipipe-only escape sequences
-    ONLCR = 4
-    ECHO = 8
-    ICRNL = 256
 
-    TCSADRAIN = 1
+    def set_raw_console():
+        """Enter raw terminal mode."""
+        _set_terminal_state(echo=False, icrnl=False, onlcr=False)
 
-    termios_state = ICRNL | ECHO
+    def unset_raw_console():
+        """Leave raw terminal mode."""
+        _set_terminal_state(echo=True, icrnl=True, onlcr=False)
 
-    def setraw(fd, dummy=None):
-        """ Set raw terminal mode (Windows stub). """
-        tcsetattr(fd, dummy, 0)
+    def _set_terminal_state(echo, icrnl, onlcr):
+        """Set ansipipe terminal state (echo, CR/LF substitutions)."""
+        num = 254
+        sys.stdout.write('\x1b]%d;ECHO\x07' % (num + echo))
+        sys.stdout.write('\x1b]%d;ICRNL\x07' % (num + icrnl))
+        sys.stdout.write('\x1b]%d;ONLCR\x07' % (num + onlcr))
+        sys.stdout.flush()
 
-    def tcsetattr(fd, dummy, attr):
-        """ Set terminal attributes (Windows stub). """
-        global termios_state
-        if (fd == sys.stdin.fileno()):
-            num = 254
-            sys.stdout.write('\x1b]%d;ECHO\x07' % (num + (attr & ECHO != 0)))
-            sys.stdout.write('\x1b]%d;ICRNL\x07' % (num + (attr & ICRNL != 0)))
-            sys.stdout.write('\x1b]%d;ONLCR\x07' % (num + (attr & ONLCR != 0)))
-            termios_state = attr
+else:
+    if sys.platform != 'win32':
+        import termios
+        import tty
 
-    def tcgetattr(fd):
-        """ Get terminal attributes (Windows stub). """
-        if (fd == sys.stdin.fileno()):
-            return termios_state
-        else:
-            return 0
+        # we're supporting everything
+        WINSI = True
+        # save termios state
+        _term_attr = None
+
+        def enable_ansi_console():
+            """Initialise ANSI console."""
+
+        def set_raw_console():
+            """Enter raw terminal mode."""
+            global _term_attr
+            fd = sys.stdin.fileno()
+            _term_attr = termios.tcgetattr(fd)
+            tty.setraw(fd)
+
+        def unset_raw_console():
+            """Leave raw terminal mode."""
+            termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, _term_attr)
+
+    else:
+        def enable_ansi_console():
+            """Initialise ANSI console."""
+
+        def set_raw_console():
+            """Enter raw terminal mode."""
+
+        def unset_raw_console():
+            """Leave raw terminal mode."""

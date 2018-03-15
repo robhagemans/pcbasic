@@ -7,9 +7,9 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from .base import WIN32, MACOS, USER_CONFIG_HOME, USER_DATA_HOME
+from .winsi import WINSI, enable_ansi_console, set_raw_console, unset_raw_console
 
 if WIN32:
-    #import winsi
     from . import win_subprocess
     from .win32 import set_dpi_aware, key_pressed, line_print
     from .win32 import get_free_bytes, get_short_pathname, get_unicode_argv

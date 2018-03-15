@@ -14,6 +14,7 @@ import logging
 import threading
 import subprocess
 
+from .winsi import ORIG_STDIN_ENCODING
 from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD, HINSTANCE, HANDLE, HKEY, BOOL
 from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong, byref
 
@@ -32,8 +33,8 @@ EOL = b'\r\n'
 # register cp65001 as an alias for utf-8
 codecs.register(lambda name: codecs.lookup('utf-8') if name == 'cp65001' else None)
 
-# original stdin codepage - this needs to be done before winsi is loaded
-_CONSOLE_ENCODING = sys.stdin.encoding
+# original stdin codepage
+_CONSOLE_ENCODING = ORIG_STDIN_ENCODING
 # there's also an ACP codepage - this seems to be locale.getpreferredencoding()
 #_ACP_ENCODING = 'cp' + str(cdll.kernel32.GetACP())
 

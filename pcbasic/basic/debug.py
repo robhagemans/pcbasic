@@ -30,7 +30,7 @@ def show_platform_info():
     logging.info('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
     modules = (
-        'numpy', 'pcbasic.interface.winsi', 'sdl2', 'pygame', 'curses', 'serial', 'parallel')
+        'numpy', 'sdl2', 'pygame', 'curses', 'serial', 'parallel')
     for module in modules:
         try:
             m = importlib.import_module(module)
@@ -47,7 +47,10 @@ def show_platform_info():
                     pass
             else:
                 logging.info('%s: available', module)
-    if sys.platform != 'win32':
+    if sys.platform == 'win32':
+        pass
+        # TODO: check DLLs
+    else:
         logging.info('\nEXTERNAL TOOLS')
         tools = ('lpr', 'paps', 'beep', 'pbcopy', 'pbpaste')
         for tool in tools:
