@@ -14,29 +14,15 @@ import sys
 WIN32 = sys.platform == 'win32'
 MACOS = sys.platform == 'darwin'
 
-
-# conventions
-if WIN32:
-    # ctrl+Z
-    EOF = b'\x1A'
-    UEOF = u'\x1A'
-else:
-    # ctrl+D
-    EOF = b'\x04'
-    UEOF = u'\x04'
-
-
 # user configuration and state directories
 HOME_DIR = os.path.expanduser(u'~')
 
 if WIN32:
     USER_CONFIG_HOME = os.getenv(u'APPDATA')
     USER_DATA_HOME = USER_CONFIG_HOME
-
 elif MACOS:
     USER_CONFIG_HOME = os.path.join(HOME_DIR, u'Library', u'Application Support')
     USER_DATA_HOME = USER_CONFIG_HOME
-
 else:
     USER_CONFIG_HOME = os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(HOME_DIR, u'.config')
     USER_DATA_HOME = os.environ.get(u'XDG_DATA_HOME') or os.path.join(HOME_DIR, u'.local', u'share')

@@ -16,34 +16,9 @@ from collections import deque
 import subprocess
 from subprocess import Popen, PIPE
 
-from ..compat import WIN32, SHELL_ENCODING
+from ..compat import EOL, SHELL_ENCODING, SHELL_COMMAND_SWITCH, SHELL_ECHOES, HIDE_WINDOW
 from .base import error
 from . import values
-
-
-# delay for input threads, in seconds
-DELAY = 0.001
-
-if WIN32:
-    # cmd.exe conventions, should also be used by other shells
-    SHELL_COMMAND_SWITCH = u'/C'
-    # the shell echoes its input
-    SHELL_ECHOES = True
-    # CRLF end-of-line
-    EOL = b'\r\n'
-    # avoid haveing an empty CMD window popping up in front of ours
-    HIDE_WINDOW = subprocess.STARTUPINFO()
-    HIDE_WINDOW.dwFlags |= 1  # STARTF_USESHOWWINDOW
-    HIDE_WINDOW.wShowWindow = 0 # SW_HIDE
-else:
-    # sh conventions, standard on Unix
-    SHELL_COMMAND_SWITCH = u'-c'
-    # the does not echo its input
-    SHELL_ECHOES = False
-    # LF end-of-line
-    EOL = b'\n'
-    # not needed on Unix
-    HIDE_WINDOW = None
 
 
 def split_quoted(line, split_by=u'\s', quote=u'"'):
@@ -110,21 +85,18 @@ class Shell(object):
         while True:
             # blocking read
             c = stream.read(1)
-            if c:
-                # don't access screen in this thread
-                # the other thread already does
-                output.append(c)
-            else:
-                # don't hog cpu, sleep 1 ms
-                time.sleep(DELAY)
+            # stream ends if process closes
+            if not c:
+                return
+            # don't access screen in this thread
+            # the other thread already does
+            output.append(c)
 
     def launch(self, command):
         """Run a SHELL subprocess."""
         if not self._shell:
-            logging.warning(b'SHELL statement not enabled: %s', self._warn)
+            logging.warning(b'SHELL statement not enabled: no command interpreter specified.')
             raise error.BASICError(error.IFC)
-        shell_output = deque()
-        shell_cerr = deque()
         cmd = split_quoted(self._shell)
         if command:
             cmd += [SHELL_COMMAND_SWITCH, self._codepage.str_to_unicode(command)]
@@ -134,8 +106,18 @@ class Shell(object):
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
             raise error.BASICError(error.IFC)
+        try:
+            self._communicate(p)
+        except EnvironmentError as e:
+            logging.warning(e)
+            pass
+
+    def _communicate(self, p):
+        """Communicate with launched shell."""
+        shell_output = deque()
+        shell_cerr = deque()
         outp = threading.Thread(target=self._process_stdout, args=(p.stdout, shell_output))
-        # daemonise or join later?
+        # daemonise or join later? if we join, a shell that doesn't close will hang us on exit
         outp.daemon = True
         outp.start()
         errp = threading.Thread(target=self._process_stdout, args=(p.stderr, shell_cerr))

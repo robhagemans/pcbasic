@@ -12,12 +12,22 @@ import ctypes
 import codecs
 import logging
 import threading
+import subprocess
+
 from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD, HINSTANCE, HANDLE, HKEY, BOOL
 from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong, byref
 
 
+# text conventions
+# ctrl+Z
+EOF = b'\x1A'
+UEOF = u'\x1A'
+# CRLF end-of-line
+EOL = b'\r\n'
+
+
 ##############################################################################
-# cmd.exe encoding
+# cmd.exe conventions
 
 # register cp65001 as an alias for utf-8
 codecs.register(lambda name: codecs.lookup('utf-8') if name == 'cp65001' else None)
@@ -49,6 +59,15 @@ def _get_oem_encoding():
 # if starting from a console, shell will inherit its codepage
 # if starting from the gui (stdin.encoding == None), we're using OEM codepage
 SHELL_ENCODING = _CONSOLE_ENCODING or _get_oem_encoding()
+# cmd.exe conventions, should also be used by other shells
+SHELL_COMMAND_SWITCH = u'/C'
+# the shell echoes its input
+SHELL_ECHOES = True
+
+# avoid having an empty CMD window popping up in front of ours
+HIDE_WINDOW = subprocess.STARTUPINFO()
+HIDE_WINDOW.dwFlags |= 1  # STARTF_USESHOWWINDOW
+HIDE_WINDOW.wShowWindow = 0 # SW_HIDE
 
 
 ##############################################################################
