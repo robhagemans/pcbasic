@@ -152,14 +152,14 @@ class SHELLEXECUTEINFO(ctypes.Structure):
         ('cbSize', DWORD),
         ('fMask', ctypes.c_ulong),
         ('hwnd', HANDLE),
-        ('lpVerb', ctypes.c_char_p),
-        ('lpFile', ctypes.c_char_p),
-        ('lpParameters', ctypes.c_char_p),
-        ('lpDirectory', ctypes.c_char_p),
+        ('lpVerb', LPCWSTR),
+        ('lpFile', LPCWSTR),
+        ('lpParameters', LPCWSTR),
+        ('lpDirectory', LPCWSTR),
         ('nShow', ctypes.c_int),
         ('hInstApp', HINSTANCE),
         ('lpIDList', ctypes.c_void_p),
-        ('lpClass', ctypes.c_char_p),
+        ('lpClass', LPCWSTR),
         ('hKeyClass', HKEY),
         ('dwHotKey', DWORD),
         ('hIconOrMonitor', HANDLE),
@@ -169,7 +169,7 @@ class SHELLEXECUTEINFO(ctypes.Structure):
 SEE_MASK_NOCLOSEPROCESS = 0x00000040
 SEE_MASK_NOASYNC = 0x00000100
 
-_ShellExecuteEx = ctypes.windll.shell32.ShellExecuteEx
+_ShellExecuteEx = ctypes.windll.shell32.ShellExecuteExW
 _ShellExecuteEx.restype = BOOL
 _WaitForSingleObject = ctypes.windll.kernel32.WaitForSingleObject
 
@@ -196,14 +196,11 @@ def _wait_for_process(handle):
     except EnvironmentError as e:
         logging.warning('Windows error: %s', e)
 
-def line_print(printbuf, printer, tempdir):
+def line_print(printbuf, printer, printfile):
     """Print the buffer to a Windows printer."""
-    if not printer or printer == b'default':
+    if not printer or printer == u'default':
         printer = get_default_printer()
     if printbuf:
-        # open a file in our PC-BASIC temporary directory
-        # this will get cleaned up on exit
-        printfile = os.path.join(tempdir, u'pcbasic_print.txt')
         with open(printfile, 'wb') as f:
             # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
             f.write(b'\xef\xbb\xbf')
@@ -211,9 +208,9 @@ def line_print(printbuf, printer, tempdir):
         sei = SHELLEXECUTEINFO()
         sei.cbSize = ctypes.sizeof(sei)
         sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC
-        sei.lpVerb = 'printto'
+        sei.lpVerb = u'printto'
         sei.lpFile = printfile
-        sei.lpParameters = '"%s"' % printer
+        sei.lpParameters = u'"%s"' % printer
         sei.hProcess = HANDLE()
         try:
             _ShellExecuteEx(ctypes.byref(sei))

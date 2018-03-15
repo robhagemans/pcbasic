@@ -41,29 +41,29 @@ class LPTDevice(devicebase.Device):
         devicebase.Device.__init__(self)
         addr, val = devicebase.parse_protocol_string(arg)
         self.stream = default_stream
-        if addr == 'FILE':
+        if addr == u'FILE':
             try:
                 self.stream = open(val, 'wb')
             except EnvironmentError as e:
-                logging.warning('Could not attach file %s to LPT device: %s', val, str(e))
-        elif addr == 'PARPORT':
+                logging.warning(u'Could not attach file %s to LPT device: %s', val, e)
+        elif addr == u'PARPORT':
             # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
             try:
                 self.stream = ParallelStream(val)
             except EnvironmentError as e:
-                logging.warning('Could not attach parallel port %s to LPT device: %s', val, str(e))
-        elif addr == 'STDIO' or (not addr and val == 'STDIO'):
-            crlf = (val.upper() == 'CRLF')
+                logging.warning(u'Could not attach parallel port %s to LPT device: %s', val, e)
+        elif addr == u'STDIO' or (not addr and val == u'STDIO'):
+            crlf = (val.upper() == u'CRLF')
             self.stream = StdIOParallelStream(crlf)
-        elif addr == 'PRINTER' or (val and not addr):
+        elif addr == u'PRINTER' or (val and not addr):
             # 'PRINTER' is default
             # name:parameters (LINE, PAGE, ...)
-            options = val.split(b':')
+            options = val.split(u':')
             printer_name = options[0]
-            flush_trigger = (options[1:] or [''])[0]
+            flush_trigger = (options[1:] or [u''])[0]
             self.stream = PrinterStream(printer_name, flush_trigger, codepage, temp_dir)
         elif val:
-            logging.warning('Could not attach %s to LPT device', arg)
+            logging.warning(u'Could not attach %s to LPT device', arg)
         # column counter is the same across all LPT files
         self.device_settings = devicebase.DeviceSettings()
         if self.stream:

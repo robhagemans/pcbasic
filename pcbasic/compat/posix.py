@@ -60,7 +60,7 @@ def get_unicode_argv():
     """Convert command-line arguments to unicode."""
     # the official parameter should be LC_CTYPE but that's None in my locale
     # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-    return [arg.decode(locale.getpreferredencoding(), errors='replace') for arg in sys.argv]
+    return [arg.decode(SHELL_ENCODING, errors='replace') for arg in sys.argv]
 
 ##############################################################################
 # printing
@@ -69,8 +69,8 @@ if which('paps'):
     def line_print(printbuf, printer, tempdir):
         """Print the buffer to a LPR printer using PAPS."""
         options = b''
-        if printer and printer != b'default':
-            options = b'-P %s' % (printer,)
+        if printer and printer != u'default':
+            options = b'-P "%s"' % (printer.encode(SHELL_ENCODING, 'replace'),)
         if printbuf:
             # A4 paper is 595 points wide by 842 points high.
             # Letter paper is 612 by 792 points.
@@ -91,8 +91,8 @@ else:
     def line_print(printbuf, printer, tempdir):
         """Print the buffer to a LPR (CUPS or older UNIX) printer."""
         options = b''
-        if printer and printer != b'default':
-            options = b'-P %s' % (printer,)
+        if printer and printer != u'default':
+            options = b'-P "%s"' % (printer.encode(SHELL_ENCODING, 'replace'),)
         if printbuf:
             # cups defaults to 10 cpi, 6 lpi.
             pr = subprocess.Popen(b'lpr %s' % (options,), shell=True, stdin=subprocess.PIPE)
