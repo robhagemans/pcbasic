@@ -12,6 +12,8 @@ import locale
 import select
 import subprocess
 
+from .python2 import which
+
 
 # text conventions
 # ctrl+D
@@ -46,6 +48,7 @@ def set_dpi_aware():
 
 def get_free_bytes(path):
     """Return the number of free bytes on the drive."""
+    # note that from Python 3.3 onwards, we can use the cross-platform shutil.disk_usage
     st = os.statvfs(path)
     return st.f_bavail * st.f_frsize
 
@@ -62,11 +65,7 @@ def get_unicode_argv():
 ##############################################################################
 # printing
 
-def command_exists(command):
-    """Check if a shell command exists."""
-    return subprocess.call(b'command -v %s >/dev/null 2>&1' % (command,), shell=True) == 0
-
-if command_exists('paps'):
+if which('paps'):
     def line_print(printbuf, printer, tempdir):
         """Print the buffer to a LPR printer using PAPS."""
         options = b''

@@ -18,7 +18,7 @@ import subprocess
 import importlib
 
 from .base import error
-from ..compat import WIN32, BASE_DIR
+from ..compat import WIN32, BASE_DIR, which
 from . import values
 from . import api
 
@@ -56,15 +56,11 @@ def show_platform_info():
                 logging.info('%s: %s', dll, path)
             else:
                 logging.info('%s: --', dll)
-    else:
-        logging.info('\nEXTERNAL TOOLS')
-        tools = ('lpr', 'paps', 'beep', 'pbcopy', 'pbpaste')
-        for tool in tools:
-            try:
-                location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
-                logging.info('%s: %s', tool, location)
-            except Exception as e:
-                logging.info('%s: --', tool)
+    logging.info('\nEXTERNAL TOOLS')
+    tools = ('notepad', 'lpr', 'paps', 'beep', 'pbcopy', 'pbpaste')
+    for tool in tools:
+        location = which(tool) or '--'
+        logging.info('%s: %s', tool, location)
 
 
 class DebugException(BaseException):

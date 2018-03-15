@@ -12,7 +12,7 @@ from collections import deque
 import time
 import sys
 
-from ..compat import WIN32
+from ..compat import WIN32, which
 
 if WIN32:
     import winsound
@@ -84,9 +84,7 @@ class Beeper(object):
     @staticmethod
     def ok():
         """This beeper is supported."""
-        # Windows not supported as there's no beep utility anyway
-        # and we can't run the test below on CMD
-        return (not WIN32 and subprocess.call('command -v beep >/dev/null 2>&1', shell=True) == 0)
+        return which('beep')
 
     @staticmethod
     def hush():
