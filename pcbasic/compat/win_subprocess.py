@@ -12,10 +12,8 @@ import os
 import ctypes
 import subprocess
 import _subprocess
-from ctypes import byref, windll, c_char_p, c_wchar_p, c_void_p, \
-     Structure, sizeof, c_wchar, WinError
-from ctypes.wintypes import BYTE, WORD, LPWSTR, BOOL, DWORD, LPVOID, \
-     HANDLE
+from ctypes import byref, windll, c_wchar_p, c_void_p, Structure, sizeof, c_wchar, WinError
+from ctypes.wintypes import BYTE, WORD, BOOL, DWORD, LPWSTR, LPVOID, HANDLE, LPCWSTR
 
 
 ##
@@ -23,8 +21,6 @@ from ctypes.wintypes import BYTE, WORD, LPWSTR, BOOL, DWORD, LPVOID, \
 ##
 
 CREATE_UNICODE_ENVIRONMENT = 0x00000400
-LPCTSTR = c_char_p
-LPTSTR = c_wchar_p
 LPSECURITY_ATTRIBUTES = c_void_p
 LPBYTE  = ctypes.POINTER(BYTE)
 
@@ -69,8 +65,8 @@ class DUMMY_HANDLE(ctypes.c_void_p):
 
 CreateProcessW = windll.kernel32.CreateProcessW
 CreateProcessW.argtypes = [
-    LPCTSTR, LPTSTR, LPSECURITY_ATTRIBUTES,
-    LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCTSTR,
+    LPCWSTR, LPWSTR, LPSECURITY_ATTRIBUTES,
+    LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCWSTR,
     LPSTARTUPINFOW, LPPROCESS_INFORMATION,
 ]
 CreateProcessW.restype = BOOL
