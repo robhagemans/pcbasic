@@ -10,19 +10,19 @@ import logging
 import ctypes
 import os
 import sys
-import platform
 from collections import Counter
 
+try:
+    import numpy
+except ImportError:
+    numpy = None
+
+from ..compat import WIN32, BASE_DIR
+
 # on Windows, set environment variable to point to SDL2 DLL location
-if platform.system() == 'Windows' and 'PYSDL2_DLL_PATH' not in os.environ:
-    if hasattr(sys, 'frozen'):
-        # we're a package: get the directory of the packaged executable
-        # (__file__ is undefined in pyinstaller packages)
-        os.environ['PYSDL2_DLL_PATH'] = os.path.dirname(sys.executable)
-    else:
-        # unpackaged: get the directory of the video_sdl2 module in ../lib
-        os.environ['PYSDL2_DLL_PATH'] = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), '..', 'lib')
+if (WIN32 and 'PYSDL2_DLL_PATH' not in os.environ and
+        os.path.isfile(os.path.join(BASE_DIR, 'lib', 'sdl2.dll'))):
+    os.environ['PYSDL2_DLL_PATH'] = os.path.join(BASE_DIR, 'lib')
 
 try:
     import sdl2
@@ -33,11 +33,6 @@ try:
     import sdl2.sdlgfx
 except ImportError:
     pass
-
-try:
-    import numpy
-except ImportError:
-    numpy = None
 
 from ..basic.base import signals
 from ..basic.base import scancode
@@ -417,7 +412,7 @@ class VideoSDL2(VideoPlugin):
         # ensure the correct SDL2 video driver is chosen for Windows
         # since this gets messed up if we also import pygame
         self._env = EnvironmentCache()
-        if platform.system() == 'Windows':
+        if sys.platform == 'win32':
             self._env.set('SDL_VIDEODRIVER', 'windows')
         # initialise SDL
         if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):

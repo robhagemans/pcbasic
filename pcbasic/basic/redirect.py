@@ -9,11 +9,12 @@ This file is released under the GNU GPL version 3 or later.
 import threading
 import logging
 import sys
-import platform
 import time
 from contextlib import contextmanager
 
-if platform.system() == 'Windows':
+from ..compat import WIN32
+
+if WIN32:
     import msvcrt
 else:
     import select
@@ -22,13 +23,6 @@ else:
     import array
 
 from .base import signals
-
-
-STDOUT_ENCODING = sys.stdout.encoding or 'utf-8'
-STDOUT_ENCODING = 'utf-8' if STDOUT_ENCODING == 'cp65001' else STDOUT_ENCODING
-
-STDIN_ENCODING = sys.stdin.encoding or 'utf-8'
-STDIN_ENCODING = 'utf-8' if STDIN_ENCODING == 'cp65001' else STDIN_ENCODING
 
 
 class RedirectedIO(object):
@@ -76,10 +70,10 @@ class RedirectedIO(object):
         if stdio and not self._stdio:
             self._stdio = True
             self._output_echos.append(OutputStreamWrapper(
-                        sys.stdout, self._codepage, STDOUT_ENCODING))
-            lfcr = platform.system() != 'Windows' and sys.stdin.isatty()
+                        sys.stdout, self._codepage, sys.stdout.encoding))
+            lfcr = not WIN32 and sys.stdin.isatty()
             self._input_streams.append(InputStreamWrapper(
-                        sys.stdin, self._codepage, STDIN_ENCODING, lfcr))
+                        sys.stdin, self._codepage, sys.stdin.encoding, lfcr))
         if self._input_file:
             try:
                 self._input_streams.append(InputStreamWrapper(
@@ -120,7 +114,7 @@ class OutputStreamWrapper(object):
 
     def __init__(self, stream, codepage, encoding):
         """Set up codec."""
-        self._encoding = encoding
+        self._encoding = encoding or 'utf-8'
         # converter with DBCS lead-byte buffer for utf8 output redirection
         self._uniconv = codepage.get_converter(preserve_control=True)
         self._stream = stream
@@ -136,11 +130,11 @@ class InputStreamWrapper(object):
     def __init__(self, stream, codepage, encoding, lfcr):
         """Set up codec."""
         self._codepage = codepage
-        self._encoding = encoding
+        self._encoding = encoding or 'utf-8'
         self._lfcr = lfcr
         self._stream = stream
         # we need non-blocking readers to be able to deactivate the thread
-        if platform.system() == 'Windows':
+        if WIN32:
             if self._stream == sys.stdin:
                 self._get_chars = _get_chars_windows_console
             else:

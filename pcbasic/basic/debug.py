@@ -18,6 +18,7 @@ import subprocess
 import importlib
 
 from .base import error
+from ..compat import WIN32, BASE_DIR, which
 from . import values
 from . import api
 
@@ -29,8 +30,7 @@ def show_platform_info():
     logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
     logging.info('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
-    modules = (
-        'numpy', 'pcbasic.interface.winsi', 'sdl2', 'pygame', 'curses', 'serial', 'parallel')
+    modules = ('numpy', 'sdl2', 'pygame', 'curses', 'serial', 'parallel')
     for module in modules:
         try:
             m = importlib.import_module(module)
@@ -47,15 +47,20 @@ def show_platform_info():
                     pass
             else:
                 logging.info('%s: available', module)
-    if sys.platform != 'win32':
-        logging.info('\nEXTERNAL TOOLS')
-        tools = ('lpr', 'paps', 'beep', 'pbcopy', 'pbpaste')
-        for tool in tools:
-            try:
-                location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
-                logging.info('%s: %s', tool, location)
-            except Exception as e:
-                logging.info('%s: --', tool)
+    if WIN32:
+        logging.info('\nLIBRARIES')
+        dlls = ('winsi.dll', 'sdl2.dll', 'sdl2_gfx.dll')
+        for dll in dlls:
+            path = os.path.join(BASE_DIR, 'lib', dll)
+            if os.path.isfile(path):
+                logging.info('%s: %s', dll, path)
+            else:
+                logging.info('%s: --', dll)
+    logging.info('\nEXTERNAL TOOLS')
+    tools = ('notepad', 'lpr', 'paps', 'beep', 'pbcopy', 'pbpaste')
+    for tool in tools:
+        location = which(tool) or '--'
+        logging.info('%s: %s', tool, location)
 
 
 class DebugException(BaseException):

@@ -13,15 +13,7 @@ import datetime
 import io
 from contextlib import contextmanager
 
-# kbhit() also appears in parports.py
-if sys.platform == 'win32':
-    from msvcrt import kbhit
-else:
-    import select
-
-    def kbhit():
-        """Return whether a character is ready to be read from the keyboard."""
-        return select.select([sys.stdin], [], [], 0)[0] != []
+from ...compat import key_pressed
 
 try:
     import serial
@@ -447,7 +439,7 @@ class SerialStdIO(object):
         s = []
         # note that kbhit assumes keyboard
         # so won't work with redirects on Windows
-        while kbhit() and len(s) < num:
+        while key_pressed() and len(s) < num:
             c = sys.stdin.read(1)
             if self._crlf and c == '\n':
                 c = '\r'
@@ -466,6 +458,6 @@ class SerialStdIO(object):
     def in_waiting(self):
         """Number of characters waiting to be read."""
         # we get at most 1 char waiting this way
-        return kbhit()
+        return key_pressed()
 
     out_waiting = 0

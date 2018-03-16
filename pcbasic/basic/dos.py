@@ -13,33 +13,17 @@ import threading
 import time
 import re
 from collections import deque
+import subprocess
 from subprocess import Popen, PIPE
 
+from ..compat import EOL, SHELL_ENCODING, SHELL_COMMAND_SWITCH, SHELL_ECHOES, HIDE_WINDOW
 from .base import error
 from . import values
 
 
-# delay for input threads, in seconds
-DELAY = 0.001
-
-# the shell's encoding
-# strange to use sys.stdin but locale.getpreferredencoding() is definitely wrong on Windows
-# whereas this seems to work if started from console
-# - but does this work if launched from a pythonw link? no
-ENCODING = sys.stdin.encoding or 'utf-8'
-ENCODING = 'utf-8' if ENCODING == 'cp65001' else ENCODING
-
-
 def split_quoted(line, split_by=u'\s', quote=u'"'):
+    """Split by separators, preserving quoted blocks."""
     return re.findall(ur'[^%s%s][^%s]*|%s.+?"' % (quote, split_by, split_by, quote), line)
-
-
-class InitFailed(Exception):
-    """Shell object initialisation failed."""
-    def __init__(self, msg=u''):
-        self._msg = msg
-    def __str__(self):
-        return self._msg
 
 
 #########################################
@@ -85,44 +69,11 @@ class Environment(object):
 #########################################
 # shell
 
-def get_shell_manager(*args, **kwargs):
-    """Return a new shell manager object."""
-    # move to shell_ generator
-    try:
-        if sys.platform == 'win32':
-            return WindowsShell(*args, **kwargs)
-        else:
-            return UnixShell(*args, **kwargs)
-    except InitFailed as e:
-        return NoShell(warn=e)
-
-
-class NoShell(object):
-    """Launcher to throw IFC for emulation targets with no DOS."""
-
-    def __init__(self, warn=None, *args, **kwargs):
-        """Initialise the shell."""
-        self._warn = warn
-
-    def launch(self, command):
-        """Launch the shell."""
-        if self._warn:
-            logging.warning(b'SHELL statement not enabled: %s', self._warn)
-        raise error.BASICError(error.IFC)
-
-
-class BaseShell(object):
+class Shell(object):
     """Launcher for command shell."""
-
-    # these should be overridden
-    _command_pattern = u''
-    _eol = b''
-    _echoes = False
 
     def __init__(self, queues, keyboard, screen, codepage, shell):
         """Initialise the shell."""
-        if not shell:
-            raise InitFailed('No command interpreter (shell) specified.')
         self._shell = shell
         self._queues = queues
         self._keyboard = keyboard
@@ -134,28 +85,39 @@ class BaseShell(object):
         while True:
             # blocking read
             c = stream.read(1)
-            if c:
-                # don't access screen in this thread
-                # the other thread already does
-                output.append(c)
-            else:
-                # don't hog cpu, sleep 1 ms
-                time.sleep(DELAY)
+            # stream ends if process closes
+            if not c:
+                return
+            # don't access screen in this thread
+            # the other thread already does
+            output.append(c)
 
     def launch(self, command):
         """Run a SHELL subprocess."""
-        shell_output = deque()
-        shell_cerr = deque()
+        if not self._shell:
+            logging.warning(b'SHELL statement not enabled: no command interpreter specified.')
+            raise error.BASICError(error.IFC)
         cmd = split_quoted(self._shell)
         if command:
-            cmd += [self._command_pattern, self._codepage.str_to_unicode(command)]
+            cmd += [SHELL_COMMAND_SWITCH, self._codepage.str_to_unicode(command)]
         try:
-            p = Popen(cmd, shell=False, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            p = Popen(
+                    cmd, shell=False, stdin=PIPE, stdout=PIPE, stderr=PIPE, startupinfo=HIDE_WINDOW)
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
             raise error.BASICError(error.IFC)
+        try:
+            self._communicate(p)
+        except EnvironmentError as e:
+            logging.warning(e)
+            pass
+
+    def _communicate(self, p):
+        """Communicate with launched shell."""
+        shell_output = deque()
+        shell_cerr = deque()
         outp = threading.Thread(target=self._process_stdout, args=(p.stdout, shell_output))
-        # daemonise or join later?
+        # daemonise or join later? if we join, a shell that doesn't close will hang us on exit
         outp.daemon = True
         outp.start()
         errp = threading.Thread(target=self._process_stdout, args=(p.stderr, shell_cerr))
@@ -180,7 +142,7 @@ class BaseShell(object):
                 n_chars = len(word)
                 # shift the cursor left so that CMD.EXE's echo can overwrite
                 # the command that's already there.
-                if self._echoes:
+                if SHELL_ECHOES:
                     self._screen.write(b'\x1D' * len(word))
                 else:
                     self._screen.write_line()
@@ -199,9 +161,9 @@ class BaseShell(object):
 
     def _send_input(self, pipe, word):
         """Write keyboard input to pipe."""
-        bytes_word = b''.join(word) + self._eol
+        bytes_word = b''.join(word) + EOL
         unicode_word = self._codepage.str_to_unicode(bytes_word, preserve_control=True)
-        pipe.write(unicode_word.encode(ENCODING, errors='replace'))
+        pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
 
     def _show_output(self, shell_output):
         """Write shell output to screen."""
@@ -209,23 +171,7 @@ class BaseShell(object):
             lines = []
             while shell_output:
                 lines.append(shell_output.popleft())
-            lines = b''.join(lines).split(self._eol)
-            lines = (l.decode(ENCODING, errors='replace') for l in lines)
+            lines = b''.join(lines).split(EOL)
+            lines = (l.decode(SHELL_ENCODING, errors='replace') for l in lines)
             lines = (self._codepage.str_from_unicode(l, errors='replace') for l in lines)
             self._screen.write('\r'.join(lines))
-
-
-class UnixShell(BaseShell):
-    """Launcher for Unix shell."""
-
-    _command_pattern = u'-c'
-    _eol = b'\n'
-    _echoes = False
-
-
-class WindowsShell(UnixShell):
-    """Launcher for Windows shell."""
-
-    _command_pattern = u'/C'
-    _eol = b'\r\n'
-    _echoes = True

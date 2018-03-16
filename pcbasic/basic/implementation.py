@@ -9,7 +9,6 @@ import io
 import os
 import Queue
 import logging
-import platform
 from contextlib import contextmanager
 
 from .metadata import NAME, VERSION, COPYRIGHT
@@ -145,8 +144,7 @@ class Implementation(object):
                 max_files, max_reclen, serial_buffer_size,
                 devices, current_device, mount, temp_dir, utf8, universal)
         # set up the SHELL command
-        self.shell = dos.get_shell_manager(
-                self.queues, self.keyboard, self.screen, self.codepage, shell)
+        self.shell = dos.Shell(self.queues, self.keyboard, self.screen, self.codepage, shell)
         # set up environment
         self.environment = dos.Environment(self.values)
         # initialise random number generator

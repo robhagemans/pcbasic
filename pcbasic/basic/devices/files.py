@@ -10,7 +10,6 @@ import os
 import sys
 import string
 import logging
-import platform
 import io
 
 from ..base import error

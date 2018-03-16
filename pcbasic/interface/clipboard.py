@@ -11,6 +11,7 @@ import locale
 
 from ..basic.base import signals
 from ..basic.base import scancode
+from ..compat import which
 
 ENCODING = locale.getpreferredencoding()
 
@@ -53,12 +54,11 @@ class XClipboard(Clipboard):
 
     def __init__(self):
         """Check for presence of xsel or xclip."""
-        check = "command -v %s >/dev/null 2>&1"
-        if subprocess.call(check % 'xclip', shell=True) == 0:
+        if which('xclip'):
             self._command = 'xclip'
             self._notmouse = ['-selection', 'clipboard']
             self.ok = True
-        elif subprocess.call(check % 'xsel', shell=True) == 0:
+        elif which('xsel'):
             # note that xsl has a bug that makes chromium/atom hang on paste
             # https://github.com/electron/electron/issues/3116
             self._command = 'xsel'

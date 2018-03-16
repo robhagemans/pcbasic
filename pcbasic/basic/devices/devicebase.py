@@ -40,12 +40,12 @@ MAGIC_TO_TYPE = { b'\xFF': b'B', b'\xFE': b'P', b'\xFD': b'M' }
 def parse_protocol_string(arg):
     """Retrieve protocol and options from argument."""
     if not arg:
-        return None, b''
-    argsplit = arg.split(':', 1)
+        return None, u''
+    argsplit = arg.split(u':', 1)
     if len(argsplit) == 1:
         addr, val = None, argsplit[0]
     else:
-        addr, val = argsplit[0].upper(), ''.join(argsplit[1:])
+        addr, val = argsplit[0].upper(), u''.join(argsplit[1:])
     return addr, val
 
 

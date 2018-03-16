@@ -118,7 +118,6 @@ for name in args:
             pcbasic.run('--interface=none')
         except Exception as e:
             crash = e
-            traceback.print_tb(sys.exc_info()[2])
     # -----------------------------------------------------------
     os.chdir(top)
     passed = True

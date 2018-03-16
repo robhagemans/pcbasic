@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
-import platform
 
 try:
     import pygame
@@ -23,6 +22,7 @@ from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
+from ..compat import WIN32, MACOS
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed, EnvironmentCache, NOKILL_MESSAGE
 from . import clipboard
@@ -660,7 +660,7 @@ class PygameClipboard(clipboard.Clipboard):
         else:
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         try:
-            if platform.system() == 'Windows':
+            if WIN32:
                 # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
                 # but give it a utf-8 MIME type, because that's how Windows likes it
                 pygame.scrap.put(
@@ -684,7 +684,7 @@ class PygameClipboard(clipboard.Clipboard):
             us = pygame.scrap.get(text_type)
             if us:
                 break
-        if platform.system() == 'Windows':
+        if WIN32:
             if text_type == 'text/plain;charset=utf-8':
                 # it's lying, it's giving us UTF16 little-endian
                 # ignore any bad UTF16 characters from outside
@@ -700,7 +700,7 @@ class PygameClipboard(clipboard.Clipboard):
 def get_clipboard_handler():
     """Get a working Clipboard handler object."""
     # Pygame.Scrap doesn't work on OSX
-    if platform.system() == 'Darwin':
+    if MACOS:
         handler = clipboard.MacClipboard()
     else:
         handler = PygameClipboard()
