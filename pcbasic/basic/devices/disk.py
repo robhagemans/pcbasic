@@ -497,6 +497,10 @@ class DiskDevice(object):
             [t.ljust(8) + (b'.' if e or not t else b' ') + e.ljust(3) + b'     ' for t, e in fils]
         )
 
+    def get_native_cwd(self):
+        """Return the current working directory in native format."""
+        return os.path.join(self._native_root, self._native_cwd)
+
     def get_cwd(self):
         """Return the current working directory in DOS format."""
         native_path = self._native_root

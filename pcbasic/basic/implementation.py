@@ -144,7 +144,9 @@ class Implementation(object):
                 max_files, max_reclen, serial_buffer_size,
                 devices, current_device, mount, temp_dir, utf8, universal)
         # set up the SHELL command
-        self.shell = dos.Shell(self.queues, self.keyboard, self.screen, self.codepage, shell)
+        # Files needed for current disk device
+        self.shell = dos.Shell(
+                self.queues, self.keyboard, self.screen, self.files, self.codepage, shell)
         # set up environment
         self.environment = dos.Environment(self.values)
         # initialise random number generator

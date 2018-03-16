@@ -72,12 +72,13 @@ class Environment(object):
 class Shell(object):
     """Launcher for command shell."""
 
-    def __init__(self, queues, keyboard, screen, codepage, shell):
+    def __init__(self, queues, keyboard, screen, files, codepage, shell):
         """Initialise the shell."""
         self._shell = shell
         self._queues = queues
         self._keyboard = keyboard
         self._screen = screen
+        self._files = files
         self._codepage = codepage
 
     def _process_stdout(self, stream, output):
@@ -100,9 +101,12 @@ class Shell(object):
         cmd = split_quoted(self._shell)
         if command:
             cmd += [SHELL_COMMAND_SWITCH, self._codepage.str_to_unicode(command)]
+        # get working directory; also raises IFC if current_device is CAS1
+        work_dir = self._files.get_native_cwd()
         try:
             p = Popen(
-                    cmd, shell=False, stdin=PIPE, stdout=PIPE, stderr=PIPE, startupinfo=HIDE_WINDOW)
+                    cmd, shell=False, cwd= work_dir,
+                    stdin=PIPE, stdout=PIPE, stderr=PIPE, startupinfo=HIDE_WINDOW)
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
             raise error.BASICError(error.IFC)

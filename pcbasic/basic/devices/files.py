@@ -604,6 +604,13 @@ class Files(object):
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
         return self._devices[dev + b':'], spec
 
+    def get_native_cwd(self):
+        """Get ccurrent working directory on current drive."""
+        # must be a disk device
+        if self._current_device not in self.drive_letters:
+            raise error.BASICError(error.IFC)
+        return self._devices[self._current_device + b':'].get_native_cwd()
+
     def chdir_(self, args):
         """CHDIR: change working directory."""
         name = values.next_string(args)
