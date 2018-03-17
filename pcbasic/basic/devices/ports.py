@@ -221,7 +221,8 @@ class COMDevice(devicebase.Device):
 
     def _open_serial(self, rs=False, cs=1000, ds=1000, cd=0):
         """Open the serial connection."""
-        self._check_open()
+        with safe_serial(error.DEVICE_TIMEOUT):
+            self._check_open()
         # handshake - report as timeout if it fails
         # by default, RTS is up, DTR down
         # RTS can be suppressed, DTR only accessible through machine ports
@@ -255,8 +256,8 @@ class COMDevice(devicebase.Device):
 
     def set_params(self, speed, parity, bytesize, stop):
         """Set serial port connection parameters."""
-        self._check_open()
         with safe_serial(error.DEVICE_FAULT):
+            self._check_open()
             self._serial.baudrate = speed
             self._serial.parity = parity
             self._serial.bytesize = bytesize
@@ -264,15 +265,15 @@ class COMDevice(devicebase.Device):
 
     def get_params(self):
         """Get serial port connection parameters."""
-        self._check_open()
         with safe_serial(error.DEVICE_FAULT):
+            self._check_open()
             return (self._serial.baudrate, self._serial.parity,
                     self._serial.bytesize, self._serial.stopbits)
 
     def set_pins(self, rts=None, dtr=None, brk=None):
         """Set signal pins."""
-        self._check_open()
         with safe_serial(error.DEVICE_FAULT):
+            self._check_open()
             if rts is not None:
                 self._serial.rts = rts
             if dtr is not None:
@@ -282,8 +283,8 @@ class COMDevice(devicebase.Device):
 
     def get_pins(self):
         """Get signal pins."""
-        self._check_open()
         with safe_serial(error.DEVICE_FAULT):
+            self._check_open()
             return (self._serial.cd, self._serial.ri,
                     self._serial.dsr, self._serial.cts)
 
@@ -294,9 +295,9 @@ class COMDevice(devicebase.Device):
 
     def io_waiting(self):
         """ Find out whether bytes are waiting for input or output. """
-        self._check_open()
         # no idea what the appropriate BASIC error would be
         with safe_serial(error.DEVICE_FAULT):
+            self._check_open()
             # socketserial has no out_waiting, though Serial does
             return self._serial.in_waiting > 0, self._serial.out_waiting > 0
 
