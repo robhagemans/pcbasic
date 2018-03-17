@@ -15,9 +15,9 @@ if WIN32:
     from .win32 import set_dpi_aware, key_pressed, line_print
     from .win32 import get_free_bytes, get_short_pathname, get_unicode_argv
     from .win32 import EOL, EOF, UEOF
-    from .win32 import SHELL_ENCODING, SHELL_COMMAND_SWITCH, SHELL_ECHOES, HIDE_WINDOW
+    from .win32 import SHELL_ENCODING, HIDE_WINDOW
 else:
     from .posix import set_dpi_aware, key_pressed, line_print
     from .posix import get_free_bytes, get_short_pathname, get_unicode_argv
     from .posix import EOL, EOF, UEOF
-    from .posix import SHELL_ENCODING, SHELL_COMMAND_SWITCH, SHELL_ECHOES, HIDE_WINDOW
+    from .posix import SHELL_ENCODING, HIDE_WINDOW

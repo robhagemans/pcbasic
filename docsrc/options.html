@@ -812,17 +812,17 @@
             <code><b>--shell=</b>[<var>shell-executable</var>]</code>
         </dt>
         <dd>
-            Set the <code><a href="#SHELL">SHELL</a></code>
-            command to run the operating system shell executable <code><var>shell-executable</var></code>.
-            The executable <code><var>shell-executable</var></code> should support the
-            command-line conventions of the primary shell of the host operating system
-            (<code>CMD.EXE</code> on Windows and <code>/bin/sh</code> on Unix).
-            By default <code><var>command</var></code> is empty,
-            which disables the <code><a href="#SHELL">SHELL</a></code> command.
+            Enable the <code><a href="#SHELL">SHELL</a></code>
+            statement to run the operating system command interpreter <code><var>shell-executable</var></code>.
+            The executable <code><var>shell-executable</var></code> should support MS-DOS's
+            <code>COMMAND.COM</code> calling conventions, in particular its <code>/C</code> switch.
+            Example command interpreters are <code>CMD.EXE</code> on Windows and <code>"wine cmd.exe"</code> on Unix.
+            If <code><var>shell-executable</var></code> is empty (as it is by default),
+            the <code><a href="#SHELL">SHELL</a></code> statement is disabled.
         </dd>
 
         <dt id="--sound-engine">
-            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b><b>portaudio</b>]</code>
+            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b>|<b>portaudio</b>]</code>
         </dt>
         <dd>
             Choose the engine to use for audio output. If omitted, the

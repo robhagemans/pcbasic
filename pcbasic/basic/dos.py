@@ -16,9 +16,14 @@ from collections import deque
 import subprocess
 from subprocess import Popen, PIPE
 
-from ..compat import EOL, SHELL_ENCODING, SHELL_COMMAND_SWITCH, SHELL_ECHOES, HIDE_WINDOW
+from ..compat import SHELL_ENCODING, HIDE_WINDOW
 from .base import error
 from . import values
+
+
+# command interpreter must support command.com convention
+# to be able to use SHELL "dos-command"
+SHELL_COMMAND_SWITCH = u'/C'
 
 
 def split_quoted(line, split_by=u'\s', quote=u'"'):
@@ -80,6 +85,7 @@ class Shell(object):
         self._screen = screen
         self._files = files
         self._codepage = codepage
+        self._last_command = deque()
 
     def _process_stdout(self, stream, output):
         """Retrieve SHELL output and write to console."""
@@ -114,7 +120,10 @@ class Shell(object):
             self._communicate(p)
         except EnvironmentError as e:
             logging.warning(e)
-            pass
+        finally:
+            # ensure the process is terminated on exit
+            if p.poll() is None:
+                p.kill()
 
     def _communicate(self, p):
         """Communicate with launched shell."""
@@ -128,12 +137,9 @@ class Shell(object):
         errp.daemon = True
         errp.start()
         word = []
-        while p.poll() is None or shell_output or shell_cerr:
+        while p.poll() is None:
             self._show_output(shell_output)
             self._show_output(shell_cerr)
-            if p.poll() is not None:
-                # drain output then break
-                continue
             try:
                 self._queues.wait()
                 # expand=False suppresses key macros
@@ -143,14 +149,10 @@ class Shell(object):
             if not c:
                 continue
             elif c in (b'\r', b'\n'):
-                n_chars = len(word)
-                # shift the cursor left so that CMD.EXE's echo can overwrite
-                # the command that's already there.
-                if SHELL_ECHOES:
-                    self._screen.write(b'\x1D' * len(word))
-                else:
-                    self._screen.write_line()
-                # send line-buffered input to pipe
+                # put sentinel on queue
+                shell_output.append(None)
+                shell_cerr.append(None)
+                # send the command
                 self._send_input(p.stdin, word)
                 word = []
             elif c == b'\b':
@@ -162,18 +164,53 @@ class Shell(object):
                 # exclude e-ascii (arrow keys not implemented)
                 word.append(c)
                 self._screen.write(c)
+        # drain final output
+        if shell_output and not shell_output[-1] in (b'\r', b'\n'):
+            shell_output.append(b'\r')
+        self._show_output(shell_output)
+        if shell_cerr and not shell_cerr[-1] in (b'\r', b'\n'):
+            shell_cerr.append(b'\r')
+        self._show_output(shell_cerr)
 
     def _send_input(self, pipe, word):
         """Write keyboard input to pipe."""
-        bytes_word = b''.join(word) + EOL
+        # for shell input, send CRLF or LF depending on platform
+        self._last_command.extend(word)
+        bytes_word = b''.join(word) + b'\r\n'
         unicode_word = self._codepage.str_to_unicode(bytes_word, preserve_control=True)
         pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
 
     def _show_output(self, shell_output):
         """Write shell output to screen."""
+        # detect sentinel for start of new command
         if shell_output:
-            lines = b''.join(shell_output).split(EOL)
-            lines = (l.decode(SHELL_ENCODING, errors='replace') for l in lines)
-            lines = (self._codepage.str_from_unicode(l, errors='replace') for l in lines)
-            self._screen.write('\r'.join(lines))
-            shell_output.clear()
+            # detect sentinel for start of new command
+            # wait for at least one LF
+            if shell_output[0] is None:
+                if b'\n' not in shell_output:
+                    return
+            # can't do a comprehension as it will crash if the deque is accessed by the thread
+            lines = deque()
+            while shell_output:
+                lines.append(shell_output.popleft())
+            # detect echo
+            if lines[0] is None:
+                lines.popleft()
+                while lines:
+                    reply = lines.popleft()
+                    try:
+                        cmd = self._last_command.popleft()
+                    except IndexError:
+                        cmd = b''
+                    if cmd != reply:
+                        lines.appendleft(reply)
+                        if reply not in (b'\r', b'\n'):
+                            # two CRs, for some reason
+                            lines.appendleft(b'\r')
+                        break
+            # accept CRLF or LF in output
+            # remove BELs (dosemu uses these a lot)
+            outstr = b''.join(lines).replace(b'\r\n', b'\r').replace(b'\x07', b'')
+            outstr = outstr.decode(SHELL_ENCODING, errors='replace')
+            outstr = self._codepage.str_from_unicode(outstr, errors='replace')
+            self._screen.write(outstr)

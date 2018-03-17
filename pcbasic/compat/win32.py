@@ -60,10 +60,6 @@ def _get_oem_encoding():
 # if starting from a console, shell will inherit its codepage
 # if starting from the gui (stdin.encoding == None), we're using OEM codepage
 SHELL_ENCODING = _CONSOLE_ENCODING or _get_oem_encoding()
-# cmd.exe conventions, should also be used by other shells
-SHELL_COMMAND_SWITCH = u'/C'
-# the shell echoes its input
-SHELL_ECHOES = True
 
 # avoid having an empty CMD window popping up in front of ours
 HIDE_WINDOW = subprocess.STARTUPINFO()

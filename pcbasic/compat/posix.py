@@ -25,10 +25,6 @@ EOL = b'\n'
 # shell conventions
 # console encoding
 SHELL_ENCODING = sys.stdin.encoding or locale.getpreferredencoding()
-# sh conventions, standard on Unix
-SHELL_COMMAND_SWITCH = u'-c'
-# the does not echo its input
-SHELL_ECHOES = False
 # window suppression not needed on Unix
 HIDE_WINDOW = None
 
