@@ -79,7 +79,8 @@ class Parser(object):
                 ins.require_end()
                 return
         self._callbacks[c](parse_args(ins))
-        if c != tk.IF:
+        # IF and RESUME statements can jump to mid-statement (THEN clause)
+        if c not in (tk.IF, tk.RESUME):
             ins.require_end()
 
     def parse_name(self, ins):
