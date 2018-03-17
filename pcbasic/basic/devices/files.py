@@ -685,4 +685,4 @@ class Files(object):
                 # allow to break during dir listing & show names flowing on screen
                 self._queues.wait()
             i += 1
-        self._screen.write_line(b' %d Bytes free' % dev.get_free())
+        self._screen.write_line(b' %d Bytes free\n' % dev.get_free())
