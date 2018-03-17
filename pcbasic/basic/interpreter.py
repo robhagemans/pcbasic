@@ -90,7 +90,7 @@ class Interpreter(object):
                     # line number marker, new statement
                     token = ins.read(4)
                     # end of program or truncated file
-                    if token[:2] == '\0\0' or len(token) < 4:
+                    if token[:2] == b'\0\0' or len(token) < 4:
                         if c == b'\0' and self.error_resume:
                             # unfinished error handler: no RESUME (don't trap this)
                             self.error_handle_mode = True
@@ -101,9 +101,9 @@ class Interpreter(object):
                         return
                     if self.tron:
                         linenum = struct.unpack_from('<H', token, 2)
-                        self._screen.write('[%i]' % linenum)
+                        self._screen.write(b'[%i]' % linenum)
                     self.step(token)
-                elif c != ':':
+                elif c != b':':
                     ins.seek(-len(c), 1)
                 self.parser.parse_statement(ins)
             except error.BASICError as e:
