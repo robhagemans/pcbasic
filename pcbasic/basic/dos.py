@@ -105,7 +105,7 @@ class Shell(object):
         work_dir = self._files.get_native_cwd()
         try:
             p = Popen(
-                    cmd, shell=False, cwd= work_dir,
+                    cmd, shell=False, cwd=work_dir,
                     stdin=PIPE, stdout=PIPE, stderr=PIPE, startupinfo=HIDE_WINDOW)
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
@@ -172,10 +172,8 @@ class Shell(object):
     def _show_output(self, shell_output):
         """Write shell output to screen."""
         if shell_output:
-            lines = []
-            while shell_output:
-                lines.append(shell_output.popleft())
-            lines = b''.join(lines).split(EOL)
+            lines = b''.join(shell_output).split(EOL)
             lines = (l.decode(SHELL_ENCODING, errors='replace') for l in lines)
             lines = (self._codepage.str_from_unicode(l, errors='replace') for l in lines)
             self._screen.write('\r'.join(lines))
+            shell_output.clear()
