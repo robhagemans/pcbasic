@@ -23,6 +23,9 @@ from . import values
 
 # command interpreter must support command.com convention
 # to be able to use SHELL "dos-command"
+# on linux, "wine cmd.exe" works OK
+# dosemu can probably be made to work with a wrapper script
+# sh doesn't work but makes little sense to use anyway as it's totally unlike MS-DOS
 SHELL_COMMAND_SWITCH = u'/C'
 
 
@@ -86,6 +89,7 @@ class Shell(object):
         self._files = files
         self._codepage = codepage
         self._last_command = deque()
+        self._encoding = None
 
     def _process_stdout(self, stream, output):
         """Retrieve SHELL output and write to console."""
@@ -116,8 +120,10 @@ class Shell(object):
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
             raise error.BASICError(error.IFC)
+        shell_output = self._launch_reader_thread(p.stdout)
+        shell_cerr = self._launch_reader_thread(p.stderr)
         try:
-            self._communicate(p)
+            self._communicate(p, shell_output, shell_cerr)
         except EnvironmentError as e:
             logging.warning(e)
         finally:
@@ -125,17 +131,28 @@ class Shell(object):
             if p.poll() is None:
                 p.kill()
 
-    def _communicate(self, p):
-        """Communicate with launched shell."""
+    def _launch_reader_thread(self, stream):
+        """Launch output reader."""
         shell_output = deque()
-        shell_cerr = deque()
-        outp = threading.Thread(target=self._process_stdout, args=(p.stdout, shell_output))
+        outp = threading.Thread(target=self._process_stdout, args=(stream, shell_output))
         # daemonise or join later? if we join, a shell that doesn't close will hang us on exit
         outp.daemon = True
         outp.start()
-        errp = threading.Thread(target=self._process_stdout, args=(p.stderr, shell_cerr))
-        errp.daemon = True
-        errp.start()
+        return shell_output
+
+    def _drain_final(self, shell_output):
+        """Drain final output from shell."""
+        if not shell_output:
+            return
+        elif not self._detect_encoding(shell_output):
+            # one-char output, must be rare...
+            shell_output.append(b'\r')
+        elif not shell_output[-1] in (self._enc(u'\r'), self._enc(u'\n')):
+            shell_output.append(self._enc(u'\r'))
+        self._show_output(shell_output)
+
+    def _communicate(self, p, shell_output, shell_cerr):
+        """Communicate with launched shell."""
         word = []
         while p.poll() is None:
             self._show_output(shell_output)
@@ -165,12 +182,8 @@ class Shell(object):
                 word.append(c)
                 self._screen.write(c)
         # drain final output
-        if shell_output and not shell_output[-1] in (b'\r', b'\n'):
-            shell_output.append(b'\r')
-        self._show_output(shell_output)
-        if shell_cerr and not shell_cerr[-1] in (b'\r', b'\n'):
-            shell_cerr.append(b'\r')
-        self._show_output(shell_cerr)
+        self._drain_final(shell_output)
+        self._drain_final(shell_cerr)
 
     def _send_input(self, pipe, word):
         """Write keyboard input to pipe."""
@@ -178,12 +191,27 @@ class Shell(object):
         self._last_command.extend(word)
         bytes_word = b''.join(word) + b'\r\n'
         unicode_word = self._codepage.str_to_unicode(bytes_word, preserve_control=True)
+        # cmd.exe /u outputs UTF-16 but does not accept it as input...
         pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
+
+    def _detect_encoding(self, shell_output):
+        """Detect UTF-16LE output."""
+        if self._encoding:
+            return True
+        elif len(shell_output) > 1:
+            # detect UTF-16 output (assuming the first output char is ascii...)
+            self._encoding = 'utf-16le' if shell_output[1] == b'\0' else SHELL_ENCODING
+            return True
+        return False
+
+    def _enc(self, unitext):
+        """Encode argument."""
+        return unitext.encode(self._encoding, errors='replace')
 
     def _show_output(self, shell_output):
         """Write shell output to screen."""
         # detect sentinel for start of new command
-        if shell_output:
+        if shell_output and self._detect_encoding(shell_output):
             # detect sentinel for start of new command
             # wait for at least one LF
             if shell_output[0] is None:
@@ -193,24 +221,31 @@ class Shell(object):
             lines = deque()
             while shell_output:
                 lines.append(shell_output.popleft())
+            # push back last char if not aligned to encoding
+            if self._encoding == 'utf-16le' and lines[-1] != b'\0':
+                shell_output.appendleft(lines.pop())
             # detect echo
             if lines[0] is None:
                 lines.popleft()
                 while lines:
                     reply = lines.popleft()
+                    if self._encoding == 'utf-16le':
+                        reply += lines.popleft()
                     try:
                         cmd = self._last_command.popleft()
                     except IndexError:
                         cmd = b''
-                    if cmd != reply:
+                    if self._enc(cmd) != reply:
                         lines.appendleft(reply)
-                        if reply not in (b'\r', b'\n'):
+                        if reply not in (self._enc(u'\r'), self._enc(u'\n')):
                             # two CRs, for some reason
-                            lines.appendleft(b'\r')
+                            lines.appendleft(self._enc(u'\r'))
                         break
+            outstr = b''.join(lines)
             # accept CRLF or LF in output
+            outstr = outstr.replace(self._enc(u'\r\n'), self._enc(u'\r'))
             # remove BELs (dosemu uses these a lot)
-            outstr = b''.join(lines).replace(b'\r\n', b'\r').replace(b'\x07', b'')
-            outstr = outstr.decode(SHELL_ENCODING, errors='replace')
+            outstr = outstr.replace(self._enc(u'\x07'), b'')
+            outstr = outstr.decode(self._encoding, errors='replace')
             outstr = self._codepage.str_from_unicode(outstr, errors='replace')
             self._screen.write(outstr)
