@@ -93,6 +93,10 @@ def shell(command):
 if plat.system == 'Windows':
     shell_output = ''
 
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= 1  # STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = 0 # SW_HIDE
+
     def process_stdout(stream):
         """ Retrieve SHELL output and write to console. """
         global shell_output
@@ -114,7 +118,8 @@ if plat.system == 'Windows':
         if command:
             cmd += ' /C ' + command
         p = subprocess.Popen(str(cmd).split(), stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
+                    startupinfo=startupinfo)
         outp = threading.Thread(target=process_stdout, args=(p.stdout,))
         outp.daemon = True
         outp.start()
