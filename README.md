@@ -58,13 +58,17 @@ PC-BASIC starts in direct mode, a 1980s-style interface operated by executing
 BASIC commands directly. There is no menu, nor are there any of the visual clues
 that we've come to expect of modern software.  
 
-A few essential commands to help you get around:  
-`LOAD "PROGRAM"` loads the program file named `PROGRAM.BAS` into memory, but does not run it yet.  
-`LIST` displays the BASIC code of the current program.  
-`RUN` starts the current program.  
-`SAVE "PROGRAM",A` saves the current program to a human-readable text file named `PROGRAM.BAS`.  
-`NEW` immediately deletes the current program from memory.  
-`SYSTEM` exits PC-BASIC immediately, discarding any unsaved program or data.  
+A few essential commands to help you get around:
+ 
+| Command               | Effect                                                        |
+|-----------------------|---------------------------------------------------------------|
+| `LOAD "PROGRAM"`      | loads the program file named `PROGRAM.BAS` into memory        |
+| `LIST`                | displays the BASIC code of the current program                |
+| `RUN`                 | starts the current program                                    |
+| `SAVE "PROGRAM",A`    | saves the current program to a text file named `PROGRAM.BAS`  |
+| `NEW`                 | immediately deletes the current program from memory           |
+| `SYSTEM`              | exits PC-BASIC immediately, discarding any unsaved program    |
+
 
 Use one of the key combinations `Ctrl+Break`, `Ctrl+Scroll Lock`, `Ctrl+C` or `F12+B`
 to interrupt a running program and return to direct mode.  
@@ -78,30 +82,6 @@ By default, PC-BASIC looks for programs in your home folder.
 
 See [the documentation on accessing your drives](http://pc-basic.org/doc#mounting) for more information.
 
-
-#### Configuration ####
-You can supply options to change PC-BASIC's behaviour by editing the configuration file. If you install the Windows package, the installer will automatically create a shortcut to this file in the PC-BASIC start menu folder. The file can also be found in the following location:
-
-| OS         | Configuration file  
-|------------|-------------------------------------------------------------------------  
-| Windows    | `%APPDATA%\pcbasic-1.2\PCBASIC.INI`  
-| Mac        | `~/Library/Application Support/pcbasic-1.2/PCBASIC.INI`  
-| Linux      | `~/.config/pcbasic-1.2/PCBASIC.INI`  
-
-For example, to start with the emulation target set to Tandy 1000 GW-BASIC, include the following line under `[pcbasic]` in the configuration file:
-
-    preset=tandy
-
-A default configuration file will be created the first time you run PC-BASIC. See the comments in that file or consult the [documentation](http://pc-basic.org/doc#settings) for more information and example options.
-
-If you start PC-BASIC from the command prompt (on Windows this is the `C:\>` prompt), you can supply configuration options directly. For example:  
-
-`pcbasic PROGRAM.BAS` runs the program file named `PROGRAM.BAS` directly.  
-`pcbasic --preset=tandy` starts with the emulation target set to Tandy GW-BASIC on a Tandy 1000.  
-`pcbasic --preset=pcjr` starts with the emulation target set to Cartridge BASIC on an IBM PCjr.  
-`pcbasic -h` shows all available command line options.  
-
-If you use PC-BASIC from the command prompt on Windows, make sure you run the `pcbasic.com` binary. You will not see any output if you call the `pcbasic.exe` binary.
 
 #### Getting programs ####
 The following pages have GW-BASIC program downloads, lots of information and further links.  
