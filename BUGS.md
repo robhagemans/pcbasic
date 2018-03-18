@@ -1,6 +1,6 @@
 #### Bug reports ####
 
-Thank you for helping to make PC_BASIC better!
+Thank you for helping to make PC-BASIC better!
 
 If you find bugs, please [open an issue on GitHub](https://github.com/robhagemans/pcbasic/issues).
 
