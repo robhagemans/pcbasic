@@ -46,12 +46,15 @@ BASIC commands directly. There is no menu, nor are there any of the visual clues
 that we've come to expect of modern software.  
 
 A few essential commands to help you get around:  
-`LOAD "PROGRAM"` loads the program file named `PROGRAM.BAS` into memory.  
-`LIST` displays the BASIC code of the current program.  
-`RUN` starts the current program.  
-`SAVE "PROGRAM",A` saves the current program to a text file named `PROGRAM.BAS`.  
-`NEW` immediately deletes the current program from memory.  
-`SYSTEM` exits PC-BASIC immediately, discarding any unsaved program or data.  
+
+| Command               | Effect                                                        |
+|-----------------------|---------------------------------------------------------------|
+| `LOAD "PROGRAM"`      | loads the program file named `PROGRAM.BAS` into memory        |
+| `LIST`                | displays the BASIC code of the current program                |
+| `RUN`                 | starts the current program                                    |
+| `SAVE "PROGRAM",A`    | saves the current program to a text file named `PROGRAM.BAS`  |
+| `NEW`                 | immediately deletes the current program from memory           |
+| `SYSTEM`              | exits PC-BASIC immediately, discarding any unsaved program    |
 
 Use one of the key combinations `Ctrl+Break`, `Ctrl+Scroll Lock`, `Ctrl+C` or `F12+B`
 to interrupt a running program and return to direct mode.  
@@ -63,21 +66,9 @@ If started through the start-menu shortcut, PC-BASIC looks for programs in the s
 - On **Windows**, this is usually a folder with your user name, located under `C:\Users\`. You can find this folder in Windows Explorer by typing `%USERPROFILE%` in the address bar.
 - On **Mac** and **Linux** this is the directory `~/`.
 
-If started from the command prompt, PC-BASIC looks for programs in the current working directory. See [the documentation on accessing your drives](http://pc-basic.org/doc#mounting) for more information.
+If started from the command prompt, PC-BASIC looks for programs in the current working directory.
 
-
-#### Configuration ####
-You can supply options to change PC-BASIC's behaviour by editing the configuration file. If you install the Windows package, the installer will automatically create a shortcut to this file in the PC-BASIC start menu folder. The file can also be found in the following location:
-
-| OS         | Configuration file  
-|------------|-------------------------------------------------------------------------  
-| Windows    | `%APPDATA%\pcbasic\PCBASIC.INI`  
-| Mac        | `~/Library/Application Support/pcbasic/PCBASIC.INI`  
-| Linux      | `~/.config/pcbasic/PCBASIC.INI`  
-
-A default configuration file will be created the first time you run PC-BASIC. See the comments in that file or consult the [documentation](http://pc-basic.org/doc#settings) for more information and example options.
-
-If you start PC-BASIC from the command prompt (on Windows this is the `C:\>` prompt), you can supply configuration options directly. Run `pcbasic -h` on the command prompt to see a list of available command-line options.  
+See [the documentation on accessing your drives](http://pc-basic.org/doc#mounting) for more information.
 
 
 #### External resources ####
