@@ -84,9 +84,9 @@ You can supply options to change PC-BASIC's behaviour by editing the configurati
 
 | OS         | Configuration file  
 |------------|-------------------------------------------------------------------------  
-| Windows    | `%APPDATA%\pcbasic\PCBASIC.INI`  
-| Mac        | `~/Library/Application Support/pcbasic/PCBASIC.INI`  
-| Linux      | `~/.config/pcbasic/PCBASIC.INI`  
+| Windows    | `%APPDATA%\pcbasic-1.2\PCBASIC.INI`  
+| Mac        | `~/Library/Application Support/pcbasic-1.2/PCBASIC.INI`  
+| Linux      | `~/.config/pcbasic-1.2/PCBASIC.INI`  
 
 For example, to start with the emulation target set to Tandy 1000 GW-BASIC, include the following line under `[pcbasic]` in the configuration file:
 
