@@ -39,20 +39,30 @@ system_config_dir = info_dir
 # user home
 home_dir = os.path.expanduser('~')
 
+
+# PC_BASIC version
+try:
+    with open(os.path.join(info_dir, 'version.txt')) as f:
+        version = f.read().rstrip()
+except EnvironmentError:
+    version = ''
+
+DIR_NAME = 'pcbasic-%s' % (version.rsplit('.', 1)[0],)
+
 # user configuration and state directories
 if system == 'Windows':
-    user_config_dir = os.path.join(os.getenv('APPDATA'), 'pcbasic')
+    user_config_dir = os.path.join(os.getenv('APPDATA'), DIR_NAME)
     state_path = user_config_dir
 elif system == 'OSX':
-    user_config_dir = os.path.join(home_dir, 'Library/Application Support/pcbasic')
+    user_config_dir = os.path.join(home_dir, 'Library/Application Support', DIR_NAME)
     state_path = user_config_dir
 elif system == 'Android':
     user_config_dir = info_dir
     state_path = info_dir
 else:
     import xdg.BaseDirectory
-    user_config_dir = os.path.join(xdg.BaseDirectory.xdg_config_home, 'pcbasic')
-    state_path = os.path.join(xdg.BaseDirectory.xdg_data_home, 'pcbasic')
+    user_config_dir = os.path.join(xdg.BaseDirectory.xdg_config_home, DIR_NAME)
+    state_path = os.path.join(xdg.BaseDirectory.xdg_data_home, DIR_NAME)
 if not os.path.exists(state_path):
     os.makedirs(state_path)
 
@@ -83,11 +93,4 @@ if system == 'Android':
 else:
     # create temporary directory
     import tempfile
-    temp_dir = tempfile.mkdtemp(prefix='pcbasic-')
-
-# PC_BASIC version
-try:
-    with open(os.path.join(info_dir, 'version.txt')) as f:
-        version = f.read().rstrip()
-except EnvironmentError:
-    version = ''
+    temp_dir = tempfile.mkdtemp(prefix='%s-' % (DIR_NAME,))
