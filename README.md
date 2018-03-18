@@ -33,9 +33,6 @@ Installers are provided in the form of a Windows `.exe` and a Mac OS `.dmg` whic
 
 Python users can obtain _development releases_ from [PyPI](https://pypi.org/project/pcbasic/) through `pip install pcbasic`.
 
-If the options above are not applicable or if you prefer to install from the repository source by yourself: please
-consult [`INSTALL.md`](https://github.com/robhagemans/pcbasic/blob/master/INSTALL.md) for detailed instructions.
-
 
 #### BASIC survival kit ####
 Click on the PC-BASIC application icon or run `pcbasic` on the command prompt to start PC-BASIC. The default emulation target is

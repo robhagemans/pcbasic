@@ -1,14 +1,15 @@
-### Installing PC-BASIC from the source distribution
-These instructions cover the steps needed to install the development version of PC-BASIC from source.
 
-#### You probably don't need to read this file ####
+
+### Setting up a development environment for PC-BASIC
+These instructions cover the steps needed to install the development source of PC-BASIC and its dependencies. You can also follow them if you simply want to install PC-BASIC from the source repository on GitHub.
+
+#### You won't need to read this file just to install PC-BASIC ####
 General installation instructions for PC-BASIC can be found in `README.md`.
-The instructions there cover the most common platforms and use cases. If the
-options described there are not applicable or you prefer to install from source,
-please consult the notes below.
+The instructions there cover the most common platforms and use cases.
 
-#### Required packages ####
-The following packages are needed or recommended when installing PC-BASIC from the Python distribution:
+
+#### Dependencies ####
+The following packages are needed or recommended when installing PC-BASIC:
 
 | Package                                                                           | OS                 | Status       | Used for
 |-----------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
@@ -100,3 +101,13 @@ The preferred graphical interface is SDL2. However, a PyGame interface is also a
 The 1.9.1 release of PyGame, currently still standard on some distributions (e.g. Ubuntu 16.04 LTS),
 unfortunately contains a few bugs that have been resolved in newer releases. Please use the latest
 PyGame release from pygame.org, or install with `pip install pygame`.
+
+#### Contributing code ####
+
+The current code base of PC-BASIC was written by a single author, Rob Hagemans.
+That is not to say it should stay that way. If you would like to contribute
+code to PC-BASIC, please contact the author at _robhagemans@users.sourceforge.net_.
+
+You'll need to agree for your code contributions to be licensed under the [Expat MIT License](https://opensource.org/licenses/MIT).
+This is a more permissive licence than PC-BASIC is (currently) released under. The reason I ask for
+a permissive licence for contributions is that it allows me to re-license the code at a later date.

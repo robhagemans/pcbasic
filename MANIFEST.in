@@ -1,8 +1,8 @@
 include README.md
 include LICENSE.md
-include CONTRIBUTING.md
+include BUGS.md
 include THANKS.md
-include INSTALL.md
+include DEVELOPMENT.md
 include GPL3.txt
 include doc/*
 include pcbasic/data/*/*
