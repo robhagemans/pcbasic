@@ -81,7 +81,7 @@ class ExceptionGuard(object):
         # create crash log file
         logname = datetime.now().strftime(LOG_PATTERN)
         logfile = tempfile.NamedTemporaryFile(
-                suffix='.log', prefix=logname, dir=self._log_dir, delete=False)
+                mode='w', suffix='.log', prefix=logname, dir=self._log_dir, delete=False)
         # construct the message
         message = [
             (0x70, 'FATAL ERROR\n'),
