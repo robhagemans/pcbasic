@@ -306,7 +306,8 @@ class ExpressionParser(object):
                     name = ins.read_name()
                     error.throw_if(not name, error.STX)
                     indices = self.parse_indices(ins)
-                    units.append(self._memory.get_variable(name, indices))
+                    view = self._memory.view_or_create_variable(name, indices)
+                    units.append(view)
                 elif d in self._functions:
                     units.append(self._parse_function(ins, d))
                     #if not isinstance(units[-1], values.String):
