@@ -291,3 +291,8 @@ class StringSpace(object):
         if self._temp != self.current:
             self._delete_last()
         self._temp = self.current
+
+    def is_permanent(self, string):
+        """Return whether string is in permanent string space."""
+        addr = string.address()
+        return addr > self._temp

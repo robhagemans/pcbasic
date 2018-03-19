@@ -274,7 +274,7 @@ class Implementation(object):
             name = name.split('(', 1)[0]
             return self.arrays.to_list(name)
         else:
-            return self.memory.get_variable(name, []).to_value()
+            return self.memory.view_or_create_variable(name, []).to_value()
 
     def interact(self):
         """Interactive interpreter session."""

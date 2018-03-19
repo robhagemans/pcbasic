@@ -415,10 +415,16 @@ class DataSegment(object):
             # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out of range afterwards
             self.arrays.check_dim(name, indices)
         value = next(args)
+        if isinstance(value, values.String):
+            # if already permanent, store a deep copy to avoid double referencing
+            if self.strings.is_permanent(value):
+                value = value.new().from_str(value.dereference())
         self.set_variable(name, indices, value)
 
     def set_variable(self, name, indices, value):
         """Assign a value to a scalar variable or an array element."""
+        # note that for strings, this assigns the pointer
+        # but does not deep copy the string
         name = self.complete_name(name)
         if indices == []:
             self.scalars.set(name, value)

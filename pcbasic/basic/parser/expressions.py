@@ -307,6 +307,7 @@ class ExpressionParser(object):
                     error.throw_if(not name, error.STX)
                     indices = self.parse_indices(ins)
                     view = self._memory.view_or_create_variable(name, indices)
+                    # should make a shallow copy? but .clone here breaks circular MID$
                     units.append(view)
                 elif d in self._functions:
                     units.append(self._parse_function(ins, d))
