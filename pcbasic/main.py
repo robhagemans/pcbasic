@@ -81,23 +81,14 @@ def show_version(settings):
 
 def convert(settings):
     """Perform file format conversion."""
-    mode, infile, outfile = settings.conv_params
+    mode, in_name, out_name = settings.conv_params
     with basic.Session(**settings.session_params) as session:
-        try:
-            # if the native file doesn't exist, treat as BASIC file spec
-            if not infile or os.path.isfile(infile):
-                # use io.BytesIO buffer for seekability
-                infile = session.bind_file(infile or io.BytesIO(sys.stdin.read()))
+        # stdin if no name supplied - use io.BytesIO buffer for seekability
+        with session.bind_file(in_name or io.BytesIO(sys.stdin.read())) as infile:
             session.execute(b'LOAD "%s"' % (infile,))
-            if (not outfile or not os.path.dirname(outfile)
-                    or os.path.isdir(os.path.dirname(outfile))):
-                outfile = session.bind_file(outfile or sys.stdout)
-            save_cmd = b'SAVE "%s"' % (outfile,)
-            if mode.upper() in (b'A', b'P'):
-                save_cmd += b',%s' % (mode,)
-            session.execute(save_cmd)
-        except basic.BASICError as e:
-            logging.error(e.message)
+        with session.bind_file(out_name or sys.stdout, create=True) as outfile:
+            mode_suffix = b',%s' % (mode,) if mode.upper() in (b'A', b'P') else b''
+            session.execute(b'SAVE "%s"%s' % (outfile, mode_suffix))
 
 def launch_session(settings):
     """Start an interactive interpreter session."""

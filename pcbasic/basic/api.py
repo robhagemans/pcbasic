@@ -57,15 +57,21 @@ class Session(object):
         self._impl.attach_interface(interface)
         return self
 
-    def bind_file(self, file_name_or_object, name=None):
+    def bind_file(self, file_name_or_object, name=None, create=False):
         """Bind a native file name or Python stream to a BASIC file name."""
         self.start()
         if isinstance(name, unicode):
             name = self._impl.codepage.str_from_unicode(name)
         # if a file name, resolve
         if not isinstance(file_name_or_object, basestring) or os.path.isfile(file_name_or_object):
+            # if it's an obkect or the file name exists, use it
             return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
-        # not resolved, try as internal name
+        elif create and (
+                not os.path.dirname(file_name_or_object) or
+                os.path.isdir(os.path.dirname(file_name_or_object))):
+            # if it doesn't and we're allowed to create and the directory exists, create new
+            return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
+        # not resolved, try to use/create as internal name
         if isinstance(file_name_or_object, unicode):
             return NameWrapper(self._impl.codepage.str_from_unicode(file_name_or_object))
         return NameWrapper(file_name_or_object)
