@@ -1,6 +1,6 @@
 #!/bin/bash
 VERSION=$(cat ../../pcbasic/data/version.txt)
-NAME="pcbasic-$VERSION"
+NAME="pcbasic-v$VERSION"
 echo "running prepare script"
 pushd ../..
 ./prepare.py

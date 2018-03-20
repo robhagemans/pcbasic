@@ -1,6 +1,6 @@
 #!/bin/bash
 VERSION=$(cat ../../pcbasic/data/version.txt)
-NAME="pcbasic-$VERSION-osx"
+NAME="pcbasic-v$VERSION-osx"
 pyinstaller installer.spec
 # replace executable started by Finder with workaround script to set cwd
 cp launcher.sh dist/PC-BASIC.app/Contents/MacOS/
