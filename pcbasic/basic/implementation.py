@@ -274,7 +274,7 @@ class Implementation(object):
             name = name.split('(', 1)[0]
             return self.arrays.to_list(name)
         else:
-            return self.memory.get_variable(name, []).to_value()
+            return self.memory.view_or_create_variable(name, []).to_value()
 
     def interact(self):
         """Interactive interpreter session."""
@@ -316,12 +316,14 @@ class Implementation(object):
         self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
         c = self.interpreter.direct_line.peek()
         if c == '\0':
+            # clear all program stacks
+            self.interpreter.clear_stacks_and_pointers()
+            # clear variables first,
+            # to avoid inconsistent state in string space if out of memory
+            self._clear_all()
             # check for lines starting with numbers (6553 6) and empty lines
             self.program.check_number_start(self.interpreter.direct_line)
             self.program.store_line(self.interpreter.direct_line)
-            # clear all program stacks
-            self.interpreter.clear_stacks_and_pointers()
-            self._clear_all()
             return True
         elif c != '':
             # it is a command, go and execute
@@ -579,10 +581,18 @@ class Implementation(object):
         # gather COMMON declarations
         commons = self.interpreter.gather_commons()
         with self.memory.preserve_commons(commons, common_all):
+            # preserve DEFtype on MERGE
+            # functions are cleared except when CHAIN ... ALL is specified
+            # OPTION BASE is preserved when there are common variables
+            self._clear_all(
+                    preserve_functions=common_all,
+                    preserve_base=(commons or common_all),
+                    preserve_deftype=merge)
             # load new program
             with self.files.open(0, name, filetype='ABP', mode='I') as f:
                 if delete_lines:
-                    # delete lines from existing code before merge (without MERGE, this is pointless)
+                    # delete lines from existing code before merge
+                    # (without MERGE, this is pointless)
                     self.program.delete(*delete_lines)
                 if merge:
                     self.program.merge(f)
@@ -593,10 +603,6 @@ class Implementation(object):
                 # don't close files!
                 # RUN
                 self.interpreter.jump(jumpnum, err=error.IFC)
-            # preserve DEFtype on MERGE
-            # functions are cleared except when CHAIN ... ALL is specified
-            # OPTION BASE is preserved when there are common variables
-            self._clear_all(preserve_functions=common_all, preserve_base=(commons or common_all), preserve_deftype=merge)
 
     def save_(self, args):
         """SAVE: save program to a file."""

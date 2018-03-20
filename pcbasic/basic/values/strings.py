@@ -256,7 +256,11 @@ class StringSpace(object):
             # exclude strings is not located in memory (FIELD or code strings)
             if addr >= self._memory.var_start():
                 string_list.append((view, addr, self._retrieve(length, addr)))
-                if self._temp is not None:
+                # set sentinel string (lowest-address permanent string)
+                # don't use zero-length strings as sentinel:
+                # they share an address with allocated strings and may get swapped on sorting
+                # in which case the allocated permanent string ends up below the sentinel
+                if self._temp is not None and length > 0:
                     if addr > self._temp and addr < last_permanent:
                         last_permanent, last_perm_view = addr, view
         # sort by address, largest first (maintain order of storage)
@@ -291,3 +295,8 @@ class StringSpace(object):
         if self._temp != self.current:
             self._delete_last()
         self._temp = self.current
+
+    def is_permanent(self, string):
+        """Return whether string is in permanent string space."""
+        addr = string.address()
+        return addr > self._temp
