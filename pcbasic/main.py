@@ -71,7 +71,7 @@ def run(*arguments):
 
 def show_usage():
     """Show usage description."""
-    sys.stdout.write(pkg_resources.resource_string(__name__, 'USAGE.txt'))
+    sys.stdout.write(pkg_resources.resource_string(__name__, 'data/USAGE.txt'))
 
 def show_version(settings):
     """Show version with optional debugging details."""
