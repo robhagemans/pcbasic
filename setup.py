@@ -13,9 +13,9 @@ from codecs import open
 from os import path
 
 # obtain metadata without importing the package (to avoid breaking setup)
-with open(path.join(
-        path.abspath(path.dirname(__file__)),
-        'pcbasic', 'basic', 'metadata.py'), encoding='utf-8') as f:
+with open(
+        path.join(path.abspath(path.dirname(__file__)), 'pcbasic', 'metadata.py'), 
+        encoding='utf-8') as f:
     exec(f.read())
 
 

@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 import logging
 
-from .metadata import NAME, VERSION, COPYRIGHT
+from ..metadata import NAME, VERSION, COPYRIGHT
 from .base import error
 from . import values
 from . import devices

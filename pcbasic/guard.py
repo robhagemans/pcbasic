@@ -15,7 +15,7 @@ import tempfile
 from datetime import datetime
 from contextlib import contextmanager
 
-from basic.metadata import VERSION
+from .metadata import VERSION
 from basic.base import error, signals
 
 

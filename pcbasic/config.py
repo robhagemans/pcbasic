@@ -20,7 +20,7 @@ import pkg_resources
 import string
 from collections import deque
 
-from .basic.metadata import VERSION, NAME
+from .metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from .compat import WIN32, get_short_pathname, get_unicode_argv
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
