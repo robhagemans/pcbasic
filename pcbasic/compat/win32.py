@@ -14,7 +14,7 @@ import logging
 import threading
 import subprocess
 
-from .winsi import ORIG_STDIN_ENCODING
+from .winsiwrapper import ORIG_STDIN_ENCODING
 from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD, HINSTANCE, HANDLE, HKEY, BOOL
 from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong, byref
 
