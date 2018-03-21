@@ -14,7 +14,6 @@ import logging
 import threading
 import subprocess
 
-from .winsiwrapper import ORIG_STDIN_ENCODING
 from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD, HINSTANCE, HANDLE, HKEY, BOOL
 from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong, byref
 
@@ -34,7 +33,7 @@ EOL = b'\r\n'
 codecs.register(lambda name: codecs.lookup('utf-8') if name == 'cp65001' else None)
 
 # original stdin codepage
-_CONSOLE_ENCODING = ORIG_STDIN_ENCODING
+_CONSOLE_ENCODING = sys.stdin.encoding
 # there's also an ACP codepage - this seems to be locale.getpreferredencoding()
 #_ACP_ENCODING = 'cp' + str(cdll.kernel32.GetACP())
 

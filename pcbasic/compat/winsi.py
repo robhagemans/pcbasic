@@ -21,18 +21,24 @@ import tty
 # save termios state
 _term_attr = None
 
-def setraw():
+def set_raw():
     """Enter raw terminal mode."""
     global _term_attr
     fd = sys.stdin.fileno()
     _term_attr = termios.tcgetattr(fd)
     tty.setraw(fd)
 
-def unsetraw():
+def unset_raw():
     """Leave raw terminal mode."""
     termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, _term_attr)
+
+def write(s):
+    """Write to console."""
+    sys.stdout.write(s)
+    sys.stdout.flush()
 
 
 encoding = sys.stdout.encoding
 read = sys.stdin.read
-write = sys.stdout.write
+
+#TODO: isatty; make all args unicode

@@ -17,7 +17,7 @@ from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from ..compat import UEOF, WINSI, enable_ansi_console, set_raw_console, unset_raw_console
+from ..compat import UEOF, console
 
 
 # escape sequence to scancode
@@ -52,24 +52,19 @@ class VideoTextBase(VideoPlugin):
         """Initialise text-based interface."""
         if not sys.stdin.isatty():
             raise InitFailed('Not a terminal (tty).')
-        elif not WINSI:
-            raise InitFailed('Module `winsi.dll` not found.')
         VideoPlugin.__init__(self, input_queue, video_queue)
-        # start winsi
-        enable_ansi_console()
         # start the stdin thread for non-blocking reads
         self._input_handler = InputHandlerCLI(input_queue)
 
     def __enter__(self):
         """Open text-based interface."""
         VideoPlugin.__enter__(self)
-        fd = sys.stdin.fileno()
-        set_raw_console()
+        console.set_raw()
 
     def __exit__(self, exc_type, value, traceback):
         """Close text-based interface."""
         try:
-            unset_raw_console()
+            console.unset_raw()
         finally:
             VideoPlugin.__exit__(self, exc_type, value, traceback)
 
@@ -101,7 +96,7 @@ class VideoCLI(VideoTextBase):
         """Close command-line interface."""
         try:
             if self._col != 1:
-                sys.stdout.write(b'\r\n')
+                console.write(b'\r\n')
         finally:
             VideoTextBase.__exit__(self, type, value, traceback)
 
@@ -126,8 +121,8 @@ class VideoCLI(VideoTextBase):
             # may have to update row!
             if row != self._last_row or col != self._col:
                 self._update_position(row, col)
-            sys.stdout.write(char.encode(sys.stdin.encoding, 'replace'))
-            sys.stdout.flush()
+            console.write(char.encode(console.encoding, 'replace'))
+            #console.flush()
             self._col = (col+2) if is_fullwidth else (col+1)
         # the terminal cursor has moved, so we'll need to move it back later
         # if that's not where we want to be
@@ -148,8 +143,8 @@ class VideoCLI(VideoTextBase):
         if (self._vpagenum == self._apagenum and
                 start <= self._cursor_row and stop >= self._cursor_row):
             self._update_position(self._cursor_row, 1)
-            sys.stdout.write(ansi.CLEAR_LINE)
-            sys.stdout.flush()
+            console.write(ansi.CLEAR_LINE)
+            #console.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
@@ -159,8 +154,8 @@ class VideoCLI(VideoTextBase):
             )
         if self._vpagenum != self._apagenum:
             return
-        sys.stdout.write('\r\n')
-        sys.stdout.flush()
+        console.write('\r\n')
+        #console.flush()
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
@@ -193,17 +188,17 @@ class VideoCLI(VideoTextBase):
             return
         self._update_col(1)
         rowtext = (u''.join(self._text[self._vpagenum][row-1]))
-        sys.stdout.write(rowtext.encode(sys.stdin.encoding, 'replace').replace('\0', ' '))
+        console.write(rowtext.encode(console.encoding, 'replace').replace('\0', ' '))
         self._col = len(self._text[self._vpagenum][row-1])+1
-        sys.stdout.flush()
+        #console.flush()
 
     def _update_position(self, row, col):
         """Move terminal print location."""
         # move cursor if necessary
         if row and row != self._last_row:
             if self._last_row:
-                sys.stdout.write(b'\r\n')
-                sys.stdout.flush()
+                console.write(b'\r\n')
+                #console.flush()
                 self._col = 1
             self._last_row = row
             # show what's on the line where we are.
@@ -214,11 +209,11 @@ class VideoCLI(VideoTextBase):
         """Move terminal print column."""
         if col != self._col:
             if self._col > col:
-                sys.stdout.write(ansi.MOVE_N_LEFT % (self._col-col))
-                sys.stdout.flush()
+                console.write(ansi.MOVE_N_LEFT % (self._col-col))
+                #console.flush()
             elif self._col < col:
-                sys.stdout.write(ansi.MOVE_N_RIGHT % (col-self._col))
-                sys.stdout.flush()
+                console.write(ansi.MOVE_N_RIGHT % (col-self._col))
+                #console.flush()
             self._col = col
 
 
@@ -247,7 +242,7 @@ class InputHandlerCLI(object):
     def _read_stdin(self):
         """Wait for stdin and put any input on the queue."""
         while True:
-            self._stdin_q.put(sys.stdin.read(1))
+            self._stdin_q.put(console.read(1))
             # don't be a hog
             time.sleep(0.0001)
 
@@ -302,7 +297,7 @@ class InputHandlerCLI(object):
             else:
                 # return the first recognised encoding sequence
                 try:
-                    return s.decode(sys.stdin.encoding), None
+                    return s.decode(console.encoding), None
                 except UnicodeDecodeError:
                     pass
             # give time for the queue to fill up
@@ -315,4 +310,4 @@ class InputHandlerCLI(object):
             s += c
         # no sequence or decodable string found
         # decode as good as it gets
-        return s.decode(sys.stdin.encoding, errors='replace'), None
+        return s.decode(console.encoding, errors='replace'), None
