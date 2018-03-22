@@ -74,7 +74,7 @@ class VideoANSI(video_cli.VideoTextBase):
             console.write(ansi.MOVE_CURSOR % (row+1, 1))
             for col, charattr in enumerate(textrow):
                 self._set_attributes(*charattr[1])
-                console.write(charattr[0].encode(console.encoding, 'replace'))
+                console.write(charattr[0])
         console.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
         #console.flush()
 
@@ -192,7 +192,7 @@ class VideoANSI(video_cli.VideoTextBase):
         if (row, col) != (self.cursor_row, self.cursor_col):
             console.write(ansi.MOVE_CURSOR % (row, col))
         self._set_attributes(fore, back, blink, underline)
-        console.write(char.encode(console.encoding, 'replace'))
+        console.write(char)
         if is_fullwidth:
             console.write(' ')
         self.cursor_row, self.cursor_col = row, col+1

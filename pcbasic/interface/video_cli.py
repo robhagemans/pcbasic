@@ -96,7 +96,7 @@ class VideoCLI(VideoTextBase):
         """Close command-line interface."""
         try:
             if self._col != 1:
-                console.write(b'\r\n')
+                console.write(u'\r\n')
         finally:
             VideoTextBase.__exit__(self, type, value, traceback)
 
@@ -121,7 +121,7 @@ class VideoCLI(VideoTextBase):
             # may have to update row!
             if row != self._last_row or col != self._col:
                 self._update_position(row, col)
-            console.write(char.encode(console.encoding, 'replace'))
+            console.write(char)
             #console.flush()
             self._col = (col+2) if is_fullwidth else (col+1)
         # the terminal cursor has moved, so we'll need to move it back later
@@ -143,7 +143,7 @@ class VideoCLI(VideoTextBase):
         if (self._vpagenum == self._apagenum and
                 start <= self._cursor_row and stop >= self._cursor_row):
             self._update_position(self._cursor_row, 1)
-            console.write(ansi.CLEAR_LINE)
+            console.write(ansi.CLEAR_LINE.decode('ascii'))
             #console.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
@@ -154,7 +154,7 @@ class VideoCLI(VideoTextBase):
             )
         if self._vpagenum != self._apagenum:
             return
-        console.write('\r\n')
+        console.write(u'\r\n')
         #console.flush()
 
     def scroll_down(self, from_line, scroll_height, back_attr):
@@ -188,7 +188,7 @@ class VideoCLI(VideoTextBase):
             return
         self._update_col(1)
         rowtext = (u''.join(self._text[self._vpagenum][row-1]))
-        console.write(rowtext.encode(console.encoding, 'replace').replace('\0', ' '))
+        console.write(rowtext.replace(u'\0', u' '))
         self._col = len(self._text[self._vpagenum][row-1])+1
         #console.flush()
 
@@ -197,7 +197,7 @@ class VideoCLI(VideoTextBase):
         # move cursor if necessary
         if row and row != self._last_row:
             if self._last_row:
-                console.write(b'\r\n')
+                console.write(u'\r\n')
                 #console.flush()
                 self._col = 1
             self._last_row = row
@@ -209,10 +209,10 @@ class VideoCLI(VideoTextBase):
         """Move terminal print column."""
         if col != self._col:
             if self._col > col:
-                console.write(ansi.MOVE_N_LEFT % (self._col-col))
+                console.write(ansi.MOVE_N_LEFT.decode('ascii') % (self._col-col))
                 #console.flush()
             elif self._col < col:
-                console.write(ansi.MOVE_N_RIGHT % (col-self._col))
+                console.write(ansi.MOVE_N_RIGHT.decode('ascii') % (col-self._col))
                 #console.flush()
             self._col = col
 
@@ -251,7 +251,7 @@ class InputHandlerCLI(object):
         try:
             return self._stdin_q.get_nowait()
         except Queue.Empty:
-            return ''
+            return u''
 
     def drain_queue(self):
         """Handle keyboard events."""
@@ -280,34 +280,30 @@ class InputHandlerCLI(object):
     def _get_key(self):
         """Retrieve one scancode sequence or one unicode char from keyboard."""
         s = self._getc()
-        if s == '':
+        if s == u'':
             return None, None
         # ansi sequences start with \x1b
         esc = (s == ansi.ESC)
-        # escape sequences are at most 5 and UTF-8 at most 4 chars long
+        # escape sequences are at most 5 chars long
         more = 5
         cutoff = 100
+        if not esc:
+            return s, None
         while (more > 0) and (cutoff > 0):
             if esc:
                 # return the first recognised escape sequence
-                uc = ESC_TO_EASCII.get(s, '')
+                uc = ESC_TO_EASCII.get(s, u'')
                 scan = ESC_TO_SCAN.get(s, None)
                 if uc or scan:
                     return uc, scan
-            else:
-                # return the first recognised encoding sequence
-                try:
-                    return s.decode(console.encoding), None
-                except UnicodeDecodeError:
-                    pass
             # give time for the queue to fill up
             time.sleep(0.0005)
             c = self._getc()
             cutoff -= 1
-            if c == '':
+            if c == u'':
                 continue
             more -= 1
             s += c
         # no sequence or decodable string found
         # decode as good as it gets
-        return s.decode(console.encoding, errors='replace'), None
+        return s, None

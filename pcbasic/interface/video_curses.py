@@ -25,6 +25,10 @@ from .base import video_plugins, InitFailed
 # so you don't see gibberish if the terminal doesn't support the sequence.
 from . import ansi
 
+# sys.stdout expects bytes
+SET_TITLE = ansi.SET_TITLE.encode('ascii')
+RESIZE_TERM = ansi.RESIZE_TERM.encode('ascii')
+
 
 ENCODING = locale.getpreferredencoding()
 
@@ -109,7 +113,7 @@ class VideoCurses(VideoPlugin):
         curses.start_color()
         self.can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
                               and curses.COLOR_PAIRS > 128)
-        sys.stdout.write(ansi.SET_TITLE % self.caption)
+        sys.stdout.write(SET_TITLE % self.caption)
         sys.stdout.flush()
         self._set_default_colours(16)
         bgcolor = self._curses_colour(7, 0, False)
@@ -190,7 +194,7 @@ class VideoCurses(VideoPlugin):
         by, bx = self.border_y, self.border_x
         # curses.resizeterm triggers KEY_RESIZE leading to a flickering loop
         # curses.resize_term doesn't resize the terminal
-        sys.stdout.write(ansi.RESIZE_TERM % (height + by*2, width + bx*2))
+        sys.stdout.write(RESIZE_TERM % (height + by*2, width + bx*2))
         sys.stdout.flush()
         self.underlay.resize(height + by*2, width + bx*2)
         self.window.resize(height, width)
@@ -408,9 +412,9 @@ class VideoCurses(VideoPlugin):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         if msg:
-            sys.stdout.write(ansi.SET_TITLE % (self.caption + ' - ' + msg))
+            sys.stdout.write(SET_TITLE % (self.caption + ' - ' + msg))
         else:
-            sys.stdout.write(ansi.SET_TITLE % self.caption)
+            sys.stdout.write(SET_TITLE % self.caption)
         sys.stdout.flush()
         # redraw in case terminal didn't recognise ansi sequence
         self._redraw()
