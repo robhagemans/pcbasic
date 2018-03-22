@@ -37,8 +37,8 @@ def write(s):
     sys.stdout.write(s)
     sys.stdout.flush()
 
-
+is_tty = sys.stdin.isatty()
 encoding = sys.stdout.encoding
 read = sys.stdin.read
 
-#TODO: isatty; make all args unicode
+#TODO: make all args unicode
