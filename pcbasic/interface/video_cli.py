@@ -222,36 +222,10 @@ class VideoCLI(VideoTextBase):
 class InputHandlerCLI(object):
     """Keyboard reader thread."""
 
-    # Note that we use a separate thread implementation because:
-    # * sys.stdin.read(1) is a blocking read
-    # * we need this to work on Windows as well as Unix, so select() won't do.
-
     def __init__(self, queue):
         """Start the keyboard reader."""
         self._input_queue = queue
         self._f12_active = False
-        self._launch_thread()
-
-    def _launch_thread(self):
-        """Start the keyboard reader thread."""
-        self._stdin_q = Queue.Queue()
-        t = threading.Thread(target=self._read_stdin)
-        t.daemon = True
-        t.start()
-
-    def _read_stdin(self):
-        """Wait for stdin and put any input on the queue."""
-        while True:
-            self._stdin_q.put(console.read(1))
-            # don't be a hog
-            time.sleep(0.0001)
-
-    def _getc(self):
-        """Read character from keyboard, non-blocking."""
-        try:
-            return self._stdin_q.get_nowait()
-        except Queue.Empty:
-            return u''
 
     def drain_queue(self):
         """Handle keyboard events."""
@@ -279,7 +253,7 @@ class InputHandlerCLI(object):
 
     def _get_key(self):
         """Retrieve one scancode sequence or one unicode char from keyboard."""
-        s = self._getc()
+        s = console.read_char()
         if s == u'':
             return None, None
         # ansi sequences start with \x1b
@@ -298,7 +272,7 @@ class InputHandlerCLI(object):
                     return uc, scan
             # give time for the queue to fill up
             time.sleep(0.0005)
-            c = self._getc()
+            c = console.read_char()
             cutoff -= 1
             if c == u'':
                 continue
