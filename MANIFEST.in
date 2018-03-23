@@ -8,4 +8,6 @@ include doc/*
 include pcbasic/data/*
 include pcbasic/data/*/*
 include pcbasic/lib/*
+include pcbasic/compat/*.c
+include pcbasic/compat/*.pyd
 prune test
