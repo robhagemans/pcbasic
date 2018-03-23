@@ -1,6 +1,6 @@
 """
-PC-BASIC - winsi
-Cross-platform console calls (posix version)
+PC-BASIC - posix_console
+POSIX console calls
 
 (c) 2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
