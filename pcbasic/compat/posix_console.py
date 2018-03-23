@@ -7,26 +7,23 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from collections import deque
-
-from .base import WIN32
-
-if WIN32:
-    # if the .pyd had been found, we'd not be loaded.
-    raise ImportError('Module `winsi.pyd` not found.')
-
-from .posix import read_all_available
-
 import termios
 import select
 import tty
 import sys
 
+from .posix import read_all_available
+
 
 # save termios state
 _term_attr = None
-
 # input buffer
 _read_buffer = deque()
+
+# console is a terminal (tty)
+is_tty = sys.stdin.isatty()
+# console encoding
+encoding = sys.stdout.encoding
 
 
 def set_raw():
@@ -64,6 +61,3 @@ def read_char():
     # not enough to decode, keep for next call
     _read_buffer.appendleft(output)
     return u''
-
-is_tty = sys.stdin.isatty()
-encoding = sys.stdout.encoding
