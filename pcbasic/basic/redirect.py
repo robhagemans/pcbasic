@@ -113,6 +113,7 @@ class OutputStreamWrapper(object):
     def write(self, s):
         """Write to codec stream."""
         self._stream.write(self._uniconv.to_unicode(s).encode(self._encoding, 'replace'))
+        self._stream.flush()
 
 
 class InputStreamWrapper(object):
