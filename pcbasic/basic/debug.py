@@ -49,7 +49,7 @@ def show_platform_info():
                 logging.info('%s: available', module)
     if WIN32:
         logging.info('\nLIBRARIES')
-        dlls = ('winsi.dll', 'sdl2.dll', 'sdl2_gfx.dll')
+        dlls = ('sdl2.dll', 'sdl2_gfx.dll')
         for dll in dlls:
             path = os.path.join(BASE_DIR, 'lib', dll)
             if os.path.isfile(path):

@@ -34,8 +34,13 @@ PyParallel is _not_ needed for printing to a CUPS or Windows printer.
 
 To use the graphical interface, you will also need to install the [`SDL2`](https://www.libsdl.org/download-2.0.php) library, which is _not_ included in the `pysdl2` package. Install the library in your OS's standard location. On Windows, you can alternatively place `sdl2.dll` in the `pcbasic\lib` directory.
 
-To use the text-based interfaces, you will need the [ANSI|pipe](http://github.com/robhagemans/ansipipe/releases) library `winsi.dll`.
-Place the DLL in the `pcbasic\lib` directory.
+To use the text-based interfaces on Windows, you need to compile the `win32_console` extension from C.
+The recommended compiler is the [Microsoft Visual C++ Compiler for Python 2.7](https://www.microsoft.com/en-us/download/details.aspx?id=44266);
+with this compiler installed, run
+
+        python setup.py build_ext --inplace
+
+and the `.pyd` extension will be built and put in the correct location.
 
 
 #### External tools ####
@@ -72,14 +77,11 @@ You'll also need [`git`](https://git-scm.com/) and all the PC-BASIC dependencies
         python -m pcbasic
 
 
-To build the supporting binaries for Windows, please refer to the compilation instructions for [SDL2](https://www.libsdl.org/), [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) and [ANSI|pipe](http://github.com/robhagemans/ansipipe/). You will need a C compiler such as [MinGW](http://mingw.org/) or [Microsoft Visual Studio](https://www.visualstudio.com/).
-
-
 #### Building `SDL2_gfx.dll` on Windows with MinGW GCC ###
-This plugin is needed if
+The [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) plugin is needed if
 you want to use the SDL2 interface with smooth scaling. Most Linux distributions will include this with their pysdl2 package.
-On Windows, you will need to compile from source. The official distribution includes a solution file for Microsoft Visual Studio;
-for those who prefer to use the MinGW GCC compiler, follow these steps:  
+On Windows, you will need to compile from source. The official distribution includes a solution file for [Microsoft Visual Studio](https://www.visualstudio.com/);
+for those who prefer to use the [MinGW](http://mingw.org/) GCC compiler, follow these steps:  
 
 1. Download and unpack the SDL2 binary, the SDL2 development package for MinGW and the SDL2_gfx source code archive. Note that the SDL2 development package contains several subdirectories for different architectures. You'll need the 32-bit version in `i686-w64-mingw32/`  
 
