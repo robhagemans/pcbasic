@@ -30,7 +30,7 @@ from . import memory
 from . import machine
 from . import interpreter
 from . import sound
-from . import redirect
+from . import iostreams
 from . import codepage as cp
 from . import values
 from . import parser
@@ -107,7 +107,7 @@ class Implementation(object):
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O streams
-        self.io_streams = redirect.IOStreams(self.codepage, input_file, output_file, append)
+        self.io_streams = iostreams.IOStreams(self.codepage, input_file, output_file, append)
         # set up input event handler
         # no interface yet; use dummy queues
         self.queues = eventcycle.EventQueues(

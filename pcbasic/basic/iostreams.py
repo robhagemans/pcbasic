@@ -1,5 +1,5 @@
 """
-PC-BASIC - redirect.py
+PC-BASIC - iostreams.py
 Input/output streams
 
 (c) 2014--2018 Rob Hagemans
