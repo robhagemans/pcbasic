@@ -96,14 +96,14 @@ class FunctionKeyMacros(object):
 class Editor(object):
     """Interactive environment."""
 
-    def __init__(self, screen, keyboard, sound, output_redirection, lpt1_file):
+    def __init__(self, screen, keyboard, sound, io_streams, lpt1_file):
         """Initialise environment."""
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
         self._screen = screen
         self._sound = sound
         self._keyboard = keyboard
-        self._redirect = output_redirection
+        self._io_streams = io_streams
         self._lpt1_file = lpt1_file
 
     def wait_screenline(self, write_endl=True, from_start=False):
@@ -115,7 +115,7 @@ class Editor(object):
             prompt_row, left, right = self._interact(prompt_width)
         except error.Break:
             # x0E CR LF is printed to redirects at break
-            self._redirect.write(b'\x0e')
+            self._io_streams.write(b'\x0e')
             # while only a line break appears on the console
             self._screen.write_line()
             raise
@@ -129,7 +129,7 @@ class Editor(object):
                     prompt_row, left, right)
         # redirects output exactly the contents of the logical line
         # including any trailing whitespace and chars past 255
-        self._redirect.write(outstr)
+        self._io_streams.write(outstr)
         # go to last row of logical line
         self._screen.current_row = self._screen.text.find_end_of_line(
                 self._screen.apagenum, self._screen.current_row)
@@ -213,7 +213,7 @@ class Editor(object):
                     self._screen.clear_view()
                 elif d == ea.CTRL_PRINT:
                     # ctrl+printscreen toggles printer copy
-                    self._redirect.toggle_echo(self._lpt1_file)
+                    self._io_streams.toggle_echo(self._lpt1_file)
                 else:
                     try:
                         # these are done on a less deep level than the fn key macros

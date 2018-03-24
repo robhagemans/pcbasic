@@ -129,7 +129,7 @@ class Display(object):
     """Display and video mode manipulation operations."""
 
     def __init__(self, queues, values, input_methods, memory,
-                initial_width, video_mem_size, capabilities, monitor, sound, redirect,
+                initial_width, video_mem_size, capabilities, monitor, sound, io_streams,
                 low_intensity, mono_tint, screen_aspect, codepage, fonts):
         """Initialise the display."""
         self.queues = queues
@@ -150,7 +150,7 @@ class Display(object):
         # text screen
         self.text_screen = TextScreen(
                 self.queues, self._values, self.mode, self.capabilities,
-                fonts, codepage, redirect, sound)
+                fonts, codepage, io_streams, sound)
         # graphics operations
         self.drawing = graphics.Drawing(self.queues, input_methods, self._values, self._memory)
         # colour palette

@@ -1,6 +1,6 @@
 """
 PC-BASIC - redirect.py
-Input/output redirection
+Input/output streams
 
 (c) 2014--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -15,11 +15,11 @@ from ..compat import WIN32, read_all_available
 from .base import signals
 
 
-class RedirectedIO(object):
-    """Manage I/O redirection to files, printers and stdio."""
+class IOStreams(object):
+    """Manage input/output to files, printers and stdio."""
 
     def __init__(self, codepage, input_file, output_file, append):
-        """Initialise redirects."""
+        """Initialise I/O streams."""
         self._stdio = False
         self._input_file = input_file
         self._output_file = output_file
@@ -32,7 +32,7 @@ class RedirectedIO(object):
         self._output_echos = []
 
     def write(self, s):
-        """Write a string/bytearray to all redirected outputs."""
+        """Write a string/bytearray to all stream outputs."""
         for f in self._output_echos:
             f.write(s)
 
