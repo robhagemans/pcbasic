@@ -13,18 +13,12 @@ import logging
 import pkg_resources
 import traceback
 
-# set locale - this is necessary for curses and *maybe* for clipboard handling
-# there's only one locale setting so best to do it all upfront here
-# NOTE that this affects str.upper() etc.
-locale.setlocale(locale.LC_ALL, '')
-
 from . import basic
 from . import state
 from . import config
 from .guard import ExceptionGuard, NOGUARD
 from .basic import __version__, debug
 from .interface import Interface, InitFailed
-
 
 def main(*arguments):
     """Wrapper for run() to deal with argv encodings, Ctrl-C, stdio and pipes."""

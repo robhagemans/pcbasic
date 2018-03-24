@@ -1,12 +1,11 @@
 """
-PC-BASIC - redirect.py
-Input/output redirection
+PC-BASIC - iostreams.py
+Input/output streams
 
 (c) 2014--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
-import threading
 import logging
 import sys
 import time
@@ -16,18 +15,18 @@ from ..compat import WIN32, read_all_available
 from .base import signals
 
 
-class RedirectedIO(object):
-    """Manage I/O redirection to files, printers and stdio."""
+class IOStreams(object):
+    """Manage input/output to files, printers and stdio."""
 
-    tick = 0.006
-
-    def __init__(self, codepage, input_file, output_file, append):
-        """Initialise redirects."""
+    def __init__(self, codepage, input_file, output_file, append, utf8):
+        """Initialise I/O streams."""
         self._stdio = False
         self._input_file = input_file
         self._output_file = output_file
         self._append = append
         self._codepage = codepage
+        # external encoding for files; None means raw codepage bytes
+        self._encoding = 'utf-8' if utf8 else None
         # input
         self._active = False
         self._input_streams = []
@@ -35,7 +34,7 @@ class RedirectedIO(object):
         self._output_echos = []
 
     def write(self, s):
-        """Write a string/bytearray to all redirected outputs."""
+        """Write a string/bytearray to all stream outputs."""
         for f in self._output_echos:
             f.write(s)
 
@@ -55,42 +54,37 @@ class RedirectedIO(object):
         finally:
             self._active = False
 
-    def attach(self, queues, stdio):
-        """Attach input queue and stdio and start stream reader threads."""
-        queue = queues.inputs
+    def attach_streams(self, stdio):
+        """Attach i/o streams."""
         if stdio and not self._stdio:
             self._stdio = True
-            self._output_echos.append(OutputStreamWrapper(
-                        sys.stdout, self._codepage, sys.stdout.encoding))
+            out_encoding = sys.stdout.encoding if sys.stdout.isatty() else self._encoding
+            in_encoding = sys.stdin.encoding if sys.stdin.isatty() else self._encoding
+            self._output_echos.append(
+                    OutputStreamWrapper(sys.stdout, self._codepage, out_encoding))
             lfcr = not WIN32 and sys.stdin.isatty()
-            self._input_streams.append(InputStreamWrapper(
-                        sys.stdin, self._codepage, sys.stdin.encoding, lfcr))
+            self._input_streams.append(
+                    InputStreamWrapper(sys.stdin, self._codepage, in_encoding, lfcr))
         if self._input_file:
             try:
                 self._input_streams.append(InputStreamWrapper(
-                        open(self._input_file, 'rb'), self._codepage, None, False))
+                        open(self._input_file, 'rb'), self._codepage, self._encoding, False))
             except EnvironmentError as e:
                 logging.warning(u'Could not open input file %s: %s', self._input_file, e.strerror)
         if self._output_file:
             mode = 'ab' if self._append else 'wb'
             try:
                 # raw codepage output to file
-                self._output_echos.append(open(self._output_file, mode))
+                self._output_echos.append(OutputStreamWrapper(
+                        open(self._output_file, mode), self._codepage, self._encoding))
             except EnvironmentError as e:
                 logging.warning(u'Could not open output file %s: %s', self._output_file, e.strerror)
-        # launch a daemon thread for each source
-        for stream in self._input_streams:
-            # launch a thread to allow nonblocking reads on both Windows and Unix
-            thread = threading.Thread(target=self._process_input, args=(stream, queue))
-            thread.daemon = True
-            thread.start()
 
-    def _process_input(self, stream, queue):
-        """Process input from stream."""
-        while True:
-            time.sleep(self.tick)
+    def process_input(self, queue):
+        """Process input from streams."""
+        for stream in self._input_streams:
             if not self._active:
-                continue
+                return
             instr = stream.read()
             if instr is None:
                 # input stream is closed, stop the thread
@@ -105,14 +99,18 @@ class OutputStreamWrapper(object):
 
     def __init__(self, stream, codepage, encoding):
         """Set up codec."""
-        self._encoding = encoding or 'utf-8'
+        self._encoding = encoding
         # converter with DBCS lead-byte buffer for utf8 output redirection
         self._uniconv = codepage.get_converter(preserve_control=True)
         self._stream = stream
 
     def write(self, s):
-        """Write to codec stream."""
-        self._stream.write(self._uniconv.to_unicode(s).encode(self._encoding, 'replace'))
+        """Write bytes to codec stream."""
+        if self._encoding:
+            self._stream.write(self._uniconv.to_unicode(s).encode(self._encoding, 'replace'))
+        else:
+            # raw output
+            self._stream.write(s)
         self._stream.flush()
 
 
@@ -122,13 +120,13 @@ class InputStreamWrapper(object):
     def __init__(self, stream, codepage, encoding, lfcr):
         """Set up codec."""
         self._codepage = codepage
-        self._encoding = encoding or 'utf-8'
+        self._encoding = encoding
         self._lfcr = lfcr
         self._stream = stream
 
     def read(self):
         """Read all chars available; nonblocking; returns unicode."""
-        # we need non-blocking readers to be able to deactivate the thread
+        # we need non-blocking readers
         s = read_all_available(self._stream)
         if s is None:
             return s

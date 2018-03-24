@@ -20,14 +20,14 @@ from .textbase import BottomBar, Cursor, ScrollArea
 class TextScreen(object):
     """Text screen."""
 
-    def __init__(self, queues, values, mode, capabilities, fonts, codepage, redirect, sound):
+    def __init__(self, queues, values, mode, capabilities, fonts, codepage, io_streams, sound):
         """Initialise text-related members."""
         self.queues = queues
         self._values = values
         self.codepage = codepage
         self.capabilities = capabilities
         # output redirection
-        self.redirect = redirect
+        self._io_streams = io_streams
         # sound output needed for printing \a
         self.sound = sound
         # cursor
@@ -122,7 +122,7 @@ class TextScreen(object):
         """Write a string to the screen at the current position."""
         if do_echo:
             # CR -> CRLF, CRLF -> CRLF LF
-            self.redirect.write(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
+            self._io_streams.write(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
         last = ''
         # if our line wrapped at the end before, it doesn't anymore
         self.text.pages[self.apagenum].row[self.current_row-1].wrap = False
@@ -234,7 +234,7 @@ class TextScreen(object):
     def start_line(self):
         """Move the cursor to the start of the next line, this line if empty."""
         if self.current_col != 1:
-            self.redirect.write('\r\n')
+            self._io_streams.write('\r\n')
             self._check_pos(scroll_ok=True)
             self.set_pos(self.current_row + 1, 1)
         # ensure line above doesn't wrap

@@ -30,7 +30,7 @@ from . import memory
 from . import machine
 from . import interpreter
 from . import sound
-from . import redirect
+from . import iostreams
 from . import codepage as cp
 from . import values
 from . import parser
@@ -104,15 +104,14 @@ class Implementation(object):
         ######################################################################
         # console
         ######################################################################
-        # set up input event handler
-        # no interface yet; use dummy queues
-        self.queues = eventcycle.EventQueues(self.values, ctrl_c_is_break, inputs=Queue.Queue())
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
-        # prepare I/O redirection
-        self.input_redirection = redirect.RedirectedIO(
-                self.codepage, input_file, output_file, append)
-        self.output_redirection = self.input_redirection
+        # prepare I/O streams
+        self.io_streams = iostreams.IOStreams(self.codepage, input_file, output_file, append, utf8)
+        # set up input event handler
+        # no interface yet; use dummy queues
+        self.queues = eventcycle.EventQueues(
+                self.values, self.io_streams, ctrl_c_is_break, inputs=Queue.Queue())
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, syntax)
         # Sound is needed for the beeps on \a
@@ -120,7 +119,7 @@ class Implementation(object):
         self.display = display.Display(
                 self.queues, self.values, self.queues,
                 self.memory, text_width, video_memory, video, monitor,
-                self.sound, self.output_redirection,
+                self.sound, self.io_streams,
                 low_intensity, mono_tint, aspect_ratio,
                 self.codepage, font)
         self.screen = self.display.text_screen
@@ -175,8 +174,7 @@ class Implementation(object):
                 self.keyboard, self.screen, self.basic_events.num_fn_keys)
         # initialise the editor
         self.editor = editor.Editor(
-                self.screen, self.keyboard, self.sound,
-                self.output_redirection, self.files.lpt1_file)
+                self.screen, self.keyboard, self.sound, self.io_streams, self.files.lpt1_file)
         ######################################################################
         # extensions
         ######################################################################
@@ -231,10 +229,10 @@ class Implementation(object):
             self.sound.rebuild()
         else:
             # use dummy video & audio queues if not provided
-            # but an input queue shouls be operational for redirects
+            # but an input queue should be operational for I/O streams
             self.queues.set(inputs=Queue.Queue())
-        # attach input queue to redirects
-        self.input_redirection.attach(self.queues, self._stdio and not interface)
+        # attach input queue to I/O streams
+        self.io_streams.attach_streams(self._stdio and not interface)
 
     def execute(self, command):
         """Execute a BASIC statement."""

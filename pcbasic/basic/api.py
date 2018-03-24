@@ -79,7 +79,7 @@ class Session(object):
     def execute(self, command):
         """Execute a BASIC statement."""
         self.start()
-        with self._impl.input_redirection.activate():
+        with self._impl.io_streams.activate():
             for cmd in command.splitlines():
                 if isinstance(cmd, unicode):
                     cmd = self._impl.codepage.str_from_unicode(cmd)
@@ -88,7 +88,7 @@ class Session(object):
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
         self.start()
-        with self._impl.input_redirection.activate():
+        with self._impl.io_streams.activate():
             if isinstance(expression, unicode):
                 expression = self._impl.codepage.str_from_unicode(expression)
             return self._impl.evaluate(expression)
@@ -111,7 +111,7 @@ class Session(object):
     def interact(self):
         """Interactive interpreter session."""
         self.start()
-        with self._impl.input_redirection.activate():
+        with self._impl.io_streams.activate():
             self._impl.interact()
 
     def close(self):
