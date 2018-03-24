@@ -79,6 +79,17 @@ These are the steps to set up the local repository ready to run PC-BASIC:
         python -m pcbasic
 
 
+#### Windows console notes ####
+When using PC-BASIC with a text-based interface on Windows, please note:
+- You need to set the console font to one of the TrueType fonts, for example Lucida Console.
+  The default raster font will not display non-ASCII letters correctly.
+
+- If the Windows console codepage is set to 65001, strange errors may occur when using `pcbasic -n` or the
+  Session API through standard I/O. For example, `IOError: [Errno 0] Error`.
+  This is a [known issue](https://bugs.python.org/issue1602) with
+  Python 2.7 and Windows. There is no fix; to work around it, change to another console codepage.
+
+
 #### Building `SDL2_gfx.dll` on Windows with MinGW GCC ###
 The [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) plugin is needed if
 you want to use the SDL2 interface with smooth scaling. Most Linux distributions will include this with their pysdl2 package.
