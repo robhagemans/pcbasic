@@ -95,14 +95,18 @@ class OutputStreamWrapper(object):
 
     def __init__(self, stream, codepage, encoding):
         """Set up codec."""
-        self._encoding = encoding or 'utf-8'
+        self._encoding = encoding
         # converter with DBCS lead-byte buffer for utf8 output redirection
         self._uniconv = codepage.get_converter(preserve_control=True)
         self._stream = stream
 
     def write(self, s):
-        """Write to codec stream."""
-        self._stream.write(self._uniconv.to_unicode(s).encode(self._encoding, 'replace'))
+        """Write bytes to codec stream."""
+        if self._encoding:
+            self._stream.write(self._uniconv.to_unicode(s).encode(self._encoding, 'replace'))
+        else:
+            # raw output
+            self._stream.write(s)
         self._stream.flush()
 
 
@@ -112,7 +116,7 @@ class InputStreamWrapper(object):
     def __init__(self, stream, codepage, encoding, lfcr):
         """Set up codec."""
         self._codepage = codepage
-        self._encoding = encoding or 'utf-8'
+        self._encoding = encoding
         self._lfcr = lfcr
         self._stream = stream
 
