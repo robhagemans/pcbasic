@@ -48,7 +48,6 @@ class IOStreams(object):
     @contextmanager
     def activate(self):
         """Grab and release input stream."""
-        # this is perhaps unnecessary without threads
         self._active = True
         try:
             yield

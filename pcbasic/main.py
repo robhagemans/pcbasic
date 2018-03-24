@@ -13,12 +13,6 @@ import logging
 import pkg_resources
 import traceback
 
-# set locale - this is necessary for curses and *maybe* for clipboard handling
-# there's only one locale setting so best to do it all upfront here
-# NOTE that this affects str.upper() etc.
-# don't do this on Windows as it makes the console codepage different from the stdout encoding ?
-locale.setlocale(locale.LC_ALL, '')
-
 from . import basic
 from . import state
 from . import config
