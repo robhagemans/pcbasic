@@ -14,7 +14,6 @@ See LICENSE.md or http://opensource.org/licenses/mit-license.php
 #define _WIN32_WINNT 0x0500
 #include <Python.h>
 #include <windows.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <process.h>
 #include <string.h>
@@ -218,14 +217,14 @@ static void console_fill(TERM *term, int x, int y, int len)
 static void console_scroll(TERM *term, int left, int top, int right, int bot, int x, int y)
 {
     SMALL_RECT rect;
+    CHAR_INFO char_info;
+    COORD pos;
     rect.Left = left;
     rect.Top = top;
     rect.Right = right;
     rect.Bottom = bot;
-    CHAR_INFO char_info;
     char_info.Char.AsciiChar = ' ';
     char_info.Attributes = term->attr;
-    COORD pos;
     pos.X = x;
     pos.Y = y;
     if (term->scroll_region.Bottom == term->height-2 && bot >= term->height-2 && y < top) {
@@ -247,11 +246,11 @@ static void console_scroll(TERM *term, int left, int top, int right, int bot, in
 
 static void console_set_pos(TERM *term, int x, int y)
 {
+    COORD pos;
     if (y < 0) y = 0;
     else if (y >= term->height) y = term->height - 1;
     if (x < 0) x = 0;
     else if (x >= term->width) x = term->width - 1;
-    COORD pos;
     pos.X = x;
     pos.Y = y;
     SetConsoleCursorPosition(term->handle, pos);
@@ -260,16 +259,16 @@ static void console_set_pos(TERM *term, int x, int y)
 static void console_resize(HANDLE term_handle, int width, int height)
 {
     CONSOLE_SCREEN_BUFFER_INFO buf_info;
+    COORD new_size;
+    SMALL_RECT new_screen;
+    new_size.X = width;
     GetConsoleScreenBufferInfo(handle_cout, &buf_info);
     // SetConsoleScreenBufferSize can't make the buffer smaller than the window (in either direction)
     // while SetConsoleWindowInfo can't make the window larger than the buffer (in either direction)
     // to allow for both shrinking and growing, we need to call one of the functions twice, and resize
     // each direction separately.
     // first adjust only the width
-    COORD new_size;
-    new_size.X = width;
     new_size.Y = buf_info.dwSize.Y;
-    SMALL_RECT new_screen;
     new_screen.Top = 0;
     new_screen.Left = 0;
     new_screen.Bottom = buf_info.dwSize.Y - 1;
@@ -315,6 +314,8 @@ typedef struct {
 static void ansi_output(TERM *term, SEQUENCE es)
 {
     if (es.prefix == L'[') {
+        int i;
+        int new_attr;
         if (es.prefix2 == L'?' && (es.suffix == L'h' || es.suffix == L'l')) {
             if (es.argc == 1 && es.argv[0] == 25) {
                 CONSOLE_CURSOR_INFO curs_info;
@@ -329,7 +330,6 @@ static void ansi_output(TERM *term, SEQUENCE es)
         switch (es.suffix) {
         case L'm':
             if (es.argc == 0) es.argv[es.argc++] = 0;
-            int i;
             for(i = 0; i < es.argc; i++) {
                 switch (es.argv[i]) {
                 case 0:
@@ -374,7 +374,6 @@ static void ansi_output(TERM *term, SEQUENCE es)
                 else if ((30 <= es.argv[i]) && (es.argv[i] <= 37))
                     term->foreground = es.argv[i] - 30;
             }
-            int new_attr;
             if (term->rvideo)
                 new_attr = foregroundcolor[term->background] | backgroundcolor[term->foreground];
             else
@@ -597,10 +596,21 @@ static void ansi_output(TERM *term, SEQUENCE es)
     }
 }
 
+// put char on string and echo
+// helper function for ansi_input
+void emit_char(WSTR *pwstr, wchar_t c) {
+    wstr_write_char(pwstr, c);
+    if (flags.echo) {
+        if (c == L'\r')
+            printf("\n");
+        else
+            printf("%lc", c);
+    }
+};
 
 // retrieve utf-8 and ansi sequences from standard input. 0 == success
 // length of buffer must be IO_BUFLEN
-static int ansi_input(wchar_t *wide_buffer, long *count)
+static int ansi_input(wchar_t *wide_buffer, unsigned long *count)
 {
     // event buffer size:
     // -  for utf8, buflen/4 is OK as one wchar is at most 4 chars of utf8
@@ -608,16 +618,10 @@ static int ansi_input(wchar_t *wide_buffer, long *count)
     // so buflen/5 events should fit in buflen wchars and buflen utf8 chars.
     // plus one char for NUL.
     WSTR wstr = wstr_create_empty(wide_buffer, IO_BUFLEN);
-    void emit_char(wchar_t c) {
-        wstr_write_char(&wstr, c);
-        if (flags.echo) {
-            if (c == L'\r')
-                printf("\n");
-            else
-                printf("%lc", c);
-        }
-    };
+    INPUT_RECORD events[(IO_BUFLEN-1)/5];
     unsigned long ecount;
+    unsigned int i;
+    wchar_t c;
     // avoid blocking
     if (!GetNumberOfConsoleInputEvents(handle_cin, &ecount))
         return 1;
@@ -625,18 +629,15 @@ static int ansi_input(wchar_t *wide_buffer, long *count)
         *count = 0;
         return 0;
     }
-    INPUT_RECORD events[(IO_BUFLEN-1)/5];
     if (!ReadConsoleInput(handle_cin, events, (IO_BUFLEN-1)/5, &ecount))
         return 1;
-    int i;
-    wchar_t c;
     for (i = 0; i < ecount; ++i) {
         if (events[i].EventType == KEY_EVENT) {
             if (!events[i].Event.KeyEvent.bKeyDown) {
                 if (events[i].Event.KeyEvent.wVirtualKeyCode == VK_MENU) {
                     // key-up event for unicode Alt+HEX input
                     c = events[i].Event.KeyEvent.uChar.UnicodeChar;
-                    emit_char(c);
+                    emit_char(&wstr, c);
                 }
             }
             else {
@@ -644,7 +645,7 @@ static int ansi_input(wchar_t *wide_buffer, long *count)
                     // ctrl or alt are down; don't parse arrow keys etc.
                     // but if any unicode is produced, send it on
                     c = events[i].Event.KeyEvent.uChar.UnicodeChar;
-                    emit_char(c);
+                    emit_char(&wstr, c);
                 }
                 else {
                     // insert ansi escape codes for arrow keys etc.
@@ -717,7 +718,7 @@ static int ansi_input(wchar_t *wide_buffer, long *count)
                         break;
                     default:
                         c = events[i].Event.KeyEvent.uChar.UnicodeChar;
-                        emit_char(c);
+                        emit_char(&wstr, c);
                     }
                 }
                 // overflow check
@@ -752,12 +753,12 @@ typedef struct {
 // initialise a new ansi sequence parser
 static void parser_init(PARSER *p, HANDLE handle)
 {
+    CONSOLE_SCREEN_BUFFER_INFO info;
     p->state = 1;
     p->term.handle = handle;
     p->term.foreground = foreground_default;
     p->term.background = background_default;
     // initialise scroll region to full screen
-    CONSOLE_SCREEN_BUFFER_INFO info;
     GetConsoleScreenBufferInfo(handle, &info);
     p->term.scroll_region.Left   = 0;
     p->term.scroll_region.Right  = info.dwSize.X - 1;
@@ -900,6 +901,7 @@ static unsigned int offset = 0;
 
 static void winsi_init()
 {
+    unsigned long dummy_mode;
     /* initialise globals */
     // stdio handles
     handle_cout = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -911,13 +913,12 @@ static void winsi_init()
     GetConsoleMode(handle_cin, &global_save_mode);
 
     // see http://stackoverflow.com/questions/1169591/check-if-output-is-redirected
-    unsigned long dummy_mode;
     global_is_console = GetConsoleMode(handle_cout, &dummy_mode);
     // prepare parser
     parser_init(&global_parser, handle_cout);
 }
 
-static void winsi_close()
+static void winsi_close(void)
 {
     /* restore console state */
     SetConsoleMode(handle_cin, global_save_mode);
@@ -928,6 +929,7 @@ static void winsi_close()
 
 static PyObject *winsi_read(PyObject *self, PyObject * args)
 {
+    unsigned long received = 0;
     if (!PyArg_ParseTuple(args, ""))
 		return NULL;
     Py_BEGIN_ALLOW_THREADS;
@@ -935,7 +937,6 @@ static PyObject *winsi_read(PyObject *self, PyObject * args)
         // empty buffer, use opportunity to reset buffer
         offset = 0;
     }
-    signed long received = 0;
     if (global_is_console) {
         // this uses IO_BUFLEN from count onwards -> need 2*IO_BUFLEN buffer
         if (ansi_input(global_buffer+offset+available, &received) != 0) {
@@ -946,7 +947,7 @@ static PyObject *winsi_read(PyObject *self, PyObject * args)
         // read directly from redirected stdin
         if (fgetws(global_buffer+offset+available, IO_BUFLEN, stdin))
             // fgets returns null-terminated string
-            received = wcslen(global_buffer+offset+available);
+            received = (unsigned long) wcslen(global_buffer+offset+available);
     }
     available += received;
     Py_END_ALLOW_THREADS;
