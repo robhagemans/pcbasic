@@ -167,8 +167,8 @@ class Shell(object):
                 continue
             elif c in (b'\r', b'\n'):
                 # put sentinel on queue
-                shell_output.append(None)
-                shell_cerr.append(None)
+                shell_output.append('')
+                shell_cerr.append('')
                 # send the command
                 self._send_input(p.stdin, word)
                 word = []
@@ -214,7 +214,7 @@ class Shell(object):
         if shell_output and self._detect_encoding(shell_output):
             # detect sentinel for start of new command
             # wait for at least one LF
-            if shell_output[0] is None:
+            if not shell_output[0]:
                 if b'\n' not in shell_output:
                     return
             # can't do a comprehension as it will crash if the deque is accessed by the thread
@@ -225,7 +225,7 @@ class Shell(object):
             if self._encoding == 'utf-16le' and lines[-1] != b'\0':
                 shell_output.appendleft(lines.pop())
             # detect echo
-            if lines[0] is None:
+            while not lines[0]:
                 lines.popleft()
                 while lines:
                     reply = lines.popleft()
