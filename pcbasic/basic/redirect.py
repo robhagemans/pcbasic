@@ -6,7 +6,6 @@ Input/output redirection
 This file is released under the GNU GPL version 3 or later.
 """
 
-import threading
 import logging
 import sys
 import time
@@ -18,8 +17,6 @@ from .base import signals
 
 class RedirectedIO(object):
     """Manage I/O redirection to files, printers and stdio."""
-
-    tick = 0.006
 
     def __init__(self, codepage, input_file, output_file, append):
         """Initialise redirects."""
@@ -49,15 +46,15 @@ class RedirectedIO(object):
     @contextmanager
     def activate(self):
         """Grab and release input stream."""
+        # this is perhaps unnecessary without threads
         self._active = True
         try:
             yield
         finally:
             self._active = False
 
-    def attach(self, queues, stdio):
-        """Attach input queue and stdio and start stream reader threads."""
-        queue = queues.inputs
+    def attach_streams(self, stdio):
+        """Attach i/o streams."""
         if stdio and not self._stdio:
             self._stdio = True
             self._output_echos.append(OutputStreamWrapper(
@@ -78,19 +75,12 @@ class RedirectedIO(object):
                 self._output_echos.append(open(self._output_file, mode))
             except EnvironmentError as e:
                 logging.warning(u'Could not open output file %s: %s', self._output_file, e.strerror)
-        # launch a daemon thread for each source
-        for stream in self._input_streams:
-            # launch a thread to allow nonblocking reads on both Windows and Unix
-            thread = threading.Thread(target=self._process_input, args=(stream, queue))
-            thread.daemon = True
-            thread.start()
 
-    def _process_input(self, stream, queue):
-        """Process input from stream."""
-        while True:
-            time.sleep(self.tick)
+    def process_input(self, queue):
+        """Process input from streams."""
+        for stream in self._input_streams:
             if not self._active:
-                continue
+                return
             instr = stream.read()
             if instr is None:
                 # input stream is closed, stop the thread
@@ -128,7 +118,7 @@ class InputStreamWrapper(object):
 
     def read(self):
         """Read all chars available; nonblocking; returns unicode."""
-        # we need non-blocking readers to be able to deactivate the thread
+        # we need non-blocking readers
         s = read_all_available(self._stream)
         if s is None:
             return s

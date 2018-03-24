@@ -104,15 +104,16 @@ class Implementation(object):
         ######################################################################
         # console
         ######################################################################
-        # set up input event handler
-        # no interface yet; use dummy queues
-        self.queues = eventcycle.EventQueues(self.values, ctrl_c_is_break, inputs=Queue.Queue())
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
-        # prepare I/O redirection
+        # prepare I/O streams
         self.input_redirection = redirect.RedirectedIO(
                 self.codepage, input_file, output_file, append)
         self.output_redirection = self.input_redirection
+        # set up input event handler
+        # no interface yet; use dummy queues
+        self.queues = eventcycle.EventQueues(
+                self.values, self.input_redirection, ctrl_c_is_break, inputs=Queue.Queue())
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, syntax)
         # Sound is needed for the beeps on \a
@@ -234,7 +235,7 @@ class Implementation(object):
             # but an input queue shouls be operational for redirects
             self.queues.set(inputs=Queue.Queue())
         # attach input queue to redirects
-        self.input_redirection.attach(self.queues, self._stdio and not interface)
+        self.input_redirection.attach_streams(self._stdio and not interface)
 
     def execute(self, command):
         """Execute a BASIC statement."""
