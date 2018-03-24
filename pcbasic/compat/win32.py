@@ -221,10 +221,13 @@ def line_print(printbuf, printer, printfile):
 # key pressed on keyboard
 from msvcrt import kbhit as key_pressed
 
-# set stdio as binary, to avoid Windows messing around with CRLFs
-msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-
+try:
+    # set stdio as binary, to avoid Windows messing around with CRLFs
+    msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+    msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+except EnvironmentError:
+    # raises an error if started in gui mode, as we have no stdio
+    pass
 
 def read_all_available(stream):
     """Read all available characters from a stream; nonblocking; None if closed."""
