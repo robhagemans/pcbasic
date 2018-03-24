@@ -14,7 +14,7 @@ from os import path
 
 # obtain metadata without importing the package (to avoid breaking setup)
 with open(
-        path.join(path.abspath(path.dirname(__file__)), 'pcbasic', 'metadata.py'), 
+        path.join(path.abspath(path.dirname(__file__)), 'pcbasic', 'metadata.py'),
         encoding='utf-8') as f:
     exec(f.read())
 
@@ -60,19 +60,27 @@ class SDistCommand(setuptools.command.sdist.sdist):
 # metadata
 # see https://github.com/pypa/sampleproject
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 #from cx_Freeze import setup, Executable
 import sys
+import platform
 
 # platform-specific settings
 if sys.platform == 'win32':
     platform_specific_requirements = []
     console_scripts = ['pcbasic=pcbasic:main']
     gui_scripts = ['pcbasicw=pcbasic:main']
+    # use different names for 32- and 64-bit pyds to allow them to stay side-by-side in place
+    if platform.architecture()[0] == '32bit':
+        console_name = 'win32_x86_console'
+    else:
+        console_name = 'win32_x64_console'
+    ext_modules = [Extension('pcbasic.compat.' + console_name, ['pcbasic/compat/win32_console.c'])]
 else:
     platform_specific_requirements = []
     console_scripts = ['pcbasic=pcbasic:main']
     gui_scripts = []
+    ext_modules = []
 
 setup(
 
@@ -113,6 +121,8 @@ setup(
                 'pcbasic/lib/*',
             ],
     },
+
+    ext_modules=ext_modules,
 
     include_package_data=True,
 

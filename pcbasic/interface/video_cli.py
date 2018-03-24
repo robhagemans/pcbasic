@@ -17,7 +17,7 @@ from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from ..compat import UEOF, WINSI, enable_ansi_console, set_raw_console, unset_raw_console
+from ..compat import UEOF, console
 
 
 # escape sequence to scancode
@@ -50,26 +50,23 @@ class VideoTextBase(VideoPlugin):
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise text-based interface."""
-        if not sys.stdin.isatty():
+        if not console:
+            raise InitFailed('Extension module `win32_console` not compiled.')
+        if not console.is_tty:
             raise InitFailed('Not a terminal (tty).')
-        elif not WINSI:
-            raise InitFailed('Module `winsi.dll` not found.')
         VideoPlugin.__init__(self, input_queue, video_queue)
-        # start winsi
-        enable_ansi_console()
         # start the stdin thread for non-blocking reads
         self._input_handler = InputHandlerCLI(input_queue)
 
     def __enter__(self):
         """Open text-based interface."""
         VideoPlugin.__enter__(self)
-        fd = sys.stdin.fileno()
-        set_raw_console()
+        console.set_raw()
 
     def __exit__(self, exc_type, value, traceback):
         """Close text-based interface."""
         try:
-            unset_raw_console()
+            console.unset_raw()
         finally:
             VideoPlugin.__exit__(self, exc_type, value, traceback)
 
@@ -101,7 +98,7 @@ class VideoCLI(VideoTextBase):
         """Close command-line interface."""
         try:
             if self._col != 1:
-                sys.stdout.write(b'\r\n')
+                console.write(u'\r\n')
         finally:
             VideoTextBase.__exit__(self, type, value, traceback)
 
@@ -126,8 +123,8 @@ class VideoCLI(VideoTextBase):
             # may have to update row!
             if row != self._last_row or col != self._col:
                 self._update_position(row, col)
-            sys.stdout.write(char.encode(sys.stdin.encoding, 'replace'))
-            sys.stdout.flush()
+            console.write(char)
+            #console.flush()
             self._col = (col+2) if is_fullwidth else (col+1)
         # the terminal cursor has moved, so we'll need to move it back later
         # if that's not where we want to be
@@ -148,8 +145,8 @@ class VideoCLI(VideoTextBase):
         if (self._vpagenum == self._apagenum and
                 start <= self._cursor_row and stop >= self._cursor_row):
             self._update_position(self._cursor_row, 1)
-            sys.stdout.write(ansi.CLEAR_LINE)
-            sys.stdout.flush()
+            console.write(ansi.CLEAR_LINE.decode('ascii'))
+            #console.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
@@ -159,8 +156,8 @@ class VideoCLI(VideoTextBase):
             )
         if self._vpagenum != self._apagenum:
             return
-        sys.stdout.write('\r\n')
-        sys.stdout.flush()
+        console.write(u'\r\n')
+        #console.flush()
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
@@ -193,17 +190,17 @@ class VideoCLI(VideoTextBase):
             return
         self._update_col(1)
         rowtext = (u''.join(self._text[self._vpagenum][row-1]))
-        sys.stdout.write(rowtext.encode(sys.stdin.encoding, 'replace').replace('\0', ' '))
+        console.write(rowtext.replace(u'\0', u' '))
         self._col = len(self._text[self._vpagenum][row-1])+1
-        sys.stdout.flush()
+        #console.flush()
 
     def _update_position(self, row, col):
         """Move terminal print location."""
         # move cursor if necessary
         if row and row != self._last_row:
             if self._last_row:
-                sys.stdout.write(b'\r\n')
-                sys.stdout.flush()
+                console.write(u'\r\n')
+                #console.flush()
                 self._col = 1
             self._last_row = row
             # show what's on the line where we are.
@@ -214,11 +211,11 @@ class VideoCLI(VideoTextBase):
         """Move terminal print column."""
         if col != self._col:
             if self._col > col:
-                sys.stdout.write(ansi.MOVE_N_LEFT % (self._col-col))
-                sys.stdout.flush()
+                console.write(ansi.MOVE_N_LEFT.decode('ascii') % (self._col-col))
+                #console.flush()
             elif self._col < col:
-                sys.stdout.write(ansi.MOVE_N_RIGHT % (col-self._col))
-                sys.stdout.flush()
+                console.write(ansi.MOVE_N_RIGHT.decode('ascii') % (col-self._col))
+                #console.flush()
             self._col = col
 
 
@@ -227,36 +224,10 @@ class VideoCLI(VideoTextBase):
 class InputHandlerCLI(object):
     """Keyboard reader thread."""
 
-    # Note that we use a separate thread implementation because:
-    # * sys.stdin.read(1) is a blocking read
-    # * we need this to work on Windows as well as Unix, so select() won't do.
-
     def __init__(self, queue):
         """Start the keyboard reader."""
         self._input_queue = queue
         self._f12_active = False
-        self._launch_thread()
-
-    def _launch_thread(self):
-        """Start the keyboard reader thread."""
-        self._stdin_q = Queue.Queue()
-        t = threading.Thread(target=self._read_stdin)
-        t.daemon = True
-        t.start()
-
-    def _read_stdin(self):
-        """Wait for stdin and put any input on the queue."""
-        while True:
-            self._stdin_q.put(sys.stdin.read(1))
-            # don't be a hog
-            time.sleep(0.0001)
-
-    def _getc(self):
-        """Read character from keyboard, non-blocking."""
-        try:
-            return self._stdin_q.get_nowait()
-        except Queue.Empty:
-            return ''
 
     def drain_queue(self):
         """Handle keyboard events."""
@@ -284,35 +255,31 @@ class InputHandlerCLI(object):
 
     def _get_key(self):
         """Retrieve one scancode sequence or one unicode char from keyboard."""
-        s = self._getc()
-        if s == '':
+        s = console.read_char()
+        if s == u'':
             return None, None
         # ansi sequences start with \x1b
         esc = (s == ansi.ESC)
-        # escape sequences are at most 5 and UTF-8 at most 4 chars long
+        # escape sequences are at most 5 chars long
         more = 5
         cutoff = 100
+        if not esc:
+            return s, None
         while (more > 0) and (cutoff > 0):
             if esc:
                 # return the first recognised escape sequence
-                uc = ESC_TO_EASCII.get(s, '')
+                uc = ESC_TO_EASCII.get(s, u'')
                 scan = ESC_TO_SCAN.get(s, None)
                 if uc or scan:
                     return uc, scan
-            else:
-                # return the first recognised encoding sequence
-                try:
-                    return s.decode(sys.stdin.encoding), None
-                except UnicodeDecodeError:
-                    pass
             # give time for the queue to fill up
             time.sleep(0.0005)
-            c = self._getc()
+            c = console.read_char()
             cutoff -= 1
-            if c == '':
+            if c == u'':
                 continue
             more -= 1
             s += c
         # no sequence or decodable string found
         # decode as good as it gets
-        return s.decode(sys.stdin.encoding, errors='replace'), None
+        return s, None

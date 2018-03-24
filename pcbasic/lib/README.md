@@ -7,4 +7,3 @@ Windows
 -------
 `SDL2.dll`  
 `SDL2_gfx.dll`  
-`winsi.dll`  

@@ -13,8 +13,8 @@ import codecs
 import logging
 import threading
 import subprocess
+import msvcrt
 
-from .winsi import ORIG_STDIN_ENCODING
 from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD, HINSTANCE, HANDLE, HKEY, BOOL
 from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong, byref
 
@@ -34,7 +34,7 @@ EOL = b'\r\n'
 codecs.register(lambda name: codecs.lookup('utf-8') if name == 'cp65001' else None)
 
 # original stdin codepage
-_CONSOLE_ENCODING = ORIG_STDIN_ENCODING
+_CONSOLE_ENCODING = sys.stdin.encoding
 # there's also an ACP codepage - this seems to be locale.getpreferredencoding()
 #_ACP_ENCODING = 'cp' + str(cdll.kernel32.GetACP())
 
@@ -69,9 +69,6 @@ HIDE_WINDOW.wShowWindow = 0 # SW_HIDE
 
 ##############################################################################
 # various
-
-# key pressed on keyboard
-from msvcrt import kbhit as key_pressed
 
 # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
 # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
@@ -216,3 +213,28 @@ def line_print(printbuf, printer, printfile):
             # launch non-daemon thread to wait for handle
             # to ensure we don't lose the print if triggered on exit
             threading.Thread(target=_wait_for_process, args=(sei.hProcess)).start()
+
+
+##############################################################################
+# non-blocking input
+
+# key pressed on keyboard
+from msvcrt import kbhit as key_pressed
+
+
+def read_all_available(stream):
+    """Read all available characters from a stream; nonblocking; None if closed."""
+    if stream == sys.stdin:
+        instr = []
+        # get characters while keyboard buffer has them available
+        # this does not echo
+        while msvcrt.kbhit():
+            c = msvcrt.getch()
+            if not c:
+                return None
+            instr.append(c)
+        return b''.join(instr)
+    else:
+        # this would work on unix too
+        # just read the whole file and be done with it
+        return stream.read() or None
