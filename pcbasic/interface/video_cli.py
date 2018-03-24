@@ -50,6 +50,8 @@ class VideoTextBase(VideoPlugin):
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise text-based interface."""
+        if not console:
+            raise InitFailed('Extension module `win32_console` not compiled.')
         if not console.is_tty:
             raise InitFailed('Not a terminal (tty).')
         VideoPlugin.__init__(self, input_queue, video_queue)
