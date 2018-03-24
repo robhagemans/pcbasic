@@ -14,6 +14,7 @@ import subprocess
 import fcntl
 import termios
 import array
+import struct
 
 # set locale - this is necessary for curses and *maybe* for clipboard handling
 # there's only one locale setting so best to do it all upfront here
@@ -39,6 +40,13 @@ HIDE_WINDOW = None
 
 ##############################################################################
 # various
+
+# preserve original terminal size
+try:
+    TERM_SIZE = struct.unpack(
+        'HHHH', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, b'\0'*8))[:2]
+except Exception:
+    TERM_SIZE = 25, 80
 
 def set_dpi_aware():
     """Enable HiDPI awareness."""

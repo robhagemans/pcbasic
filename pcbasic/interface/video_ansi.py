@@ -13,7 +13,7 @@ from .video import VideoPlugin
 from .base import video_plugins
 from . import video_cli
 from . import ansi
-from ..compat import console
+from ..compat import console, TERM_SIZE
 
 
 @video_plugins.register('ansi')
@@ -55,6 +55,7 @@ class VideoANSI(video_cli.VideoTextBase):
         """Close ANSI interface."""
         try:
             console.write(ansi.SET_COLOUR % 0)
+            console.write(ansi.RESIZE_TERM % TERM_SIZE)
             console.write(ansi.CLEAR_SCREEN)
             console.write(ansi.MOVE_CURSOR % (1, 1))
             self.show_cursor(True)

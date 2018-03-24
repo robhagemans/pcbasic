@@ -14,6 +14,7 @@ import logging
 import threading
 import subprocess
 import msvcrt
+import struct
 
 from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD, HINSTANCE, HANDLE, HKEY, BOOL
 from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong, byref
@@ -69,6 +70,22 @@ HIDE_WINDOW.wShowWindow = 0 # SW_HIDE
 
 ##############################################################################
 # various
+
+# preserve original terminal size
+def _get_term_size():
+    """Get size of terminal window."""
+    try:
+        STD_OUTPUT_HANDLE = -11
+        handle = windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+        csbi = ctypes.create_string_buffer(22)
+        res = windll.kernel32.GetConsoleScreenBufferInfo(handle, csbi)
+        if res:
+            _, _, _, _, _, left, top, right, bottom, _, _ = struct.unpack("hhhhHhhhhhh", csbi.raw)
+            return bottom-top+1, right-left+1
+    except Exception:
+        return 25, 80
+
+TERM_SIZE = _get_term_size()
 
 # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
 # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
