@@ -34,14 +34,6 @@ PyParallel is _not_ needed for printing to a CUPS or Windows printer.
 
 To use the graphical interface, you will also need to install the [`SDL2`](https://www.libsdl.org/download-2.0.php) library, which is _not_ included in the `pysdl2` package. Install the library in your OS's standard location. On Windows, you can alternatively place `sdl2.dll` in the `pcbasic\lib` directory.
 
-To use the text-based interfaces on Windows, you need to compile the `win32_console` extension from C.
-The recommended compiler is the [Microsoft Visual C++ Compiler for Python 2.7](https://www.microsoft.com/en-us/download/details.aspx?id=44266);
-with this compiler installed, run
-
-        python setup.py build_ext --inplace
-
-and the `.pyd` extension will be built and put in the correct location.
-
 
 #### External tools ####
 PC-BASIC employs the following external command-line tools, if available:
@@ -56,13 +48,19 @@ PC-BASIC employs the following external command-line tools, if available:
 
 
 #### Building from GitHub source repository ####
-The Python distribution of PC-BASIC contains precompiled documentation files.
-If you wish to use the source code as-is in the Git repo,
-you'll need to build these yourself. Compiling the documentation requires the Python modules
-[`lxml`](https://pypi.python.org/pypi/lxml/3.4.3) and [`markdown`](https://pypi.python.org/pypi/Markdown).
-Testing additionally requires [`pylint`](https://pypi.python.org/pypi/pylint/1.7.6) and [`coverage`](https://pypi.python.org/pypi/coverage).
-You'll also need [`git`](https://git-scm.com/) and all the PC-BASIC dependencies listed above.
+The following additional packages are needed for development and testing:
 
+| Package                                                                                                        | OS      | Used for
+|----------------------------------------------------------------------------------------------------------------|---------|-----------------
+| [`git`](https://git-scm.com/)                                                                                  | all     | development
+| [Microsoft Visual C++ Compiler for Python 2.7](https://www.microsoft.com/en-us/download/details.aspx?id=44266) | Windows | development
+| [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3)                                                              | all     | documentation
+| [`markdown`](https://pypi.python.org/pypi/Markdown)                                                            | all     | documentation
+| [`pylint`](https://pypi.python.org/pypi/pylint/1.7.6)                                                          | all     | testing
+| [`coverage`](https://pypi.python.org/pypi/coverage)                                                            | all     | testing
+
+
+These are the steps to set up the local repository ready to run PC-BASIC:
 
 1. Clone the repo from GitHub
 
@@ -72,7 +70,11 @@ You'll also need [`git`](https://git-scm.com/) and all the PC-BASIC dependencies
 
         python setup.py build_docs
 
-3. Run pcbasic directly from the source directory
+3. Windows only: compile the `win32_console` extension
+
+        python setup.py build_ext --inplace
+
+4. Run pcbasic directly from the source directory
 
         python -m pcbasic
 
