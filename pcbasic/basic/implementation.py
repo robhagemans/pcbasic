@@ -107,7 +107,7 @@ class Implementation(object):
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O streams
-        self.io_streams = iostreams.IOStreams(self.codepage, input_file, output_file, append)
+        self.io_streams = iostreams.IOStreams(self.codepage, input_file, output_file, append, utf8)
         # set up input event handler
         # no interface yet; use dummy queues
         self.queues = eventcycle.EventQueues(

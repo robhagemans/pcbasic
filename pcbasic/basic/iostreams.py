@@ -18,13 +18,15 @@ from .base import signals
 class IOStreams(object):
     """Manage input/output to files, printers and stdio."""
 
-    def __init__(self, codepage, input_file, output_file, append):
+    def __init__(self, codepage, input_file, output_file, append, utf8):
         """Initialise I/O streams."""
         self._stdio = False
         self._input_file = input_file
         self._output_file = output_file
         self._append = append
         self._codepage = codepage
+        # external encoding for files; None means raw codepage bytes
+        self._encoding = 'utf-8' if utf8 else None
         # input
         self._active = False
         self._input_streams = []
@@ -57,22 +59,25 @@ class IOStreams(object):
         """Attach i/o streams."""
         if stdio and not self._stdio:
             self._stdio = True
-            self._output_echos.append(OutputStreamWrapper(
-                        sys.stdout, self._codepage, sys.stdout.encoding))
+            out_encoding = sys.stdout.encoding if sys.stdout.isatty() else self._encoding
+            in_encoding = sys.stdin.encoding if sys.stdin.isatty() else self._encoding
+            self._output_echos.append(
+                    OutputStreamWrapper(sys.stdout, self._codepage, out_encoding))
             lfcr = not WIN32 and sys.stdin.isatty()
-            self._input_streams.append(InputStreamWrapper(
-                        sys.stdin, self._codepage, sys.stdin.encoding, lfcr))
+            self._input_streams.append(
+                    InputStreamWrapper(sys.stdin, self._codepage, in_encoding, lfcr))
         if self._input_file:
             try:
                 self._input_streams.append(InputStreamWrapper(
-                        open(self._input_file, 'rb'), self._codepage, None, False))
+                        open(self._input_file, 'rb'), self._codepage, self._encoding, False))
             except EnvironmentError as e:
                 logging.warning(u'Could not open input file %s: %s', self._input_file, e.strerror)
         if self._output_file:
             mode = 'ab' if self._append else 'wb'
             try:
                 # raw codepage output to file
-                self._output_echos.append(open(self._output_file, mode))
+                self._output_echos.append(OutputStreamWrapper(
+                        open(self._output_file, mode), self._codepage, self._encoding))
             except EnvironmentError as e:
                 logging.warning(u'Could not open output file %s: %s', self._output_file, e.strerror)
 
