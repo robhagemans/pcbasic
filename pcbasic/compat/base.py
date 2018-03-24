@@ -8,11 +8,15 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import sys
+import platform
 
 
 # platform constants
 WIN32 = sys.platform == 'win32'
 MACOS = sys.platform == 'darwin'
+
+# 64-bit (needed for Windows binary modules)
+X64 = platform.architecture()[0] == '64bit'
 
 # user configuration and state directories
 HOME_DIR = os.path.expanduser(u'~')

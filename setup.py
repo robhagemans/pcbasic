@@ -63,13 +63,19 @@ class SDistCommand(setuptools.command.sdist.sdist):
 from setuptools import setup, find_packages, Extension
 #from cx_Freeze import setup, Executable
 import sys
+import platform
 
 # platform-specific settings
 if sys.platform == 'win32':
     platform_specific_requirements = []
     console_scripts = ['pcbasic=pcbasic:main']
     gui_scripts = ['pcbasicw=pcbasic:main']
-    ext_modules = [Extension('pcbasic.compat.win32_console', ['pcbasic/compat/win32_console.c'])]
+    # use different names for 32- and 64-bit pyds to allow them to stay side-by-side in place
+    if platform.architecture()[0] == '32bit':
+        console_name = 'win32_x86_console'
+    else:
+        console_name = 'win32_x64_console'
+    ext_modules = [Extension('pcbasic.compat.' + console_name, ['pcbasic/compat/win32_console.c'])]
 else:
     platform_specific_requirements = []
     console_scripts = ['pcbasic=pcbasic:main']

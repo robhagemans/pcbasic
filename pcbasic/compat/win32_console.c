@@ -21,6 +21,16 @@ See LICENSE.md or http://opensource.org/licenses/mit-license.php
 #include <ctype.h>
 #include <io.h>
 
+// include arch in module name
+// so we can have 32bit and 64bit side by side for convenience
+#ifdef _WIN64
+    #define MODULE_NAME "win32_x64_console"
+    #define INIT initwin32_x64_console
+#else
+    #define MODULE_NAME "win32_x86_console"
+    #define INIT initwin32_x86_console
+#endif
+
 
 // define bool, for C < C99
 typedef enum { false, true } bool;
@@ -995,8 +1005,7 @@ static PyObject *winsi_unsetraw(PyObject *self, PyObject * args)
 }
 
 
-PyMODINIT_FUNC
-initwin32_console(void)
+PyMODINIT_FUNC INIT(void)
 {
 	PyObject *m;
 	static PyMethodDef WinsiMethods[] = {
@@ -1007,7 +1016,7 @@ initwin32_console(void)
 		{NULL, NULL, 0, NULL}
 	};
 
-    m = Py_InitModule("win32_console", WinsiMethods);
+    m = Py_InitModule(MODULE_NAME, WinsiMethods);
 	if (!m) return;
 
     winsi_init();
@@ -1033,5 +1042,5 @@ int main(int argc, char *argv[])
 {
 	Py_SetProgramName(argv[0]);
 	Py_Initialize();
-	initwin32_console();
+	INIT();
 }
