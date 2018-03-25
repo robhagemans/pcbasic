@@ -119,7 +119,7 @@ class VideoPygame(VideoPlugin):
                 display_info.current_w, display_info.current_h,
                 scaling, dimensions, aspect_ratio, border_width, fullscreen)
         # determine initial display size
-        self.display_size = self._window_sizer.find_display_size(640, 400)
+        self.display_size = self._window_sizer.find_display_size(720, 400)
         self._set_icon(icon)
         try:
             self._resize_display(*self.display_size)
@@ -231,8 +231,8 @@ class VideoPygame(VideoPlugin):
                                                       (event.joy, event.axis,
                                                       int(event.value*127 + 128))))
             elif event.type == pygame.VIDEORESIZE:
-                self.fullscreen = False
-                self._resize_display(event.w, event.h)
+                if not self.fullscreen:
+                    self._resize_display(event.w, event.h)
             elif event.type == pygame.QUIT:
                 if self._nokill:
                     self.set_caption_message(NOKILL_MESSAGE)
@@ -414,9 +414,10 @@ class VideoPygame(VideoPlugin):
 
     def _resize_display(self, width, height):
         """Change the display size."""
-        flags = pygame.RESIZABLE
         if self.fullscreen:
-            flags |= pygame.FULLSCREEN | pygame.NOFRAME
+            flags = pygame.FULLSCREEN | pygame.NOFRAME
+        else:
+            flags = pygame.RESIZABLE
         self.display = pygame.display.set_mode((width, height), flags)
         self._window_sizer.window_size = width, height
         # load display if requested

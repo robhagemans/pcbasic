@@ -433,7 +433,7 @@ class VideoSDL2(VideoPlugin):
         # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
         self._display = None
         self._work_surface = None
-        self._do_create_window(*self._window_sizer.find_display_size(640, 400))
+        self._do_create_window(*self._window_sizer.find_display_size(720, 400))
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self._display)
         # workaround for duplicated keypresses after Alt (at least on Ubuntu Unity)
