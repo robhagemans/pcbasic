@@ -50,7 +50,7 @@ def read_char():
         if not _read_buffer:
             return u'\x04'
     else:
-        _read_buffer.append(s)
+        _read_buffer.extend(list(s))
     output = []
     while _read_buffer:
         output.append(_read_buffer.popleft())
@@ -59,5 +59,5 @@ def read_char():
         except UnicodeDecodeError:
             pass
     # not enough to decode, keep for next call
-    _read_buffer.appendleft(output)
+    _read_buffer.extendleft(output)
     return u''
