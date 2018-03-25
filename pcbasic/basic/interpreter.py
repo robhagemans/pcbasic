@@ -103,8 +103,9 @@ class Interpreter(object):
                         linenum = struct.unpack_from('<H', token, 2)
                         self._screen.write(b'[%i]' % linenum)
                     self.step(token)
-                elif c != b':':
-                    ins.seek(-len(c), 1)
+                elif c not in (b':', tk.THEN, tk.ELSE, tk.GOTO):
+                    # new statement or branch of an IF statement allowed, nothing else
+                    raise error.BASICError(error.STX)
                 self.parser.parse_statement(ins)
             except error.BASICError as e:
                 self.trap_error(e)
@@ -311,7 +312,9 @@ class Interpreter(object):
             # go back to position of GOSUB
             self.set_pointer(orig_runmode, pos)
             # ignore rest of statement ('GOSUB 100 LAH' works just fine..)
-            self.get_codestream().skip_to(tk.END_STATEMENT)
+            # but NOT if we jumped for an event, as we might have jumped from anywhere!
+            if not handler:
+                self.get_codestream().skip_to(tk.END_STATEMENT)
         else:
             # jump to specified line number
             self.jump(jumpnum)
@@ -324,8 +327,9 @@ class Interpreter(object):
         # get condition
         # avoid overflow: don't use bools.
         val = values.to_single(next(args))
+        # parse_if cofunction requires THEN or GOTO here
         if val.is_zero():
-            # find corrrect ELSE block, if any
+            # find correct ELSE block, if any
             # ELSEs may be nested in the THEN clause
             ins = self.get_codestream()
             nesting_level = 0
@@ -342,17 +346,30 @@ class Interpreter(object):
                             nesting_level -= 1
                         else:
                             # read line number or continue execution
+                            # cofunction checks for line number and completes
+                            branch, = args
+                            # we may have a line number immediately after THEN or ELSE
+                            if branch is not None:
+                                self.jump(branch)
+                            else:
+                                # position ourselves on top of the THEN, GOTO or ELSE token
+                                self.get_codestream().backskip_blank()
                             break
                 else:
+                    # end of line, don't look for line number
                     ins.seek(-len(d), 1)
                     break
-        branch, = args
-        # we may have a line number immediately after THEN or ELSE
-        if branch is not None:
-            self.jump(branch)
-        # otherwise continue parsing as normal from next statement after THEN
-        # note that any :ELSE block encountered will be ignored automatically
-        # since standalone ELSE is a no-op to end of line
+        else:
+            # cofunction checks for line number and completes
+            branch, = args
+            # we may have a line number immediately after THEN or ELSE
+            if branch is not None:
+                self.jump(branch)
+            else:
+                # position ourselves on top of the THEN, GOTO or ELSE token
+                self.get_codestream().backskip_blank()
+            # note that any :ELSE block encountered will be ignored automatically
+            # since standalone ELSE is a no-op to end of line
 
     def on_jump_(self, args):
         """ON GOTO/GOSUB: calculated jump."""

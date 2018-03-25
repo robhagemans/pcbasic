@@ -79,9 +79,7 @@ class Parser(object):
                 ins.require_end()
                 return
         self._callbacks[c](parse_args(ins))
-        # IF and RESUME statements can jump to mid-statement (THEN clause)
-        if c not in (tk.IF, tk.RESUME):
-            ins.require_end()
+        # end-of-statement is checked at start of next statement in interpreter loop
 
     def parse_name(self, ins):
         """Get scalar part of variable name from token stream."""
