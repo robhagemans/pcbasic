@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from .base import WIN32, MACOS, X64, USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR
+from .base import split_quoted
 from .python2 import which
 
 if WIN32:

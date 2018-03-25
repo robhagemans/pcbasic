@@ -24,6 +24,7 @@ from .metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from .compat import WIN32, get_short_pathname, get_unicode_argv
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
+from .compat import split_quoted
 from . import data
 
 
@@ -556,10 +557,9 @@ class Settings(object):
         commands = []
         if not self.get('resume'):
             run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
-            cmd = self.get('exec')
+            # treat colons as CRs
+            commands = split_quoted(self.get('exec'), split_by=u':', quote=u"'", strip_quotes=True)
             # note that executing commands (or RUN) will suppress greeting
-            if cmd:
-                commands.append(cmd)
             if run:
                 commands.append('RUN')
             if self.get('quit'):

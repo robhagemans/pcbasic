@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import re
 import sys
 import platform
 
@@ -38,3 +39,12 @@ if hasattr(sys, 'frozen'):
     BASE_DIR = os.path.dirname(sys.executable)
 else:
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+
+
+# utility function, this has to go somewhere...
+def split_quoted(line, split_by=u'\s', quote=u'"', strip_quotes=False):
+    """Split by separators, preserving quoted blocks."""
+    chunks = re.findall(ur'[^%s%s][^%s]*|%s.+?%s' % (quote, split_by, split_by, quote, quote), line)
+    if strip_quotes:
+        chunks = [c.strip(quote) for c in chunks]
+    return chunks

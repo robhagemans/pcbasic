@@ -11,12 +11,11 @@ import sys
 import logging
 import threading
 import time
-import re
 from collections import deque
 import subprocess
 from subprocess import Popen, PIPE
 
-from ..compat import SHELL_ENCODING, HIDE_WINDOW
+from ..compat import SHELL_ENCODING, HIDE_WINDOW, split_quoted
 from .base import error
 from . import values
 
@@ -28,10 +27,6 @@ from . import values
 # sh doesn't work but makes little sense to use anyway as it's totally unlike MS-DOS
 SHELL_COMMAND_SWITCH = u'/C'
 
-
-def split_quoted(line, split_by=u'\s', quote=u'"'):
-    """Split by separators, preserving quoted blocks."""
-    return re.findall(ur'[^%s%s][^%s]*|%s.+?"' % (quote, split_by, split_by, quote), line)
 
 
 #########################################
