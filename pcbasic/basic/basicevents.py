@@ -289,6 +289,28 @@ class ComHandler(EventHandler):
 class KeyHandler(EventHandler):
     """Manage KEY events."""
 
+    # build KEY trigger code
+    # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
+    # second byte is scan code; first byte
+    #  0       if the key is pressed alone
+    #  1 to 3    if any Shift and the key are combined
+    #    4       if Ctrl and the key are combined
+    #    8       if Alt and the key are combined
+    #   32       if NumLock is activated
+    #   64       if CapsLock is activated
+    #  128       if we are defining some extended key
+    # extended keys are for example the arrow keys on the non-numerical keyboard
+    # presumably all the keys in the middle region of a standard PC keyboard?
+    #
+    # for predefined keys, modifier is ignored
+    # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
+    _mod_flags = {
+        scancode.CAPSLOCK: 0x40, scancode.NUMLOCK: 0x20,
+        scancode.ALT: 0x8, scancode.CTRL: 0x4,
+        # both shifts are equal for event purposes
+        scancode.LSHIFT: 0x3, scancode.RSHIFT: 0x3,
+    }
+
     def __init__(self, scancode=None):
         """Initialise KEY trigger."""
         EventHandler.__init__(self)
@@ -300,24 +322,13 @@ class KeyHandler(EventHandler):
         """Trigger KEY events."""
         if (self._scancode is not None) and (signal.event_type == signals.KEYB_DOWN):
             _, scancode, modifiers = signal.params
-            # build KEY trigger code
-            # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
-            # second byte is scan code; first byte
-            #  0       if the key is pressed alone
-            #  1 to 3    if any Shift and the key are combined
-            #    4       if Ctrl and the key are combined
-            #    8       if Alt and the key are combined
-            #   32       if NumLock is activated
-            #   64       if CapsLock is activated
-            #  128       if we are defining some extended key
-            # extended keys are for example the arrow keys on the non-numerical keyboard
-            # presumably all the keys in the middle region of a standard PC keyboard?
-            #
-            # for predefined keys, modifier is ignored
-            # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-            if (scancode == self._scancode) and (
-                    (self._predefined) or
-                    (modifiers is None or self._modcode == modifiers & 0x6f)):
+            if scancode != self._scancode:
+                return False
+            modcode = 0
+            if modifiers and not self._predefined:
+                for m in modifiers:
+                    modcode |= self._mod_flags.get(m, 0)
+            if self._predefined or self._modcode == modcode:
                 # trigger event
                 self.trigger()
                 # drop key from key buffer
@@ -329,8 +340,12 @@ class KeyHandler(EventHandler):
         """Set KEY trigger to chr(modcode)+chr(scancode)."""
         # can't redefine scancodes for predefined keys 1-14 (pc) 1-16 (tandy)
         if not self._predefined:
-            self._modcode = ord(keystr[0])
+            # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
+            self._modcode = ord(keystr[0]) & 0x6f
             self._scancode = ord(keystr[1])
+            # all shifts are equal
+            if self._modcode & 3:
+                self._modcode |= 3
 
 
 class PenHandler(EventHandler):
