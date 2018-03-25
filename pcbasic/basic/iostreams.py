@@ -9,7 +9,9 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 import sys
 import time
+import io
 from contextlib import contextmanager
+from collections import Iterable
 
 from ..compat import WIN32, read_all_available
 from .base import signals
@@ -18,20 +20,25 @@ from .base import signals
 class IOStreams(object):
     """Manage input/output to files, printers and stdio."""
 
-    def __init__(self, codepage, input_file, output_file, append, utf8):
+    def __init__(self, codepage, input_streams, output_streams, utf8):
         """Initialise I/O streams."""
-        self._stdio = False
-        self._input_file = input_file
-        self._output_file = output_file
-        self._append = append
         self._codepage = codepage
         # external encoding for files; None means raw codepage bytes
         self._encoding = 'utf-8' if utf8 else None
-        # input
+        # input; put in tuple if it's file-like so we do the right thing when looping
+        if not input_streams:
+            input_streams = ()
+        elif hasattr(input_streams, 'read') or not isinstance(input_streams, Iterable):
+            input_streams = (input_streams,)
+        self._input_streams = [self._wrap_input(stream) for stream in input_streams]
+        # output; put in tuple if it's file-like so we do the right thing when looping
+        if not output_streams:
+            output_streams = ()
+        elif hasattr(output_streams, 'write') or not isinstance(output_streams, Iterable):
+            output_streams = (output_streams,)
+        self._output_echos = [self._wrap_output(stream) for stream in output_streams]
+        # disable at start
         self._active = False
-        self._input_streams = []
-        # output
-        self._output_echos = []
 
     def write(self, s):
         """Write a string/bytearray to all stream outputs."""
@@ -54,31 +61,18 @@ class IOStreams(object):
         finally:
             self._active = False
 
-    def attach_streams(self, stdio):
-        """Attach i/o streams."""
-        if stdio and not self._stdio:
-            self._stdio = True
-            out_encoding = sys.stdout.encoding if sys.stdout.isatty() else self._encoding
-            in_encoding = sys.stdin.encoding if sys.stdin.isatty() else self._encoding
-            self._output_echos.append(
-                    OutputStreamWrapper(sys.stdout, self._codepage, out_encoding))
-            lfcr = not WIN32 and sys.stdin.isatty()
-            self._input_streams.append(
-                    InputStreamWrapper(sys.stdin, self._codepage, in_encoding, lfcr))
-        if self._input_file:
-            try:
-                self._input_streams.append(InputStreamWrapper(
-                        open(self._input_file, 'rb'), self._codepage, self._encoding, False))
-            except EnvironmentError as e:
-                logging.warning(u'Could not open input file %s: %s', self._input_file, e.strerror)
-        if self._output_file:
-            mode = 'ab' if self._append else 'wb'
-            try:
-                # raw codepage output to file
-                self._output_echos.append(OutputStreamWrapper(
-                        open(self._output_file, mode), self._codepage, self._encoding))
-            except EnvironmentError as e:
-                logging.warning(u'Could not open output file %s: %s', self._output_file, e.strerror)
+    def _wrap_input(self, stream):
+        """Wrap input stream."""
+        return InputStreamWrapper(
+                stream, self._codepage, (stream.encoding if stream.isatty() else self._encoding),
+                lfcr=not WIN32 and stream.isatty()
+            )
+
+    def _wrap_output(self, stream):
+        """Wrap output stream."""
+        return OutputStreamWrapper(
+                stream, self._codepage, (stream.encoding if stream.isatty() else self._encoding)
+            )
 
     def process_input(self, queue):
         """Process input from streams."""

@@ -1,7 +1,7 @@
 import pcbasic
 from pcbasic import Session
 
-with Session(stdio=True) as s:
+with Session() as s:
     s.execute('a=1')
     print s.evaluate('a+2')
     print s.evaluate('"abc"+"d"')
@@ -26,7 +26,7 @@ def add(x, y):
     print "add", repr(x), repr(y)
     return x+y
 
-with Session(stdio=True, extension=__name__) as s:
+with Session(extension=__name__) as s:
     s.execute('''
         10 a=5
         20 print a
@@ -43,7 +43,7 @@ with Session(stdio=True, extension=__name__) as s:
 class ExtendedSession(Session):
 
     def __init__(self):
-        Session.__init__(self, stdio=True, extension=self)
+        Session.__init__(self, extension=self)
 
     def adda(self, x):
         print "adda", repr(x), repr(self.get_variable("a"))

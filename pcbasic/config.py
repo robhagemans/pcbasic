@@ -414,6 +414,35 @@ class Settings(object):
                 value = None
         return value
 
+    def _get_redirects(self):
+        """Determine which i/o streams to attach."""
+        input_streams, output_streams = [], []
+        # add stdio if redirected or no interface
+        if not self.interface or not sys.stdin.isatty():
+            input_streams.append(sys.stdin)
+        # redirect output as well if input is redirected, but not the other way around
+        # this is because (1) GW-BASIC does this from the DOS prompt
+        # (2) otherwise we don't see anything - we quit after input closes
+        if not self.interface or not sys.stdout.isatty() or not sys.stdin.isatty():
+            output_streams.append(sys.stdout)
+        # explicit redirects
+        infile = self.get(b'input')
+        if infile:
+            try:
+                input_streams.append(open(infile, 'rb'))
+            except EnvironmentError as e:
+                logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
+        outfile = self.get(b'output')
+        if outfile:
+            try:
+                output_streams.append(open(outfile, 'ab' if self.get(b'append') else 'wb'))
+            except EnvironmentError as e:
+                logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
+        return {
+            'output_streams': output_streams,
+            'input_streams': input_streams,
+        }
+
     @property
     def session_params(self):
         """Return a dictionary of parameters for the Session object."""
@@ -436,11 +465,9 @@ class Settings(object):
         max_list[0] = max_list[0] or max_list[1]
         current_device, mount_dict = self._get_drives()
         codepage_dict = data.read_codepage(self.get('codepage'))
-        return {
+        params = self._get_redirects()
+        params.update({
             'syntax': self.get('syntax'),
-            'output_file': self.get(b'output'),
-            'append': self.get(b'append'),
-            'input_file': self.get(b'input'),
             'video': self.get('video'),
             'codepage': codepage_dict,
             'box_protect': not self.get('nobox'),
@@ -468,8 +495,6 @@ class Settings(object):
             # text file parameters
             'utf8': self.get('utf8'),
             'universal': not self.get('strict-newline'),
-            # attach to standard I/O if no interface (for filter interface)
-            'stdio': True,
             # keyboard settings
             'ctrl_c_is_break': self.get('ctrl-c-break'),
             # program parameters
@@ -490,8 +515,9 @@ class Settings(object):
             # ignore key buffer in console-based interfaces, to allow pasting text in console
             'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses'),
             # following GW, don't write greeting for redirected input or command-line filter run
-            'greeting': (not self.get('input') and not self.get('interface') == 'none'),
-        }
+            'greeting': (not params['input_streams']),
+        })
+        return params
 
     def _get_video_parameters(self):
         """Return a dictionary of parameters for the video plugin."""

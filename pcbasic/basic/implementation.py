@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 import io
 import os
+import sys
 import Queue
 import logging
 from contextlib import contextmanager
@@ -48,7 +49,7 @@ class Implementation(object):
 
     def __init__(self,
             syntax=u'advanced', double=False, term=u'', shell=u'',
-            output_file=None, append=False, input_file=None, stdio=True,
+            output_streams=sys.stdout, input_streams=sys.stdin,
             codepage=None, box_protect=True, font=None, text_width=80,
             video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3),
             mono_tint=(0, 255, 0), low_intensity=False,
@@ -74,8 +75,6 @@ class Implementation(object):
         self._edit_prompt = False
         # terminal program for TERM command
         self._term_program = term
-        # redirect parameters
-        self._stdio = stdio
         # option to suppress greeting
         self._greeting = greeting
         ######################################################################
@@ -107,7 +106,8 @@ class Implementation(object):
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O streams
-        self.io_streams = iostreams.IOStreams(self.codepage, input_file, output_file, append, utf8)
+        self.io_streams = iostreams.IOStreams(
+                self.codepage, input_streams, output_streams, utf8)
         # set up input event handler
         # no interface yet; use dummy queues
         self.queues = eventcycle.EventQueues(
@@ -231,8 +231,6 @@ class Implementation(object):
             # use dummy video & audio queues if not provided
             # but an input queue should be operational for I/O streams
             self.queues.set(inputs=Queue.Queue())
-        # attach input queue to I/O streams
-        self.io_streams.attach_streams(self._stdio and not interface)
 
     def execute(self, command):
         """Execute a BASIC statement."""
