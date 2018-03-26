@@ -326,50 +326,17 @@ class Interpreter(object):
         """IF: branching statement."""
         # get condition
         # avoid overflow: don't use bools.
-        val = values.to_single(next(args))
-        # parse_if cofunction requires THEN or GOTO here
-        if val.is_zero():
-            # find correct ELSE block, if any
-            # ELSEs may be nested in the THEN clause
-            ins = self.get_codestream()
-            nesting_level = 0
-            while True:
-                d = ins.skip_to_read(tk.END_STATEMENT + (tk.IF,))
-                if d == tk.IF:
-                    # nesting step on IF. (it's less convenient to count THENs
-                    # because they could be THEN or GOTO)
-                    nesting_level += 1
-                elif d == ':':
-                    # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
-                    if ins.skip_blank_read_if((tk.ELSE,)):
-                        if nesting_level > 0:
-                            nesting_level -= 1
-                        else:
-                            # read line number or continue execution
-                            # cofunction checks for line number and completes
-                            branch, = args
-                            # we may have a line number immediately after THEN or ELSE
-                            if branch is not None:
-                                self.jump(branch)
-                            else:
-                                # position ourselves on top of the THEN, GOTO or ELSE token
-                                self.get_codestream().backskip_blank()
-                            break
-                else:
-                    # end of line, don't look for line number
-                    ins.seek(-len(d), 1)
-                    break
-        else:
-            # cofunction checks for line number and completes
-            branch, = args
-            # we may have a line number immediately after THEN or ELSE
-            if branch is not None:
-                self.jump(branch)
-            else:
-                # position ourselves on top of the THEN, GOTO or ELSE token
-                self.get_codestream().backskip_blank()
-            # note that any :ELSE block encountered will be ignored automatically
-            # since standalone ELSE is a no-op to end of line
+        then_branch = not values.to_single(next(args)).is_zero()
+        # cofunction only parses the branch we need
+        # cofunction checks for line number
+        branch = args.send(then_branch)
+        # and completes
+        list(args)
+        # we may have a line number immediately after THEN or ELSE
+        if branch is not None:
+            self.jump(branch)
+        # note that any :ELSE block encountered will be ignored automatically
+        # since standalone ELSE is a no-op to end of line
 
     def on_jump_(self, args):
         """ON GOTO/GOSUB: calculated jump."""
