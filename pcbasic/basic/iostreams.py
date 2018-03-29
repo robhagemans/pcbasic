@@ -76,9 +76,9 @@ class IOStreams(object):
 
     def process_input(self, queue):
         """Process input from streams."""
+        if not self._active:
+            return
         for stream in self._input_streams:
-            if not self._active:
-                return
             instr = stream.read()
             if instr is None:
                 # input stream is closed, stop the thread
@@ -122,7 +122,7 @@ class InputStreamWrapper(object):
         """Read all chars available; nonblocking; returns unicode."""
         # we need non-blocking readers
         s = read_all_available(self._stream)
-        if s is None:
+        if not s:
             return s
         s = s.replace(b'\r\n', b'\r')
         if self._lfcr:
