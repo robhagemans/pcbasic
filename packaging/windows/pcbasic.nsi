@@ -9,7 +9,7 @@
 ;Enter the windows uninstall reg sub key to add uninstall information to Add/Remove Programs also.
 
 !define INSTDIR_REG_ROOT "HKLM"
-!define INSTDIR_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\PC-BASIC-dev"
+!define INSTDIR_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\PC-BASIC-2.0"
 
 
 ; multiuser, modern UI
@@ -17,7 +17,7 @@
 !define MULTIUSER_EXECUTIONLEVEL Highest
 !define MULTIUSER_MUI
 !define MULTIUSER_INSTALLMODE_COMMANDLINE
-!define MULTIUSER_INSTALLMODE_INSTDIR "PC-BASIC-dev"
+!define MULTIUSER_INSTALLMODE_INSTDIR "PC-BASIC-2.0"
 !include "MultiUser.nsh"
 !include "MUI2.nsh"
 !include "AdvUninstLog.nsh"
@@ -27,7 +27,7 @@
 
 
 ;Name and file
-Name "PC-BASIC (development version)"
+Name "PC-BASIC 2.0"
 OutFile "pcbasic-win32.exe"
 
 !include LogicLib.nsh
@@ -36,7 +36,7 @@ OutFile "pcbasic-win32.exe"
 
 ;Start Menu Folder Page Configuration
 !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU"
-!define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\PC-BASIC-dev"
+!define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\PC-BASIC-2.0"
 !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
 
 ;--------------------------------
@@ -82,7 +82,7 @@ Var UserShortcuts
 ;--------------------------------
 ;Installer Sections
 
-Section "PC-BASIC (development version)" SecDummy
+Section "PC-BASIC 2.0" SecDummy
     SetOutPath "$INSTDIR"
 
     !insertmacro UNINSTALL.LOG_OPEN_INSTALL
@@ -92,7 +92,7 @@ Section "PC-BASIC (development version)" SecDummy
     !insertmacro UNINSTALL.LOG_CLOSE_INSTALL
 
     ;Store installation folder
-    WriteRegStr HKCU "Software\PC-BASIC-dev" "" $INSTDIR
+    WriteRegStr HKCU "Software\PC-BASIC-2.0" "" $INSTDIR
 
     !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
 
@@ -104,14 +104,14 @@ Section "PC-BASIC (development version)" SecDummy
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PC-BASIC.lnk" "$INSTDIR\pcbasic.exe"
 
     ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
-    WriteRegStr HKCU "Software\PC-BASIC-dev" "Shortcuts" "$SMPROGRAMS\$StartMenuFolder"
+    WriteRegStr HKCU "Software\PC-BASIC-2.0" "Shortcuts" "$SMPROGRAMS\$StartMenuFolder"
 
     ; create link to ini file in current user's start menu
     SetShellVarContext "current"
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Settings.lnk" "$APPDATA\PCBASIC-dev\PCBASIC.INI"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Settings.lnk" "$APPDATA\PCBASIC-2.0\PCBASIC.INI"
 
-    WriteRegStr HKCU "Software\PC-BASIC-dev" "UserShortcuts" "$SMPROGRAMS\$StartMenuFolder"
+    WriteRegStr HKCU "Software\PC-BASIC-2.0" "UserShortcuts" "$SMPROGRAMS\$StartMenuFolder"
 
     !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
@@ -143,8 +143,8 @@ Section UnInstall
     !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
 
     ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
-    ReadRegStr $Shortcuts HKCU "Software\PC-BASIC-dev" "Shortcuts"
-    ReadRegStr $UserShortcuts HKCU "Software\PC-BASIC-dev" "UserShortcuts"
+    ReadRegStr $Shortcuts HKCU "Software\PC-BASIC-2.0" "Shortcuts"
+    ReadRegStr $UserShortcuts HKCU "Software\PC-BASIC-2.0" "UserShortcuts"
 
     Delete "$Shortcuts\PC-BASIC.lnk"
     Delete "$Shortcuts\Documentation.lnk"
@@ -153,8 +153,8 @@ Section UnInstall
     RMDir "$Shortcuts"
     RMDir "$UserShortcuts"
 
-    DeleteRegKey HKCU "Software\PC-BASIC-dev"
-;    DeleteRegKey /ifempty HKCU "Software\PC-BASIC-dev"
+    DeleteRegKey HKCU "Software\PC-BASIC-2.0"
+;    DeleteRegKey /ifempty HKCU "Software\PC-BASIC-2.0"
 SectionEnd
 
 

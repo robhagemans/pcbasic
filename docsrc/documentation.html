@@ -507,18 +507,42 @@
             <p>
                 PC-BASIC emulates DOS disk devices, which are referred to by drive letters such as <code>Z:</code>.
                 These devices can be mapped to locations in your file system.
-                <em>Windows uses should note that they are not the same locations as Windows drive letters: the device <code>C:</code> on PC-BASIC
-                is not your Windows <code>C:</code> drive, unless you explicitly tell PC-BASIC to make it so.</em>
             </p>
             <p>
-                By default, <code>Z:</code> is PC-BASIC's current device. It is mapped to your home directory
-                if PC-BASIC is started from a graphical user interface. On Windows, your home directory is
-                <code>%USERPROFILE%</code>, which is usually a folder with your user name located under
-                <code>C:\Users\</code>; on other platforms, it is <code>&tilde;</code>.
-                This is where files will be saved to and loaded from in BASIC if you do not specify another device.
-                Note that if PC-BASIC is started from the command prompt, <code>Z:</code> is mapped to
-                the current working directory instead.
+                By default, <code>Z:</code> is PC-BASIC's current device.
+                If PC-BASIC is started from a start menu shortcut, the current device will be the shortcut's <i>Start In</i> folder.
             </p>
+            <ul>
+                <li>
+                    By default, this is
+                    <code>%USERPROFILE%</code> on Windows. Uusually this will be a folder named something like
+                    <code>C:\Users\YourName</code>.
+                </li>
+                <li>
+                    On other platforms, the default location is the home directory <code>&tilde;</code>.
+                </li>
+            </ul>
+            <p>
+                This default location is where files will be saved to and loaded from in BASIC if you do not specify another device.
+                Note that if PC-BASIC is started from the command prompt, the default location will be the current working directory.
+            </p>
+            <p>
+                <strong>Notes for Windows users</strong>
+            </p>
+            <ul>
+                <li>
+                    <em>PC-BASIC's DOS disk devices are not Windows drive letters</em>.
+                    The device <code>C:</code> on PC-BASIC is <em>not</em> your Windows <code>C:</code> drive.
+                    If you want PC-BASIC's drive letters to be the same as those in Windows, you have to explicitly
+                    enable the option <code><a href="#--map-drives">map-drives</a></code>. Use this with caution, since it
+                    means that your programs can now read from and write to all drives that Windows
+                    allows you access to.
+                </li>
+                <li>
+                    If PC-BASIC's current device or <i>Start In</i> folder is changed to a system folder such as <code>C:\Program Files\PC-BASIC</code>,
+                    Windows will move files written there to <code>%LocalAppData%\VirtualStore</code> instead.
+                </li>
+            </ul>
             <p>
                 You can map drives and other file system locations as PC-BASIC devices by
                 using the <code><a href="#--mount">mount</a></code> option in the <a href="#settings">configuration file or on the command prompt</a>. For example,
@@ -532,12 +556,6 @@
                     <b>mount=A:/home/me/BasicFloppy</b>
                 </code>
                 which would make the directory <code>/home/me/BasicFloppy</code> available as PC-BASIC's <code>A:</code> device.
-            </p>
-             <p>
-                If you want PC-BASIC's drive letters to be the same as those in Windows,
-                enable the option <code><a href="#--map-drives">map-drives</a></code>. Use this with caution, since it
-                means that your programs can now read and write on all drives that Windows
-                allows you access to.
             </p>
             <p>
                 PC-BASIC uses <a href="#eightpointthree">DOS conventions</a> for filenames and paths.
