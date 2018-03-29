@@ -115,24 +115,25 @@ def key_pressed():
     """Return whether a character is ready to be read from the keyboard."""
     return select.select([sys.stdin], [], [], 0)[0] != []
 
+# output buffer for ioctl call
+_sock_size = array.array('i', [0])
+
 def read_all_available(stream):
     """Read all available characters from a stream; nonblocking; None if closed."""
     # this works for everything on unix, and sockets on Windows
     instr = []
-    closed = False
-    # output buffer for ioctl call
-    sock_size = array.array('i', [0])
     # while buffer has characters/lines to read
     while select.select([stream], [], [], 0)[0]:
         # find number of bytes available
-        fcntl.ioctl(stream, termios.FIONREAD, sock_size)
-        count = sock_size[0]
+        fcntl.ioctl(stream, termios.FIONREAD, _sock_size)
+        count = _sock_size[0]
         # and read them all
         c = stream.read(count)
         if not c:
-            closed = True
             break
         instr.append(c)
-    if not instr and closed:
-        return None
-    return b''.join(instr)
+    else:
+        # gets executed if no break
+        return b''.join(instr)
+    # break out, we're closed
+    return None

@@ -81,12 +81,17 @@ class IOStreams(object):
         for stream in self._input_streams:
             instr = stream.read()
             if instr is None:
-                # input stream is closed, stop the thread
-                queue.put(signals.Event(signals.STREAM_CLOSED))
-                return
+                break
             elif instr:
                 queue.put(signals.Event(signals.STREAM_CHAR, (instr,)))
-
+        else:
+            # executed if not break
+            return
+        # input stream is closed, remove it
+        self._input_streams.remove(stream)
+        # stop the program if last input closed
+        if not self._input_streams:
+            queue.put(signals.Event(signals.STREAM_CLOSED))
 
 class OutputStreamWrapper(object):
     """Converter stream wrapper."""
@@ -122,8 +127,11 @@ class InputStreamWrapper(object):
         """Read all chars available; nonblocking; returns unicode."""
         # we need non-blocking readers
         s = read_all_available(self._stream)
-        if not s:
+        # can be None (closed) or b'' (no input)
+        if s is None:
             return s
+        elif not s:
+            return u''
         s = s.replace(b'\r\n', b'\r')
         if self._lfcr:
             s = s.replace(b'\n', b'\r')
