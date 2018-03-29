@@ -1,6 +1,6 @@
 /*!
     PC-BASIC documentation
-    Copyright (c) 2014-2015 Rob Hagemans
+    Copyright (c) 2014-2018 Rob Hagemans
     This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
     http://creativecommons.org/licenses/by-sa/4.0/legalcode
 */
@@ -279,7 +279,6 @@ dt code {
     /* header on offline docs */
 
     .standalone header {
-        backgound: yellow;
         position:fixed;
         z-index:4;
         left: 0;
@@ -359,7 +358,7 @@ dt code {
         border: none;
     }
     nav.toc ul  {
-        padding-right: none;
+        padding-right: 0;
     }
 
     nav.toc>ul  {

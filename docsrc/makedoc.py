@@ -115,7 +115,10 @@ def makedoc(header=None, output=None, embedded_style=True):
     mdtohtml(basepath + '/../THANKS.md', ack_stream, 'acks_')
     quickstart_html = ('<article>\n' + readme_stream.getvalue() + '</article>\n').replace('PC-BASIC</h2>', 'Overview</h2>').replace('http://pc-basic.org/doc#', '#')
     licenses_html = '<footer>\n<h2 id="licence">Licences</h2>\n' + basic_license_stream.getvalue() + '<hr />\n' + doc_license_stream.getvalue() + '\n</footer>\n'
-    settings_html = ('<article>\n' + open(basepath + '/settings.html', 'r').read()
+    version = open(basepath + '/../pcbasic/data/version.txt', 'r').read().strip()
+    major_version = '.'.join(version.split('.')[:2])
+    settings_html = (
+            '<article>\n' + open(basepath + '/settings.html', 'r').read().replace('0.0', major_version)
             + '<hr />\n' + open(basepath + '/options.html', 'r').read()
             + open(basepath + '/examples.html', 'r').read() + '</article>\n')
     predoc = StringIO()
@@ -132,7 +135,6 @@ def makedoc(header=None, output=None, embedded_style=True):
     toc = StringIO()
     maketoc(predoc, toc)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    version = open(basepath + '/../pcbasic/data/version.txt', 'r').read().strip()
     subheader_html = '<header>\n<h1>PC-BASIC {0} documentation</h1>\n<small>Last updated {1}.</small>\n</header>\n'.format(version, now)
     header_html = open(header, 'r').read()
     with open(output, 'w') as outf:
