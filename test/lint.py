@@ -25,13 +25,7 @@ basedir = os.path.join('..', 'pcbasic')
 
 args = sys.argv[1:]
 if not args or args == ['--all']:
-    exclude = ['example', 'video_pygame']
-
     for path, _, filenames in os.walk(basedir):
-        lint_files(path, filenames, exclude)
-        epylint.lint(
-                os.path.join(basedir, 'interface', 'video_pygame.py'),
-                CONFIG + ['--disable=too-many-function-args,unexpected-keyword-arg'])
-
+        lint_files(path, filenames)
 else:
     lint_files(basedir, args)

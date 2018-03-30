@@ -240,6 +240,7 @@ from msvcrt import kbhit as key_pressed
 
 try:
     # set stdio as binary, to avoid Windows messing around with CRLFs
+    # pylint: disable=no-member
     msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
     msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
 except EnvironmentError:

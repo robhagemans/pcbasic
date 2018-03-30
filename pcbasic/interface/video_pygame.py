@@ -171,7 +171,7 @@ class VideoPygame(VideoPlugin):
     def _set_icon(self, mask):
         """Set the window icon."""
         height, width = len(mask), len(mask[0])
-        icon = pygame.Surface((width, height), depth=8)
+        icon = pygame.Surface((width, height), depth=8) # pylint: disable=E1121,E1123
         icon.fill(0)
         icon.blit(glyph_to_surface(mask), (0, 0, width, height))
         icon.set_palette_at(0, (0, 0, 0))
@@ -357,8 +357,10 @@ class VideoPygame(VideoPlugin):
         # create the screen that will be stretched onto the display
         border_x, border_y = self._window_sizer.border_start()
         # surface depth and flags match those of canvas
+        # pylint: disable=E1121,E1123
         screen = pygame.Surface(
-            (self.size[0] + 2*border_x, self.size[1] + 2*border_y), 0, self.canvas[self.vpagenum])
+            (self.size[0] + 2*border_x, self.size[1] + 2*border_y),
+            0, self.canvas[self.vpagenum])
         screen.set_palette(self.work_palette)
         # border colour
         border_colour = pygame.Color(0, 0, self.border_attr % self.num_fore_attrs)
@@ -445,7 +447,7 @@ class VideoPygame(VideoPlugin):
         self.set_cursor_shape(self.font_width, self.font_height,
                               0, self.font_height)
         # whole screen (blink on & off)
-        self.canvas = [ pygame.Surface(self.size, depth=8)
+        self.canvas = [ pygame.Surface(self.size, depth=8) # pylint: disable=E1121,E1123
                         for _ in range(self.num_pages)]
         for i in range(self.num_pages):
             self.canvas[i].set_palette(self.work_palette)
@@ -593,7 +595,7 @@ class VideoPygame(VideoPlugin):
         """Build a sprite for the cursor."""
         self.cursor_width = width
         self.cursor_from, self.cursor_to = from_line, to_line
-        self.cursor = pygame.Surface((width, height), depth=8)
+        self.cursor = pygame.Surface((width, height), depth=8) # pylint: disable=E1121,E1123
         color, bg = 254, 255
         self.cursor.set_colorkey(bg)
         self.cursor.fill(bg)
@@ -982,6 +984,6 @@ def apply_composite_artifacts(screen, pixels=4):
 def glyph_to_surface(glyph):
     """Build a sprite surface for the given character glyph."""
     glyph = numpy.asarray(glyph).T
-    surf = pygame.Surface(glyph.shape, depth=8)
+    surf = pygame.Surface(glyph.shape, depth=8) # pylint: disable=E1121,E1123
     pygame.surfarray.pixels2d(surf)[:] = glyph
     return surf
