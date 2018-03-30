@@ -363,14 +363,17 @@
         </dd>
 
         <dt id="--exec">
-            <code id="-e"><b>-e=</b><var>compound_statement</var></code>
-            <code><b>--exec=</b><var>compound_statement</var></code>
+            <code id="-e"><b>-e=</b><var>statement</var>[<b>:</b><var>statement</var> ...]</code>
+            <code><b>--exec=</b><var>statement</var>[<b>:</b><var>statement</var> ...]</code>
         </dt>
         <dd>
-            Execute a BASIC compound statement. The <code><var>compound_statement</var></code> is executed
-            before entering into direct mode or
-            running a program. Multiple statements can be entered by separating them with <code>:</code>, but note that no
-            further statements are executed after e.g. <code>RUN</code>, <code>GOTO</code>.
+            Execute BASIC statements. The <code><var>statement</var></code>s are executed
+            after loading any program but before entering into direct mode or
+            running it. Multiple statements can be entered by separating them with colons <code><b>:</b></code>.
+            These will be executed as if they were entered as separate statements, not as a single compound statement;
+            even if statements such as <code>GOTO</code> can be included, the following statements will be executed.
+            If a <code><b>:</b></code> is intended to be part of a statement, the statement must be quoted with
+            single quotes <code><b>'</b></code>. If your calling shell interprets such quotes, you should properly escape them.
         </dd>
 
         <dt id="--extension">
@@ -812,17 +815,17 @@
             <code><b>--shell=</b>[<var>shell-executable</var>]</code>
         </dt>
         <dd>
-            Set the <code><a href="#SHELL">SHELL</a></code>
-            command to run the operating system shell executable <code><var>shell-executable</var></code>.
-            The executable <code><var>shell-executable</var></code> should support the
-            command-line conventions of the primary shell of the host operating system
-            (<code>CMD.EXE</code> on Windows and <code>/bin/sh</code> on Unix).
-            By default <code><var>command</var></code> is empty,
-            which disables the <code><a href="#SHELL">SHELL</a></code> command.
+            Enable the <code><a href="#SHELL">SHELL</a></code>
+            statement to run the operating system command interpreter <code><var>shell-executable</var></code>.
+            The executable <code><var>shell-executable</var></code> should support MS-DOS's
+            <code>COMMAND.COM</code> calling conventions, in particular its <code>/C</code> switch.
+            Example command interpreters are <code>CMD.EXE</code> on Windows and <code>"wine cmd.exe"</code> on Unix.
+            If <code><var>shell-executable</var></code> is empty (as it is by default),
+            the <code><a href="#SHELL">SHELL</a></code> statement is disabled.
         </dd>
 
         <dt id="--sound-engine">
-            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b><b>portaudio</b>]</code>
+            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b>|<b>portaudio</b>]</code>
         </dt>
         <dd>
             Choose the engine to use for audio output. If omitted, the
@@ -913,7 +916,7 @@
             <code><b>--utf8</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
         <dd>
-            Use UTF-8 for plain-text programs. If <code><b>True</b></code>,
+            Use UTF-8 for plain-text programs and redirected I/O. If <code><b>True</b></code>,
             programs stored as plain text will be converted
             from UTF-8 on <code><a href="#LOAD">LOAD</a></code> and to UTF-8 on
             <code><a href="#SAVE">SAVE</a></code>. If <code><b>False</b></code>,

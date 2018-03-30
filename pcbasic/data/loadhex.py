@@ -6,6 +6,7 @@ HEX font loader
 This file is released under the GNU GPL version 3 or later.
 """
 
+import sys
 import pkg_resources
 import logging
 
@@ -138,9 +139,9 @@ class FontLoader(object):
         warnings = 0
         for u in missing:
             warnings += 1
-            logging.debug(u'Codepoint %s [%s] not represented in font', repr(u), u)
+            logging.debug('Code point u+%x not represented in font', ord(u))
             if warnings == max_warnings:
-                logging.debug('Further codepoint warnings suppressed.')
+                logging.debug('Further code point warnings suppressed.')
                 break
 
     def fix_missing(self, unicode_needed, font16):

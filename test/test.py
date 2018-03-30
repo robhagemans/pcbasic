@@ -13,7 +13,7 @@ import filecmp
 import contextlib
 import traceback
 import time
-from copy import copy
+from copy import copy, deepcopy
 
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -82,7 +82,15 @@ start_clock = time.clock()
 
 args = [os.path.basename(n) for n in args]
 
+# preserve environment
+startdir = os.path.abspath(os.getcwd())
+save_env = deepcopy(os.environ)
+
 for name in args:
+    # reset testing environment
+    os.chdir(startdir)
+    os.environ = deepcopy(save_env)
+
     print '\033[00;37mRunning test \033[01m%s \033[00;37m.. ' % name,
     dirname = os.path.join(basedir, name)
     if not os.path.isdir(dirname):
@@ -110,7 +118,6 @@ for name in args:
             pcbasic.run('--interface=none')
         except Exception as e:
             crash = e
-            traceback.print_tb(sys.exc_info()[2])
     # -----------------------------------------------------------
     os.chdir(top)
     passed = True

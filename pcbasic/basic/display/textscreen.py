@@ -20,14 +20,14 @@ from .textbase import BottomBar, Cursor, ScrollArea
 class TextScreen(object):
     """Text screen."""
 
-    def __init__(self, queues, values, mode, capabilities, fonts, codepage, redirect, sound):
+    def __init__(self, queues, values, mode, capabilities, fonts, codepage, io_streams, sound):
         """Initialise text-related members."""
         self.queues = queues
         self._values = values
         self.codepage = codepage
         self.capabilities = capabilities
         # output redirection
-        self.redirect = redirect
+        self._io_streams = io_streams
         # sound output needed for printing \a
         self.sound = sound
         # cursor
@@ -105,9 +105,7 @@ class TextScreen(object):
         # redraw the text screen and rebuild text buffers in video plugin
         for pagenum in range(self.mode.num_pages):
             for row in range(self.mode.height):
-                # suppress_cli=True means 'suppress echo on cli'
-                self.refresh_range(pagenum, row+1, 1, self.mode.width,
-                                   suppress_cli=True, text_only=True)
+                self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
             # redraw graphics
             if not self.mode.is_text_mode:
                 self.queues.video.put(signals.Event(signals.VIDEO_PUT_RECT, (pagenum, 0, 0,
@@ -124,7 +122,7 @@ class TextScreen(object):
         """Write a string to the screen at the current position."""
         if do_echo:
             # CR -> CRLF, CRLF -> CRLF LF
-            self.redirect.write(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
+            self._io_streams.write(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
         last = ''
         # if our line wrapped at the end before, it doesn't anymore
         self.text.pages[self.apagenum].row[self.current_row-1].wrap = False
@@ -236,7 +234,7 @@ class TextScreen(object):
     def start_line(self):
         """Move the cursor to the start of the next line, this line if empty."""
         if self.current_col != 1:
-            self.redirect.write('\r\n')
+            self._io_streams.write('\r\n')
             self._check_pos(scroll_ok=True)
             self.set_pos(self.current_row + 1, 1)
         # ensure line above doesn't wrap
@@ -339,7 +337,7 @@ class TextScreen(object):
 
     ###########################################################################
 
-    def put_char_attr(self, pagenum, row, col, c, attr, one_only=False, suppress_cli=False):
+    def put_char_attr(self, pagenum, row, col, c, attr, one_only=False):
         """Put a byte to the screen, redrawing as necessary."""
         if not self.mode.is_text_mode:
             attr = attr & 0xf
@@ -347,11 +345,11 @@ class TextScreen(object):
         if one_only:
             stop = start
         # update the screen
-        self.refresh_range(pagenum, row, start, stop, suppress_cli)
+        self.refresh_range(pagenum, row, start, stop)
 
     ###########################################################################
 
-    def refresh_range(self, pagenum, row, start, stop, suppress_cli=False, text_only=False):
+    def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Redraw a section of a screen row, assuming DBCS buffer has been set."""
         therow = self.text.pages[pagenum].row[row-1]
         col = start
@@ -364,7 +362,7 @@ class TextScreen(object):
             fore, back, blink, underline = self.mode.split_attr(attr)
             self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH, (
                     pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
-                    len(char) > 1, fore, back, blink, underline, suppress_cli
+                    len(char) > 1, fore, back, blink, underline,
             )))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer

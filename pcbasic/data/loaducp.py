@@ -34,6 +34,6 @@ def read_codepage(codepage_name):
             # allow sequence of code points separated by commas
             grapheme_cluster = u''.join(unichr(int(ucs_str.strip(), 16)) for ucs_str in splitline[1].split(','))
             codepage[cp_point] = grapheme_cluster
-        except ValueError:
+        except (ValueError, TypeError):
             logging.warning('Could not parse line in codepage file: %s', repr(line))
     return codepage

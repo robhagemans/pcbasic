@@ -8,3 +8,4 @@ This file is released under the GNU GPL version 3 or later.
 
 from .devicebase import TYPE_TO_MAGIC, InputTextFile
 from .files import Files
+from .disk import NameWrapper

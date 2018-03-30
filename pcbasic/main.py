@@ -13,29 +13,15 @@ import logging
 import pkg_resources
 import traceback
 
-# set locale - this is necessary for curses and *maybe* for clipboard handling
-# there's only one locale setting so best to do it all upfront here
-# NOTE that this affects str.upper() etc.
-locale.setlocale(locale.LC_ALL, '')
-
-from . import ansipipe
 from . import basic
 from . import state
 from . import config
 from .guard import ExceptionGuard, NOGUARD
-from .basic import __version__
+from .basic import __version__, debug
 from .interface import Interface, InitFailed
-
 
 def main(*arguments):
     """Wrapper for run() to deal with argv encodings, Ctrl-C, stdio and pipes."""
-    if not arguments:
-        # - the official parameter should be LC_CTYPE but that's None in my locale
-        # - on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-        #   instead we should run through winmain() which does the dirty work
-        #   and then calls main() with utf-8 encoding
-        encoding = 'utf-8' if sys.platform == 'win32' else locale.getpreferredencoding()
-        arguments = (arg.decode(encoding) for arg in sys.argv[1:])
     try:
         run(*arguments)
     except KeyboardInterrupt:
@@ -79,34 +65,24 @@ def run(*arguments):
 
 def show_usage():
     """Show usage description."""
-    sys.stdout.write(pkg_resources.resource_string(__name__, 'USAGE.txt'))
+    sys.stdout.write(pkg_resources.resource_string(__name__, 'data/USAGE.txt'))
 
 def show_version(settings):
     """Show version with optional debugging details."""
     sys.stdout.write(__version__ + '\n')
     if settings.debug:
-        from pcbasic.basic import debug
         debug.show_platform_info()
 
 def convert(settings):
     """Perform file format conversion."""
-    mode, name_in, name_out = settings.conv_params
+    mode, in_name, out_name = settings.conv_params
     with basic.Session(**settings.session_params) as session:
-        try:
-            # if the native file doesn't exist, treat as BASIC file spec
-            if not name_in or os.path.isfile(name_in):
-                # use io.BytesIO buffer for seekability
-                infile = session.bind_file(name_in or io.BytesIO(sys.stdin.read()))
+        # stdin if no name supplied - use io.BytesIO buffer for seekability
+        with session.bind_file(in_name or io.BytesIO(sys.stdin.read())) as infile:
             session.execute(b'LOAD "%s"' % (infile,))
-            if (not name_out or not os.path.dirname(name_out)
-                    or os.path.isdir(os.path.dirname(name_out))):
-                outfile = session.bind_file(name_out or sys.stdout)
-            save_cmd = b'SAVE "%s"' % (outfile,)
-            if mode.upper() in (b'A', b'P'):
-                save_cmd += b',%s' % (mode,)
-            session.execute(save_cmd)
-        except basic.BASICError as e:
-            logging.error(e.message)
+        with session.bind_file(out_name or sys.stdout, create=True) as outfile:
+            mode_suffix = b',%s' % (mode,) if mode.upper() in (b'A', b'P') else b''
+            session.execute(b'SAVE "%s"%s' % (outfile, mode_suffix))
 
 def launch_session(settings):
     """Start an interactive interpreter session."""

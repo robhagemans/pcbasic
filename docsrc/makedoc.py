@@ -6,6 +6,7 @@ import shutil
 from cStringIO import StringIO
 from datetime import datetime
 import codecs
+from codecs import open
 
 from lxml import etree
 import markdown
@@ -14,9 +15,9 @@ import markdown.extensions.headerid
 
 
 # obtain metadata without importing the package (to avoid breaking setup)
-with open(path.join(
-        path.abspath(path.dirname(__file__)),
-        '..', 'pcbasic', 'basic', 'metadata.py')) as f:
+with open(
+        path.join(path.abspath(path.dirname(__file__)), '..', 'pcbasic', 'metadata.py'),
+        encoding='utf-8') as f:
     exec(f.read())
 
 basepath = os.path.dirname(os.path.realpath(__file__))
@@ -67,11 +68,12 @@ def embed_style(html_file):
     parser = etree.HTMLParser(encoding='utf-8')
     doc = etree.parse(html_file, parser)
     for node in doc.xpath('//link[@rel="stylesheet"]'):
-        css = os.path.join(basepath, node.get('href'))
+        href = node.get('href')
+        css = os.path.join(basepath, href)
         node.tag = 'style'
         node.text = '\n' + open(css, 'r').read() + '\n    '
         node.attrib.clear()
-        node.set('id', css)
+        node.set('id', href)
     with open(html_file, 'w') as f:
         f.write(etree.tostring(doc, method="html"))
 
@@ -122,9 +124,16 @@ def makedoc(header=None, output=None, embedded_style=True):
     mdtohtml(basepath + '/LICENSE.md', doc_license_stream)
     mdtohtml(basepath + '/../README.md', readme_stream, baselevel=0)
     mdtohtml(basepath + '/../THANKS.md', ack_stream, 'acks_')
-    quickstart_html = ('<article>\n' + readme_stream.getvalue() + '</article>\n').replace('PC-BASIC</h2>', 'Overview</h2>').replace('http://pc-basic.org/doc#', '#')
+
+    # get the quick-start guide out of README
+    quickstart = ''.join(readme_stream.getvalue().split('<hr>')[1:])
+    quickstart = quickstart.replace('http://pc-basic.org/doc#', '#')
+
+    quickstart_html = ('<article>\n' + quickstart + '</article>\n')
     licenses_html = '<footer>\n<h2 id="licence">Licences</h2>\n' + basic_license_stream.getvalue() + '<hr />\n' + doc_license_stream.getvalue() + '\n</footer>\n'
-    settings_html = ('<article>\n' + open(basepath + '/settings.html', 'r').read()
+    major_version = '.'.join(VERSION.split('.')[:2])
+    settings_html = (
+            '<article>\n' + open(basepath + '/settings.html', 'r').read().replace('0.0', major_version)
             + '<hr />\n' + open(basepath + '/options.html', 'r').read()
             + open(basepath + '/examples.html', 'r').read() + '</article>\n')
     predoc = StringIO()
@@ -142,8 +151,33 @@ def makedoc(header=None, output=None, embedded_style=True):
     toc = StringIO()
     maketoc(predoc, toc)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    version = VERSION
-    subheader_html = '<header>\n<h1>PC-BASIC {0} documentation</h1>\n<small>Last updated {1}.</small>\n</header>\n'.format(version, now)
+    subheader_html = """
+<header>
+    <h1>PC-BASIC documentation</h1>
+</header>
+<article>
+    <h2>PC-BASIC</h2>
+    <p>
+        <em>{2}</em>
+    </p>
+    <p>
+        {3}
+    </p>
+    <p>
+        This is the documentation for <strong>PC-BASIC {0}</strong>, last updated <em>{1}</em>.<br />
+        It consists of the following documents:
+    </p>
+    <ul>
+        <li><strong><a href="#quick-start-guide">Quick Start Guide</a></strong>, the essentials needed to get started.</li>
+        <li><strong><a href="#using">User's Guide</a></strong>, in-depth guide to using the emulator</li>
+        <li><strong><a href="#settings">Configuration Guide</a></strong>, settings and options</li>
+        <li><strong><a href="#guide">Language Guide</a></a></strong>, overview of the BASIC language by topic</li>
+        <li><strong><a href="#reference">Language Reference</a></strong>, comprehensive reference to BASIC</li>
+        <li><strong><a href="#technical">Technical Reference</a></strong>, file formats and internals</li>
+        <li><strong><a href="#dev">Developer's Guide</a></strong>, using PC-BASIC as a Python module</li>
+    </ul>
+</article>
+""".format(VERSION, now, DESCRIPTION, LONG_DESCRIPTION)
     header_html = open(header, 'r').read()
     with open(output, 'w') as outf:
         outf.write(header_html)

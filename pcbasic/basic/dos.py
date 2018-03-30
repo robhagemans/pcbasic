@@ -7,24 +7,26 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
-import subprocess
+import sys
 import logging
 import threading
 import time
-import locale
-import platform
+from collections import deque
+import subprocess
+from subprocess import Popen, PIPE
 
-try:
-    import pexpect
-except ImportError:
-    pexpect = None
-
+from ..compat import SHELL_ENCODING, HIDE_WINDOW, split_quoted
 from .base import error
 from . import values
 
 
-class InitFailed(Exception):
-    """Shell object initialisation failed."""
+# command interpreter must support command.com convention
+# to be able to use SHELL "dos-command"
+# on linux, "wine cmd.exe" works OK
+# dosemu can probably be made to work with a wrapper script
+# sh doesn't work but makes little sense to use anyway as it's totally unlike MS-DOS
+SHELL_COMMAND_SWITCH = u'/C'
+
 
 
 #########################################
@@ -70,158 +72,175 @@ class Environment(object):
 #########################################
 # shell
 
-def get_shell_manager(keyboard, screen, codepage, shell_command, syntax):
-    """Return a new shell manager object."""
-    if syntax == 'pcjr':
-        return ErrorShell()
-    if shell_command:
-        if platform.system() == 'Windows':
-            return WindowsShell(keyboard, screen, codepage, shell_command)
-        else:
-            try:
-                return Shell(keyboard, screen, codepage, shell_command)
-            except InitFailed:
-                logging.warning('Pexpect module not found. SHELL statement disabled.')
-    return ShellBase()
-
-
-class ShellBase(object):
+class Shell(object):
     """Launcher for command shell."""
 
-    def launch(self, command):
-        """Launch the shell."""
-        logging.warning(b'SHELL statement disabled.')
-
-
-class ErrorShell(ShellBase):
-    """Launcher to throw IFC."""
-
-    def launch(self, command):
-        """Launch the shell."""
-        raise error.BASICError(error.IFC)
-
-
-class WindowsShell(ShellBase):
-    """Launcher for Windows CMD shell."""
-
-    def __init__(self, keyboard, screen, codepage, shell_command):
+    def __init__(self, queues, keyboard, screen, files, codepage, shell):
         """Initialise the shell."""
-        self.keyboard = keyboard
-        self.screen = screen
-        self.command = shell_command
-        self.codepage = codepage
-        self._encoding = locale.getpreferredencoding()
+        self._shell = shell
+        self._queues = queues
+        self._keyboard = keyboard
+        self._screen = screen
+        self._files = files
+        self._codepage = codepage
+        self._last_command = deque()
+        self._encoding = None
 
-    def _process_stdout(self, stream, shell_output):
+    def _process_stdout(self, stream, output):
         """Retrieve SHELL output and write to console."""
         while True:
             # blocking read
             c = stream.read(1)
-            if c:
-                # don't access screen in this thread
-                # the other thread already does
-                shell_output.append(c)
-            else:
-                # don't hog cpu, sleep 1 ms
-                time.sleep(0.001)
+            # stream ends if process closes
+            if not c:
+                return
+            # don't access screen in this thread
+            # the other thread already does
+            output.append(c)
 
     def launch(self, command):
         """Run a SHELL subprocess."""
-        shell_output = []
-        cmd = self.command
+        if not self._shell:
+            logging.warning(b'SHELL statement not enabled: no command interpreter specified.')
+            raise error.BASICError(error.IFC)
+        cmd = split_quoted(self._shell)
         if command:
-            cmd += u' /C ' + self.codepage.str_to_unicode(command)
-        p = subprocess.Popen(cmd.encode(self._encoding).split(), stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        outp = threading.Thread(target=self._process_stdout, args=(p.stdout, shell_output))
+            cmd += [SHELL_COMMAND_SWITCH, self._codepage.str_to_unicode(command)]
+        # get working directory; also raises IFC if current_device is CAS1
+        work_dir = self._files.get_native_cwd()
+        try:
+            p = Popen(
+                    cmd, shell=False, cwd=work_dir,
+                    stdin=PIPE, stdout=PIPE, stderr=PIPE, startupinfo=HIDE_WINDOW)
+        except (EnvironmentError, UnicodeEncodeError) as e:
+            logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
+            raise error.BASICError(error.IFC)
+        shell_output = self._launch_reader_thread(p.stdout)
+        shell_cerr = self._launch_reader_thread(p.stderr)
+        try:
+            self._communicate(p, shell_output, shell_cerr)
+        except EnvironmentError as e:
+            logging.warning(e)
+        finally:
+            # ensure the process is terminated on exit
+            if p.poll() is None:
+                p.kill()
+
+    def _launch_reader_thread(self, stream):
+        """Launch output reader."""
+        shell_output = deque()
+        outp = threading.Thread(target=self._process_stdout, args=(stream, shell_output))
+        # daemonise or join later? if we join, a shell that doesn't close will hang us on exit
         outp.daemon = True
         outp.start()
-        errp = threading.Thread(target=self._process_stdout, args=(p.stderr, shell_output))
-        errp.daemon = True
-        errp.start()
-        word = b''
-        while p.poll() is None or shell_output:
-            if shell_output:
-                lines, shell_output[:] = b''.join(shell_output).split('\r\n'), []
-                last = lines.pop()
-                for line in lines:
-                    self.screen.write_line(self.codepage.str_from_unicode(line.decode(self._encoding)))
-                self.screen.write(self.codepage.str_from_unicode(last.decode(self._encoding)))
-            if p.poll() is not None:
-                # drain output then break
-                continue
+        return shell_output
+
+    def _drain_final(self, shell_output):
+        """Drain final output from shell."""
+        if not shell_output:
+            return
+        elif not self._detect_encoding(shell_output):
+            # one-char output, must be rare...
+            shell_output.append(b'\r')
+        elif not shell_output[-1] in (self._enc(u'\r'), self._enc(u'\n')):
+            shell_output.append(self._enc(u'\r'))
+        self._show_output(shell_output)
+
+    def _communicate(self, p, shell_output, shell_cerr):
+        """Communicate with launched shell."""
+        word = []
+        while p.poll() is None:
+            self._show_output(shell_output)
+            self._show_output(shell_cerr)
             try:
+                self._queues.wait()
                 # expand=False suppresses key macros
-                c = self.keyboard.get_fullchar(expand=False)
+                c = self._keyboard.get_fullchar(expand=False)
             except error.Break:
                 pass
-            if c in (b'\r', b'\n'):
-                # shift the cursor left so that CMD.EXE's echo can overwrite
-                # the command that's already there. Note that Wine's CMD.EXE
-                # doesn't echo the command, so it's overwritten by the output...
-                self.screen.write(b'\x1D' * len(word))
-                p.stdin.write(self.codepage.str_to_unicode(word + b'\r\n', preserve_control=True).encode(self._encoding))
-                word = b''
+            if not c:
+                continue
+            elif c in (b'\r', b'\n'):
+                # put sentinel on queue
+                shell_output.append('')
+                shell_cerr.append('')
+                # send the command
+                self._send_input(p.stdin, word)
+                word = []
             elif c == b'\b':
                 # handle backspace
                 if word:
-                    word = word[:-1]
-                    self.screen.write(b'\x1D \x1D')
-            elif c != b'':
-                # only send to pipe when enter is pressed
-                # needed for Wine and to handle backspace properly
-                word += c
-                self.screen.write(c)
+                    word.pop()
+                    self._screen.write(b'\x1D \x1D')
+            elif not c.startswith(b'\0'):
+                # exclude e-ascii (arrow keys not implemented)
+                word.append(c)
+                self._screen.write(c)
+        # drain final output
+        self._drain_final(shell_output)
+        self._drain_final(shell_cerr)
 
+    def _send_input(self, pipe, word):
+        """Write keyboard input to pipe."""
+        # for shell input, send CRLF or LF depending on platform
+        self._last_command.extend(word)
+        bytes_word = b''.join(word) + b'\r\n'
+        unicode_word = self._codepage.str_to_unicode(bytes_word, preserve_control=True)
+        # cmd.exe /u outputs UTF-16 but does not accept it as input...
+        pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
 
-class Shell(ShellBase):
-    """Launcher for Unix shell."""
+    def _detect_encoding(self, shell_output):
+        """Detect UTF-16LE output."""
+        if self._encoding:
+            return True
+        elif len(shell_output) > 1:
+            # detect UTF-16 output (assuming the first output char is ascii...)
+            self._encoding = 'utf-16le' if shell_output[1] == b'\0' else SHELL_ENCODING
+            return True
+        return False
 
-    def __init__(self, keyboard, screen, codepage, shell_command):
-        """Initialise the shell."""
-        if not pexpect:
-            raise InitFailed()
-        self.keyboard = keyboard
-        self.screen = screen
-        self.command = shell_command
-        self.codepage = codepage
-        self._encoding = locale.getpreferredencoding()
+    def _enc(self, unitext):
+        """Encode argument."""
+        return unitext.encode(self._encoding, errors='replace')
 
-    def launch(self, command):
-        """Run a SHELL subprocess."""
-        cmd = self.command
-        if command:
-            cmd += u' -c "' + self.codepage.str_to_unicode(command) + u'"'
-        p = pexpect.spawn(cmd.encode(self._encoding))
-        while True:
-            try:
-                # expand=False suppresses key macros
-                c = self.keyboard.get_char(expand=False)
-            except error.Break:
-                # ignore ctrl+break in SHELL
-                pass
-            if c == b'\b':
-                p.send(b'\x7f')
-            elif c < b' ':
-                p.send(c.encode(self._encoding))
-            elif c != b'':
-                c = self.codepage.to_unicode(c).encode(self._encoding)
-                p.send(c)
-            while True:
-                try:
-                    c = p.read_nonblocking(1, timeout=0).decode(self._encoding)
-                except:
-                    c = u''
-                if c == u'' or c == u'\n':
-                    break
-                elif c == u'\r':
-                    self.screen.write_line()
-                elif c == u'\b':
-                    if self.screen.current_col != 1:
-                        self.screen.set_pos(
-                                self.screen.current_row,
-                                self.screen.current_col-1)
-                else:
-                    self.screen.write(self.codepage.from_unicode(c))
-            if c == u'' and not p.isalive():
-                return
+    def _show_output(self, shell_output):
+        """Write shell output to screen."""
+        # detect sentinel for start of new command
+        if shell_output and self._detect_encoding(shell_output):
+            # detect sentinel for start of new command
+            # wait for at least one LF
+            if not shell_output[0]:
+                if b'\n' not in shell_output:
+                    return
+            # can't do a comprehension as it will crash if the deque is accessed by the thread
+            lines = deque()
+            while shell_output:
+                lines.append(shell_output.popleft())
+            # push back last char if not aligned to encoding
+            if self._encoding == 'utf-16le' and lines[-1] != b'\0':
+                shell_output.appendleft(lines.pop())
+            # detect echo
+            while not lines[0]:
+                lines.popleft()
+                while lines:
+                    reply = lines.popleft()
+                    if self._encoding == 'utf-16le':
+                        reply += lines.popleft()
+                    try:
+                        cmd = self._last_command.popleft()
+                    except IndexError:
+                        cmd = b''
+                    if self._enc(cmd) != reply:
+                        lines.appendleft(reply)
+                        if reply not in (self._enc(u'\r'), self._enc(u'\n')):
+                            # two CRs, for some reason
+                            lines.appendleft(self._enc(u'\r'))
+                        break
+            outstr = b''.join(lines)
+            # accept CRLF or LF in output
+            outstr = outstr.replace(self._enc(u'\r\n'), self._enc(u'\r'))
+            # remove BELs (dosemu uses these a lot)
+            outstr = outstr.replace(self._enc(u'\x07'), b'')
+            outstr = outstr.decode(self._encoding, errors='replace')
+            outstr = self._codepage.str_from_unicode(outstr, errors='replace')
+            self._screen.write(outstr)

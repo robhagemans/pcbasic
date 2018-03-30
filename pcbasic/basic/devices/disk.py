@@ -10,22 +10,21 @@ This file is released under the GNU GPL version 3 or later.
 # Disk devices
 
 import os
-import errno
-import logging
-import string
 import re
-import platform
-import locale
+import sys
+import errno
+import string
 import struct
 import random
-if platform.system() == b'Windows':
-    import win32api
-    import ctypes
+import ntpath
+import logging
 
 from ..base.bytestream import ByteStream
 from ..base import error
+from ...compat import get_short_pathname, get_free_bytes
 from .. import values
 from . import devicebase
+
 
 # GW-BASIC FILE CONTROL BLOCK structure:
 # source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5
@@ -94,6 +93,127 @@ OS_ERROR = {
 ALLOWABLE_CHARS = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~")
 
 
+##############################################################################
+# exception handling
+
+def safe(fnname, *fnargs):
+    """Execute OS function and handle errors."""
+    try:
+        return fnname(*fnargs)
+    except EnvironmentError as e:
+        handle_oserror(e)
+
+def handle_oserror(e):
+    """Translate OS and I/O exceptions to BASIC errors."""
+    try:
+        basic_err = OS_ERROR[e.errno]
+    except KeyError:
+        logging.error(u'Unmapped environment exception: %d', e.errno)
+        basic_err = error.DEVICE_IO_ERROR
+    raise error.BASICError(basic_err)
+
+
+##############################################################################
+# dos path and filename utilities
+
+def dos_splitext(dos_name):
+    """Return trunk and extension excluding the dot."""
+    # take whatever comes after first dot as extension
+    # and whatever comes before first dot as trunk
+    # differs from ntpath.splitext:
+    # - does not include . in extension; no extension equals ending in .
+    # - dotfiles are trunks starting with . in ntpath but extensions here.
+    elements = dos_name.split(b'.', 1)
+    if len(elements) == 1:
+        trunk, ext = elements[0], ''
+    else:
+        trunk, ext = elements
+    return trunk, ext
+
+def dos_normalise_name(dos_name):
+    """Convert dosname into bytes uppercase 8.3."""
+    # a normalised DOS-name is all-uppercase, no leading or trailing spaces, and
+    # 1) . or ..; or
+    # 2) 0--8 allowable characters followed by one dot followed by 0--3 allowable characters; or
+    # 3) 1--8 allowable characters with no dots
+    #
+    # don't try to split special directory names
+    if dos_name in (b'.', b'..'):
+        return dos_name
+    # convert to all uppercase
+    dos_name = dos_name.upper()
+    # split into trunk and extension
+    trunk, ext = dos_splitext(dos_name)
+    # truncate to 8.3
+    trunk, ext = trunk[:8], ext[:3]
+    if ext:
+        ext = b'.' + ext
+    norm_name = trunk + ext
+    return norm_name
+
+def dos_is_legal_name(dos_name):
+    """Check if a (bytes) name is a legal DOS name."""
+    if dos_name in (b'.', b'..'):
+        return True
+    trunk, ext = dos_splitext(dos_name)
+    return (
+            # enforce lengths
+            (len(trunk) <= 8 and len(ext) <= 3) and
+            # no leading or trailing spaces
+            (trunk == trunk.strip() and ext == ext.strip()) and
+            # enforce allowable characters
+            ((set(trunk) | set(ext)) <= ALLOWABLE_CHARS)
+        )
+
+def dos_to_native_name(native_path, dosname, isdir):
+    """Find a matching native file name for a given normalised DOS name."""
+    try:
+        uni_name = dosname.decode(b'ascii')
+    except UnicodeDecodeError:
+        # non-ascii characters are not allowable for DOS filenames, no match
+        return None
+    # check if the 8.3 uppercase exists, prefer if so
+    if istype(native_path, uni_name, isdir):
+        return uni_name
+    # otherwise try in lexicographic order
+    try:
+        all_names = os.listdir(native_path)
+    except EnvironmentError:
+        # report no match if listdir fails
+        return None
+    for f in sorted(all_names):
+        # we won't match non-ascii anyway
+        try:
+            ascii_name = f.encode(b'ascii')
+        except UnicodeEncodeError:
+            continue
+        # don't match long names or non-legal dos names
+        if dos_is_legal_name(ascii_name):
+            try_name = dos_normalise_name(ascii_name)
+            if try_name == dosname and istype(native_path, f, isdir):
+                return f
+    return None
+
+def dos_name_matches(name, mask):
+    """Whether native name element matches DOS wildcard mask."""
+    # convert wildcard mask to regexp
+    regexp = '\A'
+    for c in mask.upper():
+        if c == '?':
+            regexp += '.'
+        elif c == '*':
+            # we won't need to match newlines, so dot is fine
+            regexp += '.*'
+        else:
+            regexp += re.escape(c)
+    regexp += '\Z'
+    cregexp = re.compile(regexp)
+    return cregexp.match(name.upper()) is not None
+
+
+##############################################################################
+# disk device mapped to native filesystem
+
 class DiskDevice(object):
     """Disk device (A:, B:, C:, ...) """
 
@@ -104,22 +224,29 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, locks, codepage, utf8, universal):
+    def __init__(self, letter, path, dos_cwd, locks, codepage, utf8, universal):
         """Initialise a disk device."""
+        # DOS drive letter
         self.letter = letter
-        # mount root
-        # this is a native path, using os.sep
-        self.path = path
-        # current working directory on this drive
+        # mount root: this is a native filesystem path, using os.sep
+        self._native_root = path
+        # code page for file system names and text file conversion
+        self._codepage = codepage
+        # current DOS working directory on this drive
         # this is a DOS relative path, no drive letter; including leading \\
         # stored with os.sep but given using backslash separators
-        self.cwd = os.path.join(*cwd.split(u'\\'))
-        self.locks = locks
-        # code page for file system names and text file conversion
-        self.codepage = codepage
+        self._native_cwd = u''
+        if self._native_root:
+            try:
+                self._native_cwd = self._get_native_reldir(dos_cwd)
+            except error.BASICError:
+                logging.warning(
+                    'Could not open working directory %s on drive %s:. Using drive root instead.',
+                    dos_cwd, letter)
+        self._locks = locks
         # text file settings
-        self.utf8 = utf8
-        self.universal = universal
+        self._utf8 = utf8
+        self._universal = universal
 
     def close(self):
         """Close disk device."""
@@ -129,7 +256,7 @@ class DiskDevice(object):
         """Device is available."""
         return True
 
-    def create_file_object(self, fhandle, filetype, mode, name=b'', number=0,
+    def _create_file_object(self, fhandle, filetype, mode, native_name=u'', number=0,
                            access=b'RW', lock=b'', field=None, reclen=128,
                            seg=0, offset=0, length=0):
         """Create disk file object of requested type."""
@@ -147,20 +274,20 @@ class DiskDevice(object):
                 filetype = b'A'
         if filetype in b'BPM':
             # binary [B]LOAD, [B]SAVE
-            return BinaryFile(fhandle, filetype, number, name, mode,
-                               seg, offset, length, locks=self.locks)
+            return BinaryFile(fhandle, filetype, number, native_name, mode,
+                               seg, offset, length, locks=self._locks)
         elif filetype == b'A':
             # ascii program file (UTF8 or universal newline if option given)
-            return TextFile(fhandle, filetype, number, name, mode, access, lock,
-                             codepage=None if not self.utf8 else self.codepage,
-                             universal=self.universal,
-                             split_long_lines=False, locks=self.locks)
+            return TextFile(fhandle, filetype, number, native_name, mode, access, lock,
+                             codepage=None if not self._utf8 else self._codepage,
+                             universal=self._universal,
+                             split_long_lines=False, locks=self._locks)
         elif filetype == b'D':
             if mode in b'IAO':
                 # text data
-                return TextFile(fhandle, filetype, number, name, mode, access, lock, locks=self.locks)
+                return TextFile(fhandle, filetype, number, native_name, mode, access, lock, locks=self._locks)
             else:
-                return RandomFile(fhandle, number, name, access, lock, field, reclen, locks=self.locks)
+                return RandomFile(fhandle, number, native_name, access, lock, field, reclen, locks=self._locks)
         else:
             # incorrect file type requested
             msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
@@ -169,8 +296,8 @@ class DiskDevice(object):
     def open(self, number, filespec, filetype, mode, access, lock,
                    reclen, seg, offset, length, field):
         """Open a file on a disk drive."""
-        # parse the file spec to a definite name
-        if not self.path:
+        # parse the file spec to a definite native name
+        if not self._native_root:
             # undefined disk drive: path not found
             raise error.BASICError(error.PATH_NOT_FOUND)
         # set default extension for programs
@@ -180,32 +307,32 @@ class DiskDevice(object):
             defext = b''
         # translate the file name to something DOS-ish if necessary
         if mode == b'I':
-            name = self._native_path(filespec, defext)
+            native_name = self._get_native_abspath(filespec, defext, isdir=False, create=False)
         else:
             # random files: try to open matching file
             # if it doesn't exist, use an all-caps 8.3 file name
-            name = self._native_path(filespec, defext, name_err=None)
+            native_name = self._get_native_abspath(filespec, defext, isdir=False, create=True)
         # handle locks, open stream and create file object
         # don't open output or append files more than once
         if mode in (b'O', b'A'):
-            self.check_file_not_open(name)
+            self._check_file_not_open(native_name)
         # obtain a lock
         if filetype == b'D':
-            self.locks.acquire(name, number, lock, access)
+            self._locks.acquire(native_name, number, lock, access)
         try:
             # open the underlying stream
-            fhandle = self._open_stream(name, mode, access)
+            fhandle = self._open_stream(native_name, mode, access)
             # apply the BASIC file wrapper
-            f = self.create_file_object(
-                    fhandle, filetype, mode, name, number,
+            f = self._create_file_object(
+                    fhandle, filetype, mode, native_name, number,
                     access, lock, field, reclen, seg, offset, length)
             # register file as open
-            self.locks.open_file(number, f)
+            self._locks.open_file(number, f)
             return f
         except Exception:
             if filetype == b'D':
-                self.locks.release(number)
-            self.locks.close_file(number)
+                self._locks.release(number)
+            self._locks.close_file(number)
             raise
 
     def _open_stream(self, native_name, mode, access):
@@ -240,166 +367,278 @@ class DiskDevice(object):
             # bad file number, which is what GW throws for open chr$(0)
             raise error.BASICError(error.BAD_FILE_NUMBER)
 
-    def _native_path_elements(self, path_without_drive, path_err, join_name=False):
-        """Return elements of the native path for a given BASIC path."""
-        path_without_drive = self.codepage.str_to_unicode(
-                bytes(path_without_drive), box_protect=False)
-        if u'/' in path_without_drive:
+    def _get_native_reldir(self, dospath):
+        """Return the native dir path for a given BASIC dir path, relative to the root."""
+        if b'/' in dospath:
             # bad file number - this is what GW produces here
             raise error.BASICError(error.BAD_FILE_NUMBER)
-        if not self.path:
+        if not self._native_root:
             # this drive letter is not available (not mounted)
             raise error.BASICError(error.PATH_NOT_FOUND)
-        # get path below drive letter
-        if path_without_drive and path_without_drive[0] == u'\\':
+        # find starting directory
+        if dospath and dospath[0] == b'\\':
             # absolute path specified
-            elements = path_without_drive.split(u'\\')
+            cwd = []
         else:
-            elements = self.cwd.split(os.sep) + path_without_drive.split(u'\\')
-        # strip whitespace
-        elements = map(unicode.strip, elements)
-        # whatever's after the last \\ is the name of the subject file or dir
-        # if the path ends in \\, there's no name
-        name = u'' if (join_name or not elements) else elements.pop()
-        # parse internal .. and . (like normpath but with \\)
-        # drop leading . and .. (this is what GW-BASIC does at drive root)
-        i = 0
-        while i < len(elements):
-            if elements[i] == u'.':
-                del elements[i]
-            elif elements[i] == u'..':
-                del elements[i]
-                if i > 0:
-                    del elements[i-1]
-                    i -= 1
-            else:
-                i += 1
+            cwd = self._native_cwd.split(os.sep)
+        # parse internal .. and . and double slashes
+        dospath = ntpath.normpath(dospath)
+        # parse leading . and .. and double slashes in relative path
+        # if at root, just drop leading dots (this is what GW-BASIC does at drive root)
+        dospath_elements = dospath.split(b'\\')
+        while dospath_elements and dospath_elements[0] in (b'', b'.', b'..'):
+            if dospath_elements[0] == b'..':
+                cwd = cwd[:-1]
+            dospath_elements = dospath_elements[1:]
         # prepend drive root path to allow filename matching
-        path = self.path
-        baselen = len(path) + (path[-1] != os.sep)
+        path = os.path.join(self._native_root, *cwd)
+        root_len = len(self._native_root) + (self._native_root[-1] != os.sep)
         # find the native matches for each step in the path
-        for e in elements:
-            # skip double slashes
-            if e:
-                # find a matching directory for every step in the path;
-                # append found name to path
-                path = os.path.join(path, match_filename(e, b'', path, name_err=path_err, isdir=True))
-        # return drive root path, relative path, file name
-        return path[:baselen], path[baselen:], name
+        for dos_elem in dospath_elements:
+            # find a matching directory for every step in the path;
+            native_elem = self._get_native_name(
+                    path, dos_elem, defext=b'', isdir=True, create=False)
+            # append found name to path
+            path = os.path.join(path, native_elem)
+        # return relative path only
+        return path[root_len:]
 
-    def _native_path(self, path_and_name, defext=b'',
-                    name_err=error.FILE_NOT_FOUND, isdir=False):
-        """Find os-native path to match the given BASIC path."""
+    def _get_native_abspath(self, path, defext, isdir, create):
+        """\
+            Find os-native path to match the given BASIC path; apply default extension.
+            path: bytes             requested DOS path to file on this device
+            defext: bytes           default extension, to apply if no dot in basename
+            create: bool            allow creating a new name for the proposed DOS name
+                                    if not, throw if matched basename does not exist
+            isdir: bool             basename should refer to a directory
+        """
         # substitute drives and cwds
         # always use Path Not Found error if not found at this stage
-        drivepath, relpath, name = self._native_path_elements(path_and_name, path_err=error.PATH_NOT_FOUND)
+        dos_dirname, name = ntpath.split(path)
+        native_relpath = self._get_native_reldir(dos_dirname)
         # return absolute path to file
-        path = os.path.join(drivepath, relpath)
+        path = os.path.join(self._native_root, native_relpath)
         if name:
-            path = os.path.join(path, match_filename(name, defext, path, name_err, isdir))
+            path = os.path.join(path, self._get_native_name(path, name, defext, isdir, create))
         # get full normalised path
         return os.path.abspath(path)
 
-    def chdir(self, name):
+    def chdir(self, dos_path):
         """Change working directory to given BASIC path."""
         # get drive path and relative path
-        dpath, rpath, _ = self._native_path_elements(name, path_err=error.PATH_NOT_FOUND, join_name=True)
+        native_relpath = self._get_native_reldir(dos_path)
         # set cwd for the specified drive
-        self.cwd = rpath
+        self._native_cwd = native_relpath
 
-    def mkdir(self, name):
+    def mkdir(self, dos_path):
         """Create directory at given BASIC path."""
-        safe(os.mkdir, self._native_path(name, name_err=None, isdir=True))
+        safe(os.mkdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=True))
 
-    def rmdir(self, name):
+    def rmdir(self, dos_path):
         """Remove directory at given BASIC path."""
-        safe(os.rmdir, self._native_path(name, name_err=error.PATH_NOT_FOUND, isdir=True))
+        safe(os.rmdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=False))
 
-    def kill(self, name):
+    def kill(self, dos_path):
         """Remove regular file at given native path."""
-        safe(os.remove, name)
+        native_path = self._get_native_abspath(dos_path, defext=b'', isdir=False, create=False)
+        # don't delete open files
+        self._check_file_not_open(native_path)
+        safe(os.remove, native_path)
 
-    def rename(self, oldname, newname):
+    def rename(self, old_dospath, new_dospath):
         """Rename a file or directory."""
-        safe(os.rename, oldname, newname)
+        old_native_path = self._get_native_abspath(
+                old_dospath, defext=b'', isdir=False, create=False)
+        new_native_path = self._get_native_abspath(
+                new_dospath, defext=b'', isdir=False, create=True)
+        if os.path.exists(new_native_path):
+            raise error.BASICError(error.FILE_ALREADY_EXISTS)
+        safe(os.rename, old_native_path, new_native_path)
 
-    def _split_pathmask(self, pathmask):
+    def _split_pathmask(self, dos_pathmask):
         """Split pathmask into path and mask."""
-        if not self.path:
-            # undefined disk drive: file not found
-            raise error.BASICError(error.FILE_NOT_FOUND)
         # forward slashes - file not found
         # GW-BASIC sometimes allows leading or trailing slashes
         # and then does weird things I don't understand.
-        if b'/' in bytes(pathmask):
+        if b'/' in dos_pathmask:
             raise error.BASICError(error.FILE_NOT_FOUND)
-        drivepath, relpath, mask = self._native_path_elements(pathmask, path_err=error.FILE_NOT_FOUND)
-        path = os.path.join(drivepath, relpath)
-        mask = mask.upper() or b'*.*'
-        return path, relpath, mask
+        # note that ntpath would otherwise accept / as \\
+        dos_path, dos_mask = ntpath.split(dos_pathmask)
+        try:
+            native_relpath = self._get_native_reldir(dos_path)
+        except error.BASICError as e:
+            # any path name problem in FILES: GW-BASIC throws file not found
+            raise error.BASICError(error.FILE_NOT_FOUND)
+        native_path = os.path.join(self._native_root, native_relpath)
+        return native_path, native_relpath, dos_mask
 
-    def _get_dirs_files(self, path):
-        """get native filenames for native path."""
-        all_names = safe(os.listdir, path)
-        dirs = [filename_from_unicode(n) for n in all_names if os.path.isdir(os.path.join(path, n))]
-        fils = [filename_from_unicode(n) for n in all_names if not os.path.isdir(os.path.join(path, n))]
+    def _get_dirs_files(self, native_path):
+        """Get native filenames for native path."""
+        all_names = safe(os.listdir, native_path)
+        dirs = [n for n in all_names if os.path.isdir(os.path.join(native_path, n))]
+        fils = [n for n in all_names if not os.path.isdir(os.path.join(native_path, n))]
         return dirs, fils
 
     def listdir(self, pathmask):
         """Get directory listing."""
-        path, relpath, mask = self._split_pathmask(pathmask)
+        native_path, native_relpath, dos_mask = self._split_pathmask(pathmask)
         fils = []
-        if mask == b'.':
-            dirs = [split_dosname((os.sep+relpath).split(os.sep)[-1:][0])]
-        elif mask == b'..':
-            dirs = [split_dosname((os.sep+relpath).split(os.sep)[-2:][0])]
+        if dos_mask in (b'.', b'..'):
+            # following GW, we just show a single dot if asked for either . or ..
+            dirs = [(u'', u'')]
         else:
-            dirs, fils = self._get_dirs_files(path)
+            dirs, fils = self._get_dirs_files(native_path)
             # filter according to mask
-            dirs = filter_names(path, dirs + [b'.', b'..'], mask)
-            fils = filter_names(path, fils, mask)
-        # format and print contents
+            dirs = self._filter_names(native_path, dirs + [u'.', u'..'], dos_mask)
+            fils = self._filter_names(native_path, fils, dos_mask)
+        # format contents
         return (
-            [join_dosname(t, e, padding=True) + b'<DIR>' for t, e in dirs] +
-            [join_dosname(t, e, padding=True) + b'     ' for t, e in fils]
+            [t.ljust(8) + (b'.' if e or not t else b' ') + e.ljust(3) + b'<DIR>' for t, e in dirs] +
+            [t.ljust(8) + (b'.' if e or not t else b' ') + e.ljust(3) + b'     ' for t, e in fils]
         )
+
+    def get_native_cwd(self):
+        """Return the current working directory in native format."""
+        return os.path.join(self._native_root, self._native_cwd)
 
     def get_cwd(self):
         """Return the current working directory in DOS format."""
-        drivepath, relpath, _ = self._native_path_elements(b'', path_err=error.FILE_NOT_FOUND)
-        path = os.path.join(drivepath, relpath)
-        if self.cwd:
-            dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
-        else:
-            dir_elems = []
+        native_path = self._native_root
+        dir_elems = []
+        if self._native_cwd:
+            for e in self._native_cwd.split(os.sep):
+                dir_elems.append(self._get_dos_display_name(native_path, e))
+                native_path += os.sep + e
         return self.letter + b':\\' + b'\\'.join(dir_elems)
 
     def get_free(self):
         """Return the number of free bytes on the drive."""
-        if platform.system() == b'Windows':
-            free_bytes = ctypes.c_ulonglong(0)
-            ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(self.path),
-                                            None, None, ctypes.pointer(free_bytes))
-            return free_bytes.value
-        else:
-            st = os.statvfs(self.path.encode(locale.getpreferredencoding()))
-            return st.f_bavail * st.f_frsize
+        return get_free_bytes(self._native_root)
 
-    def check_file_not_open(self, path):
+    def require_file_exists_and_not_open(self, dospath):
+        """Raise an error if the file is open or does not exist."""
+        # this checks for existence if name_err is set
+        native_name = self._get_native_abspath(dospath, defext=b'', isdir=False, create=False)
+        return self._check_file_not_open(native_name)
+
+    def _check_file_not_open(self, native_path):
         """Raise an error if the file is open."""
-        for f in self.locks.open_files.values():
+        for f in self._locks.open_files.values():
             try:
-                if path == f.name:
+                if native_path == f.name:
                     raise error.BASICError(error.FILE_ALREADY_OPEN)
             except AttributeError as e:
                 # only disk files have a name, so ignore
                 pass
 
+    ##########################################################################
+    # DOS and native name conversion
+
+    def _get_native_name(self, native_path, dos_name, defext, isdir, create):
+        """Find or create a matching native file name for a given BASIC name."""
+        # if the name contains a dot, do not apply the default extension
+        # to maintain GW-BASIC compatibility, a trailing single dot matches the name
+        # with no dots as well as the name with a single dot.
+        # file names with more than one dot are not affected.
+        # file spec         attempted matches
+        # LongFileName      (1) LongFileName.BAS (2) LONGFILE.BAS
+        # LongFileName.bas  (1) LongFileName.bas (2) LONGFILE.BAS
+        # LongFileName.     (1) LongFileName. (2) LongFileName (3) LONGFILE
+        # LongFileName..    (1) LongFileName.. (2) [does not try LONGFILE.. - not allowable]
+        # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
+        #
+        # don't accept leading or trailing whitespace (internal whitespace should be preserved)
+        # note that DosBox removes internal whitespace, but MS-DOS does not
+        name_err = error.PATH_NOT_FOUND if isdir else error.FILE_NOT_FOUND
+        if dos_name != dos_name.strip():
+            raise error.BASICError(name_err)
+        if defext and b'.' not in dos_name:
+            dos_name += b'.' + defext
+        elif dos_name[-1] == b'.' and b'.' not in dos_name[:-1]:
+            # ends in single dot; first try with dot
+            # but if it doesn't exist, base everything off dotless name
+            uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
+            if istype(native_path, uni_name, isdir):
+                return uni_name
+            dos_name = dos_name[:-1]
+        # check if the name exists as-is; should also match Windows short names.
+        uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
+        if istype(native_path, uni_name, isdir):
+            return uni_name
+        # original name does not exist; try matching dos-names or create one
+        # normalise to 8.3
+        norm_name = dos_normalise_name(dos_name)
+        # check for non-legal characters & spaces (but clip off overlong names)
+        if not dos_is_legal_name(norm_name):
+            raise error.BASICError(error.BAD_FILE_NAME)
+        fullname = dos_to_native_name(native_path, norm_name, isdir)
+        if fullname:
+            return fullname
+        # not found
+        if create:
+            # create a new filename
+            # we should have only ascii due to dos_is_legal_name check above
+            return norm_name.decode(b'ascii', errors='replace')
+        else:
+            raise error.BASICError(name_err)
+
+    def _get_dos_display_name(self, native_dirpath, native_name):
+        """Convert native name to short name or (not normalised or even legal) dos-style name."""
+        native_path = os.path.join(native_dirpath, native_name)
+        # get the short name if it exists, keep long name otherwise
+        native_path = get_short_pathname(native_path) or native_path
+        native_name = os.path.basename(native_path)
+        # see if we have a legal dos name that matches
+        try:
+            ascii_name = native_name.encode('ascii')
+        except UnicodeEncodeError:
+            pass
+        else:
+            if dos_is_legal_name(ascii_name):
+                return dos_normalise_name(ascii_name)
+        # convert to codepage
+        cp_name = self._codepage.str_from_unicode(native_name, errors='replace')
+        # clip overlong & mark as shortened
+        trunk, ext = dos_splitext(cp_name)
+        if len(trunk) > 8:
+            trunk = trunk[:7] + b'+'
+        if len(ext) > 3:
+            ext = ext[:2] + b'+'
+        return trunk + (b'.' if ext or not trunk else b'') + ext
+
+    def _filter_names(self, native_dirpath, native_names, dos_mask):
+        """Apply case-insensitive filename filter to display names."""
+        dos_mask = dos_mask or b'*.*'
+        trunkmask, extmask = dos_splitext(dos_mask)
+        all_files = (self._get_dos_display_name(native_dirpath, name) for name in native_names)
+        split = [dos_splitext(dos_name) for dos_name in all_files]
+        return sorted(
+                (trunk, ext) for (trunk, ext) in split
+                if dos_name_matches(trunk, trunkmask) and dos_name_matches(ext, extmask)
+            )
+
+
+##############################################################################
+# Native path utilities
+
+def istype(native_path, native_name, isdir):
+    """Return whether a file exists and is a directory or regular."""
+    name = os.path.join(native_path, native_name)
+    try:
+        return os.path.isdir(name) if isdir else os.path.isfile(name)
+    except TypeError:
+        # happens for name == u'\0'
+        return False
+
+
+##############################################################################
+# Internal disk and bound files
 
 class BoundFile(object):
     """Bound internal file."""
 
     def __init__(self, device, file_name_or_object, name):
+        """Initialise."""
         self._device = device
         self._file = file_name_or_object
         self._name = name
@@ -425,6 +664,25 @@ class BoundFile(object):
     def __str__(self):
         """Get BASIC file name."""
         return b'%s:%s' % (self._device.letter, self._name)
+
+
+class NameWrapper(object):
+    """Use normal file name as return value from bind_file."""
+
+    def __init__(self, name):
+        """Initialise."""
+        self._file = name
+
+    def __enter__(self):
+        """Context guard."""
+        return self
+
+    def __exit__(self, *dummies):
+        """Context guard."""
+
+    def __str__(self):
+        """Get BASIC file name."""
+        return self._file
 
 
 class InternalDiskDevice(DiskDevice):
@@ -461,7 +719,7 @@ class InternalDiskDevice(DiskDevice):
         if filespec in self._bound_files:
             fhandle = self._bound_files[filespec].get_stream(mode)
             try:
-                return self.create_file_object(fhandle, filetype, mode)
+                return self._create_file_object(fhandle, filetype, mode)
             except EnvironmentError as e:
                 handle_oserror(e)
         else:
@@ -471,33 +729,34 @@ class InternalDiskDevice(DiskDevice):
 
     def _split_pathmask(self, pathmask):
         """Split pathmask into path and mask."""
-        if self.path:
+        if self._native_root:
             return DiskDevice._split_pathmask(self, pathmask)
         else:
             return u'', u'', pathmask.upper() or b'*.*'
 
     def _get_dirs_files(self, path):
         """get native filenames for native path."""
-        if self.path:
+        if self._native_root:
             dirs, files = DiskDevice._get_dirs_files(self, path)
         else:
             dirs, files = [], []
-        files += [filename_from_unicode(n) for n in self._bound_files]
+        files += self._bound_files.keys()
         return dirs, files
 
     def get_cwd(self):
         """Return the current working directory in DOS format."""
-        if self.path:
+        if self._native_root:
             return DiskDevice.get_cwd(self)
         else:
             return self.letter + b':\\'
 
     def get_free(self):
         """Return the number of free bytes on the drive."""
-        if self.path:
+        if self._native_root:
             return DiskDevice.get_free(self)
         else:
             return 0
+
 
 ###############################################################################
 # Locks
@@ -569,7 +828,7 @@ class BinaryFile(devicebase.RawFile):
         # don't lock binary files
         self.lock = b''
         # we need the Locks object to register file as open
-        self.locks = locks
+        self._locks = locks
         self.access = b'RW'
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == b'O':
@@ -594,9 +853,9 @@ class BinaryFile(devicebase.RawFile):
         if self.mode == b'O':
             self.write(b'\x1a')
         devicebase.RawFile.close(self)
-        if self.locks is not None:
+        if self._locks is not None:
             # no locking for binary files, but we do need to register it closed
-            self.locks.close_file(self.number)
+            self._locks.close_file(self.number)
 
 
 class CRLFTextFileBase(devicebase.TextFileBase):
@@ -656,7 +915,7 @@ class RandomFile(CRLFTextFileBase):
         self.lock_type = lock
         self.access = access
         self.lock_list = set()
-        self.locks = locks
+        self._locks = locks
         self.number = number
         self.name = name
         # position at start of file
@@ -699,9 +958,9 @@ class RandomFile(CRLFTextFileBase):
         """Close random-access file."""
         CRLFTextFileBase.close(self)
         self.output_stream.close()
-        if self.locks is not None:
-            self.locks.release(self.number)
-            self.locks.close_file(self.number)
+        if self._locks is not None:
+            self._locks.release(self.number)
+            self._locks.close_file(self.number)
 
     def get(self, dummy=None):
         """Read a record."""
@@ -749,7 +1008,7 @@ class RandomFile(CRLFTextFileBase):
 
     def lock(self, start, stop):
         """Lock range of records."""
-        other_lock_list = set.union(*(f.lock_list for f in self.locks.list(self.name)))
+        other_lock_list = set.union(*(f.lock_list for f in self._locks.list(self.name)))
         for start_1, stop_1 in other_lock_list:
             if (stop_1 is None and start_1 is None
                         or (start >= start_1 and start <= stop_1)
@@ -777,30 +1036,30 @@ class TextFile(CRLFTextFileBase):
                                           b'', split_long_lines)
         self.lock_list = set()
         self.lock_type = lock
-        self.locks = locks
+        self._locks = locks
         self.access = access
         self.number = number
         self.name = name
         # if a codepage is supplied, text is converted to utf8
         # otherwise, it is read/written as raw bytes
-        self.codepage = codepage
-        self.universal = universal
+        self._codepage = codepage
+        self._universal = universal
         self.spaces = b''
         if self.mode == b'A':
             self.fhandle.seek(0, 2)
-        elif self.mode == b'O' and self.codepage is not None:
+        elif self.mode == b'O' and self._codepage is not None:
             # start UTF-8 files with BOM as many Windows readers expect this
             self.fhandle.write(b'\xef\xbb\xbf')
 
     def close(self):
         """Close text file."""
-        if self.mode in (b'O', b'A') and self.codepage is None:
+        if self.mode in (b'O', b'A') and self._codepage is None:
             # write EOF char
             self.fhandle.write(b'\x1a')
         CRLFTextFileBase.close(self)
-        if self.locks is not None:
-            self.locks.release(self.number)
-            self.locks.close_file(self.number)
+        if self._locks is not None:
+            self._locks.release(self.number)
+            self._locks.close_file(self.number)
 
     def loc(self):
         """Get file pointer LOC """
@@ -819,14 +1078,14 @@ class TextFile(CRLFTextFileBase):
 
     def write_line(self, s=''):
         """Write to file in normal or UTF-8 mode."""
-        if self.codepage is not None:
-            s = (self.codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
+        if self._codepage is not None:
+            s = (self._codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
         CRLFTextFileBase.write(self, s + '\r\n')
 
     def write(self, s, can_break=True):
         """Write to file in normal or UTF-8 mode."""
-        if self.codepage is not None:
-            s = (self.codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
+        if self._codepage is not None:
+            s = (self._codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
         CRLFTextFileBase.write(self, s, can_break)
 
     def _read_line_universal(self):
@@ -858,17 +1117,17 @@ class TextFile(CRLFTextFileBase):
 
     def read_line(self):
         """Read line from text file."""
-        if not self.universal:
+        if not self._universal:
             s = CRLFTextFileBase.read_line(self)
         else:
             s = self._read_line_universal()
-        if self.codepage is not None and s is not None:
-            s = self.codepage.str_from_unicode(s.decode(b'utf-8'))
+        if self._codepage is not None and s is not None:
+            s = self._codepage.str_from_unicode(s.decode(b'utf-8', errors='replace'))
         return s
 
     def lock(self, start, stop):
         """Lock the file."""
-        if set.union(*(f.lock_list for f in self.locks.list(self.name))):
+        if set.union(*(f.lock_list for f in self._locks.list(self.name))):
             raise error.BASICError(error.PERMISSION_DENIED)
         self.lock_list.add(True)
 
@@ -878,189 +1137,3 @@ class TextFile(CRLFTextFileBase):
             self.lock_list.remove(True)
         except KeyError:
             raise error.BASICError(error.PERMISSION_DENIED)
-
-
-
-##############################################################################
-# Exception handling
-
-def safe(fnname, *fnargs):
-    """Execute OS function and handle errors."""
-    try:
-        return fnname(*fnargs)
-    except EnvironmentError as e:
-        handle_oserror(e)
-
-def handle_oserror(e):
-    """Translate OS and I/O exceptions to BASIC errors."""
-    try:
-        basic_err = OS_ERROR[e.errno]
-    except KeyError:
-        logging.error(u'Unmapped environment exception: %d', e.errno)
-        basic_err = error.DEVICE_IO_ERROR
-    raise error.BASICError(basic_err)
-
-
-##############################################################################
-# DOS name translation
-
-if platform.system() == b'Windows':
-    def short_name(path, longname):
-        """Get bytes Windows short name or fake it."""
-        path_and_longname = os.path.join(path, longname)
-        try:
-            # gets the short name if it exists, keeps long name otherwise
-            path_and_name = win32api.GetShortPathName(path_and_longname)
-        except Exception:
-            # something went wrong - keep long name (happens for swap file)
-            # this should be a WindowsError which is an OSError
-            # but it often is a pywintypes.error
-            path_and_name = path_and_longname
-        # last element of path is name
-        name = path_and_name.split(os.sep)[-1]
-        # if we still have a long name, shorten it now
-        return split_dosname(name, mark_shortened=True)
-else:
-    def short_name(dummy_path, longname):
-        """Get bytes Windows short name or fake it."""
-        # path is only needed on Windows
-        return split_dosname(longname, mark_shortened=True)
-
-def split_dosname(name, mark_shortened=False):
-    """Convert unicode name into bytes uppercase 8.3 tuple; apply default extension."""
-    # convert to all uppercase, no leading or trailing spaces
-    # replace non-ascii characters with question marks
-    name = name.encode(b'ascii', errors=b'replace').strip().upper()
-    # don't try to split special directory names
-    if name == b'.':
-        return b'', b''
-    elif name == b'..':
-        return b'', b'.'
-    # take whatever comes after first dot as extension
-    # and whatever comes before first dot as trunk
-    elements = name.split(b'.', 1)
-    if len(elements) == 1:
-        trunk, ext = elements[0], ''
-    else:
-        trunk, ext = elements
-    # truncate to 8.3
-    strunk, sext = trunk[:8], ext[:3]
-    # mark shortened file names with a + sign
-    # this is used in FILES
-    if mark_shortened:
-        if strunk != trunk:
-            strunk = strunk[:7] + b'+'
-        if sext != ext:
-            sext = sext[:2] + b'+'
-    return strunk, sext
-
-def join_dosname(trunk, ext, padding=False):
-    """Join trunk and extension into (bytes) file name."""
-    if ext or not trunk:
-        ext = '.' + ext
-    if padding:
-        return trunk.ljust(8) + ext.ljust(4)
-    else:
-        return trunk + ext
-
-def istype(path, native_name, isdir):
-    """Return whether a file exists and is a directory or regular."""
-    name = os.path.join(path, native_name)
-    try:
-        return os.path.isdir(name) if isdir else os.path.isfile(name)
-    except TypeError:
-        # happens for name = '\0'
-        return False
-
-def match_dosname(dosname, path, isdir):
-    """Find a matching native file name for a given 8.3 ascii DOS name."""
-    try:
-        dosname = dosname.decode(b'ascii')
-    except UnicodeDecodeError:
-        # non-ascii characters are not allowable for DOS filenames
-        return None
-    # check if the dossified name exists as-is
-    if istype(path, dosname, isdir):
-        return dosname
-    # find other case combinations, if present
-    # also match training single dot to no dots
-    trunk, ext = split_dosname(dosname)
-    try:
-        all_names = sorted(os.listdir(path))
-    except EnvironmentError:
-        # report no match if listdir fails
-        return None
-    for f in all_names:
-        if split_dosname(f) == (trunk, ext) and istype(path, f, isdir):
-            return f
-    return None
-
-def match_filename(name, defext, path, name_err, isdir):
-    """Find or create a matching native file name for a given BASIC name."""
-    # if the name contains a dot, do not apply the default extension
-    # to maintain GW-BASIC compatibility, a trailing single dot matches the name
-    # with no dots as well as the name with a single dot.
-    # file names with more than one dot are not affected.
-    # file spec         attempted matches
-    # LongFileName      (1) LongFileName.BAS (2) LONGFILE.BAS
-    # LongFileName.bas  (1) LongFileName.bas (2) LONGFILE.BAS
-    # LongFileName.     (1) LongFileName. (2) LongFileName (3) LONGFILE
-    # LongFileName..    (1) LongFileName.. (2) [does not try LONGFILE.. - not allowable]
-    # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
-    if defext and b'.' not in name:
-        name += b'.' + defext
-    elif name[-1] == b'.' and b'.' not in name[:-1]:
-        # ends in single dot; first try with dot
-        # but if it doesn't exist, base everything off dotless name
-        if istype(path, name, isdir):
-            return name
-        name = name[:-1]
-    # check if the name exists as-is; should also match Windows short names.
-    if istype(path, name, isdir):
-        return name
-    # try to match dossified names
-    trunk, ext = split_dosname(name)
-    # enforce allowable characters
-    if (set(trunk) | set(ext)) - ALLOWABLE_CHARS:
-        raise error.BASICError(error.BAD_FILE_NAME)
-    dosname = join_dosname(trunk, ext)
-    fullname = match_dosname(dosname, path, isdir)
-    if fullname:
-        return fullname
-    # not found
-    if not name_err:
-        # create a new filename
-        return dosname
-    else:
-        raise error.BASICError(name_err)
-
-def match_wildcard(name, mask):
-    """Whether filename name matches DOS wildcard mask."""
-    # convert wildcard mask to regexp
-    regexp = '\A'
-    for c in mask:
-        if c == '?':
-            regexp += '.'
-        elif c == '*':
-            # we won't need to match newlines, so dot is fine
-            regexp += '.*'
-        else:
-            regexp += re.escape(c)
-    regexp += '\Z'
-    cregexp = re.compile(regexp)
-    return cregexp.match(name) is not None
-
-def filename_from_unicode(name):
-    """Replace disallowed characters in filename with ?."""
-    name_str = name.encode(b'ascii', b'replace')
-    return b''.join(c if c in ALLOWABLE_CHARS | set(b'.') else b'?' for c in name_str)
-
-def filter_names(path, files_list, mask=b'*.*'):
-    """Apply filename filter to short version of names."""
-    all_files = [short_name(path, name.decode(b'ascii')) for name in files_list]
-    # apply mask separately to trunk and extension, dos-style.
-    # hide dotfiles
-    trunkmask, extmask = split_dosname(mask)
-    return sorted([(t, e) for (t, e) in all_files
-        if (match_wildcard(t, trunkmask) and match_wildcard(e, extmask) and
-            (t or not e or e == b'.'))])

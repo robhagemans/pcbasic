@@ -25,40 +25,36 @@ from .base import video_plugins, InitFailed
 # so you don't see gibberish if the terminal doesn't support the sequence.
 from . import ansi
 
+# sys.stdout expects bytes
+SET_TITLE = ansi.SET_TITLE.encode('ascii')
+RESIZE_TERM = ansi.RESIZE_TERM.encode('ascii')
+
 
 ENCODING = locale.getpreferredencoding()
 
 if curses:
     # curses keycodes
     CURSES_TO_SCAN = {
-        curses.KEY_F1: scancode.F1, curses.KEY_F2: scancode.F2,
-        curses.KEY_F3: scancode.F3, curses.KEY_F4: scancode.F4,
-        curses.KEY_F5: scancode.F5, curses.KEY_F6: scancode.F6,
-        curses.KEY_F7: scancode.F7, curses.KEY_F8: scancode.F8,
-        curses.KEY_F9: scancode.F9, curses.KEY_F10: scancode.F10,
-        curses.KEY_F11: scancode.F11, curses.KEY_F12: scancode.F12,
-        curses.KEY_END: scancode.END, curses.KEY_HOME: scancode.HOME,
-        curses.KEY_UP: scancode.UP, curses.KEY_DOWN: scancode.DOWN,
-        curses.KEY_RIGHT: scancode.RIGHT, curses.KEY_LEFT: scancode.LEFT,
-        curses.KEY_IC: scancode.INSERT, curses.KEY_DC: scancode.DELETE,
-        curses.KEY_PPAGE: scancode.PAGEUP, curses.KEY_NPAGE: scancode.PAGEDOWN,
-        curses.KEY_BACKSPACE: scancode.BACKSPACE,
+        curses.KEY_F1: scancode.F1, curses.KEY_F2: scancode.F2, curses.KEY_F3: scancode.F3,
+        curses.KEY_F4: scancode.F4, curses.KEY_F5: scancode.F5, curses.KEY_F6: scancode.F6,
+        curses.KEY_F7: scancode.F7, curses.KEY_F8: scancode.F8, curses.KEY_F9: scancode.F9,
+        curses.KEY_F10: scancode.F10, curses.KEY_F11: scancode.F11, curses.KEY_F12: scancode.F12,
+        curses.KEY_END: scancode.END, curses.KEY_HOME: scancode.HOME, curses.KEY_UP: scancode.UP,
+        curses.KEY_DOWN: scancode.DOWN, curses.KEY_RIGHT: scancode.RIGHT,
+        curses.KEY_LEFT: scancode.LEFT, curses.KEY_IC: scancode.INSERT,
+        curses.KEY_DC: scancode.DELETE, curses.KEY_PPAGE: scancode.PAGEUP,
+        curses.KEY_NPAGE: scancode.PAGEDOWN, curses.KEY_BACKSPACE: scancode.BACKSPACE,
         curses.KEY_PRINT: scancode.PRINT, curses.KEY_CANCEL: scancode.ESCAPE,
     }
     CURSES_TO_EASCII = {
-        curses.KEY_F1: uea.F1, curses.KEY_F2: uea.F2,
-        curses.KEY_F3: uea.F3, curses.KEY_F4: uea.F4,
-        curses.KEY_F5: uea.F5, curses.KEY_F6: uea.F6,
-        curses.KEY_F7: uea.F7, curses.KEY_F8: uea.F8,
-        curses.KEY_F9: uea.F9, curses.KEY_F10: uea.F10,
-        curses.KEY_F11: uea.F11, curses.KEY_F12: uea.F12,
-        curses.KEY_END: uea.END, curses.KEY_HOME: uea.HOME,
-        curses.KEY_UP: uea.UP, curses.KEY_DOWN: uea.DOWN,
-        curses.KEY_RIGHT: uea.RIGHT, curses.KEY_LEFT: uea.LEFT,
-        curses.KEY_IC: uea.INSERT, curses.KEY_DC: uea.DELETE,
+        curses.KEY_F1: uea.F1, curses.KEY_F2: uea.F2, curses.KEY_F3: uea.F3, curses.KEY_F4: uea.F4,
+        curses.KEY_F5: uea.F5, curses.KEY_F6: uea.F6, curses.KEY_F7: uea.F7, curses.KEY_F8: uea.F8,
+        curses.KEY_F9: uea.F9, curses.KEY_F10: uea.F10, curses.KEY_F11: uea.F11,
+        curses.KEY_F12: uea.F12, curses.KEY_END: uea.END, curses.KEY_HOME: uea.HOME,
+        curses.KEY_UP: uea.UP, curses.KEY_DOWN: uea.DOWN, curses.KEY_RIGHT: uea.RIGHT,
+        curses.KEY_LEFT: uea.LEFT, curses.KEY_IC: uea.INSERT, curses.KEY_DC: uea.DELETE,
         curses.KEY_PPAGE: uea.PAGEUP, curses.KEY_NPAGE: uea.PAGEDOWN,
-        curses.KEY_BACKSPACE: uea.BACKSPACE,
-        curses.KEY_CANCEL: uea.ESCAPE,
+        curses.KEY_BACKSPACE: uea.BACKSPACE, curses.KEY_CANCEL: uea.ESCAPE,
     }
 
 
@@ -70,37 +66,16 @@ class VideoCurses(VideoPlugin):
         """Initialise the text interface."""
         VideoPlugin.__init__(self, input_queue, video_queue)
         # we need to ensure setlocale() has been run first to allow unicode input
-        self.curses_init = False
         if not curses:
             raise InitFailed('`Module `curses` not found')
         # set the ESC-key delay to 25 ms unless otherwise set
         # set_escdelay seems to be unavailable on python curses.
         if not os.environ.has_key('ESCDELAY'):
             os.environ['ESCDELAY'] = '25'
-        self.curses_init = True
-        self.screen = curses.initscr()
-        self.orig_size = self.screen.getmaxyx()
-        curses.noecho()
-        curses.cbreak()
-        curses.nonl()
-        curses.raw()
-        curses.start_color()
-        self.screen.clear()
         self.height, self.width = 25, 80
         self.border_y = int(round((self.height * border_width)/200.))
         self.border_x = int(round((self.width * border_width)/200.))
-        self.underlay = curses.newwin(
-            self.height + self.border_y*2, self.width + self.border_x*2, 0, 0)
-        self.window = curses.newwin(self.height, self.width, self.border_y, self.border_x)
-        self.window.nodelay(True)
-        self.window.keypad(True)
-        self.window.scrollok(False)
-        self.can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
-                              and curses.COLOR_PAIRS > 128)
         self.caption = caption
-        sys.stdout.write(ansi.SET_TITLE % self.caption)
-        sys.stdout.flush()
-        self._set_default_colours(16)
         # cursor is visible
         self.cursor_visible = True
         # 1 is line ('visible'), 2 is block ('highly visible'), 3 is invisible
@@ -110,19 +85,46 @@ class VideoCurses(VideoPlugin):
         self.cursor_col = 1
         # last colour used
         self.last_colour = None
-        # text and colour buffer
-        self.num_pages = 1
         self.vpagenum, self.apagenum = 0, 0
-        bgcolor = self._curses_colour(7, 0, False)
-        self.text = [[[(u' ', bgcolor)]*self.width for _ in range(self.height)]]
         self.f12_active = False
-        self.set_border_attr(0)
+        # initialised by __enter__
+        self.screen = None
+        self.orig_size = None
+        self.underlay = None
+        self.window = None
+        self.can_change_palette = None
+        self.text = None
 
+    def __enter__(self):
+        """Open ANSI interface."""
+        VideoPlugin.__enter__(self)
+        self.screen = curses.initscr()
+        curses.noecho()
+        curses.cbreak()
+        curses.nonl()
+        curses.raw()
+        self.orig_size = self.screen.getmaxyx()
+        self.underlay = curses.newwin(
+            self.height + self.border_y*2, self.width + self.border_x*2, 0, 0)
+        self.window = curses.newwin(self.height, self.width, self.border_y, self.border_x)
+        self.window.nodelay(True)
+        self.window.keypad(True)
+        self.window.scrollok(False)
+        curses.start_color()
+        self.can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
+                              and curses.COLOR_PAIRS > 128)
+        sys.stdout.write(SET_TITLE % self.caption)
+        sys.stdout.flush()
+        self._set_default_colours(16)
+        bgcolor = self._curses_colour(7, 0, False)
+        # text and colour buffer
+        self.text = [[[(u' ', bgcolor)]*self.width for _ in range(self.height)]]
+        self.set_border_attr(0)
+        self.screen.clear()
 
     def __exit__(self, type, value, traceback):
         """Close the curses interface."""
-        VideoPlugin.__exit__(self, type, value, traceback)
-        if self.curses_init:
+        try:
             # restore original terminal size
             self._resize(*self.orig_size)
             # restore sane terminal state
@@ -132,6 +134,8 @@ class VideoCurses(VideoPlugin):
             self.screen.keypad(False)
             curses.echo()
             curses.endwin()
+        finally:
+            VideoPlugin.__exit__(self, type, value, traceback)
 
     def _work(self):
         """Handle screen and interface events."""
@@ -190,12 +194,11 @@ class VideoCurses(VideoPlugin):
         by, bx = self.border_y, self.border_x
         # curses.resizeterm triggers KEY_RESIZE leading to a flickering loop
         # curses.resize_term doesn't resize the terminal
-        sys.stdout.write(ansi.RESIZE_TERM % (height + by*2, width + bx*2))
+        sys.stdout.write(RESIZE_TERM % (height + by*2, width + bx*2))
         sys.stdout.flush()
         self.underlay.resize(height + by*2, width + bx*2)
         self.window.resize(height, width)
         self.set_border_attr(self.border_attr)
-
 
     def _redraw(self):
         """Redraw the screen."""
@@ -274,11 +277,12 @@ class VideoCurses(VideoPlugin):
         """Change screen mode."""
         self.height = mode_info.height
         self.width = mode_info.width
-        self.num_pages = mode_info.num_pages
         self._set_default_colours(len(mode_info.palette))
         bgcolor = self._curses_colour(7, 0, False)
-        self.text = [[[(u' ', bgcolor)]*self.width
-                for _ in range(self.height)] for _ in range(self.num_pages)]
+        self.text = [
+                [[(u' ', bgcolor)]*self.width for _ in xrange(self.height)]
+                for _ in xrange(mode_info.num_pages)
+            ]
         self._resize(self.height, self.width)
         self._set_curses_palette()
         self.window.clear()
@@ -348,9 +352,7 @@ class VideoCurses(VideoPlugin):
             self.cursor_shape = 1
         curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
-    def put_glyph(
-            self, pagenum, row, col, c, is_fullwidth,
-            fore, back, blink, underline, suppress_cli):
+    def put_glyph(self, pagenum, row, col, c, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""
         if c == u'\0':
             c = u' '
@@ -410,9 +412,9 @@ class VideoCurses(VideoPlugin):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         if msg:
-            sys.stdout.write(ansi.SET_TITLE % (self.caption + ' - ' + msg))
+            sys.stdout.write(SET_TITLE % (self.caption + ' - ' + msg))
         else:
-            sys.stdout.write(ansi.SET_TITLE % self.caption)
+            sys.stdout.write(SET_TITLE % self.caption)
         sys.stdout.flush()
         # redraw in case terminal didn't recognise ansi sequence
         self._redraw()

@@ -79,8 +79,7 @@ class Parser(object):
                 ins.require_end()
                 return
         self._callbacks[c](parse_args(ins))
-        if c != tk.IF:
-            ins.require_end()
+        # end-of-statement is checked at start of next statement in interpreter loop
 
     def parse_name(self, ins):
         """Get scalar part of variable name from token stream."""
@@ -1474,14 +1473,46 @@ class Parser(object):
         """IF: enter branching statement."""
         # avoid overflow: don't use bools.
         condition = self.parse_expression(ins)
-        ins.skip_blank_read_if((',',)) # optional comma
+        ins.skip_blank_read_if((b',',)) # optional comma
         ins.require_read((tk.THEN, tk.GOTO))
-        yield condition
-        # note that interpreter.if_ cofunction may jump to ELSE clause now
-        if ins.skip_blank() in (tk.T_UINT,):
-            yield self._parse_jumpnum(ins)
+        # THEN and GOTO tokens both have length 1
+        start_pos = ins.tell() - 1
+        # allow cofunction to evaluate condition
+        branch = yield condition
+        # we only even parse the ELSE clause if this is false
+        if branch:
+            jumpnum = self._parse_optional_jumpnum(ins)
+            yield jumpnum
+            if jumpnum is None:
+                ins.seek(start_pos)
         else:
-            yield None
+            # find correct ELSE block, if any
+            # ELSEs may be nested in the THEN clause
+            nesting_level = 0
+            while True:
+                d = ins.skip_to_read(tk.END_STATEMENT + (tk.IF,))
+                if d == tk.IF:
+                    # nesting step on IF. (it's less convenient to count THENs
+                    # because they could be THEN or GOTO)
+                    nesting_level += 1
+                elif d == b':':
+                    # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
+                    if ins.skip_blank_read_if((tk.ELSE,)):
+                        # ELSE has length 1
+                        start_pos = ins.tell() - 1
+                        if nesting_level > 0:
+                            nesting_level -= 1
+                        else:
+                            jumpnum = self._parse_optional_jumpnum(ins)
+                            yield jumpnum
+                            if jumpnum is None:
+                                ins.seek(start_pos)
+                            break
+                else:
+                    # end of line, don't look for line number
+                    ins.seek(-len(d), 1)
+                    yield None
+                    break
 
     def _parse_for(self, ins):
         """Parse FOR syntax."""

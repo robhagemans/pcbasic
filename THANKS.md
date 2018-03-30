@@ -5,33 +5,45 @@
 PC-BASIC would not exist without those contributing code, reporting bugs,
 sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 
-- **Rob Hagemans**,         lead author
-- **Wengier Wu**,           bug fixes, CJK guidance
-- **Jan Bredenbeek**,       bug fixes, BASICODE guidance
-- **WJB**,                  bug fixes
-- **Ronald Herrera**,       testing, bug hunting
-- **Kenneth Wayne Boyd**,   testing, bug hunting
-- **Nauman Umer**,          testing, bug hunting
-- **Steve Pagliarulo**,     testing, bug hunting
-- **Danitegue**,            testing, bug hunting
-- **Miguel Dorta**,         testing, serial ports
-- **Patrik**,               testing, serial ports
-- **Duane**,                testing, serial ports
+Development is led by
+
+- **Rob Hagemans**
+
+Bug fixes and guidance by
+
+- **Wengier Wu**
+- **Jan Bredenbeek**
+- **WJB**
+
+Avid testers and bug hunters
+
+- **Ronald Herrera**
+- **Kenneth Wayne Boyd**
+- **Nauman Umer**
+- **Steve Pagliarulo**
+- **Daniel Santana**
+- **Miguel Dorta**
+- **Patrik**
+- **Duane**
 
 
 ### Shoulders of Giants
 
+PC-BASIC incorporates code derived from other projects, in particular:
+  * **J-L Morel**'s [Win32::Console::ANSI](http://search.cpan.org/~jlmorel/Win32-Console-ANSI-1.11/lib/Win32/Console/ANSI.pm)
+  * **Valentin Lab**'s [win_subprocess.py](https://gist.github.com/vaab/2ad7051fc193167f15f85ef573e54eb9)
+
 PC-BASIC depends on the following open-source projects:
 
   * [Python](http://www.python.org)
+  * [Setuptools](https://pypi.python.org/pypi/setuptools)
   * [Simple DirectMedia Layer (SDL)](http://www.libsdl.org)
   * [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/)
   * [PySDL2](https://pysdl2.readthedocs.org/en/latest/)
+  * [PyGame](http://www.pygame.org)
+  * [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)
   * [NumPy](http://www.numpy.org)
-  * [Python for Windows Extensions (PyWin32)](https://sourceforge.net/projects/pywin32/)
   * [PySerial](http://pyserial.sourceforge.net/pyserial.html)
-  * [PExpect](http://pexpect.readthedocs.org/en/latest/)
-  * [ANSI|pipe](https://github.com/robhagemans/ansipipe)
 
 
 ### Fond memories
@@ -39,8 +51,9 @@ PC-BASIC depends on the following open-source projects:
 PC-BASIC would not have been what it is without the following open-source projects
 which it has depended on in the past:
 
-  * [PyGame](http://www.pygame.org)
   * **Tom Rothamel**'s [PyGame Subset for Android](https://web.archive.org/web/20150712040220/http://pygame.renpy.org/) (superseded by [RAPT](http://www.renpy.org/doc/html/android.html))
+  * [Python for Windows Extensions (PyWin32)](https://sourceforge.net/projects/pywin32/)
+  * [PExpect](http://pexpect.readthedocs.org/en/latest/)
 
 
 ### Technical Documentation
@@ -123,21 +136,33 @@ apologies to those whose contribution I have failed to acknowledge here.
   * **Thomas C. McIntyre**, _BLUE: BASIC Language User Essay_, 1991, [available online](https://web.archive.org/web/20060410121551/http://scottserver.net/basically/geewhiz.html).
   * **David I. Schneider**, _Handbook of BASIC: Third Edition for the IBM PC, XT, AT, PS/2, and Compatibles_, Brady, 1988.
 
+
 ### Development tools
 
-PC-BASIC is developed using [Git](https://git-scm.com/) source control,
-[GEdit](https://wiki.gnome.org/Apps/Gedit) and [Atom](https://atom.io/) text
-editors on an [Ubuntu](http://www.ubuntu.com/) Linux system and hosted on
-[GitHub](https://github.com/) and [SourceForge](https://sourceforge.net/).
+Development tools:
 
-Packaging and documentation depends on the following projects:
+  * [Git](https://git-scm.com/)
+  * [Atom](https://atom.io/)
+  * [PyLint](https://pypi.python.org/pypi/pylint/1.7.6)
+  * [Coverage](https://pypi.python.org/pypi/coverage)
+  * [Ubuntu](http://www.ubuntu.com/)
+  * [The GNU Base System](http://www.gnu.org/)
+
+Documentation tools:
+
+  * [LXML](http://lxml.de)
+  * [Markdown](https://pypi.python.org/pypi/Markdown)
+
+Packaging tools:
 
   * [PyInstaller](http://www.pyinstaller.org)
   * [Nullsoft Scriptable Install System](http://nsis.sourceforge.net)
   * [7-Zip](http://www.7-zip.org)
-  * [The GNU Base System](http://www.gnu.org/)
-  * [LXML](http://lxml.de)
-  * [Markdown](https://pypi.python.org/pypi/Markdown)
+
+Source code and releases are hosted on:
+
+  * [GitHub](https://github.com/)
+  * [SourceForge](https://sourceforge.net/)
 
 
 ### Emulators

@@ -17,15 +17,14 @@ import tempfile
 import shutil
 import platform
 import pkg_resources
-
+import string
 from collections import deque
 
-if platform.system() == b'Windows':
-    # can use ctypes instead?
-    import win32api
-
-from .basic.metadata import VERSION, NAME
+from .metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
+from .compat import WIN32, get_short_pathname, get_unicode_argv
+from .compat import USER_CONFIG_HOME, USER_DATA_HOME
+from .compat import split_quoted
 from . import data
 
 
@@ -36,18 +35,8 @@ MAJOR_VERSION = u'.'.join(VERSION.split(u'.')[:2])
 BASENAME = u'pcbasic-{0}'.format(MAJOR_VERSION)
 
 # user configuration and state directories
-HOME_DIR = os.path.expanduser(u'~')
-if platform.system() == b'Windows':
-    USER_CONFIG_DIR = os.path.join(os.getenv(u'APPDATA'), BASENAME)
-    STATE_PATH = USER_CONFIG_DIR
-elif platform.system() == b'Darwin':
-    USER_CONFIG_DIR = os.path.join(HOME_DIR, u'Library', u'Application Support', BASENAME)
-    STATE_PATH = USER_CONFIG_DIR
-else:
-    USER_CONFIG_DIR = os.path.join(
-        os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(HOME_DIR, u'.config'), BASENAME)
-    STATE_PATH = os.path.join(
-        os.environ.get(u'XDG_DATA_HOME') or os.path.join(HOME_DIR, u'.local', u'share'), BASENAME)
+USER_CONFIG_DIR = os.path.join(USER_CONFIG_HOME, BASENAME)
+STATE_PATH = os.path.join(USER_DATA_HOME, BASENAME)
 
 # @: target drive for bundled programs
 PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
@@ -320,11 +309,13 @@ class Settings(object):
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
     }
 
-
     def __init__(self, temp_dir, arguments):
         """Initialise settings."""
         # arguments should be unicode
-        self._uargv = list(arguments or ())
+        if not arguments:
+            self._uargv = get_unicode_argv()[1:]
+        else:
+            self._uargv = list(arguments)
         # first parse a logfile argument, if any
         for args in self._uargv:
             if args[:9] == u'--logfile':
@@ -373,7 +364,17 @@ class Settings(object):
                 loglevel = logging.DEBUG
             else:
                 loglevel = logging.INFO
-        logging.basicConfig(format=formatstr, level=loglevel, filename=logfile, datefmt='%H:%M:%S')
+        # o dear o dear what a horrible API
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            root_logger.removeHandler(handler)
+        root_logger.setLevel(loglevel)
+        if logfile:
+            handler = logging.FileHandler(logfile, mode=b'w')
+        else:
+            handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(fmt=formatstr, datefmt='%H:%M:%S'))
+        root_logger.addHandler(handler)
 
     def _retrieve_options(self, uargv):
         """Retrieve command line and option file options."""
@@ -413,6 +414,35 @@ class Settings(object):
                 value = None
         return value
 
+    def _get_redirects(self):
+        """Determine which i/o streams to attach."""
+        input_streams, output_streams = [], []
+        # add stdio if redirected or no interface
+        if not self.interface or not sys.stdin.isatty():
+            input_streams.append(sys.stdin)
+        # redirect output as well if input is redirected, but not the other way around
+        # this is because (1) GW-BASIC does this from the DOS prompt
+        # (2) otherwise we don't see anything - we quit after input closes
+        if not self.interface or not sys.stdout.isatty() or not sys.stdin.isatty():
+            output_streams.append(sys.stdout)
+        # explicit redirects
+        infile = self.get(b'input')
+        if infile:
+            try:
+                input_streams.append(open(infile, 'rb'))
+            except EnvironmentError as e:
+                logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
+        outfile = self.get(b'output')
+        if outfile:
+            try:
+                output_streams.append(open(outfile, 'ab' if self.get(b'append') else 'wb'))
+            except EnvironmentError as e:
+                logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
+        return {
+            'output_streams': output_streams,
+            'input_streams': input_streams,
+        }
+
     @property
     def session_params(self):
         """Return a dictionary of parameters for the Session object."""
@@ -435,11 +465,9 @@ class Settings(object):
         max_list[0] = max_list[0] or max_list[1]
         current_device, mount_dict = self._get_drives()
         codepage_dict = data.read_codepage(self.get('codepage'))
-        return {
+        params = self._get_redirects()
+        params.update({
             'syntax': self.get('syntax'),
-            'output_file': self.get(b'output'),
-            'append': self.get(b'append'),
-            'input_file': self.get(b'input'),
             'video': self.get('video'),
             'codepage': codepage_dict,
             'box_protect': not self.get('nobox'),
@@ -452,7 +480,8 @@ class Settings(object):
             'mono_tint': self.get('mono-tint'),
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
-            'keys': self.get('keys').encode('utf-8').decode('string_escape').decode('utf-8'),
+            'keys': self.get('keys').encode('utf-8', 'replace')
+                        .decode('string_escape').decode('utf-8', 'replace'),
             # find program for PCjr TERM command
             'term': pcjr_term,
             'shell': self.get('shell'),
@@ -466,8 +495,6 @@ class Settings(object):
             # text file parameters
             'utf8': self.get('utf8'),
             'universal': not self.get('strict-newline'),
-            # attach to standard I/O if no interface (for filter interface)
-            'stdio': True,
             # keyboard settings
             'ctrl_c_is_break': self.get('ctrl-c-break'),
             # program parameters
@@ -488,8 +515,9 @@ class Settings(object):
             # ignore key buffer in console-based interfaces, to allow pasting text in console
             'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses'),
             # following GW, don't write greeting for redirected input or command-line filter run
-            'greeting': (not self.get('input') and not self.get('interface') == 'none'),
-        }
+            'greeting': (not params['input_streams']),
+        })
+        return params
 
     def _get_video_parameters(self):
         """Return a dictionary of parameters for the video plugin."""
@@ -555,10 +583,9 @@ class Settings(object):
         commands = []
         if not self.get('resume'):
             run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
-            cmd = self.get('exec')
+            # treat colons as CRs
+            commands = split_quoted(self.get('exec'), split_by=u':', quote=u"'", strip_quotes=True)
             # note that executing commands (or RUN) will suppress greeting
-            if cmd:
-                commands.append(cmd)
             if run:
                 commands.append('RUN')
             if self.get('quit'):
@@ -587,26 +614,28 @@ class Settings(object):
         # always get current device
         current_device = self.get('current-device')
         if self.get('map-drives', get_default):
-            if platform.system() == b'Windows':
+            if WIN32:
                 # get all drives in use by windows
                 # if started from CMD.EXE, get the 'current working dir' for each drive
                 # if not in CMD.EXE, there's only one cwd
-                current_device = os.path.abspath(os.getcwdu()).split(u':')[0].encode('ascii')
                 save_current = os.getcwdu()
-                for letter in win32api.GetLogicalDriveStrings().split(u':\\\0')[:-1]:
+                for letter in string.uppercase:
                     try:
-                        os.chdir(letter + u':')
-                        cwd = win32api.GetShortPathName(os.getcwdu())
-                    except Exception:
-                        # something went wrong, do not mount this drive
-                        # this is often a pywintypes.error rather than a WindowsError
+                        os.chdir(letter + b':')
+                        cwd = get_short_pathname(os.getcwdu()) or os.getcwdu()
+                    except EnvironmentError:
+                        # doesn't exist or can't access, do not mount this drive
                         pass
                     else:
                         # must not start with \\
                         path, cwd = cwd[:3], cwd[3:]
-                        bletter = letter.encode(b'ascii')
-                        mount_dict[bletter] = (path, cwd)
+                        mount_dict[letter] = (path, cwd)
                 os.chdir(save_current)
+                try:
+                    current_device = os.path.abspath(save_current).split(u':')[0].encode('ascii')
+                except UnicodeEncodeError:
+                    # fallback in case of some error
+                    current_device = mount_dict.keys()[0]
             else:
                 cwd = os.getcwdu()
                 home = os.path.expanduser(u'~')
@@ -636,8 +665,9 @@ class Settings(object):
                 # the last one that's specified will stick
                 try:
                     letter, path = a.split(u':', 1)
-                    letter = letter.encode(b'ascii', errors=b'replace').upper()
-                    path = os.path.realpath(path)
+                    letter = letter.encode('ascii', errors='replace').upper()
+                    # take abspath first to ensure unicode, realpath gives bytes for u'.'
+                    path = os.path.realpath(os.path.abspath(path))
                     if not os.path.isdir(path):
                         logging.warning(u'Could not mount %s', a)
                     else:

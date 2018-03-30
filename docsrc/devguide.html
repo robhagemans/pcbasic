@@ -34,7 +34,8 @@
             as keyboard an screen. This may be undesirable in some applications:
             for example, if run from an interactive Python session, this
             means Python and PC-BASIC are competing for keystrokes. In such cases,
-            use the keyword argument <code>stdio=False</code>.
+            set the keyword arguments <code>input_streams</code> and <code>output_streams</code>
+            explicitly (for example, to <code>None</code>).
         </p>
 
         <h5 id="session.execute"><code>execute(<var>basic_code</var>)</code></h4>

@@ -7,12 +7,12 @@ This file is released under the GNU GPL version 3 or later.
 """
 import io
 import os
+import sys
 import Queue
 import logging
-import platform
 from contextlib import contextmanager
 
-from .metadata import NAME, VERSION, COPYRIGHT
+from ..metadata import NAME, VERSION, COPYRIGHT
 from .base import error
 from .base import tokens as tk
 from .base import signals
@@ -31,7 +31,7 @@ from . import memory
 from . import machine
 from . import interpreter
 from . import sound
-from . import redirect
+from . import iostreams
 from . import codepage as cp
 from . import values
 from . import parser
@@ -49,7 +49,7 @@ class Implementation(object):
 
     def __init__(self,
             syntax=u'advanced', double=False, term=u'', shell=u'',
-            output_file=None, append=False, input_file=None, stdio=True,
+            output_streams=sys.stdout, input_streams=sys.stdin,
             codepage=None, box_protect=True, font=None, text_width=80,
             video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3),
             mono_tint=(0, 255, 0), low_intensity=False,
@@ -75,8 +75,6 @@ class Implementation(object):
         self._edit_prompt = False
         # terminal program for TERM command
         self._term_program = term
-        # redirect parameters
-        self._stdio = stdio
         # option to suppress greeting
         self._greeting = greeting
         ######################################################################
@@ -105,15 +103,15 @@ class Implementation(object):
         ######################################################################
         # console
         ######################################################################
-        # set up input event handler
-        # no interface yet; use dummy queues
-        self.queues = eventcycle.EventQueues(self.values, ctrl_c_is_break, inputs=Queue.Queue())
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
-        # prepare I/O redirection
-        self.input_redirection = redirect.RedirectedIO(
-                self.codepage, input_file, output_file, append)
-        self.output_redirection = self.input_redirection
+        # prepare I/O streams
+        self.io_streams = iostreams.IOStreams(
+                self.codepage, input_streams, output_streams, utf8)
+        # set up input event handler
+        # no interface yet; use dummy queues
+        self.queues = eventcycle.EventQueues(
+                self.values, self.io_streams, ctrl_c_is_break, inputs=Queue.Queue())
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, syntax)
         # Sound is needed for the beeps on \a
@@ -121,7 +119,7 @@ class Implementation(object):
         self.display = display.Display(
                 self.queues, self.values, self.queues,
                 self.memory, text_width, video_memory, video, monitor,
-                self.sound, self.output_redirection,
+                self.sound, self.io_streams,
                 low_intensity, mono_tint, aspect_ratio,
                 self.codepage, font)
         self.screen = self.display.text_screen
@@ -145,7 +143,9 @@ class Implementation(object):
                 max_files, max_reclen, serial_buffer_size,
                 devices, current_device, mount, temp_dir, utf8, universal)
         # set up the SHELL command
-        self.shell = dos.get_shell_manager(self.keyboard, self.screen, self.codepage, shell, syntax)
+        # Files needed for current disk device
+        self.shell = dos.Shell(
+                self.queues, self.keyboard, self.screen, self.files, self.codepage, shell)
         # set up environment
         self.environment = dos.Environment(self.values)
         # initialise random number generator
@@ -174,8 +174,7 @@ class Implementation(object):
                 self.keyboard, self.screen, self.basic_events.num_fn_keys)
         # initialise the editor
         self.editor = editor.Editor(
-                self.screen, self.keyboard, self.sound,
-                self.output_redirection, self.files.lpt1_file)
+                self.screen, self.keyboard, self.sound, self.io_streams, self.files.lpt1_file)
         ######################################################################
         # extensions
         ######################################################################
@@ -230,10 +229,8 @@ class Implementation(object):
             self.sound.rebuild()
         else:
             # use dummy video & audio queues if not provided
-            # but an input queue shouls be operational for redirects
+            # but an input queue should be operational for I/O streams
             self.queues.set(inputs=Queue.Queue())
-        # attach input queue to redirects
-        self.input_redirection.attach(self.queues, self._stdio and not interface)
 
     def execute(self, command):
         """Execute a BASIC statement."""
@@ -273,7 +270,7 @@ class Implementation(object):
             name = name.split('(', 1)[0]
             return self.arrays.to_list(name)
         else:
-            return self.memory.get_variable(name, []).to_value()
+            return self.memory.view_or_create_variable(name, []).to_value()
 
     def interact(self):
         """Interactive interpreter session."""
@@ -315,12 +312,14 @@ class Implementation(object):
         self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
         c = self.interpreter.direct_line.peek()
         if c == '\0':
+            # clear all program stacks
+            self.interpreter.clear_stacks_and_pointers()
+            # clear variables first,
+            # to avoid inconsistent state in string space if out of memory
+            self._clear_all()
             # check for lines starting with numbers (6553 6) and empty lines
             self.program.check_number_start(self.interpreter.direct_line)
             self.program.store_line(self.interpreter.direct_line)
-            # clear all program stacks
-            self.interpreter.clear_stacks_and_pointers()
-            self._clear_all()
             return True
         elif c != '':
             # it is a command, go and execute
@@ -578,10 +577,18 @@ class Implementation(object):
         # gather COMMON declarations
         commons = self.interpreter.gather_commons()
         with self.memory.preserve_commons(commons, common_all):
+            # preserve DEFtype on MERGE
+            # functions are cleared except when CHAIN ... ALL is specified
+            # OPTION BASE is preserved when there are common variables
+            self._clear_all(
+                    preserve_functions=common_all,
+                    preserve_base=(commons or common_all),
+                    preserve_deftype=merge)
             # load new program
             with self.files.open(0, name, filetype='ABP', mode='I') as f:
                 if delete_lines:
-                    # delete lines from existing code before merge (without MERGE, this is pointless)
+                    # delete lines from existing code before merge
+                    # (without MERGE, this is pointless)
                     self.program.delete(*delete_lines)
                 if merge:
                     self.program.merge(f)
@@ -592,10 +599,6 @@ class Implementation(object):
                 # don't close files!
                 # RUN
                 self.interpreter.jump(jumpnum, err=error.IFC)
-            # preserve DEFtype on MERGE
-            # functions are cleared except when CHAIN ... ALL is specified
-            # OPTION BASE is preserved when there are common variables
-            self._clear_all(preserve_functions=common_all, preserve_base=(commons or common_all), preserve_deftype=merge)
 
     def save_(self, args):
         """SAVE: save program to a file."""

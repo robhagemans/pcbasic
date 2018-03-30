@@ -10,19 +10,19 @@ import logging
 import ctypes
 import os
 import sys
-import platform
 from collections import Counter
 
+try:
+    import numpy
+except ImportError:
+    numpy = None
+
+from ..compat import WIN32, BASE_DIR
+
 # on Windows, set environment variable to point to SDL2 DLL location
-if platform.system() == 'Windows' and 'PYSDL2_DLL_PATH' not in os.environ:
-    if hasattr(sys, 'frozen'):
-        # we're a package: get the directory of the packaged executable
-        # (__file__ is undefined in pyinstaller packages)
-        os.environ['PYSDL2_DLL_PATH'] = os.path.dirname(sys.executable)
-    else:
-        # unpackaged: get the directory of the video_sdl2 module in ../lib
-        os.environ['PYSDL2_DLL_PATH'] = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), '..', 'lib')
+if (WIN32 and 'PYSDL2_DLL_PATH' not in os.environ and
+        os.path.isfile(os.path.join(BASE_DIR, 'lib', 'sdl2.dll'))):
+    os.environ['PYSDL2_DLL_PATH'] = os.path.join(BASE_DIR, 'lib')
 
 try:
     import sdl2
@@ -33,11 +33,6 @@ try:
     import sdl2.sdlgfx
 except ImportError:
     pass
-
-try:
-    import numpy
-except ImportError:
-    numpy = None
 
 from ..basic.base import signals
 from ..basic.base import scancode
@@ -417,7 +412,7 @@ class VideoSDL2(VideoPlugin):
         # ensure the correct SDL2 video driver is chosen for Windows
         # since this gets messed up if we also import pygame
         self._env = EnvironmentCache()
-        if platform.system() == 'Windows':
+        if sys.platform == 'win32':
             self._env.set('SDL_VIDEODRIVER', 'windows')
         # initialise SDL
         if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):
@@ -438,7 +433,7 @@ class VideoSDL2(VideoPlugin):
         # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
         self._display = None
         self._work_surface = None
-        self._do_create_window(*self._window_sizer.find_display_size(640, 400))
+        self._do_create_window(*self._window_sizer.find_display_size(720, 400))
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self._display)
         # workaround for duplicated keypresses after Alt (at least on Ubuntu Unity)
@@ -520,7 +515,7 @@ class VideoSDL2(VideoPlugin):
         if self._fullscreen:
              flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
         sdl2.SDL_DestroyWindow(self._display)
-        self._display = sdl2.SDL_CreateWindow(self._caption.encode('utf-8'),
+        self._display = sdl2.SDL_CreateWindow(self._caption.encode('utf-8', errors='replace'),
                     sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED,
                     width, height, flags)
         self._set_icon()
@@ -685,7 +680,7 @@ class VideoSDL2(VideoPlugin):
 
     def _handle_text_input(self, event):
         """Handle text-input event."""
-        c = event.text.text.decode('utf-8')
+        c = event.text.text.decode('utf-8', errors='replace')
         if self._f11_active:
             # F11+f to toggle fullscreen mode
             if c.upper() == u'F':
@@ -897,7 +892,7 @@ class VideoSDL2(VideoPlugin):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         title = self._caption + (u' - ' + msg if msg else u'')
-        sdl2.SDL_SetWindowTitle(self._display, title.encode('utf-8'))
+        sdl2.SDL_SetWindowTitle(self._display, title.encode('utf-8', errors='replace'))
 
     def set_clipboard_text(self, text, mouse):
         """Put text on the clipboard."""
@@ -995,9 +990,7 @@ class VideoSDL2(VideoPlugin):
         pixels[x0:x1, old_y0:new_y0] = numpy.full((x1-x0, new_y0-old_y0), back_attr, dtype=int)
         self.busy = True
 
-    def put_glyph(
-            self, pagenum, row, col, cp, is_fullwidth,
-            fore, back, blink, underline, suppress_cli):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing

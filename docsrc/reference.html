@@ -10133,11 +10133,13 @@
             <b>SHELL</b> [<var>command</var>]
         </code>
         <p>
-            Starts a subshell on the console.
-            The type of shell is determined by your OS. On Unix systems, an <code>sh</code> shell is
-            started. On Windows systems, a <code>CMD.EXE</code> shell is started.
+            Starts an operating system subshell on the console.
             If <code><var>command</var></code> is specified, the command is executed on the shell and execution
             returns to the program.
+        </p>
+        <p>
+            To enable this statement, the <code><a href="#--shell">shell</a></code> option must be set to
+            a valid command interpreter.
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -10148,14 +10150,14 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                If the <code><a href="#--shell">shell</a>=native</code> option is not specified, this statement does nothing.
-            </li>
-            <li>
             Be careful when enabling this command, as it allows the running BASIC program full access to your files and operating system.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
+            <li>
+                <code><a href="#--shell">shell</a></code> option is not specified: <samp>Illegal function call</samp>.
+            </li>
             <li>
                 <code><var>command</var></code> has a number value: <samp>Type mismatch</samp>.
             </li>

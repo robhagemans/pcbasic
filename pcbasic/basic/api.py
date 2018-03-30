@@ -7,8 +7,10 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import Queue
+import os
 
 from .base import error
+from .devices import NameWrapper
 from . import implementation
 
 
@@ -55,17 +57,29 @@ class Session(object):
         self._impl.attach_interface(interface)
         return self
 
-    def bind_file(self, file_name_or_object, name=None):
+    def bind_file(self, file_name_or_object, name=None, create=False):
         """Bind a native file name or Python stream to a BASIC file name."""
         self.start()
         if isinstance(name, unicode):
             name = self._impl.codepage.str_from_unicode(name)
-        return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
+        # if a file name, resolve
+        if not isinstance(file_name_or_object, basestring) or os.path.isfile(file_name_or_object):
+            # if it's an obkect or the file name exists, use it
+            return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
+        elif create and (
+                not os.path.dirname(file_name_or_object) or
+                os.path.isdir(os.path.dirname(file_name_or_object))):
+            # if it doesn't and we're allowed to create and the directory exists, create new
+            return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
+        # not resolved, try to use/create as internal name
+        if isinstance(file_name_or_object, unicode):
+            return NameWrapper(self._impl.codepage.str_from_unicode(file_name_or_object))
+        return NameWrapper(file_name_or_object)
 
     def execute(self, command):
         """Execute a BASIC statement."""
         self.start()
-        with self._impl.input_redirection.activate():
+        with self._impl.io_streams.activate():
             for cmd in command.splitlines():
                 if isinstance(cmd, unicode):
                     cmd = self._impl.codepage.str_from_unicode(cmd)
@@ -74,7 +88,7 @@ class Session(object):
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
         self.start()
-        with self._impl.input_redirection.activate():
+        with self._impl.io_streams.activate():
             if isinstance(expression, unicode):
                 expression = self._impl.codepage.str_from_unicode(expression)
             return self._impl.evaluate(expression)
@@ -97,7 +111,7 @@ class Session(object):
     def interact(self):
         """Interactive interpreter session."""
         self.start()
-        with self._impl.input_redirection.activate():
+        with self._impl.io_streams.activate():
             self._impl.interact()
 
     def close(self):

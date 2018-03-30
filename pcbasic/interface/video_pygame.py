@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
-import platform
 
 try:
     import pygame
@@ -23,6 +22,7 @@ from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
+from ..compat import WIN32, MACOS
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed, EnvironmentCache, NOKILL_MESSAGE
 from . import clipboard
@@ -119,7 +119,7 @@ class VideoPygame(VideoPlugin):
                 display_info.current_w, display_info.current_h,
                 scaling, dimensions, aspect_ratio, border_width, fullscreen)
         # determine initial display size
-        self.display_size = self._window_sizer.find_display_size(640, 400)
+        self.display_size = self._window_sizer.find_display_size(720, 400)
         self._set_icon(icon)
         try:
             self._resize_display(*self.display_size)
@@ -131,7 +131,7 @@ class VideoPygame(VideoPlugin):
                     'Smooth scaling not available on this display (depth %d < 24)',
                     self.display.get_bitsize())
             self._smooth = False
-        pygame.display.set_caption(self.caption.encode('utf-8'))
+        pygame.display.set_caption(self.caption.encode('utf-8', 'replace'))
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
@@ -171,7 +171,7 @@ class VideoPygame(VideoPlugin):
     def _set_icon(self, mask):
         """Set the window icon."""
         height, width = len(mask), len(mask[0])
-        icon = pygame.Surface((width, height), depth=8)
+        icon = pygame.Surface((width, height), depth=8) # pylint: disable=E1121,E1123
         icon.fill(0)
         icon.blit(glyph_to_surface(mask), (0, 0, width, height))
         icon.set_palette_at(0, (0, 0, 0))
@@ -231,8 +231,8 @@ class VideoPygame(VideoPlugin):
                                                       (event.joy, event.axis,
                                                       int(event.value*127 + 128))))
             elif event.type == pygame.VIDEORESIZE:
-                self.fullscreen = False
-                self._resize_display(event.w, event.h)
+                if not self.fullscreen:
+                    self._resize_display(event.w, event.h)
             elif event.type == pygame.QUIT:
                 if self._nokill:
                     self.set_caption_message(NOKILL_MESSAGE)
@@ -357,8 +357,10 @@ class VideoPygame(VideoPlugin):
         # create the screen that will be stretched onto the display
         border_x, border_y = self._window_sizer.border_start()
         # surface depth and flags match those of canvas
+        # pylint: disable=E1121,E1123
         screen = pygame.Surface(
-            (self.size[0] + 2*border_x, self.size[1] + 2*border_y), 0, self.canvas[self.vpagenum])
+            (self.size[0] + 2*border_x, self.size[1] + 2*border_y),
+            0, self.canvas[self.vpagenum])
         screen.set_palette(self.work_palette)
         # border colour
         border_colour = pygame.Color(0, 0, self.border_attr % self.num_fore_attrs)
@@ -414,9 +416,10 @@ class VideoPygame(VideoPlugin):
 
     def _resize_display(self, width, height):
         """Change the display size."""
-        flags = pygame.RESIZABLE
         if self.fullscreen:
-            flags |= pygame.FULLSCREEN | pygame.NOFRAME
+            flags = pygame.FULLSCREEN | pygame.NOFRAME
+        else:
+            flags = pygame.RESIZABLE
         self.display = pygame.display.set_mode((width, height), flags)
         self._window_sizer.window_size = width, height
         # load display if requested
@@ -444,7 +447,7 @@ class VideoPygame(VideoPlugin):
         self.set_cursor_shape(self.font_width, self.font_height,
                               0, self.font_height)
         # whole screen (blink on & off)
-        self.canvas = [ pygame.Surface(self.size, depth=8)
+        self.canvas = [ pygame.Surface(self.size, depth=8) # pylint: disable=E1121,E1123
                         for _ in range(self.num_pages)]
         for i in range(self.num_pages):
             self.canvas[i].set_palette(self.work_palette)
@@ -458,7 +461,7 @@ class VideoPygame(VideoPlugin):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         title = self.caption + (u' - ' + msg if msg else u'')
-        pygame.display.set_caption(title.encode('utf-8'))
+        pygame.display.set_caption(title.encode('utf-8', 'replace'))
 
     def set_clipboard_text(self, text, mouse):
         """Put text on the clipboard."""
@@ -554,9 +557,7 @@ class VideoPygame(VideoPlugin):
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
-    def put_glyph(
-            self, pagenum, row, col, cp, is_fullwidth,
-            fore, back, blink, underline, suppress_cli):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline):
         """Put a single-byte character at a given position."""
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
@@ -594,7 +595,7 @@ class VideoPygame(VideoPlugin):
         """Build a sprite for the cursor."""
         self.cursor_width = width
         self.cursor_from, self.cursor_to = from_line, to_line
-        self.cursor = pygame.Surface((width, height), depth=8)
+        self.cursor = pygame.Surface((width, height), depth=8) # pylint: disable=E1121,E1123
         color, bg = 254, 255
         self.cursor.set_colorkey(bg)
         self.cursor.fill(bg)
@@ -662,7 +663,7 @@ class PygameClipboard(clipboard.Clipboard):
         else:
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         try:
-            if platform.system() == 'Windows':
+            if WIN32:
                 # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
                 # but give it a utf-8 MIME type, because that's how Windows likes it
                 pygame.scrap.put(
@@ -686,7 +687,7 @@ class PygameClipboard(clipboard.Clipboard):
             us = pygame.scrap.get(text_type)
             if us:
                 break
-        if platform.system() == 'Windows':
+        if WIN32:
             if text_type == 'text/plain;charset=utf-8':
                 # it's lying, it's giving us UTF16 little-endian
                 # ignore any bad UTF16 characters from outside
@@ -702,7 +703,7 @@ class PygameClipboard(clipboard.Clipboard):
 def get_clipboard_handler():
     """Get a working Clipboard handler object."""
     # Pygame.Scrap doesn't work on OSX
-    if platform.system() == 'Darwin':
+    if MACOS:
         handler = clipboard.MacClipboard()
     else:
         handler = PygameClipboard()
@@ -983,6 +984,6 @@ def apply_composite_artifacts(screen, pixels=4):
 def glyph_to_surface(glyph):
     """Build a sprite surface for the given character glyph."""
     glyph = numpy.asarray(glyph).T
-    surf = pygame.Surface(glyph.shape, depth=8)
+    surf = pygame.Surface(glyph.shape, depth=8) # pylint: disable=E1121,E1123
     pygame.surfarray.pixels2d(surf)[:] = glyph
     return surf

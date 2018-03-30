@@ -5,12 +5,13 @@ from cStringIO import StringIO
 import gzip
 import os
 from os import path
+from codecs import open
 
 
 # obtain metadata without importing the package (to avoid breaking setup)
-with open(path.join(
-        path.abspath(path.dirname(__file__)),
-        '..', 'pcbasic', 'basic', 'metadata.py')) as f:
+with open(
+        path.join(path.abspath(path.dirname(__file__)), '..', 'pcbasic', 'metadata.py'),
+        encoding='utf-8') as f:
     exec(f.read())
 
 basepath = os.path.dirname(os.path.realpath(__file__))
