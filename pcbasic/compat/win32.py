@@ -240,9 +240,13 @@ from msvcrt import kbhit as key_pressed
 
 try:
     # set stdio as binary, to avoid Windows messing around with CRLFs
+    # only do this for redirected output, as it breaks interactive Python sessions
     # pylint: disable=no-member
-    msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-    msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+    if not sys.stdin.isatty():
+        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+    if not sys.stdout.isatty():
+        msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+    pass
 except EnvironmentError:
     # raises an error if started in gui mode, as we have no stdio
     pass

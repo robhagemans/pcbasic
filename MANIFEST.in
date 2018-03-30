@@ -5,9 +5,8 @@ include THANKS.md
 include DEVELOPMENT.md
 include GPL3.txt
 include doc/*
-include pcbasic/data/*
+include pcbasic/data/USAGE.txt
 include pcbasic/data/*/*
-include pcbasic/lib/*
+include pcbasic/lib/README.md
 include pcbasic/compat/*.c
-include pcbasic/compat/*.pyd
 prune test
