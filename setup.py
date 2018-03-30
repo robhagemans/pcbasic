@@ -25,7 +25,6 @@ include GPL3.txt
 include doc/*
 include pcbasic/data/USAGE.txt
 include pcbasic/data/*/*
-prune test
 """
 #
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -73,24 +72,45 @@ class SDistCommand(sdist.sdist):
             f.write(
                 'include pcbasic/lib/README.md\n'
                 'include pcbasic/compat/*.c\n'
+                'prune test\n'
             )
         self.run_command('build_docs')
         sdist.sdist.run(self)
         os.remove(os.path.join(HERE, 'MANIFEST.in'))
 
 
+class SDistDevCommand(sdist.sdist):
+    """Custom sdist_dev command."""
+
+    def run(self):
+        """Run sdist_dev command."""
+        with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
+            f.write(DUNMANIFESTIN)
+            f.write(
+                'include pcbasic/lib/*\n'
+                'include pcbasic/lib/*/*\n'
+                'include pcbasic/compat/*.c\n'
+                'recursive-include test *'
+            )
+        self.run_command('build_docs')
+        sdist.sdist.run(self)
+        os.remove(os.path.join(HERE, 'MANIFEST.in'))
+
 
 class BuildPyCommand(build_py.build_py):
     """Custom build_py command."""
 
     def run(self):
-        """ Run sdist command. """
-        print 'writing manifest'
+        """Run build_py command."""
         with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
             f.write(DUNMANIFESTIN)
+            f.write('prune test\n')
             # include DLLs on Windows
             if sys.platform == 'win32':
-                f.write('include pcbasic/lib/*.dll\n')
+                if platform.architecture()[0] == '64bit':
+                    f.write('include pcbasic/lib/win32_x64/*.dll\n')
+                else:
+                    f.write('include pcbasic/lib/win32_x86/*.dll\n')
         build_py.build_py.run(self)
         os.remove(os.path.join(HERE, 'MANIFEST.in'))
 
@@ -186,6 +206,7 @@ setup(
     cmdclass={
         'build_docs': BuildDocCommand,
         'sdist': SDistCommand,
+        'sdist_dev': SDistDevCommand,
         'build_py': BuildPyCommand,
     },
 
