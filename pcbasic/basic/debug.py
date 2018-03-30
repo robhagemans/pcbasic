@@ -18,7 +18,7 @@ import subprocess
 import importlib
 
 from .base import error
-from ..compat import WIN32, BASE_DIR, which
+from ..compat import WIN32, X64, BASE_DIR, which
 from . import values
 from . import api
 
@@ -50,8 +50,12 @@ def show_platform_info():
     if WIN32:
         logging.info('\nLIBRARIES')
         dlls = ('sdl2.dll', 'sdl2_gfx.dll')
+        if X64:
+            LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x64')
+        else:
+            LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x86')
         for dll in dlls:
-            path = os.path.join(BASE_DIR, 'lib', dll)
+            path = os.path.join(LIB_DIR, dll)
             if os.path.isfile(path):
                 logging.info('%s: %s', dll, path)
             else:

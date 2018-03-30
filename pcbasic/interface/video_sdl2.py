@@ -17,12 +17,16 @@ try:
 except ImportError:
     numpy = None
 
-from ..compat import WIN32, BASE_DIR
+from ..compat import WIN32, X64, BASE_DIR
 
 # on Windows, set environment variable to point to SDL2 DLL location
-if (WIN32 and 'PYSDL2_DLL_PATH' not in os.environ and
-        os.path.isfile(os.path.join(BASE_DIR, 'lib', 'sdl2.dll'))):
-    os.environ['PYSDL2_DLL_PATH'] = os.path.join(BASE_DIR, 'lib')
+if WIN32:
+    if X64:
+        LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x64')
+    else:
+        LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x86')
+    if ('PYSDL2_DLL_PATH' not in os.environ and os.path.isfile(os.path.join(LIB_DIR, 'sdl2.dll'))):
+        os.environ['PYSDL2_DLL_PATH'] = LIB_DIR
 
 try:
     import sdl2
