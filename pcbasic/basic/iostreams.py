@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
+import threading
 import sys
 import time
 import io
@@ -17,11 +18,17 @@ from ..compat import WIN32, read_all_available
 from .base import signals
 
 
+# sleep period for input thread
+# does not need to be very short as it reads multiple bytes in one cycle
+TICK = 0.03
+
+
 class IOStreams(object):
     """Manage input/output to files, printers and stdio."""
 
-    def __init__(self, codepage, input_streams, output_streams, utf8):
+    def __init__(self, queues, codepage, input_streams, output_streams, utf8):
         """Initialise I/O streams."""
+        self._queues = queues
         self._codepage = codepage
         # external encoding for files; None means raw codepage bytes
         self._encoding = 'utf-8' if utf8 else None
@@ -39,6 +46,12 @@ class IOStreams(object):
         self._output_echos = [self._wrap_output(stream) for stream in output_streams]
         # disable at start
         self._active = False
+        # launch a daemon thread for input
+        if self._input_streams:
+            # launch a thread to allow nonblocking reads on both Windows and Unix
+            thread = threading.Thread(target=self._process_input, args=())
+            thread.daemon = True
+            thread.start()
 
     def write(self, s):
         """Write a string/bytearray to all stream outputs."""
@@ -74,24 +87,29 @@ class IOStreams(object):
                 stream, self._codepage, (stream.encoding if stream.isatty() else self._encoding)
             )
 
-    def process_input(self, queue):
+    def _process_input(self):
         """Process input from streams."""
-        if not self._active:
-            return
-        for stream in self._input_streams:
-            instr = stream.read()
-            if instr is None:
-                break
-            elif instr:
-                queue.put(signals.Event(signals.STREAM_CHAR, (instr,)))
-        else:
-            # executed if not break
-            return
-        # input stream is closed, remove it
-        self._input_streams.remove(stream)
-        # stop the program if last input closed
-        if not self._input_streams:
-            queue.put(signals.Event(signals.STREAM_CLOSED))
+        while True:
+            time.sleep(TICK)
+            if not self._active:
+                continue
+            queue = self._queues.inputs
+            for stream in self._input_streams:
+                instr = stream.read()
+                if instr is None:
+                    break
+                elif instr:
+                    queue.put(signals.Event(signals.STREAM_CHAR, (instr,)))
+            else:
+                # executed if not break
+                continue
+            # input stream is closed, remove it
+            self._input_streams.remove(stream)
+            # exit the interpreter if last input closed
+            if not self._input_streams:
+                queue.put(signals.Event(signals.STREAM_CLOSED))
+                return
+
 
 class OutputStreamWrapper(object):
     """Converter stream wrapper."""
@@ -129,7 +147,7 @@ class InputStreamWrapper(object):
         s = read_all_available(self._stream)
         # can be None (closed) or b'' (no input)
         if s is None:
-            return s
+            return None
         elif not s:
             return u''
         s = s.replace(b'\r\n', b'\r')

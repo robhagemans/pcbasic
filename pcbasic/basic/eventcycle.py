@@ -101,13 +101,11 @@ class EventQueues(object):
     max_video_qsize = 500
     max_audio_qsize = 20
 
-    def __init__(self, values, io_streams, ctrl_c_is_break, inputs=None, video=None, audio=None):
+    def __init__(self, values, ctrl_c_is_break, inputs=None, video=None, audio=None):
         """Initialise; default is NullQueues."""
         self._values = values
         # input signal handlers
         self._handlers = []
-        # i/o streams
-        self._io_streams = io_streams
         # pause-key halts everything until another keypress
         self._pause = False
         # treat ctrl+c as break interrupt
@@ -146,8 +144,6 @@ class EventQueues(object):
 
     def check_events(self, event_check_input=()):
         """Main event cycle."""
-        # insert any events from non-interface input streams
-        self._io_streams.process_input(self.inputs)
         # check input first to avoid hang if the interface plugin has crashed
         # and we have put a lot of work on the queue
         # this works because Interface will send KEYB_QUIT on termination

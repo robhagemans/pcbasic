@@ -105,13 +105,13 @@ class Implementation(object):
         ######################################################################
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
-        # prepare I/O streams
-        self.io_streams = iostreams.IOStreams(
-                self.codepage, input_streams, output_streams, utf8)
         # set up input event handler
         # no interface yet; use dummy queues
         self.queues = eventcycle.EventQueues(
-                self.values, self.io_streams, ctrl_c_is_break, inputs=Queue.Queue())
+                self.values, ctrl_c_is_break, inputs=Queue.Queue())
+        # prepare I/O streams
+        self.io_streams = iostreams.IOStreams(
+                self.queues, self.codepage, input_streams, output_streams, utf8)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, syntax)
         # Sound is needed for the beeps on \a
