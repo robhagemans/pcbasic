@@ -547,7 +547,7 @@ class VideoSDL2(VideoPlugin):
             elif event.type == sdl2.SDL_TEXTINPUT:
                 self._handle_text_input(event)
             elif event.type == sdl2.SDL_TEXTEDITING:
-                self.set_caption_message(event.text.text)
+                self.set_caption_message(event.text.text.decode('utf-8'))
             elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
                 pos = self._window_sizer.normalise_pos(event.button.x, event.button.y)
                 if self._mouse_clip:
