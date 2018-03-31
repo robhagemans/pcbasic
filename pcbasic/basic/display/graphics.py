@@ -171,7 +171,7 @@ class Drawing(object):
             self._text.put_char_attr(self._apagenum, row, col, b' ', self._attr)
         fore, back, blink, underline = self._mode.split_attr(self._attr)
         self._queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
-                (self._apagenum, row, col, u' ', False, fore, back, blink, underline, True)))
+                (self._apagenum, row, col, u' ', False, fore, back, blink, underline)))
 
     def clear_text_area(self, x0, y0, x1, y1):
         """Remove all characters from the text buffer on a rectangle of the graphics screen."""
