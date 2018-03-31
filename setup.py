@@ -20,6 +20,7 @@ from setuptools import find_packages, Extension
 CX_FREEZE = set(sys.argv) & set(('bdist_msi', 'bdist_dmg', 'build_exe'))
 
 if CX_FREEZE:
+    import cx_Freeze
     from cx_Freeze import setup, Executable
 else:
     from setuptools import setup
@@ -211,6 +212,23 @@ SETUP_OPTIONS = {
 # freezing options
 
 if CX_FREEZE:
+
+    class BuildExeCommand(cx_Freeze.build_exe):
+        """Custom build_exe command."""
+
+        def run(self):
+            """Run build_exe command."""
+            cx_Freeze.build_exe.run(self)
+            # remove superfluous copies of python27.dll in lib/
+            # as there is a copy in the package root already
+            for root, dirs, files in os.walk('build/exe.win32-2.7/lib'):
+                for f in files:
+                    if f == 'python27.dll':
+                        print 'REMOVING %s' % (os.path.join(root, f),)
+                        os.remove(os.path.join(root, f))
+
+    SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
+
     shortversion = '.'.join(VERSION.encode('ascii').split('.')[:2])
     numversion = '.'.join(v for v in VERSION.encode('ascii').split('.') if v.isdigit())
 
