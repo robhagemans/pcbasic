@@ -169,7 +169,7 @@ SETUP_OPTIONS = {
     'keywords': 'emulator interpreter basic retro legacy gwbasic basica pcjr tandy',
 
     # contents
-    'packages': find_packages(exclude=['doc', 'test', 'docsrc', 'packaging']),
+    'packages': find_packages(exclude=['doc', 'test', 'docsrc', 'icons']),
     # rule of thumb for sdist: package_data specifies what gets *installed*,
     # but manifest specifies what gets *included* in the archive in the first place
     'package_data': {
@@ -274,7 +274,6 @@ if CX_FREEZE:
     msi_data = {
         'Directory': directory_table,
         'Shortcut': shortcut_table,
-        # use Shortcut to produce custom or multiple shortcuts
     }
 
     # cx_Freeze options
@@ -296,10 +295,10 @@ if CX_FREEZE:
 
     SETUP_OPTIONS['executables'] = [
         Executable(
-            'run.py', base='Console', targetName='pcbasic.exe', icon='packaging/icon/pcbasic.ico',
+            'run.py', base='Console', targetName='pcbasic.exe', icon='icons/pcbasic.ico',
             copyright=COPYRIGHT),
         Executable(
-            'run.py', base='Win32GUI', targetName='pcbasicw.exe', icon='packaging/icon/pcbasic.ico',
+            'run.py', base='Win32GUI', targetName='pcbasicw.exe', icon='icons/pcbasic.ico',
             #shortcutName='PC-BASIC %s' % VERSION, shortcutDir='MyProgramMenu',
             copyright=COPYRIGHT),
     ]
