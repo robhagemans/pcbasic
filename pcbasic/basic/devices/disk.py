@@ -547,11 +547,13 @@ class DiskDevice(object):
         # LongFileName..    (1) LongFileName.. (2) [does not try LONGFILE.. - not allowable]
         # Long.FileName.    (1) Long.FileName. (2) LONG.FIL
         #
-        # don't accept leading or trailing whitespace (internal whitespace should be preserved)
+        # don't accept leading whitespace (internal whitespace should be preserved)
         # note that DosBox removes internal whitespace, but MS-DOS does not
         name_err = error.PATH_NOT_FOUND if isdir else error.FILE_NOT_FOUND
-        if dos_name != dos_name.strip():
+        if dos_name != dos_name.lstrip():
             raise error.BASICError(name_err)
+        # ignore trailing whitespace
+        dos_name = dos_name.rstrip()
         if defext and b'.' not in dos_name:
             dos_name += b'.' + defext
         elif dos_name[-1] == b'.' and b'.' not in dos_name[:-1]:
