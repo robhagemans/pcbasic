@@ -15,7 +15,7 @@ from .resources import get_data, ResourceFailed
 
 FONT_DIR = u'fonts'
 FONT_PATTERN = u'{path}/{name}_{height:02d}.hex'
-FONTS = [name.split(u'_', 1)[0] for name in pkg_resources.resource_listdir(__name__, FONT_DIR) if name.lower().endswith(u'.hex')]
+FONTS = sorted(set(name.split(u'_', 1)[0] for name in pkg_resources.resource_listdir(__name__, FONT_DIR) if name.lower().endswith(u'.hex')))
 
 
 def read_fonts(codepage_dict, font_families, warn):
