@@ -71,6 +71,18 @@ HIDE_WINDOW.wShowWindow = 0 # SW_HIDE
 ##############################################################################
 # various
 
+# determine if we have a console attached or are a GUI app
+def _has_console():
+    try:
+        STD_OUTPUT_HANDLE = -11
+        handle = windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+        dummy_mode = DWORD(0)
+        return bool(windll.kernel32.GetConsoleMode(handle, pointer(dummy_mode)))
+    except Exception as e:
+        return False
+
+HAS_CONSOLE = _has_console()
+
 # preserve original terminal size
 def _get_term_size():
     """Get size of terminal window."""

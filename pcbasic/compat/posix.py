@@ -46,6 +46,9 @@ HIDE_WINDOW = None
 ##############################################################################
 # various
 
+# no such thing as console- and GUI-apps
+HAS_CONSOLE = True
+
 # preserve original terminal size
 try:
     TERM_SIZE = struct.unpack(

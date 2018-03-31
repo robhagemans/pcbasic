@@ -35,8 +35,9 @@ else:
 # package/executable directory
 if hasattr(sys, 'frozen'):
     # we're a package: get the directory of the packaged executable
-    # (__file__ is undefined in pyinstaller packages)
-    BASE_DIR = os.path.dirname(sys.executable)
+    # (__file__ is undefined in frozen packages)
+    # this is for cx_Freeze's package layout
+    BASE_DIR = os.path.join(os.path.dirname(sys.executable), 'lib', 'pcbasic')
 else:
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 

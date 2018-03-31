@@ -25,10 +25,10 @@ if WIN32:
     from .win32 import set_dpi_aware, line_print, key_pressed, read_all_available
     from .win32 import get_free_bytes, get_short_pathname, get_unicode_argv
     from .win32 import EOL, EOF, UEOF
-    from .win32 import SHELL_ENCODING, HIDE_WINDOW, TERM_SIZE
+    from .win32 import SHELL_ENCODING, HIDE_WINDOW, TERM_SIZE, HAS_CONSOLE
 else:
     from . import posix_console as console
     from .posix import set_dpi_aware, line_print, key_pressed, read_all_available
     from .posix import get_free_bytes, get_short_pathname, get_unicode_argv
     from .posix import EOL, EOF, UEOF
-    from .posix import SHELL_ENCODING, HIDE_WINDOW, TERM_SIZE
+    from .posix import SHELL_ENCODING, HIDE_WINDOW, TERM_SIZE, HAS_CONSOLE
