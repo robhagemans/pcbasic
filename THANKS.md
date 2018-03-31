@@ -30,6 +30,7 @@ Avid testers and bug hunters
 ### Shoulders of Giants
 
 PC-BASIC incorporates code derived from other projects, in particular:
+
   * **J-L Morel**'s [Win32::Console::ANSI](http://search.cpan.org/~jlmorel/Win32-Console-ANSI-1.11/lib/Win32/Console/ANSI.pm)
   * **Valentin Lab**'s [win_subprocess.py](https://gist.github.com/vaab/2ad7051fc193167f15f85ef573e54eb9)
 
