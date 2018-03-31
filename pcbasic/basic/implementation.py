@@ -731,7 +731,7 @@ class Implementation(object):
         for v in readvar:
             name, indices = v
             word, _ = finp.input_entry(name[-1], allow_past_end=False)
-            value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
+            value = self.values.from_repr(word, allow_nonnum=True, typechar=name[-1])
             if value is None:
                 value = self.values.new(name[-1])
             self.memory.set_variable(name, indices, value)
