@@ -22,6 +22,7 @@ CX_FREEZE = set(sys.argv) & set(('bdist_msi', 'bdist_dmg', 'build_exe'))
 if CX_FREEZE:
     import cx_Freeze
     from cx_Freeze import setup, Executable
+    import uuid
 else:
     from setuptools import setup
 
@@ -241,13 +242,8 @@ if CX_FREEZE:
 
     shortversion = '.'.join(VERSION.encode('ascii').split('.')[:2])
     numversion = '.'.join(v for v in VERSION.encode('ascii').split('.') if v.isdigit())
-
-    # install dir for cx_Freeze bdist_msi
-    if 'bdist_msi' in sys.argv:
-        sys.argv += [
-            '--initial-target-dir',
-            'c:\\Program Files\\%s %s' % (NAME.encode('ascii'), shortversion)
-        ]
+    UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
+    PRODUCT_CODE = '{%s}' % (uuid.uuid4(),)
 
     # these must be bytes for cx_Freeze bdist_msi
     SETUP_OPTIONS['name'] = NAME.encode('ascii')
@@ -297,7 +293,23 @@ if CX_FREEZE:
             None,                     # IconIndex
             None,                     # ShowCmd
             'TARGETDIR'               # WkDir
-      ),
+        ),
+        (
+            'UninstallShortcut',      # Shortcut
+            'MyProgramMenu',          # Directory_
+            'Uninstall',              # Name
+            'TARGETDIR',              # Component_
+            '[SystemFolder]msiexec.exe', # Target
+            '/x %s' % PRODUCT_CODE,           # Arguments
+            None,                     # Description
+            None,                     # Hotkey
+            None,                     # Icon
+            None,                     # IconIndex
+            None,                     # ShowCmd
+            # PersonalFolder is My Documents, use as Start In folder
+            'TARGETDIR'               # WkDir
+        ),
+
     ]
     msi_data = {
         'Directory': directory_table,
@@ -320,7 +332,9 @@ if CX_FREEZE:
             # add console entry points to PATH
             'add_to_path': True,
             # enforce removal of old versions
-            'upgrade_code': '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}',
+            'upgrade_code': UPGRADE_CODE,
+            'product_code': PRODUCT_CODE,
+            'initial_target_dir': 'c:\\Program Files\\%s %s' % (NAME.encode('ascii'), shortversion),
         },
     }
 
