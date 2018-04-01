@@ -219,13 +219,20 @@ if CX_FREEZE:
         def run(self):
             """Run build_exe command."""
             cx_Freeze.build_exe.run(self)
-            # remove superfluous copies of python27.dll in lib/
-            # as there is a copy in the package root already
+            # build_exe just includes everything inside the directory
+            # so remove some stuff we don't need
             for root, dirs, files in os.walk('build/exe.win32-2.7/lib'):
                 for f in files:
-                    if f == 'python27.dll':
-                        print 'REMOVING %s' % (os.path.join(root, f),)
-                        os.remove(os.path.join(root, f))
+                    name = os.path.join(root, f)
+                    if (
+                            # remove superfluous copies of python27.dll in lib/
+                            # as there is a copy in the package root already
+                            f == 'python27.dll' or
+                            # we're only producing packages for win32_x86
+                            'win32_x64' in name):
+                        print 'REMOVING %s' % (name,)
+                        os.remove(name)
+
 
     SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
 
