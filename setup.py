@@ -22,7 +22,6 @@ CX_FREEZE = set(sys.argv) & set(('bdist_msi', 'bdist_dmg', 'build_exe'))
 if CX_FREEZE:
     import cx_Freeze
     from cx_Freeze import setup, Executable
-    import uuid
 else:
     from setuptools import setup
 
@@ -212,7 +211,9 @@ SETUP_OPTIONS = {
 ###############################################################################
 # freezing options
 
-if CX_FREEZE:
+if CX_FREEZE and sys.platform == 'win32':
+
+    import msilib
 
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""
@@ -243,7 +244,7 @@ if CX_FREEZE:
     shortversion = '.'.join(VERSION.encode('ascii').split('.')[:2])
     numversion = '.'.join(v for v in VERSION.encode('ascii').split('.') if v.isdigit())
     UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
-    PRODUCT_CODE = '{%s}' % (uuid.uuid4(),)
+    PRODUCT_CODE = msilib.gen_uuid()
 
     # these must be bytes for cx_Freeze bdist_msi
     SETUP_OPTIONS['name'] = NAME.encode('ascii')
@@ -309,11 +310,12 @@ if CX_FREEZE:
             # PersonalFolder is My Documents, use as Start In folder
             'TARGETDIR'               # WkDir
         ),
-
     ]
     msi_data = {
         'Directory': directory_table,
         'Shortcut': shortcut_table,
+        'Icon': [('PC-BASIC-Icon', msilib.Binary('icons/pcbasic.ico')),],
+        'Property': [('ARPPRODUCTICON', 'PC-BASIC-Icon'),],
     }
 
     # cx_Freeze options
