@@ -316,8 +316,11 @@ if CX_FREEZE:
             #'optimize': 2,
         },
         'bdist_msi': {
-            'add_to_path': True,
             'data': msi_data,
+            # add console entry points to PATH
+            'add_to_path': True,
+            # enforce removal of old versions
+            'upgrade_code': '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}',
         },
     }
 
