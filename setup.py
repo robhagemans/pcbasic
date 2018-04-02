@@ -376,7 +376,24 @@ elif CX_FREEZE and sys.platform == 'darwin':
                         print 'REMOVING %s' % (name,)
                         os.remove(name)
 
+
+
+    class BdistMacCommand(cx_Freeze.bdist_mac):
+        """Custom bdist_mac command."""
+
+        def copy_file(self, src, dst):
+            # catch copy errors, these happen with relative references with funny bracketed names
+            # like libnpymath.a(npy_math.o)
+            try:
+                cx_Freeze.bdist_mac.copy_file(self, src, dst)
+            except Exception as e:
+                print 'ERROR: %s' % (e,)
+                # create an empty file
+                open(dst, 'w').close()
+
+
     SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
+    SETUP_OPTIONS['cmdclass']['bdist_mac'] = BdistMacCommand
 
     # cx_Freeze options
     SETUP_OPTIONS['options'] = {
