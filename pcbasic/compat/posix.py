@@ -76,7 +76,11 @@ def get_unicode_argv():
     """Convert command-line arguments to unicode."""
     # the official parameter should be LC_CTYPE but that's None in my locale
     # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-    return [arg.decode(SHELL_ENCODING, errors='replace') for arg in sys.argv]
+    # on MacOS, if launched from Finder, ignore the additional "process serial number" argument
+    return [
+        arg.decode(SHELL_ENCODING, errors='replace')
+        for arg in sys.argv if not arg.startswith(b'-psn_')
+    ]
 
 ##############################################################################
 # printing
