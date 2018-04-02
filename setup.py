@@ -17,7 +17,7 @@ from setuptools import find_packages, Extension
 
 
 # operating in cx_Freeze mode
-CX_FREEZE = set(sys.argv) & set(('bdist_msi', 'bdist_dmg', 'build_exe'))
+CX_FREEZE = set(sys.argv) & set(('bdist_msi', 'bdist_dmg', 'bdist_mac', 'build_exe'))
 
 if CX_FREEZE:
     import cx_Freeze
@@ -189,7 +189,7 @@ SETUP_OPTIONS = {
     'install_requires': ['PySDL2', 'numpy', 'pyserial'] + platform_specific_requirements,
     # use e.g. pip install -e .[dev,full]
     'extras_require': {
-        'dev': ['lxml', 'markdown', 'pylint', 'coverage'],
+        'dev': ['lxml', 'markdown', 'pylint', 'coverage', 'cx_Freeze'],
         'full': ['pygame', 'pyaudio'],
     },
 
@@ -210,6 +210,9 @@ SETUP_OPTIONS = {
 
 ###############################################################################
 # freezing options
+
+shortversion = '.'.join(VERSION.encode('ascii').split('.')[:2])
+
 
 if CX_FREEZE and sys.platform == 'win32':
 
@@ -241,7 +244,6 @@ if CX_FREEZE and sys.platform == 'win32':
 
     SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
 
-    shortversion = '.'.join(VERSION.encode('ascii').split('.')[:2])
     numversion = '.'.join(v for v in VERSION.encode('ascii').split('.') if v.isdigit())
     UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
     PRODUCT_CODE = msilib.gen_uuid()
@@ -347,6 +349,57 @@ if CX_FREEZE and sys.platform == 'win32':
         Executable(
             'run.py', base='Win32GUI', targetName='pcbasicw.exe', icon='icons/pcbasic.ico',
             #shortcutName='PC-BASIC %s' % VERSION, shortcutDir='MyProgramMenu',
+            copyright=COPYRIGHT),
+    ]
+
+
+elif CX_FREEZE and sys.platform == 'darwin':
+
+
+    class BuildExeCommand(cx_Freeze.build_exe):
+        """Custom build_exe command."""
+
+        def run(self):
+            """Run build_exe command."""
+            cx_Freeze.build_exe.run(self)
+            # build_exe just includes everything inside the directory
+            # so remove some stuff we don't need
+            for root, dirs, files in os.walk('build/exe.macosx-10.13-x86_64-2.7/lib'):
+                testing = set(root.split(os.sep)) & set(('test', 'tests', 'testing', 'examples'))
+                for f in files:
+                    name = os.path.join(root, f)
+                    if (
+                            # remove tests and examples, but not for numpy (it breaks)
+                            (testing and 'numpy' not in root) or
+                            # remove windows DLLs and PYDs
+                            'win32_' in name):
+                        print 'REMOVING %s' % (name,)
+                        os.remove(name)
+
+    SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
+
+    # cx_Freeze options
+    SETUP_OPTIONS['options'] = {
+        'build_exe': {
+            'packages': ['numpy', 'pkg_resources._vendor', 'sdl2'],
+            'excludes': [
+                'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 'pygame', 'test',
+            ],
+            'include_files': ['doc/PC-BASIC_documentation.html'],
+            #'optimize': 2,
+        },
+        'bdist_mac': {
+            'iconfile': 'icons/pcbasic.icns', 'bundle_name': '%s-%s' % (NAME, shortversion),
+        },
+        'bdist_dmg': {
+            # creating applications shortcut in the DMG fails somehow
+            #'applications_shortcut': True,
+            'volume_label': '%s-%s' % (NAME, shortversion),
+        },
+    }
+    SETUP_OPTIONS['executables'] = [
+        Executable(
+            'run.py', base='Console', targetName='pcbasic', icon='icons/pcbasic.icns',
             copyright=COPYRIGHT),
     ]
 
