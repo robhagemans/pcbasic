@@ -28,6 +28,7 @@ except locale.Error as e:
     logging.error(e)
 
 from .python2 import which
+from .base import HOME_DIR, MACOS
 
 # text conventions
 # ctrl+D
@@ -46,8 +47,22 @@ HIDE_WINDOW = None
 ##############################################################################
 # various
 
+# output buffer for ioctl call
+_sock_size = array.array('i', [0])
+
 # no such thing as console- and GUI-apps
+# check if we can treat stdin like a tty, file or socket
 HAS_CONSOLE = True
+if not sys.stdin.isatty():
+    try:
+        fcntl.ioctl(sys.stdin, termios.FIONREAD, _sock_size)
+    except EnvironmentError:
+        # maybe /dev/null, but not a real file or console
+        HAS_CONSOLE = False
+        if MACOS:
+            # for macOS - presumably we're launched as a bundle, set working directory to user home
+            # bit of a hack but I don't know a better way
+            os.chdir(HOME_DIR)
 
 # preserve original terminal size
 try:
@@ -126,10 +141,6 @@ else:
 def key_pressed():
     """Return whether a character is ready to be read from the keyboard."""
     return select.select([sys.stdin], [], [], 0)[0] != []
-
-
-# output buffer for ioctl call
-_sock_size = array.array('i', [0])
 
 def read_all_available(stream):
     """Read all available characters from a stream; nonblocking; None if closed."""
