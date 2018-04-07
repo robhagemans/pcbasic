@@ -1,12 +1,50 @@
+"""
+This is a condensed version of Marcus von Appen's pysdl2,
+containing only the functions I need.
+The original package is at https://github.com/marcusva/py-sdl2
+
+pysdl2 licence
+==============
+This software is distributed under the Public Domain. Since it is
+not enough anymore to tell people: 'hey, just do with it whatever
+you like to do', you can consider this software being distributed
+under the CC0 Public Domain Dedication
+(http://creativecommons.org/publicdomain/zero/1.0/legalcode.txt).
+
+In cases, where the law prohibits the recognition of Public Domain
+software, this software can be licensed under the zlib license as
+stated below:
+
+Copyright (C) 2012-2018 Marcus von Appen <marcus@sysfault.org>
+
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgement in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+
+"""
+
 import sys
 import array
 import os
 import warnings
-from ctypes import CFUNCTYPE, c_int, c_int8, c_uint8, c_int16, c_uint16, c_int32, \
-    c_uint32, c_int64, c_uint64, c_size_t, c_void_p, c_char_p
-from ctypes import Structure, POINTER, c_float, c_double, py_object
+from ctypes import CFUNCTYPE, c_int, c_int8, c_uint8, c_int16, c_uint16, c_int32
+from ctypes import c_uint32, c_int64, c_uint64, c_size_t, c_void_p, c_char_p
+from ctypes import Union, Structure, POINTER, c_float, c_double, c_char, py_object
 from ctypes import CDLL
 from ctypes.util import find_library
+from ctypes import c_int as _cint
 
 
 # stdinc.py
@@ -561,3 +599,457 @@ SDL_StartTextInput = _bind("SDL_StartTextInput")
 SDL_IsTextInputActive = _bind("SDL_IsTextInputActive", None, SDL_bool)
 SDL_StopTextInput = _bind("SDL_StopTextInput")
 SDL_SetTextInputRect = _bind("SDL_SetTextInputRect", [POINTER(SDL_Rect)])
+
+
+# scancode.py
+
+SDL_SCANCODE_UNKNOWN = 0
+SDL_SCANCODE_A = 4
+SDL_SCANCODE_B = 5
+SDL_SCANCODE_C = 6
+SDL_SCANCODE_D = 7
+SDL_SCANCODE_E = 8
+SDL_SCANCODE_F = 9
+SDL_SCANCODE_G = 10
+SDL_SCANCODE_H = 11
+SDL_SCANCODE_I = 12
+SDL_SCANCODE_J = 13
+SDL_SCANCODE_K = 14
+SDL_SCANCODE_L = 15
+SDL_SCANCODE_M = 16
+SDL_SCANCODE_N = 17
+SDL_SCANCODE_O = 18
+SDL_SCANCODE_P = 19
+SDL_SCANCODE_Q = 20
+SDL_SCANCODE_R = 21
+SDL_SCANCODE_S = 22
+SDL_SCANCODE_T = 23
+SDL_SCANCODE_U = 24
+SDL_SCANCODE_V = 25
+SDL_SCANCODE_W = 26
+SDL_SCANCODE_X = 27
+SDL_SCANCODE_Y = 28
+SDL_SCANCODE_Z = 29
+
+SDL_SCANCODE_1 = 30
+SDL_SCANCODE_2 = 31
+SDL_SCANCODE_3 = 32
+SDL_SCANCODE_4 = 33
+SDL_SCANCODE_5 = 34
+SDL_SCANCODE_6 = 35
+SDL_SCANCODE_7 = 36
+SDL_SCANCODE_8 = 37
+SDL_SCANCODE_9 = 38
+SDL_SCANCODE_0 = 39
+
+SDL_SCANCODE_RETURN = 40
+SDL_SCANCODE_ESCAPE = 41
+SDL_SCANCODE_BACKSPACE = 42
+SDL_SCANCODE_TAB = 43
+SDL_SCANCODE_SPACE = 44
+
+SDL_SCANCODE_MINUS = 45
+SDL_SCANCODE_EQUALS = 46
+SDL_SCANCODE_LEFTBRACKET = 47
+SDL_SCANCODE_RIGHTBRACKET = 48
+SDL_SCANCODE_BACKSLASH = 49
+
+SDL_SCANCODE_NONUSHASH = 50
+
+SDL_SCANCODE_SEMICOLON = 51
+SDL_SCANCODE_APOSTROPHE = 52
+SDL_SCANCODE_GRAVE = 53
+
+SDL_SCANCODE_COMMA = 54
+SDL_SCANCODE_PERIOD = 55
+SDL_SCANCODE_SLASH = 56
+
+SDL_SCANCODE_CAPSLOCK = 57
+
+SDL_SCANCODE_F1 = 58
+SDL_SCANCODE_F2 = 59
+SDL_SCANCODE_F3 = 60
+SDL_SCANCODE_F4 = 61
+SDL_SCANCODE_F5 = 62
+SDL_SCANCODE_F6 = 63
+SDL_SCANCODE_F7 = 64
+SDL_SCANCODE_F8 = 65
+SDL_SCANCODE_F9 = 66
+SDL_SCANCODE_F10 = 67
+SDL_SCANCODE_F11 = 68
+SDL_SCANCODE_F12 = 69
+
+SDL_SCANCODE_PRINTSCREEN = 70
+SDL_SCANCODE_SCROLLLOCK = 71
+SDL_SCANCODE_PAUSE = 72
+SDL_SCANCODE_INSERT = 73
+
+SDL_SCANCODE_HOME = 74
+SDL_SCANCODE_PAGEUP = 75
+SDL_SCANCODE_DELETE = 76
+SDL_SCANCODE_END = 77
+SDL_SCANCODE_PAGEDOWN = 78
+SDL_SCANCODE_RIGHT = 79
+SDL_SCANCODE_LEFT = 80
+SDL_SCANCODE_DOWN = 81
+SDL_SCANCODE_UP = 82
+
+SDL_SCANCODE_NUMLOCKCLEAR = 83
+SDL_SCANCODE_KP_DIVIDE = 84
+SDL_SCANCODE_KP_MULTIPLY = 85
+SDL_SCANCODE_KP_MINUS = 86
+SDL_SCANCODE_KP_PLUS = 87
+SDL_SCANCODE_KP_ENTER = 88
+SDL_SCANCODE_KP_1 = 89
+SDL_SCANCODE_KP_2 = 90
+SDL_SCANCODE_KP_3 = 91
+SDL_SCANCODE_KP_4 = 92
+SDL_SCANCODE_KP_5 = 93
+SDL_SCANCODE_KP_6 = 94
+SDL_SCANCODE_KP_7 = 95
+SDL_SCANCODE_KP_8 = 96
+SDL_SCANCODE_KP_9 = 97
+SDL_SCANCODE_KP_0 = 98
+SDL_SCANCODE_KP_PERIOD = 99
+
+SDL_SCANCODE_NONUSBACKSLASH = 100
+SDL_SCANCODE_KP_EQUALS = 103
+SDL_SCANCODE_MENU = 118
+
+SDL_SCANCODE_INTERNATIONAL1 = 135
+SDL_SCANCODE_INTERNATIONAL2 = 136
+SDL_SCANCODE_INTERNATIONAL3 = 137
+
+SDL_SCANCODE_LANG1 = 144
+SDL_SCANCODE_LANG2 = 145
+SDL_SCANCODE_LANG3 = 146
+SDL_SCANCODE_LANG4 = 147
+SDL_SCANCODE_LANG5 = 148
+
+SDL_SCANCODE_SYSREQ = 154
+
+SDL_SCANCODE_LCTRL = 224
+SDL_SCANCODE_LSHIFT = 225
+SDL_SCANCODE_LALT = 226
+SDL_SCANCODE_LGUI = 227
+SDL_SCANCODE_RCTRL = 228
+SDL_SCANCODE_RSHIFT = 229
+SDL_SCANCODE_RALT = 230
+SDL_SCANCODE_RGUI = 231
+
+SDL_SCANCODE_MODE = 257
+
+
+# keycode.py
+
+SDLK_SCANCODE_MASK = 1 << 30
+SDL_SCANCODE_TO_KEYCODE = lambda x: (x | SDLK_SCANCODE_MASK)
+
+KMOD_NONE = 0x0000
+KMOD_LSHIFT = 0x0001
+KMOD_RSHIFT = 0x0002
+KMOD_LCTRL = 0x0040
+KMOD_RCTRL = 0x0080
+KMOD_LALT = 0x0100
+KMOD_RALT = 0x0200
+KMOD_LGUI = 0x0400
+KMOD_RGUI = 0x0800
+KMOD_NUM = 0x1000
+KMOD_CAPS = 0x2000
+KMOD_MODE = 0x4000
+KMOD_RESERVED = 0x8000
+
+KMOD_CTRL = KMOD_LCTRL | KMOD_RCTRL
+KMOD_SHIFT = KMOD_LSHIFT | KMOD_RSHIFT
+KMOD_ALT = KMOD_LALT | KMOD_RALT
+KMOD_GUI = KMOD_LGUI | KMOD_RGUI
+
+SDLK_UNKNOWN = 0
+
+SDLK_RETURN = ord('\r')
+SDLK_ESCAPE = ord('\033')
+SDLK_BACKSPACE = ord('\b')
+SDLK_TAB = ord('\t')
+SDLK_SPACE = ord(' ')
+SDLK_EXCLAIM = ord('!')
+SDLK_QUOTEDBL = ord('"')
+SDLK_HASH = ord('#')
+SDLK_PERCENT = ord('%')
+SDLK_DOLLAR = ord('$')
+SDLK_AMPERSAND = ord('&')
+SDLK_QUOTE = ord('\'')
+SDLK_LEFTPAREN = ord('(')
+SDLK_RIGHTPAREN = ord(')')
+SDLK_ASTERISK = ord('*')
+SDLK_PLUS = ord('+')
+SDLK_COMMA = ord(',')
+SDLK_MINUS = ord('-')
+SDLK_PERIOD = ord('.')
+SDLK_SLASH = ord('/')
+
+SDLK_0 = ord('0')
+SDLK_1 = ord('1')
+SDLK_2 = ord('2')
+SDLK_3 = ord('3')
+SDLK_4 = ord('4')
+SDLK_5 = ord('5')
+SDLK_6 = ord('6')
+SDLK_7 = ord('7')
+SDLK_8 = ord('8')
+SDLK_9 = ord('9')
+
+SDLK_COLON = ord(':')
+SDLK_SEMICOLON = ord(';')
+SDLK_LESS = ord('<')
+SDLK_EQUALS = ord('=')
+SDLK_GREATER = ord('>')
+SDLK_QUESTION = ord('?')
+SDLK_AT = ord('@')
+
+SDLK_LEFTBRACKET = ord('[')
+SDLK_BACKSLASH = ord('\\')
+SDLK_RIGHTBRACKET = ord(']')
+SDLK_CARET = ord('^')
+SDLK_UNDERSCORE = ord('_')
+SDLK_BACKQUOTE = ord('`')
+
+SDLK_a = ord('a')
+SDLK_b = ord('b')
+SDLK_c = ord('c')
+SDLK_d = ord('d')
+SDLK_e = ord('e')
+SDLK_f = ord('f')
+SDLK_g = ord('g')
+SDLK_h = ord('h')
+SDLK_i = ord('i')
+SDLK_j = ord('j')
+SDLK_k = ord('k')
+SDLK_l = ord('l')
+SDLK_m = ord('m')
+SDLK_n = ord('n')
+SDLK_o = ord('o')
+SDLK_p = ord('p')
+SDLK_q = ord('q')
+SDLK_r = ord('r')
+SDLK_s = ord('s')
+SDLK_t = ord('t')
+SDLK_u = ord('u')
+SDLK_v = ord('v')
+SDLK_w = ord('w')
+SDLK_x = ord('x')
+SDLK_y = ord('y')
+SDLK_z = ord('z')
+
+SDLK_CAPSLOCK = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CAPSLOCK)
+
+SDLK_F1 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F1)
+SDLK_F2 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F2)
+SDLK_F3 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F3)
+SDLK_F4 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F4)
+SDLK_F5 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F5)
+SDLK_F6 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F6)
+SDLK_F7 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F7)
+SDLK_F8 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F8)
+SDLK_F9 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F9)
+SDLK_F10 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F10)
+SDLK_F11 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F11)
+SDLK_F12 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F12)
+
+SDLK_PRINTSCREEN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PRINTSCREEN)
+SDLK_SCROLLLOCK = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SCROLLLOCK)
+SDLK_PAUSE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PAUSE)
+SDLK_INSERT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_INSERT)
+SDLK_HOME = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_HOME)
+SDLK_PAGEUP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PAGEUP)
+SDLK_DELETE = ord('\177')
+SDLK_END = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_END)
+SDLK_PAGEDOWN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PAGEDOWN)
+SDLK_RIGHT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RIGHT)
+SDLK_LEFT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LEFT)
+SDLK_DOWN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_DOWN)
+SDLK_UP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_UP)
+
+SDLK_NUMLOCKCLEAR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_NUMLOCKCLEAR)
+SDLK_KP_DIVIDE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_DIVIDE)
+SDLK_KP_MULTIPLY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MULTIPLY)
+SDLK_KP_MINUS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MINUS)
+SDLK_KP_PLUS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_PLUS)
+SDLK_KP_ENTER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_ENTER)
+SDLK_KP_1 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_1)
+SDLK_KP_2 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_2)
+SDLK_KP_3 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_3)
+SDLK_KP_4 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_4)
+SDLK_KP_5 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_5)
+SDLK_KP_6 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_6)
+SDLK_KP_7 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_7)
+SDLK_KP_8 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_8)
+SDLK_KP_9 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_9)
+SDLK_KP_0 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_0)
+SDLK_KP_PERIOD = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_PERIOD)
+
+SDLK_KP_EQUALS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_EQUALS)
+
+SDLK_LCTRL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LCTRL)
+SDLK_LSHIFT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LSHIFT)
+SDLK_LALT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LALT)
+SDLK_LGUI = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LGUI)
+SDLK_RCTRL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RCTRL)
+SDLK_RSHIFT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RSHIFT)
+SDLK_RALT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RALT)
+SDLK_RGUI = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RGUI)
+
+
+# events.py
+
+SDL_QUIT = 0x100
+SDL_WINDOWEVENT = 0x200
+SDL_SYSWMEVENT = 0x201
+SDL_KEYDOWN = 0x300
+SDL_KEYUP = 0x301
+SDL_TEXTEDITING = 0x302
+SDL_TEXTINPUT = 0x303
+SDL_MOUSEMOTION = 0x400
+SDL_MOUSEBUTTONDOWN = 0x401
+SDL_MOUSEBUTTONUP = 0x402
+SDL_JOYAXISMOTION = 0x600
+SDL_JOYBUTTONDOWN = 0x603
+SDL_JOYBUTTONUP = 0x604
+
+class SDL_WindowEvent(Structure):
+    _fields_ = [("type", Uint32),
+                ("timestamp", Uint32),
+                ("windowID", Uint32),
+                ("event", Uint8),
+                ("padding1", Uint8),
+                ("padding2", Uint8),
+                ("padding3", Uint8),
+                ("data1", Sint32),
+                ("data2", Sint32)
+                ]
+
+class SDL_KeyboardEvent(Structure):
+    _fields_ = [("type", Uint32),
+                ("timestamp", Uint32),
+                ("windowID", Uint32),
+                ("state", Uint8),
+                ("repeat", Uint8),
+                ("padding2", Uint8),
+                ("padding3", Uint8),
+                ("keysym", SDL_Keysym)
+                ]
+
+SDL_TEXTEDITINGEVENT_TEXT_SIZE = 32
+
+class SDL_TextEditingEvent(Structure):
+    _fields_ = [("type", Uint32),
+                ("timestamp", Uint32),
+                ("windowID", Uint32),
+                ("text", (c_char * SDL_TEXTEDITINGEVENT_TEXT_SIZE)),
+                ("start", Sint32),
+                ("length", Sint32)
+                ]
+
+SDL_TEXTINPUTEVENT_TEXT_SIZE = 32
+class SDL_TextInputEvent(Structure):
+    _fields_ = [("type", Uint32),
+                ("timestamp", Uint32),
+                ("windowID", Uint32),
+                ("text", (c_char * SDL_TEXTINPUTEVENT_TEXT_SIZE))
+                ]
+
+class SDL_MouseMotionEvent(Structure):
+    _fields_ = [("type", Uint32),
+                ("timestamp", Uint32),
+                ("windowID", Uint32),
+                ("which", Uint32),
+                ("state", Uint32),
+                ("x", Sint32),
+                ("y", Sint32),
+                ("xrel", Sint32),
+                ("yrel", Sint32)
+                ]
+
+class SDL_MouseButtonEvent(Structure):
+    _fields_ = [("type", Uint32),
+                ("timestamp", Uint32),
+                ("windowID", Uint32),
+                ("which", Uint32),
+                ("button", Uint8),
+                ("state", Uint8),
+                ("clicks", Uint8),
+                ("padding1", Uint8),
+                ("x", Sint32),
+                ("y", Sint32)
+                ]
+
+class SDL_JoyAxisEvent(Structure):
+    _fields_ = [("type", Uint32),
+                ("timestamp", Uint32),
+                ("which", SDL_JoystickID),
+                ("axis", Uint8),
+                ("padding1", Uint8),
+                ("padding2", Uint8),
+                ("padding3", Uint8),
+                ("value", Sint16),
+                ("padding4", Uint16)
+                ]
+
+class SDL_JoyButtonEvent(Structure):
+    _fields_ = [("type", Uint32),
+                ("timestamp", Uint32),
+                ("which", SDL_JoystickID),
+                ("button", Uint8),
+                ("state", Uint8),
+                ("padding1", Uint8),
+                ("padding2", Uint8)
+                ]
+
+class SDL_QuitEvent(Structure):
+    _fields_ = [("type", Uint32),
+                ("timestamp", Uint32)
+                ]
+
+class SDL_Event(Union):
+    _fields_ = [("type", Uint32),
+                ("window", SDL_WindowEvent),
+                ("key", SDL_KeyboardEvent),
+                ("edit", SDL_TextEditingEvent),
+                ("text", SDL_TextInputEvent),
+                ("motion", SDL_MouseMotionEvent),
+                ("button", SDL_MouseButtonEvent),
+                ("jaxis", SDL_JoyAxisEvent),
+                ("jbutton", SDL_JoyButtonEvent),
+                ("quit", SDL_QuitEvent),
+                ("padding", (Uint8 * 56)),
+                ]
+
+SDL_PollEvent = _bind("SDL_PollEvent", [POINTER(SDL_Event)], c_int)
+
+
+# __init__.py
+
+# At least Win32 platforms need this now.
+_SDL_SetMainReady = _bind("SDL_SetMainReady")
+_SDL_SetMainReady()
+
+
+SDL_INIT_TIMER = 0x00000001
+SDL_INIT_AUDIO = 0x00000010
+SDL_INIT_VIDEO = 0x00000020
+SDL_INIT_JOYSTICK = 0x00000200
+SDL_INIT_HAPTIC = 0x00001000
+SDL_INIT_GAMECONTROLLER = 0x00002000
+SDL_INIT_EVENTS = 0x00004000
+SDL_INIT_NOPARACHUTE = 0x00100000
+SDL_INIT_EVERYTHING = (SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO |
+                       SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
+                       SDL_INIT_GAMECONTROLLER)
+
+SDL_Init = _bind("SDL_Init", [Uint32], _cint)
+SDL_InitSubSystem = _bind("SDL_InitSubSystem", [Uint32], _cint)
+SDL_QuitSubSystem = _bind("SDL_QuitSubSystem", [Uint32])
+SDL_WasInit = _bind("SDL_WasInit", [Uint32], Uint32)
+SDL_Quit = _bind("SDL_Quit")
+
+__version__ = "0.9.5"
+version_info = (0, 9, 5, "")

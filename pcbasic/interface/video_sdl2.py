@@ -29,14 +29,14 @@ if WIN32:
         os.environ['PYSDL2_DLL_PATH'] = LIB_DIR
 
 try:
-    import minisdl2 as sdl2
+    from . import sdl2
 except ImportError:
     sdl2 = None
 
 try:
-    from minisdl2 import sdlgfx
+    from . import sdlgfx
 except ImportError:
-    pass
+    sdlgfx = None
 
 from ..basic.base import signals
 from ..basic.base import scancode
@@ -466,7 +466,7 @@ class VideoSDL2(VideoPlugin):
                 logging.warning('Smooth scaling not available: need 32-bit colour, have %d-bit.',
                         self._display_surface.format.contents.BitsPerPixel)
                 self._smooth = False
-            if not hasattr(sdl2, 'sdlgfx'):
+            if not sdlgfx:
                 logging.warning('Smooth scaling not available: `sdlgfx` extension not found.')
                 self._smooth = False
         # available joysticks
