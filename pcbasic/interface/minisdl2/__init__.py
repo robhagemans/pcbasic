@@ -42,8 +42,6 @@ from .minisdl2 import _bind
 
 from .minisdl2 import *
 from .events import *
-from .keyboard import *
-
 from .keycode import *
 from .scancode import *
 

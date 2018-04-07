@@ -1,6 +1,3 @@
-from ctypes import c_int
-
-SDL_Scancode = c_int
 
 SDL_SCANCODE_UNKNOWN = 0
 SDL_SCANCODE_A = 4

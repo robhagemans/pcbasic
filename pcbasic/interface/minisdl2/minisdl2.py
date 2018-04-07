@@ -539,3 +539,25 @@ SDL_UpdateWindowSurface = _bind("SDL_UpdateWindowSurface", [POINTER(SDL_Window)]
 SDL_UpdateWindowSurfaceRects = _bind("SDL_UpdateWindowSurfaceRects", [POINTER(SDL_Window), POINTER(SDL_Rect), c_int], c_int)
 SDL_DestroyWindow = _bind("SDL_DestroyWindow", [POINTER(SDL_Window)])
 SDL_SetWindowResizable = _bind("SDL_SetWindowResizable", [POINTER(SDL_Window), SDL_bool], optfunc=nullfunc)
+
+
+# keyboard.py
+
+SDL_Keycode = c_int32
+SDL_Keymod = c_int
+SDL_Scancode = c_int
+
+
+class SDL_Keysym(Structure):
+    _fields_ = [("scancode", SDL_Scancode),
+                ("sym", SDL_Keycode),
+                ("mod", Uint16),
+                ("unused", Uint32)
+                ]
+
+SDL_GetModState = _bind("SDL_GetModState", None, SDL_Keymod)
+SDL_SetModState = _bind("SDL_SetModState", [SDL_Keymod])
+SDL_StartTextInput = _bind("SDL_StartTextInput")
+SDL_IsTextInputActive = _bind("SDL_IsTextInputActive", None, SDL_bool)
+SDL_StopTextInput = _bind("SDL_StopTextInput")
+SDL_SetTextInputRect = _bind("SDL_SetTextInputRect", [POINTER(SDL_Rect)])
