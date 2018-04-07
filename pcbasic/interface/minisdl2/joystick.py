@@ -1,6 +1,6 @@
 from ctypes import Structure, c_int, c_char_p, POINTER
 from .dll import _bind, nullfunc
-from .stdinc import Sint16, Sint32, Uint8, SDL_bool
+from .minisdl2 import Sint16, Sint32, Uint8, SDL_bool
 
 
 

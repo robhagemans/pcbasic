@@ -1,7 +1,7 @@
 from ctypes import Structure, POINTER, c_int, c_void_p, c_char_p, c_float, \
     py_object, CFUNCTYPE
 from .dll import _bind, nullfunc
-from .stdinc import Uint16, Uint32, SDL_bool
+from .minisdl2 import Uint16, Uint32, SDL_bool
 from .rect import SDL_Rect #, SDL_Point
 from .surface import SDL_Surface
 

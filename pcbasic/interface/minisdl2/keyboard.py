@@ -1,6 +1,6 @@
 from ctypes import Structure, c_int, c_char_p, POINTER
 from .dll import _bind
-from .stdinc import Uint8, Uint16, Uint32, SDL_bool
+from .minisdl2 import Uint8, Uint16, Uint32, SDL_bool
 from .keycode import SDL_Keycode, SDL_Keymod
 from .scancode import SDL_Scancode
 from .rect import SDL_Rect

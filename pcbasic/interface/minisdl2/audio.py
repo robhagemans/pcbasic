@@ -2,7 +2,7 @@ from ctypes import Structure, c_int, c_char_p, c_double, c_void_p, CFUNCTYPE, \
     POINTER
 from .dll import _bind, nullfunc
 from .endian import SDL_BYTEORDER, SDL_LIL_ENDIAN
-from .stdinc import Uint8, Uint16, Uint32
+from .minisdl2 import Uint8, Uint16, Uint32
 
 
 SDL_AudioFormat = Uint16

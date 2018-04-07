@@ -1,7 +1,7 @@
 from ctypes import CFUNCTYPE, Structure, POINTER, c_int, c_void_p
 from .dll import _bind, nullfunc
-from .stdinc import Uint8, Uint32, SDL_bool
-from .blendmode import SDL_BlendMode
+from .minisdl2 import Uint8, Uint32, SDL_bool
+from .minisdl2 import SDL_BlendMode
 from .rect import SDL_Rect
 from .pixels import SDL_PixelFormat, SDL_Palette
 

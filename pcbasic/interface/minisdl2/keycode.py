@@ -1,4 +1,4 @@
-from .stdinc import Sint32
+from .minisdl2 import Sint32
 from .scancode import *
 
 SDL_Keycode = Sint32

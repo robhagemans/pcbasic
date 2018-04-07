@@ -40,19 +40,15 @@ freely, subject to the following restrictions:
 from .dll import get_dll_file, _bind
 from ctypes import c_int as _cint
 
+from .minisdl2 import *
 from .audio import *
-from .blendmode import *
-from .clipboard import *
 from .error import *
 from .events import *
 from .joystick import *
 from .keyboard import *
-from .mouse import *
 from .pixels import *
 from .rect import *
-from .stdinc import *
 from .surface import *
-from .timer import *
 from .video import *
 
 from .keycode import *

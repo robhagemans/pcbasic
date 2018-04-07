@@ -1,6 +1,6 @@
 from ctypes import Structure, c_int, POINTER
 from .dll import _bind
-from .stdinc import SDL_bool
+from .minisdl2 import SDL_bool
 
 
 class SDL_Rect(Structure):

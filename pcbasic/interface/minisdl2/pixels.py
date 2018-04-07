@@ -1,7 +1,7 @@
 from ctypes import Structure, POINTER, c_int, c_char_p, c_float
 from .dll import _bind
 from .endian import SDL_BYTEORDER, SDL_BIG_ENDIAN, SDL_LIL_ENDIAN
-from .stdinc import Uint8, Uint16, Uint32, SDL_bool
+from .minisdl2 import Uint8, Uint16, Uint32, SDL_bool
 
 
 class SDL_Color(Structure):
