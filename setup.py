@@ -186,7 +186,7 @@ SETUP_OPTIONS = {
     # requirements
     # need a Python-2 that's 2.7.12 or better
     'python_requires': '~=2.7.12',
-    'install_requires': ['PySDL2', 'numpy', 'pyserial'] + platform_specific_requirements,
+    'install_requires': ['PySDL2', 'numpy', 'pyserial', 'pyparallel'] + platform_specific_requirements,
     # use e.g. pip install -e .[dev,full]
     'extras_require': {
         'dev': ['lxml', 'markdown', 'pylint', 'coverage', 'cx_Freeze'],
