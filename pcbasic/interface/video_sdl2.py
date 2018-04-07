@@ -29,12 +29,12 @@ if WIN32:
         os.environ['PYSDL2_DLL_PATH'] = LIB_DIR
 
 try:
-    import sdl2
+    import minisdl2 as sdl2
 except ImportError:
     sdl2 = None
 
 try:
-    import sdl2.sdlgfx
+    from minisdl2 import sdlgfx
 except ImportError:
     pass
 
@@ -772,7 +772,7 @@ class VideoSDL2(VideoPlugin):
             # so that the memory block is highly likely to be easily available
             # this seems to avoid unpredictable delays
             sdl2.SDL_FreeSurface(self.zoomed)
-            self.zoomed = sdl2.sdlgfx.zoomSurface(conv, zoomx, zoomy, sdl2.sdlgfx.SMOOTHING_ON)
+            self.zoomed = sdlgfx.zoomSurface(conv, zoomx, zoomy, sdlgfx.SMOOTHING_ON)
             # blit onto display
             sdl2.SDL_BlitSurface(self.zoomed, None, self._display_surface, None)
         # create clipboard feedback
