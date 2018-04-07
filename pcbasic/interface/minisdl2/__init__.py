@@ -42,9 +42,7 @@ from ctypes import c_int as _cint
 
 from .minisdl2 import *
 from .audio import *
-from .error import *
 from .events import *
-from .joystick import *
 from .keyboard import *
 from .pixels import *
 from .rect import *

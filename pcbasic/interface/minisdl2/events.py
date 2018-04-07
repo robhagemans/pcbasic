@@ -2,8 +2,8 @@ from ctypes import c_char, c_char_p, c_float, c_void_p, c_int, Structure, \
     Union, CFUNCTYPE, POINTER
 from .dll import _bind
 from .minisdl2 import Sint16, Sint32, Uint8, Uint16, Uint32, SDL_bool
+from .minisdl2 import SDL_JoystickID
 from .keyboard import SDL_Keysym
-from .joystick import SDL_JoystickID
 
 
 SDL_FIRSTEVENT = 0
