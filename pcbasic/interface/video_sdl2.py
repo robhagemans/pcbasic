@@ -11,6 +11,7 @@ import ctypes
 import os
 import sys
 from collections import Counter
+from ctypes import POINTER, c_int, c_double
 
 try:
     import numpy
@@ -27,6 +28,8 @@ if WIN32:
         LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x86')
     if ('PYSDL2_DLL_PATH' not in os.environ and os.path.isfile(os.path.join(LIB_DIR, 'sdl2.dll'))):
         os.environ['PYSDL2_DLL_PATH'] = LIB_DIR
+else:
+    LIB_DIR = ''
 
 try:
     from . import sdl2
@@ -34,9 +37,16 @@ except ImportError:
     sdl2 = None
 
 try:
-    from . import sdlgfx
-except ImportError:
+    dll = sdl2.DLL('SDL2_gfx', ['SDL2_gfx', 'SDL2_gfx-1.0'], LIB_DIR)
+except RuntimeError:
     sdlgfx = None
+else:
+    SMOOTHING_ON = 1
+    zoomSurface = dll.bind_function(
+            'zoomSurface',
+            [POINTER(sdl2.SDL_Surface), c_double, c_double, c_int], POINTER(sdl2.SDL_Surface)
+        )
+    sdlgfx = True
 
 from ..basic.base import signals
 from ..basic.base import scancode
@@ -772,7 +782,7 @@ class VideoSDL2(VideoPlugin):
             # so that the memory block is highly likely to be easily available
             # this seems to avoid unpredictable delays
             sdl2.SDL_FreeSurface(self.zoomed)
-            self.zoomed = sdlgfx.zoomSurface(conv, zoomx, zoomy, sdlgfx.SMOOTHING_ON)
+            self.zoomed = zoomSurface(conv, zoomx, zoomy, SMOOTHING_ON)
             # blit onto display
             sdl2.SDL_BlitSurface(self.zoomed, None, self._display_surface, None)
         # create clipboard feedback
