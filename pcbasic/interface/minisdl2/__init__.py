@@ -37,14 +37,12 @@ freely, subject to the following restrictions:
 
 """
 
-from .dll import get_dll_file, _bind
 from ctypes import c_int as _cint
+from .minisdl2 import _bind
 
 from .minisdl2 import *
-from .audio import *
 from .events import *
 from .keyboard import *
-from .video import *
 
 from .keycode import *
 from .scancode import *

@@ -1,7 +1,6 @@
 import os
 from ctypes import POINTER, c_int, c_double
-from .dll import DLL
-from .minisdl2 import SDL_Surface
+from .minisdl2 import DLL, SDL_Surface
 
 
 try:

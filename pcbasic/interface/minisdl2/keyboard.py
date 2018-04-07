@@ -1,10 +1,9 @@
 from ctypes import Structure, c_int, c_char_p, POINTER
-from .dll import _bind
+from .minisdl2 import _bind
 from .minisdl2 import Uint8, Uint16, Uint32, SDL_bool
 from .keycode import SDL_Keycode, SDL_Keymod
 from .scancode import SDL_Scancode
-from .minisdl2 import SDL_Rect
-from .video import SDL_Window
+from .minisdl2 import SDL_Rect, SDL_Window
 
 
 class SDL_Keysym(Structure):
