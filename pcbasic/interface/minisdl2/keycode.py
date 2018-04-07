@@ -1,6 +1,7 @@
 from .minisdl2 import Sint32
 from .scancode import *
 
+
 SDL_Keycode = Sint32
 SDLK_SCANCODE_MASK = 1 << 30
 SDL_SCANCODE_TO_KEYCODE = lambda x: (x | SDLK_SCANCODE_MASK)

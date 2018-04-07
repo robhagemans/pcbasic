@@ -44,9 +44,6 @@ from .minisdl2 import *
 from .audio import *
 from .events import *
 from .keyboard import *
-from .pixels import *
-from .rect import *
-from .surface import *
 from .video import *
 
 from .keycode import *

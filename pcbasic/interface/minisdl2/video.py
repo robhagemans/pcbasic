@@ -2,8 +2,8 @@ from ctypes import Structure, POINTER, c_int, c_void_p, c_char_p, c_float, \
     py_object, CFUNCTYPE
 from .dll import _bind, nullfunc
 from .minisdl2 import Uint16, Uint32, SDL_bool
-from .rect import SDL_Rect #, SDL_Point
-from .surface import SDL_Surface
+from .minisdl2 import SDL_Rect
+from .minisdl2 import SDL_Surface
 
 
 class SDL_DisplayMode(Structure):
@@ -78,4 +78,3 @@ SDL_UpdateWindowSurface = _bind("SDL_UpdateWindowSurface", [POINTER(SDL_Window)]
 SDL_UpdateWindowSurfaceRects = _bind("SDL_UpdateWindowSurfaceRects", [POINTER(SDL_Window), POINTER(SDL_Rect), c_int], c_int)
 SDL_DestroyWindow = _bind("SDL_DestroyWindow", [POINTER(SDL_Window)])
 SDL_SetWindowResizable = _bind("SDL_SetWindowResizable", [POINTER(SDL_Window), SDL_bool], optfunc=nullfunc)
-

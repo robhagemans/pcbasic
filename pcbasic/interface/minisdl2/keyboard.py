@@ -3,7 +3,7 @@ from .dll import _bind
 from .minisdl2 import Uint8, Uint16, Uint32, SDL_bool
 from .keycode import SDL_Keycode, SDL_Keymod
 from .scancode import SDL_Scancode
-from .rect import SDL_Rect
+from .minisdl2 import SDL_Rect
 from .video import SDL_Window
 
 
