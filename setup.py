@@ -127,28 +127,9 @@ class BuildPyCommand(build_py.build_py):
 
 ###############################################################################
 # metadata
-# see https://github.com/pypa/sampleproject
-
-# platform-specific settings
-if sys.platform == 'win32':
-    platform_specific_requirements = []
-    console_scripts = ['pcbasic=pcbasic:main']
-    gui_scripts = ['pcbasicw=pcbasic:main']
-    # use different names for 32- and 64-bit pyds to allow them to stay side-by-side in place
-    if platform.architecture()[0] == '32bit':
-        console_name = 'win32_x86_console'
-    else:
-        console_name = 'win32_x64_console'
-    ext_modules = [Extension('pcbasic.compat.' + console_name, ['pcbasic/compat/win32_console.c'])]
-else:
-    platform_specific_requirements = []
-    console_scripts = ['pcbasic=pcbasic:main']
-    gui_scripts = []
-    ext_modules = []
-
 
 SETUP_OPTIONS = {
-    'name': 'pcbasic',
+    'name': PACKAGE,
     'version': VERSION,
     'description': DESCRIPTION,
     'long_description': LONG_DESCRIPTION,
@@ -156,37 +137,28 @@ SETUP_OPTIONS = {
     'author': AUTHOR,
     'author_email': EMAIL,
     'license': LICENCE,
-
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    'classifiers': [
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: End Users/Desktop',
-        'Intended Audience :: Developers',
-        'Topic :: System :: Emulators',
-        'Topic :: Software Development :: Interpreters',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-        'Programming Language :: Python :: 2.7',
-    ],
-    'keywords': 'emulator interpreter basic retro legacy gwbasic basica pcjr tandy',
+    'classifiers': CLASSIFIERS,
+    'keywords': KEYWORDS,
 
     # contents
     'packages': find_packages(exclude=['doc', 'test', 'docsrc', 'icons']),
     # rule of thumb for sdist: package_data specifies what gets *installed*,
     # but manifest specifies what gets *included* in the archive in the first place
     'package_data': {
-        'pcbasic': [
+        PACKAGE: [
                 '*.txt', '*.md', 'pcbasic/*.txt', 'pcbasic/data/codepages/*',
                 'pcbasic/data/fonts/*', 'pcbasic/data/programs/*',
                 'pcbasic/lib/*',
             ],
     },
-    'ext_modules': ext_modules,
+    'ext_modules': [],
     'include_package_data': True,
 
     # requirements
     # need a Python-2 that's 2.7.12 or better
     'python_requires': '~=2.7.12',
-    'install_requires': ['numpy', 'pyserial', 'pyparallel'] + platform_specific_requirements,
+    'install_requires': ['numpy', 'pyserial', 'pyparallel'],
     # use e.g. pip install -e .[dev,full]
     'extras_require': {
         'dev': ['lxml', 'markdown', 'pylint', 'coverage', 'cx_Freeze'],
@@ -195,8 +167,8 @@ SETUP_OPTIONS = {
 
     # launchers
     'entry_points': {
-        'console_scripts': console_scripts,
-        'gui_scripts': gui_scripts,
+        'console_scripts':  ['pcbasic=pcbasic:main'],
+        'gui_scripts': [],
     },
 
     # setup commands
@@ -207,6 +179,27 @@ SETUP_OPTIONS = {
         'build_py': BuildPyCommand,
     },
 }
+
+
+# platform-specific settings
+if sys.platform == 'win32':
+    SETUP_OPTIONS['entry_points']['gui_scripts'] = ['pcbasicw=pcbasic:main']
+    # use different names for 32- and 64-bit pyds to allow them to stay side-by-side in place
+    if platform.architecture()[0] == '32bit':
+        console_name = 'win32_x86_console'
+    else:
+        console_name = 'win32_x64_console'
+    SETUP_OPTIONS['ext_modules'].append(
+            Extension('pcbasic.compat.' + console_name, ['pcbasic/compat/win32_console.c'])
+        )
+elif sys.platform == 'linux2':
+    target = '/usr/local/'
+    SETUP_OPTIONS['data_files'] = [
+            ('%s/share/man/man1/' % (target,), ['doc/pcbasic.1.gz']),
+            ('%s/share/applications/' % (target,), ['icons/pcbasic.desktop']),
+            ('%s/share/icons' % (target,), ['icons/pcbasic.png']),
+    ]
+
 
 ###############################################################################
 # freezing options
@@ -329,6 +322,7 @@ if CX_FREEZE and sys.platform == 'win32':
                 'pywin', 'win32com', 'test',
             ],
             'include_files': ['doc/PC-BASIC_documentation.html'],
+            #'include_msvcr': True,
             #'optimize': 2,
         },
         'bdist_msi': {
