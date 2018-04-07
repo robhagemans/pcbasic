@@ -23,7 +23,8 @@ _read_buffer = deque()
 # console is a terminal (tty)
 is_tty = sys.stdin.isatty()
 # console encoding
-encoding = sys.stdout.encoding
+# this can be None on macOS if running on console from inside an appdir
+encoding = sys.stdout.encoding or 'utf-8'
 
 
 def set_raw():
@@ -39,7 +40,7 @@ def unset_raw():
 
 def write(unicode_str):
     """Write unicode to console."""
-    sys.stdout.write(unicode_str.encode(sys.stdout.encoding))
+    sys.stdout.write(unicode_str.encode(encoding))
     sys.stdout.flush()
 
 def read_char():
@@ -55,7 +56,7 @@ def read_char():
     while _read_buffer:
         output.append(_read_buffer.popleft())
         try:
-            return b''.join(output).decode(sys.stdin.encoding)
+            return b''.join(output).decode(sys.stdin.encoding or 'utf-8')
         except UnicodeDecodeError:
             pass
     # not enough to decode, keep for next call
