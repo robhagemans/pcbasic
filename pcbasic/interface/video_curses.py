@@ -17,6 +17,7 @@ except ImportError:
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..basic.base import signals
+from ..compat import MACOS
 
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed
@@ -111,8 +112,9 @@ class VideoCurses(VideoPlugin):
         self.window.keypad(True)
         self.window.scrollok(False)
         curses.start_color()
-        self.can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
-                              and curses.COLOR_PAIRS > 128)
+        # curses mistakenly believes changing palettes works on macOS's Terminal.app
+        self.can_change_palette = (not MACOS) and (
+                curses.can_change_color() and curses.COLORS >= 16 and curses.COLOR_PAIRS > 128)
         sys.stdout.write(SET_TITLE % self.caption)
         sys.stdout.flush()
         self._set_default_colours(16)
