@@ -12,7 +12,7 @@ import logging
 from collections import deque
 
 try:
-    import sdl2
+    import minisdl2 as sdl2
 except ImportError:
     sdl2 = None
 
