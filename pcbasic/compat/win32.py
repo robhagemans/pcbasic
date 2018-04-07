@@ -166,6 +166,16 @@ def get_unicode_argv():
     argv = argv[-len(sys.argv):]
     return argv
 
+_GetFileAttributesW = windll.kernel32.GetFileAttributesW
+_GetFileAttributesW.argtypes = [LPCWSTR]
+_GetFileAttributesW.restype = DWORD
+_FILE_ATTRIBUTE_HIDDEN = 2
+
+def is_hidden(path):
+    """File is hidden."""
+    return _GetFileAttributesW(LPCWSTR(path)) & _FILE_ATTRIBUTE_HIDDEN
+
+
 ##############################################################################
 # printing
 

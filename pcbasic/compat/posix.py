@@ -97,6 +97,13 @@ def get_unicode_argv():
         for arg in sys.argv if not arg.startswith(b'-psn_')
     ]
 
+def is_hidden(path):
+    """File is hidden."""
+    # dot files are hidden on unixy systems
+    base = os.path.basename(path)
+    return base.startswith(u'.') and (base not in (u'.', u'..'))
+
+
 ##############################################################################
 # printing
 

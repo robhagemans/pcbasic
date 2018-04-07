@@ -21,7 +21,7 @@ import logging
 
 from ..base.bytestream import ByteStream
 from ..base import error
-from ...compat import get_short_pathname, get_free_bytes
+from ...compat import get_short_pathname, get_free_bytes, is_hidden
 from .. import values
 from . import devicebase
 
@@ -488,6 +488,9 @@ class DiskDevice(object):
             dirs = [(u'', u'')]
         else:
             dirs, fils = self._get_dirs_files(native_path)
+            # remove hidden files
+            dirs = [d for d in dirs if not is_hidden(d)]
+            fils = [f for f in fils if not is_hidden(f)]
             # filter according to mask
             dirs = self._filter_names(native_path, dirs + [u'.', u'..'], dos_mask)
             fils = self._filter_names(native_path, fils, dos_mask)
