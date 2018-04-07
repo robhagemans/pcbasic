@@ -186,7 +186,7 @@ SETUP_OPTIONS = {
     # requirements
     # need a Python-2 that's 2.7.12 or better
     'python_requires': '~=2.7.12',
-    'install_requires': ['PySDL2', 'numpy', 'pyserial', 'pyparallel'] + platform_specific_requirements,
+    'install_requires': ['numpy', 'pyserial', 'pyparallel'] + platform_specific_requirements,
     # use e.g. pip install -e .[dev,full]
     'extras_require': {
         'dev': ['lxml', 'markdown', 'pylint', 'coverage', 'cx_Freeze'],
@@ -323,7 +323,7 @@ if CX_FREEZE and sys.platform == 'win32':
     # cx_Freeze options
     SETUP_OPTIONS['options'] = {
         'build_exe': {
-            'packages': ['numpy', 'pkg_resources._vendor', 'sdl2'],
+            'packages': ['numpy', 'pkg_resources._vendor'],
             'excludes': [
                 'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 'pygame',
                 'pywin', 'win32com', 'test',
@@ -398,7 +398,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
     # cx_Freeze options
     SETUP_OPTIONS['options'] = {
         'build_exe': {
-            'packages': ['numpy', 'pkg_resources._vendor', 'sdl2'],
+            'packages': ['numpy', 'pkg_resources._vendor'],
             'excludes': [
                 'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 'pygame', 'test',
             ],
