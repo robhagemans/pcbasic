@@ -148,15 +148,14 @@ def makedoc(header=None, output=None, embedded_style=True):
     predoc.write(licenses_html)
     predoc.write(open(basepath + '/footer.html', 'r').read())
     predoc.seek(0)
-    toc = StringIO()
-    maketoc(predoc, toc)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     subheader_html = """
 <header>
     <h1>PC-BASIC documentation</h1>
+    <small>Version {0}</small>
 </header>
 <article>
-    <h2>PC-BASIC</h2>
+    <h2 id="top">PC-BASIC</h2>
     <p>
         <em>{2}</em>
     </p>
@@ -178,6 +177,12 @@ def makedoc(header=None, output=None, embedded_style=True):
     </ul>
 </article>
 """.format(VERSION, now, DESCRIPTION, LONG_DESCRIPTION)
+    tocdoc = StringIO()
+    tocdoc.write(subheader_html)
+    tocdoc.write(predoc.getvalue())
+    tocdoc.seek(0)
+    toc = StringIO()
+    maketoc(tocdoc, toc)
     header_html = open(header, 'r').read()
     with open(output, 'w') as outf:
         outf.write(header_html)

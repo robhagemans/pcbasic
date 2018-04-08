@@ -402,11 +402,18 @@ dt code {
         max-width: 100%;
     }
 
-    div.frontcover {
+    header {
         page: cover;
-        content: url("images/cover.png");
+        background-size: cover;
+        background-image: url("../docsrc/cover.png");
         width: 100%;
+        max-width: 100%;
         height: 100%;
+        position: absolute;
+        top:0;
+        bottom: 0;
+        left: 0;
+        right: 0;
     }
 
     /*  styles for the right hand spread
@@ -442,7 +449,7 @@ dt code {
         @bottom-right {
             margin: 10pt 0 30pt 0;
             border-top: .25pt solid #666;
-            content: string(doctitle);;
+            content: 'PC-BASIC';
             font-size: 9pt;
             color: #333;
         }
@@ -478,7 +485,7 @@ dt code {
     /*  get the title of the current chapter - this will be the content of the h1
         reset figure counter as figures start from 1 in each chapter */
     h2 {
-        string-set: doctitle "PC-BASIC " content();
+        string-set: doctitle content();
         page-break-before: always;
         counter-reset: figurenum;
         counter-reset: footnote;
@@ -536,16 +543,45 @@ dt code {
         }
     }
 
-    h1,h2,h3,h4,h5 {
-    	font-weight: bold;
-    	page-break-after: avoid;
-    	page-break-inside:avoid;
+    h2,h3,h4,h5 {
+        font-weight: bold;
+        page-break-after: avoid;
+        page-break-inside: avoid;
         color: black;
         background: white;
         padding-left: 0;
     }
-
-    h2, h3 {
+    h1 {
+        font-size: 4em;
+        font-family: serif;
+        line-height: 1em;
+        border-bottom: 2pt solid black;
+        text-align: right;
+        margin-left: 3.5em;
+        margin-right: 6rem;
+        margin-top: 4em;
+        color: black;
+    }
+    header small {
+        text-align: right;
+        font-size: 1.5em;
+        font-family: serif;
+        font-style: italic;
+        margin-right: 7rem;
+        display: block;
+        color: black;
+    }
+    h2 {
+        color: white;
+        background: grey;
+        padding: 2pt 8pt 2pt 8pt;
+        border: 2pt solid black;
+        font-size: 2em;
+    }
+    article h2, footer h2 {
+        margin-top: 8em;
+    }
+    h3 {
         border-bottom: 2pt solid black;
         font-size: 2em;
     }
