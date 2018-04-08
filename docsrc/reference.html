@@ -919,6 +919,8 @@
         </code>
         <p>
             Converts the numeric expression <code><var>x</var></code> to a signed integer.
+            Halves are rounded away from zero, so that e.g.
+            <code>CINT(2.5) = 3</code> and <code>CINT(-2.5) = -3</code>.
         </p>
         <h5>Errors</h5>
         <ul>
@@ -971,7 +973,8 @@
             <var>y</var> <b>= CSNG(</b><var>x</var><b>)</b>
         </code>
         <p>
-            Converts the numeric expression <code><var>x</var></code> to a single-precision value.
+            Converts the numeric expression <code><var>x</var></code> to a single-precision value
+            by Gaussian rounding.
         </p>
         <h5>Errors</h5>
         <ul>
