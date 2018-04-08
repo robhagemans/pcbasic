@@ -328,7 +328,7 @@ class COMFile(devicebase.TextFileBase):
         devicebase.TextFileBase.close(self)
         self.is_open = False
 
-    def read_raw(self, num=-1):
+    def _read_raw(self, num=-1):
         """Read num characters as string."""
         self._queues.wait()
         s, c = [], b''
@@ -339,15 +339,23 @@ class COMFile(devicebase.TextFileBase):
                 s.append(c)
         return b''.join(s)
 
+    def input_chars(self, num):
+        """Read a number of characters."""
+        word = self._read_raw(num)
+        if len(word) < num:
+            # input past end
+            raise error.BASICError(error.INPUT_PAST_END)
+        return word
+
     def read(self, num=-1):
         """Read num characters, replacing CR LF with CR."""
         s = []
         while len(s) < num:
-            c = self.read_raw(1)
+            c = self._read_raw(1)
             # report CRLF as CR
             # are we correct to ignore self._linefeed on input?
             if (c == b'\n' and self.last == b'\r'):
-                c = self.read_raw(1)
+                c = self._read_raw(1)
             if c:
                 s.append(c)
         return b''.join(s)

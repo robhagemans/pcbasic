@@ -859,7 +859,7 @@ class BinaryFile(devicebase.RawFile):
                 self.seg, self.offset, self.length = seg, offset, length
         else:
             # drop magic byte
-            self.read_raw(1)
+            self.read(1)
             if self.filetype == b'M':
                 # self.length gets ignored: even the \x1a at the end is read
                 header = self.read(6)
@@ -886,7 +886,7 @@ class _CRLFTextFileBase(devicebase.TextFileBase):
         """Read num characters, replacing CR LF with CR."""
         s = ''
         while len(s) < num:
-            c = self.read_raw(1)
+            c = devicebase.TextFileBase.read(self, 1)
             if not c:
                 break
             s += c
@@ -894,7 +894,7 @@ class _CRLFTextFileBase(devicebase.TextFileBase):
             # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
             if (c == '\r' and self.last != '\n') and self.next_char == '\n':
                 last, char = self.last, self.char
-                self.read_raw(1)
+                devicebase.TextFileBase.read(self, 1)
                 self.last, self.char = last, char
         return s
 
@@ -962,13 +962,16 @@ class RandomFile(_CRLFTextFileBase):
         if self.fhandle.tell() > self.reclen + write - 1:
             raise error.BASICError(error.FIELD_OVERFLOW)
 
-    def read_raw(self, num=-1):
-        """Read num characters from the field."""
+    def input_chars(self, num):
+        """Read a number of characters from the field buffer."""
         # switch to reading mode and fix readahead buffer
         self.switch_mode('I')
-        s = _CRLFTextFileBase.read_raw(self, num)
+        word = devicebase.TextFileBase.read(self, num)
         self._check_overflow()
-        return s
+        if len(word) < num:
+            # input past end
+            raise error.BASICError(error.INPUT_PAST_END)
+        return word
 
     def write(self, s, can_break=True):
         """Write the string s to the field, taking care of width settings."""

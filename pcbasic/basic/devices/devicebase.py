@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import io
 import os
 import struct
+from contextlib import contextmanager
 
 from ..base import error
 from ..base.eascii import as_bytes as ea
@@ -130,7 +131,6 @@ class KYBDDevice(Device):
 #   close(self)
 #   switch_mode(self, new_mode)
 #   input_chars(self, num)
-#   read_raw(self, num=-1)
 #   read(self, num=-1)
 #   write(self, s)
 #   flush(self)
@@ -150,6 +150,15 @@ class DeviceSettings(object):
 
     def close(self):
         """Close dummy device file."""
+
+
+@contextmanager
+def safe_io():
+    """Catch and translate I/O errors."""
+    try:
+        yield
+    except EnvironmentError:
+        raise error.BASICError(error.DEVICE_IO_ERROR)
 
 
 class RawFile(object):
@@ -181,34 +190,26 @@ class RawFile(object):
 
     def input_chars(self, num):
         """Read a number of characters."""
-        word = self.read_raw(num)
+        with safe_io():
+            word = self.fhandle.read(num)
         if len(word) < num:
             # input past end
             raise error.BASICError(error.INPUT_PAST_END)
         return word
 
-    def read_raw(self, num=-1):
-        """Read num chars. If num==-1, read all available."""
-        try:
-            return self.fhandle.read(num)
-        except EnvironmentError:
-            raise error.BASICError(error.DEVICE_IO_ERROR)
-
     def read(self, num=-1):
-        """Read num chars. If num==-1, read all available. Override to handle line endings."""
-        return self.read_raw(num)
+        """Read num chars. If num==-1, read all available."""
+        with safe_io():
+            return self.fhandle.read(num)
 
     def write(self, s):
         """Write string or bytearray to file."""
-        try:
+        with safe_io():
             self.fhandle.write(str(s))
-        except EnvironmentError:
-            raise error.BASICError(error.DEVICE_IO_ERROR)
 
     def flush(self):
         """Write contents of buffers to file."""
         self.fhandle.flush()
-
 
 
 #################################################################################
@@ -245,7 +246,7 @@ class TextFileBase(RawFile):
                 self.next_char = ''
         self.char, self.last = '', ''
 
-    def read_raw(self, num=-1):
+    def _read_raw(self, num=-1):
         """Read num characters as string."""
         s = ''
         while True:
@@ -256,12 +257,22 @@ class TextFileBase(RawFile):
             if self.next_char in ('\x1a', ''):
                 break
             s += self.next_char
-            self.next_char, self.char, self.last = self.fhandle.read(1), self.next_char, self.char
+            with safe_io():
+                self.next_char, self.char, self.last = (
+                        self.fhandle.read(1), self.next_char, self.char)
         return s
 
+    def input_chars(self, num):
+        """Read a number of characters."""
+        word = self._read_raw(num)
+        if len(word) < num:
+            # input past end
+            raise error.BASICError(error.INPUT_PAST_END)
+        return word
+
     def read(self, num=-1):
-        """Read num chars. If num==-1, read all available. Override to handle line endings."""
-        return self.read_raw(num)
+        """Read num chars. If num==-1, read all available."""
+        return self._read_raw(num)
 
     def write(self, s, can_break=True):
         """Write the string s to the file, taking care of width settings."""
@@ -397,7 +408,7 @@ class TextFileBase(RawFile):
                 c = self.read(1)
             else:
                 # no CRLF replacement inside quotes.
-                c = self.read_raw(1)
+                c = self._read_raw(1)
         # if separator was a whitespace char or closing quote
         # skip trailing whitespace before any comma or hard separator
         if c and c in self.whitespace_input or (quoted and c == '"'):
@@ -443,7 +454,7 @@ def input_entry_realtime(self, typechar, allow_past_end):
     # we read the ending char before breaking the loop
     # this may raise FIELD OVERFLOW
     # on reading from a KYBD: file, control char replacement takes place
-    # which means we need to use read() not read_raw()
+    # which means we need to use read() not _read_raw()
     parsing_trail = False
     while c and not (c in ',\r' and not quoted):
         if c == '"' and quoted:
@@ -518,12 +529,15 @@ class KYBDFile(TextFileBase):
         inst._is_master = False
         return inst
 
-    def read_raw(self, n=1):
-        """Read a string from the keyboard - INPUT$."""
+    def input_chars(self, num):
+        """Read a number of characters - INPUT$."""
         chars = b''
-        while len(chars) < n:
+        while len(chars) < num:
             chars += b''.join(b'\0' if c in self._input_replace else c if len(c) == 1 else b''
-                              for c in self._keyboard.read_bytes_kybd_file(n-len(chars)))
+                              for c in self._keyboard.read_bytes_kybd_file(num-len(chars)))
+        if len(chars) < num:
+            # input past end
+            raise error.BASICError(error.INPUT_PAST_END)
         return chars
 
     def read(self, n=1):
