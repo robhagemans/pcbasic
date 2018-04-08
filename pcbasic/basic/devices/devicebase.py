@@ -293,7 +293,7 @@ class TextFileBase(RawFile):
 
     def _check_long_line(self, line):
         """Check if line is longer than max length; raise error if needed."""
-        return len(line) > 255
+        return len(line) >= 255
 
     def read_line(self):
         """\
