@@ -246,7 +246,7 @@ class TextFileBase(RawFile):
                 self.next_char = ''
         self.char, self.last = '', ''
 
-    def _read_raw(self, num=-1):
+    def _read_raw(self, num):
         """Read num characters as string."""
         s = ''
         while True:
@@ -321,7 +321,7 @@ class TextFileBase(RawFile):
             if not c or c == '\r':
                 break
             out.append(c)
-            if len(s) == 255:
+            if len(out) == 255:
                 c = '\r' if self.next_char == '\r' else None
                 break
         if not c and not out:

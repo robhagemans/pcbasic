@@ -328,7 +328,7 @@ class COMFile(devicebase.TextFileBase):
         devicebase.TextFileBase.close(self)
         self.is_open = False
 
-    def _read_raw(self, num=-1):
+    def _read_raw(self, num):
         """Read num characters as string."""
         self._queues.wait()
         s, c = [], b''
