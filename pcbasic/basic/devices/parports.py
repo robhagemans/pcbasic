@@ -36,7 +36,7 @@ class LPTDevice(devicebase.Device):
     # in GW-BASIC, FIELD gives a FIELD OVERFLOW; we get BAD FILE MODE.
     allowed_modes = 'OR'
 
-    def __init__(self, arg, default_stream, codepage, temp_dir):
+    def __init__(self, arg, default_stream, codepage):
         """Initialise LPTn: device."""
         devicebase.Device.__init__(self)
         addr, val = devicebase.parse_protocol_string(arg)
@@ -61,7 +61,7 @@ class LPTDevice(devicebase.Device):
             options = val.split(u':')
             printer_name = options[0]
             flush_trigger = (options[1:] or [u''])[0]
-            self.stream = PrinterStream(printer_name, flush_trigger, codepage, temp_dir)
+            self.stream = PrinterStream(printer_name, flush_trigger, codepage)
         elif val:
             logging.warning(u'Could not attach %s to LPT device', arg)
         # column counter is the same across all LPT files
@@ -165,15 +165,13 @@ class LPTFile(devicebase.TextFileBase):
 class PrinterStream(io.BytesIO):
     """LPT output to printer."""
 
-    def __init__(self, printer_name, flush_trigger, codepage, temp_dir):
+    def __init__(self, printer_name, flush_trigger, codepage):
         """Initialise the printer stream."""
         self.printer_name = printer_name
         self.codepage = codepage
         # flush_trigger can be a char or a code word
         self._flush_trigger = TRIGGERS.get(flush_trigger.lower(), flush_trigger)
         io.BytesIO.__init__(self)
-        # temp file in temp dir
-        self._printfile = os.path.join(temp_dir, u'pcbasic_print.txt')
 
     def close(self):
         """Close the printer stream."""
@@ -202,7 +200,7 @@ class PrinterStream(io.BytesIO):
         # any naked lead bytes in DBCS will remain just that - avoid in-line flushes.
         utf8buf = self.codepage.str_to_unicode(
                     printbuf, preserve_control=True).encode('utf-8', 'replace')
-        line_print(utf8buf, self.printer_name, self._printfile)
+        line_print(utf8buf, self.printer_name)
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
         """Set the values of the control pins."""

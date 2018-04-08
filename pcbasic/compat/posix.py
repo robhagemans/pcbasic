@@ -108,7 +108,7 @@ def is_hidden(path):
 # printing
 
 if which('paps'):
-    def line_print(printbuf, printer, tempdir):
+    def line_print(printbuf, printer):
         """Print the buffer to a LPR printer using PAPS."""
         options = b''
         if printer and printer != u'default':
@@ -130,7 +130,7 @@ if which('paps'):
             pr.stdin.close()
 
 else:
-    def line_print(printbuf, printer, tempdir):
+    def line_print(printbuf, printer):
         """Print the buffer to a LPR (CUPS or older UNIX) printer."""
         options = b''
         if printer and printer != u'default':

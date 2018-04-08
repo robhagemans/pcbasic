@@ -492,7 +492,6 @@ class Settings(object):
             'devices': device_params,
             'current_device': current_device,
             'mount': mount_dict,
-            'temp_dir': self._temp_dir,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
             'utf8': self.get('utf8'),

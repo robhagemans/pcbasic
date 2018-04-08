@@ -15,6 +15,8 @@ import threading
 import subprocess
 import msvcrt
 import struct
+import tempfile
+import time
 
 from ctypes.wintypes import LPCWSTR, LPWSTR, DWORD, HINSTANCE, HANDLE, HKEY, BOOL
 from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong, byref
@@ -221,19 +223,22 @@ def get_default_printer():
 
 PRINTER_TIMEOUT_MS=1000
 
-def _wait_for_process(handle):
+def _wait_for_process(handle, filename):
     """Give printing process some time to complete."""
     try:
         _WaitForSingleObject(handle, DWORD(PRINTER_TIMEOUT_MS))
     except EnvironmentError as e:
         logging.warning('Windows error: %s', e)
+    # remove temporary
+    os.remove(filename)
 
-def line_print(printbuf, printer, printfile):
+def line_print(printbuf, printer):
     """Print the buffer to a Windows printer."""
     if not printer or printer == u'default':
         printer = get_default_printer()
     if printbuf:
-        with open(printfile, 'wb') as f:
+        with tempfile.NamedTemporaryFile(
+                suffix='.txt', prefix='pcbasic-print-', delete=False) as f:
             # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
             f.write(b'\xef\xbb\xbf')
             f.write(printbuf)
@@ -241,7 +246,7 @@ def line_print(printbuf, printer, printfile):
         sei.cbSize = ctypes.sizeof(sei)
         sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC
         sei.lpVerb = u'printto'
-        sei.lpFile = printfile
+        sei.lpFile = f.name
         sei.lpParameters = u'"%s"' % printer
         sei.hProcess = HANDLE()
         try:
@@ -251,7 +256,7 @@ def line_print(printbuf, printer, printfile):
         else:
             # launch non-daemon thread to wait for handle
             # to ensure we don't lose the print if triggered on exit
-            threading.Thread(target=_wait_for_process, args=(sei.hProcess)).start()
+            threading.Thread(target=_wait_for_process, args=(sei.hProcess, f.name)).start()
 
 
 ##############################################################################

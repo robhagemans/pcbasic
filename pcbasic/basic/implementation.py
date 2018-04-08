@@ -59,7 +59,7 @@ class Implementation(object):
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
-            temp_dir=u'', extension=None, greeting=True,
+            extension=None, greeting=True,
             ):
         """Initialise the interpreter session."""
         ######################################################################
@@ -141,7 +141,7 @@ class Implementation(object):
         self.files = Files(
                 self.values, self.memory, self.queues, self.keyboard, self.display,
                 max_files, max_reclen, serial_buffer_size,
-                devices, current_device, mount, temp_dir, utf8, universal)
+                devices, current_device, mount, utf8, universal)
         # set up the SHELL command
         # Files needed for current disk device
         self.shell = dos.Shell(
