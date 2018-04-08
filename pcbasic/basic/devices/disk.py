@@ -438,12 +438,29 @@ class DiskDevice(object):
         """Remove directory at given BASIC path."""
         safe(os.rmdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=False))
 
-    def kill(self, dos_path):
-        """Remove regular file at given native path."""
-        native_path = self._get_native_abspath(dos_path, defext=b'', isdir=False, create=False)
-        # don't delete open files
-        self._check_file_not_open(native_path)
-        safe(os.remove, native_path)
+    def kill(self, dos_pathmask):
+        """Remove regular files that match given BASIC path and mask."""
+        native_dir, _, dos_mask = self._split_pathmask(dos_pathmask)
+        _, files = self._get_dirs_files(native_dir)
+        # filter according to mask
+        trunkmask, extmask = dos_splitext(dos_mask)
+        split = {dos_splitext(name): name for name in files}
+        to_kill = (
+                split[(trunk, ext)] for (trunk, ext) in split
+                if dos_name_matches(trunk, trunkmask) and dos_name_matches(ext, extmask)
+            )
+        to_kill = [
+                # NOTE that this depends on display names NOT being legal names for overlong file names
+                # i.e. a + is included at the end of the display name which is not legal
+                os.path.join(native_dir, f) for f in to_kill
+                if dos_is_legal_name(f) and not is_hidden(os.path.join(native_dir, f))
+            ]
+        if not to_kill:
+            raise error.BASICError(error.FILE_NOT_FOUND)
+        for native_path in to_kill:
+            # don't delete open files
+            self._check_file_not_open(native_path)
+            safe(os.remove, native_path)
 
     def rename(self, old_dospath, new_dospath):
         """Rename a file or directory."""
@@ -481,7 +498,7 @@ class DiskDevice(object):
 
     def listdir(self, pathmask):
         """Get directory listing."""
-        native_path, native_relpath, dos_mask = self._split_pathmask(pathmask)
+        native_path, _, dos_mask = self._split_pathmask(pathmask)
         fils = []
         if dos_mask in (b'.', b'..'):
             # following GW, we just show a single dot if asked for either . or ..

@@ -6159,29 +6159,43 @@
     <section>
         <h4 id="KILL"><code>KILL</code></h4>
         <code class="flow">
-            <b>KILL</b> <var>file_spec</var>
+            <b>KILL</b> <var>filter_spec</var>
         </code>
         <p>
-            Deletes a file on a disk device.
+            Deletes one or more files on a disk device.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                The string expression <code><var>file_spec</var></code> is a
-                valid <a href="#filespec">file specification</a> indicating the file to delete.
-                It must point to an existing file on a disk device.
+                The string expression <code><var>filter_spec</var></code> is a
+                valid <a href="#filespec">file specification</a> indicating the files to delete.
+                Wildcards are allowed. See <a href="#FILES"><code>FILES</code></a> for a description
+                of wildcards.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Be very careful with the use of wildcards in this statement: the DOS matching rules may
+                not be the same as what is usual on your operating system, which could result in
+                unexpected files being deleted.
+            </li>
+            <li>
+                This statement may not delete hidden file and files that do not have short names
+                which are legal DOS names. However, this behaviour is not guaranteed
+                so you must not depend on it.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> has a number value: <samp>Type mismatch</samp>.
+                <code><var>filter_spec</var></code> is a numeric value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                The file <code><var>file_spec</var></code> is open: <samp>File already open</samp>
+                A file matching <code><var>filter_spec</var></code> is open: <samp>File already open</samp>
             </li>
             <li>
-                The file or path <code><var>file_spec</var></code> does not exist: <samp>File not found</samp>
+                No file matches <code><var>filter_spec</var></code> : <samp>File not found</samp>
             </li>
             <li>
                 The user has no write permission: <samp>Permission denied</samp>
