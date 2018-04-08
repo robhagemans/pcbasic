@@ -125,7 +125,7 @@ class KYBDDevice(Device):
 # file classes
 
 # file interface:
-#    __enter__(self)
+#   __enter__(self)
 #   __exit__(self, exc_type, exc_value, traceback)
 #   close(self)
 #   switch_mode(self, new_mode)
@@ -252,12 +252,16 @@ class TextFileBase(RawFile):
             if (num > -1 and len(s) >= num):
                 break
             # check for \x1A (EOF char will actually stop further reading
-            # (that's true in disk text files but not on LPT devices)
+            # (that's true in disk text files but not on COM devices)
             if self.next_char in ('\x1a', ''):
                 break
             s += self.next_char
             self.next_char, self.char, self.last = self.fhandle.read(1), self.next_char, self.char
         return s
+
+    def read(self, num=-1):
+        """Read num chars. If num==-1, read all available. Override to handle line endings."""
+        return self.read_raw(num)
 
     def write(self, s, can_break=True):
         """Write the string s to the file, taking care of width settings."""
@@ -291,10 +295,6 @@ class TextFileBase(RawFile):
                     if self.col == 257:
                         self.col = 1
 
-    def _check_long_line(self, line):
-        """Check if line is longer than max length; raise error if needed."""
-        return len(line) >= 255
-
     def read_line(self):
         """\
             Read a single line until line break or 255 characters.
@@ -304,13 +304,15 @@ class TextFileBase(RawFile):
             Return '' for CR if EOF
         """
         out = []
-        while not self._check_long_line(out):
+        while True:
             c = self.read(1)
             # don't check for CRLF on KYBD:, CAS:, etc.
             if not c or c == '\r':
                 break
             out.append(c)
-            c = None
+            if len(s) == 255:
+                c = '\r' if self.next_char == '\r' else None
+                break
         if not c and not out:
             return None, c
         return b''.join(out), c

@@ -900,17 +900,19 @@ class _CRLFTextFileBase(devicebase.TextFileBase):
 
     def read_line(self):
         """Read line from text file, break on CR or CRLF (not LF)."""
-        s = ''
-        while not self._check_long_line(s):
+        s = []
+        while True:
             c = self.read(1)
             if not c or (c == '\r' and self.last != '\n'):
                 # break on CR, CRLF but allow LF, LFCR to pass
                 break
-            s += c
-            c = None
+            s.append(c)
+            if len(s) == 255:
+                c = '\r' if self.next_char == '\r' else None
+                break
         if not c and not s:
             return None, c
-        return s, c
+        return ''.join(s), c
 
     def write_line(self, s=''):
         """Write string or bytearray and newline to file."""
@@ -1114,7 +1116,7 @@ class TextFile(_CRLFTextFileBase):
         # is followed by a line starting with a number
         s, c = self.spaces, b''
         self.spaces = b''
-        while not self._check_long_line(s):
+        while len(s) < 255:
             # read converts CRLF to CR
             c = self.read(1)
             if not c:
