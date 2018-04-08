@@ -9,6 +9,8 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import os
 import platform
+import shutil
+import glob
 from codecs import open
 from setuptools.command import sdist, build_py
 
@@ -49,28 +51,67 @@ with open(os.path.join(HERE, 'pcbasic', 'metadata.py'), encoding='utf-8') as f:
 
 
 ###############################################################################
-# implement build_docs command
+# setup.py new commands
 # see http://seasonofcode.com/posts/how-to-add-custom-build-steps-and-commands-to-setup-py.html
 
-class BuildDocCommand(distutils.cmd.Command):
-    """ Command to build the documentation."""
 
-    description = 'build documentation files'
+class Command(distutils.cmd.Command):
+    """User command."""
+
+    description = ''
     user_options = []
 
-    def run(self):
-        """ Run build_docs command. """
-        from docsrc.prepare import build_docs
-        build_docs()
-
     def initialize_options(self):
-        """ Set default values for options. """
+        """Set default values for options."""
         pass
 
     def finalize_options(self):
-        """ Post-process options. """
+        """Post-process options."""
         pass
 
+
+class BuildDocCommand(Command):
+    """Command to build the documentation."""
+
+    description = 'build documentation files'
+
+    def run(self):
+        """Build documentation."""
+        from docsrc.prepare import build_docs
+        build_docs()
+
+
+class WashCommand(Command):
+    """Clean the workspace."""
+
+    description = 'clean the workspace of build files; leave in-place compiled files'
+
+    def run(self):
+        """Clean the workspace."""
+        # remove traces of egg
+        for path in glob.glob(os.path.join(HERE, '*.egg-info')):
+            _prune(path)
+        # remove intermediate builds
+        _prune(os.path.join(HERE, 'build'))
+        # remove bytecode files
+        for root, dirs, files in os.walk(HERE):
+            for f in files:
+                if f.endswith('.pyc') and 'test' not in root:
+                    _remove(os.path.join(root, f))
+
+def _prune(path):
+    """Recursively remove a directory."""
+    print 'pruning %s' % (path, )
+    shutil.rmtree(path)
+
+def _remove(path):
+    """Remove a file."""
+    print 'removing %s' % (path, )
+    os.remove(path)
+
+
+###############################################################################
+# setup.py extended commands
 
 class SDistCommand(sdist.sdist):
     """Custom sdist command."""
@@ -177,6 +218,7 @@ SETUP_OPTIONS = {
         'sdist': SDistCommand,
         'sdist_dev': SDistDevCommand,
         'build_py': BuildPyCommand,
+        'wash': WashCommand,
     },
 }
 
