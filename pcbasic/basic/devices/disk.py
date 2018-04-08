@@ -450,7 +450,7 @@ class DiskDevice(object):
                 if dos_name_matches(trunk, trunkmask) and dos_name_matches(ext, extmask)
             )
         to_kill = [
-                # NOTE that this depends on display names NOT being legal names for overlong file names
+                # NOTE that this depends on display names NOT being legal names for overlong names
                 # i.e. a + is included at the end of the display name which is not legal
                 os.path.join(native_dir, f) for f in to_kill
                 if dos_is_legal_name(f) and not is_hidden(os.path.join(native_dir, f))
@@ -506,8 +506,8 @@ class DiskDevice(object):
         else:
             dirs, fils = self._get_dirs_files(native_path)
             # remove hidden files
-            dirs = [d for d in dirs if not is_hidden(d)]
-            fils = [f for f in fils if not is_hidden(f)]
+            dirs = [d for d in dirs if not is_hidden(os.path.join(native_path, d))]
+            fils = [f for f in fils if not is_hidden(os.path.join(native_path, f))]
             # filter according to mask
             dirs = self._filter_names(native_path, dirs + [u'.', u'..'], dos_mask)
             fils = self._filter_names(native_path, fils, dos_mask)
