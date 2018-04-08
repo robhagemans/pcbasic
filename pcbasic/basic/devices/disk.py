@@ -879,14 +879,16 @@ class BinaryFile(devicebase.RawFile):
             self._locks.close_file(self.number)
 
 
-class _CRLFTextFileBase(devicebase.TextFileBase):
-    """Text file with CRLF line endings, on disk device or field buffer."""
+class RandomFile(devicebase.TextFileBase):
+    """Random-access file on disk device."""
 
     def read(self, num=-1):
         """Read num characters, replacing CR LF with CR."""
         s = ''
+        self.switch_mode('I')
         while len(s) < num:
             c = devicebase.TextFileBase.read(self, 1)
+            self._check_overflow()
             if not c:
                 break
             s += c
@@ -895,6 +897,7 @@ class _CRLFTextFileBase(devicebase.TextFileBase):
             if (c == '\r' and self.last != '\n') and self.next_char == '\n':
                 last, char = self.last, self.char
                 devicebase.TextFileBase.read(self, 1)
+                self._check_overflow()
                 self.last, self.char = last, char
         return s
 
@@ -919,9 +922,6 @@ class _CRLFTextFileBase(devicebase.TextFileBase):
         self.write(str(s) + '\r\n')
 
 
-class RandomFile(_CRLFTextFileBase):
-    """Random-access file on disk device."""
-
     def __init__(self, output_stream, number, name,
                         access, lock, field, reclen=128, locks=None):
         """Initialise random-access file."""
@@ -931,7 +931,7 @@ class RandomFile(_CRLFTextFileBase):
         self.reclen = reclen
         # replace with empty field if already exists
         self._field = field
-        _CRLFTextFileBase.__init__(self, ByteStream(self._field.buffer), b'D', b'R')
+        devicebase.TextFileBase.__init__(self, ByteStream(self._field.buffer), b'D', b'R')
         self.operating_mode = b'I'
         # note that for random files, output_stream must be a seekable stream.
         self.output_stream = output_stream
@@ -977,12 +977,12 @@ class RandomFile(_CRLFTextFileBase):
         """Write the string s to the field, taking care of width settings."""
         # switch to writing mode and fix readahead buffer
         self.switch_mode(b'O')
-        _CRLFTextFileBase.write(self, s, can_break)
+        devicebase.TextFileBase.write(self, s, can_break)
         self._check_overflow()
 
     def close(self):
         """Close random-access file."""
-        _CRLFTextFileBase.close(self)
+        devicebase.TextFileBase.close(self)
         self.output_stream.close()
         if self._locks is not None:
             self._locks.release(self.number)
@@ -1051,14 +1051,50 @@ class RandomFile(_CRLFTextFileBase):
             raise error.BASICError(error.PERMISSION_DENIED)
 
 
-class TextFile(_CRLFTextFileBase):
+class TextFile(devicebase.TextFileBase):
     """Text file on disk device."""
+
+    def read(self, num=-1):
+        """Read num characters, replacing CR LF with CR."""
+        s = ''
+        while len(s) < num:
+            c = devicebase.TextFileBase.read(self, 1)
+            if not c:
+                break
+            s += c
+            # report CRLF as CR
+            # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
+            if (c == '\r' and self.last != '\n') and self.next_char == '\n':
+                last, char = self.last, self.char
+                devicebase.TextFileBase.read(self, 1)
+                self.last, self.char = last, char
+        return s
+
+    def _base_read_line(self):
+        """Read line from text file, break on CR or CRLF (not LF)."""
+        s = []
+        while True:
+            c = self.read(1)
+            if not c or (c == '\r' and self.last != '\n'):
+                # break on CR, CRLF but allow LF, LFCR to pass
+                break
+            s.append(c)
+            if len(s) == 255:
+                c = '\r' if self.next_char == '\r' else None
+                break
+        if not c and not s:
+            return None, c
+        return ''.join(s), c
+
+    #def write_line(self, s=''):
+    #    """Write string or bytearray and newline to file."""
+    #    self.write(str(s) + '\r\n')
 
     def __init__(self, fhandle, filetype, number, name,
                  mode=b'A', access=b'RW', lock=b'',
                  codepage=None, universal=False, locks=None):
         """Initialise text file object."""
-        _CRLFTextFileBase.__init__(self, fhandle, filetype, mode, b'')
+        devicebase.TextFileBase.__init__(self, fhandle, filetype, mode, b'')
         self.lock_list = set()
         self.lock_type = lock
         self._locks = locks
@@ -1081,7 +1117,7 @@ class TextFile(_CRLFTextFileBase):
         if self.mode in (b'O', b'A') and self._codepage is None:
             # write EOF char
             self.fhandle.write(b'\x1a')
-        _CRLFTextFileBase.close(self)
+        devicebase.TextFileBase.close(self)
         if self._locks is not None:
             self._locks.release(self.number)
             self._locks.close_file(self.number)
@@ -1105,13 +1141,13 @@ class TextFile(_CRLFTextFileBase):
         """Write to file in normal or UTF-8 mode."""
         if self._codepage is not None:
             s = (self._codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
-        _CRLFTextFileBase.write(self, s + '\r\n')
+        devicebase.TextFileBase.write(self, s + '\r\n')
 
     def write(self, s, can_break=True):
         """Write to file in normal or UTF-8 mode."""
         if self._codepage is not None:
             s = (self._codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
-        _CRLFTextFileBase.write(self, s, can_break)
+        devicebase.TextFileBase.write(self, s, can_break)
 
     def _read_line_universal(self):
         """Read line from ascii program file with universal newlines."""
@@ -1143,7 +1179,7 @@ class TextFile(_CRLFTextFileBase):
     def read_line(self):
         """Read line from text file."""
         if not self._universal:
-            s, cr = _CRLFTextFileBase.read_line(self)
+            s, cr = self._base_read_line()
         else:
             s, cr = self._read_line_universal()
         if self._codepage is not None and s is not None:
