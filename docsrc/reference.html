@@ -257,6 +257,10 @@
         with <code><a href="#CLEAR">CLEAR</a></code> or
         <code><a href="#ERASE">ERASE</a></code>.
     </p>
+    <p>
+        Multi-dimensional arrays are stored in column-major order, such that <code>A%(2,0)</code> immediately
+        follows <code>A%(1,0)</code>.
+    </p>
 
     <h4 id="conversions">Conversions</h4>
     <p>
@@ -8480,7 +8484,8 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>int_array_name</var></code> is an array of integers (<code>%</code>) that will supply the
+                <code><var>int_array_name</var></code> is a single- or multidimensional
+                array of integers (<code>%</code>) that will supply the
                 new values for the palette.
             </li>
             <li>
@@ -8488,9 +8493,16 @@
                 indicates at which index in the array to start mapping to the palette.
             </li>
         </ul>
-        <p>
-            If an array entry has value <code>-1</code>, the matching attribute is left unchanged.
-        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Array values are assigned to palette entries in the order in which they are stored in memory.
+                See <a href="#arrays">Arrays</a> for details about the layout of arrays in memory.
+            </li>
+            <li>
+                If an array entry has value <code>-1</code>, the matching attribute is left unchanged.
+            </li>
+        </ul>
         <h5>Errors</h5>
         <ul>
             <li>
