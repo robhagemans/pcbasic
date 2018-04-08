@@ -151,6 +151,9 @@ class VideoCurses(VideoPlugin):
         i = 0
         while True:
             i = self.window.getch()
+            # replace Mac backspace - or it will come through as ctrl+backspace which is delete
+            if i == 127:
+                i = curses.KEY_BACKSPACE
             if i < 0:
                 break
             elif i < 256:
