@@ -17,7 +17,8 @@ from . import basic
 from . import state
 from . import config
 from .guard import ExceptionGuard, NOGUARD
-from .basic import __version__, debug
+from .metadata import NAME, VERSION, COPYRIGHT
+from .basic import debug
 from .interface import Interface, InitFailed
 
 def main(*arguments):
@@ -69,7 +70,7 @@ def show_usage():
 
 def show_version(settings):
     """Show version with optional debugging details."""
-    sys.stdout.write(__version__ + '\n')
+    sys.stdout.write((u'%s %s\n%s\n' % (NAME, VERSION, COPYRIGHT)).encode(sys.stdout.encoding))
     if settings.debug:
         debug.show_platform_info()
 
