@@ -101,7 +101,7 @@ class CASDevice(object):
         if filetype == 'D':
             return CASTextFile(self.tapestream, filetype, mode)
         elif filetype == 'A':
-            return CASTextFile(self.tapestream, filetype, mode, split_long_lines=False)
+            return CASTextFile(self.tapestream, filetype, mode)
         else:
             return CASBinaryFile(self.tapestream, filetype, mode, seg, offset, length)
 

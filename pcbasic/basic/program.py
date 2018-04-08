@@ -341,9 +341,13 @@ class Program(object):
     def merge(self, g):
         """Merge program from ascii or utf8 (if utf8_files is True) stream."""
         while True:
-            line = g.read_line()
+            line, cr = g.read_line()
             if line is None:
+                # end of file
                 break
+            if cr is None:
+                # line > 255 chars
+                raise error.BASICError(error.LINE_BUFFER_OVERFLOW)
             linebuf = self.tokeniser.tokenise_line(line)
             if linebuf.read(1) == '\0':
                 # line starts with a number, add to program memory; store_line seeks to 1 first

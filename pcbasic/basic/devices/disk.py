@@ -280,8 +280,7 @@ class DiskDevice(object):
             # ascii program file (UTF8 or universal newline if option given)
             return TextFile(fhandle, filetype, number, native_name, mode, access, lock,
                              codepage=None if not self._utf8 else self._codepage,
-                             universal=self._universal,
-                             split_long_lines=False, locks=self._locks)
+                             universal=self._universal, locks=self._locks)
         elif filetype == b'D':
             if mode in b'IAO':
                 # text data
@@ -907,11 +906,11 @@ class _CRLFTextFileBase(devicebase.TextFileBase):
             if not c or (c == '\r' and self.last != '\n'):
                 # break on CR, CRLF but allow LF, LFCR to pass
                 break
-            else:
-                s += c
+            s += c
+            c = None
         if not c and not s:
-            return None
-        return s
+            return None, c
+        return s, c
 
     def write_line(self, s=''):
         """Write string or bytearray and newline to file."""
@@ -1052,9 +1051,9 @@ class TextFile(_CRLFTextFileBase):
 
     def __init__(self, fhandle, filetype, number, name,
                  mode=b'A', access=b'RW', lock=b'',
-                 codepage=None, universal=False, split_long_lines=True, locks=None):
+                 codepage=None, universal=False, locks=None):
         """Initialise text file object."""
-        _CRLFTextFileBase.__init__(self, fhandle, filetype, mode, b'', split_long_lines)
+        _CRLFTextFileBase.__init__(self, fhandle, filetype, mode, b'')
         self.lock_list = set()
         self.lock_type = lock
         self._locks = locks
@@ -1133,18 +1132,18 @@ class TextFile(_CRLFTextFileBase):
             else:
                 s += c
         if not c and not s:
-            return None
-        return s
+            return None, c
+        return s, c
 
     def read_line(self):
         """Read line from text file."""
         if not self._universal:
-            s = _CRLFTextFileBase.read_line(self)
+            s, cr = _CRLFTextFileBase.read_line(self)
         else:
-            s = self._read_line_universal()
+            s, cr = self._read_line_universal()
         if self._codepage is not None and s is not None:
             s = self._codepage.str_from_unicode(s.decode(b'utf-8', errors='replace'))
-        return s
+        return s, cr
 
     def lock(self, start, stop):
         """Lock the file."""

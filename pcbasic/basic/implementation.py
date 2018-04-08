@@ -758,7 +758,7 @@ class Implementation(object):
             raise error.BASICError(error.TYPE_MISMATCH)
         # read the input
         if finp:
-            line = finp.read_line()
+            line, _ = finp.read_line()
             if line is None:
                 raise error.BASICError(error.INPUT_PAST_END)
         else:

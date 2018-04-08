@@ -228,8 +228,7 @@ class RawFile(object):
 class TextFileBase(RawFile):
     """Base for text files on disk, KYBD file, field buffer."""
 
-    def __init__(self, fhandle, filetype, mode,
-                 first_char='', split_long_lines=True):
+    def __init__(self, fhandle, filetype, mode, first_char=''):
         """Setup the basic properties of the file."""
         RawFile.__init__(self, fhandle, filetype, mode)
         # width=255 means line wrap
@@ -244,8 +243,6 @@ class TextFileBase(RawFile):
             except (EnvironmentError, ValueError):
                 # only catching ValueError here because that's what Serial raises
                 self.next_char = ''
-        # handling of >255 char lines (False for programs)
-        self.split_long_lines = split_long_lines
         self.char, self.last = '', ''
 
     def read_raw(self, num=-1):
@@ -296,15 +293,16 @@ class TextFileBase(RawFile):
 
     def _check_long_line(self, line):
         """Check if line is longer than max length; raise error if needed."""
-        if len(line) > 255:
-            if self.split_long_lines:
-                return True
-            else:
-                raise error.BASICError(error.LINE_BUFFER_OVERFLOW)
-        return False
+        return len(line) > 255
 
     def read_line(self):
-        """Read a single line."""
+        """\
+            Read a single line until line break or 255 characters.
+            Output line and line break character
+            Return None for string, '' for cr if EOF and nothing read(input past end).
+            Return None for CR if line ended due to 255-char length limit
+            Return '' for CR if EOF
+        """
         out = []
         while not self._check_long_line(out):
             c = self.read(1)
@@ -312,9 +310,10 @@ class TextFileBase(RawFile):
             if not c or c == '\r':
                 break
             out.append(c)
+            c = None
         if not c and not out:
-            return None
-        return b''.join(out)
+            return None, c
+        return b''.join(out), c
 
     def write_line(self, s=''):
         """Write string or bytearray and follow with CR or CRLF."""
