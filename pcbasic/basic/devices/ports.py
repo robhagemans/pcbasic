@@ -361,7 +361,7 @@ class COMFile(devicebase.TextFileBase):
                 break
             if c:
                 out.append(c)
-        return ''.join(c)
+        return ''.join(out)
 
     def write_line(self, s=''):
         """Write string or bytearray and newline to port."""
