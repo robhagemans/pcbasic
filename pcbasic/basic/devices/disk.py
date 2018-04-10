@@ -966,11 +966,8 @@ class RandomFile(devicebase.TextFileBase):
         """Read a number of characters from the field buffer."""
         # switch to reading mode and fix readahead buffer
         self.switch_mode('I')
-        word = devicebase.TextFileBase.read(self, num)
+        word = devicebase.TextFileBase.input_chars(self, num)
         self._check_overflow()
-        if len(word) < num:
-            # input past end
-            raise error.BASICError(error.INPUT_PAST_END)
         return word
 
     def write(self, s, can_break=True):

@@ -191,11 +191,7 @@ class RawFile(object):
     def input_chars(self, num):
         """Read a number of characters."""
         with safe_io():
-            word = self.fhandle.read(num)
-        if len(word) < num:
-            # input past end
-            raise error.BASICError(error.INPUT_PAST_END)
-        return word
+            return self.fhandle.read(num)
 
     def read(self, num=-1):
         """Read num chars. If num==-1, read all available."""
@@ -246,9 +242,9 @@ class TextFileBase(RawFile):
                 self.next_char = ''
         self.char, self.last = '', ''
 
-    def _read_raw(self, num):
+    def input_chars(self, num):
         """Read num characters as string."""
-        s = ''
+        s = []
         while True:
             if (num > -1 and len(s) >= num):
                 break
@@ -256,23 +252,15 @@ class TextFileBase(RawFile):
             # (that's true in disk text files but not on COM devices)
             if self.next_char in ('\x1a', ''):
                 break
-            s += self.next_char
+            s.append(self.next_char)
             with safe_io():
                 self.next_char, self.char, self.last = (
                         self.fhandle.read(1), self.next_char, self.char)
-        return s
-
-    def input_chars(self, num):
-        """Read a number of characters."""
-        word = self._read_raw(num)
-        if len(word) < num:
-            # input past end
-            raise error.BASICError(error.INPUT_PAST_END)
-        return word
+        return ''.join(s)
 
     def read(self, num=-1):
         """Read num chars. If num==-1, read all available."""
-        return self._read_raw(num)
+        return self.input_chars(num)
 
     def write(self, s, can_break=True):
         """Write the string s to the file, taking care of width settings."""
@@ -408,7 +396,7 @@ class TextFileBase(RawFile):
                 c = self.read(1)
             else:
                 # no CRLF replacement inside quotes.
-                c = self._read_raw(1)
+                c = self.input_chars(1)
         # if separator was a whitespace char or closing quote
         # skip trailing whitespace before any comma or hard separator
         if c and c in self.whitespace_input or (quoted and c == '"'):
@@ -454,7 +442,7 @@ def input_entry_realtime(self, typechar, allow_past_end):
     # we read the ending char before breaking the loop
     # this may raise FIELD OVERFLOW
     # on reading from a KYBD: file, control char replacement takes place
-    # which means we need to use read() not _read_raw()
+    # which means we need to use read() not input_chars()
     parsing_trail = False
     while c and not (c in ',\r' and not quoted):
         if c == '"' and quoted:
@@ -535,9 +523,6 @@ class KYBDFile(TextFileBase):
         while len(chars) < num:
             chars += b''.join(b'\0' if c in self._input_replace else c if len(c) == 1 else b''
                               for c in self._keyboard.read_bytes_kybd_file(num-len(chars)))
-        if len(chars) < num:
-            # input past end
-            raise error.BASICError(error.INPUT_PAST_END)
         return chars
 
     def read(self, n=1):

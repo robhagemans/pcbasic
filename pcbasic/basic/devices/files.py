@@ -514,7 +514,13 @@ class Files(object):
         else:
             file_obj = self.kybd_file
         list(args)
-        return self._values.new_string().from_str(file_obj.input_chars(num))
+        # read the chars
+        word = file_obj.input_chars(num)
+        if len(word) < num:
+            # input past end
+            raise error.BASICError(error.INPUT_PAST_END)
+        return self._values.new_string().from_str(word)
+
 
     ###########################################################################
 
