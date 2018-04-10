@@ -60,19 +60,19 @@ class _CRLFTextFileBase(devicebase.TextFileBase):
 
     def read(self, num=-1):
         """Read num characters, replacing CR LF with CR."""
-        s = ''
+        s = []
         while len(s) < num:
             c = self.input_chars(1)
             if not c:
                 break
-            s += c
+            s.append(c)
             # report CRLF as CR
             # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
             if (c == '\r' and self.last != '\n') and self.next_char == '\n':
                 last, char = self.last, self.char
                 self.input_chars(1)
                 self.last, self.char = last, char
-        return s
+        return ''.join(s)
 
     def read_line(self):
         """Read line from text file, break on CR or CRLF (not LF)."""
@@ -242,7 +242,7 @@ class TextFile(_CRLFTextFileBase):
         # otherwise, it is read/written as raw bytes
         self._codepage = codepage
         self._universal = universal
-        self.spaces = b''
+        self._spaces = []
         if self.mode == b'A':
             self.fhandle.seek(0, 2)
         elif self.mode == b'O' and self._codepage is not None:
@@ -290,8 +290,8 @@ class TextFile(_CRLFTextFileBase):
         """Read line from ascii program file with universal newlines."""
         # keep reading until any kind of line break
         # is followed by a line starting with a number
-        s, c = self.spaces, b''
-        self.spaces = b''
+        s, c = self._spaces, b''
+        self._spaces = []
         while len(s) < 255:
             # read converts CRLF to CR
             c = self.read(1)
@@ -301,17 +301,17 @@ class TextFile(_CRLFTextFileBase):
                 # break on CR, CRLF, LF if next line starts with number or eof
                 while self.next_char in (b' ', b'\0'):
                     c = self.read(1)
-                    self.spaces += c
+                    self._spaces.append(c)
                 if self.next_char in string.digits or self.next_char in (b'', b'\x1a'):
                     break
                 else:
-                    s += b'\n' + self.spaces
-                    self.spaces = b''
+                    s += [b'\n'] + self._spaces
+                    self._spaces = []
             else:
-                s += c
+                s.append(c)
         if not c and not s:
             return None, c
-        return s, c
+        return ''.join(s), c
 
     def read_line(self):
         """Read line from text file."""
