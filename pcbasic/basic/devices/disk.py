@@ -879,16 +879,14 @@ class BinaryFile(devicebase.RawFile):
             self._locks.close_file(self.number)
 
 
-class RandomFile(devicebase.TextFileBase):
-    """Random-access file on disk device."""
+class _CRLFTextFileBase(devicebase.TextFileBase):
+    """Text File with CRLF replacement."""
 
     def read(self, num=-1):
         """Read num characters, replacing CR LF with CR."""
         s = ''
-        self.switch_mode('I')
         while len(s) < num:
-            c = devicebase.TextFileBase.read(self, 1)
-            self._check_overflow()
+            c = self.input_chars(1)
             if not c:
                 break
             s += c
@@ -896,8 +894,7 @@ class RandomFile(devicebase.TextFileBase):
             # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
             if (c == '\r' and self.last != '\n') and self.next_char == '\n':
                 last, char = self.last, self.char
-                devicebase.TextFileBase.read(self, 1)
-                self._check_overflow()
+                self.input_chars(1)
                 self.last, self.char = last, char
         return s
 
@@ -921,6 +918,9 @@ class RandomFile(devicebase.TextFileBase):
         """Write string or bytearray and newline to file."""
         self.write(str(s) + '\r\n')
 
+
+class RandomFile(_CRLFTextFileBase):
+    """Random-access file on disk device."""
 
     def __init__(self, output_stream, number, name,
                         access, lock, field, reclen=128, locks=None):
@@ -1048,44 +1048,8 @@ class RandomFile(devicebase.TextFileBase):
             raise error.BASICError(error.PERMISSION_DENIED)
 
 
-class TextFile(devicebase.TextFileBase):
+class TextFile(_CRLFTextFileBase):
     """Text file on disk device."""
-
-    def read(self, num=-1):
-        """Read num characters, replacing CR LF with CR."""
-        s = ''
-        while len(s) < num:
-            c = devicebase.TextFileBase.read(self, 1)
-            if not c:
-                break
-            s += c
-            # report CRLF as CR
-            # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
-            if (c == '\r' and self.last != '\n') and self.next_char == '\n':
-                last, char = self.last, self.char
-                devicebase.TextFileBase.read(self, 1)
-                self.last, self.char = last, char
-        return s
-
-    def _base_read_line(self):
-        """Read line from text file, break on CR or CRLF (not LF)."""
-        s = []
-        while True:
-            c = self.read(1)
-            if not c or (c == '\r' and self.last != '\n'):
-                # break on CR, CRLF but allow LF, LFCR to pass
-                break
-            s.append(c)
-            if len(s) == 255:
-                c = '\r' if self.next_char == '\r' else None
-                break
-        if not c and not s:
-            return None, c
-        return ''.join(s), c
-
-    #def write_line(self, s=''):
-    #    """Write string or bytearray and newline to file."""
-    #    self.write(str(s) + '\r\n')
 
     def __init__(self, fhandle, filetype, number, name,
                  mode=b'A', access=b'RW', lock=b'',
@@ -1176,7 +1140,7 @@ class TextFile(devicebase.TextFileBase):
     def read_line(self):
         """Read line from text file."""
         if not self._universal:
-            s, cr = self._base_read_line()
+            s, cr = _CRLFTextFileBase.read_line(self)
         else:
             s, cr = self._read_line_universal()
         if self._codepage is not None and s is not None:
