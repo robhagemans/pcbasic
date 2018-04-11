@@ -13,6 +13,7 @@ except ImportError:
 
 import copy_reg
 import os
+import io
 import logging
 import zlib
 import sys
@@ -40,17 +41,17 @@ def unpickle_file(name, mode, pos):
     try:
         if 'w' in mode and pos > 0:
             # preserve existing contents of writable file
-            with open(name, 'rb') as f:
+            with io.open(name, 'rb') as f:
                 buf = f.read(pos)
-            f = open(name, mode)
+            f = io.open(name, mode)
             f.write(buf)
         else:
-            f = open(name, mode)
+            f = io.open(name, mode)
             if pos > 0:
                 f.seek(pos)
     except IOError:
         logging.warning('Could not re-open file %s. Replacing with null file.', name)
-        f = open(os.devnull, mode)
+        f = io.open(os.devnull, mode)
     return f
 
 def pickle_file(f):
@@ -65,6 +66,8 @@ def pickle_file(f):
 
 # register the picklers for file and cStringIO
 copy_reg.pickle(file, pickle_file)
+copy_reg.pickle(io.BufferedReader, pickle_file)
+copy_reg.pickle(io.BufferedWriter, pickle_file)
 
 
 def zunpickle(state_file):

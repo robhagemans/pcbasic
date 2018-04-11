@@ -229,7 +229,7 @@ class TextFile(_CRLFTextFileBase):
 
     def __init__(self, fhandle, filetype, number, name,
                  mode=b'A', access=b'RW', lock=b'',
-                 codepage=None, universal=False, locks=None):
+                 codepage=None, locks=None):
         """Initialise text file object."""
         devicebase.TextFileBase.__init__(self, fhandle, filetype, mode, b'')
         self.lock_list = set()
@@ -241,8 +241,6 @@ class TextFile(_CRLFTextFileBase):
         # if a codepage is supplied, text is converted to utf8
         # otherwise, it is read/written as raw bytes
         self._codepage = codepage
-        self._universal = universal
-        self._spaces = []
         if self.mode == b'A':
             self.fhandle.seek(0, 2)
         elif self.mode == b'O' and self._codepage is not None:
@@ -286,39 +284,9 @@ class TextFile(_CRLFTextFileBase):
             s = (self._codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
         devicebase.TextFileBase.write(self, s, can_break)
 
-    def _read_line_universal(self):
-        """Read line from ascii program file with universal newlines."""
-        # keep reading until any kind of line break
-        # is followed by a line starting with a number
-        s, c = self._spaces, b''
-        self._spaces = []
-        while len(s) < 255:
-            # read converts CRLF to CR
-            c = self.read(1)
-            if not c:
-                break
-            elif c in (b'\r', b'\n'):
-                # break on CR, CRLF, LF if next line starts with number or eof
-                while self.next_char in (b' ', b'\0'):
-                    c = self.read(1)
-                    self._spaces.append(c)
-                if self.next_char in string.digits or self.next_char in (b'', b'\x1a'):
-                    break
-                else:
-                    s += [b'\n'] + self._spaces
-                    self._spaces = []
-            else:
-                s.append(c)
-        if not c and not s:
-            return None, c
-        return ''.join(s), c
-
     def read_line(self):
         """Read line from text file."""
-        if not self._universal:
-            s, cr = _CRLFTextFileBase.read_line(self)
-        else:
-            s, cr = self._read_line_universal()
+        s, cr = _CRLFTextFileBase.read_line(self)
         if self._codepage is not None and s is not None:
             s = self._codepage.str_from_unicode(s.decode(b'utf-8', errors='replace'))
         return s, cr

@@ -282,7 +282,7 @@ class Files(object):
             # forcing to single before rounding - this means we don't have enough precision
             # to address each individual record close to the maximum record number
             # but that's in line with GW
-            pos = values.round(values.to_single(pos)).to_value()
+            pos = int(values.round(values.to_single(pos)).to_value())
             # not 2^32-1 as the manual boasts!
             # pos-1 needs to fit in a single-precision mantissa
             error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)

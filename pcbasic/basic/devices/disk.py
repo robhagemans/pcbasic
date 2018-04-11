@@ -11,6 +11,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import re
+import io
 import sys
 import errno
 import string
@@ -219,9 +220,9 @@ class DiskDevice(object):
     allowed_modes = b'IOR'
 
     # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
-    access_modes = {b'I': b'rb', b'O': b'wb', b'R': b'r+b', b'A': b'ab'}
+    access_modes = {b'I': 'rb', b'O': 'wb', b'R': 'r+b', b'A': 'ab'}
     # posix access modes for BASIC ACCESS mode for RANDOM files only
-    access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
+    access_access = {b'R': 'rb', b'W': 'wb', b'RW': 'r+b'}
 
     def __init__(self, letter, path, dos_cwd, locks, codepage, utf8, universal):
         """Initialise a disk device."""
@@ -271,21 +272,26 @@ class DiskDevice(object):
                 filetype = filetype_found
             except KeyError:
                 filetype = b'A'
+        # universal newline input for text & ascii-program files
+        if self._universal and mode == b'I' and filetype in b'DA':
+            fhandle = UniversalNewlineReader(fhandle)
         if filetype in b'BPM':
             # binary [B]LOAD, [B]SAVE
-            return BinaryFile(fhandle, filetype, number, native_name, mode,
-                               seg, offset, length, locks=self._locks)
+            return BinaryFile(
+                        fhandle, filetype, number, native_name, mode,
+                        seg, offset, length, locks=self._locks)
         elif filetype == b'A':
-            # ascii program file (UTF8 or universal newline if option given)
-            return TextFile(fhandle, filetype, number, native_name, mode, access, lock,
-                             codepage=None if not self._utf8 else self._codepage,
-                             universal=self._universal, locks=self._locks)
+            # ascii program file (UTF8 if option given)
+            return TextFile(
+                        fhandle, filetype, number, native_name, mode, access, lock,
+                        codepage=None if not self._utf8 else self._codepage, locks=self._locks)
         elif filetype == b'D':
             if mode in b'IAO':
-                # text data
-                return TextFile(fhandle, filetype, number, native_name, mode, access, lock, locks=self._locks)
+                return TextFile(
+                    fhandle, filetype, number, native_name, mode, access, lock, locks=self._locks)
             else:
-                return RandomFile(fhandle, number, native_name, access, lock, field, reclen, locks=self._locks)
+                return RandomFile(
+                    fhandle, number, native_name, access, lock, field, reclen, locks=self._locks)
         else:
             # incorrect file type requested
             msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
@@ -319,7 +325,7 @@ class DiskDevice(object):
             self._locks.acquire(native_name, number, lock, access)
         try:
             # open the underlying stream
-            fhandle = self._open_stream(native_name, mode, access)
+            fhandle = self._open_stream(native_name, filetype, mode, access)
             # apply the BASIC file wrapper
             f = self._create_file_object(
                     fhandle, filetype, mode, native_name, number,
@@ -333,7 +339,7 @@ class DiskDevice(object):
             self._locks.close_file(number)
             raise
 
-    def _open_stream(self, native_name, mode, access):
+    def _open_stream(self, native_name, filetype, mode, access):
         """Open a stream on disk by os-native name with BASIC mode and access level."""
         name = native_name
         if (access and mode == b'R'):
@@ -345,11 +351,11 @@ class DiskDevice(object):
             # OUTPUT mode files are created anyway since they're opened with wb
             if ((mode == b'A' or (mode == b'R' and access in (b'RW', b'R'))) and
                     not os.path.exists(name)):
-                open(name, 'wb').close()
+                io.open(name, 'wb').close()
             if mode == b'A':
                 # APPEND mode is only valid for text files (which are seekable);
                 # first cut off EOF byte, if any.
-                f = open(name, 'r+b')
+                f = io.open(name, 'r+b')
                 try:
                     f.seek(-1, 2)
                     if f.read(1) == b'\x1a':
@@ -358,7 +364,7 @@ class DiskDevice(object):
                 except IOError:
                     pass
                 f.close()
-            return open(name, posix_access)
+            return io.open(name, posix_access)
         except EnvironmentError as e:
             handle_oserror(e)
         except TypeError:
@@ -652,6 +658,47 @@ def istype(native_path, native_name, isdir):
 
 
 ##############################################################################
+# Disk stream wrappers
+
+class UniversalNewlineReader(object):
+    """Apply universal newlines to raw/binary streams (standard functions apply to text only)."""
+
+    def __init__(self, stream):
+        """Wrap the stream."""
+        self._stream = stream
+        self._buffer = ''
+
+    def read(self, n=-1):
+        """Read n bytes from stream, replace newlines with b'\r\n'."""
+        if n > len(self._buffer):
+            raw = self._stream.read(n - len(self._buffer))
+        elif n == -1:
+            raw = self._stream.read()
+        else:
+            raw = b''
+        # note that 'BufferedReader.peek(n) may return less or more than n bytes'
+        if raw.endswith(b'\r') and self._stream.peek(1)[:1] == b'\n':
+            self._stream.read(1)
+        converted = (
+                self._buffer +
+                raw.replace(b'\r\n', b'\r').replace(b'\n', b'\r').replace(b'\r', b'\r\n')
+            )
+        if n < 0:
+            return converted
+        else:
+            output, self._buffer = converted[:n], converted[n:]
+            return output
+
+    def __getattr__(self, name):
+        """Delegate methods to stream."""
+        if hasattr(self, '_stream'):
+            return getattr(self._stream, name)
+        else:
+            raise AttributeError()
+
+
+
+##############################################################################
 # Internal disk and bound files
 
 class BoundFile(object):
@@ -675,7 +722,7 @@ class BoundFile(object):
         """Get a native stream for the bound file."""
         try:
             if isinstance(self._file, basestring):
-                return open(self._file, self._device.access_modes[mode])
+                return io.open(self._file, self._device.access_modes[mode])
             else:
                 return self._file
         except EnvironmentError as e:
