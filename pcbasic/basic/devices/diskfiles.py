@@ -114,8 +114,8 @@ class TextFile(devicebase.TextFileBase):
         return ''.join(s), c
 
     def write_line(self, s=''):
-        """Write string or bytearray and newline to file."""
-        self.write(str(s) + '\r\n')
+        """Write string and newline to file."""
+        self.write(s + '\r\n')
 
     def loc(self):
         """Get file pointer LOC """
@@ -146,21 +146,22 @@ class TextFile(devicebase.TextFileBase):
             raise error.BASICError(error.PERMISSION_DENIED)
 
 
-class RandomFile(TextFile):
+class RandomFile(devicebase.RawFile):
     """Random-access file on disk device."""
 
     def __init__(self, output_stream, number, name, access, lock, field, reclen=128, locks=None):
         """Initialise random-access file."""
+        devicebase.RawFile.__init__(self, output_stream, b'D', b'R')
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
         # touched until PUT or GET.
         self.reclen = reclen
         # replace with empty field if already exists
         self._field = field
-        devicebase.TextFileBase.__init__(self, ByteStream(self._field.buffer), b'D', b'R')
+        self._field_stream = ByteStream(self._field.buffer)
+        self._field_file = TextFile(self._field_stream, b'D', -1, b'<field>', b'R')
         self.operating_mode = b'I'
         # note that for random files, output_stream must be a seekable stream.
-        self.output_stream = output_stream
         self.lock_type = lock
         self.access = access
         self.lock_list = set()
@@ -169,90 +170,120 @@ class RandomFile(TextFile):
         self.name = name
         # position at start of file
         self.recpos = 0
-        self.output_stream.seek(0)
+        self.fhandle.seek(0)
 
     def switch_mode(self, new_mode):
         """Switch to input or output mode"""
         if new_mode == b'I' and self.operating_mode == b'O':
             self.flush()
-            self.next_char = self.fhandle.read(1)
+            self._field_file.next_char = self._field_file.fhandle.read(1)
             self.operating_mode = b'I'
         elif new_mode == b'O' and self.operating_mode == b'I':
-            self.fhandle.seek(-1, 1)
+            self._field_file.fhandle.seek(-1, 1)
             self.operating_mode = b'O'
 
     def _check_overflow(self):
         """Check for FIELD OVERFLOW."""
         write = self.operating_mode == b'O'
         # FIELD overflow happens if last byte in record has been read or written
-        if self.fhandle.tell() > self.reclen + write - 1:
+        if self._field_stream.tell() > self.reclen + write - 1:
             raise error.BASICError(error.FIELD_OVERFLOW)
 
     def input_chars(self, num):
         """Read a number of characters from the field buffer."""
         # switch to reading mode and fix readahead buffer
-        self.switch_mode('I')
-        word = devicebase.TextFileBase.input_chars(self, num)
+        self.switch_mode(b'I')
+        word = self._field_file.input_chars(num)
+        self._check_overflow()
+        return word
+
+    def input_entry(self, typechar, allow_past_end):
+        """Read a number or string entry for INPUT """
+        self.switch_mode(b'I')
+        word, c = self._field_file.input_entry(typechar, allow_past_end)
+        self._check_overflow()
+        return word, c
+
+    # is this needed?
+    def read(self, n=-1):
+        """Read a number of characters from the field buffer."""
+        self.switch_mode(b'I')
+        word = self._field_file.read(n)
+        self._check_overflow()
+        return word
+
+    def read_line(self):
+        """Read a line from the field buffer."""
+        self.switch_mode(b'I')
+        word = self._field_file.read_line()
         self._check_overflow()
         return word
 
     def write(self, s, can_break=True):
-        """Write the string s to the field, taking care of width settings."""
+        """Write the string s to the field."""
         # switch to writing mode and fix readahead buffer
         self.switch_mode(b'O')
-        devicebase.TextFileBase.write(self, s, can_break)
+        self._field_file.write(s, can_break)
+        self._check_overflow()
+
+    def write_line(self, s=b''):
+        """Write string and newline to the field buffer."""
+        # switch to writing mode and fix readahead buffer
+        self.switch_mode(b'O')
+        self._field_file.write_line(s)
         self._check_overflow()
 
     def close(self):
         """Close random-access file."""
-        devicebase.TextFileBase.close(self)
-        self.output_stream.close()
+        devicebase.RawFile.close(self)
         if self._locks is not None:
             self._locks.release(self.number)
             self._locks.close_file(self.number)
+
+    ##########################################################################
+
+    def eof(self):
+        """Return whether we're past current end-of-file, for EOF."""
+        return self.recpos * self.reclen > self.lof()
 
     def get(self, dummy=None):
         """Read a record."""
         if self.eof():
             contents = b'\0' * self.reclen
         else:
-            contents = self.output_stream.read(self.reclen)
+            contents = self.fhandle.read(self.reclen)
         # take contents and pad with NULL to required size
         self._field.buffer[:] = contents + b'\0' * (self.reclen - len(contents))
         # reset field text file loc
-        self.fhandle.seek(0)
+        self._field_stream.seek(0)
         self.recpos += 1
 
     def put(self, dummy=None):
         """Write a record."""
         current_length = self.lof()
         if self.recpos > current_length:
-            self.output_stream.seek(0, 2)
+            self.fhandle.seek(0, 2)
             numrecs = self.recpos-current_length
-            self.output_stream.write(b'\0' * numrecs * self.reclen)
-        self.output_stream.write(self._field.buffer)
+            self.fhandle.write(b'\0' * numrecs * self.reclen)
+        self.fhandle.write(self._field.buffer)
         self.recpos += 1
 
     def set_pos(self, newpos):
         """Set current record number."""
         # first record is newpos number 1
-        self.output_stream.seek((newpos-1)*self.reclen)
+        self.fhandle.seek((newpos-1) * self.reclen)
         self.recpos = newpos - 1
 
     def loc(self):
         """Get number of record just past, for LOC."""
         return self.recpos
 
-    def eof(self):
-        """Return whether we're past currentg end-of-file, for EOF."""
-        return self.recpos*self.reclen > self.lof()
-
     def lof(self):
         """Get length of file, in bytes, for LOF."""
-        current = self.output_stream.tell()
-        self.output_stream.seek(0, 2)
-        lof = self.output_stream.tell()
-        self.output_stream.seek(current)
+        current = self.fhandle.tell()
+        self.fhandle.seek(0, 2)
+        lof = self.fhandle.tell()
+        self.fhandle.seek(current)
         return lof
 
     def lock(self, start, stop):

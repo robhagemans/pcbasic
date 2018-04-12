@@ -317,8 +317,8 @@ class TextFileBase(RawFile):
         return b''.join(out), c
 
     def write_line(self, s=''):
-        """Write string or bytearray and follow with CR or CRLF."""
-        self.write(str(s) + '\r')
+        """Write string and follow with CR or CRLF."""
+        self.write(s + '\r')
 
     def eof(self):
         """Check for end of file EOF."""
