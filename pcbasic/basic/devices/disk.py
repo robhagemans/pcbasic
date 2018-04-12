@@ -278,13 +278,13 @@ class DiskDevice(object):
             if self._universal and mode == b'I':
                 fhandle = UniversalNewlineReader(fhandle)
             if self._utf8:
-                if mode == b'O':
-                    # start UTF-8 files with BOM as many Windows readers expect this
-                    # write this before attaching the wrapper to avoid it being transcoded
-                    fhandle.write(b'\xef\xbb\xbf')
                 if mode == b'I':
-                    fhandle = CodecReader(fhandle, self._codepage, 'utf-8')
-                elif mode in b'OA':
+                    # accept BOM \xef\xbb\xbf
+                    fhandle = CodecReader(fhandle, self._codepage, 'utf-8-sig')
+                elif mode == b'O':
+                    # start UTF-8 files with BOM as many Windows readers expect this
+                    fhandle = CodecWriter(fhandle, self._codepage, 'utf-8-sig')
+                elif mode == b'A':
                     fhandle = CodecWriter(fhandle, self._codepage, 'utf-8')
         if filetype in b'BPM':
             # binary [B]LOAD, [B]SAVE
@@ -738,7 +738,7 @@ class CodecReader(StreamWrapperBase):
             unistr = u''
         converted = (
                 self._buffer +
-                self._codepage.str_from_unicode(unistr)
+                self._codepage.str_from_unicode(unistr, errors='replace')
             )
         if n < 0:
             return converted
