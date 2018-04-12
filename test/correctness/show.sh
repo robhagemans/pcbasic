@@ -1,5 +1,6 @@
 test=$1
-cd "$test/model"
+SCRIPTDIR="$(dirname -- "$0")"
+cd "$SCRIPTDIR/$test/model"
 
 for file in *
 do
