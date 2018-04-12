@@ -8,8 +8,9 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 import string
-from ..base.bytestream import ByteStream
+from contextlib import contextmanager
 
+from ..base.bytestream import ByteStream
 from ..base import error
 from . import devicebase
 
@@ -146,92 +147,65 @@ class TextFile(devicebase.TextFileBase):
             raise error.BASICError(error.PERMISSION_DENIED)
 
 
+class FieldFile(TextFile):
+    """Text file on FIELD."""
+
+    def __init__(self, field, reclen):
+        """Initialise text file object."""
+        TextFile.__init__(self, ByteStream(field.buffer), b'D', -1, b'<field>', b'I')
+        self._reclen = reclen
+
+    def reset(self):
+        """Reset fiel to start of field."""
+        self.fhandle.seek(0)
+
+    @contextmanager
+    def use_mode(self, mode):
+        """Use in input or output mode."""
+        self._switch_mode(mode)
+        yield
+        self._check_overflow()
+
+    def _switch_mode(self, new_mode):
+        """Switch to input or output mode and fix readahaed buffer."""
+        if new_mode == b'I' and self.mode == b'O':
+            self.flush()
+            self.next_char = self.fhandle.read(1)
+            self.mode = b'I'
+        elif new_mode == b'O' and self.mode == b'I':
+            self.fhandle.seek(-1, 1)
+            self.mode = b'O'
+
+    def _check_overflow(self):
+        """Check for FIELD OVERFLOW."""
+        write = self.mode == b'O'
+        # FIELD overflow happens if last byte in record has been read or written
+        if self.fhandle.tell() > self._reclen + write - 1:
+            raise error.BASICError(error.FIELD_OVERFLOW)
+
+
 class RandomFile(devicebase.RawFile):
     """Random-access file on disk device."""
 
     def __init__(self, output_stream, number, name, access, lock, field, reclen=128, locks=None):
         """Initialise random-access file."""
         devicebase.RawFile.__init__(self, output_stream, b'D', b'R')
+        self.number = number
+        self.name = name
+        self.reclen = reclen
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
         # touched until PUT or GET.
-        self.reclen = reclen
-        # replace with empty field if already exists
         self._field = field
-        self._field_stream = ByteStream(self._field.buffer)
-        self._field_file = TextFile(self._field_stream, b'D', -1, b'<field>', b'R')
-        self.operating_mode = b'I'
+        self._field_file = FieldFile(field, reclen)
         # note that for random files, output_stream must be a seekable stream.
         self.lock_type = lock
         self.access = access
         self.lock_list = set()
         self._locks = locks
-        self.number = number
-        self.name = name
         # position at start of file
         self.recpos = 0
         self.fhandle.seek(0)
-
-    def switch_mode(self, new_mode):
-        """Switch to input or output mode"""
-        if new_mode == b'I' and self.operating_mode == b'O':
-            self.flush()
-            self._field_file.next_char = self._field_file.fhandle.read(1)
-            self.operating_mode = b'I'
-        elif new_mode == b'O' and self.operating_mode == b'I':
-            self._field_file.fhandle.seek(-1, 1)
-            self.operating_mode = b'O'
-
-    def _check_overflow(self):
-        """Check for FIELD OVERFLOW."""
-        write = self.operating_mode == b'O'
-        # FIELD overflow happens if last byte in record has been read or written
-        if self._field_stream.tell() > self.reclen + write - 1:
-            raise error.BASICError(error.FIELD_OVERFLOW)
-
-    def input_chars(self, num):
-        """Read a number of characters from the field buffer."""
-        # switch to reading mode and fix readahead buffer
-        self.switch_mode(b'I')
-        word = self._field_file.input_chars(num)
-        self._check_overflow()
-        return word
-
-    def input_entry(self, typechar, allow_past_end):
-        """Read a number or string entry for INPUT """
-        self.switch_mode(b'I')
-        word, c = self._field_file.input_entry(typechar, allow_past_end)
-        self._check_overflow()
-        return word, c
-
-    # is this needed?
-    def read(self, n=-1):
-        """Read a number of characters from the field buffer."""
-        self.switch_mode(b'I')
-        word = self._field_file.read(n)
-        self._check_overflow()
-        return word
-
-    def read_line(self):
-        """Read a line from the field buffer."""
-        self.switch_mode(b'I')
-        word = self._field_file.read_line()
-        self._check_overflow()
-        return word
-
-    def write(self, s, can_break=True):
-        """Write the string s to the field."""
-        # switch to writing mode and fix readahead buffer
-        self.switch_mode(b'O')
-        self._field_file.write(s, can_break)
-        self._check_overflow()
-
-    def write_line(self, s=b''):
-        """Write string and newline to the field buffer."""
-        # switch to writing mode and fix readahead buffer
-        self.switch_mode(b'O')
-        self._field_file.write_line(s)
-        self._check_overflow()
 
     def close(self):
         """Close random-access file."""
@@ -239,6 +213,40 @@ class RandomFile(devicebase.RawFile):
         if self._locks is not None:
             self._locks.release(self.number)
             self._locks.close_file(self.number)
+
+    ##########################################################################
+    # field text file operations
+
+    def input_chars(self, num):
+        """Read a number of characters from the field buffer."""
+        with self._field_file.use_mode(b'I'):
+            return self._field_file.input_chars(num)
+
+    def input_entry(self, typechar, allow_past_end):
+        """Read a number or string entry for INPUT """
+        with self._field_file.use_mode(b'I'):
+            return self._field_file.input_entry(typechar, allow_past_end)
+
+    # is this needed?
+    def read(self, n=-1):
+        """Read a number of characters from the field buffer."""
+        with self._field_file.use_mode(b'I'):
+            return self._field_file.read(n)
+
+    def read_line(self):
+        """Read a line from the field buffer."""
+        with self._field_file.use_mode(b'I'):
+            return self._field_file.read_line()
+
+    def write(self, s, can_break=True):
+        """Write the string s to the field."""
+        with self._field_file.use_mode(b'O'):
+            self._field_file.write(s, can_break)
+
+    def write_line(self, s=b''):
+        """Write string and newline to the field buffer."""
+        with self._field_file.use_mode(b'O'):
+            self._field_file.write_line(s)
 
     ##########################################################################
 
@@ -255,7 +263,7 @@ class RandomFile(devicebase.RawFile):
         # take contents and pad with NULL to required size
         self._field.buffer[:] = contents + b'\0' * (self.reclen - len(contents))
         # reset field text file loc
-        self._field_stream.seek(0)
+        self._field_file.reset()
         self.recpos += 1
 
     def put(self, dummy=None):
