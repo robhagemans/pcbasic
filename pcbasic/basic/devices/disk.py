@@ -20,6 +20,7 @@ import ntpath
 import logging
 
 from ..base import error
+from ..codepage import CONTROL
 from ...compat import get_short_pathname, get_free_bytes, is_hidden
 from .. import values
 from . import devicebase
@@ -752,7 +753,7 @@ class CodecWriter(StreamWrapperBase):
     def __init__(self, stream, codepage, encoding):
         """Wrap the stream."""
         self._encoding = encoding
-        self._converter = codepage.get_converter(preserve_control=True)
+        self._converter = codepage.get_converter(preserve=CONTROL  + (b'\x1A',))
         # don't convert universal newline (output setting)
         self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='')
 

@@ -18,6 +18,7 @@ except Exception:
 
 from ...compat import line_print
 from ..base import error
+from ..codepage import CONTROL
 from . import devicebase
 
 
@@ -199,7 +200,7 @@ class PrinterStream(io.BytesIO):
         self.truncate()
         # any naked lead bytes in DBCS will remain just that - avoid in-line flushes.
         utf8buf = self.codepage.str_to_unicode(
-                    printbuf, preserve_control=True).encode('utf-8', 'replace')
+                    printbuf, preserve=CONTROL).encode('utf-8', 'replace')
         line_print(utf8buf, self.printer_name)
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
