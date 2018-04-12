@@ -98,8 +98,7 @@ class _CRLFTextFileBase(devicebase.TextFileBase):
 class RandomFile(_CRLFTextFileBase):
     """Random-access file on disk device."""
 
-    def __init__(self, output_stream, number, name,
-                        access, lock, field, reclen=128, locks=None):
+    def __init__(self, output_stream, number, name, access, lock, field, reclen=128, locks=None):
         """Initialise random-access file."""
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
@@ -227,9 +226,8 @@ class RandomFile(_CRLFTextFileBase):
 class TextFile(_CRLFTextFileBase):
     """Text file on disk device."""
 
-    def __init__(self, fhandle, filetype, number, name,
-                 mode=b'A', access=b'RW', lock=b'',
-                 codepage=None, locks=None):
+    def __init__(
+            self, fhandle, filetype, number, name, mode=b'A', access=b'RW', lock=b'', locks=None):
         """Initialise text file object."""
         devicebase.TextFileBase.__init__(self, fhandle, filetype, mode, b'')
         self.lock_list = set()
@@ -238,18 +236,12 @@ class TextFile(_CRLFTextFileBase):
         self.access = access
         self.number = number
         self.name = name
-        # if a codepage is supplied, text is converted to utf8
-        # otherwise, it is read/written as raw bytes
-        self._codepage = codepage
         if self.mode == b'A':
             self.fhandle.seek(0, 2)
-        elif self.mode == b'O' and self._codepage is not None:
-            # start UTF-8 files with BOM as many Windows readers expect this
-            self.fhandle.write(b'\xef\xbb\xbf')
 
     def close(self):
         """Close text file."""
-        if self.mode in (b'O', b'A') and self._codepage is None:
+        if self.mode in (b'O', b'A'):
             # write EOF char
             self.fhandle.write(b'\x1a')
         devicebase.TextFileBase.close(self)
@@ -271,25 +263,6 @@ class TextFile(_CRLFTextFileBase):
         lof = self.fhandle.tell()
         self.fhandle.seek(current)
         return lof
-
-    def write_line(self, s=''):
-        """Write to file in normal or UTF-8 mode."""
-        if self._codepage is not None:
-            s = (self._codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
-        devicebase.TextFileBase.write(self, s + '\r\n')
-
-    def write(self, s, can_break=True):
-        """Write to file in normal or UTF-8 mode."""
-        if self._codepage is not None:
-            s = (self._codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
-        devicebase.TextFileBase.write(self, s, can_break)
-
-    def read_line(self):
-        """Read line from text file."""
-        s, cr = _CRLFTextFileBase.read_line(self)
-        if self._codepage is not None and s is not None:
-            s = self._codepage.str_from_unicode(s.decode(b'utf-8', errors='replace'))
-        return s, cr
 
     def lock(self, start, stop):
         """Lock the file."""

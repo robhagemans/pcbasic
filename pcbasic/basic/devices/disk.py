@@ -272,24 +272,35 @@ class DiskDevice(object):
                 filetype = filetype_found
             except KeyError:
                 filetype = b'A'
-        # universal newline input for text & ascii-program files
-        if self._universal and mode == b'I' and filetype in b'DA':
-            fhandle = UniversalNewlineReader(fhandle)
+        # universal newline and utf8 input for text & ascii-program files
+        if filetype in b'DA':
+            if self._universal and mode == b'I':
+                fhandle = UniversalNewlineReader(fhandle)
+            if self._utf8:
+                if mode == b'O':
+                    # start UTF-8 files with BOM as many Windows readers expect this
+                    # write this before attaching the wrapper to avoid it being transcoded
+                    fhandle.write(b'\xef\xbb\xbf')
+                if mode == b'I':
+                    fhandle = CodecReader(fhandle, self._codepage, 'utf-8')
+                elif mode in b'OA':
+                    fhandle = CodecWriter(fhandle, self._codepage, 'utf-8')
         if filetype in b'BPM':
             # binary [B]LOAD, [B]SAVE
             return BinaryFile(
                         fhandle, filetype, number, native_name, mode,
                         seg, offset, length, locks=self._locks)
         elif filetype == b'A':
-            # ascii program file (UTF8 if option given)
+            # ascii program file
             return TextFile(
-                        fhandle, filetype, number, native_name, mode, access, lock,
-                        codepage=None if not self._utf8 else self._codepage, locks=self._locks)
+                    fhandle, filetype, number, native_name, mode, access, lock, locks=self._locks)
         elif filetype == b'D':
             if mode in b'IAO':
+                # data file for input, output, append
                 return TextFile(
                     fhandle, filetype, number, native_name, mode, access, lock, locks=self._locks)
             else:
+                # data file for random
                 return RandomFile(
                     fhandle, number, native_name, access, lock, field, reclen, locks=self._locks)
         else:
@@ -660,7 +671,19 @@ def istype(native_path, native_name, isdir):
 ##############################################################################
 # Disk stream wrappers
 
-class UniversalNewlineReader(object):
+class StreamWrapperBase(object):
+    """Base class for delegated stream wrappers."""
+
+    def __getattr__(self, name):
+        """Delegate methods to stream."""
+        if hasattr(self, '_stream'):
+            return getattr(self._stream, name)
+        else:
+            # this is needed for pickle to be able to reconstruct the class
+            raise AttributeError()
+
+
+class UniversalNewlineReader(StreamWrapperBase):
     """Apply universal newlines to raw/binary streams (standard functions apply to text only)."""
 
     def __init__(self, stream):
@@ -689,13 +712,53 @@ class UniversalNewlineReader(object):
             output, self._buffer = converted[:n], converted[n:]
             return output
 
-    def __getattr__(self, name):
-        """Delegate methods to stream."""
-        if hasattr(self, '_stream'):
-            return getattr(self._stream, name)
-        else:
-            raise AttributeError()
+    # this is called by TextIOWrapper
+    read1 = read
 
+
+class CodecReader(StreamWrapperBase):
+    """Read binary streams, converting from Python codec to BASIC codepage."""
+
+    def __init__(self, stream, codepage, encoding):
+        """Wrap the stream."""
+        # don't convert universal newline (input setting)
+        self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='\r\n')
+        self._buffer = b''
+        self._codepage = codepage
+        self._encoding = encoding
+
+    def read(self, n=-1):
+        """Read n bytes from stream with cdepage conversion."""
+        if n > len(self._buffer):
+            unistr = self._stream.read(n - len(self._buffer))
+        elif n == -1:
+            unistr = self._stream.read()
+        else:
+            unistr = u''
+        converted = (
+                self._buffer +
+                self._codepage.str_from_unicode(unistr)
+            )
+        if n < 0:
+            return converted
+        else:
+            output, self._buffer = converted[:n], converted[n:]
+            return output
+
+
+class CodecWriter(StreamWrapperBase):
+    """Write binary streams, converting from BASIC codepage to Python codec."""
+
+    def __init__(self, stream, codepage, encoding):
+        """Wrap the stream."""
+        self._encoding = encoding
+        self._converter = codepage.get_converter(preserve_control=True)
+        # don't convert universal newline (output setting)
+        self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='')
+
+    def write(self, s):
+        """Write to stream with codepage conversion."""
+        self._stream.write(self._converter.to_unicode(s))
 
 
 ##############################################################################
