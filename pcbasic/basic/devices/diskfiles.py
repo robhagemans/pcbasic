@@ -55,8 +55,31 @@ class BinaryFile(devicebase.RawFile):
             self._locks.close_file(self.number)
 
 
-class _CRLFTextFileBase(devicebase.TextFileBase):
-    """Text File with CRLF replacement."""
+class TextFile(devicebase.TextFileBase):
+    """Text file on disk device."""
+
+    def __init__(
+            self, fhandle, filetype, number, name, mode=b'A', access=b'RW', lock=b'', locks=None):
+        """Initialise text file object."""
+        devicebase.TextFileBase.__init__(self, fhandle, filetype, mode, b'')
+        self.lock_list = set()
+        self.lock_type = lock
+        self._locks = locks
+        self.access = access
+        self.number = number
+        self.name = name
+        if self.mode == b'A':
+            self.fhandle.seek(0, 2)
+
+    def close(self):
+        """Close text file."""
+        if self.mode in (b'O', b'A'):
+            # write EOF char
+            self.fhandle.write(b'\x1a')
+        devicebase.TextFileBase.close(self)
+        if self._locks is not None:
+            self._locks.release(self.number)
+            self._locks.close_file(self.number)
 
     def read(self, num=-1):
         """Read num characters, replacing CR LF with CR."""
@@ -94,8 +117,36 @@ class _CRLFTextFileBase(devicebase.TextFileBase):
         """Write string or bytearray and newline to file."""
         self.write(str(s) + '\r\n')
 
+    def loc(self):
+        """Get file pointer LOC """
+        # for LOC(i)
+        if self.mode == b'I':
+            return max(1, (127+self.fhandle.tell())/128)
+        return self.fhandle.tell()/128
 
-class RandomFile(_CRLFTextFileBase):
+    def lof(self):
+        """Get length of file LOF."""
+        current = self.fhandle.tell()
+        self.fhandle.seek(0, 2)
+        lof = self.fhandle.tell()
+        self.fhandle.seek(current)
+        return lof
+
+    def lock(self, start, stop):
+        """Lock the file."""
+        if set.union(*(f.lock_list for f in self._locks.list(self.name))):
+            raise error.BASICError(error.PERMISSION_DENIED)
+        self.lock_list.add(True)
+
+    def unlock(self, start, stop):
+        """Unlock the file."""
+        try:
+            self.lock_list.remove(True)
+        except KeyError:
+            raise error.BASICError(error.PERMISSION_DENIED)
+
+
+class RandomFile(TextFile):
     """Random-access file on disk device."""
 
     def __init__(self, output_stream, number, name, access, lock, field, reclen=128, locks=None):
@@ -219,60 +270,5 @@ class RandomFile(_CRLFTextFileBase):
         # permission denied if the exact record range wasn't given before
         try:
             self.lock_list.remove((start, stop))
-        except KeyError:
-            raise error.BASICError(error.PERMISSION_DENIED)
-
-
-class TextFile(_CRLFTextFileBase):
-    """Text file on disk device."""
-
-    def __init__(
-            self, fhandle, filetype, number, name, mode=b'A', access=b'RW', lock=b'', locks=None):
-        """Initialise text file object."""
-        devicebase.TextFileBase.__init__(self, fhandle, filetype, mode, b'')
-        self.lock_list = set()
-        self.lock_type = lock
-        self._locks = locks
-        self.access = access
-        self.number = number
-        self.name = name
-        if self.mode == b'A':
-            self.fhandle.seek(0, 2)
-
-    def close(self):
-        """Close text file."""
-        if self.mode in (b'O', b'A'):
-            # write EOF char
-            self.fhandle.write(b'\x1a')
-        devicebase.TextFileBase.close(self)
-        if self._locks is not None:
-            self._locks.release(self.number)
-            self._locks.close_file(self.number)
-
-    def loc(self):
-        """Get file pointer LOC """
-        # for LOC(i)
-        if self.mode == b'I':
-            return max(1, (127+self.fhandle.tell())/128)
-        return self.fhandle.tell()/128
-
-    def lof(self):
-        """Get length of file LOF."""
-        current = self.fhandle.tell()
-        self.fhandle.seek(0, 2)
-        lof = self.fhandle.tell()
-        self.fhandle.seek(current)
-        return lof
-
-    def lock(self, start, stop):
-        """Lock the file."""
-        if set.union(*(f.lock_list for f in self._locks.list(self.name))):
-            raise error.BASICError(error.PERMISSION_DENIED)
-        self.lock_list.add(True)
-
-    def unlock(self, start, stop):
-        """Unlock the file."""
-        try:
-            self.lock_list.remove(True)
         except KeyError:
             raise error.BASICError(error.PERMISSION_DENIED)
