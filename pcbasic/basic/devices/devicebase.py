@@ -234,13 +234,13 @@ class TextFileBase(RawFile):
         # allow first char to be specified (e.g. already read)
         self.next_char = first_char
         # Random files are derived from text files and start in 'I' operating mode
-        if self.mode in 'IR' and not first_char:
+        if self.mode in b'IR' and not first_char:
             try:
                 self.next_char = self.fhandle.read(1)
             except (EnvironmentError, ValueError):
                 # only catching ValueError here because that's what Serial raises
-                self.next_char = ''
-        self.char, self.last = '', ''
+                self.next_char = b''
+        self.char, self.last = b'', b''
 
     def input_chars(self, num):
         """Read num characters as string."""
@@ -256,7 +256,7 @@ class TextFileBase(RawFile):
             with safe_io():
                 self.next_char, self.char, self.last = (
                         self.fhandle.read(1), self.next_char, self.char)
-        return ''.join(s)
+        return b''.join(s)
 
     def read(self, num=-1):
         """Read num chars. If num==-1, read all available."""
@@ -269,7 +269,7 @@ class TextFileBase(RawFile):
         newline = False
         # find width of first line in s
         for c in str(s):
-            if c in ('\r', '\n'):
+            if c in (b'\r', b'\n'):
                 newline = True
                 break
             if ord(c) >= 32:
@@ -306,11 +306,11 @@ class TextFileBase(RawFile):
         while True:
             c = self.read(1)
             # don't check for CRLF on KYBD:, CAS:, etc.
-            if not c or c == '\r':
+            if not c or c == b'\r':
                 break
             out.append(c)
             if len(out) == 255:
-                c = '\r' if self.next_char == '\r' else None
+                c = b'\r' if self.next_char == b'\r' else None
                 break
         if not c and not out:
             return None, c
@@ -318,14 +318,14 @@ class TextFileBase(RawFile):
 
     def write_line(self, s=''):
         """Write string and follow with CR or CRLF."""
-        self.write(s + '\r')
+        self.write(s + b'\r')
 
     def eof(self):
         """Check for end of file EOF."""
         # for EOF(i)
-        if self.mode in ('A', 'O'):
+        if self.mode in (b'A', b'O'):
             return False
-        return self.next_char in ('', '\x1a')
+        return self.next_char in (b'', b'\x1a')
 
     def set_width(self, new_width=255):
         """Set file width."""
@@ -334,51 +334,51 @@ class TextFileBase(RawFile):
     # support for INPUT#
 
     # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
-    whitespace_input = ' \0\n'
+    whitespace_input = b' \0\n'
     # numbers read from file can be separated by spaces too
-    soft_sep = ' '
+    soft_sep = b' '
 
     def _skip_whitespace(self, whitespace):
         """Skip spaces and line feeds and NUL; return last whitespace char """
-        c = ''
+        c = b''
         while self.next_char and self.next_char in whitespace:
             # drop whitespace char
             c = self.read(1)
             # LF causes following CR to be dropped
-            if c == '\n' and self.next_char == '\r':
+            if c == b'\n' and self.next_char == b'\r':
                 # LFCR: drop the CR, report as LF
                 self.read(1)
         return c
 
     def input_entry(self, typechar, allow_past_end):
         """Read a number or string entry for INPUT """
-        word, blanks = '', ''
+        word, blanks = b'', b''
         # fix readahead buffer (self.next_char)
         last = self._skip_whitespace(self.whitespace_input)
         # read first non-whitespace char
         c = self.read(1)
         # LF escapes quotes
         # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
-        quoted = (c == '"' and typechar == values.STR and last not in ('\n', '\0'))
+        quoted = (c == b'"' and typechar == values.STR and last not in (b'\n', b'\0'))
         if quoted:
             c = self.read(1)
         # LF escapes end of file, return empty string
-        if not c and not allow_past_end and last not in ('\n', '\0'):
+        if not c and not allow_past_end and last not in (b'\n', b'\0'):
             raise error.BASICError(error.INPUT_PAST_END)
         # we read the ending char before breaking the loop
         # this may raise FIELD OVERFLOW
         while c and not ((typechar != values.STR and c in self.soft_sep) or
-                        (c in ',\r' and not quoted)):
-            if c == '"' and quoted:
+                        (c in b',\r' and not quoted)):
+            if c == b'"' and quoted:
                 # whitespace after quote will be skipped below
                 break
-            elif c == '\n' and not quoted:
+            elif c == b'\n' and not quoted:
                 # LF, LFCR are dropped entirely
                 c = self.read(1)
-                if c == '\r':
+                if c == b'\r':
                     c = self.read(1)
                 continue
-            elif c == '\0':
+            elif c == b'\0':
                 # NUL is dropped even within quotes
                 pass
             elif c in self.whitespace_input and not quoted:
@@ -388,7 +388,7 @@ class TextFileBase(RawFile):
                     blanks += c
             else:
                 word += blanks + c
-                blanks = ''
+                blanks = b''
             if len(word) + len(blanks) >= 255:
                 break
             if not quoted:
@@ -398,9 +398,9 @@ class TextFileBase(RawFile):
                 c = self.input_chars(1)
         # if separator was a whitespace char or closing quote
         # skip trailing whitespace before any comma or hard separator
-        if c and c in self.whitespace_input or (quoted and c == '"'):
-            self._skip_whitespace(' ')
-            if (self.next_char in ',\r'):
+        if c and c in self.whitespace_input or (quoted and c == b'"'):
+            self._skip_whitespace(b' ')
+            if (self.next_char in b',\r'):
                 c = self.read(1)
         # file position is at one past the separator char
         return word, c
@@ -418,12 +418,12 @@ class InputTextFile(TextFileBase):
 
     def __init__(self, line):
         """Initialise InputStream."""
-        TextFileBase.__init__(self, io.BytesIO(line), 'D', 'I')
+        TextFileBase.__init__(self, io.BytesIO(line), b'D', b'I')
 
 
 def input_entry_realtime(self, typechar, allow_past_end):
     """Read a number or string entry from KYBD: or COMn: for INPUT#."""
-    word, blanks = '', ''
+    word, blanks = b'', b''
     if self._input_last:
         c, self._input_last = self._input_last, ''
     else:
@@ -432,27 +432,27 @@ def input_entry_realtime(self, typechar, allow_past_end):
         c = self.read(1)
     # LF escapes quotes
     # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
-    quoted = (c == '"' and typechar == values.STR and last not in ('\n', '\0'))
+    quoted = (c == b'"' and typechar == values.STR and last not in (b'\n', b'\0'))
     if quoted:
         c = self.read(1)
     # LF escapes end of file, return empty string
-    if not c and not allow_past_end and last not in ('\n', '\0'):
+    if not c and not allow_past_end and last not in (b'\n', b'\0'):
         raise error.BASICError(error.INPUT_PAST_END)
     # we read the ending char before breaking the loop
     # this may raise FIELD OVERFLOW
     # on reading from a KYBD: file, control char replacement takes place
     # which means we need to use read() not input_chars()
     parsing_trail = False
-    while c and not (c in ',\r' and not quoted):
-        if c == '"' and quoted:
+    while c and not (c in b',\r' and not quoted):
+        if c == b'"' and quoted:
             parsing_trail = True
-        elif c == '\n' and not quoted:
+        elif c == b'\n' and not quoted:
             # LF, LFCR are dropped entirely
             c = self.read(1)
-            if c == '\r':
+            if c == b'\r':
                 c = self.read(1)
             continue
-        elif c == '\0':
+        elif c == b'\0':
             # NUL is dropped even within quotes
             pass
         elif c in self.whitespace_input and not quoted:
@@ -462,17 +462,17 @@ def input_entry_realtime(self, typechar, allow_past_end):
                 blanks += c
         else:
             word += blanks + c
-            blanks = ''
+            blanks = b''
         if len(word) + len(blanks) >= 255:
             break
         # there should be KYBD: control char replacement here even if quoted
         c = self.read(1)
         if parsing_trail:
             if c not in self.whitespace_input:
-                if c not in (',', '\r'):
+                if c not in (b',', b'\r'):
                     self._input_last = c
                 break
-        parsing_trail = parsing_trail or (typechar != values.STR and c == ' ')
+        parsing_trail = parsing_trail or (typechar != values.STR and c == b' ')
     # file position is at one past the separator char
     return word, c
 
@@ -484,12 +484,12 @@ class KYBDFile(TextFileBase):
 
     # replace some eascii codes with control characters
     _input_replace = {
-        ea.HOME: '\xFF\x0B', ea.UP: '\xFF\x1E', ea.PAGEUP: '\xFE',
-        ea.LEFT: '\xFF\x1D', ea.RIGHT: '\xFF\x1C', ea.END: '\xFF\x0E',
-        ea.DOWN: '\xFF\x1F', ea.PAGEDOWN: '\xFE',
-        ea.DELETE: '\xFF\x7F', ea.INSERT: '\xFF\x12',
-        ea.F1: '', ea.F2: '', ea.F3: '', ea.F4: '', ea.F5: '',
-        ea.F6: '', ea.F7: '', ea.F8: '', ea.F9: '', ea.F10: '',
+        ea.HOME: b'\xFF\x0B', ea.UP: b'\xFF\x1E', ea.PAGEUP: b'\xFE',
+        ea.LEFT: b'\xFF\x1D', ea.RIGHT: b'\xFF\x1C', ea.END: b'\xFF\x0E',
+        ea.DOWN: b'\xFF\x1F', ea.PAGEDOWN: b'\xFE',
+        ea.DELETE: b'\xFF\x7F', ea.INSERT: b'\xFF\x12',
+        ea.F1: b'', ea.F2: b'', ea.F3: b'', ea.F4: b'', ea.F5: b'',
+        ea.F6: b'', ea.F7: b'', ea.F8: b'', ea.F9: b'', ea.F10: b'',
         }
 
     col = 0
@@ -497,10 +497,10 @@ class KYBDFile(TextFileBase):
     def __init__(self, keyboard, display):
         """Initialise keyboard file."""
         # use mode = 'A' to avoid needing a first char from nullstream
-        TextFileBase.__init__(self, nullstream(), filetype='D', mode='A')
+        TextFileBase.__init__(self, nullstream(), filetype=b'D', mode=b'A')
         # buffer for the separator character that broke the last INPUT# field
         # to be attached to the next
-        self._input_last = ''
+        self._input_last = b''
         self._keyboard = keyboard
         # screen needed for width settings on KYBD: master file
         self._display = display
@@ -565,7 +565,7 @@ class SCRNFile(RawFile):
 
     def __init__(self, display):
         """Initialise screen file."""
-        RawFile.__init__(self, nullstream(), filetype='D', mode='O')
+        RawFile.__init__(self, nullstream(), filetype=b'D', mode=b'O')
         # need display object as WIDTH can change graphics mode
         self._display = display
         # screen member is public, needed by print_
@@ -606,10 +606,10 @@ class SCRNFile(RawFile):
         newline = False
         # find width of first line in s
         for c in str(s):
-            if c in ('\r', '\n'):
+            if c in (b'\r', b'\n'):
                 newline = True
                 break
-            if c == '\b':
+            if c == b'\b':
                 # for lpt1 and files, nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
                 s_width -= 1
             elif ord(c) >= 32:
@@ -626,7 +626,7 @@ class SCRNFile(RawFile):
                 self._col = 1
             if self.col <= cwidth or self.width <= cwidth:
                 self.screen.write(c, do_echo=do_echo)
-            if c in ('\n', '\r'):
+            if c in (b'\n', b'\r'):
                 self._col = 1
             else:
                 self._col += 1

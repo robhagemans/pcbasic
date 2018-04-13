@@ -42,7 +42,7 @@ class BinaryFile(RawFile):
                 # self.length gets ignored: even the \x1a at the end is read
                 header = self.read(6)
                 if len(header) == 6:
-                    self.seg, self.offset, self.length = struct.unpack(b'<HHH', header)
+                    self.seg, self.offset, self.length = struct.unpack('<HHH', header)
                 else:
                     # truncated header
                     raise error.BASICError(error.BAD_FILE_MODE)
@@ -97,31 +97,31 @@ class TextFile(TextFileBase):
             s.append(c)
             # report CRLF as CR
             # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
-            if (c == '\r' and self.last != '\n') and self.next_char == '\n':
+            if (c == b'\r' and self.last != b'\n') and self.next_char == b'\n':
                 last, char = self.last, self.char
                 self.input_chars(1)
                 self.last, self.char = last, char
-        return ''.join(s)
+        return b''.join(s)
 
     def read_line(self):
         """Read line from text file, break on CR or CRLF (not LF)."""
         s = []
         while True:
             c = self.read(1)
-            if not c or (c == '\r' and self.last != '\n'):
+            if not c or (c == b'\r' and self.last != b'\n'):
                 # break on CR, CRLF but allow LF, LFCR to pass
                 break
             s.append(c)
             if len(s) == 255:
-                c = '\r' if self.next_char == '\r' else None
+                c = b'\r' if self.next_char == b'\r' else None
                 break
         if not c and not s:
             return None, c
-        return ''.join(s), c
+        return b''.join(s), c
 
     def write_line(self, s=''):
         """Write string and newline to file."""
-        self.write(s + '\r\n')
+        self.write(s + b'\r\n')
 
     def loc(self):
         """Get file pointer (LOC)."""
