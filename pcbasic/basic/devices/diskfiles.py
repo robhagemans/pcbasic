@@ -159,7 +159,7 @@ class FieldFile(TextFile):
         self._reclen = reclen
 
     def reset(self):
-        """Reset fiel to start of field."""
+        """Reset file to start of field."""
         self.fhandle.seek(0)
 
     @contextmanager

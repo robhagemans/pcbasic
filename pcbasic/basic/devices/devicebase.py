@@ -129,7 +129,6 @@ class KYBDDevice(Device):
 #   __enter__(self)
 #   __exit__(self, exc_type, exc_value, traceback)
 #   close(self)
-#   switch_mode(self, new_mode)
 #   input_chars(self, num)
 #   read(self, num=-1)
 #   write(self, s)
@@ -184,9 +183,6 @@ class RawFile(object):
             self.fhandle.close()
         except EnvironmentError:
             pass
-
-    def switch_mode(self, new_mode):
-        """Switch to input or output mode"""
 
     def input_chars(self, num):
         """Read a number of characters."""
@@ -354,7 +350,6 @@ class TextFileBase(RawFile):
         """Read a number or string entry for INPUT """
         word, blanks = '', ''
         # fix readahead buffer (self.next_char)
-        self.switch_mode(b'I')
         last = self._skip_whitespace(self.whitespace_input)
         # read first non-whitespace char
         c = self.read(1)
