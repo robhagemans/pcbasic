@@ -22,12 +22,13 @@ class BinaryFile(devicebase.RawFile):
                        seg, offset, length, locks=None):
         """Initialise program file object and write header."""
         devicebase.RawFile.__init__(self, fhandle, filetype, mode)
-        self.number = number
         # don't lock binary files
-        self.lock = b''
         # we need the Locks object to register file as open
-        self._locks = locks
+        self.number = number
+        self.lock = b''
         self.access = b'RW'
+        self._locks = locks
+        # binary file parameters
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == b'O':
             self.write(devicebase.TYPE_TO_MAGIC[filetype])
@@ -63,12 +64,14 @@ class TextFile(devicebase.TextFileBase):
             self, fhandle, filetype, number, name, mode=b'A', access=b'RW', lock=b'', locks=None):
         """Initialise text file object."""
         devicebase.TextFileBase.__init__(self, fhandle, filetype, mode, b'')
-        self.lock_list = set()
-        self.lock_type = lock
-        self._locks = locks
-        self.access = access
+        # locking members
         self.number = number
         self.name = name
+        self.lock_list = set()
+        self.lock_type = lock
+        self.access = access
+        self._locks = locks
+        # in append mode, we need to start at end of file
         if self.mode == b'A':
             self.fhandle.seek(0, 2)
 
@@ -187,24 +190,25 @@ class FieldFile(TextFile):
 class RandomFile(devicebase.RawFile):
     """Random-access file on disk device."""
 
-    def __init__(self, output_stream, number, name, access, lock, field, reclen=128, locks=None):
+    def __init__(self, fhandle, number, name, access, lock, field, reclen=128, locks=None):
         """Initialise random-access file."""
-        devicebase.RawFile.__init__(self, output_stream, b'D', b'R')
+        # note that for random files, output_stream must be a seekable stream.
+        devicebase.RawFile.__init__(self, fhandle, b'D', b'R')
+        self.reclen = reclen
+        # locking members (used by Locks.acquire)
         self.number = number
         self.name = name
-        self.reclen = reclen
+        self.lock_type = lock
+        self.lock_list = set()
+        self.access = access
+        self._locks = locks
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
         # touched until PUT or GET.
         self._field = field
         self._field_file = FieldFile(field, reclen)
-        # note that for random files, output_stream must be a seekable stream.
-        self.lock_type = lock
-        self.access = access
-        self.lock_list = set()
-        self._locks = locks
         # position at start of file
-        self.recpos = 0
+        self._recpos = 0
         self.fhandle.seek(0)
 
     def close(self):
@@ -252,7 +256,7 @@ class RandomFile(devicebase.RawFile):
 
     def eof(self):
         """Return whether we're past current end-of-file, for EOF."""
-        return self.recpos * self.reclen > self.lof()
+        return self._recpos * self.reclen > self.lof()
 
     def get(self, dummy=None):
         """Read a record."""
@@ -264,27 +268,27 @@ class RandomFile(devicebase.RawFile):
         self._field.buffer[:] = contents + b'\0' * (self.reclen - len(contents))
         # reset field text file loc
         self._field_file.reset()
-        self.recpos += 1
+        self._recpos += 1
 
     def put(self, dummy=None):
         """Write a record."""
         current_length = self.lof()
-        if self.recpos > current_length:
+        if self._recpos > current_length:
             self.fhandle.seek(0, 2)
-            numrecs = self.recpos-current_length
+            numrecs = self._recpos-current_length
             self.fhandle.write(b'\0' * numrecs * self.reclen)
         self.fhandle.write(self._field.buffer)
-        self.recpos += 1
+        self._recpos += 1
 
     def set_pos(self, newpos):
         """Set current record number."""
         # first record is newpos number 1
         self.fhandle.seek((newpos-1) * self.reclen)
-        self.recpos = newpos - 1
+        self._recpos = newpos - 1
 
     def loc(self):
         """Get number of record just past, for LOC."""
-        return self.recpos
+        return self._recpos
 
     def lof(self):
         """Get length of file, in bytes, for LOF."""
