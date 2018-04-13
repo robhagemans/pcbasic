@@ -12,16 +12,16 @@ from contextlib import contextmanager
 
 from ..base.bytestream import ByteStream
 from ..base import error
-from . import devicebase
+from .devicebase import RawFile, TextFileBase, safe_io, TYPE_TO_MAGIC
 
 
-class BinaryFile(devicebase.RawFile):
+class BinaryFile(RawFile):
     """File class for binary (B, P, M) files on disk device."""
 
     def __init__(self, fhandle, filetype, number, name, mode,
                        seg, offset, length, locks=None):
         """Initialise program file object and write header."""
-        devicebase.RawFile.__init__(self, fhandle, filetype, mode)
+        RawFile.__init__(self, fhandle, filetype, mode)
         # don't lock binary files
         # we need the Locks object to register file as open
         self.number = number
@@ -31,7 +31,7 @@ class BinaryFile(devicebase.RawFile):
         # binary file parameters
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == b'O':
-            self.write(devicebase.TYPE_TO_MAGIC[filetype])
+            self.write(TYPE_TO_MAGIC[filetype])
             if self.filetype == b'M':
                 self.write(struct.pack(b'<HHH', seg, offset, length))
                 self.seg, self.offset, self.length = seg, offset, length
@@ -51,19 +51,19 @@ class BinaryFile(devicebase.RawFile):
         """Write EOF and close program file."""
         if self.mode == b'O':
             self.write(b'\x1a')
-        devicebase.RawFile.close(self)
+        RawFile.close(self)
         if self._locks is not None:
             # no locking for binary files, but we do need to register it closed
             self._locks.close_file(self.number)
 
 
-class TextFile(devicebase.TextFileBase):
+class TextFile(TextFileBase):
     """Text file on disk device."""
 
     def __init__(
             self, fhandle, filetype, number, name, mode=b'A', access=b'RW', lock=b'', locks=None):
         """Initialise text file object."""
-        devicebase.TextFileBase.__init__(self, fhandle, filetype, mode, b'')
+        TextFileBase.__init__(self, fhandle, filetype, mode, b'')
         # locking members
         self.number = number
         self.name = name
@@ -73,14 +73,16 @@ class TextFile(devicebase.TextFileBase):
         self._locks = locks
         # in append mode, we need to start at end of file
         if self.mode == b'A':
-            self.fhandle.seek(0, 2)
+            with safe_io():
+                self.fhandle.seek(0, 2)
 
     def close(self):
         """Close text file."""
         if self.mode in (b'O', b'A'):
             # write EOF char
-            self.fhandle.write(b'\x1a')
-        devicebase.TextFileBase.close(self)
+            with safe_io():
+                self.fhandle.write(b'\x1a')
+        TextFileBase.close(self)
         if self._locks is not None:
             self._locks.release(self.number)
             self._locks.close_file(self.number)
@@ -122,18 +124,19 @@ class TextFile(devicebase.TextFileBase):
         self.write(s + '\r\n')
 
     def loc(self):
-        """Get file pointer LOC """
-        # for LOC(i)
-        if self.mode == b'I':
-            return max(1, (127+self.fhandle.tell())/128)
-        return self.fhandle.tell()/128
+        """Get file pointer (LOC)."""
+        with safe_io():
+            if self.mode == b'I':
+                return max(1, (127+self.fhandle.tell()) / 128)
+            return self.fhandle.tell() / 128
 
     def lof(self):
-        """Get length of file LOF."""
-        current = self.fhandle.tell()
-        self.fhandle.seek(0, 2)
-        lof = self.fhandle.tell()
-        self.fhandle.seek(current)
+        """Get length of file (LOF)."""
+        with safe_io():
+            current = self.fhandle.tell()
+            self.fhandle.seek(0, 2)
+            lof = self.fhandle.tell()
+            self.fhandle.seek(current)
         return lof
 
     def lock(self, start, stop):
@@ -187,13 +190,13 @@ class FieldFile(TextFile):
             raise error.BASICError(error.FIELD_OVERFLOW)
 
 
-class RandomFile(devicebase.RawFile):
+class RandomFile(RawFile):
     """Random-access file on disk device."""
 
     def __init__(self, fhandle, number, name, access, lock, field, reclen=128, locks=None):
         """Initialise random-access file."""
         # note that for random files, output_stream must be a seekable stream.
-        devicebase.RawFile.__init__(self, fhandle, b'D', b'R')
+        RawFile.__init__(self, fhandle, b'D', b'R')
         self.reclen = reclen
         # locking members (used by Locks.acquire)
         self.number = number
@@ -213,7 +216,7 @@ class RandomFile(devicebase.RawFile):
 
     def close(self):
         """Close random-access file."""
-        devicebase.RawFile.close(self)
+        RawFile.close(self)
         if self._locks is not None:
             self._locks.release(self.number)
             self._locks.close_file(self.number)
@@ -263,7 +266,8 @@ class RandomFile(devicebase.RawFile):
         if self.eof():
             contents = b'\0' * self.reclen
         else:
-            contents = self.fhandle.read(self.reclen)
+            with safe_io():
+                contents = self.fhandle.read(self.reclen)
         # take contents and pad with NULL to required size
         self._field.buffer[:] = contents + b'\0' * (self.reclen - len(contents))
         # reset field text file loc
@@ -273,17 +277,19 @@ class RandomFile(devicebase.RawFile):
     def put(self, dummy=None):
         """Write a record."""
         current_length = self.lof()
-        if self._recpos > current_length:
-            self.fhandle.seek(0, 2)
-            numrecs = self._recpos-current_length
-            self.fhandle.write(b'\0' * numrecs * self.reclen)
-        self.fhandle.write(self._field.buffer)
+        with safe_io():
+            if self._recpos > current_length:
+                self.fhandle.seek(0, 2)
+                numrecs = self._recpos - current_length
+                self.fhandle.write(b'\0' * numrecs * self.reclen)
+            self.fhandle.write(self._field.buffer)
         self._recpos += 1
 
     def set_pos(self, newpos):
         """Set current record number."""
         # first record is newpos number 1
-        self.fhandle.seek((newpos-1) * self.reclen)
+        with safe_io():
+            self.fhandle.seek((newpos-1) * self.reclen)
         self._recpos = newpos - 1
 
     def loc(self):
@@ -292,10 +298,11 @@ class RandomFile(devicebase.RawFile):
 
     def lof(self):
         """Get length of file, in bytes, for LOF."""
-        current = self.fhandle.tell()
-        self.fhandle.seek(0, 2)
-        lof = self.fhandle.tell()
-        self.fhandle.seek(current)
+        with safe_io():
+            current = self.fhandle.tell()
+            self.fhandle.seek(0, 2)
+            lof = self.fhandle.tell()
+            self.fhandle.seek(current)
         return lof
 
     def lock(self, start, stop):

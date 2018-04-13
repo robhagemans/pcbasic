@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import io
 import os
 import struct
+import logging
 from contextlib import contextmanager
 
 from ..base import error
@@ -133,6 +134,9 @@ class KYBDDevice(Device):
 #   read(self, num=-1)
 #   write(self, s)
 #   flush(self)
+#   filetype
+#   mode
+#   ? fhandle
 
 
 class DeviceSettings(object):
@@ -156,7 +160,8 @@ def safe_io():
     """Catch and translate I/O errors."""
     try:
         yield
-    except EnvironmentError:
+    except EnvironmentError as e:
+        logging.warning('I/O error on stream access: %s', e)
         raise error.BASICError(error.DEVICE_IO_ERROR)
 
 
@@ -179,10 +184,8 @@ class RawFile(object):
 
     def close(self):
         """Close the file."""
-        try:
+        with safe_io():
             self.fhandle.close()
-        except EnvironmentError:
-            pass
 
     def input_chars(self, num):
         """Read a number of characters."""
@@ -195,13 +198,14 @@ class RawFile(object):
             return self.fhandle.read(num)
 
     def write(self, s):
-        """Write string or bytearray to file."""
+        """Write string to file."""
         with safe_io():
-            self.fhandle.write(str(s))
+            self.fhandle.write(s)
 
     def flush(self):
         """Write contents of buffers to file."""
-        self.fhandle.flush()
+        with safe_io():
+            self.fhandle.flush()
 
 
 #################################################################################
