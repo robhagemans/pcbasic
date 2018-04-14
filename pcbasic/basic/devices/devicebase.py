@@ -79,8 +79,9 @@ class Device(object):
         """Set up device."""
         self.device_file = None
 
-    def open(self, number, param, filetype, mode, access, lock,
-                   reclen, seg, offset, length, field):
+    def open(
+            self, number, param, filetype, mode, access, lock,
+            reclen, seg, offset, length, field):
         """Open a file on the device."""
         if not self.device_file:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -110,6 +111,16 @@ class SCRNDevice(Device):
         Device.__init__(self)
         self.device_file = SCRNFile(display)
 
+    def open(
+            self, number, param, filetype, mode, access, lock,
+            reclen, seg, offset, length, field):
+        """Open a file on the device."""
+        new_file = Device.open(
+                self, number, param, filetype, mode, access, lock,
+                reclen, seg, offset, length, field)
+        # SAVE "SCRN:" includes a magic byte
+        new_file.write(TYPE_TO_MAGIC.get(filetype, b''))
+        return new_file
 
 class KYBDDevice(Device):
     """Keyboard device (KYBD:) """
@@ -592,16 +603,7 @@ class SCRNFile(RawFile):
         inst.reclen = reclen
         inst.filetype = filetype
         inst._is_master = False
-        inst._write_magic(filetype)
         return inst
-
-    def _write_magic(self, filetype):
-        """Write magic byte."""
-        # SAVE "SCRN:" includes a magic byte
-        try:
-            self.write(TYPE_TO_MAGIC[filetype])
-        except KeyError:
-            pass
 
     def write(self, s, can_break=True):
         """Write string s to SCRN: """
