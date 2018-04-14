@@ -211,7 +211,7 @@ class RawFile(object):
 #################################################################################
 # Text file base
 
-# text interface: file interface +
+# text interface: file interface (except read) +
 #   col
 #   width
 #   read_line(self)
@@ -221,6 +221,9 @@ class RawFile(object):
 #   input_entry(self, typechar, allow_past_end)
 #   lof(self)
 #   loc(self)
+#
+#   internal use: read_one()
+
 
 class TextFileBase(RawFile):
     """Base for text files on disk, KYBD file, field buffer."""
@@ -259,8 +262,34 @@ class TextFileBase(RawFile):
         return b''.join(s)
 
     def read(self, num=-1):
-        """Read num chars. If num==-1, read all available."""
-        return self.input_chars(num)
+        """Stubbed out read()."""
+        raise NotImplementedError()
+
+    def read_one(self):
+        """Read one character, converting device line ending to b'\r', EOF to b''."""
+        return self.input_chars(1)
+
+    def read_line(self):
+        """\
+            Read a single line until line break or 255 characters.
+            Output line and line break character
+            Return None for string, '' for cr if EOF and nothing read(input past end).
+            Return None for CR if line ended due to 255-char length limit
+            Return '' for CR if EOF
+        """
+        out = []
+        while True:
+            c = self.read_one()
+            # don't check for CRLF on KYBD:, CAS:, etc.
+            if not c or c == b'\r':
+                break
+            out.append(c)
+            if len(out) == 255:
+                c = b'\r' if self.next_char == b'\r' else None
+                break
+        if not c and not out:
+            return None, c
+        return b''.join(out), c
 
     def write(self, s, can_break=True):
         """Write the string s to the file, taking care of width settings."""
@@ -294,28 +323,6 @@ class TextFileBase(RawFile):
                     if self.col == 257:
                         self.col = 1
 
-    def read_line(self):
-        """\
-            Read a single line until line break or 255 characters.
-            Output line and line break character
-            Return None for string, '' for cr if EOF and nothing read(input past end).
-            Return None for CR if line ended due to 255-char length limit
-            Return '' for CR if EOF
-        """
-        out = []
-        while True:
-            c = self.read(1)
-            # don't check for CRLF on KYBD:, CAS:, etc.
-            if not c or c == b'\r':
-                break
-            out.append(c)
-            if len(out) == 255:
-                c = b'\r' if self.next_char == b'\r' else None
-                break
-        if not c and not out:
-            return None, c
-        return b''.join(out), c
-
     def write_line(self, s=''):
         """Write string and follow with CR or CRLF."""
         self.write(s + b'\r')
@@ -343,11 +350,11 @@ class TextFileBase(RawFile):
         c = b''
         while self.next_char and self.next_char in whitespace:
             # drop whitespace char
-            c = self.read(1)
+            c = self.read_one()
             # LF causes following CR to be dropped
             if c == b'\n' and self.next_char == b'\r':
                 # LFCR: drop the CR, report as LF
-                self.read(1)
+                self.read_one()
         return c
 
     def input_entry(self, typechar, allow_past_end):
@@ -356,12 +363,12 @@ class TextFileBase(RawFile):
         # fix readahead buffer (self.next_char)
         last = self._skip_whitespace(self.whitespace_input)
         # read first non-whitespace char
-        c = self.read(1)
+        c = self.read_one()
         # LF escapes quotes
         # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
         quoted = (c == b'"' and typechar == values.STR and last not in (b'\n', b'\0'))
         if quoted:
-            c = self.read(1)
+            c = self.read_one()
         # LF escapes end of file, return empty string
         if not c and not allow_past_end and last not in (b'\n', b'\0'):
             raise error.BASICError(error.INPUT_PAST_END)
@@ -374,9 +381,9 @@ class TextFileBase(RawFile):
                 break
             elif c == b'\n' and not quoted:
                 # LF, LFCR are dropped entirely
-                c = self.read(1)
+                c = self.read_one()
                 if c == b'\r':
-                    c = self.read(1)
+                    c = self.read_one()
                 continue
             elif c == b'\0':
                 # NUL is dropped even within quotes
@@ -392,7 +399,7 @@ class TextFileBase(RawFile):
             if len(word) + len(blanks) >= 255:
                 break
             if not quoted:
-                c = self.read(1)
+                c = self.read_one()
             else:
                 # no CRLF replacement inside quotes.
                 c = self.input_chars(1)
@@ -401,13 +408,13 @@ class TextFileBase(RawFile):
         if c and c in self.whitespace_input or (quoted and c == b'"'):
             self._skip_whitespace(b' ')
             if (self.next_char in b',\r'):
-                c = self.read(1)
+                c = self.read_one()
         # file position is at one past the separator char
         return word, c
 
 
 #################################################################################
-# Console files
+# Console INPUT
 
 
 class InputTextFile(TextFileBase):
@@ -421,6 +428,9 @@ class InputTextFile(TextFileBase):
         TextFileBase.__init__(self, io.BytesIO(line), b'D', b'I')
 
 
+#################################################################################
+# Console files
+
 def input_entry_realtime(self, typechar, allow_past_end):
     """Read a number or string entry from KYBD: or COMn: for INPUT#."""
     word, blanks = b'', b''
@@ -429,12 +439,12 @@ def input_entry_realtime(self, typechar, allow_past_end):
     else:
         last = self._skip_whitespace(self.whitespace_input)
         # read first non-whitespace char
-        c = self.read(1)
+        c = self.read_one()
     # LF escapes quotes
     # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
     quoted = (c == b'"' and typechar == values.STR and last not in (b'\n', b'\0'))
     if quoted:
-        c = self.read(1)
+        c = self.read_one()
     # LF escapes end of file, return empty string
     if not c and not allow_past_end and last not in (b'\n', b'\0'):
         raise error.BASICError(error.INPUT_PAST_END)
@@ -448,9 +458,9 @@ def input_entry_realtime(self, typechar, allow_past_end):
             parsing_trail = True
         elif c == b'\n' and not quoted:
             # LF, LFCR are dropped entirely
-            c = self.read(1)
+            c = self.read_one()
             if c == b'\r':
-                c = self.read(1)
+                c = self.read_one()
             continue
         elif c == b'\0':
             # NUL is dropped even within quotes
@@ -466,7 +476,7 @@ def input_entry_realtime(self, typechar, allow_past_end):
         if len(word) + len(blanks) >= 255:
             break
         # there should be KYBD: control char replacement here even if quoted
-        c = self.read(1)
+        c = self.read_one()
         if parsing_trail:
             if c not in self.whitespace_input:
                 if c not in (b',', b'\r'):
@@ -517,21 +527,21 @@ class KYBDFile(TextFileBase):
         return inst
 
     def input_chars(self, num):
-        """Read a number of characters - INPUT$."""
+        """Read a number of characters (INPUT$)."""
         chars = b''
         while len(chars) < num:
             chars += b''.join(b'\0' if c in self._input_replace else c if len(c) == 1 else b''
                               for c in self._keyboard.read_bytes_kybd_file(num-len(chars)))
         return chars
 
-    def read(self, n=1):
-        """Read a string from the keyboard - INPUT and LINE INPUT."""
+    def read_one(self):
+        """Read a character with line ending replacement (INPUT and LINE INPUT)."""
         chars = b''
-        while len(chars) < n:
+        while len(chars) < 1:
             # note that we need string length, not list length
-            # as read_chars can return multi-byte eascii codes
+            # as read_bytes_kybd_file can return multi-byte eascii codes
             chars += b''.join(self._input_replace.get(c, c)
-                              for c in self._keyboard.read_bytes_kybd_file(n-len(chars)))
+                              for c in self._keyboard.read_bytes_kybd_file(1))
         return chars
 
     def lof(self):

@@ -339,10 +339,10 @@ class COMFile(devicebase.TextFileBase):
                 s.append(c)
         return b''.join(s)
 
-    def read(self, num=-1):
-        """Read num characters, replacing CR LF with CR."""
+    def read_one(self):
+        """Read a character, replacing CR LF with CR."""
         s = []
-        while len(s) < num:
+        while len(s) < 1:
             c = self.input_chars(1)
             # report CRLF as CR
             # are we correct to ignore self._linefeed on input?
@@ -356,7 +356,7 @@ class COMFile(devicebase.TextFileBase):
         """Blocking read line from the port (not the FIELD buffer!)."""
         out = []
         while len(out) < 255:
-            c = self.read(1)
+            c = self.read_one()
             if c == b'\r':
                 break
             if c:
@@ -366,7 +366,7 @@ class COMFile(devicebase.TextFileBase):
 
     def write_line(self, s=''):
         """Write string or bytearray and newline to port."""
-        self.write(bytes(s) + b'\r')
+        self.write(s + b'\r')
 
     def write(self, s):
         """Write string to port."""

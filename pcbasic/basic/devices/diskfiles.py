@@ -87,27 +87,24 @@ class TextFile(TextFileBase):
             self._locks.release(self.number)
             self._locks.close_file(self.number)
 
-    def read(self, num=-1):
-        """Read num characters, replacing CR LF with CR."""
-        s = []
-        while len(s) < num:
-            c = self.input_chars(1)
-            if not c:
-                break
-            s.append(c)
-            # report CRLF as CR
-            # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
-            if (c == b'\r' and self.last != b'\n') and self.next_char == b'\n':
-                last, char = self.last, self.char
-                self.input_chars(1)
-                self.last, self.char = last, char
-        return b''.join(s)
+    def read_one(self):
+        """Read one character, replacing CR LF with CR."""
+        c = self.input_chars(1)
+        if not c:
+            return c
+        # report CRLF as CR
+        # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
+        if (c == b'\r' and self.last != b'\n') and self.next_char == b'\n':
+            last, char = self.last, self.char
+            self.input_chars(1)
+            self.last, self.char = last, char
+        return c
 
     def read_line(self):
         """Read line from text file, break on CR or CRLF (not LF)."""
         s = []
         while True:
-            c = self.read(1)
+            c = self.read_one()
             if not c or (c == b'\r' and self.last != b'\n'):
                 # break on CR, CRLF but allow LF, LFCR to pass
                 break
@@ -221,6 +218,10 @@ class RandomFile(RawFile):
             self._locks.release(self.number)
             self._locks.close_file(self.number)
 
+    def read(self, num=-1):
+        """Stubbed out read()."""
+        raise NotImplementedError()
+
     ##########################################################################
     # field text file operations
 
@@ -234,11 +235,10 @@ class RandomFile(RawFile):
         with self._field_file.use_mode(b'I'):
             return self._field_file.input_entry(typechar, allow_past_end)
 
-    # is this needed?
-    def read(self, n=-1):
+    def read_one(self):
         """Read a number of characters from the field buffer."""
         with self._field_file.use_mode(b'I'):
-            return self._field_file.read(n)
+            return self._field_file.read_one()
 
     def read_line(self):
         """Read a line from the field buffer."""
