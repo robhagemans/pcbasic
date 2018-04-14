@@ -342,10 +342,10 @@ class Program(object):
         """Merge program from ascii or utf8 (if utf8_files is True) stream."""
         while True:
             line, cr = g.read_line()
-            if line is None:
+            if not line and not cr:
                 # end of file
                 break
-            if cr is None:
+            elif cr is None:
                 # line > 255 chars
                 raise error.BASICError(error.LINE_BUFFER_OVERFLOW)
             linebuf = self.tokeniser.tokenise_line(line)

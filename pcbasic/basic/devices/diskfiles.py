@@ -112,8 +112,6 @@ class TextFile(TextFileBase):
             if len(s) == 255:
                 c = b'\r' if self.next_char == b'\r' else None
                 break
-        if not c and not s:
-            return None, c
         return b''.join(s), c
 
     def write_line(self, s=''):

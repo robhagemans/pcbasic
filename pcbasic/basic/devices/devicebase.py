@@ -298,8 +298,6 @@ class TextFileBase(RawFile):
             if len(out) == 255:
                 c = b'\r' if self.next_char == b'\r' else None
                 break
-        if not c and not out:
-            return None, c
         return b''.join(out), c
 
     def write(self, s, can_break=True):
