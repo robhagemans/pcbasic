@@ -314,16 +314,16 @@ class Program(object):
     def load(self, g):
         """Load program from ascii, bytecode or protected stream."""
         self.erase()
-        if g.filetype == 'B':
+        if g.filetype == b'B':
             # bytecode file
             self.bytecode.seek(1)
             self.bytecode.write(g.read())
-        elif g.filetype == 'P':
+        elif g.filetype == b'P':
             # protected file
             self.bytecode.seek(1)
             self.protected = self.allow_protect
             converter.unprotect(g, self.bytecode)
-        elif g.filetype == 'A':
+        elif g.filetype == b'A':
             # assume ASCII file
             # erase() only writes the terminator
             # so we need to get rid of the old code which is still in memory
@@ -332,9 +332,9 @@ class Program(object):
             # anything but numbers or whitespace: Direct Statement in File
             self.merge(g)
         else:
-            logging.debug("Incorrect file type '%s' on LOAD", g.filetype)
+            logging.debug('Incorrect file type `%s` on LOAD', g.filetype)
         # rebuild line number dict and offsets
-        if g.filetype != 'A':
+        if g.filetype != b'A':
             self.rebuild_line_dict()
         self.code_size = self.bytecode.tell()
 
@@ -349,7 +349,7 @@ class Program(object):
                 # line > 255 chars
                 raise error.BASICError(error.LINE_BUFFER_OVERFLOW)
             linebuf = self.tokeniser.tokenise_line(line)
-            if linebuf.read(1) == '\0':
+            if linebuf.read(1) == b'\0':
                 # line starts with a number, add to program memory; store_line seeks to 1 first
                 self.store_line(linebuf)
             else:
@@ -360,15 +360,15 @@ class Program(object):
     def save(self, g):
         """Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode."""
         mode = g.filetype
-        if self.protected and mode != 'P':
+        if self.protected and mode != b'P':
             raise error.BASICError(error.IFC)
         current = self.bytecode.tell()
         # skip first \x00 in bytecode
         self.bytecode.seek(1)
-        if mode == 'B':
+        if mode == b'B':
             # binary bytecode mode
             g.write(self.bytecode.read())
-        elif mode == 'P':
+        elif mode == b'P':
             # protected mode
             converter.protect(self.bytecode, g)
         else:
