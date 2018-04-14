@@ -446,21 +446,16 @@ def input_entry_realtime(self, typechar, allow_past_end):
     if self._input_last:
         c, self._input_last = self._input_last, ''
     else:
-        last = self._skip_whitespace(self.whitespace_input)
-        # read first non-whitespace char
         c = self.read_one()
     # LF escapes quotes
-    # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
-    quoted = (c == b'"' and typechar == values.STR and last not in (b'\n', b'\0'))
+    quoted = (c == b'"' and typechar == values.STR)
     if quoted:
         c = self.read_one()
     # LF escapes end of file, return empty string
-    if not c and not allow_past_end and last not in (b'\n', b'\0'):
+    if not c and not allow_past_end:
         raise error.BASICError(error.INPUT_PAST_END)
-    # we read the ending char before breaking the loop
-    # this may raise FIELD OVERFLOW
     # on reading from a KYBD: file, control char replacement takes place
-    # which means we need to use read() not input_chars()
+    # which means we need to use read_one() not input_chars()
     parsing_trail = False
     while c and not (c in b',\r' and not quoted):
         if c == b'"' and quoted:
