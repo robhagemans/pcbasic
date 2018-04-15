@@ -170,7 +170,7 @@ class FieldFile(TextFile):
     def _switch_mode(self, new_mode):
         """Switch to input or output mode and fix readahaed buffer."""
         if new_mode == b'I' and self.mode == b'O':
-            self._flush()
+            self._fhandle.flush()
             self.next_char = self._fhandle.read(1)
             self.mode = b'I'
         elif new_mode == b'O' and self.mode == b'I':

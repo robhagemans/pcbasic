@@ -235,10 +235,6 @@ class ParallelStream(object):
         """Initialise stream from pickling dict."""
         self.__init__(st['port'])
 
-    def _flush(self):
-        """No buffer to flush."""
-        pass
-
     def write(self, s):
         """Write to the parallel port."""
         if self._parallel.getInPaperOut():

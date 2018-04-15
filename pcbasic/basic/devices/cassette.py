@@ -194,9 +194,6 @@ class CassetteStream(object):
             self.is_open = False
             self.rwmode = ''
 
-    def _flush(self):
-        """Flush buffers (dummy)."""
-
     def close_tape(self):
         """Eject the tape."""
         try:

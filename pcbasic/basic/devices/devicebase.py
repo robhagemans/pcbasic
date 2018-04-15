@@ -211,11 +211,6 @@ class RawFile(object):
         with safe_io():
             self._fhandle.write(s)
 
-    def _flush(self):
-        """Write contents of buffers to file."""
-        with safe_io():
-            self._fhandle.flush()
-
 
 #################################################################################
 # Text file base
@@ -312,13 +307,11 @@ class TextFileBase(RawFile):
                 s_width += 1
         if can_break and self.width != 255 and self.col != 1 and self.col-1 + s_width > self.width and not newline:
             self.write_line()
-            self._flush()
             self.col = 1
         for c in s:
             # don't replace CR or LF with CRLF when writing to files
             if c in ('\r',):
                 self._fhandle.write(c)
-                self._flush()
                 self.col = 1
             else:
                 self._fhandle.write(c)
