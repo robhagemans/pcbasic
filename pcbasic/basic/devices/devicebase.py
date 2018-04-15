@@ -122,6 +122,7 @@ class SCRNDevice(Device):
         new_file.write(TYPE_TO_MAGIC.get(filetype, b''))
         return new_file
 
+
 class KYBDDevice(Device):
     """Keyboard device (KYBD:) """
 
@@ -141,27 +142,10 @@ class KYBDDevice(Device):
 #   __enter__(self)
 #   __exit__(self, exc_type, exc_value, traceback)
 #   close(self)
-#   input_chars(self, num)
 #   read(self, num=-1)
 #   write(self, s)
 #   filetype
 #   mode
-
-
-class DeviceSettings(object):
-    """Device-level settings, not a file as such."""
-
-    def __init__(self):
-        """Setup the basic properties of the file."""
-        self.width = 255
-        self.col = 1
-
-    def set_width(self, width):
-        """Set file width."""
-        self.width = width
-
-    def close(self):
-        """Close dummy device file."""
 
 
 @contextmanager
@@ -196,11 +180,6 @@ class RawFile(object):
         with safe_io():
             self._fhandle.close()
 
-    def input_chars(self, num):
-        """Read a number of characters."""
-        with safe_io():
-            return self._fhandle.read(num)
-
     def read(self, num=-1):
         """Read num chars. If num==-1, read all available."""
         with safe_io():
@@ -218,15 +197,32 @@ class RawFile(object):
 # text interface: file interface (except read) +
 #   col
 #   width
+#   set_width(self, new_width=255)
+#
 #   read_line(self)
 #   write_line(self, s='')
 #   eof(self)
-#   set_width(self, new_width=255)
 #   input_entry(self, typechar, allow_past_end)
 #   lof(self)
 #   loc(self)
 #
 #   internal use: read_one()
+
+
+class DeviceSettings(object):
+    """Device-level width and column settings."""
+
+    def __init__(self):
+        """Setup the basic properties of the file."""
+        self.width = 255
+        self.col = 1
+
+    def set_width(self, width):
+        """Set file width."""
+        self.width = width
+
+    def close(self):
+        """Close dummy device file."""
 
 
 class TextFileBase(RawFile):
@@ -257,7 +253,7 @@ class TextFileBase(RawFile):
                 break
             # check for \x1A (EOF char will actually stop further reading
             # (that's true in disk text files but not on COM devices)
-            if self.next_char in ('\x1a', ''):
+            if self.next_char in (b'\x1a', b''):
                 break
             s.append(self.next_char)
             with safe_io():
@@ -276,9 +272,11 @@ class TextFileBase(RawFile):
     def read_line(self):
         """\
             Read a single line until line break or 255 characters.
-            Output line and line break character
-            Return None for CR if line ended due to 255-char length limit
-            Return '' for CR if EOF
+            Returns: (line, separator character)
+            Separator character:
+                b'\r' for device-standard line break (CR or CR LF)
+                b'' at end of file
+                None if line ended due to 255-char length limit
         """
         out = []
         while True:
@@ -302,21 +300,22 @@ class TextFileBase(RawFile):
             if c in (b'\r', b'\n'):
                 newline = True
                 break
-            if ord(c) >= 32:
+            if c >= b' ':
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
-        if can_break and self.width != 255 and self.col != 1 and self.col-1 + s_width > self.width and not newline:
+        if (can_break and self.width != 255 and self.col != 1 and
+                self.col-1 + s_width > self.width and not newline):
             self.write_line()
             self.col = 1
         for c in s:
             # don't replace CR or LF with CRLF when writing to files
-            if c in ('\r',):
+            if c == b'\r':
                 self._fhandle.write(c)
                 self.col = 1
             else:
                 self._fhandle.write(c)
                 # nonprinting characters including tabs are not counted for WIDTH
-                if ord(c) >= 32:
+                if c >= b' ':
                     self.col += 1
                     # col-1 is a byte that wraps
                     if self.col == 257:
