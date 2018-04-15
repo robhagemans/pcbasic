@@ -12,7 +12,7 @@ from contextlib import contextmanager
 
 from ..base.bytestream import ByteStream
 from ..base import error
-from .devicebase import RawFile, TextFileBase, safe_io, TYPE_TO_MAGIC
+from .devicebase import RawFile, TextFileBase, InputMixin, safe_io, TYPE_TO_MAGIC
 
 
 class BinaryFile(RawFile):
@@ -57,7 +57,7 @@ class BinaryFile(RawFile):
             self._locks.close_file(self.number)
 
 
-class TextFile(TextFileBase):
+class TextFile(TextFileBase, InputMixin):
     """Text file on disk device."""
 
     def __init__(

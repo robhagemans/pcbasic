@@ -232,6 +232,9 @@ class DeviceSettings(object):
 class TextFileBase(RawFile):
     """Base for text files on disk, KYBD file, field buffer."""
 
+    # for INPUT# - numbers read from file can be separated by spaces too
+    soft_sep = b' '
+
     def __init__(self, fhandle, filetype, mode, first_char=''):
         """Setup the basic properties of the file."""
         RawFile.__init__(self, fhandle, filetype, mode)
@@ -337,10 +340,9 @@ class TextFileBase(RawFile):
         """Set file width."""
         self.width = new_width
 
-    # support for INPUT#
 
-    # numbers read from file can be separated by spaces too
-    soft_sep = b' '
+class InputMixin(object):
+    """Support for INPUT#."""
 
     def _skip_whitespace(self, whitespace):
         """Skip spaces and line feeds and NUL; return last whitespace char """
@@ -414,7 +416,7 @@ class TextFileBase(RawFile):
 # Console INPUT
 
 
-class InputTextFile(TextFileBase):
+class InputTextFile(TextFileBase, InputMixin):
     """Handle INPUT from console."""
 
     # spaces do not separate numbers on console INPUT
@@ -428,55 +430,59 @@ class InputTextFile(TextFileBase):
 #################################################################################
 # Console files
 
-def input_entry_realtime(self, typechar, allow_past_end):
-    """Read a number or string entry from KYBD: or COMn: for INPUT#."""
-    word, blanks = b'', b''
-    if self._input_last:
-        c, self._input_last = self._input_last, b''
-    else:
-        c = self.read_one()
-    # LF escapes quotes
-    quoted = (c == b'"' and typechar == values.STR)
-    if quoted:
-        c = self.read_one()
-    # LF escapes end of file, return empty string
-    if not c and not allow_past_end:
-        raise error.BASICError(error.INPUT_PAST_END)
-    # on reading from a KYBD: file, control char replacement takes place
-    # which means we need to use read_one() not read()
-    parsing_trail = False
-    while c and not (c in b',\r' and not quoted):
-        if c == b'"' and quoted:
-            parsing_trail = True
-        elif c == b'\n' and not quoted:
-            # LF, LFCR are dropped entirely
-            c = self.read_one()
-            if c == b'\r':
-                c = self.read_one()
-            continue
-        elif c == b'\0':
-            # NUL is dropped even within quotes
-            pass
-        elif c in INPUT_WHITESPACE and not quoted:
-            # ignore whitespace in numbers, except soft separators
-            # include internal whitespace in strings
-            if typechar == values.STR:
-                blanks += c
+
+class RealTimeInputMixin(object):
+    """Support for INPUT# on non-seekable KYBD and COM files."""
+
+    def input_entry(self, typechar, allow_past_end):
+        """Read a number or string entry from KYBD: or COMn: for INPUT#."""
+        word, blanks = b'', b''
+        if self._input_last:
+            c, self._input_last = self._input_last, b''
         else:
-            word += blanks + c
-            blanks = b''
-        if len(word) + len(blanks) >= 255:
-            break
-        # there should be KYBD: control char replacement here even if quoted
-        c = self.read_one()
-        if parsing_trail:
-            if c not in INPUT_WHITESPACE:
-                if c not in (b',', b'\r'):
-                    self._input_last = c
+            c = self.read_one()
+        # LF escapes quotes
+        quoted = (c == b'"' and typechar == values.STR)
+        if quoted:
+            c = self.read_one()
+        # LF escapes end of file, return empty string
+        if not c and not allow_past_end:
+            raise error.BASICError(error.INPUT_PAST_END)
+        # on reading from a KYBD: file, control char replacement takes place
+        # which means we need to use read_one() not read()
+        parsing_trail = False
+        while c and not (c in b',\r' and not quoted):
+            if c == b'"' and quoted:
+                parsing_trail = True
+            elif c == b'\n' and not quoted:
+                # LF, LFCR are dropped entirely
+                c = self.read_one()
+                if c == b'\r':
+                    c = self.read_one()
+                continue
+            elif c == b'\0':
+                # NUL is dropped even within quotes
+                pass
+            elif c in INPUT_WHITESPACE and not quoted:
+                # ignore whitespace in numbers, except soft separators
+                # include internal whitespace in strings
+                if typechar == values.STR:
+                    blanks += c
+            else:
+                word += blanks + c
+                blanks = b''
+            if len(word) + len(blanks) >= 255:
                 break
-        parsing_trail = parsing_trail or (typechar != values.STR and c == b' ')
-    # file position is at one past the separator char
-    return word, c
+            # there should be KYBD: control char replacement here even if quoted
+            c = self.read_one()
+            if parsing_trail:
+                if c not in INPUT_WHITESPACE:
+                    if c not in (b',', b'\r'):
+                        self._input_last = c
+                    break
+            parsing_trail = parsing_trail or (typechar != values.STR and c == b' ')
+        # file position is at one past the separator char
+        return word, c
 
 
 ###############################################################################
@@ -492,7 +498,7 @@ KYBD_REPLACE = {
     ea.F6: b'', ea.F7: b'', ea.F8: b'', ea.F9: b'', ea.F10: b'',
 }
 
-class KYBDFile(TextFileBase):
+class KYBDFile(TextFileBase, RealTimeInputMixin):
     """KYBD device: keyboard."""
 
     col = 0
@@ -562,8 +568,6 @@ class KYBDFile(TextFileBase):
         """Setting width on KYBD device (not files) changes screen width."""
         if self._is_master:
             self._display.set_width(new_width)
-
-    input_entry = input_entry_realtime
 
 
 ###############################################################################

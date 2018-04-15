@@ -29,7 +29,8 @@ except Exception as e:
 
 from ..base import error
 from .. import values
-from . import devicebase
+from .devicebase import Device, DeviceSettings, TextFileBase, RealTimeInputMixin
+from .devicebase import parse_protocol_string
 
 
 @contextmanager
@@ -51,21 +52,21 @@ def safe_serial(err=error.DEVICE_IO_ERROR):
 ###############################################################################
 # COM ports
 
-class COMDevice(devicebase.Device):
+class COMDevice(Device):
     """Serial port device (COMn:)."""
 
     allowed_modes = 'IOAR'
 
     def __init__(self, arg, queues, serial_in_size):
         """Initialise COMn: device."""
-        devicebase.Device.__init__(self)
+        Device.__init__(self)
         # for wait()
         self._queues = queues
         self._serial_in_size = serial_in_size
         self._url = ''
         self._spec = arg
         self._serial = self._init_serial(arg)
-        self.device_file = devicebase.DeviceSettings()
+        self.device_file = DeviceSettings()
         # only one file open at a time
         self._file = None
 
@@ -172,7 +173,7 @@ class COMDevice(devicebase.Device):
 
     def _init_serial(self, spec):
         """Initialise the serial object."""
-        addr, val = devicebase.parse_protocol_string(spec)
+        addr, val = parse_protocol_string(spec)
         try:
             if not addr and not val:
                 pass
@@ -304,14 +305,14 @@ class COMDevice(devicebase.Device):
 
 ###############################################################################
 
-class COMFile(devicebase.TextFileBase):
+class COMFile(TextFileBase, RealTimeInputMixin):
     """COMn: device - serial port."""
 
     def __init__(self, stream, field, linefeed, serial_in_size, queues):
         """Initialise COMn: file."""
         # prevent readahead by providing non-empty first char
         # we're ignoring self.char and self.next_char in this class
-        devicebase.TextFileBase.__init__(self, stream, b'D', b'R', first_char=b'DUMMY')
+        TextFileBase.__init__(self, stream, b'D', b'R', first_char=b'DUMMY')
         self.next_char = ''
         self._queues = queues
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
@@ -325,7 +326,7 @@ class COMFile(devicebase.TextFileBase):
 
     def close(self):
         """Close the file and the port."""
-        devicebase.TextFileBase.close(self)
+        TextFileBase.close(self)
         self.is_open = False
 
     def read(self, num):
@@ -399,8 +400,6 @@ class COMFile(devicebase.TextFileBase):
         """Returns number of bytes free in buffer."""
         with safe_serial():
             return max(0, self._serial_in_size - self._fhandle.in_waiting)
-
-    input_entry = devicebase.input_entry_realtime
 
 
 ###############################################################################

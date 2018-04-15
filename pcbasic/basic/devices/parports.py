@@ -19,7 +19,7 @@ except Exception:
 from ...compat import line_print
 from ..base import error
 from ..codepage import CONTROL
-from . import devicebase
+from .devicebase import Device, DeviceSettings, TextFileBase, parse_protocol_string
 
 
 # flush triggers
@@ -29,7 +29,7 @@ TRIGGERS = {'page': b'\f', 'line': b'\n', 'close': None, '': None}
 ###############################################################################
 # LPT ports
 
-class LPTDevice(devicebase.Device):
+class LPTDevice(Device):
     """Parallel port or printer device (LPTn:) """
 
     # LPT1 can be opened as RANDOM
@@ -39,8 +39,8 @@ class LPTDevice(devicebase.Device):
 
     def __init__(self, arg, default_stream, codepage):
         """Initialise LPTn: device."""
-        devicebase.Device.__init__(self)
-        addr, val = devicebase.parse_protocol_string(arg)
+        Device.__init__(self)
+        addr, val = parse_protocol_string(arg)
         self.stream = default_stream
         if addr == u'FILE':
             try:
@@ -66,7 +66,7 @@ class LPTDevice(devicebase.Device):
         elif val:
             logging.warning(u'Could not attach %s to LPT device', arg)
         # column counter is the same across all LPT files
-        self.device_settings = devicebase.DeviceSettings()
+        self.device_settings = DeviceSettings()
         if self.stream:
             self.device_file = LPTFile(self.stream, self.device_settings)
 
@@ -84,7 +84,7 @@ class LPTDevice(devicebase.Device):
 ###############################################################################
 # file on LPT device
 
-class LPTFile(devicebase.TextFileBase):
+class LPTFile(TextFileBase):
     """LPTn: device - line printer or parallel port."""
 
     def __init__(self, stream, settings, bug=False):
@@ -92,7 +92,7 @@ class LPTFile(devicebase.TextFileBase):
         # GW-BASIC quirk - different LPOS behaviour on LPRINT and LPT1 files
         self._bug = bug
         self._settings = settings
-        devicebase.TextFileBase.__init__(self, stream, filetype='D', mode='A')
+        TextFileBase.__init__(self, stream, filetype='D', mode='A')
         # default width is 80
         # width=255 means line wrap
         self.width = 80
