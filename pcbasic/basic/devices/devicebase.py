@@ -253,7 +253,7 @@ class TextFileBase(RawFile):
         self.char, self.last = b'', b''
 
     def read(self, num):
-        """Read num characters as string."""
+        """Read num characters."""
         s = []
         while True:
             if (num > -1 and len(s) >= num):
@@ -300,7 +300,7 @@ class TextFileBase(RawFile):
         s_width = 0
         newline = False
         # find width of first line in s
-        for c in str(s):
+        for c in s:
             if c in (b'\r', b'\n'):
                 newline = True
                 break
@@ -326,7 +326,7 @@ class TextFileBase(RawFile):
                         self.col = 1
 
     def write_line(self, s=''):
-        """Write string and follow with CR or CRLF."""
+        """Write string and follow with device-standard line break."""
         self.write(s + b'\r')
 
     def eof(self):
