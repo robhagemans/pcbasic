@@ -515,7 +515,7 @@ class Files(object):
             file_obj = self.kybd_file
         list(args)
         # read the chars
-        word = file_obj.input_chars(num)
+        word = file_obj.read(num)
         if len(word) < num:
             # input past end
             raise error.BASICError(error.INPUT_PAST_END)

@@ -89,14 +89,14 @@ class TextFile(TextFileBase):
 
     def read_one(self):
         """Read one character, replacing CR LF with CR."""
-        c = self.input_chars(1)
+        c = self.read(1)
         if not c:
             return c
         # report CRLF as CR
         # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
         if (c == b'\r' and self.last != b'\n') and self.next_char == b'\n':
             last, char = self.last, self.char
-            self.input_chars(1)
+            self.read(1)
             self.last, self.char = last, char
         return c
 
@@ -216,17 +216,13 @@ class RandomFile(RawFile):
             self._locks.release(self.number)
             self._locks.close_file(self.number)
 
-    def read(self, num=-1):
-        """Stubbed out read()."""
-        raise NotImplementedError()
-
     ##########################################################################
     # field text file operations
 
-    def input_chars(self, num):
+    def read(self, num):
         """Read a number of characters from the field buffer."""
         with self._field_file.use_mode(b'I'):
-            return self._field_file.input_chars(num)
+            return self._field_file.read(num)
 
     def input_entry(self, typechar, allow_past_end):
         """Read a number or string entry for INPUT """

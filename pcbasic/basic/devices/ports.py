@@ -328,7 +328,7 @@ class COMFile(devicebase.TextFileBase):
         devicebase.TextFileBase.close(self)
         self.is_open = False
 
-    def input_chars(self, num):
+    def read(self, num):
         """Read a number of characters."""
         self._queues.wait()
         s, c = [], b''
@@ -343,11 +343,11 @@ class COMFile(devicebase.TextFileBase):
         """Read a character, replacing CR LF with CR."""
         s = []
         while len(s) < 1:
-            c = self.input_chars(1)
+            c = self.read(1)
             # report CRLF as CR
             # are we correct to ignore self._linefeed on input?
             if (c == b'\n' and self.last == b'\r'):
-                c = self.input_chars(1)
+                c = self.read(1)
             if c:
                 s.append(c)
         return b''.join(s)

@@ -194,15 +194,15 @@ class RawFile(object):
 #################################################################################
 # Text file base
 
-# text interface: file interface (except read) +
+# text interface: file interface +
 #   col
 #   width
 #   set_width(self, new_width=255)
 #
 #   read_line(self)
+#   input_entry(self, typechar, allow_past_end)
 #   write_line(self, s='')
 #   eof(self)
-#   input_entry(self, typechar, allow_past_end)
 #   lof(self)
 #   loc(self)
 #
@@ -245,7 +245,7 @@ class TextFileBase(RawFile):
                 self.next_char = b''
         self.char, self.last = b'', b''
 
-    def input_chars(self, num):
+    def read(self, num):
         """Read num characters as string."""
         s = []
         while True:
@@ -261,13 +261,9 @@ class TextFileBase(RawFile):
                         self._fhandle.read(1), self.next_char, self.char)
         return b''.join(s)
 
-    def read(self, num=-1):
-        """Stubbed out read()."""
-        raise NotImplementedError()
-
     def read_one(self):
         """Read one character, converting device line ending to b'\r', EOF to b''."""
-        return self.input_chars(1)
+        return self.read(1)
 
     def read_line(self):
         """\
@@ -400,7 +396,7 @@ class TextFileBase(RawFile):
                 c = self.read_one()
             else:
                 # no CRLF replacement inside quotes.
-                c = self.input_chars(1)
+                c = self.read(1)
         # if separator was a whitespace char or closing quote
         # skip trailing whitespace before any comma or hard separator
         if c and c in self.whitespace_input or (quoted and c == b'"'):
@@ -444,7 +440,7 @@ def input_entry_realtime(self, typechar, allow_past_end):
     if not c and not allow_past_end:
         raise error.BASICError(error.INPUT_PAST_END)
     # on reading from a KYBD: file, control char replacement takes place
-    # which means we need to use read_one() not input_chars()
+    # which means we need to use read_one() not read()
     parsing_trail = False
     while c and not (c in b',\r' and not quoted):
         if c == b'"' and quoted:
@@ -519,7 +515,7 @@ class KYBDFile(TextFileBase):
         inst._is_master = False
         return inst
 
-    def input_chars(self, num):
+    def read(self, num):
         """Read a number of characters (INPUT$)."""
         chars = b''
         while len(chars) < num:
