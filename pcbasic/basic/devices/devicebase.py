@@ -207,6 +207,10 @@ class RawFile(object):
 #   loc(self)
 #
 #   internal use: read_one()
+#   internal use: soft_sep
+
+# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
+INPUT_WHITESPACE = b' \0\n'
 
 
 class DeviceSettings(object):
@@ -263,6 +267,7 @@ class TextFileBase(RawFile):
 
     def read_one(self):
         """Read one character, converting device line ending to b'\r', EOF to b''."""
+        # for use by input_entry() and read_line() only
         return self.read(1)
 
     def read_line(self):
@@ -334,8 +339,6 @@ class TextFileBase(RawFile):
 
     # support for INPUT#
 
-    # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
-    whitespace_input = b' \0\n'
     # numbers read from file can be separated by spaces too
     soft_sep = b' '
 
@@ -355,7 +358,7 @@ class TextFileBase(RawFile):
         """Read a number or string entry for INPUT """
         word, blanks = b'', b''
         # fix readahead buffer (self.next_char)
-        last = self._skip_whitespace(self.whitespace_input)
+        last = self._skip_whitespace(INPUT_WHITESPACE)
         # read first non-whitespace char
         c = self.read_one()
         # LF escapes quotes
@@ -382,7 +385,7 @@ class TextFileBase(RawFile):
             elif c == b'\0':
                 # NUL is dropped even within quotes
                 pass
-            elif c in self.whitespace_input and not quoted:
+            elif c in INPUT_WHITESPACE and not quoted:
                 # ignore whitespace in numbers, except soft separators
                 # include internal whitespace in strings
                 if typechar == values.STR:
@@ -399,7 +402,7 @@ class TextFileBase(RawFile):
                 c = self.read(1)
         # if separator was a whitespace char or closing quote
         # skip trailing whitespace before any comma or hard separator
-        if c and c in self.whitespace_input or (quoted and c == b'"'):
+        if c and c in INPUT_WHITESPACE or (quoted and c == b'"'):
             self._skip_whitespace(b' ')
             if (self.next_char in b',\r'):
                 c = self.read_one()
@@ -454,7 +457,7 @@ def input_entry_realtime(self, typechar, allow_past_end):
         elif c == b'\0':
             # NUL is dropped even within quotes
             pass
-        elif c in self.whitespace_input and not quoted:
+        elif c in INPUT_WHITESPACE and not quoted:
             # ignore whitespace in numbers, except soft separators
             # include internal whitespace in strings
             if typechar == values.STR:
@@ -467,7 +470,7 @@ def input_entry_realtime(self, typechar, allow_past_end):
         # there should be KYBD: control char replacement here even if quoted
         c = self.read_one()
         if parsing_trail:
-            if c not in self.whitespace_input:
+            if c not in INPUT_WHITESPACE:
                 if c not in (b',', b'\r'):
                     self._input_last = c
                 break
@@ -478,18 +481,19 @@ def input_entry_realtime(self, typechar, allow_past_end):
 
 ###############################################################################
 
+
+# replace some eascii codes with control characters
+KYBD_REPLACE = {
+    ea.HOME: b'\xFF\x0B', ea.UP: b'\xFF\x1E', ea.PAGEUP: b'\xFE',
+    ea.LEFT: b'\xFF\x1D', ea.RIGHT: b'\xFF\x1C', ea.END: b'\xFF\x0E',
+    ea.DOWN: b'\xFF\x1F', ea.PAGEDOWN: b'\xFE',
+    ea.DELETE: b'\xFF\x7F', ea.INSERT: b'\xFF\x12',
+    ea.F1: b'', ea.F2: b'', ea.F3: b'', ea.F4: b'', ea.F5: b'',
+    ea.F6: b'', ea.F7: b'', ea.F8: b'', ea.F9: b'', ea.F10: b'',
+}
+
 class KYBDFile(TextFileBase):
     """KYBD device: keyboard."""
-
-    # replace some eascii codes with control characters
-    _input_replace = {
-        ea.HOME: b'\xFF\x0B', ea.UP: b'\xFF\x1E', ea.PAGEUP: b'\xFE',
-        ea.LEFT: b'\xFF\x1D', ea.RIGHT: b'\xFF\x1C', ea.END: b'\xFF\x0E',
-        ea.DOWN: b'\xFF\x1F', ea.PAGEDOWN: b'\xFE',
-        ea.DELETE: b'\xFF\x7F', ea.INSERT: b'\xFF\x12',
-        ea.F1: b'', ea.F2: b'', ea.F3: b'', ea.F4: b'', ea.F5: b'',
-        ea.F6: b'', ea.F7: b'', ea.F8: b'', ea.F9: b'', ea.F10: b'',
-        }
 
     col = 0
 
@@ -519,8 +523,10 @@ class KYBDFile(TextFileBase):
         """Read a number of characters (INPUT$)."""
         chars = b''
         while len(chars) < num:
-            chars += b''.join(b'\0' if c in self._input_replace else c if len(c) == 1 else b''
-                              for c in self._keyboard.read_bytes_kybd_file(num-len(chars)))
+            chars += b''.join(
+                b'\0' if c in KYBD_REPLACE else c if len(c) == 1 else b''
+                for c in self._keyboard.read_bytes_kybd_file(num-len(chars))
+            )
         return chars
 
     def read_one(self):
@@ -529,9 +535,13 @@ class KYBDFile(TextFileBase):
         while len(chars) < 1:
             # note that we need string length, not list length
             # as read_bytes_kybd_file can return multi-byte eascii codes
-            chars += b''.join(self._input_replace.get(c, c)
-                              for c in self._keyboard.read_bytes_kybd_file(1))
+            chars += b''.join(
+                KYBD_REPLACE.get(c, c)
+                for c in self._keyboard.read_bytes_kybd_file(1)
+            )
         return chars
+
+    # read_line: inherited from TextFileBase
 
     def lof(self):
         """LOF for KYBD: is 1."""
@@ -559,8 +569,7 @@ class KYBDFile(TextFileBase):
 ###############################################################################
 
 class SCRNFile(RawFile):
-    """SCRN: file, allows writing to the screen as a text file.
-        SCRN: files work as a wrapper text file."""
+    """SCRN: file, allows writing to the screen as a text file."""
 
     def __init__(self, display):
         """Initialise screen file."""
@@ -595,14 +604,15 @@ class SCRNFile(RawFile):
         s_width = 0
         newline = False
         # find width of first line in s
-        for c in str(s):
+        for c in s:
             if c in (b'\r', b'\n'):
                 newline = True
                 break
             if c == b'\b':
-                # for lpt1 and files, nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
+                # for lpt1 and files, nonprinting chars are not counted in LPOS;
+                # but chr$(8) will take a byte out of the buffer
                 s_width -= 1
-            elif ord(c) >= 32:
+            elif c >= b' ':
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
         if can_break and (self.width != 255 and self.screen.current_row != self.screen.mode.height
@@ -610,7 +620,7 @@ class SCRNFile(RawFile):
             self.screen.write_line(do_echo=do_echo)
             self._col = 1
         cwidth = self.screen.mode.width
-        for c in str(s):
+        for c in s:
             if self.width <= cwidth and self.col > self.width:
                 self.screen.write_line(do_echo=do_echo)
                 self._col = 1
