@@ -334,7 +334,7 @@ class COMFile(devicebase.TextFileBase):
         s, c = [], b''
         while not (num > -1 and len(s) >= num):
             with safe_serial():
-                c, self.last = self.fhandle.read(1), c
+                c, self.last = self._fhandle.read(1), c
             if c:
                 s.append(c)
         return b''.join(s)
@@ -373,7 +373,7 @@ class COMFile(devicebase.TextFileBase):
         if self._linefeed:
             s = s.replace(b'\r', b'\r\n')
         with safe_serial():
-            self.fhandle.write(s)
+            self._fhandle.write(s)
 
     def get(self, num):
         """Read a record - GET."""
@@ -388,7 +388,7 @@ class COMFile(devicebase.TextFileBase):
     def loc(self):
         """LOC: Returns number of chars waiting to be read."""
         with safe_serial():
-            return self.fhandle.in_waiting
+            return self._fhandle.in_waiting
 
     def eof(self):
         """EOF: no chars waiting."""
@@ -398,7 +398,7 @@ class COMFile(devicebase.TextFileBase):
     def lof(self):
         """Returns number of bytes free in buffer."""
         with safe_serial():
-            return max(0, self._serial_in_size - self.fhandle.in_waiting)
+            return max(0, self._serial_in_size - self._fhandle.in_waiting)
 
     input_entry = devicebase.input_entry_realtime
 

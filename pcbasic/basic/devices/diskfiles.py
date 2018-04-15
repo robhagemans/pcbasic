@@ -74,14 +74,14 @@ class TextFile(TextFileBase):
         # in append mode, we need to start at end of file
         if self.mode == b'A':
             with safe_io():
-                self.fhandle.seek(0, 2)
+                self._fhandle.seek(0, 2)
 
     def close(self):
         """Close text file."""
         if self.mode in (b'O', b'A'):
             # write EOF char
             with safe_io():
-                self.fhandle.write(b'\x1a')
+                self._fhandle.write(b'\x1a')
         TextFileBase.close(self)
         if self._locks is not None:
             self._locks.release(self.number)
@@ -122,16 +122,16 @@ class TextFile(TextFileBase):
         """Get file pointer (LOC)."""
         with safe_io():
             if self.mode == b'I':
-                return max(1, (127+self.fhandle.tell()) / 128)
-            return self.fhandle.tell() / 128
+                return max(1, (127+self._fhandle.tell()) / 128)
+            return self._fhandle.tell() / 128
 
     def lof(self):
         """Get length of file (LOF)."""
         with safe_io():
-            current = self.fhandle.tell()
-            self.fhandle.seek(0, 2)
-            lof = self.fhandle.tell()
-            self.fhandle.seek(current)
+            current = self._fhandle.tell()
+            self._fhandle.seek(0, 2)
+            lof = self._fhandle.tell()
+            self._fhandle.seek(current)
         return lof
 
     def lock(self, start, stop):
@@ -158,7 +158,7 @@ class FieldFile(TextFile):
 
     def reset(self):
         """Reset file to start of field."""
-        self.fhandle.seek(0)
+        self._fhandle.seek(0)
 
     @contextmanager
     def use_mode(self, mode):
@@ -170,18 +170,18 @@ class FieldFile(TextFile):
     def _switch_mode(self, new_mode):
         """Switch to input or output mode and fix readahaed buffer."""
         if new_mode == b'I' and self.mode == b'O':
-            self.flush()
-            self.next_char = self.fhandle.read(1)
+            self._flush()
+            self.next_char = self._fhandle.read(1)
             self.mode = b'I'
         elif new_mode == b'O' and self.mode == b'I':
-            self.fhandle.seek(-1, 1)
+            self._fhandle.seek(-1, 1)
             self.mode = b'O'
 
     def _check_overflow(self):
         """Check for FIELD OVERFLOW."""
         write = self.mode == b'O'
         # FIELD overflow happens if last byte in record has been read or written
-        if self.fhandle.tell() > self._reclen + write - 1:
+        if self._fhandle.tell() > self._reclen + write - 1:
             raise error.BASICError(error.FIELD_OVERFLOW)
 
 
@@ -207,7 +207,7 @@ class RandomFile(RawFile):
         self._field_file = FieldFile(field, reclen)
         # position at start of file
         self._recpos = 0
-        self.fhandle.seek(0)
+        self._fhandle.seek(0)
 
     def close(self):
         """Close random-access file."""
@@ -265,7 +265,7 @@ class RandomFile(RawFile):
             contents = b'\0' * self.reclen
         else:
             with safe_io():
-                contents = self.fhandle.read(self.reclen)
+                contents = self._fhandle.read(self.reclen)
         # take contents and pad with NULL to required size
         self._field.buffer[:] = contents + b'\0' * (self.reclen - len(contents))
         # reset field text file loc
@@ -277,17 +277,17 @@ class RandomFile(RawFile):
         current_length = self.lof()
         with safe_io():
             if self._recpos > current_length:
-                self.fhandle.seek(0, 2)
+                self._fhandle.seek(0, 2)
                 numrecs = self._recpos - current_length
-                self.fhandle.write(b'\0' * numrecs * self.reclen)
-            self.fhandle.write(self._field.buffer)
+                self._fhandle.write(b'\0' * numrecs * self.reclen)
+            self._fhandle.write(self._field.buffer)
         self._recpos += 1
 
     def set_pos(self, newpos):
         """Set current record number."""
         # first record is newpos number 1
         with safe_io():
-            self.fhandle.seek((newpos-1) * self.reclen)
+            self._fhandle.seek((newpos-1) * self.reclen)
         self._recpos = newpos - 1
 
     def loc(self):
@@ -297,10 +297,10 @@ class RandomFile(RawFile):
     def lof(self):
         """Get length of file, in bytes, for LOF."""
         with safe_io():
-            current = self.fhandle.tell()
-            self.fhandle.seek(0, 2)
-            lof = self.fhandle.tell()
-            self.fhandle.seek(current)
+            current = self._fhandle.tell()
+            self._fhandle.seek(0, 2)
+            lof = self._fhandle.tell()
+            self._fhandle.seek(current)
         return lof
 
     def lock(self, start, stop):

@@ -166,7 +166,7 @@ class CASTextFile(devicebase.TextFileBase):
         if self.mode == 'O':
             self.write('\0')
         try:
-            self.fhandle.close()
+            self._fhandle.close()
         except EnvironmentError:
             pass
         devicebase.TextFileBase.close(self)
@@ -194,9 +194,8 @@ class CassetteStream(object):
             self.is_open = False
             self.rwmode = ''
 
-    def flush(self):
+    def _flush(self):
         """Flush buffers (dummy)."""
-        pass
 
     def close_tape(self):
         """Eject the tape."""

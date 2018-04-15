@@ -104,14 +104,14 @@ class LPTFile(devicebase.TextFileBase):
         """Set file width."""
         self.width = new_width
 
-    def flush(self):
+    def _flush(self):
         """Flush the buffer to the underlying stream."""
 
     def write(self, s, can_break=True):
         """Write a string to the printer buffer."""
         for c in bytes(s):
             # don't replace CR or LF with CRLF
-            self.fhandle.write(c)
+            self._fhandle.write(c)
             # col reverts to 1 on CR (\r) and LF (\n) but not FF (\f)
             if c in (b'\n', b'\r'):
                 self._settings.col = 1
@@ -125,7 +125,7 @@ class LPTFile(devicebase.TextFileBase):
             # width 255 means wrapping enabled
             if can_break and self.width != 255:
                 if self._settings.col > self.width:
-                    self.fhandle.write(b'\r\n')
+                    self._fhandle.write(b'\r\n')
                     # GW-BASIC quirk: on LPT1 files the LPOS goes to width+1, then wraps to 2
                     if not self._bug:
                         self._settings.col = 1
@@ -151,7 +151,7 @@ class LPTFile(devicebase.TextFileBase):
 
     def do_print(self):
         """Actually print, reset column position."""
-        self.fhandle.flush()
+        self._fhandle.flush()
         self._settings.col = 1
         self.col = 1
 
@@ -235,7 +235,7 @@ class ParallelStream(object):
         """Initialise stream from pickling dict."""
         self.__init__(st['port'])
 
-    def flush(self):
+    def _flush(self):
         """No buffer to flush."""
         pass
 

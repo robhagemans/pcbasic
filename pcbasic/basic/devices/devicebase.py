@@ -144,10 +144,8 @@ class KYBDDevice(Device):
 #   input_chars(self, num)
 #   read(self, num=-1)
 #   write(self, s)
-#   flush(self)
 #   filetype
 #   mode
-#   ? fhandle
 
 
 class DeviceSettings(object):
@@ -181,7 +179,7 @@ class RawFile(object):
 
     def __init__(self, fhandle, filetype, mode):
         """Setup the basic properties of the file."""
-        self.fhandle = fhandle
+        self._fhandle = fhandle
         self.filetype = filetype
         self.mode = mode.upper()
 
@@ -196,27 +194,27 @@ class RawFile(object):
     def close(self):
         """Close the file."""
         with safe_io():
-            self.fhandle.close()
+            self._fhandle.close()
 
     def input_chars(self, num):
         """Read a number of characters."""
         with safe_io():
-            return self.fhandle.read(num)
+            return self._fhandle.read(num)
 
     def read(self, num=-1):
         """Read num chars. If num==-1, read all available."""
         with safe_io():
-            return self.fhandle.read(num)
+            return self._fhandle.read(num)
 
     def write(self, s):
         """Write string to file."""
         with safe_io():
-            self.fhandle.write(s)
+            self._fhandle.write(s)
 
-    def flush(self):
+    def _flush(self):
         """Write contents of buffers to file."""
         with safe_io():
-            self.fhandle.flush()
+            self._fhandle.flush()
 
 
 #################################################################################
@@ -250,7 +248,7 @@ class TextFileBase(RawFile):
         # Random files are derived from text files and start in 'I' operating mode
         if self.mode in b'IR' and not first_char:
             try:
-                self.next_char = self.fhandle.read(1)
+                self.next_char = self._fhandle.read(1)
             except (EnvironmentError, ValueError):
                 # only catching ValueError here because that's what Serial raises
                 self.next_char = b''
@@ -269,7 +267,7 @@ class TextFileBase(RawFile):
             s.append(self.next_char)
             with safe_io():
                 self.next_char, self.char, self.last = (
-                        self.fhandle.read(1), self.next_char, self.char)
+                        self._fhandle.read(1), self.next_char, self.char)
         return b''.join(s)
 
     def read(self, num=-1):
@@ -284,7 +282,6 @@ class TextFileBase(RawFile):
         """\
             Read a single line until line break or 255 characters.
             Output line and line break character
-            Return None for string, '' for cr if EOF and nothing read(input past end).
             Return None for CR if line ended due to 255-char length limit
             Return '' for CR if EOF
         """
@@ -315,16 +312,16 @@ class TextFileBase(RawFile):
                 s_width += 1
         if can_break and self.width != 255 and self.col != 1 and self.col-1 + s_width > self.width and not newline:
             self.write_line()
-            self.flush()
+            self._flush()
             self.col = 1
         for c in s:
             # don't replace CR or LF with CRLF when writing to files
             if c in ('\r',):
-                self.fhandle.write(c)
-                self.flush()
+                self._fhandle.write(c)
+                self._flush()
                 self.col = 1
             else:
-                self.fhandle.write(c)
+                self._fhandle.write(c)
                 # nonprinting characters including tabs are not counted for WIDTH
                 if ord(c) >= 32:
                     self.col += 1
@@ -430,7 +427,7 @@ class InputTextFile(TextFileBase):
     """Handle INPUT from console."""
 
     # spaces do not separate numbers on console INPUT
-    soft_sep = ''
+    soft_sep = b''
 
     def __init__(self, line):
         """Initialise InputStream."""
@@ -444,7 +441,7 @@ def input_entry_realtime(self, typechar, allow_past_end):
     """Read a number or string entry from KYBD: or COMn: for INPUT#."""
     word, blanks = b'', b''
     if self._input_last:
-        c, self._input_last = self._input_last, ''
+        c, self._input_last = self._input_last, b''
     else:
         c = self.read_one()
     # LF escapes quotes
@@ -636,7 +633,7 @@ class SCRNFile(RawFile):
             else:
                 self._col += 1
 
-    def write_line(self, inp=''):
+    def write_line(self, inp=b''):
         """Write a string to the screen and follow by CR."""
         self.write(inp)
         self.screen.write_line(do_echo=self._is_master)
