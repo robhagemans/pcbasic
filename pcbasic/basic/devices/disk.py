@@ -18,6 +18,7 @@ import string
 import random
 import ntpath
 import logging
+import codecs
 
 from ..base import error
 from ..codepage import CONTROL
@@ -723,7 +724,9 @@ class CodecReader(StreamWrapperBase):
     def __init__(self, stream, codepage, encoding):
         """Wrap the stream."""
         # don't convert universal newline (input setting)
-        self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='\r\n')
+        #self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='\r\n')
+        # in Python 2, io.TextIOWrapper doesn't work on file objects such as sys.stdout
+        self._stream = codecs.getreader(encoding)(stream, errors='replace')
         self._buffer = b''
         self._codepage = codepage
         self._encoding = encoding
@@ -755,7 +758,9 @@ class CodecWriter(StreamWrapperBase):
         self._encoding = encoding
         self._converter = codepage.get_converter(preserve=CONTROL  + (b'\x1A',))
         # don't convert universal newline (output setting)
-        self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='')
+        #self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='')
+        # in Python 2, io.TextIOWrapper doesn't work on file objects such as sys.stdout
+        self._stream = codecs.getwriter(encoding)(stream, errors='replace')
 
     def write(self, s):
         """Write to stream with codepage conversion."""
