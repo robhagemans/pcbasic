@@ -235,14 +235,14 @@ class TextFileBase(RawFile):
     # for INPUT# - numbers read from file can be separated by spaces too
     soft_sep = b' '
 
-    def __init__(self, fhandle, filetype, mode, first_char=b''):
+    def __init__(self, fhandle, filetype, mode):
         """Setup the basic properties of the file."""
         RawFile.__init__(self, fhandle, filetype, mode)
         # width=255 means line wrap
         self.width = 255
         self.col = 1
         # allow first char to be specified (e.g. already read)
-        self._readahead = list(first_char)
+        self._readahead = []
         self._current, self._previous = b'', b''
 
     # readable files
@@ -516,8 +516,7 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
 
     def __init__(self, keyboard, display):
         """Initialise keyboard file."""
-        # use mode = 'A' to avoid needing a first char from nullstream
-        TextFileBase.__init__(self, nullstream(), filetype=b'D', mode=b'A')
+        TextFileBase.__init__(self, nullstream(), filetype=b'D', mode=b'I')
         # buffer for the separator character that broke the last INPUT# field
         # to be attached to the next
         self._input_last = b''

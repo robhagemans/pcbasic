@@ -133,6 +133,7 @@ class CASDevice(object):
         """Suppress Skipped and Found messages."""
         self.is_quiet = is_quiet
 
+
 #################################################################################
 # Cassette files
 

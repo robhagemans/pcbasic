@@ -77,7 +77,7 @@ class TextFile(TextFileBase, InputMixin):
     def __init__(
             self, fhandle, filetype, number, name, mode=b'A', access=b'RW', lock=b'', locks=None):
         """Initialise text file object."""
-        TextFileBase.__init__(self, fhandle, filetype, mode, b'')
+        TextFileBase.__init__(self, fhandle, filetype, mode)
         # locking members
         self.number = number
         self.name = name

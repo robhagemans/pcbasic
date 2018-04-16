@@ -310,9 +310,7 @@ class COMFile(TextFileBase, RealTimeInputMixin):
 
     def __init__(self, stream, field, linefeed, serial_in_size, queues):
         """Initialise COMn: file."""
-        # prevent readahead by providing non-empty first char
-        # we're ignoring self.char and self.next_char in this class
-        TextFileBase.__init__(self, stream, b'D', b'R', first_char=b'')
+        TextFileBase.__init__(self, stream, b'D', b'R')
         self._queues = queues
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self._field = field
