@@ -144,10 +144,6 @@ class CASBinaryFile(RawFile):
         RawFile.__init__(self, fhandle, filetype, mode)
         self.seg, self.offset, self.length = seg, offset, length
 
-    def close(self):
-        """Close a file on tape."""
-        RawFile.close(self)
-
 
 class CASTextFile(TextFileBase, InputMixin):
     """Text file on CASn: device."""

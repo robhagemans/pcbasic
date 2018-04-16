@@ -206,7 +206,7 @@ class RawFile(object):
 #   lof(self)
 #   loc(self)
 #
-#   internal use: read_one()
+#   internal use: read_one(), peek()
 #   internal use: soft_sep
 
 # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
@@ -235,38 +235,41 @@ class TextFileBase(RawFile):
     # for INPUT# - numbers read from file can be separated by spaces too
     soft_sep = b' '
 
-    def __init__(self, fhandle, filetype, mode, first_char=''):
+    def __init__(self, fhandle, filetype, mode, first_char=b''):
         """Setup the basic properties of the file."""
         RawFile.__init__(self, fhandle, filetype, mode)
         # width=255 means line wrap
         self.width = 255
         self.col = 1
         # allow first char to be specified (e.g. already read)
-        self.next_char = first_char
-        # Random files are derived from text files and start in 'I' operating mode
-        if self.mode in b'IR' and not first_char:
-            try:
-                self.next_char = self._fhandle.read(1)
-            except (EnvironmentError, ValueError):
-                # only catching ValueError here because that's what Serial raises
-                self.next_char = b''
-        self.char, self.last = b'', b''
+        self._readahead = list(first_char)
+        self._current, self._previous = b'', b''
+
+    # readable files
+
+    def peek(self, num):
+        """Return next num characters to be read; never returns more, fewer only at EOF."""
+        to_read = num - len(self._readahead)
+        if to_read > 0:
+            with safe_io():
+                self._readahead.extend(list(self._fhandle.read(to_read)))
+        return b''.join(self._readahead[:num])
 
     def read(self, num):
         """Read num characters."""
-        s = []
-        while True:
-            if (num > -1 and len(s) >= num):
-                break
-            # check for \x1A (EOF char will actually stop further reading
-            # (that's true in disk text files but not on COM devices)
-            if self.next_char in (b'\x1a', b''):
-                break
-            s.append(self.next_char)
-            with safe_io():
-                self.next_char, self.char, self.last = (
-                        self._fhandle.read(1), self.next_char, self.char)
-        return b''.join(s)
+        output = self.peek(num)
+        # check for \x1A - EOF char will actually stop further reading
+        # (that's true in disk text files but not on COM devices)
+        if b'\x1A' in output:
+            output = output[:output.index(b'\x1A')]
+        # drop read chars from buffer
+        self._readahead = self._readahead[len(output):]
+        if len(output) <= 1:
+            self._previous = self._current
+        else:
+            self._previous = output[-2]
+        self._current = output[-1:]
+        return output
 
     def read_one(self):
         """Read one character, converting device line ending to b'\r', EOF to b''."""
@@ -290,9 +293,11 @@ class TextFileBase(RawFile):
                 break
             out.append(c)
             if len(out) == 255:
-                c = b'\r' if self.next_char == b'\r' else None
+                c = b'\r' if self.peek(1) == b'\r' else None
                 break
         return b''.join(out), c
+
+    # writeable files
 
     def write(self, s, can_break=True):
         """Write the string s to the file, taking care of width settings."""
@@ -329,16 +334,18 @@ class TextFileBase(RawFile):
         """Write string and follow with device-standard line break."""
         self.write(s + b'\r')
 
+    # available for read & write (but not always useful)
+
+    def set_width(self, new_width=255):
+        """Set file width."""
+        self.width = new_width
+
     def eof(self):
         """Check for end of file EOF."""
         # for EOF(i)
         if self.mode in (b'A', b'O'):
             return False
-        return self.next_char in (b'', b'\x1a')
-
-    def set_width(self, new_width=255):
-        """Set file width."""
-        self.width = new_width
+        return self.peek(1) in (b'', b'\x1a')
 
 
 class InputMixin(object):
@@ -347,12 +354,16 @@ class InputMixin(object):
     def _skip_whitespace(self, whitespace):
         """Skip spaces and line feeds and NUL; return last whitespace char """
         c = b''
-        while self.next_char and self.next_char in whitespace:
+        while True:
+            next_char = self.peek(1)
+            if not next_char or next_char not in whitespace:
+                break
             # drop whitespace char
             c = self.read_one()
             # LF causes following CR to be dropped
-            if c == b'\n' and self.next_char == b'\r':
+            if c == b'\n' and self.peek(1) == b'\r':
                 # LFCR: drop the CR, report as LF
+                # on disk devices, this means LFCRLF is reported as LF
                 self.read_one()
         return c
 
@@ -406,7 +417,7 @@ class InputMixin(object):
         # skip trailing whitespace before any comma or hard separator
         if c and c in INPUT_WHITESPACE or (quoted and c == b'"'):
             self._skip_whitespace(b' ')
-            if (self.next_char in b',\r'):
+            if (self.peek(1) in b',\r'):
                 c = self.read_one()
         # file position is at one past the separator char
         return word, c
@@ -525,6 +536,10 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
         inst._is_master = False
         return inst
 
+    def peek(self, num):
+        """No peeking on real-time input."""
+        return b''
+
     def read(self, num):
         """Read a number of characters (INPUT$)."""
         chars = b''
@@ -547,7 +562,7 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
             )
         return chars
 
-    # read_line: inherited from TextFileBase
+    # read_line: inherited from TextFileBase, this calls peek()
 
     def lof(self):
         """LOF for KYBD: is 1."""

@@ -312,8 +312,7 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         """Initialise COMn: file."""
         # prevent readahead by providing non-empty first char
         # we're ignoring self.char and self.next_char in this class
-        TextFileBase.__init__(self, stream, b'D', b'R', first_char=b'DUMMY')
-        self.next_char = ''
+        TextFileBase.__init__(self, stream, b'D', b'R', first_char=b'')
         self._queues = queues
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self._field = field
@@ -329,29 +328,30 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         TextFileBase.close(self)
         self.is_open = False
 
+    def peek(self, num):
+        """No peeking on real-time input."""
+        return b''
+
     def read(self, num):
         """Read a number of characters."""
-        self._queues.wait()
-        s, c = [], b''
-        while not (num > -1 and len(s) >= num):
+        s, self._current = [], b''
+        while len(s) < num:
+            self._queues.wait()
             with safe_serial():
-                c, self.last = self._fhandle.read(1), c
-            if c:
-                s.append(c)
+                # non-blocking read
+                self._current, self._previous = self._fhandle.read(1), self._current
+            if self._current:
+                s.append(self._current)
         return b''.join(s)
 
     def read_one(self):
         """Read a character, replacing CR LF with CR."""
-        s = []
-        while len(s) < 1:
+        c = self.read(1)
+        # report CRLF as CR
+        # are we correct to ignore self._linefeed on input?
+        if (c == b'\n' and self._previous == b'\r'):
             c = self.read(1)
-            # report CRLF as CR
-            # are we correct to ignore self._linefeed on input?
-            if (c == b'\n' and self.last == b'\r'):
-                c = self.read(1)
-            if c:
-                s.append(c)
-        return b''.join(s)
+        return c
 
     def read_line(self):
         """Blocking read line from the port (not the FIELD buffer!)."""

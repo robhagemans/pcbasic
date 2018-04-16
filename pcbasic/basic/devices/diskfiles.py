@@ -15,6 +15,19 @@ from ..base import error
 from .devicebase import RawFile, TextFileBase, InputMixin, safe_io, TYPE_TO_MAGIC
 
 
+# binary file interface: file interface +
+#   seg
+#   offset
+#   length
+
+# locking interface
+#   number
+#   access
+#   lock_list
+#   lock_type
+#   lock()
+
+
 class BinaryFile(RawFile):
     """File class for binary (B, P, M) files on disk device."""
 
@@ -25,6 +38,7 @@ class BinaryFile(RawFile):
         # don't lock binary files
         # we need the Locks object to register file as open
         self.number = number
+        # FIXME: .lock is a method elsewhere, should this be lock_list or lock_type?
         self.lock = b''
         self.access = b'RW'
         self._locks = locks
@@ -94,10 +108,10 @@ class TextFile(TextFileBase, InputMixin):
             return c
         # report CRLF as CR
         # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
-        if (c == b'\r' and self.last != b'\n') and self.next_char == b'\n':
-            last, char = self.last, self.char
+        if (c == b'\r' and self._previous != b'\n') and self.peek(1) == b'\n':
+            last, char = self._previous, self._current
             self.read(1)
-            self.last, self.char = last, char
+            self._previous, self._current = last, char
         return c
 
     def read_line(self):
@@ -105,12 +119,12 @@ class TextFile(TextFileBase, InputMixin):
         s = []
         while True:
             c = self.read_one()
-            if not c or (c == b'\r' and self.last != b'\n'):
+            if not c or (c == b'\r' and self._previous != b'\n'):
                 # break on CR, CRLF but allow LF, LFCR to pass
                 break
             s.append(c)
             if len(s) == 255:
-                c = b'\r' if self.next_char == b'\r' else None
+                c = b'\r' if self.peek(1) == b'\r' else None
                 break
         return b''.join(s), c
 
@@ -122,7 +136,8 @@ class TextFile(TextFileBase, InputMixin):
         """Get file pointer (LOC)."""
         with safe_io():
             if self.mode == b'I':
-                return max(1, (127+self._fhandle.tell()) / 128)
+                tell = self._fhandle.tell() - len(self._readahead)
+                return max(1, (127+tell) / 128)
             return self._fhandle.tell() / 128
 
     def lof(self):
@@ -171,17 +186,17 @@ class FieldFile(TextFile):
         """Switch to input or output mode and fix readahaed buffer."""
         if new_mode == b'I' and self.mode == b'O':
             self._fhandle.flush()
-            self.next_char = self._fhandle.read(1)
             self.mode = b'I'
         elif new_mode == b'O' and self.mode == b'I':
-            self._fhandle.seek(-1, 1)
+            self._fhandle.seek(-len(self._readahead), 1)
+            self._readahead = []
+            self._previous, self._current = b'', b''
             self.mode = b'O'
 
     def _check_overflow(self):
         """Check for FIELD OVERFLOW."""
-        write = self.mode == b'O'
         # FIELD overflow happens if last byte in record has been read or written
-        if self._fhandle.tell() > self._reclen + write - 1:
+        if self._fhandle.tell() - len(self._readahead) >= self._reclen:
             raise error.BASICError(error.FIELD_OVERFLOW)
 
 
