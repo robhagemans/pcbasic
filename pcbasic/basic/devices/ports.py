@@ -316,9 +316,6 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         self._field = field
         self._linefeed = linefeed
         self._serial_in_size = serial_in_size
-        # buffer for the separator character that broke the last INPUT# field
-        # to be attached to the next
-        self._input_last = b''
         self.is_open = True
 
     def close(self):
@@ -327,12 +324,13 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         self.is_open = False
 
     def peek(self, num):
-        """No peeking on real-time input."""
-        return b''
+        """Return only readahead buffer, no blocking peek."""
+        return b''.join(self._readahead[:num])
 
     def read(self, num):
         """Read a number of characters."""
-        s, self._current = [], b''
+        # take at most num chars out of readahead buffer (holds just one on COM but anyway)
+        s, self._readahead = self._readahead[:num], self._readahead[num:]
         while len(s) < num:
             self._queues.wait()
             with safe_serial():

@@ -448,10 +448,7 @@ class RealTimeInputMixin(object):
     def input_entry(self, typechar, allow_past_end):
         """Read a number or string entry from KYBD: or COMn: for INPUT#."""
         word, blanks = b'', b''
-        if self._input_last:
-            c, self._input_last = self._input_last, b''
-        else:
-            c = self.read_one()
+        c = self.read_one()
         # LF escapes quotes
         quoted = (c == b'"' and typechar == values.STR)
         if quoted:
@@ -485,11 +482,14 @@ class RealTimeInputMixin(object):
             if len(word) + len(blanks) >= 255:
                 break
             # there should be KYBD: control char replacement here even if quoted
+            save_prev = self._previous
             c = self.read_one()
             if parsing_trail:
                 if c not in INPUT_WHITESPACE:
+                    # un-read the character if it's not a separator
                     if c not in (b',', b'\r'):
-                        self._input_last = c
+                        self._readahead.insert(0, c)
+                        self._current, self._previous = self._previous, save_prev
                     break
             parsing_trail = parsing_trail or (typechar != values.STR and c == b' ')
         # file position is at one past the separator char
@@ -519,7 +519,6 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
         TextFileBase.__init__(self, nullstream(), filetype=b'D', mode=b'I')
         # buffer for the separator character that broke the last INPUT# field
         # to be attached to the next
-        self._input_last = b''
         self._keyboard = keyboard
         # screen needed for width settings on KYBD: master file
         self._display = display
@@ -536,14 +535,17 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
         return inst
 
     def peek(self, num):
-        """No peeking on real-time input."""
-        return b''
+        """Return only readahead buffer, no blocking peek."""
+        return b''.join(self._readahead[:num])
 
     def read(self, num):
         """Read a number of characters (INPUT$)."""
-        chars = b''
+        # take at most num chars out of readahead buffer (holds just one on KYBD but anyway)
+        chars, self._readahead = b''.join(self._readahead[:num]), self._readahead[num:]
+        # fill up the rest with actual keyboard reads
         while len(chars) < num:
             chars += b''.join(
+                # note that INPUT$ on KYBD files replaces some eascii with NUL
                 b'\0' if c in KYBD_REPLACE else c if len(c) == 1 else b''
                 for c in self._keyboard.read_bytes_kybd_file(num-len(chars))
             )
@@ -551,15 +553,19 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
 
     def read_one(self):
         """Read a character with line ending replacement (INPUT and LINE INPUT)."""
-        chars = b''
-        while len(chars) < 1:
+        # take char out of readahead buffer, if present; blocking keyboard read otherwise
+        if self._readahead:
+            chars, self._readahead = b''.join(self._readahead[:1]), self._readahead[1:]
+            return chars
+        else:
             # note that we need string length, not list length
             # as read_bytes_kybd_file can return multi-byte eascii codes
-            chars += b''.join(
+            # blocking read
+            return b''.join(
+                # INPUT and LINE INPUT on KYBD files replace some eascii with control sequences
                 KYBD_REPLACE.get(c, c)
                 for c in self._keyboard.read_bytes_kybd_file(1)
             )
-        return chars
 
     # read_line: inherited from TextFileBase, this calls peek()
 
@@ -576,7 +582,7 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
         if self.mode in (b'A', b'O'):
             return False
         # blocking peek
-        return (self._keyboard.peek_byte_kybd_file() == b'\x1a')
+        return (self._keyboard.peek_byte_kybd_file() == b'\x1A')
 
     def set_width(self, new_width=255):
         """Setting width on KYBD device (not files) changes screen width."""
