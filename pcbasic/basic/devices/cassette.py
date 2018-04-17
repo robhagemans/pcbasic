@@ -133,6 +133,7 @@ class CASDevice(object):
         """Suppress Skipped and Found messages."""
         self.is_quiet = is_quiet
 
+
 #################################################################################
 # Cassette files
 
@@ -143,10 +144,6 @@ class CASBinaryFile(RawFile):
         """Initialise binary file."""
         RawFile.__init__(self, fhandle, filetype, mode)
         self.seg, self.offset, self.length = seg, offset, length
-
-    def close(self):
-        """Close a file on tape."""
-        RawFile.close(self)
 
 
 class CASTextFile(TextFileBase, InputMixin):

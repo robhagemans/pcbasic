@@ -310,18 +310,12 @@ class COMFile(TextFileBase, RealTimeInputMixin):
 
     def __init__(self, stream, field, linefeed, serial_in_size, queues):
         """Initialise COMn: file."""
-        # prevent readahead by providing non-empty first char
-        # we're ignoring self.char and self.next_char in this class
-        TextFileBase.__init__(self, stream, b'D', b'R', first_char=b'DUMMY')
-        self.next_char = ''
+        TextFileBase.__init__(self, stream, b'D', b'R')
         self._queues = queues
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self._field = field
         self._linefeed = linefeed
         self._serial_in_size = serial_in_size
-        # buffer for the separator character that broke the last INPUT# field
-        # to be attached to the next
-        self._input_last = b''
         self.is_open = True
 
     def close(self):
@@ -329,29 +323,31 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         TextFileBase.close(self)
         self.is_open = False
 
+    def peek(self, num):
+        """Return only readahead buffer, no blocking peek."""
+        return b''.join(self._readahead[:num])
+
     def read(self, num):
         """Read a number of characters."""
-        self._queues.wait()
-        s, c = [], b''
-        while not (num > -1 and len(s) >= num):
+        # take at most num chars out of readahead buffer (holds just one on COM but anyway)
+        s, self._readahead = self._readahead[:num], self._readahead[num:]
+        while len(s) < num:
+            self._queues.wait()
             with safe_serial():
-                c, self.last = self._fhandle.read(1), c
-            if c:
-                s.append(c)
+                # non-blocking read
+                self._current, self._previous = self._fhandle.read(1), self._current
+            if self._current:
+                s.append(self._current)
         return b''.join(s)
 
     def read_one(self):
         """Read a character, replacing CR LF with CR."""
-        s = []
-        while len(s) < 1:
+        c = self.read(1)
+        # report CRLF as CR
+        # are we correct to ignore self._linefeed on input?
+        if (c == b'\n' and self._previous == b'\r'):
             c = self.read(1)
-            # report CRLF as CR
-            # are we correct to ignore self._linefeed on input?
-            if (c == b'\n' and self.last == b'\r'):
-                c = self.read(1)
-            if c:
-                s.append(c)
-        return b''.join(s)
+        return c
 
     def read_line(self):
         """Blocking read line from the port (not the FIELD buffer!)."""
