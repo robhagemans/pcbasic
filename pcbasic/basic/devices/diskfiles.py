@@ -269,6 +269,20 @@ class RandomFile(RawFile):
         with self._field_file.use_mode(b'O'):
             self._field_file.write_line(s)
 
+    @property
+    def width(self):
+        """Get the width setting on the field buffer."""
+        return self._field_file.width
+
+    def set_width(self, new_width):
+        """Change the width setting on the field buffer."""
+        self._field_file.set_width(new_width)
+
+    @property
+    def col(self):
+        """Get the current column position on the field buffer."""
+        return self._field_file.col
+
     ##########################################################################
 
     def eof(self):
