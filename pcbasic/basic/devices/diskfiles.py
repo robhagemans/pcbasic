@@ -75,7 +75,8 @@ class TextFile(TextFileBase, InputMixin):
     """Text file on disk device."""
 
     def __init__(
-            self, fhandle, filetype, number, name, mode=b'A', access=b'RW', lock=b'', locks=None):
+            self, fhandle, filetype, number, name, mode=b'A',
+            access=b'RW', lock=b'', locks=None, universal=False):
         """Initialise text file object."""
         TextFileBase.__init__(self, fhandle, filetype, mode)
         # locking members
@@ -85,6 +86,7 @@ class TextFile(TextFileBase, InputMixin):
         self.lock_type = lock
         self.access = access
         self._locks = locks
+        self._universal = universal
         # in append mode, we need to start at end of file
         if self.mode == b'A':
             with safe_io():
@@ -112,10 +114,13 @@ class TextFile(TextFileBase, InputMixin):
             last, char = self._previous, self._current
             self.read(1)
             self._previous, self._current = last, char
+        # universal newlines: report \n as line break
+        if (self._universal and c == b'\n'):
+            c = b'\r'
         return c
 
     def read_line(self):
-        """Read line from text file, break on CR or CRLF (not LF)."""
+        """Read line from text file, break on CR or CRLF (not LF, unless universal newlines)."""
         s = []
         while True:
             c = self.read_one()

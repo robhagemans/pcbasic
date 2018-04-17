@@ -274,10 +274,8 @@ class DiskDevice(object):
                 filetype = filetype_found
             except KeyError:
                 filetype = b'A'
-        # universal newline and utf8 input for text & ascii-program files
+        # utf8 input for text & ascii-program files
         if filetype in b'DA':
-            if self._universal and mode == b'I':
-                fhandle = UniversalNewlineReader(fhandle)
             if self._utf8:
                 if mode == b'I':
                     # accept BOM \xef\xbb\xbf
@@ -291,20 +289,22 @@ class DiskDevice(object):
             # binary [B]LOAD, [B]SAVE
             return BinaryFile(
                         fhandle, filetype, number, native_name, mode,
-                        seg, offset, length, locks=self._locks)
+                        seg, offset, length, self._locks)
         elif filetype == b'A':
             # ascii program file
             return TextFile(
-                    fhandle, filetype, number, native_name, mode, access, lock, locks=self._locks)
+                    fhandle, filetype, number, native_name, mode,
+                    access, lock, self._locks, self._universal)
         elif filetype == b'D':
             if mode in b'IAO':
                 # data file for input, output, append
                 return TextFile(
-                    fhandle, filetype, number, native_name, mode, access, lock, locks=self._locks)
+                    fhandle, filetype, number, native_name, mode,
+                    access, lock, self._locks, self._universal)
             else:
                 # data file for random
                 return RandomFile(
-                    fhandle, number, native_name, access, lock, field, reclen, locks=self._locks)
+                    fhandle, number, native_name, access, lock, field, reclen, self._locks)
         else:
             # incorrect file type requested
             msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
@@ -683,39 +683,6 @@ class StreamWrapperBase(object):
         else:
             # this is needed for pickle to be able to reconstruct the class
             raise AttributeError()
-
-
-class UniversalNewlineReader(StreamWrapperBase):
-    """Apply universal newlines to raw/binary streams (standard functions apply to text only)."""
-
-    def __init__(self, stream):
-        """Wrap the stream."""
-        self._stream = stream
-        self._buffer = ''
-
-    def read(self, n=-1):
-        """Read n bytes from stream, replace newlines with b'\r\n'."""
-        if n > len(self._buffer):
-            raw = self._stream.read(n - len(self._buffer))
-        elif n == -1:
-            raw = self._stream.read()
-        else:
-            raw = b''
-        # note that 'BufferedReader.peek(n) may return less or more than n bytes'
-        if raw.endswith(b'\r') and self._stream.peek(1)[:1] == b'\n':
-            self._stream.read(1)
-        converted = (
-                self._buffer +
-                raw.replace(b'\r\n', b'\r').replace(b'\n', b'\r').replace(b'\r', b'\r\n')
-            )
-        if n < 0:
-            return converted
-        else:
-            output, self._buffer = converted[:n], converted[n:]
-            return output
-
-    # this is called by TextIOWrapper
-    read1 = read
 
 
 class CodecReader(StreamWrapperBase):
