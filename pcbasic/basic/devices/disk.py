@@ -333,10 +333,14 @@ class DiskDevice(object):
         if mode in (b'O', b'A'):
             self._check_file_not_open(native_name)
         # obtain a lock
-        if lock and not access:
-            access = b'RW'
         if filetype == b'D':
             self._locks.acquire(native_name, number, lock, access)
+        # setting this only after the lock acquisition makes the check asymmetric
+        # which is what GW-BASIC does...
+        # first file to open with unspecified access gets RW access
+        # but second file gets checked for ''
+        if lock and not access:
+            access = b'RW'
         try:
             # open the underlying stream
             fhandle = self._open_stream(native_name, filetype, mode)
@@ -889,9 +893,20 @@ class Locks(object):
                     (lock_type == b'RW') or
                     # defined locking: don't accept if open in default mode
                     (lock_type and not f.lock_type) or
-                    # LOCK READ or LOCK WRITE: accept base on ACCESS of open file
-                    (lock_type and lock_type != b'SHARED' and f.access and set(lock_type) & set(f.access)) or
-                    (f.lock_type and f.lock_type != b'SHARED' and access and set(f.lock_type) & set(access))):
+                    # LOCK READ or LOCK WRITE: accept based on ACCESS of open file
+                    (
+                        lock_type and lock_type != b'SHARED' and
+                        f.access and set(lock_type) & set(f.access)
+                    ) or
+                    (
+                        f.lock_type and f.lock_type != b'SHARED' and
+                        (
+                            (access and set(f.lock_type) & set(access)) or
+                            # can't open with unspecified access if other is LOCK READ WRITE
+                            (not access and set(f.lock_type) == set(b'RW'))
+                        )
+                    )
+                ):
                 raise error.BASICError(error.PERMISSION_DENIED)
         self._locks[number] = name
 
