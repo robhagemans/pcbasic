@@ -94,6 +94,9 @@ OS_ERROR = {
 # this is complex and leads to unpredictable results depending on host platform.
 ALLOWABLE_CHARS = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~")
 
+# posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
+ACCESS_MODES = {b'I': 'rb', b'O': 'wb', b'R': 'r+b', b'A': 'ab'}
+
 
 ##############################################################################
 # exception handling
@@ -221,11 +224,6 @@ class DiskDevice(object):
 
     allowed_modes = b'IOR'
 
-    # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
-    access_modes = {b'I': 'rb', b'O': 'wb', b'R': 'r+b', b'A': 'ab'}
-    # posix access modes for BASIC ACCESS mode for RANDOM files only
-    access_access = {b'R': 'rb', b'W': 'wb', b'RW': 'r+b'}
-
     def __init__(self, letter, path, dos_cwd, locks, codepage, utf8, universal):
         """Initialise a disk device."""
         # DOS drive letter
@@ -310,8 +308,9 @@ class DiskDevice(object):
             msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
             raise ValueError(msg)
 
-    def open(self, number, filespec, filetype, mode, access, lock,
-                   reclen, seg, offset, length, field):
+    def open(
+            self, number, filespec, filetype, mode, access, lock,
+            reclen, seg, offset, length, field):
         """Open a file on a disk drive."""
         # parse the file spec to a definite native name
         if not self._native_root:
@@ -334,11 +333,13 @@ class DiskDevice(object):
         if mode in (b'O', b'A'):
             self._check_file_not_open(native_name)
         # obtain a lock
+        if lock and not access:
+            access = b'RW'
         if filetype == b'D':
             self._locks.acquire(native_name, number, lock, access)
         try:
             # open the underlying stream
-            fhandle = self._open_stream(native_name, filetype, mode, access)
+            fhandle = self._open_stream(native_name, filetype, mode)
             # apply the BASIC file wrapper
             f = self._create_file_object(
                     fhandle, filetype, mode, native_name, number,
@@ -352,23 +353,17 @@ class DiskDevice(object):
             self._locks.close_file(number)
             raise
 
-    def _open_stream(self, native_name, filetype, mode, access):
+    def _open_stream(self, native_name, filetype, mode):
         """Open a stream on disk by os-native name with BASIC mode and access level."""
-        name = native_name
-        if (access and mode == b'R'):
-            posix_access = self.access_access[access]
-        else:
-            posix_access = self.access_modes[mode]
         try:
             # create file if in RANDOM or APPEND mode and doesn't exist yet
             # OUTPUT mode files are created anyway since they're opened with wb
-            if ((mode == b'A' or (mode == b'R' and access in (b'RW', b'R'))) and
-                    not os.path.exists(name)):
-                io.open(name, 'wb').close()
+            if ((mode == b'A' or mode == b'R') and not os.path.exists(native_name)):
+                io.open(native_name, 'wb').close()
             if mode == b'A':
                 # APPEND mode is only valid for text files (which are seekable);
                 # first cut off EOF byte, if any.
-                f = io.open(name, 'r+b')
+                f = io.open(native_name, 'r+b')
                 try:
                     f.seek(-1, 2)
                     if f.read(1) == b'\x1a':
@@ -377,10 +372,11 @@ class DiskDevice(object):
                 except IOError:
                     pass
                 f.close()
-            return io.open(name, posix_access)
+            return io.open(native_name, ACCESS_MODES[mode])
         except EnvironmentError as e:
             handle_oserror(e)
         except TypeError:
+            # TypeError: stat() argument 1 must be encoded string without null bytes, not str
             # bad file number, which is what GW throws for open chr$(0)
             raise error.BASICError(error.BAD_FILE_NUMBER)
 
@@ -758,7 +754,7 @@ class BoundFile(object):
         """Get a native stream for the bound file."""
         try:
             if isinstance(self._file, basestring):
-                return io.open(self._file, self._device.access_modes[mode])
+                return io.open(self._file, ACCESS_MODES[mode])
             else:
                 return self._file
         except EnvironmentError as e:
@@ -891,10 +887,11 @@ class Locks(object):
                     ((not lock_type) and f.lock_type) or
                     # LOCK READ WRITE: don't accept if already open
                     (lock_type == b'RW') or
-                    # SHARED: don't accept if open in default mode
-                    (lock_type == b'SHARED' and not f.lock_type) or
+                    # defined locking: don't accept if open in default mode
+                    (lock_type and not f.lock_type) or
                     # LOCK READ or LOCK WRITE: accept base on ACCESS of open file
-                    (lock_type in f.access) or (f.lock_type in access)):
+                    (lock_type and lock_type != b'SHARED' and f.access and set(lock_type) & set(f.access)) or
+                    (f.lock_type and f.lock_type != b'SHARED' and access and set(f.lock_type) & set(access))):
                 raise error.BASICError(error.PERMISSION_DENIED)
         self._locks[number] = name
 
