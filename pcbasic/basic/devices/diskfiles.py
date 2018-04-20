@@ -103,8 +103,16 @@ class TextFile(TextFileBase, InputMixin):
             self._locks.release(self.number)
             self._locks.close_file(self.number)
 
+    def read(self, n):
+        """Read num characters."""
+        if self._locks:
+            self._locks.try_access(self, 'R')
+        return TextFileBase.read(self, n)
+
     def read_one(self):
         """Read one character, replacing CR LF with CR."""
+        if self._locks:
+            self._locks.try_access(self, 'R')
         c = self.read(1)
         if not c:
             return c
@@ -121,6 +129,8 @@ class TextFile(TextFileBase, InputMixin):
 
     def read_line(self):
         """Read line from text file, break on CR or CRLF (not LF, unless universal newlines)."""
+        if self._locks:
+            self._locks.try_access(self, 'R')
         s = []
         while True:
             c = self.read_one()
@@ -135,6 +145,8 @@ class TextFile(TextFileBase, InputMixin):
 
     def write_line(self, s=''):
         """Write string and newline to file."""
+        if self._locks:
+            self._locks.try_access(self, 'W')
         self.write(s + b'\r\n')
 
     def loc(self):
@@ -291,6 +303,8 @@ class RandomFile(RawFile):
 
     def get(self, dummy=None):
         """Read a record."""
+        if self._locks:
+            self._locks.try_access(self, 'R')
         if self.eof():
             contents = b'\0' * self.reclen
         else:
@@ -304,6 +318,8 @@ class RandomFile(RawFile):
 
     def put(self, dummy=None):
         """Write a record."""
+        if self._locks:
+            self._locks.try_access(self, 'W')
         current_length = self.lof()
         with safe_io():
             if self._recpos > current_length:

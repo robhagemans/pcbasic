@@ -910,6 +910,19 @@ class Locks(object):
                 raise error.BASICError(error.PERMISSION_DENIED)
         self._locks[number] = name
 
+    def try_access(self, this_file, access):
+        """Attempt to access a file."""
+        # access in violation of ACCESS declaration in OPEN: path/file access error
+        if this_file.access and not (set(access) & set(this_file.access)):
+            raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
+        # access in violation of other's LOCK declation in OPEN: path/file access error
+        # access in violation of other's LOCK#: permission denied
+        already_open = self.list(this_file.name)
+        for f in already_open:
+            if f != this_file and (
+                    f.lock_type and f.lock_type != b'SHARED' and (set(f.lock_type) & set(access))):
+                raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
+
     def release(self, number):
         """Release the lock on a file before closing."""
         try:
