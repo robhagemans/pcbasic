@@ -916,12 +916,28 @@ class Locks(object):
         if this_file.access and not (set(access) & set(this_file.access)):
             raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
         # access in violation of other's LOCK declation in OPEN: path/file access error
-        # access in violation of other's LOCK#: permission denied
         already_open = self.list(this_file.name)
         for f in already_open:
             if f != this_file and (
                     f.lock_type and f.lock_type != b'SHARED' and (set(f.lock_type) & set(access))):
                 raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
+
+    def try_record_lock(self, this_file, start, stop):
+        """Attempt to access a record."""
+        other_locks = [f.lock_list for f in self.list(this_file.name) if f != this_file]
+        other_lock_set = set.union(*other_locks) if other_locks else set()
+        # access in violation of other's LOCK#: permission denied
+        # whole-file access sought
+        if stop is None and start is None:
+            if other_lock_set:
+                raise error.BASICError(error.PERMISSION_DENIED)
+        else:
+            # range access sought
+            for start_1, stop_1 in other_lock_set:
+                if (stop_1 is None and start_1 is None
+                            or (start >= start_1 and start <= stop_1)
+                            or (stop >= start_1 and stop <= stop_1)):
+                    raise error.BASICError(error.PERMISSION_DENIED)
 
     def release(self, number):
         """Release the lock on a file before closing."""

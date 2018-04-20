@@ -168,14 +168,15 @@ class TextFile(TextFileBase, InputMixin):
 
     def lock(self, start, stop):
         """Lock the file."""
-        if set.union(*(f.lock_list for f in self._locks.list(self.name))):
-            raise error.BASICError(error.PERMISSION_DENIED)
-        self.lock_list.add(True)
+        # range bounds are ignored on text file
+        # we need a tuple in case the other file checking the lock is a random file
+        self._locks.try_record_lock(self, None, None)
+        self.lock_list.add((None, None))
 
     def unlock(self, start, stop):
         """Unlock the file."""
         try:
-            self.lock_list.remove(True)
+            self.lock_list.remove((None, None))
         except KeyError:
             raise error.BASICError(error.PERMISSION_DENIED)
 
@@ -305,6 +306,7 @@ class RandomFile(RawFile):
         """Read a record."""
         if self._locks:
             self._locks.try_access(self, 'R')
+            self._locks.try_record_lock(self, self._recpos+1, self._recpos+1)
         if self.eof():
             contents = b'\0' * self.reclen
         else:
@@ -320,6 +322,7 @@ class RandomFile(RawFile):
         """Write a record."""
         if self._locks:
             self._locks.try_access(self, 'W')
+            self._locks.try_record_lock(self, self._recpos+1, self._recpos+1)
         current_length = self.lof()
         with safe_io():
             if self._recpos > current_length:
@@ -351,12 +354,7 @@ class RandomFile(RawFile):
 
     def lock(self, start, stop):
         """Lock range of records."""
-        other_lock_list = set.union(*(f.lock_list for f in self._locks.list(self.name)))
-        for start_1, stop_1 in other_lock_list:
-            if (stop_1 is None and start_1 is None
-                        or (start >= start_1 and start <= stop_1)
-                        or (stop >= start_1 and stop <= stop_1)):
-                raise error.BASICError(error.PERMISSION_DENIED)
+        self._locks.try_record_lock(self, start, stop)
         self.lock_list.add((start, stop))
 
     def unlock(self, start, stop):
