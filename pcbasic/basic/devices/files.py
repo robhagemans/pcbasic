@@ -295,7 +295,7 @@ class Files(object):
         """PUT: write record to file."""
         number = values.to_int(next(args))
         error.range_check(0, 255, number)
-        the_file = self.get(number, b'R')
+        the_file = self.get(number, b'R', not_open=error.BAD_FILE_MODE)
         pos, = args
         thefile, num_bytes = self._set_record_pos(the_file, pos)
         thefile.put(num_bytes)
@@ -304,7 +304,7 @@ class Files(object):
         """GET: read record from file."""
         number = values.to_int(next(args))
         error.range_check(0, 255, number)
-        the_file = self.get(number, b'R')
+        the_file = self.get(number, b'R', not_open=error.BAD_FILE_MODE)
         pos, = args
         thefile, num_bytes = self._set_record_pos(the_file, pos)
         thefile.get(num_bytes)
