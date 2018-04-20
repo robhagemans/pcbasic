@@ -922,9 +922,12 @@ class Locks(object):
                     f.lock_type and f.lock_type != b'SHARED' and (set(f.lock_type) & set(access))):
                 raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
 
-    def try_record_lock(self, this_file, start, stop):
+    def try_record_lock(self, this_file, start, stop, allow_self=True):
         """Attempt to access a record."""
-        other_locks = [f.lock_list for f in self.list(this_file.name) if f != this_file]
+        other_locks = [
+            f.lock_list for f in self.list(this_file.name)
+            if (not allow_self) or f != this_file
+        ]
         other_lock_set = set.union(*other_locks) if other_locks else set()
         # access in violation of other's LOCK#: permission denied
         # whole-file access sought

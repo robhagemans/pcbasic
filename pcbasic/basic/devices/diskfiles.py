@@ -170,7 +170,7 @@ class TextFile(TextFileBase, InputMixin):
         """Lock the file."""
         # range bounds are ignored on text file
         # we need a tuple in case the other file checking the lock is a random file
-        self._locks.try_record_lock(self, None, None)
+        self._locks.try_record_lock(self, None, None, allow_self=False)
         self.lock_list.add((None, None))
 
     def unlock(self, start, stop):
@@ -355,7 +355,7 @@ class RandomFile(RawFile):
 
     def lock(self, start, stop):
         """Lock range of records."""
-        self._locks.try_record_lock(self, start, stop)
+        self._locks.try_record_lock(self, start, stop, allow_self=False)
         self.lock_list.add((start, stop))
 
     def unlock(self, start, stop):
