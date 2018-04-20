@@ -260,7 +260,8 @@ class RandomFile(RawFile):
     def input_entry(self, typechar, allow_past_end):
         """Read a number or string entry for INPUT """
         with self._field_file.use_mode(b'I'):
-            return self._field_file.input_entry(typechar, allow_past_end)
+            # reading past end should give FIELD OVERFLOW, so suppress INPUT_PAST_END
+            return self._field_file.input_entry(typechar, allow_past_end=True)
 
     def read_one(self):
         """Read a number of characters from the field buffer."""
