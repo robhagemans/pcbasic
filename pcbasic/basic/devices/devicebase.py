@@ -149,13 +149,13 @@ class KYBDDevice(Device):
 
 
 @contextmanager
-def safe_io():
+def safe_io(err=error.DEVICE_IO_ERROR):
     """Catch and translate I/O errors."""
     try:
         yield
     except EnvironmentError as e:
         logging.warning('I/O error on stream access: %s', e)
-        raise error.BASICError(error.DEVICE_IO_ERROR)
+        raise error.BASICError(err)
 
 
 class RawFile(object):

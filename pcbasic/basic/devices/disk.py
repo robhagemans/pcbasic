@@ -25,7 +25,7 @@ from ..codepage import CONTROL
 from ...compat import get_short_pathname, get_free_bytes, is_hidden
 from .. import values
 from . import devicebase
-from .diskfiles import BinaryFile, TextFile, RandomFile
+from .diskfiles import BinaryFile, TextFile, RandomFile, Locks
 
 
 # GW-BASIC FILE CONTROL BLOCK structure:
@@ -93,6 +93,9 @@ OS_ERROR = {
 # based on CHCP code page, which may differ from display codepage in COUNTRY.SYS
 # this is complex and leads to unpredictable results depending on host platform.
 ALLOWABLE_CHARS = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~")
+
+# posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
+ACCESS_MODES = {b'I': 'rb', b'O': 'wb', b'R': 'r+b', b'A': 'ab'}
 
 
 ##############################################################################
@@ -221,12 +224,7 @@ class DiskDevice(object):
 
     allowed_modes = b'IOR'
 
-    # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
-    access_modes = {b'I': 'rb', b'O': 'wb', b'R': 'r+b', b'A': 'ab'}
-    # posix access modes for BASIC ACCESS mode for RANDOM files only
-    access_access = {b'R': 'rb', b'W': 'wb', b'RW': 'r+b'}
-
-    def __init__(self, letter, path, dos_cwd, locks, codepage, utf8, universal):
+    def __init__(self, letter, path, dos_cwd, codepage, utf8, universal):
         """Initialise a disk device."""
         # DOS drive letter
         self.letter = letter
@@ -245,7 +243,8 @@ class DiskDevice(object):
                 logging.warning(
                     'Could not open working directory %s on drive %s:. Using drive root instead.',
                     dos_cwd, letter)
-        self._locks = locks
+        # locks are drive-specific
+        self._locks = Locks()
         # text file settings
         self._utf8 = utf8
         self._universal = universal
@@ -258,9 +257,9 @@ class DiskDevice(object):
         """Device is available."""
         return True
 
-    def _create_file_object(self, fhandle, filetype, mode, native_name=u'', number=0,
-                           access=b'RW', lock=b'', field=None, reclen=128,
-                           seg=0, offset=0, length=0):
+    def _create_file_object(
+            self, fhandle, filetype, mode, number=0,
+            field=None, reclen=128, seg=0, offset=0, length=0):
         """Create disk file object of requested type."""
         # determine file type if needed
         if len(filetype) > 1 and mode == b'I':
@@ -287,31 +286,25 @@ class DiskDevice(object):
                     fhandle = CodecWriter(fhandle, self._codepage, 'utf-8')
         if filetype in b'BPM':
             # binary [B]LOAD, [B]SAVE
-            return BinaryFile(
-                        fhandle, filetype, number, native_name, mode,
-                        seg, offset, length, self._locks)
+            return BinaryFile(fhandle, filetype, number, mode, seg, offset, length, self._locks)
         elif filetype == b'A':
             # ascii program file
-            return TextFile(
-                    fhandle, filetype, number, native_name, mode,
-                    access, lock, self._locks, self._universal)
+            return TextFile(fhandle, filetype, number, mode, self._locks, self._universal)
         elif filetype == b'D':
             if mode in b'IAO':
                 # data file for input, output, append
-                return TextFile(
-                    fhandle, filetype, number, native_name, mode,
-                    access, lock, self._locks, self._universal)
+                return TextFile(fhandle, filetype, number, mode, self._locks, self._universal)
             else:
                 # data file for random
-                return RandomFile(
-                    fhandle, number, native_name, access, lock, field, reclen, self._locks)
+                return RandomFile(fhandle, number, field, reclen, self._locks)
         else:
             # incorrect file type requested
             msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
             raise ValueError(msg)
 
-    def open(self, number, filespec, filetype, mode, access, lock,
-                   reclen, seg, offset, length, field):
+    def open(
+            self, number, filespec, filetype, mode, access, lock,
+            reclen, seg, offset, length, field):
         """Open a file on a disk drive."""
         # parse the file spec to a definite native name
         if not self._native_root:
@@ -331,44 +324,31 @@ class DiskDevice(object):
             native_name = self._get_native_abspath(filespec, defext, isdir=False, create=True)
         # handle locks, open stream and create file object
         # don't open output or append files more than once
-        if mode in (b'O', b'A'):
-            self._check_file_not_open(native_name)
+        # whether it's the same file is determined by DOS basename, i.e. excluding directories!
+        dos_basename = self._get_dos_name_defext(filespec, defext)
         # obtain a lock
-        if filetype == b'D':
-            self._locks.acquire(native_name, number, lock, access)
+        self._locks.open_file(dos_basename, number, mode, lock, access)
         try:
             # open the underlying stream
-            fhandle = self._open_stream(native_name, filetype, mode, access)
+            fhandle = self._open_stream(native_name, filetype, mode)
             # apply the BASIC file wrapper
-            f = self._create_file_object(
-                    fhandle, filetype, mode, native_name, number,
-                    access, lock, field, reclen, seg, offset, length)
-            # register file as open
-            self._locks.open_file(number, f)
-            return f
+            return self._create_file_object(
+                    fhandle, filetype, mode, number, field, reclen, seg, offset, length)
         except Exception:
-            if filetype == b'D':
-                self._locks.release(number)
             self._locks.close_file(number)
             raise
 
-    def _open_stream(self, native_name, filetype, mode, access):
+    def _open_stream(self, native_name, filetype, mode):
         """Open a stream on disk by os-native name with BASIC mode and access level."""
-        name = native_name
-        if (access and mode == b'R'):
-            posix_access = self.access_access[access]
-        else:
-            posix_access = self.access_modes[mode]
         try:
             # create file if in RANDOM or APPEND mode and doesn't exist yet
             # OUTPUT mode files are created anyway since they're opened with wb
-            if ((mode == b'A' or (mode == b'R' and access in (b'RW', b'R'))) and
-                    not os.path.exists(name)):
-                io.open(name, 'wb').close()
+            if ((mode == b'A' or mode == b'R') and not os.path.exists(native_name)):
+                io.open(native_name, 'wb').close()
             if mode == b'A':
+                f = io.open(native_name, 'r+b')
                 # APPEND mode is only valid for text files (which are seekable);
                 # first cut off EOF byte, if any.
-                f = io.open(name, 'r+b')
                 try:
                     f.seek(-1, 2)
                     if f.read(1) == b'\x1a':
@@ -377,10 +357,11 @@ class DiskDevice(object):
                 except IOError:
                     pass
                 f.close()
-            return io.open(name, posix_access)
+            return io.open(native_name, ACCESS_MODES[mode])
         except EnvironmentError as e:
             handle_oserror(e)
         except TypeError:
+            # TypeError: stat() argument 1 must be encoded string without null bytes, not str
             # bad file number, which is what GW throws for open chr$(0)
             raise error.BASICError(error.BAD_FILE_NUMBER)
 
@@ -462,21 +443,22 @@ class DiskDevice(object):
         # filter according to mask
         trunkmask, extmask = dos_splitext(dos_mask)
         split = {dos_splitext(name): name for name in files}
-        to_kill = (
+        to_kill_dos = (
                 split[(trunk, ext)] for (trunk, ext) in split
                 if dos_name_matches(trunk, trunkmask) and dos_name_matches(ext, extmask)
             )
         to_kill = [
                 # NOTE that this depends on display names NOT being legal names for overlong names
                 # i.e. a + is included at the end of the display name which is not legal
-                os.path.join(native_dir, f) for f in to_kill
+                os.path.join(native_dir, f) for f in to_kill_dos
                 if dos_is_legal_name(f) and not is_hidden(os.path.join(native_dir, f))
             ]
         if not to_kill:
             raise error.BASICError(error.FILE_NOT_FOUND)
-        for native_path in to_kill:
+        for dos_path in to_kill_dos:
             # don't delete open files
-            self._check_file_not_open(native_path)
+            self.require_file_not_open(dos_path)
+        for native_path in to_kill:
             safe(os.remove, native_path)
 
     def rename(self, old_dospath, new_dospath):
@@ -552,24 +534,26 @@ class DiskDevice(object):
         """Return the number of free bytes on the drive."""
         return get_free_bytes(self._native_root)
 
-    def require_file_exists_and_not_open(self, dospath):
+    def require_file_exists(self, dospath):
         """Raise an error if the file is open or does not exist."""
-        # this checks for existence if name_err is set
-        native_name = self._get_native_abspath(dospath, defext=b'', isdir=False, create=False)
-        return self._check_file_not_open(native_name)
+        # this checks for existence with create=False
+        self._get_native_abspath(dospath, defext=b'', isdir=False, create=False)
 
-    def _check_file_not_open(self, native_path):
+    def require_file_not_open(self, dos_basename):
         """Raise an error if the file is open."""
-        for f in self._locks.open_files.values():
-            try:
-                if native_path == f.name:
-                    raise error.BASICError(error.FILE_ALREADY_OPEN)
-            except AttributeError as e:
-                # only disk files have a name, so ignore
-                pass
+        if self._locks.list_open(dos_basename):
+            raise error.BASICError(error.FILE_ALREADY_OPEN)
 
     ##########################################################################
     # DOS and native name conversion
+
+    def _get_dos_name_defext(self, dos_name, defext):
+        """Strip trailing whitepace and apply default extension to DOS name."""
+        # ignore trailing whitespace
+        dos_name = dos_name.rstrip()
+        if defext and b'.' not in dos_name:
+            dos_name += b'.' + defext
+        return dos_name
 
     def _get_native_name(self, native_path, dos_name, defext, isdir, create):
         """Find or create a matching native file name for a given BASIC name."""
@@ -589,11 +573,8 @@ class DiskDevice(object):
         name_err = error.PATH_NOT_FOUND if isdir else error.FILE_NOT_FOUND
         if dos_name != dos_name.lstrip():
             raise error.BASICError(name_err)
-        # ignore trailing whitespace
-        dos_name = dos_name.rstrip()
-        if defext and b'.' not in dos_name:
-            dos_name += b'.' + defext
-        elif dos_name[-1] == b'.' and b'.' not in dos_name[:-1]:
+        dos_name = self._get_dos_name_defext(dos_name, defext)
+        if dos_name[-1] == b'.' and b'.' not in dos_name[:-1]:
             # ends in single dot; first try with dot
             # but if it doesn't exist, base everything off dotless name
             uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
@@ -758,7 +739,7 @@ class BoundFile(object):
         """Get a native stream for the bound file."""
         try:
             if isinstance(self._file, basestring):
-                return io.open(self._file, self._device.access_modes[mode])
+                return io.open(self._file, ACCESS_MODES[mode])
             else:
                 return self._file
         except EnvironmentError as e:
@@ -791,10 +772,10 @@ class NameWrapper(object):
 class InternalDiskDevice(DiskDevice):
     """Internal disk device for special operations."""
 
-    def __init__(self, letter, path, cwd, locks, codepage, utf8, universal):
+    def __init__(self, letter, path, cwd, codepage, utf8, universal):
         """Initialise internal disk."""
         self._bound_files = {}
-        DiskDevice.__init__(self, letter, path, cwd, locks, codepage, utf8, universal)
+        DiskDevice.__init__(self, letter, path, cwd, codepage, utf8, universal)
 
     def bind(self, file_name_or_object, name=None):
         """Bind a native file name or object to an internal name."""
@@ -816,8 +797,9 @@ class InternalDiskDevice(DiskDevice):
         """Unbind bound file."""
         del self._bound_files[name]
 
-    def open(self, number, filespec, filetype, mode, access, lock,
-                   reclen, seg, offset, length, field):
+    def open(
+            self, number, filespec, filetype, mode, access, lock,
+            reclen, seg, offset, length, field):
         """Open a file on the internal disk drive."""
         if filespec in self._bound_files:
             fhandle = self._bound_files[filespec].get_stream(mode)
@@ -859,59 +841,3 @@ class InternalDiskDevice(DiskDevice):
             return DiskDevice.get_free(self)
         else:
             return 0
-
-
-###############################################################################
-# Locks
-
-class Locks(object):
-    """Lock management."""
-
-    def __init__(self):
-        """Initialise locks."""
-        # dict of native file names by number, for locking
-        self._locks = {}
-        # dict of disk files
-        self.open_files = {}
-
-    def list(self, name):
-        """Retrieve a list of files open to the same disk stream."""
-        return [ self.open_files[fnum]
-                       for (fnum, fname) in self._locks.iteritems()
-                       if fname == name ]
-
-    def acquire(self, name, number, lock_type, access):
-        """Try to lock a file."""
-        if not number:
-            return
-        already_open = self.list(name)
-        for f in already_open:
-            if (
-                    # default mode: don't accept if SHARED/LOCK present
-                    ((not lock_type) and f.lock_type) or
-                    # LOCK READ WRITE: don't accept if already open
-                    (lock_type == b'RW') or
-                    # SHARED: don't accept if open in default mode
-                    (lock_type == b'SHARED' and not f.lock_type) or
-                    # LOCK READ or LOCK WRITE: accept base on ACCESS of open file
-                    (lock_type in f.access) or (f.lock_type in access)):
-                raise error.BASICError(error.PERMISSION_DENIED)
-        self._locks[number] = name
-
-    def release(self, number):
-        """Release the lock on a file before closing."""
-        try:
-            del self._locks[number]
-        except KeyError:
-            pass
-
-    def open_file(self, number, f):
-        """Register disk file as open."""
-        self.open_files[number] = f
-
-    def close_file(self, number):
-        """Deregister disk file."""
-        try:
-            del self.open_files[number]
-        except KeyError:
-            pass

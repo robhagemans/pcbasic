@@ -19,7 +19,7 @@ except Exception:
 from ...compat import line_print
 from ..base import error
 from ..codepage import CONTROL
-from .devicebase import Device, DeviceSettings, TextFileBase, parse_protocol_string
+from .devicebase import Device, DeviceSettings, TextFileBase, parse_protocol_string, safe_io
 
 
 # flush triggers
@@ -44,7 +44,7 @@ class LPTDevice(Device):
         self.stream = default_stream
         if addr == u'FILE':
             try:
-                self.stream = open(val, 'wb')
+                self.stream = io.open(val, 'wb')
             except EnvironmentError as e:
                 logging.warning(u'Could not attach file %s to LPT device: %s', val, e)
         elif addr == u'PARPORT':
@@ -70,8 +70,9 @@ class LPTDevice(Device):
         if self.stream:
             self.device_file = LPTFile(self.stream, self.device_settings)
 
-    def open(self, number, param, filetype, mode, access, lock,
-                   reclen, seg, offset, length, fiekd):
+    def open(
+            self, number, param, filetype, mode, access, lock,
+            reclen, seg, offset, length, fiekd):
         """Open a file on LPTn: """
         # shared position/width settings across files
         return LPTFile(self.stream, self.device_settings, bug=True)
@@ -92,7 +93,7 @@ class LPTFile(TextFileBase):
         # GW-BASIC quirk - different LPOS behaviour on LPRINT and LPT1 files
         self._bug = bug
         self._settings = settings
-        TextFileBase.__init__(self, stream, filetype='D', mode='A')
+        TextFileBase.__init__(self, stream, filetype=b'D', mode=b'A')
         # default width is 80
         # width=255 means line wrap
         self.width = 80
@@ -104,33 +105,31 @@ class LPTFile(TextFileBase):
         """Set file width."""
         self.width = new_width
 
-    def _flush(self):
-        """Flush the buffer to the underlying stream."""
-
     def write(self, s, can_break=True):
         """Write a string to the printer buffer."""
-        for c in bytes(s):
-            # don't replace CR or LF with CRLF
-            self._fhandle.write(c)
-            # col reverts to 1 on CR (\r) and LF (\n) but not FF (\f)
-            if c in (b'\n', b'\r'):
-                self._settings.col = 1
-            elif c == b'\b':
-                if self._settings.col > 1:
-                    self._settings.col -= 1
-            else:
-                # nonprinting characters including tabs are not counted for LPOS
-                if ord(c) >= 32:
-                    self._settings.col += 1
-            # width 255 means wrapping enabled
-            if can_break and self.width != 255:
-                if self._settings.col > self.width:
-                    self._fhandle.write(b'\r\n')
-                    # GW-BASIC quirk: on LPT1 files the LPOS goes to width+1, then wraps to 2
-                    if not self._bug:
-                        self._settings.col = 1
-                    elif self._settings.col > self.width + 1:
-                        self._settings.col = 2
+        with safe_io():
+            for c in bytes(s):
+                # don't replace CR or LF with
+                self._fhandle.write(c)
+                # col reverts to 1 on CR (\r) and LF (\n) but not FF (\f)
+                if c in (b'\n', b'\r'):
+                    self._settings.col = 1
+                elif c == b'\b':
+                    if self._settings.col > 1:
+                        self._settings.col -= 1
+                else:
+                    # nonprinting characters including tabs are not counted for LPOS
+                    if ord(c) >= 32:
+                        self._settings.col += 1
+                # width 255 means wrapping enabled
+                if can_break and self.width != 255:
+                    if self._settings.col > self.width:
+                        self._fhandle.write(b'\r\n')
+                        # GW-BASIC quirk: on LPT1 files the LPOS goes to width+1, then wraps to 2
+                        if not self._bug:
+                            self._settings.col = 1
+                        elif self._settings.col > self.width + 1:
+                            self._settings.col = 2
         self.col = self._settings.col
 
     def write_line(self, s=b''):
@@ -151,7 +150,8 @@ class LPTFile(TextFileBase):
 
     def do_print(self):
         """Actually print, reset column position."""
-        self._fhandle.flush()
+        with safe_io():
+            self._fhandle.flush()
         self._settings.col = 1
         self.col = 1
 
@@ -229,7 +229,7 @@ class ParallelStream(object):
 
     def __getstate__(self):
         """Get pickling dict for stream."""
-        return { 'port': self._port }
+        return {'port': self._port}
 
     def __setstate__(self, st):
         """Initialise stream from pickling dict."""
@@ -237,23 +237,26 @@ class ParallelStream(object):
 
     def write(self, s):
         """Write to the parallel port."""
-        if self._parallel.getInPaperOut():
-            raise error.BASICError(error.OUT_OF_PAPER)
-        for c in s:
-            self._parallel.setData(ord(c))
+        with safe_io():
+            if self._parallel.getInPaperOut():
+                raise error.BASICError(error.OUT_OF_PAPER)
+            for c in s:
+                self._parallel.setData(ord(c))
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
         """Set the values of the control pins."""
-        self._parallel.setDataStrobe(strobe)
-        self._parallel.setAutoFeed(lf)
-        self._parallel.setInitOut(init)
-        # select-printer pin not implemented
+        with safe_io():
+            self._parallel.setDataStrobe(strobe)
+            self._parallel.setAutoFeed(lf)
+            self._parallel.setInitOut(init)
+            # select-printer pin not implemented
 
     def get_status(self):
         """Get the values of the status pins."""
-        paper = self._parallel.getInPaperOut()
-        ack = self._parallel.getInAcknowledge()
-        select = self._parallel.getInSelected()
+        with safe_io():
+            paper = self._parallel.getInPaperOut()
+            ack = self._parallel.getInAcknowledge()
+            select = self._parallel.getInSelected()
         # not implemented: busy, error pins
         busy = False
         err = False
@@ -280,8 +283,8 @@ class StdIOParallelStream(object):
     def write(self, s):
         """Write to stdout."""
         for c in s:
-            if self._crlf and c == '\r':
-                c = '\n'
+            if self._crlf and c == b'\r':
+                c = b'\n'
             sys.stdout.write(c)
         self.flush()
 
