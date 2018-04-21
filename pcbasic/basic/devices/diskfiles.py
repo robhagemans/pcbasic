@@ -308,7 +308,8 @@ class RandomFile(RawFile):
         """Read a record."""
         if self._locks:
             self._locks.try_access(self, b'R')
-            self._locks.try_record_lock(self, self._recpos+1, self._recpos+1)
+            # exceptionally, GET is allowed if the file holding the lock is open for OUTPUT
+            self._locks.try_record_lock(self, self._recpos+1, self._recpos+1, read_only=True)
         if self.eof():
             contents = b'\0' * self.reclen
         else:
