@@ -330,11 +330,13 @@ class DiskDevice(object):
             native_name = self._get_native_abspath(filespec, defext, isdir=False, create=True)
         # handle locks, open stream and create file object
         # don't open output or append files more than once
+        # whether it's the same file is determined by DOS basename, i.e. excluding directories!
+        dos_basename = ntpath.basename(self._get_dos_name_defext(filespec, defext))
         if mode in (b'O', b'A'):
-            self._check_file_not_open(native_name)
+            self._check_file_not_open(dos_basename)
         # obtain a lock
         if filetype == b'D':
-            self._locks.acquire(native_name, number, lock, access)
+            self._locks.acquire(dos_basename, number, lock, access)
         # setting this only after the lock acquisition makes the check asymmetric
         # which is what GW-BASIC does...
         # first file to open with unspecified access gets RW access
@@ -346,7 +348,7 @@ class DiskDevice(object):
             fhandle = self._open_stream(native_name, filetype, mode)
             # apply the BASIC file wrapper
             f = self._create_file_object(
-                    fhandle, filetype, mode, native_name, number,
+                    fhandle, filetype, mode, dos_basename, number,
                     access, lock, field, reclen, seg, offset, length)
             # register file as open
             self._locks.open_file(number, f)
@@ -571,6 +573,14 @@ class DiskDevice(object):
     ##########################################################################
     # DOS and native name conversion
 
+    def _get_dos_name_defext(self, dos_name, defext):
+        """Strip trailing whitepace and apply default extension to DOS name."""
+        # ignore trailing whitespace
+        dos_name = dos_name.rstrip()
+        if defext and b'.' not in dos_name:
+            dos_name += b'.' + defext
+        return dos_name
+
     def _get_native_name(self, native_path, dos_name, defext, isdir, create):
         """Find or create a matching native file name for a given BASIC name."""
         # if the name contains a dot, do not apply the default extension
@@ -589,11 +599,8 @@ class DiskDevice(object):
         name_err = error.PATH_NOT_FOUND if isdir else error.FILE_NOT_FOUND
         if dos_name != dos_name.lstrip():
             raise error.BASICError(name_err)
-        # ignore trailing whitespace
-        dos_name = dos_name.rstrip()
-        if defext and b'.' not in dos_name:
-            dos_name += b'.' + defext
-        elif dos_name[-1] == b'.' and b'.' not in dos_name[:-1]:
+        dos_name = self._get_dos_name_defext(dos_name, defext)
+        if dos_name[-1] == b'.' and b'.' not in dos_name[:-1]:
             # ends in single dot; first try with dot
             # but if it doesn't exist, base everything off dotless name
             uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)

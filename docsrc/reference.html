@@ -6675,6 +6675,13 @@
                 <code><var>record_1</var></code>. An non-matching <code>UNLOCK</code> will raise
                 <samp>Permission denied</samp>.
             </li>
+            <li>
+                To check if another open file is the same file, PC-BASIC only looks at the base name
+                of the file, i.e. its DOS name without directories. As a consequence, if a file <samp>"test.txt"</samp>
+                is open and locked, an attempt to lock a file <samp>"dir\test.txt"</samp> will fail, even if these are
+                different files. Conversely, if two file names are different but point to the same file in the
+                file system (for example due to file system links), then these will be considered as different files by BASIC.
+            </li>
         </ul>
         <h5>Errors</h5>
         <ul>
@@ -6691,7 +6698,7 @@
                 <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
             </li>
             <li>
-                <code>LOCK</code> (part of) a file already locked: <samp>Permission denied</samp>.
+                <code>LOCK</code> (part of) a file with the same name as a file already locked: <samp>Permission denied</samp>.
             </li>
             <li>
                 <code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <samp>Bad record number</samp>.
@@ -7449,6 +7456,13 @@
             the locks are only implemented internally. Whether other processes may access
             the file will depend on the host OS.
         </p>
+        <li>
+            To check if another open file is the same file, PC-BASIC only looks at the base name
+            of the file, i.e. its DOS name without directories. As a consequence, if a file <samp>"test.txt"</samp>
+            is open and locked, an attempt to lock a file <samp>"dir\test.txt"</samp> will fail, even if these are
+            different files. Conversely, if two file names are different but point to the same file in the
+            file system (for example due to file system links), then these will be considered as different files by BASIC.
+        </li>
         <h5 id="filespec">File specifications</h5>
         <p>
             A <dfn>file specification</dfn> <code><var>file_spec</var></code>
@@ -7780,7 +7794,7 @@
                 <samp>Bad file number</samp>.
             </li>
             <li>
-                A file is already open for <code>OUTPUT</code> or <code>APPEND</code>: <samp>File already open</samp>.
+                A file with the same name is already open for <code>OUTPUT</code> or <code>APPEND</code>: <samp>File already open</samp>.
                 This is only raised for <code>COMn:</code>, <code>CASn:</code> and disk devices.
             </li>
             <li>
@@ -11338,7 +11352,7 @@
                     <p>
                         An attempt is made to open a file to a file number that is already in use;
                         or an attempt is made to open a file for <code>OUTPUT</code> or <code>APPEND</code>  on a serial, disk or cassette device
-                        when a file is already open for <code>OUTPUT</code> or <code>APPEND</code> on that device;
+                        when a file with the same name is already open for <code>OUTPUT</code> or <code>APPEND</code> on that device;
                         or a <a href="#KILL"><code>KILL</code></a> or <a href="#NAME"><code>NAME</code></a> statement is executed on an open disk file.
                     </p>
                 </td>
