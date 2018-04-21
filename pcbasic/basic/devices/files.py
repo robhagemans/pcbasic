@@ -567,8 +567,6 @@ class Files(object):
         # use None to request default mounts, use {} for no mounts
         if mount_dict is None:
             mount_dict = DEFAULT_MOUNTS
-        # disk file locks
-        locks = disk.Locks()
         # disk devices
         for letter in self.drive_letters:
             if not mount_dict:
@@ -579,8 +577,7 @@ class Files(object):
                 path, cwd = None, u''
             # treat device @: separately - internal disk
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
-            self._devices[letter + b':'] = disk_class(
-                    letter, path, cwd, locks, codepage, utf8, universal)
+            self._devices[letter + b':'] = disk_class(letter, path, cwd, codepage, utf8, universal)
         # allow upper or lower case, unicode or str, with or without :
         if isinstance(current_device, unicode):
             current_device = current_device.encode('ascii')
@@ -605,7 +602,7 @@ class Files(object):
         return self._devices[dev + b':'], spec
 
     def get_native_cwd(self):
-        """Get ccurrent working directory on current drive."""
+        """Get current working directory on current drive."""
         # must be a disk device
         if self._current_device not in self.drive_letters:
             raise error.BASICError(error.IFC)

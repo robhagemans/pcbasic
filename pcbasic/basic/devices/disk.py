@@ -224,7 +224,7 @@ class DiskDevice(object):
 
     allowed_modes = b'IOR'
 
-    def __init__(self, letter, path, dos_cwd, locks, codepage, utf8, universal):
+    def __init__(self, letter, path, dos_cwd, codepage, utf8, universal):
         """Initialise a disk device."""
         # DOS drive letter
         self.letter = letter
@@ -243,7 +243,8 @@ class DiskDevice(object):
                 logging.warning(
                     'Could not open working directory %s on drive %s:. Using drive root instead.',
                     dos_cwd, letter)
-        self._locks = locks
+        # locks are drive-specific
+        self._locks = Locks()
         # text file settings
         self._utf8 = utf8
         self._universal = universal
@@ -798,10 +799,10 @@ class NameWrapper(object):
 class InternalDiskDevice(DiskDevice):
     """Internal disk device for special operations."""
 
-    def __init__(self, letter, path, cwd, locks, codepage, utf8, universal):
+    def __init__(self, letter, path, cwd, codepage, utf8, universal):
         """Initialise internal disk."""
         self._bound_files = {}
-        DiskDevice.__init__(self, letter, path, cwd, locks, codepage, utf8, universal)
+        DiskDevice.__init__(self, letter, path, cwd, codepage, utf8, universal)
 
     def bind(self, file_name_or_object, name=None):
         """Bind a native file name or object to an internal name."""
