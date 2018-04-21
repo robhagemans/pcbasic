@@ -643,9 +643,11 @@ class Files(object):
         dev, oldpath = self._get_diskdevice_and_path(values.next_string(args))
         # don't rename open files
         # NOTE: we need to check file exists before parsing the next name
-        # to get the same error ssequencing as GW-BASIC
-        dev.require_file_exists_and_not_open(oldpath)
+        # to get the same error sequencing as GW-BASIC
+        dev.require_file_exists(oldpath)
+        dev.require_file_not_open(oldpath)
         newdev, newpath = self._get_diskdevice_and_path(values.next_string(args))
+        dev.require_file_not_open(newpath)
         list(args)
         if dev != newdev:
             raise error.BASICError(error.RENAME_ACROSS_DISKS)

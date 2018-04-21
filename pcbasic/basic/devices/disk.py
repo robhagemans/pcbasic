@@ -331,9 +331,9 @@ class DiskDevice(object):
         # handle locks, open stream and create file object
         # don't open output or append files more than once
         # whether it's the same file is determined by DOS basename, i.e. excluding directories!
-        dos_basename = ntpath.basename(self._get_dos_name_defext(filespec, defext))
+        dos_basename = self._get_dos_name_defext(filespec, defext)
         if mode in (b'O', b'A'):
-            self._check_file_not_open(dos_basename)
+            self.require_file_not_open(dos_basename)
         # obtain a lock
         if filetype == b'D':
             self._locks.acquire(dos_basename, number, lock, access)
@@ -464,21 +464,22 @@ class DiskDevice(object):
         # filter according to mask
         trunkmask, extmask = dos_splitext(dos_mask)
         split = {dos_splitext(name): name for name in files}
-        to_kill = (
+        to_kill_dos = (
                 split[(trunk, ext)] for (trunk, ext) in split
                 if dos_name_matches(trunk, trunkmask) and dos_name_matches(ext, extmask)
             )
         to_kill = [
                 # NOTE that this depends on display names NOT being legal names for overlong names
                 # i.e. a + is included at the end of the display name which is not legal
-                os.path.join(native_dir, f) for f in to_kill
+                os.path.join(native_dir, f) for f in to_kill_dos
                 if dos_is_legal_name(f) and not is_hidden(os.path.join(native_dir, f))
             ]
         if not to_kill:
             raise error.BASICError(error.FILE_NOT_FOUND)
-        for native_path in to_kill:
+        for dos_path in to_kill_dos:
             # don't delete open files
-            self._check_file_not_open(native_path)
+            self.require_file_not_open(dos_path)
+        for native_path in to_kill:
             safe(os.remove, native_path)
 
     def rename(self, old_dospath, new_dospath):
@@ -554,17 +555,16 @@ class DiskDevice(object):
         """Return the number of free bytes on the drive."""
         return get_free_bytes(self._native_root)
 
-    def require_file_exists_and_not_open(self, dospath):
+    def require_file_exists(self, dospath):
         """Raise an error if the file is open or does not exist."""
-        # this checks for existence if name_err is set
-        native_name = self._get_native_abspath(dospath, defext=b'', isdir=False, create=False)
-        return self._check_file_not_open(native_name)
+        # this checks for existence with create=False
+        self._get_native_abspath(dospath, defext=b'', isdir=False, create=False)
 
-    def _check_file_not_open(self, native_path):
+    def require_file_not_open(self, dos_basename):
         """Raise an error if the file is open."""
         for f in self._locks.open_files.values():
             try:
-                if native_path == f.name:
+                if ntpath.basename(dos_basename) == f.name:
                     raise error.BASICError(error.FILE_ALREADY_OPEN)
             except AttributeError as e:
                 # only disk files have a name, so ignore

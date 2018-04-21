@@ -6192,7 +6192,7 @@
                 <code><var>filter_spec</var></code> is a numeric value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                A file matching <code><var>filter_spec</var></code> is open: <samp>File already open</samp>
+                A file with a base name equal to that of a file matching <code><var>filter_spec</var></code> is open: <samp>File already open</samp>
             </li>
             <li>
                 No file matches <code><var>filter_spec</var></code> : <samp>File not found</samp>
@@ -6961,7 +6961,7 @@
                 <code><var>old_name</var></code> does not exist: <samp>File not found</samp>.
             </li>
             <li>
-                <code><var>old_name</var></code> is open: <samp>File already open</samp>.
+                A file with a base name equal to that of <code><var>old_name</var></code> or <code><var>new_name</var></code> is open: <samp>File already open</samp>.
             </li>
             <li>
                 <code><var>new_name</var></code> exists: <samp>File already exists</samp>.
@@ -11352,8 +11352,9 @@
                     <p>
                         An attempt is made to open a file to a file number that is already in use;
                         or an attempt is made to open a file for <code>OUTPUT</code> or <code>APPEND</code>  on a serial, disk or cassette device
-                        when a file with the same name is already open for <code>OUTPUT</code> or <code>APPEND</code> on that device;
-                        or a <a href="#KILL"><code>KILL</code></a> or <a href="#NAME"><code>NAME</code></a> statement is executed on an open disk file.
+                        when a file (or, on a disk device, a file with the same name) is already open for <code>OUTPUT</code> or <code>APPEND</code> on that device;
+                        or a <a href="#KILL"><code>KILL</code></a> or <a href="#NAME"><code>NAME</code></a> statement is executed on a disk file
+                        when a file with the same name is open on the same device.
                     </p>
                 </td>
             </tr>
