@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 import string
+import ntpath
 from contextlib import contextmanager
 
 from ..base.bytestream import ByteStream
@@ -29,7 +30,7 @@ from .devicebase import RawFile, TextFileBase, InputMixin, safe_io, TYPE_TO_MAGI
 class BinaryFile(RawFile):
     """File class for binary (B, P, M) files on disk device."""
 
-    def __init__(self, fhandle, filetype, number, mode, seg, offset, length, locks=None):
+    def __init__(self, fhandle, filetype, number, mode, seg, offset, length, locks):
         """Initialise program file object and write header."""
         RawFile.__init__(self, fhandle, filetype, mode)
         # don't lock binary files
@@ -60,15 +61,14 @@ class BinaryFile(RawFile):
         if self.mode == b'O':
             self.write(b'\x1a')
         RawFile.close(self)
-        if self._locks is not None:
-            # no locking for binary files, but we do need to register it closed
-            self._locks.close_file(self._number)
+        # no locking for binary files, but we do need to register it closed
+        self._locks.close_file(self._number)
 
 
 class TextFile(TextFileBase, InputMixin):
     """Text file on disk device."""
 
-    def __init__(self, fhandle, filetype, number, mode=b'A', locks=None, universal=False):
+    def __init__(self, fhandle, filetype, number, mode, locks, universal):
         """Initialise text file object."""
         TextFileBase.__init__(self, fhandle, filetype, mode)
         self._locks = locks
@@ -86,13 +86,11 @@ class TextFile(TextFileBase, InputMixin):
             with safe_io():
                 self._fhandle.write(b'\x1a')
         TextFileBase.close(self)
-        if self._locks is not None:
-            self._locks.close_file(self._number)
+        self._locks.close_file(self._number)
 
     def read(self, n):
         """Read num characters."""
-        if self._locks:
-            self._locks.try_access(self._number, b'R')
+        self._locks.try_access(self._number, b'R')
         return TextFileBase.read(self, n)
 
     def read_one(self):
@@ -127,8 +125,7 @@ class TextFile(TextFileBase, InputMixin):
 
     def write(self, s, can_break=True):
         """Write string to file."""
-        if self._locks:
-            self._locks.try_access(self._number, b'W')
+        self._locks.try_access(self._number, b'W')
         TextFileBase.write(self, s, can_break)
 
     def write_line(self, s=''):
@@ -156,13 +153,11 @@ class TextFile(TextFileBase, InputMixin):
         """Lock the file."""
         # range bounds are ignored on text file
         # we need a tuple in case the other file checking the lock is a random file
-        if self._locks:
-            self._locks.acquire_record_lock(self._number, None, None)
+        self._locks.acquire_record_lock(self._number, None, None)
 
     def unlock(self, start, stop):
         """Unlock the file."""
-        if self._locks:
-            self._locks.release_record_lock(self._number, None, None)
+        self._locks.release_record_lock(self._number, None, None)
 
 
 class FieldFile(TextFile):
@@ -170,7 +165,8 @@ class FieldFile(TextFile):
 
     def __init__(self, field, reclen):
         """Initialise text file object."""
-        TextFile.__init__(self, ByteStream(field.buffer), b'D', None, b'I')
+        # don't let the field file use device locks
+        TextFile.__init__(self, ByteStream(field.buffer), b'D', None, b'I', Locks(), False)
         self._reclen = reclen
 
     def reset(self):
@@ -205,7 +201,7 @@ class FieldFile(TextFile):
 class RandomFile(RawFile):
     """Random-access file on disk device."""
 
-    def __init__(self, fhandle, number, field, reclen=128, locks=None):
+    def __init__(self, fhandle, number, field, reclen, locks):
         """Initialise random-access file."""
         # note that for random files, output_stream must be a seekable stream.
         RawFile.__init__(self, fhandle, b'D', b'R')
@@ -224,8 +220,7 @@ class RandomFile(RawFile):
     def close(self):
         """Close random-access file."""
         RawFile.close(self)
-        if self._locks is not None:
-            self._locks.close_file(self._number)
+        self._locks.close_file(self._number)
 
     ##########################################################################
     # field text file operations
@@ -283,9 +278,8 @@ class RandomFile(RawFile):
 
     def get(self, dummy=None):
         """Read a record."""
-        if self._locks:
-            # exceptionally, GET is allowed if the file holding the lock is open for OUTPUT
-            self._locks.try_record_access(self._number, self._recpos+1, self._recpos+1, b'R')
+        # exceptionally, GET is allowed if the file holding the lock is open for OUTPUT
+        self._locks.try_record_access(self._number, self._recpos+1, self._recpos+1, b'R')
         if self.eof():
             contents = b'\0' * self.reclen
         else:
@@ -299,8 +293,7 @@ class RandomFile(RawFile):
 
     def put(self, dummy=None):
         """Write a record."""
-        if self._locks:
-            self._locks.try_record_access(self._number, self._recpos+1, self._recpos+1, b'W')
+        self._locks.try_record_access(self._number, self._recpos+1, self._recpos+1, b'W')
         current_length = self.lof()
         with safe_io():
             if self._recpos > current_length:
@@ -332,10 +325,141 @@ class RandomFile(RawFile):
 
     def lock(self, start, stop):
         """Lock range of records."""
-        if self._locks:
-            self._locks.acquire_record_lock(self._number, start, stop)
+        self._locks.acquire_record_lock(self._number, start, stop)
 
     def unlock(self, start, stop):
         """Unlock range of records."""
-        if self._locks:
-            self._locks.release_record_lock(self._number, start, stop)
+        self._locks.release_record_lock(self._number, start, stop)
+
+
+###############################################################################
+# Locks
+
+
+class LockingParameters(object):
+    """Record of a file's locking parameters."""
+
+    def __init__(self, dos_name, mode, lock_type, access):
+        """Build a record."""
+        self.name = ntpath.basename(dos_name)
+        self.lock_set = set()
+        self.lock_type = lock_type
+        self.access = access
+        self.mode = mode
+
+
+class Locks(object):
+    """Lock management."""
+
+    def __init__(self):
+        """Initialise locks."""
+        # dict of LockingParameters objects, one for each open disk file, by file number
+        self._locking_parameters = {}
+
+    def list_open(self, name, exclude_number=None):
+        """Retrieve a list of files open on the same disk device."""
+        return [
+            f for number, f in self._locking_parameters.iteritems()
+            if f.name == ntpath.basename(name) and number != exclude_number
+        ]
+
+    def open_file(self, name, number, mode, lock_type, access):
+        """Register a disk file and try to acquire a file lock."""
+        if not number:
+            return
+        already_open = self.list_open(name)
+        if mode in (b'O', b'A') and already_open:
+            raise error.BASICError(error.FILE_ALREADY_OPEN)
+        for f in already_open:
+            if (
+                    # default mode: don't accept if SHARED/LOCK present
+                    ((not lock_type) and f.lock_type) or
+                    # LOCK READ WRITE: don't accept if already open
+                    (lock_type == b'RW') or
+                    # defined locking: don't accept if open in default mode
+                    (lock_type and not f.lock_type) or
+                    # LOCK READ or LOCK WRITE: accept based on ACCESS of open file
+                    (
+                        lock_type and lock_type != b'SHARED' and
+                        f.access and set(lock_type) & set(f.access)
+                    ) or
+                    (
+                        f.lock_type and f.lock_type != b'SHARED' and
+                        (
+                            (access and set(f.lock_type) & set(access)) or
+                            # can't open with unspecified access if other is LOCK READ WRITE
+                            (not access and set(f.lock_type) == set(b'RW'))
+                        )
+                    )
+                ):
+                raise error.BASICError(error.PERMISSION_DENIED)
+        # setting this only after the lock acquisition makes the check asymmetric
+        # which is what GW-BASIC does...
+        # first file to open with unspecified access gets RW access
+        # but second file gets checked for ''
+        if lock_type and not access:
+            access = b'RW'
+        self._locking_parameters[number] = LockingParameters(name, mode, lock_type, access)
+
+    def close_file(self, number):
+        """Deregister disk file."""
+        try:
+            del self._locking_parameters[number]
+        except KeyError:
+            pass
+
+    def try_access(self, number, access):
+        """Attempt to access a file."""
+        if not number:
+            return
+        this_file = self._locking_parameters[number]
+        # access in violation of ACCESS declaration in OPEN: path/file access error
+        if this_file.access and not (set(access) & set(this_file.access)):
+            raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
+        # access in violation of other's LOCK declation in OPEN: path/file access error
+        others = self.list_open(this_file.name, number)
+        for f in others:
+            if (f.lock_type and f.lock_type != b'SHARED' and (set(f.lock_type) & set(access))):
+                raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
+
+    def try_record_access(self, number, start, stop, access=b'RW'):
+        """Attempt to access a record."""
+        self.try_access(number, access)
+        self._try_record_lock(number, start, stop, allow_self=True, read_only=(access == b'R'))
+
+    def _try_record_lock(self, number, start, stop, allow_self=True, read_only=False):
+        """Attempt to access a record."""
+        this_file = self._locking_parameters[number]
+        other_locks = [
+            f.lock_set for f in self.list_open(this_file.name, number if allow_self else None)
+            # access parameter only exists to allow reading a record on locked OUTPUT file
+            if not (f.mode in b'OA' and read_only)
+        ]
+        other_lock_set = set.union(*other_locks) if other_locks else set()
+        # access in violation of other's LOCK#: permission denied
+        # whole-file access sought
+        if stop is None and start is None:
+            if other_lock_set:
+                raise error.BASICError(error.PERMISSION_DENIED)
+        else:
+            # range access sought
+            for start_1, stop_1 in other_lock_set:
+                if (stop_1 is None and start_1 is None
+                            or (start >= start_1 and start <= stop_1)
+                            or (stop >= start_1 and stop <= stop_1)):
+                    raise error.BASICError(error.PERMISSION_DENIED)
+
+    def acquire_record_lock(self, number, start, stop):
+        """Acquire a lock on a range of records."""
+        self._try_record_lock(number, start, stop, allow_self=False)
+        this_file = self._locking_parameters[number]
+        this_file.lock_set.add((start, stop))
+
+    def release_record_lock(self, number, start, stop):
+        """Acquire a lock on a range of records."""
+        this_file = self._locking_parameters[number]
+        # permission denied if the exact record range wasn't given before
+        try:
+            this_file.lock_set.remove((start, stop))
+        except KeyError:
+            raise error.BASICError(error.PERMISSION_DENIED)
