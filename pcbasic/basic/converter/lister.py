@@ -89,7 +89,7 @@ class Lister(object):
             else:
                 ins.seek(-1, 1)
                 comment = self._detokenise_keyword(ins, output)
-        return output, textpos
+        return output[:255], textpos
 
     def _detokenise_keyword(self, ins, output):
         """Convert a one- or two-byte keyword token to ascii."""

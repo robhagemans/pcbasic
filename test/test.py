@@ -49,7 +49,7 @@ def suppress_stdio(do_suppress):
 
 
 args = sys.argv[1:]
-basedir = os.path.join('.', 'test-basic')
+basedir = os.path.join('.', 'correctness')
 
 do_suppress = '--loud' not in args
 

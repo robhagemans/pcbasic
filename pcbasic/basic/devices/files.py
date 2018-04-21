@@ -72,7 +72,7 @@ class Files(object):
             f.close()
         self.files = {}
 
-    def open(self, number, description, filetype, mode='I', access='R', lock='',
+    def open(self, number, description, filetype, mode=b'I', access=b'', lock=b'',
                 reclen=128, seg=0, offset=0, length=0):
         """Open a file on a device specified by description."""
         if (not description) or (number < 0) or (number > self.max_files):
@@ -92,7 +92,7 @@ class Files(object):
             self.files[number] = new_file
         return new_file
 
-    def get(self, num, mode='IOAR', not_open=error.BAD_FILE_NUMBER):
+    def get(self, num, mode=b'IOAR', not_open=error.BAD_FILE_NUMBER):
         """Get the file object for a file number and check allowed mode."""
         if (num < 1):
             raise error.BASICError(error.BAD_FILE_NUMBER)
@@ -104,7 +104,7 @@ class Files(object):
             raise error.BASICError(error.BAD_FILE_MODE)
         return the_file
 
-    def _get_from_integer(self, num, mode='IOAR'):
+    def _get_from_integer(self, num, mode=b'IOAR'):
         """Get the file object for an Integer file number and check allowed mode."""
         num = values.to_int(num, unsigned=True)
         error.range_check(0, 255, num)
@@ -151,7 +151,7 @@ class Files(object):
 
     def device_available(self, spec):
         """Return whether the device indicated by the spec (including :) is available."""
-        dev_name = spec.split(b':', 1)[0] + ':'
+        dev_name = spec.split(b':', 1)[0] + b':'
         return (dev_name in self._devices) and self._devices[dev_name].available()
 
     def get_device(self, name):
@@ -161,10 +161,10 @@ class Files(object):
     def _get_device_param(self, file_spec, mode):
         """Get a device object and parameters from a file specification."""
         name = bytes(file_spec)
-        split = name.split(':', 1)
+        split = name.split(b':', 1)
         if len(split) > 1:
             # colon (:) found
-            dev_name = split[0].upper() + ':'
+            dev_name = split[0].upper() + b':'
             dev_param = split[1]
             try:
                 device = self._devices[dev_name]
@@ -175,16 +175,16 @@ class Files(object):
         else:
             device = self._devices[self._current_device + b':']
             # MS-DOS device aliases - these can't be names of disk files
-            if device != self._devices['CAS1:'] and name in DOS_DEVICE_FILES:
-                if name == 'AUX':
-                    device, dev_param = self._devices['COM1:'], ''
-                elif name == 'CON' and mode == 'I':
-                    device, dev_param = self._devices['KYBD:'], ''
-                elif name == 'CON' and mode == 'O':
-                    device, dev_param = self._devices['SCRN:'], ''
-                elif name == 'PRN':
-                    device, dev_param = self._devices['LPT1:'], ''
-                elif name == 'NUL':
+            if device != self._devices[b'CAS1:'] and name in DOS_DEVICE_FILES:
+                if name == b'AUX':
+                    device, dev_param = self._devices[b'COM1:'], ''
+                elif name == b'CON' and mode == b'I':
+                    device, dev_param = self._devices[b'KYBD:'], ''
+                elif name == b'CON' and mode == b'O':
+                    device, dev_param = self._devices[b'SCRN:'], ''
+                elif name == b'PRN':
+                    device, dev_param = self._devices[b'LPT1:'], ''
+                elif name == b'NUL':
                     device, dev_param = devicebase.NullDevice(), ''
             else:
                 # open file on default device
@@ -220,7 +220,7 @@ class Files(object):
         if next(args):
             # old syntax
             mode = first_expr[:1].upper()
-            if mode not in ('I', 'O', 'A', 'R'):
+            if mode not in (b'I', b'O', b'A', b'R'):
                 raise error.BASICError(error.BAD_FILE_MODE)
             number = values.to_int(next(args))
             error.range_check(0, 255, number)
@@ -234,25 +234,24 @@ class Files(object):
             number = values.to_int(next(args))
             error.range_check(0, 255, number)
         reclen, = args
-        mode = mode or 'R'
-        default_access_modes = {'I':'R', 'O':'W', 'A':'RW', 'R':'RW'}
-        access = access or default_access_modes[mode]
-        lock = lock or b''
+        mode = mode or b'R'
         if reclen is None:
             reclen = 128
         else:
             reclen = values.to_int(reclen)
-        # mode and access must match if not a RANDOM file
+        # mode and access (if specified) must match if not a RANDOM file
         # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
         # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
-        if mode == 'A' and access == 'W':
-            raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
-        elif mode != 'R' and access and access != default_access_modes[mode]:
-            raise error.BASICError(error.STX)
+        if access:
+            if mode == b'A' and access == b'W':
+                raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
+            elif ((mode == b'I' and access != b'R') or (mode == b'O' and access != b'W') or
+                    (mode == b'A' and access != b'RW')):
+                raise error.BASICError(error.STX)
         error.range_check(1, self.max_reclen, reclen)
         # can't open file 0, or beyond max_files
         error.range_check_err(1, self.max_files, number, error.BAD_FILE_NUMBER)
-        self.open(number, name, 'D', mode, access, lock, reclen)
+        self.open(number, name, b'D', mode, access, lock, reclen)
 
     ###########################################################################
 
@@ -261,7 +260,7 @@ class Files(object):
         number = values.to_int(next(args))
         error.range_check(0, 255, number)
         # check if file is open
-        self.get(number, 'R')
+        self.get(number, b'R')
         offset = 0
         try:
             while True:
@@ -274,41 +273,36 @@ class Files(object):
         except StopIteration:
             pass
 
-    def _set_record_pos(self, the_file, pos=None):
+    def _check_pos(self, pos):
         """Helper function: PUT and GET syntax."""
-        if not isinstance(the_file, ports.COMFile):
-            num_bytes = the_file.reclen
-        if pos is not None:
-            # forcing to single before rounding - this means we don't have enough precision
-            # to address each individual record close to the maximum record number
-            # but that's in line with GW
-            pos = values.round(values.to_single(pos)).to_value()
-            # not 2^32-1 as the manual boasts!
-            # pos-1 needs to fit in a single-precision mantissa
-            error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
-            if not isinstance(the_file, ports.COMFile):
-                the_file.set_pos(pos)
-            else:
-                num_bytes = pos
-        return the_file, num_bytes
+        if pos is None:
+            return pos
+        # forcing to single before rounding - this means we don't have enough precision
+        # to address each individual record close to the maximum record number
+        # but that's in line with GW
+        pos = int(values.round(values.to_single(pos)).to_value())
+        # not 2^32-1 as the manual boasts!
+        # pos-1 needs to fit in a single-precision mantissa
+        error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
+        return pos
 
     def put_(self, args):
         """PUT: write record to file."""
         number = values.to_int(next(args))
         error.range_check(0, 255, number)
-        the_file = self.get(number, 'R')
+        the_file = self.get(number, b'R', not_open=error.BAD_FILE_MODE)
         pos, = args
-        thefile, num_bytes = self._set_record_pos(the_file, pos)
-        thefile.put(num_bytes)
+        pos = self._check_pos(pos)
+        the_file.put(pos)
 
     def get_(self, args):
         """GET: read record from file."""
         number = values.to_int(next(args))
         error.range_check(0, 255, number)
-        the_file = self.get(number, 'R')
+        the_file = self.get(number, b'R', not_open=error.BAD_FILE_MODE)
         pos, = args
-        thefile, num_bytes = self._set_record_pos(the_file, pos)
-        thefile.get(num_bytes)
+        pos = self._check_pos(pos)
+        the_file.get(pos)
 
     ###########################################################################
 
@@ -514,7 +508,13 @@ class Files(object):
         else:
             file_obj = self.kybd_file
         list(args)
-        return self._values.new_string().from_str(file_obj.input_chars(num))
+        # read the chars
+        word = file_obj.read(num)
+        if len(word) < num:
+            # input past end
+            raise error.BASICError(error.INPUT_PAST_END)
+        return self._values.new_string().from_str(word)
+
 
     ###########################################################################
 
@@ -562,8 +562,6 @@ class Files(object):
         # use None to request default mounts, use {} for no mounts
         if mount_dict is None:
             mount_dict = DEFAULT_MOUNTS
-        # disk file locks
-        locks = disk.Locks()
         # disk devices
         for letter in self.drive_letters:
             if not mount_dict:
@@ -574,8 +572,7 @@ class Files(object):
                 path, cwd = None, u''
             # treat device @: separately - internal disk
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
-            self._devices[letter + b':'] = disk_class(
-                    letter, path, cwd, locks, codepage, utf8, universal)
+            self._devices[letter + b':'] = disk_class(letter, path, cwd, codepage, utf8, universal)
         # allow upper or lower case, unicode or str, with or without :
         if isinstance(current_device, unicode):
             current_device = current_device.encode('ascii')
@@ -600,7 +597,7 @@ class Files(object):
         return self._devices[dev + b':'], spec
 
     def get_native_cwd(self):
-        """Get ccurrent working directory on current drive."""
+        """Get current working directory on current drive."""
         # must be a disk device
         if self._current_device not in self.drive_letters:
             raise error.BASICError(error.IFC)
@@ -638,9 +635,11 @@ class Files(object):
         dev, oldpath = self._get_diskdevice_and_path(values.next_string(args))
         # don't rename open files
         # NOTE: we need to check file exists before parsing the next name
-        # to get the same error ssequencing as GW-BASIC
-        dev.require_file_exists_and_not_open(oldpath)
+        # to get the same error sequencing as GW-BASIC
+        dev.require_file_exists(oldpath)
+        dev.require_file_not_open(oldpath)
         newdev, newpath = self._get_diskdevice_and_path(values.next_string(args))
+        dev.require_file_not_open(newpath)
         list(args)
         if dev != newdev:
             raise error.BASICError(error.RENAME_ACROSS_DISKS)

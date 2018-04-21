@@ -16,6 +16,7 @@ import subprocess
 from subprocess import Popen, PIPE
 
 from ..compat import SHELL_ENCODING, HIDE_WINDOW, split_quoted
+from .codepage import CONTROL
 from .base import error
 from . import values
 
@@ -185,7 +186,7 @@ class Shell(object):
         # for shell input, send CRLF or LF depending on platform
         self._last_command.extend(word)
         bytes_word = b''.join(word) + b'\r\n'
-        unicode_word = self._codepage.str_to_unicode(bytes_word, preserve_control=True)
+        unicode_word = self._codepage.str_to_unicode(bytes_word, preserve=CONTROL)
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
         pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
 
