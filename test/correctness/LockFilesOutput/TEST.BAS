@@ -17,6 +17,11 @@
 140 unlock#1, 1 to 3
 150 print#1, "test2"
 160 put#3, 3
+170 rem in gw-basic, which write prevails depends on close sequencing
+175 rem whichever file gets their buffer flushed last prevails
+177 rem not whoever performed the last operation
+180 rem let's not test that here - enforce flushing PRINT before PUT
+190 close 1: close 3
 999 end
 10000 print#2, err, erl
 10010 resume next
