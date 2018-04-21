@@ -2273,7 +2273,7 @@
             <var>length</var> <b>= PLAY(</b><var>voice</var><b>)</b>
         </code>
         <p>
-            Returns the number of notes in the background music queue. The return value is in <code>[0&#8212;16]</code>.
+            Returns the number of notes in the background music queue. The return value is in <code>[0&#8212;32]</code>.
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -2288,9 +2288,10 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                There are at most 16 notes in the music queue. Some GW-BASIC manuals
-                claim there can be up to 32, but in reality <code>PLAY</code> only returns at the
-                last 16 notes.
+                There are at most 32 notes in the music queue. However, unless the articulation is
+                set to legato, there are short gaps between each note; these are counted as
+                separate notes in the queue. Effectively, the queue length is thus 16 for the default
+                and staccato articulations and 32 for legato.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -8750,8 +8751,10 @@
                     <td>
                         Turns on background mode; sound commands exit without waiting for the
                         music to finish. The music keeps playing while other commands are
-                        executed. There can be up to 16 notes in the background music queue;
-                        if more notes are played, <code>PLAY</code> will block until there are only 16 left.
+                        executed. There can be up to 32 notes in the background music queue;
+                        if more notes are played, <code>PLAY</code> will block until there are only 32 left.
+                        Note that the gaps between notes in the default articulation and in staccato
+                        are counted as separate notes on the queue.
                     </td>
                 </tr>
                 <tr>

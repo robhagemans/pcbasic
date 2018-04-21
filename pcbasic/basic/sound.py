@@ -68,6 +68,11 @@ class Sound(object):
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
+        if fill != 1:
+            # put a placeholder 0-duration tone on the queue to represent the gap
+            # the gap is included in the actual tone, but it needs to be counted for events
+            gap = signals.Event(signals.AUDIO_TONE, [voice, 0, 0, 0, 0, 0])
+            self._queues.audio.put(gap)
         tone = signals.Event(signals.AUDIO_TONE, [voice, frequency, duration, fill, loop, volume])
         self._queues.audio.put(tone)
         self.voice_queue[voice].put(tone, None if loop else duration)
@@ -126,8 +131,8 @@ class Sound(object):
     def play_sound(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
         """Play a sound on the tone generator; wait if tone queue is full."""
         self.play_sound_no_wait(frequency, duration, fill, loop, voice, volume)
-        # at most 16 notes in the sound queue (not 32 as the guide says!)
-        self.wait_music(15)
+        # at most 16 notes in the sound queue with gaps, or 32 without gaps
+        self.wait_music(31)
 
     def noise_(self, args):
         """Generate a noise (NOISE statement)."""
