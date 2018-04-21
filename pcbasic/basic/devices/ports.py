@@ -373,13 +373,17 @@ class COMFile(TextFileBase, RealTimeInputMixin):
             self._fhandle.write(s)
 
     def get(self, num):
-        """Read a record - GET."""
+        """Read num bytes - GET on COM port."""
+        if not num:
+            return
         # blocking read of num bytes
         s = self.read(num)
         self._field.buffer[:len(s)] = s
 
     def put(self, num):
-        """Write a record - PUT."""
+        """Write num bytes - PUT on COM port."""
+        if not num:
+            return
         self.write(self._field.buffer[:num])
 
     def loc(self):

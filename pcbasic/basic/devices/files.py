@@ -273,23 +273,18 @@ class Files(object):
         except StopIteration:
             pass
 
-    def _set_record_pos(self, the_file, pos=None):
+    def _check_pos(self, pos):
         """Helper function: PUT and GET syntax."""
-        if not isinstance(the_file, ports.COMFile):
-            num_bytes = the_file.reclen
-        if pos is not None:
-            # forcing to single before rounding - this means we don't have enough precision
-            # to address each individual record close to the maximum record number
-            # but that's in line with GW
-            pos = int(values.round(values.to_single(pos)).to_value())
-            # not 2^32-1 as the manual boasts!
-            # pos-1 needs to fit in a single-precision mantissa
-            error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
-            if not isinstance(the_file, ports.COMFile):
-                the_file.set_pos(pos)
-            else:
-                num_bytes = pos
-        return the_file, num_bytes
+        if pos is None:
+            return pos
+        # forcing to single before rounding - this means we don't have enough precision
+        # to address each individual record close to the maximum record number
+        # but that's in line with GW
+        pos = int(values.round(values.to_single(pos)).to_value())
+        # not 2^32-1 as the manual boasts!
+        # pos-1 needs to fit in a single-precision mantissa
+        error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
+        return pos
 
     def put_(self, args):
         """PUT: write record to file."""
@@ -297,8 +292,8 @@ class Files(object):
         error.range_check(0, 255, number)
         the_file = self.get(number, b'R', not_open=error.BAD_FILE_MODE)
         pos, = args
-        thefile, num_bytes = self._set_record_pos(the_file, pos)
-        thefile.put(num_bytes)
+        pos = self._check_pos(pos)
+        the_file.put(pos)
 
     def get_(self, args):
         """GET: read record from file."""
@@ -306,8 +301,8 @@ class Files(object):
         error.range_check(0, 255, number)
         the_file = self.get(number, b'R', not_open=error.BAD_FILE_MODE)
         pos, = args
-        thefile, num_bytes = self._set_record_pos(the_file, pos)
-        thefile.get(num_bytes)
+        pos = self._check_pos(pos)
+        the_file.get(pos)
 
     ###########################################################################
 

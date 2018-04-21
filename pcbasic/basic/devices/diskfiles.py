@@ -276,8 +276,9 @@ class RandomFile(RawFile):
         """Return whether we're past current end-of-file, for EOF."""
         return self._recpos * self.reclen > self.lof()
 
-    def get(self, dummy=None):
+    def get(self, pos):
         """Read a record."""
+        self._set_record_pos(pos)
         # exceptionally, GET is allowed if the file holding the lock is open for OUTPUT
         self._locks.try_record_access(self._number, self._recpos+1, self._recpos+1, b'R')
         if self.eof():
@@ -291,8 +292,9 @@ class RandomFile(RawFile):
         self._field_file.reset()
         self._recpos += 1
 
-    def put(self, dummy=None):
+    def put(self, pos):
         """Write a record."""
+        self._set_record_pos(pos)
         self._locks.try_record_access(self._number, self._recpos+1, self._recpos+1, b'W')
         current_length = self.lof()
         with safe_io():
@@ -303,12 +305,13 @@ class RandomFile(RawFile):
             self._fhandle.write(self._field.buffer)
         self._recpos += 1
 
-    def set_pos(self, newpos):
-        """Set current record number."""
-        # first record is newpos number 1
-        with safe_io():
-            self._fhandle.seek((newpos-1) * self.reclen)
-        self._recpos = newpos - 1
+    def _set_record_pos(self, pos):
+        """Move record pointer to new position."""
+        if pos is not None:
+            # first record is number 1
+            with safe_io():
+                self._fhandle.seek((pos-1) * self.reclen)
+            self._recpos = pos - 1
 
     def loc(self):
         """Get number of record just past, for LOC."""
