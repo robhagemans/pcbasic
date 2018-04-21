@@ -333,8 +333,6 @@ class DiskDevice(object):
         # don't open output or append files more than once
         # whether it's the same file is determined by DOS basename, i.e. excluding directories!
         dos_basename = self._get_dos_name_defext(filespec, defext)
-        if mode in (b'O', b'A'):
-            self.require_file_not_open(dos_basename)
         # obtain a lock
         self._locks.open_file(dos_basename, number, mode, lock, access)
         try:
@@ -552,7 +550,7 @@ class DiskDevice(object):
 
     def require_file_not_open(self, dos_basename):
         """Raise an error if the file is open."""
-        if self._locks.list_open(ntpath.basename(dos_basename)):
+        if self._locks.list_open(dos_basename):
             raise error.BASICError(error.FILE_ALREADY_OPEN)
 
     ##########################################################################
@@ -881,7 +879,7 @@ class Locks(object):
         """Retrieve a list of files open on the same disk device."""
         return [
             f for number, f in self._locking_parameters.iteritems()
-            if f.name == name and number != exclude_number
+            if f.name == ntpath.basename(name) and number != exclude_number
         ]
 
     def open_file(self, name, number, mode, lock_type, access):
@@ -889,6 +887,8 @@ class Locks(object):
         if not number:
             return
         already_open = self.list_open(name)
+        if mode in (b'O', b'A') and already_open:
+            raise error.BASICError(error.FILE_ALREADY_OPEN)
         for f in already_open:
             if (
                     # default mode: don't accept if SHARED/LOCK present
