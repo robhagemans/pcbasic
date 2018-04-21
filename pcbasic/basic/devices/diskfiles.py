@@ -341,7 +341,7 @@ class LockingParameters(object):
 
     def __init__(self, dos_name, mode, lock_type, access):
         """Build a record."""
-        self.name = ntpath.basename(dos_name)
+        self.name = ntpath.basename(dos_name).upper()
         self.lock_set = set()
         self.lock_type = lock_type
         self.access = access
@@ -360,16 +360,16 @@ class Locks(object):
         """Retrieve a list of files open on the same disk device."""
         return [
             f for number, f in self._locking_parameters.iteritems()
-            if f.name == ntpath.basename(name) and number != exclude_number
+            if f.name == ntpath.basename(name).upper() and number != exclude_number
         ]
 
     def open_file(self, name, number, mode, lock_type, access):
         """Register a disk file and try to acquire a file lock."""
-        if not number:
-            return
         already_open = self.list_open(name)
         if mode in (b'O', b'A') and already_open:
             raise error.BASICError(error.FILE_ALREADY_OPEN)
+        if not number:
+            return
         for f in already_open:
             if (
                     # default mode: don't accept if SHARED/LOCK present
