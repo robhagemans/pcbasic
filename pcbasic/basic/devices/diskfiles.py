@@ -171,15 +171,12 @@ class TextFile(TextFileBase, InputMixin):
         # range bounds are ignored on text file
         # we need a tuple in case the other file checking the lock is a random file
         if self._locks:
-            self._locks.try_record_lock(self, None, None, allow_self=False)
-        self.lock_list.add((None, None))
+            self._locks.acquire_record_lock(self, None, None)
 
     def unlock(self, start, stop):
         """Unlock the file."""
-        try:
-            self.lock_list.remove((None, None))
-        except KeyError:
-            raise error.BASICError(error.PERMISSION_DENIED)
+        if self._locks:
+            self._locks.release_record_lock(self, None, None)
 
 
 class FieldFile(TextFile):
@@ -357,13 +354,10 @@ class RandomFile(RawFile):
 
     def lock(self, start, stop):
         """Lock range of records."""
-        self._locks.try_record_lock(self, start, stop, allow_self=False)
-        self.lock_list.add((start, stop))
+        if self._locks:
+            self._locks.acquire_record_lock(self, start, stop)
 
     def unlock(self, start, stop):
         """Unlock range of records."""
-        # permission denied if the exact record range wasn't given before
-        try:
-            self.lock_list.remove((start, stop))
-        except KeyError:
-            raise error.BASICError(error.PERMISSION_DENIED)
+        if self._locks:
+            self._locks.release_record_lock(self, start, stop)

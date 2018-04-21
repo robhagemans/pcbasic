@@ -951,6 +951,19 @@ class Locks(object):
                             or (stop >= start_1 and stop <= stop_1)):
                     raise error.BASICError(error.PERMISSION_DENIED)
 
+    def acquire_record_lock(self, this_file, start, stop):
+        """Acquire a lock on a range of records."""
+        self.try_record_lock(this_file, start, stop, allow_self=False)
+        this_file.lock_list.add((start, stop))
+
+    def release_record_lock(self, this_file, start, stop):
+        """Acquire a lock on a range of records."""
+        # permission denied if the exact record range wasn't given before
+        try:
+            this_file.lock_list.remove((start, stop))
+        except KeyError:
+            raise error.BASICError(error.PERMISSION_DENIED)
+
     def release(self, number):
         """Release the lock on a file before closing."""
         try:
