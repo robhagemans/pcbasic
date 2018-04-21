@@ -35,7 +35,7 @@ class BinaryFile(RawFile):
         # don't lock binary files
         # we need the Locks object to register file as open
         self._locks = locks
-        self.number = number
+        self._number = number
         # binary file parameters
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == b'O':
@@ -62,7 +62,7 @@ class BinaryFile(RawFile):
         RawFile.close(self)
         if self._locks is not None:
             # no locking for binary files, but we do need to register it closed
-            self._locks.close_file(self.number)
+            self._locks.close_file(self._number)
 
 
 class TextFile(TextFileBase, InputMixin):
@@ -72,7 +72,7 @@ class TextFile(TextFileBase, InputMixin):
         """Initialise text file object."""
         TextFileBase.__init__(self, fhandle, filetype, mode)
         self._locks = locks
-        self.number = number
+        self._number = number
         self._universal = universal
         # in append mode, we need to start at end of file
         if self.mode == b'A':
@@ -87,12 +87,12 @@ class TextFile(TextFileBase, InputMixin):
                 self._fhandle.write(b'\x1a')
         TextFileBase.close(self)
         if self._locks is not None:
-            self._locks.close_file(self.number)
+            self._locks.close_file(self._number)
 
     def read(self, n):
         """Read num characters."""
         if self._locks:
-            self._locks.try_access(self, b'R')
+            self._locks.try_access(self._number, b'R')
         return TextFileBase.read(self, n)
 
     def read_one(self):
@@ -128,7 +128,7 @@ class TextFile(TextFileBase, InputMixin):
     def write(self, s, can_break=True):
         """Write string to file."""
         if self._locks:
-            self._locks.try_access(self, b'W')
+            self._locks.try_access(self._number, b'W')
         TextFileBase.write(self, s, can_break)
 
     def write_line(self, s=''):
@@ -157,12 +157,12 @@ class TextFile(TextFileBase, InputMixin):
         # range bounds are ignored on text file
         # we need a tuple in case the other file checking the lock is a random file
         if self._locks:
-            self._locks.acquire_record_lock(self, None, None)
+            self._locks.acquire_record_lock(self._number, None, None)
 
     def unlock(self, start, stop):
         """Unlock the file."""
         if self._locks:
-            self._locks.release_record_lock(self, None, None)
+            self._locks.release_record_lock(self._number, None, None)
 
 
 class FieldFile(TextFile):
@@ -211,7 +211,7 @@ class RandomFile(RawFile):
         RawFile.__init__(self, fhandle, b'D', b'R')
         self.reclen = reclen
         self._locks = locks
-        self.number = number
+        self._number = number
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
         # touched until PUT or GET.
@@ -225,7 +225,7 @@ class RandomFile(RawFile):
         """Close random-access file."""
         RawFile.close(self)
         if self._locks is not None:
-            self._locks.close_file(self.number)
+            self._locks.close_file(self._number)
 
     ##########################################################################
     # field text file operations
@@ -284,9 +284,8 @@ class RandomFile(RawFile):
     def get(self, dummy=None):
         """Read a record."""
         if self._locks:
-            self._locks.try_access(self, b'R')
             # exceptionally, GET is allowed if the file holding the lock is open for OUTPUT
-            self._locks.try_record_lock(self, self._recpos+1, self._recpos+1, read_only=True)
+            self._locks.try_record_access(self._number, self._recpos+1, self._recpos+1, b'R')
         if self.eof():
             contents = b'\0' * self.reclen
         else:
@@ -301,8 +300,7 @@ class RandomFile(RawFile):
     def put(self, dummy=None):
         """Write a record."""
         if self._locks:
-            self._locks.try_access(self, b'W')
-            self._locks.try_record_lock(self, self._recpos+1, self._recpos+1)
+            self._locks.try_record_access(self._number, self._recpos+1, self._recpos+1, b'W')
         current_length = self.lof()
         with safe_io():
             if self._recpos > current_length:
@@ -335,9 +333,9 @@ class RandomFile(RawFile):
     def lock(self, start, stop):
         """Lock range of records."""
         if self._locks:
-            self._locks.acquire_record_lock(self, start, stop)
+            self._locks.acquire_record_lock(self._number, start, stop)
 
     def unlock(self, start, stop):
         """Unlock range of records."""
         if self._locks:
-            self._locks.release_record_lock(self, start, stop)
+            self._locks.release_record_lock(self._number, start, stop)

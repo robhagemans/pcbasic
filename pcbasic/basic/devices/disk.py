@@ -919,9 +919,8 @@ class Locks(object):
         except KeyError:
             pass
 
-    def try_access(self, this_file_object, access):
+    def try_access(self, number, access):
         """Attempt to access a file."""
-        number = this_file_object.number
         if not number:
             return
         this_file = self._locking_parameters[number]
@@ -934,9 +933,13 @@ class Locks(object):
             if (f.lock_type and f.lock_type != b'SHARED' and (set(f.lock_type) & set(access))):
                 raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
 
-    def try_record_lock(self, this_file_object, start, stop, allow_self=True, read_only=False):
+    def try_record_access(self, number, start, stop, access=b'RW'):
         """Attempt to access a record."""
-        number = this_file_object.number
+        self.try_access(number, access)
+        self._try_record_lock(number, start, stop, allow_self=True, read_only=(access == b'R'))
+
+    def _try_record_lock(self, number, start, stop, allow_self=True, read_only=False):
+        """Attempt to access a record."""
         this_file = self._locking_parameters[number]
         other_locks = [
             f.lock_set for f in self.list_open(this_file.name, number if allow_self else None)
@@ -957,16 +960,14 @@ class Locks(object):
                             or (stop >= start_1 and stop <= stop_1)):
                     raise error.BASICError(error.PERMISSION_DENIED)
 
-    def acquire_record_lock(self, this_file_object, start, stop):
+    def acquire_record_lock(self, number, start, stop):
         """Acquire a lock on a range of records."""
-        self.try_record_lock(this_file_object, start, stop, allow_self=False)
-        number = this_file_object.number
+        self._try_record_lock(number, start, stop, allow_self=False)
         this_file = self._locking_parameters[number]
         this_file.lock_set.add((start, stop))
 
-    def release_record_lock(self, this_file_object, start, stop):
+    def release_record_lock(self, number, start, stop):
         """Acquire a lock on a range of records."""
-        number = this_file_object.number
         this_file = self._locking_parameters[number]
         # permission denied if the exact record range wasn't given before
         try:
