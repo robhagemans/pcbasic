@@ -106,13 +106,11 @@ class TextFile(TextFileBase, InputMixin):
     def read(self, n):
         """Read num characters."""
         if self._locks:
-            self._locks.try_access(self, 'R')
+            self._locks.try_access(self, b'R')
         return TextFileBase.read(self, n)
 
     def read_one(self):
         """Read one character, replacing CR LF with CR."""
-        if self._locks:
-            self._locks.try_access(self, 'R')
         c = self.read(1)
         if not c:
             return c
@@ -129,8 +127,6 @@ class TextFile(TextFileBase, InputMixin):
 
     def read_line(self):
         """Read line from text file, break on CR or CRLF (not LF, unless universal newlines)."""
-        if self._locks:
-            self._locks.try_access(self, 'R')
         s = []
         while True:
             c = self.read_one()
@@ -143,10 +139,14 @@ class TextFile(TextFileBase, InputMixin):
                 break
         return b''.join(s), c
 
+    def write(self, s, can_break=True):
+        """Write string to file."""
+        if self._locks:
+            self._locks.try_access(self, b'W')
+        TextFileBase.write(self, s, can_break)
+
     def write_line(self, s=''):
         """Write string and newline to file."""
-        if self._locks:
-            self._locks.try_access(self, 'W')
         self.write(s + b'\r\n')
 
     def loc(self):
@@ -170,7 +170,8 @@ class TextFile(TextFileBase, InputMixin):
         """Lock the file."""
         # range bounds are ignored on text file
         # we need a tuple in case the other file checking the lock is a random file
-        self._locks.try_record_lock(self, None, None, allow_self=False)
+        if self._locks:
+            self._locks.try_record_lock(self, None, None, allow_self=False)
         self.lock_list.add((None, None))
 
     def unlock(self, start, stop):
@@ -306,7 +307,7 @@ class RandomFile(RawFile):
     def get(self, dummy=None):
         """Read a record."""
         if self._locks:
-            self._locks.try_access(self, 'R')
+            self._locks.try_access(self, b'R')
             self._locks.try_record_lock(self, self._recpos+1, self._recpos+1)
         if self.eof():
             contents = b'\0' * self.reclen
@@ -322,7 +323,7 @@ class RandomFile(RawFile):
     def put(self, dummy=None):
         """Write a record."""
         if self._locks:
-            self._locks.try_access(self, 'W')
+            self._locks.try_access(self, b'W')
             self._locks.try_record_lock(self, self._recpos+1, self._recpos+1)
         current_length = self.lof()
         with safe_io():
