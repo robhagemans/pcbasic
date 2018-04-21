@@ -257,9 +257,9 @@ class DiskDevice(object):
         """Device is available."""
         return True
 
-    def _create_file_object(self, fhandle, filetype, mode, native_name=u'', number=0,
-                           access=b'RW', lock=b'', field=None, reclen=128,
-                           seg=0, offset=0, length=0):
+    def _create_file_object(
+            self, fhandle, filetype, mode, number=0,
+            field=None, reclen=128, seg=0, offset=0, length=0):
         """Create disk file object of requested type."""
         # determine file type if needed
         if len(filetype) > 1 and mode == b'I':
@@ -286,24 +286,17 @@ class DiskDevice(object):
                     fhandle = CodecWriter(fhandle, self._codepage, 'utf-8')
         if filetype in b'BPM':
             # binary [B]LOAD, [B]SAVE
-            return BinaryFile(
-                        fhandle, filetype, number, native_name, mode,
-                        seg, offset, length, self._locks)
+            return BinaryFile(fhandle, filetype, number, mode, seg, offset, length, self._locks)
         elif filetype == b'A':
             # ascii program file
-            return TextFile(
-                    fhandle, filetype, number, native_name, mode,
-                    access, lock, self._locks, self._universal)
+            return TextFile(fhandle, filetype, number, mode, self._locks, self._universal)
         elif filetype == b'D':
             if mode in b'IAO':
                 # data file for input, output, append
-                return TextFile(
-                    fhandle, filetype, number, native_name, mode,
-                    access, lock, self._locks, self._universal)
+                return TextFile(fhandle, filetype, number, mode, self._locks, self._universal)
             else:
                 # data file for random
-                return RandomFile(
-                    fhandle, number, native_name, access, lock, field, reclen, self._locks)
+                return RandomFile(fhandle, number, field, reclen, self._locks)
         else:
             # incorrect file type requested
             msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
@@ -339,10 +332,8 @@ class DiskDevice(object):
             # open the underlying stream
             fhandle = self._open_stream(native_name, filetype, mode)
             # apply the BASIC file wrapper
-            f = self._create_file_object(
-                    fhandle, filetype, mode, dos_basename, number,
-                    access, lock, field, reclen, seg, offset, length)
-            return f
+            return self._create_file_object(
+                    fhandle, filetype, mode, number, field, reclen, seg, offset, length)
         except Exception:
             self._locks.close_file(number)
             raise
@@ -806,8 +797,9 @@ class InternalDiskDevice(DiskDevice):
         """Unbind bound file."""
         del self._bound_files[name]
 
-    def open(self, number, filespec, filetype, mode, access, lock,
-                   reclen, seg, offset, length, field):
+    def open(
+            self, number, filespec, filetype, mode, access, lock,
+            reclen, seg, offset, length, field):
         """Open a file on the internal disk drive."""
         if filespec in self._bound_files:
             fhandle = self._bound_files[filespec].get_stream(mode)

@@ -29,8 +29,7 @@ from .devicebase import RawFile, TextFileBase, InputMixin, safe_io, TYPE_TO_MAGI
 class BinaryFile(RawFile):
     """File class for binary (B, P, M) files on disk device."""
 
-    def __init__(self, fhandle, filetype, number, name, mode,
-                       seg, offset, length, locks=None):
+    def __init__(self, fhandle, filetype, number, mode, seg, offset, length, locks=None):
         """Initialise program file object and write header."""
         RawFile.__init__(self, fhandle, filetype, mode)
         # don't lock binary files
@@ -69,9 +68,7 @@ class BinaryFile(RawFile):
 class TextFile(TextFileBase, InputMixin):
     """Text file on disk device."""
 
-    def __init__(
-            self, fhandle, filetype, number, name, mode=b'A',
-            access=b'RW', lock=b'', locks=None, universal=False):
+    def __init__(self, fhandle, filetype, number, mode=b'A', locks=None, universal=False):
         """Initialise text file object."""
         TextFileBase.__init__(self, fhandle, filetype, mode)
         self._locks = locks
@@ -173,7 +170,7 @@ class FieldFile(TextFile):
 
     def __init__(self, field, reclen):
         """Initialise text file object."""
-        TextFile.__init__(self, ByteStream(field.buffer), b'D', -1, b'<field>', b'I')
+        TextFile.__init__(self, ByteStream(field.buffer), b'D', None, b'I')
         self._reclen = reclen
 
     def reset(self):
@@ -208,7 +205,7 @@ class FieldFile(TextFile):
 class RandomFile(RawFile):
     """Random-access file on disk device."""
 
-    def __init__(self, fhandle, number, name, access, lock, field, reclen=128, locks=None):
+    def __init__(self, fhandle, number, field, reclen=128, locks=None):
         """Initialise random-access file."""
         # note that for random files, output_stream must be a seekable stream.
         RawFile.__init__(self, fhandle, b'D', b'R')
