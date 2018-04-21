@@ -336,14 +336,7 @@ class DiskDevice(object):
         if mode in (b'O', b'A'):
             self.require_file_not_open(dos_basename)
         # obtain a lock
-        if filetype == b'D':
-            self._locks.acquire(dos_basename, number, lock, access)
-        # setting this only after the lock acquisition makes the check asymmetric
-        # which is what GW-BASIC does...
-        # first file to open with unspecified access gets RW access
-        # but second file gets checked for ''
-        if lock and not access:
-            access = b'RW'
+        self._locks.open_file(dos_basename, number, mode, lock, access)
         try:
             # open the underlying stream
             fhandle = self._open_stream(native_name, filetype, mode)
@@ -351,12 +344,8 @@ class DiskDevice(object):
             f = self._create_file_object(
                     fhandle, filetype, mode, dos_basename, number,
                     access, lock, field, reclen, seg, offset, length)
-            # register file as open
-            self._locks.open_file(number, f)
             return f
         except Exception:
-            if filetype == b'D':
-                self._locks.release(number)
             self._locks.close_file(number)
             raise
 
@@ -368,9 +357,9 @@ class DiskDevice(object):
             if ((mode == b'A' or mode == b'R') and not os.path.exists(native_name)):
                 io.open(native_name, 'wb').close()
             if mode == b'A':
+                f = io.open(native_name, 'r+b')
                 # APPEND mode is only valid for text files (which are seekable);
                 # first cut off EOF byte, if any.
-                f = io.open(native_name, 'r+b')
                 try:
                     f.seek(-1, 2)
                     if f.read(1) == b'\x1a':
@@ -563,13 +552,8 @@ class DiskDevice(object):
 
     def require_file_not_open(self, dos_basename):
         """Raise an error if the file is open."""
-        for f in self._locks.open_files.values():
-            try:
-                if ntpath.basename(dos_basename) == f.name:
-                    raise error.BASICError(error.FILE_ALREADY_OPEN)
-            except AttributeError as e:
-                # only disk files have a name, so ignore
-                pass
+        if self._locks.list_open(ntpath.basename(dos_basename)):
+            raise error.BASICError(error.FILE_ALREADY_OPEN)
 
     ##########################################################################
     # DOS and native name conversion
@@ -872,27 +856,39 @@ class InternalDiskDevice(DiskDevice):
 ###############################################################################
 # Locks
 
+
+class LockingParameters(object):
+    """Record of a file's locking parameters."""
+
+    def __init__(self, dos_name, mode, lock_type, access):
+        """Build a record."""
+        self.name = ntpath.basename(dos_name)
+        self.lock_set = set()
+        self.lock_type = lock_type
+        self.access = access
+        self.mode = mode
+
+
 class Locks(object):
     """Lock management."""
 
     def __init__(self):
         """Initialise locks."""
-        # dict of native file names by number, for locking
-        self._locks = {}
-        # dict of disk files
-        self.open_files = {}
+        # dict of LockingParameters objects, one for each open disk file, by file number
+        self._locking_parameters = {}
 
-    def list(self, name):
-        """Retrieve a list of files open to the same disk stream."""
-        return [ self.open_files[fnum]
-                       for (fnum, fname) in self._locks.iteritems()
-                       if fname == name ]
+    def list_open(self, name, exclude_number=None):
+        """Retrieve a list of files open on the same disk device."""
+        return [
+            f for number, f in self._locking_parameters.iteritems()
+            if f.name == name and number != exclude_number
+        ]
 
-    def acquire(self, name, number, lock_type, access):
-        """Try to lock a file."""
+    def open_file(self, name, number, mode, lock_type, access):
+        """Register a disk file and try to acquire a file lock."""
         if not number:
             return
-        already_open = self.list(name)
+        already_open = self.list_open(name)
         for f in already_open:
             if (
                     # default mode: don't accept if SHARED/LOCK present
@@ -916,26 +912,44 @@ class Locks(object):
                     )
                 ):
                 raise error.BASICError(error.PERMISSION_DENIED)
-        self._locks[number] = name
+        # setting this only after the lock acquisition makes the check asymmetric
+        # which is what GW-BASIC does...
+        # first file to open with unspecified access gets RW access
+        # but second file gets checked for ''
+        if lock_type and not access:
+            access = b'RW'
+        self._locking_parameters[number] = LockingParameters(name, mode, lock_type, access)
 
-    def try_access(self, this_file, access):
+    def close_file(self, number):
+        """Deregister disk file."""
+        try:
+            del self._locking_parameters[number]
+        except KeyError:
+            pass
+
+    def try_access(self, this_file_object, access):
         """Attempt to access a file."""
+        number = this_file_object.number
+        if not number:
+            return
+        this_file = self._locking_parameters[number]
         # access in violation of ACCESS declaration in OPEN: path/file access error
         if this_file.access and not (set(access) & set(this_file.access)):
             raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
         # access in violation of other's LOCK declation in OPEN: path/file access error
-        already_open = self.list(this_file.name)
-        for f in already_open:
-            if f != this_file and (
-                    f.lock_type and f.lock_type != b'SHARED' and (set(f.lock_type) & set(access))):
+        others = self.list_open(this_file.name, number)
+        for f in others:
+            if (f.lock_type and f.lock_type != b'SHARED' and (set(f.lock_type) & set(access))):
                 raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
 
-    def try_record_lock(self, this_file, start, stop, allow_self=True, read_only=False):
+    def try_record_lock(self, this_file_object, start, stop, allow_self=True, read_only=False):
         """Attempt to access a record."""
+        number = this_file_object.number
+        this_file = self._locking_parameters[number]
         other_locks = [
-            f.lock_list for f in self.list(this_file.name)
+            f.lock_set for f in self.list_open(this_file.name, number if allow_self else None)
             # access parameter only exists to allow reading a record on locked OUTPUT file
-            if ((not allow_self) or f != this_file) and not (f.mode in b'OA' and read_only)
+            if not (f.mode in b'OA' and read_only)
         ]
         other_lock_set = set.union(*other_locks) if other_locks else set()
         # access in violation of other's LOCK#: permission denied
@@ -951,33 +965,19 @@ class Locks(object):
                             or (stop >= start_1 and stop <= stop_1)):
                     raise error.BASICError(error.PERMISSION_DENIED)
 
-    def acquire_record_lock(self, this_file, start, stop):
+    def acquire_record_lock(self, this_file_object, start, stop):
         """Acquire a lock on a range of records."""
-        self.try_record_lock(this_file, start, stop, allow_self=False)
-        this_file.lock_list.add((start, stop))
+        self.try_record_lock(this_file_object, start, stop, allow_self=False)
+        number = this_file_object.number
+        this_file = self._locking_parameters[number]
+        this_file.lock_set.add((start, stop))
 
-    def release_record_lock(self, this_file, start, stop):
+    def release_record_lock(self, this_file_object, start, stop):
         """Acquire a lock on a range of records."""
+        number = this_file_object.number
+        this_file = self._locking_parameters[number]
         # permission denied if the exact record range wasn't given before
         try:
-            this_file.lock_list.remove((start, stop))
+            this_file.lock_set.remove((start, stop))
         except KeyError:
             raise error.BASICError(error.PERMISSION_DENIED)
-
-    def release(self, number):
-        """Release the lock on a file before closing."""
-        try:
-            del self._locks[number]
-        except KeyError:
-            pass
-
-    def open_file(self, number, f):
-        """Register disk file as open."""
-        self.open_files[number] = f
-
-    def close_file(self, number):
-        """Deregister disk file."""
-        try:
-            del self.open_files[number]
-        except KeyError:
-            pass

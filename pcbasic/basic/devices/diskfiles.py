@@ -22,10 +22,8 @@ from .devicebase import RawFile, TextFileBase, InputMixin, safe_io, TYPE_TO_MAGI
 
 # locking interface
 #   number
-#   access
-#   lock_list
-#   lock_type
 #   lock()
+#   unlock()
 
 
 class BinaryFile(RawFile):
@@ -37,11 +35,8 @@ class BinaryFile(RawFile):
         RawFile.__init__(self, fhandle, filetype, mode)
         # don't lock binary files
         # we need the Locks object to register file as open
-        self.number = number
-        # FIXME: .lock is a method elsewhere, should this be lock_list or lock_type?
-        self.lock = b''
-        self.access = b'RW'
         self._locks = locks
+        self.number = number
         # binary file parameters
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == b'O':
@@ -79,13 +74,8 @@ class TextFile(TextFileBase, InputMixin):
             access=b'RW', lock=b'', locks=None, universal=False):
         """Initialise text file object."""
         TextFileBase.__init__(self, fhandle, filetype, mode)
-        # locking members
-        self.number = number
-        self.name = name
-        self.lock_list = set()
-        self.lock_type = lock
-        self.access = access
         self._locks = locks
+        self.number = number
         self._universal = universal
         # in append mode, we need to start at end of file
         if self.mode == b'A':
@@ -100,7 +90,6 @@ class TextFile(TextFileBase, InputMixin):
                 self._fhandle.write(b'\x1a')
         TextFileBase.close(self)
         if self._locks is not None:
-            self._locks.release(self.number)
             self._locks.close_file(self.number)
 
     def read(self, n):
@@ -224,13 +213,8 @@ class RandomFile(RawFile):
         # note that for random files, output_stream must be a seekable stream.
         RawFile.__init__(self, fhandle, b'D', b'R')
         self.reclen = reclen
-        # locking members (used by Locks.acquire)
-        self.number = number
-        self.name = name
-        self.lock_type = lock
-        self.lock_list = set()
-        self.access = access
         self._locks = locks
+        self.number = number
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
         # touched until PUT or GET.
@@ -244,7 +228,6 @@ class RandomFile(RawFile):
         """Close random-access file."""
         RawFile.close(self)
         if self._locks is not None:
-            self._locks.release(self.number)
             self._locks.close_file(self.number)
 
     ##########################################################################
