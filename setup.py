@@ -268,13 +268,27 @@ if CX_FREEZE and sys.platform == 'win32':
                     if (
                             # remove superfluous copies of python27.dll in lib/
                             # as there is a copy in the package root already
-                            f == 'python27.dll' or
+                            f .lower() == 'python27.dll' or f.lower() == 'msvcr90.dll' or
                             # remove tests and examples, but not for numpy (it breaks)
                             (testing and 'numpy' not in root) or
                             # we're only producing packages for win32_x86
                             'win32_x64' in name):
                         print 'REMOVING %s' % (name,)
                         os.remove(name)
+            # remove lib dir altogether to avoid it getting copied into the msi
+            # as everything in there is copied once already
+            shutil.rmtree('build/lib')
+            # remove c++ runtime etc
+            os.remove('build/exe.win32-2.7/msvcm90.dll')
+            os.remove('build/exe.win32-2.7/msvcp90.dll')
+            # remove numpy tests that can be left out (some seem needed)
+            for module in [
+                    'distutils', 'setuptools', 'pydoc_data', 'numpy/core/tests', 'numpy/lib/tests',
+                    'numpy/f2py/tests', 'numpy/distutils', 'numpy/doc',]:
+                try:
+                    shutil.rmtree('build/exe.win32-2.7/lib/%s' % module)
+                except EnvironmentError:
+                    pass
 
 
     SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
@@ -288,6 +302,8 @@ if CX_FREEZE and sys.platform == 'win32':
     SETUP_OPTIONS['author'] = AUTHOR.encode('ascii')
     SETUP_OPTIONS['version'] = numversion
 
+    # compile separately, as they end up in the wrong place anyway
+    SETUP_OPTIONS['ext_modules'] = []
 
     directory_table = [
         (
@@ -364,7 +380,7 @@ if CX_FREEZE and sys.platform == 'win32':
                 'pywin', 'win32com', 'test',
             ],
             'include_files': ['doc/PC-BASIC_documentation.html'],
-            #'include_msvcr': True,
+            'include_msvcr': True,
             #'optimize': 2,
         },
         'bdist_msi': {
@@ -391,7 +407,6 @@ if CX_FREEZE and sys.platform == 'win32':
 
 elif CX_FREEZE and sys.platform == 'darwin':
 
-
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""
 
@@ -411,7 +426,6 @@ elif CX_FREEZE and sys.platform == 'darwin':
                             'win32_' in name):
                         print 'REMOVING %s' % (name,)
                         os.remove(name)
-
 
 
     class BdistMacCommand(cx_Freeze.bdist_mac):
