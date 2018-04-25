@@ -38,7 +38,7 @@ except ImportError:
 
 try:
     dll = sdl2.DLL('SDL2_gfx', ['SDL2_gfx', 'SDL2_gfx-1.0'], LIB_DIR)
-except RuntimeError:
+except Exception:
     sdlgfx = None
 else:
     SMOOTHING_ON = 1
