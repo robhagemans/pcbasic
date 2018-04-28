@@ -493,7 +493,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
                 print e
             shutil.copytree(self.bundleDir, 'build/dmg/' + os.path.basename(self.bundleDir))
             # include the docs at them top level in the dmg
-            shutil.copy('doc/PC-BASIC_documentation.html', 'build/dmg')
+            shutil.copy('doc/PC-BASIC_documentation.html', 'build/dmg/Documentation.html')
 
             createargs = [
                 'hdiutil', 'create', '-fs', 'HFSX', '-format', 'UDZO',
