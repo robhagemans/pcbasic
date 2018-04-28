@@ -142,6 +142,7 @@ class SDistDevCommand(sdist.sdist):
                 'include pcbasic/lib/*\n'
                 'include pcbasic/lib/*/*\n'
                 'include pcbasic/compat/*.c\n'
+                'include pcbasic/compat/*.pyd\n'
                 'recursive-include test *'
             )
         self.run_command('build_docs')
@@ -169,6 +170,7 @@ class BuildPyCommand(build_py.build_py):
 
 ###############################################################################
 # metadata
+
 
 SETUP_OPTIONS = {
     'name': PACKAGE,
