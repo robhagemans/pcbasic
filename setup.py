@@ -11,6 +11,7 @@ import os
 import platform
 import shutil
 import glob
+import subprocess
 from codecs import open
 from setuptools.command import sdist, build_py
 
@@ -426,10 +427,35 @@ elif CX_FREEZE and sys.platform == 'darwin':
                             'win32_' in name):
                         print 'REMOVING %s' % (name,)
                         os.remove(name)
+            # remove modules that can be left out (some numpy tests seem needed)
+            for module in [
+                    'distutils', 'setuptools', 'pydoc_data', 'numpy/core/tests', 'numpy/lib/tests',
+                    'numpy/f2py/tests', 'numpy/distutils', 'numpy/doc',]:
+                try:
+                    shutil.rmtree('build/exe.macosx-10.13-x86_64-2.7/lib/%s' % module)
+                except EnvironmentError:
+                    pass
 
 
     class BdistMacCommand(cx_Freeze.bdist_mac):
         """Custom bdist_mac command."""
+
+        def run(self):
+            """Run bdist_mac command."""
+            cx_Freeze.bdist_mac.run(self)
+            # fix install names in libraries in lib/ that were modified by cx_Freeze
+            name = 'libSDL_gfx.dylib'
+            file_path = 'build/PC-BASIC-2.0.app/Contents/MacOS/lib/pcbasic/lib/darwin' + name
+            # find the references: call otool -L on the file
+            otool = subprocess.Popen(('otool', '-L', file_path), stdout=subprocess.PIPE)
+            for ref in otool.stdout:
+                if 'libSDL_gfx' not in ref:
+                    continue
+                path = ref.decode().strip().split()[0]
+                subprocess.call((
+                    'install_name_tool', '-change', path,
+                    '@loader_path/' + name, file_path
+                ))
 
         def copy_file(self, src, dst):
             # catch copy errors, these happen with relative references with funny bracketed names
@@ -442,8 +468,23 @@ elif CX_FREEZE and sys.platform == 'darwin':
                 open(dst, 'w').close()
 
 
+    class BdistDmgCommand(cx_Freeze.bdist_dmg):
+        """Custom bdist_mac command."""
+
+        def run(self):
+            """Run bdist_dmg command."""
+            cx_Freeze.bdist_dmg.run(self)
+            # move the disk image to dist/
+            try:
+                os.mkdir('dist/')
+            except EnvironmentError:
+                pass
+            shutil.move('build/PC-BASIC-2.0.dmg', 'dist/')
+
+
     SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
     SETUP_OPTIONS['cmdclass']['bdist_mac'] = BdistMacCommand
+    SETUP_OPTIONS['cmdclass']['bdist_dmg'] = BdistDmgCommand
 
     # cx_Freeze options
     SETUP_OPTIONS['options'] = {
