@@ -29,9 +29,15 @@ Once you have a working Python installation, most dependencies can be installed 
         pip install pysdl2 numpy pygame pyaudio pyserial
 
 To use the graphical interface, you will also need to install the [SDL2](https://www.libsdl.org/download-2.0.php) library.
-Install the library in your OS's standard location. On Windows, you can alternatively place `sdl2.dll` in the `pcbasic\lib` directory.
+Install the library in your OS's standard location for libraries.
+If this causes difficulties, you can alternatively place the library in the following location:
 
-PyParallel is only needed to access physical parallel ports, not for printing to a CUPS or Windows printer.
+- Windows (64-bit Python, 64-bit SDL): `pcbasic\lib\win32_x64\sdl2.dll`  
+- Windows (32-bit Python, 32-bit SDL): `pcbasic\lib\win32_x86\sdl2.dll`  
+- MacOS: `pcbasic/lib/darwin/libSDL2.dylib`  
+
+[PyParallel](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/)
+is only needed to access physical parallel ports, not for printing to a CUPS or Windows printer.
 Note that most modern machines do not actually have parallel ports. If you have a parallel port and want to use it with PC-BASIC,
 download and install PyParallel from the link above. Although a `pyparallel` package exists in on PyPI, at present this does not work
 as essential libraries are missing.
