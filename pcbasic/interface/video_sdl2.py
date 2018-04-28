@@ -18,35 +18,45 @@ try:
 except ImportError:
     numpy = None
 
-from ..compat import WIN32, X64, BASE_DIR
+from ..compat import WIN32, BASE_DIR, PLATFORM
 
-# on Windows, set environment variable to point to SDL2 DLL location
-if WIN32:
-    if X64:
-        LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x64')
-    else:
-        LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x86')
-    if ('PYSDL2_DLL_PATH' not in os.environ and os.path.isfile(os.path.join(LIB_DIR, 'sdl2.dll'))):
-        os.environ['PYSDL2_DLL_PATH'] = LIB_DIR
-else:
-    LIB_DIR = ''
+# platform-specific dll location
+LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
+
+# look for SDL2.dll / libSDL2.dylib / libSDL2.so:
+# first in standard search path
+# if not found, in LIB_DIR
+# FIXME: look in LIB_DIR first, user can remove if they want to use standard one
+# more predictable, otherwise may break if they have sdl2.dll elsewhere
 
 try:
     from . import sdl2
 except ImportError:
-    sdl2 = None
+    try:
+        os.environ['PYSDL2_DLL_PATH'] = LIB_DIR
+        from . import sdl2
+    except ImportError:
+        sdl2 = None
+
+# look for SDL2_gfx.dll:
+# first in SDL2.dll location
+# if not found, in LIB_DIR
 
 try:
-    dll = sdl2.DLL('SDL2_gfx', ['SDL2_gfx', 'SDL2_gfx-1.0'], LIB_DIR)
+    sdlgfx = sdl2.DLL('SDL2_gfx', ['SDL2_gfx', 'SDL2_gfx-1.0'], os.path.dirname(sdl2.dll.libfile))
 except Exception:
-    sdlgfx = None
-else:
+    try:
+        sdlgfx = sdl2.DLL('SDL2_gfx', ['SDL2_gfx', 'SDL2_gfx-1.0'], LIB_DIR)
+    except Exception:
+        sdlgfx = None
+
+if sdlgfx:
     SMOOTHING_ON = 1
-    zoomSurface = dll.bind_function(
+    zoomSurface = sdlgfx.bind_function(
             'zoomSurface',
             [POINTER(sdl2.SDL_Surface), c_double, c_double, c_int], POINTER(sdl2.SDL_Surface)
         )
-    sdlgfx = True
+
 
 from ..basic.base import signals
 from ..basic.base import scancode
@@ -426,7 +436,7 @@ class VideoSDL2(VideoPlugin):
         # ensure the correct SDL2 video driver is chosen for Windows
         # since this gets messed up if we also import pygame
         self._env = EnvironmentCache()
-        if sys.platform == 'win32':
+        if WIN32:
             self._env.set('SDL_VIDEODRIVER', 'windows')
         # initialise SDL
         if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):

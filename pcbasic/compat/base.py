@@ -19,6 +19,12 @@ MACOS = sys.platform == 'darwin'
 # 64-bit (needed for Windows binary modules)
 X64 = platform.architecture()[0] == '64bit'
 
+# platform tag for libraries
+if WIN32:
+    PLATFORM = sys.platform + ('_x64' if X64 else '_x86')
+else:
+    PLATFORM = sys.platform
+
 # user configuration and state directories
 HOME_DIR = os.path.expanduser(u'~')
 
