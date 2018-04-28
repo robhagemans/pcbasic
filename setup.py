@@ -473,7 +473,38 @@ elif CX_FREEZE and sys.platform == 'darwin':
                 os.mkdir('dist/')
             except EnvironmentError:
                 pass
-            shutil.move('build/PC-BASIC-2.0.dmg', 'dist/')
+            if os.path.exists('dist/' + os.path.basename(self.dmgName)):
+                os.unlink('dist/' + os.path.basename(self.dmgName))
+            shutil.move(self.dmgName, 'dist/')
+
+        def buildDMG(self):
+            # Remove DMG if it already exists
+            if os.path.exists(self.dmgName):
+                os.unlink(self.dmgName)
+
+            # hdiutil with multiple -srcfolder hangs, so create a temp dir
+            try:
+                shutil.rmtree('build/dmg')
+            except EnvironmentError as e:
+                print e
+            try:
+                os.mkdir('build/dmg')
+            except EnvironmentError as e:
+                print e
+            shutil.copytree(self.bundleDir, 'build/dmg/' + os.path.basename(self.bundleDir))
+            # include the docs at them top level in the dmg
+            shutil.copy('doc/PC-BASIC_documentation.html', 'build/dmg')
+
+            createargs = [
+                'hdiutil', 'create', '-fs', 'HFSX', '-format', 'UDZO',
+                self.dmgName, '-imagekey', 'zlib-level=9', '-srcfolder',
+                'build/dmg', '-volname', self.volume_label,
+            ]
+            # removed application shortcuts logic as I'm not using it anyway
+
+            # Create the dmg
+            if os.spawnvp(os.P_WAIT, 'hdiutil', createargs) != 0:
+                raise OSError('creation of the dmg failed')
 
 
     SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
@@ -487,7 +518,6 @@ elif CX_FREEZE and sys.platform == 'darwin':
             'excludes': [
                 'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 'pygame', 'test',
             ],
-            'include_files': ['doc/PC-BASIC_documentation.html'],
             #'optimize': 2,
         },
         'bdist_mac': {
