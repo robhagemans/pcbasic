@@ -447,7 +447,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
             name = 'libSDL2_gfx.dylib'
             file_path = 'build/PC-BASIC-2.0.app/Contents/MacOS/lib/pcbasic/lib/darwin/' + name
             subprocess.call((
-                'install_name_tool', '-change', '@executable_path/libSDL2_gfx.dylib',
+                'install_name_tool', '-change', '@executable_path/libSDL2.dylib',
                 '@loader_path/libSDL2.dylib', file_path
             ))
 
