@@ -127,7 +127,7 @@ def makedoc(header=None, output=None, embedded_style=True):
 
     # get the quick-start guide out of README
     quickstart = ''.join(readme_stream.getvalue().split('<hr>')[1:])
-    quickstart = quickstart.replace('http://pc-basic.org/doc#', '#')
+    quickstart = quickstart.replace('http://pc-basic.org/doc/2.0#', '#')
 
     quickstart_html = ('<article>\n' + quickstart + '</article>\n')
     licenses_html = '<footer>\n<h2 id="licence">Licences</h2>\n' + basic_license_stream.getvalue() + '<hr />\n' + doc_license_stream.getvalue() + '\n</footer>\n'

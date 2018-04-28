@@ -18,28 +18,21 @@ See also the [PC-BASIC home page](http://robhagemans.github.io/pcbasic/).
 
 ### Quick Start Guide ###
 
-This quick start guide covers installation and elementary use of PC-BASIC. For more information, please refer to the [full PC-BASIC documentation](http://pc-basic.org/doc#) which covers usage, command-line options and a [comprehensive GW-BASIC language reference](http://pc-basic.org/doc#reference). This documentation is also included with the current PC-BASIC release.
+This quick start guide covers installation and elementary use of PC-BASIC. For more information, please refer to the [PC-BASIC documentation](http://pc-basic.org/doc/2.0#).
 
 If you find bugs, please [open an issue on GitHub](https://github.com/robhagemans/pcbasic/issues). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
 
 
 #### Installation ####
-The _stable release_ is preferred for desktop use. It can be downloaded from one of the following locations:  
 
-- [PC-BASIC releases on GitHub](https://github.com/robhagemans/pcbasic/releases)  
-- [PC-BASIC releases on SourceForge](https://sourceforge.net/projects/pcbasic/files/)  
+PC-BASIC desktop installers for Windows, Mac, and Linux can be downloaded from [GitHub](https://github.com/robhagemans/pcbasic/releases).
 
-Installers are provided in the form of a Windows `.exe` and a Mac OS `.dmg` which can be installed in the usual way for those platforms. For Linux and other Unix-based systems, a `.tgz` archive is provided which includes an install script. Please consult the documentation inside the package for further instructions.
-
-Python users can obtain _development releases_ from [PyPI](https://pypi.org/project/pcbasic/) through `pip install pcbasic`.
+Python users can obtain the PC-BASIC package from [PyPI](https://pypi.org/project/pcbasic/) through `pip install pcbasic`.
 
 
 #### BASIC survival kit ####
-Click on the PC-BASIC application icon or run `pcbasic` on the command prompt to start PC-BASIC. The default emulation target is
-GW-BASIC 3.23 on a generic IBM-compatible PC with a VGA video card.  
-
-PC-BASIC starts in direct mode, a 1980s-style interface operated by executing
-BASIC commands directly. There is no menu, nor are there any of the visual clues
+PC-BASIC has a 1980s-style interface operated by executing
+typed commands. There is no menu, nor are there any of the visual clues
 that we've come to expect of modern software.  
 
 A few essential commands to help you get around:  
@@ -54,7 +47,7 @@ A few essential commands to help you get around:
 | `SYSTEM`              | exits PC-BASIC immediately, discarding any unsaved program    |
 
 Use one of the key combinations `Ctrl+Break`, `Ctrl+Scroll Lock`, `Ctrl+C` or `F12+B`
-to interrupt a running program and return to direct mode.  
+to interrupt a running program.  
 
 
 #### Program location ####
@@ -65,7 +58,7 @@ If started through the start-menu shortcut, PC-BASIC looks for programs in the s
 
 If started from the command prompt, PC-BASIC looks for programs in the current working directory.
 
-See [the documentation on accessing your drives](http://pc-basic.org/doc#mounting) for more information.
+See [the documentation on accessing your drives](http://pc-basic.org/doc/2.0#mounting) for more information.
 
 
 #### External resources ####
@@ -75,7 +68,7 @@ The following pages have GW-BASIC program downloads, lots of information and fur
 - [PeatSoft](http://archive.is/AUm6G) provides GW-BASIC documentation, utilities and some more games.  
 - [Neil C. Obremski's gw-basic.com](http://www.gw-basic.com/) has some fun new games made recently in GW-BASIC.  
 - [Leon Peyre](http://peyre.x10.mx/GWBASIC/) has a nice collection of GW-BASIC programs, including the (in)famous first IBM PC game `DONKEY.BAS`.  
-- [Brooks deForest](http://www.brooksdeforest.com/tandy1000/) provides his amazing Tandy GW-BASIC games, all released into the public domain.  
+- [Brooks deForest](https://web.archive.org/web/20170222075609/brooksdeforest.com/tandy1000) provides his amazing Tandy GW-BASIC games, all released into the public domain.  
 - [TVDog's Archive](http://www.oldskool.org/guides/tvdog/) is a great source of information and GW-BASIC programs for the Tandy 1000.  
 - [Phillip Bigelow](http://www.scn.org/~bh162/basic_programs.html) provides scientific programs written in GW-BASIC.  
 - [Gary Peek](http://www.garypeek.com/basic/gwprograms.htm) provides miscellaneous GW-BASIC sources which he released into the public domain.  
