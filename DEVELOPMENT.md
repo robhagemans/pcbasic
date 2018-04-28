@@ -60,13 +60,14 @@ The following additional packages are used for development, testing and packagin
 
 | Package                                                                                                        | OS                | Used for
 |----------------------------------------------------------------------------------------------------------------|-------------------|-----------------
-| [Git](https://git-scm.com/)                                                                                  | all               | development
+| [Git](https://git-scm.com/)                                                                                    | all               | development
 | [Microsoft Visual C++ Compiler for Python 2.7](https://www.microsoft.com/en-us/download/details.aspx?id=44266) | Windows           | development
 | [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3)                                                              | all               | documentation
 | [`markdown`](https://pypi.python.org/pypi/Markdown)                                                            | all               | documentation
-| [Prince](https://www.princexml.com/download/)                                                                | all               | documentation
+| [Prince](https://www.princexml.com/download/)                                                                  | all               | documentation
 | [`pylint`](https://pypi.python.org/pypi/pylint/1.7.6)                                                          | all               | testing
 | [`coverage`](https://pypi.python.org/pypi/coverage)                                                            | all               | testing
+| [`wheel`](https://pypi.python.org/pypi/wheel)                                                                  | all               | packaging
 | [`cx_Freeze`](https://pypi.org/project/cx_Freeze/)                                                             | Windows, MacOS    | packaging
 | [`fpm`](https://github.com/jordansissel/fpm)                                                                   | Linux             | packaging
 

@@ -158,6 +158,7 @@ Documentation tools:
 
 Packaging tools:
 
+  * [Wheel](https://pypi.python.org/pypi/wheel)
   * [cx_Freeze](https://anthony-tuininga.github.io/cx_Freeze/)
   * [fpm](https://github.com/jordansissel/fpm)
 
