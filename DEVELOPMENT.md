@@ -49,16 +49,19 @@ PC-BASIC employs the following external command-line tools, if available:
 
 
 #### Building from GitHub source repository ####
-The following additional packages are needed for development and testing:
+The following additional packages are used for development, testing and packaging:
 
-| Package                                                                                                        | OS      | Used for
-|----------------------------------------------------------------------------------------------------------------|---------|-----------------
-| [`git`](https://git-scm.com/)                                                                                  | all     | development
-| [Microsoft Visual C++ Compiler for Python 2.7](https://www.microsoft.com/en-us/download/details.aspx?id=44266) | Windows | development
-| [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3)                                                              | all     | documentation
-| [`markdown`](https://pypi.python.org/pypi/Markdown)                                                            | all     | documentation
-| [`pylint`](https://pypi.python.org/pypi/pylint/1.7.6)                                                          | all     | testing
-| [`coverage`](https://pypi.python.org/pypi/coverage)                                                            | all     | testing
+| Package                                                                                                        | OS                | Used for
+|----------------------------------------------------------------------------------------------------------------|-------------------|-----------------
+| [Git](https://git-scm.com/)                                                                                  | all               | development
+| [Microsoft Visual C++ Compiler for Python 2.7](https://www.microsoft.com/en-us/download/details.aspx?id=44266) | Windows           | development
+| [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3)                                                              | all               | documentation
+| [`markdown`](https://pypi.python.org/pypi/Markdown)                                                            | all               | documentation
+| [Prince](https://www.princexml.com/download/)                                                                | all               | documentation
+| [`pylint`](https://pypi.python.org/pypi/pylint/1.7.6)                                                          | all               | testing
+| [`coverage`](https://pypi.python.org/pypi/coverage)                                                            | all               | testing
+| [`cx_Freeze`](https://pypi.org/project/cx_Freeze/)                                                             | Windows, MacOS    | packaging
+| [`fpm`](https://github.com/jordansissel/fpm)                                                                   | Linux             | packaging
 
 
 These are the steps to set up the local repository ready to run PC-BASIC:

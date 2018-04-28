@@ -154,12 +154,12 @@ Documentation tools:
 
   * [LXML](http://lxml.de)
   * [Markdown](https://pypi.python.org/pypi/Markdown)
+  * [Prince](https://www.princexml.com/download/)
 
 Packaging tools:
 
-  * [PyInstaller](http://www.pyinstaller.org)
-  * [Nullsoft Scriptable Install System](http://nsis.sourceforge.net)
-  * [7-Zip](http://www.7-zip.org)
+  * [cx_Freeze](https://anthony-tuininga.github.io/cx_Freeze/)
+  * [fpm](https://github.com/jordansissel/fpm)
 
 Source code and releases are hosted on:
 
