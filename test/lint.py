@@ -5,7 +5,7 @@ import sys
 
 CONFIG = [
     '--ignored-modules=pygame,numpy,pygame.mixer,msvcrt',
-    '--ignored-classes=Serial,pygame.Surface',
+    '--ignored-classes=Serial,pygame.Surface,Namespace',
     '--errors-only',
 ]
 
