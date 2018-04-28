@@ -19,36 +19,41 @@ except ImportError:
     numpy = None
 
 from ..compat import WIN32, BASE_DIR, PLATFORM
+from .base import EnvironmentCache
 
 # platform-specific dll location
 LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
 
 # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
-# first in standard search path
+# first in LIB_DIR, then in the standard search path
 # if not found, in LIB_DIR
-# FIXME: look in LIB_DIR first, user can remove if they want to use standard one
-# more predictable, otherwise may break if they have sdl2.dll elsewhere
 
+# look in LIB_DIR first, user can remove if they want to use standard one
+_sdl_env = EnvironmentCache()
+_sdl_env.set('PYSDL2_DLL_PATH', LIB_DIR)
 try:
     from . import sdl2
 except ImportError:
+    _sdl_env.set('PYSDL2_DLL_PATH', '')
     try:
-        os.environ['PYSDL2_DLL_PATH'] = LIB_DIR
         from . import sdl2
     except ImportError:
         sdl2 = None
 
 # look for SDL2_gfx.dll:
 # first in SDL2.dll location
-# if not found, in LIB_DIR
-
+# if not found, in LIB_DIR; then in standard search path
+GFX_NAMES = ['SDL2_gfx', 'SDL2_gfx-1.0']
 try:
-    sdlgfx = sdl2.DLL('SDL2_gfx', ['SDL2_gfx', 'SDL2_gfx-1.0'], os.path.dirname(sdl2.dll.libfile))
+    sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, os.path.dirname(sdl2.dll.libfile))
 except Exception:
     try:
-        sdlgfx = sdl2.DLL('SDL2_gfx', ['SDL2_gfx', 'SDL2_gfx-1.0'], LIB_DIR)
+        sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, LIB_DIR)
     except Exception:
-        sdlgfx = None
+        try:
+            sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES)
+        except Exception:
+            sdlgfx = None
 
 if sdlgfx:
     SMOOTHING_ON = 1
@@ -57,13 +62,12 @@ if sdlgfx:
             [POINTER(sdl2.SDL_Surface), c_double, c_double, c_int], POINTER(sdl2.SDL_Surface)
         )
 
-
+from .base import video_plugins, InitFailed, NOKILL_MESSAGE
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
 from .video import VideoPlugin
-from .base import video_plugins, InitFailed, EnvironmentCache, NOKILL_MESSAGE
 from . import window
 from . import clipboard
 
