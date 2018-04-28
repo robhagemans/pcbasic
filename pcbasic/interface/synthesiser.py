@@ -61,14 +61,13 @@ class SignalSource(object):
 class SoundGenerator(object):
     """Sound sample chunk generator."""
 
-    def __init__(self, signal_source, feedback, frequency, total_duration, fill, loop, volume):
+    def __init__(self, signal_source, feedback, frequency, duration, loop, volume):
         """Initialise the generator."""
         # noise generator
         self.signal_source = signal_source
         self.feedback = feedback
         # actual duration and gap length
-        self.duration = fill * total_duration
-        self.gap = (1-fill) * total_duration
+        self.duration = duration
         self.amplitude = AMPLITUDE[volume]
         self.frequency = frequency
         self.loop = loop
@@ -112,10 +111,6 @@ class SoundGenerator(object):
                 # append final chunk
                 rest_length = self.num_samples - self.count_samples
                 chunk = chunk[:rest_length]
-                # append quiet gap if requested
-                if self.gap:
-                    gap_chunk = numpy.zeros(int(self.gap * SAMPLE_RATE), numpy.int16)
-                    chunk = numpy.concatenate((chunk, gap_chunk))
                 # done
                 self.count_samples = self.num_samples
         # if loop, attach one chunk to loop, do not increment count

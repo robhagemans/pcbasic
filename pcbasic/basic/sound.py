@@ -71,9 +71,9 @@ class Sound(object):
         if fill != 1:
             # put a placeholder 0-duration tone on the queue to represent the gap
             # the gap is included in the actual tone, but it needs to be counted for events
-            gap = signals.Event(signals.AUDIO_TONE, [voice, 0, 0, 0, 0, 0])
+            gap = signals.Event(signals.AUDIO_TONE, [voice, 0, (1-fill) * duration, 0, 0])
             self._queues.audio.put(gap)
-        tone = signals.Event(signals.AUDIO_TONE, [voice, frequency, duration, fill, loop, volume])
+        tone = signals.Event(signals.AUDIO_TONE, [voice, frequency, fill*duration, loop, volume])
         self._queues.audio.put(tone)
         self.voice_queue[voice].put(tone, None if loop else duration)
         if voice == 2 and frequency != 0:
@@ -156,7 +156,7 @@ class Sound(object):
     def play_noise(self, source, volume, duration, loop=False):
         """Generate a noise."""
         frequency = self._noise_freq[source]
-        noise = signals.Event(signals.AUDIO_NOISE, [source > 3, frequency, duration, 1, loop, volume])
+        noise = signals.Event(signals.AUDIO_NOISE, [source > 3, frequency, duration, loop, volume])
         self._queues.audio.put(noise)
         self.voice_queue[3].put(noise, None if loop else duration)
         # don't wait for noise
