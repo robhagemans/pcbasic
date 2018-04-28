@@ -117,13 +117,13 @@ class Codepage(object):
         """Convert codepage point to unicode grapheme cluster """
         return self.cp_to_unicode.get(cp, replace)
 
-    def str_to_unicode(self, cps, preserve_control=False, box_protect=True):
+    def str_to_unicode(self, cps, preserve=b'', box_protect=True):
         """Convert codepage string to unicode string."""
-        return Converter(self, preserve_control, box_protect).to_unicode(cps, flush=True)
+        return Converter(self, preserve, box_protect).to_unicode(cps, flush=True)
 
-    def get_converter(self, preserve_control=False):
+    def get_converter(self, preserve=b''):
         """Get converter from codepage to unicode."""
-        return Converter(self, preserve_control, self.box_protect)
+        return Converter(self, preserve, self.box_protect)
 
 
 ########################################
@@ -175,13 +175,13 @@ box_right_unicode = [u'\u2500', u'\u2550']
 class Converter(object):
     """Buffered converter to Unicode - supports DBCS and box-drawing protection."""
 
-    def __init__(self, codepage, preserve_control=False, box_protect=None):
+    def __init__(self, codepage, preserve=b'', box_protect=None):
         """Initialise with empty buffer."""
         self._cp = codepage
         # hold one or two bytes
         # lead byte without trail byte, or box-protectable dbcs
         self._buf = b''
-        self._preserve_control = preserve_control
+        self._preserve = set(preserve)
         # may override box protection defaults
         self._box_protect = box_protect or self._cp.box_protect
         self._dbcs = self._cp.dbcs
@@ -202,7 +202,7 @@ class Converter(object):
     def to_unicode(self, s, flush=False):
         """Process codepage string, returning unicode string when ready."""
         return u''.join([(seq.decode('ascii', errors='ignore')
-                                if (self._preserve_control and seq in CONTROL)
+                                if (seq in self._preserve)
                                 else self._cp.to_unicode(seq))
                         for seq in self.mark(s, flush)])
 
@@ -222,7 +222,7 @@ class Converter(object):
         if not self._box_protect:
             return self._process_nobox(c)
         out = []
-        if self._preserve_control and c in CONTROL:
+        if c in self._preserve:
             # control char; flush buffer as SBCS and add control char unchanged
             out += self._flush() + [c]
             self._bset = -1
@@ -249,7 +249,7 @@ class Converter(object):
     def _process_nobox(self, c):
         """Process a single char, no box drawing protection """
         out = []
-        if self._preserve_control and c in CONTROL:
+        if c in self._preserve:
             # control char; flush buffer as SBCS and add control char unchanged
             out += self._flush() + [c]
             return out

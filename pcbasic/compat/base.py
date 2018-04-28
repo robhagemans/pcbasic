@@ -19,6 +19,12 @@ MACOS = sys.platform == 'darwin'
 # 64-bit (needed for Windows binary modules)
 X64 = platform.architecture()[0] == '64bit'
 
+# platform tag for libraries
+if WIN32:
+    PLATFORM = sys.platform + ('_x64' if X64 else '_x86')
+else:
+    PLATFORM = sys.platform
+
 # user configuration and state directories
 HOME_DIR = os.path.expanduser(u'~')
 
@@ -35,8 +41,9 @@ else:
 # package/executable directory
 if hasattr(sys, 'frozen'):
     # we're a package: get the directory of the packaged executable
-    # (__file__ is undefined in pyinstaller packages)
-    BASE_DIR = os.path.dirname(sys.executable)
+    # (__file__ is undefined in frozen packages)
+    # this is for cx_Freeze's package layout
+    BASE_DIR = os.path.join(os.path.dirname(sys.executable), 'lib', 'pcbasic')
 else:
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 

@@ -16,7 +16,7 @@ import io
 
 from ..base import error
 from ..base import tokens as tk
-from . import devicebase
+from .devicebase import RawFile, TextFileBase, InputMixin, DeviceSettings, parse_protocol_string
 
 TOKEN_TO_TYPE = {
     0: b'D', 1: b'M', 0xa0: b'P',
@@ -48,10 +48,10 @@ class CASDevice(object):
 
     def __init__(self, arg, screen):
         """Initialise tape device."""
-        addr, val = devicebase.parse_protocol_string(arg)
+        addr, val = parse_protocol_string(arg)
         ext = val.split('.')[-1].upper()
         # WIDTH and LOC on CAS1: directly are ignored
-        self.device_file = devicebase.DeviceSettings()
+        self.device_file = DeviceSettings()
         # by default, show messages
         self.is_quiet = False
         # console for messages
@@ -101,7 +101,7 @@ class CASDevice(object):
         if filetype == 'D':
             return CASTextFile(self.tapestream, filetype, mode)
         elif filetype == 'A':
-            return CASTextFile(self.tapestream, filetype, mode, split_long_lines=False)
+            return CASTextFile(self.tapestream, filetype, mode)
         else:
             return CASBinaryFile(self.tapestream, filetype, mode, seg, offset, length)
 
@@ -133,23 +133,20 @@ class CASDevice(object):
         """Suppress Skipped and Found messages."""
         self.is_quiet = is_quiet
 
+
 #################################################################################
 # Cassette files
 
-class CASBinaryFile(devicebase.RawFile):
+class CASBinaryFile(RawFile):
     """Program or Memory file on CASn: device."""
 
     def __init__(self, fhandle, filetype, mode, seg, offset, length):
         """Initialise binary file."""
-        devicebase.RawFile.__init__(self, fhandle, filetype, mode)
+        RawFile.__init__(self, fhandle, filetype, mode)
         self.seg, self.offset, self.length = seg, offset, length
 
-    def close(self):
-        """Close a file on tape."""
-        devicebase.RawFile.close(self)
 
-
-class CASTextFile(devicebase.TextFileBase):
+class CASTextFile(TextFileBase, InputMixin):
     """Text file on CASn: device."""
 
     def lof(self):
@@ -166,10 +163,10 @@ class CASTextFile(devicebase.TextFileBase):
         if self.mode == 'O':
             self.write('\0')
         try:
-            self.fhandle.close()
+            self._fhandle.close()
         except EnvironmentError:
             pass
-        devicebase.TextFileBase.close(self)
+        TextFileBase.close(self)
 
 
 class CassetteStream(object):
@@ -193,10 +190,6 @@ class CassetteStream(object):
             self._close_record_buffer()
             self.is_open = False
             self.rwmode = ''
-
-    def flush(self):
-        """Flush buffers (dummy)."""
-        pass
 
     def close_tape(self):
         """Eject the tape."""

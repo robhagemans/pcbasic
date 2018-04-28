@@ -257,6 +257,10 @@
         with <code><a href="#CLEAR">CLEAR</a></code> or
         <code><a href="#ERASE">ERASE</a></code>.
     </p>
+    <p>
+        Multi-dimensional arrays are stored in column-major order, such that <code>A%(2,0)</code> immediately
+        follows <code>A%(1,0)</code>.
+    </p>
 
     <h4 id="conversions">Conversions</h4>
     <p>
@@ -919,6 +923,8 @@
         </code>
         <p>
             Converts the numeric expression <code><var>x</var></code> to a signed integer.
+            Halves are rounded away from zero, so that e.g.
+            <code>CINT(2.5) = 3</code> and <code>CINT(-2.5) = -3</code>.
         </p>
         <h5>Errors</h5>
         <ul>
@@ -971,7 +977,8 @@
             <var>y</var> <b>= CSNG(</b><var>x</var><b>)</b>
         </code>
         <p>
-            Converts the numeric expression <code><var>x</var></code> to a single-precision value.
+            Converts the numeric expression <code><var>x</var></code> to a single-precision value
+            by Gaussian rounding.
         </p>
         <h5>Errors</h5>
         <ul>
@@ -1994,9 +2001,8 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                In GW-BASIC, when entering direct mode, <code>LPT1:</code> (but not other printers)
-                is flushed and its position is reset to 1. This is not implemented in
-                PC-BASIC.
+                When entering direct mode, <code>LPT1:</code> (but not other printers)
+                is flushed and its position is reset to 1.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -2267,7 +2273,7 @@
             <var>length</var> <b>= PLAY(</b><var>voice</var><b>)</b>
         </code>
         <p>
-            Returns the number of notes in the background music queue. The return value is in <code>[0&#8212;16]</code>.
+            Returns the number of notes in the background music queue. The return value is in <code>[0&#8212;32]</code>.
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -2282,9 +2288,10 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                There are at most 16 notes in the music queue. Some GW-BASIC manuals
-                claim there can be up to 32, but in reality <code>PLAY</code> only returns at the
-                last 16 notes.
+                There are at most 32 notes in the music queue. However, unless the articulation is
+                set to legato, there are short gaps between each note; these are counted as
+                separate notes in the queue. Effectively, the queue length is thus 16 for the default
+                and staccato articulations and 32 for legato.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -5242,7 +5249,7 @@
             </li>
             <li>
                 <code><var>file_number</var></code> is not the number of an open file:
-                <samp>Bad file number</samp>.
+                <samp>Bad file mode</samp>.
             </li>
             <li>
                 <code><var>file_number</var></code> is open under a mode other than <code>RANDOM</code>:
@@ -6153,29 +6160,43 @@
     <section>
         <h4 id="KILL"><code>KILL</code></h4>
         <code class="flow">
-            <b>KILL</b> <var>file_spec</var>
+            <b>KILL</b> <var>filter_spec</var>
         </code>
         <p>
-            Deletes a file on a disk device.
+            Deletes one or more files on a disk device.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                The string expression <code><var>file_spec</var></code> is a
-                valid <a href="#filespec">file specification</a> indicating the file to delete.
-                It must point to an existing file on a disk device.
+                The string expression <code><var>filter_spec</var></code> is a
+                valid <a href="#filespec">file specification</a> indicating the files to delete.
+                Wildcards are allowed. See <a href="#FILES"><code>FILES</code></a> for a description
+                of wildcards.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Be very careful with the use of wildcards in this statement: the DOS matching rules may
+                not be the same as what is usual on your operating system, which could result in
+                unexpected files being deleted.
+            </li>
+            <li>
+                This statement may not delete hidden file and files that do not have short names
+                which are legal DOS names. However, this behaviour is not guaranteed
+                so you must not depend on it.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> has a number value: <samp>Type mismatch</samp>.
+                <code><var>filter_spec</var></code> is a numeric value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                The file <code><var>file_spec</var></code> is open: <samp>File already open</samp>
+                A file with a base name equal to that of a file matching <code><var>filter_spec</var></code> is open: <samp>File already open</samp>
             </li>
             <li>
-                The file or path <code><var>file_spec</var></code> does not exist: <samp>File not found</samp>
+                No file matches <code><var>filter_spec</var></code> : <samp>File not found</samp>
             </li>
             <li>
                 The user has no write permission: <samp>Permission denied</samp>
@@ -6655,6 +6676,13 @@
                 <code><var>record_1</var></code>. An non-matching <code>UNLOCK</code> will raise
                 <samp>Permission denied</samp>.
             </li>
+            <li>
+                To check if another open file is the same file, PC-BASIC only looks at the base name
+                of the file, i.e. its DOS name without directories. As a consequence, if a file <samp>"test.txt"</samp>
+                is open and locked, an attempt to lock a file <samp>"dir\test.txt"</samp> will fail, even if these are
+                different files. Conversely, if two file names are different but point to the same file in the
+                file system (for example due to file system links), then these will be considered as different files by BASIC.
+            </li>
         </ul>
         <h5>Errors</h5>
         <ul>
@@ -6671,7 +6699,7 @@
                 <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
             </li>
             <li>
-                <code>LOCK</code> (part of) a file already locked: <samp>Permission denied</samp>.
+                <code>LOCK</code> (part of) a file with the same name as a file already locked: <samp>Permission denied</samp>.
             </li>
             <li>
                 <code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <samp>Bad record number</samp>.
@@ -6934,7 +6962,7 @@
                 <code><var>old_name</var></code> does not exist: <samp>File not found</samp>.
             </li>
             <li>
-                <code><var>old_name</var></code> is open: <samp>File already open</samp>.
+                A file with a base name equal to that of <code><var>old_name</var></code> or <code><var>new_name</var></code> is open: <samp>File already open</samp>.
             </li>
             <li>
                 <code><var>new_name</var></code> exists: <samp>File already exists</samp>.
@@ -7429,6 +7457,13 @@
             the locks are only implemented internally. Whether other processes may access
             the file will depend on the host OS.
         </p>
+        <li>
+            To check if another open file is the same file, PC-BASIC only looks at the base name
+            of the file, i.e. its DOS name without directories. As a consequence, if a file <samp>"test.txt"</samp>
+            is open and locked, an attempt to lock a file <samp>"dir\test.txt"</samp> will fail, even if these are
+            different files. Conversely, if two file names are different but point to the same file in the
+            file system (for example due to file system links), then these will be considered as different files by BASIC.
+        </li>
         <h5 id="filespec">File specifications</h5>
         <p>
             A <dfn>file specification</dfn> <code><var>file_spec</var></code>
@@ -7760,7 +7795,7 @@
                 <samp>Bad file number</samp>.
             </li>
             <li>
-                A file is already open for <code>OUTPUT</code> or <code>APPEND</code>: <samp>File already open</samp>.
+                A file with the same name is already open for <code>OUTPUT</code> or <code>APPEND</code>: <samp>File already open</samp>.
                 This is only raised for <code>COMn:</code>, <code>CASn:</code> and disk devices.
             </li>
             <li>
@@ -8478,7 +8513,8 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>int_array_name</var></code> is an array of integers (<code>%</code>) that will supply the
+                <code><var>int_array_name</var></code> is a single- or multidimensional
+                array of integers (<code>%</code>) that will supply the
                 new values for the palette.
             </li>
             <li>
@@ -8486,9 +8522,16 @@
                 indicates at which index in the array to start mapping to the palette.
             </li>
         </ul>
-        <p>
-            If an array entry has value <code>-1</code>, the matching attribute is left unchanged.
-        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Array values are assigned to palette entries in the order in which they are stored in memory.
+                See <a href="#arrays">Arrays</a> for details about the layout of arrays in memory.
+            </li>
+            <li>
+                If an array entry has value <code>-1</code>, the matching attribute is left unchanged.
+            </li>
+        </ul>
         <h5>Errors</h5>
         <ul>
             <li>
@@ -8708,8 +8751,10 @@
                     <td>
                         Turns on background mode; sound commands exit without waiting for the
                         music to finish. The music keeps playing while other commands are
-                        executed. There can be up to 16 notes in the background music queue;
-                        if more notes are played, <code>PLAY</code> will block until there are only 16 left.
+                        executed. There can be up to 32 notes in the background music queue;
+                        if more notes are played, <code>PLAY</code> will block until there are only 32 left.
+                        Note that the gaps between notes in the default articulation and in staccato
+                        are counted as separate notes on the queue.
                     </td>
                 </tr>
                 <tr>
@@ -9329,7 +9374,7 @@
             </li>
             <li>
                 <code><var>file_number</var></code> is not the number of an open file:
-                <samp>Bad file number</samp>.
+                <samp>Bad file mode</samp>.
             </li>
             <li>
                 <code><var>file_number</var></code> is open under a mode other than <code>RANDOM</code>:
@@ -9729,10 +9774,13 @@
                 <code><var>dir_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                <code><var>dir_spec</var></code> is an empty string: <samp>Bad file name</samp> .
+                <code><var>dir_spec</var></code> is an empty string: <samp>Bad file name</samp>.
             </li>
             <li>
-                No matching path is found: <samp>Path not found</samp> .
+                No matching path is found: <samp>Path not found</samp>.
+            </li>
+            <li>
+                Directory to remove is not empty: <samp>Path/File access error</samp>.
             </li>
         </ul>
     </section>
@@ -11307,8 +11355,9 @@
                     <p>
                         An attempt is made to open a file to a file number that is already in use;
                         or an attempt is made to open a file for <code>OUTPUT</code> or <code>APPEND</code>  on a serial, disk or cassette device
-                        when a file is already open for <code>OUTPUT</code> or <code>APPEND</code> on that device;
-                        or a <a href="#KILL"><code>KILL</code></a> or <a href="#NAME"><code>NAME</code></a> statement is executed on an open disk file.
+                        when a file (or, on a disk device, a file with the same name) is already open for <code>OUTPUT</code> or <code>APPEND</code> on that device;
+                        or a <a href="#KILL"><code>KILL</code></a> or <a href="#NAME"><code>NAME</code></a> statement is executed on a disk file
+                        when a file with the same name is open on the same device.
                     </p>
                 </td>
             </tr>

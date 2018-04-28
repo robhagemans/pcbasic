@@ -30,11 +30,11 @@ def show_platform_info():
     logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
     logging.info('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
-    modules = ('numpy', 'sdl2', 'pygame', 'curses', 'serial', 'parallel')
+    modules = ('numpy', 'pygame', 'curses', 'serial', 'parallel')
     for module in modules:
         try:
             m = importlib.import_module(module)
-        except ImportError:
+        except Exception:
             logging.info('%s: --', module)
         else:
             for version_attr in ('__version__', 'version', 'VERSION'):

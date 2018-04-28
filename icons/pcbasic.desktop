@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=PC-BASIC
+GenericName=GW-BASIC compatible interpreter
+Exec=/usr/local/bin/pcbasic
+Terminal=false
+Type=Application
+Icon=pcbasic
+Categories=Development;IDE;

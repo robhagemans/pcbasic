@@ -11,16 +11,16 @@ The instructions there cover the most common platforms and use cases.
 #### Dependencies ####
 The following packages are needed or recommended when installing PC-BASIC:
 
-| Package                                                                           | OS                 | Status       | Used for
-|-----------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
-| [Python 2.7.12](https://www.python.org/downloads/release/python-2712/)            | all                | required     |
-| [Setuptools](https://pypi.python.org/pypi/setuptools)                             | all                | required     |
-| [PySDL2](https://pysdl2.readthedocs.org/en/latest/)                               | all                | recommended  | sound and graphics
-| [NumPy](https://sourceforge.net/projects/numpy/files/)                            | all                | recommended  | sound and graphics
-| [PySerial 3.4](https://pypi.python.org/pypi/pyserial)                             | all                | optional     | physical or emulated serial port access
-| [PyParallel 0.2](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/) | Windows, Linux     | optional     | physical parallel port access
-| [PyGame 1.9.3](http://www.pygame.org)                                             | all                | optional     | sound and graphics (PyGame interface)
-| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                            | all                | experimental | sound (PortAudio engine)
+| Package                                                                       | OS                 | Status       | Used for
+|-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
+| [Python 2.7.12](https://www.python.org/downloads/release/python-2712/)        | all                | required     |
+| [Setuptools](https://pypi.python.org/pypi/setuptools)                         | all                | required     |
+| [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | sound and graphics
+| [NumPy](https://sourceforge.net/projects/numpy/files/)                        | all                | recommended  | sound and graphics
+| [PySerial 3.4](https://pypi.python.org/pypi/pyserial)                         | all                | optional     | physical or emulated serial port access
+| [PyParallel](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/) | Windows, Linux     | optional     | physical parallel port access
+| [PyGame 1.9.3](http://www.pygame.org)                                         | all                | optional     | sound and graphics (PyGame interface)
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | experimental | sound (PortAudio engine)
 
 
 `setuptools` and `pip` are included with Python.
@@ -28,12 +28,19 @@ Once you have a working Python installation, most dependencies can be installed 
 
         pip install pysdl2 numpy pygame pyaudio pyserial
 
-If you require access to a physical parallel port,
-download PyParallel from the web site linked above. This is only supported on Windows and Linux.
-However, since most modern machines do not actually have parallel ports, you probably don't need it.
-PyParallel is _not_ needed for printing to a CUPS or Windows printer.
+To use the graphical interface, you will also need to install the [SDL2](https://www.libsdl.org/download-2.0.php) library.
+Install the library in your OS's standard location for libraries.
+If this causes difficulties, you can alternatively place the library in the following location:
 
-To use the graphical interface, you will also need to install the [`SDL2`](https://www.libsdl.org/download-2.0.php) library, which is _not_ included in the `pysdl2` package. Install the library in your OS's standard location. On Windows, you can alternatively place `sdl2.dll` in the `pcbasic\lib` directory.
+- Windows (64-bit Python, 64-bit SDL): `pcbasic\lib\win32_x64\sdl2.dll`  
+- Windows (32-bit Python, 32-bit SDL): `pcbasic\lib\win32_x86\sdl2.dll`  
+- MacOS: `pcbasic/lib/darwin/libSDL2.dylib`  
+
+[PyParallel](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/)
+is only needed to access physical parallel ports, not for printing to a CUPS or Windows printer.
+Note that most modern machines do not actually have parallel ports. If you have a parallel port and want to use it with PC-BASIC,
+download and install PyParallel from the link above. Although a `pyparallel` package exists in on PyPI, at present this does not work
+as essential libraries are missing.
 
 
 #### External tools ####
@@ -49,16 +56,21 @@ PC-BASIC employs the following external command-line tools, if available:
 
 
 #### Building from GitHub source repository ####
-The following additional packages are needed for development and testing:
+The following additional packages are used for development, testing and packaging:
 
-| Package                                                                                                        | OS      | Used for
-|----------------------------------------------------------------------------------------------------------------|---------|-----------------
-| [`git`](https://git-scm.com/)                                                                                  | all     | development
-| [Microsoft Visual C++ Compiler for Python 2.7](https://www.microsoft.com/en-us/download/details.aspx?id=44266) | Windows | development
-| [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3)                                                              | all     | documentation
-| [`markdown`](https://pypi.python.org/pypi/Markdown)                                                            | all     | documentation
-| [`pylint`](https://pypi.python.org/pypi/pylint/1.7.6)                                                          | all     | testing
-| [`coverage`](https://pypi.python.org/pypi/coverage)                                                            | all     | testing
+| Package                                                                                                        | OS                | Used for
+|----------------------------------------------------------------------------------------------------------------|-------------------|-----------------
+| [Git](https://git-scm.com/)                                                                                    | all               | development
+| [Microsoft Visual C++ Compiler for Python 2.7](https://www.microsoft.com/en-us/download/details.aspx?id=44266) | Windows           | development
+| [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3)                                                              | all               | documentation
+| [`markdown`](https://pypi.python.org/pypi/Markdown)                                                            | all               | documentation
+| [Prince](https://www.princexml.com/download/)                                                                  | all               | documentation
+| [`pylint`](https://pypi.python.org/pypi/pylint/1.7.6)                                                          | all               | testing
+| [`coverage`](https://pypi.python.org/pypi/coverage)                                                            | all               | testing
+| [`wheel`](https://pypi.python.org/pypi/wheel)                                                                  | all               | packaging
+| [`twine`](https://pypi.python.org/pypi/twine)                                                                  | all               | packaging
+| [`cx_Freeze`](https://pypi.org/project/cx_Freeze/)                                                             | Windows, MacOS    | packaging
+| [`fpm`](https://github.com/jordansissel/fpm)                                                                   | Linux             | packaging
 
 
 These are the steps to set up the local repository ready to run PC-BASIC:

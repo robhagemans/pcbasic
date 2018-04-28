@@ -11,39 +11,63 @@ import ctypes
 import os
 import sys
 from collections import Counter
+from ctypes import POINTER, c_int, c_double
 
 try:
     import numpy
 except ImportError:
     numpy = None
 
-from ..compat import WIN32, X64, BASE_DIR
+from ..compat import WIN32, BASE_DIR, PLATFORM
+from .base import EnvironmentCache
 
-# on Windows, set environment variable to point to SDL2 DLL location
-if WIN32:
-    if X64:
-        LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x64')
-    else:
-        LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x86')
-    if ('PYSDL2_DLL_PATH' not in os.environ and os.path.isfile(os.path.join(LIB_DIR, 'sdl2.dll'))):
-        os.environ['PYSDL2_DLL_PATH'] = LIB_DIR
+# platform-specific dll location
+LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
 
+# look for SDL2.dll / libSDL2.dylib / libSDL2.so:
+# first in LIB_DIR, then in the standard search path
+# if not found, in LIB_DIR
+
+# look in LIB_DIR first, user can remove if they want to use standard one
+_sdl_env = EnvironmentCache()
+_sdl_env.set('PYSDL2_DLL_PATH', LIB_DIR)
 try:
-    import sdl2
+    from . import sdl2
 except ImportError:
-    sdl2 = None
+    _sdl_env.set('PYSDL2_DLL_PATH', '')
+    try:
+        from . import sdl2
+    except ImportError:
+        sdl2 = None
 
+# look for SDL2_gfx.dll:
+# first in SDL2.dll location
+# if not found, in LIB_DIR; then in standard search path
+GFX_NAMES = ['SDL2_gfx', 'SDL2_gfx-1.0']
 try:
-    import sdl2.sdlgfx
-except ImportError:
-    pass
+    sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, os.path.dirname(sdl2.dll.libfile))
+except Exception:
+    try:
+        sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, LIB_DIR)
+    except Exception:
+        try:
+            sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES)
+        except Exception:
+            sdlgfx = None
 
+if sdlgfx:
+    SMOOTHING_ON = 1
+    zoomSurface = sdlgfx.bind_function(
+            'zoomSurface',
+            [POINTER(sdl2.SDL_Surface), c_double, c_double, c_int], POINTER(sdl2.SDL_Surface)
+        )
+
+from .base import video_plugins, InitFailed, NOKILL_MESSAGE
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
 from .video import VideoPlugin
-from .base import video_plugins, InitFailed, EnvironmentCache, NOKILL_MESSAGE
 from . import window
 from . import clipboard
 
@@ -416,7 +440,7 @@ class VideoSDL2(VideoPlugin):
         # ensure the correct SDL2 video driver is chosen for Windows
         # since this gets messed up if we also import pygame
         self._env = EnvironmentCache()
-        if sys.platform == 'win32':
+        if WIN32:
             self._env.set('SDL_VIDEODRIVER', 'windows')
         # initialise SDL
         if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):
@@ -466,7 +490,7 @@ class VideoSDL2(VideoPlugin):
                 logging.warning('Smooth scaling not available: need 32-bit colour, have %d-bit.',
                         self._display_surface.format.contents.BitsPerPixel)
                 self._smooth = False
-            if not hasattr(sdl2, 'sdlgfx'):
+            if not sdlgfx:
                 logging.warning('Smooth scaling not available: `sdlgfx` extension not found.')
                 self._smooth = False
         # available joysticks
@@ -547,7 +571,7 @@ class VideoSDL2(VideoPlugin):
             elif event.type == sdl2.SDL_TEXTINPUT:
                 self._handle_text_input(event)
             elif event.type == sdl2.SDL_TEXTEDITING:
-                self.set_caption_message(event.text.text)
+                self.set_caption_message(event.text.text.decode('utf-8'))
             elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
                 pos = self._window_sizer.normalise_pos(event.button.x, event.button.y)
                 if self._mouse_clip:
@@ -697,7 +721,8 @@ class VideoSDL2(VideoPlugin):
             self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
         else:
             eascii, scan, mod, ts = self._last_down
-            if ts == event.text.timestamp:
+            # timestamps for kepdown and textinput may differ by one on mac
+            if ts + 1 >= event.text.timestamp:
                 # combine if same time stamp
                 if eascii and c != eascii:
                     # filter out chars being sent with alt+key on Linux
@@ -772,7 +797,7 @@ class VideoSDL2(VideoPlugin):
             # so that the memory block is highly likely to be easily available
             # this seems to avoid unpredictable delays
             sdl2.SDL_FreeSurface(self.zoomed)
-            self.zoomed = sdl2.sdlgfx.zoomSurface(conv, zoomx, zoomy, sdl2.sdlgfx.SMOOTHING_ON)
+            self.zoomed = zoomSurface(conv, zoomx, zoomy, SMOOTHING_ON)
             # blit onto display
             sdl2.SDL_BlitSurface(self.zoomed, None, self._display_surface, None)
         # create clipboard feedback

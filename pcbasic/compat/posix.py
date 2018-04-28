@@ -28,6 +28,7 @@ except locale.Error as e:
     logging.error(e)
 
 from .python2 import which
+from .base import HOME_DIR, MACOS
 
 # text conventions
 # ctrl+D
@@ -45,6 +46,23 @@ HIDE_WINDOW = None
 
 ##############################################################################
 # various
+
+# output buffer for ioctl call
+_sock_size = array.array('i', [0])
+
+# no such thing as console- and GUI-apps
+# check if we can treat stdin like a tty, file or socket
+HAS_CONSOLE = True
+if not sys.stdin.isatty():
+    try:
+        fcntl.ioctl(sys.stdin, termios.FIONREAD, _sock_size)
+    except EnvironmentError:
+        # maybe /dev/null, but not a real file or console
+        HAS_CONSOLE = False
+        if MACOS:
+            # for macOS - presumably we're launched as a bundle, set working directory to user home
+            # bit of a hack but I don't know a better way
+            os.chdir(HOME_DIR)
 
 # preserve original terminal size
 try:
@@ -73,13 +91,24 @@ def get_unicode_argv():
     """Convert command-line arguments to unicode."""
     # the official parameter should be LC_CTYPE but that's None in my locale
     # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-    return [arg.decode(SHELL_ENCODING, errors='replace') for arg in sys.argv]
+    # on MacOS, if launched from Finder, ignore the additional "process serial number" argument
+    return [
+        arg.decode(SHELL_ENCODING, errors='replace')
+        for arg in sys.argv if not arg.startswith(b'-psn_')
+    ]
+
+def is_hidden(path):
+    """File is hidden."""
+    # dot files are hidden on unixy systems
+    base = os.path.basename(path)
+    return base.startswith(u'.') and (base not in (u'.', u'..'))
+
 
 ##############################################################################
 # printing
 
 if which('paps'):
-    def line_print(printbuf, printer, tempdir):
+    def line_print(printbuf, printer):
         """Print the buffer to a LPR printer using PAPS."""
         options = b''
         if printer and printer != u'default':
@@ -101,7 +130,7 @@ if which('paps'):
             pr.stdin.close()
 
 else:
-    def line_print(printbuf, printer, tempdir):
+    def line_print(printbuf, printer):
         """Print the buffer to a LPR (CUPS or older UNIX) printer."""
         options = b''
         if printer and printer != u'default':
@@ -119,10 +148,6 @@ else:
 def key_pressed():
     """Return whether a character is ready to be read from the keyboard."""
     return select.select([sys.stdin], [], [], 0)[0] != []
-
-
-# output buffer for ioctl call
-_sock_size = array.array('i', [0])
 
 def read_all_available(stream):
     """Read all available characters from a stream; nonblocking; None if closed."""

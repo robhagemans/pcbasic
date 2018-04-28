@@ -16,6 +16,7 @@ from collections import Iterable
 
 from ..compat import WIN32, read_all_available
 from .base import signals
+from .codepage import CONTROL
 
 
 # sleep period for input thread
@@ -118,7 +119,7 @@ class OutputStreamWrapper(object):
         """Set up codec."""
         self._encoding = encoding
         # converter with DBCS lead-byte buffer for utf8 output redirection
-        self._uniconv = codepage.get_converter(preserve_control=True)
+        self._uniconv = codepage.get_converter(preserve=CONTROL)
         self._stream = stream
 
     def write(self, s):
@@ -159,4 +160,4 @@ class InputStreamWrapper(object):
             # raw input means it's already in the BASIC codepage
             # but the keyboard functions use unicode
             # for input, don't use lead-byte buffering beyond the convert call
-            return self._codepage.str_to_unicode(s, preserve_control=True)
+            return self._codepage.str_to_unicode(s, preserve=CONTROL)

@@ -77,7 +77,7 @@ class TextBuffer(object):
     def __init__(self, attr, width, height, num_pages, codepage, do_fullwidth):
         """Initialise the screen buffer to given pages and dimensions."""
         self._dbcs_enabled = codepage.dbcs and do_fullwidth
-        self._conv = codepage.get_converter(preserve_control=False)
+        self._conv = codepage.get_converter(preserve=b'')
         self.pages = [TextPage(attr, width, height, self._conv, self._dbcs_enabled)
                       for _ in range(num_pages)]
         self.width = width

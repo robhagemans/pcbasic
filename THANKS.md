@@ -33,18 +33,19 @@ PC-BASIC incorporates code derived from other projects, in particular:
 
   * **J-L Morel**'s [Win32::Console::ANSI](http://search.cpan.org/~jlmorel/Win32-Console-ANSI-1.11/lib/Win32/Console/ANSI.pm)
   * **Valentin Lab**'s [win_subprocess.py](https://gist.github.com/vaab/2ad7051fc193167f15f85ef573e54eb9)
+  * **Marcus von Appen**'s [PySDL2](https://pysdl2.readthedocs.org/en/latest/)
 
 PC-BASIC depends on the following open-source projects:
 
   * [Python](http://www.python.org)
   * [Setuptools](https://pypi.python.org/pypi/setuptools)
+  * [NumPy](http://www.numpy.org)
+  * [PySerial](https://github.com/pyserial/pyserial)
+  * [PyParallel](https://github.com/pyserial/pyparallel)
   * [Simple DirectMedia Layer (SDL)](http://www.libsdl.org)
   * [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/)
-  * [PySDL2](https://pysdl2.readthedocs.org/en/latest/)
   * [PyGame](http://www.pygame.org)
   * [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)
-  * [NumPy](http://www.numpy.org)
-  * [PySerial](http://pyserial.sourceforge.net/pyserial.html)
 
 
 ### Fond memories
@@ -153,17 +154,20 @@ Documentation tools:
 
   * [LXML](http://lxml.de)
   * [Markdown](https://pypi.python.org/pypi/Markdown)
+  * [Prince](https://www.princexml.com/download/)
 
 Packaging tools:
 
-  * [PyInstaller](http://www.pyinstaller.org)
-  * [Nullsoft Scriptable Install System](http://nsis.sourceforge.net)
-  * [7-Zip](http://www.7-zip.org)
+  * [Wheel](https://pypi.python.org/pypi/wheel)
+  * [Twine](https://pypi.python.org/pypi/twine)
+  * [cx_Freeze](https://anthony-tuininga.github.io/cx_Freeze/)
+  * [fpm](https://github.com/jordansissel/fpm)
 
 Source code and releases are hosted on:
 
   * [GitHub](https://github.com/)
   * [SourceForge](https://sourceforge.net/)
+  * [PyPI](https://pypi.org/project/pcbasic/)
 
 
 ### Emulators

@@ -22,7 +22,7 @@ from collections import deque
 
 from .metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
-from .compat import WIN32, get_short_pathname, get_unicode_argv
+from .compat import WIN32, get_short_pathname, get_unicode_argv, HAS_CONSOLE
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
 from .compat import split_quoted
 from . import data
@@ -418,12 +418,14 @@ class Settings(object):
         """Determine which i/o streams to attach."""
         input_streams, output_streams = [], []
         # add stdio if redirected or no interface
-        if not self.interface or not sys.stdin.isatty():
+        if HAS_CONSOLE and (not self.interface or not sys.stdin.isatty()):
             input_streams.append(sys.stdin)
         # redirect output as well if input is redirected, but not the other way around
         # this is because (1) GW-BASIC does this from the DOS prompt
         # (2) otherwise we don't see anything - we quit after input closes
-        if not self.interface or not sys.stdout.isatty() or not sys.stdin.isatty():
+        # isatty is also false if we run as a GUI exe, so check that here
+        if HAS_CONSOLE and (
+                not self.interface or not sys.stdout.isatty() or not sys.stdin.isatty()):
             output_streams.append(sys.stdout)
         # explicit redirects
         infile = self.get(b'input')
@@ -490,7 +492,6 @@ class Settings(object):
             'devices': device_params,
             'current_device': current_device,
             'mount': mount_dict,
-            'temp_dir': self._temp_dir,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
             'utf8': self.get('utf8'),
