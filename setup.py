@@ -444,18 +444,12 @@ elif CX_FREEZE and sys.platform == 'darwin':
             """Run bdist_mac command."""
             cx_Freeze.bdist_mac.run(self)
             # fix install names in libraries in lib/ that were modified by cx_Freeze
-            name = 'libSDL_gfx.dylib'
-            file_path = 'build/PC-BASIC-2.0.app/Contents/MacOS/lib/pcbasic/lib/darwin' + name
-            # find the references: call otool -L on the file
-            otool = subprocess.Popen(('otool', '-L', file_path), stdout=subprocess.PIPE)
-            for ref in otool.stdout:
-                if 'libSDL_gfx' not in ref:
-                    continue
-                path = ref.decode().strip().split()[0]
-                subprocess.call((
-                    'install_name_tool', '-change', path,
-                    '@loader_path/' + name, file_path
-                ))
+            name = 'libSDL2_gfx.dylib'
+            file_path = 'build/PC-BASIC-2.0.app/Contents/MacOS/lib/pcbasic/lib/darwin/' + name
+            subprocess.call((
+                'install_name_tool', '-change', '@executable_path/libSDL2_gfx.dylib',
+                '@loader_path/libSDL2.dylib', file_path
+            ))
 
         def copy_file(self, src, dst):
             # catch copy errors, these happen with relative references with funny bracketed names
