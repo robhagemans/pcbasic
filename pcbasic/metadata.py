@@ -23,5 +23,5 @@ CLASSIFIERS = [
     u'Topic :: Software Development :: Interpreters',
     u'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
     u'Programming Language :: Python :: 2.7',
-],
-KEYWORDS = u'emulator interpreter basic retro legacy gwbasic basica pcjr tandy',
+]
+KEYWORDS = [u'emulator', u'interpreter', u'basic', u'retro', u'legacy', u'gwbasic', u'basica', u'pcjr', u'tandy']
