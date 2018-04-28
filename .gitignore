@@ -2,6 +2,7 @@
 *.pyd
 *.pyo
 *.dll
+*.dylib
 .android.*
 USAGE.txt
 doc/
