@@ -159,6 +159,7 @@ Documentation tools:
 Packaging tools:
 
   * [Wheel](https://pypi.python.org/pypi/wheel)
+  * [Twine](https://pypi.python.org/pypi/twine)
   * [cx_Freeze](https://anthony-tuininga.github.io/cx_Freeze/)
   * [fpm](https://github.com/jordansissel/fpm)
 
@@ -166,6 +167,7 @@ Source code and releases are hosted on:
 
   * [GitHub](https://github.com/)
   * [SourceForge](https://sourceforge.net/)
+  * [PyPI](https://pypi.org/project/pcbasic/)
 
 
 ### Emulators
