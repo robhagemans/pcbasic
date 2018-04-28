@@ -31,16 +31,16 @@ class Sound(object):
         self._values = values
         # Tandy/PCjr noise generator
         # frequency for noise sources
-        self.noise_freq = [self._base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
-        self.noise_freq[3] = 0.
-        self.noise_freq[7] = 0.
+        self._noise_freq = [self._base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
+        self._noise_freq[3] = 0.
+        self._noise_freq[7] = 0.
         # pc-speaker on/off; (not implemented; not sure whether should be on)
-        self.beep_on = True
+        self._beep_on = True
         if syntax in ('pcjr', 'tandy'):
             self.capabilities = syntax
         else:
             self.capabilities = ''
-        # Tandy/PCjr SOUND ON and BEEP ON
+        # Tandy/PCjr SOUND ON and BEEP ONfor c in value
         # tandy has SOUND ON by default, pcjr has it OFF
         self.sound_on = (self.capabilities == 'tandy')
         # timed queues for each voice
@@ -51,7 +51,7 @@ class Sound(object):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
         command, = args
         if command:
-            self.beep_on = (command == tk.ON)
+            self._beep_on = (command == tk.ON)
         else:
             self.play_alert()
 
@@ -79,8 +79,8 @@ class Sound(object):
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
-            self.noise_freq[3] = frequency/2.
-            self.noise_freq[7] = frequency/2.
+            self._noise_freq[3] = frequency/2.
+            self._noise_freq[7] = frequency/2.
 
     def sound_(self, args):
         """SOUND: produce a sound or switch external speaker on/off."""
@@ -126,13 +126,13 @@ class Sound(object):
         else:
             self.play_sound(freq, dur_sec, voice=voice, volume=volume)
             if self.foreground:
-                self.wait_music()
+                self._wait_music()
 
     def play_sound(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
         """Play a sound on the tone generator; wait if tone queue is full."""
         self.play_sound_no_wait(frequency, duration, fill, loop, voice, volume)
         # at most 16 notes in the sound queue with gaps, or 32 without gaps
-        self.wait_music(31)
+        self._wait_music(31)
 
     def noise_(self, args):
         """Generate a noise (NOISE statement)."""
@@ -155,13 +155,13 @@ class Sound(object):
 
     def play_noise(self, source, volume, duration, loop=False):
         """Generate a noise."""
-        frequency = self.noise_freq[source]
+        frequency = self._noise_freq[source]
         noise = signals.Event(signals.AUDIO_NOISE, [source > 3, frequency, duration, 1, loop, volume])
         self._queues.audio.put(noise)
         self.voice_queue[3].put(noise, None if loop else duration)
         # don't wait for noise
 
-    def wait_music(self, wait_length=0):
+    def _wait_music(self, wait_length=0):
         """Wait until a given number of notes are left on the queue."""
         while (self.queue_length(0) > wait_length or
                 self.queue_length(1) > wait_length or
@@ -236,8 +236,10 @@ class PlayParser(object):
     # 12-tone equal temperament
     # C, C#, D, D#, E, F, F#, G, G#, A, A#, B
     _note_freq = [440.*2**((i-33.)/12.) for i in range(84)]
-    _notes = {'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
-              'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11}
+    _notes = {
+        'C': 0, 'C#': 1, 'D-': 1, 'D': 2, 'D#': 3, 'E-': 3, 'E': 4, 'F': 5, 'F#': 6,
+        'G-': 6, 'G': 7, 'G#': 8, 'A-': 8, 'A': 9, 'A#': 10, 'B-': 10, 'B': 11
+    }
 
     def __init__(self, sound, memory, values):
         """Initialise parser."""
