@@ -535,6 +535,56 @@ elif CX_FREEZE and sys.platform == 'darwin':
             copyright=COPYRIGHT),
     ]
 
+###############################################################################
+# linux packaging
+
+
+class BdistRpmCommand(Command):
+    """Command to create a .rpm package."""
+
+    description = 'create .rpm package (requires fpm)'
+
+    def run(self):
+        """Create .rpm package."""
+        try:
+            os.mkdir('dist/')
+        except EnvironmentError:
+            pass
+        if os.path.exists('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,)):
+            os.unlink('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,))
+        os.chdir('dist')
+        subprocess.call((
+            'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
+            '--prefix=/usr/local/lib/python2.7/site-packages/',
+            '--depends=numpy,pyserial,SDL2,SDL2_gfx', '..'
+        ))
+
+
+class BdistDebCommand(Command):
+    """Command to create a .deb package."""
+
+    description = 'create .deb package (requires fpm)'
+
+    def run(self):
+        """Create .deb package."""
+        try:
+            os.mkdir('dist/')
+        except EnvironmentError:
+            pass
+        if os.path.exists('dist/python-pcbasic_%s_all.deb' % (VERSION,)):
+            os.unlink('dist/python-pcbasic_%s_all.deb' % (VERSION,))
+        os.chdir('dist')
+        subprocess.call((
+            'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
+            '--prefix=/usr/local/lib/python2.7/site-packages/',
+            '--depends=python-numpy,python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
+            '..'
+        ))
+
+
+SETUP_OPTIONS['cmdclass']['bdist_rpm'] = BdistRpmCommand
+SETUP_OPTIONS['cmdclass']['bdist_deb'] = BdistDebCommand
+
 
 ###############################################################################
 # run the setup
