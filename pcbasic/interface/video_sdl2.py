@@ -717,7 +717,8 @@ class VideoSDL2(VideoPlugin):
             self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
         else:
             eascii, scan, mod, ts = self._last_down
-            if ts == event.text.timestamp:
+            # timestamps for kepdown and textinput may differ by one on mac
+            if ts + 1 >= event.text.timestamp:
                 # combine if same time stamp
                 if eascii and c != eascii:
                     # filter out chars being sent with alt+key on Linux
