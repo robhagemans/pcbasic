@@ -68,13 +68,12 @@ class Sound(object):
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
-        if fill != 1:
-            # put a placeholder 0-duration tone on the queue to represent the gap
-            # the gap is included in the actual tone, but it needs to be counted for events
-            gap = signals.Event(signals.AUDIO_TONE, [voice, 0, (1-fill) * duration, 0, 0])
-            self._queues.audio.put(gap)
         tone = signals.Event(signals.AUDIO_TONE, [voice, frequency, fill*duration, loop, volume])
         self._queues.audio.put(tone)
+        # separate gap event, except for legato (fill==1)
+        if fill != 1:
+            gap = signals.Event(signals.AUDIO_TONE, [voice, 0, (1-fill) * duration, 0, 0])
+            self._queues.audio.put(gap)
         self.voice_queue[voice].put(tone, None if loop else duration)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
