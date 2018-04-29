@@ -296,9 +296,7 @@ class PlayParser(object):
                     note = mmls.parse_number()
                     error.range_check(0, 84, note)
                     dur = vstate.length
-                    c = mmls.skip_blank().upper()
-                    if c == '.':
-                        mmls.read(1)
+                    while mmls.skip_blank_read_if(('.',)):
                         dur *= 1.5
                     if note == 0:
                         self._sound.play_sound(0, dur*vstate.tempo, vstate.speed,
@@ -345,10 +343,9 @@ class PlayParser(object):
                         error.range_check(0, 64, length)
                         if length > 0:
                             dur = 1. / float(length)
-                    if mmls.skip_blank_read_if(('.',)):
+                    while mmls.skip_blank_read_if(('.',)):
                         error.throw_if(note == 'P' and length == 0)
                         dur *= 1.5
-                        break
                     if note == 'P':
                         # length must be specified
                         if length is None:
