@@ -234,9 +234,9 @@ class Settings(object):
             u'type': u'string', u'default': u'',
             u'choices': (u'', u'none', u'cli', u'text', u'graphical',
                         u'ansi', u'curses', u'pygame', u'sdl2'), },
-        u'sound-engine': {
+        u'sound': {
             u'type': u'string', u'default': u'',
-            u'choices': (u'', u'none', u'beep', u'portaudio'), },
+            u'choices': (u'', u'none', u'beep', u'portaudio', u'interface'), },
         u'load': {u'type': u'string', u'default': u'', },
         u'run': {u'type': u'string', u'default': u'',  },
         u'convert': {u'type': u'string', u'default': u'', },
@@ -571,7 +571,7 @@ class Settings(object):
                 iface_list = (interface,)
         iface_params = {
             'try_interfaces': iface_list,
-            'audio_override': self.get('sound-engine'),
+            'audio_override': self.get('sound') != 'interface' and self.get('sound'),
         }
         iface_params.update(self._get_video_parameters())
         iface_params.update(self._get_audio_parameters())
