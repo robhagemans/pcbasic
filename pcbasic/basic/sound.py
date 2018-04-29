@@ -306,9 +306,10 @@ class PlayParser(object):
                     while mmls.skip_blank_read_if(('.',)):
                         dur *= 1.5
                     if note == 0:
+                        # pause
                         self._sound.play_sound_no_wait(
                                 0, dur*vstate.tempo,
-                                vstate.fill, False, voice, vstate.volume)
+                                1, False, voice, vstate.volume)
                     else:
                         self._sound.play_sound_no_wait(
                                 self._note_freq[note-1], dur*vstate.tempo,
@@ -362,7 +363,7 @@ class PlayParser(object):
                         elif length > 0:
                             self._sound.play_sound_no_wait(
                                     0, dur * vstate.tempo,
-                                    vstate.fill, False, voice, vstate.volume)
+                                    1, False, voice, vstate.volume)
                     else:
                         # use default length for length 0
                         try:
