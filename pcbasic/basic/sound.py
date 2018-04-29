@@ -186,7 +186,8 @@ class Sound(object):
 
     def is_playing(self, voice):
         """A note is playing or queued at the given voice."""
-        return self.voice_queue[voice].qsize() > 0
+        # empty at two notes: check e.g. bisqwit/noise.bas for timings
+        return self.voice_queue[voice].qsize() > 2
 
     def persist(self, flag):
         """Set mixer persistence flag (runmode)."""
