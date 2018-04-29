@@ -43,8 +43,10 @@ class Sound(object):
         # Tandy/PCjr SOUND ON and BEEP ONfor c in value
         # tandy has SOUND ON by default, pcjr has it OFF
         self.sound_on = (self.capabilities == 'tandy')
-        # timed queues for each voice
+        # timed queues for each voice (including gaps, for background counting & rebuilding)
         self.voice_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
+        # timed queues for tones only (for PLAY, ON PLAY, etc.)
+        self.tone_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
         self.foreground = True
 
     def beep_(self, args):
@@ -57,9 +59,11 @@ class Sound(object):
 
     def play_alert(self):
         """Produce an alert sound."""
-        self.play_sound(800, 0.25)
+        self.play_sound_no_wait(800, 0.25, fill=1, loop=False, voice=0, volume=15)
+        # at most 16 notes in the sound queue with gaps, or 32 without gaps
+        self._wait_background()
 
-    def play_sound_no_wait(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
+    def play_sound_no_wait(self, frequency, duration, fill, loop, voice, volume):
         """Play a sound on the tone generator."""
         if frequency < 0:
             frequency = 0
@@ -70,16 +74,26 @@ class Sound(object):
             frequency = 110.
         tone = signals.Event(signals.AUDIO_TONE, [voice, frequency, fill*duration, loop, volume])
         self._queues.audio.put(tone)
+        self.voice_queue[voice].put(tone, None if loop else fill*duration)
+        self.tone_queue[voice].put(tone, None if loop else duration)
         # separate gap event, except for legato (fill==1)
-        if fill != 1:
+        if fill != 1 and not loop:
             gap = signals.Event(signals.AUDIO_TONE, [voice, 0, (1-fill) * duration, 0, 0])
             self._queues.audio.put(gap)
-        self.voice_queue[voice].put(tone, None if loop else duration)
+            self.voice_queue[voice].put(gap, (1-fill)*duration)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
             self._noise_freq[3] = frequency/2.
             self._noise_freq[7] = frequency/2.
+
+    def play_noise(self, source, volume, duration, loop):
+        """Generate a noise."""
+        frequency = self._noise_freq[source]
+        noise = signals.Event(signals.AUDIO_NOISE, [source > 3, frequency, duration, loop, volume])
+        self._queues.audio.put(noise)
+        self.voice_queue[3].put(noise, None if loop else duration)
+        self.tone_queue[3].put(noise, None if loop else duration)
 
     def sound_(self, args):
         """SOUND: produce a sound or switch external speaker on/off."""
@@ -121,17 +135,11 @@ class Sound(object):
         # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
         if dur < 0.02272727248:
             # play indefinitely in background
-            self.play_sound(freq, 1, loop=True, voice=voice, volume=volume)
+            self.play_sound_no_wait(freq, dur_sec, fill=1, loop=True, voice=voice, volume=volume)
+            self._wait_background()
         else:
-            self.play_sound(freq, dur_sec, voice=voice, volume=volume)
-            if self.foreground:
-                self._wait_music()
-
-    def play_sound(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
-        """Play a sound on the tone generator; wait if tone queue is full."""
-        self.play_sound_no_wait(frequency, duration, fill, loop, voice, volume)
-        # at most 16 notes in the sound queue with gaps, or 32 without gaps
-        self._wait_music(31)
+            self.play_sound_no_wait(freq, dur_sec, fill=1, loop=False, voice=voice, volume=volume)
+            self.wait()
 
     def noise_(self, args):
         """Generate a noise (NOISE statement)."""
@@ -147,18 +155,15 @@ class Sound(object):
         # calculate duration in seconds
         dur_sec = dur / 18.2
         # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
-        if dur < 0.02272727248:
-            self.play_noise(source, volume, dur_sec, loop=True)
-        else:
-            self.play_noise(source, volume, dur_sec)
-
-    def play_noise(self, source, volume, duration, loop=False):
-        """Generate a noise."""
-        frequency = self._noise_freq[source]
-        noise = signals.Event(signals.AUDIO_NOISE, [source > 3, frequency, duration, loop, volume])
-        self._queues.audio.put(noise)
-        self.voice_queue[3].put(noise, None if loop else duration)
+        self.play_noise(source, volume, dur_sec, loop=(dur < 0.02272727248))
         # don't wait for noise
+
+    def wait(self):
+        """Wait for the queue to become free."""
+        if self.foreground:
+            self._wait_music()
+        else:
+            self._wait_background()
 
     def _wait_music(self, wait_length=0):
         """Wait until a given number of notes are left on the queue."""
@@ -167,27 +172,28 @@ class Sound(object):
                 self.queue_length(2) > wait_length):
             self._queues.wait()
 
-    def wait_all_music(self):
-        """Wait until all music (not noise) has finished playing."""
-        while (self.is_playing(0) or self.is_playing(1) or self.is_playing(2)):
+    def queue_length(self, voice=0):
+        """Return the number of notes in the queue."""
+        # one note is currently playing, i.e. not "queued"
+        # two notes seems to produce better timings in practice
+        return max(0, self.tone_queue[voice].qsize()-2)
+
+    def _wait_background(self):
+        """Wait until the background queue becomes available."""
+        wait_length = 32
+        # top of queue is the currently playing tone or gap, hence -1
+        while (self.voice_queue[0].qsize()-1 > wait_length or
+                self.voice_queue[1].qsize()-1 > wait_length or
+                self.voice_queue[2].qsize()-1 > wait_length):
             self._queues.wait()
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""
         for q in self.voice_queue:
             q.clear()
+        for q in self.tone_queue:
+            q.clear()
         self._queues.audio.put(signals.Event(signals.AUDIO_STOP))
-
-    def queue_length(self, voice=0):
-        """Return the number of notes in the queue."""
-        # NOTE: this returns zero when there are still TWO notes to play
-        # this agrees with empirical GW-BASIC ON PLAY() timings!
-        return max(0, self.voice_queue[voice].qsize()-2)
-
-    def is_playing(self, voice):
-        """A note is playing or queued at the given voice."""
-        # empty at two notes: check e.g. bisqwit/noise.bas for timings
-        return self.voice_queue[voice].qsize() > 2
 
     def persist(self, flag):
         """Set mixer persistence flag (runmode)."""
@@ -224,7 +230,7 @@ class PlayState(object):
     def __init__(self):
         """Initialise play state."""
         self.octave = 4
-        self.speed = 7./8.
+        self.fill = 7./8.
         self.tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
         self.length = 0.25
         self.volume = 15
@@ -300,12 +306,13 @@ class PlayParser(object):
                     while mmls.skip_blank_read_if(('.',)):
                         dur *= 1.5
                     if note == 0:
-                        self._sound.play_sound(0, dur*vstate.tempo, vstate.speed,
-                                        volume=0, voice=voice)
+                        self._sound.play_sound_no_wait(
+                                0, dur*vstate.tempo,
+                                vstate.fill, False, voice, vstate.volume)
                     else:
-                        self._sound.play_sound(self._note_freq[note-1], dur*vstate.tempo,
-                                        vstate.speed, volume=vstate.volume,
-                                        voice=voice)
+                        self._sound.play_sound_no_wait(
+                                self._note_freq[note-1], dur*vstate.tempo,
+                                vstate.fill, False, voice, vstate.volume)
                 elif c == 'L':
                     recip = mmls.parse_number()
                     error.range_check(1, 64, recip)
@@ -353,26 +360,26 @@ class PlayParser(object):
                             raise error.BASICError(error.IFC)
                         # don't do anything for length 0
                         elif length > 0:
-                            self._sound.play_sound(0, dur * vstate.tempo, vstate.speed,
-                                            volume=vstate.volume, voice=voice)
+                            self._sound.play_sound_no_wait(
+                                    0, dur * vstate.tempo,
+                                    vstate.fill, False, voice, vstate.volume)
                     else:
                         # use default length for length 0
                         try:
-                            self._sound.play_sound(
+                            self._sound.play_sound_no_wait(
                                 self._note_freq[(vstate.octave+next_oct)*12 + self._notes[note]],
-                                dur * vstate.tempo, vstate.speed,
-                                volume=vstate.volume, voice=voice)
+                                dur * vstate.tempo, vstate.fill, False, voice, vstate.volume)
                         except KeyError:
                             raise error.BASICError(error.IFC)
                     next_oct = 0
                 elif c == 'M':
                     c = mmls.skip_blank_read().upper()
                     if c == 'N':
-                        vstate.speed = 7./8.
+                        vstate.fill = 7./8.
                     elif c == 'L':
-                        vstate.speed = 1.
+                        vstate.fill = 1.
                     elif c == 'S':
-                        vstate.speed = 3./4.
+                        vstate.fill = 3./4.
                     elif c == 'F':
                         self._sound.foreground = True
                     elif c == 'B':
@@ -389,13 +396,13 @@ class PlayParser(object):
                         vstate.volume = vol
                 else:
                     raise error.BASICError(error.IFC)
+        # align voices (excluding noise) at the end of each PLAY statement
         max_time = max(q.expiry() for q in self._sound.voice_queue[:3])
-        for voice, q in enumerate(self._sound.voice_queue):
+        for voice, q in enumerate(self._sound.voice_queue[:3]):
             dur = (max_time - q.expiry()).total_seconds()
             if dur > 0:
-                self._sound.play_sound(0, dur, fill=1, loop=False, voice=voice)
-        if self._sound.foreground:
-            self._sound.wait_all_music()
+                self._sound.play_sound_no_wait(0, dur, fill=1, loop=False, voice=voice, volume=0)
+        self._sound.wait()
 
 
 ###############################################################################
