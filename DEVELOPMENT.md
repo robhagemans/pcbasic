@@ -26,7 +26,7 @@ The following packages are needed or recommended when installing PC-BASIC:
 `setuptools` and `pip` are included with Python.
 Once you have a working Python installation, most dependencies can be installed with `pip`:
 
-        pip install pysdl2 numpy pygame pyaudio pyserial
+        pip install numpy pygame pyaudio pyserial
 
 To use the graphical interface, you will also need to install the [SDL2](https://www.libsdl.org/download-2.0.php) library.
 Install the library in your OS's standard location for libraries.
