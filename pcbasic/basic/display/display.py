@@ -244,13 +244,14 @@ class Display(object):
                                     self.mode.num_pages, self.mode.bitsperpixel)
         else:
             self.pixels = None
+        # set active page & visible page, counting from 0.
+        self.set_page(new_vpagenum, new_apagenum)
         # initialise text screen
+        # NOTE this requires active page to have beet set!
         self.text_screen.init_mode(self.mode, self.pixels, self.attr, new_vpagenum, new_apagenum)
         # restore emulated video memory in new mode
         if save_mem:
             self.mode.set_all_memory(self, save_mem)
-        # set active page & visible page, counting from 0.
-        self.set_page(new_vpagenum, new_apagenum)
         # center graphics cursor, reset window, etc.
         self.drawing.init_mode(self.mode, self.text_screen.text, self.pixels)
         self.drawing.set_attr(self.attr)
