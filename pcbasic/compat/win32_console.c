@@ -35,13 +35,6 @@ See LICENSE.md or http://opensource.org/licenses/mit-license.php
 // define bool, for C < C99
 typedef enum { false, true } bool;
 
-// not defined in MinGW
-static int wcscasecmp(wchar_t *a, wchar_t *b)
-{
-    while (*a && *b && towupper(*a++) == towupper(*b++));
-    return (*a || *b);
-}
-
 
 // ============================================================================
 // console globals
@@ -579,28 +572,6 @@ static void ansi_output(TERM *term, SEQUENCE es)
             case 2:
                 // ESC]2;%sBEL: set title
                 SetConsoleTitle(es.args);
-                break;
-            case 255:
-                // ANSIpipe-only: ESC]255;%sBEL: set terminal property
-                // properties supported: ECHO, ICRNL, ONLCR
-                // not thread-safe, so a bit unpredictable
-                // if you're using stdout and stderr at the same time.
-                // special property: SUPPSTERR - suppress stderr
-                if (!wcscasecmp(es.args, L"ECHO"))
-                    flags.echo = true;
-                else if (!wcscasecmp(es.args, L"ICRNL"))
-                    flags.icrnl = true;
-                else if (!wcscasecmp(es.args, L"ONLCR"))
-                    flags.onlcr = true;
-                break;
-            case 254:
-                // ANSIpipe-only: ESC]254;%sBEL: unset terminal property
-                if (!wcscasecmp(es.args, L"ECHO"))
-                    flags.echo = false;
-                else if (!wcscasecmp(es.args, L"ICRNL"))
-                    flags.icrnl = false;
-                else if (!wcscasecmp(es.args, L"ONLCR"))
-                    flags.onlcr = false;
                 break;
         }
     }
