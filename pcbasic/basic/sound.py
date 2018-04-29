@@ -45,8 +45,6 @@ class Sound(object):
         self.sound_on = (self.capabilities == 'tandy')
         # timed queues for each voice (including gaps, for background counting & rebuilding)
         self.voice_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
-        # timed queues for tones only (for PLAY, ON PLAY, etc.)
-        self.tone_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
         self.foreground = True
 
     def beep_(self, args):
@@ -74,13 +72,12 @@ class Sound(object):
             frequency = 110.
         tone = signals.Event(signals.AUDIO_TONE, [voice, frequency, fill*duration, loop, volume])
         self._queues.audio.put(tone)
-        self.voice_queue[voice].put(tone, None if loop else fill*duration)
-        self.tone_queue[voice].put(tone, None if loop else duration)
+        self.voice_queue[voice].put(tone, None if loop else fill*duration, True)
         # separate gap event, except for legato (fill==1)
         if fill != 1 and not loop:
             gap = signals.Event(signals.AUDIO_TONE, [voice, 0, (1-fill) * duration, 0, 0])
             self._queues.audio.put(gap)
-            self.voice_queue[voice].put(gap, (1-fill)*duration)
+            self.voice_queue[voice].put(gap, (1-fill)*duration, False)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -92,8 +89,7 @@ class Sound(object):
         frequency = self._noise_freq[source]
         noise = signals.Event(signals.AUDIO_NOISE, [source > 3, frequency, duration, loop, volume])
         self._queues.audio.put(noise)
-        self.voice_queue[3].put(noise, None if loop else duration)
-        self.tone_queue[3].put(noise, None if loop else duration)
+        self.voice_queue[3].put(noise, None if loop else duration, True)
 
     def sound_(self, args):
         """SOUND: produce a sound or switch external speaker on/off."""
@@ -165,33 +161,33 @@ class Sound(object):
         else:
             self._wait_background()
 
-    def _wait_music(self, wait_length=0):
+    def _wait_music(self):
         """Wait until a given number of notes are left on the queue."""
-        while (self.queue_length(0) > wait_length or
-                self.queue_length(1) > wait_length or
-                self.queue_length(2) > wait_length):
+        # top of queue is the currently playing tone or gap, hence -1
+        wait_length = 0
+        while (self.voice_queue[0].qsize() > wait_length or
+                self.voice_queue[1].qsize() > wait_length or
+                self.voice_queue[2].qsize() > wait_length):
+            self._queues.wait()
+
+    def _wait_background(self):
+        """Wait until the background queue becomes available."""
+        wait_length = 31
+        # top of queue is the currently playing tone or gap, hence -1
+        while (self.voice_queue[0].qsize() > wait_length or
+                self.voice_queue[1].qsize() > wait_length or
+                self.voice_queue[2].qsize() > wait_length):
             self._queues.wait()
 
     def queue_length(self, voice=0):
         """Return the number of notes in the queue."""
         # one note is currently playing, i.e. not "queued"
         # two notes seems to produce better timings in practice
-        return max(0, self.tone_queue[voice].qsize()-2)
-
-    def _wait_background(self):
-        """Wait until the background queue becomes available."""
-        wait_length = 32
-        # top of queue is the currently playing tone or gap, hence -1
-        while (self.voice_queue[0].qsize()-1 > wait_length or
-                self.voice_queue[1].qsize()-1 > wait_length or
-                self.voice_queue[2].qsize()-1 > wait_length):
-            self._queues.wait()
+        return max(0, self.voice_queue[voice].qsize(False)-1)
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""
         for q in self.voice_queue:
-            q.clear()
-        for q in self.tone_queue:
             q.clear()
         self._queues.audio.put(signals.Event(signals.AUDIO_STOP))
 
@@ -231,7 +227,7 @@ class PlayState(object):
         """Initialise play state."""
         self.octave = 4
         self.fill = 7./8.
-        self.tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
+        self.tempo = 2. # 2*0.25 = 0.5 seconds per quarter note
         self.length = 0.25
         self.volume = 15
 
@@ -430,13 +426,18 @@ class TimedQueue(object):
 
     def _check_expired(self):
         """Drop expired items from queue."""
+        counts = 0
         try:
             while self._deque[0][1] <= datetime.datetime.now():
-                self._deque.popleft()
+                _, _, counts = self._deque.popleft()
+            # stop counting a tone only when its gap has finished
+            # if the last popped item counted (i.e. was a tone),
+            # and we're its gap, count us too until we expire
+            #self._deque[0] = self._deque[0][0], self._deque[0][1], self._deque[0][2] or counts
         except (IndexError, TypeError):
             pass
 
-    def put(self, item, duration):
+    def put(self, item, duration, count_for_size):
         """Put item onto queue with duration in seconds. Items with duration None remain until next item is put."""
         self._check_expired()
         try:
@@ -450,16 +451,17 @@ class TimedQueue(object):
             expiry = max(self._deque[-1][1], datetime.datetime.now()) + datetime.timedelta(seconds=duration)
         else:
             expiry = datetime.datetime.now() + datetime.timedelta(seconds=duration)
-        self._deque.append((item, expiry))
+        self._deque.append((item, expiry, count_for_size))
 
     def clear(self):
         """Clear the queue."""
         self._deque.clear()
 
-    def qsize(self):
+    def qsize(self, count_all=True):
         """Number of elements in queue."""
         self._check_expired()
-        return len(self._deque)
+        # top of queue always counts
+        return len([item for i, item in enumerate(self._deque) if count_all or item[2] or not i])
 
     def expiry(self):
         """Last expiry in queue."""
