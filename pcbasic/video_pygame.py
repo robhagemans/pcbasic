@@ -1354,7 +1354,7 @@ if numpy:
         dest_array = pygame.surfarray.pixels2d(
             canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
         # apply the operation
-        operations[operation_token](dest_array, numpy.array(array).T)
+        operations[operation_token](dest_array, numpy.array(array, dtype='B').T)
         screen_changed = True
 
 else:
