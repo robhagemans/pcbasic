@@ -172,7 +172,8 @@ class Sound(object):
 
     def _wait_background(self):
         """Wait until the background queue becomes available."""
-        wait_length = 31
+        # 32 plus one playing
+        wait_length = 33
         # top of queue is the currently playing tone or gap, hence -1
         while (self.voice_queue[0].qsize() > wait_length or
                 self.voice_queue[1].qsize() > wait_length or
