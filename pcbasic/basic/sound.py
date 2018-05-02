@@ -157,24 +157,19 @@ class Sound(object):
     def wait(self):
         """Wait for the queue to become free."""
         if self.foreground:
-            self._wait_music()
+            # wait until fully done
+            self._wait(0)
         else:
             self._wait_background()
-
-    def _wait_music(self):
-        """Wait until a given number of notes are left on the queue."""
-        # top of queue is the currently playing tone or gap, hence -1
-        wait_length = 0
-        while (self.voice_queue[0].qsize() > wait_length or
-                self.voice_queue[1].qsize() > wait_length or
-                self.voice_queue[2].qsize() > wait_length):
-            self._queues.wait()
 
     def _wait_background(self):
         """Wait until the background queue becomes available."""
         # 32 plus one playing
-        wait_length = 33
-        # top of queue is the currently playing tone or gap, hence -1
+        self._wait(33)
+
+    def _wait(self, wait_length):
+        """Wait until queue is shorter than or equal to given length."""
+        # top of queue is the currently playing tone or gap
         while (self.voice_queue[0].qsize() > wait_length or
                 self.voice_queue[1].qsize() > wait_length or
                 self.voice_queue[2].qsize() > wait_length):
@@ -430,11 +425,7 @@ class TimedQueue(object):
         counts = 0
         try:
             while self._deque[0][1] <= datetime.datetime.now():
-                _, _, counts = self._deque.popleft()
-            # stop counting a tone only when its gap has finished
-            # if the last popped item counted (i.e. was a tone),
-            # and we're its gap, count us too until we expire
-            #self._deque[0] = self._deque[0][0], self._deque[0][1], self._deque[0][2] or counts
+                self._deque.popleft()
         except (IndexError, TypeError):
             pass
 
