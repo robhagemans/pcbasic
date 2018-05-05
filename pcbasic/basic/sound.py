@@ -69,9 +69,7 @@ class Sound(object):
         """Play a sound on the tone generator."""
         if frequency < 0:
             frequency = 0
-        if ((self.capabilities == 'tandy' or
-                (self.capabilities == 'pcjr' and self.sound_on)) and
-                frequency < 110. and frequency != 0):
+        if self.capabilities in ('tandy', 'pcjr') and self.sound_on and 0 < frequency < 110.:
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
         tone = signals.Event(signals.AUDIO_TONE, [voice, frequency, fill*duration, loop, volume])
@@ -267,7 +265,7 @@ class PlayParser(object):
         if not any(mml_list):
             raise error.BASICError(error.MISSING_OPERAND)
         # on PCjr, three-voice PLAY requires SOUND ON
-        if self._sound.capabilities == 'pcjr' and not self._sound.sound_on and len(mml_list) > 1:
+        if not self._sound.sound_on and len(mml_list) > 1:
             raise error.BASICError(error.STX)
         # a marker is inserted at the start of the PLAY statement
         # this takes up one spot in the buffer and thus affects timings
@@ -387,8 +385,8 @@ class PlayParser(object):
                         self._sound.foreground = False
                     else:
                         raise error.BASICError(error.IFC)
-                elif c == 'V' and (self._sound.capabilities == 'tandy' or
-                                    (self._sound.capabilities == 'pcjr' and self._sound.sound_on)):
+                elif c == 'V' and (
+                        self._sound.capabilities in ('tandy', 'pcjr') and self._sound.sound_on):
                     vol = mmls.parse_number()
                     error.range_check(-1, 15, vol)
                     if vol == -1:
