@@ -272,7 +272,7 @@ class PlayParser(object):
         # a marker is inserted at the start of the PLAY statement
         # this takes up one spot in the buffer and thus affects timings
         for queue in self._sound.voice_queue[:3]:
-            queue.put(signals.Event(signals.AUDIO_TONE, [0, 0, 0, 0, 0]), 0, False)
+            queue.put(signals.Event(signals.AUDIO_TONE, [0, 0, 0, 0, 0]), 0, None)
         mml_list += [''] * (3-len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, self._memory, self._values) for mml in mml_list]
         next_oct = 0
@@ -397,6 +397,12 @@ class PlayParser(object):
                         vstate.volume = vol
                 else:
                     raise error.BASICError(error.IFC)
+        # remove marker if nothing got added to the queue
+        # FIXME: private member access
+        last_entries = [queue._deque[-1][2] if queue else None for queue in self._sound.voice_queue[:3]]
+        if last_entries == [None, None, None]:
+            for queue in self._sound.voice_queue[:3]:
+                queue._deque.pop()
         # align voices (excluding noise) at the end of each PLAY statement
         max_time = max(q.expiry() for q in self._sound.voice_queue[:3])
         for voice, q in enumerate(self._sound.voice_queue[:3]):
