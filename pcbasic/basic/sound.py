@@ -18,6 +18,10 @@ from . import mlparser
 from . import values
 
 
+# number of tones, gaps or markers in background buffer
+BACKGROUND_BUFFER_LENGTH = 32
+
+
 class Sound(object):
     """Sound queue manipulations."""
 
@@ -165,7 +169,7 @@ class Sound(object):
     def _wait_background(self):
         """Wait until the background queue becomes available."""
         # 32 plus one playing
-        self._wait(33)
+        self._wait(BACKGROUND_BUFFER_LENGTH+1)
 
     def _wait(self, wait_length):
         """Wait until queue is shorter than or equal to given length."""
@@ -265,6 +269,10 @@ class PlayParser(object):
         # on PCjr, three-voice PLAY requires SOUND ON
         if self._sound.capabilities == 'pcjr' and not self._sound.sound_on and len(mml_list) > 1:
             raise error.BASICError(error.STX)
+        # a marker is inserted at the start of the PLAY statement
+        # this takes up one spot in the buffer and thus affects timings
+        for queue in self._sound.voice_queue[:3]:
+            queue.put(signals.Event(signals.AUDIO_TONE, [0, 0, 0, 0, 0]), 0, False)
         mml_list += [''] * (3-len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, self._memory, self._values) for mml in mml_list]
         next_oct = 0
