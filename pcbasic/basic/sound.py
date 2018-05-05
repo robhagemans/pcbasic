@@ -21,12 +21,29 @@ from . import values
 # number of tones, gaps or markers in background buffer
 BACKGROUND_BUFFER_LENGTH = 32
 
+# base frequency for noise source
+BASE_FREQ = 3579545. / 1024.
+# frequency multipliers for noise sources 0-7
+NOISE_FREQ = tuple(BASE_FREQ * v for v in (1., 0.5, 0.25, 0., 1., 0.5, 0.25, 0.))
+
+# duration in seconds of synch marker
+MARKER_DURATION = 0.02
+
+# 12-tone equal temperament
+# C, C#, D, D#, E, F, F#, G, G#, A, A#,
+NOTE_FREQ = tuple(440. * 2**((i-33.)/12.) for i in range(84))
+NOTES = {
+    b'C': 0, b'C#': 1, b'D-': 1, b'D': 2, b'D#': 3, b'E-': 3, b'E': 4, b'F': 5, b'F#': 6,
+    b'G-': 6, b'G': 7, b'G#': 8, b'A-': 8, b'A': 9, b'A#': 10, b'B-': 10, b'B': 11
+}
+
+# critical duration value below which sound loops
+# in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
+LOOP_THRESHOLD = 0.02272727248
+
 
 class Sound(object):
     """Sound queue manipulations."""
-
-    # base frequency for noise source
-    _base_freq = 3579545./1024.
 
     def __init__(self, queues, values, syntax):
         """Initialise sound queue."""
@@ -35,16 +52,12 @@ class Sound(object):
         self._values = values
         # Tandy/PCjr noise generator
         # frequency for noise sources
-        self._noise_freq = [self._base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
-        self._noise_freq[3] = 0.
-        self._noise_freq[7] = 0.
+        self._noise_freq = list(NOISE_FREQ)
         # pc-speaker on/off; (not implemented; not sure whether should be on)
         self._beep_on = True
-        if syntax in ('pcjr', 'tandy'):
-            self.capabilities = syntax
-        else:
-            self.capabilities = ''
-        # Tandy/PCjr SOUND ON and BEEP ONfor c in value
+        # advnced sound capabilities
+        self.capabilities = syntax if syntax in ('pcjr', 'tandy') else ''
+        # Tandy/PCjr SOUND ON and BEEP ON
         # tandy has SOUND ON by default, pcjr has it OFF
         self.sound_on = (self.capabilities == 'tandy')
         # timed queues for each voice (including gaps, for background counting & rebuilding)
@@ -57,27 +70,27 @@ class Sound(object):
         if command:
             self._beep_on = (command == tk.ON)
         else:
-            self.play_alert()
+            self.beep()
 
-    def play_alert(self):
+    def beep(self):
         """Produce an alert sound."""
-        self.play_sound_no_wait(800, 0.25, fill=1, loop=False, voice=0, volume=15)
+        self.emit_tone(800, 0.25, fill=1, loop=False, voice=0, volume=15)
         # at most 16 notes in the sound queue with gaps, or 32 without gaps
         self._wait_background()
 
-    def play_sound_no_wait(self, frequency, duration, fill, loop, voice, volume):
+    def emit_tone(self, frequency, duration, fill, loop, voice, volume):
         """Play a sound on the tone generator."""
         if frequency < 0:
             frequency = 0
-        if self.capabilities in ('tandy', 'pcjr') and self.sound_on and 0 < frequency < 110.:
+        if self.capabilities and self.sound_on and 0 < frequency < 110.:
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
-        tone = signals.Event(signals.AUDIO_TONE, [voice, frequency, fill*duration, loop, volume])
+        tone = signals.Event(signals.AUDIO_TONE, (voice, frequency, fill*duration, loop, volume))
         self._queues.audio.put(tone)
         self.voice_queue[voice].put(tone, None if loop else fill*duration, True)
         # separate gap event, except for legato (fill==1)
         if fill != 1 and not loop:
-            gap = signals.Event(signals.AUDIO_TONE, [voice, 0, (1-fill) * duration, 0, 0])
+            gap = signals.Event(signals.AUDIO_TONE, (voice, 0, (1-fill) * duration, 0, 0))
             self._queues.audio.put(gap)
             self.voice_queue[voice].put(gap, (1-fill)*duration, False)
         if voice == 2 and frequency != 0:
@@ -86,17 +99,17 @@ class Sound(object):
             self._noise_freq[3] = frequency/2.
             self._noise_freq[7] = frequency/2.
 
-    def play_noise(self, source, volume, duration, loop):
+    def emit_noise(self, source, volume, duration, loop):
         """Generate a noise."""
         frequency = self._noise_freq[source]
-        noise = signals.Event(signals.AUDIO_NOISE, [source > 3, frequency, duration, loop, volume])
+        noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, loop, volume))
         self._queues.audio.put(noise)
         self.voice_queue[3].put(noise, None if loop else duration, True)
 
     def sound_(self, args):
         """SOUND: produce a sound or switch external speaker on/off."""
         arg0 = next(args)
-        if self.capabilities in ('pcjr', 'tandy') and arg0 in (tk.ON, tk.OFF):
+        if self.capabilities and arg0 in (tk.ON, tk.OFF):
             command = arg0
         else:
             command = None
@@ -131,12 +144,12 @@ class Sound(object):
         # calculate duration in seconds
         dur_sec = dur / 18.2
         # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
-        if dur < 0.02272727248:
+        if dur < LOOP_THRESHOLD:
             # play indefinitely in background
-            self.play_sound_no_wait(freq, dur_sec, fill=1, loop=True, voice=voice, volume=volume)
+            self.emit_tone(freq, dur_sec, fill=1, loop=True, voice=voice, volume=volume)
             self._wait_background()
         else:
-            self.play_sound_no_wait(freq, dur_sec, fill=1, loop=False, voice=voice, volume=volume)
+            self.emit_tone(freq, dur_sec, fill=1, loop=False, voice=voice, volume=volume)
             self.wait()
 
     def noise_(self, args):
@@ -153,7 +166,7 @@ class Sound(object):
         # calculate duration in seconds
         dur_sec = dur / 18.2
         # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
-        self.play_noise(source, volume, dur_sec, loop=(dur < 0.02272727248))
+        self.emit_noise(source, volume, dur_sec, loop=(dur < LOOP_THRESHOLD))
         # don't wait for noise
 
     def wait(self):
@@ -176,12 +189,6 @@ class Sound(object):
                 self.voice_queue[1].qsize() > wait_length or
                 self.voice_queue[2].qsize() > wait_length):
             self._queues.wait()
-
-    def queue_length(self, voice=0):
-        """Return the number of notes in the queue."""
-        # one note is currently playing, i.e. not "queued"
-        # two notes seems to produce better timings in practice
-        return max(0, self.voice_queue[voice].qsize(False))
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""
@@ -210,9 +217,9 @@ class Sound(object):
         voice = values.to_int(next(args))
         list(args)
         error.range_check(0, 255, voice)
-        if not(self.capabilities in ('pcjr', 'tandy') and voice in (1, 2)):
+        if not(self.capabilities and voice in (1, 2)):
             voice = 0
-        return self._values.new_integer().from_int(self.queue_length(voice))
+        return self._values.new_integer().from_int(self.voice_queue[voice].tones_waiting())
 
 
 ###############################################################################
@@ -225,21 +232,14 @@ class PlayState(object):
         """Initialise play state."""
         self.octave = 4
         self.fill = 7./8.
-        self.tempo = 2. # 2*0.25 = 0.5 seconds per quarter note
+        # 2*0.25 = 0.5 seconds per quarter note
+        self.tempo = 2.
         self.length = 0.25
         self.volume = 15
 
 
 class PlayParser(object):
     """MML Parser."""
-
-    # 12-tone equal temperament
-    # C, C#, D, D#, E, F, F#, G, G#, A, A#, B
-    _note_freq = [440.*2**((i-33.)/12.) for i in range(84)]
-    _notes = {
-        'C': 0, 'C#': 1, 'D-': 1, 'D': 2, 'D#': 3, 'E-': 3, 'E': 4, 'F': 5, 'F#': 6,
-        'G-': 6, 'G': 7, 'G#': 8, 'A-': 8, 'A': 9, 'A#': 10, 'B-': 10, 'B': 11
-    }
 
     def __init__(self, sound, memory, values):
         """Initialise parser."""
@@ -270,8 +270,8 @@ class PlayParser(object):
         # a marker is inserted at the start of the PLAY statement
         # this takes up one spot in the buffer and thus affects timings
         for queue in self._sound.voice_queue[:3]:
-            queue.put(signals.Event(signals.AUDIO_TONE, [0, 0, 0, 0, 0]), 0.002, None)
-        mml_list += [''] * (3-len(mml_list))
+            queue.put(signals.Event(signals.AUDIO_TONE, (0, 0, 0, 0, 0)), MARKER_DURATION, None)
+        mml_list += [b''] * (3 - len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, self._memory, self._values) for mml in mml_list]
         next_oct = 0
         voices = range(3)
@@ -282,12 +282,12 @@ class PlayParser(object):
                 vstate = self._state[voice]
                 mmls = ml_parser_list[voice]
                 c = mmls.skip_blank_read().upper()
-                if c == '':
+                if c == b'':
                     voices.remove(voice)
                     continue
-                elif c == ';':
+                elif c == b';':
                     continue
-                elif c == 'X':
+                elif c == b'X':
                     # insert substring
                     sub = mmls.parse_string()
                     pos = mmls.tell()
@@ -297,96 +297,93 @@ class PlayParser(object):
                     mmls.write(sub)
                     mmls.write(rest)
                     mmls.seek(pos)
-                elif c == 'N':
+                elif c == b'N':
                     note = mmls.parse_number()
                     error.range_check(0, 84, note)
                     dur = vstate.length
-                    while mmls.skip_blank_read_if(('.',)):
+                    while mmls.skip_blank_read_if((b'.',)):
                         dur *= 1.5
                     if note == 0:
                         # pause
-                        self._sound.play_sound_no_wait(
-                                0, dur*vstate.tempo,
-                                1, False, voice, vstate.volume)
+                        self._sound.emit_tone(
+                                0, dur*vstate.tempo, 1, False, voice, vstate.volume)
                     else:
-                        self._sound.play_sound_no_wait(
-                                self._note_freq[note-1], dur*vstate.tempo,
+                        self._sound.emit_tone(
+                                NOTE_FREQ[note-1], dur*vstate.tempo,
                                 vstate.fill, False, voice, vstate.volume)
-                elif c == 'L':
+                elif c == b'L':
                     recip = mmls.parse_number()
                     error.range_check(1, 64, recip)
                     vstate.length = 1. / recip
-                elif c == 'T':
+                elif c == b'T':
                     recip = mmls.parse_number()
                     error.range_check(32, 255, recip)
                     vstate.tempo = 240. / recip
-                elif c == 'O':
+                elif c == b'O':
                     octave = mmls.parse_number()
                     error.range_check(0, 6, octave)
                     vstate.octave = octave
-                elif c == '>':
+                elif c == b'>':
                     vstate.octave += 1
                     if vstate.octave > 6:
                         vstate.octave = 6
-                elif c == '<':
+                elif c == b'<':
                     vstate.octave -= 1
                     if vstate.octave < 0:
                         vstate.octave = 0
-                elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
+                elif c in (b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'P'):
                     note = c
                     dur = vstate.length
                     length = None
-                    if mmls.skip_blank_read_if(('#', '+')):
-                        note += '#'
-                    elif mmls.skip_blank_read_if(('-',)):
-                        note += '-'
+                    if mmls.skip_blank_read_if((b'#', b'+')):
+                        note += b'#'
+                    elif mmls.skip_blank_read_if((b'-',)):
+                        note += b'-'
                     c = mmls.skip_blank_read_if(string.digits)
                     if c is not None:
                         numstr = [c]
                         while mmls.skip_blank() in set(string.digits):
                             numstr.append(mmls.read(1))
                         # NOT ml_parse_number, only literals allowed here!
-                        length = int(''.join(numstr))
+                        length = int(b''.join(numstr))
                         error.range_check(0, 64, length)
                         if length > 0:
                             dur = 1. / float(length)
-                    while mmls.skip_blank_read_if(('.',)):
-                        error.throw_if(note == 'P' and length == 0)
+                    while mmls.skip_blank_read_if((b'.',)):
+                        error.throw_if(note == b'P' and length == 0)
                         dur *= 1.5
-                    if note == 'P':
+                    if note == b'P':
                         # length must be specified
                         if length is None:
                             raise error.BASICError(error.IFC)
                         # don't do anything for length 0
                         elif length > 0:
-                            self._sound.play_sound_no_wait(
-                                    0, dur * vstate.tempo,
-                                    1, False, voice, vstate.volume)
+                            self._sound.emit_tone(
+                                    0, dur * vstate.tempo, 1, False, voice, vstate.volume)
                     else:
                         # use default length for length 0
                         try:
-                            self._sound.play_sound_no_wait(
-                                self._note_freq[(vstate.octave+next_oct)*12 + self._notes[note]],
+                            self._sound.emit_tone(
+                                NOTE_FREQ[(vstate.octave + next_oct) * 12 + NOTES[note]],
                                 dur * vstate.tempo, vstate.fill, False, voice, vstate.volume)
                         except KeyError:
                             raise error.BASICError(error.IFC)
                     next_oct = 0
-                elif c == 'M':
+                elif c == b'M':
                     c = mmls.skip_blank_read().upper()
-                    if c == 'N':
+                    if c == b'N':
                         vstate.fill = 7./8.
-                    elif c == 'L':
+                    elif c == b'L':
                         vstate.fill = 1.
-                    elif c == 'S':
+                    elif c == b'S':
                         vstate.fill = 3./4.
-                    elif c == 'F':
+                    elif c == b'F':
                         self._sound.foreground = True
-                    elif c == 'B':
+                    elif c == b'B':
                         self._sound.foreground = False
                     else:
                         raise error.BASICError(error.IFC)
-                elif c == 'V' and (
-                        self._sound.capabilities in ('tandy', 'pcjr') and self._sound.sound_on):
+                elif c == b'V' and self._sound.capabilities and self._sound.sound_on:
                     vol = mmls.parse_number()
                     error.range_check(-1, 15, vol)
                     if vol == -1:
@@ -406,7 +403,7 @@ class PlayParser(object):
         for voice, q in enumerate(self._sound.voice_queue[:3]):
             dur = (max_time - q.expiry()).total_seconds()
             if dur > 0:
-                self._sound.play_sound_no_wait(0, dur, fill=1, loop=False, voice=voice, volume=0)
+                self._sound.emit_tone(0, dur, fill=1, loop=False, voice=voice, volume=0)
         self._sound.wait()
 
 
@@ -464,13 +461,13 @@ class TimedQueue(object):
     def qsize(self, count_all=True):
         """Number of elements in queue."""
         self._check_expired()
-        if count_all:
-            return len([item for i, item in enumerate(self._deque)])
-        else:
-            #print [ counts for _, dur, counts in self._deque ]
-            # count number of notes waiting, exclude the top of queue ("now playing")
-            return len([item for i, item in enumerate(self._deque) if item[2] and i])
+        return len([item for i, item in enumerate(self._deque)])
 
+    def tones_waiting(self):
+        """Number of tones (not gaps) waiting in queue."""
+        self._check_expired()
+        # count number of notes waiting, exclude the top of queue ("now playing")
+        return len([item for i, item in enumerate(self._deque) if item[2] and i])
 
     def expiry(self):
         """Last expiry in queue."""

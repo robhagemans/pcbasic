@@ -224,16 +224,14 @@ class PlayHandler(EventHandler):
 
     def check_input(self, signal):
         """Check and trigger PLAY (music queue) events."""
-        play_now = [self.sound.queue_length(voice) for voice in range(3)]
+        play_now = [self.sound.voice_queue[voice].tones_waiting() for voice in range(3)]
         if self.multivoice:
             for voice in range(3):
                 if (play_now[voice] <= self.trig and
-                        play_now[voice] > 0 and
-                        play_now[voice] != self.last[voice]):
+                        play_now[voice] > 0 and play_now[voice] != self.last[voice]):
                     self.trigger()
         else:
-            if (self.last[0] >= self.trig and
-                    play_now[0] < self.trig):
+            if (self.last[0] >= self.trig and play_now[0] < self.trig):
                 self.trigger()
         self.last = play_now
         return False
