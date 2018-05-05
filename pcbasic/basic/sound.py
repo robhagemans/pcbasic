@@ -183,7 +183,7 @@ class Sound(object):
         """Return the number of notes in the queue."""
         # one note is currently playing, i.e. not "queued"
         # two notes seems to produce better timings in practice
-        return max(0, self.voice_queue[voice].qsize(False)-1)
+        return max(0, self.voice_queue[voice].qsize(False))
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""
@@ -272,7 +272,7 @@ class PlayParser(object):
         # a marker is inserted at the start of the PLAY statement
         # this takes up one spot in the buffer and thus affects timings
         for queue in self._sound.voice_queue[:3]:
-            queue.put(signals.Event(signals.AUDIO_TONE, [0, 0, 0, 0, 0]), 0, None)
+            queue.put(signals.Event(signals.AUDIO_TONE, [0, 0, 0, 0, 0]), 0.002, None)
         mml_list += [''] * (3-len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, self._memory, self._values) for mml in mml_list]
         next_oct = 0
@@ -466,8 +466,13 @@ class TimedQueue(object):
     def qsize(self, count_all=True):
         """Number of elements in queue."""
         self._check_expired()
-        # top of queue always counts
-        return len([item for i, item in enumerate(self._deque) if count_all or item[2] or not i])
+        if count_all:
+            return len([item for i, item in enumerate(self._deque)])
+        else:
+            #print [ counts for _, dur, counts in self._deque ]
+            # count number of notes waiting, exclude the top of queue ("now playing")
+            return len([item for i, item in enumerate(self._deque) if item[2] and i])
+
 
     def expiry(self):
         """Last expiry in queue."""
