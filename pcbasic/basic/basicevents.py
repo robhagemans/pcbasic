@@ -217,23 +217,22 @@ class PlayHandler(EventHandler):
     def __init__(self, sound, multivoice):
         """Initialise PLAY trigger."""
         EventHandler.__init__(self)
-        self.last = [0, 0, 0]
         self.trig = 1
         self.multivoice = multivoice
         self.sound = sound
+        # set to a number higher than the maximum buffer length?
+        self.last = 0 #34 if multivoice else 0
 
     def check_input(self, signal):
         """Check and trigger PLAY (music queue) events."""
         play_now = [self.sound.voice_queue[voice].tones_waiting() for voice in range(3)]
         if self.multivoice:
-            for voice in range(3):
-                if (play_now[voice] <= self.trig and
-                        play_now[voice] > 0 and play_now[voice] != self.last[voice]):
-                    self.trigger()
-        else:
-            if (self.last[0] >= self.trig and play_now[0] < self.trig):
+            if (self.last > max(play_now) and max(play_now) < self.trig):
                 self.trigger()
-        self.last = play_now
+        else:
+            if (self.last >= self.trig and play_now[0] < self.trig):
+                self.trigger()
+        self.last = max(play_now)
         return False
 
     def set_trigger(self, n):
