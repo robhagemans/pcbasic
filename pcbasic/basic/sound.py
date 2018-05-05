@@ -63,6 +63,7 @@ class Sound(object):
         # timed queues for each voice (including gaps, for background counting & rebuilding)
         self.voice_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
         self.foreground = True
+        self._synch = False
 
     def beep_(self, args):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
@@ -85,6 +86,8 @@ class Sound(object):
         if self.capabilities and self.sound_on and 0 < frequency < 110.:
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
+        if self._synch:
+            self.emit_synch()
         tone = signals.Event(signals.AUDIO_TONE, (voice, frequency, fill*duration, loop, volume))
         self._queues.audio.put(tone)
         self.voice_queue[voice].put(tone, None if loop else fill*duration, True)
@@ -221,6 +224,28 @@ class Sound(object):
             voice = 0
         return self._values.new_integer().from_int(self.voice_queue[voice].tones_waiting())
 
+    def synch_voices(self):
+        """Synchronise the three tone voices."""
+        self._synch = True
+
+    def unsynch_voices(self):
+        """Stop synchronising the three tone voices."""
+        self._synch = False
+
+    def emit_synch(self):
+        """Synchronise the three tone voices."""
+        # align voices (excluding noise) at the end of each PLAY statement
+        max_time = max(q.expiry() for q in self.voice_queue[:3])
+        for voice, q in enumerate(self.voice_queue[:3]):
+            duration = (max_time - q.expiry()).total_seconds()
+            # fill up the queue with the necessary amount of silence
+            # this takes up one spot in the buffer and thus affects timings
+            # which is intentional
+            balloon = signals.Event(signals.AUDIO_TONE, (voice, 0, duration, False, 0))
+            self._queues.audio.put(balloon)
+            self.voice_queue[voice].put(balloon, duration + MARKER_DURATION, None)
+        self._synch = False
+
 
 ###############################################################################
 # PLAY parser
@@ -269,8 +294,7 @@ class PlayParser(object):
             raise error.BASICError(error.STX)
         # a marker is inserted at the start of the PLAY statement
         # this takes up one spot in the buffer and thus affects timings
-        for queue in self._sound.voice_queue[:3]:
-            queue.put(signals.Event(signals.AUDIO_TONE, (0, 0, 0, 0, 0)), MARKER_DURATION, None)
+        self._sound.synch_voices()
         mml_list += [b''] * (3 - len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, self._memory, self._values) for mml in mml_list]
         next_oct = 0
@@ -392,18 +416,7 @@ class PlayParser(object):
                         vstate.volume = vol
                 else:
                     raise error.BASICError(error.IFC)
-        # remove marker if nothing got added to the queue
-        # FIXME: private member access
-        last_entries = [queue._deque[-1][2] if queue else None for queue in self._sound.voice_queue[:3]]
-        if last_entries == [None, None, None]:
-            for queue in self._sound.voice_queue[:3]:
-                queue._deque.pop()
-        # align voices (excluding noise) at the end of each PLAY statement
-        max_time = max(q.expiry() for q in self._sound.voice_queue[:3])
-        for voice, q in enumerate(self._sound.voice_queue[:3]):
-            dur = (max_time - q.expiry()).total_seconds()
-            if dur > 0:
-                self._sound.emit_tone(0, dur, fill=1, loop=False, voice=voice, volume=0)
+        self._sound.unsynch_voices()
         self._sound.wait()
 
 
