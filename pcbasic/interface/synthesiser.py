@@ -81,6 +81,9 @@ class SoundGenerator(object):
         if self.count_samples >= self.num_samples:
             # done already
             return None
+        # don't generate too many samples
+        if length + self.count_samples > self.num_samples:
+            length = (self.num_samples - self.count_samples)
         # work on last element of sound queue
         if self.frequency == 0 or self.frequency == 32767:
             chunk = numpy.zeros(length, numpy.int16)
