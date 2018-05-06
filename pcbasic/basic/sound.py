@@ -26,9 +26,6 @@ BASE_FREQ = 3579545. / 1024.
 # frequency multipliers for noise sources 0-7
 NOISE_FREQ = tuple(BASE_FREQ * v for v in (1., 0.5, 0.25, 0., 1., 0.5, 0.25, 0.))
 
-# duration in seconds of synch marker
-MARKER_DURATION = 0 #0.02
-
 # 12-tone equal temperament
 # C, C#, D, D#, E, F, F#, G, G#, A, A#,
 NOTE_FREQ = tuple(440. * 2**((i-33.)/12.) for i in range(84))
@@ -240,7 +237,7 @@ class Sound(object):
             # which is intentional
             balloon = signals.Event(signals.AUDIO_TONE, (voice, 0, duration, False, 0))
             self._queues.audio.put(balloon)
-            self.voice_queue[voice].put(balloon, duration + MARKER_DURATION, None)
+            self.voice_queue[voice].put(balloon, duration, None)
         self._synch = False
 
 
@@ -426,6 +423,8 @@ class TimedQueue(object):
     def __init__(self):
         """Initialise timed queue."""
         self._deque = deque()
+        # hack to reproduce queue lengths
+        self._balloon_popped = False
 
     def __getstate__(self):
         """Get pickling dict for queue."""
@@ -444,7 +443,8 @@ class TimedQueue(object):
         counts = 0
         try:
             while self._deque[0][1] <= datetime.datetime.now():
-                self._deque.popleft()
+                popped = self._deque.popleft()
+                self._balloon_popped = (popped[2] is None)
         except (IndexError, TypeError):
             pass
 
@@ -454,6 +454,7 @@ class TimedQueue(object):
         Items with duration None remain until next item is put.
         """
         self._check_expired()
+        # drop looping elements
         try:
             if self._deque[-1][1] is None:
                 self._deque.pop()
@@ -479,7 +480,13 @@ class TimedQueue(object):
         """Number of tones (not gaps) waiting in queue."""
         self._check_expired()
         # count number of notes waiting, exclude the top of queue ("now playing")
-        return len([item for i, item in enumerate(self._deque) if item[2] and i])
+        waiting = len([item for i, item in enumerate(self._deque) if item[2] and i])
+        # hack: if the most recent item popped was a balloon
+        # (i.e. we've just started a PLAY and the first note has not finished)
+        # include the first note in the waiting queue length
+        waiting += self._balloon_popped
+        self._balloon_popped = False
+        return waiting
 
     def expiry(self):
         """Last expiry in queue, return now() for looping sound."""
