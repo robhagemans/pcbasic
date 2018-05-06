@@ -18,6 +18,11 @@ from . import mlparser
 from . import values
 
 
+# NOTE - sound timings and queue lengths are fairly close to DOSBox for Tandy.
+# For regular GW-BASIC there are some differences
+# and the results of the original are difficult to understand
+
+
 # number of tones, gaps or markers in background buffer
 BACKGROUND_BUFFER_LENGTH = 32
 
@@ -175,8 +180,8 @@ class Sound(object):
     def wait(self):
         """Wait for the queue to become free."""
         if self.foreground:
-            # wait until fully done
-            self._wait(0)
+            # wait until fully done on Tandy/PCjr, continue early on GW
+            self._wait(0 if self.capabilities else 1)
         else:
             self._wait_background()
 
@@ -231,16 +236,17 @@ class Sound(object):
 
     def emit_synch(self):
         """Synchronise the three tone voices."""
-        # align voices (excluding noise) at the end of each PLAY statement
-        max_time = max(q.expiry() for q in self.voice_queue[:3])
-        for voice, q in enumerate(self.voice_queue[:3]):
-            duration = (max_time - q.expiry()).total_seconds()
-            # fill up the queue with the necessary amount of silence
-            # this takes up one spot in the buffer and thus affects timings
-            # which is intentional
-            balloon = signals.Event(signals.AUDIO_TONE, (voice, 0, duration, False, 0))
-            self._queues.audio.put(balloon)
-            self.voice_queue[voice].put(balloon, duration, None)
+        # on Tandy/PCjr, align voices (excluding noise) at the end of each PLAY statement
+        if self.capabilities:
+            max_time = max(q.expiry() for q in self.voice_queue[:3])
+            for voice, q in enumerate(self.voice_queue[:3]):
+                duration = (max_time - q.expiry()).total_seconds()
+                # fill up the queue with the necessary amount of silence
+                # this takes up one spot in the buffer and thus affects timings
+                # which is intentional
+                balloon = signals.Event(signals.AUDIO_TONE, (voice, 0, duration, False, 0))
+                self._queues.audio.put(balloon)
+                self.voice_queue[voice].put(balloon, duration, None)
         self._synch = False
 
 
@@ -477,6 +483,7 @@ class TimedQueue(object):
     def qsize(self, count_all=True):
         """Number of elements in queue."""
         self._check_expired()
+        # FIXME - remove count_all , isn't this just len(self._deque) ?
         return len([item for i, item in enumerate(self._deque)])
 
     def tones_waiting(self):
