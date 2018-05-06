@@ -59,16 +59,16 @@ class Sound(object):
         # Tandy/PCjr noise generator
         # frequency for noise sources
         self._noise_freq = list(NOISE_FREQ)
-        # pc-speaker on/off; (not implemented; not sure whether should be on)
-        self._beep_on = True
         # advnced sound capabilities
-        self.capabilities = syntax if syntax in ('pcjr', 'tandy') else ''
+        self._multivoice = syntax if syntax in ('pcjr', 'tandy') else ''
         # Tandy/PCjr SOUND ON and BEEP ON
         # tandy has SOUND ON by default, pcjr has it OFF
-        self.sound_on = (self.capabilities == 'tandy')
+        self._sound_on = (self._multivoice == 'tandy')
+        # pc-speaker on/off; (not implemented; not sure whether should be on)
+        self._beep_on = True
         # timed queues for each voice (including gaps, for background counting & rebuilding)
-        self.voice_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
-        self.foreground = True
+        self._voice_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
+        self._foreground = True
         self._synch = False
         # initialise PLAY state
         self.reset_play()
@@ -91,19 +91,19 @@ class Sound(object):
         """Play a sound on the tone generator."""
         if frequency < 0:
             frequency = 0
-        if self.capabilities and self.sound_on and 0 < frequency < 110.:
+        if self._multivoice and self._sound_on and 0 < frequency < 110.:
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
         if self._synch:
             self.emit_synch()
         tone = signals.Event(signals.AUDIO_TONE, (voice, frequency, fill*duration, loop, volume))
         self._queues.audio.put(tone)
-        self.voice_queue[voice].put(tone, None if loop else fill*duration, True)
+        self._voice_queue[voice].put(tone, None if loop else fill*duration, True)
         # separate gap event, except for legato (fill==1)
         if fill != 1 and not loop:
             gap = signals.Event(signals.AUDIO_TONE, (voice, 0, (1-fill) * duration, 0, 0))
             self._queues.audio.put(gap)
-            self.voice_queue[voice].put(gap, (1-fill) * duration, False)
+            self._voice_queue[voice].put(gap, (1-fill) * duration, False)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -115,12 +115,12 @@ class Sound(object):
         frequency = self._noise_freq[source]
         noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, loop, volume))
         self._queues.audio.put(noise)
-        self.voice_queue[3].put(noise, None if loop else duration, True)
+        self._voice_queue[3].put(noise, None if loop else duration, True)
 
     def sound_(self, args):
         """SOUND: produce a sound or switch external speaker on/off."""
         arg0 = next(args)
-        if self.capabilities and arg0 in (tk.ON, tk.OFF):
+        if self._multivoice and arg0 in (tk.ON, tk.OFF):
             command = arg0
         else:
             command = None
@@ -143,7 +143,7 @@ class Sound(object):
                 error.range_check(0, 2, voice) # can't address noise channel here
         list(args)
         if command is not None:
-            self.sound_on = (command == tk.ON)
+            self._sound_on = (command == tk.ON)
             return
         if dur == 0:
             self.stop_all_sound()
@@ -151,7 +151,7 @@ class Sound(object):
         # Tandy only allows frequencies below 37 (but plays them as 110 Hz)
         if freq != 0:
             # 32767 is pause
-            error.range_check(-32768 if self.capabilities == 'tandy' else 37, 32767, freq)
+            error.range_check(-32768 if self._multivoice == 'tandy' else 37, 32767, freq)
         # calculate duration in seconds
         dur_sec = dur / TICK_LENGTH
         # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
@@ -165,7 +165,7 @@ class Sound(object):
 
     def noise_(self, args):
         """Generate a noise (NOISE statement)."""
-        if not self.sound_on:
+        if not self._sound_on:
             raise error.BASICError(error.IFC)
         source = values.to_int(next(args))
         error.range_check(0, 7, source)
@@ -182,9 +182,9 @@ class Sound(object):
 
     def wait(self):
         """Wait for the queue to become free."""
-        if self.foreground:
+        if self._foreground:
             # wait until fully done on Tandy/PCjr, continue early on GW
-            self._wait(0 if self.capabilities else 1)
+            self._wait(0 if self._multivoice else 1)
         else:
             self._wait_background()
 
@@ -196,12 +196,12 @@ class Sound(object):
     def _wait(self, wait_length):
         """Wait until queue is shorter than or equal to given length."""
         # top of queue is the currently playing tone or gap
-        while max(len(queue) for queue in self.voice_queue) > wait_length:
+        while max(len(queue) for queue in self._voice_queue) > wait_length:
             self._queues.wait()
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""
-        for q in self.voice_queue:
+        for q in self._voice_queue:
             q.clear()
         self._queues.audio.put(signals.Event(signals.AUDIO_STOP))
 
@@ -212,7 +212,7 @@ class Sound(object):
     def rebuild(self):
         """Rebuild tone queues."""
         # should we pop one at a time from each voice queue to equalise timings?
-        for voice, q in enumerate(self.voice_queue):
+        for voice, q in enumerate(self._voice_queue):
             for item, duration in q.iteritems():
                 item.params = list(item.params)
                 item.params[2] = duration
@@ -223,29 +223,33 @@ class Sound(object):
         voice = values.to_int(next(args))
         list(args)
         error.range_check(0, 255, voice)
-        if not(self.capabilities and voice in (1, 2)):
+        if not(self._multivoice and voice in (1, 2)):
             voice = 0
-        return self._values.new_integer().from_int(self.voice_queue[voice].tones_waiting())
+        return self._values.new_integer().from_int(self._voice_queue[voice].tones_waiting())
+
+    def tones_waiting(self):
+        """Return max number of tones waiting in queues."""
+        return max(self._voice_queue[voice].tones_waiting() for voice in range(3))
 
     def emit_synch(self):
         """Synchronise the three tone voices."""
         # on Tandy/PCjr, align voices (excluding noise) at the end of each PLAY statement
-        if self.capabilities:
-            max_time = max(q.expiry() for q in self.voice_queue[:3])
-            for voice, q in enumerate(self.voice_queue[:3]):
+        if self._multivoice:
+            max_time = max(q.expiry() for q in self._voice_queue[:3])
+            for voice, q in enumerate(self._voice_queue[:3]):
                 duration = (max_time - q.expiry()).total_seconds()
                 # fill up the queue with the necessary amount of silence
                 # this takes up one spot in the buffer and thus affects timings
                 # which is intentional
                 balloon = signals.Event(signals.AUDIO_TONE, (voice, 0, duration, False, 0))
                 self._queues.audio.put(balloon)
-                self.voice_queue[voice].put(balloon, duration, None)
+                self._voice_queue[voice].put(balloon, duration, None)
         self._synch = False
 
     def reset_play(self):
         """Reset PLAY state."""
         # music foreground (MF) mode
-        self.foreground = True
+        self._foreground = True
         # reset all PLAY state
         self._state = [PlayState(), PlayState(), PlayState()]
 
@@ -258,7 +262,7 @@ class Sound(object):
         if not any(mml_list):
             raise error.BASICError(error.MISSING_OPERAND)
         # on PCjr, three-voice PLAY requires SOUND ON
-        if not self.sound_on and len(mml_list) > 1:
+        if not self._sound_on and len(mml_list) > 1:
             raise error.BASICError(error.STX)
         # a marker is inserted at the start of the PLAY statement
         # this takes up one spot in the buffer and thus affects timings
@@ -368,12 +372,12 @@ class Sound(object):
                     elif c == b'S':
                         vstate.fill = 3./4.
                     elif c == b'F':
-                        self.foreground = True
+                        self._foreground = True
                     elif c == b'B':
-                        self.foreground = False
+                        self._foreground = False
                     else:
                         raise error.BASICError(error.IFC)
-                elif c == b'V' and self.capabilities and self.sound_on:
+                elif c == b'V' and self._multivoice and self._sound_on:
                     vol = mmls.parse_number()
                     error.range_check(-1, 15, vol)
                     if vol == -1:
