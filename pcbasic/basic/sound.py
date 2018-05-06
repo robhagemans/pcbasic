@@ -193,9 +193,7 @@ class Sound(object):
     def _wait(self, wait_length):
         """Wait until queue is shorter than or equal to given length."""
         # top of queue is the currently playing tone or gap
-        while (self.voice_queue[0].qsize() > wait_length or
-                self.voice_queue[1].qsize() > wait_length or
-                self.voice_queue[2].qsize() > wait_length):
+        while max(len(queue) for queue in self.voice_queue) > wait_length:
             self._queues.wait()
 
     def stop_all_sound(self):
@@ -480,11 +478,10 @@ class TimedQueue(object):
         """Clear the queue."""
         self._deque.clear()
 
-    def qsize(self, count_all=True):
+    def __len__(self):
         """Number of elements in queue."""
         self._check_expired()
-        # FIXME - remove count_all , isn't this just len(self._deque) ?
-        return len([item for i, item in enumerate(self._deque)])
+        return len(self._deque)
 
     def tones_waiting(self):
         """Number of tones (not gaps) waiting in queue."""
