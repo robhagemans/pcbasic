@@ -50,11 +50,12 @@ TICK_LENGTH = 0x1234DC / 65536.
 class Sound(object):
     """Sound queue manipulations."""
 
-    def __init__(self, queues, values, syntax):
+    def __init__(self, queues, values, memory, syntax):
         """Initialise sound queue."""
         # for wait() and queues
         self._queues = queues
         self._values = values
+        self._memory = memory
         # Tandy/PCjr noise generator
         # frequency for noise sources
         self._noise_freq = list(NOISE_FREQ)
@@ -69,6 +70,8 @@ class Sound(object):
         self.voice_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
         self.foreground = True
         self._synch = False
+        # initialise PLAY state
+        self.reset_play()
 
     def beep_(self, args):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
@@ -224,14 +227,6 @@ class Sound(object):
             voice = 0
         return self._values.new_integer().from_int(self.voice_queue[voice].tones_waiting())
 
-    def synch_voices(self):
-        """Synchronise the three tone voices."""
-        self._synch = True
-
-    def unsynch_voices(self):
-        """Stop synchronising the three tone voices."""
-        self._synch = False
-
     def emit_synch(self):
         """Synchronise the three tone voices."""
         # on Tandy/PCjr, align voices (excluding noise) at the end of each PLAY statement
@@ -247,38 +242,10 @@ class Sound(object):
                 self.voice_queue[voice].put(balloon, duration, None)
         self._synch = False
 
-
-###############################################################################
-# PLAY parser
-
-class PlayState(object):
-    """State variables of the PLAY command."""
-
-    def __init__(self):
-        """Initialise play state."""
-        self.octave = 4
-        self.fill = 7./8.
-        # 2*0.25 = 0.5 seconds per quarter note
-        self.tempo = 2.
-        self.length = 0.25
-        self.volume = 15
-
-
-class PlayParser(object):
-    """MML Parser."""
-
-    def __init__(self, sound, memory, values):
-        """Initialise parser."""
-        self._memory = memory
-        self._values = values
-        self._sound = sound
-        # initialise PLAY state
-        self.reset()
-
-    def reset(self):
+    def reset_play(self):
         """Reset PLAY state."""
         # music foreground (MF) mode
-        self._sound.foreground = True
+        self.foreground = True
         # reset all PLAY state
         self._state = [PlayState(), PlayState(), PlayState()]
 
@@ -291,11 +258,11 @@ class PlayParser(object):
         if not any(mml_list):
             raise error.BASICError(error.MISSING_OPERAND)
         # on PCjr, three-voice PLAY requires SOUND ON
-        if not self._sound.sound_on and len(mml_list) > 1:
+        if not self.sound_on and len(mml_list) > 1:
             raise error.BASICError(error.STX)
         # a marker is inserted at the start of the PLAY statement
         # this takes up one spot in the buffer and thus affects timings
-        self._sound.synch_voices()
+        self._synch = True
         mml_list += [b''] * (3 - len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, self._memory, self._values) for mml in mml_list]
         next_oct = 0
@@ -330,10 +297,9 @@ class PlayParser(object):
                         dur *= 1.5
                     if note == 0:
                         # pause
-                        self._sound.emit_tone(
-                                0, dur*vstate.tempo, 1, False, voice, vstate.volume)
+                        self.emit_tone(0, dur*vstate.tempo, 1, False, voice, vstate.volume)
                     else:
-                        self._sound.emit_tone(
+                        self.emit_tone(
                                 NOTE_FREQ[note-1], dur*vstate.tempo,
                                 vstate.fill, False, voice, vstate.volume)
                 elif c == b'L':
@@ -383,12 +349,11 @@ class PlayParser(object):
                             raise error.BASICError(error.IFC)
                         # don't do anything for length 0
                         elif length > 0:
-                            self._sound.emit_tone(
-                                    0, dur * vstate.tempo, 1, False, voice, vstate.volume)
+                            self.emit_tone(0, dur * vstate.tempo, 1, False, voice, vstate.volume)
                     else:
                         # use default length for length 0
                         try:
-                            self._sound.emit_tone(
+                            self.emit_tone(
                                 NOTE_FREQ[(vstate.octave + next_oct) * 12 + NOTES[note]],
                                 dur * vstate.tempo, vstate.fill, False, voice, vstate.volume)
                         except KeyError:
@@ -403,12 +368,12 @@ class PlayParser(object):
                     elif c == b'S':
                         vstate.fill = 3./4.
                     elif c == b'F':
-                        self._sound.foreground = True
+                        self.foreground = True
                     elif c == b'B':
-                        self._sound.foreground = False
+                        self.foreground = False
                     else:
                         raise error.BASICError(error.IFC)
-                elif c == b'V' and self._sound.capabilities and self._sound.sound_on:
+                elif c == b'V' and self.capabilities and self.sound_on:
                     vol = mmls.parse_number()
                     error.range_check(-1, 15, vol)
                     if vol == -1:
@@ -417,8 +382,21 @@ class PlayParser(object):
                         vstate.volume = vol
                 else:
                     raise error.BASICError(error.IFC)
-        self._sound.unsynch_voices()
-        self._sound.wait()
+        self._synch = False
+        self.wait()
+
+
+class PlayState(object):
+    """State variables of the PLAY command."""
+
+    def __init__(self):
+        """Initialise play state."""
+        self.octave = 4
+        self.fill = 7./8.
+        # 2*0.25 = 0.5 seconds per quarter note
+        self.tempo = 2.
+        self.length = 0.25
+        self.volume = 15
 
 
 ###############################################################################

@@ -386,7 +386,7 @@ class Parser(object):
             tk.PLAY + tk.ON: session.basic_events.play_,
             tk.PLAY + tk.OFF: session.basic_events.play_,
             tk.PLAY + tk.STOP: session.basic_events.play_,
-            tk.PLAY: session.play_parser.play_,
+            tk.PLAY: session.sound.play_,
             tk.VIEW + tk.PRINT: session.screen.view_print_,
             tk.VIEW: session.drawing.view_,
             tk.PALETTE + tk.USING: session.display.palette.palette_using_,
