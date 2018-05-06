@@ -85,7 +85,7 @@ class SoundGenerator(object):
             # done already
             return None
         # don't generate too many samples
-        if length + self.count_samples > self.num_samples:
+        if length + self.count_samples > self.num_samples and not self.loop:
             length = (self.num_samples - self.count_samples)
         # work on last element of sound queue
         if self.frequency == 0 or self.frequency == 32767:
