@@ -38,6 +38,9 @@ NOTES = {
 # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
 LOOP_THRESHOLD = 0.02272727248
 
+# length of a clock tick ("PIT tick", see Joel Yliluoma's noise.bas)
+TICK_LENGTH = 0x1234DC / 65536.
+
 
 class Sound(object):
     """Sound queue manipulations."""
@@ -142,7 +145,7 @@ class Sound(object):
             # 32767 is pause
             error.range_check(-32768 if self.capabilities == 'tandy' else 37, 32767, freq)
         # calculate duration in seconds
-        dur_sec = dur / 18.2
+        dur_sec = dur / TICK_LENGTH
         # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
         if dur < LOOP_THRESHOLD:
             # play indefinitely in background
@@ -164,7 +167,7 @@ class Sound(object):
         error.range_check(-65535, 65535, dur)
         list(args)
         # calculate duration in seconds
-        dur_sec = dur / 18.2
+        dur_sec = dur / TICK_LENGTH
         # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
         self.emit_noise(source, volume, dur_sec, loop=(dur < LOOP_THRESHOLD))
         # don't wait for noise
