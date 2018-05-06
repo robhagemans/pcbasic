@@ -27,7 +27,7 @@ BASE_FREQ = 3579545. / 1024.
 NOISE_FREQ = tuple(BASE_FREQ * v for v in (1., 0.5, 0.25, 0., 1., 0.5, 0.25, 0.))
 
 # duration in seconds of synch marker
-MARKER_DURATION = 0.02
+MARKER_DURATION = 0 #0.02
 
 # 12-tone equal temperament
 # C, C#, D, D#, E, F, F#, G, G#, A, A#,
@@ -95,12 +95,12 @@ class Sound(object):
         if fill != 1 and not loop:
             gap = signals.Event(signals.AUDIO_TONE, (voice, 0, (1-fill) * duration, 0, 0))
             self._queues.audio.put(gap)
-            self.voice_queue[voice].put(gap, (1-fill)*duration, False)
+            self.voice_queue[voice].put(gap, (1-fill) * duration, False)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
-            self._noise_freq[3] = frequency/2.
-            self._noise_freq[7] = frequency/2.
+            self._noise_freq[3] = frequency / 2.
+            self._noise_freq[7] = frequency / 2.
 
     def emit_noise(self, source, volume, duration, loop):
         """Generate a noise."""
@@ -207,11 +207,8 @@ class Sound(object):
         """Rebuild tone queues."""
         # should we pop one at a time from each voice queue to equalise timings?
         for voice, q in enumerate(self.voice_queue):
-            last_expiry = datetime.datetime.now()
-            for item, expiry in q.iteritems():
-                # adjust duration
-                duration = (expiry - last_expiry).total_seconds()
-                last_expiry = expiry
+            for item, duration in q.iteritems():
+                item.params = list(item.params)
                 item.params[2] = duration
                 self._queues.audio.put(item)
 
@@ -440,7 +437,7 @@ class TimedQueue(object):
     def __setstate__(self, st):
         """Initialise queue from pickling dict."""
         offset = datetime.datetime.now() - st['now']
-        self._deque = deque((item, expiry+offset) for (item, expiry) in st['deque'])
+        self._deque = deque((item, expiry+offset, counts) for (item, expiry, counts) in st['deque'])
 
     def _check_expired(self):
         """Drop expired items from queue."""
@@ -452,7 +449,10 @@ class TimedQueue(object):
             pass
 
     def put(self, item, duration, count_for_size):
-        """Put item onto queue with duration in seconds. Items with duration None remain until next item is put."""
+        """
+        Put item onto queue with duration in seconds.
+        Items with duration None remain until next item is put.
+        """
         self._check_expired()
         try:
             if self._deque[-1][1] is None:
@@ -461,10 +461,9 @@ class TimedQueue(object):
             pass
         if duration is None:
             expiry = None
-        elif self._deque:
-            expiry = max(self._deque[-1][1], datetime.datetime.now()) + datetime.timedelta(seconds=duration)
         else:
-            expiry = datetime.datetime.now() + datetime.timedelta(seconds=duration)
+            last = self._deque[-1][1] if self._deque else datetime.datetime.now()
+            expiry = max(last, datetime.datetime.now()) + datetime.timedelta(seconds=duration)
         self._deque.append((item, expiry, count_for_size))
 
     def clear(self):
@@ -483,14 +482,22 @@ class TimedQueue(object):
         return len([item for i, item in enumerate(self._deque) if item[2] and i])
 
     def expiry(self):
-        """Last expiry in queue."""
+        """Last expiry in queue, return now() for looping sound."""
+        self._check_expired()
         try:
-            return self._deque[-1][1]
+            return self._deque[-1][1] or datetime.datetime.now()
         except IndexError:
             return datetime.datetime.now()
 
     def iteritems(self):
-        """Iterate over items in queue."""
+        """Iterate over each item and its duration."""
         self._check_expired()
-        for item in self._deque:
-            yield item
+        last_expiry = datetime.datetime.now()
+        for item, expiry, _ in self._deque:
+            if expiry is None:
+                duration = None
+            else:
+                # adjust duration
+                duration = (expiry - last_expiry).total_seconds()
+                last_expiry = expiry
+            yield item, duration
