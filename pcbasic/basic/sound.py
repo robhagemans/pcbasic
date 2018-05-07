@@ -152,6 +152,7 @@ class Sound(object):
         list(args)
         if command is not None:
             self._sound_on = (command == tk.ON)
+            self.stop_all_sound()
             return
         if dur == 0:
             self.stop_all_sound()
