@@ -94,8 +94,12 @@ class Sound(object):
         if self._multivoice and self._sound_on and 0 < frequency < 110.:
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
+        # if a synch is requested, emit it at the first tone or pause
         if self._synch:
             self.emit_synch()
+        # no sound if switched off
+        if not (self._beep_on or self._sound_on):
+            volume = 0
         tone = signals.Event(signals.AUDIO_TONE, (voice, frequency, fill*duration, loop, volume))
         self._queues.audio.put(tone)
         self._voice_queue[voice].put(tone, None if loop else fill*duration, True)
@@ -113,6 +117,9 @@ class Sound(object):
     def emit_noise(self, source, volume, duration, loop):
         """Generate a noise."""
         frequency = self._noise_freq[source]
+        # no sound if switched off
+        if not (self._beep_on or self._sound_on):
+            volume = 0
         noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, loop, volume))
         self._queues.audio.put(noise)
         self._voice_queue[3].put(noise, None if loop else duration, True)
@@ -154,7 +161,7 @@ class Sound(object):
             error.range_check(-32768 if self._multivoice == 'tandy' else 37, 32767, freq)
         # calculate duration in seconds
         dur_sec = dur / TICK_LENGTH
-        # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
+        # loop if duration less than 1/44 == 0.02272727248
         if dur < LOOP_THRESHOLD:
             # play indefinitely in background
             self.emit_tone(freq, dur_sec, fill=1, loop=True, voice=voice, volume=volume)
@@ -176,7 +183,7 @@ class Sound(object):
         list(args)
         # calculate duration in seconds
         dur_sec = dur / TICK_LENGTH
-        # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
+        # loop if duration less than 1/44 == 0.02272727248
         self.emit_noise(source, volume, dur_sec, loop=(dur < LOOP_THRESHOLD))
         # don't wait for noise
 
