@@ -98,6 +98,7 @@ class Sound(object):
         if self._synch:
             self.emit_synch()
         # no sound if switched off
+        # see https://www.vogons.org/viewtopic.php?t=56735&p=626006
         if not (self._beep_on or self._sound_on):
             volume = 0
         tone = signals.Event(signals.AUDIO_TONE, (voice, frequency, fill*duration, loop, volume))
@@ -168,7 +169,12 @@ class Sound(object):
             self._wait_background()
         else:
             self.emit_tone(freq, dur_sec, fill=1, loop=False, voice=voice, volume=volume)
-            self.wait()
+            if self._foreground:
+                # continue when last tone has started playing, both on tandy and gw
+                # this is different from what PLAY does!
+                self._wait(1)
+            else:
+                self._wait_background()
 
     def noise_(self, args):
         """Generate a noise (NOISE statement)."""
@@ -187,14 +193,6 @@ class Sound(object):
         self.emit_noise(source, volume, dur_sec, loop=(dur < LOOP_THRESHOLD))
         # noise is always background
         self._wait_background()
-
-    def wait(self):
-        """Wait for the queue to become free."""
-        if self._foreground:
-            # wait until fully done on Tandy/PCjr, continue early on GW
-            self._wait(0 if self._multivoice else 1)
-        else:
-            self._wait_background()
 
     def _wait_background(self):
         """Wait until the background queue becomes available."""
@@ -395,7 +393,11 @@ class Sound(object):
                 else:
                     raise error.BASICError(error.IFC)
         self._synch = False
-        self.wait()
+        if self._foreground:
+            # wait until fully done on Tandy/PCjr, continue early on GW
+            self._wait(0 if self._multivoice else 1)
+        else:
+            self._wait_background()
 
 
 class PlayState(object):
