@@ -3266,7 +3266,7 @@
             <b>BEEP</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
-            This statement has no effect.
+            Switches the internal speaker on or off.
         </p>
         <h5>Notes</h5>
         <ul>
@@ -3274,7 +3274,6 @@
                 Only legal with the <code><a href="syntax">syntax</a>={pcjr|tandy}</code> option.
             </li>
             <li>
-                On PCjr and Tandy computers, <code>BEEP OFF</code> would turn off the internal speaker.
                 On PC-BASIC, both the internal and the external speaker are emulated through
                 the same sound system.
             </li>
@@ -10317,8 +10316,8 @@
             <b>SOUND</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
-            Toggles the availability of advanced sound capabilities on PCjr and Tandy. This includes 3-voice
-            sound, noise generation and volume control.
+            Switches the external speaker on or off and toggles the availability of advanced sound capabilities on PCjr and Tandy. This includes 3-voice
+            sound, noise generation and volume control. Clears the background music queue.
         </p>
         <h5>Notes</h5>
         <ul>
@@ -10326,8 +10325,7 @@
                 Only available with <code>syntax={pcjr | tandy}</code>.
             </li>
             <li>
-               On PCjr and Tandy computers, <code>SOUND ON</code> would turn on the external speaker as
-                well as make advanced sound capabilities available. On PC-BASIC, both the
+                On PC-BASIC, both the
                 internal and the external speaker are emulated through the same sound
                 system.
             </li>
