@@ -51,6 +51,14 @@ class EnvironmentCache(object):
         """Create the environment cache."""
         self._saved = {}
 
+    def __enter__(self):
+        """Context guard."""
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        """Context guard."""
+        self.close()
+
     def set(self, key, value):
         """Set an environment variable and save the original value in the cache."""
         if key in self._saved:

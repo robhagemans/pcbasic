@@ -21,39 +21,38 @@ except ImportError:
 from ..compat import WIN32, BASE_DIR, PLATFORM
 from .base import EnvironmentCache
 
+
 # platform-specific dll location
 LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
 
-# look for SDL2.dll / libSDL2.dylib / libSDL2.so:
-# first in LIB_DIR, then in the standard search path
-# if not found, in LIB_DIR
-
-# look in LIB_DIR first, user can remove if they want to use standard one
-_sdl_env = EnvironmentCache()
-_sdl_env.set('PYSDL2_DLL_PATH', LIB_DIR)
-try:
-    from . import sdl2
-except ImportError:
-    _sdl_env.set('PYSDL2_DLL_PATH', '')
+with EnvironmentCache() as _sdl_env:
+    # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
+    # first in LIB_DIR, then in the standard search path
+    # user should remove dll from LIB_DIR they want to use another one
+    _sdl_env.set('PYSDL2_DLL_PATH', LIB_DIR)
     try:
         from . import sdl2
     except ImportError:
-        sdl2 = None
+        _sdl_env.set('PYSDL2_DLL_PATH', '')
+        try:
+            from . import sdl2
+        except ImportError:
+            sdl2 = None
 
-# look for SDL2_gfx.dll:
-# first in SDL2.dll location
-# if not found, in LIB_DIR; then in standard search path
-GFX_NAMES = ['SDL2_gfx', 'SDL2_gfx-1.0']
-try:
-    sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, os.path.dirname(sdl2.dll.libfile))
-except Exception:
+    # look for SDL2_gfx.dll:
+    # first in SDL2.dll location
+    # if not found, in LIB_DIR; then in standard search path
+    GFX_NAMES = ['SDL2_gfx', 'SDL2_gfx-1.0']
     try:
-        sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, LIB_DIR)
+        sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, os.path.dirname(sdl2.dll.libfile))
     except Exception:
         try:
-            sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES)
+            sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, LIB_DIR)
         except Exception:
-            sdlgfx = None
+            try:
+                sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES)
+            except Exception:
+                sdlgfx = None
 
 if sdlgfx:
     SMOOTHING_ON = 1
