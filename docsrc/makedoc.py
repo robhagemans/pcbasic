@@ -149,11 +149,16 @@ def makedoc(header=None, output=None, embedded_style=True):
     predoc.write(open(basepath + '/footer.html', 'r').read())
     predoc.seek(0)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    subheader_html = """
+    if embedded_style:
+        subheader_html = """
 <header>
     <h1>PC-BASIC documentation</h1>
     <small>Version {0}</small>
 </header>
+""".format(VERSION, now, DESCRIPTION, LONG_DESCRIPTION)
+    else:
+        subheader_html = ''
+    subheader_html += """
 <article>
     <h2 id="top">PC-BASIC</h2>
     <p>
