@@ -185,7 +185,8 @@ class Sound(object):
         dur_sec = dur / TICK_LENGTH
         # loop if duration less than 1/44 == 0.02272727248
         self.emit_noise(source, volume, dur_sec, loop=(dur < LOOP_THRESHOLD))
-        # don't wait for noise
+        # noise is always background
+        self._wait_background()
 
     def wait(self):
         """Wait for the queue to become free."""
