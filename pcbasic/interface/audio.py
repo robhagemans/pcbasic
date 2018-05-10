@@ -78,8 +78,8 @@ class AudioPlugin(object):
     def persist(self, do_persist):
         """Allow or disallow mixer to quit."""
 
-    def tone(self, voice, frequency, duration, fill, loop, volume):
+    def tone(self, voice, frequency, duration, loop, volume):
         """Enqueue a tone."""
 
-    def noise(self, source, frequency, duration, fill, loop, volume):
+    def noise(self, source, frequency, duration, loop, volume):
         """Enqueue a noise."""

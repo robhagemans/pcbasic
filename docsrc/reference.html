@@ -3266,7 +3266,7 @@
             <b>BEEP</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
-            This statement has no effect.
+            Switches the internal speaker on or off.
         </p>
         <h5>Notes</h5>
         <ul>
@@ -3274,7 +3274,6 @@
                 Only legal with the <code><a href="syntax">syntax</a>={pcjr|tandy}</code> option.
             </li>
             <li>
-                On PCjr and Tandy computers, <code>BEEP OFF</code> would turn off the internal speaker.
                 On PC-BASIC, both the internal and the external speaker are emulated through
                 the same sound system.
             </li>
@@ -8801,8 +8800,8 @@
                 </td>
                 <td>
                     Set the volume to <code><var>n</var></code>, in the range <code>[-1&#8212;15]</code>. <code>-1</code> means full volume.
-                    On <code><a href="#--syntax">syntax</a>=pcjr</code>, if <code><a href="#SOUND-switch">SOUND ON</a></code>
-                    has not been executed, this has no effect. On <code><a href="#--syntax">syntax</a>=tandy</code> it does have.
+                    If <code><a href="#SOUND-switch">SOUND ON</a></code>
+                    has not been executed, this has no effect.
                 </td>
             </tr>
         </table>
@@ -8843,8 +8842,8 @@
                 No MML string is specified: <samp>Missing operand</samp>.
             </li>
             <li>
-                On PCjr, if <code>SOUND ON</code> has not been executed, using the three-voice syntax
-                will raise <samp>Syntax error</samp>. This is not the case on Tandy.
+                If <code>SOUND ON</code> has not been executed, using the three-voice syntax
+                will raise <samp>Syntax error</samp>.
             </li>
         </ul>
     </section>
@@ -10317,8 +10316,8 @@
             <b>SOUND</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
-            Toggles the availability of advanced sound capabilities on PCjr and Tandy. This includes 3-voice
-            sound, noise generation and volume control.
+            Switches the external speaker on or off and toggles the availability of advanced sound capabilities on PCjr and Tandy. This includes 3-voice
+            sound, noise generation and volume control. Clears the background music queue.
         </p>
         <h5>Notes</h5>
         <ul>
@@ -10326,8 +10325,7 @@
                 Only available with <code>syntax={pcjr | tandy}</code>.
             </li>
             <li>
-               On PCjr and Tandy computers, <code>SOUND ON</code> would turn on the external speaker as
-                well as make advanced sound capabilities available. On PC-BASIC, both the
+                On PC-BASIC, both the
                 internal and the external speaker are emulated through the same sound
                 system.
             </li>

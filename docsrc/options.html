@@ -824,14 +824,12 @@
             the <code><a href="#SHELL">SHELL</a></code> statement is disabled.
         </dd>
 
-        <dt id="--sound-engine">
-            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b>|<b>portaudio</b>]</code>
+        <dt id="--sound">
+            <code><b>--sound=</b>[<b>none</b>|<b>beep</b>|<b>portaudio</b>|<b>interface</b>]</code>
         </dt>
         <dd>
-            Choose the engine to use for audio output. If omitted, the
-            default engine for the interface selected with
-            <code><a href="#--interface">--interface</a></code> is chosen.
-            Not all interfaces will be available on all systems.
+            Choose the sound engine to use.
+            Not all sound engines will be available on all systems.
             <dl class="compact">
                 <dt><code><b>none</b></code></dt>
                 <dd>Suppress sound output.</dd>
@@ -839,7 +837,10 @@
                 <dd>Use the built-in speaker.</dd>
                 <dt><code><b>portaudio</b></code></dt>
                 <dd>Use the PortAudio sound generator.</dd>
+                <dt><code><b>interface</b></code></dt>
+                <dd>Use the native sound engine of the interface, if available.</dd>
             </dl>
+            Default is <code><b>interface</b></code>.
         </dd>
 
         <dt id="--state">

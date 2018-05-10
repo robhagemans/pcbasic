@@ -79,18 +79,18 @@ class AudioPygame(AudioPlugin):
         """Allow or disallow mixer to quit."""
         self._persist = do_persist
 
-    def tone(self, voice, frequency, duration, fill, loop, volume):
+    def tone(self, voice, frequency, duration, loop, volume):
         """Enqueue a tone."""
         self.generators[voice].append(synthesiser.SoundGenerator(
                     self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
-                    frequency, duration, fill, loop, volume))
+                    frequency, duration, loop, volume))
 
-    def noise(self, source, frequency, duration, fill, loop, volume):
+    def noise(self, source, frequency, duration, loop, volume):
         """Enqueue a noise."""
         feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
         self.generators[3].append(synthesiser.SoundGenerator(
                     self.signal_sources[3], feedback,
-                    frequency, duration, fill, loop, volume))
+                    frequency, duration, loop, volume))
 
     def hush(self):
         """Stop sound."""

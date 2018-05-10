@@ -48,6 +48,9 @@ class SignalSource(object):
         """Initialise the signal source."""
         self.lfsr = init
         self.feedback = feedback
+        # "remaining phase"/pi, i.e. runs 0 to 1 or 0 to -1 on half wavelength
+        self.phase = 0.
+        self.bit = 0
 
     def next(self):
         """Get a sample bit."""
@@ -55,24 +58,23 @@ class SignalSource(object):
         self.lfsr >>= 1
         if bit:
             self.lfsr ^= self.feedback
+        self.bit = bit
         return bit
 
 
 class SoundGenerator(object):
     """Sound sample chunk generator."""
 
-    def __init__(self, signal_source, feedback, frequency, total_duration, fill, loop, volume):
+    def __init__(self, signal_source, feedback, frequency, duration, loop, volume):
         """Initialise the generator."""
         # noise generator
         self.signal_source = signal_source
         self.feedback = feedback
         # actual duration and gap length
-        self.duration = fill * total_duration
-        self.gap = (1-fill) * total_duration
+        self.duration = duration
         self.amplitude = AMPLITUDE[volume]
         self.frequency = frequency
         self.loop = loop
-        self.bit = 0
         self.count_samples = 0
         self.num_samples = int(self.duration * SAMPLE_RATE)
 
@@ -82,11 +84,27 @@ class SoundGenerator(object):
         if self.count_samples >= self.num_samples:
             # done already
             return None
+        # don't generate too many samples
+        if length + self.count_samples > self.num_samples and not self.loop:
+            length = (self.num_samples - self.count_samples)
+        if self.frequency == 32767:
+            self.frequency = 0
         # work on last element of sound queue
-        if self.frequency == 0 or self.frequency == 32767:
+        if self.frequency == 0:
             chunk = numpy.zeros(length, numpy.int16)
         else:
             half_wavelength = SAMPLE_RATE / (2.*self.frequency)
+            # resolution for averaging
+            resolution = 20
+            # generate first half-wave so as to complete the last one played
+            if self.signal_source.phase:
+                bit = -self.amplitude if self.signal_source.bit else self.amplitude
+                first_length = int(half_wavelength * self.signal_source.phase)
+                matrix = numpy.repeat(numpy.array([bit], numpy.int16), first_length * resolution)
+                length -= first_length
+                self.signal_source.phase = 0.
+            else:
+                matrix = numpy.array([], numpy.int16)
             num_half_waves = int(ceil(length / half_wavelength))
             # generate bits
             bits = [
@@ -97,8 +115,8 @@ class SoundGenerator(object):
             # this allows to use numpy all the way
             # which is *much* faster than looping over an array
             # stretch array by half_wavelength * resolution
-            resolution = 20
-            matrix = numpy.repeat(numpy.array(bits, numpy.int16), int(half_wavelength * resolution))
+            matrix = numpy.append(matrix, numpy.repeat(
+                    numpy.array(bits, numpy.int16), int(half_wavelength * resolution)))
             # cut off on round number of resolution blocks
             matrix = matrix[:len(matrix)-(len(matrix)%resolution)]
             # average over blocks
@@ -111,11 +129,12 @@ class SoundGenerator(object):
             else:
                 # append final chunk
                 rest_length = self.num_samples - self.count_samples
+                # keep track of remaining phase to avoid ticks
+                if self.frequency:
+                    self.signal_source.phase = float(len(chunk) - rest_length) / half_wavelength
+                else:
+                    self.signal_source.phase = 0.
                 chunk = chunk[:rest_length]
-                # append quiet gap if requested
-                if self.gap:
-                    gap_chunk = numpy.zeros(int(self.gap * SAMPLE_RATE), numpy.int16)
-                    chunk = numpy.concatenate((chunk, gap_chunk))
                 # done
                 self.count_samples = self.num_samples
         # if loop, attach one chunk to loop, do not increment count

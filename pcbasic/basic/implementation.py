@@ -113,7 +113,7 @@ class Implementation(object):
         self.io_streams = iostreams.IOStreams(
                 self.queues, self.codepage, input_streams, output_streams, utf8)
         # initialise sound queue
-        self.sound = sound.Sound(self.queues, self.values, syntax)
+        self.sound = sound.Sound(self.queues, self.values, self.memory, syntax)
         # Sound is needed for the beeps on \a
         # InputMethods is needed for wait() in graphics
         self.display = display.Display(
@@ -188,8 +188,6 @@ class Implementation(object):
         self.interpreter = interpreter.Interpreter(
                 self.queues, self.screen, self.files, self.sound,
                 self.values, self.memory, self.program, self.parser, self.basic_events)
-        # PLAY parser
-        self.play_parser = sound.PlayParser(self.sound, self.memory, self.values)
         ######################################################################
         # callbacks
         ######################################################################
@@ -447,7 +445,7 @@ class Implementation(object):
         # stop all sound
         self.sound.stop_all_sound()
         # reset PLAY state
-        self.play_parser.reset()
+        self.sound.reset_play()
         # reset DRAW state (angle, scale) and current graphics position
         self.drawing.reset()
         # reset random number generator
