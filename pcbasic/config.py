@@ -353,15 +353,10 @@ class Settings(object):
             os.makedirs(PROGRAM_PATH)
             # unpack bundled programs
             store_bundled_programs(PROGRAM_PATH)
-        # keep track of unrecognised arguments before logger is initialised
-        self._unrecognised_arguments = []
         # store options in options dictionary
         self._options = self._retrieve_options(self._uargv)
         # prepare global logger for use by main program
         self._prepare_logging()
-        # log unrecognised arguments now that we have a logger
-        for arg, value in self._unrecognised_arguments:
-            logging.warning('Ignored unrecognised option `%s=%s` in configuration file', arg, value)
         # initial validations
         python_version = tuple(int(v) for v in platform.python_version_tuple())
         if python_version >= (3, 0, 0) or python_version < MIN_PYTHON_VERSION:
@@ -407,6 +402,11 @@ class Settings(object):
         args = self._parse_presets(remaining, preset_dict)
         # local config file settings override preset settings
         self._merge_arguments(args, preset_dict[u'pcbasic'])
+        # find unrecognised arguments
+        for key, value in args.iteritems():
+            if key not in self.arguments:
+                self._logger.warning(
+                        'Ignored unrecognised option `%s=%s` in configuration file', key, value)
         # parse rest of command line
         self._merge_arguments(args, self._parse_args(remaining))
         # clean up arguments
@@ -888,7 +888,7 @@ class Settings(object):
                     args0[a] += u',' + args1[a]
                     continue
             except KeyError:
-                self._unrecognised_arguments.append((a, args1[a]))
+                pass
             # override
             args0[a] = args1[a]
 
