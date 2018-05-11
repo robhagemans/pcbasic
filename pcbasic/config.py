@@ -106,7 +106,8 @@ class Settings(object):
     """Read and retrieve command-line settings and options."""
 
     # Default preset definitions
-    # For example, --preset=tandy will load all options in the [tandy] section. Preset options override default options.
+    # For example, --preset=tandy will load all options in the [tandy] section.
+    # Preset options override default options.
     # Presets can also be added by adding a section in brackets in the user configuration file
     # e.g., a section headed [myconfig] will be loaded with --preset=myconfig
 
@@ -340,14 +341,20 @@ class Settings(object):
             os.makedirs(PROGRAM_PATH)
             # unpack bundled programs
             store_bundled_programs(PROGRAM_PATH)
+        # keep track of unrecognised arguments before logger is initialised
+        self._unrecognised_arguments = []
         # store options in options dictionary
         self._options = self._retrieve_options(self._uargv)
         # prepare global logger for use by main program
         self._prepare_logging()
+        # log unrecognised arguments now that we have a logger
+        for arg, value in self._unrecognised_arguments:
+            logging.warning('Ignored unrecognised option `%s=%s` in configuration file', arg, value)
         # initial validations
         python_version = tuple(int(v) for v in platform.python_version_tuple())
         if python_version >= (3, 0, 0) or python_version < MIN_PYTHON_VERSION:
-            msg = 'PC-BASIC requires Python 2, version %d.%d.%d or higher. ' % MIN_PYTHON_VERSION + 'You have %d.%d.%d.' % python_version
+            msg = ('PC-BASIC requires Python 2, version %d.%d.%d or higher. ' % MIN_PYTHON_VERSION +
+                'You have %d.%d.%d.' % python_version)
             logging.fatal(msg)
             raise Exception(msg)
 
@@ -796,7 +803,7 @@ class Settings(object):
                 # if the zip-file contains only a directory at the top level,
                 # then move into that directory. E.g. all files in package.zip
                 # could be under the directory package/
-                contents = os.listdir('.')
+                contents = os.listdir(u'.')
                 if len(contents) == 1:
                     os.chdir(contents[0])
                 # recursively rename all files to all-caps to avoid case issues on Unix
@@ -834,26 +841,29 @@ class Settings(object):
         """Read config file."""
         try:
             config = ConfigParser.RawConfigParser(allow_no_value=True)
-            # use utf_8_sig to ignore a BOM if it's at the start of the file (e.g. created by Notepad)
+            # use utf_8_sig to ignore a BOM if it's at the start of the file
+            # (e.g. created by Notepad)
             with codecs.open(config_file, b'r', b'utf_8_sig') as f:
                 config.readfp(f)
         except (ConfigParser.Error, IOError):
-            self._logger.warning(u'Error in configuration file %s. '
-                           u'Configuration not loaded.', config_file)
+            self._logger.warning(
+                u'Error in configuration file %s. Configuration not loaded.', config_file)
             return {u'pcbasic': {}}
-        presets = { header: dict(config.items(header))
-                    for header in config.sections() }
+        presets = {header: dict(config.items(header)) for header in config.sections()}
         return presets
 
     def _parse_args(self, remaining):
         """Retrieve command line options."""
         # set arguments
         known = self.arguments.keys() + range(self.positional)
-        args = {d:remaining[d] for d in remaining if d in known}
-        not_recognised = {d:remaining[d] for d in remaining if d not in known}
+        args = {d: remaining[d] for d in remaining if d in known}
+        not_recognised = {d: remaining[d] for d in remaining if d not in known}
         for d in not_recognised:
-            self._logger.warning(u'Ignored unrecognised option "%s=%s"',
-                            d, not_recognised[d])
+            if not_recognised[d]:
+                self._logger.warning(
+                    u'Ignored unrecognised command-line argument `%s=%s`', d, not_recognised[d])
+            else:
+                self._logger.warning(u'Ignored unrecognised command-line argument `%s`', d)
         return args
 
     ################################################
@@ -866,7 +876,7 @@ class Settings(object):
                     args0[a] += u',' + args1[a]
                     continue
             except KeyError:
-                pass
+                self._unrecognised_arguments.append((a, args1[a]))
             # override
             args0[a] = args1[a]
 
