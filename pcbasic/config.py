@@ -102,6 +102,18 @@ class TemporaryDirectory():
                 logging.error(str(e))
 
 
+class WhitespaceStripper(object):
+    """File wrapper for ConfigParser that strips leading whitespace."""
+
+    def __init__(self, file):
+        """Initialise to file object."""
+        self._file = file
+
+    def readline(self):
+        """Read a line and strip whitespace (but not EOL)."""
+        return self._file.readline().lstrip(' \t')
+
+
 class Settings(object):
     """Read and retrieve command-line settings and options."""
 
@@ -844,7 +856,7 @@ class Settings(object):
             # use utf_8_sig to ignore a BOM if it's at the start of the file
             # (e.g. created by Notepad)
             with codecs.open(config_file, b'r', b'utf_8_sig') as f:
-                config.readfp(f)
+                config.readfp(WhitespaceStripper(f))
         except (ConfigParser.Error, IOError):
             self._logger.warning(
                 u'Error in configuration file %s. Configuration not loaded.', config_file)
