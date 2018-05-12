@@ -55,7 +55,7 @@ class Implementation(object):
             mono_tint=(0, 255, 0), low_intensity=False,
             devices=None, current_device=u'Z:', mount=None, utf8=False, universal=True,
             keys=u'', check_keybuffer_full=True, ctrl_c_is_break=True,
-            max_list_line=65535, allow_protect=False,
+            hide_listing=None, allow_protect=False,
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
@@ -96,7 +96,7 @@ class Implementation(object):
         # initialise the program
         bytecode = codestream.TokenisedStream(self.memory.code_start)
         self.program = program.Program(
-                self.tokeniser, self.lister, max_list_line, allow_protect,
+                self.tokeniser, self.lister, hide_listing, allow_protect,
                 allow_code_poke, self.memory, bytecode, rebuild_offsets)
         # register all data segment users
         self.memory.set_buffers(self.program)

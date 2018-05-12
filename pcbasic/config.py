@@ -117,7 +117,7 @@ class Settings(object):
 
     default_config = {
         u'strict': {
-            u'strict-hidden-lines': u'True',
+            u'hide-listing': u'65530',
             u'strict-newline': u'True',
             u'strict-protect': u'True',
             u'allow-code-poke': u'True',
@@ -268,7 +268,7 @@ class Settings(object):
         u'fullscreen': {u'type': u'bool', u'default': False,},
         u'nokill': {u'type': u'bool', u'default': False,},
         u'debug': {u'type': u'bool', u'default': False,},
-        u'strict-hidden-lines': {u'type': u'bool', u'default': False,},
+        u'hide-listing': {u'type': u'int', u'default': 65535,},
         u'strict-protect': {u'type': u'bool', u'default': False,},
         u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
         u'resume': {u'type': u'bool', u'default': False,},
@@ -511,7 +511,7 @@ class Settings(object):
             # keyboard settings
             'ctrl_c_is_break': self.get('ctrl-c-break'),
             # program parameters
-            'max_list_line': 65535 if not self.get('strict-hidden-lines') else 65530,
+            'hide_listing': self.get('hide-listing'),
             'allow_protect': self.get('strict-protect'),
             'allow_code_poke': self.get('allow-code-poke'),
             'rebuild_offsets': not self.get('convert'),

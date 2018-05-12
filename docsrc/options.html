@@ -852,13 +852,13 @@
             directory.
         </dd>
 
-        <dt id="--strict-hidden-lines">
-            <code><b>--strict-hidden-lines</b>[<b>=True</b>|<b>=False</b>]</code>
+        <dt id="--hide-listing">
+            <code><b>--hide-listing=</b><var>line_number</var></code>
         </dt>
         <dd>
-            Disable listing and saving to plain text of lines beyond <code>65530</code>, as in
-            GW-BASIC. Use with care as this allows execution of hidden
-            lines of code.
+            Disable listing and saving to plain text of lines beyond <code><var>line_number</var></code>, as in
+            GW-BASIC beyond <code>65530</code>. Use with care as this allows execution of hidden
+            lines of code. Default is to list all lines.
         </dd>
 
         <dt id="--strict-newline">
