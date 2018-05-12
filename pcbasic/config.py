@@ -457,31 +457,37 @@ class Settings(object):
     @property
     def session_params(self):
         """Return a dictionary of parameters for the Session object."""
-        current_device, mount_dict = self._get_drives(False)
+        # don't parse any options on --resume
         if self.get('resume'):
             return {}
-        pcjr_term = self.get('term')
+        # preset PEEK values
         peek_values = {}
         try:
             for a in self.get('peek'):
-                seg, addr, val = a.split(':')
+                seg, addr, val = a.split(u':')
                 peek_values[int(seg)*0x10 + int(addr)] = int(val)
         except (TypeError, ValueError):
             pass
+        # devices and mounts
+        current_device, mount_dict = self._get_drives(False)
         device_params = {
                 key.upper()+':' : self.get(key)
                 for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')}
+        current_device, mount_dict = self._get_drives()
+        # memory setting
         max_list = self.get('max-memory')
         max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
         max_list[0] = max_list[0] or max_list[1]
-        current_device, mount_dict = self._get_drives()
-        codepage_dict = data.read_codepage(self.get('codepage'))
+        # codepage parameters
+        codepage_dict = data.read_codepage(self.get('codepage').split(u':')[0])
+        nobox = self.get('codepage').split(u':')[1] == u'nobox'
+        # redirects
         params = self._get_redirects()
         params.update({
             'syntax': self.get('syntax'),
             'video': self.get('video'),
             'codepage': codepage_dict,
-            'box_protect': not self.get('nobox'),
+            'box_protect': not nobox,
             'monitor': self.get('monitor'),
             # screen settings
             'aspect_ratio': (3072, 2000) if self.get('video') == 'tandy' else (4, 3),
@@ -493,7 +499,7 @@ class Settings(object):
             'keys': self.get('keys').encode('utf-8', 'replace')
                         .decode('string_escape').decode('utf-8', 'replace'),
             # find program for PCjr TERM command
-            'term': pcjr_term,
+            'term': self.get('term'),
             'shell': self.get('shell'),
             'double': self.get('double'),
             # device settings

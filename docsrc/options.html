@@ -141,7 +141,7 @@
         </dd>
 
         <dt id="--codepage">
-            <code><b>--codepage=</b><var>codepage_id</var></code>
+            <code><b>--codepage=</b><var>codepage_id</var>[<b>:nobox</b>]</code>
         </dt>
         <dd>
             Load the specified codepage. The codepage determines which
@@ -211,6 +211,13 @@
                 <li><code><b>viscii</b></code></li>
             </ul>.
             See the <a href="#codepages">list of codepages</a> in the User's Guide for details.
+            <br />
+            The specifier <code><b>nobox</b></code> disables box-drawing recognition 
+            for double-byte character set code pages. By
+            default, sequences of box-drawing characters are recognised by an
+            algorithm that isn't as smart as it thinks it is, and displayed as
+            box drawing rather than as DBCS characters. If <code><b>nobox</b></code>
+            is set, they will be displayed as DBCS.
         </dd>
 
         <dt id="--config">
@@ -697,17 +704,6 @@
         <dd>
             Run PC-BASIC as a command-line filter. Same as
             <code><b><a href="#--interface">--interface</a>=none</b></code>.
-        </dd>
-
-        <dt id="--nobox">
-            <code><b>--nobox</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            Disable box-drawing recognition for double-byte character set code pages. By
-            default, sequences of box-drawing characters are recognised by an
-            algorithm that isn't as smart as it thinks it is, and displayed as
-            box drawing rather than as DBCS characters. If <code><b>--nobox</b></code>
-            is set, they will be displayed as DBCS.
         </dd>
 
         <dt id="--output">
