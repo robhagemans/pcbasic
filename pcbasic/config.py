@@ -118,7 +118,7 @@ class Settings(object):
     default_config = {
         u'strict': {
             u'hide-listing': u'65530',
-            u'strict-newline': u'True',
+            u'soft-linefeed': u'True',
             u'hide-protected': u'True',
             u'allow-code-poke': u'True',
             u'nokill': u'True',
@@ -272,7 +272,7 @@ class Settings(object):
         u'hide-protected': {u'type': u'bool', u'default': False,},
         u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
         u'resume': {u'type': u'bool', u'default': False,},
-        u'strict-newline': {u'type': u'bool', u'default': False,},
+        u'soft-linefeed': {u'type': u'bool', u'default': False,},
         u'syntax': {
             u'type': u'string', u'choices': (u'advanced', u'pcjr', u'tandy'),
             u'default': u'advanced',},
@@ -507,7 +507,7 @@ class Settings(object):
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
             'utf8': self.get('utf8'),
-            'universal': not self.get('strict-newline'),
+            'soft_linefeed': self.get('soft-linefeed'),
             # keyboard settings
             'ctrl_c_is_break': self.get('ctrl-c-break'),
             # program parameters
