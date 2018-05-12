@@ -498,7 +498,7 @@
             Protected mode offered little protection anyway; disallowing access is a small
             security hazard as it would allow someone to send you a program that you cannot
             inspect before running it. However, it is possible to disable access of
-            protected files by enabling the option <code><a href="#--strict-protect">strict-protect</a></code>. </p> <p>You
+            protected files by enabling the option <code><a href="#--hide-protects">hide-protected</a></code>. </p> <p>You
             can read a program file into memory with <code><a href="#LOAD">LOAD</a> "MYPROG"</code>. This will
             erase the program currently in memory and replace it with the one read from the
             current working directory. To access files in a different directory, specify a path from the current
@@ -616,8 +616,8 @@
                 As a consequence, in exceptional cases where a program line is continued through <code><i>LF</i></code>
                 correct GW-BASIC text files may not be loaded correctly.
                 If you encounter such a case, use
-                the <code><a href="#--strict-newline">strict-newline</a></code> option to enable GW-BASIC behaviour. If
-                <code>strict-newline</code> is enabled, text files in standard Unix format
+                the <code><a href="#--soft-linefeed">soft-linefeed</a></code> option to enable GW-BASIC behaviour. If
+                <code>soft-linefeed</code> is enabled, text files in standard Unix format
                 (<code><i>LF</i></code> line endings, no end-of-file character) will fail to load, as they do in GW-BASIC.
                 On Linux or Mac, use a utility such as
                 <a href="http://waterlan.home.xs4all.nl/dos2unix.html"><code>unix2dos</code></a>

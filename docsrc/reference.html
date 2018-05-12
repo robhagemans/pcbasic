@@ -6461,7 +6461,7 @@
                 <code>65531</code>&mdash;<code>65535</code> inclusive.
                 By default, PC-BASIC's <code>LIST</code> does show these lines. However,
                 showing them can be disabled with the option
-                <code><a href="#--strict-hidden-lines">strict-hidden-lines</a></code>.
+                <code><a href="#--hide-listing">hide-listing=65530</a></code>.
             </li>
         </ul>
         <h5>Parameters</h5>
@@ -6517,7 +6517,7 @@
                 <code>65531</code>&mdash;<code>65535</code> inclusive.
                 By default, PC-BASIC's <code>LLIST</code> does show these lines. However,
                 showing them can be disabled with the option
-                <code><a href="#--strict-hidden-lines">strict-hidden-lines</a></code>.
+                <code><a href="#--hide-listing">hide-listing=65530</a></code>.
             </li>
         </ul>
         <h5>Parameters</h5>
@@ -9921,7 +9921,7 @@
                 <samp>Bad file name</samp> (on disk devices).
             </li>
             <li>
-                <code><a href="#--strict-protect">strict-protect</a></code> is enabled, the current program is protected and <code>,P</code> is not specified:
+                <code><a href="#--hide-protected">hide-protected</a></code> is enabled, the current program is protected and <code>,P</code> is not specified:
                 <samp>Illegal function call</samp>.
             </li>
         </ul>
@@ -10485,7 +10485,7 @@
             <b>TERM</b>
         </code>
         <p>
-            Load and run the program defined by the <code><a href="#--pcjr-term">pcjr-term</a></code> option.
+            Load and run the program defined by the <code><a href="#--term">term</a></code> option.
             By default, as on the IBM PCjr, this is a
             built-in serial terminal emulator application.
             This statement is only available with
@@ -10494,7 +10494,7 @@
         <h5>Errors</h5>
         <ul>
             <li>
-                If <code><a href="#--pcjr-term">pcjr-term</a></code> is not set,
+                If <code><a href="#--term">term</a></code> is not set,
                 this statement raises <code>Internal error</code>.
             </li>
             <li>

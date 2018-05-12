@@ -129,7 +129,7 @@ class Settings(object):
             },
         u'pcjr': {
             u'syntax': u'pcjr',
-            u'pcjr-term': os.path.join(PROGRAM_PATH, 'PCTERM.BAS'),
+            u'term': os.path.join(PROGRAM_PATH, 'PCTERM.BAS'),
             u'video': u'pcjr',
             u'font': u'vga',
             u'codepage': u'437',
@@ -276,7 +276,7 @@ class Settings(object):
         u'syntax': {
             u'type': u'string', u'choices': (u'advanced', u'pcjr', u'tandy'),
             u'default': u'advanced',},
-        u'pcjr-term': {u'type': u'string', u'default': u'',},
+        u'term': {u'type': u'string', u'default': u'',},
         u'video': {
             u'type': u'string', u'default': 'vga',
             u'choices': (
@@ -463,7 +463,7 @@ class Settings(object):
         current_device, mount_dict = self._get_drives(False)
         if self.get('resume'):
             return {}
-        pcjr_term = self.get('pcjr-term')
+        pcjr_term = self.get('term')
         peek_values = {}
         try:
             for a in self.get('peek'):

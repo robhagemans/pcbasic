@@ -724,15 +724,6 @@
             GW-BASIC.
         </dd>
 
-        <dt id="--pcjr-term">
-            <code><b>--pcjr-term=</b><var>terminal_program</var></code>
-        </dt>
-        <dd>
-            Set the terminal program run by the PCjr <code><a href="#TERM">TERM</a></code>
-            command to <code><var>terminal_program</var></code>. This only has an
-            effect with <code><b><a href="#--syntax">--syntax</a>=</b>{<b>pcjr</b>|<b>tandy</b>}</code>.
-        </dd>
-
         <dt id="--peek">
             <code><b>--peek=</b>[<var>seg</var><b>:</b><var>addr</var><b>:</b><var>val</var>[<b>,</b><var>seg</var><b>:</b><var>addr</var><b>:</b><var>val</var> ... ]]</code>
         </dt>
@@ -903,6 +894,15 @@
         <dd>
             Use text-based interface. Same as
             <code><b><a href="#--interface">--interface</a>=text</b></code>.
+        </dd>
+
+        <dt id="--term">
+            <code><b>--term=</b><var>terminal_program</var></code>
+        </dt>
+        <dd>
+            Set the terminal program run by the PCjr <code><a href="#TERM">TERM</a></code>
+            command to <code><var>terminal_program</var></code>. This only has an
+            effect with <code><b><a href="#--syntax">--syntax</a>=</b>{<b>pcjr</b>|<b>tandy</b>}</code>.
         </dd>
 
         <dt id="--text-width">
