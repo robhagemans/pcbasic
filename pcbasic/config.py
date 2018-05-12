@@ -232,7 +232,6 @@ class Settings(object):
     arguments = {
         u'input': {u'type': u'string', u'default': u'', },
         u'output': {u'type': u'string', u'default': u'', },
-        u'append': {u'type': u'bool', u'default': False, },
         u'interface': {
             u'type': u'string', u'default': u'',
             u'choices': (u'', u'none', u'cli', u'text', u'graphical',
@@ -437,18 +436,34 @@ class Settings(object):
                 not self.interface or not sys.stdout.isatty() or not sys.stdin.isatty()):
             output_streams.append(sys.stdout)
         # explicit redirects
-        infile = self.get(b'input')
-        if infile:
-            try:
-                input_streams.append(open(infile, 'rb'))
-            except EnvironmentError as e:
-                logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
-        outfile = self.get(b'output')
-        if outfile:
-            try:
-                output_streams.append(open(outfile, 'ab' if self.get(b'append') else 'wb'))
-            except EnvironmentError as e:
-                logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
+        infile_params = self.get('input').split(u':')
+        if infile_params[0].upper() in (u'STDIO', u'STDIN'):
+            if sys.stdin not in input_streams:
+                input_streams.append(sys.stdin)
+        else:
+            if len(infile_params) > 1 and infile_params[0].upper() == u'FILE':
+                infile = infile_params[1]
+            else:
+                infile = infile_params[0]
+            if infile:
+                try:
+                    input_streams.append(open(infile, 'rb'))
+                except EnvironmentError as e:
+                    logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
+        outfile_params = self.get('output').split(u':')
+        if outfile_params[0].upper() in (u'STDIO', u'STDOUT'):
+            if sys.stdout not in output_streams:
+                output_streams.append(sys.stdout)
+        else:
+            if len(outfile_params) > 1 and outfile_params[0].upper() == u'FILE':
+                outfile_params = outfile_params[1:]
+            outfile = outfile_params[0]
+            append = len(outfile_params) > 1 and outfile_params[1].lower() == u'append'
+            if outfile:
+                try:
+                    output_streams.append(open(outfile, 'ab' if append else 'wb'))
+                except EnvironmentError as e:
+                    logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
         return {
             'output_streams': output_streams,
             'input_streams': input_streams,
@@ -479,8 +494,9 @@ class Settings(object):
         max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
         max_list[0] = max_list[0] or max_list[1]
         # codepage parameters
-        codepage_dict = data.read_codepage(self.get('codepage').split(u':')[0])
-        nobox = self.get('codepage').split(u':')[1] == u'nobox'
+        codepage_params = self.get('codepage').split(u':')
+        codepage_dict = data.read_codepage(codepage_params[0])
+        nobox = len(codepage_params) > 1 and codepage_params[1] == u'nobox'
         # redirects
         params = self._get_redirects()
         params.update({
