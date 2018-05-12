@@ -162,14 +162,12 @@ class Settings(object):
             u'font': u'cga,mda',
             u'codepage': u'437',
             u'monitor': u'mono',
-            u'mono-tint': u'0,255,0',
             },
         u'hercules': {
             u'video': u'hercules',
             u'font': u'cga,mda',
             u'codepage': u'437',
             u'monitor': u'mono',
-            u'mono-tint': u'0,255,0',
             },
         u'olivetti': {
             u'video': u'olivetti',
@@ -289,9 +287,8 @@ class Settings(object):
         u'border': {u'type': u'int', u'default': 5,},
         u'mouse-clipboard': {u'type': u'bool', u'default': True,},
         u'state': {u'type': u'string', u'default': u'',},
-        u'mono-tint': {u'type': u'int', u'list': 3, u'default': [255, 255, 255],},
         u'monitor': {
-            u'type': u'string', u'choices': (u'rgb', u'composite', u'mono'),
+            u'type': u'string', u'choices': (u'rgb', u'composite', u'green', u'amber', u'grey', u'mono'),
             u'default': u'rgb',},
         u'aspect': {u'type': u'int', u'list': 2, u'default': [4, 3],},
         u'scaling': {
@@ -491,7 +488,6 @@ class Settings(object):
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
             'low_intensity': self.get('cga-low'),
-            'mono_tint': self.get('mono-tint'),
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
             'keys': self.get('keys').encode('utf-8', 'replace')

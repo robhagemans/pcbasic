@@ -641,7 +641,7 @@
         </dd>
 
         <dt id="--monitor">
-            <code><b>--monitor=</b>{<b>rgb</b>|<b>composite</b>|<b>mono</b>}</code>
+            <code><b>--monitor=</b>{<b>rgb</b>|<b>composite</b>|<b>green</b>|<b>amber</b>|<b>grey</b>|<b>mono</b>}</code>
         </dt>
         <dd>
             Sets the monitor type to emulate. Available types are:
@@ -654,21 +654,30 @@
                     Composite colour monitor.
                 </dd>
 
+                <dt><code><b>green</b></code></dt>
+                <dd>
+                    Green-tinted monochrome monitor.
+                </dd>
+
+                <dt><code><b>amber</b></code></dt>
+                <dd>
+                    Amber-tinted monochrome monitor.
+                </dd>
+
+                <dt><code><b>grey</b></code></dt>
+                <dd>
+                    Greyscale monochrome monitor.
+                </dd>
+
                 <dt><code><b>mono</b></code></dt>
-                <dd>Monochrome monitor.</dd>
+                <dd>
+                    Green-tinted monochrome monitor (same as <code><b>green</b></code>).
+                </dd>
             </dl>
             On
             <code><a href="#SCREEN-statement">SCREEN</a> 2</code> with
             <code><b><a href="#--video">--video</a>=</b>{<b>pcjr</b>|<b>tandy</b>|<b>cga</b>|<b>cga_old</b>}</code>,
             <code><b>--monitor=composite</b></code> enables (crude) colour artifacts.
-        </dd>
-
-        <dt id="--mono-tint">
-            <code><b>--mono-tint=</b><var>r</var><b>,</b><var>g</var><b>,</b><var>b</var></code>
-        </dt>
-        <dd>
-            Specify the monochrome tint as the red-green-blue values <code><var>r</var>,<var>g</var>,<var>b</var></code>, each in the range 0&#8212;255.
-            Only has an effect if combined with <code><b><a href="#--monitor">--monitor</a>=mono</b></code>.
         </dd>
 
         <dt id="--mount">
