@@ -279,7 +279,6 @@ class Settings(object):
             u'choices': (
                 u'vga', u'ega', u'cga', u'cga_old', u'mda',
                 u'pcjr', u'tandy', u'hercules', u'olivetti'), },
-        u'map-drives': {u'type': u'bool', u'default': False,},
         u'cga-low': {u'type': u'bool', u'default': False,},
         u'nobox': {u'type': u'bool', u'default': False,},
         u'utf8': {u'type': u'bool', u'default': False,},
@@ -306,7 +305,7 @@ class Settings(object):
         u'shell': {u'type': u'string', u'default': u'',},
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},
         u'wait': {u'type': u'bool', u'default': False,},
-        u'current-device': {u'type': u'string', u'default': 'Z'},
+        u'current-device': {u'type': u'string', u'default': ''},
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
     }
 
@@ -484,7 +483,6 @@ class Settings(object):
         except (TypeError, ValueError):
             pass
         # devices and mounts
-        current_device, mount_dict = self._get_drives(False)
         device_params = {
                 key.upper()+':' : self.get(key)
                 for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')}
@@ -639,12 +637,28 @@ class Settings(object):
             'log_dir': STATE_PATH,
             }
 
-    def _get_drives(self, get_default=True):
+    def _get_drives(self):
         """Assign disk locations to disk devices."""
-        mount_dict = {}
         # always get current device
-        current_device = self.get('current-device')
-        if self.get('map-drives', get_default):
+        current_device = self.get('current-device').upper()
+        # build mount dictionary
+        mount_list = self.get('mount', False)
+        mount_dict = {}
+        if mount_list is not None:
+            for a in mount_list:
+                # the last one that's specified will stick
+                try:
+                    letter, path = a.split(u':', 1)
+                    letter = letter.encode('ascii', errors='replace').upper()
+                    # take abspath first to ensure unicode, realpath gives bytes for u'.'
+                    path = os.path.realpath(os.path.abspath(path))
+                    if not os.path.isdir(path):
+                        logging.warning(u'Could not mount %s', a)
+                    else:
+                        mount_dict[letter] = (path, u'')
+                except (TypeError, ValueError) as e:
+                    logging.warning(u'Could not mount %s: %s', a, unicode(e))
+        else:
             if WIN32:
                 # get all drives in use by windows
                 # if started from CMD.EXE, get the 'current working dir' for each drive
@@ -662,49 +676,26 @@ class Settings(object):
                         path, cwd = cwd[:3], cwd[3:]
                         mount_dict[letter] = (path, cwd)
                 os.chdir(save_current)
-                try:
-                    current_device = os.path.abspath(save_current).split(u':')[0].encode('ascii')
-                except UnicodeEncodeError:
-                    # fallback in case of some error
-                    current_device = mount_dict.keys()[0]
+                if not current_device:
+                    try:
+                        current_device = os.path.abspath(save_current).split(u':')[0].encode('ascii')
+                    except UnicodeEncodeError:
+                        pass
             else:
-                cwd = os.getcwdu()
-                home = os.path.expanduser(u'~')
-                # if cwd is in home tree, set it also on H:
-                if cwd[:len(home)] == home:
-                    home_cwd = cwd[len(home)+1:]
-                else:
-                    home_cwd = u''
-                mount_dict = {
-                    # map C to root
-                    b'C': (u'/', cwd[1:]),
-                    # map Z to cwd
-                    b'Z': (cwd, u''),
-                    # map H to home
-                    b'H': (home, home_cwd),
-                    }
-                # default durrent drive
+                # non-Windows systems simply have 'Z:' set to their their cwd by default
+                mount_dict[b'Z'] = (os.getcwdu(), u'')
                 current_device = b'Z'
-        else:
-            mount_dict[b'Z'] = (os.getcwdu(), u'')
+        # fallbacks for current device
+        if current_device != 'CAS1' and (
+                not current_device or current_device not in mount_dict.keys()):
+            if mount_dict:
+                # if not set or not sensible, set current device to lowest available
+                current_device = sorted(mount_dict.keys())[0]
+            else:
+                # if nothing mounted at all and not set to CAS1, current device will be @:
+                current_device = b'@'
         # directory for bundled BASIC programs accessible through @:
         mount_dict[b'@'] = (PROGRAM_PATH, u'')
-        # build mount dictionary
-        mount_list = self.get('mount', get_default)
-        if mount_list:
-            for a in mount_list:
-                # the last one that's specified will stick
-                try:
-                    letter, path = a.split(u':', 1)
-                    letter = letter.encode('ascii', errors='replace').upper()
-                    # take abspath first to ensure unicode, realpath gives bytes for u'.'
-                    path = os.path.realpath(os.path.abspath(path))
-                    if not os.path.isdir(path):
-                        logging.warning(u'Could not mount %s', a)
-                    else:
-                        mount_dict[letter] = (path, u'')
-                except (TypeError, ValueError) as e:
-                    logging.warning(u'Could not mount %s: %s', a, unicode(e))
         return current_device, mount_dict
 
     @property

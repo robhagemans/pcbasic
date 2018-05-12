@@ -589,22 +589,6 @@
             If this option is not specified, <code>LPT3:</code> is unavailable.
         </dd>
 
-        <dt id="--map-drives">
-            <code><b>--map-drives</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            On Windows, assign all Windows drive letters to PC-BASIC drive
-            letters. On other systems, assign to:
-            <dl class="compact">
-                <dt><code>Z:</code></dt>
-                <dd>the current working directory</dd>
-                <dt><code>C:</code></dt>
-                <dd>the filesystem root</dd>
-                <dt><code>H:</code></dt>
-                <dd>the user's home directory.</dd>
-            </dl>
-        </dd>
-
         <dt id="--max-files">
             <code id="-f"><b>-f=</b><var>number_of_files</var></code>
             <code><b>--max-files=</b><var>number_of_files</var></code>
@@ -690,6 +674,10 @@
             The path can be absolute or relative. By
             default, <code>Z:</code> is assigned to the current working
             directory and no other drive letters are assigned.
+            <br />
+            If this option is not specified: on Windows, all Windows drive letters
+            will be assigned to PC-BASIC drive
+            letters; on other systems, the current working directory is assigned to <code>Z:</code>.
         </dd>
 
         <dt id="-n">
