@@ -26,8 +26,11 @@ from . import api
 def show_platform_info():
     """Show information about operating system and installed modules."""
     logging.info('\nPLATFORM')
-    logging.info('os: %s %s %s', platform.system(), platform.processor(), platform.version())
-    logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
+    logging.info('os: %s', platform.platform())
+    frozen = '[%s]' % (sys.frozen,) if (hasattr(sys, 'frozen') and sys.frozen) else ''
+    logging.info(
+        'python: %s %s %s', sys.version.replace('\n', ''),
+        ' '.join(platform.architecture()), frozen)
     logging.info('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
     modules = ('numpy', 'pygame', 'curses', 'serial', 'parallel')

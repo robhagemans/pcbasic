@@ -19,7 +19,7 @@ from .metadata import VERSION
 from basic.base import error, signals
 
 
-LOG_PATTERN = u'pcbasic-crash-%Y%m%d-'
+LOG_PATTERN = u'crash-%Y%m%d-'
 PAUSE_MESSAGE = u'Fatal error. Press a key to close this window'
 
 
@@ -83,12 +83,14 @@ class ExceptionGuard(object):
         logfile = tempfile.NamedTemporaryFile(
                 mode='w', suffix='.log', prefix=logname, dir=self._log_dir, delete=False)
         # construct the message
+        frozen = sys.frozen if (hasattr(sys, 'frozen') and sys.frozen) else ''
         message = [
             (0x70, 'FATAL ERROR\n'),
             (0x17, 'version   '),
             (0x1f, VERSION.encode('ascii')),
             (0x17, '\npython    '),
-            (0x1f, platform.python_version()),
+            (0x1f, '%s [%s] %s' % (
+                    platform.python_version(), ' '.join(platform.architecture()), frozen)),
             (0x17, '\nplatform  '),
             (0x1f, platform.platform()),
             (0x17, '\ninterface '),
