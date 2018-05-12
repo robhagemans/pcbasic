@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import io
 import sys
 import ConfigParser
 import logging
@@ -41,19 +42,9 @@ STATE_PATH = os.path.join(USER_DATA_HOME, BASENAME)
 # @: target drive for bundled programs
 PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
 
+# format for log files
+LOGGING_FORMAT = u'[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
 
-def get_logger(logfile=None):
-    """Use the awkward logging interface as we can only use basicConfig once."""
-    l = logging.getLogger(__name__)
-    l.setLevel(logging.INFO)
-    if logfile:
-        h = logging.FileHandler(logfile, mode=b'w')
-    else:
-        h = logging.StreamHandler()
-    h.setLevel(logging.INFO)
-    h.setFormatter(logging.Formatter(u'%(levelname)s: %(message)s'))
-    l.addHandler(h)
-    return l
 
 def append_arg(args, key, value):
     """Update a single list-type argument by appending a value."""
@@ -336,7 +327,7 @@ class Settings(object):
                 break
         else:
             logfile = None
-        self._logger = get_logger(logfile)
+        self._logger = self._get_logger()
         self._temp_dir = temp_dir
         # create state path if needed
         if not os.path.exists(STATE_PATH):
@@ -365,6 +356,19 @@ class Settings(object):
             logging.fatal(msg)
             raise Exception(msg)
 
+    def _get_logger(self):
+        """Use the awkward logging interface as we can only use basicConfig once."""
+        # get the root logger
+        l = logging.getLogger()
+        l.setLevel(logging.INFO)
+        # send to a buffer until we know where to log to
+        self._logstream = io.StringIO()
+        h = logging.StreamHandler(self._logstream)
+        h.setLevel(logging.INFO)
+        h.setFormatter(logging.Formatter(LOGGING_FORMAT))
+        l.addHandler(h)
+        return l
+
     def _prepare_logging(self):
         """Set up the global logger."""
         logfile = self.get('logfile')
@@ -373,7 +377,7 @@ class Settings(object):
             loglevel = logging.INFO
         else:
             # logging setup before we import modules and may need to log errors
-            formatstr = '[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
+            formatstr = LOGGING_FORMAT
             if self.get('debug'):
                 loglevel = logging.DEBUG
             else:
@@ -384,9 +388,11 @@ class Settings(object):
             root_logger.removeHandler(handler)
         root_logger.setLevel(loglevel)
         if logfile:
-            handler = logging.FileHandler(logfile, mode=b'w')
+            logstream = open(logfile, 'w')
         else:
-            handler = logging.StreamHandler()
+            logstream = sys.stderr
+        logstream.write(self._logstream.getvalue())
+        handler = logging.StreamHandler(logstream)
         handler.setFormatter(logging.Formatter(fmt=formatstr, datefmt='%H:%M:%S'))
         root_logger.addHandler(handler)
 
