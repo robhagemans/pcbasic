@@ -701,19 +701,6 @@
             is set, they will be displayed as DBCS.
         </dd>
 
-        <dt id="--nokill">
-            <code><b>--nokill</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            Allow BASIC to capture <kbd>Alt+F4</kbd>.
-            Graphical interface only. By default,
-            <kbd>Alt</kbd>+<kbd>F4</kbd> is captured by most operating
-            systems as a quit signal, and will terminate PC-BASIC. Set
-            <code><b>--nokill</b></code> to allow BASIC to capture
-            <kbd>Alt</kbd>+<kbd>F4</kbd> instead. This is useful if
-            your program uses this key combination.
-        </dd>
-
         <dt id="--output">
             <code><b>--output=</b><var>output_file</var></code>
         </dt>
@@ -742,6 +729,19 @@
             like <code class="block">[this]</code> <code><b>--preset=this</b></code> will load all
             settings defined in that section. Available presets depend on your
             configuration file. See the <a href="#presets">list of default presets</a> in the User's Guide.
+        </dd>
+
+        <dt id="--prevent-close">
+            <code><b>--prevent_close</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Suppress window close event. This allows BASIC to capture <kbd>Alt+F4</kbd> or other
+            key combinations that normally close the window.
+            Graphical interface only. By default, the operating system's key combination to close a window
+            (usually <kbd>Alt</kbd>+<kbd>F4</kbd>) terminates PC-BASIC. Set
+            <code><b>--prevent_close</b></code> to allow BASIC to capture
+            this key combination instead. This is useful if
+            your program uses this key combination.
         </dd>
 
         <dt  id="--quit">
