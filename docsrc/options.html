@@ -422,6 +422,24 @@
             Show a usage message and exit.
         </dd>
 
+        <dt id="--hide-listing">
+            <code><b>--hide-listing=</b><var>line_number</var></code>
+        </dt>
+        <dd>
+            Disable listing and saving to plain text of lines beyond <code><var>line_number</var></code>, as in
+            GW-BASIC beyond <code>65530</code>. Use with care as this allows execution of hidden
+            lines of code. Default is to list all lines.
+        </dd>
+
+        <dt id="--hide-protected">
+            <code><b>--hide-protected</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Disable listing and saving to plain text of protected files, as in
+            GW-BASIC. Use with care as this allows execution of hidden
+            lines of code.
+        </dd>
+
         <dt id="-i">
             <code><b>-i</b></code>
         </dt>
@@ -852,15 +870,6 @@
             directory.
         </dd>
 
-        <dt id="--hide-listing">
-            <code><b>--hide-listing=</b><var>line_number</var></code>
-        </dt>
-        <dd>
-            Disable listing and saving to plain text of lines beyond <code><var>line_number</var></code>, as in
-            GW-BASIC beyond <code>65530</code>. Use with care as this allows execution of hidden
-            lines of code. Default is to list all lines.
-        </dd>
-
         <dt id="--strict-newline">
             <code><b>--strict-newline</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
@@ -868,15 +877,6 @@
             Parse <code>CR</code> and <code>LF</code> in text and program files strictly
             like GW-BASIC. On Unix, you will need to convert your files to DOS
             text first if using this option.
-        </dd>
-
-        <dt id="--strict-protect">
-            <code><b>--strict-protect</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            Disable listing and saving to plain text of protected files, as in
-            GW-BASIC. Use with care as this allows execution of hidden
-            lines of code.
         </dd>
 
         <dt id="--syntax">

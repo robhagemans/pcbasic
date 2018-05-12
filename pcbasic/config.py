@@ -119,7 +119,7 @@ class Settings(object):
         u'strict': {
             u'hide-listing': u'65530',
             u'strict-newline': u'True',
-            u'strict-protect': u'True',
+            u'hide-protected': u'True',
             u'allow-code-poke': u'True',
             u'nokill': u'True',
             u'ctrl-c-break': u'False',
@@ -269,7 +269,7 @@ class Settings(object):
         u'nokill': {u'type': u'bool', u'default': False,},
         u'debug': {u'type': u'bool', u'default': False,},
         u'hide-listing': {u'type': u'int', u'default': 65535,},
-        u'strict-protect': {u'type': u'bool', u'default': False,},
+        u'hide-protected': {u'type': u'bool', u'default': False,},
         u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
         u'resume': {u'type': u'bool', u'default': False,},
         u'strict-newline': {u'type': u'bool', u'default': False,},
@@ -512,7 +512,7 @@ class Settings(object):
             'ctrl_c_is_break': self.get('ctrl-c-break'),
             # program parameters
             'hide_listing': self.get('hide-listing'),
-            'allow_protect': self.get('strict-protect'),
+            'hide_protected': self.get('hide-protected'),
             'allow_code_poke': self.get('allow-code-poke'),
             'rebuild_offsets': not self.get('convert'),
             # max available memory to BASIC (set by /m)
