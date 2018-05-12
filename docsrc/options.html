@@ -842,6 +842,15 @@
             the <code><a href="#SHELL">SHELL</a></code> statement is disabled.
         </dd>
 
+        <dt id="--soft-linefeed">
+            <code><b>--soft-linefeed</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Do not treat <code>LF</code> in text and program files as a line break. This enables
+            the highest level of compatibility with GW-BASIC files. If this option is set,
+            any Linux or Mac text files need to be converted to DOS text before using then with PC-BASIC.
+        </dd>
+
         <dt id="--sound">
             <code><b>--sound=</b>[<b>none</b>|<b>beep</b>|<b>portaudio</b>|<b>interface</b>]</code>
         </dt>
@@ -868,15 +877,6 @@
             Set the save-state file to <code><var>state_file</var></code>.
             Default is <code>pcbasic.session</code> in the Application Data
             directory.
-        </dd>
-
-        <dt id="--soft-linefeed">
-            <code><b>--soft-linefeed</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            Parse <code>CR</code> and <code>LF</code> in text and program files strictly
-            like GW-BASIC. On Unix, you will need to convert your files to DOS
-            text first if using this option.
         </dd>
 
         <dt id="--syntax">
