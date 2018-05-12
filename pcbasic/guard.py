@@ -83,7 +83,7 @@ class ExceptionGuard(object):
         logfile = tempfile.NamedTemporaryFile(
                 mode='w', suffix='.log', prefix=logname, dir=self._log_dir, delete=False)
         # construct the message
-        frozen = sys.frozen if (hasattr(sys, 'frozen') and sys.frozen) else ''
+        frozen = getattr(sys, 'frozen', '') or ''
         message = [
             (0x70, 'FATAL ERROR\n'),
             (0x17, 'version   '),

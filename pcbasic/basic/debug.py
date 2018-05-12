@@ -27,7 +27,7 @@ def show_platform_info():
     """Show information about operating system and installed modules."""
     logging.info('\nPLATFORM')
     logging.info('os: %s', platform.platform())
-    frozen = '[%s]' % (sys.frozen,) if (hasattr(sys, 'frozen') and sys.frozen) else ''
+    frozen = getattr(sys, 'frozen', '') or ''
     logging.info(
         'python: %s %s %s', sys.version.replace('\n', ''),
         ' '.join(platform.architecture()), frozen)
