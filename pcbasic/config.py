@@ -44,6 +44,7 @@ PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
 
 # format for log files
 LOGGING_FORMAT = u'[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
+LOGGING_FORMATTER = logging.Formatter(fmt=LOGGING_FORMAT, datefmt=u'%H:%M:%S')
 
 
 def append_arg(args, key, value):
@@ -320,14 +321,7 @@ class Settings(object):
             self._uargv = get_unicode_argv()[1:]
         else:
             self._uargv = list(arguments)
-        # first parse a logfile argument, if any
-        for args in self._uargv:
-            if args[:9] == u'--logfile':
-                logfile = args[10:]
-                break
-        else:
-            logfile = None
-        self._logger = self._get_logger()
+        self._pre_init_logging()
         self._temp_dir = temp_dir
         # create state path if needed
         if not os.path.exists(STATE_PATH):
@@ -356,34 +350,26 @@ class Settings(object):
             logging.fatal(msg)
             raise Exception(msg)
 
-    def _get_logger(self):
-        """Use the awkward logging interface as we can only use basicConfig once."""
+    def _pre_init_logging(self):
+        """Set up the global logger temporarily until we know the log stream."""
+        # we use the awkward logging interface as we can only use basicConfig once
         # get the root logger
-        l = logging.getLogger()
-        l.setLevel(logging.INFO)
+        root_logger = logging.getLogger()
+        root_logger.setLevel(logging.INFO)
         # send to a buffer until we know where to log to
         self._logstream = io.StringIO()
-        h = logging.StreamHandler(self._logstream)
-        h.setLevel(logging.INFO)
-        h.setFormatter(logging.Formatter(LOGGING_FORMAT))
-        l.addHandler(h)
-        return l
+        handler = logging.StreamHandler(self._logstream)
+        handler.setFormatter(LOGGING_FORMATTER)
+        root_logger.addHandler(handler)
 
     def _prepare_logging(self):
         """Set up the global logger."""
+        # get log stream and level from options
         logfile = self.get('logfile')
-        if self.get('version') or self.get('help'):
-            formatstr = '%(message)s'
-            loglevel = logging.INFO
-        else:
-            # logging setup before we import modules and may need to log errors
-            formatstr = LOGGING_FORMAT
-            if self.get('debug'):
-                loglevel = logging.DEBUG
-            else:
-                loglevel = logging.INFO
+        loglevel = logging.DEBUG if self.get('debug') else logging.INFO
         # o dear o dear what a horrible API
         root_logger = logging.getLogger()
+        # remove all old handlers: temporary ones we set as well as any default ones
         for handler in root_logger.handlers:
             root_logger.removeHandler(handler)
         root_logger.setLevel(loglevel)
@@ -391,9 +377,10 @@ class Settings(object):
             logstream = open(logfile, 'w')
         else:
             logstream = sys.stderr
+        # write out cached logs
         logstream.write(self._logstream.getvalue())
         handler = logging.StreamHandler(logstream)
-        handler.setFormatter(logging.Formatter(fmt=formatstr, datefmt='%H:%M:%S'))
+        handler.setFormatter(LOGGING_FORMATTER)
         root_logger.addHandler(handler)
 
     def _retrieve_options(self, uargv):
@@ -411,7 +398,7 @@ class Settings(object):
         # find unrecognised arguments
         for key, value in args.iteritems():
             if key not in self.arguments:
-                self._logger.warning(
+                logging.warning(
                         'Ignored unrecognised option `%s=%s` in configuration file', key, value)
         # parse rest of command line
         self._merge_arguments(args, self._parse_args(remaining))
@@ -747,7 +734,7 @@ class Settings(object):
                 else:
                     append_arg(args, skey, svalue)
             except KeyError:
-                self._logger.warning(u'Ignored unrecognised option `-%s`', short_arg)
+                logging.warning(u'Ignored unrecognised option `-%s`', short_arg)
 
     def _get_arguments(self, argv):
         """Convert arguments to dictionary."""
@@ -771,9 +758,9 @@ class Settings(object):
                 elif key[0] == u'-':
                     self._append_short_args(args, key, value)
                 else:
-                    self._logger.warning(u'Ignored surplus positional argument `%s`', arg)
+                    logging.warning(u'Ignored surplus positional argument `%s`', arg)
             else:
-                self._logger.warning(u'Ignored unrecognised option `=%s`', value)
+                logging.warning(u'Ignored unrecognised option `=%s`', value)
         return args
 
     def _parse_presets(self, remaining, conf_dict):
@@ -791,7 +778,7 @@ class Settings(object):
                     self._merge_arguments(argdict, conf_dict[p])
                 except KeyError:
                     if p not in self.default_presets:
-                        self._logger.warning(u'Ignored undefined preset "%s"', p)
+                        logging.warning(u'Ignored undefined preset "%s"', p)
             # look for more presets in expended arglist
             try:
                 presets = self._parse_list(u'preset', argdict.pop(u'preset'))
@@ -864,7 +851,7 @@ class Settings(object):
             with codecs.open(config_file, b'r', b'utf_8_sig') as f:
                 config.readfp(WhitespaceStripper(f))
         except (ConfigParser.Error, IOError):
-            self._logger.warning(
+            logging.warning(
                 u'Error in configuration file %s. Configuration not loaded.', config_file)
             return {u'pcbasic': {}}
         presets = {header: dict(config.items(header)) for header in config.sections()}
@@ -878,10 +865,10 @@ class Settings(object):
         not_recognised = {d: remaining[d] for d in remaining if d not in known}
         for d in not_recognised:
             if not_recognised[d]:
-                self._logger.warning(
+                logging.warning(
                     u'Ignored unrecognised command-line argument `%s=%s`', d, not_recognised[d])
             else:
-                self._logger.warning(u'Ignored unrecognised command-line argument `%s`', d)
+                logging.warning(u'Ignored unrecognised command-line argument `%s`', d)
         return args
 
     ################################################
@@ -920,7 +907,7 @@ class Settings(object):
                 arg = self._parse_bool(d, arg)
         if u'choices' in self.arguments[d]:
             if arg and arg not in self.arguments[d][u'choices']:
-                self._logger.warning(u'Value "%s=%s" ignored; should be one of (%s)',
+                logging.warning(u'Value "%s=%s" ignored; should be one of (%s)',
                                 d, unicode(arg), u', '.join(self.arguments[d][u'choices']))
                 arg = u''
         return arg
@@ -940,7 +927,7 @@ class Settings(object):
         if length < 0:
             lst += [None]*(-length-len(lst))
         if length != u'*' and (len(lst) > abs(length) or len(lst) < length):
-            self._logger.warning(u'Option "%s=%s" ignored, should have %d elements',
+            logging.warning(u'Option "%s=%s" ignored, should have %d elements',
                             d, s, abs(length))
         return lst
 
@@ -954,7 +941,7 @@ class Settings(object):
             elif s.upper() in (u'NO', u'FALSE', u'OFF', u'0'):
                 return False
         except AttributeError:
-            self._logger.warning(u'Option "%s=%s" ignored; should be a boolean', d, s)
+            logging.warning(u'Option "%s=%s" ignored; should be a boolean', d, s)
             return None
 
     def _parse_int(self, d, s):
@@ -963,7 +950,7 @@ class Settings(object):
             try:
                 return int(s)
             except ValueError:
-                self._logger.warning(u'Option "%s=%s" ignored; should be an integer', d, s)
+                logging.warning(u'Option "%s=%s" ignored; should be an integer', d, s)
         return None
 
 
