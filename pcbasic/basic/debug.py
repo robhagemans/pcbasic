@@ -23,35 +23,36 @@ from . import values
 from . import api
 
 
-def show_platform_info():
+def get_platform_info():
     """Show information about operating system and installed modules."""
-    logging.info('\nPLATFORM')
-    logging.info('os: %s', platform.platform())
+    info = []
+    info.append('\nPLATFORM')
+    info.append('os: %s' % platform.platform())
     frozen = getattr(sys, 'frozen', '') or ''
-    logging.info(
-        'python: %s %s %s', sys.version.replace('\n', ''),
-        ' '.join(platform.architecture()), frozen)
-    logging.info('\nMODULES')
+    info.append(
+        'python: %s %s %s' % (
+        sys.version.replace('\n', ''), ' '.join(platform.architecture()), frozen))
+    info.append('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
     modules = ('numpy', 'pygame', 'curses', 'serial', 'parallel')
     for module in modules:
         try:
             m = importlib.import_module(module)
         except Exception:
-            logging.info('%s: --', module)
+            info.append('%s: --' % module)
         else:
             for version_attr in ('__version__', 'version', 'VERSION'):
                 try:
                     name = module.split('.')[-1]
                     version = getattr(m, version_attr)
-                    logging.info('%s: %s', name, version)
+                    info.append('%s: %s' % (name, version))
                     break
                 except AttributeError:
                     pass
             else:
-                logging.info('%s: available', module)
+                info.append('%s: available' % module)
     if WIN32:
-        logging.info('\nLIBRARIES')
+        info.append('\nLIBRARIES')
         dlls = ('sdl2.dll', 'sdl2_gfx.dll')
         if X64:
             LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x64')
@@ -60,14 +61,16 @@ def show_platform_info():
         for dll in dlls:
             path = os.path.join(LIB_DIR, dll)
             if os.path.isfile(path):
-                logging.info('%s: %s', dll, path)
+                info.append('%s: %s' % (dll, path))
             else:
-                logging.info('%s: --', dll)
-    logging.info('\nEXTERNAL TOOLS')
+                info.append('%s: --' % dll)
+    info.append('\nEXTERNAL TOOLS')
     tools = ('notepad', 'lpr', 'paps', 'beep', 'pbcopy', 'pbpaste')
     for tool in tools:
         location = which(tool) or '--'
-        logging.info('%s: %s', tool, location)
+        info.append('%s: %s' % (tool, location))
+    info.append('')
+    return '\n'.join(info)
 
 
 class DebugException(BaseException):
@@ -200,4 +203,4 @@ class DebugSession(api.Session):
 
     def showplatform(self):
         """Show platform info."""
-        show_platform_info()
+        logging.debug(get_platform_info())

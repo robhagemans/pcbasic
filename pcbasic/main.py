@@ -72,7 +72,7 @@ def show_version(settings):
     """Show version with optional debugging details."""
     sys.stdout.write((u'%s %s\n%s\n' % (NAME, VERSION, COPYRIGHT)).encode(sys.stdout.encoding))
     if settings.debug:
-        debug.show_platform_info()
+        sys.stdout.write(debug.get_platform_info())
 
 def convert(settings):
     """Perform file format conversion."""
