@@ -195,26 +195,11 @@ class Settings(object):
     # number of positional arguments
     positional = 2
 
-    # GWBASIC invocation, for reference:
-    # GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,m]] [/d]
-    #   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN.
-    #   /f:n    Set maximum number of open files to n. Default is 3.
-    #           Each additional file reduces free memory by 322 bytes.
-    #   /s:n    Set the maximum record length for RANDOM files.
-    #           Default is 128, maximum is 32768.
-    #   /c:n    Set the COM receive buffer to n bytes.
-    #           If n==0, disable the COM ports.
-    #   /i      Statically allocate file control blocks and data buffer.
-    #           NOTE: this appears to be always the case in GW-BASIC, as here.
-    #   /m:n,m  Set the highest memory location to n (default 65534) and maximum
-    #           BASIC memory to m*16 bytes (default is all available).
+    # short-form arguments
     short_args = {
         u'd': u'double',
         u'f': u'max-files',
         u's': u'max-reclen',
-        u'c': u'serial-buffer-size',
-        u'm': u'max-memory',
-        u'i': u'',
         u'b': u'interface=cli',
         u't': u'interface=text',
         u'n': u'interface=none',
@@ -280,7 +265,6 @@ class Settings(object):
                 u'vga', u'ega', u'cga', u'cga_old', u'mda',
                 u'pcjr', u'tandy', u'hercules', u'olivetti'), },
         u'cga-low': {u'type': u'bool', u'default': False,},
-        u'nobox': {u'type': u'bool', u'default': False,},
         u'utf8': {u'type': u'bool', u'default': False,},
         u'border': {u'type': u'int', u'default': 5,},
         u'mouse-clipboard': {u'type': u'bool', u'default': True,},
@@ -307,6 +291,7 @@ class Settings(object):
         u'wait': {u'type': u'bool', u'default': False,},
         u'current-device': {u'type': u'string', u'default': ''},
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
+        u'options': {u'type': u'string', u'default': ''},
     }
 
     def __init__(self, temp_dir, arguments):
@@ -397,6 +382,8 @@ class Settings(object):
                         'Ignored unrecognised option `%s=%s` in configuration file', key, value)
         # parse rest of command line
         self._merge_arguments(args, self._parse_args(remaining))
+        # parse GW-BASIC style options
+        self._parse_gw_options(args)
         # clean up arguments
         self._clean_arguments(args)
         if package:
@@ -879,6 +866,55 @@ class Settings(object):
             else:
                 logging.warning(u'Ignored unrecognised command-line argument `%s`', d)
         return args
+
+    def _parse_gw_options(self, args):
+        """Parse GW-BASIC-style options."""
+        # GWBASIC invocation, for reference:
+        # GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,m]] [/d]
+        #   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN.
+        #   /f:n    Set maximum number of open files to n. Default is 3.
+        #           Each additional file reduces free memory by 322 bytes.
+        #   /s:n    Set the maximum record length for RANDOM files.
+        #           Default is 128, maximum is 32768.
+        #   /c:n    Set the COM receive buffer to n bytes.
+        #           If n==0, disable the COM ports.
+        #   /i      Statically allocate file control blocks and data buffer.
+        #           NOTE: this appears to be always the case in GW-BASIC, as here.
+        #   /m:n,m  Set the highest memory location to n (default 65534) and maximum
+        #           BASIC memory to m*16 bytes (default is all available).
+        options = args.pop('options', '')
+        for option in options.split(u' '):
+            if not option:
+                continue
+            if option.startswith(u'<'):
+                args['input'] = option[1:]
+            elif option.startswith(u'>'):
+                if option[1] == u'>':
+                    args['output'] = option[2:] + u':append'
+                else:
+                    args['output'] = option[1:]
+            elif option.startswith(u'/'):
+                option = option.lower()
+                split = option[1:].split(u':')
+                if len(split) == 1:
+                    if option[1] == u'd':
+                        args['double'] = True
+                    elif option[1] == u'i':
+                        pass
+                elif len(split) == 2:
+                    if option[1] == u'f':
+                        args['max-files'] = split[1]
+                    elif option[1] == u's':
+                        args['max-reclen'] = split[1]
+                    elif option[1] == u'c':
+                        args['serial-buffer-size'] = split[1]
+                    elif option[1] == u'm':
+                        args['max-memory'] = split[1]
+            else:
+                # positional argument
+                args[0] = option
+        return args
+
 
     ################################################
 

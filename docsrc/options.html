@@ -357,7 +357,7 @@
         </dt>
         <dd>
             Enable double-precision transcendental math functions. This is
-            equivalent to the <code><b><a href="#gwbasic-options">/d</a></b></code> option in GW-BASIC.
+            equivalent to the <code><b><a href="#--options">/d</a></b></code> option in GW-BASIC.
         </dd>
 
         <dt id="--exec">
@@ -436,14 +436,6 @@
             Disable listing and saving to plain text of protected files, as in
             GW-BASIC. Use with care as this allows execution of hidden
             lines of code.
-        </dd>
-
-        <dt id="-i">
-            <code><b>-i</b></code>
-        </dt>
-        <dd>
-            This option is ignored. It is included only for compatibility with
-            GW-BASIC <code><b><a href="#gwbasic-options">/i</a></b></code>.
         </dd>
 
         <dt id="--input">
@@ -596,12 +588,11 @@
         <dd>
             Set maximum number of open files to
             <code><var>number_of_files</var></code>. This is
-            equivalent to the <code><b><a href="#gwbasic-options">/f</a></b></code> option in GW-BASIC.
+            equivalent to the <code><b><a href="#--options">/f</a></b></code> option in GW-BASIC.
             Default is <code><b>3</b></code>.
         </dd>
 
         <dt id="--max-memory">
-            <code id="-m"><b>-m=</b><var>max_memory</var>[<b>,</b><var>basic_memory_blocks</var>]</code>
             <code><b>--max-memory=</b><var>max_memory</var>[<b>,</b><var>basic_memory_blocks</var>]</code>
         </dt>
         <dd>
@@ -611,7 +602,7 @@
             <code><var>basic_memory_blocks</var>*16</code>. In PC-BASIC, the
             minimum of these values is simply the data memory size; the two
             values are allowed for compatibility with the
-            <code><b><a href="#gwbasic-options">/m</a></b></code> option in GW-BASIC.
+            <code><b><a href="#--options">/m</a></b></code> option in GW-BASIC.
         </dd>
 
         <dt id="--max-reclen">
@@ -622,7 +613,7 @@
             Set maximum record length for <code>RANDOM</code> files to
             <code><var>record_length</var></code>. Default is <code><b>128</b></code>, maximum is
             <code><b>32767</b></code>. This is equivalent to the
-            <code><b><a href="#gwbasic-options">/s</a></b></code> option in GW-BASIC.
+            <code><b><a href="#--options">/s</a></b></code> option in GW-BASIC.
         </dd>
 
         <dt id="--monitor">
@@ -725,14 +716,14 @@
         </dd>
 
         <dt id="--prevent-close">
-            <code><b>--prevent_close</b>[<b>=True</b>|<b>=False</b>]</code>
+            <code><b>--prevent-close</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
         <dd>
-            Suppress window close event. This allows BASIC to capture <kbd>Alt+F4</kbd> or other
+            Suppress window close event. This allows BASIC to capture
             key combinations that normally close the window.
             Graphical interface only. By default, the operating system's key combination to close a window
             (usually <kbd>Alt</kbd>+<kbd>F4</kbd>) terminates PC-BASIC. Set
-            <code><b>--prevent_close</b></code> to allow BASIC to capture
+            <code><b>--prevent-close</b></code> to allow BASIC to capture
             this key combination instead. This is useful if
             your program uses this key combination.
         </dd>
@@ -805,7 +796,6 @@
         </dd>
 
         <dt id="--serial-buffer-size">
-            <code id="-c"><b>-c=</b><var>size</var></code>
             <code><b>--serial-buffer-size=</b><var>size</var></code>
         </dt>
         <dd>
@@ -985,94 +975,84 @@
             <code><b><a href="#--interface">--interface</a>=graphical</b></code> or
             <code><b>--interface=text</b></code>. Default is <code><b>False</b></code>.
         </dd>
-    </dl>
-</section>
-<hr />
 
-<section>
-    <h3 id="gwbasic-options">GW-BASIC options</h4>
-    <p>
-        GW-BASIC recognised a number of DOS-style command-line options on the command-line when invoking it from DOS
-        with a command like <code>BASIC</code>, <code>BASICA</code>, or <code>GWBASIC</code>.
-        These are matched by PC-BASIC with only minor modifications, usually just replacing the
-        forward slash <code><b>/</b></code> with a dash <code><b>-</b></code>. The GW-BASIC syntax is shown here
-        for reference only; only the syntax with the dash works with PC-BASIC.
-    </p>
-    <dl>
-        <dt>
-            <code><b>/d</b></code>
-            becomes
-            <code><b><a href="#-d">-d</a></b></code>
+        <dt id="--options">
+            <code><b>--options=</b><var>gwbasic_options</var></code>
         </dt>
         <dd>
-            Enable double-precision floating-point math functions.
-        </dd>
-        <dt>
-            <code><b>/f:</b><var>n</var></code>
-            becomes
-            <code><b><a href="#-f">-f</a>=</b><var>n</var></code>
-        </dt>
-        <dd>
-            Set the maximum number of open files.
-        </dd>
-        <dt>
-            <code><b>/s:</b><var>n</var></code>
-            becomes
-            <code><b><a href="#-s">-s</a>=</b><var>n</var></code>
-        </dt>
-        <dd>
-            Set the maximum record length for <code>RANDOM</code> files.
-        </dd>
-        <dt>
-            <code><b>/c:</b><var>n</var></code>
-            becomes
-            <code><b><a href="#-c">-c</a>=</b><var>n</var></code>
-        </dt>
-        <dd>
-            Set the size of the receive buffer for <code>COM</code> devices.
-        </dd>
-        <dt>
-            <code><b>/i:</b><var>n</var></code>
-            becomes
-            <code><b><a href="#-i">-i</a>=</b><var>n</var></code>
-        </dt>
-        <dd>
-            No effect.
-        </dd>
-        <dt>
-            <code><b>/m:</b><var>n</var>,<var>m</var></code>
-            becomes
-            <code><b><a href="#-m">-m</a>=</b><var>n</var>,<var>m</var></code>
-        </dt>
-        <dd>
-            Set the highest memory location to <code><var>n</var></code> and maximum
-            BASIC memory size to <code><var>m</var>*16</code> bytes.
-        </dd>
-        <dt>
-            <code><b>&gt;</b><var>filename</var></code>
-            becomes
-            <code><b><a href="#--output">--output</a>=</b><var>filename</var></code>
-        </dt>
-        <dd>
-            Write screen output to <code><var>filename</var></code>.
-        </dd>
-        <dt>
-            <code><b>&gt;&gt;</b><var>filename</var></code>
-            becomes
-                <code><b>--output=</b><var>filename</var><b>:append</b></code>
-        </dt>
-        <dd>
-            Append screen output to <code><var>filename</var></code>.
-        </dd>
-        <dt>
-            <code><b>&lt;</b><var>filename</var></code>
-            becomes
-            <code><b><a href="#--input">--input</a>=</b><var>filename</var></code>
-        </dt>
-        <dd>
-            Read keyboard input from <code><var>filename</var></code>.
+            Set GW-BASIC-style command-line switches. This is a convenience option to facilitate
+            migration from GW-BASIC. <code>gwbasic_options</var></code> is a string that may contain
+            the following options:
+            <dl>
+                <dt>
+                    <code><b>/d</b></code>
+                </dt>
+                <dd>
+                    Enable double-precision floating-point math functions.
+                    See also <code><b><a href="#--double">--double</a></b></code>.
+                </dd>
+                <dt>
+                    <code><b>/f:</b><var>n</var></code>
+                </dt>
+                <dd>
+                    Set the maximum number of open files.
+                    See also <code><b><a href="#--max-files">--max-files</a></b></code>.
+                </dd>
+                <dt>
+                    <code><b>/s:</b><var>n</var></code>
+                </dt>
+                <dd>
+                    Set the maximum record length for <code>RANDOM</code> files.
+                    See also <code><b><a href="#--max-reclen">--max-reclen</a></b></code>.
+                </dd>
+                <dt>
+                    <code><b>/c:</b><var>n</var></code>
+                </dt>
+                <dd>
+                    Set the size of the receive buffer for <code>COM</code> devices.
+                    See also <code><b><a href="#--serial-buffer-size">--serial-buffer-size</a></b></code>.
+                </dd>
+                <dt>
+                    <code><b>/i</code>
+                </dt>
+                <dd>
+                    Statically allocate file control blocks and data buffer. Note that this is already
+                    the default approach in GW-BASIC and PC-BASIC so that this option has no effect.
+                </dd>
+                <dt>
+                    <code><b>/m:</b><var>n</var>,<var>m</var></code>
+                </dt>
+                <dd>
+                    Set the highest memory location to <code><var>n</var></code> and maximum
+                    BASIC memory size to <code><var>m</var>*16</code> bytes.
+                    See also <code><b><a href="#--max-memory">--max-memory</a></b></code>.
+                </dd>
+                <dt>
+                    <code><b>&gt;</b><var>filename</var></code>
+                </dt>
+                <dd>
+                    Write screen output to <code><var>filename</var></code>.
+                    See also <code><b><a href="#--output">--output</a></b></code>.
+                </dd>
+                <dt>
+                    <code><b>&gt;&gt;</b><var>filename</var></code>
+                </dt>
+                <dd>
+                    Append screen output to <code><var>filename</var></code>.
+                    See also <code><b><a href="#--output">--output</a></b></code>.
+                </dd>
+                <dt>
+                    <code><b>&lt;</b><var>filename</var></code>
+                </dt>
+                <dd>
+                    Read keyboard input from <code><var>filename</var></code>.
+                    See also <code><b><a href="#--input">--input</a></b></code>.
+                </dd>
+            </dl>
+            GW-BASIC-style switches are not case sensitive.
+            Note that the symbols used in these switches may have different meaning in the shell
+            from which PC-BASIC is called; you should quote and escape the options as necessary.
         </dd>
     </dl>
 </section>
-
 <hr />
