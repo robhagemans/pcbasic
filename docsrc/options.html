@@ -123,14 +123,6 @@
             </dl>
         </dd>
 
-        <dt id="--cga-low">
-            <code><b>--cga-low</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            Use low-intensity palettes in CGA modes.
-            Only has an effect if combined with <code><b><a href="#--video">--video</a>=</b>{<b>cga</b>|<b>cga_old</b>|<b>ega</b>|<b>vga</b>}</code>.
-        </dd>
-
         <dt id="--codepage">
             <code><b>--codepage=</b><var>codepage_id</var>[<b>:nobox</b>]</code>
         </dt>
@@ -916,10 +908,10 @@
         </dd>
 
         <dt id="--video">
-            <code><b>--video=</b><var>card</var></code>
+            <code><b>--video=</b><var>adapter</var>[<b>:low</b>]</code>
         </dt>
         <dd>
-            Set the video card to emulate. Available video cards:
+            Set the video adapter to emulate. Available adapters:
             <dl class="compact">
                 <dt><code><b>vga</b></code></dt>
                 <dd>Video Graphics Array</dd>
@@ -949,6 +941,9 @@
                 <dd>Olivetti M24 graphics</dd>
             </dl>
             Default is <code><b>vga</b></code>.
+            <br />
+            If the specifier <code><b>low</b></code> is given, use low-intensity palettes in CGA modes.
+            This only has an effect with adapters <code>{<b>cga</b>|<b>cga_old</b>|<b>ega</b>|<b>vga</b>}</code>.
         </dd>
 
         <dt id="--video-memory">

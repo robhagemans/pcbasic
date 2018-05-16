@@ -264,7 +264,6 @@ class Settings(object):
             u'choices': (
                 u'vga', u'ega', u'cga', u'cga_old', u'mda',
                 u'pcjr', u'tandy', u'hercules', u'olivetti'), },
-        u'cga-low': {u'type': u'bool', u'default': False,},
         u'utf8': {u'type': u'bool', u'default': False,},
         u'border': {u'type': u'int', u'default': 5,},
         u'mouse-clipboard': {u'type': u'bool', u'default': True,},
@@ -482,11 +481,14 @@ class Settings(object):
         codepage_params = self.get('codepage').split(u':')
         codepage_dict = data.read_codepage(codepage_params[0])
         nobox = len(codepage_params) > 1 and codepage_params[1] == u'nobox'
+        # video parameters
+        video_params = self.get('video').split(u':')
+        cga_low = len(video_params) > 1 and video_params[1] == u'low'
         # redirects
         params = self._get_redirects()
         params.update({
             'syntax': self.get('syntax'),
-            'video': self.get('video'),
+            'video': video_params[0],
             'codepage': codepage_dict,
             'box_protect': not nobox,
             'monitor': self.get('monitor'),
@@ -494,7 +496,7 @@ class Settings(object):
             'aspect_ratio': (3072, 2000) if self.get('video') == 'tandy' else (4, 3),
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
-            'low_intensity': self.get('cga-low'),
+            'low_intensity': cga_low,
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
             'keys': self.get('keys').encode('utf-8', 'replace')
@@ -945,13 +947,14 @@ class Settings(object):
             return arg
         if u'choices' in self.arguments[d]:
             arg = arg.lower()
+        first_arg = arg.split(u':')[0]
         if u'type' in self.arguments[d]:
             if (self.arguments[d][u'type'] == u'int'):
                 arg = self._parse_int(d, arg)
             elif (self.arguments[d][u'type'] == u'bool'):
                 arg = self._parse_bool(d, arg)
         if u'choices' in self.arguments[d]:
-            if arg and arg not in self.arguments[d][u'choices']:
+            if first_arg and first_arg not in self.arguments[d][u'choices']:
                 logging.warning(u'Value "%s=%s" ignored; should be one of (%s)',
                                 d, unicode(arg), u', '.join(self.arguments[d][u'choices']))
                 arg = u''
