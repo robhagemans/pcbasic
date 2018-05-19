@@ -172,7 +172,7 @@ def makedoc(header=None, output=None, embedded_style=True):
         It consists of the following documents:
     </p>
     <ul>
-        <li><strong><a href="#quick-start-guide">Quick Start Guide</a></strong>, the essentials needed to get started.</li>
+        <li><strong><a href="#quick-start-guide">Quick Start Guide</a></strong>, the essentials needed to get started</li>
         <li><strong><a href="#using">User's Guide</a></strong>, in-depth guide to using the emulator</li>
         <li><strong><a href="#settings">Configuration Guide</a></strong>, settings and options</li>
         <li><strong><a href="#guide">Language Guide</a></a></strong>, overview of the BASIC language by topic</li>
