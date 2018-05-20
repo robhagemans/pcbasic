@@ -44,11 +44,11 @@ class AudioBeep(AudioPlugin):
         self.generators = [deque(), deque(), deque(), deque()]
         AudioPlugin.__init__(self, audio_queue)
 
-    def tone(self, voice, frequency, duration, fill, loop, volume):
+    def tone(self, voice, frequency, duration, loop, volume):
         """Enqueue a tone."""
         if voice == 0:
             self.generators[voice].append(self.beeper(
-                    frequency, duration, fill, loop, volume))
+                    frequency, duration, loop, volume))
 
     def hush(self):
         """Stop sound."""
@@ -73,11 +73,10 @@ class AudioBeep(AudioPlugin):
 class Beeper(object):
     """Manage external beeper."""
 
-    def __init__(self, frequency, duration, fill, loop, dummy_volume):
+    def __init__(self, frequency, duration, loop, dummy_volume):
         """Initialise beeper."""
         self._frequency = frequency
         self._duration = duration
-        self._fill = fill
         self._proc = None
         self.loop = loop
 
@@ -99,9 +98,8 @@ class Beeper(object):
                     'sleep {0}'.format(self._duration).split())
             else:
                 self._proc = subprocess.Popen(
-                    'beep -f {freq} -l {dur} -D {gap}'.format(
-                        freq=self._frequency, dur=self._duration*self._fill*1000,
-                        gap=self._duration*(1-self._fill)*1000
+                    'beep -f {freq} -l {dur}'.format(
+                        freq=self._frequency, dur=self._duration*1000,
                     ).split())
         # return self if still busy, None otherwise
         if self._proc and self._proc.poll() is None:
@@ -126,8 +124,7 @@ class WinBeeper(Beeper):
         """Emit a sound."""
         if not self._proc or (self.loop and not self._proc.is_alive()):
             self._proc = threading.Thread(
-                target=self._beep,
-                args=(self._frequency, self._duration, self._fill, self.loop))
+                target=self._beep, args=(self._frequency, self._duration, self.loop))
             self._proc.start()
         # return self if still busy, None otherwise
         if self._proc and self._proc.is_alive():
@@ -136,13 +133,12 @@ class WinBeeper(Beeper):
             return None
 
     @staticmethod
-    def _beep(frequency, duration, fill, loop):
+    def _beep(frequency, duration, loop):
         """Beeping thread target."""
         if frequency < 37 or frequency >= 32767:
             time.sleep(duration)
         else:
-            winsound.Beep(int(frequency), int(duration*fill*1000))
-            time.sleep(duration*(1-fill))
+            winsound.Beep(int(frequency), int(duration*1000))
 
 
 KIOCSOUND = 0x4B2F
@@ -166,13 +162,12 @@ class LinuxBeeper(WinBeeper):
         fcntl.ioctl(sys.stdout, KIOCSOUND, 0)
 
     @staticmethod
-    def _beep(frequency, duration, fill, loop):
+    def _beep(frequency, duration, loop):
         """Beeping thread target."""
         if frequency < 37 or frequency >= 32767:
             fcntl.ioctl(sys.stdout, KIOCSOUND, 0)
         else:
             fcntl.ioctl(sys.stdout, KIOCSOUND, int(CLOCK_TICK_RATE / frequency))
-        time.sleep(duration*fill)
+        time.sleep(duration)
         if not loop:
             fcntl.ioctl(sys.stdout, KIOCSOUND, 0)
-        time.sleep(duration*(1-fill))

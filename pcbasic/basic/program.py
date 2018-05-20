@@ -19,14 +19,14 @@ from . import converter
 class Program(object):
     """BASIC program."""
 
-    def __init__(self, tokeniser, lister, max_list_line,
+    def __init__(self, tokeniser, lister, hide_listing,
                 allow_protect, allow_code_poke, memory, bytecode, rebuild_offsets):
         """Initialise program."""
         self._memory = memory
         # program bytecode buffer
         self.bytecode = bytecode
         self.erase()
-        self.max_list_line = max_list_line
+        self.max_list_line = hide_listing if hide_listing else 65535
         self.allow_protect = allow_protect
         self.allow_code_poke = allow_code_poke
         self._rebuild_offsets = rebuild_offsets

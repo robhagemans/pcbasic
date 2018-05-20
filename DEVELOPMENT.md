@@ -20,7 +20,7 @@ The following packages are needed or recommended when installing PC-BASIC:
 | [PySerial 3.4](https://pypi.python.org/pypi/pyserial)                         | all                | optional     | physical or emulated serial port access
 | [PyParallel](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/) | Windows, Linux     | optional     | physical parallel port access
 | [PyGame 1.9.3](http://www.pygame.org)                                         | all                | optional     | sound and graphics (PyGame interface)
-| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | experimental | sound (PortAudio engine)
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound (PortAudio engine)
 
 
 `setuptools` and `pip` are included with Python.

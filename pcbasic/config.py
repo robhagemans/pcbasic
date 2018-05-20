@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import io
 import sys
 import ConfigParser
 import logging
@@ -41,19 +42,10 @@ STATE_PATH = os.path.join(USER_DATA_HOME, BASENAME)
 # @: target drive for bundled programs
 PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
 
+# format for log files
+LOGGING_FORMAT = u'[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
+LOGGING_FORMATTER = logging.Formatter(fmt=LOGGING_FORMAT, datefmt=u'%H:%M:%S')
 
-def get_logger(logfile=None):
-    """Use the awkward logging interface as we can only use basicConfig once."""
-    l = logging.getLogger(__name__)
-    l.setLevel(logging.INFO)
-    if logfile:
-        h = logging.FileHandler(logfile, mode=b'w')
-    else:
-        h = logging.StreamHandler()
-    h.setLevel(logging.INFO)
-    h.setFormatter(logging.Formatter(u'%(levelname)s: %(message)s'))
-    l.addHandler(h)
-    return l
 
 def append_arg(args, key, value):
     """Update a single list-type argument by appending a value."""
@@ -102,21 +94,34 @@ class TemporaryDirectory():
                 logging.error(str(e))
 
 
+class WhitespaceStripper(object):
+    """File wrapper for ConfigParser that strips leading whitespace."""
+
+    def __init__(self, file):
+        """Initialise to file object."""
+        self._file = file
+
+    def readline(self):
+        """Read a line and strip whitespace (but not EOL)."""
+        return self._file.readline().lstrip(' \t')
+
+
 class Settings(object):
     """Read and retrieve command-line settings and options."""
 
     # Default preset definitions
-    # For example, --preset=tandy will load all options in the [tandy] section. Preset options override default options.
+    # For example, --preset=tandy will load all options in the [tandy] section.
+    # Preset options override default options.
     # Presets can also be added by adding a section in brackets in the user configuration file
     # e.g., a section headed [myconfig] will be loaded with --preset=myconfig
 
     default_config = {
         u'strict': {
-            u'strict-hidden-lines': u'True',
-            u'strict-newline': u'True',
-            u'strict-protect': u'True',
+            u'hide-listing': u'65530',
+            u'soft-linefeed': u'True',
+            u'hide-protected': u'True',
             u'allow-code-poke': u'True',
-            u'nokill': u'True',
+            u'prevent-close': u'True',
             u'ctrl-c-break': u'False',
             },
         u'basica': {
@@ -124,7 +129,7 @@ class Settings(object):
             },
         u'pcjr': {
             u'syntax': u'pcjr',
-            u'pcjr-term': os.path.join(PROGRAM_PATH, 'PCTERM.BAS'),
+            u'term': os.path.join(PROGRAM_PATH, 'PCTERM.BAS'),
             u'video': u'pcjr',
             u'font': u'vga',
             u'codepage': u'437',
@@ -157,14 +162,12 @@ class Settings(object):
             u'font': u'cga,mda',
             u'codepage': u'437',
             u'monitor': u'mono',
-            u'mono-tint': u'0,255,0',
             },
         u'hercules': {
             u'video': u'hercules',
             u'font': u'cga,mda',
             u'codepage': u'437',
             u'monitor': u'mono',
-            u'mono-tint': u'0,255,0',
             },
         u'olivetti': {
             u'video': u'olivetti',
@@ -192,26 +195,11 @@ class Settings(object):
     # number of positional arguments
     positional = 2
 
-    # GWBASIC invocation, for reference:
-    # GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,m]] [/d]
-    #   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN.
-    #   /f:n    Set maximum number of open files to n. Default is 3.
-    #           Each additional file reduces free memory by 322 bytes.
-    #   /s:n    Set the maximum record length for RANDOM files.
-    #           Default is 128, maximum is 32768.
-    #   /c:n    Set the COM receive buffer to n bytes.
-    #           If n==0, disable the COM ports.
-    #   /i      Statically allocate file control blocks and data buffer.
-    #           NOTE: this appears to be always the case in GW-BASIC, as here.
-    #   /m:n,m  Set the highest memory location to n (default 65534) and maximum
-    #           BASIC memory to m*16 bytes (default is all available).
+    # short-form arguments
     short_args = {
         u'd': u'double',
         u'f': u'max-files',
         u's': u'max-reclen',
-        u'c': u'serial-buffer-size',
-        u'm': u'max-memory',
-        u'i': u'',
         u'b': u'interface=cli',
         u't': u'interface=text',
         u'n': u'interface=none',
@@ -229,14 +217,13 @@ class Settings(object):
     arguments = {
         u'input': {u'type': u'string', u'default': u'', },
         u'output': {u'type': u'string', u'default': u'', },
-        u'append': {u'type': u'bool', u'default': False, },
         u'interface': {
             u'type': u'string', u'default': u'',
             u'choices': (u'', u'none', u'cli', u'text', u'graphical',
                         u'ansi', u'curses', u'pygame', u'sdl2'), },
-        u'sound-engine': {
+        u'sound': {
             u'type': u'string', u'default': u'',
-            u'choices': (u'', u'none', u'beep', u'portaudio'), },
+            u'choices': (u'', u'none', u'beep', u'portaudio', u'interface'), },
         u'load': {u'type': u'string', u'default': u'', },
         u'run': {u'type': u'string', u'default': u'',  },
         u'convert': {u'type': u'string', u'default': u'', },
@@ -261,32 +248,28 @@ class Settings(object):
             u'default': [u'unifont', u'univga', u'freedos'],},
         u'dimensions': {u'type': u'int', u'list': 2, u'default': [],},
         u'fullscreen': {u'type': u'bool', u'default': False,},
-        u'nokill': {u'type': u'bool', u'default': False,},
+        u'prevent-close': {u'type': u'bool', u'default': False,},
         u'debug': {u'type': u'bool', u'default': False,},
-        u'strict-hidden-lines': {u'type': u'bool', u'default': False,},
-        u'strict-protect': {u'type': u'bool', u'default': False,},
+        u'hide-listing': {u'type': u'int', u'default': 65535,},
+        u'hide-protected': {u'type': u'bool', u'default': False,},
         u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
         u'resume': {u'type': u'bool', u'default': False,},
-        u'strict-newline': {u'type': u'bool', u'default': False,},
+        u'soft-linefeed': {u'type': u'bool', u'default': False,},
         u'syntax': {
             u'type': u'string', u'choices': (u'advanced', u'pcjr', u'tandy'),
             u'default': u'advanced',},
-        u'pcjr-term': {u'type': u'string', u'default': u'',},
+        u'term': {u'type': u'string', u'default': u'',},
         u'video': {
             u'type': u'string', u'default': 'vga',
             u'choices': (
                 u'vga', u'ega', u'cga', u'cga_old', u'mda',
                 u'pcjr', u'tandy', u'hercules', u'olivetti'), },
-        u'map-drives': {u'type': u'bool', u'default': False,},
-        u'cga-low': {u'type': u'bool', u'default': False,},
-        u'nobox': {u'type': u'bool', u'default': False,},
         u'utf8': {u'type': u'bool', u'default': False,},
         u'border': {u'type': u'int', u'default': 5,},
         u'mouse-clipboard': {u'type': u'bool', u'default': True,},
         u'state': {u'type': u'string', u'default': u'',},
-        u'mono-tint': {u'type': u'int', u'list': 3, u'default': [255, 255, 255],},
         u'monitor': {
-            u'type': u'string', u'choices': (u'rgb', u'composite', u'mono'),
+            u'type': u'string', u'choices': (u'rgb', u'composite', u'green', u'amber', u'grey', u'mono'),
             u'default': u'rgb',},
         u'aspect': {u'type': u'int', u'list': 2, u'default': [4, 3],},
         u'scaling': {
@@ -305,8 +288,9 @@ class Settings(object):
         u'shell': {u'type': u'string', u'default': u'',},
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},
         u'wait': {u'type': u'bool', u'default': False,},
-        u'current-device': {u'type': u'string', u'default': 'Z'},
+        u'current-device': {u'type': u'string', u'default': ''},
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
+        u'options': {u'type': u'string', u'default': ''},
     }
 
     def __init__(self, temp_dir, arguments):
@@ -316,14 +300,7 @@ class Settings(object):
             self._uargv = get_unicode_argv()[1:]
         else:
             self._uargv = list(arguments)
-        # first parse a logfile argument, if any
-        for args in self._uargv:
-            if args[:9] == u'--logfile':
-                logfile = args[10:]
-                break
-        else:
-            logfile = None
-        self._logger = get_logger(logfile)
+        self._pre_init_logging()
         self._temp_dir = temp_dir
         # create state path if needed
         if not os.path.exists(STATE_PATH):
@@ -347,33 +324,42 @@ class Settings(object):
         # initial validations
         python_version = tuple(int(v) for v in platform.python_version_tuple())
         if python_version >= (3, 0, 0) or python_version < MIN_PYTHON_VERSION:
-            msg = 'PC-BASIC requires Python 2, version %d.%d.%d or higher. ' % MIN_PYTHON_VERSION + 'You have %d.%d.%d.' % python_version
+            msg = ('PC-BASIC requires Python 2, version %d.%d.%d or higher. ' % MIN_PYTHON_VERSION +
+                'You have %d.%d.%d.' % python_version)
             logging.fatal(msg)
             raise Exception(msg)
 
+    def _pre_init_logging(self):
+        """Set up the global logger temporarily until we know the log stream."""
+        # we use the awkward logging interface as we can only use basicConfig once
+        # get the root logger
+        root_logger = logging.getLogger()
+        root_logger.setLevel(logging.INFO)
+        # send to a buffer until we know where to log to
+        self._logstream = io.StringIO()
+        handler = logging.StreamHandler(self._logstream)
+        handler.setFormatter(LOGGING_FORMATTER)
+        root_logger.addHandler(handler)
+
     def _prepare_logging(self):
         """Set up the global logger."""
+        # get log stream and level from options
         logfile = self.get('logfile')
-        if self.get('version') or self.get('help'):
-            formatstr = '%(message)s'
-            loglevel = logging.INFO
-        else:
-            # logging setup before we import modules and may need to log errors
-            formatstr = '[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
-            if self.get('debug'):
-                loglevel = logging.DEBUG
-            else:
-                loglevel = logging.INFO
+        loglevel = logging.DEBUG if self.get('debug') else logging.INFO
         # o dear o dear what a horrible API
         root_logger = logging.getLogger()
+        # remove all old handlers: temporary ones we set as well as any default ones
         for handler in root_logger.handlers:
             root_logger.removeHandler(handler)
         root_logger.setLevel(loglevel)
         if logfile:
-            handler = logging.FileHandler(logfile, mode=b'w')
+            logstream = open(logfile, 'w')
         else:
-            handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(fmt=formatstr, datefmt='%H:%M:%S'))
+            logstream = sys.stderr
+        # write out cached logs
+        logstream.write(self._logstream.getvalue())
+        handler = logging.StreamHandler(logstream)
+        handler.setFormatter(LOGGING_FORMATTER)
         root_logger.addHandler(handler)
 
     def _retrieve_options(self, uargv):
@@ -388,8 +374,15 @@ class Settings(object):
         args = self._parse_presets(remaining, preset_dict)
         # local config file settings override preset settings
         self._merge_arguments(args, preset_dict[u'pcbasic'])
+        # find unrecognised arguments
+        for key, value in args.iteritems():
+            if key not in self.arguments:
+                logging.warning(
+                        'Ignored unrecognised option `%s=%s` in configuration file', key, value)
         # parse rest of command line
         self._merge_arguments(args, self._parse_args(remaining))
+        # parse GW-BASIC style options
+        self._parse_gw_options(args)
         # clean up arguments
         self._clean_arguments(args)
         if package:
@@ -428,18 +421,34 @@ class Settings(object):
                 not self.interface or not sys.stdout.isatty() or not sys.stdin.isatty()):
             output_streams.append(sys.stdout)
         # explicit redirects
-        infile = self.get(b'input')
-        if infile:
-            try:
-                input_streams.append(open(infile, 'rb'))
-            except EnvironmentError as e:
-                logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
-        outfile = self.get(b'output')
-        if outfile:
-            try:
-                output_streams.append(open(outfile, 'ab' if self.get(b'append') else 'wb'))
-            except EnvironmentError as e:
-                logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
+        infile_params = self.get('input').split(u':')
+        if infile_params[0].upper() in (u'STDIO', u'STDIN'):
+            if sys.stdin not in input_streams:
+                input_streams.append(sys.stdin)
+        else:
+            if len(infile_params) > 1 and infile_params[0].upper() == u'FILE':
+                infile = infile_params[1]
+            else:
+                infile = infile_params[0]
+            if infile:
+                try:
+                    input_streams.append(open(infile, 'rb'))
+                except EnvironmentError as e:
+                    logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
+        outfile_params = self.get('output').split(u':')
+        if outfile_params[0].upper() in (u'STDIO', u'STDOUT'):
+            if sys.stdout not in output_streams:
+                output_streams.append(sys.stdout)
+        else:
+            if len(outfile_params) > 1 and outfile_params[0].upper() == u'FILE':
+                outfile_params = outfile_params[1:]
+            outfile = outfile_params[0]
+            append = len(outfile_params) > 1 and outfile_params[1].lower() == u'append'
+            if outfile:
+                try:
+                    output_streams.append(open(outfile, 'ab' if append else 'wb'))
+                except EnvironmentError as e:
+                    logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
         return {
             'output_streams': output_streams,
             'input_streams': input_streams,
@@ -448,44 +457,52 @@ class Settings(object):
     @property
     def session_params(self):
         """Return a dictionary of parameters for the Session object."""
-        current_device, mount_dict = self._get_drives(False)
+        # don't parse any options on --resume
         if self.get('resume'):
             return {}
-        pcjr_term = self.get('pcjr-term')
+        # preset PEEK values
         peek_values = {}
         try:
             for a in self.get('peek'):
-                seg, addr, val = a.split(':')
+                seg, addr, val = a.split(u':')
                 peek_values[int(seg)*0x10 + int(addr)] = int(val)
         except (TypeError, ValueError):
             pass
+        # devices and mounts
         device_params = {
                 key.upper()+':' : self.get(key)
                 for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')}
+        current_device, mount_dict = self._get_drives()
+        # memory setting
         max_list = self.get('max-memory')
         max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
         max_list[0] = max_list[0] or max_list[1]
-        current_device, mount_dict = self._get_drives()
-        codepage_dict = data.read_codepage(self.get('codepage'))
+        # codepage parameters
+        codepage_params = self.get('codepage').split(u':')
+        codepage_dict = data.read_codepage(codepage_params[0])
+        nobox = len(codepage_params) > 1 and codepage_params[1] == u'nobox'
+        # video parameters
+        video_params = self.get('video').split(u':')
+        cga_low = len(video_params) > 1 and video_params[1] == u'low'
+        # redirects
         params = self._get_redirects()
         params.update({
             'syntax': self.get('syntax'),
-            'video': self.get('video'),
+            'video': video_params[0],
             'codepage': codepage_dict,
-            'box_protect': not self.get('nobox'),
+            'box_protect': not nobox,
             'monitor': self.get('monitor'),
             # screen settings
             'aspect_ratio': (3072, 2000) if self.get('video') == 'tandy' else (4, 3),
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
-            'low_intensity': self.get('cga-low'),
-            'mono_tint': self.get('mono-tint'),
+            'low_intensity': cga_low,
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
             'keys': self.get('keys').encode('utf-8', 'replace')
                         .decode('string_escape').decode('utf-8', 'replace'),
             # find program for PCjr TERM command
-            'term': pcjr_term,
+            'term': self.get('term'),
             'shell': self.get('shell'),
             'double': self.get('double'),
             # device settings
@@ -495,12 +512,12 @@ class Settings(object):
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
             'utf8': self.get('utf8'),
-            'universal': not self.get('strict-newline'),
+            'soft_linefeed': self.get('soft-linefeed'),
             # keyboard settings
             'ctrl_c_is_break': self.get('ctrl-c-break'),
             # program parameters
-            'max_list_line': 65535 if not self.get('strict-hidden-lines') else 65530,
-            'allow_protect': self.get('strict-protect'),
+            'hide_listing': self.get('hide-listing'),
+            'hide_protected': self.get('hide-protected'),
             'allow_code_poke': self.get('allow-code-poke'),
             'rebuild_offsets': not self.get('convert'),
             # max available memory to BASIC (set by /m)
@@ -528,7 +545,7 @@ class Settings(object):
             'border_width': self.get('border'),
             'scaling': self.get('scaling'),
             'fullscreen': self.get('fullscreen'),
-            'alt_f4_quits': not self.get('nokill'),
+            'prevent_close': self.get('prevent-close'),
             'caption': self.get('caption'),
             'mouse_clipboard': self.get('mouse-clipboard'),
             'icon': ICON,
@@ -571,7 +588,7 @@ class Settings(object):
                 iface_list = (interface,)
         iface_params = {
             'try_interfaces': iface_list,
-            'audio_override': self.get('sound-engine'),
+            'audio_override': self.get('sound') != 'interface' and self.get('sound'),
         }
         iface_params.update(self._get_video_parameters())
         iface_params.update(self._get_audio_parameters())
@@ -609,12 +626,28 @@ class Settings(object):
             'log_dir': STATE_PATH,
             }
 
-    def _get_drives(self, get_default=True):
+    def _get_drives(self):
         """Assign disk locations to disk devices."""
-        mount_dict = {}
         # always get current device
-        current_device = self.get('current-device')
-        if self.get('map-drives', get_default):
+        current_device = self.get('current-device').upper()
+        # build mount dictionary
+        mount_list = self.get('mount', False)
+        mount_dict = {}
+        if mount_list is not None:
+            for a in mount_list:
+                # the last one that's specified will stick
+                try:
+                    letter, path = a.split(u':', 1)
+                    letter = letter.encode('ascii', errors='replace').upper()
+                    # take abspath first to ensure unicode, realpath gives bytes for u'.'
+                    path = os.path.realpath(os.path.abspath(path))
+                    if not os.path.isdir(path):
+                        logging.warning(u'Could not mount %s', a)
+                    else:
+                        mount_dict[letter] = (path, u'')
+                except (TypeError, ValueError) as e:
+                    logging.warning(u'Could not mount %s: %s', a, unicode(e))
+        else:
             if WIN32:
                 # get all drives in use by windows
                 # if started from CMD.EXE, get the 'current working dir' for each drive
@@ -632,49 +665,26 @@ class Settings(object):
                         path, cwd = cwd[:3], cwd[3:]
                         mount_dict[letter] = (path, cwd)
                 os.chdir(save_current)
-                try:
-                    current_device = os.path.abspath(save_current).split(u':')[0].encode('ascii')
-                except UnicodeEncodeError:
-                    # fallback in case of some error
-                    current_device = mount_dict.keys()[0]
+                if not current_device:
+                    try:
+                        current_device = os.path.abspath(save_current).split(u':')[0].encode('ascii')
+                    except UnicodeEncodeError:
+                        pass
             else:
-                cwd = os.getcwdu()
-                home = os.path.expanduser(u'~')
-                # if cwd is in home tree, set it also on H:
-                if cwd[:len(home)] == home:
-                    home_cwd = cwd[len(home)+1:]
-                else:
-                    home_cwd = u''
-                mount_dict = {
-                    # map C to root
-                    b'C': (u'/', cwd[1:]),
-                    # map Z to cwd
-                    b'Z': (cwd, u''),
-                    # map H to home
-                    b'H': (home, home_cwd),
-                    }
-                # default durrent drive
+                # non-Windows systems simply have 'Z:' set to their their cwd by default
+                mount_dict[b'Z'] = (os.getcwdu(), u'')
                 current_device = b'Z'
-        else:
-            mount_dict[b'Z'] = (os.getcwdu(), u'')
+        # fallbacks for current device
+        if current_device != 'CAS1' and (
+                not current_device or current_device not in mount_dict.keys()):
+            if mount_dict:
+                # if not set or not sensible, set current device to lowest available
+                current_device = sorted(mount_dict.keys())[0]
+            else:
+                # if nothing mounted at all and not set to CAS1, current device will be @:
+                current_device = b'@'
         # directory for bundled BASIC programs accessible through @:
         mount_dict[b'@'] = (PROGRAM_PATH, u'')
-        # build mount dictionary
-        mount_list = self.get('mount', get_default)
-        if mount_list:
-            for a in mount_list:
-                # the last one that's specified will stick
-                try:
-                    letter, path = a.split(u':', 1)
-                    letter = letter.encode('ascii', errors='replace').upper()
-                    # take abspath first to ensure unicode, realpath gives bytes for u'.'
-                    path = os.path.realpath(os.path.abspath(path))
-                    if not os.path.isdir(path):
-                        logging.warning(u'Could not mount %s', a)
-                    else:
-                        mount_dict[letter] = (path, u'')
-                except (TypeError, ValueError) as e:
-                    logging.warning(u'Could not mount %s: %s', a, unicode(e))
         return current_device, mount_dict
 
     @property
@@ -722,7 +732,7 @@ class Settings(object):
                 else:
                     append_arg(args, skey, svalue)
             except KeyError:
-                self._logger.warning(u'Ignored unrecognised option `-%s`', short_arg)
+                logging.warning(u'Ignored unrecognised option `-%s`', short_arg)
 
     def _get_arguments(self, argv):
         """Convert arguments to dictionary."""
@@ -746,9 +756,9 @@ class Settings(object):
                 elif key[0] == u'-':
                     self._append_short_args(args, key, value)
                 else:
-                    self._logger.warning(u'Ignored surplus positional argument `%s`', arg)
+                    logging.warning(u'Ignored surplus positional argument `%s`', arg)
             else:
-                self._logger.warning(u'Ignored unrecognised option `=%s`', value)
+                logging.warning(u'Ignored unrecognised option `=%s`', value)
         return args
 
     def _parse_presets(self, remaining, conf_dict):
@@ -766,7 +776,7 @@ class Settings(object):
                     self._merge_arguments(argdict, conf_dict[p])
                 except KeyError:
                     if p not in self.default_presets:
-                        self._logger.warning(u'Ignored undefined preset "%s"', p)
+                        logging.warning(u'Ignored undefined preset "%s"', p)
             # look for more presets in expended arglist
             try:
                 presets = self._parse_list(u'preset', argdict.pop(u'preset'))
@@ -796,7 +806,7 @@ class Settings(object):
                 # if the zip-file contains only a directory at the top level,
                 # then move into that directory. E.g. all files in package.zip
                 # could be under the directory package/
-                contents = os.listdir('.')
+                contents = os.listdir(u'.')
                 if len(contents) == 1:
                     os.chdir(contents[0])
                 # recursively rename all files to all-caps to avoid case issues on Unix
@@ -834,27 +844,79 @@ class Settings(object):
         """Read config file."""
         try:
             config = ConfigParser.RawConfigParser(allow_no_value=True)
-            # use utf_8_sig to ignore a BOM if it's at the start of the file (e.g. created by Notepad)
+            # use utf_8_sig to ignore a BOM if it's at the start of the file
+            # (e.g. created by Notepad)
             with codecs.open(config_file, b'r', b'utf_8_sig') as f:
-                config.readfp(f)
+                config.readfp(WhitespaceStripper(f))
         except (ConfigParser.Error, IOError):
-            self._logger.warning(u'Error in configuration file %s. '
-                           u'Configuration not loaded.', config_file)
+            logging.warning(
+                u'Error in configuration file %s. Configuration not loaded.', config_file)
             return {u'pcbasic': {}}
-        presets = { header: dict(config.items(header))
-                    for header in config.sections() }
+        presets = {header: dict(config.items(header)) for header in config.sections()}
         return presets
 
     def _parse_args(self, remaining):
         """Retrieve command line options."""
         # set arguments
         known = self.arguments.keys() + range(self.positional)
-        args = {d:remaining[d] for d in remaining if d in known}
-        not_recognised = {d:remaining[d] for d in remaining if d not in known}
+        args = {d: remaining[d] for d in remaining if d in known}
+        not_recognised = {d: remaining[d] for d in remaining if d not in known}
         for d in not_recognised:
-            self._logger.warning(u'Ignored unrecognised option "%s=%s"',
-                            d, not_recognised[d])
+            if not_recognised[d]:
+                logging.warning(
+                    u'Ignored unrecognised command-line argument `%s=%s`', d, not_recognised[d])
+            else:
+                logging.warning(u'Ignored unrecognised command-line argument `%s`', d)
         return args
+
+    def _parse_gw_options(self, args):
+        """Parse GW-BASIC-style options."""
+        # GWBASIC invocation, for reference:
+        # GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,m]] [/d]
+        #   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN.
+        #   /f:n    Set maximum number of open files to n. Default is 3.
+        #           Each additional file reduces free memory by 322 bytes.
+        #   /s:n    Set the maximum record length for RANDOM files.
+        #           Default is 128, maximum is 32768.
+        #   /c:n    Set the COM receive buffer to n bytes.
+        #           If n==0, disable the COM ports.
+        #   /i      Statically allocate file control blocks and data buffer.
+        #           NOTE: this appears to be always the case in GW-BASIC, as here.
+        #   /m:n,m  Set the highest memory location to n (default 65534) and maximum
+        #           BASIC memory to m*16 bytes (default is all available).
+        options = args.pop('options', '')
+        for option in options.split(u' '):
+            if not option:
+                continue
+            if option.startswith(u'<'):
+                args['input'] = option[1:]
+            elif option.startswith(u'>'):
+                if option[1] == u'>':
+                    args['output'] = option[2:] + u':append'
+                else:
+                    args['output'] = option[1:]
+            elif option.startswith(u'/'):
+                option = option.lower()
+                split = option[1:].split(u':')
+                if len(split) == 1:
+                    if option[1] == u'd':
+                        args['double'] = True
+                    elif option[1] == u'i':
+                        pass
+                elif len(split) == 2:
+                    if option[1] == u'f':
+                        args['max-files'] = split[1]
+                    elif option[1] == u's':
+                        args['max-reclen'] = split[1]
+                    elif option[1] == u'c':
+                        args['serial-buffer-size'] = split[1]
+                    elif option[1] == u'm':
+                        args['max-memory'] = split[1]
+            else:
+                # positional argument
+                args[0] = option
+        return args
+
 
     ################################################
 
@@ -885,14 +947,15 @@ class Settings(object):
             return arg
         if u'choices' in self.arguments[d]:
             arg = arg.lower()
+        first_arg = arg.split(u':')[0]
         if u'type' in self.arguments[d]:
             if (self.arguments[d][u'type'] == u'int'):
                 arg = self._parse_int(d, arg)
             elif (self.arguments[d][u'type'] == u'bool'):
                 arg = self._parse_bool(d, arg)
         if u'choices' in self.arguments[d]:
-            if arg and arg not in self.arguments[d][u'choices']:
-                self._logger.warning(u'Value "%s=%s" ignored; should be one of (%s)',
+            if first_arg and first_arg not in self.arguments[d][u'choices']:
+                logging.warning(u'Value "%s=%s" ignored; should be one of (%s)',
                                 d, unicode(arg), u', '.join(self.arguments[d][u'choices']))
                 arg = u''
         return arg
@@ -912,7 +975,7 @@ class Settings(object):
         if length < 0:
             lst += [None]*(-length-len(lst))
         if length != u'*' and (len(lst) > abs(length) or len(lst) < length):
-            self._logger.warning(u'Option "%s=%s" ignored, should have %d elements',
+            logging.warning(u'Option "%s=%s" ignored, should have %d elements',
                             d, s, abs(length))
         return lst
 
@@ -926,7 +989,7 @@ class Settings(object):
             elif s.upper() in (u'NO', u'FALSE', u'OFF', u'0'):
                 return False
         except AttributeError:
-            self._logger.warning(u'Option "%s=%s" ignored; should be a boolean', d, s)
+            logging.warning(u'Option "%s=%s" ignored; should be a boolean', d, s)
             return None
 
     def _parse_int(self, d, s):
@@ -935,7 +998,7 @@ class Settings(object):
             try:
                 return int(s)
             except ValueError:
-                self._logger.warning(u'Option "%s=%s" ignored; should be an integer', d, s)
+                logging.warning(u'Option "%s=%s" ignored; should be an integer', d, s)
         return None
 
 

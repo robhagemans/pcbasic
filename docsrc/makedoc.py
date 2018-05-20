@@ -149,13 +149,18 @@ def makedoc(header=None, output=None, embedded_style=True):
     predoc.write(open(basepath + '/footer.html', 'r').read())
     predoc.seek(0)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    subheader_html = """
+    if embedded_style:
+        subheader_html = """
 <header>
     <h1>PC-BASIC documentation</h1>
     <small>Version {0}</small>
 </header>
+""".format(VERSION, now, DESCRIPTION, LONG_DESCRIPTION)
+    else:
+        subheader_html = ''
+    subheader_html += """
 <article>
-    <h2 id="top">PC-BASIC</h2>
+    <h2 id="top">PC-BASIC {0}</h2>
     <p>
         <em>{2}</em>
     </p>
@@ -167,7 +172,7 @@ def makedoc(header=None, output=None, embedded_style=True):
         It consists of the following documents:
     </p>
     <ul>
-        <li><strong><a href="#quick-start-guide">Quick Start Guide</a></strong>, the essentials needed to get started.</li>
+        <li><strong><a href="#quick-start-guide">Quick Start Guide</a></strong>, the essentials needed to get started</li>
         <li><strong><a href="#using">User's Guide</a></strong>, in-depth guide to using the emulator</li>
         <li><strong><a href="#settings">Configuration Guide</a></strong>, settings and options</li>
         <li><strong><a href="#guide">Language Guide</a></a></strong>, overview of the BASIC language by topic</li>
@@ -175,8 +180,27 @@ def makedoc(header=None, output=None, embedded_style=True):
         <li><strong><a href="#technical">Technical Reference</a></strong>, file formats and internals</li>
         <li><strong><a href="#dev">Developer's Guide</a></strong>, using PC-BASIC as a Python module</li>
     </ul>
-</article>
+
 """.format(VERSION, now, DESCRIPTION, LONG_DESCRIPTION)
+    if not embedded_style:
+        subheader_html += """
+    <p>
+        Offline versions of this documentation are available in the following formats:
+    </p>
+    <ul>
+        <li><a href="PC-BASIC_documentation.html">Single-file HTML</a></li>
+        <li><a href="PC-BASIC_documentation.pdf">PDF</a></li>
+    </ul>
+    <p>
+        Documentation for other versions of PC-BASIC:
+    </p>
+    <ul>
+        <li><a href="http://pc-basic.org/doc/">PC-BASIC 1.2</a></li>
+    </ul>
+</article>
+"""
+    else:
+        subheader_html += '</article>\n'
     tocdoc = StringIO()
     tocdoc.write(subheader_html)
     tocdoc.write(predoc.getvalue())

@@ -94,6 +94,13 @@ COMPOSITE = {
     ]
 }
 
+MONO_TINT = {
+    'green': [0, 255, 0],
+    'amber': [255, 128, 0],
+    'grey': [255, 255, 255],
+    'mono': [0, 255, 0],
+}
+
 
 ###############################################################################
 # Low level video (mainly about colours; mode object factory)
@@ -101,19 +108,19 @@ COMPOSITE = {
 class Video(object):
     """Low-level display operations."""
 
-    def __init__(self, capabilities, monitor, mono_tint, low_intensity, aspect, video_mem_size):
+    def __init__(self, capabilities, monitor, low_intensity, aspect, video_mem_size):
         """Initialise colour sets."""
         # public members - used by VideoMode
         # video adapter type - cga, ega, etc
-        if capabilities == 'ega' and monitor == 'mono':
+        if capabilities == 'ega' and monitor in MONO_TINT:
             capabilities = 'ega_mono'
         self.capabilities = capabilities
         # monochrome tint in rgb
-        self.mono_tint = mono_tint
+        self.mono_tint = MONO_TINT.get(monitor, MONO_TINT['green'])
         # emulated monitor type - rgb, composite, mono
-        self.monitor = monitor
+        self.monitor = 'mono' if monitor in MONO_TINT else monitor
         # build 16-greyscale and 16-colour sets
-        self.colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
+        self.colours16_mono = tuple(tuple(tint*i//255 for tint in self.mono_tint)
                                for i in INTENSITY16)
         # NTSC colorburst settings
         if monitor == 'mono':

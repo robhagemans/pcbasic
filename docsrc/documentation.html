@@ -429,7 +429,7 @@
                     Certain key combinations will be interpreted by the operating system or
                     window manager and cause special actions. For example, on most systems,
                     <kbd>Alt</kbd>+<kbd>F4</kbd> will terminate PC-BASIC unless
-                    the <a href="#--nokill"><code>nokill</code></a> option is set; <kbd>F1</kbd>
+                    the <a href="#--prevent_close"><code>prevent_close</code></a> option is set; <kbd>F1</kbd>
                     may open your operating system's help system. It may be possible to avoid
                     some of these effects by using the graphical interface in full-screen mode.
                 </li>
@@ -498,7 +498,7 @@
             Protected mode offered little protection anyway; disallowing access is a small
             security hazard as it would allow someone to send you a program that you cannot
             inspect before running it. However, it is possible to disable access of
-            protected files by enabling the option <code><a href="#--strict-protect">strict-protect</a></code>. </p> <p>You
+            protected files by enabling the option <code><a href="#--hide-protects">hide-protected</a></code>. </p> <p>You
             can read a program file into memory with <code><a href="#LOAD">LOAD</a> "MYPROG"</code>. This will
             erase the program currently in memory and replace it with the one read from the
             current working directory. To access files in a different directory, specify a path from the current
@@ -558,10 +558,8 @@
                 <li>
                     <em>PC-BASIC's DOS disk devices are not Windows drive letters</em>.
                     The device <code>C:</code> on PC-BASIC is <em>not</em> your Windows <code>C:</code> drive.
-                    If you want PC-BASIC's drive letters to be the same as those in Windows, you have to explicitly
-                    enable the option <code><a href="#--map-drives">map-drives</a></code>. Use this with caution, since it
-                    means that your programs can now read from and write to all drives that Windows
-                    allows you access to.
+                    However, by default, Windows drive letters are mapped to PC-BASIC devices at the start
+                    of the PC-BASIC session.
                 </li>
                 <li>
                     If PC-BASIC's current device or <i>Start In</i> folder is changed to a system folder such as <code>C:\Program Files\PC-BASIC</code>,
@@ -616,8 +614,8 @@
                 As a consequence, in exceptional cases where a program line is continued through <code><i>LF</i></code>
                 correct GW-BASIC text files may not be loaded correctly.
                 If you encounter such a case, use
-                the <code><a href="#--strict-newline">strict-newline</a></code> option to enable GW-BASIC behaviour. If
-                <code>strict-newline</code> is enabled, text files in standard Unix format
+                the <code><a href="#--soft-linefeed">soft-linefeed</a></code> option to enable GW-BASIC behaviour. If
+                <code>soft-linefeed</code> is enabled, text files in standard Unix format
                 (<code><i>LF</i></code> line endings, no end-of-file character) will fail to load, as they do in GW-BASIC.
                 On Linux or Mac, use a utility such as
                 <a href="http://waterlan.home.xs4all.nl/dos2unix.html"><code>unix2dos</code></a>

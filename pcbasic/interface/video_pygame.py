@@ -45,14 +45,14 @@ class VideoPygame(VideoPlugin):
             self, input_queue, video_queue,
             caption=u'', icon=ICON,
             scaling=None, dimensions=None, aspect_ratio=(4, 3), border_width=0, fullscreen=False,
-            alt_f4_quits=True, mouse_clipboard=True,
+            prevent_close=False, mouse_clipboard=True,
             **kwargs):
         """Initialise pygame interface."""
         VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
         self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
-        self._nokill = not alt_f4_quits
+        self._nokill = prevent_close
         # window caption/title
         self.caption = caption
         # start in fullscreen mode

@@ -6,210 +6,203 @@ Keyboard e-ASCII codes
 This file is released under the GNU GPL version 3 or later.
 """
 
+class Namespace(object):
+    """Simple namespace class."""
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
 # based on Tandy-1000 basic manual, modified for IBM PC keyboard
 # we don't specify the standard ASCII character values here
 # nor the CTRL+a -> b'\x01' etc. series
 # except where convenient
 
-class _EASCIIBytes(object):
-    """EASCII constants as bytes."""
+as_bytes = Namespace(
 
-    def __init__(self):
-        """Set bytes constants."""
-        self.NUL = b'\0\0'
+    NUL = b'\0\0',
 
-        self.CTRL_b = b'\x02'
-        self.CTRL_c = b'\x03'
-        self.CTRL_d = b'\x04'
-        self.CTRL_e = b'\x05'
-        self.CTRL_f = b'\x06'
-        self.CTRL_k = b'\x0B'
-        self.CTRL_l = b'\x0C'
-        self.CTRL_n = b'\x0E'
-        self.CTRL_r = b'\x12'
-        self.CTRL_z = b'\x1A'
+    CTRL_b = b'\x02',
+    CTRL_c = b'\x03',
+    CTRL_d = b'\x04',
+    CTRL_e = b'\x05',
+    CTRL_f = b'\x06',
+    CTRL_k = b'\x0B',
+    CTRL_l = b'\x0C',
+    CTRL_n = b'\x0E',
+    CTRL_r = b'\x12',
+    CTRL_z = b'\x1A',
 
-        self.ESCAPE = b'\x1B'
-        self.SHIFT_ESCAPE = b'\x1B'
-        self.CTRL_ESCAPE = b'\x1B'
+    ESCAPE = b'\x1B',
+    SHIFT_ESCAPE = b'\x1B',
+    CTRL_ESCAPE = b'\x1B',
 
-        self.BACKSPACE = b'\x08'
-        self.SHIFT_BACKSPACE = b'\x08'
-        self.CTRL_BACKSPACE = b'\x7F'
-        self.ALT_BACKSPACE = b'\0\x8C'
+    BACKSPACE = b'\x08',
+    SHIFT_BACKSPACE = b'\x08',
+    CTRL_BACKSPACE = b'\x7F',
+    ALT_BACKSPACE = b'\0\x8C',
 
-        self.TAB = b'\x09'
-        self.SHIFT_TAB = b'\0\x0F'
-        self.CTRL_TAB = b'\0\x8D'
-        self.ALT_TAB = b'\0\x8E'
+    TAB = b'\x09',
+    SHIFT_TAB = b'\0\x0F',
+    CTRL_TAB = b'\0\x8D',
+    ALT_TAB = b'\0\x8E',
 
-        self.RETURN = b'\r'
-        self.SHIFT_RETURN = b'\r'
-        self.CTRL_RETURN = b'\n'
-        self.ALT_RETURN = b'\0\x8F'
+    RETURN = b'\r',
+    SHIFT_RETURN = b'\r',
+    CTRL_RETURN = b'\n',
+    ALT_RETURN = b'\0\x8F',
 
-        self.SPACE = b' '
-        self.SHIFT_SPACE = b' '
-        self.CTRL_SPACE = b' '
-        self.ALT_SPACE = b'\0 '
+    SPACE = b' ',
+    SHIFT_SPACE = b' ',
+    CTRL_SPACE = b' ',
+    ALT_SPACE = b'\0 ',
 
-        self.CTRL_PRINT = b'\0\x72'
-        self.ALT_PRINT = b'\0\x46'
+    CTRL_PRINT = b'\0\x72',
+    ALT_PRINT = b'\0\x46',
 
-        self.INSERT = b'\0\x52'
-        self.SHIFT_INSERT = b'\0\x52'
+    INSERT = b'\0\x52',
+    SHIFT_INSERT = b'\0\x52',
 
-        self.DELETE = b'\0\x53'
-        self.SHIFT_DELETE = b'\0\x53'
+    DELETE = b'\0\x53',
+    SHIFT_DELETE = b'\0\x53',
 
-        self.CTRL_2 = b'\0\x03'
-        self.CTRL_6 = b'\x1E'
-        self.CTRL_MINUS = b'\x1F'
-        self.SHIFT_KP5 = b'5'
-        self.ALT_KP5 = b'\x05'
+    CTRL_2 = b'\0\x03',
+    CTRL_6 = b'\x1E',
+    CTRL_MINUS = b'\x1F',
+    SHIFT_KP5 = b'5',
+    ALT_KP5 = b'\x05',
 
-        self.CTRL_BACKSLASH = b'\x1C'
-        # CTRL+]
-        self.CTRL_RIGHTBRACKET = b'\x1D'
+    CTRL_BACKSLASH = b'\x1C',
+    # CTRL+]
+    CTRL_RIGHTBRACKET = b'\x1D',
 
-        # Alt codes
+    # Alt codes
 
-        self.ALT_1 = b'\0\x78'
-        self.ALT_2 = b'\0\x79'
-        self.ALT_3 = b'\0\x7A'
-        self.ALT_4 = b'\0\x7B'
-        self.ALT_5 = b'\0\x7C'
-        self.ALT_6 = b'\0\x7D'
-        self.ALT_7 = b'\0\x7E'
-        self.ALT_8 = b'\0\x7F'
-        self.ALT_9 = b'\0\x80'
-        self.ALT_0 = b'\0\x81'
-        self.ALT_MINUS = b'\0\x82'
-        self.ALT_EQUALS = b'\0\x83'
+    ALT_1 = b'\0\x78',
+    ALT_2 = b'\0\x79',
+    ALT_3 = b'\0\x7A',
+    ALT_4 = b'\0\x7B',
+    ALT_5 = b'\0\x7C',
+    ALT_6 = b'\0\x7D',
+    ALT_7 = b'\0\x7E',
+    ALT_8 = b'\0\x7F',
+    ALT_9 = b'\0\x80',
+    ALT_0 = b'\0\x81',
+    ALT_MINUS = b'\0\x82',
+    ALT_EQUALS = b'\0\x83',
 
-        self.ALT_q = b'\0\x10'
-        self.ALT_w = b'\0\x11'
-        self.ALT_e = b'\0\x12'
-        self.ALT_r = b'\0\x13'
-        self.ALT_t = b'\0\x14'
-        self.ALT_y = b'\0\x15'
-        self.ALT_u = b'\0\x16'
-        self.ALT_i = b'\0\x17'
-        self.ALT_o = b'\0\x18'
-        self.ALT_p = b'\0\x19'
+    ALT_q = b'\0\x10',
+    ALT_w = b'\0\x11',
+    ALT_e = b'\0\x12',
+    ALT_r = b'\0\x13',
+    ALT_t = b'\0\x14',
+    ALT_y = b'\0\x15',
+    ALT_u = b'\0\x16',
+    ALT_i = b'\0\x17',
+    ALT_o = b'\0\x18',
+    ALT_p = b'\0\x19',
 
-        self.ALT_a = b'\0\x1E'
-        self.ALT_s = b'\0\x1F'
-        self.ALT_d = b'\0\x20'
-        self.ALT_f = b'\0\x21'
-        self.ALT_g = b'\0\x22'
-        self.ALT_h = b'\0\x23'
-        self.ALT_j = b'\0\x24'
-        self.ALT_k = b'\0\x25'
-        self.ALT_l = b'\0\x26'
+    ALT_a = b'\0\x1E',
+    ALT_s = b'\0\x1F',
+    ALT_d = b'\0\x20',
+    ALT_f = b'\0\x21',
+    ALT_g = b'\0\x22',
+    ALT_h = b'\0\x23',
+    ALT_j = b'\0\x24',
+    ALT_k = b'\0\x25',
+    ALT_l = b'\0\x26',
 
-        self.ALT_z = b'\0\x2C'
-        self.ALT_x = b'\0\x2D'
-        self.ALT_c = b'\0\x2E'
-        self.ALT_v = b'\0\x2F'
-        self.ALT_b = b'\0\x30'
-        self.ALT_n = b'\0\x31'
-        self.ALT_m = b'\0\x32'
+    ALT_z = b'\0\x2C',
+    ALT_x = b'\0\x2D',
+    ALT_c = b'\0\x2E',
+    ALT_v = b'\0\x2F',
+    ALT_b = b'\0\x30',
+    ALT_n = b'\0\x31',
+    ALT_m = b'\0\x32',
 
-        # function keys
+    # function keys
 
-        self.F1 = b'\0\x3B'
-        self.F2 = b'\0\x3C'
-        self.F3 = b'\0\x3D'
-        self.F4 = b'\0\x3E'
-        self.F5 = b'\0\x3F'
-        self.F6 = b'\0\x40'
-        self.F7 = b'\0\x41'
-        self.F8 = b'\0\x42'
-        self.F9 = b'\0\x43'
-        self.F10 = b'\0\x44'
+    F1 = b'\0\x3B',
+    F2 = b'\0\x3C',
+    F3 = b'\0\x3D',
+    F4 = b'\0\x3E',
+    F5 = b'\0\x3F',
+    F6 = b'\0\x40',
+    F7 = b'\0\x41',
+    F8 = b'\0\x42',
+    F9 = b'\0\x43',
+    F10 = b'\0\x44',
 
-        self.SHIFT_F1 = b'\0\x54'
-        self.SHIFT_F2 = b'\0\x55'
-        self.SHIFT_F3 = b'\0\x56'
-        self.SHIFT_F4 = b'\0\x57'
-        self.SHIFT_F5 = b'\0\x58'
-        self.SHIFT_F6 = b'\0\x59'
-        self.SHIFT_F7 = b'\0\x5A'
-        self.SHIFT_F8 = b'\0\x5B'
-        self.SHIFT_F9 = b'\0\x5C'
-        self.SHIFT_F10 = b'\0\x5D'
+    SHIFT_F1 = b'\0\x54',
+    SHIFT_F2 = b'\0\x55',
+    SHIFT_F3 = b'\0\x56',
+    SHIFT_F4 = b'\0\x57',
+    SHIFT_F5 = b'\0\x58',
+    SHIFT_F6 = b'\0\x59',
+    SHIFT_F7 = b'\0\x5A',
+    SHIFT_F8 = b'\0\x5B',
+    SHIFT_F9 = b'\0\x5C',
+    SHIFT_F10 = b'\0\x5D',
 
-        self.CTRL_F1 = b'\0\x5E'
-        self.CTRL_F2 = b'\0\x5F'
-        self.CTRL_F3 = b'\0\x60'
-        self.CTRL_F4 = b'\0\x61'
-        self.CTRL_F5 = b'\0\x62'
-        self.CTRL_F6 = b'\0\x63'
-        self.CTRL_F7 = b'\0\x64'
-        self.CTRL_F8 = b'\0\x65'
-        self.CTRL_F9 = b'\0\x66'
-        self.CTRL_F10 = b'\0\x67'
+    CTRL_F1 = b'\0\x5E',
+    CTRL_F2 = b'\0\x5F',
+    CTRL_F3 = b'\0\x60',
+    CTRL_F4 = b'\0\x61',
+    CTRL_F5 = b'\0\x62',
+    CTRL_F6 = b'\0\x63',
+    CTRL_F7 = b'\0\x64',
+    CTRL_F8 = b'\0\x65',
+    CTRL_F9 = b'\0\x66',
+    CTRL_F10 = b'\0\x67',
 
-        self.ALT_F1 = b'\0\x68'
-        self.ALT_F2 = b'\0\x69'
-        self.ALT_F3 = b'\0\x6A'
-        self.ALT_F4 = b'\0\x6B'
-        self.ALT_F5 = b'\0\x6C'
-        self.ALT_F6 = b'\0\x6D'
-        self.ALT_F7 = b'\0\x6E'
-        self.ALT_F8 = b'\0\x6F'
-        self.ALT_F9 = b'\0\x70'
-        self.ALT_F10 = b'\0\x71'
+    ALT_F1 = b'\0\x68',
+    ALT_F2 = b'\0\x69',
+    ALT_F3 = b'\0\x6A',
+    ALT_F4 = b'\0\x6B',
+    ALT_F5 = b'\0\x6C',
+    ALT_F6 = b'\0\x6D',
+    ALT_F7 = b'\0\x6E',
+    ALT_F8 = b'\0\x6F',
+    ALT_F9 = b'\0\x70',
+    ALT_F10 = b'\0\x71',
 
-        # numeric keypad
-        self.HOME = b'\0\x47'
-        self.UP = b'\0\x48'
-        self.PAGEUP = b'\0\x49'
-        self.LEFT = b'\0\x4B'
-        self.RIGHT = b'\0\x4D'
-        self.END = b'\0\x4F'
-        self.DOWN = b'\0\x50'
-        self.PAGEDOWN = b'\0\x51'
+    # numeric keypad
+    HOME = b'\0\x47',
+    UP = b'\0\x48',
+    PAGEUP = b'\0\x49',
+    LEFT = b'\0\x4B',
+    RIGHT = b'\0\x4D',
+    END = b'\0\x4F',
+    DOWN = b'\0\x50',
+    PAGEDOWN = b'\0\x51',
 
-        self.SHIFT_HOME = b'\0\x47'
-        self.SHIFT_UP = b'\0\x48'
-        self.SHIFT_PAGEUP = b'\0\x49'
-        self.SHIFT_LEFT = b'\0\x87'
-        self.SHIFT_RIGHT = b'\0\x88'
-        self.SHIFT_END = b'\0\x4F'
-        self.SHIFT_DOWN = b'\0\x50'
-        self.SHIFT_PAGEDOWN = b'\0\x51'
+    SHIFT_HOME = b'\0\x47',
+    SHIFT_UP = b'\0\x48',
+    SHIFT_PAGEUP = b'\0\x49',
+    SHIFT_LEFT = b'\0\x87',
+    SHIFT_RIGHT = b'\0\x88',
+    SHIFT_END = b'\0\x4F',
+    SHIFT_DOWN = b'\0\x50',
+    SHIFT_PAGEDOWN = b'\0\x51',
 
-        self.CTRL_HOME = b'\0\x77'
-        self.CTRL_PAGEUP = b'\0\x84'
-        self.CTRL_LEFT = b'\0\x73'
-        self.CTRL_RIGHT = b'\0\x74'
-        self.CTRL_END = b'\0\x75'
-        self.CTRL_PAGEDOWN = b'\0\x76'
+    CTRL_HOME = b'\0\x77',
+    CTRL_PAGEUP = b'\0\x84',
+    CTRL_LEFT = b'\0\x73',
+    CTRL_RIGHT = b'\0\x74',
+    CTRL_END = b'\0\x75',
+    CTRL_PAGEDOWN = b'\0\x76',
 
-        # Tandy e-ASCII codes
-        self.F11 = b'\0\x98'
-        self.F12 = b'\0\x99'
-        self.SHIFT_F11 = b'\0\xA2'
-        self.SHIFT_F12 = b'\0\xA3'
-        self.CTRL_F11 = b'\0\xAC'
-        self.CTRL_F12 = b'\0\xAD'
-        self.ALT_F11 = b'\0\xB6'
-        self.ALT_F12 = b'\0\xB7'
+    # Tandy e-ASCII codes
+    F11 = b'\0\x98',
+    F12 = b'\0\x99',
+    SHIFT_F11 = b'\0\xA2',
+    SHIFT_F12 = b'\0\xA3',
+    CTRL_F11 = b'\0\xAC',
+    CTRL_F12 = b'\0\xAD',
+    ALT_F11 = b'\0\xB6',
+    ALT_F12 = b'\0\xB7',
+)
 
-
-class _EASCIIUnicode(_EASCIIBytes):
-    """EASCII constants as unicode."""
-
-    def __init__(self):
-        """Set unicode constants."""
-        # override class variables
-        #_EASCIIBytes.__init__(self)
-        for name, value in _EASCIIBytes().__dict__.iteritems():
-            if name[0] != b'_':
-                self.__dict__[name] = u''.join([unichr(ord(x)) for x in value])
-
-
-as_bytes = _EASCIIBytes()
-as_unicode = _EASCIIUnicode()
+as_unicode = Namespace(**{
+    key: u''.join([unichr(ord(c)) for c in value])
+    for key, value in as_bytes.__dict__.iteritems()
+})
