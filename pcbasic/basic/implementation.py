@@ -596,6 +596,9 @@ class Implementation(object):
                 # don't close files!
                 # RUN
                 self.interpreter.jump(jumpnum, err=error.IFC)
+        # ensure newly allocated strings are not considered temporary
+        # e.g. code strings in the old program become allocated strings in the new
+        self.strings.fix_temporaries()
 
     def save_(self, args):
         """SAVE: save program to a file."""
