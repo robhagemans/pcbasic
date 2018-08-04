@@ -150,8 +150,14 @@ class COMDevice(Device):
 
     def char_waiting(self):
         """Whether a char is present in buffer. For ON COM(n)."""
+        if not self._serial:
+            return False
         with safe_io():
-            return self._serial and self._serial.in_waiting
+            # ON COM can be set without any OPEN statement
+            # so we need to ensure the serial port is opened before querying it
+            if not self._serial.is_open:
+                self._serial.open()
+            return self._serial.in_waiting
 
     ##########################################################################
 
@@ -304,7 +310,9 @@ class COMFile(TextFileBase, RealTimeInputMixin):
 
     def close(self):
         """Close the file and the port."""
-        TextFileBase.close(self)
+        # do *not* call the parent close()
+        # as this would call close() on our (unique) serial file handle
+        #TextFileBase.close(self)
         self.is_open = False
 
     def peek(self, num):
