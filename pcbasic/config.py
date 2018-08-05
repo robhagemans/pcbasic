@@ -16,7 +16,8 @@ import codecs
 import locale
 import tempfile
 import shutil
-import platform
+# import platform
+import sys
 import pkg_resources
 import string
 from collections import deque
@@ -322,8 +323,8 @@ class Settings(object):
         # prepare global logger for use by main program
         self._prepare_logging()
         # initial validations
-        python_version = tuple(int(v) for v in platform.python_version_tuple())
-        if python_version >= (3, 0, 0) or python_version < MIN_PYTHON_VERSION:
+        python_version = sys.version_info
+        if python_version.major > 2  or (python_version.minor < 7 and python_version.micro < 12 ):
             msg = ('PC-BASIC requires Python 2, version %d.%d.%d or higher. ' % MIN_PYTHON_VERSION +
                 'You have %d.%d.%d.' % python_version)
             logging.fatal(msg)
