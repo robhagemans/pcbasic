@@ -16,7 +16,6 @@ import codecs
 import locale
 import tempfile
 import shutil
-import platform
 import pkg_resources
 import string
 from collections import deque
@@ -29,6 +28,7 @@ from .compat import split_quoted
 from . import data
 
 
+# minimum required python2 version
 MIN_PYTHON_VERSION = (2, 7, 12)
 
 # base directory name
@@ -322,10 +322,13 @@ class Settings(object):
         # prepare global logger for use by main program
         self._prepare_logging()
         # initial validations
-        python_version = tuple(int(v) for v in platform.python_version_tuple())
-        if python_version >= (3, 0, 0) or python_version < MIN_PYTHON_VERSION:
-            msg = ('PC-BASIC requires Python 2, version %d.%d.%d or higher. ' % MIN_PYTHON_VERSION +
-                'You have %d.%d.%d.' % python_version)
+        # sys.version_info tuples first three elements are guaranteed to be ints
+        python_version = sys.version_info[:3]
+        if python_version >= (3,) or python_version < MIN_PYTHON_VERSION:
+            msg = (
+                'PC-BASIC requires Python 2, version %d.%d.%d or higher. ' % MIN_PYTHON_VERSION +
+                'You have %d.%d.%d.' % python_version
+            )
             logging.fatal(msg)
             raise Exception(msg)
 
