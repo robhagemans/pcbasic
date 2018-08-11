@@ -101,6 +101,7 @@ class Shell(object):
 
     def launch(self, command):
         """Run a SHELL subprocess."""
+        logging.debug('Executing SHELL command %r', command)
         if not self._shell:
             logging.warning(b'SHELL statement not enabled: no command interpreter specified.')
             raise error.BASICError(error.IFC)
