@@ -47,15 +47,13 @@ class COMDevice(Device):
         # for wait()
         self._queues = queues
         self._serial_in_size = serial_in_size
-        self._url = ''
         self._spec = arg
         self._serial = self._init_serial(arg)
         self.device_file = DeviceSettings()
         # only one file open at a time
         self._file = None
 
-    def open(self, number, param, filetype, mode, access, lock,
-                       reclen, seg, offset, length, field):
+    def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
         """Open a file on COMn: """
         if not self._serial:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -208,6 +206,7 @@ class COMDevice(Device):
     def _check_open(self):
         """Open the underlying port if necessary."""
         if not self._serial.is_open:
+            logging.debug('Opening serial port %s.', self._serial.port)
             self._serial.open()
 
     def _open_serial(self, rs=False, cs=1000, ds=1000, cd=0):
@@ -247,6 +246,10 @@ class COMDevice(Device):
 
     def set_params(self, speed, parity, bytesize, stop):
         """Set serial port connection parameters."""
+        logging.debug(
+            'Setting serial port %s parameters to (%d, %s, %s, %s).',
+            self._serial.port, speed, parity, bytesize, stop
+        )
         with safe_io(error.DEVICE_FAULT):
             self._check_open()
             self._serial.baudrate = speed
@@ -282,6 +285,7 @@ class COMDevice(Device):
     def close(self):
         """Close the serial connection."""
         if self._serial and self._serial.is_open:
+            logging.debug('Closing serial port %s.', self._serial.port)
             self._serial.close()
 
     def io_waiting(self):
@@ -309,7 +313,7 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         self.is_open = True
 
     def close(self):
-        """Close the file and the port."""
+        """Close the file (but not the port)."""
         # do *not* call the parent close()
         # as this would call close() on our (unique) serial file handle
         #TextFileBase.close(self)
@@ -330,6 +334,7 @@ class COMFile(TextFileBase, RealTimeInputMixin):
                 self._current, self._previous = self._fhandle.read(1), self._current
             if self._current:
                 s.append(self._current)
+        logging.debug('Reading from serial port %s: %r', self._fhandle.port, b''.join(s))
         return b''.join(s)
 
     def read_one(self):
@@ -362,6 +367,7 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         if self._linefeed:
             s = s.replace(b'\r', b'\r\n')
         with safe_io():
+            logging.debug('Writing to serial port %s: %r', self._fhandle.port, s)
             self._fhandle.write(s)
 
     def get(self, num):
@@ -418,6 +424,7 @@ class SerialStdIO(object):
         self.rts = False
         self.dtr = False
         self.break_condition = False
+        self.port = 'STDIO'
 
     def open(self):
         """Open a connection."""

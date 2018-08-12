@@ -101,17 +101,17 @@ class DebugSession(api.Session):
 
     def _debug_step(self, token):
         """Execute traces and watches on a program step."""
-        outstr = ''
+        outstr = u''
         if self._do_trace:
             linum = struct.unpack_from('<H', token, 2)
-            outstr += '[%i]' % linum
+            outstr += u'[%i]' % linum
         for (expr, outs) in self._watch_list:
-            outstr += ' %s = ' % str(expr)
+            outstr += u' %s = ' % str(expr)
             outs.seek(2)
             try:
                 val = self._impl.parser.expression_parser.parse(outs)
                 if isinstance(val, values.String):
-                    outstr += '"%s"' % val.to_str()
+                    outstr += u'"%s"' % self._impl.codepage.str_to_unicode(val.to_str())
                 else:
                     outstr += values.to_repr(val, leading_space=False, type_sign=True)
             except Exception as e:
@@ -163,7 +163,7 @@ class DebugSession(api.Session):
 
     def logprint(self, *args):
         """Write arguments to log."""
-        logging.debug(' '.join(bytes(arg) for arg in args))
+        logging.debug(self._impl.codepage.str_to_unicode(' '.join(bytes(arg) for arg in args)))
 
     def logwrite(self, *args):
         """Write arguments to log."""
@@ -194,7 +194,7 @@ class DebugSession(api.Session):
     def showscreen(self):
         """Copy the screen buffer to the log."""
         for s in str(self._impl.display.text_screen).split('\n'):
-            logging.debug(s)
+            logging.debug(self._impl.codepage.str_to_unicode(s))
 
     def showprogram(self):
         """Write a marked-up hex dump of the program to the log."""

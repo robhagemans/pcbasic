@@ -88,6 +88,9 @@ class Files(object):
         new_file = device.open(
                 number, dev_param, filetype, mode, access, lock,
                 reclen, seg, offset, length, field)
+        logging.debug(
+            'Opened file %r as #%d (type %s, mode %s)', dev_param, number, filetype, mode
+        )
         if number:
             self.files[number] = new_file
         return new_file
