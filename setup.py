@@ -452,6 +452,11 @@ elif CX_FREEZE and sys.platform == 'darwin':
                 'install_name_tool', '-change', '@executable_path/libSDL2.dylib',
                 '@loader_path/libSDL2.dylib', file_path
             ))
+            # remove some files we don't need
+            os.remove('build/PC-BASIC-2.0.app/Contents/MacOS/libSDL2.dylib')
+            for path in glob.glob('build/PC-BASIC-2.0.app/Contents/MacOS/libnpymath*'):
+                os.remove(path)
+
 
         def copy_file(self, src, dst):
             # catch copy errors, these happen with relative references with funny bracketed names
