@@ -531,44 +531,60 @@
             <h4 id="mounting">Accessing your drives</h4>
             <p>
                 PC-BASIC emulates DOS disk devices, which are referred to by drive letters such as <code>Z:</code>.
-                These devices can be mapped to locations in your file system.
+                One of the drive letters is the <em>current device</em>.
             </p>
             <p>
-                By default, <code>Z:</code> is PC-BASIC's current device.
-                If PC-BASIC is started from a start menu shortcut, the current device will be the shortcut's <i>Start In</i> folder.
+                On <strong>Windows</strong>:
             </p>
             <ul>
                 <li>
-                    By default, this is
-                    <code>%USERPROFILE%</code> on Windows. Usually this will be a folder named something like
+                    By default, PC-BASIC disk devices will agree with Windows drive letters at the
+                    start of the PC-BASIC session.
+                </li>
+                <li>
+                    If PC-BASIC is started from a start menu shortcut, the current device will be
+                    the shortcut's <i>Start In</i> folder. By default, this is
+                    <code>%USERPROFILE%</code>. Usually that will be a folder named something like
                     <code>C:\Users\YourName</code>.
                 </li>
                 <li>
-                    On other platforms, the default location is the home directory <code>&tilde;</code>.
-                </li>
-            </ul>
-            <p>
-                This default location is where files will be saved to and loaded from in BASIC if you do not specify another device.
-                Note that if PC-BASIC is started from the command prompt, the default location will be the current working directory.
-            </p>
-            <p>
-                <strong>Notes for Windows users</strong>
-            </p>
-            <ul>
-                <li>
-                    <em>PC-BASIC's DOS disk devices are not Windows drive letters</em>.
-                    The device <code>C:</code> on PC-BASIC is <em>not</em> your Windows <code>C:</code> drive.
-                    However, by default, Windows drive letters are mapped to PC-BASIC devices at the start
-                    of the PC-BASIC session.
+                    If PC-BASIC is started from the command prompt, the current device will be set to
+                    the current working directory of the command prompt.
                 </li>
                 <li>
                     If PC-BASIC's current device or <i>Start In</i> folder is changed to a system folder such as <code>C:\Program Files\PC-BASIC</code>,
                     Windows will move files written there to <code>%LocalAppData%\VirtualStore</code> instead.
+                    This is best avoided.
+                </li>
+                <li>
+                    Note that <em>PC-BASIC's DOS disk devices are not the same thing as Windows drive letters</em>.
+                    The device <code>C:</code> on PC-BASIC is <em>not</em> always your Windows <code>C:</code> drive.
+                    By default, Windows drive letters are mapped to PC-BASIC devices at the start
+                    of the PC-BASIC session. However, if you use the <code><a href="#--mount">mount</a></code> option;
+                    or if Windows drive letters change while PC-BASIC is running (through e.g. <code>net use</code> or
+                    <i>Map Network Drive</i> operations), they will no longer agree.
                 </li>
             </ul>
             <p>
+                On <strong>other systems</strong>:
+            </p>
+            <ul>
+                <li>
+                    By default, <code>Z:</code> will point to the current working directory from where PC-BASIC was started.
+                    It will be the current device.
+                </li>
+                <li>
+                    If started from a menu or app package, this will usually be your home directory <code>&tilde;</code>.
+                </li>
+            </ul>
+            <p>
+                This current device is where files will be saved to and loaded from in BASIC if you do not specify another device.
+                You can change the current device using the <code><a href="#--current-device">current-device</a></code>
+                option in the <a href="#settings">configuration file or on the command prompt</a>.
+            </p>
+            <p>
                 You can map drives and other file system locations as PC-BASIC devices by
-                using the <code><a href="#--mount">mount</a></code> option in the <a href="#settings">configuration file or on the command prompt</a>. For example,
+                using the <code><a href="#--mount">mount</a></code> option. For example,
                 on Windows, the option
                 <code class="block">
                     <b>mount=A:C:\Users\Me\BasicFloppy</b>
