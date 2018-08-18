@@ -15,6 +15,10 @@ from ..base import tokens as tk
 from .. import values
 
 
+# mark bytes conversion explicitly
+int2byte = chr
+
+
 class UserFunction(object):
     """User-defined function."""
 
@@ -108,17 +112,17 @@ class UserFunctionManager(object):
         pointer_loc = self._memory.code_start + ins.tell()
         # read parameters
         fnvars = []
-        if ins.skip_blank_read_if(('(',)):
+        if ins.skip_blank_read_if((b'(',)):
             while True:
                 name = ins.read_name()
                 # must not be empty
                 error.throw_if(not name, error.STX)
                 # do not append sigil here yet, leave until evaluation time
                 fnvars.append(name)
-                if ins.skip_blank() in tk.END_STATEMENT + (')',):
+                if ins.skip_blank() in tk.END_STATEMENT + (b')',):
                     break
-                ins.require_read((',',))
-            ins.require_read((')',))
+                ins.require_read((b',',))
+            ins.require_read((b')',))
         # read code
         if not ins.skip_blank_read_if((tk.O_EQ,)):
             self._fn_dict[fnname] = None
@@ -129,7 +133,7 @@ class UserFunctionManager(object):
         # allocate function pointer
         pointer = struct.pack('<H', pointer_loc) + bytearray(values.size_bytes(fnname)-2)
         # function name is represented with first char shifted by 128
-        memory_name = chr(128+ord(fnname[0])) + fnname[1:]
+        memory_name = int2byte(128+ord(fnname[0])) + fnname[1:]
         self._memory.scalars.set(memory_name, self._values.from_bytes(pointer))
         for name in fnvars:
             # allocate, but don't set, variables

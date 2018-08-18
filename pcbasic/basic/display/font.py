@@ -18,13 +18,16 @@ except ImportError:
 from ..base import signals
 
 
+# mark bytes conversion explicitly
+int2byte = chr
+
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
 # Many internet sources say this should be 0xC0--0xDF. However, that would
 # exclude the shading characters. It appears to be traced back to a mistake in
 # IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
-CARRY_COL_9_CHARS = tuple(chr(_c) for _c in range(0xb0, 0xdf+1))
+CARRY_COL_9_CHARS = tuple(int2byte(_c) for _c in range(0xb0, 0xdf+1))
 # ascii codepoints for which to repeat row 8 in row 9 (box drawing)
-CARRY_ROW_9_CHARS = tuple(chr(_c) for _c in range(0xb0, 0xdf+1))
+CARRY_ROW_9_CHARS = tuple(int2byte(_c) for _c in range(0xb0, 0xdf+1))
 
 
 # The glyphs below are extracted from Henrique Peron's CPIDOS v3.0,
@@ -33,7 +36,8 @@ CARRY_ROW_9_CHARS = tuple(chr(_c) for _c in range(0xb0, 0xdf+1))
 #   http://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/dos/cpi/
 # CPIDOS is Copyright (C) 2002-2011 by Henrique Peron (hperon@terra.com.br)
 # and licensed under the GNU GPL version 2 or later.
-DEFAULT_FONT = {chr(_i): binascii.unhexlify(_v) for _i, _v in enumerate((
+DEFAULT_FONT = {
+    int2byte(_i): binascii.unhexlify(_v) for _i, _v in enumerate((
     '0000000000000000', '7e81a581bd99817e', '7effdbffc3e7ff7e', '6cfefefe7c381000',
     '10387cfe7c381000', '387c38fefed61038', '10387cfefe7c1038', '0000183c3c180000',
     'ffffe7c3c3e7ffff', '003c664242663c00', 'ffc399bdbd99c3ff', '0f070f7dcccccc78',
@@ -113,12 +117,12 @@ class Font(object):
 
     def get_byte(self, charvalue, offset):
         """Get byte sequency for character."""
-        return ord(self._fontdict[chr(charvalue)][offset])
+        return ord(self._fontdict[int2byte(charvalue)][offset])
 
     def set_byte(self, charvalue, offset, byte):
         """Set byte sequency for character."""
-        old = self._fontdict[chr(charvalue)]
-        self._fontdict[chr(charvalue)] = old[:offset%8] + byte + old[offset%8+1:]
+        old = self._fontdict[int2byte(charvalue)]
+        self._fontdict[int2byte(charvalue)] = old[:offset%8] + byte + old[offset%8+1:]
         #self.screen.rebuild_glyph(charvalue)
 
     def build_glyph(self, c, req_width, req_height):
@@ -126,9 +130,7 @@ class Font(object):
         try:
             face = bytearray(self._fontdict[c])
         except KeyError:
-            logging.debug(
-                    b'code point [%s] not represented in font, replacing with blank glyph.',
-                    repr(c))
+            logging.debug('Code point [%r] not represented in font, replacing with blank glyph.', c)
             face = bytearray(int(self._height))
         # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
         code_height = 8 if req_height == 9 else req_height
@@ -138,18 +140,21 @@ class Font(object):
         if force_double or force_single:
             # i.e. we need a double-width char but got single or v.v.
             logging.debug(
-                    b'Incorrect glyph width for code point [%s]: %d-pixel requested, %d-pixel found.',
-                    repr(c), req_width, code_width)
+                'Incorrect glyph width for code point [%r]: %d-pixel requested, %d-pixel found.',
+                c, req_width, code_width
+            )
         return _unpack_glyph(
-                face, code_height, code_width, req_height, req_width,
-                force_double, force_single,
-                c in CARRY_COL_9_CHARS, c in CARRY_ROW_9_CHARS)
+            face, code_height, code_width, req_height, req_width,
+            force_double, force_single,
+            c in CARRY_COL_9_CHARS, c in CARRY_ROW_9_CHARS
+        )
 
 if numpy:
 
     def _unpack_glyph(
             face, code_height, code_width, req_height, req_width,
-            force_double, force_single, carry_col_9, carry_row_9):
+            force_double, force_single, carry_col_9, carry_row_9
+        ):
         """Convert byte list to glyph pixels, numpy implementation."""
         glyph = numpy.unpackbits(face, axis=0).reshape((code_height, code_width)).astype(bool)
         # repeat last rows (e.g. for 9-bit high chars)
@@ -178,7 +183,8 @@ else:
 
     def _unpack_glyph(
             face, code_height, code_width, req_height, req_width,
-            force_double, force_single, carry_col_9, carry_row_9):
+            force_double, force_single, carry_col_9, carry_row_9
+        ):
         """Convert byte list to glyph pixels, non-numpy implementation."""
         # req_width can be 8, 9 (SBCS), 16, 18 (DBCS) only
         req_width_base = req_width if req_width <= 9 else req_width // 2
@@ -225,7 +231,7 @@ class GlyphCache(object):
         # preload SBCS glyphs
         self._glyphs = {
             c: self._fonts[mode.font_height].build_glyph(c, mode.font_width, mode.font_height)
-            for c in map(chr, range(256))
+            for c in map(int2byte, range(256))
         }
         self.submit()
 
@@ -234,24 +240,29 @@ class GlyphCache(object):
         if self._mode.is_text_mode:
             # send glyphs to signals; copy is necessary
             # as dict may change here while the other thread is working on it
-            self._queues.video.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
-                ({self._codepage.to_unicode(k, u'\0'): v for k, v in self._glyphs.iteritems()},)))
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_BUILD_GLYPHS, (
+                    {self._codepage.to_unicode(k, u'\0'): v for k, v in self._glyphs.iteritems()},
+                )
+            ))
 
     def rebuild_glyph(self, ordval):
         """Rebuild a text-mode character after POKE."""
         if self._mode.is_text_mode:
             # force rebuilding the character by deleting and requesting
-            del self._glyphs[chr(ordval)]
-            self._submit_char(chr(ordval))
+            del self._glyphs[int2byte(ordval)]
+            self._submit_char(int2byte(ordval))
 
     def _submit_char(self, char):
         """Rebuild glyph and send to interface."""
         mask = self._fonts[self._mode.font_height].build_glyph(
-                char, self._mode.font_width*2, self._mode.font_height)
+            char, self._mode.font_width*2, self._mode.font_height
+        )
         self._glyphs[char] = mask
         if self._mode.is_text_mode:
             self._queues.video.put(signals.Event(
-                    signals.VIDEO_BUILD_GLYPHS, ({self._codepage.to_unicode(char, u'\0'): mask},)))
+                signals.VIDEO_BUILD_GLYPHS, ({self._codepage.to_unicode(char, u'\0'): mask},)
+            ))
 
     def check_char(self, char):
         """Submit glyph if needed."""

@@ -17,6 +17,10 @@ from .text import TextBuffer, TextRow
 from .textbase import BottomBar, Cursor, ScrollArea
 
 
+# mark bytes conversion explicitly
+int2byte = chr
+
+
 class TextScreen(object):
     """Text screen."""
 
@@ -43,8 +47,9 @@ class TextScreen(object):
         if not fonts:
             fonts = {8: {}}
         self.fonts = {
-                height: font.Font(height, font_dict)
-                for height, font_dict in fonts.iteritems()}
+            height: font.Font(height, font_dict)
+            for height, font_dict in fonts.iteritems()
+        }
         # function key macros
         self.bottom_bar = BottomBar()
 
@@ -57,8 +62,10 @@ class TextScreen(object):
         # set up glyph cache and preload halfwidth glyphs (i.e. single-byte code points)
         self._glyphs = font.GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
         # build the screen buffer
-        self.text = TextBuffer(self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
-                               self.codepage, do_fullwidth=(self.mode.font_height >= 14))
+        self.text = TextBuffer(
+            self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
+            self.codepage, do_fullwidth=(self.mode.font_height >= 14)
+        )
         # pixel buffer
         self.pixels = pixels
         # redraw key line
@@ -81,8 +88,10 @@ class TextScreen(object):
     def check_font_available(self, mode):
         """Raise IFC if no suitable font available for this mode."""
         if mode.font_height not in self.fonts:
-            logging.warning('No %d-pixel font available. Could not enter video mode %s.',
-                            mode.font_height, mode.name)
+            logging.warning(
+                'No %d-pixel font available. Could not enter video mode %s.',
+                mode.font_height, mode.name
+            )
             raise error.BASICError(error.IFC)
 
     def rebuild(self):
@@ -90,11 +99,13 @@ class TextScreen(object):
         # send the glyph dict to interface if necessary
         self._glyphs.submit()
         # fix the cursor
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
-                (self.cursor.width, self.mode.font_height,
-                 self.cursor.from_line, self.cursor.to_line)))
-        self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
-                (self.current_row, self.current_col)))
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_SET_CURSOR_SHAPE,
+            (self.cursor.width, self.mode.font_height, self.cursor.from_line, self.cursor.to_line)
+        ))
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col)
+        ))
         if self.mode.is_text_mode:
             attr = self.text.get_attr(self.apagenum, self.current_row, self.current_col)
             fore, _, _, _ = self.mode.split_attr(attr & 0xf)
@@ -108,9 +119,12 @@ class TextScreen(object):
                 self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
             # redraw graphics
             if not self.mode.is_text_mode:
-                self.queues.video.put(signals.Event(signals.VIDEO_PUT_RECT, (pagenum, 0, 0,
-                                self.mode.pixel_width-1, self.mode.pixel_height-1,
-                                self.pixels.pages[pagenum].buffer)))
+                self.queues.video.put(signals.Event(
+                    signals.VIDEO_PUT_RECT, (
+                        pagenum, 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
+                        self.pixels.pages[pagenum].buffer
+                    )
+                ))
 
     def __str__(self):
         """Return a string representation of the screen buffer (for debugging)."""
@@ -122,47 +136,47 @@ class TextScreen(object):
         """Write a string to the screen at the current position."""
         if do_echo:
             # CR -> CRLF, CRLF -> CRLF LF
-            self._io_streams.write(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
+            self._io_streams.write(b''.join([(b'\r\n' if c == b'\r' else c) for c in s]))
         last = ''
         # if our line wrapped at the end before, it doesn't anymore
         self.text.pages[self.apagenum].row[self.current_row-1].wrap = False
         for c in s:
             row, col = self.current_row, self.current_col
-            if c == '\t':
+            if c == b'\t':
                 # TAB
                 num = (8 - (col - 1 - 8 * int((col-1) // 8)))
                 for _ in range(num):
-                    self.write_char(' ')
-            elif c == '\n':
+                    self.write_char(b' ')
+            elif c == b'\n':
                 # LF
                 # exclude CR/LF
-                if last != '\r':
+                if last != b'\r':
                     # LF connects lines like word wrap
                     self.text.pages[self.apagenum].row[row-1].wrap = True
                     self.set_pos(row + 1, 1, scroll_ok)
-            elif c == '\r':
+            elif c == b'\r':
                 # CR
                 self.text.pages[self.apagenum].row[row-1].wrap = False
                 self.set_pos(row + 1, 1, scroll_ok)
-            elif c == '\a':
+            elif c == b'\a':
                 # BEL
                 self.sound.beep()
-            elif c == '\x0B':
+            elif c == b'\x0B':
                 # HOME
                 self.set_pos(1, 1, scroll_ok)
-            elif c == '\x0C':
+            elif c == b'\x0C':
                 # CLS
                 self.clear_view()
-            elif c == '\x1C':
+            elif c == b'\x1C':
                 # RIGHT
                 self.set_pos(row, col + 1, scroll_ok)
-            elif c == '\x1D':
+            elif c == b'\x1D':
                 # LEFT
                 self.set_pos(row, col - 1, scroll_ok)
-            elif c == '\x1E':
+            elif c == b'\x1E':
                 # UP
                 self.set_pos(row - 1, col, scroll_ok)
-            elif c == '\x1F':
+            elif c == b'\x1F':
                 # DOWN
                 self.set_pos(row + 1, col, scroll_ok)
             else:
@@ -310,8 +324,7 @@ class TextScreen(object):
             self.current_row = self.scroll_area.top
         self._move_cursor(self.current_row, self.current_col)
         # signal position change
-        return (self.current_row == oldrow and
-                 self.current_col == oldcol)
+        return (self.current_row == oldrow and self.current_col == oldcol)
 
     def _move_cursor(self, row, col):
         """Move the cursor to a new position."""
@@ -320,11 +333,13 @@ class TextScreen(object):
         width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
         self.cursor.set_width(width)
         # set the cursor's attribute to that of the current location
-        fore, _, _, _ = self.mode.split_attr(0xf &
-                self.text.get_attr(self.apagenum, self.current_row, self.current_col))
+        fore, _, _, _ = self.mode.split_attr(
+            0xf & self.text.get_attr(self.apagenum, self.current_row, self.current_col)
+        )
         self.cursor.reset_attr(fore)
-        self.queues.video.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
-                (self.current_row, self.current_col)))
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col))
+        )
 
     def move_to_end(self):
         """Jump to end of logical line; follow wraps (END)."""
@@ -360,16 +375,19 @@ class TextScreen(object):
             # ensure glyph is stored
             self._glyphs.check_char(char)
             fore, back, blink, underline = self.mode.split_attr(attr)
-            self.queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH, (
+            self.queues.video.put(signals.Event(
+                signals.VIDEO_PUT_GLYPH, (
                     pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
                     len(char) > 1, fore, back, blink, underline,
-            )))
+                )
+            ))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
                 x0, y0, x1, y1, sprite = self._glyphs.get_sprite(r, c, char, fore, back)
                 self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1, sprite, tk.PSET)
                 self.queues.video.put(signals.Event(
-                        signals.VIDEO_PUT_RECT, (self.apagenum, x0, y0, x1, y1, sprite)))
+                    signals.VIDEO_PUT_RECT, (self.apagenum, x0, y0, x1, y1, sprite)
+                ))
 
     def _redraw_row(self, start, row, wrap=True):
         """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
@@ -377,9 +395,12 @@ class TextScreen(object):
             for i in range(start, self.text.pages[self.apagenum].row[row-1].end):
                 # redrawing changes colour attributes to current foreground (cf. GW)
                 # don't update all dbcs chars behind at each put
-                char = chr(self.text.get_char(self.apagenum, row, i+1))
+                char = int2byte(self.text.get_char(self.apagenum, row, i+1))
                 self.put_char_attr(self.apagenum, row, i+1, char, self.attr, one_only=True)
-            if (wrap and self.text.pages[self.apagenum].row[row-1].wrap and row >= 0 and row < self.text.height-1):
+            if (
+                    wrap and self.text.pages[self.apagenum].row[row-1].wrap and
+                    row >= 0 and row < self.text.height-1
+                ):
                 row += 1
                 start = 0
             else:
@@ -463,8 +484,9 @@ class TextScreen(object):
         if from_line is None:
             from_line = self.scroll_area.top
         _, back, _, _ = self.mode.split_attr(self.attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_SCROLL_UP,
-                    (from_line, self.scroll_area.bottom, back)))
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_SCROLL_UP, (from_line, self.scroll_area.bottom, back)
+        ))
         if self.current_row > from_line:
             self.current_row -= 1
         # sync buffers with the new screen reality:
@@ -479,8 +501,9 @@ class TextScreen(object):
     def scroll_down(self, from_line):
         """Scroll the scroll region down by one line, starting at from_line."""
         _, back, _, _ = self.mode.split_attr(self.attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_SCROLL_DOWN,
-                    (from_line, self.scroll_area.bottom, back)))
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_SCROLL_DOWN, (from_line, self.scroll_area.bottom, back)
+        ))
         if self.current_row >= from_line:
             self.current_row += 1
         # sync buffers with the new screen reality:
@@ -511,7 +534,9 @@ class TextScreen(object):
             if not self.text.pages[self.apagenum].row[self.current_row-1].wrap:
                 return
             # else: LF case; scroll up without changing attributes
-            self.text.pages[self.apagenum].row[self.current_row-1].wrap = self.text.pages[self.apagenum].row[self.current_row].wrap
+            self.text.pages[self.apagenum].row[self.current_row-1].wrap = (
+                self.text.pages[self.apagenum].row[self.current_row].wrap
+            )
             self.scroll(self.current_row + 1)
             # redraw from the LF
             self._rewrite_for_delete(text[1:] + b' ' * cwidth)
@@ -519,7 +544,10 @@ class TextScreen(object):
             # rewrite the contents (with the current attribute!)
             self._rewrite_for_delete(text[cwidth:] + b' ' * cwidth)
             # if last row was empty, scroll up.
-            if self.text.pages[self.apagenum].row[lastrow-1].end == 0 and self.text.pages[self.apagenum].row[lastrow-2].wrap:
+            if (
+                    self.text.pages[self.apagenum].row[lastrow-1].end == 0 and
+                    self.text.pages[self.apagenum].row[lastrow-2].wrap
+                ):
                 self.text.pages[self.apagenum].row[lastrow-2].wrap = False
                 self.scroll(lastrow)
         # restore original position
@@ -529,7 +557,9 @@ class TextScreen(object):
         """Rewrite text contents (with the current attribute)."""
         for c in text:
             if c == b'\n':
-                self.put_char_attr(self.apagenum, self.current_row, self.current_col, b' ', self.attr)
+                self.put_char_attr(
+                    self.apagenum, self.current_row, self.current_col, b' ', self.attr
+                )
                 self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col-1
                 break
             else:
@@ -578,7 +608,10 @@ class TextScreen(object):
             self.insert_fullchars(row, col, b' ' * (self.mode.width-col+1), self.attr)
             self.text.pages[self.apagenum].row[row-1].end = col - 1
         else:
-            while (self.text.pages[self.apagenum].row[row-1].wrap and row < self.scroll_area.bottom):
+            while (
+                    self.text.pages[self.apagenum].row[row-1].wrap and
+                    row < self.scroll_area.bottom
+                ):
                 row += 1
             if row >= self.scroll_area.bottom:
                 self.scroll()
@@ -602,10 +635,12 @@ class TextScreen(object):
     def copy_clipboard(self, start_row, start_col, stop_row, stop_col, is_mouse_selection):
         """Copy selected screen area to clipboard."""
         clips = self.text.get_text_logical(
-                self.vpagenum, start_row, start_col, stop_row, stop_col)
+            self.vpagenum, start_row, start_col, stop_row, stop_col
+        )
         text = u'\n'.join(self.codepage.str_to_unicode(clip) for clip in clips)
         self.queues.video.put(signals.Event(
-                signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)))
+                signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)
+        ))
 
     ###########################################################################
     # text screen callbacks
@@ -695,7 +730,10 @@ class TextScreen(object):
         if start is None and stop is None:
             self.scroll_area.unset()
         else:
-            max_line = 25 if (self.capabilities in ('pcjr', 'tandy') and not self.bottom_bar.visible) else 24
+            if self.capabilities in ('pcjr', 'tandy') and not self.bottom_bar.visible:
+                max_line = 25
+            else:
+                max_line = 24
             error.range_check(1, max_line, start, stop)
             error.throw_if(stop < start)
             self._set_scroll_area(start, stop)

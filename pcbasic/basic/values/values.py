@@ -17,6 +17,10 @@ from . import numbers
 from . import strings
 
 
+# mark bytes conversion explicitly
+int2byte = chr
+
+
 # BASIC type sigils:
 # Integer (%) - stored as two's complement, little-endian
 # Single (!) - stored as 4-byte Microsoft Binary Format
@@ -32,8 +36,19 @@ TYPE_TO_SIZE = {STR: 3, INT: 2, SNG: 4, DBL: 8}
 SIZE_TO_TYPE = {2: INT, 3: STR, 4: SNG, 8: DBL}
 
 # type classes
-SIZE_TO_CLASS = {2: numbers.Integer, 3: strings.String, 4: numbers.Single, 8: numbers.Double}
-TYPE_TO_CLASS = {INT: numbers.Integer, STR: strings.String, SNG: numbers.Single, DBL: numbers.Double}
+SIZE_TO_CLASS = {
+    2: numbers.Integer,
+    3: strings.String,
+    4: numbers.Single,
+    8: numbers.Double
+}
+
+TYPE_TO_CLASS = {
+    INT: numbers.Integer,
+    STR: strings.String,
+    SNG: numbers.Single,
+    DBL: numbers.Double
+}
 
 
 def size_bytes(name):
@@ -260,12 +275,12 @@ class Values(object):
         if typechar == STR:
             return self.new_string().from_str(word)
         # skip spaces and line feeds (but not NUL).
-        word = word.lstrip(' \n').upper()
+        word = word.lstrip(b' \n').upper()
         if not word:
             return self.new_integer()
-        if word[:2] == '&H':
+        if word[:2] == b'&H':
             return self.new_integer().from_hex(word[2:])
-        elif word[:1] == '&':
+        elif word[:1] == b'&':
             return self.new_integer().from_oct(word[2:] if word[1:2] == 'O' else word[1:])
         # we need to try to convert to int first,
         # mainly so that the tokeniser can output the right token type
@@ -551,7 +566,8 @@ def str_(args):
     """STR$: string representation of a number."""
     x, = args
     return x._values.new_string().from_str(
-                to_repr(pass_number(x), leading_space=True, type_sign=False))
+        to_repr(pass_number(x), leading_space=True, type_sign=False)
+    )
 
 def val_(args):
     """VAL: number value of a string."""
@@ -578,7 +594,7 @@ def chr_(args):
     x, = args
     val = pass_number(x).to_integer().to_int()
     error.range_check(0, 255, val)
-    return x._values.new_string().from_str(chr(val))
+    return x._values.new_string().from_str(int2byte(val))
 
 def oct_(args):
     """OCT$: octal representation of int."""
@@ -656,7 +672,7 @@ def instr_(args):
     new_int = numbers.Integer(None, big._values)
     big = big.to_str()
     small = small.to_str()
-    if big == '' or start > len(big):
+    if big == b'' or start > len(big):
         return new_int
     # BASIC counts string positions from 1
     find = big[start-1:].find(small)
@@ -678,7 +694,7 @@ def string_(args):
         # overflow if outside Integer range
         ascval = asc_value_or_char.to_integer().to_int()
         error.range_check(0, 255, ascval)
-        char = chr(ascval)
+        char = int2byte(ascval)
     return strings.String(None, asc_value_or_char._values).from_str(char * num)
 
 ##############################################################################

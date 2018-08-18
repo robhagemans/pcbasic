@@ -9,6 +9,11 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 from . import values
 
+
+# mark bytes conversion explicitly
+int2byte = chr
+
+
 class Randomiser(object):
     """Linear Congruential Generator """
 
@@ -28,22 +33,26 @@ class Randomiser(object):
 
     def reseed(self, val):
         """Reseed the random number generator."""
-        # RANDOMIZE converts to int in a non-standard way - looking at the first two bytes in the internal representation
+        # RANDOMIZE converts to int in a non-standard way -
+        # looking at the first two bytes in the internal representation
         # on a program line, if a number outside the signed int range (or -32768) is entered,
         # the number is stored as a MBF double or float. Randomize then:
         #   - ignores the first 4 bytes (if it's a double)
         #   - reads the next two
         #   - xors them with the final two (most significant including sign bit, and exponent)
         # and interprets them as a signed int
-        # e.g. 1#    = /x00/x00/x00/x00 /x00/x00/x00/x81 gets read as /x00/x00 ^ /x00/x81 = /x00/x81 -> 0x10000-0x8100 = -32512 (sign bit set)
-        #      0.25# = /x00/x00/x00/x00 /x00/x00/x00/x7f gets read as /x00/x00 ^ /x00/x7f = /x00/x7F -> 0x7F00 = 32512 (sign bit not set)
-        #              /xDE/xAD/xBE/xEF /xFF/x80/x00/x80 gets read as /xFF/x80 ^ /x00/x80 = /xFF/x00 -> 0x00FF = 255
+        # e.g. 1#    = /x00/x00/x00/x00 /x00/x00/x00/x81 gets read as /x00/x00 ^ /x00/x81
+        #            = /x00/x81 -> 0x10000-0x8100 = -32512 (sign bit set)
+        #      0.25# = /x00/x00/x00/x00 /x00/x00/x00/x7f gets read as /x00/x00 ^ /x00/x7f
+        #            = /x00/x7F -> 0x7F00 = 32512 (sign bit not set)
+        #              /xDE/xAD/xBE/xEF /xFF/x80/x00/x80 gets read as /xFF/x80 ^ /x00/x80 
+        #            = /xFF/x00 -> 0x00FF = 255
         s = val.to_bytes()
         final_two = s[-2:]
         mask = bytearray(2)
         if len(s) >= 4:
             mask = s[-4:-2]
-        final_two = chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1])
+        final_two = int2byte(final_two[0]^mask[0]) + int2byte(final_two[1]^mask[1])
         # unpack to signed integer
         n, = struct.unpack('<h', final_two)
         self._seed &= 0xff
@@ -65,7 +74,8 @@ class Randomiser(object):
                 self._cycle(f.mantissa())
         # seed/period
         return self._values.new_single().from_int(self._seed).idiv(
-                    self._values.new_single().from_int(self._period))
+            self._values.new_single().from_int(self._period)
+        )
 
     def _cycle(self, n):
         """Get a value from the random number generator (int argument)."""

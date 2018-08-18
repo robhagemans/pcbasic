@@ -17,6 +17,10 @@ from . import values
 from . import converter
 
 
+# mark bytes conversion explicitly
+int2byte = chr
+
+
 class Program(object):
     """BASIC program."""
 
@@ -77,7 +81,7 @@ class Program(object):
         self.last_stored = None
         self.code_size = self.bytecode.tell()
 
-    def truncate(self, rest=''):
+    def truncate(self, rest=b''):
         """Write bytecode and cut the program of beyond the current position."""
         self.bytecode.write(rest if rest else b'\0\0\0')
         self.bytecode.truncate()
@@ -439,7 +443,7 @@ class Program(object):
                 self.bytecode.write(b'\0' * (offset-self.bytecode.tell()))
             else:
                 self.bytecode.seek(offset)
-            self.bytecode.write(chr(val))
+            self.bytecode.write(int2byte(val))
             self.bytecode.seek(0, 2)
             self.rebuild_line_dict()
             # restore program pointer

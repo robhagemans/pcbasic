@@ -9,6 +9,11 @@ import pcbasic.basic.values
 from pcbasic.basic.values.numbers import *
 from pcbasic.basic.values import numbers
 
+
+# mark bytes conversion explicitly
+int2byte = chr
+
+
 if __name__ == '__main__':
     vm = values.Values(None, None, False)
     for i in range(127,130):
@@ -16,7 +21,7 @@ if __name__ == '__main__':
         r = vm.new_single().from_int(2**23)
         r.iadd(a)
         s = r.clone()
-        s.view()[-1:] = chr(ord(s.view()[-1])+8)
+        s.view()[-1:] = int2byte(ord(s.view()[-1])+8)
         t = s.clone()
         print s.iadd(r).isub(t).isub(r).to_value(),
 
@@ -26,7 +31,7 @@ if __name__ == '__main__':
     # with open('ALLWORD.DAT', 'wb') as f:
     #     for i in range(256):
     #         for j in range(256):
-    #             f.write(chr(j)+chr(i)+'\0'+'\x80')
+    #             f.write(int2byte(j)+int2byte(i)+'\0'+'\x80')
 
     print 'allbytes-add'
 
@@ -38,8 +43,8 @@ if __name__ == '__main__':
                         buf = bytearray(f.read(4))
                         if len(buf) < 4:
                             break
-                        bufl = bytearray(chr(buf[0])+'\0\0'+chr(0x80))
-                        bufr = bytearray(chr(buf[1])+'\0\0'+chr(0x80))
+                        bufl = bytearray('%c\0\0\80' % buf[0])
+                        bufr = bytearray('%c\0\0\80' % buf[1])
 
                         l = Single(bufl, vm)
                         bufs = str(bufl), str(bufr)
@@ -61,8 +66,8 @@ if __name__ == '__main__':
                         buf = bytearray(f.read(4))
                         if len(buf) < 4:
                             break
-                        bufl = bytearray(chr(buf[0])+'\0\0'+chr(0x80))
-                        bufr = bytearray(chr(buf[1])+'\0\0'+chr(0x80))
+                        bufl = bytearray('%c\0\0\80' % buf[0])
+                        bufr = bytearray('%c\0\0\80' % buf[1])
 
                         l = Single(bufl, vm)
                         bufs = str(bufl), str(bufr)
@@ -77,7 +82,7 @@ if __name__ == '__main__':
 
     for shift in [0,]+range(9, 11):
         r = vm.new_single()
-        letter = chr(ord('0')+shift) if shift<10 else chr(ord('A')-10+shift)
+        letter = int2byte(ord('0')+shift) if shift<10 else int2byte(ord('A')-10+shift)
         print letter
 
         with open('input/ALLWORD.DAT', 'rb') as f:
@@ -85,7 +90,7 @@ if __name__ == '__main__':
                 with open('output/ALLWORD'+letter+'.DAT', 'wb') as g:
                         while True:
                             l = r
-                            l.view()[3:] = chr(0x80+shift)
+                            l.view()[3:] = int2byte(0x80+shift)
                             buf = bytearray(f.read(4))
                             if len(buf) < 4:
                                 break
@@ -107,7 +112,7 @@ if __name__ == '__main__':
 
     for shift in range(17):
         r = vm.new_single()
-        letter = chr(ord('0')+shift) if shift<10 else chr(ord('A')-10+shift)
+        letter = int2byte(ord('0')+shift) if shift<10 else int2byte(ord('A')-10+shift)
         print letter
 
         with open('input/BYTES.DAT', 'rb') as f:
@@ -115,7 +120,7 @@ if __name__ == '__main__':
                 with open('output/LO'+letter+'.DAT', 'wb') as g:
                         while True:
                             l = r
-                            l.view()[3:] = chr(0x80+shift)
+                            l.view()[3:] = int2byte(0x80+shift)
                             buf = bytearray(f.read(4))
                             if len(buf) < 4:
                                 break

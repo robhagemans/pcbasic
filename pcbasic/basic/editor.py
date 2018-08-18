@@ -13,9 +13,10 @@ from .base import error
 from .base import tokens as tk
 from .base.eascii import as_bytes as ea
 
+
 # alt+key macros for interactive mode
 # these happen at a higher level than F-key macros
-alt_key_replace = {
+ALT_KEY_REPLACE = {
     ea.ALT_a: tk.KW_AUTO,
     ea.ALT_b: tk.KW_BSAVE,
     ea.ALT_c: tk.KW_COLOR,
@@ -38,7 +39,13 @@ alt_key_replace = {
     ea.ALT_v: tk.KW_VAL,
     ea.ALT_w: tk.KW_WIDTH,
     ea.ALT_x: tk.KW_XOR,
-    }
+}
+
+ALPHANUMERIC = bytes(string.digits + string.ascii_letters)
+
+
+# mark bytes conversion explicitly
+int2byte = chr
 
 
 class FunctionKeyMacros(object):
@@ -48,7 +55,8 @@ class FunctionKeyMacros(object):
     _replace_chars = {
         b'\x07': b'\x0e', b'\x08': b'\xfe', b'\x09': b'\x1a', b'\x0A': b'\x1b',
         b'\x0B': b'\x7f', b'\x0C': b'\x16', b'\x0D': b'\x1b', b'\x1C': b'\x10',
-        b'\x1D': b'\x11', b'\x1E': b'\x18', b'\x1F': b'\x19'}
+        b'\x1D': b'\x11', b'\x1E': b'\x18', b'\x1F': b'\x19'
+    }
 
     def __init__(self, keyboard, screen, num_fn_keys):
         """Initialise user-definable key list."""
@@ -217,7 +225,7 @@ class Editor(object):
                 else:
                     try:
                         # these are done on a less deep level than the fn key macros
-                        letters = list(alt_key_replace[d]) + [' ']
+                        letters = list(ALT_KEY_REPLACE[d]) + [b' ']
                     except KeyError:
                         letters = [d]
                     for d in letters:
@@ -273,8 +281,8 @@ class Editor(object):
         crow, ccol = self._screen.current_row, self._screen.current_col
         # find non-alphanumeric chars
         while True:
-            c = chr(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
-            if (c not in string.digits + string.ascii_letters):
+            c = int2byte(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
+            if (c not in ALPHANUMERIC):
                 break
             ccol += 1
             if ccol > self._screen.mode.width:
@@ -285,8 +293,8 @@ class Editor(object):
                 ccol = 1
         # find alphanumeric chars
         while True:
-            c = chr(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
-            if (c in string.digits + string.ascii_letters):
+            c = int2byte(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
+            if (c in ALPHANUMERIC):
                 break
             ccol += 1
             if ccol > self._screen.mode.width:
@@ -309,8 +317,8 @@ class Editor(object):
                     return
                 crow -= 1
                 ccol = self._screen.mode.width
-            c = chr(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
-            if (c in string.digits + string.ascii_letters):
+            c = int2byte(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
+            if (c in ALPHANUMERIC):
                 break
         # find non-alphanumeric chars
         while True:
@@ -321,7 +329,7 @@ class Editor(object):
                     break
                 crow -= 1
                 ccol = self._screen.mode.width
-            c = chr(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
-            if (c not in string.digits + string.ascii_letters):
+            c = int2byte(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
+            if (c not in ALPHANUMERIC):
                 break
         self._screen.set_pos(last_row, last_col)

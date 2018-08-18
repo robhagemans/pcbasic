@@ -30,6 +30,10 @@ from ..base import tokens as tk
 from ..base import error
 
 
+# mark bytes conversion explicitly
+int2byte = chr
+
+
 # for to_str
 # for numbers, tab and LF are whitespace
 BLANKS = b' \t\n'
@@ -210,7 +214,7 @@ class Integer(Number):
             byte = ord(self._buffer[0])
             # although there is a one-byte token for '10', we don't write it.
             if byte < 10:
-                return chr(ord(tk.C_0) + byte)
+                return int2byte(ord(tk.C_0) + byte)
             else:
                 return tk.T_BYTE + self._buffer[0]
         else:
@@ -236,7 +240,7 @@ class Integer(Number):
         elif d == tk.T_BYTE:
             self._buffer[:] = token[-1] + b'\0'
         elif tk.C_0 <= d <= tk.C_10:
-            self._buffer[:] = chr(ord(d) - 0x11) + b'\0'
+            self._buffer[:] = int2byte(ord(d) - 0x11) + b'\0'
         else:
             raise ValueError('%s is not an Integer token.' % repr(token))
         return self
@@ -302,7 +306,7 @@ class Integer(Number):
             lsb -= 0x100
             msb += 1
         # ignore overflow, since -0 == 0
-        self._buffer[:] = chr(lsb) + chr(msb & 0xff)
+        self._buffer[:] = int2byte(lsb) + int2byte(msb & 0xff)
         return self
 
     def iabs(self):
@@ -321,7 +325,7 @@ class Integer(Number):
         # overflow if signs were equal and have changed
         if (ord(self._buffer[1]) > 0x7f) == (ord(rhs._buffer[1]) > 0x7f) != (msb > 0x7f):
             raise error.BASICError(error.OVERFLOW)
-        self._buffer[:] = chr(lsb) + chr(msb & 0xff)
+        self._buffer[:] = int2byte(lsb) + int2byte(msb & 0xff)
         return self
 
     def isub(self, rhs):
@@ -460,7 +464,7 @@ class Float(Number):
         if not self._check_limits(exp, neg):
             return self
         struct.pack_into(self._intformat, self._buffer, 0, man & (self._mask if neg else self._posmask))
-        self._buffer[-1] = chr(exp)
+        self._buffer[-1] = int2byte(exp)
         return self
 
 
@@ -486,7 +490,7 @@ class Float(Number):
             if not self._check_limits(exp, neg):
                 return self
             struct.pack_into(self._intformat, self._buffer, 0, man & (self._mask if neg else self._posmask))
-            self._buffer[-1] = chr(exp)
+            self._buffer[-1] = int2byte(exp)
         return self
 
     def to_int_truncate(self):
@@ -504,12 +508,12 @@ class Float(Number):
 
     def ineg(self):
         """Negate in-place."""
-        self._buffer[-2] = chr(ord(self._buffer[-2]) ^ 0x80)
+        self._buffer[-2] = int2byte(ord(self._buffer[-2]) ^ 0x80)
         return self
 
     def iabs(self):
         """Absolute value in-place."""
-        self._buffer[-2] = chr(ord(self._buffer[-2]) & 0x7F)
+        self._buffer[-2] = int2byte(ord(self._buffer[-2]) & 0x7F)
         return self
 
     def iround(self):
@@ -883,7 +887,7 @@ class Float(Number):
         # pack into byte representation
         struct.pack_into(self._intformat, self._buffer, 0, (man>>8) & (self._mask if neg else self._posmask))
         if self._check_limits(exp, neg):
-            self._buffer[-1] = chr(exp)
+            self._buffer[-1] = int2byte(exp)
         return self
 
     def _to_int_den(self):
@@ -909,7 +913,7 @@ class Float(Number):
             raise OverflowError(self)
         elif exp <= 0:
             # set to zero, but leave mantissa as is
-            self._buffer[-1:] = chr(0)
+            self._buffer[-1:] = int2byte(0)
             return False
         return True
 

@@ -18,6 +18,11 @@ from ..base import error
 from ..base import tokens as tk
 from .devicebase import RawFile, TextFileBase, InputMixin, DeviceSettings, parse_protocol_string
 
+
+# mark bytes conversion explicitly
+int2byte = chr
+
+# file types (data, bsaved memory, protected, ascii, tokenised)
 TOKEN_TO_TYPE = {
     0: b'D', 1: b'M', 0xa0: b'P',
     0x20: b'P', 0x40: b'A', 0x80: b'B'
@@ -44,7 +49,7 @@ class CASDevice(object):
     """Cassette tape device (CASn:) """
 
     # control characters not allowed in file name on tape
-    _illegal_chars = set(map(chr, range(0x20)))
+    _illegal_chars = set(map(int2byte, range(0x20)))
 
     def __init__(self, arg, screen):
         """Initialise tape device."""
@@ -66,8 +71,7 @@ class CASDevice(object):
                 # 'CAS' is default
                 self.tapestream = CassetteStream(CASBitStream(val, 'r'))
         except EnvironmentError as e:
-            logging.warning("Couldn't attach %s to CAS device: %s",
-                            val, str(e))
+            logging.warning('Could not attach %s to CAS device: %s', val, str(e))
             self.tapestream = None
 
     def available(self):
@@ -79,8 +83,7 @@ class CASDevice(object):
         if self.tapestream:
             self.tapestream.close_tape()
 
-    def open(self, number, param, filetype, mode, access, lock,
-                   reclen, seg, offset, length, field):
+    def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
         """Open a file on tape."""
         if not self.tapestream:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -90,17 +93,17 @@ class CASDevice(object):
             # Cassette BASIC throws bad file NUMBER, for some reason.
             raise error.BASICError(error.BAD_FILE_NUMBER)
         try:
-            if mode == 'O':
+            if mode == b'O':
                 self.tapestream.open_write(param, filetype, seg, offset, length)
-            elif mode == 'I':
+            elif mode == b'I':
                 _, filetype, seg, offset, length = self._search(param, filetype)
             else:
                 raise error.BASICError(error.BAD_FILE_MODE)
         except EnvironmentError:
             raise error.BASICError(error.DEVICE_IO_ERROR)
-        if filetype == 'D':
+        if filetype == b'D':
             return CASTextFile(self.tapestream, filetype, mode)
-        elif filetype == 'A':
+        elif filetype == b'A':
             return CASTextFile(self.tapestream, filetype, mode)
         else:
             return CASBinaryFile(self.tapestream, filetype, mode, seg, offset, length)
@@ -112,13 +115,13 @@ class CASDevice(object):
                 trunk, filetype, seg, offset, length = self.tapestream.open_read()
                 if ((not trunk_req or trunk.rstrip() == trunk_req.rstrip()) and
                         (not filetypes_req or filetype in filetypes_req)):
-                    message = "%s Found." % (trunk + '.' + filetype)
+                    message = b'%s.%s Found.' % (trunk, filetype)
                     if not self.is_quiet:
                         self.screen.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
                     return trunk, filetype, seg, offset, length
                 else:
-                    message = "%s Skipped." % (trunk + '.' + filetype)
+                    message = b'%s.%s Skipped.' % (trunk, filetype)
                     if not self.is_quiet:
                         self.screen.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
@@ -160,8 +163,8 @@ class CASTextFile(TextFileBase, InputMixin):
     def close(self):
         """Close a file on tape."""
         # terminate cassette text files with NUL
-        if self.mode == 'O':
-            self.write('\0')
+        if self.mode == b'O':
+            self.write(b'\0')
         try:
             self._fhandle.close()
         except EnvironmentError:
@@ -181,7 +184,7 @@ class CassetteStream(object):
         self.last = 0, 0, 0
         self.buffer_complete = False
         self.length = 0
-        self.filetype = ''
+        self.filetype = b''
         self.rwmode = ''
 
     def close(self):
@@ -213,7 +216,7 @@ class CassetteStream(object):
 
     def read(self, nbytes=-1):
         """Read bytes from a file on tape."""
-        c = ''
+        c = b''
         try:
             while True:
                 if nbytes > -1:
@@ -237,14 +240,12 @@ class CassetteStream(object):
         self.rwmode = 'r'
         while True:
             record = self._read_record(None)
-            if record and record[0] == '\xa5':
+            if record and record[0] == b'\xa5':
                 break
             else:
                 # unknown record type
-                logging.debug("%s Skipped non-header record.",
-                              timestamp(self.bitstream.counter()))
-        file_trunk, token, self.length, seg, offset = struct.unpack('<8sBHHH',
-                                                                    record[1:16])
+                logging.debug('%s Skipped non-header record.', timestamp(self.bitstream.counter()))
+        file_trunk, token, self.length, seg, offset = struct.unpack('<8sBHHH', record[1:16])
         try:
             self.filetype = TOKEN_TO_TYPE[token]
         except KeyError:
@@ -261,7 +262,7 @@ class CassetteStream(object):
         self.buffer_complete = False
         self.bitstream.switch_mode('w')
         self.rwmode = 'w'
-        if filetype in ('A', 'D'):
+        if filetype in (b'A', b'D'):
             # ASCII program files: length, seg, offset are untouched,
             # remain that of the previous file recorded!
             seg, offs, length = self.last
@@ -269,9 +270,11 @@ class CassetteStream(object):
             self.last = seg, offs, length
         self.filetype = filetype
         # header seems to end at 0x00, 0x01, then filled out with last char
-        header = struct.pack('<c8sBHHHBB',
-                    '\xa5', name[:8] + ' ' * (8-len(name)),
-                    TYPE_TO_TOKEN[filetype], length, seg, offs, 0, 1)
+        header = struct.pack(
+            '<c8sBHHHBB',
+            b'\xa5', name[:8] + b' ' * (8-len(name)),
+            TYPE_TO_TOKEN[filetype], length, seg, offs, 0, 1
+        )
         self._write_record(header)
         self.is_open = True
 
@@ -281,7 +284,7 @@ class CassetteStream(object):
             # reached end-of-tape without finding appropriate file
             raise EndOfTape()
         self.record_num += 1
-        record = ''
+        record = b''
         block_num = 0
         byte_count = 0
         while byte_count < reclen or reclen is None:
@@ -309,14 +312,14 @@ class CassetteStream(object):
     def _read_block(self):
         """Read a block of data from tape."""
         count = 0
-        data = ''
+        data = b''
         while True:
             if count == 256:
                 break
             byte = self.bitstream.read_byte()
             if byte is None:
                 raise PulseError()
-            data += chr(byte)
+            data += int2byte(byte)
             count += 1
         bytes0, bytes1 = self.bitstream.read_byte(), self.bitstream.read_byte()
         crc_given = bytes0 * 0x100 + bytes1
@@ -324,8 +327,7 @@ class CassetteStream(object):
         # if crc for either polarity matches, return that
         if crc_given == crc_calc:
             return data
-        raise CRCError("CRC check failed, required: %04x realised: %04x" %
-                        (crc_given, crc_calc))
+        raise CRCError('CRC check failed, required: %04x realised: %04x' % (crc_given, crc_calc))
 
     def _write_block(self, data):
         """Write a 256-byte block to tape."""
@@ -343,7 +345,7 @@ class CassetteStream(object):
         """Read to fill the tape buffer."""
         if self.buffer_complete:
             return False
-        if self.filetype in ('M', 'B', 'P'):
+        if self.filetype in (b'M', b'B', b'P'):
             # bsave, tokenised and protected come in one multi-block record
             self.record_stream = io.BytesIO()
             self.record_stream.write(self._read_record(self.length))
@@ -364,7 +366,7 @@ class CassetteStream(object):
 
     def _flush_record_buffer(self):
         """Write the tape buffer to tape."""
-        if self.filetype not in ('M', 'B', 'P') and self.rwmode == 'w':
+        if self.filetype not in (b'M', b'B', b'P') and self.rwmode == 'w':
             data = self.record_stream.getvalue()
             while True:
                 if len(data) < 255:
@@ -372,7 +374,7 @@ class CassetteStream(object):
                 chunk, data = data[:255], data[255:]
                 # ascii and data come as a sequence of one-block records
                 # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
-                self._write_record('\0' + chunk)
+                self._write_record(b'\0' + chunk)
             self.record_stream = io.BytesIO()
             self.record_stream.write(data)
             self.record_stream.seek(0, 2)
@@ -383,12 +385,12 @@ class CassetteStream(object):
             self._flush_record_buffer()
             self.buffer_complete = True
             data = self.record_stream.getvalue()
-            if self.filetype in ('M', 'B', 'P'):
+            if self.filetype in (b'M', b'B', b'P'):
                 # bsave, tokenised and protected come in one multi-block record
                 self._write_record(data)
             else:
                 if data:
-                    self._write_record(chr(len(data)) + data)
+                    self._write_record(int2byte(len(data)) + data)
         self.record_stream = io.BytesIO()
 
 
@@ -401,7 +403,7 @@ class TapeBitStream(object):
     # sync byte for IBM PC tapes
     sync_byte = 0x16
     # intro text
-    intro = 'PC-BASIC tape\x1a'
+    intro = b'PC-BASIC tape\x1a'
 
     def __init__(self, mode='r'):
         """Initialise tape interface."""
@@ -427,7 +429,7 @@ class TapeBitStream(object):
         """Try to read intro; ensure image not empty."""
         for b in bytearray(self.intro):
             c = self.read_byte()
-            if c == '':
+            if c == b'':
                 # empty or short file
                 return False
             if c != b:
@@ -490,7 +492,7 @@ class TapeBitStream(object):
 
     def write_byte(self, byte):
         """Write a byte to tape image."""
-        bits = [ 1 if (byte & (128 >> i) != 0) else 0 for i in range(8) ]
+        bits = [1 if (byte & (128 >> i) != 0) else 0 for i in range(8)]
         for bit in bits:
             self.write_bit(bit)
 
@@ -562,9 +564,11 @@ class CASBitStream(TapeBitStream):
 
     def __getstate__(self):
         """Get pickling dict for stream."""
-        return { 'filename': self.cas_name,
-                 'mode': self.operating_mode,
-                 'counter': self.counter() }
+        return {
+            'filename': self.cas_name,
+            'mode': self.operating_mode,
+            'counter': self.counter()
+        }
 
     def __setstate__(self, st):
         """Initialise stream from pickling dict."""
@@ -607,9 +611,9 @@ class CASBitStream(TapeBitStream):
         self.mask >>= 1
         if self.mask <= 0:
             self.cas.write(self.current_byte)
-            self.current_byte = '\0'
+            self.current_byte = b'\0'
             self.mask = 0x80
-        self.current_byte = chr(ord(self.current_byte) | (bit*self.mask))
+        self.current_byte = int2byte(ord(self.current_byte) | (bit*self.mask))
 
     def flush(self):
         """Write remaining bits to tape."""
@@ -618,14 +622,15 @@ class CASBitStream(TapeBitStream):
             # read bit on stream to combine with
             existing = self.cas.read(1)
             if not existing:
-                existing = '\0'
+                existing = b'\0'
             else:
                 self.cas.seek(-1, 1)
             # 0b1000 -> 0b1111 etc.
             combine_mask = self.mask * 2 - 1
-            self.current_byte = chr(
+            self.current_byte = int2byte(
                 (ord(existing) & combine_mask) +
-                (ord(self.current_byte) & (0xff^combine_mask)))
+                (ord(self.current_byte) & (0xff^combine_mask))
+            )
             # flush bits in write buffer
             # pad with zero if necessary to align on byte limit
             self.cas.write(self.current_byte)
@@ -643,11 +648,11 @@ class CASBitStream(TapeBitStream):
 
     def _create(self):
         """Create a new CAS-file."""
-        self.current_byte = '\0'
+        self.current_byte = b'\0'
         self.mask = 0x100
         with open(self.cas_name, 'wb') as self.cas:
             self.operating_mode = 'w'
-            self.current_byte = '\0'
+            self.current_byte = b'\0'
             self.write_intro()
         self.cas = open(self.cas_name, 'r+b')
         self.cas.seek(0, 2)
@@ -772,9 +777,11 @@ class WAVBitStream(TapeBitStream):
 
     def __getstate__(self):
         """Get pickling dict for stream."""
-        return { 'filename': self.filename,
-                 'mode': self.operating_mode,
-                 'counter': self.counter() }
+        return {
+            'filename': self.filename,
+            'mode': self.operating_mode,
+            'counter': self.counter()
+        }
 
     def __setstate__(self, st):
         """Initialise stream from pickling dict."""
@@ -818,9 +825,9 @@ class WAVBitStream(TapeBitStream):
         self.wav.seek(0, 2)
         end_pos = self.wav.tell()
         self.wav.seek(self.riff_pos, 0)
-        self.wav.write(struct.pack('<4sL', 'RIFF', end_pos-self.riff_pos-8))
+        self.wav.write(struct.pack('<4sL', b'RIFF', end_pos-self.riff_pos-8))
         self.wav.seek(self.data_pos, 0)
-        self.wav.write(struct.pack('<4sL', 'data', end_pos-self.start))
+        self.wav.write(struct.pack('<4sL', b'data', end_pos-self.start))
         self.wav.close()
 
     def _fill_buffer(self):
@@ -864,18 +871,19 @@ class WAVBitStream(TapeBitStream):
     def write_pause(self, milliseconds):
         """Write a pause of given length to the tape."""
         length = (milliseconds * self.framerate / 1000)
-        zero = { 1: '\x7f', 2: '\x00\x00'}
+        zero = {1: b'\x7f', 2: b'\x00\x00'}
         self.wav.write(zero[self.sampwidth] * self.nchannels * length)
         self.wav_pos += length
 
     def write_bit(self, bit):
         """Write a bit to tape."""
         half_length = self.halflength[bit]
-        down = { 1: '\x00', 2: '\x00\x80'}
-        up = { 1: '\xff', 2: '\xff\x7f'}
+        down = {1: b'\x00', 2: b'\x00\x80'}
+        up = {1: b'\xff', 2: b'\xff\x7f'}
         self.wav.write(
             down[self.sampwidth] * self.nchannels * half_length +
-            up[self.sampwidth] * self.nchannels * half_length)
+            up[self.sampwidth] * self.nchannels * half_length
+        )
         self.wav_pos += 2 * half_length
 
     def _read_wav_header(self):
@@ -885,7 +893,7 @@ class WAVBitStream(TapeBitStream):
         except (EOFError):
             logging.debug('WAV file is corrupted.')
             return False
-        if ch.getname() != 'RIFF' or ch.read(4) != 'WAVE':
+        if ch.getname() != b'RIFF' or ch.read(4) != b'WAVE':
             logging.debug('Not a WAV file.')
             return False
         # this would normally be 0
@@ -899,15 +907,17 @@ class WAVBitStream(TapeBitStream):
                 logging.debug('No data chunk found in WAV file.')
                 return False
             chunkname = chunk.getname()
-            if chunkname == 'fmt ':
-                format_tag, self.nchannels, self.framerate, _, _ = struct.unpack('<HHLLH', chunk.read(14))
+            if chunkname == b'fmt ':
+                format_tag, self.nchannels, self.framerate, _, _ = struct.unpack(
+                    '<HHLLH', chunk.read(14)
+                )
                 if format_tag == 1:
                     sampwidth = struct.unpack('<H', chunk.read(2))[0]
                     self.sampwidth = (sampwidth + 7) // 8
                 else:
                     logging.debug('WAV file not in uncompressed PCM format.')
                     return False
-            elif chunkname == 'data':
+            elif chunkname == b'data':
                 if not self.sampwidth:
                     logging.debug('Format chunk not found.')
                     return False
@@ -922,17 +932,19 @@ class WAVBitStream(TapeBitStream):
         # "RIFF" chunk header
         self.riff_pos = self.wav.tell()
         # length is corrected at close
-        self.wav.write(struct.pack('<4sL4s', 'RIFF', 36, 'WAVE'))
+        self.wav.write(struct.pack('<4sL4s', b'RIFF', 36, b'WAVE'))
         # "fmt " subchunk
-        self.wav.write(struct.pack('<4sLHHLLHH', 'fmt ', 16,
-            1, self.nchannels, self.framerate,
+        self.wav.write(struct.pack(
+            '<4sLHHLLHH',
+            b'fmt ', 16, 1, self.nchannels, self.framerate,
             self.nchannels * self.framerate * self.sampwidth,
             self.nchannels * self.sampwidth,
-            self.sampwidth * 8))
+            self.sampwidth * 8
+        ))
         # "data" subchunk header
         self.data_pos = self.wav.tell()
         # length is corrected at close
-        self.wav.write(struct.pack('<4sL', 'data', 0))
+        self.wav.write(struct.pack('<4sL', b'data', 0))
         self.start = self.wav.tell()
 
     def _is_leader_halfpulse(self, half):
@@ -966,11 +978,15 @@ class WAVBitStream(TapeBitStream):
                         if sync == self.sync_byte:
                             return True
                         else:
-                            logging.debug("%s Incorrect sync byte after %d pulses: %02x",
-                                          timestamp(self.counter()), counter, sync)
+                            logging.debug(
+                                '%s Incorrect sync byte after %d pulses: %02x',
+                                timestamp(self.counter()), counter, sync
+                            )
                     except (PulseError, FramingError) as e:
-                        logging.debug("%s Error in sync byte after %d pulses: %s",
-                                      timestamp(self.counter()), counter, e)
+                        logging.debug(
+                            '%s Error in sync byte after %d pulses: %s',
+                            timestamp(self.counter()), counter, e
+                        )
         except (EndOfTape, StopIteration):
             self.read_half = self._gen_read_halfpulse()
             return False
@@ -1001,7 +1017,7 @@ def hms(seconds):
 
 def timestamp(counter):
     """Time stamp."""
-    return "[%d:%02d:%02d] " % hms(counter)
+    return b'[%d:%02d:%02d] ' % hms(counter)
 
 def passthrough():
     """Passthrough filter."""

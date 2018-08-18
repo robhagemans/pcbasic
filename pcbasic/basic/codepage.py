@@ -10,18 +10,23 @@ import unicodedata
 import logging
 import os
 
+
+# mark bytes conversion explicitly
+int2byte = chr
+
+
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
 # ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
 # see http://www.siao2.com/2005/09/17/469941.aspx
-PRINTABLE_ASCII = map(chr, range(0x20, 0x7F))
+PRINTABLE_ASCII = map(int2byte, range(0x20, 0x7F))
 
 # on the terminal, these values are not shown as special graphic chars but as their normal effect
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
 CONTROL = (b'\x07', b'\x09', b'\x0A', b'\x0B', b'\x0C', b'\x0D', b'\x1C', b'\x1D', b'\x1E', b'\x1F')
 
 # default is codepage 437
-DEFAULT_CODEPAGE = {chr(i): c for i, c in enumerate(
+DEFAULT_CODEPAGE = {int2byte(i): c for i, c in enumerate(
     u'\x00\u263a\u263b\u2665\u2666\u2663\u2660\u2022\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b'
     u'\u263c\u25ba\u25c4\u2195\u203c\xb6\xa7\u25ac\u21a8\u2191\u2193\u2192\u2190\u221f\u2194\u25b2'
     u'\u25bc!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrst'
@@ -81,8 +86,8 @@ class Codepage(object):
                         self.box_right[i].add(cp_point[0])
         # fill up any undefined 1-byte codepoints
         for c in range(256):
-            if chr(c) not in self.cp_to_unicode:
-                self.cp_to_unicode[chr(c)] = u'\0'
+            if int2byte(c) not in self.cp_to_unicode:
+                self.cp_to_unicode[int2byte(c)] = u'\0'
         self.unicode_to_cp = dict((reversed(item) for item in self.cp_to_unicode.items()))
         if self.dbcs_num_chars > 0:
             self.dbcs = True
@@ -95,7 +100,7 @@ class Codepage(object):
         """Convert normalised unicode grapheme cluster to codepage char sequence."""
         # pass through eascii clusters
         if uc and uc[0] == u'\0':
-            return b''.join(chr(min(255, ord(c))) for c in uc)
+            return b''.join(int2byte(min(255, ord(c))) for c in uc)
         # bring cluster on C normal form (combine what can be combined)
         if len(uc) > 1:
             uc = unicodedata.normalize('NFC', uc)

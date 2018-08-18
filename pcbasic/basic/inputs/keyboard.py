@@ -16,33 +16,42 @@ from ..base.eascii import as_bytes as ea
 from ..base.eascii import as_unicode as uea
 
 
+# mark bytes conversion explicitly
+int2byte = chr
+
+
 # bit flags for modifier keys
 # sticky modifiers
 TOGGLE = {
     scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,
-    scancode.NUMLOCK: 0x20, scancode.SCROLLOCK: 0x10}
+    scancode.NUMLOCK: 0x20, scancode.SCROLLOCK: 0x10
+}
 
 # nonsticky modifiers
 MODIFIER = {
     scancode.ALT: 0x8, scancode.CTRL: 0x4,
-    scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
+    scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1
+}
 
 # default function key eascii codes for KEY autotext.
 FUNCTION_KEY = {
     ea.F1: 0, ea.F2: 1, ea.F3: 2, ea.F4: 3,
     ea.F5: 4, ea.F6: 5, ea.F7: 6, ea.F8: 7,
-    ea.F9: 8, ea.F10: 9, ea.F11: 10, ea.F12: 11}
+    ea.F9: 8, ea.F10: 9, ea.F11: 10, ea.F12: 11
+}
 
 # numeric keypad
 KEYPAD = {
     scancode.KP0: b'0', scancode.KP1: b'1', scancode.KP2: b'2', scancode.KP3: b'3',
     scancode.KP4: b'4', scancode.KP5: b'5', scancode.KP6: b'6', scancode.KP7: b'7',
-    scancode.KP8: b'8', scancode.KP9: b'9'}
+    scancode.KP8: b'8', scancode.KP9: b'9'
+}
 
 # function-key macros
 DEFAULT_MACROS = (
     b'LIST ', b'RUN\r', b'LOAD"', b'SAVE"', b'CONT\r', b',"LPT1:"\r',
-    b'TRON\r', b'TROFF\r', b'KEY ', b'SCREEN 0,0,0\r', b'', b'')
+    b'TRON\r', b'TROFF\r', b'KEY ', b'SCREEN 0,0,0\r', b'', b''
+)
 
 # short beep (0.1s at 800Hz) emitted if buffer is full
 FULL_TONE = (0, 800, 0.01, 1, False, 15)
@@ -167,11 +176,11 @@ class KeyboardBuffer(object):
 
 def _split_eascii(cp_s):
     """Split a string of e-ascii/codepage into keystrokes."""
-    d = ''
+    d = b''
     for c in cp_s:
         if d or c != b'\0':
             yield d + c
-            d = ''
+            d = b''
         elif c == b'\0':
             # eascii code is \0 plus one char
             d = c
@@ -192,7 +201,7 @@ class Keyboard(object):
         # active status of caps, num, scroll, alt, ctrl, shift modifiers
         self.mod = 0
         # store for alt+keypad ascii insertion
-        self.keypad_ascii = ''
+        self.keypad_ascii = b''
         # ignore caps lock, let OS handle it
         # this is now switched off hard-coded, but logic remains for now
         self._ignore_caps = True
@@ -237,8 +246,10 @@ class Keyboard(object):
             self.last_scancode = scan
         # update ephemeral modifier status at every keypress
         # mods is a list of scancodes; OR together the known modifiers
-        self.mod &= ~(MODIFIER[scancode.CTRL] | MODIFIER[scancode.ALT] |
-                    MODIFIER[scancode.LSHIFT] | MODIFIER[scancode.RSHIFT])
+        self.mod &= ~(
+            MODIFIER[scancode.CTRL] | MODIFIER[scancode.ALT] |
+            MODIFIER[scancode.LSHIFT] | MODIFIER[scancode.RSHIFT]
+        )
         if mods:
             for m in mods:
                 self.mod |= MODIFIER.get(m, 0)
@@ -255,8 +266,10 @@ class Keyboard(object):
                 return
             except KeyError:
                 pass
-        if (self.mod & TOGGLE[scancode.CAPSLOCK]
-                and not self._ignore_caps and len(c) == 1):
+        if (
+                self.mod & TOGGLE[scancode.CAPSLOCK]
+                and not self._ignore_caps and len(c) == 1
+            ):
             c = c.swapcase()
         self.buf.append(self._codepage.from_unicode(c), scan)
 
@@ -271,7 +284,7 @@ class Keyboard(object):
            pass
         # ALT+keycode
         if scan == scancode.ALT and self.keypad_ascii:
-            char = chr(int(self.keypad_ascii)%256)
+            char = int2byte(int(self.keypad_ascii)%256)
             if char == b'\0':
                 char = b'\0\0'
             self.buf.append(char, None)
@@ -305,8 +318,10 @@ class Keyboard(object):
         # if input stream has closed, don't wait but return empty
         # which will tell the Editor to close
         # except if we're waiting for KYBD: input
-        while (not self._expansion_vessel) and (self.buf.empty) and (
-                    keyboard_only or (not self._input_closed and not self._stream_buffer)):
+        while (
+                not self._expansion_vessel) and (self.buf.empty) and (
+                keyboard_only or (not self._input_closed and not self._stream_buffer)
+            ):
             self._queues.wait()
 
     def _read_byte(self, expand=True):

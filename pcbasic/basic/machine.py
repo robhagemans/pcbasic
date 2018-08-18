@@ -15,9 +15,13 @@ from . import values
 from . import devices
 
 
+# mark non-unicode conversion explicitly
+int2byte = chr
+
 # ROM copyright notice
-NOTICE = bytearray(b'%s %s\r%s\r' %
-            tuple(_.encode('ascii', 'ignore') for _ in (NAME, VERSION, COPYRIGHT)))
+NOTICE = bytearray(
+    b'%s %s\r%s\r' % tuple(_.encode('ascii', 'ignore') for _ in (NAME, VERSION, COPYRIGHT))
+)
 
 
 ###############################################################################
@@ -38,7 +42,8 @@ class MachinePorts(object):
         self._display = display
         # parallel port base address:
         # http://retired.beyondlogic.org/spp/parallel.htm
-        # 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
+        # 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards
+        #              - Doesn't support ECP addresses
         # 378h - 37Fh  Usual Address For LPT 1
         # 278h - 27Fh  Usual Address For LPT 2
         self.lpt_device = [files.get_device('LPT1:'), files.get_device('LPT2:')]
@@ -172,11 +177,12 @@ class MachinePorts(object):
                 return
             if addr - base_addr[lpt_port_nr] == 0:
                 # set data port
-                self.lpt_device[lpt_port_nr].stream.write(chr(val))
+                self.lpt_device[lpt_port_nr].stream.write(int2byte(val))
             else:
                 # set control port
                 self.lpt_device[lpt_port_nr].stream.set_control(
-                    select=val & 0x8, init=val&0x4, lf=val&0x2, strobe=val&0x1)
+                    select=val & 0x8, init=val&0x4, lf=val&0x2, strobe=val&0x1
+                )
         else:
             # serial port machine ports
             # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers
@@ -189,9 +195,13 @@ class MachinePorts(object):
                 # (among other things that aren't implemented)
                 if addr in (base_addr, base_addr+1) and self.com_enable_baud_write[com_port_nr]:
                     if addr == base_addr:
-                        self.com_baud_divisor[com_port_nr] = (self.com_baud_divisor[com_port_nr] & 0xff00) + val
+                        self.com_baud_divisor[com_port_nr] = (
+                            (self.com_baud_divisor[com_port_nr] & 0xff00) + val
+                        )
                     elif addr == base_addr + 1:
-                        self.com_baud_divisor[com_port_nr] = val*0x100 + (self.com_baud_divisor[com_port_nr] & 0xff)
+                        self.com_baud_divisor[com_port_nr] = (
+                            val*0x100 + (self.com_baud_divisor[com_port_nr] & 0xff)
+                        )
                     if self.com_baud_divisor[com_port_nr]:
                         baudrate, parity, bytesize, stopbits = com_port.get_params()
                         baudrate = 115200 // self.com_baud_divisor[com_port_nr]
@@ -204,7 +214,7 @@ class MachinePorts(object):
                     # break condition
                     self.com_break[com_port_nr] = (val & 0x40) != 0
                     # parity
-                    parity = {0x38:'S', 0x28:'M', 0x18:'E', 0x8:'O', 0:'N'}[val&0x38]
+                    parity = {0x38: 'S', 0x28: 'M', 0x18: 'E', 0x8: 'O', 0: 'N'}[val&0x38]
                     # stopbits
                     if val & 0x4:
                         # 2 or 1.5 stop bits
@@ -314,7 +324,7 @@ class Memory(object):
         if offset is not None:
             offset = values.to_int(offset, unsigned=True)
         list(args)
-        with self._files.open(0, name, filetype='M', mode='I') as g:
+        with self._files.open(0, name, filetype=b'M', mode=b'I') as g:
             # size gets ignored; even the \x1a at the end gets dumped onto the screen.
             seg = g.seg
             if offset is None:
@@ -337,14 +347,17 @@ class Memory(object):
         offset = values.to_int(next(args), unsigned=True)
         length = values.to_int(next(args), unsigned=True)
         list(args)
-        with self._files.open(0, name, filetype='M', mode='O',
-                    seg=self.segment, offset=offset, length=length) as g:
+        with self._files.open(
+                    0, name, filetype=b'M', mode=b'O',
+                    seg=self.segment, offset=offset, length=length
+                ) as g:
             addr = self.segment * 0x10 + offset
             g.write(str(self._get_memory_block(addr, length)))
             # Tandys repeat the header at the end of the file
             if self._syntax == 'tandy':
-                g.write(devices.TYPE_TO_MAGIC['M'] +
-                        struct.pack('<HHH', self.segment, offset, length))
+                g.write(
+                    devices.TYPE_TO_MAGIC[b'M'] + struct.pack('<HHH', self.segment, offset, length)
+                )
 
     def def_seg_(self, args):
         """DEF SEG: Set segment."""
@@ -424,7 +437,7 @@ class Memory(object):
             addr += video_len
             length -= video_len
         for a in range(addr, addr+length):
-            block += chr(max(0, self._get_memory(a)))
+            block.append(max(0, self._get_memory(a)))
         return block
 
     def _set_memory_block(self, addr, buf):
@@ -585,12 +598,12 @@ class Memory(object):
         elif addr == 1053:
             return (self.keyboard.buf.stop*2 + self.key_buffer_offset) // 256
         elif addr in range(1024+self.key_buffer_offset, 1024+self.key_buffer_offset+32):
-            index = (addr-1024-self.key_buffer_offset)//2
-            odd = (addr-1024-self.key_buffer_offset)%2
+            index = (addr-1024-self.key_buffer_offset) // 2
+            odd = (addr-1024-self.key_buffer_offset) % 2
             c, scan = self.keyboard.buf.ring_read(index)
             if odd:
                 return scan
-            elif c == '':
+            elif c == b'':
                 return 0
             else:
                 # however, arrow keys (all extended scancodes?) give 0xe0 instead of 0
@@ -607,11 +620,13 @@ class Memory(object):
             elif self.display.mode.name == '320x200x4':
                 return 4 + cval
             else:
-                mode_num = {'640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
+                mode_num = {
+                    '640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
                     '640x200x4': 10, '320x200x16': 13, '640x200x16': 14,
                     '640x350x4': 15, '640x350x16': 16, '640x400x2': 0x40,
-                    '320x200x4pcjr': 4 }
+                    '320x200x4pcjr': 4
                     # '720x348x2': ? # hercules - unknown
+                }
                 try:
                     return mode_num[self.display.mode.name]
                 except KeyError:
@@ -646,16 +661,20 @@ class Memory(object):
         elif addr == 1125:
             # bit 0: only in text mode?
             # bit 2: should this be colorswitch or colorburst_is_enabled?
-            return ((self.display.mode.width == 80) * 1 +
-                    (not self.display.mode.is_text_mode) * 2 +
-                     self.display.colorswitch * 4 + 8 +
-                     (self.display.mode.name == '640x200x2') * 16 +
-                     self.blink_enabled * 32)
+            return (
+                (self.display.mode.width == 80) * 1 +
+                (not self.display.mode.is_text_mode) * 2 +
+                self.display.colorswitch * 4 + 8 +
+                (self.display.mode.name == '640x200x2') * 16 +
+                self.blink_enabled * 32
+            )
         # 1126 color
         elif addr == 1126:
             if self.display.mode.name == '320x200x4':
-                return (self.display.palette.get_entry(0)
-                        + 32 * self.display.video.cga4_palette_num)
+                return (
+                    self.display.palette.get_entry(0)
+                    + 32 * self.display.video.cga4_palette_num
+                )
             elif self.display.mode.is_text_mode:
                 return self.display.border_attr % 16
                 # not implemented: + 16 "if current color specified through
@@ -673,21 +692,23 @@ class Memory(object):
         elif addr == 1050:
             # keyboard ring buffer starts at n+1024; lowest 1054
             self.keyboard.buf.ring_set_boundaries(
-                    (value - self.key_buffer_offset) // 2,
-                    self.keyboard.buf.stop)
+                (value - self.key_buffer_offset) // 2,
+                self.keyboard.buf.stop
+            )
         elif addr == 1052:
             # ring buffer ends at n + 1023
             self.keyboard.buf.ring_set_boundaries(
-                    self.keyboard.buf.start,
-                    (value - self.key_buffer_offset) // 2)
+                self.keyboard.buf.start,
+                (value - self.key_buffer_offset) // 2
+            )
         elif addr in range(1024+self.key_buffer_offset, 1024+self.key_buffer_offset+32):
-            index = (addr-1024-self.key_buffer_offset)//2
-            odd = (addr-1024-self.key_buffer_offset)%2
+            index = (addr-1024-self.key_buffer_offset) // 2
+            odd = (addr-1024-self.key_buffer_offset) % 2
             c, scan = self.keyboard.buf.ring_read(index)
             if odd:
                 scan = value
             elif value in (0, 0xe0):
-                c = ''
+                c = b''
             else:
-                c = chr(value)
+                c = int2byte(value)
             self.keyboard.buf.ring_write(index, c, scan)

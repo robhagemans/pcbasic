@@ -26,6 +26,7 @@ from .base import video_plugins, InitFailed
 # so you don't see gibberish if the terminal doesn't support the sequence.
 from . import ansi
 
+
 # sys.stdout expects bytes
 SET_TITLE = ansi.SET_TITLE.encode('ascii')
 RESIZE_TERM = ansi.RESIZE_TERM.encode('ascii')
@@ -106,7 +107,8 @@ class VideoCurses(VideoPlugin):
         curses.raw()
         self.orig_size = self.screen.getmaxyx()
         self.underlay = curses.newwin(
-            self.height + self.border_y*2, self.width + self.border_x*2, 0, 0)
+            self.height + self.border_y*2, self.width + self.border_x*2, 0, 0
+        )
         self.window = curses.newwin(self.height, self.width, self.border_y, self.border_x)
         self.window.nodelay(True)
         self.window.keypad(True)
@@ -147,7 +149,7 @@ class VideoCurses(VideoPlugin):
 
     def _check_input(self):
         """Handle keyboard events."""
-        s = ''
+        s = bytearray()
         i = 0
         while True:
             i = self.window.getch()
@@ -157,12 +159,13 @@ class VideoCurses(VideoPlugin):
             if i < 0:
                 break
             elif i < 256:
-                s += chr(i)
+                s.append(i)
             else:
                 if i == curses.KEY_BREAK:
                     # this is fickle, on many terminals doesn't work
                     self._input_queue.put(signals.Event(
-                            signals.KEYB_DOWN, (u'', scancode.BREAK, [scancode.CTRL])))
+                        signals.KEYB_DOWN, (u'', scancode.BREAK, [scancode.CTRL])
+                    ))
                 elif i == curses.KEY_RESIZE:
                     self._resize(self.height, self.width)
                 # scancode, insert here and now
@@ -173,7 +176,7 @@ class VideoCurses(VideoPlugin):
                 # can contain special characters.
                 # however, if that does occur, this won't work correctly.
                 scan = CURSES_TO_SCAN.get(i, None)
-                c = CURSES_TO_EASCII.get(i, '')
+                c = CURSES_TO_EASCII.get(i, u'')
                 if scan or c:
                     self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, [])))
                     if i == curses.KEY_F12:
@@ -214,7 +217,8 @@ class VideoCurses(VideoPlugin):
             for col, charattr in enumerate(textrow):
                 try:
                     self.window.addstr(
-                            row, col, charattr[0].encode(ENCODING, 'replace'), charattr[1])
+                        row, col, charattr[0].encode(ENCODING, 'replace'), charattr[1]
+                    )
                 except curses.error:
                     pass
         if self.cursor_visible:
@@ -246,8 +250,9 @@ class VideoCurses(VideoPlugin):
         if self.can_change_palette:
             for back in range(8):
                 for fore in range(16):
-                    curses.init_pair(back*16+fore+1,
-                            self.default_colors[fore], self.default_colors[back])
+                    curses.init_pair(
+                        back*16+fore+1, self.default_colors[fore], self.default_colors[back]
+                    )
         else:
             for back in range(8):
                 for fore in range(8):
@@ -255,11 +260,13 @@ class VideoCurses(VideoPlugin):
                         # black on white mandatorily mapped on color 0
                         pass
                     elif back == 0:
-                        curses.init_pair(back*8+fore+1,
-                                self.default_colors[fore], self.default_colors[back])
+                        curses.init_pair(
+                            back*8+fore+1, self.default_colors[fore], self.default_colors[back]
+                        )
                     else:
-                        curses.init_pair(back*8+fore,
-                                self.default_colors[fore], self.default_colors[back])
+                        curses.init_pair(
+                            back*8+fore, self.default_colors[fore], self.default_colors[back]
+                        )
 
     def _curses_colour(self, fore, back, blink):
         """Convert split attribute to curses colour."""
@@ -285,9 +292,9 @@ class VideoCurses(VideoPlugin):
         self._set_default_colours(len(mode_info.palette))
         bgcolor = self._curses_colour(7, 0, False)
         self.text = [
-                [[(u' ', bgcolor)]*self.width for _ in xrange(self.height)]
-                for _ in xrange(mode_info.num_pages)
-            ]
+            [[(u' ', bgcolor)]*self.width for _ in xrange(self.height)]
+            for _ in xrange(mode_info.num_pages)
+        ]
         self._resize(self.height, self.width)
         self._set_curses_palette()
         self.window.clear()
@@ -309,8 +316,9 @@ class VideoCurses(VideoPlugin):
         """Clear screen rows."""
         bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][start-1:stop] = [
-                [(u' ', bgcolor)]*len(self.text[self.apagenum][0])
-                for _ in range(start-1, stop)]
+            [(u' ', bgcolor)]*len(self.text[self.apagenum][0])
+            for _ in range(start-1, stop)
+        ]
         if self.apagenum != self.vpagenum:
             return
         self.window.bkgdset(' ', bgcolor)
@@ -326,8 +334,9 @@ class VideoCurses(VideoPlugin):
         if self.can_change_palette:
             for i in range(len(new_palette)):
                 r, g, b = new_palette[i]
-                curses.init_color(self.default_colors[i],
-                                (r*1000)//255, (g*1000)//255, (b*1000)//255)
+                curses.init_color(
+                    self.default_colors[i], (r*1000)//255, (g*1000)//255, (b*1000)//255
+                )
 
     def set_border_attr(self, attr):
         """Change border attribute."""
@@ -378,8 +387,9 @@ class VideoCurses(VideoPlugin):
         """Scroll the screen up between from_line and scroll_height."""
         bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][from_line-1:scroll_height] = (
-                    self.text[self.apagenum][from_line:scroll_height]
-                    + [[(u' ', bgcolor)]*len(self.text[self.apagenum][0])])
+            self.text[self.apagenum][from_line:scroll_height]
+            + [[(u' ', bgcolor)] * len(self.text[self.apagenum][0])]
+        )
         if self.apagenum != self.vpagenum:
             return
         self.window.scrollok(True)
@@ -398,8 +408,9 @@ class VideoCurses(VideoPlugin):
         """Scroll the screen down between from_line and scroll_height."""
         bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][from_line-1:scroll_height] = (
-                    [[(u' ', bgcolor)]*len(self.text[self.apagenum][0])]
-                    + self.text[self.apagenum][from_line-1:scroll_height-1])
+            [[(u' ', bgcolor)] * len(self.text[self.apagenum][0])]
+            + self.text[self.apagenum][from_line-1:scroll_height-1]
+        )
         if self.apagenum != self.vpagenum:
             return
         self.window.scrollok(True)
