@@ -22,6 +22,7 @@ This file is released under the GNU GPL version 3.
 # The exponent is biased by 128.
 # There is an assumed 1 bit after the radix point (so the assumed mantissa is 0.1ffff... where f's are the fraction bits)
 
+import binascii
 import struct
 import math
 
@@ -56,9 +57,11 @@ class Value(object):
     def __str__(self):
         """String representation for debugging."""
         try:
-            return b'%s[%s %s]' % (self.sigil, bytes(self.to_bytes()).encode('hex'), repr(self.to_value()))
+            return b'%s[%s %s]' % (
+                self.sigil, binascii.hexlify(bytes(self.to_bytes())), repr(self.to_value())
+            )
         except Exception:
-            return b'%s[%s <detached>]' % (self.sigil, bytes(self.to_bytes()).encode('hex'))
+            return b'%s[%s <detached>]' % (self.sigil, binascii.hexlify(bytes(self.to_bytes())))
 
     __repr__ = __str__
 

@@ -6,6 +6,7 @@ Array variable management
 This file is released under the GNU GPL version 3 or later.
 """
 
+import binascii
 import struct
 
 from ..base import error
@@ -33,7 +34,10 @@ class Arrays(object):
 
     def __str__(self):
         """Debugging representation of variable dictionary."""
-        return '\n'.join('%s%s: %s' % (n, v, str(self._buffers[n]).encode('hex')) for n, v in self._dims.iteritems())
+        return b'\n'.join(
+            b'%s%s: %s' % (n, v, binascii.hexlify(bytes(self._buffers[n])))
+            for n, v in self._dims.iteritems()
+        )
 
     def clear(self):
         """Clear arrays."""
@@ -125,7 +129,10 @@ class Arrays(object):
         return self._record_size(name, dimensions) + self._buffer_size(name, dimensions)
 
     def allocate(self, name, dimensions):
-        """Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value."""
+        """
+        Allocate array space for an array of given dimensioned size.
+        Raise errors if duplicate name or illegal index value.
+        """
         if not dimensions:
             # DIM A does nothing
             return
@@ -152,7 +159,10 @@ class Arrays(object):
         self._cache[name] = None
 
     def check_dim(self, name, index):
-        """Check if an array has been allocated. If not, auto-allocate if indices are <= 10; raise error otherwise."""
+        """
+        Check if an array has been allocated.
+        If not, auto-allocate if indices are <= 10; raise error otherwise.
+        """
         try:
             dimensions = self._dims[name]
         except KeyError:
@@ -211,7 +221,10 @@ class Arrays(object):
         dimensions = self._dims[name]
         _, array_ptr = self._array_memory[name]
         # arrays are kept at the end of the var list
-        return self._memory.var_current() + array_ptr + values.size_bytes(name) * self.index(indices, dimensions)
+        return (
+            self._memory.var_current() + array_ptr +
+            values.size_bytes(name) * self.index(indices, dimensions)
+        )
 
     def dereference(self, address):
         """Get a value for an array given its pointer address."""
@@ -254,17 +267,23 @@ class Arrays(object):
             else:
                 offset -= max(3, len(the_arr))+1
                 dimensions = self._dims[the_arr]
-                data_rep = struct.pack('<HB', self.array_size_bytes(the_arr) + 1 + 2*len(dimensions), len(dimensions))
+                data_rep = struct.pack(
+                    '<HB',
+                    self.array_size_bytes(the_arr) + 1 + 2*len(dimensions),
+                    len(dimensions)
+                )
                 for d in dimensions:
                     data_rep += struct.pack('<H', d + 1 - self._base)
                 return data_rep[offset]
 
     def get_strings(self):
         """Return a list of views of string array elements."""
-        return [memoryview(buf)[i:i+3]
-                    for name, buf in self._buffers.iteritems()
-                        if name[-1] == values.STR
-                            for i in range(0, len(buf), 3)]
+        return [
+            memoryview(buf)[i:i+3]
+            for name, buf in self._buffers.iteritems()
+            if name[-1] == values.STR
+            for i in range(0, len(buf), 3)
+        ]
 
 
     ###########################################################################
@@ -298,6 +317,12 @@ class Arrays(object):
         if not remaining_dimensions:
             return []
         elif len(remaining_dimensions) == 1:
-            return [self.get(name, index+[i+(self._base or 0)]).to_value() for i in xrange(remaining_dimensions[0])]
+            return [
+                self.get(name, index+[i+(self._base or 0)]).to_value()
+                for i in xrange(remaining_dimensions[0])
+            ]
         else:
-            return [self._to_list(name, index+[i+(self._base or 0)], remaining_dimensions[1:]) for i in xrange(remaining_dimensions[0])]
+            return [
+                self._to_list(name, index+[i+(self._base or 0)], remaining_dimensions[1:])
+                for i in xrange(remaining_dimensions[0])
+            ]

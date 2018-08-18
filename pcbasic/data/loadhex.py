@@ -9,13 +9,18 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import pkg_resources
 import logging
+import binascii
 
 from ..basic.codepage import PRINTABLE_ASCII
 from .resources import get_data, ResourceFailed
 
 FONT_DIR = u'fonts'
 FONT_PATTERN = u'{path}/{name}_{height:02d}.hex'
-FONTS = sorted(set(name.split(u'_', 1)[0] for name in pkg_resources.resource_listdir(__name__, FONT_DIR) if name.lower().endswith(u'.hex')))
+FONTS = sorted(
+    set(name.split(u'_', 1)[0]
+    for name in pkg_resources.resource_listdir(__name__, FONT_DIR)
+    if name.lower().endswith(u'.hex'))
+)
 
 
 def read_fonts(codepage_dict, font_families, warn):
@@ -29,7 +34,11 @@ def read_fonts(codepage_dict, font_families, warn):
     substitutes = {
         grapheme_cluster: unichr(ord(cp_point))
         for cp_point, grapheme_cluster in codepage_dict.iteritems()
-        if cp_point in PRINTABLE_ASCII and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point))
+        if (
+            cp_point in PRINTABLE_ASCII
+            and (len(grapheme_cluster) > 1
+            or ord(grapheme_cluster) != ord(cp_point))
+        )
     }
     fonts = {}
     # load fonts, height-16 first
@@ -39,12 +48,14 @@ def read_fonts(codepage_dict, font_families, warn):
         for name in font_families:
             try:
                 font_files.append(
-                        get_data(FONT_PATTERN, path=FONT_DIR, name=name, height=height))
+                    get_data(FONT_PATTERN, path=FONT_DIR, name=name, height=height)
+                )
             except ResourceFailed as e:
                 if warn:
                     logging.debug(e)
         fonts[height] = FontLoader(height).load_hex(
-                font_files, unicode_needed, substitutes, warn=warn)
+            font_files, unicode_needed, substitutes, warn=warn
+        )
         # fix missing code points font based on 16-line font
         if fonts[16]:
             fonts[height].fix_missing(unicode_needed, fonts[16])
@@ -52,7 +63,10 @@ def read_fonts(codepage_dict, font_families, warn):
         fonts[9] = fonts[8]
     # convert keys from unicode to codepage
     fonts = {
-        height: {c: font._fontdict[uc] for c, uc in codepage_dict.iteritems() if uc in font._fontdict}
+        height: {
+            c: font._fontdict[uc]
+            for c, uc in codepage_dict.iteritems() if uc in font._fontdict
+        }
         for height, font in fonts.iteritems()
     }
     return {height: font for height, font in fonts.iteritems()}
@@ -75,12 +89,12 @@ class FontLoader(object):
                 continue
             for line in hexres.splitlines():
                 # ignore empty lines and comment lines (first char is #)
-                if (not line) or (line[0] == '#'):
+                if (not line) or (line[0] == b'#'):
                     continue
                 # strip off comments
                 # split unicodepoint and hex string (max 32 chars)
-                ucs_str, fonthex = line.split('#')[0].split(':')
-                ucs_sequence = ucs_str.split(',')
+                ucs_str, fonthex = line.split(b'#')[0].split(b':')
+                ucs_sequence = ucs_str.split(b',')
                 fonthex = fonthex.strip()
                 # extract codepoint and hex string;
                 # discard anything following whitespace; ignore malformed lines
@@ -100,13 +114,15 @@ class FontLoader(object):
                         fonthex = fonthex[:2*self._height]
                     else:
                         fonthex = fonthex[:4*self._height]
-                    self._fontdict[c] = fonthex.decode('hex')
+                    self._fontdict[c] = binascii.unhexlify(fonthex)
                 except Exception as e:
                     logging.warning('Could not parse line in font file: %s', repr(line))
         # substitute code points
-        self._fontdict.update({old: self._fontdict[new]
-                for (new, old) in substitutes.iteritems()
-                if new in self._fontdict})
+        self._fontdict.update({
+            old: self._fontdict[new]
+            for (new, old) in substitutes.iteritems()
+            if new in self._fontdict
+        })
         # char 0 should always be defined and empty
         self._fontdict[u'\0'] = b'\0' * self._height
         self._combine_glyphs(unicode_needed)
@@ -128,8 +144,10 @@ class FontLoader(object):
                             for y, row in enumerate(self._fontdict[c]):
                                 clusterglyph[y] |= ord(row)
                     except KeyError as e:
-                        logging.debug('Could not combine grapheme cluster %s, missing %s [%s]',
-                            cluster, repr(c), c)
+                        logging.debug(
+                            'Could not combine grapheme cluster %s, missing %s [%s]',
+                            cluster, repr(c), c
+                        )
                     self._fontdict[cluster] = str(clusterglyph)
 
     def _warn_missing(self, unicode_needed, max_warnings=3):
@@ -155,8 +173,8 @@ class FontLoader(object):
                     s16 = list(font16.fontdict[c])
                     start = (16 - self._height) // 2
                     if len(s16) == 16:
-                        self._fontdict[c] = ''.join([s16[i] for i in range(start, 16-start)])
+                        self._fontdict[c] = b''.join([s16[i] for i in range(start, 16-start)])
                     else:
-                        self._fontdict[c] = ''.join([s16[i] for i in range(start*2, 32-start*2)])
+                        self._fontdict[c] = b''.join([s16[i] for i in range(start*2, 32-start*2)])
                 except (KeyError, AttributeError) as e:
                     self._fontdict[c] = b'\0' * self._height

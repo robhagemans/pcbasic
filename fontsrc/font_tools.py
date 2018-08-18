@@ -1,5 +1,6 @@
 import os
 import sys
+import binascii
 
 cp437 = (
     u'\u0000\u263A\u263B\u2665\u2666\u2663\u2660\u2022\u25D8\u25CB\u25D9\u2642\u2640\u266A\u266B\u263C' +
@@ -37,7 +38,7 @@ def load_codepage(name):
         us = u''
         print splitline
         # extract codepage point
-        cp_point = splitline[0].strip().decode('hex')
+        cp_point = binascii.unhexlify(splitline[0].strip())
         for cps in splitline[1].split(','):
             # extract unicode point
             ucs_point = int('0x' + cps.split()[0].strip(), 16)
@@ -131,7 +132,7 @@ def load_hex_font_bare(name, height):
         if (codepoint in fontdict):
             sys.stderr.write('Ignored repeated definition of code point %x\n' % ord(codepoint))
             continue
-        string = splitline[1].strip().split()[0].decode('hex')
+        string = binascii.unhexlify(splitline[1].strip().split()[0])
         # string must be 32-byte or 16-byte; cut to required font size
         if len(string) == 32:
             # dbcs glyph
@@ -165,6 +166,6 @@ def font_show(font, height, cp_to_unicode, show_width):
 
 def print_hex(font, unitbl):
     for i, f in enumerate(font):
-        s = f.encode('hex').upper()
+        s = binascii.hexlify(f).upper()
         tohex = s + '0'*(32-len(s))
         print "%04X:%s" % (ord(unitbl[chr(i)]), tohex)

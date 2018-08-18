@@ -6,6 +6,7 @@
 import os
 import sys
 import zipfile
+import binascii
 import subprocess
 
 # tools
@@ -24,7 +25,7 @@ def load_codepage(name):
         if len(splitline) < 2:
             continue
         # extract codepage point
-        cp_point = splitline[0].strip().decode('hex')
+        cp_point = binascii.unhexlify(splitline[0].strip())
         # extract unicode points
         ucs = u''
         for cp_str in splitline[1].split()[0].strip().split(','):
@@ -82,7 +83,7 @@ def write_hex(outfile, font, unitbl):
             of.write(hexline(unitbl[chr(i)], f))
 
 def hexline(ucp, glyph):
-    s = glyph.encode('hex').upper()
+    s = binascii.hexlify(glyph).upper()
     tohex = s + '0'*(32-len(s))
     ucp_str = ','.join(['%04X' % ord(c) for c in ucp])
     return "%s:%s\n" % (ucp_str, tohex)

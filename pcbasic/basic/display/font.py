@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import logging
+import binascii
 
 try:
     import numpy
@@ -32,7 +33,7 @@ CARRY_ROW_9_CHARS = tuple(chr(_c) for _c in range(0xb0, 0xdf+1))
 #   http://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/dos/cpi/
 # CPIDOS is Copyright (C) 2002-2011 by Henrique Peron (hperon@terra.com.br)
 # and licensed under the GNU GPL version 2 or later.
-DEFAULT_FONT = {chr(_i): _v.decode('hex') for _i, _v in enumerate((
+DEFAULT_FONT = {chr(_i): binascii.unhexlify(_v) for _i, _v in enumerate((
     '0000000000000000', '7e81a581bd99817e', '7effdbffc3e7ff7e', '6cfefefe7c381000',
     '10387cfe7c381000', '387c38fefed61038', '10387cfefe7c1038', '0000183c3c180000',
     'ffffe7c3c3e7ffff', '003c664242663c00', 'ffc399bdbd99c3ff', '0f070f7dcccccc78',

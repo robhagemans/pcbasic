@@ -1,6 +1,7 @@
 
 import sys
 import os
+from binascii import hexlify
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
 from pcbasic.basic.values import *
@@ -47,7 +48,7 @@ if __name__ == '__main__':
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
-                            print out.encode('hex'), inp.encode('hex')
+                            print hexlify(out), hexlify(inp)
 
 
     print 'allbytes-sub'
@@ -70,7 +71,7 @@ if __name__ == '__main__':
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
-                            print out.encode('hex'), inp.encode('hex')
+                            print hexlify(out), hexlify(inp)
 
     print 'allshifts'
 
@@ -96,7 +97,7 @@ if __name__ == '__main__':
                             g.write(out)
                             inp = h.read(4)
                             if out != inp:
-                                print out.encode('hex'), inp.encode('hex')
+                                print hexlify(out), hexlify(inp)
                             l = ll
 
 
@@ -126,7 +127,7 @@ if __name__ == '__main__':
                             g.write(out)
                             inp = h.read(4)
                             if out != inp:
-                                print out.encode('hex'), inp.encode('hex')
+                                print hexlify(out), hexlify(inp)
                             l = ll
 
 
@@ -148,7 +149,7 @@ if __name__ == '__main__':
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
-                            print out.encode('hex'), inp.encode('hex')
+                            print hexlify(out), hexlify(inp)
                         l = ll
 
     print 'bigbytes'
@@ -169,7 +170,7 @@ if __name__ == '__main__':
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
-                            print out.encode('hex'), inp.encode('hex')
+                            print hexlify(out), hexlify(inp)
                         l = ll
 
 
@@ -195,5 +196,5 @@ if __name__ == '__main__':
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
-                            print out.encode('hex'), inp.encode('hex')
+                            print hexlify(out), hexlify(inp)
                         l = ll
