@@ -91,7 +91,7 @@ class GraphicsViewPort(object):
         """Get the midpoint of the current graphics view."""
         x0, y0, x1, y1 = self.get()
         # +1 to match GW-BASIC
-        return x0 + (x1-x0)/2 + 1, y0 + (y1-y0)/2 + 1
+        return x0 + (x1-x0)//2 + 1, y0 + (y1-y0)//2 + 1
 
     def coords(self, x, y):
         """Retrieve absolute coordinates for viewport coordinates."""
@@ -170,8 +170,10 @@ class Drawing(object):
         if col >= 1 and row >= 1 and col <= self._mode.width and row <= self._mode.height:
             self._text.put_char_attr(self._apagenum, row, col, b' ', self._attr)
         fore, back, blink, underline = self._mode.split_attr(self._attr)
-        self._queues.video.put(signals.Event(signals.VIDEO_PUT_GLYPH,
-                (self._apagenum, row, col, u' ', False, fore, back, blink, underline)))
+        self._queues.video.put(
+            signals.Event(signals.VIDEO_PUT_GLYPH,
+            (self._apagenum, row, col, u' ', False, fore, back, blink, underline))
+        )
 
     def clear_text_area(self, x0, y0, x1, y1):
         """Remove all characters from the text buffer on a rectangle of the graphics screen."""
@@ -204,15 +206,18 @@ class Drawing(object):
         """Write a list of attributes to a scanline interval."""
         x, y, colours = self.graph_view.clip_list(x, y, colours)
         newcolours = self._pixels.pages[pagenum].put_interval(x, y, colours, mask)
-        self._queues.video.put(signals.Event(signals.VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours)))
+        self._queues.video.put(
+            signals.Event(signals.VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours))
+        )
         self.clear_text_area(x, y, x+len(colours), y)
 
     def fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
         x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
         self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
-        self._queues.video.put(signals.Event(signals.VIDEO_FILL_INTERVAL,
-                        (self._apagenum, x0, x1, y, index)))
+        self._queues.video.put(
+            signals.Event(signals.VIDEO_FILL_INTERVAL, (self._apagenum, x0, x1, y, index))
+        )
         self.clear_text_area(x0, y, x1, y)
 
     def get_until(self, x0, x1, y, c):
@@ -226,18 +231,21 @@ class Drawing(object):
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """Apply an [y][x] array of attributes onto a screen rect."""
         x0, y0, x1, y1, sprite = self.graph_view.clip_area(x0, y0, x1, y1, sprite)
-        rect = self._pixels.pages[self._apagenum].put_rect(x0, y0, x1, y1,
-                                                        sprite, operation_token)
-        self._queues.video.put(signals.Event(signals.VIDEO_PUT_RECT,
-                              (self._apagenum, x0, y0, x1, y1, rect)))
+        rect = self._pixels.pages[self._apagenum].put_rect(
+            x0, y0, x1, y1, sprite, operation_token
+        )
+        self._queues.video.put(
+            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, x1, y1, rect))
+        )
         self.clear_text_area(x0, y0, x1, y1)
 
     def fill_rect(self, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
         self._pixels.pages[self._apagenum].fill_rect(x0, y0, x1, y1, index)
-        self._queues.video.put(signals.Event(signals.VIDEO_FILL_RECT,
-                                (self._apagenum, x0, y0, x1, y1, index)))
+        self._queues.video.put(
+            signals.Event(signals.VIDEO_FILL_RECT, (self._apagenum, x0, y0, x1, y1, index))
+        )
         self.clear_text_area(x0, y0, x1, y1)
 
     ## VIEW graphics viewport
@@ -403,7 +411,10 @@ class Drawing(object):
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
         step0 = next(args)
-        x0, y0 = (None if arg is None else values.to_single(arg).to_value() for _, arg in zip(range(2), args))
+        x0, y0 = (
+            None if arg is None else values.to_single(arg).to_value()
+            for _, arg in zip(range(2), args)
+        )
         step1 = next(args)
         x1, y1 = (values.to_single(next(args)).to_value() for _ in range(2))
         coord0 = x0, y0, step0
@@ -427,9 +438,9 @@ class Drawing(object):
         c = self.get_attr_index(c)
         if not shape:
             self.draw_line(x0, y0, x1, y1, c, pattern)
-        elif shape == 'B':
+        elif shape == b'B':
             self.draw_box(x0, y0, x1, y1, c, pattern)
-        elif shape == 'BF':
+        elif shape == b'BF':
             self.draw_box_filled(x0, y0, x1, y1, c)
         self.last_point = x1, y1
         self.last_attr = c
@@ -451,7 +462,7 @@ class Drawing(object):
         sx = 1 if x1 > x0 else -1
         sy = 1 if y1 > y0 else -1
         mask = 0x8000
-        line_error = dx / 2
+        line_error = dx // 2
         x, y = x0, y0
         for x in xrange(x0, x1+sx, sx):
             if pattern & mask != 0:
@@ -603,15 +614,19 @@ class Drawing(object):
             if stop is not None:
                 stopx = abs(int(round(rx * math.cos(stop))))
                 stopy = abs(int(round(ry * math.sin(stop))))
-            self.draw_ellipse(x0, y0, rx, ry, c,
-                              start_octant/2, startx, starty, start_line,
-                              stop_octant/2, stopx, stopy, stop_line)
+            self.draw_ellipse(
+                x0, y0, rx, ry, c,
+                start_octant//2, startx, starty, start_line,
+                stop_octant//2, stopx, stopy, stop_line
+            )
         self.last_attr = c
         self.last_point = x0, y0
 
-    def draw_circle(self, x0, y0, r, c,
-                    oct0=-1, coo0=-1, line0=False,
-                    oct1=-1, coo1=-1, line1=False):
+    def draw_circle(
+            self, x0, y0, r, c,
+            oct0=-1, coo0=-1, line0=False,
+            oct1=-1, coo1=-1, line1=False
+        ):
         """Draw a circle sector using the midpoint algorithm."""
         # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
         # find invisible octants
@@ -665,9 +680,11 @@ class Drawing(object):
         if line1:
             self.draw_line(x0, y0, *_octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
 
-    def draw_ellipse(self, cx, cy, rx, ry, c,
-                     qua0=-1, x0=-1, y0=-1, line0=False,
-                     qua1=-1, x1=-1, y1=-1, line1=False):
+    def draw_ellipse(
+            self, cx, cy, rx, ry, c,
+            qua0=-1, x0=-1, y0=-1, line0=False,
+            qua1=-1, x1=-1, y1=-1, line1=False
+        ):
         """Draw ellipse using the midpoint algorithm."""
         # for algorithm see http://members.chello.at/~easyfilter/bresenham.html
         # find invisible quadrants
@@ -768,9 +785,10 @@ class Drawing(object):
     def flood_fill(self, lcoord, c, pattern, border, background):
         """Fill an area defined by a border attribute with a tiled pattern."""
         # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
-        # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
-        # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
-        # also equal to the background pattern.
+        # flood fill stops on border colour in all directions;
+        # it also stops on scanlines in fill_colour
+        # pattern tiling stops at intervals that equal the pattern to be drawn,
+        # unless this pattern is also equal to the background pattern.
         c, border = self.get_attr_index(c), self.get_attr_index(border)
         solid = (pattern is None)
         if not solid:
@@ -797,18 +815,28 @@ class Drawing(object):
             # check next scanlines and add intervals to the list
             if ydir == 0:
                 if y + 1 <= bound_y1:
-                    line_seed = self.check_scanline(line_seed, x_left, x_right, y+1, c, tile, back, border, 1)
+                    line_seed = self.check_scanline(
+                        line_seed, x_left, x_right, y+1, c, tile, back, border, 1
+                    )
                 if y - 1 >= bound_y0:
-                    line_seed = self.check_scanline(line_seed, x_left, x_right, y-1, c, tile, back, border, -1)
+                    line_seed = self.check_scanline(
+                        line_seed, x_left, x_right, y-1, c, tile, back, border, -1
+                    )
             else:
                 # check the same interval one scanline onward in the same direction
                 if y+ydir <= bound_y1 and y+ydir >= bound_y0:
-                    line_seed = self.check_scanline(line_seed, x_left, x_right, y+ydir, c, tile, back, border, ydir)
+                    line_seed = self.check_scanline(
+                        line_seed, x_left, x_right, y+ydir, c, tile, back, border, ydir
+                    )
                 # check any bit of the interval that was extended one scanline backward
                 # this is where the flood fill goes around corners.
                 if y-ydir <= bound_y1 and y-ydir >= bound_y0:
-                    line_seed = self.check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir)
-                    line_seed = self.check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir)
+                    line_seed = self.check_scanline(
+                        line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir
+                    )
+                    line_seed = self.check_scanline(
+                        line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir
+                    )
             # draw the pixels for the current interval
             if solid:
                 self.fill_interval(x_left, x_right, y, tile[0][0])
@@ -820,8 +848,10 @@ class Drawing(object):
                 self._input_methods.wait()
         self.last_attr = c
 
-    def check_scanline(self, line_seed, x_start, x_stop, y,
-                       c, tile, back, border, ydir):
+    def check_scanline(
+            self, line_seed, x_start, x_stop, y,
+            c, tile, back, border, ydir
+        ):
         """Append all subintervals between border colours to the scanning stack."""
         if x_stop < x_start:
             return line_seed
@@ -845,7 +875,8 @@ class Drawing(object):
                 has_same_pattern &= (pattern[pat_x] == rtile[tile_x])
                 has_same_pattern &= (not back or pattern[pat_x] != rback[tile_x])
             # we've reached a border colour, append our interval & start a new one
-            # don't append if same fill colour/pattern, to avoid infinite loops over bits already painted (eg. 00 shape)
+            # don't append if same fill colour/pattern,
+            # to avoid infinite loops over bits already painted (eg. 00 shape)
             if x_stop_next >= x_start_next and not has_same_pattern:
                 line_seed.append([x_start_next, x_stop_next, y, ydir])
             x_start_next = x + 1
@@ -953,36 +984,36 @@ class Drawing(object):
         plot, goback = True, False
         while True:
             c = gmls.skip_blank_read().upper()
-            if c == '':
+            if c == b'':
                 break
-            elif c == ';':
+            elif c == b';':
                 continue
-            elif c == 'B':
+            elif c == b'B':
                 # do not draw
                 plot = False
-            elif c == 'N':
+            elif c == b'N':
                 # return to postiton after move
                 goback = True
-            elif c == 'X':
+            elif c == b'X':
                 # execute substring
                 sub = gmls.parse_string()
                 self.draw(sub)
-            elif c == 'C':
+            elif c == b'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if gmls.skip_blank() == ';':
+                if gmls.skip_blank() == b';':
                     self.last_attr = 0
                 else:
                     attr = gmls.parse_number()
                     # 100000 seems to be GW's limit
                     error.range_check(-99999, 99999, attr)
                     self.last_attr = attr
-            elif c == 'S':
+            elif c == b'S':
                 # set scale
                 scale = gmls.parse_number()
                 error.range_check(1, 255, scale)
                 self.draw_scale = scale
-            elif c == 'A':
+            elif c == b'A':
                 # set angle
                 # allow empty spec (default 0), but only if followed by a semicolon
                 if gmls.skip_blank() == ';':
@@ -991,41 +1022,41 @@ class Drawing(object):
                     angle = gmls.parse_number()
                     error.range_check(0, 3, angle)
                     self.draw_angle = 90 * angle
-            elif c == 'T':
+            elif c == b'T':
                 # 'turn angle' - set (don't turn) the angle to any value
-                if gmls.read(1).upper() != 'A':
+                if gmls.read(1).upper() != b'A':
                     raise error.BASICError(error.IFC)
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if gmls.skip_blank() == ';':
+                if gmls.skip_blank() == b';':
                     self.draw_angle = 0
                 else:
                     angle = gmls.parse_number()
                     error.range_check(-360, 360, angle)
                     self.draw_angle = angle
             # one-variable movement commands:
-            elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
+            elif c in (b'U', b'D', b'L', b'R', b'E', b'F', b'G', b'H'):
                 step = gmls.parse_number(default=1)
                 # 100000 seems to be GW's limit
                 error.range_check(-99999, 99999, step)
                 x0, y0 = self.last_point
                 x1, y1 = 0, 0
-                if c in ('U', 'E', 'H'):
+                if c in (b'U', b'E', b'H'):
                     y1 -= step
-                elif c in ('D', 'F', 'G'):
+                elif c in (b'D', b'F', b'G'):
                     y1 += step
-                if c in ('L', 'G', 'H'):
+                if c in (b'L', b'G', b'H'):
                     x1 -= step
-                elif c in ('R', 'E', 'F'):
+                elif c in (b'R', b'E', b'F'):
                     x1 += step
                 self.draw_step(x0, y0, x1, y1, plot, goback)
                 plot = True
                 goback = False
             # two-variable movement command
-            elif c == 'M':
-                relative = gmls.skip_blank() in ('+','-')
+            elif c == b'M':
+                relative = gmls.skip_blank() in (b'+', b'-')
                 x = gmls.parse_number()
                 error.range_check(-9999, 9999, x)
-                if gmls.skip_blank() != ',':
+                if gmls.skip_blank() != b',':
                     raise error.BASICError(error.IFC)
                 else:
                     gmls.read(1)
@@ -1042,11 +1073,11 @@ class Drawing(object):
                         self.last_point = x0, y0
                 plot = True
                 goback = False
-            elif c == 'P':
+            elif c == b'P':
                 # paint - flood fill
                 colour = gmls.parse_number()
                 error.range_check(0, 9999, colour)
-                if gmls.skip_blank_read() != ',':
+                if gmls.skip_blank_read() != b',':
                     raise error.BASICError(error.IFC)
                 bound = gmls.parse_number()
                 error.range_check(0, 9999, bound)
@@ -1061,8 +1092,8 @@ class Drawing(object):
         rotate = self.draw_angle
         aspect = self._mode.pixel_aspect
         yfac = aspect[1] / (1.*aspect[0])
-        x1 = (scale*sx) / 4
-        y1 = (scale*sy) / 4
+        x1 = (scale*sx) // 4
+        y1 = (scale*sy) // 4
         if rotate == 0 or rotate == 360:
             pass
         elif rotate == 90:
@@ -1091,7 +1122,10 @@ class Drawing(object):
     ### POINT and PMAP
 
     def point_(self, args):
-        """POINT (1 argument): Return current coordinate (2 arguments): Return the attribute of a pixel."""
+        """
+        POINT (1 argument): Return current coordinate
+        (2 arguments): Return the attribute of a pixel.
+        """
         arg0 = next(args)
         arg1 = next(args)
         if arg1 is None:
@@ -1150,7 +1184,7 @@ def tile_to_interval(x0, x1, y, tile):
     if numpy:
         # fast method using numpy instead of loop
         ntile = numpy.roll(numpy.array(tile).astype(int)[y % h], int(-x0 % 8))
-        return numpy.tile(ntile, (dx+w-1) / w)[:dx]
+        return numpy.tile(ntile, (dx+w-1) // w)[:dx]
     else:
         return [tile[y % h][x % 8] for x in xrange(x0, x1+1)]
 
@@ -1179,14 +1213,22 @@ def _get_octant(f, rx, ry):
 
 def _octant_coord(octant, x0, y0, x, y):
     """Return symmetrically reflected coordinates for a given pair."""
-    if   octant == 7:     return x0+x, y0+y
-    elif octant == 0:     return x0+x, y0-y
-    elif octant == 4:     return x0-x, y0+y
-    elif octant == 3:     return x0-x, y0-y
-    elif octant == 6:     return x0+y, y0+x
-    elif octant == 1:     return x0+y, y0-x
-    elif octant == 5:     return x0-y, y0+x
-    elif octant == 2:     return x0-y, y0-x
+    if octant == 7:
+        return x0+x, y0+y
+    elif octant == 0:
+        return x0+x, y0-y
+    elif octant == 4:
+        return x0-x, y0+y
+    elif octant == 3:
+        return x0-x, y0-y
+    elif octant == 6:
+        return x0+y, y0+x
+    elif octant == 1:
+        return x0+y, y0-x
+    elif octant == 5:
+        return x0-y, y0+x
+    elif octant == 2:
+        return x0-y, y0-x
 
 def _octant_gt(octant, y, coord):
     """Return whether y is further along the circle than coord."""
@@ -1208,10 +1250,14 @@ def _octant_gte(octant, y, coord):
 
 def _quadrant_coord(quadrant, x0, y0, x, y):
     """Return symmetrically reflected coordinates for a given pair."""
-    if   quadrant == 3:     return x0+x, y0+y
-    elif quadrant == 0:     return x0+x, y0-y
-    elif quadrant == 2:     return x0-x, y0+y
-    elif quadrant == 1:     return x0-x, y0-y
+    if quadrant == 3:
+        return x0+x, y0+y
+    elif quadrant == 0:
+        return x0+x, y0-y
+    elif quadrant == 2:
+        return x0-x, y0+y
+    elif quadrant == 1:
+        return x0-x, y0-y
 
 def _quadrant_gt(quadrant, x, y, x0, y0):
     """Return whether y is further along the ellipse than coord."""

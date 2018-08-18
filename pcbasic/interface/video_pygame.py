@@ -394,7 +394,7 @@ class VideoPygame(VideoPlugin):
                 self.cursor_width, self.font_height)
         if self.text_mode:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
-            if self._cycle / BLINK_CYCLES in (1, 3):
+            if self._cycle // BLINK_CYCLES in (1, 3):
                 screen.blit(self.cursor, (
                         (self.cursor_col-1) * self.font_width,
                         (self.cursor_row-1) * self.font_height) )

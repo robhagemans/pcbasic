@@ -261,7 +261,7 @@ class Editor(object):
     def tab(self):
         """Jump to next 8-position tab stop (TAB)."""
         row, col = self._screen.current_row, self._screen.current_col
-        newcol = 9 + 8 * int((col-1) / 8)
+        newcol = 9 + 8 * int((col-1) // 8)
         if self._overwrite_mode:
             self._screen.set_pos(row, newcol, scroll_ok=False)
         else:

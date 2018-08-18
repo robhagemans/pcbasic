@@ -81,9 +81,10 @@ class WindowSizer(object):
             # this assumes actual display aspect ratio is wider than 4:3
             # scale y to fit screen
             canvas_y = (1-DISPLAY_SLACK/100.) * (
-                    self._screen_size[1] // int(1+self._border_width/100.))
+                self._screen_size[1] // int(1+self._border_width/100.)
+            )
             # scale x to match aspect ratio
-            canvas_x = (canvas_y * self._aspect[0]) / self._aspect[1]
+            canvas_x = (canvas_y * self._aspect[0]) / float(self._aspect[1])
             # add back border
             pixel_x = int(canvas_x * (1 + self._border_width/100.))
             pixel_y = int(canvas_y * (1 + self._border_width/100.))

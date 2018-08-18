@@ -130,7 +130,7 @@ class AudioSDL2(AudioPlugin):
     def _get_next_chunk(self, notused, stream, length_bytes):
         """Callback function to generate the next chunk to be played."""
         # this is for 16-bit samples
-        length = length_bytes/2
+        length = length_bytes // 2
         samples = [self.samples[voice][:length] for voice in range(4)]
         self.samples = [self.samples[voice][length:] for voice in range(4)]
         # if samples have run out, add silence

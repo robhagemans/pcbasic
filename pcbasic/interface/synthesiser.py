@@ -115,12 +115,14 @@ class SoundGenerator(object):
             # this allows to use numpy all the way
             # which is *much* faster than looping over an array
             # stretch array by half_wavelength * resolution
-            matrix = numpy.append(matrix, numpy.repeat(
-                    numpy.array(bits, numpy.int16), int(half_wavelength * resolution)))
+            matrix = numpy.append(
+                matrix,
+                numpy.repeat(numpy.array(bits, numpy.int16), int(half_wavelength * resolution))
+            )
             # cut off on round number of resolution blocks
             matrix = matrix[:len(matrix)-(len(matrix)%resolution)]
             # average over blocks
-            matrix = matrix.reshape((len(matrix)/resolution, resolution))
+            matrix = matrix.reshape((len(matrix)//resolution, resolution))
             chunk = numpy.int16(numpy.mean(matrix, axis=1))
         if not self.loop:
             # last chunk is shorter

@@ -27,9 +27,9 @@ class Formatter(object):
             if sep == tk.USING:
                 newline = self._print_using(args)
                 break
-            elif sep == ',':
+            elif sep == b',':
                 self._print_comma()
-            elif sep == ';':
+            elif sep == b';':
                 pass
             elif sep == tk.SPC:
                 self._print_spc(values.to_int(value, unsigned=True))
@@ -37,7 +37,7 @@ class Formatter(object):
                 self._print_tab(values.to_int(value, unsigned=True))
             else:
                 self._print_value(next(args))
-            newline = sep not in (tk.TAB, tk.SPC, ',', ';')
+            newline = sep not in (tk.TAB, tk.SPC, b',', b';')
         if newline:
             if self._screen and self._screen.overflow:
                 self._output.write_line()
@@ -47,56 +47,57 @@ class Formatter(object):
         """Print a value."""
         # numbers always followed by a space
         if isinstance(expr, values.Number):
-            word = values.to_repr(expr, leading_space=True, type_sign=False) + ' '
+            word = values.to_repr(expr, leading_space=True, type_sign=False) + b' '
         else:
             word = expr.to_str()
-        # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
+        # output file (devices) takes care of width management;
+        # we must send a whole string at a time for this to be correct.
         self._output.write(word)
 
     def _print_comma(self):
         """Skip to next output zone."""
-        number_zones = max(1, int(self._output.width/14))
-        next_zone = int((self._output.col-1) / 14) + 1
+        number_zones = max(1, int(self._output.width // 14))
+        next_zone = int((self._output.col-1) // 14) + 1
         if next_zone >= number_zones and self._output.width >= 14 and self._output.width != 255:
             self._output.write_line()
         else:
-            self._output.write(' ' * (1 + 14*next_zone-self._output.col), can_break=False)
+            self._output.write(b' ' * (1 + 14*next_zone-self._output.col), can_break=False)
 
     def _print_spc(self, num):
         """Print SPC separator."""
         numspaces = max(0, num) % self._output.width
-        self._output.write(' ' * numspaces, can_break=False)
+        self._output.write(b' ' * numspaces, can_break=False)
 
     def _print_tab(self, num):
         """Print TAB separator."""
         pos = max(0, num - 1) % self._output.width + 1
         if pos < self._output.col:
             self._output.write_line()
-            self._output.write(' ' * (pos-1))
+            self._output.write(b' ' * (pos-1))
         else:
-            self._output.write(' ' * (pos-self._output.col), can_break=False)
+            self._output.write(b' ' * (pos-self._output.col), can_break=False)
 
     def _print_using(self, args):
         """PRINT USING clause: Write expressions to screen or file using a formatting string."""
         format_expr = values.next_string(args)
-        if format_expr == '':
+        if format_expr == b'':
             raise error.BASICError(error.IFC)
         fors = codestream.CodeStream(format_expr)
         newline, format_chars = True, False
         start_cycle = True
-        initial_literal = ''
+        initial_literal = b''
         try:
             while True:
                 c = fors.peek()
-                if c == '':
+                if c == b'':
                     if not format_chars:
                         # avoid infinite loop
                         break
                     # loop the format string if more variables to come
                     start_cycle = True
-                    initial_literal = ''
+                    initial_literal = b''
                     fors.seek(0)
-                elif c == '_':
+                elif c == b'_':
                     # escape char; write next char in fors or _ if this is the last char
                     if start_cycle:
                         initial_literal += fors.read(2)[-1]
@@ -140,20 +141,20 @@ class StringField(object):
 
     def __init__(self, fors):
         """Get consecutive string-related formatting tokens."""
-        word = ''
+        word = b''
         c = fors.peek()
-        if c in ('!', '&'):
+        if c in (b'!', b'&'):
             word += fors.read(1)
-        elif c == '\\':
+        elif c == b'\\':
             word += fors.read(1)
             # count the width of the \ \ token;
             # only spaces allowed and closing \ is necessary
             while True:
                 c = fors.read(1)
                 word += c
-                if c == '\\':
+                if c == b'\\':
                     break
-                elif c != ' ': # can be empty as well
+                elif c != b' ': # can be empty as well
                     fors.seek(-len(word), 1)
                     raise ValueError()
         if not word:
@@ -163,7 +164,7 @@ class StringField(object):
     def format(self, value):
         """Format a string."""
         s = values.pass_string(value)
-        if self._string_field == '&':
+        if self._string_field == b'&':
             s = s.to_str()
         else:
             s = s.to_str().ljust(len(self._string_field))[:len(self._string_field)]
@@ -174,43 +175,43 @@ class NumberField(object):
 
     def __init__(self, fors):
         """Get consecutive number-related formatting tokens."""
-        word, digits_before, decimals = '', 0, 0
+        word, digits_before, decimals = b'', 0, 0
         # + comes first
-        leading_plus = (fors.peek() == '+')
+        leading_plus = (fors.peek() == b'+')
         if leading_plus:
             word += fors.read(1)
         # $ and * combinations
         c = fors.peek()
-        if c in ('$', '*'):
+        if c in (b'$', b'*'):
             word += fors.read(2)
             if word[-1] != c:
                 fors.seek(-len(word), 1)
                 raise ValueError()
-            if c == '*':
+            if c == b'*':
                 digits_before += 2
-                if fors.peek() == '$':
+                if fors.peek() == b'$':
                     word += fors.read(1)
             else:
                 digits_before += 1
         # number field
         c = fors.peek()
-        dot = (c == '.')
+        dot = (c == b'.')
         comma = False
         if dot:
             word += fors.read(1)
-        if c in ('.', '#'):
+        if c in (b'.', b'#'):
             while True:
                 c = fors.peek()
-                if not dot and c == '.':
+                if not dot and c == b'.':
                     word += fors.read(1)
                     dot = True
-                elif c == '#' or (not dot and c == ','):
+                elif c == b'#' or (not dot and c == b','):
                     word += fors.read(1)
                     if dot:
                         decimals += 1
                     else:
                         digits_before += 1
-                        if c == ',':
+                        if c == b',':
                             comma = True
                 else:
                     break
@@ -218,11 +219,12 @@ class NumberField(object):
             fors.seek(-len(word), 1)
             raise ValueError()
         # post characters
-        if fors.peek(4) == '^^^^':
+        if fors.peek(4) == b'^^^^':
             word += fors.read(4)
-        if not leading_plus and fors.peek() in ('-', '+'):
+        if not leading_plus and fors.peek() in (b'-', b'+'):
             word += fors.read(1)
-        self._tokens, self._digits_before, self._decimals, self._comma = word, digits_before, decimals, comma
+        self._tokens, self._digits_before = word, digits_before
+        self._decimals, self._comma = decimals, comma
 
     def format(self, value):
         """Format a number to a format string."""
@@ -237,18 +239,18 @@ class NumberField(object):
         if digits_before + decimals > 24:
             raise error.BASICError(error.IFC)
         # dollar sign, decimal point
-        has_dollar, force_dot = '$' in tokens, '.' in tokens
+        has_dollar, force_dot = b'$' in tokens, b'.' in tokens
         # leading sign, if any
-        valstr, post_sign = '', ''
+        valstr, post_sign = b'', b''
         neg = value.is_negative()
-        if tokens[0] == '+':
-            valstr += '-' if neg else '+'
-        elif tokens[-1] == '+':
-            post_sign = '-' if neg else '+'
-        elif tokens[-1] == '-':
-            post_sign = '-' if neg else ' '
+        if tokens[0] == b'+':
+            valstr += b'-' if neg else b'+'
+        elif tokens[-1] == b'+':
+            post_sign = b'-' if neg else b'+'
+        elif tokens[-1] == b'-':
+            post_sign = b'-' if neg else b' '
         else:
-            valstr += '-' if neg else ''
+            valstr += b'-' if neg else b''
             # reserve space for sign in scientific notation by taking away a digit position
             if not has_dollar:
                 digits_before -= 1
@@ -259,17 +261,17 @@ class NumberField(object):
         # but we convert to Float before calling format_number
         value = value.clone().iabs()
         # currency sign, if any
-        valstr += '$' if has_dollar else ''
+        valstr += b'$' if has_dollar else b''
         # format to string
-        if '^' in tokens:
+        if b'^' in tokens:
             valstr += value.to_str_scientific(digits_before, decimals, force_dot, comma)
         else:
             valstr += value.to_str_fixed(decimals, force_dot, comma)
         # trailing signs, if any
         valstr += post_sign
         if len(valstr) > len(tokens):
-            valstr = '%' + valstr
+            valstr = b'%' + valstr
         else:
             # filler
-            valstr = valstr.rjust(len(tokens), '*' if '*' in tokens else ' ')
+            valstr = valstr.rjust(len(tokens), b'*' if b'*' in tokens else b' ')
         return valstr

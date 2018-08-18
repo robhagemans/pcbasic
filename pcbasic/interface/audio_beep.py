@@ -167,7 +167,7 @@ class LinuxBeeper(WinBeeper):
         if frequency < 37 or frequency >= 32767:
             fcntl.ioctl(sys.stdout, KIOCSOUND, 0)
         else:
-            fcntl.ioctl(sys.stdout, KIOCSOUND, int(CLOCK_TICK_RATE / frequency))
+            fcntl.ioctl(sys.stdout, KIOCSOUND, int(CLOCK_TICK_RATE // frequency))
         time.sleep(duration)
         if not loop:
             fcntl.ioctl(sys.stdout, KIOCSOUND, 0)

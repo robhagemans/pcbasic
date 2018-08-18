@@ -130,7 +130,7 @@ class TextScreen(object):
             row, col = self.current_row, self.current_col
             if c == '\t':
                 # TAB
-                num = (8 - (col - 1 - 8 * int((col-1) / 8)))
+                num = (8 - (col - 1 - 8 * int((col-1) // 8)))
                 for _ in range(num):
                     self.write_char(' ')
             elif c == '\n':

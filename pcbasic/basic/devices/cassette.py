@@ -578,7 +578,7 @@ class CASBitStream(TapeBitStream):
 
     def wind(self, loc):
         """Set position of tape in seconds."""
-        self.cas.seek(int(loc * 1000000 / (750 * 8)))
+        self.cas.seek(int(loc * 1000000 // (750 * 8)))
         self.current_byte = self.cas.read(1)
 
     def close(self):
@@ -749,15 +749,15 @@ class WAVBitStream(TapeBitStream):
             self.sub_threshold = 0
             self.subtractor = 128*self.nchannels
         else:
-            self.sub_threshold = 256*self.nchannels/2
+            self.sub_threshold = 256*self.nchannels//2
             self.subtractor =  256*self.nchannels
         # volume above/below zero that is interpreted as zero
         self.zero_threshold = self.nchannels
         # 1000 us for 1, 500 us for 0; threshold for half-pulse (500 us, 250 us)
-        self.halflength = [250*self.framerate/1000000, 500*self.framerate/1000000]
-        self.halflength_cut = 375*self.framerate/1000000
-        self.halflength_max = 2*self.halflength_cut
-        self.halflength_min = self.halflength_cut / 2
+        self.halflength = [(250*self.framerate) // 1000000, (500*self.framerate) // 1000000]
+        self.halflength_cut = (375 * self.framerate) // 1000000
+        self.halflength_max = 2 * self.halflength_cut
+        self.halflength_min = self.halflength_cut // 2
         self.length_cut = 2*self.halflength_cut
         # 2048 halves = 1024 pulses = 512 1-bits = 64 bytes of leader
         self.min_leader_halves = 2048

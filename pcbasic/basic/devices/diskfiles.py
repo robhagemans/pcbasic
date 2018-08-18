@@ -137,8 +137,8 @@ class TextFile(TextFileBase, InputMixin):
         with safe_io():
             if self.mode == b'I':
                 tell = self._fhandle.tell() - len(self._readahead)
-                return max(1, (127+tell) / 128)
-            return self._fhandle.tell() / 128
+                return max(1, (127+tell) // 128)
+            return self._fhandle.tell() // 128
 
     def lof(self):
         """Get length of file (LOF)."""

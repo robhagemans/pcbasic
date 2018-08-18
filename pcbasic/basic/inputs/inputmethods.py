@@ -221,4 +221,4 @@ class Stick(object):
     def _decay_timer(self):
         """Millisecond timer for game port decay."""
         now = datetime.datetime.now()
-        return now.second*1000 + now.microsecond/1000
+        return now.second*1000 + now.microsecond//1000

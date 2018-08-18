@@ -831,7 +831,7 @@ class VideoSDL2(VideoPlugin):
                 pixels[left : left+self.font_width, top : top+self.font_height])
         if self.text_mode:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
-            if self._cycle/BLINK_CYCLES in (1, 3):
+            if self._cycle // BLINK_CYCLES in (1, 3):
                 curs_height = min(
                         self.cursor_to - self.cursor_from+1, self.font_height - self.cursor_from)
                 curs_rect = sdl2.SDL_Rect(
