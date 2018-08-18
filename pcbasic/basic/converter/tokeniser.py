@@ -18,7 +18,7 @@ from .. import values
 class PlainTextStream(codestream.CodeStream):
     """Stream of plain-text BASIC code."""
 
-    end_line = ('\0', '\r')
+    end_line = (b'\0', b'\r')
 
     def read_line_number(self):
         """Read a line or jump number, return as int."""
@@ -61,7 +61,7 @@ class Tokeniser(object):
         tk.KW_ERL, tk.KW_RESTORE, tk.KW_RETURN)
 
     # operator symbols
-    _ascii_operators = '+-=/\\^*<>'
+    _ascii_operators = b'+-=/\\^*<>'
 
     def __init__(self, values, keyword_dict):
         """Initialise tokeniser."""
@@ -74,7 +74,7 @@ class Tokeniser(object):
         outs = codestream.TokenisedStream()
         # skip whitespace at start of line
         d = ins.skip_blank()
-        if d == '':
+        if d == b'':
             # empty line at EOF
             return outs
         # read the line number
@@ -90,30 +90,31 @@ class Tokeniser(object):
             # peek next character
             c = ins.peek()
             # anything after NUL is ignored till EOL
-            if c == '\0':
+            if c == b'\0':
                 ins.read(1)
-                ins.read_to(('', '\r'))
+                ins.read_to((b'', b'\r'))
                 break
             # end of line
-            elif c in ('', '\r'):
+            elif c in (b'', b'\r'):
                 break
             # handle whitespace
             elif c in ins.blanks:
                 ins.read(1)
                 outs.write(c)
             # handle string literals
-            elif ins.peek() == '"':
+            elif ins.peek() == b'"':
                 outs.write(ins.read_string())
             # handle jump numbers
-            elif allow_number and allow_jumpnum and c in string.digits + '.':
+            elif allow_number and allow_jumpnum and c in string.digits + b'.':
                 self._tokenise_jump_number(ins, outs)
             # handle numbers
             # numbers following var names with no operator or token in between
             # should not be parsed, eg OPTION BASE 1
             # note we don't include leading signs, encoded as unary operators
             # number starting with & are always parsed
-            elif c in ('&', ) or (allow_number and
-                                      not allow_jumpnum and c in string.digits + '.'):
+            elif c in (b'&', ) or (
+                    allow_number and not allow_jumpnum and c in string.digits + '.'
+                ):
                 outs.write(self.tokenise_number(ins))
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):
             elif c in self._ascii_operators:
@@ -124,20 +125,20 @@ class Tokeniser(object):
                 outs.write(self._keyword_to_token[c])
                 allow_number = True
             # special case ' -> :REM'
-            elif c == "'":
+            elif c == b"'":
                 ins.read(1)
-                outs.write(':' + tk.REM + tk.O_REM)
+                outs.write(b':' + tk.REM + tk.O_REM)
                 self._tokenise_rem(ins, outs)
             # special case ? -> PRINT
-            elif c == '?':
+            elif c == b'?':
                 ins.read(1)
                 outs.write(tk.PRINT)
                 allow_number = True
             # keywords & variable names
-            elif c in string.ascii_letters:
+            elif c in bytes(string.ascii_letters):
                 word = self._tokenise_word(ins, outs)
                 # handle non-parsing modes
-                if word in (tk.KW_REM, "'"):
+                if word in (tk.KW_REM, b"'"):
                     self._tokenise_rem(ins, outs)
                 elif word == tk.KW_DATA:
                     self._tokenise_data(ins, outs)
@@ -150,31 +151,31 @@ class Tokeniser(object):
                         spc_or_tab = True
             else:
                 ins.read(1)
-                if c in (',', '#', ';'):
+                if c in (b',', b'#', b';'):
                     # can separate numbers as well as jumpnums
                     allow_number = True
-                elif c in ('(', '['):
+                elif c in (b'(', b'['):
                     allow_number = True
-                elif c == ')' and spc_or_tab:
+                elif c == b')' and spc_or_tab:
                     spc_or_tab = False
                     allow_jumpnum, allow_number = False, True
                 else:
                     allow_jumpnum, allow_number = False, False
                 # replace all other nonprinting chars by spaces;
                 # HOUSE 0x7f is allowed.
-                outs.write(c if ord(c) >= 32 and ord(c) <= 127 else ' ')
+                outs.write(c if ord(c) >= 32 and ord(c) <= 127 else b' ')
         outs.seek(0)
         return outs
 
     def _tokenise_rem(self, ins, outs):
         """Pass anything after REM as is till EOL."""
-        outs.write(ins.read_to(('', '\r', '\0')))
+        outs.write(ins.read_to((b'', b'\r', b'\0')))
 
     def _tokenise_data(self, ins, outs):
         """Pass DATA as is, till end of statement, except for literals."""
         while True:
-            outs.write(ins.read_to(('', '\r', '\0', ':', '"')))
-            if ins.peek() == '"':
+            outs.write(ins.read_to((b'', b'\r', b'\0', b':', b'"')))
+            if ins.peek() == b'"':
                 # string literal in DATA
                 outs.write(ins.read_string())
             else:
@@ -193,21 +194,21 @@ class Tokeniser(object):
             outs.write('\x00\xC0\xDE' + struct.pack('<H', linenum))
             # ignore single whitespace after line number, if any,
             # unless line number is zero (as does GW)
-            if ins.peek() == ' ' and linenum != 0:
+            if ins.peek() == b' ' and linenum != 0:
                 ins.read(1)
         else:
             # direct line; internally, we need an anchor for the program pointer,
             # so we encode a ':'
-            outs.write(':')
+            outs.write(b':')
 
     def _tokenise_jump_number(self, ins, outs):
         """Convert an ascii line number pointer to tokenised form."""
         linum = ins.read_line_number()
         if linum is not None:
             outs.write(tk.T_UINT + struct.pack('<H', linum))
-        elif ins.peek() == '.':
+        elif ins.peek() == b'.':
             ins.read(1)
-            outs.write('.')
+            outs.write(b'.')
 
     def _tokenise_word(self, ins, outs):
         """Convert a keyword to tokenised form."""
@@ -216,16 +217,16 @@ class Tokeniser(object):
             c = ins.read(1)
             word += c.upper()
             # special cases 'GO     TO' -> 'GOTO', 'GO SUB' -> 'GOSUB'
-            if word == 'GO':
+            if word == b'GO':
                 pos = ins.tell()
                 # GO SUB allows 1 space
-                if ins.peek(4).upper() == ' SUB':
+                if ins.peek(4).upper() == b' SUB':
                     word = tk.KW_GOSUB
                     ins.read(4)
                 else:
                     # GOTO allows any number of spaces
                     nxt = ins.skip_blank()
-                    if ins.read(2).upper() == 'TO':
+                    if ins.read(2).upper() == b'TO':
                         word = tk.KW_GOTO
                     else:
                         ins.seek(pos)
@@ -233,7 +234,7 @@ class Tokeniser(object):
                     nxt = ins.peek()
                     if nxt in tk.NAME_CHARS:
                         ins.seek(pos)
-                        word = 'GO'
+                        word = b'GO'
             if word in self._keyword_to_token:
                 # ignore if part of a longer name, except FN, SPC(, TAB(, USR
                 if word not in (tk.KW_FN, tk.KW_SPC, tk.KW_TAB, tk.KW_USR):
@@ -243,7 +244,7 @@ class Tokeniser(object):
                 token = self._keyword_to_token[word]
                 # handle special case ELSE -> :ELSE
                 if word == tk.KW_ELSE:
-                    outs.write(':' + token)
+                    outs.write(b':' + token)
                 # handle special case WHILE -> WHILE+
                 elif word == tk.KW_WHILE:
                     outs.write(token + tk.O_PLUS)
@@ -266,14 +267,14 @@ class Tokeniser(object):
         word = ins.read_number()
         if not word:
             return ''
-        elif word[:2] == '&H':
+        elif word[:2] == b'&H':
             # hex constant
             return self._values.new_integer().from_hex(word[2:]).to_token_hex()
-        elif word[:2] == '&O':
+        elif word[:2] == b'&O':
             # octal constant
             # read_number converts &1 into &O1
             return self._values.new_integer().from_oct(word[2:]).to_token_oct()
-        elif word[0] in string.digits + '.+-':
+        elif word[0] in string.digits + b'.+-':
             # handle other numbers
             # note GW passes signs separately as a token
             # and only stores positive numbers in the program
