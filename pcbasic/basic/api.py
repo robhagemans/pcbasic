@@ -6,7 +6,6 @@ Session API
 This file is released under the GNU GPL version 3 or later.
 """
 
-import Queue
 import os
 
 from .base import error

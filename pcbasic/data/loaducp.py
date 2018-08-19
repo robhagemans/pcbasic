@@ -10,6 +10,8 @@ import pkg_resources
 import logging
 import binascii
 
+from six import unichr
+
 from .resources import get_data
 
 CODEPAGE_DIR = u'codepages'

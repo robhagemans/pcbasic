@@ -7,7 +7,8 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import time
-import Queue
+
+from six.moves import queue
 
 from .base import error
 from .base import scancode
@@ -61,7 +62,7 @@ def save_queue(q):
         try:
             qlist.append(q.get(False))
             q.task_done()
-        except Queue.Empty:
+        except queue.Empty:
             break
     return qlist
 
@@ -87,7 +88,7 @@ class NullQueue(object):
         pass
     def get(self, block=False, timeout=False):
         # we're ignoring block
-        raise Queue.Empty
+        raise queue.Empty
     def task_done(self):
         pass
     def join(self):
@@ -162,7 +163,7 @@ class EventQueues(object):
             # pop input queues
             try:
                 signal = self.inputs.get(False)
-            except Queue.Empty:
+            except queue.Empty:
                 if self._pause:
                     continue
                 else:

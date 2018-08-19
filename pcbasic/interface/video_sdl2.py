@@ -18,7 +18,7 @@ try:
 except ImportError:
     numpy = None
 
-from six import iteritems
+from six import iteritems, unichr
 
 from ..compat import WIN32, BASE_DIR, PLATFORM
 from .base import EnvironmentCache

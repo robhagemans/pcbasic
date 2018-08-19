@@ -18,7 +18,7 @@ try:
 except ImportError:
     numpy = None
 
-from six import iteritems
+from six import iteritems, unichr
 
 from ..basic.base import signals
 from ..basic.base import scancode

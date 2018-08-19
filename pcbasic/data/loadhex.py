@@ -11,7 +11,7 @@ import pkg_resources
 import logging
 import binascii
 
-from six import iteritems, itervalues
+from six import iteritems, itervalues, unichr
 
 from ..basic.codepage import PRINTABLE_ASCII
 from .resources import get_data, ResourceFailed

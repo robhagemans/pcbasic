@@ -6,8 +6,6 @@ Sound interface based on PyGame
 This file is released under the GNU GPL version 3 or later.
 """
 
-
-import Queue
 from collections import deque
 
 try:

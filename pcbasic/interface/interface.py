@@ -7,10 +7,11 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import sys
-import Queue
 import threading
 import logging
 import traceback
+
+from six.moves import queue
 
 from ..basic.base import signals
 from .base import InitFailed, video_plugins, audio_plugins, WAIT_MESSAGE
@@ -26,9 +27,9 @@ class Interface(object):
 
     def __init__(self, guard=None, try_interfaces=(), audio_override=None, wait=False, **kwargs):
         """Initialise interface."""
-        self._input_queue = Queue.Queue()
-        self._video_queue = Queue.Queue()
-        self._audio_queue = Queue.Queue()
+        self._input_queue = queue.Queue()
+        self._video_queue = queue.Queue()
+        self._audio_queue = queue.Queue()
         self._wait = wait
         self._guard = guard
         self._video, self._audio = None, None
@@ -116,14 +117,14 @@ class Interface(object):
         while not self._video_queue.empty():
             try:
                 signal = self._video_queue.get(False)
-            except Queue.Empty:
+            except queue.Empty:
                 continue
             self._video_queue.task_done()
         # drain audio queue
         while not self._audio_queue.empty():
             try:
                 signal = self._audio_queue.get(False)
-            except Queue.Empty:
+            except queue.Empty:
                 continue
             self._audio_queue.task_done()
 

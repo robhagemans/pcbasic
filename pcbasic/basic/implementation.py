@@ -8,9 +8,10 @@ This file is released under the GNU GPL version 3 or later.
 import io
 import os
 import sys
-import Queue
 import logging
 from contextlib import contextmanager
+
+from six.moves import queue
 
 from ..metadata import NAME, VERSION, COPYRIGHT
 from .base import error
@@ -109,7 +110,7 @@ class Implementation(object):
         # set up input event handler
         # no interface yet; use dummy queues
         self.queues = eventcycle.EventQueues(
-            self.values, ctrl_c_is_break, inputs=Queue.Queue()
+            self.values, ctrl_c_is_break, inputs=queue.Queue()
         )
         # prepare I/O streams
         self.io_streams = iostreams.IOStreams(
@@ -241,7 +242,7 @@ class Implementation(object):
         else:
             # use dummy video & audio queues if not provided
             # but an input queue should be operational for I/O streams
-            self.queues.set(inputs=Queue.Queue())
+            self.queues.set(inputs=queue.Queue())
 
     def execute(self, command):
         """Execute a BASIC statement."""

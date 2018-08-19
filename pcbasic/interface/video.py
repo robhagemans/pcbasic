@@ -6,8 +6,9 @@ Base class for video plugins
 This file is released under the GNU GPL version 3 or later.
 """
 
-import Queue
 import time
+
+from six.moves import queue
 
 from ..basic.base import signals
 
@@ -67,7 +68,7 @@ class VideoPlugin(object):
         while True:
             try:
                 signal = self._video_queue.get(False)
-            except Queue.Empty:
+            except queue.Empty:
                 return True
             # putting task_done before the execution avoids hanging on join() after an exception
             self._video_queue.task_done()

@@ -10,21 +10,21 @@ import unicodedata
 import logging
 import os
 
-from six import iteritems, int2byte
+from six import iteritems, int2byte, unichr
 
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
 # ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
 # see http://www.siao2.com/2005/09/17/469941.aspx
-PRINTABLE_ASCII = map(int2byte, range(0x20, 0x7F))
+PRINTABLE_ASCII = tuple(int2byte(_c) for _c in range(0x20, 0x7F))
 
 # on the terminal, these values are not shown as special graphic chars but as their normal effect
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
 CONTROL = (b'\x07', b'\x09', b'\x0A', b'\x0B', b'\x0C', b'\x0D', b'\x1C', b'\x1D', b'\x1E', b'\x1F')
 
 # default is codepage 437
-DEFAULT_CODEPAGE = {int2byte(i): c for i, c in enumerate(
+DEFAULT_CODEPAGE = {int2byte(_i): _c for _i, _c in enumerate(
     u'\x00\u263a\u263b\u2665\u2666\u2663\u2660\u2022\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b'
     u'\u263c\u25ba\u25c4\u2195\u203c\xb6\xa7\u25ac\u21a8\u2191\u2193\u2192\u2190\u221f\u2194\u25b2'
     u'\u25bc!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrst'
