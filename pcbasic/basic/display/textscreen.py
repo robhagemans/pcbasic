@@ -8,6 +8,8 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
+from six import iteritems, int2byte
+
 from ..base import signals
 from ..base import error
 from ..base import tokens as tk
@@ -15,10 +17,6 @@ from .. import values
 from . import font
 from .text import TextBuffer, TextRow
 from .textbase import BottomBar, Cursor, ScrollArea
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 class TextScreen(object):
@@ -48,7 +46,7 @@ class TextScreen(object):
             fonts = {8: {}}
         self.fonts = {
             height: font.Font(height, font_dict)
-            for height, font_dict in fonts.iteritems()
+            for height, font_dict in iteritems(fonts)
         }
         # function key macros
         self.bottom_bar = BottomBar()

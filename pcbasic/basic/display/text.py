@@ -66,7 +66,7 @@ class TextPage(object):
 
     def __init__(self, attr, width, height, conv, dbcs_enabled):
         """Initialise the screen buffer to given dimensions."""
-        self.row = [TextRow(attr, width, conv, dbcs_enabled) for _ in xrange(height)]
+        self.row = [TextRow(attr, width, conv, dbcs_enabled) for _ in range(height)]
         self.width = width
         self.height = height
 

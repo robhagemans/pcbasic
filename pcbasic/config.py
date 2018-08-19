@@ -20,6 +20,8 @@ import pkg_resources
 import string
 from collections import deque
 
+from six import iteritems
+
 from .metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from .compat import WIN32, get_short_pathname, get_unicode_argv, HAS_CONSOLE
@@ -392,7 +394,7 @@ class Settings(object):
         # local config file settings override preset settings
         self._merge_arguments(args, preset_dict[u'pcbasic'])
         # find unrecognised arguments
-        for key, value in args.iteritems():
+        for key, value in iteritems(args):
             if key not in self.arguments:
                 logging.warning(
                     'Ignored unrecognised option `%s=%s` in configuration file', key, value

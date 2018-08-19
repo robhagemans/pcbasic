@@ -293,8 +293,8 @@ class VideoCurses(VideoPlugin):
         self._set_default_colours(len(mode_info.palette))
         bgcolor = self._curses_colour(7, 0, False)
         self.text = [
-            [[(u' ', bgcolor)]*self.width for _ in xrange(self.height)]
-            for _ in xrange(mode_info.num_pages)
+            [[(u' ', bgcolor)]*self.width for _ in range(self.height)]
+            for _ in range(mode_info.num_pages)
         ]
         self._resize(self.height, self.width)
         self._set_curses_palette()

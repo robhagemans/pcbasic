@@ -18,6 +18,8 @@ try:
 except ImportError:
     numpy = None
 
+from six import iteritems
+
 from ..compat import WIN32, BASE_DIR, PLATFORM
 from .base import EnvironmentCache
 
@@ -658,7 +660,7 @@ class VideoSDL2(VideoPlugin):
                 ):
                 return
         # get modifiers
-        mod = [s for m, s in MOD_TO_SCAN.iteritems() if e.key.keysym.mod & m]
+        mod = [s for m, s in iteritems(MOD_TO_SCAN) if e.key.keysym.mod & m]
         # get eascii
         try:
             if scancode.ALT in mod:
@@ -1089,7 +1091,7 @@ class VideoSDL2(VideoPlugin):
 
     def build_glyphs(self, new_dict):
         """Build a dict of glyphs for use in text mode."""
-        for char, glyph in new_dict.iteritems():
+        for char, glyph in iteritems(new_dict):
             # transpose because _pixels2d uses column-major mode and hence [x][y] indexing
             # (we can change this)
             self.glyph_dict[char] = numpy.asarray(glyph).T

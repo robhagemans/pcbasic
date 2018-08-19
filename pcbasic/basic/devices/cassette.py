@@ -14,13 +14,12 @@ import string
 from chunk import Chunk
 import io
 
+from six import int2byte
+
 from ..base import error
 from ..base import tokens as tk
 from .devicebase import RawFile, TextFileBase, InputMixin, DeviceSettings, parse_protocol_string
 
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 # file types (data, bsaved memory, protected, ascii, tokenised)
 TOKEN_TO_TYPE = {
@@ -28,7 +27,7 @@ TOKEN_TO_TYPE = {
     0x20: b'P', 0x40: b'A', 0x80: b'B'
 }
 
-TYPE_TO_TOKEN = dict(reversed(item) for item in TOKEN_TO_TYPE.iteritems())
+TYPE_TO_TOKEN = dict(reversed(item) for item in TOKEN_TO_TYPE.items())
 
 
 #################################################################################
@@ -485,7 +484,7 @@ class TapeBitStream(object):
         """Read a byte from the tape."""
         # NOTE: skip_start is ignored
         byte = 0
-        for i in xrange(8):
+        for i in range(8):
             bit = self.read_bit()
             if bit is None:
                 raise PulseError()

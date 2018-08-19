@@ -6,6 +6,9 @@ Keyboard e-ASCII codes
 This file is released under the GNU GPL version 3 or later.
 """
 
+from six import iteritems
+
+
 class Namespace(object):
     """Simple namespace class."""
     def __init__(self, **kwargs):
@@ -204,5 +207,5 @@ as_bytes = Namespace(
 
 as_unicode = Namespace(**{
     key: u''.join([unichr(ord(c)) for c in value])
-    for key, value in as_bytes.__dict__.iteritems()
+    for key, value in iteritems(as_bytes.__dict__)
 })

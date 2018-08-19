@@ -8,6 +8,8 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 
+from six import iteritems, iterkeys
+
 from ..base import error
 from .. import values
 
@@ -27,12 +29,12 @@ class Scalars(object):
 
     def __iter__(self):
         """Return an iterable over all scalar names."""
-        return self._vars.iterkeys()
+        return iterkeys(self._vars)
 
     def __str__(self):
         """Debugging representation of variable dictionary."""
         return '\n'.join(
-            '%s: %s' % (n, self._values.from_bytes(v)) for n, v in self._vars.iteritems()
+            '%s: %s' % (n, self._values.from_bytes(v)) for n, v in iteritems(self._vars)
         )
 
     def clear(self):
@@ -113,7 +115,7 @@ class Scalars(object):
 
     def dereference(self, address):
         """Get a value for a scalar given its pointer address."""
-        for name, data in self._var_memory.iteritems():
+        for name, data in iteritems(self._var_memory):
             if data[1] == address:
                 return self.get(name)
         return None
@@ -143,7 +145,7 @@ class Scalars(object):
     def get_strings(self):
         """Return a list of views of string scalars."""
         return [
-            memoryview(value) for name, value in self._vars.iteritems() if name[-1] == values.STR
+            memoryview(value) for name, value in iteritems(self._vars) if name[-1] == values.STR
         ]
 
 

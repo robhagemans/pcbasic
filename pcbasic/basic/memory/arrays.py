@@ -9,6 +9,8 @@ This file is released under the GNU GPL version 3 or later.
 import binascii
 import struct
 
+from six import iteritems, iterkeys
+
 from ..base import error
 from .. import values
 from .scalars import get_name_in_memory
@@ -30,13 +32,13 @@ class Arrays(object):
 
     def __iter__(self):
         """Return an iterable over all scalar names."""
-        return self._dims.iterkeys()
+        return iterkeys(self._dims)
 
     def __str__(self):
         """Debugging representation of variable dictionary."""
         return b'\n'.join(
             b'%s%s: %s' % (n, v, binascii.hexlify(bytes(self._buffers[n])))
-            for n, v in self._dims.iteritems()
+            for n, v in iteritems(self._dims)
         )
 
     def clear(self):
@@ -230,7 +232,7 @@ class Arrays(object):
         """Get a value for an array given its pointer address."""
         found_addr = -1
         found_name = None
-        for name, data in self._array_memory.iteritems():
+        for name, data in iteritems(self._array_memory):
             addr = self._memory.var_current() + data[1]
             if addr > found_addr and addr <= address:
                 found_addr = addr
@@ -280,7 +282,7 @@ class Arrays(object):
         """Return a list of views of string array elements."""
         return [
             memoryview(buf)[i:i+3]
-            for name, buf in self._buffers.iteritems()
+            for name, buf in iteritems(self._buffers)
             if name[-1] == values.STR
             for i in range(0, len(buf), 3)
         ]
@@ -319,10 +321,10 @@ class Arrays(object):
         elif len(remaining_dimensions) == 1:
             return [
                 self.get(name, index+[i+(self._base or 0)]).to_value()
-                for i in xrange(remaining_dimensions[0])
+                for i in range(remaining_dimensions[0])
             ]
         else:
             return [
                 self._to_list(name, index+[i+(self._base or 0)], remaining_dimensions[1:])
-                for i in xrange(remaining_dimensions[0])
+                for i in range(remaining_dimensions[0])
             ]

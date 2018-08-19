@@ -11,6 +11,8 @@ import string
 import ntpath
 from contextlib import contextmanager
 
+from six import iteritems
+
 from ..base.bytestream import ByteStream
 from ..base import error
 from .devicebase import RawFile, TextFileBase, InputMixin, safe_io, TYPE_TO_MAGIC
@@ -394,7 +396,7 @@ class Locks(object):
     def list_open(self, name, exclude_number=None):
         """Retrieve a list of files open on the same disk device."""
         return [
-            f for number, f in self._locking_parameters.iteritems()
+            f for number, f in iteritems(self._locking_parameters)
             if f.name == ntpath.basename(name).upper() and number != exclude_number
         ]
 

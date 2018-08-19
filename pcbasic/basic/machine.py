@@ -9,14 +9,13 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 import logging
 
+from six import iteritems, int2byte
+
 from ..metadata import NAME, VERSION, COPYRIGHT
 from .base import error
 from . import values
 from . import devices
 
-
-# mark non-unicode conversion explicitly
-int2byte = chr
 
 # ROM copyright notice
 NOTICE = bytearray(
@@ -114,7 +113,7 @@ class MachinePorts(object):
             # serial port machine ports
             # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers
             # http://control.com/thread/1026221083
-            for base_addr, com_port_nr in self.com_base.iteritems():
+            for base_addr, com_port_nr in iteritems(self.com_base):
                 com_port = self.com_device[com_port_nr]
                 if not com_port.available():
                     continue
@@ -187,7 +186,7 @@ class MachinePorts(object):
             # serial port machine ports
             # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers
             # http://control.com/thread/1026221083
-            for base_addr, com_port_nr in self.com_base.iteritems():
+            for base_addr, com_port_nr in iteritems(self.com_base):
                 com_port = self.com_device[com_port_nr]
                 if not com_port.available():
                     continue

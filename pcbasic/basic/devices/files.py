@@ -12,6 +12,8 @@ import string
 import logging
 import io
 
+from six.moves import xrange
+
 from ..base import error
 from ..base import tokens as tk
 from .. import values

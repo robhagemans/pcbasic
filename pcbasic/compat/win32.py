@@ -162,7 +162,7 @@ def get_unicode_argv():
     cmd = _GetCommandLineW()
     argc = c_int(0)
     argv = _CommandLineToArgvW(cmd, byref(argc))
-    argv = [argv[i] for i in xrange(argc.value)]
+    argv = [argv[i] for i in range(argc.value)]
     # clip off the python interpreter call, if we use it
     # anything that didn't get included in sys.argv is not for us either
     argv = argv[-len(sys.argv):]

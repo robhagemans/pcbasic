@@ -464,7 +464,7 @@ class Drawing(object):
         mask = 0x8000
         line_error = dx // 2
         x, y = x0, y0
-        for x in xrange(x0, x1+sx, sx):
+        for x in range(x0, x1+sx, sx):
             if pattern & mask != 0:
                 if steep:
                     self.put_pixel(y, x, c)
@@ -1186,7 +1186,7 @@ def tile_to_interval(x0, x1, y, tile):
         ntile = numpy.roll(numpy.array(tile).astype(int)[y % h], int(-x0 % 8))
         return numpy.tile(ntile, (dx+w-1) // w)[:dx]
     else:
-        return [tile[y % h][x % 8] for x in xrange(x0, x1+1)]
+        return [tile[y % h][x % 8] for x in range(x0, x1+1)]
 
 
 ###############################################################################

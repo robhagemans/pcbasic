@@ -10,6 +10,8 @@ import struct
 import logging
 from operator import itemgetter
 
+from six import iteritems
+
 from ..base import error
 from . import numbers
 
@@ -161,7 +163,7 @@ class StringSpace(object):
 
     def __str__(self):
         """Debugging representation of string table."""
-        return '\n'.join('%x: %r' % (n, v) for n, v in self._strings.iteritems())
+        return '\n'.join('%x: %r' % (n, v) for n, v in iteritems(self._strings))
 
     def clear(self):
         """Empty string space."""
@@ -281,7 +283,7 @@ class StringSpace(object):
     def get_memory(self, address):
         """Retrieve data from data memory: string space """
         # find the variable we're in
-        for try_address, value in self._strings.iteritems():
+        for try_address, value in iteritems(self._strings):
             length = len(value)
             if try_address <= address < try_address + length:
                 return value[address - try_address]

@@ -10,6 +10,7 @@ import unicodedata
 import logging
 import os
 
+from six import iteritems
 
 # mark bytes conversion explicitly
 int2byte = chr
@@ -65,7 +66,7 @@ class Codepage(object):
         self.box_right = [set(), set()]
         self.cp_to_unicode = {}
         self.dbcs_num_chars = 0
-        for cp_point, grapheme_cluster in codepage_dict.iteritems():
+        for cp_point, grapheme_cluster in iteritems(codepage_dict):
             # do not redefine printable ASCII, but substitute glyphs
             if (
                     cp_point in PRINTABLE_ASCII and
@@ -91,7 +92,7 @@ class Codepage(object):
         for c in range(256):
             if int2byte(c) not in self.cp_to_unicode:
                 self.cp_to_unicode[int2byte(c)] = u'\0'
-        self.unicode_to_cp = dict((reversed(item) for item in self.cp_to_unicode.items()))
+        self.unicode_to_cp = dict((reversed(item) for item in iteritems(self.cp_to_unicode)))
         if self.dbcs_num_chars > 0:
             self.dbcs = True
 
@@ -708,7 +709,7 @@ GRAPHEME_BREAK = {
 
 def _get_grapheme_break(c):
     """Get grapheme break property of unicode char."""
-    for key, value in GRAPHEME_BREAK.iteritems():
+    for key, value in iteritems(GRAPHEME_BREAK):
         if ord(c) in value:
             return key
     # no grapheme break property found

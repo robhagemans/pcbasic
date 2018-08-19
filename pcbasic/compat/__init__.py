@@ -11,7 +11,6 @@ from .base import split_quoted
 from .python2 import which
 
 if WIN32:
-
     try:
         if X64:
             from . import win32_x64_console as console

@@ -18,6 +18,8 @@ try:
 except ImportError:
     numpy = None
 
+from six import iteritems
+
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
@@ -245,7 +247,7 @@ class VideoPygame(VideoPlugin):
         # get scancode
         scan = key_to_scan.get(e.key, None)
         # get modifiers
-        mod = [s for m, s in mod_to_scan.iteritems() if e.mod & m]
+        mod = [s for m, s in iteritems(mod_to_scan) if e.mod & m]
         # compensate for missing l-alt down events (needed at least on Ubuntu Unity)
         if (e.mod & pygame.KMOD_LALT) and not self._alt_key_down:
             # insert an alt keydown event before the alt-modified keydown
@@ -593,7 +595,7 @@ class VideoPygame(VideoPlugin):
 
     def build_glyphs(self, new_dict):
         """Build a dict of glyphs for use in text mode."""
-        for char, glyph in new_dict.iteritems():
+        for char, glyph in iteritems(new_dict):
             self.glyph_dict[char] = glyph_to_surface(glyph)
 
     def set_cursor_shape(self, width, height, from_line, to_line):

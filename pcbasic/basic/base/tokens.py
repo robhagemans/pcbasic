@@ -8,6 +8,9 @@ This file is released under the GNU GPL version 3 or later.
 
 import string
 
+from six import iteritems
+
+
 # allowable as chars 2.. in a variable name (first char must be a letter)
 NAME_CHARS = tuple(string.ascii_letters + string.digits + b'.')
 # type characters
@@ -501,4 +504,4 @@ class TokenKeywordDict(object):
             # pcjr, tandy; incompatible with Sperry PC.
             self.to_keyword[NOISE] = KW_NOISE
             self.to_keyword[TERM] = KW_TERM
-        self.to_token = dict((reversed(item) for item in self.to_keyword.items()))
+        self.to_token = dict((reversed(item) for item in iteritems(self.to_keyword)))

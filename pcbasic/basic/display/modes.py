@@ -6,19 +6,19 @@ Emulated video modes
 This file is released under the GNU GPL version 3 or later.
 """
 
+import struct
+
 try:
     import numpy
 except ImportError:
     numpy = None
 
-import struct
+from six import int2byte
+from six.moves import xrange
 
 from .. import values
 from ..base import error
 
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
 INTENSITY_EGA_MONO_0 = (0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xff, 0xff, 0xff)
@@ -631,7 +631,7 @@ if numpy:
         attrmask = (1<<bpp) - 1
         bitval = numpy.array([128, 64, 32, 16, 8, 4, 2, 1], dtype=numpy.uint8)
         bitmask = bitval[0::bpp]
-        for i in xrange(1, bpp):
+        for i in range(1, bpp):
             bitmask |= bitval[i::bpp]
         pre_mask = numpy.tile(bitmask, len(byte_array))
         post_shift = numpy.tile(
@@ -659,11 +659,11 @@ if numpy:
         attrs = numpy.left_shift(attrs & attrmask, shift)
         # below is much faster than:
         #   return list([ sum(attrs[i:i+pixels_per_byte])
-        #                 for i in xrange(0, len(attrs), pixels_per_byte) ])
+        #                 for i in range(0, len(attrs), pixels_per_byte) ])
         # and anything involving numpy.array_split or numpy.dot is even slower.
         # numpy.roll is ok but this is the fastest I've found:
         nattrs = attrs[0::pixels_per_byte]
-        for i in xrange(1, pixels_per_byte):
+        for i in range(1, pixels_per_byte):
             nattrs |= attrs[i::pixels_per_byte]
         return bytearray(list(nattrs))
 
@@ -674,7 +674,7 @@ else:
         attrmask = (1<<bpp) - 1
         return [
             ((byte >> (8-bpp-shift)) & attrmask) * mask
-            for byte in byte_array for shift in xrange(0, 8, bpp)
+            for byte in byte_array for shift in range(0, 8, bpp)
         ]
 
     def interval_to_bytes(colours, pixels_per_byte, plane=0):

@@ -224,7 +224,7 @@ class Sound(object):
         """Rebuild tone queues."""
         # should we pop one at a time from each voice queue to equalise timings?
         for voice, q in enumerate(self._voice_queue):
-            for item, duration in q.iteritems():
+            for item, duration in q.items():
                 item.params = list(item.params)
                 item.params[2] = duration
                 self._queues.audio.put(item)
@@ -500,7 +500,7 @@ class TimedQueue(object):
         except IndexError:
             return datetime.datetime.now()
 
-    def iteritems(self):
+    def items(self):
         """Iterate over each item and its duration."""
         self._check_expired()
         last_expiry = datetime.datetime.now()

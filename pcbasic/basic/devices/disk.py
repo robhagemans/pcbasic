@@ -20,6 +20,8 @@ import ntpath
 import logging
 import codecs
 
+from six.moves import xrange
+
 from ..base import error
 from ..codepage import CONTROL
 from ...compat import get_short_pathname, get_free_bytes, is_hidden
