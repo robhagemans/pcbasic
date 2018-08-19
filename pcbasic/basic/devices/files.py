@@ -43,7 +43,8 @@ class Files(object):
             self, values, memory, queues, keyboard, display,
             max_files, max_reclen, serial_buffer_size,
             device_params, current_device, mount_dict,
-            utf8, universal):
+            utf8, universal
+        ):
         """Initialise files."""
         # for wait() in files_
         self._queues = queues
@@ -54,9 +55,10 @@ class Files(object):
         self.max_files = max_files
         self.max_reclen = max_reclen
         self._init_devices(
-                values, queues, display, keyboard,
-                device_params, current_device, mount_dict,
-                serial_buffer_size, utf8, universal)
+            values, queues, display, keyboard,
+            device_params, current_device, mount_dict,
+            serial_buffer_size, utf8, universal
+        )
 
     ###########################################################################
     # file management
@@ -75,8 +77,10 @@ class Files(object):
             f.close()
         self.files = {}
 
-    def open(self, number, description, filetype, mode=b'I', access=b'', lock=b'',
-                reclen=128, seg=0, offset=0, length=0):
+    def open(
+            self, number, description, filetype, mode=b'I', access=b'', lock=b'',
+            reclen=128, seg=0, offset=0, length=0
+        ):
         """Open a file on a device specified by description."""
         if (not description) or (number < 0) or (number > self.max_files):
             # bad file number; also for name='', for some reason
@@ -120,9 +124,10 @@ class Files(object):
     # device management
 
     def _init_devices(
-                self, values, queues, display, keyboard,
-                device_params, current_device, mount_dict,
-                serial_in_size, utf8, universal):
+            self, values, queues, display, keyboard,
+            device_params, current_device, mount_dict,
+            serial_in_size, utf8, universal
+        ):
         """Initialise devices."""
         # screen device, for files_()
         self._screen = display.text_screen
@@ -139,7 +144,8 @@ class Files(object):
             b'COM2:': ports.COMDevice(device_params.get(b'COM2:', None), queues, serial_in_size),
             # parallel devices - LPT1: must always be available
             b'LPT1:': parports.LPTDevice(
-                        device_params.get(b'LPT1:', None), devicebase.nullstream(), codepage),
+                device_params.get(b'LPT1:', None), devicebase.nullstream(), codepage
+            ),
             b'LPT2:': parports.LPTDevice(device_params.get(b'LPT2:', None), None, codepage),
             b'LPT3:': parports.LPTDevice(device_params.get(b'LPT3:', None), None, codepage),
         }
@@ -183,15 +189,15 @@ class Files(object):
             # MS-DOS device aliases - these can't be names of disk files
             if device != self._devices[b'CAS1:'] and name in DOS_DEVICE_FILES:
                 if name == b'AUX':
-                    device, dev_param = self._devices[b'COM1:'], ''
+                    device, dev_param = self._devices[b'COM1:'], b''
                 elif name == b'CON' and mode == b'I':
-                    device, dev_param = self._devices[b'KYBD:'], ''
+                    device, dev_param = self._devices[b'KYBD:'], b''
                 elif name == b'CON' and mode == b'O':
-                    device, dev_param = self._devices[b'SCRN:'], ''
+                    device, dev_param = self._devices[b'SCRN:'], b''
                 elif name == b'PRN':
-                    device, dev_param = self._devices[b'LPT1:'], ''
+                    device, dev_param = self._devices[b'LPT1:'], b''
                 elif name == b'NUL':
-                    device, dev_param = devicebase.NullDevice(), ''
+                    device, dev_param = devicebase.NullDevice(), b''
             else:
                 # open file on default device
                 dev_param = name
@@ -362,21 +368,21 @@ class Files(object):
         else:
             file_number = values.to_int(file_number)
             error.range_check(0, 255, file_number)
-            output = self.get(file_number, 'OAR')
+            output = self.get(file_number, b'OAR')
         outstrs = []
         try:
             while True:
                 expr = next(args)
                 if isinstance(expr, values.String):
-                    outstrs.append('"%s"' % expr.to_str())
+                    outstrs.append(b'"%s"' % expr.to_str())
                 else:
                     outstrs.append(values.to_repr(expr, leading_space=False, type_sign=False))
         except StopIteration:
             # write the whole thing as one thing (this affects line breaks)
-            output.write_line(','.join(outstrs))
+            output.write_line(b','.join(outstrs))
         except error.BASICError:
             if outstrs:
-                output.write(','.join(outstrs) + ',')
+                output.write(b','.join(outstrs) + b',')
             raise
 
     def width_(self, args):
@@ -389,7 +395,7 @@ class Files(object):
         elif isinstance(file_or_device, values.Number):
             file_or_device = values.to_int(file_or_device)
             error.range_check(0, 255, file_or_device)
-            dev = self.get(file_or_device, mode='IOAR')
+            dev = self.get(file_or_device, mode=b'IOAR')
             w = values.to_int(next(args))
         else:
             expr = next(args)
@@ -421,7 +427,7 @@ class Files(object):
         if file_number is not None:
             file_number = values.to_int(file_number)
             error.range_check(0, 255, file_number)
-            output = self.get(file_number, 'OAR')
+            output = self.get(file_number, b'OAR')
             screen = None
         else:
             # neither LPRINT not a file number: print to screen
@@ -442,7 +448,7 @@ class Files(object):
         thefile = self.get(num)
         control_string = values.next_string(args)
         list(args)
-        logging.warning("IOCTL statement not implemented.")
+        logging.warning('IOCTL statement not implemented.')
         raise error.BASICError(error.IFC)
 
     def motor_(self, args):
@@ -476,7 +482,7 @@ class Files(object):
         num, = args
         num = values.to_integer(num)
         eof = self._values.new_integer()
-        if not num.is_zero() and self._get_from_integer(num, 'IR').eof():
+        if not num.is_zero() and self._get_from_integer(num, b'IR').eof():
             eof = eof.from_int(-1)
         return eof
 
@@ -492,7 +498,7 @@ class Files(object):
         num, = args
         num = values.to_int(num)
         error.range_check(0, 3, num)
-        printer = self._devices['LPT%d:' % max(1, num)]
+        printer = self._devices[b'LPT%d:' % max(1, num)]
         col = printer.device_settings.col
         # follow weird GW-BASIC behaviour
         # this is reported as 1 if it equals the DEVICE's width plus one
@@ -510,7 +516,7 @@ class Files(object):
             filenum = values.to_int(filenum)
             error.range_check(0, 255, filenum)
             # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
-            file_obj = self.get(filenum, mode='IR', not_open=error.BAD_FILE_MODE)
+            file_obj = self.get(filenum, mode=b'IR', not_open=error.BAD_FILE_MODE)
         else:
             file_obj = self.kybd_file
         list(args)
@@ -531,7 +537,7 @@ class Files(object):
         # raise BAD FILE NUMBER if the file is not open
         infile = self.get(num)
         list(args)
-        logging.warning("IOCTL$ function not implemented.")
+        logging.warning('IOCTL$ function not implemented.')
         raise error.BASICError(error.IFC)
 
     def erdev_(self, args):
@@ -560,7 +566,8 @@ class Files(object):
 
     def _init_disk_devices(
             self, mount_dict, current_device,
-            codepage, utf8, universal):
+            codepage, utf8, universal
+        ):
         """Initialise disk devices."""
         # use None to request default mounts, use {} for no mounts
         if mount_dict is None:
@@ -669,7 +676,7 @@ class Files(object):
         dev, path = self._get_diskdevice_and_path(pathmask)
         # retrieve files first (to ensure correct path/file not found errors)
         output = dev.listdir(path)
-        num_cols = self._screen.mode.width//20
+        num_cols = self._screen.mode.width // 20
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
         self._screen.write_line(dev.get_cwd())
@@ -678,7 +685,7 @@ class Files(object):
         # output files
         for i, cols in enumerate(output[j:j+num_cols] for j in xrange(0, len(output), num_cols)):
             self._screen.write_line(b' '.join(cols))
-            if not (i%4):
+            if not (i % 4):
                 # allow to break during dir listing & show names flowing on screen
                 self._queues.wait()
             i += 1

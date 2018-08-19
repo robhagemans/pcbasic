@@ -35,7 +35,7 @@ class LPTDevice(Device):
     # LPT1 can be opened as RANDOM
     # but behaves just like OUTPUT
     # in GW-BASIC, FIELD gives a FIELD OVERFLOW; we get BAD FILE MODE.
-    allowed_modes = 'OR'
+    allowed_modes = b'OR'
 
     def __init__(self, arg, default_stream, codepage):
         """Initialise LPTn: device."""

@@ -54,7 +54,7 @@ class CASDevice(object):
     def __init__(self, arg, screen):
         """Initialise tape device."""
         addr, val = parse_protocol_string(arg)
-        ext = val.split('.')[-1].upper()
+        ext = val.split(u'.')[-1].upper()
         # WIDTH and LOC on CAS1: directly are ignored
         self.device_file = DeviceSettings()
         # by default, show messages
@@ -64,14 +64,14 @@ class CASDevice(object):
         try:
             if not val:
                 self.tapestream = None
-            elif addr == 'WAV' or (addr != 'CAS' and ext == 'WAV'):
+            elif addr == u'WAV' or (addr != u'CAS' and ext == u'WAV'):
                 # if unspecified, determine type on the basis of filename extension
                 self.tapestream = CassetteStream(WAVBitStream(val, 'r'))
             else:
                 # 'CAS' is default
                 self.tapestream = CassetteStream(CASBitStream(val, 'r'))
         except EnvironmentError as e:
-            logging.warning('Could not attach %s to CAS device: %s', val, e)
+            logging.warning(u'Could not attach %s to CAS device: %s', val, e)
             self.tapestream = None
 
     def available(self):
@@ -113,8 +113,10 @@ class CASDevice(object):
         try:
             while True:
                 trunk, filetype, seg, offset, length = self.tapestream.open_read()
-                if ((not trunk_req or trunk.rstrip() == trunk_req.rstrip()) and
-                        (not filetypes_req or filetype in filetypes_req)):
+                if (
+                        (not trunk_req or trunk.rstrip() == trunk_req.rstrip()) and
+                        (not filetypes_req or filetype in filetypes_req)
+                    ):
                     message = b'%s.%s Found.' % (trunk, filetype)
                     if not self.is_quiet:
                         self.screen.write_line(message)

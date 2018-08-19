@@ -57,8 +57,8 @@ class BasicEvents(object):
         self.timer = TimerHandler(self._clock)
         self.play = PlayHandler(self._sound, self.multivoice)
         self.com = [
-            ComHandler(self._files.get_device('COM1:')),
-            ComHandler(self._files.get_device('COM2:'))]
+            ComHandler(self._files.get_device(b'COM1:')),
+            ComHandler(self._files.get_device(b'COM2:'))]
         self.pen = PenHandler()
         # joy*2 + button
         self.strig = [StrigHandler(joy, button)

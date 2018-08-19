@@ -44,9 +44,9 @@ class Clock(object):
         list(args)
         # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
         now = datetime.datetime.now() + self.time_offset
-        strlist = timestr.replace('.', ':').split(':')
+        strlist = timestr.replace(b'.', b':').split(b':')
         if len(strlist) == 1:
-            strlist = strlist[0].split('.')
+            strlist = strlist[0].split(b'.')
         if len(strlist) not in (1, 2, 3):
             raise error.BASICError(error.IFC)
         try:
@@ -67,16 +67,18 @@ class Clock(object):
         # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
         # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
         now = datetime.datetime.now() + self.time_offset
-        strlist = datestr.replace('/', '-').split('-')
+        strlist = datestr.replace(b'/', b'-').split(b'-')
         if len(strlist) != 3:
             raise error.BASICError(error.IFC)
         try:
             datelist = [int(s) for s in strlist]
         except ValueError:
             raise error.BASICError(error.IFC)
-        if (datelist[0] > 12 or datelist[1] > 31 or
+        if (
+                datelist[0] > 12 or datelist[1] > 31 or
                 (datelist[2] > 77 and datelist[2] < 80) or
-                (datelist[2] > 99 and datelist[2] < 1980 or datelist[2] > 2099)):
+                (datelist[2] > 99 and datelist[2] < 1980 or datelist[2] > 2099)
+            ):
             raise error.BASICError(error.IFC)
         if datelist[2] <= 77:
             datelist[2] = 2000 + datelist[2]
@@ -84,8 +86,9 @@ class Clock(object):
             datelist[2] = 1900 + datelist[2]
         try:
             newtime = datetime.datetime(
-                            datelist[2], datelist[0], datelist[1],
-                            now.hour, now.minute, now.second, now.microsecond)
+                datelist[2], datelist[0], datelist[1],
+                now.hour, now.minute, now.second, now.microsecond
+            )
         except ValueError:
             raise error.BASICError(error.IFC)
         list(args)

@@ -98,9 +98,7 @@ def CreateProcess(executable, args, _p_attr, _t_attr,
     wenv = None
     if env is not None:
         ## LPCWSTR seems to be c_wchar_p, so let's say CWSTR is c_wchar
-        env = (unicode("").join([
-            unicode("%s=%s\0") % (k, v)
-            for k, v in env.items()])) + unicode("\0")
+        env = (u''.join([u'%s=%s\0' % (k, v) for k, v in env.items()])) + u'\0'
         wenv = (c_wchar * len(env))()
         wenv.value = env
 
@@ -141,12 +139,12 @@ class Popen(subprocess.Popen):
         if shell:
             startupinfo.dwFlags |= _subprocess.STARTF_USESHOWWINDOW
             startupinfo.wShowWindow = _subprocess.SW_HIDE
-            comspec = os.environ.get("COMSPEC", unicode("cmd.exe"))
-            args = unicode('{} /c "{}"').format(comspec, args)
+            comspec = os.environ.get("COMSPEC", u'cmd.exe')
+            args = u'{} /c "{}"'.format(comspec, args)
             if (_subprocess.GetVersion() >= 0x80000000 or
-                    os.path.basename(comspec).lower() == "command.com"):
+                    os.path.basename(comspec).lower() == 'command.com'):
                 w9xpopen = self._find_w9xpopen()
-                args = unicode('"%s" %s') % (w9xpopen, args)
+                args = u'"%s" %s' % (w9xpopen, args)
                 creationflags |= _subprocess.CREATE_NEW_CONSOLE
 
         super(Popen, self)._execute_child(args, executable,

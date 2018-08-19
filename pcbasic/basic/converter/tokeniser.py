@@ -196,7 +196,7 @@ class Tokeniser(object):
             # starts with a NUL
             # next two bytes are for internal use and at this point
             # can be anything nonzero; we use this.
-            outs.write('\x00\xC0\xDE' + struct.pack('<H', linenum))
+            outs.write(b'\x00\xC0\xDE' + struct.pack('<H', linenum))
             # ignore single whitespace after line number, if any,
             # unless line number is zero (as does GW)
             if ins.peek() == b' ' and linenum != 0:
@@ -217,7 +217,7 @@ class Tokeniser(object):
 
     def _tokenise_word(self, ins, outs):
         """Convert a keyword to tokenised form."""
-        word = ''
+        word = b''
         while True:
             c = ins.read(1)
             word += c.upper()
@@ -271,7 +271,7 @@ class Tokeniser(object):
         """Convert Python-string number representation to number token."""
         word = ins.read_number()
         if not word:
-            return ''
+            return b''
         elif word[:2] == b'&H':
             # hex constant
             return self._values.new_integer().from_hex(word[2:]).to_token_hex()

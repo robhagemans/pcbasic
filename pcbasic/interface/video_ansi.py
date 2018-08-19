@@ -24,7 +24,7 @@ class VideoANSI(video_cli.VideoTextBase):
         """Initialise the text interface."""
         video_cli.VideoTextBase.__init__(self, input_queue, video_queue)
         self.caption = caption
-        self.set_caption_message('')
+        self.set_caption_message(u'')
         # cursor is visible
         self.cursor_visible = True
         # 1 is line ('visible'), 2 is block ('highly visible'), 3 is invisible
@@ -195,7 +195,7 @@ class VideoANSI(video_cli.VideoTextBase):
         self._set_attributes(fore, back, blink, underline)
         console.write(char)
         if is_fullwidth:
-            console.write(' ')
+            console.write(u' ')
         self.cursor_row, self.cursor_col = row, col+1
         #console.flush()
 
@@ -226,7 +226,7 @@ class VideoANSI(video_cli.VideoTextBase):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         if msg:
-            console.write(ansi.SET_TITLE % (self.caption + ' - ' + msg))
+            console.write(ansi.SET_TITLE % (self.caption + u' - ' + msg))
         else:
             console.write(ansi.SET_TITLE % self.caption)
         #console.flush()

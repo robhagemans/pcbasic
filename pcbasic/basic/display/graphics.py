@@ -1016,7 +1016,7 @@ class Drawing(object):
             elif c == b'A':
                 # set angle
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if gmls.skip_blank() == ';':
+                if gmls.skip_blank() == b';':
                     self.draw_angle = 0
                 else:
                     angle = gmls.parse_number()

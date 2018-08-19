@@ -67,7 +67,10 @@ class Codepage(object):
         self.dbcs_num_chars = 0
         for cp_point, grapheme_cluster in codepage_dict.iteritems():
             # do not redefine printable ASCII, but substitute glyphs
-            if cp_point in PRINTABLE_ASCII and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
+            if (
+                    cp_point in PRINTABLE_ASCII and
+                    (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point))
+                ):
                 ascii_cp = unichr(ord(cp_point))
                 self.cp_to_unicode[cp_point] = ascii_cp
             else:
@@ -116,9 +119,9 @@ class Codepage(object):
 
     def str_from_unicode(self, ucs, errors='ignore'):
         """Convert unicode string to codepage string."""
-        return ''.join(self.from_unicode(uc, errors=errors) for uc in split_graphemes(ucs))
+        return b''.join(self.from_unicode(uc, errors=errors) for uc in split_graphemes(ucs))
 
-    def to_unicode(self, cp, replace=''):
+    def to_unicode(self, cp, replace=u''):
         """Convert codepage point to unicode grapheme cluster """
         return self.cp_to_unicode.get(cp, replace)
 
@@ -206,10 +209,14 @@ class Converter(object):
 
     def to_unicode(self, s, flush=False):
         """Process codepage string, returning unicode string when ready."""
-        return u''.join([(seq.decode('ascii', errors='ignore')
-                                if (seq in self._preserve)
-                                else self._cp.to_unicode(seq))
-                        for seq in self.mark(s, flush)])
+        return u''.join(
+            (
+                seq.decode('ascii', errors='ignore')
+                if (seq in self._preserve)
+                else self._cp.to_unicode(seq)
+            )
+            for seq in self.mark(s, flush)
+        )
 
     def _flush(self, num=None):
         """Empty buffer and return contents."""
@@ -681,7 +688,7 @@ def _is_grapheme_boundary(last_c, current_c):
     # see http://bugs.python.org/issue18406
     # and http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries
     # Break at the start and end of the text.
-    if last_c == '' or current_c == '':
+    if last_c == u'' or current_c == u'':
         return True
     last = _get_grapheme_break(last_c)
     current = _get_grapheme_break(current_c)
@@ -716,7 +723,9 @@ def _is_grapheme_boundary(last_c, current_c):
 def split_graphemes(ucs):
     """Split unicode string to list of grapheme clusters."""
     # generate pairs do_break, character_after
-    split_iter = ((_is_grapheme_boundary(a, b), b) for a, b in zip([''] + list(ucs), list(ucs) + ['']))
+    split_iter = (
+        (_is_grapheme_boundary(a, b), b) for a, b in zip([u''] + list(ucs), list(ucs) + [u''])
+    )
     # split string on breaks
     grapheme_list = []
     current_grapheme = u''

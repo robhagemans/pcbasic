@@ -64,7 +64,7 @@ class Sound(object):
         # frequency for noise sources
         self._noise_freq = list(NOISE_FREQ)
         # advnced sound capabilities
-        self._multivoice = syntax if syntax in ('pcjr', 'tandy') else ''
+        self._multivoice = syntax if syntax in ('pcjr', 'tandy') else b''
         # Tandy/PCjr SOUND ON and BEEP ON
         # tandy has SOUND ON by default, pcjr has it OFF
         self._sound_on = (self._multivoice == 'tandy')

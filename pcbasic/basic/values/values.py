@@ -241,7 +241,7 @@ class Values(object):
     def from_bool(self, boo):
         """Convert Python boolean to Integer."""
         if boo:
-            return numbers.Integer(None, self).from_bytes('\xff\xff')
+            return numbers.Integer(None, self).from_bytes(b'\xff\xff')
         return numbers.Integer(None, self)
 
     ###########################################################################

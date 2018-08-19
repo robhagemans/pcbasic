@@ -130,7 +130,7 @@ def dos_splitext(dos_name):
     # - dotfiles are trunks starting with . in ntpath but extensions here.
     elements = dos_name.split(b'.', 1)
     if len(elements) == 1:
-        trunk, ext = elements[0], ''
+        trunk, ext = elements[0], b''
     else:
         trunk, ext = elements
     return trunk, ext
@@ -202,16 +202,16 @@ def dos_to_native_name(native_path, dosname, isdir):
 def dos_name_matches(name, mask):
     """Whether native name element matches DOS wildcard mask."""
     # convert wildcard mask to regexp
-    regexp = '\A'
+    regexp = b'\\A'
     for c in mask.upper():
-        if c == '?':
-            regexp += '.'
-        elif c == '*':
+        if c == b'?':
+            regexp += b'.'
+        elif c == b'*':
             # we won't need to match newlines, so dot is fine
-            regexp += '.*'
+            regexp += b'.*'
         else:
             regexp += re.escape(c)
-    regexp += '\Z'
+    regexp += b'\\Z'
     cregexp = re.compile(regexp)
     return cregexp.match(name.upper()) is not None
 
@@ -242,7 +242,8 @@ class DiskDevice(object):
             except error.BASICError:
                 logging.warning(
                     'Could not open working directory %s on drive %s:. Using drive root instead.',
-                    dos_cwd, letter)
+                    dos_cwd, letter
+                )
         # locks are drive-specific
         self._locks = Locks()
         # text file settings

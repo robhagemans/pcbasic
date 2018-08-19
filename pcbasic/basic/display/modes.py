@@ -752,7 +752,7 @@ def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offs):
     length = dy * self.bitsperpixel * row_bytes
     if offs+length > len(byte_array):
         raise ValueError('Sprite exceeds array byte size')
-    byte_array[offs:offs+length] = '\0'*length
+    byte_array[offs:offs+length] = b'\0'*length
     for row in attrs:
         for plane in range(self.bitsperpixel):
             byte_array[offs:offs+row_bytes] = interval_to_bytes(row, 8, plane)
@@ -908,7 +908,7 @@ class CGAMode(GraphicsMode):
             # NOTE: if we use memoryviews instead of bytearrays, we won't need
             # this check as the assignment will fail with ValueError anyway
             raise ValueError('Sprite exceeds array byte size')
-        byte_array[offs:offs+length] = '\0'*length
+        byte_array[offs:offs+length] = b'\0'*length
         for row in attrs:
             byte_array[offs:offs+row_bytes] = interval_to_bytes(row, 8//self.bitsperpixel, 0)
             offs += row_bytes

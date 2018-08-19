@@ -31,7 +31,9 @@ class Scalars(object):
 
     def __str__(self):
         """Debugging representation of variable dictionary."""
-        return '\n'.join('%s: %s' % (n, self._values.from_bytes(v)) for n, v in self._vars.iteritems())
+        return '\n'.join(
+            '%s: %s' % (n, self._values.from_bytes(v)) for n, v in self._vars.iteritems()
+        )
 
     def clear(self):
         """Clear scalar variables."""
@@ -140,7 +142,9 @@ class Scalars(object):
 
     def get_strings(self):
         """Return a list of views of string scalars."""
-        return [memoryview(value) for name, value in self._vars.iteritems() if name[-1] == values.STR]
+        return [
+            memoryview(value) for name, value in self._vars.iteritems() if name[-1] == values.STR
+        ]
 
 
 ###############################################################################
@@ -164,4 +168,4 @@ def get_name_in_memory(name, offset):
             return 0
     else:
         # rest of name is encoded such that c1 == 'A'
-        return ord(name[offset-1].upper()) - ord('A') + 0xC1
+        return ord(name[offset-1].upper()) - ord(b'A') + 0xC1

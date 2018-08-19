@@ -70,7 +70,8 @@ class Field(object):
         str_addr = self.address + offset
         str_sequence = struct.pack('<BH', length, str_addr)
         # assign the string ptr to the variable name
-        # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
+        # desired side effect: if we re-assign this string variable through LET,
+        # it's no longer connected to the FIELD.
         self.memory.set_variable(name, indices, self.memory.values.from_bytes(str_sequence))
 
 
@@ -104,7 +105,7 @@ class DataSegment(object):
         # code_start+1: offsets in files (4718 == 0x126e)
         self.code_start = self.field_mem_base + (max_files+1) * self.field_mem_offset
         # default sigils for names
-        self.deftype = ['!']*26
+        self.deftype = [values.SNG]*26
         # FIELD buffers
         self.max_files = max_files
         self.max_reclen = max_reclen
@@ -143,14 +144,14 @@ class DataSegment(object):
 
     def clear_deftype(self):
         """Reset default sigils."""
-        self.deftype = ['!']*26
+        self.deftype = [values.SNG]*26
 
     def deftype_(self, sigil, args):
         """DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables."""
         for start, stop in args:
-            start = ord(start.upper()) - ord('A')
+            start = ord(start.upper()) - ord(b'A')
             if stop:
-                stop = ord(stop.upper()) - ord('A')
+                stop = ord(stop.upper()) - ord(b'A')
             else:
                 stop = start
             self.deftype[start:stop+1] = [sigil] * (stop-start+1)
@@ -199,8 +200,9 @@ class DataSegment(object):
         string_store = values.StringSpace(self)
         # preserve scalars
         common_scalars = {
-                name: self.scalars.get(name)
-                for name in preserve_sc if name in self.scalars}
+            name: self.scalars.get(name)
+            for name in preserve_sc if name in self.scalars
+        }
         for name, value in common_scalars.iteritems():
             if name[-1] == values.STR:
                 length, address = self.strings.copy_to(string_store, *value.to_pointer())
@@ -208,8 +210,9 @@ class DataSegment(object):
                 common_scalars[name] = value
         # preserve arrays
         common_arrays = {
-                name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
-                for name in preserve_ar if name in self.arrays}
+            name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
+            for name in preserve_ar if name in self.arrays
+        }
         for name, value in common_arrays.iteritems():
             if name[-1] == values.STR:
                 dimensions, buf = value
@@ -217,15 +220,17 @@ class DataSegment(object):
                     # if the string array is not full, pointers are zero
                     # but address is ignored for zero length
                     length, address = self.strings.copy_to(
-                                string_store, *struct.unpack('<BH', buf[i:i+3]))
+                        string_store, *struct.unpack('<BH', buf[i:i+3])
+                    )
                     # modify the stored bytearray
                     buf[i:i+3] = struct.pack('<BH', length, address)
         yield
         # check if there is sufficient memory
-        scalar_size = sum(self.scalars.memory_size(name)
-                            for name in common_scalars.iterkeys())
-        array_size = sum(self.arrays.memory_size(name, val[0])
-                            for name, val in common_arrays.iteritems())
+        scalar_size = sum(self.scalars.memory_size(name) for name in common_scalars)
+        array_size = sum(
+            self.arrays.memory_size(name, val[0])
+            for name, val in common_arrays.iteritems()
+        )
         if self.var_start() + scalar_size + array_size > string_store.current:
             raise error.BASICError(error.OUT_OF_MEMORY)
         self.strings.rebuild(string_store)
@@ -394,7 +399,7 @@ class DataSegment(object):
     def complete_name(self, name):
         """Add default sigil to a name, if missing."""
         if name and name[-1] not in tk.SIGILS:
-            name += self.deftype[ord(name[0].upper()) - ord('A')]
+            name += self.deftype[ord(name[0].upper()) - ord(b'A')]
         return name
 
     def view_or_create_variable(self, name, indices):

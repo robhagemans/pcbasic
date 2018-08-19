@@ -490,7 +490,7 @@ class Implementation(object):
             raise error.BASICError(error.INTERNAL_ERROR)
         # terminal program for TERM command
         prog = self.files.get_device(b'@:').bind(self._term_program)
-        with self.files.open(0, prog, filetype='ABP', mode='I') as progfile:
+        with self.files.open(0, prog, filetype=b'ABP', mode=b'I') as progfile:
             self.program.load(progfile)
         self.interpreter.error_handle_mode = False
         self.interpreter.clear_stacks_and_pointers()
@@ -511,7 +511,7 @@ class Implementation(object):
         line_range = next(args)
         out = values.next_string(args)
         if out is not None:
-            out = self.files.open(0, out, filetype='A', mode='O')
+            out = self.files.open(0, out, filetype=b'A', mode=b'O')
         list(args)
         lines = self.program.list_lines(*line_range)
         if out:
@@ -558,7 +558,7 @@ class Implementation(object):
         """LOAD: load program from file."""
         name = values.next_string(args)
         comma_r, = args
-        with self.files.open(0, name, filetype='ABP', mode='I') as f:
+        with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
             self.program.load(f)
         # reset stacks
         self.interpreter.clear_stacks_and_pointers()
@@ -596,7 +596,7 @@ class Implementation(object):
                     preserve_base=(commons or common_all),
                     preserve_deftype=merge)
             # load new program
-            with self.files.open(0, name, filetype='ABP', mode='I') as f:
+            with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
                 if delete_lines:
                     # delete lines from existing code before merge
                     # (without MERGE, this is pointless)
@@ -617,13 +617,15 @@ class Implementation(object):
     def save_(self, args):
         """SAVE: save program to a file."""
         name = values.next_string(args)
-        mode = (next(args) or 'B').upper()
+        mode = (next(args) or b'B').upper()
         list(args)
-        with self.files.open(0, name, filetype=mode, mode='O',
-                            seg=self.memory.data_segment, offset=self.memory.code_start,
-                            length=len(self.program.bytecode.getvalue())-1) as f:
+        with self.files.open(
+                0, name, filetype=mode, mode=b'O',
+                seg=self.memory.data_segment, offset=self.memory.code_start,
+                length=len(self.program.bytecode.getvalue())-1
+            ) as f:
             self.program.save(f)
-        if mode == 'A':
+        if mode == b'A':
             # return to direct mode
             self.interpreter.set_pointer(False)
 
@@ -632,7 +634,7 @@ class Implementation(object):
         name = values.next_string(args)
         list(args)
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
-        with self.files.open(0, name, filetype='A', mode='I') as f:
+        with self.files.open(0, name, filetype=b'A', mode=b'I') as f:
             self.program.merge(f)
         # clear all program stacks
         self.interpreter.clear_stacks_and_pointers()
@@ -657,7 +659,7 @@ class Implementation(object):
             try:
                 name = values.next_string(args)
                 comma_r = next(args)
-                with self.files.open(0, name, filetype='ABP', mode='I') as f:
+                with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
                     self.program.load(f)
             except StopIteration:
                 pass
@@ -689,7 +691,7 @@ class Implementation(object):
         if file_number is not None:
             file_number = values.to_int(file_number)
             error.range_check(0, 255, file_number)
-            finp = self.files.get(file_number, mode='IR')
+            finp = self.files.get(file_number, mode=b'IR')
             self._input_file(finp, args)
         else:
             newline, prompt, following = next(args)
@@ -697,8 +699,8 @@ class Implementation(object):
 
     def _input_console(self, newline, prompt, following, readvar):
         """INPUT: request input from user."""
-        if following == ';':
-            prompt += '? '
+        if following == b';':
+            prompt += b'? '
         # read the input
         self.interpreter.input_mode = True
         self.parser.redo_on_break = True
@@ -728,9 +730,9 @@ class Implementation(object):
             # earlier separators empty: there were too few values
             # empty values will be converted to zero by from_str
             # None means a conversion error occurred
-            if (seps[-1] or '' in seps[:-1] or None in values):
+            if (seps[-1] or b'' in seps[:-1] or None in values):
                 # good old Redo!
-                self.screen.write_line('?Redo from start')
+                self.screen.write_line(b'?Redo from start')
                 readvar = var
             else:
                 varlist = [r + [v] for r, v in zip(var, values)]
@@ -761,7 +763,7 @@ class Implementation(object):
             prompt, newline = None, None
             file_number = values.to_int(file_number)
             error.range_check(0, 255, file_number)
-            finp = self.files.get(file_number, mode='IR')
+            finp = self.files.get(file_number, mode=b'IR')
         # get string variable
         readvar, indices = next(args)
         list(args)
@@ -793,7 +795,7 @@ class Implementation(object):
         else:
             # prompt for random seed if not specified
             while val is None:
-                self.screen.write('Random number seed (-32768 to 32767)? ')
+                self.screen.write(b'Random number seed (-32768 to 32767)? ')
                 seed = self.editor.wait_screenline()
                 val = self.values.from_repr(seed, allow_nonnum=False)
             # seed entered on prompt is rounded to int

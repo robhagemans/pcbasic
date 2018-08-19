@@ -116,8 +116,9 @@ class VideoCurses(VideoPlugin):
         curses.start_color()
         # curses mistakenly believes changing palettes works on macOS's Terminal.app
         self.can_change_palette = (not MACOS) and (
-                curses.can_change_color() and curses.COLORS >= 16 and curses.COLOR_PAIRS > 128)
-        sys.stdout.write(SET_TITLE % self.caption)
+            curses.can_change_color() and curses.COLORS >= 16 and curses.COLOR_PAIRS > 128
+        )
+        sys.stdout.write(SET_TITLE % self.caption.encode('utf-8', 'replace'))
         sys.stdout.flush()
         self._set_default_colours(16)
         bgcolor = self._curses_colour(7, 0, False)
@@ -212,7 +213,7 @@ class VideoCurses(VideoPlugin):
         """Redraw the screen."""
         self.window.clear()
         if self.last_colour != 0:
-            self.window.bkgdset(' ', self._curses_colour(7, 0, False))
+            self.window.bkgdset(32, self._curses_colour(7, 0, False))
         for row, textrow in enumerate(self.text[self.vpagenum]):
             for col, charattr in enumerate(textrow):
                 try:
@@ -321,7 +322,7 @@ class VideoCurses(VideoPlugin):
         ]
         if self.apagenum != self.vpagenum:
             return
-        self.window.bkgdset(' ', bgcolor)
+        self.window.bkgdset(32, bgcolor)
         for r in range(start, stop+1):
             try:
                 self.window.move(r-1, 0)
@@ -341,7 +342,7 @@ class VideoCurses(VideoPlugin):
     def set_border_attr(self, attr):
         """Change border attribute."""
         self.border_attr = attr
-        self.underlay.bkgd(' ', self._curses_colour(0, attr, False))
+        self.underlay.bkgd(32, self._curses_colour(0, attr, False))
         self.underlay.refresh()
         self._redraw()
 
@@ -377,7 +378,7 @@ class VideoCurses(VideoPlugin):
         if pagenum == self.vpagenum:
             if colour != self.last_colour:
                 self.last_colour = colour
-                self.window.bkgdset(' ', colour)
+                self.window.bkgdset(32, colour)
             try:
                 self.window.addstr(row-1, col-1, c.encode(ENCODING, 'replace'), colour)
             except curses.error:

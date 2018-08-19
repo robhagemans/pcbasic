@@ -108,7 +108,7 @@ class Palette(object):
             dimensions = self._memory.arrays.dimensions(array_name)
         except KeyError:
             raise error.BASICError(error.IFC)
-        error.throw_if(array_name[-1] != '%', error.TYPE_MISMATCH)
+        error.throw_if(array_name[-1] != values.INT, error.TYPE_MISMATCH)
         lst = self._memory.arrays.view_full_buffer(array_name)
         start = self._memory.arrays.index(start_indices, dimensions)
         error.throw_if(self._memory.arrays.array_len(dimensions) - start < num_palette_entries)
@@ -137,7 +137,8 @@ class Display(object):
         self._memory = memory
         # low level settings
         self.video = Video(
-                capabilities, monitor, low_intensity, screen_aspect, video_mem_size)
+            capabilities, monitor, low_intensity, screen_aspect, video_mem_size
+        )
         self.capabilities = self.video.capabilities
         # video mode settings
         self._mode_nr, self.colorswitch, self.apagenum, self.vpagenum = 0, 1, 0, 0
@@ -149,8 +150,9 @@ class Display(object):
         self.border_attr = 0
         # text screen
         self.text_screen = TextScreen(
-                self.queues, self._values, self.mode, self.capabilities,
-                fonts, codepage, io_streams, sound)
+            self.queues, self._values, self.mode, self.capabilities,
+            fonts, codepage, io_streams, sound
+        )
         # graphics operations
         self.drawing = graphics.Drawing(self.queues, input_methods, self._values, self._memory)
         # colour palette
@@ -193,10 +195,12 @@ class Display(object):
             new_apagenum = self.apagenum
             if (self.capabilities == 'pcjr' and new_apagenum >= info.num_pages):
                 new_apagenum = 0
-        if ((not info.is_text_mode and info.name != self.mode.name) or
+        if (
+                (not info.is_text_mode and info.name != self.mode.name) or
                 (info.is_text_mode and not self.mode.is_text_mode) or
                 (info.width != self.mode.width) or
-                (new_colorswitch != self.colorswitch) or force_reset):
+                (new_colorswitch != self.colorswitch) or force_reset
+            ):
             self._set_mode(
                     info, new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase)
         else:
@@ -227,8 +231,10 @@ class Display(object):
         width_only = (self.mode.is_text_mode and spec.is_text_mode)
         # attribute and border persist on width-only change
         # otherwise start with black border and default attr
-        if (not width_only or self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
-                or self.colorswitch != new_colorswitch):
+        if (
+                not width_only or self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
+                or self.colorswitch != new_colorswitch
+            ):
             self.attr = spec.attr
         if (not width_only and spec.name != self.mode.name):
             self.set_border(0)
@@ -240,8 +246,10 @@ class Display(object):
         self._init_mode_colorburst(new_colorswitch)
         # initialise pixel buffers
         if not self.mode.is_text_mode:
-            self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
-                                    self.mode.num_pages, self.mode.bitsperpixel)
+            self.pixels = PixelBuffer(
+                self.mode.pixel_width, self.mode.pixel_height,
+                self.mode.num_pages, self.mode.bitsperpixel
+            )
         else:
             self.pixels = None
         # set active page & visible page, counting from 0.
@@ -313,12 +321,15 @@ class Display(object):
         self.palette.init_mode(self.mode)
         # don't try composite unless our video card supports it
         if self.capabilities in modes.COMPOSITE:
-            composite_artifacts = (colorburst and self.video.monitor == 'composite' and
-                        (not self.mode.is_text_mode) and self.mode.supports_artifacts)
+            composite_artifacts = (
+                colorburst and self.video.monitor == 'composite' and
+                (not self.mode.is_text_mode) and self.mode.supports_artifacts
+            )
             # this is only needed because composite artifacts are implemented in the interface
             self.queues.video.put(signals.Event(
-                    signals.VIDEO_SET_COMPOSITE,
-                    (composite_artifacts, modes.COMPOSITE[self.capabilities])))
+                signals.VIDEO_SET_COMPOSITE,
+                (composite_artifacts, modes.COMPOSITE[self.capabilities])
+            ))
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
@@ -421,8 +432,9 @@ class Display(object):
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
         # this raises error before
         mode, colorswitch, apagenum, vpagenum = (
-                None if arg is None else values.to_int(arg)
-                for _, arg in zip(range(4), args))
+            None if arg is None else values.to_int(arg)
+            for _, arg in zip(range(4), args)
+        )
         # if any parameter not in [0,255], error 5 without doing anything
         # if the parameters are outside narrow ranges
         # (e.g. not implemented screen mode, pagenum beyond max)
@@ -510,11 +522,12 @@ class Display(object):
         if mode.is_text_mode:
             error.range_check(0, mode.num_attr-1, fore)
             error.range_check(0, 15, back, bord)
-            self.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10
-                            + (fore & 0xf))
+            self.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf))
             self.set_border(bord)
-        elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
-                            '640x200x4', '320x200x16', '640x200x16'):
+        elif mode.name in (
+                '160x200x16', '320x200x4pcjr', '320x200x16pcjr'
+                '640x200x4', '320x200x16', '640x200x16'
+            ):
             error.range_check(1, mode.num_attr-1, fore)
             error.range_check(0, mode.num_attr-1, back)
             self.set_attr(fore)

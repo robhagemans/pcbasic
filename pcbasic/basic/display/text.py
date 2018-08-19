@@ -78,8 +78,10 @@ class TextBuffer(object):
         """Initialise the screen buffer to given pages and dimensions."""
         self._dbcs_enabled = codepage.dbcs and do_fullwidth
         self._conv = codepage.get_converter(preserve=b'')
-        self.pages = [TextPage(attr, width, height, self._conv, self._dbcs_enabled)
-                      for _ in range(num_pages)]
+        self.pages = [
+            TextPage(attr, width, height, self._conv, self._dbcs_enabled)
+            for _ in range(num_pages)
+        ]
         self.width = width
         self.height = height
 
@@ -126,14 +128,16 @@ class TextBuffer(object):
 
     def scroll_up(self, pagenum, from_line, bottom, attr):
         """Scroll up."""
-        self.pages[pagenum].row.insert(bottom,
-                TextRow(attr, self.width, self._conv, self._dbcs_enabled))
+        self.pages[pagenum].row.insert(
+            bottom, TextRow(attr, self.width, self._conv, self._dbcs_enabled)
+        )
         del self.pages[pagenum].row[from_line-1]
 
     def scroll_down(self, pagenum, from_line, bottom, attr):
         """Scroll down."""
-        self.pages[pagenum].row.insert(from_line - 1,
-                TextRow(attr, self.width, self._conv, self._dbcs_enabled))
+        self.pages[pagenum].row.insert(
+            from_line - 1, TextRow(attr, self.width, self._conv, self._dbcs_enabled)
+        )
         del self.pages[pagenum].row[bottom-1]
 
     def get_char(self, pagenum, row, col):
@@ -164,7 +168,7 @@ class TextBuffer(object):
             ca = therow.buf[col-1]
             char, attr = ca[0], ca[1]
         else:
-            char, attr = '\0', 0
+            char, attr = b'\0', 0
             logging.debug('DBCS buffer corrupted at %d, %d (%d)', row, col, therow.double[col-1])
         return char, attr
 

@@ -88,12 +88,12 @@ class Interrupt(Exception):
 
 class Exit(Interrupt):
     """Exit emulator."""
-    message = 'Exit'
+    message = b'Exit'
 
 
 class Reset(Exit):
     """Reset emulator."""
-    message = 'Reset'
+    message = b'Reset'
 
 
 class Break(Interrupt):
@@ -103,72 +103,72 @@ class Break(Interrupt):
         """Initialise break."""
         Interrupt.__init__(self)
         self.stop = stop
-        self.message = 'Break'
+        self.message = b'Break'
 
 
 class BASICError(Interrupt):
     """Runtime error."""
 
-    default_message = 'Unprintable error'
+    default_message = b'Unprintable error'
     messages = {
-        1: 'NEXT without FOR',
-        2: 'Syntax error',
-        3: 'RETURN without GOSUB',
-        4: 'Out of DATA',
-        5: 'Illegal function call',
-        6: 'Overflow',
-        7: 'Out of memory',
-        8: 'Undefined line number',
-        9: 'Subscript out of range',
-        10: 'Duplicate Definition',
-        11: 'Division by zero',
-        12: 'Illegal direct',
-        13: 'Type mismatch',
-        14: 'Out of string space',
-        15: 'String too long',
-        16: 'String formula too complex',
-        17: "Can't continue",
-        18: 'Undefined user function',
-        19: 'No RESUME',
-        20: 'RESUME without error',
+        1: b'NEXT without FOR',
+        2: b'Syntax error',
+        3: b'RETURN without GOSUB',
+        4: b'Out of DATA',
+        5: b'Illegal function call',
+        6: b'Overflow',
+        7: b'Out of memory',
+        8: b'Undefined line number',
+        9: b'Subscript out of range',
+        10: b'Duplicate Definition',
+        11: b'Division by zero',
+        12: b'Illegal direct',
+        13: b'Type mismatch',
+        14: b'Out of string space',
+        15: b'String too long',
+        16: b'String formula too complex',
+        17: b"Can't continue",
+        18: b'Undefined user function',
+        19: b'No RESUME',
+        20: b'RESUME without error',
         # 21
-        22: 'Missing operand',
-        23: 'Line buffer overflow',
-        24: 'Device Timeout',
-        25: 'Device Fault',
-        26: 'FOR without NEXT',
-        27: 'Out of paper',
+        22: b'Missing operand',
+        23: b'Line buffer overflow',
+        24: b'Device Timeout',
+        25: b'Device Fault',
+        26: b'FOR without NEXT',
+        27: b'Out of paper',
         # 28
-        29: 'WHILE without WEND',
-        30: 'WEND without WHILE',
+        29: b'WHILE without WEND',
+        30: b'WEND without WHILE',
         # 31--49
-        50: 'FIELD overflow',
-        51: 'Internal error',
-        52: 'Bad file number',
-        53: 'File not found',
-        54: 'Bad file mode',
-        55: 'File already open',
+        50: b'FIELD overflow',
+        51: b'Internal error',
+        52: b'Bad file number',
+        53: b'File not found',
+        54: b'Bad file mode',
+        55: b'File already open',
         # 56
-        57: 'Device I/O error',
-        58: 'File already exists',
+        57: b'Device I/O error',
+        58: b'File already exists',
         # 59--60
-        61: 'Disk full',
-        62: 'Input past end',
-        63: 'Bad record number',
-        64: 'Bad file name',
+        61: b'Disk full',
+        62: b'Input past end',
+        63: b'Bad record number',
+        64: b'Bad file name',
         # 65
-        66: 'Direct statement in file',
-        67: 'Too many files',
-        68: 'Device Unavailable',
-        69: 'Communication buffer overflow',
-        70: 'Permission Denied',
-        71: 'Disk not Ready',
-        72: 'Disk media error',
-        73: 'Advanced Feature',
-        74: 'Rename across disks',
-        75: 'Path/File access error',
-        76: 'Path not found',
-        77: 'Deadlock',
+        66: b'Direct statement in file',
+        67: b'Too many files',
+        68: b'Device Unavailable',
+        69: b'Communication buffer overflow',
+        70: b'Permission Denied',
+        71: b'Disk not Ready',
+        72: b'Disk media error',
+        73: b'Advanced Feature',
+        74: b'Rename across disks',
+        75: b'Path/File access error',
+        76: b'Path not found',
+        77: b'Deadlock',
     }
 
     def __init__(self, value, pos=None):

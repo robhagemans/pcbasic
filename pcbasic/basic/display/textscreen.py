@@ -137,7 +137,7 @@ class TextScreen(object):
         if do_echo:
             # CR -> CRLF, CRLF -> CRLF LF
             self._io_streams.write(b''.join([(b'\r\n' if c == b'\r' else c) for c in s]))
-        last = ''
+        last = b''
         # if our line wrapped at the end before, it doesn't anymore
         self.text.pages[self.apagenum].row[self.current_row-1].wrap = False
         for c in s:
@@ -248,7 +248,7 @@ class TextScreen(object):
     def start_line(self):
         """Move the cursor to the start of the next line, this line if empty."""
         if self.current_col != 1:
-            self._io_streams.write('\r\n')
+            self._io_streams.write(b'\r\n')
             self._check_pos(scroll_ok=True)
             self.set_pos(self.current_row + 1, 1)
         # ensure line above doesn't wrap

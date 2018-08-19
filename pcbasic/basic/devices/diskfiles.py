@@ -128,7 +128,7 @@ class TextFile(TextFileBase, InputMixin):
         self._locks.try_access(self._number, b'W')
         TextFileBase.write(self, s, can_break)
 
-    def write_line(self, s=''):
+    def write_line(self, s=b''):
         """Write string and newline to file."""
         self.write(s + b'\r\n')
 

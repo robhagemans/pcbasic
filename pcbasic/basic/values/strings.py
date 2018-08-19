@@ -17,7 +17,7 @@ from . import numbers
 class String(numbers.Value):
     """String pointer."""
 
-    sigil = '$'
+    sigil = b'$'
     size = 3
 
     def __init__(self, buffer, values):

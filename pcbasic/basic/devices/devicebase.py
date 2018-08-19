@@ -57,8 +57,10 @@ class NullDevice(object):
     def __init__(self):
         """Set up device."""
 
-    def open(self, number, param, filetype, mode, access, lock,
-                   reclen, seg, offset, length, field):
+    def open(
+            self, number, param, filetype, mode, access, lock,
+            reclen, seg, offset, length, field
+        ):
         """Open a file on the device."""
         return TextFileBase(nullstream(), filetype, mode)
 
@@ -73,7 +75,7 @@ class NullDevice(object):
 class Device(object):
     """Device interface for master-file devices."""
 
-    allowed_modes = ''
+    allowed_modes = b''
 
     def __init__(self):
         """Set up device."""
@@ -81,7 +83,8 @@ class Device(object):
 
     def open(
             self, number, param, filetype, mode, access, lock,
-            reclen, seg, offset, length, field):
+            reclen, seg, offset, length, field
+        ):
         """Open a file on the device."""
         if not self.device_file:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -103,7 +106,7 @@ class Device(object):
 class SCRNDevice(Device):
     """Screen device (SCRN:) """
 
-    allowed_modes = 'OR'
+    allowed_modes = b'OR'
 
     def __init__(self, display):
         """Initialise screen device."""
@@ -113,11 +116,13 @@ class SCRNDevice(Device):
 
     def open(
             self, number, param, filetype, mode, access, lock,
-            reclen, seg, offset, length, field):
+            reclen, seg, offset, length, field
+        ):
         """Open a file on the device."""
         new_file = Device.open(
-                self, number, param, filetype, mode, access, lock,
-                reclen, seg, offset, length, field)
+            self, number, param, filetype, mode, access, lock,
+            reclen, seg, offset, length, field
+        )
         # SAVE "SCRN:" includes a magic byte
         new_file.write(TYPE_TO_MAGIC.get(filetype, b''))
         return new_file
@@ -126,7 +131,7 @@ class SCRNDevice(Device):
 class KYBDDevice(Device):
     """Keyboard device (KYBD:) """
 
-    allowed_modes = 'IR'
+    allowed_modes = b'IR'
 
     def __init__(self, keyboard, display):
         """Initialise keyboard device."""
@@ -201,7 +206,7 @@ class RawFile(object):
 #
 #   read_line(self)
 #   input_entry(self, typechar, allow_past_end)
-#   write_line(self, s='')
+#   write_line(self, s=b'')
 #   eof(self)
 #   lof(self)
 #   loc(self)
@@ -384,8 +389,10 @@ class InputMixin(object):
             raise error.BASICError(error.INPUT_PAST_END)
         # we read the ending char before breaking the loop
         # this may raise FIELD OVERFLOW
-        while c and not ((typechar != values.STR and c in self.soft_sep) or
-                        (c in b',\r' and not quoted)):
+        while c and not (
+                (typechar != values.STR and c in self.soft_sep) or
+                (c in b',\r' and not quoted)
+            ):
             if c == b'"' and quoted:
                 # whitespace after quote will be skipped below
                 break

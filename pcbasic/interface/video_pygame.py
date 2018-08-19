@@ -46,7 +46,8 @@ class VideoPygame(VideoPlugin):
             caption=u'', icon=ICON,
             scaling=None, dimensions=None, aspect_ratio=(4, 3), border_width=0, fullscreen=False,
             prevent_close=False, mouse_clipboard=True,
-            **kwargs):
+            **kwargs
+        ):
         """Initialise pygame interface."""
         VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
@@ -531,29 +532,33 @@ class VideoPygame(VideoPlugin):
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
         temp_scroll_area = pygame.Rect(
-                0, (from_line-1)*self.font_height,
-                self.size[0], (scroll_height-from_line+1) * self.font_height)
+            0, (from_line-1)*self.font_height,
+            self.size[0], (scroll_height-from_line+1) * self.font_height
+        )
         # scroll
         self.canvas[self.apagenum].set_clip(temp_scroll_area)
         self.canvas[self.apagenum].scroll(0, -self.font_height)
         # empty new line
         bg = (0, 0, back_attr)
-        self.canvas[self.apagenum].fill(bg, (
-                0, (scroll_height-1) * self.font_height, self.size[0], self.font_height))
+        self.canvas[self.apagenum].fill(
+            bg, (0, (scroll_height-1) * self.font_height, self.size[0], self.font_height)
+        )
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
         temp_scroll_area = pygame.Rect(
-                0, (from_line-1) * self.font_height,
-                self.size[0], (scroll_height-from_line+1) * self.font_height)
+            0, (from_line-1) * self.font_height,
+            self.size[0], (scroll_height-from_line+1) * self.font_height
+        )
         self.canvas[self.apagenum].set_clip(temp_scroll_area)
         self.canvas[self.apagenum].scroll(0, self.font_height)
         # empty new line
         bg = (0, 0, back_attr)
-        self.canvas[self.apagenum].fill(bg, (
-                0, (from_line-1) * self.font_height, self.size[0], self.font_height))
+        self.canvas[self.apagenum].fill(
+            bg, (0, (from_line-1) * self.font_height, self.size[0], self.font_height)
+        )
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
@@ -565,18 +570,18 @@ class VideoPygame(VideoPlugin):
         color = (0, 0, fore + self.num_fore_attrs*back + 128*blink)
         bg = (0, 0, back)
         x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
-        if cp == '\0':
+        if cp == u'\0':
             # guaranteed to be blank, saves time on some BLOADs
             self.canvas[pagenum].fill(bg, (x0, y0, self.font_width, self.font_height))
         else:
             try:
                 glyph = self.glyph_dict[cp]
             except KeyError:
-                if '\0' not in self.glyph_dict:
+                if u'\0' not in self.glyph_dict:
                     logging.error('No glyph received for code point 0')
                     return
                 logging.warning('No glyph received for code point %s', hex(ord(cp)))
-                glyph = self.glyph_dict['\0']
+                glyph = self.glyph_dict[u'\0']
             if glyph.get_palette_at(0) != bg:
                 glyph.set_palette_at(0, bg)
             if glyph.get_palette_at(1) != color:
@@ -643,8 +648,10 @@ class PygameClipboard(clipboard.Clipboard):
     """Clipboard handling using Pygame.Scrap."""
 
     # text type we look for in the clipboard
-    text = ('UTF8_STRING', 'text/plain;charset=utf-8', 'text/plain',
-            'TEXT', 'STRING')
+    text = (
+        'UTF8_STRING', 'text/plain;charset=utf-8', 'text/plain',
+        'TEXT', 'STRING'
+    )
 
     def __init__(self):
         """Initialise the clipboard handler."""
@@ -667,7 +674,8 @@ class PygameClipboard(clipboard.Clipboard):
                 # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
                 # but give it a utf-8 MIME type, because that's how Windows likes it
                 pygame.scrap.put(
-                        'text/plain;charset=utf-8', text.encode('utf-16le', 'replace') + '\0\0')
+                    'text/plain;charset=utf-8', text.encode('utf-16le', 'replace') + b'\0\0'
+                )
             else:
                 pygame.scrap.put(pygame.SCRAP_TEXT, text.encode('utf-8', 'replace'))
         except KeyError:
@@ -679,25 +687,28 @@ class PygameClipboard(clipboard.Clipboard):
             pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
-        us = ''
+        us = u''
         available = pygame.scrap.get_types()
         for text_type in self.text:
             if text_type not in available:
                 continue
-            us = pygame.scrap.get(text_type)
-            if us:
+            s = pygame.scrap.get(text_type)
+            if s:
                 break
         if WIN32:
             if text_type == 'text/plain;charset=utf-8':
                 # it's lying, it's giving us UTF16 little-endian
                 # ignore any bad UTF16 characters from outside
-                us = us.decode('utf-16le', errors='replace')
+                us = s.decode('utf-16le', errors='replace')
+            else:
+                # fallback
+                us = s.decode('ascii', errors='replace')
             # remove null-terminator
             us = us[:us.find(u'\0')]
         else:
-            us = us.decode('utf-8', errors='replace')
+            us = s.decode('utf-8', errors='replace')
         if us:
-            us = us.replace('\r\n', '\n').replace('\n', '\r')
+            us = us.replace(u'\r\n', u'\n').replace(u'\n', u'\r')
         return us or u''
 
 def get_clipboard_handler():

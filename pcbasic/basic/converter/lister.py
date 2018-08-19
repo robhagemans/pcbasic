@@ -57,7 +57,7 @@ class Lister(object):
 
     def token_to_line_number(self, trail):
         """Unpack a line number token trail, -1 if end of program."""
-        if len(trail) < 4 or trail[:2] == '\0\0':
+        if len(trail) < 4 or trail[:2] == b'\0\0':
             return -1
         return struct.unpack_from('<H', trail, 2)[0]
 
@@ -84,7 +84,7 @@ class Lister(object):
                 litstring = not litstring
             elif s in tk.NUMBER or s in tk.LINE_NUMBER:
                 self._detokenise_number(ins, s, output)
-            elif comment or litstring or ('\x20' <= s <= '\x7E'):
+            elif comment or litstring or (b'\x20' <= s <= b'\x7E'):
                 # honest ASCII
                 output += s
             elif s == b'\x0A':

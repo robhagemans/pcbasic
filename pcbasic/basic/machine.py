@@ -46,7 +46,7 @@ class MachinePorts(object):
         #              - Doesn't support ECP addresses
         # 378h - 37Fh  Usual Address For LPT 1
         # 278h - 27Fh  Usual Address For LPT 2
-        self.lpt_device = [files.get_device('LPT1:'), files.get_device('LPT2:')]
+        self.lpt_device = [files.get_device(b'LPT1:'), files.get_device(b'LPT2:')]
         # serial port base address:
         # http://www.petesqbsite.com/sections/tutorials/zines/qbnews/9-com_ports.txt
         #            COM1             &H3F8
@@ -54,7 +54,7 @@ class MachinePorts(object):
         #            COM3             &H3E8 (not implemented)
         #            COM4             &H2E8 (not implemented)
         self.com_base = {0x3f8: 0, 0x2f8: 1}
-        self.com_device = [files.get_device('COM1:'), files.get_device('COM2:')]
+        self.com_device = [files.get_device(b'COM1:'), files.get_device(b'COM2:')]
         self.com_enable_baud_write = [False, False]
         self.com_baud_divisor = [0, 0]
         self.com_break = [False, False]
@@ -123,7 +123,7 @@ class MachinePorts(object):
                     _, parity, bytesize, stopbits = com_port.get_params()
                     value = self.com_enable_baud_write[com_port_nr] * 0x80
                     value += self.com_break[com_port_nr] * 0x40
-                    value += {'S': 0x38, 'M': 0x28, 'E': 0x18, 'O': 0x8, 'N': 0}[parity]
+                    value += {b'S': 0x38, b'M': 0x28, b'E': 0x18, b'O': 0x8, b'N': 0}[parity]
                     if stopbits > 1:
                         value += 0x4
                     value += bytesize - 5
@@ -214,7 +214,7 @@ class MachinePorts(object):
                     # break condition
                     self.com_break[com_port_nr] = (val & 0x40) != 0
                     # parity
-                    parity = {0x38: 'S', 0x28: 'M', 0x18: 'E', 0x8: 'O', 0: 'N'}[val&0x38]
+                    parity = {0x38: b'S', 0x28: b'M', 0x18: b'E', 0x8: b'O', 0: b'N'}[val&0x38]
                     # stopbits
                     if val & 0x4:
                         # 2 or 1.5 stop bits
@@ -558,12 +558,14 @@ class Memory(object):
         #   "(PEEK (1041) AND 192)/64" WILL PROVIDE NUMBER OF PRINTERS INSTALLED.
         elif addr == 1041:
             return (
-                2 * (self._files.device_available('COM1:') +
-                    self._files.device_available('COM2:')) +
-                16 +
-                64 * (self._files.device_available('LPT1:') +
-                    self._files.device_available('LPT2:') +
-                    self._files.device_available('LPT3:'))
+                2 * (
+                    self._files.device_available(b'COM1:') +
+                    self._files.device_available(b'COM2:')
+                ) + 16 + 64 * (
+                    self._files.device_available(b'LPT1:') +
+                    self._files.device_available(b'LPT2:') +
+                    self._files.device_available(b'LPT3:')
+                )
             )
         # &h40:&h17 keyboard flag
         # &H80 - Insert state active

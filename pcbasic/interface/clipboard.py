@@ -37,8 +37,10 @@ class MacClipboard(Clipboard):
 
     def paste(self, mouse=False):
         """Get unicode text from clipboard."""
-        return (subprocess.check_output('pbpaste').decode(ENCODING, 'replace')
-                .replace('\r\n','\r').replace('\n', '\r'))
+        return (
+            subprocess.check_output('pbpaste').decode(ENCODING, 'replace')
+            .replace(u'\r\n', u'\r').replace(u'\n', u'\r')
+        )
 
     def copy(self, text, mouse=False):
         """Put unicode text on clipboard."""
@@ -73,7 +75,7 @@ class XClipboard(Clipboard):
             output = subprocess.check_output((self._command, '-o'))
         else:
             output = subprocess.check_output([self._command, '-o'] + self._notmouse)
-        return (output.decode(ENCODING, 'replace').replace('\r\n','\r').replace('\n', '\r'))
+        return (output.decode(ENCODING, 'replace').replace(u'\r\n', u'\r').replace(u'\n', u'\r'))
 
     def copy(self, text, mouse=False):
         """Put unicode text on clipboard."""
