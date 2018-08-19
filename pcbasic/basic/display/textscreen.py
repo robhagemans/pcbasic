@@ -197,7 +197,7 @@ class TextScreen(object):
         for i, l in enumerate(cuts):
             # clear_line looks back along wraps, use screen.clear_from instead
             self.clear_from(self.current_row, 1)
-            self.write(str(l))
+            self.write(l)
             if i != len(cuts) - 1:
                 self.write(b'\n')
         if newline:

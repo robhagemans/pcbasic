@@ -38,7 +38,7 @@ class Interface(object):
             except KeyError:
                 logging.error('Unknown video plugin `%s`', video)
             except InitFailed as e:
-                logging.info('Could not initialise video plugin `%s`: %s', video, str(e))
+                logging.info('Could not initialise video plugin `%s`: %s', video, e)
             if self._video:
                 break
         else:
@@ -52,7 +52,7 @@ class Interface(object):
             if audio_override and audio_override != 'none':
                 logging.error('Unknown audio plugin `%s`', audio)
         except InitFailed as e:
-            logging.info('Could not initialise audio plugin `%s`: %s', audio, str(e))
+            logging.info('Could not initialise audio plugin `%s`: %s', audio, e)
         if not self._audio:
             # audio fallback to no-plugin
             self._audio = AudioPlugin(self._audio_queue, **kwargs)

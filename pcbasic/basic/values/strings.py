@@ -116,12 +116,16 @@ class String(numbers.Value):
         self.from_pointer(*target)
         source = val.to_pointer()
         if source != target:
-            self._stringspace.view(*target)[offset:offset+num] = self._stringspace.view(*source)[:num]
+            self._stringspace.view(*target)[offset:offset+num] = (
+                self._stringspace.view(*source)[:num]
+            )
         else:
             # copy byte by byte from left to right
             # to conform to GW overwriting of source string on overlap
             for i in range(num):
-                self._stringspace.view(*target)[i+offset:i+offset+1] = self._stringspace.view(*source)[i]
+                self._stringspace.view(*target)[i+offset:i+offset+1] = (
+                    self._stringspace.view(*source)[i]
+                )
         return self
 
 
@@ -142,7 +146,7 @@ class String(numbers.Value):
         """SPACE$: repeat spaces."""
         num = num.to_integer().to_int()
         error.range_check(0, 255, num)
-        return self.new().from_str(' ' * num)
+        return self.new().from_str(b' ' * num)
 
 
 class StringSpace(object):
@@ -157,7 +161,7 @@ class StringSpace(object):
 
     def __str__(self):
         """Debugging representation of string table."""
-        return '\n'.join('%x: %s' % (n, repr(v)) for n, v in self._strings.iteritems())
+        return '\n'.join('%x: %r' % (n, v) for n, v in self._strings.iteritems())
 
     def clear(self):
         """Empty string space."""

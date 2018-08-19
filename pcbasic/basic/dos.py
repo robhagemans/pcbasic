@@ -21,6 +21,10 @@ from .base import error
 from . import values
 
 
+# get environment as bytes
+getenvb = os.getenv
+
+
 # command interpreter must support command.com convention
 # to be able to use SHELL "dos-command"
 # on linux, "wine cmd.exe" works OK
@@ -30,7 +34,7 @@ SHELL_COMMAND_SWITCH = u'/C'
 
 
 
-#########################################
+##########################################
 # calling shell environment
 
 class Environment(object):
@@ -53,21 +57,20 @@ class Environment(object):
             error.range_check(1, 255, expr)
             envlist = list(os.environ)
             if expr > len(envlist):
-                envstr = ''
+                envstr = b''
             else:
-                envstr = '%s=%s' % (envlist[expr-1], os.getenv(envlist[expr-1]))
+                envstr = b'%s=%s' % (envlist[expr-1], getenvb(envlist[expr-1]))
         return self._values.new_string().from_str(envstr)
 
     def environ_statement_(self, args):
         """ENVIRON: set environment string."""
         envstr = values.next_string(args)
         list(args)
-        eqs = envstr.find('=')
+        eqs = envstr.find(b'=')
         if eqs <= 0:
             raise error.BASICError(error.IFC)
-        envvar = str(envstr[:eqs])
-        val = str(envstr[eqs+1:])
-        os.environ[envvar] = val
+        envvar = envstr[:eqs]
+        os.environ[envvar] = envstr[eqs+1:]
 
 
 #########################################
@@ -103,7 +106,7 @@ class Shell(object):
         """Run a SHELL subprocess."""
         logging.debug('Executing SHELL command %r', command)
         if not self._shell:
-            logging.warning(b'SHELL statement not enabled: no command interpreter specified.')
+            logging.warning('SHELL statement not enabled: no command interpreter specified.')
             raise error.BASICError(error.IFC)
         cmd = split_quoted(self._shell)
         if command:
@@ -112,8 +115,9 @@ class Shell(object):
         work_dir = self._files.get_native_cwd()
         try:
             p = Popen(
-                    cmd, shell=False, cwd=work_dir,
-                    stdin=PIPE, stdout=PIPE, stderr=PIPE, startupinfo=HIDE_WINDOW)
+                cmd, shell=False, cwd=work_dir,
+                stdin=PIPE, stdout=PIPE, stderr=PIPE, startupinfo=HIDE_WINDOW
+            )
         except (EnvironmentError, UnicodeEncodeError) as e:
             logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
             raise error.BASICError(error.IFC)
@@ -164,8 +168,8 @@ class Shell(object):
                 continue
             elif c in (b'\r', b'\n'):
                 # put sentinel on queue
-                shell_output.append('')
-                shell_cerr.append('')
+                shell_output.append(b'')
+                shell_cerr.append(b'')
                 # send the command
                 self._send_input(p.stdin, word)
                 word = []

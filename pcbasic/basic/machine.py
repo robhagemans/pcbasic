@@ -352,7 +352,7 @@ class Memory(object):
                     seg=self.segment, offset=offset, length=length
                 ) as g:
             addr = self.segment * 0x10 + offset
-            g.write(str(self._get_memory_block(addr, length)))
+            g.write(bytes(self._get_memory_block(addr, length)))
             # Tandys repeat the header at the end of the file
             if self._syntax == 'tandy':
                 g.write(

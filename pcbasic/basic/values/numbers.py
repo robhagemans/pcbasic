@@ -731,7 +731,7 @@ class Float(Number):
             # this has n_work or n_work+1 digits, depending on rounding
             mantissa, exp10 = self.to_decimal(n_work)
             n_after = -exp10
-        digitstr = str(abs(mantissa))
+        digitstr = b'%d' % (abs(mantissa),)
         # number of digits before the radix point.
         n_before = len(digitstr) - n_after
         # fill up with zeros to required number of figures
@@ -1233,7 +1233,7 @@ def str_to_decimal(s, allow_nonnum=True):
 
 def _get_digits(mantissa, n_digits, remove_trailing):
     """Get the digits for an int."""
-    digitstr = str(abs(mantissa)).rjust(n_digits, '0')
+    digitstr = (b'%d' % abs(mantissa)).rjust(n_digits, '0')
     if remove_trailing:
         return digitstr.rstrip('0')
     else:

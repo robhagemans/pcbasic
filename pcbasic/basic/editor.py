@@ -97,7 +97,7 @@ class FunctionKeyMacros(object):
             text = self._keyboard.get_macro(i)[:6]
             text = b''.join(self._replace_chars.get(s, s) for s in text)
             kcol = 1 + 8*i
-            self._bar.write(str(i+1)[-1], kcol, False)
+            self._bar.write((b'%d' % (i+1,))[-1], kcol, False)
             self._bar.write(text, kcol+1, True)
 
 

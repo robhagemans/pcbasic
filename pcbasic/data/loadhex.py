@@ -145,10 +145,9 @@ class FontLoader(object):
                                 clusterglyph[y] |= ord(row)
                     except KeyError as e:
                         logging.debug(
-                            'Could not combine grapheme cluster %s, missing %s [%s]',
-                            cluster, repr(c), c
+                            'Could not combine grapheme cluster %s, missing %r [%s]', cluster, c, c
                         )
-                    self._fontdict[cluster] = str(clusterglyph)
+                    self._fontdict[cluster] = bytes(clusterglyph)
 
     def _warn_missing(self, unicode_needed, max_warnings=3):
         """Check if we have all needed glyphs."""

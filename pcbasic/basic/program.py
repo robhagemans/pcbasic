@@ -239,13 +239,13 @@ class Program(object):
     def edit(self, screen, from_line, bytepos=None):
         """Output program line to console and position cursor."""
         if self.protected:
-            screen.write(str(from_line) + b'\r')
+            screen.write(b'%d\r' % (from_line,))
             raise error.BASICError(error.IFC)
         # list line
         self.bytecode.seek(self.line_numbers[from_line]+1)
         _, output, textpos = self.lister.detokenise_line(self.bytecode, bytepos)
         # no newline to avoid scrolling on line 24
-        screen.list_line(str(output), newline=False)
+        screen.list_line(bytes(output), newline=False)
         # find row, column position for textpos
         newlines, c = 0, 0
         pos_row, pos_col = 0, 0
@@ -310,7 +310,7 @@ class Program(object):
                 # not redefined, exists in program?
                 if jumpnum not in self.line_numbers:
                     linum = self.get_line_number(ins.tell()-1)
-                    screen.write_line(b'Undefined line ' + str(jumpnum) + b' in ' + str(linum))
+                    screen.write_line(b'Undefined line %d in %d' % (jumpnum, linum))
                 newjump = jumpnum
             ins.seek(-2, 1)
             ins.write(struct.pack('<H', newjump))
@@ -388,7 +388,7 @@ class Program(object):
                 current_line, output, _ = self.lister.detokenise_line(self.bytecode)
                 if current_line == -1 or (current_line > self.max_list_line):
                     break
-                g.write_line(str(output))
+                g.write_line(bytes(output))
         self.bytecode.seek(current)
 
     def list_lines(self, from_line, to_line):
@@ -412,7 +412,7 @@ class Program(object):
         for pos in listable:
             self.bytecode.seek(pos + 1)
             _, line, _ = self.lister.detokenise_line(self.bytecode)
-            lines.append(str(line))
+            lines.append(bytes(line))
         return lines
 
     def get_memory(self, offset):

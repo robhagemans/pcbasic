@@ -35,10 +35,10 @@ class Lister(object):
         elif current_line == 0 and ins.peek() == b' ':
             # ignore up to one space after line number 0
             ins.read(1)
-        linum = bytearray(str(current_line))
+        linum = bytearray(b'%d' % (current_line,))
         # write one extra whitespace character after line number
         # unless first char is TAB
-        if ins.peek() != '\t':
+        if ins.peek() != b'\t':
             linum += bytearray(b' ')
         line, textpos = self.detokenise_compound_statement(ins, bytepos)
         return current_line, linum + line, textpos + len(linum) + 1
@@ -180,13 +180,13 @@ class Lister(object):
         elif lead == tk.T_HEX:
             output += b'&H' + self._values.from_bytes(trail).to_hex()
         elif lead == tk.T_BYTE:
-            output += str(ord(trail))
+            output += b'%d' % (ord(trail),)
         elif tk.C_0 <= lead <= tk.C_10:
-            output += str(ord(lead) - ord(tk.C_0))
+            output += b'%d' % (ord(lead) - ord(tk.C_0),)
         elif lead in tk.LINE_NUMBER:
             # 0D: line pointer (unsigned int) - this token should not be here;
             #     interpret as line number and carry on
             # 0E: line number (unsigned int)
-            output += str(struct.unpack('<H', trail)[0])
+            output += b'%d' % (struct.unpack('<H', trail)[0],)
         elif lead in (tk.T_SINGLE, tk.T_DOUBLE, tk.T_INT):
             output += self._values.from_bytes(trail).to_str(leading_space=False, type_sign=True)

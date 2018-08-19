@@ -71,7 +71,7 @@ class CASDevice(object):
                 # 'CAS' is default
                 self.tapestream = CassetteStream(CASBitStream(val, 'r'))
         except EnvironmentError as e:
-            logging.warning('Could not attach %s to CAS device: %s', val, str(e))
+            logging.warning('Could not attach %s to CAS device: %s', val, e)
             self.tapestream = None
 
     def available(self):

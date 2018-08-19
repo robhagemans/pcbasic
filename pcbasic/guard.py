@@ -6,12 +6,12 @@ Crash guard
 This file is released under the GNU GPL version 3 or later.
 """
 
-import sys
 import os
-import platform
-import traceback
+import sys
 import logging
+import platform
 import tempfile
+import traceback
 from datetime import datetime
 from contextlib import contextmanager
 
@@ -58,9 +58,9 @@ class ExceptionGuard(object):
         if not impl:
             return False
         if iface:
-            iface_name = '%s, %s' % (type(iface._video).__name__, type(iface._audio).__name__)
+            iface_name = u'%s, %s' % (type(iface._video).__name__, type(iface._audio).__name__)
         else:
-            iface_name = '--'
+            iface_name = u'--'
         # log the standard python error
         stack = traceback.extract_tb(exc_traceback)
         logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
@@ -71,78 +71,84 @@ class ExceptionGuard(object):
             from_line = impl.program.get_line_number(bytepos)
             codestream.seek(impl.program.line_numbers[from_line]+1)
             _, output, textpos = impl.lister.detokenise_line(codestream, bytepos)
-            code_line = str(output)
+            code_line = bytes(output)
         else:
             impl.interpreter.direct_line.seek(0)
-            code_line = str(impl.lister.detokenise_compound_statement(
-                    impl.interpreter.direct_line)[0])
+            code_line = bytes(
+                impl.lister.detokenise_compound_statement(impl.interpreter.direct_line)[0]
+            )
+        # don't risk codepage logic here, use cp437
+        code_line = code_line.decode('cp437', 'replace')
         # stop program execution
         impl.interpreter.set_pointer(False)
         # create crash log file
         logname = datetime.now().strftime(LOG_PATTERN)
         logfile = tempfile.NamedTemporaryFile(
-                mode='w', suffix='.log', prefix=logname, dir=self._log_dir, delete=False)
+            mode='wb', suffix='.log', prefix=logname, dir=self._log_dir, delete=False
+        )
         # construct the message
-        frozen = getattr(sys, 'frozen', '') or ''
+        frozen = getattr(sys, 'frozen', u'') or u''
         message = [
-            (0x70, 'FATAL ERROR\n'),
-            (0x17, 'version   '),
-            (0x1f, VERSION.encode('ascii')),
-            (0x17, '\npython    '),
-            (0x1f, '%s [%s] %s' % (
-                    platform.python_version(), ' '.join(platform.architecture()), frozen)),
-            (0x17, '\nplatform  '),
+            (0x70, u'FATAL ERROR\n'),
+            (0x17, u'version   '),
+            (0x1f, VERSION),
+            (0x17, u'\npython    '),
+            (0x1f, u'%s [%s] %s' % (
+                platform.python_version(), b' '.join(platform.architecture()), frozen
+            )),
+            (0x17, u'\nplatform  '),
             (0x1f, platform.platform()),
-            (0x17, '\ninterface '),
+            (0x17, u'\ninterface '),
             (0x1f, iface_name),
-            (0x17, '\nstatement '),
-            (0x1f, code_line + '\n\n'),
+            (0x17, u'\nstatement '),
+            (0x1f, code_line + u'\n\n'),
         ] + [
-            (0x1f, '{0}:{1}, {2}\n'.format(os.path.split(s[0])[-1], s[1], s[2]))
+            (0x1f, u'{0}:{1}, {2}\n'.format(os.path.split(s[0])[-1], s[1], s[2]))
             for s in stack[-4:]
         ] + [
-            (0x1f,  '{0}:'.format(exc_type.__name__)),
-            (0x17,  ' {0}\n\n'.format(str(exc_value))),
-            (0x70,  'This is a bug in PC-BASIC.\n'),
-            (0x17,  'Sorry about that. '),
-            (0x17,  'To help improve PC-BASIC, '),
-            (0x70,  'please file a bug report'),
-            (0x17,  ' at\n  '),
-            (0x1f,  'https://github.com/robhagemans/pcbasic/issues'),
-            (0x17,  '\nPlease include the messages above and '),
-            (0x17,  'as much information as you can about what you were doing and how this happened. '),
-            (0x17,  'If possible, please attach the log file\n  '),
-            (0x1f,  logfile.name.encode('ascii', errors='replace')),
-            (0x17,  '\nThank you!\n\n'),
-            (0x17,  'Press a key to close this window.'),
+            (0x1f, u'{0}:'.format(exc_type.__name__)),
+            (0x17, u' {0}\n\n'.format(exc_value)),
+            (0x70, u'This is a bug in PC-BASIC.\n'),
+            (0x17, u'Sorry about that. '),
+            (0x17, u'To help improve PC-BASIC, '),
+            (0x70, u'please file a bug report'),
+            (0x17, u' at\n  '),
+            (0x1f, u'https://github.com/robhagemans/pcbasic/issues'),
+            (0x17, u'\nPlease include the messages above and '),
+            (0x17, u'as much information as you can about what you were doing and '),
+            (0x17, u'how this happened. Please attach the log file\n  '),
+            (0x1f, logfile.name),
+            (0x17, u'\nThank you!\n\n'),
+            (0x17, u'Press a key to close this window.'),
         ]
         bottom = (0x70,
-            'This message has been copied onto the clipboard. You can paste it with Ctrl-V.')
+            u'This message has been copied onto the clipboard. You can paste it with Ctrl-V.'
+        )
         # create crash log
         crashlog = [
-            'PC-BASIC crash log',
-            '=' * 100,
-            ''.join(text for _, text in message),
-            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
-            '==== Screen Pages ='.ljust(100, '='),
+            u'PC-BASIC crash log',
+            u'=' * 100,
+            u''.join(text for _, text in message),
+            u''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
+            u'==== Screen Pages ='.ljust(100, u'='),
             str(impl.display.text_screen),
-            '==== Scalars ='.ljust(100, '='),
+            u'==== Scalars ='.ljust(100, u'='),
             str(impl.scalars),
-            '==== Arrays ='.ljust(100, '='),
+            u'==== Arrays ='.ljust(100, u'='),
             str(impl.arrays),
-            '==== Strings ='.ljust(100, '='),
+            u'==== Strings ='.ljust(100, u'='),
             str(impl.strings),
-            '==== Program Buffer ='.ljust(100, '='),
+            u'==== Program Buffer ='.ljust(100, u'='),
             str(impl.program),
         ]
         impl.program.bytecode.seek(1)
-        crashlog.append('==== Program ='.ljust(100, '='))
+        crashlog.append(u'==== Program ='.ljust(100, u'='))
         while True:
             _, line, _ = impl.lister.detokenise_line(impl.program.bytecode)
             if not line:
                 break
-            crashlog.append(str(line))
-        crashlog.append('==== Options ='.ljust(100, '='))
+            crashlog.append(bytes(line).decode('cp437', 'replace'))
+        crashlog.append(u'==== Options ='.ljust(100, u'='))
         crashlog.append(repr(self._uargv))
         # clear screen for modal message
         # choose attributes - this should be readable on VGA, MDA, PCjr etc.
@@ -153,17 +159,19 @@ class ExceptionGuard(object):
         # show message on screen
         for attr, text in message:
             impl.display.set_attr(attr)
-            impl.display.text_screen.write(text.replace('\n', '\r'))
+            impl.display.text_screen.write(text.encode('cp437', 'replace').replace('\n', '\r'))
         impl.display.text_screen._bottom_row_allowed = True
         impl.display.text_screen.set_pos(25, 1)
         impl.display.set_attr(bottom[0])
         impl.display.text_screen.write(bottom[1])
         # write crash log
-        crashlog = b'\n'.join(crashlog)
+        print repr(crashlog)
+        crashlog = u'\n'.join(
+            line.decode('cp437', 'replace') if isinstance(line, bytes) else line
+            for line in crashlog
+        )
         with logfile as f:
-            f.write(crashlog)
+            f.write(crashlog.encode('utf-8', 'replace'))
         # put on clipboard
-        # note that log contains raw non-ascii bytes. don't risk codepage logic here, use cp437
-        impl.queues.video.put(signals.Event(
-                signals.VIDEO_SET_CLIPBOARD_TEXT, (crashlog.decode('cp437', 'replace'), False)))
+        impl.queues.video.put(signals.Event(signals.VIDEO_SET_CLIPBOARD_TEXT, (crashlog, False)))
         return True

@@ -47,9 +47,9 @@ if __name__ == '__main__':
                         bufr = bytearray('%c\0\0\80' % buf[1])
 
                         l = Single(bufl, vm)
-                        bufs = str(bufl), str(bufr)
+                        bufs = bytes(bufl), bytes(bufr)
                         r = Single(bufr, vm)
-                        out = str(l.iadd(r).to_bytes())
+                        out = bytes(l.iadd(r).to_bytes())
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
@@ -70,9 +70,9 @@ if __name__ == '__main__':
                         bufr = bytearray('%c\0\0\80' % buf[1])
 
                         l = Single(bufl, vm)
-                        bufs = str(bufl), str(bufr)
+                        bufs = bytes(bufl), bytes(bufr)
                         r = Single(bufr, vm)
-                        out = str(l.isub(r).to_bytes())
+                        out = bytes(l.isub(r).to_bytes())
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
@@ -97,8 +97,8 @@ if __name__ == '__main__':
                             buf[2:] = '\0\x80'
                             r = Single(buf, vm)
                             ll = l.clone()
-                            bufs = str(l.to_bytes()), str(buf)
-                            out = str(l.iadd(r).to_bytes())
+                            bufs = bytes(l.to_bytes()), bytes(buf)
+                            out = bytes(l.iadd(r).to_bytes())
                             g.write(out)
                             inp = h.read(4)
                             if out != inp:
@@ -127,8 +127,8 @@ if __name__ == '__main__':
                             buf[2:] = '\0\x80'
                             r = Single(buf, vm)
                             ll = l.clone()
-                            bufs = str(l.to_bytes()), str(buf)
-                            out = str(l.iadd(r).to_bytes())
+                            bufs = bytes(l.to_bytes()), bytes(buf)
+                            out = bytes(l.iadd(r).to_bytes())
                             g.write(out)
                             inp = h.read(4)
                             if out != inp:
@@ -149,8 +149,8 @@ if __name__ == '__main__':
                             break
                         r = Single(buf, vm)
                         ll = l.clone()
-                        bufs = str(l.to_bytes()), str(buf)
-                        out = str(l.iadd(r).to_bytes())
+                        bufs = bytes(l.to_bytes()), bytes(buf)
+                        out = bytes(l.iadd(r).to_bytes())
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
@@ -170,8 +170,8 @@ if __name__ == '__main__':
                             break
                         r = Single(buf, vm)
                         ll = l.clone()
-                        bufs = str(l.to_bytes()), str(buf)
-                        out = str(l.iadd(r).to_bytes())
+                        bufs = bytes(l.to_bytes()), bytes(buf)
+                        out = bytes(l.iadd(r).to_bytes())
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
@@ -192,12 +192,12 @@ if __name__ == '__main__':
                             break
                         r = Single(buf, vm)
                         ll = l.clone()
-                        bufs = str(l.to_bytes()), str(buf)
+                        bufs = bytes(l.to_bytes()), bytes(buf)
                         try:
                             l.imul(r)
                         except OverflowError:
                             pass
-                        out = str(l.to_bytes())
+                        out = bytes(l.to_bytes())
                         g.write(out)
                         inp = h.read(4)
                         if out != inp:
