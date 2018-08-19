@@ -51,7 +51,7 @@ else:
 # utility function, this has to go somewhere...
 def split_quoted(line, split_by=u'\s', quote=u'"', strip_quotes=False):
     """Split by separators, preserving quoted blocks."""
-    chunks = re.findall(ur'[^%s%s][^%s]*|%s.+?%s' % (quote, split_by, split_by, quote, quote), line)
+    chunks = re.findall(u'[^%s%s][^%s]*|%s.+?%s' % (quote, split_by, split_by, quote, quote), line)
     if strip_quotes:
         chunks = [c.strip(quote) for c in chunks]
     return chunks
