@@ -21,19 +21,9 @@ from . import operators as op
 from . import userfunctions
 
 
-# AIMS
-# separate parsing from evaluation (ExpressionParser creates Expression, which can then evaluate)
-# difficulty: reproduce sequence of errors (syntax checks during evaluation)
-# approach: build an evaluation tree with operation and value nodes
-#   def OperationNode.evaluate(self):
-#       args = (arg.evaluate() for arg in self._args)
-#       return self._oper(*args)
-#
-# in the code below, this could be implemented by replacing evaluate steps
-# operation[token](*args) --> OperationNode(token, args)
-# adding the OperationNodes to the unit stack as we currently do values
-# when popped off the stack, they end up in the tree (through the argument list)
-# but are not yet evaluated.
+# bytes constants
+DIGITS = string.digits
+LETTERS = string.ascii_letters
 
 
 class ExpressionParser(object):
@@ -69,20 +59,20 @@ class ExpressionParser(object):
                 tk.C_9: self._gen_parse_arguments,
             },
             tk.IOCTL: {
-                '$': self._gen_parse_ioctl,
+                b'$': self._gen_parse_ioctl,
             },
             tk.ENVIRON: {
-                '$': self._gen_parse_arguments,
+                b'$': self._gen_parse_arguments,
             },
             tk.INPUT: {
-                '$': self._gen_parse_input,
+                b'$': self._gen_parse_input,
             },
             tk.ERDEV: {
-                '$': self._no_argument,
+                b'$': self._no_argument,
                 None: self._no_argument,
             },
             tk.VARPTR: {
-                '$': self._gen_parse_varptr_str,
+                b'$': self._gen_parse_varptr_str,
                 None: self._gen_parse_varptr,
             },
         }
@@ -145,7 +135,7 @@ class ExpressionParser(object):
             tk.SCREEN: partial(self._gen_parse_arguments_optional, length=3),
             tk.INSTR: self._gen_parse_instr,
             tk.FN: None,
-            '_': self._gen_parse_call_extension,
+            b'_': self._gen_parse_call_extension,
         }
         self._functions = set(self._complex.keys() + self._simple.keys())
 
@@ -163,13 +153,13 @@ class ExpressionParser(object):
             tk.USR + tk.C_7: session.machine.usr_,
             tk.USR + tk.C_8: session.machine.usr_,
             tk.USR + tk.C_9: session.machine.usr_,
-            tk.IOCTL + '$': session.files.ioctl_,
-            tk.ENVIRON + '$': session.environment.environ_,
-            tk.INPUT + '$': session.files.input_,
+            tk.IOCTL + b'$': session.files.ioctl_,
+            tk.ENVIRON + b'$': session.environment.environ_,
+            tk.INPUT + b'$': session.files.input_,
             tk.ERDEV: session.files.erdev_,
-            tk.ERDEV + '$': session.files.erdev_str_,
+            tk.ERDEV + b'$': session.files.erdev_str_,
             tk.VARPTR: session.memory.varptr_,
-            tk.VARPTR + '$': session.memory.varptr_str_,
+            tk.VARPTR + b'$': session.memory.varptr_str_,
             tk.SCREEN: session.screen.screen_fn_,
             tk.FN: None,
             tk.ERL: session.interpreter.erl_,
@@ -228,7 +218,7 @@ class ExpressionParser(object):
             tk.EOF: session.files.eof_,
             tk.LOC: session.files.loc_,
             tk.LOF: session.files.lof_,
-            '_': session.extensions.call_as_function,
+            b'_': session.extensions.call_as_function,
         }
 
     def __getstate__(self):
@@ -256,13 +246,13 @@ class ExpressionParser(object):
         with self._memory.get_stack() as units:
             final = True
             # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-            d = ''
+            d = b''
             while True:
                 last = d
                 ins.skip_blank()
                 d = ins.read_keyword_token()
                 ins.seek(-len(d), 1)
-                if d == tk.NOT and not (last in op.OPERATORS or last == ''):
+                if d == tk.NOT and not (last in op.OPERATORS or last == b''):
                     # unary NOT ends expression except after another operator or at start
                     break
                 elif d in op.OPERATORS:
@@ -273,7 +263,7 @@ class ExpressionParser(object):
                         nxt = ins.skip_blank()
                         if nxt in op.COMBINABLE:
                             d += ins.read(len(nxt))
-                    if last in op.OPERATORS or last == '' or d == tk.NOT:
+                    if last in op.OPERATORS or last == b'' or d == tk.NOT:
                         # also if last is ( but that leads to recursive call and last == ''
                         nargs = 1
                         # zero operands for a binary operator is always syntax error
@@ -291,18 +281,18 @@ class ExpressionParser(object):
                             raise error.BASICError(error.STX)
                         self._drain(prec, operations, units)
                     operations.append((oper, nargs, prec))
-                elif not (last in op.OPERATORS or last == ''):
+                elif not (last in op.OPERATORS or last == b''):
                     # repeated unit ends expression
                     # repeated literals or variables or non-keywords like 'AS'
                     break
-                elif d == '(':
+                elif d == b'(':
                     ins.read(len(d))
                     # we need to create a new object or we'll overwrite our own stacks
                     # this will not be needed if we localise stacks in the expression parser
                     # either a separate class of just as local variables
                     units.append(self.parse(ins))
-                    ins.require_read((')',))
-                elif d and d in string.ascii_letters:
+                    ins.require_read((b')',))
+                elif d and d in LETTERS:
                     name = ins.read_name()
                     error.throw_if(not name, error.STX)
                     indices = self.parse_indices(ins)
@@ -319,7 +309,7 @@ class ExpressionParser(object):
                     # missing operand inside brackets or before comma is syntax error
                     final = False
                     break
-                elif d == '"':
+                elif d == b'"':
                     units.append(self.read_string_literal(ins))
                 else:
                     units.append(self.read_number_literal(ins))
@@ -348,7 +338,7 @@ class ExpressionParser(object):
         """Read a quoted string literal (no leading blanks), return as String."""
         # address points to initial quote
         address = ins.tell_address()
-        value = ins.read_string().strip('"')
+        value = ins.read_string().strip(b'"')
         # if this is a program, create a string pointer to code space
         # and don't reserve space in string memory
         # +1 to point to start of payload, not intial quote
@@ -359,7 +349,7 @@ class ExpressionParser(object):
         d = ins.peek()
         # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
         # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
-        if d in string.digits:
+        if d in DIGITS:
             return self._values.from_repr(ins.read_number(), allow_nonnum=False)
         # number literals
         elif d in tk.NUMBER:
@@ -376,14 +366,14 @@ class ExpressionParser(object):
     def parse_indices(self, ins):
         """Parse array indices."""
         indices = []
-        if ins.skip_blank_read_if(('[', '(')):
+        if ins.skip_blank_read_if((b'[', b'(')):
             # it's an array, read indices
             while True:
                 expr = self.parse(ins)
                 indices.append(values.to_int(expr))
-                if not ins.skip_blank_read_if((',',)):
+                if not ins.skip_blank_read_if((b',',)):
                     break
-            ins.require_read((']', ')'))
+            ins.require_read((b']', b')'))
         return indices
 
     ###########################################################################
@@ -429,43 +419,43 @@ class ExpressionParser(object):
         """Parse a comma-separated list of arguments."""
         if not length:
             return
-        ins.require_read(('(',))
+        ins.require_read((b'(',))
         for i in range(length-1):
             yield self.parse(ins)
-            ins.require_read((','),)
+            ins.require_read((b','),)
         yield self.parse(ins)
-        ins.require_read((')',))
+        ins.require_read((b')',))
 
     def _gen_parse_arguments_optional(self, ins, length):
         """Parse a comma-separated list of arguments, last one optional."""
-        ins.require_read(('(',))
+        ins.require_read((b'(',))
         yield self.parse(ins)
         for _ in range(length-2):
-            ins.require_read((','),)
+            ins.require_read((b','),)
             yield self.parse(ins)
-        if ins.skip_blank_read_if((',',),):
+        if ins.skip_blank_read_if((b',',),):
             yield self.parse(ins)
         else:
             yield None
-        ins.require_read((')',))
+        ins.require_read((b')',))
 
     def _gen_parse_one_optional_argument(self, ins):
         """Parse a single, optional argument."""
-        if ins.skip_blank_read_if(('(',)):
+        if ins.skip_blank_read_if((b'(',)):
             yield self.parse(ins)
-            ins.require_read((')',))
+            ins.require_read((b')',))
         else:
             yield None
 
     def _gen_parse_call_extension(self, ins):
         """Parse an extension function."""
         yield ins.read_name()
-        if ins.skip_blank_read_if(('(',)):
+        if ins.skip_blank_read_if((b'(',)):
             while True:
                 yield self.parse(ins)
-                if not ins.skip_blank_read_if((',',)):
+                if not ins.skip_blank_read_if((b',',)):
                     break
-            ins.require_read((')',))
+            ins.require_read((b')',))
         else:
             yield None
 
@@ -474,48 +464,48 @@ class ExpressionParser(object):
 
     def _gen_parse_ioctl(self, ins):
         """Parse IOCTL$ syntax."""
-        ins.require_read(('(',))
-        ins.skip_blank_read_if(('#',))
+        ins.require_read((b'(',))
+        ins.skip_blank_read_if((b'#',))
         yield self.parse(ins)
-        ins.require_read((')',))
+        ins.require_read((b')',))
 
     def _gen_parse_instr(self, ins):
         """Parse INSTR syntax."""
-        ins.require_read(('(',))
+        ins.require_read((b'(',))
         # followed by comma so empty will raise STX
         s = self.parse(ins)
         yield s
         if isinstance(s, values.Number):
-            ins.require_read((',',))
+            ins.require_read((b',',))
             yield self.parse(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse(ins)
-        ins.require_read((')',))
+        ins.require_read((b')',))
 
     def _gen_parse_input(self, ins):
         """Parse INPUT$ syntax."""
-        ins.require_read(('(',))
+        ins.require_read((b'(',))
         yield self.parse(ins)
-        if ins.skip_blank_read_if((',',)):
-            ins.skip_blank_read_if(('#',))
+        if ins.skip_blank_read_if((b',',)):
+            ins.skip_blank_read_if((b'#',))
             yield self.parse(ins)
         else:
             yield None
-        ins.require_read((')',))
+        ins.require_read((b')',))
 
     def _gen_parse_varptr_str(self, ins):
         """Parse VARPTR$ syntax."""
-        ins.require_read(('(',))
+        ins.require_read((b'(',))
         yield ins.read_name()
         yield self.parse_indices(ins)
-        ins.require_read((')',))
+        ins.require_read((b')',))
 
     def _gen_parse_varptr(self, ins):
         """Parse VARPTR syntax."""
-        ins.require_read(('(',))
-        if ins.skip_blank_read_if(('#',)):
+        ins.require_read((b'(',))
+        if ins.skip_blank_read_if((b'#',)):
             yield self.parse(ins)
         else:
             yield ins.read_name()
             yield self.parse_indices(ins)
-        ins.require_read((')',))
+        ins.require_read((b')',))

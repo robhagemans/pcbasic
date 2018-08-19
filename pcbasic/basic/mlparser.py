@@ -13,11 +13,14 @@ from .base import codestream
 from . import values
 
 
+DIGITS = string.digits
+
+
 class MLParser(codestream.CodeStream):
     """Macro Language parser."""
 
     # whitespace character for both macro languages is only space
-    blanks = ' '
+    blanks = b' '
 
     def __init__(self, gml, data_memory, values):
         """Initialise macro-language parser."""
@@ -28,24 +31,24 @@ class MLParser(codestream.CodeStream):
     def parse_number(self, default=None):
         """Parse a value in a macro-language string."""
         c = self.skip_blank()
-        sgn = -1 if c == '-' else 1
-        if c in ('+', '-'):
+        sgn = -1 if c == b'-' else 1
+        if c in (b'+', b'-'):
             self.read(1)
             c = self.peek()
             # don't allow default if sign is given
             default = None
-        if c == '=':
+        if c == b'=':
             self.read(1)
             c = self.peek()
             if len(c) == 0:
                 raise error.BASICError(error.IFC)
             elif ord(c) > 8:
                 step = self._parse_variable().to_int()
-                self.require_read((';',), err=error.IFC)
+                self.require_read((b';',), err=error.IFC)
             else:
                 # varptr$
                 step = self.memory.get_value_for_varptrstr(self.read(3)).to_int()
-        elif c and c in string.digits:
+        elif c and c in DIGITS:
             step = self._parse_const()
         elif default is not None:
             step = default
@@ -62,7 +65,7 @@ class MLParser(codestream.CodeStream):
             raise error.BASICError(error.IFC)
         elif ord(c) > 8:
             sub = self._parse_variable()
-            self.require_read((';',), err=error.IFC)
+            self.require_read((b';',), err=error.IFC)
             return values.pass_string(sub).to_str()
         else:
             # varptr$
@@ -78,8 +81,8 @@ class MLParser(codestream.CodeStream):
 
     def _parse_const(self):
         """Parse and return a constant value in a macro-language string."""
-        numstr = ''
-        while self.skip_blank() in set(string.digits):
+        numstr = b''
+        while self.skip_blank() in set(DIGITS):
             numstr += self.read(1)
         try:
             return int(numstr)
@@ -89,13 +92,13 @@ class MLParser(codestream.CodeStream):
     def _parse_indices(self):
         """Parse constant array indices."""
         indices = []
-        if self.skip_blank_read_if(('[', '(')):
+        if self.skip_blank_read_if((b'[', b'(')):
             while True:
-                if self.skip_blank() in set(string.digits):
+                if self.skip_blank() in set(DIGITS):
                     indices.append(self._parse_const())
                 else:
                     indices.append(self._parse_variable().to_int())
-                if not self.skip_blank_read_if((',',)):
+                if not self.skip_blank_read_if((b',',)):
                     break
-            self.require_read((']', ')'))
+            self.require_read((b']', b')'))
         return indices

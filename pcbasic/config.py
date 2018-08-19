@@ -46,6 +46,9 @@ PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
 LOGGING_FORMAT = u'[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
 LOGGING_FORMATTER = logging.Formatter(fmt=LOGGING_FORMAT, datefmt=u'%H:%M:%S')
 
+# drive letters except @, bytes constant
+UPPERCASE = string.uppercase
+
 
 def append_arg(args, key, value):
     """Update a single list-type argument by appending a value."""
@@ -658,7 +661,7 @@ class Settings(object):
                 # if started from CMD.EXE, get the 'current working dir' for each drive
                 # if not in CMD.EXE, there's only one cwd
                 save_current = os.getcwdu()
-                for letter in string.uppercase:
+                for letter in UPPERCASE:
                     try:
                         os.chdir(letter + b':')
                         cwd = get_short_pathname(os.getcwdu()) or os.getcwdu()

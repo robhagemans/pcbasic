@@ -15,6 +15,11 @@ from ..base import codestream
 from .. import values
 
 
+# bytes constants
+DIGITS = string.digits
+LETTERS = string.ascii_letters
+
+
 class PlainTextStream(codestream.CodeStream):
     """Stream of plain-text BASIC code."""
 
@@ -29,7 +34,7 @@ class PlainTextStream(codestream.CodeStream):
             c = self.peek()
             if not c:
                 break
-            elif c in string.digits:
+            elif c in DIGITS:
                 word += self.read(1)
                 nblanks = 0
                 ndigits += 1
@@ -105,7 +110,7 @@ class Tokeniser(object):
             elif ins.peek() == b'"':
                 outs.write(ins.read_string())
             # handle jump numbers
-            elif allow_number and allow_jumpnum and c in string.digits + b'.':
+            elif allow_number and allow_jumpnum and c in DIGITS + b'.':
                 self._tokenise_jump_number(ins, outs)
             # handle numbers
             # numbers following var names with no operator or token in between
@@ -113,7 +118,7 @@ class Tokeniser(object):
             # note we don't include leading signs, encoded as unary operators
             # number starting with & are always parsed
             elif c in (b'&', ) or (
-                    allow_number and not allow_jumpnum and c in string.digits + '.'
+                    allow_number and not allow_jumpnum and c in DIGITS + b'.'
                 ):
                 outs.write(self.tokenise_number(ins))
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):
@@ -135,7 +140,7 @@ class Tokeniser(object):
                 outs.write(tk.PRINT)
                 allow_number = True
             # keywords & variable names
-            elif c in bytes(string.ascii_letters):
+            elif c in LETTERS:
                 word = self._tokenise_word(ins, outs)
                 # handle non-parsing modes
                 if word in (tk.KW_REM, b"'"):
@@ -274,7 +279,7 @@ class Tokeniser(object):
             # octal constant
             # read_number converts &1 into &O1
             return self._values.new_integer().from_oct(word[2:]).to_token_oct()
-        elif word[0] in string.digits + b'.+-':
+        elif word[0] in DIGITS + b'.+-':
             # handle other numbers
             # note GW passes signs separately as a token
             # and only stores positive numbers in the program

@@ -18,6 +18,11 @@ from . import expressions
 from . import userfunctions
 
 
+# bytes constants
+DIGITS = string.digits
+LETTERS = string.ascii_letters
+
+
 class Parser(object):
     """BASIC statement parser."""
 
@@ -71,7 +76,7 @@ class Parser(object):
             parse_args = stat_dict[selector]
         else:
             ins.seek(-len(c), 1)
-            if c in set(string.ascii_letters):
+            if c in set(LETTERS):
                 # implicit LET
                 c = tk.LET
                 parse_args = self._simple[tk.LET]
@@ -198,7 +203,7 @@ class Parser(object):
             tk.UNLOCK: self._parse_lock_unlock,
             tk.MID: self._parse_mid,
             tk.PEN: self._parse_event_command,
-            '_': self._parse_call_extension,
+            b'_': self._parse_call_extension,
         }
         if self._syntax in ('pcjr', 'tandy'):
             self._simple.update({
@@ -229,15 +234,15 @@ class Parser(object):
                 tk.ON: self._parse_key_macro,
                 tk.OFF: self._parse_key_macro,
                 tk.LIST: self._parse_key_macro,
-                '(': self._parse_com_command,
+                b'(': self._parse_com_command,
                 None: self._parse_two_args,
             },
             tk.PUT: {
-                '(': self._parse_put_graph,
+                b'(': self._parse_put_graph,
                 None: self._parse_put_get_file,
             },
             tk.GET: {
-                '(': self._parse_get_graph,
+                b'(': self._parse_get_graph,
                 None: self._parse_put_get_file,
             },
             tk.PLAY: {
@@ -377,11 +382,11 @@ class Parser(object):
             tk.KEY + tk.ON: session.fkey_macros.key_,
             tk.KEY + tk.OFF: session.fkey_macros.key_,
             tk.KEY + tk.LIST: session.fkey_macros.key_,
-            tk.KEY + '(': session.basic_events.key_,
+            tk.KEY + b'(': session.basic_events.key_,
             tk.KEY: session.key_,
-            tk.PUT + '(': session.drawing.put_,
+            tk.PUT + b'(': session.drawing.put_,
             tk.PUT: session.files.put_,
-            tk.GET + '(': session.drawing.get_,
+            tk.GET + b'(': session.drawing.get_,
             tk.GET: session.files.get_,
             tk.PLAY + tk.ON: session.basic_events.play_,
             tk.PLAY + tk.OFF: session.basic_events.play_,
@@ -394,7 +399,7 @@ class Parser(object):
             tk.STRIG + tk.ON: session.stick.strig_statement_,
             tk.STRIG + tk.OFF: session.stick.strig_statement_,
             tk.STRIG: session.basic_events.strig_,
-            '_': session.extensions.call_as_statement,
+            b'_': session.extensions.call_as_statement,
         }
 
     ###########################################################################
@@ -402,10 +407,10 @@ class Parser(object):
 
     def _parse_bracket(self, ins):
         """Compute the value of the bracketed expression."""
-        ins.require_read(('(',))
+        ins.require_read((b'(',))
         # we'll get a Syntax error, not a Missing operand, if we close with )
         val = self.parse_expression(ins)
-        ins.require_read((')',))
+        ins.require_read((b')',))
         return val
 
     def _parse_variable(self, ins):
@@ -447,8 +452,8 @@ class Parser(object):
             token = ins.read(2)
             assert len(token) == 2, 'bytecode truncated in line number pointer'
             return struct.unpack('<H', token)[0]
-        elif c == '.':
-            return '.'
+        elif c == b'.':
+            return b'.'
         else:
             if allow_empty:
                 ins.seek(-len(c), 1)
@@ -522,7 +527,7 @@ class Parser(object):
     def _parse_two_args(self, ins):
         """Parse POKE or OUT syntax."""
         yield self.parse_expression(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
 
     ###########################################################################
@@ -537,8 +542,8 @@ class Parser(object):
         elif c not in tk.END_STATEMENT:
             yield None
             yield self.parse_expression(ins)
-            if ins.skip_blank_read_if((',',)):
-                ins.require_read(('R',))
+            if ins.skip_blank_read_if((b',',)):
+                ins.require_read((b'R',))
                 yield True
             else:
                 yield False
@@ -607,9 +612,9 @@ class Parser(object):
     def _parse_noise(self, ins):
         """Parse NOISE syntax (Tandy/PCjr)."""
         yield self.parse_expression(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
         ins.require_end()
 
@@ -623,14 +628,14 @@ class Parser(object):
             yield command
         else:
             yield self.parse_expression(ins)
-            ins.require_read((',',))
+            ins.require_read((b',',))
             dur = self.parse_expression(ins)
             yield dur
             # only look for args 3 and 4 if duration is > 0;
             # otherwise those args are a syntax error (on tandy)
-            if (dur.sign() == 1) and ins.skip_blank_read_if((',',)) and self._syntax in ('pcjr', 'tandy'):
+            if (dur.sign() == 1) and ins.skip_blank_read_if((b',',)) and self._syntax in ('pcjr', 'tandy'):
                 yield self.parse_expression(ins)
-                if ins.skip_blank_read_if((',',)):
+                if ins.skip_blank_read_if((b',',)):
                     yield self.parse_expression(ins)
                 else:
                     yield None
@@ -645,7 +650,7 @@ class Parser(object):
             for _ in range(3):
                 last = self.parse_expression(ins, allow_empty=True)
                 yield last
-                if not ins.skip_blank_read_if((',',)):
+                if not ins.skip_blank_read_if((b',',)):
                     break
             else:
                 raise error.BASICError(error.STX)
@@ -678,7 +683,7 @@ class Parser(object):
     def _parse_bload(self, ins):
         """Parse BLOAD syntax."""
         yield self.parse_expression(ins)
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             yield self.parse_expression(ins)
         else:
             yield None
@@ -687,29 +692,29 @@ class Parser(object):
     def _parse_bsave(self, ins):
         """Parse BSAVE syntax."""
         yield self.parse_expression(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
         ins.require_end()
 
     def _parse_call(self, ins):
         """Parse CALL and CALLS syntax."""
         yield self.parse_name(ins)
-        if ins.skip_blank_read_if(('(',)):
+        if ins.skip_blank_read_if((b'(',)):
             while True:
                 yield self._parse_variable(ins)
-                if not ins.skip_blank_read_if((',',)):
+                if not ins.skip_blank_read_if((b',',)):
                     break
-            ins.require_read((')',))
+            ins.require_read((b')',))
         ins.require_end()
 
     def _parse_wait(self, ins):
         """Parse WAIT syntax."""
         yield self.parse_expression(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             yield self.parse_expression(ins)
         else:
             yield None
@@ -720,7 +725,7 @@ class Parser(object):
         yield ins.read_name()
         while True:
             yield self.parse_expression(ins, allow_empty=True)
-            if not ins.skip_blank_read_if((',',)):
+            if not ins.skip_blank_read_if((b',',)):
                 break
 
     ###########################################################################
@@ -761,7 +766,7 @@ class Parser(object):
     def _parse_auto(self, ins):
         """Parse AUTO syntax."""
         yield self._parse_jumpnum_or_dot(ins, allow_empty=True)
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             inc = self._parse_optional_jumpnum(ins)
             if inc is None:
                 raise error.BASICError(error.IFC)
@@ -774,8 +779,8 @@ class Parser(object):
     def _parse_save(self, ins):
         """Parse SAVE syntax."""
         yield self.parse_expression(ins)
-        if ins.skip_blank_read_if((',',)):
-            yield ins.require_read(('A', 'a', 'P', 'p'))
+        if ins.skip_blank_read_if((b',',)):
+            yield ins.require_read((b'A', b'a', b'P', b'p'))
         else:
             yield None
         ins.require_end()
@@ -783,7 +788,7 @@ class Parser(object):
     def _parse_list(self, ins):
         """Parse LIST syntax."""
         yield self._parse_line_range(ins)
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             yield self.parse_expression(ins)
             # ignore everything after file spec
             ins.skip_to(tk.END_LINE)
@@ -794,8 +799,8 @@ class Parser(object):
     def _parse_load(self, ins):
         """Parse LOAD syntax."""
         yield self.parse_expression(ins)
-        if ins.skip_blank_read_if((',',)):
-            yield ins.require_read(('R', 'r'))
+        if ins.skip_blank_read_if((b',',)):
+            yield ins.require_read((b'R', b'r'))
         else:
             yield None
         ins.require_end()
@@ -805,9 +810,9 @@ class Parser(object):
         new, old, step = None, None, None
         if ins.skip_blank() not in tk.END_STATEMENT:
             new = self._parse_jumpnum_or_dot(ins, allow_empty=True)
-            if ins.skip_blank_read_if((',',)):
+            if ins.skip_blank_read_if((b',',)):
                 old = self._parse_jumpnum_or_dot(ins, allow_empty=True)
-                if ins.skip_blank_read_if((',',)):
+                if ins.skip_blank_read_if((b',',)):
                     step = self._parse_optional_jumpnum(ins)
         ins.require_end()
         if step is None:
@@ -820,15 +825,15 @@ class Parser(object):
         yield ins.skip_blank_read_if((tk.MERGE,)) is not None
         yield self.parse_expression(ins)
         jumpnum, common_all, delete_range = None, False, True
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             # check for an expression that indicates a line in the other program.
             # This is not stored as a jumpnum (to avoid RENUM)
             jumpnum = self.parse_expression(ins, allow_empty=True)
-            if ins.skip_blank_read_if((',',)):
+            if ins.skip_blank_read_if((b',',)):
                 common_all = ins.skip_blank_read_if((tk.W_ALL,), 3)
                 if common_all:
                     # CHAIN "file", , ALL, DELETE
-                    delete_range = ins.skip_blank_read_if((',',))
+                    delete_range = ins.skip_blank_read_if((b',',))
                 # CHAIN "file", , DELETE
         yield jumpnum
         yield common_all
@@ -841,7 +846,7 @@ class Parser(object):
             error.throw_if(not to_line)
             delete_lines = (from_line, to_line)
             # ignore rest if preceded by comma
-            if ins.skip_blank_read_if((',',)):
+            if ins.skip_blank_read_if((b',',)):
                 ins.skip_to(tk.END_STATEMENT)
             yield delete_lines
         else:
@@ -854,7 +859,7 @@ class Parser(object):
     def _parse_open(self, ins):
         """Parse OPEN syntax."""
         yield self.parse_expression(ins)
-        first_syntax = ins.skip_blank_read_if((',',))
+        first_syntax = ins.skip_blank_read_if((b',',))
         yield first_syntax
         if first_syntax:
             args = self._parse_open_first(ins)
@@ -865,11 +870,11 @@ class Parser(object):
 
     def _parse_open_first(self, ins):
         """Parse OPEN first ('old') syntax."""
-        ins.skip_blank_read_if(('#',))
+        ins.skip_blank_read_if((b'#',))
         yield self.parse_expression(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             yield self.parse_expression(ins)
         else:
             yield None
@@ -880,9 +885,9 @@ class Parser(object):
         if ins.skip_blank_read_if((tk.FOR,)):
             # read mode word
             if ins.skip_blank_read_if((tk.INPUT,)):
-                yield 'I'
+                yield b'I'
             else:
-                mode_dict = {tk.W_OUTPUT:'O', tk.W_RANDOM:'R', tk.W_APPEND:'A'}
+                mode_dict = {tk.W_OUTPUT: b'O', tk.W_RANDOM: b'R', tk.W_APPEND: b'A'}
                 word = ins.skip_blank_read_if(mode_dict, 6)
                 if word is not None:
                     yield mode_dict[word]
@@ -902,7 +907,7 @@ class Parser(object):
             yield ins.skip_blank_read_if((tk.W_SHARED), 6)
         # AS file number clause
         ins.require_read((tk.W_AS,))
-        ins.skip_blank_read_if(('#',))
+        ins.skip_blank_read_if((b'#',))
         yield self.parse_expression(ins)
         # LEN clause
         if ins.skip_blank_read_if((tk.LEN,), 2):
@@ -915,9 +920,9 @@ class Parser(object):
         """Parse access mode for OPEN."""
         d = ins.skip_blank_read_if((tk.READ, tk.WRITE))
         if d == tk.WRITE:
-            return 'W'
+            return b'W'
         elif d == tk.READ:
-            return 'RW' if ins.skip_blank_read_if((tk.WRITE,)) else 'R'
+            return b'RW' if ins.skip_blank_read_if((tk.WRITE,)) else b'R'
         raise error.BASICError(error.STX)
 
     def _parse_close(self, ins):
@@ -925,28 +930,28 @@ class Parser(object):
         if ins.skip_blank() not in tk.END_STATEMENT:
             while True:
                 # if an error occurs, the files parsed before are closed anyway
-                ins.skip_blank_read_if(('#',))
+                ins.skip_blank_read_if((b'#',))
                 yield self.parse_expression(ins)
-                if not ins.skip_blank_read_if((',',)):
+                if not ins.skip_blank_read_if((b',',)):
                     break
 
     def _parse_field(self, ins):
         """Parse FIELD syntax."""
-        ins.skip_blank_read_if(('#',))
+        ins.skip_blank_read_if((b'#',))
         yield self.parse_expression(ins)
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             while True:
                 yield self.parse_expression(ins)
                 ins.require_read((tk.W_AS,), err=error.IFC)
                 yield self._parse_variable(ins)
-                if not ins.skip_blank_read_if((',',)):
+                if not ins.skip_blank_read_if((b',',)):
                     break
 
     def _parse_lock_unlock(self, ins):
         """Parse LOCK or UNLOCK syntax."""
-        ins.skip_blank_read_if(('#',))
+        ins.skip_blank_read_if((b'#',))
         yield self.parse_expression(ins)
-        if not ins.skip_blank_read_if((',',)):
+        if not ins.skip_blank_read_if((b',',)):
             ins.require_end()
             yield None
             yield None
@@ -962,16 +967,16 @@ class Parser(object):
 
     def _parse_ioctl(self, ins):
         """Parse IOCTL syntax."""
-        ins.skip_blank_read_if(('#',))
+        ins.skip_blank_read_if((b'#',))
         yield self.parse_expression(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
 
     def _parse_put_get_file(self, ins):
         """Parse PUT and GET syntax."""
-        ins.skip_blank_read_if(('#',))
+        ins.skip_blank_read_if((b'#',))
         yield self.parse_expression(ins)
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             yield self.parse_expression(ins)
         else:
             yield None
@@ -981,18 +986,18 @@ class Parser(object):
 
     def _parse_pair(self, ins):
         """Parse coordinate pair."""
-        ins.require_read(('(',))
+        ins.require_read((b'(',))
         yield self.parse_expression(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
-        ins.require_read((')',))
+        ins.require_read((b')',))
 
     def _parse_pset_preset(self, ins):
         """Parse PSET and PRESET syntax."""
         yield ins.skip_blank_read_if((tk.STEP,))
         for c in self._parse_pair(ins):
             yield c
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             yield self.parse_expression(ins)
         else:
             yield None
@@ -1002,7 +1007,7 @@ class Parser(object):
         """Parse WINDOW syntax."""
         screen = ins.skip_blank_read_if((tk.SCREEN,))
         yield screen
-        if ins.skip_blank() == '(':
+        if ins.skip_blank() == b'(':
             for c in self._parse_pair(ins):
                 yield c
             ins.require_read((tk.O_MINUS,))
@@ -1016,11 +1021,11 @@ class Parser(object):
         yield ins.skip_blank_read_if((tk.STEP,))
         for c in self._parse_pair(ins):
             yield c
-        ins.require_read((',',))
+        ins.require_read((b',',))
         last = self.parse_expression(ins)
         yield last
         for count_args in range(4):
-            if ins.skip_blank_read_if((',',)):
+            if ins.skip_blank_read_if((b',',)):
                 last = self.parse_expression(ins, allow_empty=True)
                 yield last
             else:
@@ -1037,7 +1042,7 @@ class Parser(object):
         for last in self._parse_pair(ins):
             yield last
         for count_args in range(3):
-            if ins.skip_blank_read_if((',',)):
+            if ins.skip_blank_read_if((b',',)):
                 last = self.parse_expression(ins, allow_empty=True)
                 yield last
             else:
@@ -1050,20 +1055,20 @@ class Parser(object):
     def _parse_view(self, ins):
         """Parse VIEW syntax."""
         yield ins.skip_blank_read_if((tk.SCREEN,))
-        if ins.skip_blank() == '(':
+        if ins.skip_blank() == b'(':
             for c in self._parse_pair(ins):
                 yield c
             ins.require_read((tk.O_MINUS,))
             for c in self._parse_pair(ins):
                 yield c
-            if ins.skip_blank_read_if((',',)):
+            if ins.skip_blank_read_if((b',',)):
                 yield self.parse_expression(ins)
-                ins.require_read((',',))
+                ins.require_read((b',',))
                 yield self.parse_expression(ins)
 
     def _parse_line(self, ins):
         """Parse LINE syntax."""
-        if ins.skip_blank() in ('(', tk.STEP):
+        if ins.skip_blank() in (b'(', tk.STEP):
             yield ins.skip_blank_read_if((tk.STEP,))
             for c in self._parse_pair(ins):
                 yield c
@@ -1074,16 +1079,16 @@ class Parser(object):
         yield ins.skip_blank_read_if((tk.STEP,))
         for c in self._parse_pair(ins):
             yield c
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             expr = self.parse_expression(ins, allow_empty=True)
             yield expr
-            if ins.skip_blank_read_if((',',)):
-                if ins.skip_blank_read_if(('B',)):
-                    shape = 'BF' if ins.skip_blank_read_if(('F',)) else 'B'
+            if ins.skip_blank_read_if((b',',)):
+                if ins.skip_blank_read_if((b'B',)):
+                    shape = b'BF' if ins.skip_blank_read_if((b'F',)) else b'B'
                 else:
                     shape = None
                 yield shape
-                if ins.skip_blank_read_if((',',)):
+                if ins.skip_blank_read_if((b',',)):
                     yield self.parse_expression(ins)
                 else:
                     # mustn't end on a comma
@@ -1110,7 +1115,7 @@ class Parser(object):
         yield ins.skip_blank_read_if((tk.STEP,))
         for c in self._parse_pair(ins):
             yield c
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_name(ins)
         ins.require_end()
 
@@ -1119,9 +1124,9 @@ class Parser(object):
         # don't accept STEP
         for c in self._parse_pair(ins):
             yield c
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_name(ins)
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             yield ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
         else:
             yield None
@@ -1134,17 +1139,17 @@ class Parser(object):
         """Parse CLEAR syntax."""
         # integer expression allowed but ignored
         yield self.parse_expression(ins, allow_empty=True)
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             exp1 = self.parse_expression(ins, allow_empty=True)
             yield exp1
-            if not ins.skip_blank_read_if((',',)):
+            if not ins.skip_blank_read_if((b',',)):
                 if not exp1:
                     raise error.BASICError(error.STX)
             else:
                 # set aside stack space for GW-BASIC. The default is the previous stack space size.
                 exp2 = self.parse_expression(ins, allow_empty=True)
                 yield exp2
-                if self._syntax in ('pcjr', 'tandy') and ins.skip_blank_read_if((',',)):
+                if self._syntax in ('pcjr', 'tandy') and ins.skip_blank_read_if((b',',)):
                     # Tandy/PCjr: select video memory size
                     yield self.parse_expression(ins)
                 elif not exp2:
@@ -1160,25 +1165,25 @@ class Parser(object):
         """Generator: lazily parse variable list."""
         while True:
             yield self._parse_variable(ins)
-            if not ins.skip_blank_read_if((',',)):
+            if not ins.skip_blank_read_if((b',',)):
                 break
 
     def _parse_deftype(self, ins):
         """Parse DEFSTR/DEFINT/DEFSNG/DEFDBL syntax."""
         while True:
-            start = ins.require_read(string.ascii_letters)
+            start = ins.require_read(LETTERS)
             stop = None
             if ins.skip_blank_read_if((tk.O_MINUS,)):
-                stop = ins.require_read(string.ascii_letters)
+                stop = ins.require_read(LETTERS)
             yield start, stop
-            if not ins.skip_blank_read_if((',',)):
+            if not ins.skip_blank_read_if((b',',)):
                 break
 
     def _parse_erase(self, ins):
         """Parse ERASE syntax."""
         while True:
             yield self.parse_name(ins)
-            if not ins.skip_blank_read_if((',',)):
+            if not ins.skip_blank_read_if((b',',)):
                 break
 
     def _parse_let(self, ins):
@@ -1192,16 +1197,16 @@ class Parser(object):
     def _parse_mid(self, ins):
         """Parse MID$ syntax."""
         # do not use require_read as we don't allow whitespace here
-        if ins.read(1) != '(':
+        if ins.read(1) != b'(':
             raise error.BASICError(error.STX)
         yield self._parse_variable(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             yield self.parse_expression(ins)
         else:
             yield None
-        ins.require_read((')',))
+        ins.require_read((b')',))
         ins.require_read((tk.O_EQ,))
         # we're not using a temp string here
         # as it would delete the new string generated by midset if applied to a code literal
@@ -1212,25 +1217,25 @@ class Parser(object):
         """Parse OPTION BASE syntax."""
         ins.require_read((tk.W_BASE,))
         # MUST be followed by ASCII '1' or '0', num constants or expressions are an error!
-        yield ins.require_read(('0', '1'))
+        yield ins.require_read((b'0', b'1'))
 
     def _parse_prompt(self, ins):
         """Helper function for INPUT: parse prompt definition."""
         # ; to avoid echoing newline
-        newline = not ins.skip_blank_read_if((';',))
+        newline = not ins.skip_blank_read_if((b';',))
         # parse prompt
-        prompt, following = '', ';'
-        if ins.skip_blank() == '"':
+        prompt, following = b'', b';'
+        if ins.skip_blank() == b'"':
             # only literal allowed, not a string expression
-            prompt = ins.read_string().strip('"')
-            following = ins.require_read((';', ','))
+            prompt = ins.read_string().strip(b'"')
+            following = ins.require_read((b';', b','))
         return newline, prompt, following
 
     def _parse_input(self, ins):
         """Parse INPUT syntax."""
-        if ins.skip_blank_read_if(('#',)):
+        if ins.skip_blank_read_if((b'#',)):
             yield self.parse_expression(ins)
-            ins.require_read((',',))
+            ins.require_read((b',',))
         else:
             yield None
             yield self._parse_prompt(ins)
@@ -1240,9 +1245,9 @@ class Parser(object):
     def _parse_line_input(self, ins):
         """Parse LINE INPUT syntax."""
         ins.require_read((tk.INPUT,))
-        if ins.skip_blank_read_if(('#',)):
+        if ins.skip_blank_read_if((b'#',)):
             yield self.parse_expression(ins)
-            ins.require_read((',',))
+            ins.require_read((b',',))
         else:
             yield None
             yield self._parse_prompt(ins)
@@ -1262,7 +1267,7 @@ class Parser(object):
     def _parse_swap(self, ins):
         """Parse SWAP syntax."""
         yield self._parse_variable(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self._parse_variable(ins)
 
     ###########################################################################
@@ -1277,7 +1282,7 @@ class Parser(object):
         if self._syntax != 'pcjr':
             yield self.parse_expression(ins, allow_empty=True)
             # optional comma
-            if not ins.skip_blank_read_if((',',)):
+            if not ins.skip_blank_read_if((b',',)):
                 ins.require_end(err=error.IFC)
         else:
             yield None
@@ -1286,12 +1291,12 @@ class Parser(object):
         """Parse COLOR syntax."""
         last = self.parse_expression(ins, allow_empty=True)
         yield last
-        if ins.skip_blank_read_if((',',)):
+        if ins.skip_blank_read_if((b',',)):
             # unlike LOCATE, ending in any number of commas is a Missing Operand
             while True:
                 last = self.parse_expression(ins, allow_empty=True)
                 yield last
-                if not ins.skip_blank_read_if((',',)):
+                if not ins.skip_blank_read_if((b',',)):
                     break
             if last is None:
                 raise error.BASICError(error.MISSING_OPERAND)
@@ -1306,7 +1311,7 @@ class Parser(object):
             yield None
             ins.require_end()
         else:
-            ins.require_read((',',))
+            ins.require_read((b',',))
             colour = self.parse_expression(ins, allow_empty=True)
             yield colour
             error.throw_if(attrib is None or colour is None, error.STX)
@@ -1325,7 +1330,7 @@ class Parser(object):
         for i in range(5):
             yield self.parse_expression(ins, allow_empty=True)
             # note that LOCATE can end on a 5th comma but no stuff allowed after it
-            if not ins.skip_blank_read_if((',',)):
+            if not ins.skip_blank_read_if((b',',)):
                 break
         ins.require_end()
 
@@ -1343,46 +1348,46 @@ class Parser(object):
 
     def _parse_write(self, ins):
         """Parse WRITE syntax."""
-        if ins.skip_blank_read_if(('#',)):
+        if ins.skip_blank_read_if((b'#',)):
             yield self.parse_expression(ins)
-            ins.require_read((',',))
+            ins.require_read((b',',))
         else:
             yield None
         if ins.skip_blank() not in tk.END_STATEMENT:
             while True:
                 yield self.parse_expression(ins)
-                if not ins.skip_blank_read_if((',', ';')):
+                if not ins.skip_blank_read_if((b',', b';')):
                     break
             ins.require_end()
 
     def _parse_width(self, ins):
         """Parse WIDTH syntax."""
-        d = ins.skip_blank_read_if(('#', tk.LPRINT))
+        d = ins.skip_blank_read_if((b'#', tk.LPRINT))
         if d:
-            if d == '#':
+            if d == b'#':
                 yield self.parse_expression(ins)
-                ins.require_read((',',))
+                ins.require_read((b',',))
             else:
                 yield tk.LPRINT
             yield self.parse_expression(ins)
         else:
             yield None
-            if ins.peek() in set(string.digits) | set(tk.NUMBER):
+            if ins.peek() in set(DIGITS) | set(tk.NUMBER):
                 expr = self.expression_parser.read_number_literal(ins)
             else:
                 expr = self.parse_expression(ins)
             yield expr
             if isinstance(expr, values.String):
-                ins.require_read((',',))
+                ins.require_read((b',',))
                 yield self.parse_expression(ins)
-            elif not ins.skip_blank_read_if((',',)):
+            elif not ins.skip_blank_read_if((b',',)):
                 yield None
                 ins.require_end(error.IFC)
             else:
                 # parse dummy number rows setting
                 yield self.parse_expression(ins, allow_empty=True)
                 # trailing comma is accepted
-                ins.skip_blank_read_if((',',))
+                ins.skip_blank_read_if((b',',))
         ins.require_end()
 
     def _parse_screen(self, ins):
@@ -1394,7 +1399,7 @@ class Parser(object):
             last = self.parse_expression(ins, allow_empty=True)
             yield last
             argcount += 1
-            if not ins.skip_blank_read_if((',',)):
+            if not ins.skip_blank_read_if((b',',)):
                 break
         if last is None:
             if self._syntax == 'tandy' and argcount == 1:
@@ -1407,16 +1412,16 @@ class Parser(object):
     def _parse_pcopy(self, ins):
         """Parse PCOPY syntax."""
         yield self.parse_expression(ins)
-        ins.require_read((',',))
+        ins.require_read((b',',))
         yield self.parse_expression(ins)
         ins.require_end()
 
     def _parse_print(self, ins, parse_file):
         """Parse PRINT or LPRINT syntax."""
         if parse_file:
-            if ins.skip_blank_read_if(('#',)):
+            if ins.skip_blank_read_if((b'#',)):
                 yield self.parse_expression(ins)
-                ins.require_read((',',))
+                ins.require_read((b',',))
             else:
                 yield None
         while True:
@@ -1427,7 +1432,7 @@ class Parser(object):
             elif d == tk.USING:
                 yield (tk.USING, None)
                 yield self.parse_expression(ins)
-                ins.require_read((';',))
+                ins.require_read((b';',))
                 has_args = False
                 while True:
                     expr = self.parse_expression(ins, allow_empty=True)
@@ -1439,14 +1444,14 @@ class Parser(object):
                             raise error.BASICError(error.MISSING_OPERAND)
                         break
                     has_args = True
-                    if not ins.skip_blank_read_if((';', ',')):
+                    if not ins.skip_blank_read_if((b';', b',')):
                         break
                 break
-            elif d in (',', ';'):
+            elif d in (b',', b';'):
                 yield (d, None)
             elif d in (tk.SPC, tk.TAB):
                 num = self.parse_expression(ins)
-                ins.require_read((')',))
+                ins.require_read((b')',))
                 yield (d, num)
             else:
                 ins.seek(-len(d), 1)
@@ -1465,7 +1470,7 @@ class Parser(object):
             if num is None:
                 break
             yield num
-            if not ins.skip_blank_read_if((',',)):
+            if not ins.skip_blank_read_if((b',',)):
                 break
         ins.require_end()
 
@@ -1473,7 +1478,8 @@ class Parser(object):
         """IF: enter branching statement."""
         # avoid overflow: don't use bools.
         condition = self.parse_expression(ins)
-        ins.skip_blank_read_if((b',',)) # optional comma
+        # optional comma
+        ins.skip_blank_read_if((b',',))
         ins.require_read((tk.THEN, tk.GOTO))
         # THEN and GOTO tokens both have length 1
         start_pos = ins.tell() - 1
@@ -1533,10 +1539,10 @@ class Parser(object):
         # note that next_ will not run the full generator if it finds a loop to iterate
         while True:
             # optional var name, errors have been checked during _find_next scan
-            if ins.skip_blank() not in tk.END_STATEMENT + (',',):
+            if ins.skip_blank() not in tk.END_STATEMENT + (b',',):
                 yield self.parse_name(ins)
             else:
                 yield None
             # done if we're not jumping into a comma'ed NEXT
-            if not ins.skip_blank_read_if((',')):
+            if not ins.skip_blank_read_if((b',')):
                 break

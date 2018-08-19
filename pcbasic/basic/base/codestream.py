@@ -14,11 +14,18 @@ from . import error
 from . import tokens as tk
 
 
+# bytes constants
+DIGITS = string.digits
+HEXDIGITS = string.hexdigits
+OCTDIGITS = string.octdigits
+LETTERS = string.ascii_letters
+
+
 class CodeStream(io.BytesIO):
     """Stream of various kinds of code."""
 
     # whitespace
-    blanks = ' \t\n'
+    blanks = b' \t\n'
     # line end characters for ths stream type
     end_line = None
 
@@ -37,7 +44,7 @@ class CodeStream(io.BytesIO):
         while True:
             d = self.read(1)
             # skip_range must not include ''
-            if d == '' or d not in skip_range:
+            if d == b'' or d not in skip_range:
                 return d + self.read(n-1)
 
     def skip(self, skip_range, n=1):
@@ -62,12 +69,12 @@ class CodeStream(io.BytesIO):
             self.seek(-1, 1)
             d = self.peek()
             # skip_range must not include ''
-            if d == '' or d not in self.blanks:
+            if d == b'' or d not in self.blanks:
                 return d
 
     def read_if(self, d, in_range):
         """Read if next char is not empty and in range."""
-        if d != '' and d in in_range:
+        if d != b'' and d in in_range:
             self.read(len(d))
             return d
         return None
@@ -78,10 +85,10 @@ class CodeStream(io.BytesIO):
 
     def read_to(self, findrange):
         """Read until a character from a given range is found."""
-        out = ''
+        out = b''
         while True:
             d = self.read(1)
-            if d == '':
+            if d == b'':
                 break
             if d in findrange:
                 break
@@ -92,11 +99,11 @@ class CodeStream(io.BytesIO):
     def read_name(self):
         """Read a variable name."""
         d = self.skip_blank_read()
-        if not d or d not in string.ascii_letters:
+        if not d or d not in LETTERS:
             # variable name must start with a letter
             self.seek(-len(d), 1)
-            return ''
-        name = ''
+            return b''
+        name = b''
         while d in tk.NAME_CHARS:
             name += d
             d = self.read(1)
@@ -113,17 +120,17 @@ class CodeStream(io.BytesIO):
         """Read numeric literal."""
         c = self.peek()
         if not c:
-            return ''
-        elif c == '&':
+            return b''
+        elif c == b'&':
             # handle hex or oct constants
             self.read(1)
-            if self.peek().upper() == 'H':
+            if self.peek().upper() == b'H':
                 # hex literal
-                return '&H' + self._read_hex()
+                return b'&H' + self._read_hex()
             else:
                 # octal literal
-                return '&O' + self._read_oct()
-        elif c in string.digits + '.+-':
+                return b'&O' + self._read_oct()
+        elif c in DIGITS + b'.+-':
             # decimal literal
             return self._read_dec()
 
@@ -142,36 +149,37 @@ class CodeStream(io.BytesIO):
         """Read decimal literal."""
         have_exp = False
         have_point = False
-        word = ''
+        word = b''
         while True:
             c = self.read(1).upper()
             if not c:
                 break
-            elif c == '.' and not have_point and not have_exp:
+            elif c == b'.' and not have_point and not have_exp:
                 have_point = True
                 word += c
-            elif c in 'ED' and not have_exp:
+            elif c in b'ED' and not have_exp:
                 # there's a special exception for number followed by EL or EQ
                 # presumably meant to protect ELSE and maybe EQV ?
-                if c == 'E' and self.peek().upper() in ('L', 'Q'):
+                if c == b'E' and self.peek().upper() in (b'L', b'Q'):
                     self.seek(-1, 1)
                     break
                 else:
                     have_exp = True
                     word += c
-            elif c in '-+' and (not word or word[-1] in 'ED'):
+            elif c in b'-+' and (not word or word[-1] in b'ED'):
                 # must be first character or in exponent
                 word += c
-            elif c in string.digits + self.blanks + '\x1c\x1d\x1f':
-                # '\x1c\x1d\x1f' are ASCII separators - these cause string representations to evaluate to zero
+            elif c in DIGITS + self.blanks + b'\x1c\x1d\x1f':
+                # '\x1c\x1d\x1f' are ASCII separators
+                # - these cause string representations to evaluate to zero
                 # we'll remove blanks later but need to keep it for now
                 # so we can reposition the stream on removing trailing whitespace
                 word += c
-            elif c in '!#' and not have_exp:
+            elif c in b'!#' and not have_exp:
                 word += c
                 # must be last character
                 break
-            elif c == '%':
+            elif c == b'%':
                 # swallow a %, but break parsing
                 break
             else:
@@ -179,7 +187,7 @@ class CodeStream(io.BytesIO):
                 break
         # don't claim trailing whitespace
         trimword = word.rstrip(self.blanks)
-        self.seek(-len(word)+len(trimword), 1)
+        self.seek(-len(word) + len(trimword), 1)
         # remove all internal whitespace
         word = trimword.strip(self.blanks)
         return word
@@ -188,11 +196,11 @@ class CodeStream(io.BytesIO):
         """Read hexadecimal literal."""
         # pass the H in &H
         self.read(1)
-        word = ''
+        word = b''
         while True:
             c = self.peek()
             # hex literals must not be interrupted by whitespace
-            if c and c in string.hexdigits:
+            if c and c in HEXDIGITS:
                 word += self.read(1)
             else:
                 break
@@ -201,13 +209,13 @@ class CodeStream(io.BytesIO):
     def _read_oct(self):
         """Read octal literal."""
         # O is optional, could also be &777 instead of &O777
-        if self.peek().upper() == 'O':
+        if self.peek().upper() == b'O':
             self.read(1)
-        word = ''
+        word = b''
         while True:
             c = self.peek()
             # oct literals may be interrupted by whitespace
-            if c and c in string.octdigits + self.blanks:
+            if c and c in OCTDIGITS + self.blanks:
                 word += self.read(1)
             else:
                 break
@@ -216,15 +224,16 @@ class CodeStream(io.BytesIO):
     def read_string(self):
         """Read a string literal."""
         word = self.read(1)
-        if not word or word != '"':
+        if not word or word != b'"':
             self.seek(-len(word), 1)
-            return ''
-        # while tokenised numbers inside a string literal will be printed as tokenised numbers, they don't actually execute as such:
-        # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a
-        # line number afterwards, etc. We follow this.
-        word += self.read_to(('"',) + self.end_line)
+            return b''
+        # while tokenised numbers inside a string literal will be printed as tokenised numbers,
+        # they don't actually execute as such:
+        # a \00 character, even if inside a tokenised number, will break a string literal
+        # and make the parser expect a line number afterwards, etc. We follow this.
+        word += self.read_to((b'"',) + self.end_line)
         delim = self.read(1)
-        if delim == '"':
+        if delim == b'"':
             word += delim
         else:
             self.seek(-len(delim), 1)
@@ -254,13 +263,13 @@ class TokenisedStream(CodeStream):
         nchars = len(findrange[0])
         while True:
             c = self.read(1)
-            if c == '':
+            if c == b'':
                 break
-            elif c == '"':
+            elif c == b'"':
                 literal = not literal
             elif c == tk.REM:
                 rem = True
-            elif c == '\0':
+            elif c == b'\0':
                 literal = False
                 rem = False
             if literal or rem:
@@ -271,11 +280,11 @@ class TokenisedStream(CodeStream):
                     break
             break_on_first_char = True
             # not elif! if not break_on_first_char, c needs to be properly processed.
-            if c == '\0':
+            if c == b'\0':
                 # offset and line number follow
                 literal = False
                 off = self.read(2)
-                if len(off) < 2 or off == '\0\0':
+                if len(off) < 2 or off == b'\0\0':
                     break
                 self.read(2)
             elif c in tk.PLUS_BYTES:
@@ -289,7 +298,7 @@ class TokenisedStream(CodeStream):
     def read_keyword_token(self):
         """Read full keyword token."""
         token = self.read(1)
-        if token in ('\xff', '\xfe', '\xfd'):
+        if token in (b'\xff', b'\xfe', b'\xfd'):
             token += self.read(1)
         return token
 
@@ -298,7 +307,7 @@ class TokenisedStream(CodeStream):
         lead = self.read(1)
         if lead not in tk.NUMBER:
             self.seek(-len(lead), 1)
-            return ''
+            return b''
         trail = self.read(tk.PLUS_BYTES.get(lead, 0))
         return lead + trail
 
@@ -319,10 +328,10 @@ class TokenisedStream(CodeStream):
         while True:
             separator = self.skip_to_read(tk.END_STATEMENT)
             # skip line number, if there
-            if separator == '\0':
+            if separator == b'\0':
                 # break on end of stream
                 trail = self.read(4)
-                if len(trail) < 4 or trail[:2] == '\0\0':
+                if len(trail) < 4 or trail[:2] == b'\0\0':
                     return None
             # get first keyword in statement
             self.skip_blank()
@@ -339,14 +348,14 @@ class TokenisedStream(CodeStream):
         while True:
             c = self.skip_to_read(tk.END_STATEMENT + (tk.THEN, tk.ELSE))
             # skip line number, if there
-            if c == '\0':
+            if c == b'\0':
                 # break on end of stream
                 trail = self.read(4)
-                if len(trail) < 4 or trail[:2] == '\0\0':
+                if len(trail) < 4 or trail[:2] == b'\0\0':
                     break
             # get first keyword in statement
             d = self.skip_blank()
-            if d == '':
+            if d == b'':
                 break
             elif d == for_char:
                 self.read(1)
@@ -360,8 +369,8 @@ class TokenisedStream(CodeStream):
                     # NEXT I, J
                     if allow_comma:
                         while (self.skip_blank() not in tk.END_STATEMENT):
-                            self.skip_to(tk.END_STATEMENT + (',',))
-                            if self.peek() == ',':
+                            self.skip_to(tk.END_STATEMENT + (b',',))
+                            if self.peek() == b',':
                                 if stack > 0:
                                     self.read(1)
                                     stack -= 1

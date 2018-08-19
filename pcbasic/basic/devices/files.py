@@ -29,6 +29,9 @@ DOS_DEVICE_FILES = (b'AUX', b'CON', b'NUL', b'PRN')
 # default mount dictionary
 DEFAULT_MOUNTS = {b'Z': (os.getcwdu(), u'')}
 
+# allowable drive letters in GW-BASIC are letters or @
+DRIVE_LETTERS = b'@' + string.ascii_uppercase
+
 
 ############################################################################
 # General file manipulation
@@ -555,9 +558,6 @@ class Files(object):
     ###########################################################################
     # disk devices
 
-    # allowable drive letters in GW-BASIC are letters or @
-    drive_letters = b'@' + string.ascii_uppercase
-
     def _init_disk_devices(
             self, mount_dict, current_device,
             codepage, utf8, universal):
@@ -566,7 +566,7 @@ class Files(object):
         if mount_dict is None:
             mount_dict = DEFAULT_MOUNTS
         # disk devices
-        for letter in self.drive_letters:
+        for letter in DRIVE_LETTERS:
             if not mount_dict:
                 mount_dict = {}
             if letter in mount_dict:
@@ -595,14 +595,14 @@ class Files(object):
             except KeyError:
                 raise error.BASICError(error.DEVICE_UNAVAILABLE)
         # must be a disk device
-        if dev not in self.drive_letters:
+        if dev not in DRIVE_LETTERS:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
         return self._devices[dev + b':'], spec
 
     def get_native_cwd(self):
         """Get current working directory on current drive."""
         # must be a disk device
-        if self._current_device not in self.drive_letters:
+        if self._current_device not in DRIVE_LETTERS:
             raise error.BASICError(error.IFC)
         return self._devices[self._current_device + b':'].get_native_cwd()
 

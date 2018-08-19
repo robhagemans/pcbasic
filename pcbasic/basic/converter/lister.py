@@ -16,6 +16,9 @@ from .. import values
 # mark bytes conversion explicitly
 int2byte = chr
 
+DIGITS = string.digits
+ALPHANUMERIC = string.ascii_letters + string.digits
+
 
 class Lister(object):
     """BASIC detokeniser."""
@@ -113,7 +116,7 @@ class Lister(object):
         # when we're here, s is an actual keyword token.
         # letter or number followed by token is separated by a space
         if (
-                output and int2byte(output[-1]) in bytes(string.digits + string.ascii_letters)
+                output and int2byte(output[-1]) in ALPHANUMERIC
                 and s not in tk.OPERATOR
             ):
             output += b' '
@@ -148,7 +151,7 @@ class Lister(object):
         elif len(output) > 4 and bytes(output[-4:]) == tk.KW_ELSE:
             if (
                     len(output) > 5 and int2byte(output[-5]) == b':' and
-                    int2byte(output[-6]) in bytes(string.digits)
+                    int2byte(output[-6]) in DIGITS
                 ):
                 output[:] = output[:-5] + b' ' + tk.KW_ELSE
             else:

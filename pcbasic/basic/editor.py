@@ -41,11 +41,11 @@ ALT_KEY_REPLACE = {
     ea.ALT_x: tk.KW_XOR,
 }
 
-ALPHANUMERIC = bytes(string.digits + string.ascii_letters)
-
 
 # mark bytes conversion explicitly
 int2byte = chr
+
+ALPHANUMERIC = string.digits + string.ascii_letters
 
 
 class FunctionKeyMacros(object):

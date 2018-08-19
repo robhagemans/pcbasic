@@ -15,6 +15,10 @@ from .base import codestream
 from . import values
 
 
+# bytes constants
+DIGITS = string.digits
+
+
 class Interpreter(object):
     """BASIC interpreter."""
 
@@ -136,7 +140,7 @@ class Interpreter(object):
         """Handle a Break event."""
         # print ^C at current position
         if not self.input_mode and not e.stop:
-            self._screen.write('^C')
+            self._screen.write(b'^C')
         # if we're in a program, save pointer
         pos = -1
         if self.run_mode:
@@ -258,7 +262,7 @@ class Interpreter(object):
         # keep the sound engine on to avoid delays in run mode
         self._sound.persist(new_runmode)
         # suppress cassette messages in run mode
-        self._files.get_device('CAS1:').quiet(new_runmode)
+        self._files.get_device(b'CAS1:').quiet(new_runmode)
         codestream = self.get_codestream()
         if pos is not None:
             # jump to position, if given
@@ -306,7 +310,8 @@ class Interpreter(object):
             raise error.BASICError(error.RETURN_WITHOUT_GOSUB)
         # returning from ON (event) GOSUB, re-enable event
         if handler:
-            # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
+            # if stopped explicitly using STOP, we wouldn't have got here;
+            # if STOP is run inside the trap, no effect. OFF in trap: event off.
             handler.stopped = False
         if jumpnum is None:
             # go back to position of GOSUB
@@ -392,11 +397,11 @@ class Interpreter(object):
         """Helper function for FOR: find matching NEXT."""
         endforpos = ins.tell()
         ins.skip_block(tk.FOR, tk.NEXT, allow_comma=True)
-        if ins.skip_blank() not in (tk.NEXT, ','):
+        if ins.skip_blank() not in (tk.NEXT, b','):
             # FOR without NEXT marked with FOR line number
             ins.seek(endforpos)
             raise error.BASICError(error.FOR_WITHOUT_NEXT)
-        comma = (ins.read(1) == ',')
+        comma = (ins.read(1) == b',')
         # check var name for NEXT
         # no-var only allowed in standalone NEXT
         if ins.skip_blank() not in tk.END_STATEMENT:
@@ -525,24 +530,24 @@ class Interpreter(object):
             if self._program_code.peek() in tk.END_STATEMENT:
                 # initialise - find first DATA
                 self._program_code.skip_to_token(tk.DATA,)
-            if self._program_code.read(1) not in (tk.DATA, ','):
+            if self._program_code.read(1) not in (tk.DATA, b','):
                 self._program_code.seek(current)
                 raise error.BASICError(error.OUT_OF_DATA)
             self._program_code.skip_blank()
             if name[-1] == values.STR:
                 # for unquoted strings, payload starts at the first non-empty character
                 address = self._program_code.tell_address()
-                word = self._program_code.read_to((',', '"',) + tk.END_STATEMENT)
-                if self._program_code.peek() == '"':
-                    if word == '':
+                word = self._program_code.read_to((b',', b'"',) + tk.END_STATEMENT)
+                if self._program_code.peek() == b'"':
+                    if word == b'':
                         # nothing before the quotes, so this is a quoted string literal
                         # string payload starts after quote
                         address = self._program_code.tell_address() + 1
-                        word = self._program_code.read_string().strip('"')
+                        word = self._program_code.read_string().strip(b'"')
                     else:
                         # complete unquoted string literal
                         word += self._program_code.read_string()
-                    if (self._program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
+                    if (self._program_code.skip_blank() not in (tk.END_STATEMENT + (b',',))):
                         raise error.BASICError(error.STX)
                 else:
                     word = word.strip(self._program_code.blanks)
@@ -550,10 +555,10 @@ class Interpreter(object):
             else:
                 word = self._program_code.read_number()
                 if word is None:
-                    word = ''
+                    word = b''
                 value = self._values.from_repr(word, allow_nonnum=False)
                 # anything after the number is a syntax error, but assignment has taken place)
-                if (self._program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
+                if (self._program_code.skip_blank() not in (tk.END_STATEMENT + (b',',))):
                     data_error = True
             # restore to current program location
             # to ensure any other errors in set_variable get the correct line number
@@ -587,24 +592,31 @@ class Interpreter(object):
             return
         while True:
             name = self.parser.parse_name(ins)
-            bracket = ins.skip_blank_read_if(('(','['))
+            bracket = ins.skip_blank_read_if((b'(', b'['))
             if bracket:
-                # a literal is allowed but ignored; for sqare brackets, it's a syntax error if omitted
-                if (bracket == '[') or ins.peek() in set(string.digits) | set(tk.NUMBER):
+                # a literal is allowed but ignored;
+                # for sqare brackets, it's a syntax error if omitted
+                if (bracket == b'[') or ins.peek() in set(DIGITS) | set(tk.NUMBER):
                     x = self.parser.expression_parser.read_number_literal(ins)
-                ins.require_read((')',']'))
+                ins.require_read((b')', b']'))
             # entries with square brackets are completely ignored!
-            if bracket != '[':
+            if bracket != b'[':
                 yield name, bracket
-            if not ins.skip_blank_read_if((',',)):
+            if not ins.skip_blank_read_if((b',',)):
                 break
         ins.require_end()
 
     def _add_common_vars(self, common_scalars, common_arrays):
         """COMMON: define variables to be preserved on CHAIN."""
         common_vars = list(self._parse_common_args(self._program_code))
-        common_scalars.update(self._memory.complete_name(name) for name, brackets in common_vars if not brackets)
-        common_arrays.update(self._memory.complete_name(name) for name, brackets in common_vars if brackets)
+        common_scalars.update(
+            self._memory.complete_name(name)
+            for name, brackets in common_vars if not brackets
+        )
+        common_arrays.update(
+            self._memory.complete_name(name)
+            for name, brackets in common_vars if brackets
+        )
 
     ###########################################################################
     # callbacks
@@ -631,12 +643,14 @@ class Interpreter(object):
         # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
         # and there's a STOP in the subroutine.
         # CONT then continues and the rest of the original line is executed, printing x
-        # However, CONT:PRINT triggers a bug - a syntax error in a nonexistant line number is reported.
+        # However, CONT:PRINT triggers a bug
+        #  - a syntax error in a nonexistant line number is reported.
         # CONT:PRINT "y" results in neither x nor y being printed.
         # if a command is executed before CONT, x is not printed.
         # It would appear that GW-BASIC only partially overwrites the line buffer and
         # then jumps back to the original return location!
-        # in this implementation, the CONT command will fully overwrite the line buffer so x is not printed.
+        # in this implementation, the CONT command will fully overwrite the line buffer
+        # so x is not printed.
 
     def tron_(self, args):
         """TRON: trace on."""
