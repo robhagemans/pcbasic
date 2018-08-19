@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import struct
-import string
 import ntpath
 from contextlib import contextmanager
 

@@ -9,21 +9,16 @@ This file is released under the GNU GPL version 3 or later.
 from collections import deque
 from functools import partial
 import logging
-import string
 import struct
 import types
 
 from ..base import tokens as tk
+from ..base.tokens import DIGITS, LETTERS
 from ..base import error
 from .. import values
 from .. import dos
 from . import operators as op
 from . import userfunctions
-
-
-# bytes constants
-DIGITS = string.digits
-LETTERS = string.ascii_letters
 
 
 class ExpressionParser(object):

@@ -17,7 +17,6 @@ import locale
 import tempfile
 import shutil
 import pkg_resources
-import string
 from collections import deque
 
 from six import iteritems
@@ -49,7 +48,7 @@ LOGGING_FORMAT = u'[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
 LOGGING_FORMATTER = logging.Formatter(fmt=LOGGING_FORMAT, datefmt=u'%H:%M:%S')
 
 # drive letters except @, bytes constant
-UPPERCASE = string.uppercase
+UPPERCASE = b'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
 def append_arg(args, key, value):

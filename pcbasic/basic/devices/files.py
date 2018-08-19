@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import sys
-import string
 import logging
 import io
 
@@ -32,7 +31,7 @@ DOS_DEVICE_FILES = (b'AUX', b'CON', b'NUL', b'PRN')
 DEFAULT_MOUNTS = {b'Z': (os.getcwdu(), u'')}
 
 # allowable drive letters in GW-BASIC are letters or @
-DRIVE_LETTERS = b'@' + string.ascii_uppercase
+DRIVE_LETTERS = b'@' + tk.UPPERCASE
 
 
 ############################################################################

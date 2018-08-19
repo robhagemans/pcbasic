@@ -8,18 +8,14 @@ This file is released under the GNU GPL version 3 or later.
 
 from collections import deque
 import Queue
-import string
 import datetime
 
 from .base import error
 from .base import signals
 from .base import tokens as tk
+from .base.tokens import DIGITS
 from . import mlparser
 from . import values
-
-
-# bytes constants
-DIGITS = string.digits
 
 
 # NOTE - sound timings and queue lengths are fairly close to DOSBox for Tandy.

@@ -7,20 +7,15 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
-import string
 import struct
 from functools import partial
 
 from ..base import error
 from ..base import tokens as tk
+from ..base.tokens import DIGITS, LETTERS
 from .. import values
 from . import expressions
 from . import userfunctions
-
-
-# bytes constants
-DIGITS = string.digits
-LETTERS = string.ascii_letters
 
 
 class Parser(object):

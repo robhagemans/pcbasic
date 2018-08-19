@@ -6,18 +6,13 @@ Convert tokenised to plain-text format
 This file is released under the GNU GPL version 3 or later.
 """
 
-import string
 import struct
 
+from six import int2byte
+
 from ..base import tokens as tk
+from ..base.tokens import DIGITS, ALPHANUMERIC
 from .. import values
-
-
-# mark bytes conversion explicitly
-int2byte = chr
-
-DIGITS = string.digits
-ALPHANUMERIC = string.ascii_letters + string.digits
 
 
 class Lister(object):

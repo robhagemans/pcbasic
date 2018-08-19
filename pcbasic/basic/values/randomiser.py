@@ -9,9 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 from . import values
 
-
-# mark bytes conversion explicitly
-int2byte = chr
+from six import int2byte
 
 
 class Randomiser(object):
@@ -45,7 +43,7 @@ class Randomiser(object):
         #            = /x00/x81 -> 0x10000-0x8100 = -32512 (sign bit set)
         #      0.25# = /x00/x00/x00/x00 /x00/x00/x00/x7f gets read as /x00/x00 ^ /x00/x7f
         #            = /x00/x7F -> 0x7F00 = 32512 (sign bit not set)
-        #              /xDE/xAD/xBE/xEF /xFF/x80/x00/x80 gets read as /xFF/x80 ^ /x00/x80 
+        #              /xDE/xAD/xBE/xEF /xFF/x80/x00/x80 gets read as /xFF/x80 ^ /x00/x80
         #            = /xFF/x00 -> 0x00FF = 255
         s = val.to_bytes()
         final_two = s[-2:]

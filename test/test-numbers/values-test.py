@@ -2,16 +2,15 @@
 import sys
 import os
 from binascii import hexlify
+
+from six import int2byte
+
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
 from pcbasic.basic.values import *
 import pcbasic.basic.values
 from pcbasic.basic.values.numbers import *
 from pcbasic.basic.values import numbers
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 if __name__ == '__main__':

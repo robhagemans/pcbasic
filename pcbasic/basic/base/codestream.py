@@ -7,18 +7,11 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from functools import partial
-import string
 import io
 
 from . import error
 from . import tokens as tk
-
-
-# bytes constants
-DIGITS = string.digits
-HEXDIGITS = string.hexdigits
-OCTDIGITS = string.octdigits
-LETTERS = string.ascii_letters
+from .tokens import DIGITS, HEXDIGITS, OCTDIGITS, LETTERS
 
 
 class CodeStream(io.BytesIO):

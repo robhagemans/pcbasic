@@ -10,10 +10,7 @@ import unicodedata
 import logging
 import os
 
-from six import iteritems
-
-# mark bytes conversion explicitly
-int2byte = chr
+from six import iteritems, int2byte
 
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined

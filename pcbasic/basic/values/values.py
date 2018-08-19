@@ -7,18 +7,15 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import math
-import string
 import struct
 import functools
+
+from six import int2byte
 
 from ..base import error
 from ..base import tokens as tk
 from . import numbers
 from . import strings
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 # BASIC type sigils:

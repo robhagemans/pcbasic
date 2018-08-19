@@ -6,14 +6,10 @@ DRAW and PLAY macro language stream utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
-import string
-
 from .base import error
 from .base import codestream
+from .base.tokens import DIGITS
 from . import values
-
-
-DIGITS = string.digits
 
 
 class MLParser(codestream.CodeStream):

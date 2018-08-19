@@ -14,7 +14,6 @@ import re
 import io
 import sys
 import errno
-import string
 import random
 import ntpath
 import logging
@@ -23,6 +22,7 @@ import codecs
 from six.moves import xrange
 
 from ..base import error
+from ..base.tokens import ALPHANUMERIC
 from ..codepage import CONTROL
 from ...compat import get_short_pathname, get_free_bytes, is_hidden
 from .. import values
@@ -94,7 +94,7 @@ OS_ERROR = {
 # GW-BASIC also allows 0x7F and up, but replaces accented chars with unaccented
 # based on CHCP code page, which may differ from display codepage in COUNTRY.SYS
 # this is complex and leads to unpredictable results depending on host platform.
-ALLOWABLE_CHARS = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~")
+ALLOWABLE_CHARS = set(ALPHANUMERIC + b" !#$%&'()-@^_`{}~")
 
 # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
 ACCESS_MODES = {b'I': 'rb', b'O': 'wb', b'R': 'r+b', b'A': 'ab'}

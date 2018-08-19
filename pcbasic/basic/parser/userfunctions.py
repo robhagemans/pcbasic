@@ -7,16 +7,14 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import struct
-from itertools import izip
+
+from six import int2byte
+from six.moves import zip
 
 from ..base import error
 from ..base import codestream
 from ..base import tokens as tk
 from .. import values
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 class UserFunction(object):
@@ -40,7 +38,7 @@ class UserFunction(object):
         """Evaluate user-defined function."""
         # parse/evaluate arguments
         conversions = (values.TYPE_TO_CONV[self._memory.complete_name(name)[-1]] for name in self._varnames)
-        args = [conv(arg) for arg, conv in izip(iargs, conversions)]
+        args = [conv(arg) for arg, conv in zip(iargs, conversions)]
         # recursion is not allowed as there's no way to terminate it
         if self._is_parsing:
             raise error.BASICError(error.OUT_OF_MEMORY)

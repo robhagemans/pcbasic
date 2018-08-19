@@ -26,12 +26,10 @@ import binascii
 import struct
 import math
 
+from six import int2byte
+
 from ..base import tokens as tk
 from ..base import error
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 # for to_str

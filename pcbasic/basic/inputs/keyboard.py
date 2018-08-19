@@ -9,15 +9,13 @@ This file is released under the GNU GPL version 3 or later.
 from collections import deque
 from contextlib import contextmanager
 
+from six import int2byte
+
 from ..base import error
 from ..base import scancode
 from ..base import signals
 from ..base.eascii import as_bytes as ea
 from ..base.eascii import as_unicode as uea
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 # bit flags for modifier keys

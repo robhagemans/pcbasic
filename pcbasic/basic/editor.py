@@ -7,10 +7,12 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
-import string
+
+from six import int2byte
 
 from .base import error
 from .base import tokens as tk
+from .base.tokens import ALPHANUMERIC
 from .base.eascii import as_bytes as ea
 
 
@@ -40,12 +42,6 @@ ALT_KEY_REPLACE = {
     ea.ALT_w: tk.KW_WIDTH,
     ea.ALT_x: tk.KW_XOR,
 }
-
-
-# mark bytes conversion explicitly
-int2byte = chr
-
-ALPHANUMERIC = string.digits + string.ascii_letters
 
 
 class FunctionKeyMacros(object):

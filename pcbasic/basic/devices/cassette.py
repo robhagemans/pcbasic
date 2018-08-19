@@ -10,7 +10,6 @@ import os
 import math
 import struct
 import logging
-import string
 from chunk import Chunk
 import io
 

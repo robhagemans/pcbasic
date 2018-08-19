@@ -11,14 +11,12 @@ import logging
 import struct
 import io
 
+from six import int2byte
+
 from .base import error
 from .base import tokens as tk
 from . import values
 from . import converter
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 class Program(object):

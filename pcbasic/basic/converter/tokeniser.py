@@ -6,18 +6,13 @@ Convert plain-text BASIC code to tokenised form
 This file is released under the GNU GPL version 3 or later.
 """
 
-import string
 import struct
 import io
 
 from ..base import tokens as tk
+from ..base.tokens import DIGITS, LETTERS
 from ..base import codestream
 from .. import values
-
-
-# bytes constants
-DIGITS = string.digits
-LETTERS = string.ascii_letters
 
 
 class PlainTextStream(codestream.CodeStream):
