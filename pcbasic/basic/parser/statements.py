@@ -815,8 +815,6 @@ class Parser(object):
                 if ins.skip_blank_read_if((b',',)):
                     step = self._parse_optional_jumpnum(ins)
         ins.require_end()
-        if step is None:
-            raise error.BASICError(error.IFC)
         for n in (new, old, step):
             yield n
 
