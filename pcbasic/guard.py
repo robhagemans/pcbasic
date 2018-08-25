@@ -165,7 +165,6 @@ class ExceptionGuard(object):
         impl.display.set_attr(bottom[0])
         impl.display.text_screen.write(bottom[1])
         # write crash log
-        print repr(crashlog)
         crashlog = u'\n'.join(
             line.decode('cp437', 'replace') if isinstance(line, bytes) else line
             for line in crashlog
