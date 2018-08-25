@@ -296,7 +296,7 @@ class StringSpace(object):
 
     def reset_temporaries(self):
         """Delete temporary string at top of string space."""
-        if self._temp != self.current:
+        if self._temp is not None and self._temp != self.current:
             self._delete_last()
         self._temp = self.current
 

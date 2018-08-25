@@ -427,14 +427,19 @@ class DataSegment(object):
         self.set_variable(name, indices, value)
 
     def set_variable(self, name, indices, value):
-        """Assign a value to a scalar variable or an array element."""
-        # note that for strings, this assigns the pointer
-        # but does not deep copy the string
-        name = self.complete_name(name)
-        if indices == []:
-            self.scalars.set(name, value)
-        else:
-            self.arrays.set(name, indices, value)
+        """
+        Assign a value to a scalar variable or an array element.
+        Note that for strings, this assigns the pointer but does not deep copy the string.
+        """
+        with self.get_stack() as stack:
+            # put the value on the stack temporarily
+            # to avoid losing string values to garbage collection
+            stack.append(value)
+            name = self.complete_name(name)
+            if indices == []:
+                self.scalars.set(name, value)
+            else:
+                self.arrays.set(name, indices, value)
 
     def varptr(self, name, indices):
         """Get address of variable."""
