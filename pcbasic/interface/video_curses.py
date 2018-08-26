@@ -72,7 +72,7 @@ class VideoCurses(VideoPlugin):
             raise InitFailed('`Module `curses` not found')
         # set the ESC-key delay to 25 ms unless otherwise set
         # set_escdelay seems to be unavailable on python curses.
-        if not os.environ.has_key('ESCDELAY'):
+        if 'ESCDELAY' not in os.environ:
             os.environ['ESCDELAY'] = '25'
         self.height, self.width = 25, 80
         self.border_y = int(round((self.height * border_width)/200.))
