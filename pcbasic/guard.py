@@ -69,9 +69,12 @@ class ExceptionGuard(object):
             codestream = impl.program.bytecode
             bytepos = codestream.tell() - 1
             from_line = impl.program.get_line_number(bytepos)
-            codestream.seek(impl.program.line_numbers[from_line]+1)
-            _, output, textpos = impl.lister.detokenise_line(codestream, bytepos)
-            code_line = bytes(output)
+            try:
+                codestream.seek(impl.program.line_numbers[from_line]+1)
+                _, output, textpos = impl.lister.detokenise_line(codestream, bytepos)
+                code_line = bytes(output)
+            except KeyError:
+                code_line = b'<could not retrieve line number %d>' % from_line
         else:
             impl.interpreter.direct_line.seek(0)
             code_line = bytes(
