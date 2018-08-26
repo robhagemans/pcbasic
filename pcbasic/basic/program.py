@@ -270,11 +270,14 @@ class Program(object):
         new_line = 10 if new_line is None else new_line
         start_line = 0 if start_line is None else start_line
         step = 10 if step is None else step
+        # ensure we're not about to overwrite anything
+        remaining = [_k for _k in self.line_numbers.keys() if _k < start_line]
+        if remaining and new_line <= max(remaining):
+            raise error.BASICError(error.IFC)
         # get a sorted list of line numbers
-        keys = sorted([ k for k in self.line_numbers.keys() if k >= start_line])
         # assign the new numbers
         old_to_new = {}
-        for old_line in keys:
+        for old_line in sorted(_k for _k in self.line_numbers.keys() if _k >= start_line):
             if old_line < 65535 and new_line > 65529:
                 raise error.BASICError(error.IFC)
             if old_line == 65536:
