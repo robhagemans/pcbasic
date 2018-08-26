@@ -122,6 +122,8 @@ class DataSegment(object):
         self._stack = []
         # FIELD buffers
         self.reset_fields()
+        # garbage collection switch
+        self._allow_collect = True
 
     def set_buffers(self, program):
         """Register program and variables."""
@@ -197,57 +199,69 @@ class DataSegment(object):
             preserve_sc, preserve_ar = preserve_common
         else:
             preserve_sc, preserve_ar = set(), set()
-        string_store = values.StringSpace(self)
-        # preserve scalars
-        common_scalars = {
-            name: self.scalars.get(name)
-            for name in preserve_sc if name in self.scalars
-        }
-        for name, value in common_scalars.iteritems():
-            if name[-1] == values.STR:
-                length, address = self.strings.copy_to(string_store, *value.to_pointer())
-                value = self.values.new_string().from_pointer(length, address)
-                common_scalars[name] = value
-        # preserve arrays
-        common_arrays = {
-            name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
-            for name in preserve_ar if name in self.arrays
-        }
-        for name, value in common_arrays.iteritems():
-            if name[-1] == values.STR:
+        # do not collect garbage during string migration
+        # it's not going to free up memory and it will break things
+        with self.hold_garbage():
+            string_store = values.StringSpace(self)
+            # preserve scalars
+            common_scalars = {
+                name: self.scalars.get(name)
+                for name in preserve_sc if name in self.scalars
+            }
+            for name, value in common_scalars.iteritems():
+                if name[-1] == values.STR:
+                    length, address = self.strings.copy_to(string_store, *value.to_pointer())
+                    value = self.values.new_string().from_pointer(length, address)
+                    common_scalars[name] = value
+            # preserve arrays
+            common_arrays = {
+                name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
+                for name in preserve_ar if name in self.arrays
+            }
+            for name, value in common_arrays.iteritems():
+                if name[-1] == values.STR:
+                    dimensions, buf = value
+                    for i in range(0, len(buf), 3):
+                        # if the string array is not full, pointers are zero
+                        # but address is ignored for zero length
+                        length, address = self.strings.copy_to(
+                            string_store, *struct.unpack('<BH', buf[i:i+3])
+                        )
+                        # modify the stored bytearray
+                        buf[i:i+3] = struct.pack('<BH', length, address)
+            yield
+            # check if there is sufficient memory
+            scalar_size = sum(self.scalars.memory_size(name) for name in common_scalars)
+            array_size = sum(
+                self.arrays.memory_size(name, val[0])
+                for name, val in common_arrays.iteritems()
+            )
+            if self.var_start() + scalar_size + array_size > string_store.current:
+                raise error.BASICError(error.OUT_OF_MEMORY)
+            self.strings.rebuild(string_store)
+            for name, value in common_scalars.iteritems():
+                self.scalars.set(name, value)
+            for name, value in common_arrays.iteritems():
                 dimensions, buf = value
-                for i in range(0, len(buf), 3):
-                    # if the string array is not full, pointers are zero
-                    # but address is ignored for zero length
-                    length, address = self.strings.copy_to(
-                        string_store, *struct.unpack('<BH', buf[i:i+3])
-                    )
-                    # modify the stored bytearray
-                    buf[i:i+3] = struct.pack('<BH', length, address)
-        yield
-        # check if there is sufficient memory
-        scalar_size = sum(self.scalars.memory_size(name) for name in common_scalars)
-        array_size = sum(
-            self.arrays.memory_size(name, val[0])
-            for name, val in common_arrays.iteritems()
-        )
-        if self.var_start() + scalar_size + array_size > string_store.current:
-            raise error.BASICError(error.OUT_OF_MEMORY)
-        self.strings.rebuild(string_store)
-        for name, value in common_scalars.iteritems():
-            self.scalars.set(name, value)
-        for name, value in common_arrays.iteritems():
-            dimensions, buf = value
-            self.arrays.allocate(name, dimensions)
-            # copy the array buffers back
-            self.arrays.view_full_buffer(name)[:] = buf
+                self.arrays.allocate(name, dimensions)
+                # copy the array buffers back
+                self.arrays.view_full_buffer(name)[:] = buf
 
     def _get_free(self):
         """Return the amount of memory available to variables, arrays, strings and code."""
         return self.strings.current - self.var_current() - self.arrays.current
 
+    @contextmanager
+    def hold_garbage(self):
+        """Temporarily block garbage collection."""
+        self._allow_collect = False
+        yield
+        self._allow_collect = True
+
     def _collect_garbage(self):
         """Collect garbage from string space. Compactify string storage."""
+        if not self._allow_collect:
+            return
         # find all strings that are actually referenced
         stack_strings = [value.view() for stack in self._stack for value in stack if isinstance(value, values.String)]
         string_ptrs = self.scalars.get_strings() + self.arrays.get_strings() + stack_strings
