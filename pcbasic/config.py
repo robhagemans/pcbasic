@@ -36,7 +36,7 @@ from . import data
 
 # minimum required python versions
 MIN_PYTHON2_VERSION = (2, 7, 12)
-MIN_PYTHON3_VERSION = (3, 3, 5)
+MIN_PYTHON3_VERSION = (3, 5, 0)
 
 # base directory name
 MAJOR_VERSION = u'.'.join(VERSION.split(u'.')[:2])
