@@ -215,7 +215,7 @@ class DataSegment(object):
                 name: self.scalars.get(name)
                 for name in preserve_sc if name in self.scalars
             }
-            for name, value in common_scalars.iteritems():
+            for name, value in iteritems(common_scalars):
                 if name[-1] == values.STR:
                     length, address = self.strings.copy_to(string_store, *value.to_pointer())
                     value = self.values.new_string().from_pointer(length, address)
