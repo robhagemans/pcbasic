@@ -813,7 +813,15 @@ class Parser(object):
             if ins.skip_blank_read_if((b',',)):
                 old = self._parse_jumpnum_or_dot(ins, allow_empty=True)
                 if ins.skip_blank_read_if((b',',)):
+                    # the number not optional at all if a comma is given
+                    # but we need to control the error type
                     step = self._parse_optional_jumpnum(ins)
+                    # negative numbers leave us before the end and raise STX
+                    ins.require_end()
+                    # empty afer comma raises IFC
+                    if step is None:
+                        raise error.BASICError(error.IFC)
+        # we need require_end in both places to get correct error sequencing
         ins.require_end()
         for n in (new, old, step):
             yield n
