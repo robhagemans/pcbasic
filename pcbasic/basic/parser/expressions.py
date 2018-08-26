@@ -132,7 +132,7 @@ class ExpressionParser(object):
             tk.FN: None,
             b'_': self._gen_parse_call_extension,
         }
-        self._functions = set(self._complex.keys() + self._simple.keys())
+        self._functions = set(self._complex.keys()) | set(self._simple.keys())
 
     def init_functions(self, session):
         """Initialise function callbacks."""

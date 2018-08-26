@@ -76,7 +76,7 @@ class EnvironmentCache(object):
 
     def close(self):
         """Restore all environment variables."""
-        for key in self._saved.keys():
+        for key in list(self._saved.keys()):
             self.reset(key)
 
     def __del__(self):

@@ -8,7 +8,16 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
-from six import int2byte
+from six import int2byte, PY2
+
+if PY2:
+    def iterchar(s):
+        """Iterate over bytes, returning char."""
+        return s
+else:
+    def iterchar(s):
+        """Iterate over bytes, returning char."""
+        return (int2byte(_i) for _i in s)
 
 from .base import error
 from .base import tokens as tk
@@ -91,9 +100,9 @@ class FunctionKeyMacros(object):
         self._bar.clear()
         for i in range(10):
             text = self._keyboard.get_macro(i)[:6]
-            text = b''.join(self._replace_chars.get(s, s) for s in text)
+            text = b''.join(self._replace_chars.get(s, s) for s in iterchar(text))
             kcol = 1 + 8*i
-            self._bar.write((b'%d' % (i+1,))[-1], kcol, False)
+            self._bar.write((b'%d' % (i+1,))[-1:], kcol, False)
             self._bar.write(text, kcol+1, True)
 
 

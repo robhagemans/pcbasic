@@ -908,7 +908,7 @@ class Settings(object):
     def _parse_args(self, remaining):
         """Retrieve command line options."""
         # set arguments
-        known = self.arguments.keys() + range(self.positional)
+        known = list(self.arguments.keys()) + list(range(self.positional))
         args = {d: remaining[d] for d in remaining if d in known}
         not_recognised = {d: remaining[d] for d in remaining if d not in known}
         for d in not_recognised:
@@ -1025,7 +1025,7 @@ class Settings(object):
                 return None
         lst = [self._parse_type(d, arg) for arg in lst]
         # negative length: optional up-to
-        if length < 0:
+        if length != u'*' and length < 0:
             lst += [None]*(-length-len(lst))
         if length != u'*' and (len(lst) > abs(length) or len(lst) < length):
             logging.warning(u'Option "%s=%s" ignored, should have %d elements', d, s, abs(length))

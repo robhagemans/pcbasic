@@ -61,12 +61,14 @@ class BasicEvents(object):
             ComHandler(self._files.get_device(b'COM2:'))]
         self.pen = PenHandler()
         # joy*2 + button
-        self.strig = [StrigHandler(joy, button)
-                      for joy in range(2) for button in range(2)]
+        self.strig = [
+            StrigHandler(joy, button)
+            for joy in range(2) for button in range(2)
+        ]
         # all handlers in order of handling; TIMER first
         # key events are not handled FIFO but first 11-20 in that order, then 1-10
         self.all = ([self.timer]
-            + [self.key[num] for num in (range(10, 20) + range(10))]
+            + [self.key[num] for num in (list(range(10, 20)) + list(range(10)))]
             + [self.play] + self.com + [self.pen] + self.strig)
         # keep a list of enabled events
         self.enabled = set()

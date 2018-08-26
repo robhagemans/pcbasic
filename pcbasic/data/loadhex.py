@@ -92,7 +92,7 @@ class FontLoader(object):
                 continue
             for line in hexres.splitlines():
                 # ignore empty lines and comment lines (first char is #)
-                if (not line) or (line[0] == b'#'):
+                if (not line) or (line[:1] == b'#'):
                     continue
                 # strip off comments
                 # split unicodepoint and hex string (max 32 chars)
