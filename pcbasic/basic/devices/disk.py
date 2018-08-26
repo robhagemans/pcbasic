@@ -20,6 +20,7 @@ import logging
 import codecs
 
 from six.moves import xrange
+from six import string_types
 
 from ..base import error
 from ..base.tokens import ALPHANUMERIC
@@ -746,7 +747,7 @@ class BoundFile(object):
     def get_stream(self, mode):
         """Get a native stream for the bound file."""
         try:
-            if isinstance(self._file, basestring):
+            if isinstance(self._file, string_types):
                 return io.open(self._file, ACCESS_MODES[mode])
             else:
                 return self._file
@@ -756,6 +757,8 @@ class BoundFile(object):
     def __str__(self):
         """Get BASIC file name."""
         return b'%s:%s' % (self._device.letter, self._name)
+
+    __bytes__ = __str__
 
 
 class NameWrapper(object):
@@ -775,6 +778,8 @@ class NameWrapper(object):
     def __str__(self):
         """Get BASIC file name."""
         return self._file
+
+    __bytes__ = __str__
 
 
 class InternalDiskDevice(DiskDevice):

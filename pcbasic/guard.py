@@ -16,7 +16,7 @@ from datetime import datetime
 from contextlib import contextmanager
 
 from .metadata import VERSION
-from basic.base import error, signals
+from .basic.base import error, signals
 
 
 LOG_PATTERN = u'crash-%Y%m%d-'

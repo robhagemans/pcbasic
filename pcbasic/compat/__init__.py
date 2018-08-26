@@ -6,8 +6,13 @@ Cross-platform compatibility utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
+import sys
+
+from six import PY2, PY3
+
 from .base import WIN32, MACOS, X64, USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, PLATFORM
 from .base import split_quoted
+
 from .python2 import which
 
 if WIN32:

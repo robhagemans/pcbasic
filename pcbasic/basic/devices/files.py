@@ -12,6 +12,8 @@ import logging
 import io
 
 from six.moves import xrange
+from six import PY2, int2byte
+from six import text_type as unicode
 
 from ..base import error
 from ..base import tokens as tk

@@ -29,8 +29,9 @@ from .compat import split_quoted
 from . import data
 
 
-# minimum required python2 version
-MIN_PYTHON_VERSION = (2, 7, 12)
+# minimum required python versions
+MIN_PYTHON2_VERSION = (2, 7, 12)
+MIN_PYTHON3_VERSION = (3, 3, 5)
 
 # base directory name
 MAJOR_VERSION = u'.'.join(VERSION.split(u'.')[:2])
@@ -334,9 +335,13 @@ class Settings(object):
         # initial validations
         # sys.version_info tuple's first three elements are guaranteed to be ints
         python_version = sys.version_info[:3]
-        if python_version >= (3,) or python_version < MIN_PYTHON_VERSION:
+        if (
+                (python_version[0] == 2 and python_version < MIN_PYTHON2_VERSION) or
+                (python_version[0] == 3 and python_version < MIN_PYTHON3_VERSION)
+            ):
             msg = (
-                'PC-BASIC requires Python 2, version %d.%d.%d or higher. ' % MIN_PYTHON_VERSION +
+                'PC-BASIC requires Python version %d.%d.%d, ' % MIN_PYTHON2_VERSION +
+                'version %d.%d.%d, or higher. ' % MIN_PYTHON3_VERSION +
                 'You have %d.%d.%d.' % python_version
             )
             logging.fatal(msg)
@@ -665,7 +670,7 @@ class Settings(object):
                     else:
                         mount_dict[letter] = (path, u'')
                 except (TypeError, ValueError) as e:
-                    logging.warning(u'Could not mount %s: %s', a, unicode(e))
+                    logging.warning(u'Could not mount %s: %s', a, e)
         else:
             if WIN32:
                 # get all drives in use by windows

@@ -8,6 +8,8 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 
+from six import string_types, text_type
+
 from .base import error
 from .devices import NameWrapper
 from . import implementation
@@ -59,10 +61,10 @@ class Session(object):
     def bind_file(self, file_name_or_object, name=None, create=False):
         """Bind a native file name or Python stream to a BASIC file name."""
         self.start()
-        if isinstance(name, unicode):
+        if isinstance(name, text_type):
             name = self._impl.codepage.str_from_unicode(name)
         # if a file name, resolve
-        if not isinstance(file_name_or_object, basestring) or os.path.isfile(file_name_or_object):
+        if not isinstance(file_name_or_object, string_types) or os.path.isfile(file_name_or_object):
             # if it's an obkect or the file name exists, use it
             return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
         elif create and (
@@ -71,7 +73,7 @@ class Session(object):
             # if it doesn't and we're allowed to create and the directory exists, create new
             return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
         # not resolved, try to use/create as internal name
-        if isinstance(file_name_or_object, unicode):
+        if isinstance(file_name_or_object, text_type):
             return NameWrapper(self._impl.codepage.str_from_unicode(file_name_or_object))
         return NameWrapper(file_name_or_object)
 
@@ -80,7 +82,7 @@ class Session(object):
         self.start()
         with self._impl.io_streams.activate():
             for cmd in command.splitlines():
-                if isinstance(cmd, unicode):
+                if isinstance(cmd, text_type):
                     cmd = self._impl.codepage.str_from_unicode(cmd)
                 self._impl.execute(cmd)
 
@@ -88,14 +90,14 @@ class Session(object):
         """Evaluate a BASIC expression."""
         self.start()
         with self._impl.io_streams.activate():
-            if isinstance(expression, unicode):
+            if isinstance(expression, text_type):
                 expression = self._impl.codepage.str_from_unicode(expression)
             return self._impl.evaluate(expression)
 
     def set_variable(self, name, value):
         """Set a variable in memory."""
         self.start()
-        if isinstance(name, unicode):
+        if isinstance(name, text_type):
             name = name.encode('ascii')
         name = name.upper()
         self._impl.set_variable(name, value)
@@ -103,7 +105,7 @@ class Session(object):
     def get_variable(self, name):
         """Get a variable in memory."""
         self.start()
-        if isinstance(name, unicode):
+        if isinstance(name, text_type):
             name = name.encode('ascii')
         return self._impl.get_variable(name)
 
