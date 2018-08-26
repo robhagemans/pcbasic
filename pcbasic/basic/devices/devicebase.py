@@ -17,7 +17,7 @@ from ..base.eascii import as_bytes as ea
 from .. import values
 
 def nullstream():
-    return open(os.devnull, b'r+')
+    return open(os.devnull, 'r+')
 
 
 # magic chars used by some devices to indicate file type

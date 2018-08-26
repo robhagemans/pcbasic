@@ -122,8 +122,8 @@ if which('paps'):
             # margin of 0.
             pr = subprocess.Popen(
                 b'paps --cpi=11 --lpi=6 --left-margin=20 --right-margin=20 '
-                '--top-margin=6 --bottom-margin=6 '
-                '| lpr %s' % (options,), shell=True, stdin=subprocess.PIPE)
+                b'--top-margin=6 --bottom-margin=6 '
+                b'| lpr %s' % (options,), shell=True, stdin=subprocess.PIPE)
             # PAPS does not recognise CRLF
             printbuf = printbuf.replace(b'\r\n', b'\n')
             pr.stdin.write(printbuf)

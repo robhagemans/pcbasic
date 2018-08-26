@@ -227,7 +227,7 @@ class DiskDevice(object):
 
     allowed_modes = b'IOR'
 
-    def __init__(self, letter, path, dos_cwd, codepage, utf8, universal):
+    def __init__(self, letter, path, cwd, codepage, utf8, universal):
         """Initialise a disk device."""
         # DOS drive letter
         self.letter = letter
@@ -241,11 +241,11 @@ class DiskDevice(object):
         self._native_cwd = u''
         if self._native_root:
             try:
-                self._native_cwd = self._get_native_reldir(dos_cwd)
+                self._native_cwd = cwd
             except error.BASICError:
                 logging.warning(
                     'Could not open working directory %s on drive %s:. Using drive root instead.',
-                    dos_cwd, letter
+                    cwd, letter
                 )
         # locks are drive-specific
         self._locks = Locks()

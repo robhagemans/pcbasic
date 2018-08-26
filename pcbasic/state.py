@@ -11,7 +11,9 @@ try:
 except ImportError:
     import pickle
 
-import copy_reg
+from six import PY2
+from six.moves import copyreg
+
 import os
 import io
 import logging
@@ -65,9 +67,10 @@ def pickle_file(f):
         return unpickle_file, (f.name, f.mode, -1)
 
 # register the picklers for file and cStringIO
-copy_reg.pickle(file, pickle_file)
-copy_reg.pickle(io.BufferedReader, pickle_file)
-copy_reg.pickle(io.BufferedWriter, pickle_file)
+if PY2:
+    copyreg.pickle(file, pickle_file)
+copyreg.pickle(io.BufferedReader, pickle_file)
+copyreg.pickle(io.BufferedWriter, pickle_file)
 
 
 def zunpickle(state_file):

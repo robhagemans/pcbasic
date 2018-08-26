@@ -9,7 +9,6 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import io
 import sys
-import ConfigParser
 import logging
 import zipfile
 import codecs
@@ -19,7 +18,13 @@ import shutil
 import pkg_resources
 from collections import deque
 
-from six import iteritems
+from six import iteritems, PY2
+from six.moves import configparser
+
+if PY2:
+    getcwdu = os.getcwdu
+else:
+    getcwdu = os.getcwd
 
 from .metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
@@ -76,6 +81,13 @@ def store_bundled_programs(PROGRAM_PATH):
         with open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
             f.write(data.read_program_file(name))
 
+def escape_decode_unicode(s):
+    """Decode escapes in a unicode object."""
+    # note that unicode_escape can't deal, at all, with things like \x81
+    # so we encode to utf8, parse escapes, and decode back
+    return (
+        codecs.escape_decode(s.encode('utf-8', 'replace'))[0].decode('utf-8', 'replace')
+    )
 
 class TemporaryDirectory():
     """Temporary directory context guard like in Python 3 tempfile."""
@@ -109,6 +121,17 @@ class WhitespaceStripper(object):
     def readline(self):
         """Read a line and strip whitespace (but not EOL)."""
         return self._file.readline().lstrip(u' \t')
+
+    def __next__(self):
+        """Make iterable for Python 3."""
+        line = self.readline()
+        if not line:
+            raise StopIteration()
+        return line
+
+    def __iter__(self):
+        """We are iterable."""
+        return self
 
 
 class Settings(object):
@@ -523,8 +546,7 @@ class Settings(object):
             'low_intensity': cga_low,
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
-            'keys': self.get('keys').encode('utf-8', 'replace')
-                        .decode('string_escape').decode('utf-8', 'replace'),
+            'keys': escape_decode_unicode(self.get('keys')),
             # find program for PCjr TERM command
             'term': self.get('term'),
             'shell': self.get('shell'),
@@ -668,7 +690,7 @@ class Settings(object):
                     if not os.path.isdir(path):
                         logging.warning(u'Could not mount %s', a)
                     else:
-                        mount_dict[letter] = (path, u'')
+                        mount_dict[letter] = (path, b'')
                 except (TypeError, ValueError) as e:
                     logging.warning(u'Could not mount %s: %s', a, e)
         else:
@@ -676,11 +698,11 @@ class Settings(object):
                 # get all drives in use by windows
                 # if started from CMD.EXE, get the 'current working dir' for each drive
                 # if not in CMD.EXE, there's only one cwd
-                save_current = os.getcwdu()
+                save_current = getcwdu()
                 for letter in UPPERCASE:
                     try:
                         os.chdir(letter + b':')
-                        cwd = get_short_pathname(os.getcwdu()) or os.getcwdu()
+                        cwd = get_short_pathname(getcwdu()) or getcwdu()
                     except EnvironmentError:
                         # doesn't exist or can't access, do not mount this drive
                         pass
@@ -698,7 +720,7 @@ class Settings(object):
                         pass
             else:
                 # non-Windows systems simply have 'Z:' set to their their cwd by default
-                mount_dict[b'Z'] = (os.getcwdu(), u'')
+                mount_dict[b'Z'] = (getcwdu(), u'')
                 current_device = b'Z'
         # fallbacks for current device
         if (
@@ -870,12 +892,12 @@ class Settings(object):
     def _read_config_file(self, config_file):
         """Read config file."""
         try:
-            config = ConfigParser.RawConfigParser(allow_no_value=True)
+            config = configparser.RawConfigParser(allow_no_value=True)
             # use utf_8_sig to ignore a BOM if it's at the start of the file
             # (e.g. created by Notepad)
-            with codecs.open(config_file, b'r', b'utf_8_sig') as f:
+            with codecs.open(config_file, 'r', 'utf_8_sig') as f:
                 config.readfp(WhitespaceStripper(f))
-        except (ConfigParser.Error, IOError):
+        except (configparser.Error, IOError):
             logging.warning(
                 u'Error in configuration file %s. Configuration not loaded.', config_file
             )
