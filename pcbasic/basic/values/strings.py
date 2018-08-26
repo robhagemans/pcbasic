@@ -182,7 +182,10 @@ class StringSpace(object):
     def _retrieve(self, length, address):
         """Retrieve a string by its pointer."""
         # if string length == 0, return empty string
-        return bytearray() if length == 0 else self._strings[address]
+        try:
+            return bytearray() if length == 0 else self._strings[address]
+        except KeyError:
+            raise KeyError(u'Dereferencing detached string at %x (%d)' % (address, address))
 
     def view(self, length, address):
         """Return a writeable view of a string from its string pointer."""
