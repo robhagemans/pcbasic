@@ -97,7 +97,7 @@ class CodeStream(io.BytesIO):
             self.seek(-len(d), 1)
             return b''
         name = b''
-        while d in tk.NAME_CHARS:
+        while d and d in tk.NAME_CHARS:
             name += d
             d = self.read(1)
         # only the first 40 chars are relevant in GW-BASIC, rest is discarded

@@ -20,7 +20,7 @@ OCTDIGITS = b'01234567'
 
 
 # allowable as chars 2.. in a variable name (first char must be a letter)
-NAME_CHARS = tuple(ALPHANUMERIC + b'.')
+NAME_CHARS = ALPHANUMERIC + b'.'
 # type characters
 SIGILS = (b'#', b'!', b'%', b'$')
 
