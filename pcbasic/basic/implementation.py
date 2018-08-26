@@ -701,46 +701,50 @@ class Implementation(object):
         """INPUT: request input from user."""
         if following == b';':
             prompt += b'? '
-        # read the input
-        self.interpreter.input_mode = True
-        self.parser.redo_on_break = True
-        # readvar is a list of (name, indices) tuples
-        # we return a list of (name, indices, values) tuples
-        while True:
-            self.screen.write(prompt)
-            # disconnect the wrap between line with the prompt and previous line
-            if self.screen.current_row > 1:
-                self.screen.text.pages[self.screen.apagenum].row[self.screen.current_row-2].wrap = False
-            line = self.editor.wait_screenline(write_endl=newline)
-            inputstream = InputTextFile(line)
-            # read the values and group them and the separators
-            var, values, seps = [], [], []
-            for name, indices in readvar:
-                name = self.memory.complete_name(name)
-                word, sep = inputstream.input_entry(name[-1], allow_past_end=True)
-                try:
-                    value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
-                except error.BASICError as e:
-                    # string entered into numeric field
-                    value = None
-                var.append([name, indices])
-                values.append(value)
-                seps.append(sep)
-            # last separator not empty: there were too many values or commas
-            # earlier separators empty: there were too few values
-            # empty values will be converted to zero by from_str
-            # None means a conversion error occurred
-            if (seps[-1] or b'' in seps[:-1] or None in values):
-                # good old Redo!
-                self.screen.write_line(b'?Redo from start')
-                readvar = var
-            else:
-                varlist = [r + [v] for r, v in zip(var, values)]
-                break
-        self.parser.redo_on_break = False
-        self.interpreter.input_mode = False
-        for v in varlist:
-            self.memory.set_variable(*v)
+        with self.memory.get_stack() as stack:
+            # read the input
+            self.interpreter.input_mode = True
+            self.parser.redo_on_break = True
+            # readvar is a list of (name, indices) tuples
+            # we return a list of (name, indices, values) tuples
+            while True:
+                self.screen.write(prompt)
+                # disconnect the wrap between line with the prompt and previous line
+                if self.screen.current_row > 1:
+                    (
+                        self.screen.text.pages[self.screen.apagenum].row[self.screen.current_row-2]
+                    ).wrap = False
+                line = self.editor.wait_screenline(write_endl=newline)
+                inputstream = InputTextFile(line)
+                # read the values and group them and the separators
+                var, values, seps = [], [], []
+                for name, indices in readvar:
+                    name = self.memory.complete_name(name)
+                    word, sep = inputstream.input_entry(name[-1], allow_past_end=True)
+                    try:
+                        value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
+                    except error.BASICError as e:
+                        # string entered into numeric field
+                        value = None
+                    stack.append(value)
+                    var.append([name, indices])
+                    values.append(value)
+                    seps.append(sep)
+                # last separator not empty: there were too many values or commas
+                # earlier separators empty: there were too few values
+                # empty values will be converted to zero by from_str
+                # None means a conversion error occurred
+                if (seps[-1] or b'' in seps[:-1] or None in values):
+                    # good old Redo!
+                    self.screen.write_line(b'?Redo from start')
+                    readvar = var
+                else:
+                    varlist = [r + [v] for r, v in zip(var, values)]
+                    break
+            self.parser.redo_on_break = False
+            self.interpreter.input_mode = False
+            for v in varlist:
+                self.memory.set_variable(*v)
 
     def _input_file(self, finp, readvar):
         """INPUT: retrieve input from file."""
