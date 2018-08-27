@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 from collections import deque
 import datetime
 
+from ..compat import iterchar
 from .base import error
 from .base import signals
 from .base import tokens as tk
@@ -343,7 +344,7 @@ class Sound(object):
                     c = mmls.skip_blank_read_if(DIGITS)
                     if c is not None:
                         numstr = [c]
-                        while mmls.skip_blank() in set(DIGITS):
+                        while mmls.skip_blank() in set(iterchar(DIGITS)):
                             numstr.append(mmls.read(1))
                         # NOT ml_parse_number, only literals allowed here!
                         length = int(b''.join(numstr))
