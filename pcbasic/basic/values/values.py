@@ -50,7 +50,7 @@ TYPE_TO_CLASS = {
 
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
-    return TYPE_TO_SIZE[name[-1]]
+    return TYPE_TO_SIZE[name[-1:]]
 
 ###############################################################################
 # type checks
@@ -253,7 +253,7 @@ class Values(object):
         """Convert number token to new Number temporary"""
         if not token:
             raise ValueError('Token must not be empty')
-        lead = bytes(token)[0]
+        lead = bytes(token)[0:1]
         if lead == tk.T_SINGLE:
             return numbers.Single(None, self).from_token(token)
         elif lead == tk.T_DOUBLE:
@@ -686,7 +686,7 @@ def string_(args):
         error.range_check(0, 255, asc_value_or_char.to_int())
     list(args)
     if isinstance(asc_value_or_char, strings.String):
-        char = asc_value_or_char.to_str()[0]
+        char = asc_value_or_char.to_str()[:1]
     else:
         # overflow if outside Integer range
         ascval = asc_value_or_char.to_integer().to_int()

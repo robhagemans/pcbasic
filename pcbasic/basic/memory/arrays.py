@@ -214,7 +214,7 @@ class Arrays(object):
         if isinstance(value, values.String):
             self._memory.strings.fix_temporaries()
         # copy value into array
-        self.view_buffer(name, index)[:] = values.to_type(name[-1], value).to_bytes()
+        self.view_buffer(name, index)[:] = values.to_type(name[-1:], value).to_bytes()
         # drop cache
         self._cache[name] = None
 
@@ -283,7 +283,7 @@ class Arrays(object):
         return [
             memoryview(buf)[i:i+3]
             for name, buf in iteritems(self._buffers)
-            if name[-1] == values.STR
+            if name[-1:] == values.STR
             for i in range(0, len(buf), 3)
         ]
 
@@ -304,7 +304,7 @@ class Arrays(object):
                 self._from_list(v, name, index+[i+(self._base or 0)])
         else:
             for i, v in enumerate(python_list):
-                self.set(name, index+[i+(self._base or 0)], self._values.from_value(v, name[-1]))
+                self.set(name, index+[i+(self._base or 0)], self._values.from_value(v, name[-1:]))
 
     def to_list(self, name):
         """Convert BASIC array to Python list."""

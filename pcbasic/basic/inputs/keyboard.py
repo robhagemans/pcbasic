@@ -11,6 +11,7 @@ from contextlib import contextmanager
 
 from six import int2byte
 
+from ...compat import iterchar
 from ..base import error
 from ..base import scancode
 from ..base import signals
@@ -175,7 +176,7 @@ class KeyboardBuffer(object):
 def _split_eascii(cp_s):
     """Split a string of e-ascii/codepage into keystrokes."""
     d = b''
-    for c in cp_s:
+    for c in iterchar(cp_s):
         if d or c != b'\0':
             yield d + c
             d = b''
@@ -317,8 +318,9 @@ class Keyboard(object):
         # which will tell the Editor to close
         # except if we're waiting for KYBD: input
         while (
-                not self._expansion_vessel) and (self.buf.empty) and (
-                keyboard_only or (not self._input_closed and not self._stream_buffer)
+                (not self._expansion_vessel) and (self.buf.empty) and (
+                    keyboard_only or (not self._input_closed and not self._stream_buffer)
+                )
             ):
             self._queues.wait()
 
@@ -332,7 +334,7 @@ class Keyboard(object):
         if not expand or c not in FUNCTION_KEY:
             return c
         # function key macro expansion
-        self._expansion_vessel = list(self._key_replace[FUNCTION_KEY[c]])
+        self._expansion_vessel = list(iterchar(self._key_replace[FUNCTION_KEY[c]]))
         try:
             return self._expansion_vessel.pop(0)
         except IndexError:

@@ -108,7 +108,7 @@ class Palette(object):
             dimensions = self._memory.arrays.dimensions(array_name)
         except KeyError:
             raise error.BASICError(error.IFC)
-        error.throw_if(array_name[-1] != values.INT, error.TYPE_MISMATCH)
+        error.throw_if(array_name[-1:] != values.INT, error.TYPE_MISMATCH)
         lst = self._memory.arrays.view_full_buffer(array_name)
         start = self._memory.arrays.index(start_indices, dimensions)
         error.throw_if(self._memory.arrays.array_len(dimensions) - start < num_palette_entries)

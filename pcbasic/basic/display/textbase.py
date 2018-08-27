@@ -6,6 +6,7 @@ Text screen helper classes
 This file is released under the GNU GPL version 3 or later.
 """
 
+from ...compat import iterchar
 from ..base import signals
 from ..base import error
 from .. import values
@@ -30,7 +31,7 @@ class BottomBar(object):
 
     def write(self, s, col, reverse):
         """Write chars on virtual bottom bar."""
-        for i, c in enumerate(s):
+        for i, c in enumerate(iterchar(s)):
             self._contents[col + i] = (c, reverse)
 
     def show(self, on, screen):

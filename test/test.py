@@ -28,8 +28,8 @@ def is_same(file1, file2):
         return False
 
 def count_diff(file1, file2):
-    lines1 = open(file1).readlines()
-    lines2 = open(file2).readlines()
+    lines1 = open(file1, 'rb').readlines()
+    lines2 = open(file2, 'rb').readlines()
     n = len(lines1)
     count = 0
     for one, two in zip(lines1, lines2):
@@ -48,21 +48,24 @@ def suppress_stdio(do_suppress):
         sys.stderr = err
         sys.stdout = out
 
-
+def contained(arglist, elem):
+    try:
+        arglist.remove(elem)
+    except ValueError:
+        return False
+    return True
 
 args = sys.argv[1:]
 basedir = os.path.join('.', 'correctness')
 
-do_suppress = '--loud' not in args
+do_suppress = not contained(args, '--loud')
+reraise = contained(args, '--reraise')
 
-try:
-    args.remove('--loud')
-except ValueError:
-    pass
+if contained(args, '--nonumpy'):
+    sys.modules['numpy'] = None
 
-if '--coverage' in args:
+if contained(args, '--coverage'):
     import coverage
-    args.remove('--coverage')
     cov = coverage.coverage()
     cov.start()
 else:
@@ -125,7 +128,8 @@ for name in args:
             pcbasic.run('--interface=none')
         except Exception as e:
             crash = e
-            raise
+            if reraise:
+                raise
     # -----------------------------------------------------------
     os.chdir(top)
     passed = True

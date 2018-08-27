@@ -332,7 +332,7 @@ class CassetteStream(object):
     def _write_block(self, data):
         """Write a 256-byte block to tape."""
         # fill out short blocks with last byte
-        data += data[-1]*(256-len(data))
+        data += data[-1:]*(256-len(data))
         for b in data:
             self.bitstream.write_byte(ord(b))
         crc_word = crc(data)

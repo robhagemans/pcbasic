@@ -29,7 +29,7 @@ class String(numbers.Value):
 
     def length(self):
         """String length."""
-        return ord(self._buffer[0])
+        return bytearray(self._buffer)[0]
 
     def address(self):
         """Pointer address."""
@@ -126,7 +126,7 @@ class String(numbers.Value):
             # to conform to GW overwriting of source string on overlap
             for i in range(num):
                 self._stringspace.view(*target)[i+offset:i+offset+1] = (
-                    self._stringspace.view(*source)[i]
+                    self._stringspace.view(*source)[i:i+1]
                 )
         return self
 
@@ -140,9 +140,9 @@ class String(numbers.Value):
 
     def asc(self):
         """ASC: ordinal ASCII value of a character."""
-        s = self.to_str()
+        s = bytearray(self.to_str())
         error.throw_if(not s)
-        return numbers.Integer(None, self._values).from_int(ord(s[0]))
+        return numbers.Integer(None, self._values).from_int(s[0])
 
     def space(self, num):
         """SPACE$: repeat spaces."""

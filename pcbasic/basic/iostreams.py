@@ -77,16 +77,21 @@ class IOStreams(object):
 
     def _wrap_input(self, stream):
         """Wrap input stream."""
+        if stream.isatty() and hasattr(stream, 'encoding'):
+            encoding = stream.encoding
+        else:
+            encoding = self._encoding
         return InputStreamWrapper(
-                stream, self._codepage, (stream.encoding if stream.isatty() else self._encoding),
-                lfcr=not WIN32 and stream.isatty()
-            )
+            stream, self._codepage, encoding, lfcr=not WIN32 and stream.isatty()
+        )
 
     def _wrap_output(self, stream):
         """Wrap output stream."""
-        return OutputStreamWrapper(
-                stream, self._codepage, (stream.encoding if stream.isatty() else self._encoding)
-            )
+        if stream.isatty() and hasattr(stream, 'encoding'):
+            encoding = stream.encoding
+        else:
+            encoding = self._encoding
+        return OutputStreamWrapper(stream, self._codepage, encoding)
 
     def _process_input(self):
         """Process input from streams."""

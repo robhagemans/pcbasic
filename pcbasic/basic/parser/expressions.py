@@ -417,7 +417,7 @@ class ExpressionParser(object):
         ins.require_read((b'(',))
         for i in range(length-1):
             yield self.parse(ins)
-            ins.require_read((b','),)
+            ins.require_read((b',',))
         yield self.parse(ins)
         ins.require_read((b')',))
 
@@ -426,9 +426,9 @@ class ExpressionParser(object):
         ins.require_read((b'(',))
         yield self.parse(ins)
         for _ in range(length-2):
-            ins.require_read((b','),)
+            ins.require_read((b',',))
             yield self.parse(ins)
-        if ins.skip_blank_read_if((b',',),):
+        if ins.skip_blank_read_if((b',',)):
             yield self.parse(ins)
         else:
             yield None

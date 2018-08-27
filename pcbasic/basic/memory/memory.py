@@ -216,7 +216,7 @@ class DataSegment(object):
                 for name in preserve_sc if name in self.scalars
             }
             for name, value in iteritems(common_scalars):
-                if name[-1] == values.STR:
+                if name[-1:] == values.STR:
                     length, address = self.strings.copy_to(string_store, *value.to_pointer())
                     value = self.values.new_string().from_pointer(length, address)
                     common_scalars[name] = value
@@ -226,7 +226,7 @@ class DataSegment(object):
                 for name in preserve_ar if name in self.arrays
             }
             for name, value in iteritems(common_arrays):
-                if name[-1] == values.STR:
+                if name[-1:] == values.STR:
                     dimensions, buf = value
                     for i in range(0, len(buf), 3):
                         # if the string array is not full, pointers are zero
@@ -433,8 +433,8 @@ class DataSegment(object):
 
     def complete_name(self, name):
         """Add default sigil to a name, if missing."""
-        if name and name[-1] not in tk.SIGILS:
-            name += self.deftype[ord(name[0].upper()) - ord(b'A')]
+        if name and name[-1:] not in tk.SIGILS:
+            name += self.deftype[bytearray(name.upper())[0] - ord(b'A')]
         return name
 
     def view_or_create_variable(self, name, indices):

@@ -63,7 +63,7 @@ class Lister(object):
         output = bytearray()
         while True:
             s = ins.read(1)
-            if not textpos and ins.tell() >= bytepos:
+            if not textpos and bytepos is not None and ins.tell() >= bytepos:
                 textpos = len(output)
             if s in tk.END_LINE:
                 # \x00 ends lines and comments when listed,
@@ -106,7 +106,7 @@ class Lister(object):
                 keyword = self._token_to_keyword[s]
                 ins.read(1)
             except KeyError:
-                output += s[0]
+                output += s[:1]
                 return False
         # when we're here, s is an actual keyword token.
         # letter or number followed by token is separated by a space

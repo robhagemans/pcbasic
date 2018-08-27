@@ -12,17 +12,18 @@ import struct
 import logging
 from contextlib import contextmanager
 
+from ...compat import iterchar
 from ..base import error
 from ..base.eascii import as_bytes as ea
 from .. import values
 
 def nullstream():
-    return open(os.devnull, 'r+')
+    return open(os.devnull, 'r+b')
 
 
 # magic chars used by some devices to indicate file type
-TYPE_TO_MAGIC = { b'B': b'\xFF', b'P': b'\xFE', b'M': b'\xFD' }
-MAGIC_TO_TYPE = { b'\xFF': b'B', b'\xFE': b'P', b'\xFD': b'M' }
+TYPE_TO_MAGIC = {b'B': b'\xFF', b'P': b'\xFE', b'M': b'\xFD'}
+MAGIC_TO_TYPE = {b'\xFF': b'B', b'\xFE': b'P', b'\xFD': b'M'}
 
 
 
@@ -257,7 +258,7 @@ class TextFileBase(RawFile):
         to_read = num - len(self._readahead)
         if to_read > 0:
             with safe_io():
-                self._readahead.extend(list(self._fhandle.read(to_read)))
+                self._readahead.extend(iterchar(self._fhandle.read(to_read)))
         return b''.join(self._readahead[:num])
 
     def read(self, num):
@@ -311,7 +312,7 @@ class TextFileBase(RawFile):
         s_width = 0
         newline = False
         # find width of first line in s
-        for c in s:
+        for c in iterchar(s):
             if c in (b'\r', b'\n'):
                 newline = True
                 break
@@ -322,7 +323,7 @@ class TextFileBase(RawFile):
                 self.col-1 + s_width > self.width and not newline):
             self.write_line()
             self.col = 1
-        for c in s:
+        for c in iterchar(s):
             # don't replace CR or LF with CRLF when writing to files
             if c == b'\r':
                 self._fhandle.write(c)
@@ -636,7 +637,7 @@ class SCRNFile(RawFile):
         s_width = 0
         newline = False
         # find width of first line in s
-        for c in s:
+        for c in iterchar(s):
             if c in (b'\r', b'\n'):
                 newline = True
                 break
@@ -652,7 +653,7 @@ class SCRNFile(RawFile):
             self.screen.write_line(do_echo=do_echo)
             self._col = 1
         cwidth = self.screen.mode.width
-        for c in s:
+        for c in iterchar(s):
             if self.width <= cwidth and self.col > self.width:
                 self.screen.write_line(do_echo=do_echo)
                 self._col = 1

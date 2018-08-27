@@ -100,9 +100,9 @@ class Formatter(object):
                 elif c == b'_':
                     # escape char; write next char in fors or _ if this is the last char
                     if start_cycle:
-                        initial_literal += fors.read(2)[-1]
+                        initial_literal += fors.read(2)[-1:]
                     else:
-                        self._output.write(fors.read(2)[-1])
+                        self._output.write(fors.read(2)[-1:])
                 else:
                     try:
                         format_field = StringField(fors)
@@ -184,7 +184,7 @@ class NumberField(object):
         c = fors.peek()
         if c in (b'$', b'*'):
             word += fors.read(2)
-            if word[-1] != c:
+            if word[-1:] != c:
                 fors.seek(-len(word), 1)
                 raise ValueError()
             if c == b'*':
@@ -245,9 +245,9 @@ class NumberField(object):
         neg = value.is_negative()
         if tokens[0] == b'+':
             valstr += b'-' if neg else b'+'
-        elif tokens[-1] == b'+':
+        elif tokens[-1:] == b'+':
             post_sign = b'-' if neg else b'+'
-        elif tokens[-1] == b'-':
+        elif tokens[-1:] == b'-':
             post_sign = b'-' if neg else b' '
         else:
             valstr += b'-' if neg else b''

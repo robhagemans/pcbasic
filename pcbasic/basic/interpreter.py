@@ -364,7 +364,7 @@ class Interpreter(object):
         """Initialise a FOR loop."""
         # read variable
         varname = self._memory.complete_name(next(args))
-        vartype = varname[-1]
+        vartype = varname[-1:]
         start = values.to_type(vartype, next(args))
         # only raised after the TO has been parsed
         if vartype in (values.STR, values.DBL):
@@ -376,7 +376,7 @@ class Interpreter(object):
         list(args)
         if step is None:
             # convert 1 to vartype
-            step = self._values.from_value(1, varname[-1])
+            step = self._values.from_value(1, varname[-1:])
         ins = self.get_codestream()
         # find NEXT
         forpos, nextpos = self._find_next(ins, varname)
@@ -530,7 +530,7 @@ class Interpreter(object):
                 self._program_code.seek(current)
                 raise error.BASICError(error.OUT_OF_DATA)
             self._program_code.skip_blank()
-            if name[-1] == values.STR:
+            if name[-1:] == values.STR:
                 # for unquoted strings, payload starts at the first non-empty character
                 address = self._program_code.tell_address()
                 word = self._program_code.read_to((b',', b'"',) + tk.END_STATEMENT)

@@ -276,7 +276,7 @@ class Sound(object):
         mml_list += [b''] * (3 - len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, self._memory, self._values) for mml in mml_list]
         next_oct = 0
-        voices = range(3)
+        voices = list(range(3))
         while True:
             if not voices:
                 break

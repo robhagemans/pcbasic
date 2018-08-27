@@ -379,7 +379,7 @@ class Memory(object):
     def call_(self, args):
         """CALL or CALLS: Call machine language procedure."""
         addr_var = next(args)
-        if self._memory.complete_name(addr_var)[-1] == values.STR:
+        if self._memory.complete_name(addr_var)[-1:] == values.STR:
             # type mismatch
             raise error.BASICError(error.TYPE_MISMATCH)
         list(args)

@@ -403,8 +403,10 @@ class Program(object):
         # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
         if to_line is None:
             to_line = self.max_list_line
-        numbers = [num for num in self.line_numbers
-                            if num >= from_line and num <= to_line]
+        numbers = [
+            num for num in self.line_numbers
+            if (from_line is None or num >= from_line) and num <= to_line
+        ]
         # sort by positions, not line numbers!
         listable = sorted([self.line_numbers[num] for num in numbers])
         if numbers:
@@ -421,7 +423,7 @@ class Program(object):
         offset -= self.code_start
         code = self.bytecode.getvalue()
         try:
-            return ord(code[offset])
+            return ord(code[offset:offset+1])
         except IndexError:
             return -1
 

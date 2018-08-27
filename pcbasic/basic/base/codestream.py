@@ -159,7 +159,7 @@ class CodeStream(io.BytesIO):
                 else:
                     have_exp = True
                     word += c
-            elif c in b'-+' and (not word or word[-1] in b'ED'):
+            elif c in b'-+' and (not word or word[-1:] in b'ED'):
                 # must be first character or in exponent
                 word += c
             elif c in DIGITS + self.blanks + b'\x1c\x1d\x1f':

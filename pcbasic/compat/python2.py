@@ -11,6 +11,46 @@ import shutil
 import sys
 import os
 
+
+PY2 = sys.version_info.major == 2
+PY3 = not PY2
+
+
+if PY2:
+    def iterchar(s):
+        """Iterate over bytes, returning char."""
+        return s
+else:
+    def iterchar(s):
+        """Iterate over bytes, returning char."""
+        return (s[_i:_i+1] for _i in range(len(s)))
+
+if PY2:
+    getcwdu = os.getcwdu
+else:
+    getcwdu = os.getcwd
+
+if PY2:
+    def bstdout():
+        return sys.stdout
+
+    def bstdin():
+        return sys.stdin
+
+    def bstderr():
+        return sys.stderr
+
+else:
+    def bstdout():
+        return sys.stdout.buffer
+
+    def bstdin():
+        return sys.stdin.buffer
+
+    def bstderr():
+        return sys.stderr.buffer
+
+
 try:
     from shutil import which
 except ImportError:

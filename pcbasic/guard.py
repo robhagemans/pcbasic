@@ -97,7 +97,7 @@ class ExceptionGuard(object):
             (0x1f, VERSION),
             (0x17, u'\npython    '),
             (0x1f, u'%s [%s] %s' % (
-                platform.python_version(), b' '.join(platform.architecture()), frozen
+                platform.python_version(), u' '.join(platform.architecture()), frozen
             )),
             (0x17, u'\nplatform  '),
             (0x1f, platform.platform()),

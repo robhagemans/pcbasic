@@ -895,7 +895,7 @@ class Drawing(object):
         operation_token = operation_token or tk.XOR
         if array_name not in self._memory.arrays:
             raise error.BASICError(error.IFC)
-        elif array_name[-1] == values.STR:
+        elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
         self.last_point = x0, y0
@@ -937,7 +937,7 @@ class Drawing(object):
         array_name = self._memory.complete_name(array_name)
         if array_name not in self._memory.arrays:
             raise error.BASICError(error.IFC)
-        elif array_name[-1] == values.STR:
+        elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
         x1, y1 = self.graph_view.coords(*self.get_window_physical(*lcoord1))

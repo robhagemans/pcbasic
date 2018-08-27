@@ -340,8 +340,8 @@ class KeyHandler(EventHandler):
         # can't redefine scancodes for predefined keys 1-14 (pc) 1-16 (tandy)
         if not self._predefined:
             # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-            self._modcode = ord(keystr[0]) & 0x6f
-            self._scancode = ord(keystr[1])
+            self._modcode = bytearray(keystr)[0] & 0x6f
+            self._scancode = bytearray(keystr)[1]
             # all shifts are equal
             if self._modcode & 3:
                 self._modcode |= 3

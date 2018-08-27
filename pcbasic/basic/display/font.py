@@ -210,7 +210,7 @@ else:
         # double the width if code width incorrect
         if force_double:
             for yy in range(code_height):
-                for xx in range(req_width_base, -1, -1):
+                for xx in range(req_width_base-1, -1, -1):
                     glyph[yy][2*xx+1] = glyph[yy][xx]
                     glyph[yy][2*xx] = glyph[yy][xx]
         return glyph

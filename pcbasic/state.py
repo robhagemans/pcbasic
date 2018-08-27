@@ -71,6 +71,8 @@ if PY2:
     copyreg.pickle(file, pickle_file)
 copyreg.pickle(io.BufferedReader, pickle_file)
 copyreg.pickle(io.BufferedWriter, pickle_file)
+copyreg.pickle(io.TextIOWrapper, pickle_file)
+copyreg.pickle(io.BufferedRandom, pickle_file)
 
 
 def zunpickle(state_file):

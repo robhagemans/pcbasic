@@ -12,23 +12,10 @@ import logging
 import io
 
 from six.moves import xrange
-from six import PY2, int2byte
+from six import int2byte
 from six import text_type as unicode
 
-if PY2:
-    getcwdu = os.getcwdu
-
-    def iterchar(s):
-        """Iterate over bytes, returning char."""
-        return s
-else:
-    getcwdu = os.getcwd
-
-    def iterchar(s):
-        """Iterate over bytes, returning char."""
-        return (int2byte(_i) for _i in s)
-
-
+from ...compat import iterchar, getcwdu
 from ..base import error
 from ..base import tokens as tk
 from .. import values

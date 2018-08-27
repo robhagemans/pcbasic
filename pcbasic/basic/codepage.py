@@ -12,6 +12,8 @@ import os
 
 from six import iteritems, int2byte, unichr
 
+from ..compat import iterchar
+
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
@@ -200,7 +202,7 @@ class Converter(object):
             # stateless if not dbcs
             return list(s)
         else:
-            unistr = [seq for c in s for seq in self._process(c)]
+            unistr = [seq for c in iterchar(s) for seq in self._process(c)]
             if flush:
                 unistr += self._flush()
             return unistr
@@ -316,7 +318,7 @@ class Converter(object):
             # goes to case 0
         else:
             for bset in (0, 1):
-                if self._cp.connects(self._buf[-1], c, bset):
+                if self._cp.connects(self._buf[-1:], c, bset):
                     self._bset = bset
                     # take out only first byte
                     out += self._flush(1)
@@ -335,8 +337,8 @@ class Converter(object):
         out = []
         if c not in self._cp.lead:
             out += self._flush() + [c]
-        elif self._cp.connects(self._buf[-1], c, self._bset):
-            self._last = self._buf[-1]
+        elif self._cp.connects(self._buf[-1:], c, self._bset):
+            self._last = self._buf[-1:]
             # output box drawing
             out += self._flush(1) + self._flush(1) + [c]
             # goes to case 4

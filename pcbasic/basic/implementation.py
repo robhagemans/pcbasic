@@ -14,6 +14,7 @@ from contextlib import contextmanager
 from six.moves import queue
 
 from ..metadata import NAME, VERSION, COPYRIGHT
+from ..compat import bstdin, bstdout
 from .base import error
 from .base import tokens as tk
 from .base import signals
@@ -50,7 +51,7 @@ class Implementation(object):
 
     def __init__(
             self, syntax=u'advanced', double=False, term=u'', shell=u'',
-            output_streams=sys.stdout, input_streams=sys.stdin,
+            output_streams=bstdout(), input_streams=bstdin(),
             codepage=None, box_protect=True, font=None, text_width=80,
             video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3), low_intensity=False,
             devices=None, current_device=u'Z:', mount=None, utf8=False, soft_linefeed=False,
@@ -273,7 +274,7 @@ class Implementation(object):
             name = name.split(b'(', 1)[0]
             self.arrays.from_list(value, name)
         else:
-            self.memory.set_variable(name, [], self.values.from_value(value, name[-1]))
+            self.memory.set_variable(name, [], self.values.from_value(value, name[-1:]))
 
     def get_variable(self, name):
         """Get a variable in memory."""
@@ -721,9 +722,9 @@ class Implementation(object):
                 var, values, seps = [], [], []
                 for name, indices in readvar:
                     name = self.memory.complete_name(name)
-                    word, sep = inputstream.input_entry(name[-1], allow_past_end=True)
+                    word, sep = inputstream.input_entry(name[-1:], allow_past_end=True)
                     try:
-                        value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
+                        value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1:])
                     except error.BASICError as e:
                         # string entered into numeric field
                         value = None
@@ -751,10 +752,10 @@ class Implementation(object):
         """INPUT: retrieve input from file."""
         for v in readvar:
             name, indices = v
-            word, _ = finp.input_entry(name[-1], allow_past_end=False)
-            value = self.values.from_repr(word, allow_nonnum=True, typechar=name[-1])
+            word, _ = finp.input_entry(name[-1:], allow_past_end=False)
+            value = self.values.from_repr(word, allow_nonnum=True, typechar=name[-1:])
             if value is None:
-                value = self.values.new(name[-1])
+                value = self.values.new(name[-1:])
             self.memory.set_variable(name, indices, value)
 
     def line_input_(self, args):
@@ -775,7 +776,7 @@ class Implementation(object):
         if not readvar:
             raise error.BASICError(error.STX)
         readvar = self.memory.complete_name(readvar)
-        if readvar[-1] != values.STR:
+        if readvar[-1:] != values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
         # read the input
         if finp:

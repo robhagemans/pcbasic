@@ -93,7 +93,7 @@ class TextBuffer(object):
         for num, page in enumerate(self.pages):
             row_strs += [horiz_bar]
             for i, row in enumerate(page.row):
-                s = [ c[0] for c in row.buf ]
+                s = [c[0] for c in row.buf]
                 outstr = '{0:2}'.format(i)
                 if lastwrap:
                     outstr += ('\\')
@@ -124,6 +124,7 @@ class TextBuffer(object):
 
     def put_char_attr(self, pagenum, row, col, c, attr):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
+        assert isinstance(c, bytes), type(c)
         return self.pages[pagenum].row[row-1].put_char_attr(col, c, attr)
 
     def scroll_up(self, pagenum, from_line, bottom, attr):
@@ -233,7 +234,7 @@ class TextBuffer(object):
         # add all rows of the logical line
         for row in range(srow, self.height+1):
             therow = self.pages[pagenum].row[row-1]
-            line += bytearray(pair[0] for pair in therow.buf[scol-1:therow.end])
+            line += b''.join(pair[0] for pair in therow.buf[scol-1:therow.end])
             # continue so long as the line wraps
             if not therow.wrap:
                 break
@@ -264,7 +265,7 @@ class TextBuffer(object):
                 else:
                     rowpairs = therow.buf[:therow.end]
                 # get characters from char/attr pairs and convert to bytearray
-                line += bytearray(pair[0] for pair in rowpairs)
+                line += b''.join(pair[0] for pair in rowpairs)
                 if not therow.wrap:
                     break
                 # wrap before end of line means LF

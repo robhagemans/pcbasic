@@ -29,7 +29,7 @@ class Clock(object):
         diff = now-midnight
         seconds = diff.seconds
         micro = diff.microseconds
-        return long(seconds)*1000 + long(micro)/1000
+        return int(seconds*1000 + micro/1000)
 
     def timer_(self, args):
         """TIMER: get clock ticks since midnight."""

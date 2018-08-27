@@ -18,19 +18,15 @@ import shutil
 import pkg_resources
 from collections import deque
 
-from six import iteritems, PY2
+from six import iteritems
 from six.moves import configparser
-
-if PY2:
-    getcwdu = os.getcwdu
-else:
-    getcwdu = os.getcwd
 
 from .metadata import VERSION, NAME
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from .compat import WIN32, get_short_pathname, get_unicode_argv, HAS_CONSOLE
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
-from .compat import split_quoted
+from .compat import split_quoted, getcwdu
+from .compat import bstdout, bstdin
 from . import data
 
 
@@ -459,19 +455,19 @@ class Settings(object):
         input_streams, output_streams = [], []
         # add stdio if redirected or no interface
         if HAS_CONSOLE and (not self.interface or not sys.stdin.isatty()):
-            input_streams.append(sys.stdin)
+            input_streams.append(bstdin())
         # redirect output as well if input is redirected, but not the other way around
         # this is because (1) GW-BASIC does this from the DOS prompt
         # (2) otherwise we don't see anything - we quit after input closes
         # isatty is also false if we run as a GUI exe, so check that here
         if HAS_CONSOLE and (
                 not self.interface or not sys.stdout.isatty() or not sys.stdin.isatty()):
-            output_streams.append(sys.stdout)
+            output_streams.append(bstdout())
         # explicit redirects
         infile_params = self.get('input').split(u':')
         if infile_params[0].upper() in (u'STDIO', u'STDIN'):
-            if sys.stdin not in input_streams:
-                input_streams.append(sys.stdin)
+            if bstdin() not in input_streams:
+                input_streams.append(bstdin())
         else:
             if len(infile_params) > 1 and infile_params[0].upper() == u'FILE':
                 infile = infile_params[1]
@@ -484,8 +480,8 @@ class Settings(object):
                     logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
         outfile_params = self.get('output').split(u':')
         if outfile_params[0].upper() in (u'STDIO', u'STDOUT'):
-            if sys.stdout not in output_streams:
-                output_streams.append(sys.stdout)
+            if bstdout() not in output_streams:
+                output_streams.append(bstdout())
         else:
             if len(outfile_params) > 1 and outfile_params[0].upper() == u'FILE':
                 outfile_params = outfile_params[1:]
@@ -690,7 +686,7 @@ class Settings(object):
                     if not os.path.isdir(path):
                         logging.warning(u'Could not mount %s', a)
                     else:
-                        mount_dict[letter] = (path, b'')
+                        mount_dict[letter] = (path, u'')
                 except (TypeError, ValueError) as e:
                     logging.warning(u'Could not mount %s: %s', a, e)
         else:

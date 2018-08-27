@@ -20,7 +20,7 @@ if __name__ == '__main__':
         r = vm.new_single().from_int(2**23)
         r.iadd(a)
         s = r.clone()
-        s.view()[-1:] = int2byte(ord(s.view()[-1])+8)
+        s.view()[-1:] = int2byte(bytearray(s.view())[-1]+8)
         t = s.clone()
         print s.iadd(r).isub(t).isub(r).to_value(),
 

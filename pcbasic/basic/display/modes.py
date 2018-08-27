@@ -200,7 +200,9 @@ class Video(object):
 
     def get_allowed_widths(self):
         """Get allowed screen widths."""
-        return set(mode.width for mode in self._text_data.values() + self._mode_data.values())
+        return set(
+            mode.width for mode in list(self._text_data.values()) + list(self._mode_data.values())
+        )
 
     ###########################################################################
     # video modes
