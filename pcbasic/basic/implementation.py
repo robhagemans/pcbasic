@@ -12,6 +12,7 @@ import logging
 from contextlib import contextmanager
 
 from six.moves import queue
+from six import text_type
 
 from ..metadata import NAME, VERSION, COPYRIGHT
 from ..compat import bstdin, bstdout
@@ -266,7 +267,7 @@ class Implementation(object):
     def set_variable(self, name, value):
         """Set a variable in memory."""
         name = name.upper()
-        if isinstance(value, unicode):
+        if isinstance(value, text_type):
             value = self.codepage.str_from_unicode(value)
         elif isinstance(value, bool):
             value = -1 if value else 0

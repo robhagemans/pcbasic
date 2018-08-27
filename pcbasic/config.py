@@ -18,7 +18,7 @@ import shutil
 import pkg_resources
 from collections import deque
 
-from six import iteritems
+from six import iteritems, text_type
 from six.moves import configparser
 
 from .metadata import VERSION, NAME
@@ -1004,7 +1004,7 @@ class Settings(object):
             if first_arg and first_arg not in self.arguments[d][u'choices']:
                 logging.warning(
                     u'Value "%s=%s" ignored; should be one of (%s)',
-                    d, unicode(arg), u', '.join(self.arguments[d][u'choices'])
+                    d, arg, u', '.join(self.arguments[d][u'choices'])
                 )
                 arg = u''
         return arg
@@ -1079,7 +1079,7 @@ class Settings(object):
         )
         argnames = sorted(self.arguments.keys())
         try:
-            with open(file_name, b'w') as f:
+            with open(file_name, b'wb') as f:
                 # write a BOM at start to ensure Notepad gets that it's utf-8
                 # but don't use codecs.open as that doesn't do CRLF on Windows
                 f.write(b'\xEF\xBB\xBF')
@@ -1087,8 +1087,9 @@ class Settings(object):
                 for a in argnames:
                     try:
                         f.write(
-                            (u'## choices: %s\n' %
-                                    u', '.join(map(unicode, self.arguments[a][u'choices']))
+                            (
+                                u'## choices: %s\n' %
+                                u', '.join(u'%s' % (_s,) for _s in self.arguments[a][u'choices'])
                             ).encode(b'utf-8')
                         )
                     except(KeyError, TypeError):
@@ -1096,9 +1097,9 @@ class Settings(object):
                     try:
                         # check if it's a list
                         self.arguments[a][u'list']
-                        formatted = u','.join(map(unicode, self.arguments[a][u'default']))
+                        formatted = u','.join(u'%s' % (_s,) for _s in self.arguments[a][u'default'])
                     except(KeyError, TypeError):
-                        formatted = unicode(self.arguments[a][u'default'])
+                        formatted = u'%s' % (self.arguments[a][u'default'],)
                     f.write((u'#%s=%s\n' % (a, formatted)).encode(b'utf-8'))
                 f.write(footer)
         except (OSError, IOError):

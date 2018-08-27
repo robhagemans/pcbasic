@@ -10,7 +10,7 @@ import logging
 from importlib import import_module
 from collections import Iterable
 
-from six import string_types
+from six import string_types, text_type
 
 from .base import error
 from . import values
@@ -64,9 +64,9 @@ class Extensions(object):
                 logging.error(u'Could not load extension module `%s`: %s', ext, repr(e))
                 raise error.BASICError(error.INTERNAL_ERROR)
         self._ext_funcs = {
-            n.upper(): getattr(ext_obj, n)
+            n.upper().encode('ascii', 'ignore'): getattr(ext_obj, n)
             for ext_obj in ext_objs
-                for n in dir(ext_obj) if not n.startswith('_')
+            for n in dir(ext_obj) if not n.startswith('_')
         }
 
     def call_as_statement(self, args):
@@ -86,7 +86,7 @@ class Extensions(object):
     def call_as_function(self, args):
         """Extension function: call a python function as a function."""
         result = self.call_as_statement(args)
-        if isinstance(result, unicode):
+        if isinstance(result, text_type):
             result = self._codepage.str_from_unicode(result)
         if isinstance(result, bytes):
             return self._values.from_value(result, values.STR)

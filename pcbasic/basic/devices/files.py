@@ -12,8 +12,7 @@ import logging
 import io
 
 from six.moves import xrange
-from six import int2byte
-from six import text_type as unicode
+from six import int2byte, text_type
 
 from ...compat import iterchar, getcwdu
 from ..base import error
@@ -587,8 +586,8 @@ class Files(object):
             # treat device @: separately - internal disk
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
             self._devices[letter + b':'] = disk_class(letter, path, cwd, codepage, utf8, universal)
-        # allow upper or lower case, unicode or str, with or without :
-        if isinstance(current_device, unicode):
+        # allow upper or lower case, unicode or bytes, with or without :
+        if isinstance(current_device, text_type):
             current_device = current_device.encode('ascii')
         self._current_device = current_device.split(b':')[0].upper()
 
