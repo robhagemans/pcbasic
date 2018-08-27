@@ -57,7 +57,7 @@ class Value(object):
         self._buffer = memoryview(buffer)
         self._values = values
 
-    def __str__(self):
+    def __bytes__(self):
         """String representation for debugging."""
         try:
             return b'%s[%s %s]' % (
@@ -66,8 +66,11 @@ class Value(object):
         except Exception:
             return b'%s[%s <detached>]' % (self.sigil, binascii.hexlify(self.to_bytes()))
 
-    __repr__ = __str__
+    def __str__(self):
+        """String representation for debugging."""
+        return bytes(self).decode('ascii', 'replace')
 
+    __repr__ = __str__
 
     def __getstate__(self):
         # can't pickle memoryview
@@ -1214,7 +1217,7 @@ def str_to_decimal(s, allow_nonnum=True):
                     else:
                         zeros = 0
                 continue
-            elif c == '.':
+            elif c == b'.':
                 found_point = True
                 continue
             elif c.upper() in b'DE':

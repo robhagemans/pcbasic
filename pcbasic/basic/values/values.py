@@ -122,13 +122,18 @@ def _call_float_function(fn, *args):
     feh = args[0].error_handler
     try:
         # to_float can overflow on Double.pos_max
-        args = [arg.to_float(arg._values.double_math) for arg in args]
+        args = [_arg.to_float(values.double_math) for _arg in args]
         floatcls = args[0].__class__
-        args = [arg.to_value() for arg in args]
-        return floatcls(None, values).from_value(fn(*args))
+        args = [_arg.to_value() for _arg in args]
+        result = fn(*args)
+        # python3 may return complex values for some real functions
+        # where python2 simply raises an error
+        if isinstance(result, complex):
+            raise ValueError('Non-real result')
+        return floatcls(None, values).from_value(result)
     except (ValueError, ArithmeticError) as e:
         # create positive infinity of the appropriate class
-        if arg._values.double_math and isinstance(args[0], numbers.Double):
+        if values.double_math and isinstance(args[0], numbers.Double):
             floatcls = numbers.Double
         else:
             floatcls = numbers.Single
@@ -361,17 +366,17 @@ def to_int(inp, unsigned=False):
 def mki_(args):
     """MKI$: return the byte representation of an int."""
     x, = args
-    return x._values.new_string().from_str(to_integer(x).to_bytes())
+    return x._values.new_string().from_str(bytes(to_integer(x).to_bytes()))
 
 def mks_(args):
     """MKS$: return the byte representation of a single."""
     x, = args
-    return x._values.new_string().from_str(to_single(x).to_bytes())
+    return x._values.new_string().from_str(bytes(to_single(x).to_bytes()))
 
 def mkd_(args):
     """MKD$: return the byte representation of a double."""
     x, = args
-    return x._values.new_string().from_str(to_double(x).to_bytes())
+    return x._values.new_string().from_str(bytes(to_double(x).to_bytes()))
 
 def cvi_(args):
     """CVI: return the int value of a byte representation."""

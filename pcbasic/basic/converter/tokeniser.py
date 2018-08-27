@@ -274,7 +274,7 @@ class Tokeniser(object):
             # octal constant
             # read_number converts &1 into &O1
             return self._values.new_integer().from_oct(word[2:]).to_token_oct()
-        elif word[0] in DIGITS + b'.+-':
+        elif word[:1] in DIGITS + b'.+-':
             # handle other numbers
             # note GW passes signs separately as a token
             # and only stores positive numbers in the program

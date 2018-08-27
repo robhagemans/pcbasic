@@ -194,8 +194,8 @@ class Program(object):
             if self.code_start + 1 + pos + length > self._memory.stack_start():
                 raise error.BASICError(error.OUT_OF_MEMORY)
             self.bytecode.write(
-                    struct.pack('<BH', 0, self.code_start + 1 + pos + length) +
-                    linebuf.read())
+                struct.pack('<BH', 0, self.code_start + 1 + pos + length) + linebuf.read()
+            )
         # write back the remainder of the program
         self.truncate(rest)
         # update all next offsets by shifting them by the length of the added line

@@ -42,6 +42,7 @@ class String(numbers.Value):
 
     def from_str(self, python_str):
         """Set to value of python str."""
+        assert isinstance(python_str, bytes), type(python_str)
         self._buffer[:] = struct.pack('<BH', *self._stringspace.store(python_str))
         return self
 
