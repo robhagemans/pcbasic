@@ -6,6 +6,7 @@ DRAW and PLAY macro language stream utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
+from ..compat import iterchar
 from .base import error
 from .base import codestream
 from .base.tokens import DIGITS
@@ -78,7 +79,7 @@ class MLParser(codestream.CodeStream):
     def _parse_const(self):
         """Parse and return a constant value in a macro-language string."""
         numstr = b''
-        while self.skip_blank() in set(DIGITS):
+        while self.skip_blank() in set(iterchar(DIGITS)):
             numstr += self.read(1)
         try:
             return int(numstr)
@@ -90,7 +91,7 @@ class MLParser(codestream.CodeStream):
         indices = []
         if self.skip_blank_read_if((b'[', b'(')):
             while True:
-                if self.skip_blank() in set(DIGITS):
+                if self.skip_blank() in set(iterchar(DIGITS)):
                     indices.append(self._parse_const())
                 else:
                     indices.append(self._parse_variable().to_int())

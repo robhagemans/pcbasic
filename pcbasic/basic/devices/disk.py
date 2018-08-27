@@ -477,9 +477,11 @@ class DiskDevice(object):
     def rename(self, old_dospath, new_dospath):
         """Rename a file or directory."""
         old_native_path = self._get_native_abspath(
-                old_dospath, defext=b'', isdir=False, create=False)
+            old_dospath, defext=b'', isdir=False, create=False
+        )
         new_native_path = self._get_native_abspath(
-                new_dospath, defext=b'', isdir=False, create=True)
+            new_dospath, defext=b'', isdir=False, create=True
+        )
         if os.path.exists(new_native_path):
             raise error.BASICError(error.FILE_ALREADY_EXISTS)
         safe(os.rename, old_native_path, new_native_path)

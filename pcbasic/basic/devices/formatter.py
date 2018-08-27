@@ -243,7 +243,7 @@ class NumberField(object):
         # leading sign, if any
         valstr, post_sign = b'', b''
         neg = value.is_negative()
-        if tokens[0] == b'+':
+        if tokens[:1] == b'+':
             valstr += b'-' if neg else b'+'
         elif tokens[-1:] == b'+':
             post_sign = b'-' if neg else b'+'

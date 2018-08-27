@@ -189,7 +189,7 @@ class Converter(object):
         # hold one or two bytes
         # lead byte without trail byte, or box-protectable dbcs
         self._buf = b''
-        self._preserve = set(preserve)
+        self._preserve = set(iterchar(preserve))
         # may override box protection defaults
         self._box_protect = box_protect or self._cp.box_protect
         self._dbcs = self._cp.dbcs
@@ -200,7 +200,7 @@ class Converter(object):
         """Process codepage string, returning list of grouped code sequences when ready."""
         if not self._dbcs:
             # stateless if not dbcs
-            return list(s)
+            return list(iterchar(s))
         else:
             unistr = [seq for c in iterchar(s) for seq in self._process(c)]
             if flush:
