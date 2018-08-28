@@ -10,7 +10,7 @@ import logging
 from importlib import import_module
 from collections import Iterable
 
-from six import string_types, text_type
+from six import text_type
 
 from .base import error
 from . import values
@@ -21,7 +21,7 @@ class Extensions(object):
 
     def __init__(self, extension, values, codepage):
         """Initialise extension handler."""
-        if isinstance(extension, string_types) or not isinstance(extension, Iterable):
+        if isinstance(extension, (bytes, text_type)) or not isinstance(extension, Iterable):
             extension = [extension]
         self._extension = list(extension)
         self._values = values
@@ -56,7 +56,7 @@ class Extensions(object):
         ext_objs = []
         for ext in self._extension:
             try:
-                if isinstance(ext, string_types):
+                if isinstance(ext, (bytes, text_type)):
                     ext_objs.append(import_module(ext))
                 else:
                     ext_objs.append(ext)

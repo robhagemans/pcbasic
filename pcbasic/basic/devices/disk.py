@@ -20,7 +20,7 @@ import logging
 import codecs
 
 from six.moves import xrange
-from six import string_types, text_type
+from six import text_type
 
 from ..base import error
 from ..base.tokens import ALPHANUMERIC
@@ -750,7 +750,7 @@ class BoundFile(object):
     def get_stream(self, mode):
         """Get a native stream for the bound file."""
         try:
-            if isinstance(self._file, string_types):
+            if isinstance(self._file, (bytes, text_type)):
                 return io.open(self._file, ACCESS_MODES[mode])
             else:
                 return self._file

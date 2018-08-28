@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 
-from six import string_types, text_type
+from six import text_type
 
 from .base import error
 from .devices import NameWrapper
@@ -64,7 +64,10 @@ class Session(object):
         if isinstance(name, text_type):
             name = self._impl.codepage.str_from_unicode(name)
         # if a file name, resolve
-        if not isinstance(file_name_or_object, string_types) or os.path.isfile(file_name_or_object):
+        if (
+                not isinstance(file_name_or_object, (bytes, text_type))
+                or os.path.isfile(file_name_or_object)
+            ):
             # if it's an obkect or the file name exists, use it
             return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
         elif create and (
