@@ -6,7 +6,8 @@ BASIC keyword tokens
 This file is released under the GNU GPL version 3 or later.
 """
 
-from six import iteritems
+from ...compat import iteritems
+
 
 # ascii constants in bytes form
 # note that strings module equivanets are unicode in python 3

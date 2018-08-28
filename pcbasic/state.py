@@ -11,15 +11,14 @@ try:
 except ImportError:
     import pickle
 
-from six import PY2
-from six.moves import copyreg
-
 import os
 import io
 import logging
 import zlib
 import sys
 from contextlib import contextmanager
+
+from .compat import PY2, copyreg
 
 
 @contextmanager

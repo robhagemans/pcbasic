@@ -11,11 +11,10 @@ import sys
 import logging
 from contextlib import contextmanager
 
-from six.moves import queue
-from six import text_type
+from ..compat import queue, text_type
+from ..compat import bstdin, bstdout
 
 from ..metadata import NAME, VERSION, COPYRIGHT
-from ..compat import bstdin, bstdout
 from .base import error
 from .base import tokens as tk
 from .base import signals

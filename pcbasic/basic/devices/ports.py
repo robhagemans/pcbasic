@@ -13,9 +13,9 @@ import datetime
 import io
 from contextlib import contextmanager
 
-from six import iteritems
-
+from ...compat import iteritems
 from ...compat import key_pressed
+
 from .devicebase import safe_io
 
 try:

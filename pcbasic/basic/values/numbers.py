@@ -26,9 +26,8 @@ import binascii
 import struct
 import math
 
-from six import int2byte
+from ...compat import iterchar, int2byte
 
-from ...compat import iterchar
 from ..base import tokens as tk
 from ..base import error
 

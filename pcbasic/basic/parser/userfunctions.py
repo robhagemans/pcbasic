@@ -8,8 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 
-from six import int2byte
-from six.moves import zip
+from ...compat import int2byte, zip
 
 from ..base import error
 from ..base import codestream

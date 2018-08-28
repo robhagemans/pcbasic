@@ -8,9 +8,8 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
-from six import iteritems, int2byte
+from ...compat import iterchar, iteritems, int2byte
 
-from ...compat import iterchar
 from ..base import signals
 from ..base import error
 from ..base import tokens as tk

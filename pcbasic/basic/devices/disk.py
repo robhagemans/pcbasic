@@ -19,13 +19,12 @@ import ntpath
 import logging
 import codecs
 
-from six.moves import xrange
-from six import text_type
+from ...compat import xrange, text_type
+from ...compat import get_short_pathname, get_free_bytes, is_hidden, iterchar
 
 from ..base import error
 from ..base.tokens import ALPHANUMERIC
 from ..codepage import CONTROL
-from ...compat import get_short_pathname, get_free_bytes, is_hidden, iterchar
 from .. import values
 from . import devicebase
 from .diskfiles import BinaryFile, TextFile, RandomFile, Locks

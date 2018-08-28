@@ -6,8 +6,7 @@ Base class for audio plugins
 This file is released under the GNU GPL version 3 or later.
 """
 
-from six.moves import queue
-
+from ..compat import queue
 from ..basic.base import signals
 
 

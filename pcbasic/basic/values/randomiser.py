@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 from . import values
 
-from six import int2byte
+from ...compat import int2byte
 
 
 class Randomiser(object):

@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 
-from six import int2byte
+from ...compat import int2byte
 
 from ..base import tokens as tk
 from ..base.tokens import DIGITS, ALPHANUMERIC

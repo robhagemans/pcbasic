@@ -11,10 +11,9 @@ import sys
 import logging
 import io
 
-from six.moves import xrange
-from six import int2byte, text_type
-
+from ...compat import xrange, int2byte, text_type
 from ...compat import iterchar, getcwdu
+
 from ..base import error
 from ..base import tokens as tk
 from .. import values

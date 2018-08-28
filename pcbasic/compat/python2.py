@@ -5,6 +5,10 @@ Python 2 backports for Python 3 functionality
 Contains functions from Python 3.3 source code, which is
 copyright (c) 2001-2016 Python Software Foundation
 and released under a GPL-compatible licence https://docs.python.org/3.3/license.html
+
+Contains lines of code from package six, which is
+Copyright (c) 2010-2018 Benjamin Peterson
+and released under an MIT licence https://opensource.org/licenses/MIT
 """
 
 import shutil
@@ -17,20 +21,19 @@ PY3 = not PY2
 
 
 if PY2:
-    def iterchar(s):
-        """Iterate over bytes, returning char."""
-        return s
-else:
-    def iterchar(s):
-        """Iterate over bytes, returning char."""
-        return (s[_i:_i+1] for _i in range(len(s)))
+    import ConfigParser as configparser
+    import Queue as queue
+    import copy_reg as copyreg
 
-if PY2:
+    import itertools as _itertools
+
     getcwdu = os.getcwdu
-else:
-    getcwdu = os.getcwd
+    xrange = xrange
+    unichr = unichr
+    int2byte = chr
+    text_type = unicode
+    zip = _itertools.izip
 
-if PY2:
     def bstdout():
         return sys.stdout
 
@@ -40,7 +43,33 @@ if PY2:
     def bstderr():
         return sys.stderr
 
+    def iterchar(s):
+        """Iterate over bytes, returning char."""
+        return s
+
+    def iteritems(d, **kw):
+        return d.iteritems(**kw)
+
+    def itervalues(d, **kw):
+        return d.itervalues(**kw)
+
+    def iterkeys(d, **kw):
+        return d.iterkeys(**kw)
+
 else:
+    import configparser
+    import queue
+    import copyreg
+
+    import struct as _struct
+
+    getcwdu = os.getcwd
+    xrange = range
+    unichr = chr
+    int2byte = _struct.Struct(">B").pack
+    text_type = str
+    zip = zip
+
     def bstdout():
         return sys.stdout.buffer
 
@@ -49,6 +78,19 @@ else:
 
     def bstderr():
         return sys.stderr.buffer
+
+    def iterchar(s):
+        """Iterate over bytes, returning char."""
+        return (s[_i:_i+1] for _i in range(len(s)))
+
+    def iteritems(d, **kw):
+        return iter(d.items(**kw))
+
+    def itervalues(d, **kw):
+        return iter(d.values(**kw))
+
+    def iterkeys(d, **kw):
+        return iter(d.keys(**kw))
 
 
 try:

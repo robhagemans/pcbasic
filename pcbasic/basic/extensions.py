@@ -10,7 +10,7 @@ import logging
 from importlib import import_module
 from collections import Iterable
 
-from six import text_type
+from ..compat import text_type
 
 from .base import error
 from . import values

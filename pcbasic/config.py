@@ -18,15 +18,15 @@ import shutil
 import pkg_resources
 from collections import deque
 
-from six import iteritems, text_type
-from six.moves import configparser
-
-from .metadata import VERSION, NAME
-from .data import CODEPAGES, FONTS, PROGRAMS, ICON
+from .compat import iteritems, text_type
+from .compat import configparser
 from .compat import WIN32, get_short_pathname, get_unicode_argv, HAS_CONSOLE
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
 from .compat import split_quoted, getcwdu
 from .compat import bstdout, bstdin
+
+from .data import CODEPAGES, FONTS, PROGRAMS, ICON
+from .metadata import VERSION, NAME
 from . import data
 
 

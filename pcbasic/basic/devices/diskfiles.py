@@ -10,7 +10,7 @@ import struct
 import ntpath
 from contextlib import contextmanager
 
-from six import iteritems
+from ...compat import iteritems
 
 from ..base.bytestream import ByteStream
 from ..base import error

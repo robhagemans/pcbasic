@@ -10,7 +10,7 @@ import math
 import struct
 import functools
 
-from six import int2byte
+from ...compat import int2byte
 
 from ..base import error
 from ..base import tokens as tk

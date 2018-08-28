@@ -15,7 +15,7 @@ try:
 except ImportError:
     numpy = None
 
-from six import iteritems, int2byte
+from ...compat import iteritems, int2byte
 
 from ..base import signals
 

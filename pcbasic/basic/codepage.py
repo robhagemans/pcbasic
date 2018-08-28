@@ -10,9 +10,7 @@ import unicodedata
 import logging
 import os
 
-from six import iteritems, int2byte, unichr
-
-from ..compat import iterchar
+from ..compat import iterchar, iteritems, int2byte, unichr
 
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined

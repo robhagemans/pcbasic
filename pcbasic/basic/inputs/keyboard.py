@@ -9,9 +9,8 @@ This file is released under the GNU GPL version 3 or later.
 from collections import deque
 from contextlib import contextmanager
 
-from six import int2byte
+from ...compat import iterchar, int2byte
 
-from ...compat import iterchar
 from ..base import error
 from ..base import scancode
 from ..base import signals

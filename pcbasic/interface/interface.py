@@ -11,7 +11,7 @@ import threading
 import logging
 import traceback
 
-from six.moves import queue
+from ..compat import queue
 
 from ..basic.base import signals
 from .base import InitFailed, video_plugins, audio_plugins, WAIT_MESSAGE

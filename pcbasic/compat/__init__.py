@@ -12,6 +12,8 @@ from .base import WIN32, MACOS, X64, USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR,
 from .base import split_quoted
 
 from .python2 import PY2, PY3, iterchar, which, getcwdu, bstdin, bstdout, bstderr
+from .python2 import getcwdu, xrange, unichr, int2byte, text_type, iteritems, itervalues, iterkeys
+from .python2 import configparser, queue, copyreg, zip
 
 if WIN32:
     try:

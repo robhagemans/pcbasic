@@ -8,9 +8,8 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
-from six import int2byte
+from ..compat import iterchar, int2byte
 
-from ..compat import iterchar
 from .base import error
 from .base import tokens as tk
 from .base.tokens import ALPHANUMERIC

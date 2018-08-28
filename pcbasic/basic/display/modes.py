@@ -13,8 +13,7 @@ try:
 except ImportError:
     numpy = None
 
-from six import int2byte
-from six.moves import xrange
+from ...compat import xrange, int2byte
 
 from .. import values
 from ..base import error

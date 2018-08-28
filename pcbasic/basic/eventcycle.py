@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import time
 
-from six.moves import queue
+from ..compat import queue
 
 from .base import error
 from .base import scancode

@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 
-from six import iteritems, iterkeys
+from ...compat import iteritems, iterkeys
 
 from ..base import error
 from .. import values

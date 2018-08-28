@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 
-from six import text_type
+from ..compat import text_type
 
 from .base import error
 from .devices import NameWrapper

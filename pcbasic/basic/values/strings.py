@@ -10,7 +10,7 @@ import struct
 import logging
 from operator import itemgetter
 
-from six import iteritems
+from ...compat import iteritems
 
 from ..base import error
 from . import numbers

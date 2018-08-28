@@ -10,7 +10,7 @@ import struct
 from contextlib import contextmanager
 from collections import deque
 
-from six import iteritems
+from ...compat import iteritems
 
 from ..base import error
 from ..base import tokens as tk

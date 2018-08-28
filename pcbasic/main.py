@@ -21,6 +21,7 @@ from .metadata import NAME, VERSION, COPYRIGHT
 from .basic import debug
 from .interface import Interface, InitFailed
 
+
 def main(*arguments):
     """Wrapper for run() to deal with argv encodings, Ctrl-C, stdio and pipes."""
     try:

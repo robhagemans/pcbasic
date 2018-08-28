@@ -10,7 +10,7 @@ import pkg_resources
 import logging
 import binascii
 
-from six import unichr
+from ..compat import unichr
 
 from .resources import get_data
 

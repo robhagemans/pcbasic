@@ -7,13 +7,13 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import io
 import math
 import struct
 import logging
 from chunk import Chunk
-import io
 
-from six import int2byte
+from ...compat import int2byte
 
 from ..base import error
 from ..base import tokens as tk
