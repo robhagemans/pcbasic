@@ -34,10 +34,10 @@ class Arrays(object):
         """Return an iterable over all scalar names."""
         return iterkeys(self._dims)
 
-    def __str__(self):
+    def __repr__(self):
         """Debugging representation of variable dictionary."""
-        return b'\n'.join(
-            b'%s%s: %s' % (n, v, binascii.hexlify(bytes(self._buffers[n])))
+        return '\n'.join(
+            '%s%s: %s' % (n, v, binascii.hexlify(bytes(self._buffers[n])))
             for n, v in iteritems(self._dims)
         )
 

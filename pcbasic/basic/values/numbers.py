@@ -56,20 +56,15 @@ class Value(object):
         self._buffer = memoryview(buffer)
         self._values = values
 
-    def __bytes__(self):
+    def __repr__(self):
         """String representation for debugging."""
         try:
-            return b'%s[%s %s]' % (
-                self.sigil, binascii.hexlify(self.to_bytes()), repr(self.to_value())
+            return '%s[%s %r]' % (
+                self.sigil, binascii.hexlify(self.to_bytes()),
+                self.to_value()
             )
         except Exception:
-            return b'%s[%s <detached>]' % (self.sigil, binascii.hexlify(self.to_bytes()))
-
-    def __str__(self):
-        """String representation for debugging."""
-        return bytes(self).decode('ascii', 'replace')
-
-    __repr__ = __str__
+            return '%s[%s <detached>]' % (self.sigil, binascii.hexlify(self.to_bytes()))
 
     def __getstate__(self):
         # can't pickle memoryview

@@ -21,7 +21,7 @@ class InitFailed(Exception):
     def __init__(self, message=''):
         self._message = message
 
-    def __str__(self):
+    def __repr__(self):
         return self._message
 
 

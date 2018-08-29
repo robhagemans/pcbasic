@@ -162,7 +162,7 @@ class StringSpace(object):
         self._temp = None
         self.clear()
 
-    def __str__(self):
+    def __repr__(self):
         """Debugging representation of string table."""
         return '\n'.join('%x: %r' % (n, v) for n, v in iteritems(self._strings))
 

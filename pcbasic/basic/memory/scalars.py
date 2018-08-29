@@ -31,7 +31,7 @@ class Scalars(object):
         """Return an iterable over all scalar names."""
         return iterkeys(self._vars)
 
-    def __str__(self):
+    def __repr__(self):
         """Debugging representation of variable dictionary."""
         return '\n'.join(
             '%s: %s' % (n, self._values.from_bytes(v)) for n, v in iteritems(self._vars)

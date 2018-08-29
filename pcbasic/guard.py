@@ -134,15 +134,15 @@ class ExceptionGuard(object):
             u''.join(text for _, text in message),
             u''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
             u'==== Screen Pages ='.ljust(100, u'='),
-            str(impl.display.text_screen),
+            repr(impl.display.text_screen),
             u'==== Scalars ='.ljust(100, u'='),
-            str(impl.scalars),
+            repr(impl.scalars),
             u'==== Arrays ='.ljust(100, u'='),
-            str(impl.arrays),
+            repr(impl.arrays),
             u'==== Strings ='.ljust(100, u'='),
-            str(impl.strings),
+            repr(impl.strings),
             u'==== Program Buffer ='.ljust(100, u'='),
-            str(impl.program),
+            repr(impl.program),
         ]
         impl.program.bytecode.seek(1)
         crashlog.append(u'==== Program ='.ljust(100, u'='))

@@ -9,3 +9,4 @@ doc/
 build/
 dist/
 pcbasic.egg-info/
+__pycache__/

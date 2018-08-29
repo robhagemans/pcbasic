@@ -7,7 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
-
+import binascii
 
 class TextRow(object):
     """Buffer for a single row of the screen."""
@@ -85,25 +85,30 @@ class TextBuffer(object):
         self.width = width
         self.height = height
 
-    def __str__(self):
-        """Return a string representation of the screen buffer (for debugging)."""
-        horiz_bar = ('  +' + '-' * self.width + '+')
-        lastwrap = False
+    def __repr__(self):
+        """Return an ascii representation of the screen buffer (for debugging)."""
+        horiz_bar = ('   +' + '-' * self.width + '+')
         row_strs = []
         for num, page in enumerate(self.pages):
-            row_strs += [horiz_bar]
+            lastwrap = False
+            row_strs.append(horiz_bar)
             for i, row in enumerate(page.row):
-                s = [c[0] for c in row.buf]
-                outstr = '{0:2}'.format(i)
-                if lastwrap:
-                    outstr += ('\\')
-                else:
-                    outstr += ('|')
-                outstr += (''.join(s))
-                if row.wrap:
-                    row_strs.append(outstr + '\\ {0:2}'.format(row.end))
-                else:
-                    row_strs.append(outstr + '| {0:2}'.format(row.end))
+                # convert non-ascii bytes to \x81 etc
+                # dbcs is encoded as double char in left column, '' in right
+                rowbytes = (_pair[0] for _pair in row.buf)
+                # replace non-ascii with ? - this is not ideal but
+                # for python2 we need to stick to ascii-128 so implicit conversion to bytes works
+                # and for python3 we must use unicode
+                # and backslashreplace messes up the output width...
+                rowstr = ''.join(
+                    _char.decode('ascii', 'replace').replace(u'\ufffd', u'?')
+                    for _char in rowbytes
+                )
+                left = '\\' if lastwrap else '|'
+                right = '\\' if row.wrap else '|'
+                row_strs.append('{0:2} {1}{2}{3} {4:2}'.format(
+                    i, left, rowstr, right, row.end,
+                ))
                 lastwrap = row.wrap
             row_strs.append(horiz_bar)
         return '\n'.join(row_strs)

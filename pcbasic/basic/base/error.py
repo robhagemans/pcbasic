@@ -74,11 +74,7 @@ IFC = ILLEGAL_FUNCTION_CALL
 class Interrupt(Exception):
     """Base type for exceptions."""
 
-    def __bytes__(self):
-        """String representation of exception."""
-        return self.message
-
-    def __str__(self):
+    def __repr__(self):
         """String representation of exception."""
         return self.message.decode('ascii', 'replace')
 
