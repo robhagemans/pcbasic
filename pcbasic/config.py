@@ -77,13 +77,6 @@ def store_bundled_programs(PROGRAM_PATH):
         with open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
             f.write(data.read_program_file(name))
 
-def escape_decode_unicode(s):
-    """Decode escapes in a unicode object."""
-    # note that unicode_escape can't deal, at all, with things like \x81
-    # so we encode to utf8, parse escapes, and decode back
-    return (
-        codecs.escape_decode(s.encode('utf-8', 'replace'))[0].decode('utf-8', 'replace')
-    )
 
 class TemporaryDirectory():
     """Temporary directory context guard like in Python 3 tempfile."""
@@ -542,7 +535,9 @@ class Settings(object):
             'low_intensity': cga_low,
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
-            'keys': escape_decode_unicode(self.get('keys')),
+            # we first need to encode the unicode to bytes before we can decode it
+            # this preserves unicode as \x (if latin-1) and \u escapes
+            'keys': self.get('keys').encode('ascii', 'backslashreplace').decode('unicode-escape'),
             # find program for PCjr TERM command
             'term': self.get('term'),
             'shell': self.get('shell'),

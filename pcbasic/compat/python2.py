@@ -27,12 +27,34 @@ if PY2:
 
     import itertools as _itertools
 
+    _FS_ENCODING = sys.getfilesystemencoding()
+
     getcwdu = os.getcwdu
     xrange = xrange
     unichr = unichr
     int2byte = chr
     text_type = unicode
     zip = _itertools.izip
+
+    # unicode system interfaces
+
+    # following python 3.5 this uses sys.getfilesystemencoding()
+    def getenvu(key, default=None):
+        assert isinstance(key, unicode), type(key)
+        try:
+            return os.environ[key.encode(_FS_ENCODING)].decode(_FS_ENCODING)
+        except KeyError:
+            return default
+
+    def setenvu(key, value):
+        assert isinstance(key, unicode), type(key)
+        assert isinstance(value, unicode), type(value)
+        os.environ[key.encode(_FS_ENCODING)] = value.encode(_FS_ENCODING)
+
+    def iterenvu():
+        return (_key.decode(_FS_ENCODING) for _key in os.environ)
+
+    # bytes streams
 
     def bstdout():
         return sys.stdout
@@ -42,6 +64,8 @@ if PY2:
 
     def bstderr():
         return sys.stderr
+
+    # iterators
 
     def iterchar(s):
         """Iterate over bytes, returning char."""
@@ -70,6 +94,19 @@ else:
     text_type = str
     zip = zip
 
+    # unicode system interfaces
+
+    # following python 3.5 this uses sys.getfilesystemencoding()
+    getenvu = os.getenv
+
+    def setenvu(key, value):
+        os.environ[key] = value
+
+    def iterenvu():
+        return os.environ.keys()
+
+    # bytes streams
+
     def bstdout():
         return sys.stdout.buffer
 
@@ -78,6 +115,8 @@ else:
 
     def bstderr():
         return sys.stderr.buffer
+
+    # iterators
 
     def iterchar(s):
         """Iterate over bytes, returning char."""

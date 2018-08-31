@@ -156,7 +156,7 @@ class Implementation(object):
             self.queues, self.keyboard, self.screen, self.files, self.codepage, shell
         )
         # set up environment
-        self.environment = dos.Environment(self.values)
+        self.environment = dos.Environment(self.values, self.codepage)
         # initialise random number generator
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock

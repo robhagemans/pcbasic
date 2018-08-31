@@ -15,14 +15,10 @@ from collections import deque
 import subprocess
 from subprocess import Popen, PIPE
 
-from ..compat import SHELL_ENCODING, HIDE_WINDOW, split_quoted
+from ..compat import SHELL_ENCODING, HIDE_WINDOW, split_quoted, getenvu, setenvu, iterenvu
 from .codepage import CONTROL
 from .base import error
 from . import values
-
-
-# get environment as bytes
-getenvb = os.getenv
 
 
 # command interpreter must support command.com convention
@@ -33,34 +29,56 @@ getenvb = os.getenv
 SHELL_COMMAND_SWITCH = u'/C'
 
 
-
 ##########################################
 # calling shell environment
 
 class Environment(object):
     """Handle environment changes."""
 
-    def __init__(self, values):
+    def __init__(self, values, codepage):
         """Initialise."""
         self._values = values
+        self._codepage = codepage
+
+    def _setenv(self, key, value):
+        """Set environment (bytes) key to (bytes) value."""
+        assert isinstance(key, bytes), type(key)
+        assert isinstance(value, bytes), type(value)
+        ukey = self._codepage.str_to_unicode(key)
+        uvalue = self._codepage.str_to_unicode(value)
+        setenvu(ukey, uvalue)
+
+    def _getenv(self, key):
+        """Get environment (bytes) value or b''."""
+        assert isinstance(key, bytes), type(key)
+        ukey = self._codepage.str_to_unicode(key)
+        return self._codepage.from_unicode(getenvu(ukey, u''))
+
+    def _getenv_item(self, index):
+        """Get environment (bytes) 'key=value' or b'', by zero-based index."""
+        envlist = list(iterenvu())
+        try:
+            ukey = envlist[index]
+        except IndexError:
+            return b''
+        else:
+            key = self._codepage.from_unicode(ukey)
+            value = self._codepage.from_unicode(getenvu(ukey, u''))
+            return b'%s=%s' % (key, value)
 
     def environ_(self, args):
         """ENVIRON$: get environment string."""
         expr, = args
         if isinstance(expr, values.String):
-            parm = expr.to_str()
-            if not parm:
+            key = expr.to_str()
+            if not key:
                 raise error.BASICError(error.IFC)
-            envstr = os.getenv(parm) or b''
+            result = self._getenv(key)
         else:
-            expr = values.to_int(expr)
-            error.range_check(1, 255, expr)
-            envlist = list(os.environ)
-            if expr > len(envlist):
-                envstr = b''
-            else:
-                envstr = b'%s=%s' % (envlist[expr-1], getenvb(envlist[expr-1]))
-        return self._values.new_string().from_str(envstr)
+            index = values.to_int(expr)
+            error.range_check(1, 255, index)
+            result = self._getenv_item(index-1)
+        return self._values.new_string().from_str(result)
 
     def environ_statement_(self, args):
         """ENVIRON: set environment string."""
@@ -69,8 +87,7 @@ class Environment(object):
         eqs = envstr.find(b'=')
         if eqs <= 0:
             raise error.BASICError(error.IFC)
-        envvar = envstr[:eqs]
-        os.environ[envvar] = envstr[eqs+1:]
+        self._setenv(envstr[:eqs], envstr[eqs+1:])
 
 
 #########################################

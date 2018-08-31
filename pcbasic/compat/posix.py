@@ -40,6 +40,7 @@ EOL = b'\n'
 # shell conventions
 # console encoding
 SHELL_ENCODING = sys.stdin.encoding or locale.getpreferredencoding()
+FS_ENCODING = sys.getfilesystemencoding()
 # window suppression not needed on Unix
 HIDE_WINDOW = None
 
@@ -93,7 +94,7 @@ def get_unicode_argv():
     # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
     # on MacOS, if launched from Finder, ignore the additional "process serial number" argument
     return [
-        arg.decode(SHELL_ENCODING, errors='replace')
+        arg.decode(FS_ENCODING, errors='replace')
         for arg in sys.argv if not arg.startswith(b'-psn_')
     ]
 
