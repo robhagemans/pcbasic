@@ -34,6 +34,26 @@ from . import data
 MIN_PYTHON2_VERSION = (2, 7, 12)
 MIN_PYTHON3_VERSION = (3, 5, 0)
 
+def validate_version():
+    """Initial validations."""
+    # sys.version_info tuple's first three elements are guaranteed to be ints
+    python_version = sys.version_info[:3]
+    if (
+            (python_version[0] == 2 and python_version < MIN_PYTHON2_VERSION) or
+            (python_version[0] == 3 and python_version < MIN_PYTHON3_VERSION)
+        ):
+        msg = (
+            'PC-BASIC requires Python version %d.%d.%d, ' % MIN_PYTHON2_VERSION +
+            'version %d.%d.%d, or higher. ' % MIN_PYTHON3_VERSION +
+            'You have %d.%d.%d.' % python_version
+        )
+        logging.fatal(msg)
+        raise ImportError(msg)
+
+# raise ImportError if incorrect Python version
+validate_version()
+
+
 # base directory name
 MAJOR_VERSION = u'.'.join(VERSION.split(u'.')[:2])
 BASENAME = u'pcbasic-{0}'.format(MAJOR_VERSION)
@@ -345,21 +365,6 @@ class Settings(object):
             raise
         # prepare global logger for use by main program
         self._prepare_logging()
-        # FIXME: these should be importerrors on pcbasic
-        # initial validations
-        # sys.version_info tuple's first three elements are guaranteed to be ints
-        python_version = sys.version_info[:3]
-        if (
-                (python_version[0] == 2 and python_version < MIN_PYTHON2_VERSION) or
-                (python_version[0] == 3 and python_version < MIN_PYTHON3_VERSION)
-            ):
-            msg = (
-                'PC-BASIC requires Python version %d.%d.%d, ' % MIN_PYTHON2_VERSION +
-                'version %d.%d.%d, or higher. ' % MIN_PYTHON3_VERSION +
-                'You have %d.%d.%d.' % python_version
-            )
-            logging.fatal(msg)
-            raise Exception(msg)
 
     def _pre_init_logging(self):
         """Set up the global logger temporarily until we know the log stream."""
