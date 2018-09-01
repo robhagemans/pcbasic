@@ -19,7 +19,7 @@ import ntpath
 import logging
 import codecs
 
-from ...compat import xrange, text_type
+from ...compat import xrange, text_type, add_str
 from ...compat import get_short_pathname, get_free_bytes, is_hidden, iterchar
 
 from ..base import error
@@ -228,7 +228,7 @@ class DiskDevice(object):
 
     allowed_modes = b'IOR'
 
-    def __init__(self, letter, path, cwd, codepage, text_mode):
+    def __init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed):
         """Initialise a disk device."""
         assert isinstance(cwd, text_type), type(cwd)
         # DOS drive letter
@@ -251,6 +251,7 @@ class DiskDevice(object):
         self._locks = Locks()
         # text file settings
         self._text_mode = text_mode
+        self._soft_linefeed = soft_linefeed
 
     def close(self):
         """Close disk device."""
@@ -288,7 +289,7 @@ class DiskDevice(object):
                 # if the input stream is unicode: encode codepage bytes
                 # replace newlines with \r in text mode
                 fhandle = self._codepage.wrap_input_stream(
-                    fhandle, replace_newlines=self._text_mode
+                    fhandle, replace_newlines=not self._soft_linefeed
                 )
         if filetype in b'BPM':
             # binary [B]LOAD, [B]SAVE
@@ -680,11 +681,13 @@ def istype(native_path, native_name, isdir):
 ##############################################################################
 # Internal disk and bound files
 
+@add_str
 class BoundFile(object):
     """Bound internal file."""
 
     def __init__(self, device, file_name_or_object, name):
         """Initialise."""
+        assert isinstance(name, bytes)
         self._device = device
         self._file = file_name_or_object
         self._name = name
@@ -707,18 +710,18 @@ class BoundFile(object):
         except EnvironmentError as e:
             handle_oserror(e)
 
-    def __str__(self):
+    def __bytes__(self):
         """Get BASIC file name."""
         return b'%s:%s' % (self._device.letter, self._name)
 
-    __bytes__ = __str__
 
-
+@add_str
 class NameWrapper(object):
     """Use normal file name as return value from bind_file."""
 
     def __init__(self, name):
         """Initialise."""
+        assert isinstance(name, bytes)
         self._file = name
 
     def __enter__(self):
@@ -728,20 +731,18 @@ class NameWrapper(object):
     def __exit__(self, *dummies):
         """Context guard."""
 
-    def __str__(self):
+    def __bytes__(self):
         """Get BASIC file name."""
         return self._file
-
-    __bytes__ = __str__
 
 
 class InternalDiskDevice(DiskDevice):
     """Internal disk device for special operations."""
 
-    def __init__(self, letter, path, cwd, codepage, text_mode):
+    def __init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed):
         """Initialise internal disk."""
         self._bound_files = {}
-        DiskDevice.__init__(self, letter, path, cwd, codepage, text_mode)
+        DiskDevice.__init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed)
 
     def bind(self, file_name_or_object, name=None):
         """Bind a native file name or object to an internal name."""
@@ -777,8 +778,9 @@ class InternalDiskDevice(DiskDevice):
                 handle_oserror(e)
         else:
             return DiskDevice.open(
-                    self, number, filespec, filetype, mode, access, lock,
-                    reclen, seg, offset, length, field)
+                self, number, filespec, filetype, mode, access, lock,
+                reclen, seg, offset, length, field
+            )
 
     def _split_pathmask(self, pathmask):
         """Split pathmask into path and mask."""

@@ -135,6 +135,21 @@ else:
     def iterkeys(d, **kw):
         return iter(d.keys(**kw))
 
+if PY2:
+    def add_str(cls):
+        try:
+            cls.__str__ = cls.__bytes__
+        except AttributeError:
+            pass
+        return cls
+else:
+    def add_str(cls):
+        try:
+            cls.__str__ = cls.__unicode__
+        except AttributeError:
+            pass
+        return cls
+
 
 @contextlib.contextmanager
 def suppress_output():

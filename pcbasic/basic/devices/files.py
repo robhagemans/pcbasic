@@ -45,7 +45,7 @@ class Files(object):
             self, values, memory, queues, keyboard, display,
             max_files, max_reclen, serial_buffer_size,
             device_params, current_device, mount_dict,
-            text_mode
+            text_mode, soft_linefeed
         ):
         """Initialise files."""
         # for wait() in files_
@@ -58,7 +58,7 @@ class Files(object):
         self._init_devices(
             values, queues, display, keyboard,
             device_params, current_device, mount_dict,
-            serial_buffer_size, text_mode
+            serial_buffer_size, text_mode, soft_linefeed
         )
 
     ###########################################################################
@@ -128,7 +128,7 @@ class Files(object):
     def _init_devices(
             self, values, queues, display, keyboard,
             device_params, current_device, mount_dict,
-            serial_in_size, text_mode
+            serial_in_size, text_mode, soft_linefeed
         ):
         """Initialise devices."""
         # screen device, for files_()
@@ -156,7 +156,7 @@ class Files(object):
         self.kybd_file = self._devices[b'KYBD:'].device_file
         self.lpt1_file = self._devices[b'LPT1:'].device_file
         # disks
-        self._init_disk_devices(mount_dict, current_device, codepage, text_mode)
+        self._init_disk_devices(mount_dict, current_device, codepage, text_mode, soft_linefeed)
 
     def close_devices(self):
         """Close device master files."""
@@ -568,7 +568,7 @@ class Files(object):
 
     def _init_disk_devices(
             self, mount_dict, current_device,
-            codepage, text_mode
+            codepage, text_mode, soft_linefeed
         ):
         """Initialise disk devices."""
         # use None to request default mounts, use {} for no mounts
@@ -584,7 +584,9 @@ class Files(object):
                 path, cwd = None, u''
             # treat device @: separately - internal disk
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
-            self._devices[letter + b':'] = disk_class(letter, path, cwd, codepage, text_mode)
+            self._devices[letter + b':'] = disk_class(
+                letter, path, cwd, codepage, text_mode, soft_linefeed
+            )
         # allow upper or lower case, unicode or bytes, with or without :
         if isinstance(current_device, text_type):
             current_device = current_device.encode('ascii')

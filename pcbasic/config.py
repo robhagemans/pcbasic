@@ -136,6 +136,7 @@ class Settings(object):
         u'strict': {
             u'hide-listing': u'65530',
             u'text': u'',
+            u'soft-linefeed': u'False',
             u'hide-protected': u'True',
             u'allow-code-poke': u'True',
             u'prevent-close': u'True',
@@ -281,6 +282,7 @@ class Settings(object):
                 u'vga', u'ega', u'cga', u'cga_old', u'mda',
                 u'pcjr', u'tandy', u'hercules', u'olivetti'), },
         u'text': {u'type': u'string', u'default': u'',},
+        u'soft-linefeed': {u'type': u'bool', u'default': False,},
         u'border': {u'type': u'int', u'default': 5,},
         u'mouse-clipboard': {u'type': u'bool', u'default': True,},
         u'state': {u'type': u'string', u'default': u'',},
@@ -558,6 +560,7 @@ class Settings(object):
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
             'textfile_encoding': self.get('text'),
+            'soft_linefeed': self.get('soft-linefeed'),
             # keyboard settings
             'ctrl_c_is_break': self.get('ctrl-c-break'),
             # program parameters
@@ -1082,18 +1085,18 @@ class Settings(object):
         )
         argnames = sorted(self.arguments.keys())
         try:
-            with open(file_name, b'wb') as f:
+            with open(file_name, 'wb') as f:
                 # write a BOM at start to ensure Notepad gets that it's utf-8
                 # but don't use codecs.open as that doesn't do CRLF on Windows
                 f.write(b'\xEF\xBB\xBF')
-                f.write(header.encode(b'utf-8'))
+                f.write(header.encode('utf-8'))
                 for a in argnames:
                     try:
                         f.write(
                             (
                                 u'## choices: %s\n' %
                                 u', '.join(u'%s' % (_s,) for _s in self.arguments[a][u'choices'])
-                            ).encode(b'utf-8')
+                            ).encode('utf-8')
                         )
                     except(KeyError, TypeError):
                         pass
@@ -1103,7 +1106,7 @@ class Settings(object):
                         formatted = u','.join(u'%s' % (_s,) for _s in self.arguments[a][u'default'])
                     except(KeyError, TypeError):
                         formatted = u'%s' % (self.arguments[a][u'default'],)
-                    f.write((u'#%s=%s\n' % (a, formatted)).encode(b'utf-8'))
+                    f.write((u'#%s=%s\n' % (a, formatted)).encode('utf-8'))
                 f.write(footer)
         except (OSError, IOError):
             # can't create file, ignore. we'll get a message later.

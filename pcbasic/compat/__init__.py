@@ -14,7 +14,7 @@ from .base import split_quoted
 from .python2 import PY2, PY3, iterchar, which, stdin, stdout, stderr, suppress_output
 from .python2 import xrange, unichr, int2byte, text_type, iteritems, itervalues, iterkeys
 from .python2 import getcwdu, getenvu, setenvu, iterenvu
-from .python2 import configparser, queue, copyreg, zip
+from .python2 import configparser, queue, copyreg, zip, add_str
 
 if WIN32:
     try:
