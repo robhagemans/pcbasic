@@ -97,7 +97,7 @@ OS_ERROR = {
 ALLOWABLE_CHARS = set(ALPHANUMERIC + b" !#$%&'()-@^_`{}~")
 
 # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
-ACCESS_MODES = {b'I': 'rb', b'O': 'wb', b'R': 'r+b', b'A': 'ab'}
+ACCESS_MODES = {b'I': 'r', b'O': 'w', b'R': 'r+', b'A': 'a'}
 
 
 ##############################################################################
@@ -115,7 +115,7 @@ def handle_oserror(e):
     try:
         basic_err = OS_ERROR[e.errno]
     except KeyError:
-        logging.error(u'Unmapped environment exception: %d', e.errno)
+        logging.error(u'Unmapped environment exception: %s', e.errno)
         basic_err = error.DEVICE_IO_ERROR
     raise error.BASICError(basic_err)
 
@@ -228,7 +228,7 @@ class DiskDevice(object):
 
     allowed_modes = b'IOR'
 
-    def __init__(self, letter, path, cwd, codepage, utf8, universal):
+    def __init__(self, letter, path, cwd, codepage, text_mode):
         """Initialise a disk device."""
         assert isinstance(cwd, text_type), type(cwd)
         # DOS drive letter
@@ -250,8 +250,7 @@ class DiskDevice(object):
         # locks are drive-specific
         self._locks = Locks()
         # text file settings
-        self._utf8 = utf8
-        self._universal = universal
+        self._text_mode = text_mode
 
     def close(self):
         """Close disk device."""
@@ -263,13 +262,14 @@ class DiskDevice(object):
 
     def _create_file_object(
             self, fhandle, filetype, mode, number=0,
-            field=None, reclen=128, seg=0, offset=0, length=0):
+            field=None, reclen=128, seg=0, offset=0, length=0
+        ):
         """Create disk file object of requested type."""
         # determine file type if needed
         if len(filetype) > 1 and mode == b'I':
             # read magic
             first = fhandle.read(1)
-            fhandle.seek(-len(first), 1)
+            fhandle.seek(0)
             try:
                 filetype_found = devicebase.MAGIC_TO_TYPE[first]
                 if filetype_found not in filetype:
@@ -277,27 +277,29 @@ class DiskDevice(object):
                 filetype = filetype_found
             except KeyError:
                 filetype = b'A'
-        # utf8 input for text & ascii-program files
+        # unicode or bytes input for text & ascii-program files
         if filetype in b'DA':
-            if self._utf8:
-                if mode == b'I':
-                    # accept BOM \xef\xbb\xbf
-                    fhandle = CodecReader(fhandle, self._codepage, 'utf-8-sig')
-                elif mode == b'O':
-                    # start UTF-8 files with BOM as many Windows readers expect this
-                    fhandle = CodecWriter(fhandle, self._codepage, 'utf-8-sig')
-                elif mode == b'A':
-                    fhandle = CodecWriter(fhandle, self._codepage, 'utf-8')
+            if mode in (b'O', b'A'):
+                # if the input stream is unicode: decode codepage bytes
+                fhandle = self._codepage.wrap_output_stream(
+                    fhandle, preserve=CONTROL+(b'\x1A',)
+                )
+            else:
+                # if the input stream is unicode: encode codepage bytes
+                # replace newlines with \r in text mode
+                fhandle = self._codepage.wrap_input_stream(
+                    fhandle, replace_newlines=self._text_mode
+                )
         if filetype in b'BPM':
             # binary [B]LOAD, [B]SAVE
             return BinaryFile(fhandle, filetype, number, mode, seg, offset, length, self._locks)
         elif filetype == b'A':
             # ascii program file
-            return TextFile(fhandle, filetype, number, mode, self._locks, self._universal)
+            return TextFile(fhandle, filetype, number, mode, self._locks)
         elif filetype == b'D':
             if mode in b'IAO':
                 # data file for input, output, append
-                return TextFile(fhandle, filetype, number, mode, self._locks, self._universal)
+                return TextFile(fhandle, filetype, number, mode, self._locks)
             else:
                 # data file for random
                 return RandomFile(fhandle, number, field, reclen, self._locks)
@@ -308,7 +310,8 @@ class DiskDevice(object):
 
     def open(
             self, number, filespec, filetype, mode, access, lock,
-            reclen, seg, offset, length, field):
+            reclen, seg, offset, length, field
+        ):
         """Open a file on a disk drive."""
         # parse the file spec to a definite native name
         if not self._native_root:
@@ -334,15 +337,16 @@ class DiskDevice(object):
         self._locks.open_file(dos_basename, number, mode, lock, access)
         try:
             # open the underlying stream
-            fhandle = self._open_stream(native_name, filetype, mode)
+            fhandle = self.open_stream(native_name, filetype, mode)
             # apply the BASIC file wrapper
             return self._create_file_object(
-                    fhandle, filetype, mode, number, field, reclen, seg, offset, length)
+                fhandle, filetype, mode, number, field, reclen, seg, offset, length
+            )
         except Exception:
             self._locks.close_file(number)
             raise
 
-    def _open_stream(self, native_name, filetype, mode):
+    def open_stream(self, native_name, filetype, mode):
         """Open a stream on disk by os-native name with BASIC mode and access level."""
         try:
             # create file if in RANDOM or APPEND mode and doesn't exist yet
@@ -361,7 +365,15 @@ class DiskDevice(object):
                 except IOError:
                     pass
                 f.close()
-            return io.open(native_name, ACCESS_MODES[mode])
+            access_mode = ACCESS_MODES[mode]
+            text_mode = self._text_mode
+            # use BOM on input and output, but not append
+            if text_mode.lower() in ('utf-8', 'utf_8', 'utf', 'u8', 'utf8') and mode in (b'I', b'O'):
+                text_mode = 'utf-8-sig'
+            if text_mode:
+                return io.open(native_name, access_mode, encoding=text_mode, newline='')
+            else:
+                return io.open(native_name, access_mode + 'b')
         except EnvironmentError as e:
             handle_oserror(e)
         except TypeError:
@@ -666,67 +678,6 @@ def istype(native_path, native_name, isdir):
 
 
 ##############################################################################
-# Disk stream wrappers
-
-class StreamWrapperBase(object):
-    """Base class for delegated stream wrappers."""
-
-    def __getattr__(self, name):
-        """Delegate methods to stream."""
-        if hasattr(self, '_stream'):
-            return getattr(self._stream, name)
-        else:
-            # this is needed for pickle to be able to reconstruct the class
-            raise AttributeError()
-
-
-class CodecReader(StreamWrapperBase):
-    """Read binary streams, converting from Python codec to BASIC codepage."""
-
-    def __init__(self, stream, codepage, encoding):
-        """Wrap the stream."""
-        # don't convert universal newline (input setting)
-        #self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='\r\n')
-        # in Python 2, io.TextIOWrapper doesn't work on file objects such as sys.stdout
-        self._stream = codecs.getreader(encoding)(stream, errors='replace')
-        self._buffer = b''
-        self._codepage = codepage
-        self._encoding = encoding
-
-    def read(self, n=-1):
-        """Read n bytes from stream with cdepage conversion."""
-        if n > len(self._buffer):
-            unistr = self._stream.read(n - len(self._buffer))
-        elif n == -1:
-            unistr = self._stream.read()
-        else:
-            unistr = u''
-        converted = (self._buffer + self._codepage.str_from_unicode(unistr, errors='replace'))
-        if n < 0:
-            return converted
-        else:
-            output, self._buffer = converted[:n], converted[n:]
-            return output
-
-
-class CodecWriter(StreamWrapperBase):
-    """Write binary streams, converting from BASIC codepage to Python codec."""
-
-    def __init__(self, stream, codepage, encoding):
-        """Wrap the stream."""
-        self._encoding = encoding
-        self._converter = codepage.get_converter(preserve=CONTROL  + (b'\x1A',))
-        # don't convert universal newline (output setting)
-        #self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='')
-        # in Python 2, io.TextIOWrapper doesn't work on file objects such as sys.stdout
-        self._stream = codecs.getwriter(encoding)(stream, errors='replace')
-
-    def write(self, s):
-        """Write to stream with codepage conversion."""
-        self._stream.write(self._converter.to_unicode(s))
-
-
-##############################################################################
 # Internal disk and bound files
 
 class BoundFile(object):
@@ -746,11 +697,11 @@ class BoundFile(object):
         """Context guard."""
         self._device.unbind(self._name)
 
-    def get_stream(self, mode):
+    def get_stream(self, filetype, mode):
         """Get a native stream for the bound file."""
         try:
             if isinstance(self._file, (bytes, text_type)):
-                return io.open(self._file, ACCESS_MODES[mode])
+                return self._device.open_stream(self._file, filetype, mode)
             else:
                 return self._file
         except EnvironmentError as e:
@@ -787,10 +738,10 @@ class NameWrapper(object):
 class InternalDiskDevice(DiskDevice):
     """Internal disk device for special operations."""
 
-    def __init__(self, letter, path, cwd, codepage, utf8, universal):
+    def __init__(self, letter, path, cwd, codepage, text_mode):
         """Initialise internal disk."""
         self._bound_files = {}
-        DiskDevice.__init__(self, letter, path, cwd, codepage, utf8, universal)
+        DiskDevice.__init__(self, letter, path, cwd, codepage, text_mode)
 
     def bind(self, file_name_or_object, name=None):
         """Bind a native file name or object to an internal name."""
@@ -818,10 +769,11 @@ class InternalDiskDevice(DiskDevice):
         ):
         """Open a file on the internal disk drive."""
         if filespec in self._bound_files:
-            fhandle = self._bound_files[filespec].get_stream(mode)
+            fhandle = self._bound_files[filespec].get_stream(filetype, mode)
             try:
                 return self._create_file_object(fhandle, filetype, mode)
             except EnvironmentError as e:
+                raise
                 handle_oserror(e)
         else:
             return DiskDevice.open(

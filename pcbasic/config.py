@@ -135,7 +135,7 @@ class Settings(object):
     default_config = {
         u'strict': {
             u'hide-listing': u'65530',
-            u'soft-linefeed': u'True',
+            u'text': u'',
             u'hide-protected': u'True',
             u'allow-code-poke': u'True',
             u'prevent-close': u'True',
@@ -271,7 +271,6 @@ class Settings(object):
         u'hide-protected': {u'type': u'bool', u'default': False,},
         u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
         u'resume': {u'type': u'bool', u'default': False,},
-        u'soft-linefeed': {u'type': u'bool', u'default': False,},
         u'syntax': {
             u'type': u'string', u'choices': (u'advanced', u'pcjr', u'tandy'),
             u'default': u'advanced',},
@@ -281,7 +280,7 @@ class Settings(object):
             u'choices': (
                 u'vga', u'ega', u'cga', u'cga_old', u'mda',
                 u'pcjr', u'tandy', u'hercules', u'olivetti'), },
-        u'utf8': {u'type': u'bool', u'default': False,},
+        u'text': {u'type': u'string', u'default': u'',},
         u'border': {u'type': u'int', u'default': 5,},
         u'mouse-clipboard': {u'type': u'bool', u'default': True,},
         u'state': {u'type': u'string', u'default': u'',},
@@ -448,8 +447,8 @@ class Settings(object):
         """Determine which i/o streams to attach."""
         input_streams, output_streams = [], []
         # unicode or encoded input
-        # FIXME: replace this with --text=raw,net,[encoding] ?
-        if self.get('utf8'):
+        # FIXME: this is confusing as it overlaps with disk file encoding - use qualifier?
+        if self.get('text'):
             # use unicode streams
             stdin_stream, stdout_stream = stdin, stdout
         else:
@@ -558,8 +557,7 @@ class Settings(object):
             'mount': mount_dict,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
-            'utf8': self.get('utf8'),
-            'soft_linefeed': self.get('soft-linefeed'),
+            'textfile_encoding': self.get('text'),
             # keyboard settings
             'ctrl_c_is_break': self.get('ctrl-c-break'),
             # program parameters

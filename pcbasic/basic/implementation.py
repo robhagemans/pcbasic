@@ -53,7 +53,7 @@ class Implementation(object):
             output_streams=sys.stdout, input_streams=sys.stdin,
             codepage=None, box_protect=True, font=None, text_width=80,
             video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3), low_intensity=False,
-            devices=None, current_device=u'Z:', mount=None, utf8=False, soft_linefeed=False,
+            devices=None, current_device=u'Z:', mount=None, textfile_encoding=None,
             keys=u'', check_keybuffer_full=True, ctrl_c_is_break=True,
             hide_listing=None, hide_protected=False,
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
@@ -147,7 +147,7 @@ class Implementation(object):
         self.files = Files(
             self.values, self.memory, self.queues, self.keyboard, self.display,
             max_files, max_reclen, serial_buffer_size,
-            devices, current_device, mount, utf8, not soft_linefeed
+            devices, current_device, mount, text_mode=textfile_encoding
         )
         # set up the SHELL command
         # Files needed for current disk device

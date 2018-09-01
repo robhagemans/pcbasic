@@ -126,7 +126,7 @@ class Codepage(object):
         """Convert codepage point to unicode grapheme cluster """
         return self.cp_to_unicode.get(cp, replace)
 
-    def str_to_unicode(self, cps, preserve=b'', box_protect=True):
+    def str_to_unicode(self, cps, preserve=(), box_protect=True):
         """Convert codepage string to unicode string."""
         return Converter(self, preserve, box_protect).to_unicode(cps, flush=True)
 
@@ -134,7 +134,7 @@ class Codepage(object):
         """Get converter from codepage to unicode."""
         return Converter(self, preserve, self.box_protect)
 
-    def wrap_output_stream(self, stream, preserve=b''):
+    def wrap_output_stream(self, stream, preserve=()):
         """Wrap a stream so that we can write codepage bytes to it."""
         # check for file-like objects that expect unicode, raw output otherwise
         if not isinstance(stream, (
@@ -142,25 +142,91 @@ class Codepage(object):
                 codecs.StreamReaderWriter, codecs.StreamWriter,
             )):
             return stream
-        return OutputStreamWrapper(stream, self.get_converter(preserve))
+        return OutputStreamWrapper(stream, self, preserve)
+
+    def wrap_input_stream(self, stream, replace_newlines=False):
+        """Wrap a stream so that we can read codepage bytes from it."""
+        # check for file-like objects that expect unicode, raw output otherwise
+        if isinstance(stream, (
+                io.TextIOWrapper, io.StringIO,
+                codecs.StreamReaderWriter, codecs.StreamReader,
+            )):
+            stream = InputStreamWrapper(stream, self)
+        if replace_newlines:
+            return NewlineWrapper(stream)
+        return stream
 
 
-class OutputStreamWrapper(object):
+##############################################################################
+# stream wrappers
+
+class StreamWrapperBase(object):
+    """Base class for delegated stream wrappers."""
+
+    def __init__(self, stream):
+        """Set up codec."""
+        self._stream = stream
+
+    def __getattr__(self, name):
+        """Delegate methods to stream."""
+        if hasattr(self, '_stream') and name != '__getstate__':
+            return getattr(self._stream, name)
+        else:
+            # this is needed for pickle to be able to reconstruct the class
+            raise AttributeError()
+
+
+class OutputStreamWrapper(StreamWrapperBase):
     """
     Converter stream wrapper, takes bytes input.
     Stream must be a unicode (text) stream.
     """
 
-    def __init__(self, stream, converter):
+    def __init__(self, stream, codepage, preserve=()):
         """Set up codec."""
-        self._conv = converter
+        self._conv = codepage.get_converter(preserve)
         self._stream = stream
 
     def write(self, s):
         """Write bytes to codec stream."""
         # decode BASIC bytes --(codepage)-> unicode
         self._stream.write(self._conv.to_unicode(s))
-        #self._stream.flush()
+
+
+class InputStreamWrapper(StreamWrapperBase):
+    """
+    Converter stream wrapper, produces bytes output.
+    Stream must be a unicode (text) stream.
+    """
+
+    def __init__(self, stream, codepage):
+        """Set up codec."""
+        self._codepage = codepage
+        self._stream = stream
+        self._buffer = b''
+
+    def read(self, n=-1):
+        """Read n bytes from stream with codepage conversion."""
+        if n > len(self._buffer):
+            unistr = self._stream.read(n - len(self._buffer))
+        elif n == -1:
+            unistr = self._stream.read()
+        else:
+            unistr = u''
+        converted = (self._buffer + self._codepage.str_from_unicode(unistr, errors='replace'))
+        if n < 0:
+            coutput = converted
+        else:
+            output, self._buffer = converted[:n], converted[n:]
+        return output
+
+
+class NewlineWrapper(StreamWrapperBase):
+    """Replace newlines on input stream. Wraps a bytes stream."""
+
+    def read(self, n=-1):
+        """Read n bytes from stream with codepage conversion."""
+        return self._stream.read(n).replace(b'\r\n', b'\r').replace(b'\n', b'\r')
 
 
 ########################################

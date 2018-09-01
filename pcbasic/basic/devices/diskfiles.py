@@ -69,12 +69,11 @@ class BinaryFile(RawFile):
 class TextFile(TextFileBase, InputMixin):
     """Text file on disk device."""
 
-    def __init__(self, fhandle, filetype, number, mode, locks, universal):
+    def __init__(self, fhandle, filetype, number, mode, locks):
         """Initialise text file object."""
         TextFileBase.__init__(self, fhandle, filetype, mode)
         self._locks = locks
         self._number = number
-        self._universal = universal
         # in append mode, we need to start at end of file
         if self.mode == b'A':
             with safe_io():
@@ -105,13 +104,10 @@ class TextFile(TextFileBase, InputMixin):
             last, char = self._previous, self._current
             self.read(1)
             self._previous, self._current = last, char
-        # universal newlines: report \n as line break
-        if (self._universal and c == b'\n'):
-            c = b'\r'
         return c
 
     def read_line(self):
-        """Read line from text file, break on CR or CRLF (not LF, unless universal newlines)."""
+        """Read line from text file, break on CR or CRLF (not LF)."""
         s = []
         while True:
             c = self.read_one()
@@ -167,7 +163,7 @@ class FieldFile(TextFile):
     def __init__(self, field, reclen):
         """Initialise text file object."""
         # don't let the field file use device locks
-        TextFile.__init__(self, ByteStream(field.view_buffer()), b'D', None, b'I', Locks(), False)
+        TextFile.__init__(self, ByteStream(field.view_buffer()), b'D', None, b'I', Locks())
         self._field = field
         self._reclen = reclen
 
