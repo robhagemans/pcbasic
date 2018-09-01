@@ -26,7 +26,7 @@ FONTS = sorted(
 )
 
 
-def read_fonts(codepage_dict, font_families, warn):
+def read_fonts(codepage_dict, font_families, warn=False):
     """Load font typefaces."""
     # load the graphics fonts, including the 8-pixel RAM font
     # use set() for speed - lookup is O(1) rather than O(n) for list

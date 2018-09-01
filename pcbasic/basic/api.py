@@ -14,6 +14,9 @@ from .base import error
 from .devices import NameWrapper
 from . import implementation
 
+from ..data import read_codepage as codepage
+from ..data import read_fonts as font
+
 
 class Session(object):
     """Public API to BASIC session."""
