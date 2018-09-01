@@ -8,7 +8,10 @@ This file is released under the GNU GPL version 3 or later.
 
 import unicodedata
 import logging
+import codecs
 import os
+import io
+
 
 from ..compat import iterchar, iteritems, int2byte, unichr
 
@@ -127,9 +130,37 @@ class Codepage(object):
         """Convert codepage string to unicode string."""
         return Converter(self, preserve, box_protect).to_unicode(cps, flush=True)
 
-    def get_converter(self, preserve=b''):
+    def get_converter(self, preserve=()):
         """Get converter from codepage to unicode."""
         return Converter(self, preserve, self.box_protect)
+
+    def wrap_output_stream(self, stream, preserve=b''):
+        """Wrap a stream so that we can write codepage bytes to it."""
+        # check for file-like objects that expect unicode, raw output otherwise
+        if not isinstance(stream, (
+                io.TextIOWrapper, io.StringIO,
+                codecs.StreamReaderWriter, codecs.StreamWriter,
+            )):
+            return stream
+        return OutputStreamWrapper(stream, self.get_converter(preserve))
+
+
+class OutputStreamWrapper(object):
+    """
+    Converter stream wrapper, takes bytes input.
+    Stream must be a unicode (text) stream.
+    """
+
+    def __init__(self, stream, converter):
+        """Set up codec."""
+        self._conv = converter
+        self._stream = stream
+
+    def write(self, s):
+        """Write bytes to codec stream."""
+        # decode BASIC bytes --(codepage)-> unicode
+        self._stream.write(self._conv.to_unicode(s))
+        #self._stream.flush()
 
 
 ########################################
@@ -181,12 +212,14 @@ box_right_unicode = [u'\u2500', u'\u2550']
 class Converter(object):
     """Buffered converter to Unicode - supports DBCS and box-drawing protection."""
 
-    def __init__(self, codepage, preserve=b'', box_protect=None):
+    def __init__(self, codepage, preserve=(), box_protect=None):
         """Initialise with empty buffer."""
         self._cp = codepage
         # hold one or two bytes
         # lead byte without trail byte, or box-protectable dbcs
         self._buf = b''
+        # preserve is a tuple/list of bytes that should keep the same ordinal
+        # this is mainly for control characters that have alternate graphical symbols
         self._preserve = set(preserve)
         # may override box protection defaults
         self._box_protect = box_protect or self._cp.box_protect
@@ -200,10 +233,10 @@ class Converter(object):
             # stateless if not dbcs
             return list(iterchar(s))
         else:
-            unistr = [seq for c in iterchar(s) for seq in self._process(c)]
+            sequences = [seq for c in iterchar(s) for seq in self._process(c)]
             if flush:
-                unistr += self._flush()
-            return unistr
+                sequences += self._flush()
+            return sequences
 
     def to_unicode(self, s, flush=False):
         """Process codepage string, returning unicode string when ready."""

@@ -12,6 +12,9 @@ and released under an MIT licence https://opensource.org/licenses/MIT
 """
 
 import shutil
+import codecs
+import contextlib
+import itertools
 import sys
 import os
 
@@ -25,8 +28,6 @@ if PY2:
     import Queue as queue
     import copy_reg as copyreg
 
-    import itertools as _itertools
-
     _FS_ENCODING = sys.getfilesystemencoding()
 
     getcwdu = os.getcwdu
@@ -34,7 +35,25 @@ if PY2:
     unichr = unichr
     int2byte = chr
     text_type = unicode
-    zip = _itertools.izip
+    zip = itertools.izip
+
+    # unicode streams
+
+    def _wrap_input_stream(stream):
+        """Wrap std streams to make them behave more like in Python 3."""
+        wrapped = codecs.getreader(stream.encoding or 'utf-8')(stream)
+        wrapped.buffer = stream
+        return wrapped
+
+    def _wrap_output_stream(stream):
+        """Wrap std streams to make them behave more like in Python 3."""
+        wrapped = codecs.getwriter(stream.encoding or 'utf-8')(stream)
+        wrapped.buffer = stream
+        return wrapped
+
+    stdin = _wrap_input_stream(sys.stdin)
+    stdout = _wrap_output_stream(sys.stdout)
+    stderr = _wrap_output_stream(sys.stderr)
 
     # unicode system interfaces
 
@@ -54,16 +73,6 @@ if PY2:
     def iterenvu():
         return (_key.decode(_FS_ENCODING) for _key in os.environ)
 
-    # bytes streams
-
-    def bstdout():
-        return sys.stdout
-
-    def bstdin():
-        return sys.stdin
-
-    def bstderr():
-        return sys.stderr
 
     # iterators
 
@@ -94,6 +103,12 @@ else:
     text_type = str
     zip = zip
 
+    # unicode streams
+
+    stdin = sys.stdin
+    stdout = sys.stdout
+    stderr = sys.stderr
+
     # unicode system interfaces
 
     # following python 3.5 this uses sys.getfilesystemencoding()
@@ -104,20 +119,6 @@ else:
 
     def iterenvu():
         return os.environ.keys()
-
-    # bytes streams
-
-    def bstdout():
-        sys.stdout.buffer.encoding = sys.stdout.encoding
-        return sys.stdout.buffer
-
-    def bstdin():
-        sys.stdin.buffer.encoding = sys.stdin.encoding
-        return sys.stdin.buffer
-
-    def bstderr():
-        sys.stderr.buffer.encoding = sys.stderr.encoding
-        return sys.stderr.buffer
 
     # iterators
 
@@ -133,6 +134,31 @@ else:
 
     def iterkeys(d, **kw):
         return iter(d.keys(**kw))
+
+
+@contextlib.contextmanager
+def suppress_output():
+    """Suppress stdout and stderr messages."""
+    try:
+        # save the file descriptors for /dev/stdout and /dev/stderr
+        save_0, save_1 = os.dup(sys.stdout.fileno()), os.dup(sys.stderr.fileno())
+        # http://stackoverflow.com/questions/977840/
+        # redirecting-fortran-called-via-f2py-output-in-python/978264#978264
+        with open(os.devnull, 'w') as null_0:
+            with open(os.devnull, 'w') as null_1:
+                # put /dev/null fds on 1 (stdout) and 2 (stderr)
+                os.dup2(null_0.fileno(), sys.stdout.fileno())
+                os.dup2(null_1.fileno(), sys.stderr.fileno())
+                # do stuff
+                yield
+                sys.stdout.flush()
+                sys.stderr.flush()
+                # restore file descriptors
+                os.dup2(save_0, sys.stdout.fileno())
+                os.dup2(save_1, sys.stderr.fileno())
+    finally:
+        os.close(save_0)
+        os.close(save_1)
 
 
 try:

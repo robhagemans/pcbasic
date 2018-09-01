@@ -11,7 +11,7 @@ import sys
 from .base import WIN32, MACOS, X64, USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, PLATFORM
 from .base import split_quoted
 
-from .python2 import PY2, PY3, iterchar, which, bstdin, bstdout, bstderr
+from .python2 import PY2, PY3, iterchar, which, stdin, stdout, stderr, suppress_output
 from .python2 import xrange, unichr, int2byte, text_type, iteritems, itervalues, iterkeys
 from .python2 import getcwdu, getenvu, setenvu, iterenvu
 from .python2 import configparser, queue, copyreg, zip

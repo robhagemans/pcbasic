@@ -11,6 +11,7 @@ import threading
 import sys
 import time
 import io
+import codecs
 from contextlib import contextmanager
 from collections import Iterable
 
@@ -27,12 +28,10 @@ TICK = 0.03
 class IOStreams(object):
     """Manage input/output to files, printers and stdio."""
 
-    def __init__(self, queues, codepage, input_streams, output_streams, utf8):
+    def __init__(self, queues, codepage, input_streams, output_streams):
         """Initialise I/O streams."""
         self._queues = queues
         self._codepage = codepage
-        # external encoding for files; None means raw codepage bytes
-        self._encoding = 'utf-8' if utf8 else None
         # input; put in tuple if it's file-like so we do the right thing when looping
         if not input_streams:
             input_streams = ()
@@ -44,7 +43,10 @@ class IOStreams(object):
             output_streams = ()
         elif hasattr(output_streams, 'write') or not isinstance(output_streams, Iterable):
             output_streams = (output_streams,)
-        self._output_echos = [self._wrap_output(stream) for stream in output_streams]
+        self._output_echos = [
+            self._codepage.wrap_output_stream(stream, preserve=CONTROL)
+            for stream in output_streams
+        ]
         # disable at start
         self._active = False
         # launch a daemon thread for input
@@ -77,21 +79,9 @@ class IOStreams(object):
 
     def _wrap_input(self, stream):
         """Wrap input stream."""
-        if stream.isatty():
-            encoding = stream.encoding
-        else:
-            encoding = self._encoding
-        return InputStreamWrapper(
-            stream, self._codepage, encoding, lfcr=not WIN32 and stream.isatty()
+        return NonBlockingInputWrapper(
+            stream, self._codepage, lfcr=not WIN32 and stream.isatty()
         )
-
-    def _wrap_output(self, stream):
-        """Wrap output stream."""
-        if stream.isatty():
-            encoding = stream.encoding
-        else:
-            encoding = self._encoding
-        return OutputStreamWrapper(stream, self._codepage, encoding)
 
     def _process_input(self):
         """Process input from streams."""
@@ -117,35 +107,18 @@ class IOStreams(object):
                 return
 
 
-class OutputStreamWrapper(object):
-    """Converter stream wrapper."""
+class NonBlockingInputWrapper(object):
+    """
+    Non-blocking input wrapper, converts CRLF.
+    Wraps unicode or bytes stream; always produces unicode.
+    """
 
-    def __init__(self, stream, codepage, encoding):
+    def __init__(self, stream, codepage, lfcr):
         """Set up codec."""
-        self._encoding = encoding
-        # converter with DBCS lead-byte buffer for utf8 output redirection
-        self._uniconv = codepage.get_converter(preserve=CONTROL)
         self._stream = stream
-
-    def write(self, s):
-        """Write bytes to codec stream."""
-        if self._encoding:
-            self._stream.write(self._uniconv.to_unicode(s).encode(self._encoding, 'replace'))
-        else:
-            # raw output
-            self._stream.write(s)
-        self._stream.flush()
-
-
-class InputStreamWrapper(object):
-    """Converter and non-blocking input wrapper."""
-
-    def __init__(self, stream, codepage, encoding, lfcr):
-        """Set up codec."""
-        self._codepage = codepage
-        self._encoding = encoding
         self._lfcr = lfcr
-        self._stream = stream
+        # codepage, used to read unicode from bytes streams
+        self._codepage = codepage
 
     def read(self):
         """Read all chars available; nonblocking; returns unicode."""
@@ -156,13 +129,13 @@ class InputStreamWrapper(object):
             return None
         elif not s:
             return u''
-        s = s.replace(b'\r\n', b'\r')
-        if self._lfcr:
-            s = s.replace(b'\n', b'\r')
-        if self._encoding:
-            return s.decode(self._encoding, 'replace')
-        else:
+        if isinstance(s, bytes):
             # raw input means it's already in the BASIC codepage
             # but the keyboard functions use unicode
             # for input, don't use lead-byte buffering beyond the convert call
-            return self._codepage.str_to_unicode(s, preserve=CONTROL)
+            s = self._codepage.str_to_unicode(s, preserve=CONTROL)
+        # replace CRLF (and, if desired, LF) with CR
+        s = s.replace(u'\r\n', u'\r')
+        if self._lfcr:
+            s = s.replace(u'\n', u'\r')
+        return s

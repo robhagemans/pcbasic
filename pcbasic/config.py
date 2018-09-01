@@ -23,7 +23,7 @@ from .compat import configparser
 from .compat import WIN32, get_short_pathname, get_unicode_argv, HAS_CONSOLE
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
 from .compat import split_quoted, getcwdu
-from .compat import bstdout, bstdin
+from .compat import stdout, stdin
 
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from .metadata import VERSION, NAME
@@ -344,6 +344,7 @@ class Settings(object):
             raise
         # prepare global logger for use by main program
         self._prepare_logging()
+        # FIXME: these should be importerrors on pcbasic
         # initial validations
         # sys.version_info tuple's first three elements are guaranteed to be ints
         python_version = sys.version_info[:3]
@@ -446,21 +447,30 @@ class Settings(object):
     def _get_redirects(self):
         """Determine which i/o streams to attach."""
         input_streams, output_streams = [], []
+        # unicode or encoded input
+        # FIXME: replace this with --text=raw,net,[encoding] ?
+        if self.get('utf8'):
+            # use unicode streams
+            stdin_stream, stdout_stream = stdin, stdout
+        else:
+            # use bytes streams
+            stdin_stream, stdout_stream = stdin.buffer, stdout.buffer
         # add stdio if redirected or no interface
         if HAS_CONSOLE and (not self.interface or not sys.stdin.isatty()):
-            input_streams.append(bstdin())
+            input_streams.append(stdin_stream)
         # redirect output as well if input is redirected, but not the other way around
         # this is because (1) GW-BASIC does this from the DOS prompt
         # (2) otherwise we don't see anything - we quit after input closes
         # isatty is also false if we run as a GUI exe, so check that here
         if HAS_CONSOLE and (
-                not self.interface or not sys.stdout.isatty() or not sys.stdin.isatty()):
-            output_streams.append(bstdout())
+                not self.interface or not sys.stdout.isatty() or not sys.stdin.isatty()
+            ):
+            output_streams.append(stdout_stream)
         # explicit redirects
         infile_params = self.get('input').split(u':')
         if infile_params[0].upper() in (u'STDIO', u'STDIN'):
-            if bstdin() not in input_streams:
-                input_streams.append(bstdin())
+            if stdin_stream not in input_streams:
+                input_streams.append(stdin_stream)
         else:
             if len(infile_params) > 1 and infile_params[0].upper() == u'FILE':
                 infile = infile_params[1]
@@ -473,8 +483,8 @@ class Settings(object):
                     logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
         outfile_params = self.get('output').split(u':')
         if outfile_params[0].upper() in (u'STDIO', u'STDOUT'):
-            if bstdout() not in output_streams:
-                output_streams.append(bstdout())
+            if stdout_stream not in output_streams:
+                output_streams.append(stdout_stream)
         else:
             if len(outfile_params) > 1 and outfile_params[0].upper() == u'FILE':
                 outfile_params = outfile_params[1:]

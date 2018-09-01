@@ -18,7 +18,7 @@ import zlib
 import sys
 from contextlib import contextmanager
 
-from .compat import PY2, copyreg
+from .compat import PY2, copyreg, stdout, stdin
 
 
 @contextmanager
@@ -57,7 +57,7 @@ def unpickle_file(name, mode, pos):
 
 def pickle_file(f):
     """Pickle a file object."""
-    if f in (sys.stdout, sys.stdin):
+    if f in (sys.stdout, sys.stdin, stdout, stdin, stdout.buffer, stdin.buffer):
         return unpickle_file, (None, f.mode, -1)
     try:
         return unpickle_file, (f.name, f.mode, f.tell())

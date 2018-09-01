@@ -12,7 +12,6 @@ import logging
 from contextlib import contextmanager
 
 from ..compat import queue, text_type
-from ..compat import bstdin, bstdout
 
 from ..metadata import NAME, VERSION, COPYRIGHT
 from .base import error
@@ -51,7 +50,7 @@ class Implementation(object):
 
     def __init__(
             self, syntax=u'advanced', double=False, term=u'', shell=u'',
-            output_streams=bstdout(), input_streams=bstdin(),
+            output_streams=sys.stdout, input_streams=sys.stdin,
             codepage=None, box_protect=True, font=None, text_width=80,
             video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3), low_intensity=False,
             devices=None, current_device=u'Z:', mount=None, utf8=False, soft_linefeed=False,
@@ -115,7 +114,7 @@ class Implementation(object):
         )
         # prepare I/O streams
         self.io_streams = iostreams.IOStreams(
-            self.queues, self.codepage, input_streams, output_streams, utf8
+            self.queues, self.codepage, input_streams, output_streams,
         )
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.memory, syntax)

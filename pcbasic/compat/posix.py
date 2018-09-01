@@ -152,8 +152,10 @@ def key_pressed():
 
 def read_all_available(stream):
     """Read all available characters from a stream; nonblocking; None if closed."""
-    # this works for everything on unix, and sockets on Windows
+    # this function works for everything on unix, and sockets on Windows
     instr = []
+    # get an empty string, can be bytes or unicode depending on the stream
+    empty = stream.read(0)
     # if buffer has characters/lines to read
     if select.select([stream], [], [], 0)[0]:
         # find number of bytes available
@@ -165,4 +167,4 @@ def read_all_available(stream):
             # break out, we're closed
             return None
         instr.append(c)
-    return b''.join(instr)
+    return empty.join(instr)

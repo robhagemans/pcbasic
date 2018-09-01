@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import re
+import contextlib
 import sys
 import platform
 
