@@ -187,7 +187,7 @@ class Converter(object):
         # hold one or two bytes
         # lead byte without trail byte, or box-protectable dbcs
         self._buf = b''
-        self._preserve = set(iterchar(preserve))
+        self._preserve = set(preserve)
         # may override box protection defaults
         self._box_protect = box_protect or self._cp.box_protect
         self._dbcs = self._cp.dbcs

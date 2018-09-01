@@ -77,7 +77,7 @@ class IOStreams(object):
 
     def _wrap_input(self, stream):
         """Wrap input stream."""
-        if stream.isatty() and hasattr(stream, 'encoding'):
+        if stream.isatty():
             encoding = stream.encoding
         else:
             encoding = self._encoding
@@ -87,7 +87,7 @@ class IOStreams(object):
 
     def _wrap_output(self, stream):
         """Wrap output stream."""
-        if stream.isatty() and hasattr(stream, 'encoding'):
+        if stream.isatty():
             encoding = stream.encoding
         else:
             encoding = self._encoding

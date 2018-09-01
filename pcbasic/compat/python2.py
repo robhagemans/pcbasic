@@ -108,12 +108,15 @@ else:
     # bytes streams
 
     def bstdout():
+        sys.stdout.buffer.encoding = sys.stdout.encoding
         return sys.stdout.buffer
 
     def bstdin():
+        sys.stdin.buffer.encoding = sys.stdin.encoding
         return sys.stdin.buffer
 
     def bstderr():
+        sys.stderr.buffer.encoding = sys.stderr.encoding
         return sys.stderr.buffer
 
     # iterators
