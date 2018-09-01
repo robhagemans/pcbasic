@@ -685,10 +685,11 @@ def istype(native_path, native_name, isdir):
 class BoundFile(object):
     """Bound internal file."""
 
-    def __init__(self, device, file_name_or_object, name):
+    def __init__(self, device, codepage, file_name_or_object, name):
         """Initialise."""
         assert isinstance(name, bytes)
         self._device = device
+        self._codepage = codepage
         self._file = file_name_or_object
         self._name = name
 
@@ -714,15 +715,21 @@ class BoundFile(object):
         """Get BASIC file name."""
         return b'%s:%s' % (self._device.letter, self._name)
 
+    def __unicode__(self):
+        """Get BASIC file name."""
+        return self._codepage.str_to_unicode(bytes(self))
+
 
 @add_str
 class NameWrapper(object):
     """Use normal file name as return value from bind_file."""
 
-    def __init__(self, name):
+    def __init__(self, codepage, name):
         """Initialise."""
-        assert isinstance(name, bytes)
+        if isinstance(name, text_type):
+            name = codepage.str_from_unicode(name)
         self._file = name
+        self._codepage = codepage
 
     def __enter__(self):
         """Context guard."""
@@ -734,6 +741,10 @@ class NameWrapper(object):
     def __bytes__(self):
         """Get BASIC file name."""
         return self._file
+
+    def __unicode__(self):
+        """Get BASIC file name."""
+        return self._codepage.str_to_unicode(bytes(self))
 
 
 class InternalDiskDevice(DiskDevice):
@@ -757,11 +768,15 @@ class InternalDiskDevice(DiskDevice):
                 # unlikely
                 logging.error('No internal bound-file names available')
                 raise error.BASICError(error.TOO_MANY_FILES)
-        self._bound_files[name] = BoundFile(self, file_name_or_object, name)
+        elif isinstance(name, text_type):
+            name = self._codepage.str_from_unicode(name)
+        self._bound_files[name] = BoundFile(self, self._codepage, file_name_or_object, name)
         return self._bound_files[name]
 
     def unbind(self, name):
         """Unbind bound file."""
+        if isinstance(name, text_type):
+            name = self._codepage.str_from_unicode(name)
         del self._bound_files[name]
 
     def open(

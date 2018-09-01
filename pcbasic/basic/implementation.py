@@ -8,7 +8,9 @@ This file is released under the GNU GPL version 3 or later.
 import io
 import os
 import sys
+import math
 import logging
+from functools import partial
 from contextlib import contextmanager
 
 from ..compat import queue, text_type
@@ -276,14 +278,39 @@ class Implementation(object):
         else:
             self.memory.set_variable(name, [], self.values.from_value(value, name[-1:]))
 
-    def get_variable(self, name):
+    def get_converter(self, from_type, to_type):
+        """Get a converter function; raise ValueError if not allowed"""
+        if to_type is None or from_type == to_type:
+            return lambda _x: _x
+        converter = {
+            (bytes, text_type): partial(self.codepage.str_to_unicode, preserve=cp.CONTROL),
+            (text_type, bytes): self.codepage.str_from_unicode,
+            (int, bool): bool,
+            (float, bool): bool,
+            (bool, int): lambda _bool: (-1 if _bool else 0),
+            (int, float): float,
+            (float, int): lambda _flt: int(math.floor(_flt)),
+            (bool, float): lambda _bool: (-1. if _bool else 0.),
+        }
+        try:
+            return converter[(from_type, to_type)]
+        except KeyError:
+            raise ValueError("BASIC can't convert %s to %s." % (from_type, to_type))
+
+    def get_variable(self, name, as_type=None):
         """Get a variable in memory."""
         name = name.upper()
         if b'(' in name:
             name = name.split(b'(', 1)[0]
-            return self.arrays.to_list(name)
+            value = self.arrays.to_list(name)
+            if not value:
+                return []
+            convert = self.get_converter(type(value[0]), as_type)
+            return [convert(_item) for _item in value]
         else:
-            return self.memory.view_or_create_variable(name, []).to_value()
+            value = self.memory.view_or_create_variable(name, []).to_value()
+            convert = self.get_converter(type(value), as_type)
+            return convert(value)
 
     def interact(self):
         """Interactive interpreter session."""
