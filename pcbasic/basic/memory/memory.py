@@ -56,6 +56,10 @@ class Field(object):
         self.buffer = bytearray(reclen)
         self.memory = memory
 
+    def clear(self):
+        """Zero the buffer."""
+        self.buffer[:] = b'\0' * len(self.buffer)
+
     def attach_var(self, name, indices, offset, length):
         """Attach a FIELD variable."""
         if self.address < 0 or self.memory == None:
@@ -106,10 +110,6 @@ class DataSegment(object):
         self.code_start = self.field_mem_base + (max_files+1) * self.field_mem_offset
         # default sigils for names
         self.deftype = [values.SNG]*26
-        # FIELD buffers
-        self.max_files = max_files
-        self.max_reclen = max_reclen
-        self.fields = {}
         # string space
         self.strings = values.StringSpace(self)
         # prepare string and number handler
@@ -121,7 +121,14 @@ class DataSegment(object):
         # temporary values
         self._stack = []
         # FIELD buffers
-        self.reset_fields()
+        self.max_files = max_files
+        self.max_reclen = max_reclen
+        # fields are indexed by BASIC file number, hence max_files+1
+        # file 0 (program/system file) probably doesn't need a field
+        self.fields = {
+            i: Field(self.max_reclen, i, self)
+            for i in range(1, self.max_files+1)
+        }
         # garbage collection switch
         self._allow_collect = True
 
@@ -131,11 +138,8 @@ class DataSegment(object):
 
     def reset_fields(self):
         """Reset FIELD buffers."""
-        self.fields.clear()
-        # fields are indexed by BASIC file number, hence max_files+1
-        # file 0 (program/system file) probably doesn't need a field
-        for i in range(self.max_files+1):
-            self.fields[i+1] = Field(self.max_reclen, i+1, self)
+        for field in self.fields.values():
+            field.clear()
 
     @contextmanager
     def get_stack(self):
