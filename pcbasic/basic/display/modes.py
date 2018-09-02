@@ -541,10 +541,10 @@ class TextMode(VideoMode):
     """Default settings for a text mode."""
 
     def __init__(
-                self, name, height, width,
-                font_height, font_width, attr, palette, colours,
-                num_pages, is_mono=False, has_blink=True
-            ):
+            self, name, height, width,
+            font_height, font_width, attr, palette, colours,
+            num_pages, is_mono=False, has_blink=True
+        ):
         """Initialise video mode settings."""
         video_segment = 0xb000 if is_mono else 0xb800
         page_size = 0x1000 if width == 80 else 0x800
@@ -644,6 +644,17 @@ if numpy:
         ) & attrmask
         return numpy.array(attrs) * mask
 
+else:
+    def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
+        """Convert masked attributes packed into bytes to a scanline interval."""
+        bpp = 8 // pixels_per_byte
+        attrmask = (1<<bpp) - 1
+        return [
+            ((byte >> (8-bpp-shift)) & attrmask) * mask
+            for byte in byte_array for shift in range(0, 8, bpp)
+        ]
+
+if numpy:
     def interval_to_bytes(colours, pixels_per_byte, plane=0):
         """Convert a scanline interval into masked attributes packed into bytes."""
         num_pixels = len(colours)
@@ -669,15 +680,6 @@ if numpy:
         return bytearray(list(nattrs))
 
 else:
-    def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
-        """Convert masked attributes packed into bytes to a scanline interval."""
-        bpp = 8 // pixels_per_byte
-        attrmask = (1<<bpp) - 1
-        return [
-            ((byte >> (8-bpp-shift)) & attrmask) * mask
-            for byte in byte_array for shift in range(0, 8, bpp)
-        ]
-
     def interval_to_bytes(colours, pixels_per_byte, plane=0):
         """Convert a scanline interval into masked attributes packed into bytes."""
         num_pixels = len(colours)
@@ -805,17 +807,17 @@ class GraphicsMode(VideoMode):
     """Default settings for a graphics mode."""
 
     def __init__(
-                self, name, pixel_width, pixel_height,
-                text_height, text_width,
-                attr, palette, colours, bitsperpixel,
-                interleave_times, bank_size,
-                num_pages=None,
-                has_blink=False,
-                supports_artifacts=False,
-                cursor_index=None,
-                pixel_aspect=None, aspect=None,
-                video_segment=0xb800,
-            ):
+            self, name, pixel_width, pixel_height,
+            text_height, text_width,
+            attr, palette, colours, bitsperpixel,
+            interleave_times, bank_size,
+            num_pages=None,
+            has_blink=False,
+            supports_artifacts=False,
+            cursor_index=None,
+            pixel_aspect=None, aspect=None,
+            video_segment=0xb800,
+        ):
         """Initialise video mode settings."""
         font_width = int(pixel_width // text_width)
         font_height = int(pixel_height // text_height)
@@ -933,13 +935,13 @@ class EGAMode(GraphicsMode):
     """Default settings for a EGA graphics mode."""
 
     def __init__(
-                self, name, pixel_width, pixel_height,
-                text_height, text_width,
-                attr, palette, colours, bitsperpixel,
-                interleave_times, bank_size, num_pages,
-                colours1=None, has_blink=False, planes_used=range(4),
-                aspect=None
-            ):
+            self, name, pixel_width, pixel_height,
+            text_height, text_width,
+            attr, palette, colours, bitsperpixel,
+            interleave_times, bank_size, num_pages,
+            colours1=None, has_blink=False, planes_used=range(4),
+            aspect=None
+        ):
         """Initialise video mode settings."""
         GraphicsMode.__init__(
             self, name, pixel_width, pixel_height,
