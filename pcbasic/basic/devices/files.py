@@ -50,7 +50,6 @@ class Files(object):
         self._queues = queues
         self._values = values
         self._memory = memory
-        self._fields = self._memory.fields
         self.files = {}
         self.max_files = max_files
         self.max_reclen = max_reclen
@@ -90,11 +89,12 @@ class Files(object):
         mode = mode.upper()
         device, dev_param = self._get_device_param(description, mode)
         # get the field buffer
-        field = self._fields[number] if number else None
+        field = self._memory.fields[number] if number else None
         # open the file on the device
         new_file = device.open(
-                number, dev_param, filetype, mode, access, lock,
-                reclen, seg, offset, length, field)
+            number, dev_param, filetype, mode, access, lock,
+            reclen, seg, offset, length, field
+        )
         logging.debug(
             'Opened file %r as #%d (type %s, mode %s)', dev_param, number, filetype, mode
         )
@@ -280,7 +280,7 @@ class Files(object):
                 error.range_check(0, 255, width)
                 name, index = next(args)
                 name = self._memory.complete_name(name)
-                self._fields[number].attach_var(name, index, offset, width)
+                self._memory.fields[number].attach_var(name, index, offset, width)
                 offset += width
         except StopIteration:
             pass

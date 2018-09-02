@@ -306,6 +306,7 @@ class TextFileBase(RawFile):
 
     def write(self, s, can_break=True):
         """Write the string s to the file, taking care of width settings."""
+        assert isinstance(s, bytes)
         # only break lines at the start of a new string. width 255 means unlimited width
         s_width = 0
         newline = False

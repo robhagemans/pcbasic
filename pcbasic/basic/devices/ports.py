@@ -381,13 +381,13 @@ class COMFile(TextFileBase, RealTimeInputMixin):
             return
         # blocking read of num bytes
         s = self.read(num)
-        self._field.buffer[:len(s)] = s
+        self._field.view_buffer()[:len(s)] = s
 
     def put(self, num):
         """Write num bytes - PUT on COM port."""
         if not num:
             return
-        self.write(self._field.buffer[:num])
+        self.write(bytes(self._field.view_buffer()[:num]))
 
     def loc(self):
         """LOC: Returns number of chars waiting to be read."""

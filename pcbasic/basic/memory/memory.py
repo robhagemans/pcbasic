@@ -47,36 +47,35 @@ from . import arrays
 class Field(object):
     """Buffer for FIELD access."""
 
-    def __init__(self, reclen, number=0, memory=None):
+    def __init__(self, reclen, address, memory):
         """Set up empty FIELD buffer."""
-        if number > 0:
-            self.address = memory.field_mem_start + (number-1)*memory.field_mem_offset
-        else:
-            self.address = -1
-        self.buffer = bytearray(reclen)
-        self.memory = memory
+        self._address = address
+        self._buffer = bytearray(reclen)
+        self._memory = memory
 
     def clear(self):
         """Zero the buffer."""
-        self.buffer[:] = b'\0' * len(self.buffer)
+        self._buffer[:] = bytearray(len(self._buffer))
+
+    def view_buffer(self):
+        """Get a view of the field buffer."""
+        return memoryview(self._buffer)
 
     def attach_var(self, name, indices, offset, length):
         """Attach a FIELD variable."""
-        if self.address < 0 or self.memory == None:
-            raise AttributeError("Can't attach variable to non-memory-mapped field.")
-        if name[-1] != values.STR:
+        if name[-1:] != values.STR:
             # type mismatch
             raise error.BASICError(error.TYPE_MISMATCH)
-        if offset + length > len(self.buffer):
+        if offset + length > len(self._buffer):
             # FIELD overflow
             raise error.BASICError(error.FIELD_OVERFLOW)
         # create a string pointer
-        str_addr = self.address + offset
+        str_addr = self._address + offset
         str_sequence = struct.pack('<BH', length, str_addr)
         # assign the string ptr to the variable name
         # desired side effect: if we re-assign this string variable through LET,
         # it's no longer connected to the FIELD.
-        self.memory.set_variable(name, indices, self.memory.values.from_bytes(str_sequence))
+        self._memory.set_variable(name, indices, self._memory.values.from_bytes(str_sequence))
 
 
 class DataSegment(object):
@@ -98,16 +97,16 @@ class DataSegment(object):
         # total size of data segment (set by CLEAR)
         self.total_memory = total_memory
         # first field buffer address (workspace size; 3429 for gw-basic)
-        self.field_mem_base = reserved_memory
+        self._field_mem_base = reserved_memory
         # file header (at head of field memory)
         file_header_size = 194
         # bytes distance between field buffers
-        self.field_mem_offset = file_header_size + max_reclen
+        self._field_mem_offset = file_header_size + max_reclen
         # start of 1st field =3945, includes FCB & header header of 1st field
-        self.field_mem_start = self.field_mem_base + self.field_mem_offset + file_header_size
+        self._field_mem_start = self._field_mem_base + self._field_mem_offset + file_header_size
         # data memory model: start of code section
         # code_start+1: offsets in files (4718 == 0x126e)
-        self.code_start = self.field_mem_base + (max_files+1) * self.field_mem_offset
+        self.code_start = self._field_mem_base + (max_files+1) * self._field_mem_offset
         # default sigils for names
         self.deftype = [values.SNG]*26
         # string space
@@ -126,8 +125,10 @@ class DataSegment(object):
         # fields are indexed by BASIC file number, hence max_files+1
         # file 0 (program/system file) probably doesn't need a field
         self.fields = {
-            i: Field(self.max_reclen, i, self)
-            for i in range(1, self.max_files+1)
+            _i + 1: Field(
+                self.max_reclen, self._field_mem_start + _i * self._field_mem_offset, self
+            )
+            for _i in range(self.max_files)
         }
         # garbage collection switch
         self._allow_collect = True
@@ -315,7 +316,7 @@ class DataSegment(object):
         elif addr >= self.code_start:
             # code memory
             return max(0, self.program.get_memory(addr))
-        elif addr >= self.field_mem_start:
+        elif addr >= self._field_mem_start:
             # file & FIELD memory
             return max(0, self._get_field_memory(addr))
         else:
@@ -331,7 +332,7 @@ class DataSegment(object):
         elif addr >= self.code_start:
             # code memory
             self.program.set_memory(addr, val)
-        elif addr >= self.field_mem_start:
+        elif addr >= self._field_mem_start:
             # file & FIELD memory
             self._not_implemented_pass(addr, val)
         elif addr >= 0:
@@ -340,18 +341,32 @@ class DataSegment(object):
     ###############################################################################
     # File buffer access
 
+    def _get_field_offset(self, address):
+        """Get the field and affset for an address in a FIELD buffer."""
+        # find the file we're in
+        start = address - self._field_mem_start
+        number = 1 + start // self._field_mem_offset
+        offset = start % self._field_mem_offset
+        if (number not in self.fields) or (start < 0):
+            raise ValueError('Address %x is not in FIELD memory' % address)
+        return number, offset
+
     def _get_field_memory(self, address):
         """Retrieve data from FIELD buffer."""
-        if address < self.field_mem_start:
-            return -1
-        # find the file we're in
-        start = address - self.field_mem_start
-        number = 1 + start // self.field_mem_offset
-        offset = start % self.field_mem_offset
         try:
-            return self.fields[number].buffer[offset]
+            number, offset = self._get_field_offset(address)
+        except ValueError:
+            return -1
+        try:
+            return self.fields[number].view_buffer()[offset]
         except (KeyError, IndexError):
             return -1
+
+    def view_field_memory(self, address, length):
+        """Get a view od data in FIELD buffer."""
+        number, offset = self._get_field_offset(address)
+        # memoryview slice continues to point to buffer, does not copy
+        return self.fields[number].view_buffer()[offset:offset+length]
 
     ###########################################################################
     # other memory access
@@ -483,7 +498,7 @@ class DataSegment(object):
             # file number 0 is allowed for VARPTR
             if filenum < 0 or filenum > self.max_files:
                 raise error.BASICError(error.BAD_FILE_NUMBER)
-            var_ptr = self.field_mem_base + filenum * self.field_mem_offset + 6
+            var_ptr = self._field_mem_base + filenum * self._field_mem_offset + 6
         else:
             name = arg0
             error.throw_if(not name, error.STX)

@@ -198,17 +198,11 @@ class StringSpace(object):
         elif address >= self._memory.code_start:
             # get string stored in code as bytearray
             codestr = self._memory.program.get_memory_block(address, length)
+            # NOTE this is a writeable view of a *copy* of the code!
             return memoryview(codestr)
         else:
             # string stored in field buffers
-            # find the file we're in
-            start = address - self._memory.field_mem_start
-            number = 1 + start // self._memory.field_mem_offset
-            offset = start % self._memory.field_mem_offset
-            if (number not in self._memory.fields) or (start < 0):
-                raise KeyError('Invalid string pointer')
-            # memoryview slice continues to point to buffer, does not copy
-            return memoryview(self._memory.fields[number].buffer)[offset:offset+length]
+            return self._memory.view_field_memory(address, length)
 
     def check_modify(self, length, address):
         """Assign a new string into an existing buffer."""

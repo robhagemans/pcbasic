@@ -166,12 +166,9 @@ class FieldFile(TextFile):
     def __init__(self, field, reclen):
         """Initialise text file object."""
         # don't let the field file use device locks
-        TextFile.__init__(self, ByteStream(field.buffer), b'D', None, b'I', Locks(), False)
+        TextFile.__init__(self, ByteStream(field.view_buffer()), b'D', None, b'I', Locks(), False)
+        self._field = field
         self._reclen = reclen
-
-    def reset(self):
-        """Reset file to start of field."""
-        self._fhandle.seek(0)
 
     @contextmanager
     def use_mode(self, mode):
@@ -179,6 +176,21 @@ class FieldFile(TextFile):
         self._switch_mode(mode)
         yield
         self._check_overflow()
+
+    def __getstate__(self):
+        """Pickle."""
+        pickledict = self.__dict__
+        pickledict['_pos'] = self._fhandle.tell()
+        # can't pickle memoryview objects
+        del pickledict['_fhandle']
+        return pickledict
+
+    def __setstate__(self, pickledict):
+        """Unpickle."""
+        pos = pickledict.pop('_pos')
+        self. __dict__ = pickledict
+        self._fhandle = ByteStream(self._field.view_buffer())
+        self.fhandle.seek(pos)
 
     def _switch_mode(self, new_mode):
         """Switch to input or output mode and fix readahaed buffer."""
@@ -197,6 +209,29 @@ class FieldFile(TextFile):
         if self._fhandle.tell() - len(self._readahead) >= self._reclen:
             raise error.BASICError(error.FIELD_OVERFLOW)
 
+    def set_buffer(self, contents):
+        """Set the contents of the buffer."""
+        # take contents and pad with NULL to required size
+        try:
+            self._field.view_buffer()[:self._reclen] = contents.ljust(self._reclen, b'\0')
+        except ValueError:
+            # can't modify size of memoryview
+            raise error.BASICError(error.FIELD_OVERFLOW)
+        # reset field text file loc
+        self._fhandle.seek(0)
+
+    def get_buffer(self):
+        """Get a copy of the contents of the buffer."""
+        return bytearray(self._field.view_buffer())
+
+    def write(self, bytestr, can_break=True):
+        """Write bytes to buffer."""
+        try:
+            TextFile.write(self, bytestr, can_break)
+        except ValueError:
+            # can't modify size of memoryview
+            raise error.BASICError(error.FIELD_OVERFLOW)
+
 
 class RandomFile(RawFile):
     """Random-access file on disk device."""
@@ -211,7 +246,6 @@ class RandomFile(RawFile):
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
         # touched until PUT or GET.
-        self._field = field
         self._field_file = FieldFile(field, reclen)
         # position at start of file
         self._recpos = 0
@@ -287,9 +321,7 @@ class RandomFile(RawFile):
             with safe_io():
                 contents = self._fhandle.read(self.reclen)
         # take contents and pad with NULL to required size
-        self._field.buffer[:] = contents + b'\0' * (self.reclen - len(contents))
-        # reset field text file loc
-        self._field_file.reset()
+        self._field_file.set_buffer(contents)
         self._recpos += 1
 
     def put(self, pos):
@@ -302,7 +334,7 @@ class RandomFile(RawFile):
                 self._fhandle.seek(0, 2)
                 numrecs = self._recpos - current_length
                 self._fhandle.write(b'\0' * numrecs * self.reclen)
-            self._fhandle.write(self._field.buffer)
+            self._fhandle.write(bytes(self._field_file.get_buffer()))
         self._recpos += 1
 
     def _set_record_pos(self, pos):
