@@ -10,7 +10,7 @@ import struct
 import ntpath
 from contextlib import contextmanager
 
-from ...compat import iteritems
+from ...compat import iteritems, iterchar
 
 from ..base.bytestream import ByteStream
 from ..base import error
@@ -413,14 +413,14 @@ class Locks(object):
                     # LOCK READ or LOCK WRITE: accept based on ACCESS of open file
                     (
                         lock_type and lock_type != b'SHARED' and
-                        f.access and set(lock_type) & set(f.access)
+                        f.access and set(iterchar(lock_type)) & set(iterchar(f.access))
                     ) or
                     (
                         f.lock_type and f.lock_type != b'SHARED' and
                         (
-                            (access and set(f.lock_type) & set(access)) or
+                            (access and set(iterchar(f.lock_type)) & set(iterchar(access))) or
                             # can't open with unspecified access if other is LOCK READ WRITE
-                            (not access and set(f.lock_type) == set(b'RW'))
+                            (not access and set(iterchar(f.lock_type)) == {b'R', b'W'})
                         )
                     )
                 ):
@@ -476,9 +476,11 @@ class Locks(object):
         else:
             # range access sought
             for start_1, stop_1 in other_lock_set:
-                if (stop_1 is None and start_1 is None
-                            or (start >= start_1 and start <= stop_1)
-                            or (stop >= start_1 and stop <= stop_1)):
+                if (
+                        stop_1 is None and start_1 is None
+                        or (start >= start_1 and start <= stop_1)
+                        or (stop >= start_1 and stop <= stop_1)
+                    ):
                     raise error.BASICError(error.PERMISSION_DENIED)
 
     def acquire_record_lock(self, number, start, stop):

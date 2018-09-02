@@ -273,7 +273,7 @@ class TextFileBase(RawFile):
         if len(output) <= 1:
             self._previous = self._current
         else:
-            self._previous = output[-2]
+            self._previous = output[-2:]
         self._current = output[-1:]
         return output
 
@@ -319,8 +319,10 @@ class TextFileBase(RawFile):
             if c >= b' ':
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
-        if (can_break and self.width != 255 and self.col != 1 and
-                self.col-1 + s_width > self.width and not newline):
+        if (
+                can_break and self.width != 255 and self.col != 1 and
+                self.col-1 + s_width > self.width and not newline
+            ):
             self.write_line()
             self.col = 1
         for c in iterchar(s):
@@ -337,7 +339,7 @@ class TextFileBase(RawFile):
                     if self.col == 257:
                         self.col = 1
 
-    def write_line(self, s=''):
+    def write_line(self, s=b''):
         """Write string and follow with device-standard line break."""
         self.write(s + b'\r')
 
@@ -426,7 +428,7 @@ class InputMixin(object):
         # skip trailing whitespace before any comma or hard separator
         if c and c in INPUT_WHITESPACE or (quoted and c == b'"'):
             self._skip_whitespace(b' ')
-            if (self.peek(1) in b',\r'):
+            if self.peek(1) in b',\r':
                 c = self.read_one()
         # file position is at one past the separator char
         return word, c
