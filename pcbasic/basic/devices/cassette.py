@@ -553,9 +553,9 @@ class CASBitStream(TapeBitStream):
             self.operating_mode = 'r'
             self.mask = 0x100
             try:
-                self.cas = open(self.cas_name, 'r+b')
+                self.cas = io.open(self.cas_name, 'r+b')
             except EnvironmentError:
-                self.cas = open(self.cas_name, 'rb')
+                self.cas = io.open(self.cas_name, 'rb')
             self.current_byte = self.cas.read(1)
             if self.current_byte == '' or not self.read_intro():
                 self.cas.close()
@@ -650,11 +650,11 @@ class CASBitStream(TapeBitStream):
         """Create a new CAS-file."""
         self.current_byte = b'\0'
         self.mask = 0x100
-        with open(self.cas_name, 'wb') as self.cas:
+        with io.open(self.cas_name, 'wb') as self.cas:
             self.operating_mode = 'w'
             self.current_byte = b'\0'
             self.write_intro()
-        self.cas = open(self.cas_name, 'r+b')
+        self.cas = io.open(self.cas_name, 'r+b')
         self.cas.seek(0, 2)
 
 
@@ -735,15 +735,15 @@ class WAVBitStream(TapeBitStream):
             self.framerate = 22050
             self.sampwidth = 1
             self.nchannels = 1
-            self.wav = open(self.filename, 'wb')
+            self.wav = io.open(self.filename, 'wb')
             self._write_wav_header()
             self.operating_mode = 'w'
         else:
             # open file for reading and find wave parameters
             try:
-                self.wav = open(self.filename, 'r+b')
+                self.wav = io.open(self.filename, 'r+b')
             except EnvironmentError:
-                self.wav = open(self.filename, 'rb')
+                self.wav = io.open(self.filename, 'rb')
             if not self._read_wav_header():
                 raise EndOfTape()
             self.operating_mode = 'r'

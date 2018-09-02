@@ -159,14 +159,14 @@ class ExceptionGuard(object):
         impl.display.set_attr(0x17)
         impl.display.set_border(1)
         impl.display.text_screen.clear()
+        impl.display.text_screen._bottom_row_allowed = True
         # show message on screen
         for attr, text in message:
             impl.display.set_attr(attr)
             impl.display.text_screen.write(text.encode('cp437', 'replace').replace('\n', '\r'))
-        impl.display.text_screen._bottom_row_allowed = True
         impl.display.text_screen.set_pos(25, 1)
         impl.display.set_attr(bottom[0])
-        impl.display.text_screen.write(bottom[1])
+        impl.display.text_screen.write(bottom[1].encode('cp437', 'replace').replace('\n', '\r'))
         # write crash log
         crashlog = u'\n'.join(
             line.decode('cp437', 'replace') if isinstance(line, bytes) else line

@@ -11,7 +11,6 @@ import io
 import sys
 import logging
 import zipfile
-import codecs
 import locale
 import tempfile
 import shutil
@@ -23,7 +22,7 @@ from .compat import configparser
 from .compat import WIN32, get_short_pathname, get_unicode_argv, HAS_CONSOLE
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
 from .compat import split_quoted, getcwdu
-from .compat import stdout, stdin
+from .compat import stdout, stdin, stderr
 
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from .metadata import VERSION, NAME
@@ -94,7 +93,7 @@ def safe_split(s, sep):
 def store_bundled_programs(PROGRAM_PATH):
     """Retrieve contents of BASIC programs."""
     for name in PROGRAMS:
-        with open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
+        with io.open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
             f.write(data.read_program_file(name))
 
 
@@ -155,7 +154,7 @@ class Settings(object):
     default_config = {
         u'strict': {
             u'hide-listing': u'65530',
-            u'text': u'',
+            u'text-encoding': u'',
             u'soft-linefeed': u'False',
             u'hide-protected': u'True',
             u'allow-code-poke': u'True',
@@ -301,7 +300,7 @@ class Settings(object):
             u'choices': (
                 u'vga', u'ega', u'cga', u'cga_old', u'mda',
                 u'pcjr', u'tandy', u'hercules', u'olivetti'), },
-        u'text': {u'type': u'string', u'default': u'',},
+        u'text-encoding': {u'type': u'string', u'default': u'',},
         u'soft-linefeed': {u'type': u'bool', u'default': False,},
         u'border': {u'type': u'int', u'default': 5,},
         u'mouse-clipboard': {u'type': u'bool', u'default': True,},
@@ -395,9 +394,9 @@ class Settings(object):
         root_logger = self._reset_logging()
         root_logger.setLevel(loglevel)
         if logfile:
-            logstream = open(logfile, 'w')
+            logstream = io.open(logfile, 'w', encoding='utf_8', errors='replace')
         else:
-            logstream = sys.stderr
+            logstream = stderr
         # write out cached logs
         logstream.write(self._logstream.getvalue())
         handler = logging.StreamHandler(logstream)
@@ -468,7 +467,7 @@ class Settings(object):
                 infile = infile_params[0]
             if infile:
                 try:
-                    input_streams.append(open(infile, 'rb'))
+                    input_streams.append(io.open(infile, 'rb'))
                 except EnvironmentError as e:
                     logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
         # output redirects
@@ -485,7 +484,7 @@ class Settings(object):
             append = len(outfile_params) > 1 and outfile_params[1].lower() == u'append'
             if outfile:
                 try:
-                    output_streams.append(open(outfile, 'ab' if append else 'wb'))
+                    output_streams.append(io.open(outfile, 'ab' if append else 'wb'))
                 except EnvironmentError as e:
                     logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
         # implicit stdio redirects
@@ -567,7 +566,7 @@ class Settings(object):
             'mount': mount_dict,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
-            'textfile_encoding': self.get('text'),
+            'textfile_encoding': self.get('text-encoding'),
             'soft_linefeed': self.get('soft-linefeed'),
             # keyboard settings
             'ctrl_c_is_break': self.get('ctrl-c-break'),
@@ -905,7 +904,7 @@ class Settings(object):
             config = configparser.RawConfigParser(allow_no_value=True)
             # use utf_8_sig to ignore a BOM if it's at the start of the file
             # (e.g. created by Notepad)
-            with codecs.open(config_file, 'r', 'utf_8_sig') as f:
+            with io.open(config_file, 'r', encoding='utf_8_sig', errors='replace') as f:
                 config.readfp(WhitespaceStripper(f))
         except (configparser.Error, IOError):
             logging.warning(
@@ -1093,18 +1092,13 @@ class Settings(object):
         )
         argnames = sorted(self.arguments.keys())
         try:
-            with open(file_name, 'wb') as f:
-                # write a BOM at start to ensure Notepad gets that it's utf-8
-                # but don't use codecs.open as that doesn't do CRLF on Windows
-                f.write(b'\xEF\xBB\xBF')
-                f.write(header.encode('utf-8'))
+            with io.open(file_name, 'w', encoding='utf_8_sig', errors='replace') as f:
+                f.write(header)
                 for a in argnames:
                     try:
                         f.write(
-                            (
-                                u'## choices: %s\n' %
-                                u', '.join(u'%s' % (_s,) for _s in self.arguments[a][u'choices'])
-                            ).encode('utf-8')
+                            u'## choices: %s\n' %
+                            u', '.join(u'%s' % (_s,) for _s in self.arguments[a][u'choices'])
                         )
                     except(KeyError, TypeError):
                         pass
@@ -1114,7 +1108,7 @@ class Settings(object):
                         formatted = u','.join(u'%s' % (_s,) for _s in self.arguments[a][u'default'])
                     except(KeyError, TypeError):
                         formatted = u'%s' % (self.arguments[a][u'default'],)
-                    f.write((u'#%s=%s\n' % (a, formatted)).encode('utf-8'))
+                    f.write(u'#%s=%s\n' % (a, formatted))
                 f.write(footer)
         except (OSError, IOError):
             # can't create file, ignore. we'll get a message later.

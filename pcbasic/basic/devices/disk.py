@@ -17,7 +17,6 @@ import errno
 import random
 import ntpath
 import logging
-import codecs
 
 from ...compat import xrange, text_type, add_str
 from ...compat import get_short_pathname, get_free_bytes, is_hidden, iterchar
@@ -98,6 +97,9 @@ ALLOWABLE_CHARS = set(ALPHANUMERIC + b" !#$%&'()-@^_`{}~")
 
 # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
 ACCESS_MODES = {b'I': 'r', b'O': 'w', b'R': 'r+', b'A': 'a'}
+
+# aliases for the utf-8 encoding
+UTF_8 = ('utf_8', 'utf-8', 'utf', 'u8', 'utf8')
 
 
 ##############################################################################
@@ -368,13 +370,17 @@ class DiskDevice(object):
                 f.close()
             access_mode = ACCESS_MODES[mode]
             text_mode = self._text_mode
-            # use BOM on input and output, but not append
-            if text_mode.lower() in ('utf-8', 'utf_8', 'utf', 'u8', 'utf8') and mode in (b'I', b'O'):
-                text_mode = 'utf-8-sig'
-            if text_mode:
-                return io.open(native_name, access_mode, encoding=text_mode, newline='')
-            else:
+            # access 'raw' text files as bytes
+            if not text_mode:
                 return io.open(native_name, access_mode + 'b')
+            # encoded text files
+            # use a BOM on input and output, but not append
+            if text_mode.lower() in UTF_8:
+                text_mode = 'utf-8-sig'
+            # preserve original newlines on reading and writing
+            return io.open(
+                native_name, access_mode, encoding=text_mode, errors='replace', newline=''
+            )
         except EnvironmentError as e:
             handle_oserror(e)
         except TypeError:

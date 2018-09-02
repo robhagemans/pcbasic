@@ -11,7 +11,6 @@ import threading
 import sys
 import time
 import io
-import codecs
 from contextlib import contextmanager
 from collections import Iterable
 
