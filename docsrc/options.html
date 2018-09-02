@@ -430,7 +430,7 @@
         </dd>
 
         <dt id="--input">
-            <code><b>--input=</b><var>input_file</var></code>
+            <code><b>--input=</b>{<var>input_file</var>|{<b>STDIO</b>|<b>STDIN</b>}[<b>:RAW</b>]}</code>
         </dt>
         <dd>
             Retrieve keyboard input from <code><var>input_file</var></code>,
@@ -440,6 +440,8 @@
             <br />
             If <code><var>input_file</var></code> is <code><b>STDIO:</b></code>
             or <code><b>STDIN:</b></code>, keyboard input will be read from standard input.
+            If <code><b>RAW</b></code> is specified, input will be treated as codepage bytes.
+            If not, it will be treated as the locale's encoding (probably UTF-8).
         </dd>
 
         <dt id="--interface">

@@ -27,7 +27,7 @@ except locale.Error as e:
     # mis-configured locale can throw an error here, no need to crash
     logging.error(e)
 
-from .python2 import which
+from .python2 import which, text_type
 from .base import HOME_DIR, MACOS
 
 # text conventions
@@ -154,8 +154,12 @@ def read_all_available(stream):
     """Read all available characters from a stream; nonblocking; None if closed."""
     # this function works for everything on unix, and sockets on Windows
     instr = []
-    # get an empty string, can be bytes or unicode depending on the stream
-    empty = stream.read(0)
+    # we're getting bytes counts for unicode which is pretty useless - so back to bytes
+    try:
+        encoding = stream.encoding
+        stream = stream.buffer
+    except:
+        encoding = None
     # if buffer has characters/lines to read
     if select.select([stream], [], [], 0)[0]:
         # find number of bytes available
@@ -167,4 +171,6 @@ def read_all_available(stream):
             # break out, we're closed
             return None
         instr.append(c)
-    return empty.join(instr)
+    if encoding:
+        return b''.join(instr).decode(encoding, 'replace')
+    return b''.join(instr)
