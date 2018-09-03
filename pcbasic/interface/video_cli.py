@@ -145,7 +145,7 @@ class VideoCLI(VideoTextBase):
         if (self._vpagenum == self._apagenum and
                 start <= self._cursor_row and stop >= self._cursor_row):
             self._update_position(self._cursor_row, 1)
-            console.write(ansi.CLEAR_LINE.decode('ascii'))
+            console.write(ansi.CLEAR_LINE)
             #console.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
@@ -211,10 +211,10 @@ class VideoCLI(VideoTextBase):
         """Move terminal print column."""
         if col != self._col:
             if self._col > col:
-                console.write(ansi.MOVE_N_LEFT.decode('ascii') % (self._col-col))
+                console.write(ansi.MOVE_N_LEFT % (self._col-col))
                 #console.flush()
             elif self._col < col:
-                console.write(ansi.MOVE_N_RIGHT.decode('ascii') % (col-self._col))
+                console.write(ansi.MOVE_N_RIGHT % (col-self._col))
                 #console.flush()
             self._col = col
 
