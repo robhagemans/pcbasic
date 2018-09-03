@@ -51,10 +51,10 @@ to interrupt a running program.
 
 
 #### Program location ####
-If started through the start-menu shortcut, PC-BASIC looks for programs in the shortcut's start-in folder. By default, this will be your home folder.
+If started through the start-menu shortcut, PC-BASIC looks for programs in the shortcut's start-in folder.
 
-- On **Windows**, this is usually a folder with your user name, located under `C:\Users\`. You can find this folder in Windows Explorer by typing `%USERPROFILE%` in the address bar.
-- On **Mac** and **Linux** this is the directory `~/`.
+- On **Windows**, this is your `Documents` folder by default.
+- On **Mac** and **Linux** this is your home directory `~/` by default.
 
 If started from the command prompt, PC-BASIC looks for programs in the current working directory.
 
