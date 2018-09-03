@@ -8,8 +8,11 @@ This file is released under the GNU GPL version 3 or later.
 
 from collections import deque
 
+from ..compat import suppress_output
+
 try:
-    import pygame
+    with suppress_output():
+        import pygame
 except ImportError:
     pygame = None
 
@@ -37,13 +40,13 @@ QUIET_QUIT = 10000
 # buffer size in sample frames
 BUFSIZE = 1024 #4096
 
+
 ##############################################################################
 # plugin
 
 @audio_plugins.register('pygame')
 class AudioPygame(AudioPlugin):
     """Pygame-based audio plugin."""
-
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""

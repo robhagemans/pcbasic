@@ -8,8 +8,11 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
+from ..compat import iteritems, unichr, suppress_output
+
 try:
-    import pygame
+    with suppress_output():
+        import pygame
 except ImportError:
     pygame = None
 
@@ -18,7 +21,6 @@ try:
 except ImportError:
     numpy = None
 
-from ..compat import iteritems, unichr
 
 from ..basic.base import signals
 from ..basic.base import scancode
