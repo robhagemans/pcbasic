@@ -64,7 +64,10 @@ def read_char():
     while _read_buffer:
         output.append(_read_buffer.popleft())
         try:
-            return b''.join(output).decode(sys.stdin.encoding or 'utf-8')
+            if _PY2:
+                return b''.join(output).decode(sys.stdin.encoding or 'utf-8')
+            else:
+                return u''.join(output)
         except UnicodeDecodeError:
             pass
     # not enough to decode, keep for next call
