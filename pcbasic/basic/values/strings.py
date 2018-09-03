@@ -182,6 +182,11 @@ class StringSpace(object):
         """Copy a string to another string space."""
         return string_space.store(self.view(length, address).tobytes())
 
+    def iterpointers(self):
+        """Iterate over strings in order of addresses."""
+        # we need to enforce the order as it's undefined otherwise
+        return ((len(self._strings[_addr]), _addr )for _addr in sorted(self._strings))
+
     def _retrieve(self, length, address):
         """Retrieve a string by its pointer."""
         # if string length == 0, return empty string

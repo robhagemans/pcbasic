@@ -215,27 +215,34 @@ class DataSegment(object):
                 name: self.scalars.get(name)
                 for name in preserve_sc if name in self.scalars
             }
-            for name, value in iteritems(common_scalars):
-                if name[-1:] == values.STR:
-                    length, address = self.strings.copy_to(string_store, *value.to_pointer())
-                    value = self.values.new_string().from_pointer(length, address)
-                    common_scalars[name] = value
             # preserve arrays
             common_arrays = {
                 name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
                 for name in preserve_ar if name in self.arrays
             }
-            for name, value in iteritems(common_arrays):
-                if name[-1:] == values.STR:
-                    dimensions, buf = value
-                    for i in range(0, len(buf), 3):
-                        # if the string array is not full, pointers are zero
-                        # but address is ignored for zero length
-                        length, address = self.strings.copy_to(
-                            string_store, *struct.unpack('<BH', buf[i:i+3])
-                        )
-                        # modify the stored bytearray
-                        buf[i:i+3] = struct.pack('<BH', length, address)
+            # FIXME: might have multiple names with the same pointer
+            scalar_strings = {
+                value.to_pointer(): name
+                for name, value in iteritems(common_scalars)
+                if name[-1:] == values.STR
+            }
+            array_strings = {
+                struct.unpack('<BH', value[1][_i:_i+3]): (name, _i)
+                for name, value in iteritems(common_arrays)
+                for _i in range(0, len(value[1]), 3)
+                if name[-1:] == values.STR
+            }
+            for pointer in sorted(scalar_strings, key=lambda _pair: _pair[1], reverse=True):
+                name = scalar_strings[pointer]
+                length, address = self.strings.copy_to(string_store, *pointer)
+                common_scalars[name] = self.values.new_string().from_pointer(length, address)
+            for pointer in sorted(array_strings, key=lambda _pair: _pair[1], reverse=True):
+                name, offset = array_strings[pointer]
+                # if the string array is not full, pointers are zero
+                # but address is ignored for zero length
+                length, address = self.strings.copy_to(string_store, *pointer)
+                # modify the stored bytearray
+                common_arrays[name][1][offset:offset+3] = struct.pack('<BH', length, address)
             yield
             # check if there is sufficient memory
             scalar_size = sum(self.scalars.memory_size(name) for name in common_scalars)
