@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 # see e.g. http://toomanyideas.net/2014/pysdl2-playing-a-sound-from-a-wav-file.html
 
 import logging
+import ctypes
 from collections import deque
 
 try:
@@ -79,15 +80,17 @@ class AudioSDL2(AudioPlugin):
     def tone(self, voice, frequency, duration, loop, volume):
         """Enqueue a tone."""
         self.generators[voice].append(synthesiser.SoundGenerator(
-                    self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
-                    frequency, duration, loop, volume))
+            self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
+            frequency, duration, loop, volume
+        ))
 
     def noise(self, source, frequency, duration, loop, volume):
         """Enqueue a noise."""
         feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
         self.generators[3].append(synthesiser.SoundGenerator(
-                    self.signal_sources[3], feedback,
-                    frequency, duration, loop, volume))
+            self.signal_sources[3], feedback,
+            frequency, duration, loop, volume
+        ))
 
     def hush(self):
         """Stop sound."""
@@ -123,8 +126,7 @@ class AudioSDL2(AudioPlugin):
                 # append chunk to samples list
                 # lock to ensure callback doesn't try to access the list too
                 sdl2.SDL_LockAudioDevice(self.dev)
-                self.samples[voice] = numpy.concatenate(
-                        (self.samples[voice], current_chunk))
+                self.samples[voice] = numpy.concatenate((self.samples[voice], current_chunk))
                 sdl2.SDL_UnlockAudioDevice(self.dev)
 
     def _get_next_chunk(self, notused, stream, length_bytes):
@@ -140,7 +142,9 @@ class AudioSDL2(AudioPlugin):
                 samples[voice] = numpy.concatenate((samples[voice], silence))
         # mix the samples by averaging
         # we need the int32 intermediate step, for int16 numpy will average [32767, 32767] to -1
-        mixed = numpy.array(numpy.mean(samples, axis=0, dtype=numpy.int32), dtype=numpy.int16)
-        # copy into byte array (is there a better way?)
-        for i in xrange(length_bytes):
-            stream[i] = ord(mixed.data[i])
+        mixed = bytearray(
+            numpy.array(numpy.mean(samples, axis=0, dtype=numpy.int32), dtype=numpy.int16).data
+        )
+        ctypes.memmove(
+            stream, (ctypes.c_char * length_bytes).from_buffer(mixed[:length_bytes]), length_bytes
+        )
