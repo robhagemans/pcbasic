@@ -24,7 +24,7 @@ from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
-from ..compat import WIN32, MACOS
+from ..compat import WIN32, MACOS, PY2
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed, EnvironmentCache, NOKILL_MESSAGE
 from . import clipboard
@@ -134,7 +134,10 @@ class VideoPygame(VideoPlugin):
                     'Smooth scaling not available on this display (depth %d < 24)',
                     self.display.get_bitsize())
             self._smooth = False
-        pygame.display.set_caption(self.caption.encode('utf-8', 'replace'))
+        if PY2:
+            pygame.display.set_caption(self.caption.encode('utf-8', 'replace'))
+        else:
+            pygame.display.set_caption(self.caption)
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
