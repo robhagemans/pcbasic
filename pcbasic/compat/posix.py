@@ -27,8 +27,13 @@ except locale.Error as e:
     # mis-configured locale can throw an error here, no need to crash
     logging.error(e)
 
-from .python2 import which, text_type
-from .base import HOME_DIR, MACOS
+from .base import PY2, HOME_DIR, MACOS
+
+if PY2:
+    from .python2 import which
+else:
+    from shutil import which
+
 
 # text conventions
 # ctrl+D
@@ -68,7 +73,8 @@ if not sys.stdin.isatty():
 # preserve original terminal size
 try:
     TERM_SIZE = struct.unpack(
-        'HHHH', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, b'\0'*8))[:2]
+        'HHHH', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, b'\0'*8)
+    )[:2]
 except Exception:
     TERM_SIZE = 25, 80
 
@@ -88,15 +94,10 @@ def get_short_pathname(native_path):
     """Return Windows short path name or None if not available."""
     return None
 
-def get_unicode_argv():
-    """Convert command-line arguments to unicode."""
+if PY2:
     # the official parameter should be LC_CTYPE but that's None in my locale
     # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-    # on MacOS, if launched from Finder, ignore the additional "process serial number" argument
-    return [
-        arg.decode(FS_ENCODING, errors='replace')
-        for arg in sys.argv if not arg.startswith(b'-psn_')
-    ]
+    argv = [_arg.decode(FS_ENCODING, errors='replace') for _arg in sys.argv]
 
 def is_hidden(path):
     """File is hidden."""
