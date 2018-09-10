@@ -77,12 +77,14 @@ def suppress_output():
                 os.dup2(null_0.fileno(), sys.stdout.fileno())
                 os.dup2(null_1.fileno(), sys.stderr.fileno())
                 # do stuff
-                yield
-                sys.stdout.flush()
-                sys.stderr.flush()
-                # restore file descriptors
-                os.dup2(save_0, sys.stdout.fileno())
-                os.dup2(save_1, sys.stderr.fileno())
+                try:
+                    yield
+                finally:
+                    sys.stdout.flush()
+                    sys.stderr.flush()
+                    # restore file descriptors
+                    os.dup2(save_0, sys.stdout.fileno())
+                    os.dup2(save_1, sys.stderr.fileno())
     finally:
         os.close(save_0)
         os.close(save_1)

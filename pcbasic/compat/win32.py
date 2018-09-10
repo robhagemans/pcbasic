@@ -73,18 +73,6 @@ HIDE_WINDOW.wShowWindow = 0 # SW_HIDE
 ##############################################################################
 # various
 
-# determine if we have a console attached or are a GUI app
-def _has_console():
-    try:
-        STD_OUTPUT_HANDLE = -11
-        handle = windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
-        dummy_mode = DWORD(0)
-        return bool(windll.kernel32.GetConsoleMode(handle, pointer(dummy_mode)))
-    except Exception as e:
-        return False
-
-HAS_CONSOLE = _has_console()
-
 # preserve original terminal size
 def _get_term_size():
     """Get size of terminal window."""
@@ -260,40 +248,3 @@ def line_print(printbuf, printer):
             # launch non-daemon thread to wait for handle
             # to ensure we don't lose the print if triggered on exit
             threading.Thread(target=_wait_for_process, args=(sei.hProcess, f.name)).start()
-
-
-##############################################################################
-# non-blocking input
-
-# key pressed on keyboard
-from msvcrt import kbhit as key_pressed
-
-try:
-    # set stdio as binary, to avoid Windows messing around with CRLFs
-    # only do this for redirected output, as it breaks interactive Python sessions
-    # pylint: disable=no-member
-    if not sys.stdin.isatty():
-        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-    if not sys.stdout.isatty():
-        msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-    pass
-except EnvironmentError:
-    # raises an error if started in gui mode, as we have no stdio
-    pass
-
-def read_all_available(stream):
-    """Read all available characters from a stream; nonblocking; None if closed."""
-    if stream == sys.stdin and sys.stdin.isatty():
-        instr = []
-        # get characters while keyboard buffer has them available
-        # this does not echo
-        while msvcrt.kbhit():
-            c = msvcrt.getch()
-            if not c:
-                return None
-            instr.append(c)
-        return b''.join(instr)
-    else:
-        # this would work on unix too
-        # just read the whole file and be done with it
-        return stream.read() or None

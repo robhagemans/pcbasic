@@ -41,6 +41,8 @@ class INPUT_RECORD(Structure):
         ('KeyEvent', KEY_EVENT_RECORD),
     )
 
+KEY_EVENT = 1
+VK_MENU = 0x12
 
 _ReadConsoleInputW = windll.kernel32.ReadConsoleInputW
 _ReadConsoleInputW.argtypes = (
@@ -95,7 +97,6 @@ class ConsoleInput(_StreamWrapper):
         while size < 0 or len(self._bytes_buffer) < size:
             nevents = wintypes.DWORD()
             _GetNumberOfConsoleInputEvents(_GetStdHandle(STD_INPUT_HANDLE), byref(nevents))
-            print nevents.value
             if not nevents.value and not blocking:
                 return
             if nevents.value > 0:
@@ -107,7 +108,8 @@ class ConsoleInput(_StreamWrapper):
                     nevents.value, byref(nread)
                 )
                 for event in input_buffer:
-                    print event
+                    if event.EventType != KEY_EVENT:
+                        continue
                     # key-up event for unicode Alt+HEX input
                     if event.KeyEvent.bKeyDown or event.KeyEvent.wVirtualKeyCode == VK_MENU:
                         char = event.KeyEvent.UnicodeChar
@@ -119,6 +121,15 @@ class ConsoleInput(_StreamWrapper):
 
 
 # Python2-compatible standard bytes streams
-bstdout = ConsoleOutput(sys.stdout, STD_OUTPUT_HANDLE)
-bstderr = ConsoleOutput(sys.stderr, STD_ERROR_HANDLE)
-bstdin = ConsoleOutput(sys.stdin, STD_INPUT_HANDLE)
+if sys.stdin.isatty():
+    bstdin = ConsoleInput(sys.stdin, STD_INPUT_HANDLE)
+else:
+    bstdin = sys.stdin
+if sys.stdout.isatty():
+    bstdout = ConsoleOutput(sys.stdout, STD_OUTPUT_HANDLE)
+else:
+    bstdout = sys.stdout
+if sys.stderr.isatty():
+    bstderr = ConsoleOutput(sys.stderr, STD_ERROR_HANDLE)
+else:
+    bstderr = sys.stderr

@@ -10,7 +10,6 @@ import os
 import sys
 import locale
 import logging
-import select
 import subprocess
 import fcntl
 import termios
@@ -52,23 +51,6 @@ HIDE_WINDOW = None
 
 ##############################################################################
 # various
-
-# output buffer for ioctl call
-_sock_size = array.array('i', [0])
-
-# no such thing as console- and GUI-apps
-# check if we can treat stdin like a tty, file or socket
-HAS_CONSOLE = True
-if not sys.stdin.isatty():
-    try:
-        fcntl.ioctl(sys.stdin, termios.FIONREAD, _sock_size)
-    except EnvironmentError:
-        # maybe /dev/null, but not a real file or console
-        HAS_CONSOLE = False
-        if MACOS:
-            # for macOS - presumably we're launched as a bundle, set working directory to user home
-            # bit of a hack but I don't know a better way
-            os.chdir(HOME_DIR)
 
 # preserve original terminal size
 try:
@@ -142,36 +124,3 @@ else:
             pr = subprocess.Popen(b'lpr %s' % (options,), shell=True, stdin=subprocess.PIPE)
             pr.stdin.write(printbuf)
             pr.stdin.close()
-
-
-##############################################################################
-# non-blocking input
-
-def key_pressed():
-    """Return whether a character is ready to be read from the keyboard."""
-    return select.select([sys.stdin], [], [], 0)[0] != []
-
-def read_all_available(stream):
-    """Read all available characters from a stream; nonblocking; None if closed."""
-    # this function works for everything on unix, and sockets on Windows
-    instr = []
-    # we're getting bytes counts for unicode which is pretty useless - so back to bytes
-    try:
-        encoding = stream.encoding
-        stream = stream.buffer
-    except:
-        encoding = None
-    # if buffer has characters/lines to read
-    if select.select([stream], [], [], 0)[0]:
-        # find number of bytes available
-        fcntl.ioctl(stream, termios.FIONREAD, _sock_size)
-        count = _sock_size[0]
-        # and read them all
-        c = stream.read(count)
-        if not c and not instr:
-            # break out, we're closed
-            return None
-        instr.append(c)
-    if encoding:
-        return b''.join(instr).decode(encoding, 'replace')
-    return b''.join(instr)
