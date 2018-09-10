@@ -7,42 +7,42 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import sys
+import codecs
 from collections import deque
 
 from .base import PY2, WIN32
 
 
-if PY2:
-    import codecs
+def _wrap_output_stream(stream):
+    """Wrap std bytes streams to make them behave more like in Python 3."""
+    wrapped = codecs.getwriter(stream.encoding or 'utf-8')(stream)
+    wrapped.buffer = stream
+    return wrapped
 
-    if WIN32:
-        from .win32_console import bstdin, bstdout, bstderr
-        #from .colorama import AnsiToWin32
-        #bstdout, bstderr = AnsiToWin32(bstdout).stream, AnsiToWin32(bstderr).stream
-    else:
-        bstdin, bstdout, bstderr = sys.stdin, sys.stdout, sys.stderr
+def _wrap_input_stream(stream):
+    """Wrap std bytes streams to make them behave more like in Python 3."""
+    wrapped = codecs.getreader(stream.encoding or 'utf-8')(stream)
+    wrapped.buffer = stream
+    return wrapped
 
-    def _wrap_output_stream(stream):
-        """Wrap std streams to make them behave more like in Python 3."""
-        wrapped = codecs.getwriter(stream.encoding or 'utf-8')(stream)
-        wrapped.buffer = stream
-        return wrapped
 
-    def _wrap_input_stream(stream):
-        """Wrap std streams to make them behave more like in Python 3."""
-        wrapped = codecs.getreader(stream.encoding or 'utf-8')(stream)
-        wrapped.buffer = stream
-        return wrapped
+
+if WIN32:
+    import msvcrt
+
+    # wrap an encoded bytes stream both in Py2 and Py3
+    # we could get unicode out directly from the wrapped stream
+    # but that would confuse type checks further down
+    from .win32_console import bstdin, bstdout, bstderr
+
+    # FIXME: colorama assumes bytes in Py2 and unicode in Py3
+    #from .colorama import AnsiToWin32
+    #bstdout, bstderr = AnsiToWin32(bstdout).stream, AnsiToWin32(bstderr).stream
 
     stdin = _wrap_input_stream(bstdin)
     stdout = _wrap_output_stream(bstdout)
     stderr = _wrap_output_stream(bstderr)
 
-else:
-    stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
-
-if WIN32:
-    import msvcrt
 
     from ctypes import windll, byref
     from ctypes.wintypes import DWORD
@@ -84,15 +84,19 @@ if WIN32:
     def read_all_available(stream):
         """Read all available characters from a stream; nonblocking; None if closed."""
         if hasattr(stream, 'isatty') and stream.isatty():
-            instr = []
-            # get characters while keyboard buffer has them available
-            # this does not echo
-            while msvcrt.kbhit():
-                c = msvcrt.getch()
-                if not c:
-                    return None
-                instr.append(c)
-            return b''.join(instr)
+            # we're reading from stdin or something wrapping it
+            try:
+                encoding = stream.encoding
+                stream = stream.buffer
+            except:
+                encoding = None
+            # get it from our wrapper instead, which has a non-blocking option
+            #FIXME: we're not dealing with closed streams
+            bstr = bstdin.read(blocking=False)
+            if encoding:
+                return bstr.decode(encoding, 'replace')
+            else:
+                return bstr
         else:
             # this would work on unix too
             # just read the whole file and be done with it
@@ -100,6 +104,13 @@ if WIN32:
 
 else:
     import tty, termios, select, fcntl, array
+
+    if PY2:
+        stdin = _wrap_input_stream(sys.stdin)
+        stdout = _wrap_output_stream(sys.stdout)
+        stderr = _wrap_output_stream(sys.stderr)
+    else:
+        stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
 
     # output buffer for ioctl call
     _sock_size = array.array('i', [0])

@@ -22,15 +22,15 @@ _WriteConsoleW.argtypes = (
 
 class KEY_EVENT_RECORD(Structure):
     _fields_ = (
-        ('bKeyDown', wintypes.BOOL),
-        ('wRepeatCount', wintypes.WORD),
-        ('wVirtualKeyCode', wintypes.WORD),
-        ('wVirtualScanCode', wintypes.WORD),
+        ('bKeyDown', wintypes.BOOL), #32 bit?
+        ('wRepeatCount', wintypes.WORD), #16
+        ('wVirtualKeyCode', wintypes.WORD),#16
+        ('wVirtualScanCode', wintypes.WORD), #16
         # union with CHAR AsciiChar
-        ('UnicodeChar', wintypes.WCHAR),
-        ('dwControlKeyState', wintypes.DWORD),
-        # 14 bytes so far, need another 2 bytes
-        ('filler', wintypes.WORD),
+        ('UnicodeChar', wintypes.WCHAR), #32
+        ('dwControlKeyState', wintypes.DWORD), #32
+        # note that structure is in a union with other event records
+        # but it is the largest type. mouseeventrecord is 128 bytes
     )
 
 class INPUT_RECORD(Structure):
@@ -91,7 +91,7 @@ class ConsoleInput(_StreamWrapper):
             output, self._bytes_buffer = self._bytes_buffer, bytearray()
         else:
             output, self._bytes_buffer = self._bytes_buffer[:size], self._bytes_buffer[size:]
-        return output
+        return bytes(output)
 
     def _fill_buffer(self, size, blocking):
         while size < 0 or len(self._bytes_buffer) < size:
@@ -113,22 +113,25 @@ class ConsoleInput(_StreamWrapper):
                     # key-up event for unicode Alt+HEX input
                     if event.KeyEvent.bKeyDown or event.KeyEvent.wVirtualKeyCode == VK_MENU:
                         char = event.KeyEvent.UnicodeChar
+                        self._bytes_buffer += char.encode(self.encoding)
                         if char == u'\x1a':
                             # ctrl-z is end of input on windows console
                             return
-                        self._bytes_buffer += char.encode(self.encoding)
-            time.sleep(0.1)
+            time.sleep(0.01)
 
 
 # Python2-compatible standard bytes streams
+
 if sys.stdin.isatty():
     bstdin = ConsoleInput(sys.stdin, STD_INPUT_HANDLE)
 else:
     bstdin = sys.stdin
+
 if sys.stdout.isatty():
     bstdout = ConsoleOutput(sys.stdout, STD_OUTPUT_HANDLE)
 else:
     bstdout = sys.stdout
+
 if sys.stderr.isatty():
     bstderr = ConsoleOutput(sys.stderr, STD_ERROR_HANDLE)
 else:
