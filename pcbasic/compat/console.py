@@ -181,7 +181,7 @@ _read_buffer = deque()
 
 def read_char():
     """Read unicode char from console, non-blocking."""
-    s = read_all_available(sys.stdin)
+    s = read_all_available(stdin)
     if s is None:
         # stream closed, send ctrl-d
         if not _read_buffer:
