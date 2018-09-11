@@ -120,7 +120,7 @@ class ConsoleInput(_StreamWrapper):
                         self._bytes_buffer += bchar
                         if self.echo and char and char != u'\0':
                             _WriteConsoleW(
-                                self._echo_handle, char, len(char),
+                                self._echo_handle, u'\n' if char == u'\r' else char, len(char),
                                 byref(wintypes.DWORD()), byref(wintypes.DWORD())
                             )
                         if char == u'\x1a':
