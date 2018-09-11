@@ -34,14 +34,18 @@ if WIN32:
     # we could get unicode out directly from the wrapped stream
     # but that would confuse type checks further down
     from .win32_console import bstdin, bstdout, bstderr
+    from .colorama import AnsiToWin32
 
-    # FIXME: colorama assumes bytes in Py2 and unicode in Py3
-    #from .colorama import AnsiToWin32
-    #bstdout, bstderr = AnsiToWin32(bstdout).stream, AnsiToWin32(bstderr).stream
+    # colorama expects byte stream in Python2 and unicode streams in Python 3
+    if PY2:
+        bstdout, bstderr = AnsiToWin32(bstdout).stream, AnsiToWin32(bstderr).stream
 
     stdin = _wrap_input_stream(bstdin)
     stdout = _wrap_output_stream(bstdout)
     stderr = _wrap_output_stream(bstderr)
+
+    if not PY2:
+        stdout, stderr = AnsiToWin32(stdout).stream, AnsiToWin32(stderr).stream
 
 
     from ctypes import windll, byref
