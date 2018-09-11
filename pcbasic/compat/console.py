@@ -60,10 +60,10 @@ if WIN32:
     HAS_CONSOLE = _has_console()
 
     def set_raw():
-        pass
+        bstdin.echo = False
 
     def unset_raw():
-        pass
+        bstdin.echo = True
 
     # key pressed on keyboard
     from msvcrt import kbhit as key_pressed

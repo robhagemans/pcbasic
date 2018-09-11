@@ -81,9 +81,12 @@ class ConsoleOutput(_StreamWrapper):
 class ConsoleInput(_StreamWrapper):
     """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdin."""
 
-    def __init__(self, stream, nhandle, encoding='utf-8'):
-        _StreamWrapper.__init__(self, stream, nhandle, encoding)
+    def __init__(self, encoding='utf-8'):
+        _StreamWrapper.__init__(self, sys.stdin, STD_INPUT_HANDLE, encoding)
+        self._echo_handle = _GetStdHandle(STD_OUTPUT_HANDLE)
         self._bytes_buffer = bytearray()
+        # public field - console echo
+        self.echo = True
 
     def read(self, size=-1, blocking=True):
         self._fill_buffer(size, blocking)
@@ -113,7 +116,13 @@ class ConsoleInput(_StreamWrapper):
                     # key-up event for unicode Alt+HEX input
                     if event.KeyEvent.bKeyDown or event.KeyEvent.wVirtualKeyCode == VK_MENU:
                         char = event.KeyEvent.UnicodeChar
-                        self._bytes_buffer += char.encode(self.encoding)
+                        bchar = char.encode(self.encoding)
+                        self._bytes_buffer += bchar
+                        if self.echo and char and char != u'\0':
+                            _WriteConsoleW(
+                                self._echo_handle, char, len(char),
+                                byref(wintypes.DWORD()), byref(wintypes.DWORD())
+                            )
                         if char == u'\x1a':
                             # ctrl-z is end of input on windows console
                             return
@@ -123,7 +132,7 @@ class ConsoleInput(_StreamWrapper):
 # Python2-compatible standard bytes streams
 
 if sys.stdin.isatty():
-    bstdin = ConsoleInput(sys.stdin, STD_INPUT_HANDLE)
+    bstdin = ConsoleInput()
 else:
     bstdin = sys.stdin
 
