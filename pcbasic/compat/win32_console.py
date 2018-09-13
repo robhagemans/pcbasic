@@ -7,39 +7,11 @@ import codecs
 import time
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
+
 STD_INPUT_HANDLE = -10
 STD_OUTPUT_HANDLE = -11
 STD_ERROR_HANDLE = -12
 
-_GetStdHandle = windll.kernel32.GetStdHandle
-_GetStdHandle.argtypes = (wintypes.DWORD,)
-_GetStdHandle.restype = wintypes.HANDLE
-
-_WriteConsoleW = windll.kernel32.WriteConsoleW
-_WriteConsoleW.argtypes = (
-    wintypes.HANDLE, wintypes.LPCWSTR, wintypes.DWORD, POINTER(wintypes.DWORD), wintypes.LPVOID
-)
-
-class KEY_EVENT_RECORD(Structure):
-    _fields_ = (
-        ('bKeyDown', wintypes.BOOL), #32 bit?
-        ('wRepeatCount', wintypes.WORD), #16
-        ('wVirtualKeyCode', wintypes.WORD),#16
-        ('wVirtualScanCode', wintypes.WORD), #16
-        # union with CHAR AsciiChar
-        ('UnicodeChar', wintypes.WCHAR), #32
-        ('dwControlKeyState', wintypes.DWORD), #32
-        # note that structure is in a union with other event records
-        # but it is the largest type. mouseeventrecord is 128 bytes
-    )
-
-class INPUT_RECORD(Structure):
-    _fields_ = (
-        ('EventType', wintypes.WORD),
-        # union of many event types but we only care about key events
-        # total size is 16 bytes
-        ('KeyEvent', KEY_EVENT_RECORD),
-    )
 
 KEY_EVENT = 1
 VK_MENU = 0x12
@@ -70,6 +42,58 @@ KEY_CODE_TO_ANSI = {
 }
 
 
+class KEY_EVENT_RECORD(Structure):
+    _fields_ = (
+        ('bKeyDown', wintypes.BOOL), #32 bit?
+        ('wRepeatCount', wintypes.WORD), #16
+        ('wVirtualKeyCode', wintypes.WORD),#16
+        ('wVirtualScanCode', wintypes.WORD), #16
+        # union with CHAR AsciiChar
+        ('UnicodeChar', wintypes.WCHAR), #32
+        ('dwControlKeyState', wintypes.DWORD), #32
+        # note that structure is in a union with other event records
+        # but it is the largest type. mouseeventrecord is 128 bytes
+    )
+
+class INPUT_RECORD(Structure):
+    _fields_ = (
+        ('EventType', wintypes.WORD),
+        # union of many event types but we only care about key events
+        # total size is 16 bytes
+        ('KeyEvent', KEY_EVENT_RECORD),
+    )
+
+class CHAR_INFO(Structure):
+    _fields_ = (
+        ('UnicodeChar', wintypes.WCHAR),
+        ('Attributes', wintypes.WORD),
+    )
+
+class CONSOLE_SCREEN_BUFFER_INFO(Structure):
+    """struct in wincon.h."""
+    _fields_ = (
+        ('dwSize', wintypes._COORD),
+        ('dwCursorPosition', wintypes._COORD),
+        ('wAttributes', wintypes.WORD),
+        ('srWindow', wintypes.SMALL_RECT),
+        ('dwMaximumWindowSize', wintypes._COORD),
+    )
+
+_GetStdHandle = windll.kernel32.GetStdHandle
+_GetStdHandle.argtypes = (wintypes.DWORD,)
+_GetStdHandle.restype = wintypes.HANDLE
+
+_WriteConsoleW = windll.kernel32.WriteConsoleW
+_WriteConsoleW.argtypes = (
+    wintypes.HANDLE, wintypes.LPCWSTR, wintypes.DWORD, POINTER(wintypes.DWORD), wintypes.LPVOID
+)
+
+_WriteConsoleOutputW = windll.kernel32.WriteConsoleOutputW
+_WriteConsoleOutputW.argtypes = (
+    wintypes.HANDLE, POINTER(CHAR_INFO),
+    wintypes._COORD, wintypes._COORD, POINTER(wintypes.SMALL_RECT)
+)
+
 _ReadConsoleInputW = windll.kernel32.ReadConsoleInputW
 _ReadConsoleInputW.argtypes = (
     wintypes.HANDLE, POINTER(INPUT_RECORD), wintypes.DWORD, POINTER(wintypes.DWORD)
@@ -77,6 +101,32 @@ _ReadConsoleInputW.argtypes = (
 
 _GetNumberOfConsoleInputEvents = windll.kernel32.GetNumberOfConsoleInputEvents
 _GetNumberOfConsoleInputEvents.argtypes = (wintypes.HANDLE, POINTER(wintypes.DWORD))
+
+
+_GetConsoleScreenBufferInfo = windll.kernel32.GetConsoleScreenBufferInfo
+_GetConsoleScreenBufferInfo.argtypes = (wintypes.HANDLE, POINTER(CONSOLE_SCREEN_BUFFER_INFO))
+
+
+def _write_console(handle, unistr):
+    """Write character to console, avoid scroll on bottom line."""
+    csbi = CONSOLE_SCREEN_BUFFER_INFO()
+    _GetConsoleScreenBufferInfo(handle, byref(csbi))
+    col, row = csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y
+    width, height = csbi.dwSize.X, csbi.dwSize.Y
+    for ch in unistr:
+        if (row == height-1 and col >= width - 1 and ch != u'\n'):
+            ci = CHAR_INFO(ch, csbi.wAttributes)
+            # do not advance cursor if we're on the last position of the
+            # screen buffer, to avoid unwanted scrolling.
+            _WriteConsoleOutputW(
+                handle, byref(ci), wintypes._COORD(1, 1), wintypes._COORD(0, 0),
+                wintypes.SMALL_RECT(col, row, col, row)
+            )
+        else:
+            _WriteConsoleW(
+                handle, ch, 1,
+                byref(wintypes.DWORD()), byref(wintypes.DWORD())
+            )
 
 
 class _StreamWrapper(object):
@@ -98,10 +148,7 @@ class ConsoleOutput(_StreamWrapper):
         if not isinstance(bytestr, bytes):
             raise TypeError('write() argument must be bytes, not %s' % type(bytestr))
         unistr = bytestr.decode(self.encoding)
-        _WriteConsoleW(
-            self._handle, unistr, len(unistr),
-            byref(wintypes.DWORD()), byref(wintypes.DWORD())
-        )
+        _write_console(self._handle, unistr)
 
 
 class ConsoleInput(_StreamWrapper):
@@ -143,10 +190,7 @@ class ConsoleInput(_StreamWrapper):
                     if char:
                         self._bytes_buffer += char.encode(self.encoding)
                         if self.echo:
-                            _WriteConsoleW(
-                                self._echo_handle, u'\n' if char == u'\r' else char, len(char),
-                                byref(wintypes.DWORD()), byref(wintypes.DWORD())
-                            )
+                            _write_console(self._echo_handle, u'\n' if char == u'\r' else char)
                         if char == u'\x1a':
                             # ctrl-z is end of input on windows console
                             return
