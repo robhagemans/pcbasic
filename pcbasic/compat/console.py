@@ -33,7 +33,7 @@ if WIN32:
     # wrap an encoded bytes stream both in Py2 and Py3
     # we could get unicode out directly from the wrapped stream
     # but that would confuse type checks further down
-    from .win32_console import bstdin, bstdout, bstderr
+    from .win32_console import bstdin, bstdout, bstderr, TERM_SIZE
     from .colorama import AnsiToWin32
 
     # colorama expects byte stream in Python2 and unicode streams in Python 3
@@ -107,7 +107,7 @@ if WIN32:
             return stream.read() or None
 
 else:
-    import tty, termios, select, fcntl, array
+    import tty, termios, select, fcntl, array, struct
 
     if PY2:
         stdin = _wrap_input_stream(sys.stdin)
@@ -135,6 +135,14 @@ else:
 
     # save termios state
     _term_attr = None
+
+    # preserve original terminal size
+    try:
+        TERM_SIZE = struct.unpack(
+            'HHHH', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, b'\0'*8)
+        )[:2]
+    except Exception:
+        TERM_SIZE = 25, 80
 
     def set_raw():
         """Enter raw terminal mode."""

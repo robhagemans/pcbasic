@@ -137,6 +137,22 @@ def _write_console(handle, unistr):
             )
 
 
+# preserve original terminal size
+def _get_term_size():
+    """Get size of terminal window."""
+    try:
+        handle = _GetStdHandle(STD_OUTPUT_HANDLE)
+        csbi = CONSOLE_SCREEN_BUFFER_INFO()
+        _GetConsoleScreenBufferInfo(handle, csbi)
+        left, top = csbi.srWindow.Left, csbi.srWindow.Top,
+        right, bottom = csbi.srWindow.Right, csbi.srWindow.Bottom
+        return bottom-top+1, right-left+1
+    except Exception:
+        return 25, 80
+
+TERM_SIZE = _get_term_size()
+
+
 class _StreamWrapper(object):
     """Delegating stream wrapper."""
 
