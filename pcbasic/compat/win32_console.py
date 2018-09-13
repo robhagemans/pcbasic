@@ -1,5 +1,13 @@
+"""
+PC-BASIC - compat.win32_console
+Windows console support:
+- unicode output for Python 2
+- scroll prevention
+- ANSI input & adjustable echo
 
-# only needed for Python2
+(c) 2018 Rob Hagemans
+This file is released under the GNU GPL version 3 or later.
+"""
 
 import sys
 import ctypes
@@ -221,14 +229,23 @@ class ConsoleInput(_StreamWrapper):
 if sys.stdin.isatty():
     bstdin = ConsoleInput()
 else:
-    bstdin = sys.stdin
+    try:
+        bstdin = sys.stdin.buffer
+    except AttributeError:
+        bstdin = sys.stdin
 
 if sys.stdout.isatty():
     bstdout = ConsoleOutput(sys.stdout, STD_OUTPUT_HANDLE)
 else:
-    bstdout = sys.stdout
+    try:
+        bstdout = sys.stdout.buffer
+    except AttributeError:
+        bstdout = sys.stdout
 
 if sys.stderr.isatty():
     bstderr = ConsoleOutput(sys.stderr, STD_ERROR_HANDLE)
 else:
-    bstderr = sys.stderr
+    try:
+        bstderr = sys.stderr.buffer
+    except AttributeError:
+        bstderr = sys.stderr
