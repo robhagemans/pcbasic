@@ -16,6 +16,7 @@ import sys
 import time
 import msvcrt
 import ctypes
+from collections import deque
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
 from .base import PY2, wrap_input_stream, wrap_output_stream
@@ -28,30 +29,31 @@ STD_ERROR_HANDLE = -12
 KEY_EVENT = 1
 VK_MENU = 0x12
 
-KEY_CODE_TO_ANSI = {
-    0x21: u'\x1b[5~', # VK_PRIOR, page up
-    0x22: u'\x1b[6~', # VK_NEXT, page down
-    0x23: u'\x1bOF', # VK_END
-    0x24: u'\x1bOH', # VK_HOME
-    0x25: u'\x1b[D', # VK_LEFT
-    0x26: u'\x1b[A', # VK_UP
-    0x27: u'\x1b[C', # VK_RIGHT
-    0x28: u'\x1b[B', # VK_DOWN
-    0x2d: u'\x1b[2~', # VK_INSERT
-    0x2e: u'\x1b[3~', # VK_DELETE
-    0x70: u'\x1bOP', # VK_F1
-    0x71: u'\x1bOQ', # VK_F2
-    0x72: u'\x1bOR', # VK_F3
-    0x73: u'\x1bOS', # VK_F4
-    0x74: u'\x1b[15~', # VK_F5
-    0x75: u'\x1b[17~', # VK_F6
-    0x76: u'\x1b[18~', # VK_F7
-    0x77: u'\x1b[19~', # VK_F8
-    0x78: u'\x1b[20~', # VK_F9
-    0x79: u'\x1b[21~', # VK_F10
-    0x7a: u'\x1b[23~', # VK_F11
-    0x7b: u'\x1b[24~', # VK_F12
-}
+
+class Keys(object):
+    """Windows virtual key codes."""
+    PAGEUP = 0x21 # VK_PRIOR
+    PAGEDOWN = 0x22 # VK_NEXT
+    END = 0x23
+    HOME = 0x24
+    LEFT = 0x25
+    UP = 0x26
+    RIGHT = 0x27
+    DOWN = 0x28
+    INSERT = 0x2d
+    DELETE = 0x2e
+    F1 = 0x70
+    F2 = 0x71
+    F3 = 0x72
+    F4 = 0x73
+    F5 = 0x74
+    F6 = 0x75
+    F7 = 0x76
+    F8 = 0x77
+    F9 = 0x78
+    F10 = 0x79
+    F11 = 0x7a
+    F12 = 0x7b
 
 
 class Colours(object):
@@ -64,6 +66,7 @@ class Colours(object):
     MAGENTA = 5
     YELLOW = 6
     WHITE = 7 # GREY
+
 
 # character attributes, from wincon.h
 NORMAL              = 0x00 # dim text, dim background
@@ -281,126 +284,6 @@ def _has_console():
         return False
 
 
-class _StreamWrapper(object):
-    """Delegating stream wrapper."""
-
-    def __init__(self, stream, handle, encoding='utf-8'):
-        self._wrapped = stream
-        self._handle = handle
-        self.encoding = encoding
-
-    def __getattr__(self, attr):
-        return getattr(self._wrapped, attr)
-
-
-class ConsoleOutput(_StreamWrapper):
-    """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
-
-    def write(self, bytestr):
-        if not isinstance(bytestr, bytes):
-            raise TypeError('write() argument must be bytes, not %s' % type(bytestr))
-        unistr = bytestr.decode(self.encoding)
-        _write_console(self._handle, unistr)
-
-
-class ConsoleInput(_StreamWrapper):
-    """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdin."""
-
-    def __init__(self, encoding='utf-8'):
-        _StreamWrapper.__init__(self, sys.stdin, HSTDIN, encoding)
-        self._echo_handle = HSTDOUT
-        self._bytes_buffer = bytearray()
-        # public field - console echo
-        self.echo = True
-
-    def read(self, size=-1, blocking=True):
-        self._fill_buffer(size, blocking)
-        if size < 0:
-            output, self._bytes_buffer = self._bytes_buffer, bytearray()
-        else:
-            output, self._bytes_buffer = self._bytes_buffer[:size], self._bytes_buffer[size:]
-        return bytes(output)
-
-    def _fill_buffer(self, size, blocking):
-        while size < 0 or len(self._bytes_buffer) < size:
-            nevents = wintypes.DWORD()
-            _GetNumberOfConsoleInputEvents(HSTDIN, byref(nevents))
-            if not nevents.value and not blocking:
-                return
-            if nevents.value > 0:
-                input_buffer = (INPUT_RECORD * nevents.value)()
-                nread = wintypes.DWORD()
-                _ReadConsoleInputW(
-                    HSTDIN,
-                    cast(input_buffer, POINTER(INPUT_RECORD)),
-                    nevents.value, byref(nread)
-                )
-                for event in input_buffer:
-                    if event.EventType != KEY_EVENT:
-                        continue
-                    char = self._translate_event(event)
-                    if char:
-                        self._bytes_buffer += char.encode(self.encoding)
-                        if self.echo:
-                            _write_console(self._echo_handle, u'\n' if char == u'\r' else char)
-                        if char == u'\x1a':
-                            # ctrl-z is end of input on windows console
-                            return
-            time.sleep(0.01)
-
-    def _translate_event(self, event):
-        char = event.KeyEvent.UnicodeChar
-        if char == u'\0':
-            # windows uses null-terminated strings so \0 means no output
-            char = u''
-        if not event.KeyEvent.bKeyDown:
-            # key-up event for unicode Alt+HEX input
-            if event.KeyEvent.wVirtualKeyCode == VK_MENU:
-                return char
-            # ignore other key-up events
-            return u''
-        elif event.KeyEvent.dwControlKeyState & 0xf:
-            # ctrl or alt are down; don't parse arrow keys etc.
-            # but if any unicode is produced, send it on
-            return char
-        else:
-            key_code = event.KeyEvent.wVirtualKeyCode
-            return KEY_CODE_TO_ANSI.get(key_code, char)
-
-
-# Python2-compatible standard bytes streams
-
-if sys.stdin.isatty():
-    bstdin = ConsoleInput()
-else:
-    try:
-        bstdin = sys.stdin.buffer
-    except AttributeError:
-        bstdin = sys.stdin
-
-if sys.stdout.isatty():
-    bstdout = ConsoleOutput(sys.stdout, HSTDOUT)
-else:
-    try:
-        bstdout = sys.stdout.buffer
-    except AttributeError:
-        bstdout = sys.stdout
-
-if sys.stderr.isatty():
-    bstderr = ConsoleOutput(sys.stderr, HSTDERR)
-else:
-    try:
-        bstderr = sys.stderr.buffer
-    except AttributeError:
-        bstderr = sys.stderr
-
-# wrap an encoded bytes stream both in Py2 and Py3
-# we could get unicode out directly from the wrapped stream
-# but that would confuse type checks further down
-stdin = wrap_input_stream(bstdin)
-stdout = wrap_output_stream(bstdout)
-stderr = wrap_output_stream(bstderr)
-
 try:
     # set stdio as binary, to avoid Windows messing around with CRLFs
     # only do this for redirected output, as it breaks interactive Python sessions
@@ -415,52 +298,31 @@ except EnvironmentError:
     pass
 
 
-def read_all_available(stream):
-    """Read all available characters from a stream; nonblocking; None if closed."""
-    if hasattr(stream, 'isatty') and stream.isatty():
-        # we're reading from stdin or something wrapping it
-        try:
-            encoding = stream.encoding
-            stream = stream.buffer
-        except:
-            encoding = None
-        # get it from our wrapper instead, which has a non-blocking option
-        #FIXME: we're not dealing with closed streams
-        bstr = bstdin.read(blocking=False)
-        if encoding:
-            return bstr.decode(encoding, 'replace')
-        else:
-            return bstr
-    else:
-        # this would work on unix too
-        # just read the whole file and be done with it
-        return stream.read() or None
-
-
 
 class Win32Console(object):
     """Win32API-based console implementation."""
 
+    keys = Keys
     colours = Colours
 
     def __init__(self):
         """Set up console"""
         self.has_stdin = _has_console()
         self.original_size = _get_term_size()
-        self.stdin = stdin
-        self.stdout = stdout
-        self.stderr = stderr
         csbi = GetConsoleScreenBufferInfo(HSTDOUT)
         self._default = csbi.wAttributes
         self._attrs = csbi.wAttributes
+        # input
+        self._input_buffer = deque()
+        self._echo = True
 
     def set_raw(self):
         """Enter raw terminal mode."""
-        bstdin.echo = False
+        self._echo = False
 
     def unset_raw(self):
         """Leave raw terminal mode."""
-        bstdin.echo = True
+        self._echo = True
 
     def key_pressed(self):
         """key pressed on keyboard."""
@@ -487,6 +349,13 @@ class Win32Console(object):
         _SetConsoleScreenBufferSize(HSTDOUT, new_size)
         _SetConsoleWindowInfo(HSTDOUT, True, new_window)
         _SetConsoleScreenBufferSize(HSTDOUT, new_size)
+
+    ##########################################################################
+    # output
+
+    def write(self, unistr):
+        """Write text to the console."""
+        _write_console(HSTDOUT, unistr)
 
     def clear(self):
         """Clear the screen."""
@@ -526,15 +395,17 @@ class Win32Console(object):
 
     def move_cursor_left(self, n):
         """Move cursor n cells to the left."""
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
-        position = csbi.dwCursorPosition
-        self.move_cursor_to(position.X+1 - n, position.Y+1)
+        self._move_cursor(0, -n)
 
     def move_cursor_right(self, n):
         """Move cursor n cells to the right."""
+        self._move_cursor(0, n)
+
+    def _move_cursor(self, rows, cols):
+        """Move cursor relative to current position."""
         csbi = GetConsoleScreenBufferInfo(HSTDOUT)
         position = csbi.dwCursorPosition
-        self.move_cursor_to(position.X+1 + n, position.Y+1)
+        self.move_cursor_to(position.Y+1 + rows, position.X+1 + cols)
 
     def move_cursor_to(self, row, col):
         """Move cursor to a new position (1,1 is top left)."""
@@ -601,3 +472,178 @@ class Win32Console(object):
         """Set current attributes."""
         self._attrs = fore + back * 16 + (BRIGHT if bright else NORMAL)
         _SetConsoleTextAttribute(HSTDOUT, self._attrs)
+
+    ##########################################################################
+    # input
+
+    def read_key(self):
+        """
+        Read keypress from console. Non-blocking. Returns:
+        - unicode, if character key
+        - int out of console.keys, if special key
+        - u'\x04' if closed
+        """
+        self._fill_buffer(blocking=False)
+        if not self._input_buffer:
+            return u''
+        return self._input_buffer.popleft()
+
+    def read_all_chars(self):
+        """Read all characters in the buffer."""
+        self._fill_buffer(blocking=False)
+        output = u''.join(_char for _char in self._input_buffer if not isinstance(_char, int))
+        self._input_buffer.clear()
+        return output
+
+    def _fill_buffer(self, blocking):
+        """Interpret all key events."""
+        while True:
+            nevents = wintypes.DWORD()
+            _GetNumberOfConsoleInputEvents(HSTDIN, byref(nevents))
+            if not nevents.value and not blocking:
+                return
+            # only ever block on first loop
+            blocking = False
+            if nevents.value > 0:
+                input_buffer = (INPUT_RECORD * nevents.value)()
+                nread = wintypes.DWORD()
+                _ReadConsoleInputW(
+                    HSTDIN,
+                    cast(input_buffer, POINTER(INPUT_RECORD)),
+                    nevents.value, byref(nread)
+                )
+                for event in input_buffer:
+                    if event.EventType != KEY_EVENT:
+                        continue
+                    key = self._translate_event(event)
+                    if key:
+                        self._input_buffer.append(key)
+                        if self._echo:
+                            self._echo_key(key)
+                        if key == u'\x1a':
+                            # ctrl-z is end of input on windows console
+                            return
+            time.sleep(0.01)
+
+    def _translate_event(self, event):
+        char = event.KeyEvent.UnicodeChar
+        key = event.KeyEvent.wVirtualKeyCode
+        if char == u'\0':
+            # windows uses null-terminated strings so \0 means no output
+            char = u''
+        if not event.KeyEvent.bKeyDown:
+            # key-up event for unicode Alt+HEX input
+            if event.KeyEvent.wVirtualKeyCode == VK_MENU:
+                return char
+            # ignore other key-up events
+            return u''
+        elif event.KeyEvent.dwControlKeyState & 0xf:
+            # ctrl or alt are down; don't parse arrow keys etc.
+            # but if any unicode is produced, send it on
+            return char
+        # this is hacky - is the key code a recognised one?
+        elif key in self.keys.__dict__.values():
+            return key
+        return char
+
+    def _echo_key(self, key):
+        """Echo a character or special key."""
+        if not isinstance(key, int):
+            # caracter echo
+            if key == u'\r':
+                key = u'\n'
+            _write_console(HSTDOUT, key)
+
+
+console = Win32Console()
+
+
+def read_all_available(stream):
+    """Read all available characters from a stream; nonblocking; None if closed."""
+    # are we're reading from (wrapped) stdin or not?
+    if hasattr(stream, 'isatty') and stream.isatty():
+        # this is shaky - try to identify unicode vs bytes stream
+        is_unicode_stream = hasattr(stream, 'buffer')
+        #FIXME: we're not dealing with closed streams
+        unistr = console.read_all_chars()
+        if is_unicode_stream:
+            return unistr
+        else:
+            return unistr.encode(stdin.encoding, 'replace')
+    else:
+        # this would work on unix too
+        # just read the whole file and be done with it
+        return stream.read() or None
+
+
+class _StreamWrapper(object):
+    """Delegating stream wrapper."""
+
+    def __init__(self, stream, handle, encoding='utf-8'):
+        self._wrapped = stream
+        self._handle = handle
+        self.encoding = encoding
+
+    def __getattr__(self, attr):
+        return getattr(self._wrapped, attr)
+
+
+class ConsoleOutput(_StreamWrapper):
+    """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
+
+    def write(self, bytestr):
+        if not isinstance(bytestr, bytes):
+            raise TypeError('write() argument must be bytes, not %s' % type(bytestr))
+        unistr = bytestr.decode(self.encoding)
+        _write_console(self._handle, unistr)
+
+
+class ConsoleInput(_StreamWrapper):
+    """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdin."""
+
+    def __init__(self, encoding='utf-8'):
+        _StreamWrapper.__init__(self, sys.stdin, HSTDIN, encoding)
+
+    def read(self, size=-1):
+        output = bytearray()
+        while size < 0 or len(output) < size:
+            key = console.read_key()
+            if isinstance(key, int):
+                continue
+            output.append(key.encode(self.encoding))
+        return bytes(output)
+
+
+# Python2-compatible standard bytes streams
+
+if sys.stdin.isatty():
+    bstdin = ConsoleInput()
+else:
+    try:
+        bstdin = sys.stdin.buffer
+    except AttributeError:
+        bstdin = sys.stdin
+
+if sys.stdout.isatty():
+    bstdout = ConsoleOutput(sys.stdout, HSTDOUT)
+else:
+    try:
+        bstdout = sys.stdout.buffer
+    except AttributeError:
+        bstdout = sys.stdout
+
+if sys.stderr.isatty():
+    bstderr = ConsoleOutput(sys.stderr, HSTDERR)
+else:
+    try:
+        bstderr = sys.stderr.buffer
+    except AttributeError:
+        bstderr = sys.stderr
+
+
+# wrap an encoded bytes stream both in Py2 and Py3
+# we could get unicode out directly from the wrapped stream
+# but that would confuse type checks further down
+stdin = wrap_input_stream(bstdin)
+stdout = wrap_output_stream(bstdout)
+stderr = wrap_output_stream(bstderr)

@@ -11,7 +11,6 @@ import logging
 
 from .video import VideoPlugin
 from .base import video_plugins
-from . import ansi
 from . import video_cli
 from ..compat import console
 

@@ -12,9 +12,12 @@ from .base import PLATFORM, PY2, PY3, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR
 from .base import split_quoted, suppress_output
 
-from .console import console, read_all_available
 
-stdin, stdout, stderr = console.stdin, console.stdout, console.stderr
+if WIN32:
+    from .win32_console import console, read_all_available, stdin, stdout, stderr
+else:
+    from .posix_console import console, read_all_available, stdin, stdout, stderr
+
 HAS_CONSOLE = console.has_stdin
 
 if PY2:
