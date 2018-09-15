@@ -70,8 +70,8 @@ KEY_EVENT = 1
 VK_MENU = 0x12
 
 # character attributes, from wincon.h
-NORMAL              = 0x00 # dim text, dim background
-BRIGHT              = 0x08 # bright text, dim background
+NORMAL = 0x00
+BRIGHT = 0x08
 
 
 ##############################################################################
@@ -457,7 +457,7 @@ class Win32Console(object):
         Read keypress from console. Non-blocking. Returns:
         - unicode, if character key
         - int out of console.keys, if special key
-        - u'\x04' if closed
+        - EOF if closed
         """
         self._fill_buffer(blocking=False)
         if not self._input_buffer:
@@ -467,8 +467,19 @@ class Win32Console(object):
     def read_all_chars(self):
         """Read all characters in the buffer."""
         self._fill_buffer(blocking=False)
-        output = u''.join(_char for _char in self._input_buffer if not isinstance(_char, int))
+        closed = False
+        if self._input_buffer and self._input_buffer[-1] == u'\x1a':
+            closed = True
+            self._input_buffer.pop()
+            if not self._input_buffer:
+                return None
+        output = u''.join(
+            _char for _char in self._input_buffer
+            if not isinstance(_char, int)
+        )
         self._input_buffer.clear()
+        if closed:
+            self._input_buffer.append(u'\x1a')
         return output
 
     def _fill_buffer(self, blocking):
@@ -494,11 +505,11 @@ class Win32Console(object):
                     key = self._translate_event(event)
                     if key:
                         self._input_buffer.append(key)
-                        if self._echo:
-                            self._echo_key(key)
                         if key == u'\x1a':
                             # ctrl-z is end of input on windows console
                             return
+                        if self._echo:
+                            self._echo_key(key)
             time.sleep(0.01)
 
     def _translate_event(self, event):
@@ -554,9 +565,8 @@ def read_all_available(stream):
     if hasattr(stream, 'isatty') and stream.isatty():
         # this is shaky - try to identify unicode vs bytes stream
         is_unicode_stream = hasattr(stream, 'buffer')
-        #FIXME: we're not dealing with closed streams
         unistr = console.read_all_chars()
-        if is_unicode_stream:
+        if is_unicode_stream or unistr is None:
             return unistr
         else:
             return unistr.encode(stdin.encoding, 'replace')
