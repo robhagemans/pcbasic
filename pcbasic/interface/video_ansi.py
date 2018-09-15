@@ -42,7 +42,6 @@ class VideoANSI(video_cli.VideoTextBase):
         self._set_default_colours(16)
         self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
         self.logger = logging.getLogger()
-        #console.flush()
 
     def __enter__(self):
         """Open ANSI interface."""
@@ -59,7 +58,6 @@ class VideoANSI(video_cli.VideoTextBase):
             console.write(ansi.CLEAR_SCREEN)
             console.write(ansi.MOVE_CURSOR % (1, 1))
             self.show_cursor(True)
-            #console.flush()
             # re-enable logger
             self.logger.disabled = False
         finally:
@@ -77,7 +75,6 @@ class VideoANSI(video_cli.VideoTextBase):
                 self._set_attributes(*charattr[1])
                 console.write(charattr[0])
         console.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
-        #console.flush()
 
     def _set_default_colours(self, num_attr):
         """Set colours for default palette."""
@@ -104,7 +101,6 @@ class VideoANSI(video_cli.VideoTextBase):
         console.write(ansi.SET_COLOUR % fore)
         if blink:
             console.write(ansi.SET_COLOUR % 5)
-        #console.flush()
 
     def set_mode(self, mode_info):
         """Change screen mode."""
@@ -119,7 +115,6 @@ class VideoANSI(video_cli.VideoTextBase):
         console.write(ansi.RESIZE_TERM % (self.height, self.width))
         self._set_attributes(7, 0, False, False)
         console.write(ansi.CLEAR_SCREEN)
-        #console.flush()
         return True
 
     def set_page(self, new_vpagenum, new_apagenum):
@@ -147,14 +142,12 @@ class VideoANSI(video_cli.VideoTextBase):
                 console.write(ansi.MOVE_CURSOR % (r, 1))
                 console.write(ansi.CLEAR_LINE)
             console.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
-            #console.flush()
 
     def move_cursor(self, row, col):
         """Move the cursor to a new position."""
         if (row, col) != (self.cursor_row, self.cursor_col):
             self.cursor_row, self.cursor_col = row, col
             console.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
-            #console.flush()
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
@@ -169,7 +162,6 @@ class VideoANSI(video_cli.VideoTextBase):
         else:
             # force move when made visible again
             console.write(ansi.HIDE_CURSOR)
-        #console.flush()
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """Set the cursor shape."""
@@ -181,7 +173,6 @@ class VideoANSI(video_cli.VideoTextBase):
         if self.cursor_visible:
             pass
             #console.write(ansi.SET_CURSOR_SHAPE % cursor_shape)
-            #console.flush()
 
     def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""
@@ -199,7 +190,6 @@ class VideoANSI(video_cli.VideoTextBase):
         if is_fullwidth:
             console.write(u' ')
         self.cursor_row, self.cursor_col = row, col+1
-        #console.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
@@ -233,4 +223,3 @@ class VideoANSI(video_cli.VideoTextBase):
             console.write(ansi.SET_TITLE % (self.caption + u' - ' + msg))
         else:
             console.write(ansi.SET_TITLE % self.caption)
-        #console.flush()

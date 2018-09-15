@@ -26,7 +26,6 @@ def _wrap_input_stream(stream):
     return wrapped
 
 
-
 if WIN32:
     import msvcrt
 
