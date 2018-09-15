@@ -80,13 +80,8 @@ class PosixConsole(object):
 
     def __init__(self):
         """Set up the console."""
-        # check if we can treat stdin like a tty, file or socket
-        self.has_stdin = self._check_stdin_exists()
-        if self.has_stdin:
-            # buffer to save termios state
-            self._term_attr = termios.tcgetattr(sys.stdin.fileno())
-        else:
-            self._term_attr = None
+        # buffer to save termios state
+        self._term_attr = termios.tcgetattr(sys.stdin.fileno())
         # preserve original terminal size
         self.original_size = self.get_size()
         # input buffer
@@ -98,16 +93,6 @@ class PosixConsole(object):
     @property
     def is_tty(self):
         return stdin.isatty()
-
-    def _check_stdin_exists(self):
-        """Check if we can treat stdin like a tty, file or socket."""
-        if not sys.stdin.isatty():
-            try:
-                fcntl.ioctl(sys.stdin, termios.FIONREAD, _sock_size)
-            except EnvironmentError:
-                # maybe /dev/null, but not a real file or console
-                return False
-        return True
 
     def get_size(self):
         """Get terminal size."""
@@ -265,7 +250,21 @@ class PosixConsole(object):
         return sequence
 
 
-console = PosixConsole()
+def _has_console():
+    """To see if we are a console app, check if we can treat stdin like a tty, file or socket."""
+    if not sys.stdin.isatty():
+        try:
+            fcntl.ioctl(sys.stdin, termios.FIONREAD, _sock_size)
+        except EnvironmentError:
+            # maybe /dev/null, but not a real file or console
+            return False
+    return True
+
+
+if _has_console():
+    console = PosixConsole()
+else:
+    console = None
 
 
 def read_all_available(stream):

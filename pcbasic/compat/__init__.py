@@ -18,8 +18,6 @@ if WIN32:
 else:
     from .posix_console import console, read_all_available, stdin, stdout, stderr
 
-HAS_CONSOLE = console.has_stdin
-
 if PY2:
     from .python2 import add_str, iterchar
     from .python2 import xrange, zip, iteritems, itervalues, iterkeys
@@ -60,5 +58,5 @@ if MACOS:
     # for macOS - if no console, presumably we're launched as a bundle
     # set working directory to user home
     # bit of a hack but I don't know a better way
-    if not console.HAS_CONSOLE:
+    if not console:
         os.chdir(HOME_DIR)

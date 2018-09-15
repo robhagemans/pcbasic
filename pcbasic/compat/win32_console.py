@@ -271,14 +271,6 @@ def _get_term_size():
     except Exception:
         return 25, 80
 
-# determine if we have a console attached or are a GUI app
-def _has_console():
-    try:
-        return bool(windll.kernel32.GetConsoleMode(HSTDOUT, byref(wintypes.DWORD())))
-    except Exception as e:
-        return False
-
-
 
 ##############################################################################
 # console class
@@ -291,7 +283,6 @@ class Win32Console(object):
 
     def __init__(self):
         """Set up console"""
-        self.has_stdin = _has_console()
         self.original_size = _get_term_size()
         csbi = GetConsoleScreenBufferInfo(HSTDOUT)
         self._default = csbi.wAttributes
@@ -539,7 +530,18 @@ class Win32Console(object):
             _write_console(HSTDOUT, key)
 
 
-console = Win32Console()
+def _has_console():
+    """Determine if we have a console attached or are a GUI app."""
+    try:
+        return bool(windll.kernel32.GetConsoleMode(HSTDOUT, byref(wintypes.DWORD())))
+    except Exception as e:
+        return False
+
+
+if _has_console():
+    console = Win32Console()
+else:
+    console = None
 
 
 ##############################################################################

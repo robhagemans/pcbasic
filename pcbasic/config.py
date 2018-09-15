@@ -19,10 +19,10 @@ from collections import deque
 
 from .compat import iteritems, text_type
 from .compat import configparser
-from .compat import WIN32, get_short_pathname, argv, HAS_CONSOLE
+from .compat import WIN32, get_short_pathname, argv
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
 from .compat import split_quoted, getcwdu
-from .compat import stdout, stdin, stderr
+from .compat import console, stdout, stdin, stderr
 
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from .metadata import VERSION, NAME
@@ -490,18 +490,18 @@ class Settings(object):
         # implicit stdio redirects
         # add stdio if redirected or no interface
         if stdin not in input_streams and stdin.buffer not in input_streams:
-            if HAS_CONSOLE and not sys.stdin.isatty():
+            if console and not stdin.isatty():
                 input_streams.append(stdin.buffer)
-            elif HAS_CONSOLE and not self.interface:
+            elif console and not self.interface:
                 input_streams.append(stdin)
         # redirect output as well if input is redirected, but not the other way around
         # this is because (1) GW-BASIC does this from the DOS prompt
         # (2) otherwise we don't see anything - we quit after input closes
         # isatty is also false if we run as a GUI exe, so check that here
         if stdout not in output_streams and stdout.buffer not in output_streams:
-            if HAS_CONSOLE and (not sys.stdout.isatty() or not sys.stdin.isatty()):
+            if console and (not stdout.isatty() or not stdin.isatty()):
                 output_streams.append(stdout.buffer)
-            elif HAS_CONSOLE and not self.interface:
+            elif console and not self.interface:
                 output_streams.append(stdout)
         return {
             'output_streams': output_streams,
