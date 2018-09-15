@@ -9,37 +9,34 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import time
 
-from . import ansi
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from ..compat import UEOF, console
+from ..compat import UEOF, console, stdin, stdout
 
 
 # escape sequence to scancode
-ESC_TO_SCAN = {
-    ansi.F1: scancode.F1,  ansi.F2: scancode.F2,  ansi.F3: scancode.F3,  ansi.F4: scancode.F4,
-    ansi.F1_OLD: scancode.F1,  ansi.F2_OLD: scancode.F2,  ansi.F3_OLD: scancode.F3,
-    ansi.F4_OLD: scancode.F4,  ansi.F5: scancode.F5,  ansi.F6: scancode.F6,  ansi.F7: scancode.F7,
-    ansi.F8: scancode.F8,  ansi.F9: scancode.F9,  ansi.F10: scancode.F10,  ansi.F11: scancode.F11,
-    ansi.F12: scancode.F12,  ansi.END: scancode.END,  ansi.END2: scancode.END,
-    ansi.HOME: scancode.HOME,  ansi.HOME2: scancode.HOME,  ansi.UP: scancode.UP,
-    ansi.DOWN: scancode.DOWN,  ansi.RIGHT: scancode.RIGHT,  ansi.LEFT: scancode.LEFT,
-    ansi.INSERT: scancode.INSERT,  ansi.DELETE: scancode.DELETE,  ansi.PAGEUP: scancode.PAGEUP,
-    ansi.PAGEDOWN: scancode.PAGEDOWN,
+KEYS = console.keys
+KEY_TO_SCAN = {
+    KEYS.F1: scancode.F1,  KEYS.F2: scancode.F2,  KEYS.F3: scancode.F3,  KEYS.F4: scancode.F4,
+    KEYS.F5: scancode.F5,  KEYS.F6: scancode.F6,  KEYS.F7: scancode.F7,
+    KEYS.F8: scancode.F8,  KEYS.F9: scancode.F9,  KEYS.F10: scancode.F10,  KEYS.F11: scancode.F11,
+    KEYS.F12: scancode.F12,  KEYS.END: scancode.END,
+    KEYS.HOME: scancode.HOME,  KEYS.UP: scancode.UP,
+    KEYS.DOWN: scancode.DOWN,  KEYS.RIGHT: scancode.RIGHT,  KEYS.LEFT: scancode.LEFT,
+    KEYS.INSERT: scancode.INSERT,  KEYS.DELETE: scancode.DELETE,  KEYS.PAGEUP: scancode.PAGEUP,
+    KEYS.PAGEDOWN: scancode.PAGEDOWN,
 }
-
 # escape sequence to e-ASCII
-ESC_TO_EASCII = {
-    ansi.F1: uea.F1,  ansi.F2: uea.F2,  ansi.F3: uea.F3,  ansi.F4: uea.F4,  ansi.F1_OLD: uea.F1,
-    ansi.F2_OLD: uea.F2,  ansi.F3_OLD: uea.F3,  ansi.F4_OLD: uea.F4,  ansi.F5: uea.F5,
-    ansi.F6: uea.F6,  ansi.F7: uea.F7,  ansi.F8: uea.F8,  ansi.F9: uea.F9,  ansi.F10: uea.F10,
-    ansi.F11: uea.F11,  ansi.F12: uea.F12,  ansi.END: uea.END,  ansi.END2: uea.END,
-    ansi.HOME: uea.HOME,  ansi.HOME2: uea.HOME,  ansi.UP: uea.UP,  ansi.DOWN: uea.DOWN,
-    ansi.RIGHT: uea.RIGHT,  ansi.LEFT: uea.LEFT,  ansi.INSERT: uea.INSERT,
-    ansi.DELETE: uea.DELETE,  ansi.PAGEUP: uea.PAGEUP,  ansi.PAGEDOWN: uea.PAGEDOWN,
+KEY_TO_EASCII = {
+    KEYS.F1: uea.F1,  KEYS.F2: uea.F2,  KEYS.F3: uea.F3,  KEYS.F4: uea.F4,  KEYS.F5: uea.F5,
+    KEYS.F6: uea.F6,  KEYS.F7: uea.F7,  KEYS.F8: uea.F8,  KEYS.F9: uea.F9,  KEYS.F10: uea.F10,
+    KEYS.F11: uea.F11,  KEYS.F12: uea.F12,  KEYS.END: uea.END,
+    KEYS.HOME: uea.HOME,  KEYS.UP: uea.UP,  KEYS.DOWN: uea.DOWN,
+    KEYS.RIGHT: uea.RIGHT,  KEYS.LEFT: uea.LEFT,  KEYS.INSERT: uea.INSERT,
+    KEYS.DELETE: uea.DELETE,  KEYS.PAGEUP: uea.PAGEUP,  KEYS.PAGEDOWN: uea.PAGEDOWN,
 }
 
 
@@ -48,10 +45,8 @@ class VideoTextBase(VideoPlugin):
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise text-based interface."""
-        if not console:
-            raise InitFailed('Extension module `win32_console` not compiled.')
-        if not console.is_tty:
-            raise InitFailed('Not a terminal (tty).')
+        if not stdin.isatty() or not stdout.isatty():
+            raise InitFailed('This interface requires a console terminal (tty).')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # start the stdin thread for non-blocking reads
         self._input_handler = InputHandlerCLI(input_queue)
@@ -142,7 +137,7 @@ class VideoCLI(VideoTextBase):
         if (self._vpagenum == self._apagenum and
                 start <= self._cursor_row and stop >= self._cursor_row):
             self._update_position(self._cursor_row, 1)
-            console.write(ansi.CLEAR_LINE)
+            console.clear_row()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
@@ -204,9 +199,9 @@ class VideoCLI(VideoTextBase):
         """Move terminal print column."""
         if col != self._col:
             if self._col > col:
-                console.write(ansi.MOVE_N_LEFT % (self._col-col))
+                console.move_cursor_left(self._col-col)
             elif self._col < col:
-                console.write(ansi.MOVE_N_RIGHT % (col-self._col))
+                console.move_cursor_right(col-self._col)
             self._col = col
 
 
@@ -233,7 +228,8 @@ class InputHandlerCLI(object):
             elif uc == u'\x7f':
                 # backspace
                 self._input_queue.put(
-                        signals.Event(signals.KEYB_DOWN, (uea.BACKSPACE, scancode.BACKSPACE, [])))
+                    signals.Event(signals.KEYB_DOWN, (uea.BACKSPACE, scancode.BACKSPACE, []))
+                )
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
                 self._input_queue.put(signals.Event(signals.KEYB_DOWN, (uc, sc, [])))
@@ -246,31 +242,13 @@ class InputHandlerCLI(object):
 
     def _get_key(self):
         """Retrieve one scancode sequence or one unicode char from keyboard."""
-        s = console.read_char()
-        if s == u'':
+        inp = console.read_key()
+        if inp == u'':
             return None, None
-        # ansi sequences start with \x1b
-        esc = (s == ansi.ESC)
-        # escape sequences are at most 5 chars long
-        more = 5
-        cutoff = 100
-        if not esc:
-            return s, None
-        while (more > 0) and (cutoff > 0):
-            if esc:
-                # return the first recognised escape sequence
-                uc = ESC_TO_EASCII.get(s, u'')
-                scan = ESC_TO_SCAN.get(s, None)
-                if uc or scan:
-                    return uc, scan
-            # give time for the queue to fill up
-            time.sleep(0.0005)
-            c = console.read_char()
-            cutoff -= 1
-            if c == u'':
-                continue
-            more -= 1
-            s += c
-        # no sequence or decodable string found
-        # decode as good as it gets
-        return s, None
+        if isinstance(inp, int):
+            # keycode
+            uc = KEY_TO_EASCII.get(inp, u'')
+            scan = KEY_TO_SCAN.get(inp, None)
+            return uc, scan
+        # character
+        return inp, None

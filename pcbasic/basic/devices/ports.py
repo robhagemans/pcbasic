@@ -14,7 +14,7 @@ import io
 from contextlib import contextmanager
 
 from ...compat import iteritems
-from ...compat import key_pressed
+from ...compat import console
 
 from .devicebase import safe_io
 
@@ -446,7 +446,7 @@ class SerialStdIO(object):
         s = []
         # note that kbhit assumes keyboard
         # so won't work with redirects on Windows
-        while key_pressed() and len(s) < num:
+        while console.key_pressed() and len(s) < num:
             c = sys.stdin.read(1)
             if self._crlf and c == b'\n':
                 c = b'\r'
@@ -465,6 +465,6 @@ class SerialStdIO(object):
     def in_waiting(self):
         """Number of characters waiting to be read."""
         # we get at most 1 char waiting this way
-        return key_pressed()
+        return console.key_pressed()
 
     out_waiting = 0
