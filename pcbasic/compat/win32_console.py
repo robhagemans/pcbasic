@@ -22,14 +22,6 @@ from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 from .base import PY2, wrap_input_stream, wrap_output_stream
 
 
-STD_INPUT_HANDLE = -10
-STD_OUTPUT_HANDLE = -11
-STD_ERROR_HANDLE = -12
-
-KEY_EVENT = 1
-VK_MENU = 0x12
-
-
 class Keys(object):
     """Windows virtual key codes."""
     PAGEUP = 0x21 # VK_PRIOR
@@ -68,11 +60,17 @@ class Colours(object):
     WHITE = 7 # GREY
 
 
+# windpws constants
+KEY_EVENT = 1
+VK_MENU = 0x12
+
 # character attributes, from wincon.h
 NORMAL              = 0x00 # dim text, dim background
 BRIGHT              = 0x08 # bright text, dim background
-#BRIGHT_BACKGROUND   = 0x80 # dim text, bright background
 
+
+##############################################################################
+# ctypes wrappers
 
 class KEY_EVENT_RECORD(Structure):
     _fields_ = (
@@ -139,7 +137,6 @@ _ReadConsoleInputW.argtypes = (
 _GetNumberOfConsoleInputEvents = windll.kernel32.GetNumberOfConsoleInputEvents
 _GetNumberOfConsoleInputEvents.argtypes = (wintypes.HANDLE, POINTER(wintypes.DWORD))
 
-
 _GetConsoleScreenBufferInfo = windll.kernel32.GetConsoleScreenBufferInfo
 _GetConsoleScreenBufferInfo.argtypes = (wintypes.HANDLE, POINTER(CONSOLE_SCREEN_BUFFER_INFO))
 
@@ -190,7 +187,6 @@ _SetConsoleTextAttribute = windll.kernel32.SetConsoleTextAttribute
 _SetConsoleTextAttribute.argtypes = (wintypes.HANDLE, wintypes.WORD)
 _SetConsoleTextAttribute.restype = wintypes.BOOL
 
-
 _SetConsoleScreenBufferSize = windll.kernel32.SetConsoleScreenBufferSize
 _SetConsoleScreenBufferSize.argtypes = (wintypes.HANDLE, wintypes._COORD)
 
@@ -237,10 +233,9 @@ def ScrollConsoleScreenBuffer(handle, scroll_rect, clip_rect, new_position, char
     )
 
 
-
-HSTDIN = _GetStdHandle(STD_INPUT_HANDLE)
-HSTDOUT = _GetStdHandle(STD_OUTPUT_HANDLE)
-HSTDERR = _GetStdHandle(STD_ERROR_HANDLE)
+HSTDIN = _GetStdHandle(-10)
+HSTDOUT = _GetStdHandle(-11)
+HSTDERR = _GetStdHandle(-12)
 
 
 def _write_console(handle, unistr):
@@ -284,20 +279,9 @@ def _has_console():
         return False
 
 
-try:
-    # set stdio as binary, to avoid Windows messing around with CRLFs
-    # only do this for redirected output, as it breaks interactive Python sessions
-    # pylint: disable=no-member
-    if not sys.stdin.isatty():
-        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-    if not sys.stdout.isatty():
-        msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-    pass
-except EnvironmentError:
-    # raises an error if started in gui mode, as we have no stdio
-    pass
 
-
+##############################################################################
+# console class
 
 class Win32Console(object):
     """Win32API-based console implementation."""
@@ -558,6 +542,9 @@ class Win32Console(object):
 console = Win32Console()
 
 
+##############################################################################
+# non-blocking input
+
 def read_all_available(stream):
     """Read all available characters from a stream; nonblocking; None if closed."""
     # are we're reading from (wrapped) stdin or not?
@@ -576,74 +563,77 @@ def read_all_available(stream):
         return stream.read() or None
 
 
-class _StreamWrapper(object):
-    """Delegating stream wrapper."""
+##############################################################################
+# standard i/o
 
-    def __init__(self, stream, handle, encoding='utf-8'):
-        self._wrapped = stream
-        self._handle = handle
-        self.encoding = encoding
+if PY2:
 
-    def __getattr__(self, attr):
-        return getattr(self._wrapped, attr)
+    class _StreamWrapper(object):
+        """Delegating stream wrapper."""
 
+        def __init__(self, stream, handle, encoding='utf-8'):
+            self._wrapped = stream
+            self._handle = handle
+            self.encoding = encoding
 
-class ConsoleOutput(_StreamWrapper):
-    """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
-
-    def write(self, bytestr):
-        if not isinstance(bytestr, bytes):
-            raise TypeError('write() argument must be bytes, not %s' % type(bytestr))
-        unistr = bytestr.decode(self.encoding)
-        _write_console(self._handle, unistr)
+        def __getattr__(self, attr):
+            return getattr(self._wrapped, attr)
 
 
-class ConsoleInput(_StreamWrapper):
-    """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdin."""
+    class _ConsoleOutput(_StreamWrapper):
+        """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
 
-    def __init__(self, encoding='utf-8'):
-        _StreamWrapper.__init__(self, sys.stdin, HSTDIN, encoding)
-
-    def read(self, size=-1):
-        output = bytearray()
-        while size < 0 or len(output) < size:
-            key = console.read_key()
-            if isinstance(key, int):
-                continue
-            output.append(key.encode(self.encoding))
-        return bytes(output)
+        def write(self, bytestr):
+            if not isinstance(bytestr, bytes):
+                raise TypeError('write() argument must be bytes, not %s' % type(bytestr))
+            unistr = bytestr.decode(self.encoding)
+            _write_console(self._handle, unistr)
 
 
-# Python2-compatible standard bytes streams
+    class _ConsoleInput(_StreamWrapper):
+        """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdin."""
 
-if sys.stdin.isatty():
-    bstdin = ConsoleInput()
+        def __init__(self, encoding='utf-8'):
+            _StreamWrapper.__init__(self, sys.stdin, HSTDIN, encoding)
+
+        def read(self, size=-1):
+            output = bytearray()
+            while size < 0 or len(output) < size:
+                key = console.read_key()
+                if isinstance(key, int):
+                    continue
+                output.append(key.encode(self.encoding))
+            return bytes(output)
+
+
+    if sys.stdin.isatty():
+        stdin = wrap_input_stream(_ConsoleInput())
+    else:
+        stdin = wrap_input_stream(sys.stdin)
+
+    if sys.stdout.isatty():
+        stdout = wrap_output_stream(_ConsoleOutput(sys.stdout, HSTDOUT))
+    else:
+        stdout = wrap_output_stream(sys.stdout)
+
+    if sys.stderr.isatty():
+        stderr = wrap_output_stream(_ConsoleOutput(sys.stderr, HSTDERR))
+    else:
+        stderr = wrap_output_stream(sys.stderr)
+
 else:
-    try:
-        bstdin = sys.stdin.buffer
-    except AttributeError:
-        bstdin = sys.stdin
-
-if sys.stdout.isatty():
-    bstdout = ConsoleOutput(sys.stdout, HSTDOUT)
-else:
-    try:
-        bstdout = sys.stdout.buffer
-    except AttributeError:
-        bstdout = sys.stdout
-
-if sys.stderr.isatty():
-    bstderr = ConsoleOutput(sys.stderr, HSTDERR)
-else:
-    try:
-        bstderr = sys.stderr.buffer
-    except AttributeError:
-        bstderr = sys.stderr
+    stdin = sys.stdin
+    stdout = sys.stdout
+    stderr = sys.stderr
 
 
-# wrap an encoded bytes stream both in Py2 and Py3
-# we could get unicode out directly from the wrapped stream
-# but that would confuse type checks further down
-stdin = wrap_input_stream(bstdin)
-stdout = wrap_output_stream(bstdout)
-stderr = wrap_output_stream(bstderr)
+# set stdio as binary, to avoid Windows messing around with CRLFs
+# only do this for redirected output, as it breaks interactive Python sessions
+try:
+    if not sys.stdin.isatty():
+        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+    if not sys.stdout.isatty():
+        msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+except EnvironmentError:
+    # raises an error if started in gui mode, as we have no stdio
+    pass
