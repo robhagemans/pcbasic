@@ -14,7 +14,7 @@ import io
 from contextlib import contextmanager
 
 from ...compat import iteritems
-from ...compat import console
+from ...compat import console, stdin, stdout
 
 from .devicebase import safe_io
 
@@ -447,7 +447,7 @@ class SerialStdIO(object):
         # note that kbhit assumes keyboard
         # so won't work with redirects on Windows
         while console.key_pressed() and len(s) < num:
-            c = sys.stdin.read(1)
+            c = stdin.buffer.read(1)
             if self._crlf and c == b'\n':
                 c = b'\r'
             if c:
@@ -458,8 +458,8 @@ class SerialStdIO(object):
         """Write to stdout."""
         if self._crlf:
             s = s.replace(b'\r', b'\n')
-        sys.stdout.write(s)
-        sys.stdout.flush()
+        stdout.buffer.write(s)
+        stdout.buffer.flush()
 
     @property
     def in_waiting(self):

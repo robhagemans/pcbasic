@@ -442,6 +442,5 @@ class VideoCurses(VideoPlugin):
             console.set_caption(self.caption + ' - ' + msg)
         else:
             console.set_caption(self.caption)
-        sys.stdout.flush()
         # redraw in case terminal didn't recognise ansi sequence
         self._redraw()

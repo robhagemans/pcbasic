@@ -16,7 +16,7 @@ try:
 except Exception:
     parallel = None
 
-from ...compat import line_print, iterchar
+from ...compat import line_print, iterchar, stdout
 from ..base import error
 from ..codepage import CONTROL
 from .devicebase import Device, DeviceSettings, TextFileBase, parse_protocol_string, safe_io
@@ -182,7 +182,7 @@ class PrinterStream(io.BytesIO):
 
     def write(self, s):
         """Write to printer stream."""
-        for c in s:
+        for c in iterchar(s):
             if c == b'\b':
                 # backspace: drop a non-newline character from the buffer
                 self.seek(-1, 1)
@@ -243,7 +243,7 @@ class ParallelStream(object):
         with safe_io():
             if self._parallel.getInPaperOut():
                 raise error.BASICError(error.OUT_OF_PAPER)
-            for c in s:
+            for c in iterchar(s):
                 self._parallel.setData(ord(c))
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
@@ -285,15 +285,14 @@ class StdIOParallelStream(object):
 
     def write(self, s):
         """Write to stdout."""
-        for c in s:
-            if self._crlf and c == b'\r':
-                c = b'\n'
-            sys.stdout.write(c)
+        if self._crlf:
+            s = s.replace(b'\r', b'\n')
+        stdout.buffer.write(s)
         self.flush()
 
     def flush(self):
         """Flush stdout."""
-        sys.stdout.flush()
+        stdout.flush()
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
         """Set the values of the control pins."""

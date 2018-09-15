@@ -20,6 +20,7 @@ from .guard import ExceptionGuard, NOGUARD
 from .metadata import NAME, VERSION, COPYRIGHT
 from .basic import debug
 from .interface import Interface, InitFailed
+from .compat import stdin, stdout
 
 
 def main(*arguments):
@@ -67,22 +68,23 @@ def run(*arguments):
 
 def show_usage():
     """Show usage description."""
-    sys.stdout.write(pkg_resources.resource_string(__name__, 'data/USAGE.txt'))
+    usage = pkg_resources.resource_string(__name__, 'data/USAGE.txt').decode('utf-8', 'replace')
+    stdout.write(usage)
 
 def show_version(settings):
     """Show version with optional debugging details."""
-    sys.stdout.write((u'%s %s\n%s\n' % (NAME, VERSION, COPYRIGHT)).encode(sys.stdout.encoding))
+    stdout.write(u'%s %s\n%s\n' % (NAME, VERSION, COPYRIGHT))
     if settings.debug:
-        sys.stdout.write(debug.get_platform_info())
+        stdout.write(debug.get_platform_info())
 
 def convert(settings):
     """Perform file format conversion."""
     mode, in_name, out_name = settings.conv_params
     with basic.Session(**settings.session_params) as session:
-        # stdin if no name supplied - use io.BytesIO buffer for seekability
-        with session.bind_file(in_name or io.BytesIO(sys.stdin.read())) as infile:
+        # binary stdin if no name supplied - use BytesIO buffer for seekability
+        with session.bind_file(in_name or io.BytesIO(stdin.buffer.read())) as infile:
             session.execute(b'LOAD "%s"' % (infile,))
-        with session.bind_file(out_name or sys.stdout, create=True) as outfile:
+        with session.bind_file(out_name or stdout.buffer, create=True) as outfile:
             mode_suffix = b',%s' % (mode,) if mode.upper() in (b'A', b'P') else b''
             session.execute(b'SAVE "%s"%s' % (outfile, mode_suffix))
 
