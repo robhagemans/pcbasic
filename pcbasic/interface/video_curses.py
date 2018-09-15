@@ -17,7 +17,7 @@ except ImportError:
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..basic.base import signals
-from ..compat import MACOS
+from ..compat import MACOS, PY2, console
 
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed
@@ -27,12 +27,46 @@ from .base import video_plugins, InitFailed
 from . import ansi
 
 
-# sys.stdout expects bytes
-SET_TITLE = ansi.SET_TITLE.encode('ascii')
-RESIZE_TERM = ansi.RESIZE_TERM.encode('ascii')
+def _set_caption(caption):
+    """Set terminal caption."""
+    console.write(ansi.SET_TITLE % (caption,))
+
+def _resize_term(height, width):
+    """Resize terminal."""
+    console.write(ansi.RESIZE_TERM % (height, width))
 
 
-ENCODING = locale.getpreferredencoding()
+if PY2:
+    # curses works with bytes in Python 2
+    _ENCODING = locale.getpreferredencoding()
+
+    def _to_str(unistr):
+        """Convert unicode to str."""
+        return unistr.encode(_ENCODING, 'replace')
+
+    def _get_wch(window):
+        """Get input from keyboard; unicode if character, int otherwise."""
+        s = bytearray()
+        while True:
+            i = window.getch()
+            if i > 255:
+                return i
+            if i < 0:
+                return bytes(s).decode(_ENCODING, 'replace')
+            s.append(i)
+
+else:
+    def _to_str(unistr):
+        """Convert unicode to str."""
+        return unistr
+
+    def _get_wch(window):
+        """Get input from keyboard; unicode if character, int otherwise."""
+        try:
+            return window.get_wch()
+        except curses.error:
+            # no input
+            return u''
 
 if curses:
     # curses keycodes
@@ -118,8 +152,7 @@ class VideoCurses(VideoPlugin):
         self.can_change_palette = (not MACOS) and (
             curses.can_change_color() and curses.COLORS >= 16 and curses.COLOR_PAIRS > 128
         )
-        sys.stdout.write(SET_TITLE % self.caption.encode('utf-8', 'replace'))
-        sys.stdout.flush()
+        _set_caption(self.caption)
         self._set_default_colours(16)
         bgcolor = self._curses_colour(7, 0, False)
         # text and colour buffer
@@ -150,24 +183,18 @@ class VideoCurses(VideoPlugin):
 
     def _check_input(self):
         """Handle keyboard events."""
-        s = bytearray()
-        i = 0
-        while True:
-            i = self.window.getch()
+        inp = _get_wch(self.window)
+        if isinstance(inp, int):
             # replace Mac backspace - or it will come through as ctrl+backspace which is delete
-            if i == 127:
-                i = curses.KEY_BACKSPACE
-            if i < 0:
-                break
-            elif i < 256:
-                s.append(i)
+            if inp == 127:
+                inp = curses.KEY_BACKSPACE
             else:
-                if i == curses.KEY_BREAK:
+                if inp == curses.KEY_BREAK:
                     # this is fickle, on many terminals doesn't work
                     self._input_queue.put(signals.Event(
                         signals.KEYB_DOWN, (u'', scancode.BREAK, [scancode.CTRL])
                     ))
-                elif i == curses.KEY_RESIZE:
+                elif inp == curses.KEY_RESIZE:
                     self._resize(self.height, self.width)
                 # scancode, insert here and now
                 # there shouldn't be a mix of special keys and utf8 in one
@@ -176,21 +203,20 @@ class VideoCurses(VideoPlugin):
                 # utf-8 sequence or a pasted utf-8 string, neither of which
                 # can contain special characters.
                 # however, if that does occur, this won't work correctly.
-                scan = CURSES_TO_SCAN.get(i, None)
-                c = CURSES_TO_EASCII.get(i, u'')
-                if scan or c:
-                    self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, [])))
-                    if i == curses.KEY_F12:
+                scan = CURSES_TO_SCAN.get(inp, None)
+                char = CURSES_TO_EASCII.get(inp, u'')
+                if scan or char:
+                    self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, scan, [])))
+                    if inp == curses.KEY_F12:
                         self.f12_active = True
                     else:
                         self._unset_f12()
-        # convert into unicode chars
-        u = s.decode(ENCODING, 'replace')
-        # then handle these one by one
-        for c in u:
-            #check_full=False to allow pasting chunks of text
-            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, [])))
-            self._unset_f12()
+        else:
+            # could be more than one code point, handle these one by one
+            for char in inp:
+                #check_full=False to allow pasting chunks of text
+                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, [])))
+                self._unset_f12()
 
     def _unset_f12(self):
         """Deactivate F12 """
@@ -203,8 +229,7 @@ class VideoCurses(VideoPlugin):
         by, bx = self.border_y, self.border_x
         # curses.resizeterm triggers KEY_RESIZE leading to a flickering loop
         # curses.resize_term doesn't resize the terminal
-        sys.stdout.write(RESIZE_TERM % (height + by*2, width + bx*2))
-        sys.stdout.flush()
+        _resize_term(height + by*2, width + bx*2)
         self.underlay.resize(height + by*2, width + bx*2)
         self.window.resize(height, width)
         self.set_border_attr(self.border_attr)
@@ -218,7 +243,7 @@ class VideoCurses(VideoPlugin):
             for col, charattr in enumerate(textrow):
                 try:
                     self.window.addstr(
-                        row, col, charattr[0].encode(ENCODING, 'replace'), charattr[1]
+                        row, col, _to_str(charattr[0]), charattr[1]
                     )
                 except curses.error:
                     pass
@@ -380,7 +405,7 @@ class VideoCurses(VideoPlugin):
                 self.last_colour = colour
                 self.window.bkgdset(32, colour)
             try:
-                self.window.addstr(row-1, col-1, c.encode(ENCODING, 'replace'), colour)
+                self.window.addstr(row-1, col-1, _to_str(c), colour)
             except curses.error:
                 pass
 
@@ -427,9 +452,9 @@ class VideoCurses(VideoPlugin):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         if msg:
-            sys.stdout.write(SET_TITLE % (self.caption + ' - ' + msg))
+            _set_caption(self.caption + ' - ' + msg)
         else:
-            sys.stdout.write(SET_TITLE % self.caption)
+            _set_caption(self.caption)
         sys.stdout.flush()
         # redraw in case terminal didn't recognise ansi sequence
         self._redraw()
