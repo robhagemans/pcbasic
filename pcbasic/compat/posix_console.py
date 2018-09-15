@@ -15,6 +15,7 @@ import select
 import fcntl
 import array
 import struct
+import atexit
 from collections import deque
 
 from .base import MACOS, PY2, HOME_DIR, wrap_input_stream, wrap_output_stream
@@ -267,6 +268,9 @@ if _has_console():
     console = PosixConsole()
 else:
     console = None
+
+# don't crash into raw terminal
+atexit.register(lambda: console.unset_raw() if console else None)
 
 
 def read_all_available(stream):
