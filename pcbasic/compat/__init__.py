@@ -12,8 +12,10 @@ from .base import PLATFORM, PY2, PY3, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR
 from .base import split_quoted, suppress_output
 
+from . import console
+from .console import stdin, stdout, stderr, read_all_available, key_pressed, HAS_CONSOLE, TERM_SIZE
+
 if PY2:
-    from .python2 import stdin, stdout, stderr
     from .python2 import add_str, iterchar
     from .python2 import xrange, zip, iteritems, itervalues, iterkeys
     from .python2 import getcwdu, getenvu, setenvu, iterenvu
@@ -31,31 +33,20 @@ else:
     from .python3 import int2byte, add_str, iterchar
     from .python3 import xrange, zip, iteritems, itervalues, iterkeys
     from .python3 import getcwdu, getenvu, setenvu, iterenvu
-    stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
     unichr, text_type = chr, str
     argv = sys.argv
 
 
 if WIN32:
-    try:
-        if X64:
-            from . import win32_x64_console as console
-        else:
-            from . import win32_x86_console as console
-    except ImportError:
-        # extension module not compiled
-        console = None
-
-    from .win32 import set_dpi_aware, line_print, key_pressed, read_all_available
+    from .win32 import set_dpi_aware, line_print
     from .win32 import get_free_bytes, get_short_pathname, is_hidden
     from .win32 import EOL, EOF, UEOF
-    from .win32 import SHELL_ENCODING, HIDE_WINDOW, TERM_SIZE, HAS_CONSOLE
+    from .win32 import SHELL_ENCODING, HIDE_WINDOW
 else:
-    from . import posix_console as console
-    from .posix import set_dpi_aware, line_print, key_pressed, read_all_available
+    from .posix import set_dpi_aware, line_print
     from .posix import get_free_bytes, get_short_pathname, is_hidden
     from .posix import EOL, EOF, UEOF
-    from .posix import SHELL_ENCODING, HIDE_WINDOW, TERM_SIZE, HAS_CONSOLE
+    from .posix import SHELL_ENCODING, HIDE_WINDOW
 
 
 if MACOS:

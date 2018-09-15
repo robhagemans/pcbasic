@@ -11,6 +11,7 @@ import re
 import contextlib
 import sys
 import platform
+import codecs
 
 
 # Python major version
@@ -53,6 +54,21 @@ else:
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 
 
+# unicode stream wrappers
+
+def wrap_output_stream(stream):
+    """Wrap std bytes streams to make them behave more like in Python 3."""
+    wrapped = codecs.getwriter(stream.encoding or 'utf-8')(stream)
+    wrapped.buffer = stream
+    return wrapped
+
+def wrap_input_stream(stream):
+    """Wrap std bytes streams to make them behave more like in Python 3."""
+    wrapped = codecs.getreader(stream.encoding or 'utf-8')(stream)
+    wrapped.buffer = stream
+    return wrapped
+
+
 # utility functions, this has to go somewhere...
 
 def split_quoted(line, split_by=u'\s', quote=u'"', strip_quotes=False):
@@ -77,12 +93,14 @@ def suppress_output():
                 os.dup2(null_0.fileno(), sys.stdout.fileno())
                 os.dup2(null_1.fileno(), sys.stderr.fileno())
                 # do stuff
-                yield
-                sys.stdout.flush()
-                sys.stderr.flush()
-                # restore file descriptors
-                os.dup2(save_0, sys.stdout.fileno())
-                os.dup2(save_1, sys.stderr.fileno())
+                try:
+                    yield
+                finally:
+                    sys.stdout.flush()
+                    sys.stderr.flush()
+                    # restore file descriptors
+                    os.dup2(save_0, sys.stdout.fileno())
+                    os.dup2(save_1, sys.stderr.fileno())
     finally:
         os.close(save_0)
         os.close(save_1)

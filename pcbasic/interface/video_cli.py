@@ -122,7 +122,6 @@ class VideoCLI(VideoTextBase):
             if row != self._last_row or col != self._col:
                 self._update_position(row, col)
             console.write(char)
-            #console.flush()
             self._col = (col+2) if is_fullwidth else (col+1)
         # the terminal cursor has moved, so we'll need to move it back later
         # if that's not where we want to be
@@ -144,7 +143,6 @@ class VideoCLI(VideoTextBase):
                 start <= self._cursor_row and stop >= self._cursor_row):
             self._update_position(self._cursor_row, 1)
             console.write(ansi.CLEAR_LINE)
-            #console.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
@@ -155,7 +153,6 @@ class VideoCLI(VideoTextBase):
         if self._vpagenum != self._apagenum:
             return
         console.write(u'\r\n')
-        #console.flush()
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
@@ -190,7 +187,6 @@ class VideoCLI(VideoTextBase):
         rowtext = (u''.join(self._text[self._vpagenum][row-1]))
         console.write(rowtext.replace(u'\0', u' '))
         self._col = len(self._text[self._vpagenum][row-1])+1
-        #console.flush()
 
     def _update_position(self, row, col):
         """Move terminal print location."""
@@ -198,7 +194,6 @@ class VideoCLI(VideoTextBase):
         if row and row != self._last_row:
             if self._last_row:
                 console.write(u'\r\n')
-                #console.flush()
                 self._col = 1
             self._last_row = row
             # show what's on the line where we are.
@@ -210,10 +205,8 @@ class VideoCLI(VideoTextBase):
         if col != self._col:
             if self._col > col:
                 console.write(ansi.MOVE_N_LEFT % (self._col-col))
-                #console.flush()
             elif self._col < col:
                 console.write(ansi.MOVE_N_RIGHT % (col-self._col))
-                #console.flush()
             self._col = col
 
 

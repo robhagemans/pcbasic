@@ -41,23 +41,6 @@ def add_str(cls):
         pass
     return cls
 
-# unicode streams
-
-def _wrap_input_stream(stream):
-    """Wrap std streams to make them behave more like in Python 3."""
-    wrapped = codecs.getreader(stream.encoding or 'utf-8')(stream)
-    wrapped.buffer = stream
-    return wrapped
-
-def _wrap_output_stream(stream):
-    """Wrap std streams to make them behave more like in Python 3."""
-    wrapped = codecs.getwriter(stream.encoding or 'utf-8')(stream)
-    wrapped.buffer = stream
-    return wrapped
-
-stdin = _wrap_input_stream(sys.stdin)
-stdout = _wrap_output_stream(sys.stdout)
-stderr = _wrap_output_stream(sys.stderr)
 
 # unicode system interfaces
 
