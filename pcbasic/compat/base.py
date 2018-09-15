@@ -11,6 +11,7 @@ import re
 import contextlib
 import sys
 import platform
+import codecs
 
 
 # Python major version
@@ -51,6 +52,21 @@ if hasattr(sys, 'frozen'):
     BASE_DIR = os.path.join(os.path.dirname(sys.executable), 'lib', 'pcbasic')
 else:
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+
+
+# unicode stream wrappers
+
+def wrap_output_stream(stream):
+    """Wrap std bytes streams to make them behave more like in Python 3."""
+    wrapped = codecs.getwriter(stream.encoding or 'utf-8')(stream)
+    wrapped.buffer = stream
+    return wrapped
+
+def wrap_input_stream(stream):
+    """Wrap std bytes streams to make them behave more like in Python 3."""
+    wrapped = codecs.getreader(stream.encoding or 'utf-8')(stream)
+    wrapped.buffer = stream
+    return wrapped
 
 
 # utility functions, this has to go somewhere...

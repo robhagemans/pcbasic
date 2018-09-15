@@ -9,12 +9,16 @@ Windows console support:
 This file is released under the GNU GPL version 3 or later.
 """
 
+import os
 import sys
-import ctypes
-import codecs
 import time
+import msvcrt
+import ctypes
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
+from .colorama import AnsiToWin32
+
+from .base import PY2, wrap_input_stream, wrap_output_stream
 
 STD_INPUT_HANDLE = -10
 STD_OUTPUT_HANDLE = -11
@@ -265,3 +269,72 @@ else:
         bstderr = sys.stderr.buffer
     except AttributeError:
         bstderr = sys.stderr
+
+# wrap an encoded bytes stream both in Py2 and Py3
+# we could get unicode out directly from the wrapped stream
+# but that would confuse type checks further down
+
+# colorama expects byte stream in Python2 and unicode streams in Python 3
+if PY2:
+    bstdout, bstderr = AnsiToWin32(bstdout).stream, AnsiToWin32(bstderr).stream
+
+stdin = wrap_input_stream(bstdin)
+stdout = wrap_output_stream(bstdout)
+stderr = wrap_output_stream(bstderr)
+
+if not PY2:
+    stdout, stderr = AnsiToWin32(stdout).stream, AnsiToWin32(stderr).stream
+
+
+# determine if we have a console attached or are a GUI app
+def _has_console():
+    try:
+        handle = _GetStdHandle(STD_OUTPUT_HANDLE)
+        return bool(windll.kernel32.GetConsoleMode(handle, byref(wintypes.DWORD())))
+    except Exception as e:
+        return False
+
+HAS_CONSOLE = _has_console()
+
+def set_raw():
+    bstdin.echo = False
+
+def unset_raw():
+    bstdin.echo = True
+
+# key pressed on keyboard
+key_pressed = msvcrt.kbhit
+
+try:
+    # set stdio as binary, to avoid Windows messing around with CRLFs
+    # only do this for redirected output, as it breaks interactive Python sessions
+    # pylint: disable=no-member
+    if not sys.stdin.isatty():
+        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+    if not sys.stdout.isatty():
+        msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+    pass
+except EnvironmentError:
+    # raises an error if started in gui mode, as we have no stdio
+    pass
+
+def read_all_available(stream):
+    """Read all available characters from a stream; nonblocking; None if closed."""
+    if hasattr(stream, 'isatty') and stream.isatty():
+        # we're reading from stdin or something wrapping it
+        try:
+            encoding = stream.encoding
+            stream = stream.buffer
+        except:
+            encoding = None
+        # get it from our wrapper instead, which has a non-blocking option
+        #FIXME: we're not dealing with closed streams
+        bstr = bstdin.read(blocking=False)
+        if encoding:
+            return bstr.decode(encoding, 'replace')
+        else:
+            return bstr
+    else:
+        # this would work on unix too
+        # just read the whole file and be done with it
+        return stream.read() or None
