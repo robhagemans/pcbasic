@@ -11,9 +11,21 @@ import logging
 
 from .video import VideoPlugin
 from .base import video_plugins
-from . import video_cli
 from . import ansi
-from ..compat import console, TERM_SIZE
+from . import video_cli
+from ..compat import console
+
+
+COL = console.colours
+# ANSI colour numbers for EGA colours: black, blue, green, cyan, red, magenta, yellow, white
+COLOURS_8 = (
+    COL.BLACK, COL.BLUE, COL.GREEN, COL.CYAN,
+    COL.RED, COL.MAGENTA, COL.YELLOW, COL.WHITE
+) * 2
+# CGA colours: black, cyan, magenta, white
+COLOURS_4 = (COL.BLACK, COL.CYAN, COL.MAGENTA, COL.WHITE) * 4
+# Mono colours: black, white
+COLOURS_2 = (COL.BLACK, COL.WHITE) * 8
 
 
 @video_plugins.register('ansi')
@@ -53,10 +65,10 @@ class VideoANSI(video_cli.VideoTextBase):
     def __exit__(self, type, value, traceback):
         """Close ANSI interface."""
         try:
-            console.write(ansi.SET_COLOUR % 0)
-            console.write(ansi.RESIZE_TERM % TERM_SIZE)
-            console.write(ansi.CLEAR_SCREEN)
-            console.write(ansi.MOVE_CURSOR % (1, 1))
+            console.reset_attributes()
+            console.resize(*console.original_size)
+            console.clear()
+            #console.move_cursor_to(1, 1)
             self.show_cursor(True)
             # re-enable logger
             self.logger.disabled = False
@@ -68,39 +80,32 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def _redraw(self):
         """Redraw the screen."""
-        console.write(ansi.CLEAR_SCREEN)
+        console.clear()
         for row, textrow in enumerate(self.text[self.vpagenum]):
-            console.write(ansi.MOVE_CURSOR % (row+1, 1))
+            console.move_cursor_to(row+1, 1)
             for col, charattr in enumerate(textrow):
                 self._set_attributes(*charattr[1])
                 console.write(charattr[0])
-        console.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
+        console.move_cursor_to(self.cursor_row, self.cursor_col)
 
     def _set_default_colours(self, num_attr):
         """Set colours for default palette."""
         if num_attr == 2:
-            self.default_colours = ansi.COLOURS_2
+            self.default_colours = COLOURS_2
         elif num_attr == 4:
-            self.default_colours = ansi.COLOURS_4
+            self.default_colours = COLOURS_4
         else:
-            self.default_colours = ansi.COLOURS_8
+            self.default_colours = COLOURS_8
 
     def _set_attributes(self, fore, back, blink, underline):
         """Set ANSI colours based on split attribute."""
         if self.last_attributes == (fore, back, blink, underline):
             return
         self.last_attributes = fore, back, blink, underline
-        bright = (fore & 8)
-        if bright == 0:
-            fore = 30 + self.default_colours[fore%8]
-        else:
-            fore = 90 + self.default_colours[fore%8]
-        back = 40 + self.default_colours[back%8]
-        console.write(ansi.SET_COLOUR % 0)
-        console.write(ansi.SET_COLOUR % back)
-        console.write(ansi.SET_COLOUR % fore)
-        if blink:
-            console.write(ansi.SET_COLOUR % 5)
+        bright, fore = divmod(fore, 8)
+        console.set_attributes(
+            self.default_colours[fore], self.default_colours[back], bright, blink, underline
+        )
 
     def set_mode(self, mode_info):
         """Change screen mode."""
@@ -112,9 +117,9 @@ class VideoANSI(video_cli.VideoTextBase):
             for _ in range(self.num_pages)
         ]
         self._set_default_colours(len(mode_info.palette))
-        console.write(ansi.RESIZE_TERM % (self.height, self.width))
+        console.resize(self.height, self.width)
         self._set_attributes(7, 0, False, False)
-        console.write(ansi.CLEAR_SCREEN)
+        console.clear()
         return True
 
     def set_page(self, new_vpagenum, new_apagenum):
@@ -139,15 +144,15 @@ class VideoANSI(video_cli.VideoTextBase):
         if self.vpagenum == self.apagenum:
             self._set_attributes(7, back_attr, False, False)
             for r in range(start, stop+1):
-                console.write(ansi.MOVE_CURSOR % (r, 1))
-                console.write(ansi.CLEAR_LINE)
-            console.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
+                console.move_cursor_to(r, 1)
+                console.clear_row()
+            console.move_cursor_to(self.cursor_row, self.cursor_col)
 
     def move_cursor(self, row, col):
         """Move the cursor to a new position."""
         if (row, col) != (self.cursor_row, self.cursor_col):
             self.cursor_row, self.cursor_col = row, col
-            console.write(ansi.MOVE_CURSOR % (self.cursor_row, self.cursor_col))
+            console.move_cursor_to(self.cursor_row, self.cursor_col)
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
@@ -157,11 +162,11 @@ class VideoANSI(video_cli.VideoTextBase):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on
         if cursor_on:
-            console.write(ansi.SHOW_CURSOR)
+            console.show_cursor()
             #console.write(ansi.SET_CURSOR_SHAPE % cursor_shape)
         else:
             # force move when made visible again
-            console.write(ansi.HIDE_CURSOR)
+            console.hide_cursor()
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """Set the cursor shape."""
@@ -184,7 +189,7 @@ class VideoANSI(video_cli.VideoTextBase):
         if self.vpagenum != pagenum:
             return
         if (row, col) != (self.cursor_row, self.cursor_col):
-            console.write(ansi.MOVE_CURSOR % (row, col))
+            console.move_cursor_to(row, col)
         self._set_attributes(fore, back, blink, underline)
         console.write(char)
         if is_fullwidth:
@@ -199,9 +204,7 @@ class VideoANSI(video_cli.VideoTextBase):
         )
         if self.apagenum != self.vpagenum:
             return
-        console.write(ansi.SET_SCROLL_REGION % (from_line, scroll_height))
-        console.write(ansi.SCROLL_UP % 1)
-        console.write(ansi.SET_SCROLL_SCREEN)
+        console.scroll_up(from_line, scroll_height)
         self.clear_rows(back_attr, scroll_height, scroll_height)
 
     def scroll_down(self, from_line, scroll_height, back_attr):
@@ -212,14 +215,12 @@ class VideoANSI(video_cli.VideoTextBase):
         )
         if self.apagenum != self.vpagenum:
             return
-        console.write(ansi.SET_SCROLL_REGION % (from_line, scroll_height))
-        console.write(ansi.SCROLL_DOWN % 1)
-        console.write(ansi.SET_SCROLL_SCREEN)
+        console.scroll_down(from_line, scroll_height)
         self.clear_rows(back_attr, from_line, from_line)
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         if msg:
-            console.write(ansi.SET_TITLE % (self.caption + u' - ' + msg))
+            console.set_caption(self.caption + u' - ' + msg)
         else:
-            console.write(ansi.SET_TITLE % self.caption)
+            console.set_caption(self.caption)

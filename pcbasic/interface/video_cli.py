@@ -9,13 +9,12 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import time
 
-from . import ansi
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from ..compat import UEOF, console
+from ..compat import UEOF, console, ansi
 
 
 # escape sequence to scancode
@@ -142,7 +141,7 @@ class VideoCLI(VideoTextBase):
         if (self._vpagenum == self._apagenum and
                 start <= self._cursor_row and stop >= self._cursor_row):
             self._update_position(self._cursor_row, 1)
-            console.write(ansi.CLEAR_LINE)
+            console.clear_row()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
@@ -204,9 +203,9 @@ class VideoCLI(VideoTextBase):
         """Move terminal print column."""
         if col != self._col:
             if self._col > col:
-                console.write(ansi.MOVE_N_LEFT % (self._col-col))
+                console.move_cursor_left(self._col-col)
             elif self._col < col:
-                console.write(ansi.MOVE_N_RIGHT % (col-self._col))
+                console.move_cursor_right(col-self._col)
             self._col = col
 
 

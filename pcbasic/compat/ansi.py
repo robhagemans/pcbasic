@@ -6,12 +6,19 @@ Definitions for ANSI escape sequences
 This file is released under the GNU GPL version 3 or later.
 """
 
-# ANSI colour numbers for EGA colours: black, blue, green, cyan, red, magenta, yellow, white
-COLOURS_8 = (0, 4, 2, 6, 1, 5, 3, 7)
-# CGA colours: black, cyan, magenta, white
-COLOURS_4 = (0, 6, 5, 7) * 4
-# Mono colours: black, white
-COLOURS_2 = (0, 7) * 8
+
+class Colours(object):
+    """ANSI colour constants."""
+    BLACK = 0
+    BLUE = 4
+    GREEN = 2
+    CYAN = 6
+    RED = 1
+    MAGENTA = 5
+    YELLOW = 3
+    WHITE = 7
+
+
 # ANSI colour names for EGA colours
 #COLOUR_NAMES = (
 #    'Black', 'Dark Blue', 'Dark Green', 'Dark Cyan',
@@ -24,7 +31,7 @@ COLOURS_2 = (0, 7) * 8
 # http://en.wikipedia.org/wiki/ANSI_escape_code
 # http://misc.flogisoft.com/bash/tip_colors_and_formatting
 ESC = u'\x1B'
-RESET = u'\x1B[0m\x1Bc'
+#RESET = u'\x1B[0m\x1Bc'
 SET_SCROLL_SCREEN = u'\x1B[r'
 SET_SCROLL_REGION = u'\x1B[%i;%ir'
 CLEAR_SCREEN = u'\x1B[2J'
@@ -35,13 +42,13 @@ SHOW_CURSOR = u'\x1B[?25h'
 HIDE_CURSOR = u'\x1B[?25l'
 RESIZE_TERM = u'\x1B[8;%i;%i;t'
 MOVE_CURSOR = u'\x1B[%i;%if'
-SAVE_CURSOR_POS = u'\x1B[s'
-RESTORE_CURSOR_POS = u'\x1B[u'
-REQUEST_SIZE = u'\x1B[18;t'
-SET_CURSOR_COLOUR = u'\x1B]12;%s\a'
+#SAVE_CURSOR_POS = u'\x1B[s'
+#RESTORE_CURSOR_POS = u'\x1B[u'
+#REQUEST_SIZE = u'\x1B[18;t'
+#SET_CURSOR_COLOUR = u'\x1B]12;%s\a'
 #% (2*(is_line+1) - blinks)
 # 1 blinking block 2 block 3 blinking line 4 line
-SET_CURSOR_SHAPE = u'\x1B[%i q'
+#SET_CURSOR_SHAPE = u'\x1B[%i q'
 SET_COLOUR = u'\x1B[%im'
 SET_TITLE = u'\x1B]2;%s\a'
 MOVE_RIGHT = u'\x1B[C'

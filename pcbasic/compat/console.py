@@ -10,34 +10,45 @@ from collections import deque
 
 from .base import WIN32
 
+
 if WIN32:
-    from .win32_console import stdin, stdout, stderr, TERM_SIZE, HAS_CONSOLE
-    from .win32_console import set_raw, unset_raw, key_pressed, read_all_available
+    from .win32_console import read_all_available
+    from .win32_console import Win32Console as _BaseConsole
 else:
-    from .posix_console import stdin, stdout, stderr, TERM_SIZE, HAS_CONSOLE
-    from .posix_console import set_raw, unset_raw, key_pressed, read_all_available
+    from .posix_console import read_all_available
+    from .posix_console import PosixConsole as _BaseConsole
 
 
-# console is a terminal (tty)
-is_tty = stdin.isatty()
+class Console(_BaseConsole):
+    """Cross-platform terminal/console operations."""
 
-# input buffer
-_read_buffer = deque()
+    def __init__(self):
+        """Set up console."""
+        _BaseConsole.__init__(self)
+        # input buffer
+        self._read_buffer = deque()
 
-def read_char():
-    """Read unicode char from console, non-blocking."""
-    s = read_all_available(stdin)
-    if s is None:
-        # stream closed, send ctrl-d
-        if not _read_buffer:
-            return u'\x04'
-    else:
-        _read_buffer.extend(list(s))
-    if _read_buffer:
-        return _read_buffer.popleft()
-    return u''
+    @property
+    def is_tty(self):
+        return self.stdin.isatty()
 
-def write(unicode_str):
-    """Write unicode to console."""
-    stdout.write(unicode_str)
-    stdout.flush()
+    def read_char(self):
+        """Read unicode char from console, non-blocking."""
+        s = read_all_available(self.stdin)
+        if s is None:
+            # stream closed, send ctrl-d
+            if not self._read_buffer:
+                return u'\x04'
+        else:
+            self._read_buffer.extend(list(s))
+        if self._read_buffer:
+            return self._read_buffer.popleft()
+        return u''
+
+    def write(self, unicode_str):
+        """Write unicode to console."""
+        self.stdout.write(unicode_str)
+        self.stdout.flush()
+
+
+console = Console()

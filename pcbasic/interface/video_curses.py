@@ -21,19 +21,6 @@ from ..compat import MACOS, PY2, console
 
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed
-# for a few ansi sequences not supported by curses
-# only use these if you clear the screen afterwards,
-# so you don't see gibberish if the terminal doesn't support the sequence.
-from . import ansi
-
-
-def _set_caption(caption):
-    """Set terminal caption."""
-    console.write(ansi.SET_TITLE % (caption,))
-
-def _resize_term(height, width):
-    """Resize terminal."""
-    console.write(ansi.RESIZE_TERM % (height, width))
 
 
 if PY2:
@@ -152,7 +139,7 @@ class VideoCurses(VideoPlugin):
         self.can_change_palette = (not MACOS) and (
             curses.can_change_color() and curses.COLORS >= 16 and curses.COLOR_PAIRS > 128
         )
-        _set_caption(self.caption)
+        console.set_caption(self.caption)
         self._set_default_colours(16)
         bgcolor = self._curses_colour(7, 0, False)
         # text and colour buffer
@@ -229,7 +216,7 @@ class VideoCurses(VideoPlugin):
         by, bx = self.border_y, self.border_x
         # curses.resizeterm triggers KEY_RESIZE leading to a flickering loop
         # curses.resize_term doesn't resize the terminal
-        _resize_term(height + by*2, width + bx*2)
+        console.resize(height + by*2, width + bx*2)
         self.underlay.resize(height + by*2, width + bx*2)
         self.window.resize(height, width)
         self.set_border_attr(self.border_attr)
@@ -452,9 +439,9 @@ class VideoCurses(VideoPlugin):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         if msg:
-            _set_caption(self.caption + ' - ' + msg)
+            console.set_caption(self.caption + ' - ' + msg)
         else:
-            _set_caption(self.caption)
+            console.set_caption(self.caption)
         sys.stdout.flush()
         # redraw in case terminal didn't recognise ansi sequence
         self._redraw()
