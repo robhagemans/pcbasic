@@ -1,11 +1,10 @@
-#!/usr/bin/env python2
 from lxml import etree, html
 import re
-from cStringIO import StringIO
+from io import StringIO
 import gzip
 import os
 from os import path
-from codecs import open
+from io import open
 
 
 # obtain metadata without importing the package (to avoid breaking setup)
@@ -19,7 +18,12 @@ basepath = os.path.dirname(os.path.realpath(__file__))
 
 def html_to_man(html):
     def massage(text):
-        return re.sub(' +', ' ', text.encode('utf-8').replace('\\', '\\[rs]').replace('-', '\\-').replace('|', '\\||').replace('.', '\\|.').replace('\n', ' ').replace('"', '\\[dq]').replace("'", "\\|'"))
+        return re.sub(
+            u' +', u' ',
+            text.replace(u'\\', u'\\[rs]').replace(u'-', u'\\-').replace(u'|', u'\\||')
+            .replace(u'.', u'\\|.').replace(u'\n', u' ')
+            .replace(u'"', u'\\[dq]').replace(u"'", u"\\|'")
+        )
 
     def convert_html(e, indent=0, inside=False):
         inner = massage(e.text) if e.text else ''
@@ -69,7 +73,4 @@ def makeman():
         pass
     # output manfile
     with gzip.open(basepath + '/../doc/pcbasic.1.gz', 'wb') as manfile:
-        manfile.write(html_to_man(man_html))
-
-if __name__ == '__main__':
-    makeman()
+        manfile.write(html_to_man(man_html).encode('utf-8'))

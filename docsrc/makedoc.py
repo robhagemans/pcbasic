@@ -1,18 +1,15 @@
-#!/usr/bin/env python2
 import sys
 import os
 from os import path
 import shutil
-from cStringIO import StringIO
+from io import StringIO
 from datetime import datetime
-import codecs
-from codecs import open
+from io import open
 
 from lxml import etree
 import markdown
 from markdown.extensions.toc import TocExtension
 import markdown.extensions.headerid
-
 
 # obtain metadata without importing the package (to avoid breaking setup)
 with open(
@@ -24,17 +21,17 @@ basepath = os.path.dirname(os.path.realpath(__file__))
 
 
 def mdtohtml(md_file, outf, prefix='', baselevel=1):
-    with codecs.open(md_file, 'r', 'utf-8') as inf:
+    with open(md_file, 'r', encoding='utf-8') as inf:
         md = inf.read()
         toc = TocExtension(baselevel=baselevel, slugify=lambda value, separator: prefix + markdown.extensions.headerid.slugify(value, separator))
-        outf.write(markdown.markdown(md, extensions=['markdown.extensions.tables', toc], output_format='html5', lazy_ol=False).encode('utf-8'))
+        outf.write(markdown.markdown(md, extensions=['markdown.extensions.tables', toc], output_format='html5', lazy_ol=False))
 
 def maketoc(html_doc, toc):
     parser = etree.HTMLParser()
     doc = etree.parse(html_doc, parser)
     last = -1
-    toc.write('<nav class="toc">\n')
-    toc.write('    <h2 id="toc">Table of Contents</h2>\n')
+    toc.write(u'<nav class="toc">\n')
+    toc.write(u'    <h2 id="toc">Table of Contents</h2>\n')
     for node in doc.xpath('//h2|//h3|//h4'):
         level = int(node.tag[1])
         node_id = node.get('id')
@@ -46,23 +43,23 @@ def maketoc(html_doc, toc):
         if node_id:
             node.set('href', '#' + node_id)
         if level-last < 0:
-            toc.write('</li>\n')
+            toc.write(u'</li>\n')
             for i in range((last-level), 0, -1):
-                toc.write('    '*((level+i-1)*2+1) + '</ul>\n')
-                toc.write('    '*(level+i-1)*2 + '</li>\n')
+                toc.write(u'    '*((level+i-1)*2+1) + '</ul>\n')
+                toc.write(u'    '*(level+i-1)*2 + '</li>\n')
         elif level-last > 0:
-            toc.write('\n')
+            toc.write(u'\n')
             for i in range(level-last, 0, -1):
-                toc.write('    '*((level-i)*2+1) + '<ul>\n')
+                toc.write(u'    '*((level-i)*2+1) + '<ul>\n')
         else:
-            toc.write('</li>\n')
-        toc.write('    '*(level*2) + '<li>' + etree.tostring(node).strip())
+            toc.write(u'</li>\n')
+        toc.write(u'    '*(level*2) + u'<li>' + etree.tostring(node).strip().decode('utf-8'))
         last = level
-    toc.write('</li>\n')
+    toc.write(u'</li>\n')
     while level > first:
-        toc.write('    '*(level*2-1) + '</ul>\n')
+        toc.write(u'    '*(level*2-1) + '</ul>\n')
         level -= 1
-    toc.write('</nav>\n')
+    toc.write(u'</nav>\n')
 
 def embed_style(html_file):
     parser = etree.HTMLParser(encoding='utf-8')
@@ -75,7 +72,7 @@ def embed_style(html_file):
         node.attrib.clear()
         node.set('id', href)
     with open(html_file, 'w') as f:
-        f.write(etree.tostring(doc, method="html"))
+        f.write(etree.tostring(doc, method="html").decode('utf-8'))
 
 def get_options(html_file):
     parser = etree.HTMLParser(encoding='utf-8')
@@ -106,7 +103,7 @@ def embed_options(html_file):
         for c in get_options(html_file):
             node.append(c)
     with open(html_file, 'w') as f:
-        f.write(etree.tostring(doc, method="html"))
+        f.write(etree.tostring(doc, method="html").decode('utf-8'))
 
 def makedoc(header=None, output=None, embedded_style=True):
     header = header or basepath + '/header.html'
@@ -126,8 +123,8 @@ def makedoc(header=None, output=None, embedded_style=True):
     mdtohtml(basepath + '/../THANKS.md', ack_stream, 'acks_')
 
     # get the quick-start guide out of README
-    quickstart = ''.join(readme_stream.getvalue().split('<hr>')[1:])
-    quickstart = quickstart.replace('http://pc-basic.org/doc/2.0#', '#')
+    quickstart = u''.join(readme_stream.getvalue().split(u'<hr>')[1:])
+    quickstart = quickstart.replace(u'http://pc-basic.org/doc/2.0#', u'#')
 
     quickstart_html = ('<article>\n' + quickstart + '</article>\n')
     licenses_html = '<footer>\n<h2 id="licence">Licences</h2>\n' + basic_license_stream.getvalue() + '<hr />\n' + doc_license_stream.getvalue() + '\n</footer>\n'
@@ -150,15 +147,15 @@ def makedoc(header=None, output=None, embedded_style=True):
     predoc.seek(0)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     if embedded_style:
-        subheader_html = """
+        subheader_html = u"""
 <header>
     <h1>PC-BASIC documentation</h1>
     <small>Version {0}</small>
 </header>
 """.format(VERSION, now, DESCRIPTION, LONG_DESCRIPTION)
     else:
-        subheader_html = ''
-    subheader_html += """
+        subheader_html = u''
+    subheader_html += u"""
 <article>
     <h2 id="top">PC-BASIC {0}</h2>
     <p>
@@ -183,7 +180,7 @@ def makedoc(header=None, output=None, embedded_style=True):
 
 """.format(VERSION, now, DESCRIPTION, LONG_DESCRIPTION)
     if not embedded_style:
-        subheader_html += """
+        subheader_html += u"""
     <p>
         Offline versions of this documentation are available in the following formats:
     </p>
@@ -200,7 +197,7 @@ def makedoc(header=None, output=None, embedded_style=True):
 </article>
 """
     else:
-        subheader_html += '</article>\n'
+        subheader_html += u'</article>\n'
     tocdoc = StringIO()
     tocdoc.write(subheader_html)
     tocdoc.write(predoc.getvalue())
@@ -216,12 +213,3 @@ def makedoc(header=None, output=None, embedded_style=True):
     embed_options(output)
     if embedded_style:
         embed_style(output)
-
-if __name__ == '__main__':
-    header, output = None, None
-    try:
-        header = sys.argv[1]
-        output = sys.argv[2]
-    except IndexError:
-        pass
-    makedoc(header, output)
