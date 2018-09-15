@@ -7,4 +7,4 @@
 SCRIPTDIR="$(dirname -- "$0")"
 export PYTHONPATH="$PYTHONPATH":"$SCRIPTDIR"
 
-/usr/bin/env python2 -m pcbasic "$@"
+/usr/bin/env python -m pcbasic "$@"

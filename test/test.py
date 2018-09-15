@@ -6,6 +6,8 @@
 This file is released under the GNU GPL version 3 or later.
 """
 
+from __future__ import print_function
+
 import sys
 import os
 import shutil
@@ -26,8 +28,8 @@ def is_same(file1, file2):
         return False
 
 def count_diff(file1, file2):
-    lines1 = open(file1).readlines()
-    lines2 = open(file2).readlines()
+    lines1 = open(file1, 'rb').readlines()
+    lines2 = open(file2, 'rb').readlines()
     n = len(lines1)
     count = 0
     for one, two in zip(lines1, lines2):
@@ -40,35 +42,40 @@ def suppress_stdio(do_suppress):
     if not do_suppress:
         yield
     else:
-        sys.stderr, err = open(os.devnull, 'w'), sys.stderr
-        sys.stdout, out = open(os.devnull, 'w'), sys.stdout
-        yield
-        sys.stderr = err
-        sys.stdout = out
+        with pcbasic.compat.suppress_output():
+            yield
 
-
+def contained(arglist, elem):
+    try:
+        arglist.remove(elem)
+    except ValueError:
+        return False
+    return True
 
 args = sys.argv[1:]
 basedir = os.path.join('.', 'correctness')
 
-do_suppress = '--loud' not in args
+do_suppress = not contained(args, '--loud')
+reraise = contained(args, '--reraise')
 
-try:
-    args.remove('--loud')
-except ValueError:
-    pass
+if contained(args, '--nonumpy'):
+    sys.modules['numpy'] = None
 
-if '--coverage' in args:
+if contained(args, '--coverage'):
     import coverage
-    args.remove('--coverage')
     cov = coverage.coverage()
     cov.start()
 else:
     cov = None
 
 if not args or '--all' in args:
-    args = [f for f in sorted(os.listdir(basedir))
-            if os.path.isdir(os.path.join(basedir, f)) and os.path.isdir(os.path.join(basedir, f, 'model'))]
+    args = [
+        f for f in sorted(os.listdir(basedir))
+        if (
+            os.path.isdir(os.path.join(basedir, f))
+            and os.path.isdir(os.path.join(basedir, f, 'model'))
+        )
+    ]
 
 numtests = 0
 failed = []
@@ -91,10 +98,10 @@ for name in args:
     os.chdir(startdir)
     os.environ = deepcopy(save_env)
 
-    print '\033[00;37mRunning test \033[01m%s \033[00;37m.. ' % name,
+    print('\033[00;37mRunning test \033[01m%s \033[00;37m.. ' % name, end='')
     dirname = os.path.join(basedir, name)
     if not os.path.isdir(dirname):
-        print '\033[01;31mno such test.\033[00;37m'
+        print('\033[01;31mno such test.\033[00;37m')
         continue
     output_dir = os.path.join(dirname, 'output')
     model_dir = os.path.join(dirname, 'model')
@@ -118,6 +125,8 @@ for name in args:
             pcbasic.run('--interface=none')
         except Exception as e:
             crash = e
+            if reraise:
+                raise
     # -----------------------------------------------------------
     os.chdir(top)
     passed = True
@@ -125,58 +134,75 @@ for name in args:
     failfiles = []
     for path, dirs, files in os.walk(model_dir):
         for f in files:
+            if f.endswith('.pyc'):
+                continue
             filename = os.path.join(path[len(model_dir)+1:], f)
             if (not is_same(os.path.join(output_dir, filename), os.path.join(model_dir, filename))
                     and not os.path.isfile(os.path.join(dirname, filename))):
                 failfiles.append(filename)
-                known = os.path.isdir(known_dir) and is_same(os.path.join(output_dir, filename), os.path.join(known_dir, filename))
+                known = (
+                    os.path.isdir(known_dir) and
+                    is_same(os.path.join(output_dir, filename), os.path.join(known_dir, filename))
+                )
                 passed = False
     for path, dirs, files in os.walk(output_dir):
         for f in files:
+            if f.endswith('.pyc'):
+                continue
             filename = os.path.join(path[len(output_dir)+1:], f)
-            if (not os.path.isfile(os.path.join(model_dir, filename)) and not os.path.isfile(os.path.join(dirname, filename))):
+            if (
+                    not os.path.isfile(os.path.join(model_dir, filename))
+                    and not os.path.isfile(os.path.join(dirname, filename))
+                ):
                 failfiles.append(filename)
                 passed = False
                 known = False
     if crash or not passed:
         if crash:
-            print '\033[01;31mEXCEPTION.\033[00;37m'
-            print '    %s' % repr(e)
+            print('\033[01;31mEXCEPTION.\033[00;37m')
+            print('    %r' % crash)
             failed.append(name)
         elif not known:
-            print '\033[01;31mfailed.\033[00;37m'
+            print('\033[01;31mfailed.\033[00;37m')
             for failname in failfiles:
                 try:
-                    n, count = count_diff(os.path.join(output_dir, failname), os.path.join(model_dir, failname))
+                    n, count = count_diff(
+                        os.path.join(output_dir, failname), os.path.join(model_dir, failname)
+                    )
                     pct = 100.*count/float(n) if n != 0 else 0
-                    print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct)
+                    print('    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct))
                 except EnvironmentError as e:
-                    print '    %s: %s' % (failname, e)
+                    print('    %s: %s' % (failname, e))
             failed.append(name)
         else:
-            print '\033[00;36mknown failure.\033[00;37m'
+            print('\033[00;36mknown failure.\033[00;37m')
             for failname in failfiles:
                 try:
-                    n, count = count_diff(os.path.join(output_dir, failname), os.path.join(model_dir, failname))
+                    n, count = count_diff(
+                        os.path.join(output_dir, failname), os.path.join(model_dir, failname)
+                    )
                     pct = 100.*count/float(n) if n != 0 else 0
-                    print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct)
+                    print('    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct))
                 except EnvironmentError as e:
-                    print '    %s: %s' % (failname, e)
+                    print('    %s: %s' % (failname, e))
             knowfailed.append(name)
     else:
-        print '\033[00;32mpassed.\033[00;37m'
+        print('\033[00;32mpassed.\033[00;37m')
         shutil.rmtree(output_dir)
     numtests += 1
 
-print
-print '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):' % (numtests, time.time() - start_time, time.clock() - start_clock)
+print()
+print(
+    '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):' %
+    (numtests, time.time() - start_time, time.clock() - start_clock)
+)
 if failed:
-    print '    %d new failures: \033[01;31m%s\033[00m' % (len(failed), ' '.join(failed))
+    print('    %d new failures: \033[01;31m%s\033[00m' % (len(failed), ' '.join(failed)))
 if knowfailed:
-    print '    %d known failures: \033[00;36m%s\033[00m' % (len(knowfailed), ' '.join(knowfailed))
+    print('    %d known failures: \033[00;36m%s\033[00m' % (len(knowfailed), ' '.join(knowfailed)))
 numpass = numtests - len(failed) - len(knowfailed)
 if numpass:
-    print '    %d passes' % numpass
+    print('    %d passes' % numpass)
 
 if cov:
     cov.stop()

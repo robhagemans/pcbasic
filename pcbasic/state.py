@@ -11,13 +11,14 @@ try:
 except ImportError:
     import pickle
 
-import copy_reg
 import os
 import io
 import logging
 import zlib
 import sys
 from contextlib import contextmanager
+
+from .compat import PY2, copyreg, stdout, stdin
 
 
 @contextmanager
@@ -56,7 +57,7 @@ def unpickle_file(name, mode, pos):
 
 def pickle_file(f):
     """Pickle a file object."""
-    if f in (sys.stdout, sys.stdin):
+    if f in (sys.stdout, sys.stdin, stdout, stdin, stdout.buffer, stdin.buffer):
         return unpickle_file, (None, f.mode, -1)
     try:
         return unpickle_file, (f.name, f.mode, f.tell())
@@ -65,9 +66,12 @@ def pickle_file(f):
         return unpickle_file, (f.name, f.mode, -1)
 
 # register the picklers for file and cStringIO
-copy_reg.pickle(file, pickle_file)
-copy_reg.pickle(io.BufferedReader, pickle_file)
-copy_reg.pickle(io.BufferedWriter, pickle_file)
+if PY2:
+    copyreg.pickle(file, pickle_file)
+copyreg.pickle(io.BufferedReader, pickle_file)
+copyreg.pickle(io.BufferedWriter, pickle_file)
+copyreg.pickle(io.TextIOWrapper, pickle_file)
+copyreg.pickle(io.BufferedRandom, pickle_file)
 
 
 def zunpickle(state_file):

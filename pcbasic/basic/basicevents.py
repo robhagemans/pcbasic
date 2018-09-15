@@ -61,12 +61,14 @@ class BasicEvents(object):
             ComHandler(self._files.get_device(b'COM2:'))]
         self.pen = PenHandler()
         # joy*2 + button
-        self.strig = [StrigHandler(joy, button)
-                      for joy in range(2) for button in range(2)]
+        self.strig = [
+            StrigHandler(joy, button)
+            for joy in range(2) for button in range(2)
+        ]
         # all handlers in order of handling; TIMER first
         # key events are not handled FIFO but first 11-20 in that order, then 1-10
         self.all = ([self.timer]
-            + [self.key[num] for num in (range(10, 20) + range(10))]
+            + [self.key[num] for num in (list(range(10, 20)) + list(range(10)))]
             + [self.play] + self.com + [self.pen] + self.strig)
         # keep a list of enabled events
         self.enabled = set()
@@ -338,8 +340,8 @@ class KeyHandler(EventHandler):
         # can't redefine scancodes for predefined keys 1-14 (pc) 1-16 (tandy)
         if not self._predefined:
             # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-            self._modcode = ord(keystr[0]) & 0x6f
-            self._scancode = ord(keystr[1])
+            self._modcode = bytearray(keystr)[0] & 0x6f
+            self._scancode = bytearray(keystr)[1]
             # all shifts are equal
             if self._modcode & 3:
                 self._modcode |= 3

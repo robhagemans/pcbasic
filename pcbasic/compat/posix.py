@@ -27,8 +27,13 @@ except locale.Error as e:
     # mis-configured locale can throw an error here, no need to crash
     logging.error(e)
 
-from .python2 import which
-from .base import HOME_DIR, MACOS
+from .base import PY2, HOME_DIR, MACOS
+
+if PY2:
+    from .python2 import which
+else:
+    from shutil import which
+
 
 # text conventions
 # ctrl+D
@@ -40,6 +45,7 @@ EOL = b'\n'
 # shell conventions
 # console encoding
 SHELL_ENCODING = sys.stdin.encoding or locale.getpreferredencoding()
+FS_ENCODING = sys.getfilesystemencoding()
 # window suppression not needed on Unix
 HIDE_WINDOW = None
 
@@ -67,7 +73,8 @@ if not sys.stdin.isatty():
 # preserve original terminal size
 try:
     TERM_SIZE = struct.unpack(
-        'HHHH', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, b'\0'*8))[:2]
+        'HHHH', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, b'\0'*8)
+    )[:2]
 except Exception:
     TERM_SIZE = 25, 80
 
@@ -87,15 +94,10 @@ def get_short_pathname(native_path):
     """Return Windows short path name or None if not available."""
     return None
 
-def get_unicode_argv():
-    """Convert command-line arguments to unicode."""
+if PY2:
     # the official parameter should be LC_CTYPE but that's None in my locale
     # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-    # on MacOS, if launched from Finder, ignore the additional "process serial number" argument
-    return [
-        arg.decode(SHELL_ENCODING, errors='replace')
-        for arg in sys.argv if not arg.startswith(b'-psn_')
-    ]
+    argv = [_arg.decode(FS_ENCODING, errors='replace') for _arg in sys.argv]
 
 def is_hidden(path):
     """File is hidden."""
@@ -122,8 +124,8 @@ if which('paps'):
             # margin of 0.
             pr = subprocess.Popen(
                 b'paps --cpi=11 --lpi=6 --left-margin=20 --right-margin=20 '
-                '--top-margin=6 --bottom-margin=6 '
-                '| lpr %s' % (options,), shell=True, stdin=subprocess.PIPE)
+                b'--top-margin=6 --bottom-margin=6 '
+                b'| lpr %s' % (options,), shell=True, stdin=subprocess.PIPE)
             # PAPS does not recognise CRLF
             printbuf = printbuf.replace(b'\r\n', b'\n')
             pr.stdin.write(printbuf)
@@ -151,8 +153,14 @@ def key_pressed():
 
 def read_all_available(stream):
     """Read all available characters from a stream; nonblocking; None if closed."""
-    # this works for everything on unix, and sockets on Windows
+    # this function works for everything on unix, and sockets on Windows
     instr = []
+    # we're getting bytes counts for unicode which is pretty useless - so back to bytes
+    try:
+        encoding = stream.encoding
+        stream = stream.buffer
+    except:
+        encoding = None
     # if buffer has characters/lines to read
     if select.select([stream], [], [], 0)[0]:
         # find number of bytes available
@@ -164,4 +172,6 @@ def read_all_available(stream):
             # break out, we're closed
             return None
         instr.append(c)
+    if encoding:
+        return b''.join(instr).decode(encoding, 'replace')
     return b''.join(instr)

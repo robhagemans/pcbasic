@@ -7,19 +7,15 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from collections import deque
-import Queue
-import string
 import datetime
 
+from ..compat import iterchar
 from .base import error
 from .base import signals
 from .base import tokens as tk
+from .base.tokens import DIGITS
 from . import mlparser
 from . import values
-
-
-# bytes constants
-DIGITS = string.digits
 
 
 # NOTE - sound timings and queue lengths are fairly close to DOSBox for Tandy.
@@ -224,7 +220,7 @@ class Sound(object):
         """Rebuild tone queues."""
         # should we pop one at a time from each voice queue to equalise timings?
         for voice, q in enumerate(self._voice_queue):
-            for item, duration in q.iteritems():
+            for item, duration in q.items():
                 item.params = list(item.params)
                 item.params[2] = duration
                 self._queues.audio.put(item)
@@ -281,7 +277,7 @@ class Sound(object):
         mml_list += [b''] * (3 - len(mml_list))
         ml_parser_list = [mlparser.MLParser(mml, self._memory, self._values) for mml in mml_list]
         next_oct = 0
-        voices = range(3)
+        voices = list(range(3))
         while True:
             if not voices:
                 break
@@ -348,7 +344,7 @@ class Sound(object):
                     c = mmls.skip_blank_read_if(DIGITS)
                     if c is not None:
                         numstr = [c]
-                        while mmls.skip_blank() in set(DIGITS):
+                        while mmls.skip_blank() in set(iterchar(DIGITS)):
                             numstr.append(mmls.read(1))
                         # NOT ml_parse_number, only literals allowed here!
                         length = int(b''.join(numstr))
@@ -500,7 +496,7 @@ class TimedQueue(object):
         except IndexError:
             return datetime.datetime.now()
 
-    def iteritems(self):
+    def items(self):
         """Iterate over each item and its duration."""
         self._check_expired()
         last_expiry = datetime.datetime.now()

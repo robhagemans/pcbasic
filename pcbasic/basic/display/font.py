@@ -15,11 +15,10 @@ try:
 except ImportError:
     numpy = None
 
+from ...compat import iteritems, int2byte
+
 from ..base import signals
 
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
 # Many internet sources say this should be 0xC0--0xDF. However, that would
@@ -211,7 +210,7 @@ else:
         # double the width if code width incorrect
         if force_double:
             for yy in range(code_height):
-                for xx in range(req_width_base, -1, -1):
+                for xx in range(req_width_base-1, -1, -1):
                     glyph[yy][2*xx+1] = glyph[yy][xx]
                     glyph[yy][2*xx] = glyph[yy][xx]
         return glyph
@@ -242,7 +241,7 @@ class GlyphCache(object):
             # as dict may change here while the other thread is working on it
             self._queues.video.put(signals.Event(
                 signals.VIDEO_BUILD_GLYPHS, (
-                    {self._codepage.to_unicode(k, u'\0'): v for k, v in self._glyphs.iteritems()},
+                    {self._codepage.to_unicode(k, u'\0'): v for k, v in iteritems(self._glyphs)},
                 )
             ))
 

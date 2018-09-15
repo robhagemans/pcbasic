@@ -6,12 +6,13 @@ Sound interface based on PyGame
 This file is released under the GNU GPL version 3 or later.
 """
 
-
-import Queue
 from collections import deque
 
+from ..compat import suppress_output
+
 try:
-    import pygame
+    with suppress_output():
+        import pygame
 except ImportError:
     pygame = None
 
@@ -39,13 +40,13 @@ QUIET_QUIT = 10000
 # buffer size in sample frames
 BUFSIZE = 1024 #4096
 
+
 ##############################################################################
 # plugin
 
 @audio_plugins.register('pygame')
 class AudioPygame(AudioPlugin):
     """Pygame-based audio plugin."""
-
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
@@ -57,7 +58,8 @@ class AudioPygame(AudioPlugin):
             raise InitFailed('Module `mixer` not found')
         # this must be called before pygame.init() in the video plugin
         mixer.pre_init(
-                synthesiser.SAMPLE_RATE, -synthesiser.SAMPLE_BITS, channels=1, buffer=BUFSIZE)
+            synthesiser.SAMPLE_RATE, -synthesiser.SAMPLE_BITS, channels=1, buffer=BUFSIZE
+        )
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
@@ -82,15 +84,17 @@ class AudioPygame(AudioPlugin):
     def tone(self, voice, frequency, duration, loop, volume):
         """Enqueue a tone."""
         self.generators[voice].append(synthesiser.SoundGenerator(
-                    self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
-                    frequency, duration, loop, volume))
+            self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
+            frequency, duration, loop, volume
+        ))
 
     def noise(self, source, frequency, duration, loop, volume):
         """Enqueue a noise."""
         feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
         self.generators[3].append(synthesiser.SoundGenerator(
-                    self.signal_sources[3], feedback,
-                    frequency, duration, loop, volume))
+            self.signal_sources[3], feedback,
+            frequency, duration, loop, volume
+        ))
 
     def hush(self):
         """Stop sound."""
@@ -102,8 +106,10 @@ class AudioPygame(AudioPlugin):
 
     def _work(self):
         """Replenish sample buffer."""
-        if (sum(len(q) for q in self.generators) == 0 and
-                    self._next_tone == [None, None, None, None]):
+        if (
+                sum(len(q) for q in self.generators) == 0 and
+                self._next_tone == [None, None, None, None]
+            ):
             # check if mixer can be quit
             self._check_quit()
             return

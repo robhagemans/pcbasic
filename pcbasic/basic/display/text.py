@@ -7,7 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
-
+import binascii
 
 class TextRow(object):
     """Buffer for a single row of the screen."""
@@ -66,7 +66,7 @@ class TextPage(object):
 
     def __init__(self, attr, width, height, conv, dbcs_enabled):
         """Initialise the screen buffer to given dimensions."""
-        self.row = [TextRow(attr, width, conv, dbcs_enabled) for _ in xrange(height)]
+        self.row = [TextRow(attr, width, conv, dbcs_enabled) for _ in range(height)]
         self.width = width
         self.height = height
 
@@ -85,25 +85,30 @@ class TextBuffer(object):
         self.width = width
         self.height = height
 
-    def __str__(self):
-        """Return a string representation of the screen buffer (for debugging)."""
-        horiz_bar = ('  +' + '-' * self.width + '+')
-        lastwrap = False
+    def __repr__(self):
+        """Return an ascii representation of the screen buffer (for debugging)."""
+        horiz_bar = ('   +' + '-' * self.width + '+')
         row_strs = []
         for num, page in enumerate(self.pages):
-            row_strs += [horiz_bar]
+            lastwrap = False
+            row_strs.append(horiz_bar)
             for i, row in enumerate(page.row):
-                s = [ c[0] for c in row.buf ]
-                outstr = '{0:2}'.format(i)
-                if lastwrap:
-                    outstr += ('\\')
-                else:
-                    outstr += ('|')
-                outstr += (''.join(s))
-                if row.wrap:
-                    row_strs.append(outstr + '\\ {0:2}'.format(row.end))
-                else:
-                    row_strs.append(outstr + '| {0:2}'.format(row.end))
+                # convert non-ascii bytes to \x81 etc
+                # dbcs is encoded as double char in left column, '' in right
+                rowbytes = (_pair[0] for _pair in row.buf)
+                # replace non-ascii with ? - this is not ideal but
+                # for python2 we need to stick to ascii-128 so implicit conversion to bytes works
+                # and for python3 we must use unicode
+                # and backslashreplace messes up the output width...
+                rowstr = ''.join(
+                    _char.decode('ascii', 'replace').replace(u'\ufffd', u'?')
+                    for _char in rowbytes
+                )
+                left = '\\' if lastwrap else '|'
+                right = '\\' if row.wrap else '|'
+                row_strs.append('{0:2} {1}{2}{3} {4:2}'.format(
+                    i, left, rowstr, right, row.end,
+                ))
                 lastwrap = row.wrap
             row_strs.append(horiz_bar)
         return '\n'.join(row_strs)
@@ -124,6 +129,7 @@ class TextBuffer(object):
 
     def put_char_attr(self, pagenum, row, col, c, attr):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
+        assert isinstance(c, bytes), type(c)
         return self.pages[pagenum].row[row-1].put_char_attr(col, c, attr)
 
     def scroll_up(self, pagenum, from_line, bottom, attr):
@@ -233,7 +239,7 @@ class TextBuffer(object):
         # add all rows of the logical line
         for row in range(srow, self.height+1):
             therow = self.pages[pagenum].row[row-1]
-            line += bytearray(pair[0] for pair in therow.buf[scol-1:therow.end])
+            line += b''.join(pair[0] for pair in therow.buf[scol-1:therow.end])
             # continue so long as the line wraps
             if not therow.wrap:
                 break
@@ -264,7 +270,7 @@ class TextBuffer(object):
                 else:
                     rowpairs = therow.buf[:therow.end]
                 # get characters from char/attr pairs and convert to bytearray
-                line += bytearray(pair[0] for pair in rowpairs)
+                line += b''.join(pair[0] for pair in rowpairs)
                 if not therow.wrap:
                     break
                 # wrap before end of line means LF

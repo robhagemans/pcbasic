@@ -7,18 +7,15 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import math
-import string
 import struct
 import functools
+
+from ...compat import int2byte
 
 from ..base import error
 from ..base import tokens as tk
 from . import numbers
 from . import strings
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 # BASIC type sigils:
@@ -53,7 +50,7 @@ TYPE_TO_CLASS = {
 
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
-    return TYPE_TO_SIZE[name[-1]]
+    return TYPE_TO_SIZE[name[-1:]]
 
 ###############################################################################
 # type checks
@@ -125,13 +122,18 @@ def _call_float_function(fn, *args):
     feh = args[0].error_handler
     try:
         # to_float can overflow on Double.pos_max
-        args = [arg.to_float(arg._values.double_math) for arg in args]
+        args = [_arg.to_float(values.double_math) for _arg in args]
         floatcls = args[0].__class__
-        args = [arg.to_value() for arg in args]
-        return floatcls(None, values).from_value(fn(*args))
+        args = [_arg.to_value() for _arg in args]
+        result = fn(*args)
+        # python3 may return complex values for some real functions
+        # where python2 simply raises an error
+        if isinstance(result, complex):
+            raise ValueError('Non-real result')
+        return floatcls(None, values).from_value(result)
     except (ValueError, ArithmeticError) as e:
         # create positive infinity of the appropriate class
-        if arg._values.double_math and isinstance(args[0], numbers.Double):
+        if values.double_math and isinstance(args[0], numbers.Double):
             floatcls = numbers.Double
         else:
             floatcls = numbers.Single
@@ -256,7 +258,7 @@ class Values(object):
         """Convert number token to new Number temporary"""
         if not token:
             raise ValueError('Token must not be empty')
-        lead = bytes(token)[0]
+        lead = bytes(token)[0:1]
         if lead == tk.T_SINGLE:
             return numbers.Single(None, self).from_token(token)
         elif lead == tk.T_DOUBLE:
@@ -364,17 +366,17 @@ def to_int(inp, unsigned=False):
 def mki_(args):
     """MKI$: return the byte representation of an int."""
     x, = args
-    return x._values.new_string().from_str(to_integer(x).to_bytes())
+    return x._values.new_string().from_str(bytes(to_integer(x).to_bytes()))
 
 def mks_(args):
     """MKS$: return the byte representation of a single."""
     x, = args
-    return x._values.new_string().from_str(to_single(x).to_bytes())
+    return x._values.new_string().from_str(bytes(to_single(x).to_bytes()))
 
 def mkd_(args):
     """MKD$: return the byte representation of a double."""
     x, = args
-    return x._values.new_string().from_str(to_double(x).to_bytes())
+    return x._values.new_string().from_str(bytes(to_double(x).to_bytes()))
 
 def cvi_(args):
     """CVI: return the int value of a byte representation."""
@@ -689,7 +691,7 @@ def string_(args):
         error.range_check(0, 255, asc_value_or_char.to_int())
     list(args)
     if isinstance(asc_value_or_char, strings.String):
-        char = asc_value_or_char.to_str()[0]
+        char = asc_value_or_char.to_str()[:1]
     else:
         # overflow if outside Integer range
         ascval = asc_value_or_char.to_integer().to_int()

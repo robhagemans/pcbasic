@@ -21,7 +21,7 @@ class InitFailed(Exception):
     def __init__(self, message=''):
         self._message = message
 
-    def __str__(self):
+    def __repr__(self):
         return self._message
 
 
@@ -76,7 +76,7 @@ class EnvironmentCache(object):
 
     def close(self):
         """Restore all environment variables."""
-        for key in self._saved.keys():
+        for key in list(self._saved.keys()):
             self.reset(key)
 
     def __del__(self):

@@ -6,12 +6,16 @@ Session API
 This file is released under the GNU GPL version 3 or later.
 """
 
-import Queue
 import os
+
+from ..compat import text_type
 
 from .base import error
 from .devices import NameWrapper
 from . import implementation
+
+from ..data import read_codepage as codepage
+from ..data import read_fonts as font
 
 
 class Session(object):
@@ -60,28 +64,28 @@ class Session(object):
     def bind_file(self, file_name_or_object, name=None, create=False):
         """Bind a native file name or Python stream to a BASIC file name."""
         self.start()
-        if isinstance(name, unicode):
-            name = self._impl.codepage.str_from_unicode(name)
         # if a file name, resolve
-        if not isinstance(file_name_or_object, basestring) or os.path.isfile(file_name_or_object):
-            # if it's an obkect or the file name exists, use it
+        if (
+                not isinstance(file_name_or_object, (bytes, text_type))
+                or os.path.isfile(file_name_or_object)
+            ):
+            # if it's an object or the file name exists, use it
             return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
         elif create and (
                 not os.path.dirname(file_name_or_object) or
-                os.path.isdir(os.path.dirname(file_name_or_object))):
+                os.path.isdir(os.path.dirname(file_name_or_object))
+            ):
             # if it doesn't and we're allowed to create and the directory exists, create new
             return self._impl.files.get_device(b'@:').bind(file_name_or_object, name)
         # not resolved, try to use/create as internal name
-        if isinstance(file_name_or_object, unicode):
-            return NameWrapper(self._impl.codepage.str_from_unicode(file_name_or_object))
-        return NameWrapper(file_name_or_object)
+        return NameWrapper(self._impl.codepage, file_name_or_object)
 
     def execute(self, command):
         """Execute a BASIC statement."""
         self.start()
         with self._impl.io_streams.activate():
             for cmd in command.splitlines():
-                if isinstance(cmd, unicode):
+                if isinstance(cmd, text_type):
                     cmd = self._impl.codepage.str_from_unicode(cmd)
                 self._impl.execute(cmd)
 
@@ -89,24 +93,29 @@ class Session(object):
         """Evaluate a BASIC expression."""
         self.start()
         with self._impl.io_streams.activate():
-            if isinstance(expression, unicode):
+            if isinstance(expression, text_type):
                 expression = self._impl.codepage.str_from_unicode(expression)
             return self._impl.evaluate(expression)
 
     def set_variable(self, name, value):
         """Set a variable in memory."""
         self.start()
-        if isinstance(name, unicode):
+        if isinstance(name, text_type):
             name = name.encode('ascii')
         name = name.upper()
         self._impl.set_variable(name, value)
 
-    def get_variable(self, name):
+    def get_variable(self, name, as_type=None):
         """Get a variable in memory."""
         self.start()
-        if isinstance(name, unicode):
+        if isinstance(name, text_type):
             name = name.encode('ascii')
-        return self._impl.get_variable(name)
+        return self._impl.get_variable(name, as_type)
+
+    def convert(self, value, to_type):
+        """Convert a Python value to another type, consistent with BASIC rules."""
+        self.start()
+        return self._impl.get_converter(type(value), to_type)(value)
 
     def interact(self):
         """Interactive interpreter session."""

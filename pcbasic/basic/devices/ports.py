@@ -13,7 +13,9 @@ import datetime
 import io
 from contextlib import contextmanager
 
+from ...compat import iteritems
 from ...compat import key_pressed
+
 from .devicebase import safe_io
 
 try:
@@ -197,7 +199,7 @@ class COMDevice(Device):
         """Get pickling dict for stream."""
         # copy as we still need _serial for close()
         # which gets called after __getstate__() on shutdown
-        pickle_dict = {k:v for k,v in self.__dict__.iteritems()}
+        pickle_dict = {k:v for k,v in iteritems(self.__dict__)}
         del pickle_dict['_serial']
         return pickle_dict
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 """
 PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter

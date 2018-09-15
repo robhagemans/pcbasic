@@ -29,7 +29,7 @@ class Clock(object):
         diff = now-midnight
         seconds = diff.seconds
         micro = diff.microseconds
-        return long(seconds)*1000 + long(micro)/1000
+        return int(seconds*1000 + micro/1000)
 
     def timer_(self, args):
         """TIMER: get clock ticks since midnight."""
@@ -98,10 +98,10 @@ class Clock(object):
         """Get (offset) system time."""
         list(args)
         time = (datetime.datetime.now() + self.time_offset).strftime('%H:%M:%S')
-        return self._values.new_string().from_str(time)
+        return self._values.new_string().from_str(time.encode('ascii'))
 
     def date_fn_(self, args):
         """Get (offset) system date."""
         list(args)
         date = (datetime.datetime.now() + self.time_offset).strftime('%m-%d-%Y')
-        return self._values.new_string().from_str(date)
+        return self._values.new_string().from_str(date.encode('ascii'))

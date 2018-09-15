@@ -464,7 +464,7 @@ class Drawing(object):
         mask = 0x8000
         line_error = dx // 2
         x, y = x0, y0
-        for x in xrange(x0, x1+sx, sx):
+        for x in range(x0, x1+sx, sx):
             if pattern & mask != 0:
                 if steep:
                     self.put_pixel(y, x, c)
@@ -603,9 +603,11 @@ class Drawing(object):
         if stop:
             stop_octant, stop_coord, stop_line = _get_octant(stop, rx, ry)
         if aspect == 1.:
-            self.draw_circle(x0, y0, rx, c,
-                             start_octant, start_coord, start_line,
-                             stop_octant, stop_coord, stop_line)
+            self.draw_circle(
+                x0, y0, rx, c,
+                start_octant, start_coord, start_line,
+                stop_octant, stop_coord, stop_line
+            )
         else:
             startx, starty, stopx, stopy = -1, -1, -1, -1
             if start is not None:
@@ -631,18 +633,18 @@ class Drawing(object):
         # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
         # find invisible octants
         if oct0 == -1:
-            hide_oct = range(0,0)
+            hide_oct = []
         elif oct0 < oct1 or oct0 == oct1 and _octant_gte(oct0, coo1, coo0):
-            hide_oct = range(0, oct0) + range(oct1+1, 8)
+            hide_oct = list(range(0, oct0)) + list(range(oct1+1, 8))
         else:
-            hide_oct = range(oct1+1, oct0)
+            hide_oct = list(range(oct1+1, oct0))
         # if oct1==oct0:
         # ----|.....|--- : coo1 lt coo0 : print if y in [0,coo1] or in [coo0, r]
         # ....|-----|... ; coo1 gte coo0: print if y in [coo0,coo1]
         x, y = r, 0
         bres_error = 1-r
         while x >= y:
-            for octant in range(0,8):
+            for octant in range(0, 8):
                 if octant in hide_oct:
                     continue
                 elif oct0 != oct1 and octant == oct0 and _octant_gt(oct0, coo0, y):
@@ -689,11 +691,11 @@ class Drawing(object):
         # for algorithm see http://members.chello.at/~easyfilter/bresenham.html
         # find invisible quadrants
         if qua0 == -1:
-            hide_qua = range(0,0)
+            hide_qua = []
         elif qua0 < qua1 or qua0 == qua1 and _quadrant_gte(qua0, x1, y1, x0, y0):
-            hide_qua = range(0, qua0) + range(qua1+1, 4)
+            hide_qua = list(range(0, qua0)) + list(range(qua1+1, 4))
         else:
-            hide_qua = range(qua1+1,qua0)
+            hide_qua = list(range(qua1+1, qua0))
         # error increment
         dx = 16 * (1-2*rx) * ry * ry
         dy = 16 * rx * rx
@@ -895,7 +897,7 @@ class Drawing(object):
         operation_token = operation_token or tk.XOR
         if array_name not in self._memory.arrays:
             raise error.BASICError(error.IFC)
-        elif array_name[-1] == values.STR:
+        elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
         self.last_point = x0, y0
@@ -937,7 +939,7 @@ class Drawing(object):
         array_name = self._memory.complete_name(array_name)
         if array_name not in self._memory.arrays:
             raise error.BASICError(error.IFC)
-        elif array_name[-1] == values.STR:
+        elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
         x1, y1 = self.graph_view.coords(*self.get_window_physical(*lcoord1))
@@ -1186,7 +1188,7 @@ def tile_to_interval(x0, x1, y, tile):
         ntile = numpy.roll(numpy.array(tile).astype(int)[y % h], int(-x0 % 8))
         return numpy.tile(ntile, (dx+w-1) // w)[:dx]
     else:
-        return [tile[y % h][x % 8] for x in xrange(x0, x1+1)]
+        return [tile[y % h][x % 8] for x in range(x0, x1+1)]
 
 
 ###############################################################################

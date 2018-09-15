@@ -154,7 +154,7 @@ _CommandLineToArgvW = windll.shell32.CommandLineToArgvW
 _CommandLineToArgvW.argtypes = [LPCWSTR, POINTER(c_int)]
 _CommandLineToArgvW.restype = POINTER(LPWSTR)
 
-def get_unicode_argv():
+def _get_unicode_argv():
     """Convert command-line arguments to unicode."""
     # we need to go to the Windows API as argv may not be in a full unicode encoding
     # note that this will not be necessary in Python 3 where sys.argv is unicode
@@ -162,11 +162,14 @@ def get_unicode_argv():
     cmd = _GetCommandLineW()
     argc = c_int(0)
     argv = _CommandLineToArgvW(cmd, byref(argc))
-    argv = [argv[i] for i in xrange(argc.value)]
+    argv = [argv[i] for i in range(argc.value)]
     # clip off the python interpreter call, if we use it
     # anything that didn't get included in sys.argv is not for us either
     argv = argv[-len(sys.argv):]
     return argv
+
+argv = _get_unicode_argv()
+
 
 _GetFileAttributesW = windll.kernel32.GetFileAttributesW
 _GetFileAttributesW.argtypes = [LPCWSTR]

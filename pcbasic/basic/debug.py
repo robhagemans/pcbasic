@@ -77,7 +77,7 @@ class DebugException(BaseException):
     """Test exception for debugging purposes"""
     # inherit from BaseException to circumvent extension manager catching Exception
 
-    def __str__(self):
+    def __repr__(self):
         return self.__doc__
 
 
@@ -106,7 +106,7 @@ class DebugSession(api.Session):
             linum = struct.unpack_from('<H', token, 2)
             outstr += u'[%i]' % linum
         for (expr, outs) in self._watch_list:
-            outstr += u' %s = ' % str(expr)
+            outstr += u' %r = ' % (expr,)
             outs.seek(2)
             try:
                 val = self._impl.parser.expression_parser.parse(outs)
@@ -115,7 +115,7 @@ class DebugSession(api.Session):
                 else:
                     outstr += values.to_repr(val, leading_space=False, type_sign=True)
             except Exception as e:
-                logging.debug(str(type(e))+' '+str(e))
+                logging.debug('%s %s', type(e), e)
                 traceback.print_tb(sys.exc_info()[2])
         if outstr:
             logging.debug(outstr)
@@ -182,23 +182,23 @@ class DebugSession(api.Session):
         """Dump all variables to the log."""
         repr_vars = '\n'.join((
             '==== Scalars ='.ljust(100, '='),
-            str(self._impl.scalars),
+            repr(self._impl.scalars),
             '==== Arrays ='.ljust(100, '='),
-            str(self._impl.arrays),
+            repr(self._impl.arrays),
             '==== Strings ='.ljust(100, '='),
-            str(self._impl.strings),
+            repr(self._impl.strings),
         ))
         for s in repr_vars.split('\n'):
             logging.debug(s)
 
     def showscreen(self):
         """Copy the screen buffer to the log."""
-        for s in str(self._impl.display.text_screen).split('\n'):
+        for s in repr(self._impl.display.text_screen).split('\n'):
             logging.debug(self._impl.codepage.str_to_unicode(s))
 
     def showprogram(self):
         """Write a marked-up hex dump of the program to the log."""
-        for s in str(self._impl.program).split('\n'):
+        for s in repr(self._impl.program).split('\n'):
             logging.debug(s)
 
     def showplatform(self):

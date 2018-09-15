@@ -7,10 +7,12 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
-import string
+
+from ..compat import iterchar, int2byte
 
 from .base import error
 from .base import tokens as tk
+from .base.tokens import ALPHANUMERIC
 from .base.eascii import as_bytes as ea
 
 
@@ -42,12 +44,6 @@ ALT_KEY_REPLACE = {
 }
 
 
-# mark bytes conversion explicitly
-int2byte = chr
-
-ALPHANUMERIC = string.digits + string.ascii_letters
-
-
 class FunctionKeyMacros(object):
     """Handles display of function-key macro strings."""
 
@@ -70,7 +66,7 @@ class FunctionKeyMacros(object):
         """Print a list of the function key macros."""
         for i in range(self._num_fn_keys):
             text = self._keyboard.get_macro(i)
-            text = b''.join(self._replace_chars.get(s, s) for s in text)
+            text = b''.join(self._replace_chars.get(s, s) for s in iterchar(text))
             self._screen.write_line(b'F%d %s' % (i+1, text))
 
     def set(self, num, macro):
@@ -95,9 +91,9 @@ class FunctionKeyMacros(object):
         self._bar.clear()
         for i in range(10):
             text = self._keyboard.get_macro(i)[:6]
-            text = b''.join(self._replace_chars.get(s, s) for s in text)
+            text = b''.join(self._replace_chars.get(s, s) for s in iterchar(text))
             kcol = 1 + 8*i
-            self._bar.write((b'%d' % (i+1,))[-1], kcol, False)
+            self._bar.write((b'%d' % (i+1,))[-1:], kcol, False)
             self._bar.write(text, kcol+1, True)
 
 
@@ -130,17 +126,20 @@ class Editor(object):
         # get contents of the logical line
         if from_start:
             outstr = self._screen.text.get_logical_line(
-                    self._screen.apagenum, self._screen.current_row)
+                self._screen.apagenum, self._screen.current_row
+            )
         else:
             outstr = self._screen.text.get_logical_line_from(
-                    self._screen.apagenum, self._screen.current_row,
-                    prompt_row, left, right)
+                self._screen.apagenum, self._screen.current_row,
+                prompt_row, left, right
+            )
         # redirects output exactly the contents of the logical line
         # including any trailing whitespace and chars past 255
         self._io_streams.write(outstr)
         # go to last row of logical line
         self._screen.current_row = self._screen.text.find_end_of_line(
-                self._screen.apagenum, self._screen.current_row)
+            self._screen.apagenum, self._screen.current_row
+        )
         # echo the CR, if requested
         if write_endl:
             self._screen.write_line()
@@ -170,8 +169,10 @@ class Editor(object):
                 if not d:
                     # input stream closed
                     raise error.Exit()
-                if d in (ea.UP, ea.CTRL_6, ea.DOWN, ea.CTRL_MINUS,  ea.RIGHT, ea.CTRL_BACKSLASH,
-                          ea.LEFT, ea.CTRL_RIGHTBRACKET, ea.HOME, ea.CTRL_k, ea.END, ea.CTRL_n):
+                if d in (
+                        ea.UP, ea.CTRL_6, ea.DOWN, ea.CTRL_MINUS,  ea.RIGHT, ea.CTRL_BACKSLASH,
+                        ea.LEFT, ea.CTRL_RIGHTBRACKET, ea.HOME, ea.CTRL_k, ea.END, ea.CTRL_n
+                    ):
                     # arrow keys drop us out of insert mode
                     self.set_overwrite_mode(True)
                 if d == ea.CTRL_c:
@@ -225,17 +226,17 @@ class Editor(object):
                 else:
                     try:
                         # these are done on a less deep level than the fn key macros
-                        letters = list(ALT_KEY_REPLACE[d]) + [b' ']
+                        letters = list(iterchar(ALT_KEY_REPLACE[d])) + [b' ']
                     except KeyError:
                         letters = [d]
                     for d in letters:
                         # ignore eascii by this point, but not dbcs
-                        if d[0] not in (b'\0', b'\r'):
+                        if d[:1] not in (b'\0', b'\r'):
                             if not self._overwrite_mode:
                                 self._screen.insert_fullchars(d)
                             else:
                                 # put all dbcs in before messing with cursor position
-                                for c in d:
+                                for c in iterchar(d):
                                     self._screen.write_char(c, do_scroll_down=True)
         finally:
             self.set_overwrite_mode(True)
@@ -252,7 +253,8 @@ class Editor(object):
     def clear_line(self, the_row, from_col=1):
         """Clear whole logical line (ESC), leaving prompt."""
         self._screen.clear_from(
-                self._screen.text.find_start_of_line(self._screen.apagenum, the_row), from_col)
+            self._screen.text.find_start_of_line(self._screen.apagenum, the_row), from_col
+        )
 
     def backspace(self, start_row, start_col):
         """Delete the char to the left (BACKSPACE)."""

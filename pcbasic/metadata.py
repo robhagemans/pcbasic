@@ -16,12 +16,13 @@ PC-BASIC runs plain-text, tokenised and protected .BAS files.
 It implements floating-point arithmetic in the Microsoft Binary Format (MBF) and can therefore
 read and write binary data files created by GW-BASIC.'''
 CLASSIFIERS = [
-    u'Development Status :: 4 - Beta',
+    u'Development Status :: 3 - Alpha',
     u'Intended Audience :: End Users/Desktop',
     u'Intended Audience :: Developers',
     u'Topic :: System :: Emulators',
     u'Topic :: Software Development :: Interpreters',
     u'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
     u'Programming Language :: Python :: 2.7',
+    u'Programming Language :: Python :: 3.5',
 ]
 KEYWORDS = [u'emulator', u'interpreter', u'basic', u'retro', u'legacy', u'gwbasic', u'basica', u'pcjr', u'tandy']

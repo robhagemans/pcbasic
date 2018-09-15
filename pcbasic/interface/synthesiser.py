@@ -109,7 +109,7 @@ class SoundGenerator(object):
             # generate bits
             bits = [
                 -self.amplitude if self.signal_source.next() else self.amplitude
-                for _ in xrange(num_half_waves)
+                for _ in range(num_half_waves)
             ]
             # do sampling by averaging the signal over bins of given resolution
             # this allows to use numpy all the way

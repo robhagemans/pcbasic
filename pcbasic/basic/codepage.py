@@ -8,25 +8,26 @@ This file is released under the GNU GPL version 3 or later.
 
 import unicodedata
 import logging
+import codecs
 import os
+import io
 
 
-# mark bytes conversion explicitly
-int2byte = chr
+from ..compat import iterchar, iteritems, int2byte, unichr
 
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
 # ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
 # see http://www.siao2.com/2005/09/17/469941.aspx
-PRINTABLE_ASCII = map(int2byte, range(0x20, 0x7F))
+PRINTABLE_ASCII = tuple(int2byte(_c) for _c in range(0x20, 0x7F))
 
 # on the terminal, these values are not shown as special graphic chars but as their normal effect
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
 CONTROL = (b'\x07', b'\x09', b'\x0A', b'\x0B', b'\x0C', b'\x0D', b'\x1C', b'\x1D', b'\x1E', b'\x1F')
 
 # default is codepage 437
-DEFAULT_CODEPAGE = {int2byte(i): c for i, c in enumerate(
+DEFAULT_CODEPAGE = {int2byte(_i): _c for _i, _c in enumerate(
     u'\x00\u263a\u263b\u2665\u2666\u2663\u2660\u2022\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b'
     u'\u263c\u25ba\u25c4\u2195\u203c\xb6\xa7\u25ac\u21a8\u2191\u2193\u2192\u2190\u221f\u2194\u25b2'
     u'\u25bc!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrst'
@@ -65,7 +66,7 @@ class Codepage(object):
         self.box_right = [set(), set()]
         self.cp_to_unicode = {}
         self.dbcs_num_chars = 0
-        for cp_point, grapheme_cluster in codepage_dict.iteritems():
+        for cp_point, grapheme_cluster in iteritems(codepage_dict):
             # do not redefine printable ASCII, but substitute glyphs
             if (
                     cp_point in PRINTABLE_ASCII and
@@ -91,7 +92,7 @@ class Codepage(object):
         for c in range(256):
             if int2byte(c) not in self.cp_to_unicode:
                 self.cp_to_unicode[int2byte(c)] = u'\0'
-        self.unicode_to_cp = dict((reversed(item) for item in self.cp_to_unicode.items()))
+        self.unicode_to_cp = dict((reversed(item) for item in iteritems(self.cp_to_unicode)))
         if self.dbcs_num_chars > 0:
             self.dbcs = True
 
@@ -125,13 +126,107 @@ class Codepage(object):
         """Convert codepage point to unicode grapheme cluster """
         return self.cp_to_unicode.get(cp, replace)
 
-    def str_to_unicode(self, cps, preserve=b'', box_protect=True):
+    def str_to_unicode(self, cps, preserve=(), box_protect=True):
         """Convert codepage string to unicode string."""
         return Converter(self, preserve, box_protect).to_unicode(cps, flush=True)
 
-    def get_converter(self, preserve=b''):
+    def get_converter(self, preserve=()):
         """Get converter from codepage to unicode."""
         return Converter(self, preserve, self.box_protect)
+
+    def wrap_output_stream(self, stream, preserve=()):
+        """Wrap a stream so that we can write codepage bytes to it."""
+        # check for file-like objects that expect unicode, raw output otherwise
+        if not isinstance(stream, (
+                io.TextIOWrapper, io.StringIO,
+                codecs.StreamReaderWriter, codecs.StreamWriter,
+            )):
+            return stream
+        return OutputStreamWrapper(stream, self, preserve)
+
+    def wrap_input_stream(self, stream, replace_newlines=False):
+        """Wrap a stream so that we can read codepage bytes from it."""
+        # check for file-like objects that expect unicode, raw output otherwise
+        if isinstance(stream, (
+                io.TextIOWrapper, io.StringIO,
+                codecs.StreamReaderWriter, codecs.StreamReader,
+            )):
+            stream = InputStreamWrapper(stream, self)
+        if replace_newlines:
+            return NewlineWrapper(stream)
+        return stream
+
+
+##############################################################################
+# stream wrappers
+
+class StreamWrapperBase(object):
+    """Base class for delegated stream wrappers."""
+
+    def __init__(self, stream):
+        """Set up codec."""
+        self._stream = stream
+
+    def __getattr__(self, name):
+        """Delegate methods to stream."""
+        if hasattr(self, '_stream') and name != '__getstate__':
+            return getattr(self._stream, name)
+        else:
+            # this is needed for pickle to be able to reconstruct the class
+            raise AttributeError()
+
+
+class OutputStreamWrapper(StreamWrapperBase):
+    """
+    Converter stream wrapper, takes bytes input.
+    Stream must be a unicode (text) stream.
+    """
+
+    def __init__(self, stream, codepage, preserve=()):
+        """Set up codec."""
+        self._conv = codepage.get_converter(preserve)
+        self._stream = stream
+
+    def write(self, s):
+        """Write bytes to codec stream."""
+        # decode BASIC bytes --(codepage)-> unicode
+        self._stream.write(self._conv.to_unicode(s))
+
+
+class InputStreamWrapper(StreamWrapperBase):
+    """
+    Converter stream wrapper, produces bytes output.
+    Stream must be a unicode (text) stream.
+    """
+
+    def __init__(self, stream, codepage):
+        """Set up codec."""
+        self._codepage = codepage
+        self._stream = stream
+        self._buffer = b''
+
+    def read(self, n=-1):
+        """Read n bytes from stream with codepage conversion."""
+        if n > len(self._buffer):
+            unistr = self._stream.read(n - len(self._buffer))
+        elif n == -1:
+            unistr = self._stream.read()
+        else:
+            unistr = u''
+        converted = (self._buffer + self._codepage.str_from_unicode(unistr, errors='replace'))
+        if n < 0:
+            coutput = converted
+        else:
+            output, self._buffer = converted[:n], converted[n:]
+        return output
+
+
+class NewlineWrapper(StreamWrapperBase):
+    """Replace newlines on input stream. Wraps a bytes stream."""
+
+    def read(self, n=-1):
+        """Read n bytes from stream with codepage conversion."""
+        return self._stream.read(n).replace(b'\r\n', b'\r').replace(b'\n', b'\r')
 
 
 ########################################
@@ -183,12 +278,14 @@ box_right_unicode = [u'\u2500', u'\u2550']
 class Converter(object):
     """Buffered converter to Unicode - supports DBCS and box-drawing protection."""
 
-    def __init__(self, codepage, preserve=b'', box_protect=None):
+    def __init__(self, codepage, preserve=(), box_protect=None):
         """Initialise with empty buffer."""
         self._cp = codepage
         # hold one or two bytes
         # lead byte without trail byte, or box-protectable dbcs
         self._buf = b''
+        # preserve is a tuple/list of bytes that should keep the same ordinal
+        # this is mainly for control characters that have alternate graphical symbols
         self._preserve = set(preserve)
         # may override box protection defaults
         self._box_protect = box_protect or self._cp.box_protect
@@ -200,12 +297,12 @@ class Converter(object):
         """Process codepage string, returning list of grouped code sequences when ready."""
         if not self._dbcs:
             # stateless if not dbcs
-            return list(s)
+            return list(iterchar(s))
         else:
-            unistr = [seq for c in s for seq in self._process(c)]
+            sequences = [seq for c in iterchar(s) for seq in self._process(c)]
             if flush:
-                unistr += self._flush()
-            return unistr
+                sequences += self._flush()
+            return sequences
 
     def to_unicode(self, s, flush=False):
         """Process codepage string, returning unicode string when ready."""
@@ -318,7 +415,7 @@ class Converter(object):
             # goes to case 0
         else:
             for bset in (0, 1):
-                if self._cp.connects(self._buf[-1], c, bset):
+                if self._cp.connects(self._buf[-1:], c, bset):
                     self._bset = bset
                     # take out only first byte
                     out += self._flush(1)
@@ -337,8 +434,8 @@ class Converter(object):
         out = []
         if c not in self._cp.lead:
             out += self._flush() + [c]
-        elif self._cp.connects(self._buf[-1], c, self._bset):
-            self._last = self._buf[-1]
+        elif self._cp.connects(self._buf[-1:], c, self._bset):
+            self._last = self._buf[-1:]
             # output box drawing
             out += self._flush(1) + self._flush(1) + [c]
             # goes to case 4
@@ -708,7 +805,7 @@ GRAPHEME_BREAK = {
 
 def _get_grapheme_break(c):
     """Get grapheme break property of unicode char."""
-    for key, value in GRAPHEME_BREAK.iteritems():
+    for key, value in iteritems(GRAPHEME_BREAK):
         if ord(c) in value:
             return key
     # no grapheme break property found

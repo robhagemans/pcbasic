@@ -8,9 +8,12 @@ This file is released under the GNU GPL version 3 or later.
 import io
 import os
 import sys
-import Queue
+import math
 import logging
+from functools import partial
 from contextlib import contextmanager
+
+from ..compat import queue, text_type
 
 from ..metadata import NAME, VERSION, COPYRIGHT
 from .base import error
@@ -52,7 +55,8 @@ class Implementation(object):
             output_streams=sys.stdout, input_streams=sys.stdin,
             codepage=None, box_protect=True, font=None, text_width=80,
             video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3), low_intensity=False,
-            devices=None, current_device=u'Z:', mount=None, utf8=False, soft_linefeed=False,
+            devices=None, current_device=u'Z:', mount=None,
+            textfile_encoding=None, soft_linefeed=False,
             keys=u'', check_keybuffer_full=True, ctrl_c_is_break=True,
             hide_listing=None, hide_protected=False,
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
@@ -109,11 +113,11 @@ class Implementation(object):
         # set up input event handler
         # no interface yet; use dummy queues
         self.queues = eventcycle.EventQueues(
-            self.values, ctrl_c_is_break, inputs=Queue.Queue()
+            self.values, ctrl_c_is_break, inputs=queue.Queue()
         )
         # prepare I/O streams
         self.io_streams = iostreams.IOStreams(
-            self.queues, self.codepage, input_streams, output_streams, utf8
+            self.queues, self.codepage, input_streams, output_streams,
         )
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.memory, syntax)
@@ -146,7 +150,7 @@ class Implementation(object):
         self.files = Files(
             self.values, self.memory, self.queues, self.keyboard, self.display,
             max_files, max_reclen, serial_buffer_size,
-            devices, current_device, mount, utf8, not soft_linefeed
+            devices, current_device, mount, textfile_encoding, soft_linefeed
         )
         # set up the SHELL command
         # Files needed for current disk device
@@ -154,7 +158,7 @@ class Implementation(object):
             self.queues, self.keyboard, self.screen, self.files, self.codepage, shell
         )
         # set up environment
-        self.environment = dos.Environment(self.values)
+        self.environment = dos.Environment(self.values, self.codepage)
         # initialise random number generator
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock
@@ -241,7 +245,7 @@ class Implementation(object):
         else:
             # use dummy video & audio queues if not provided
             # but an input queue should be operational for I/O streams
-            self.queues.set(inputs=Queue.Queue())
+            self.queues.set(inputs=queue.Queue())
 
     def execute(self, command):
         """Execute a BASIC statement."""
@@ -264,7 +268,7 @@ class Implementation(object):
     def set_variable(self, name, value):
         """Set a variable in memory."""
         name = name.upper()
-        if isinstance(value, unicode):
+        if isinstance(value, text_type):
             value = self.codepage.str_from_unicode(value)
         elif isinstance(value, bool):
             value = -1 if value else 0
@@ -272,16 +276,41 @@ class Implementation(object):
             name = name.split(b'(', 1)[0]
             self.arrays.from_list(value, name)
         else:
-            self.memory.set_variable(name, [], self.values.from_value(value, name[-1]))
+            self.memory.set_variable(name, [], self.values.from_value(value, name[-1:]))
 
-    def get_variable(self, name):
+    def get_converter(self, from_type, to_type):
+        """Get a converter function; raise ValueError if not allowed"""
+        if to_type is None or from_type == to_type:
+            return lambda _x: _x
+        converter = {
+            (bytes, text_type): partial(self.codepage.str_to_unicode, preserve=cp.CONTROL),
+            (text_type, bytes): self.codepage.str_from_unicode,
+            (int, bool): bool,
+            (float, bool): bool,
+            (bool, int): lambda _bool: (-1 if _bool else 0),
+            (int, float): float,
+            (float, int): lambda _flt: int(math.floor(_flt)),
+            (bool, float): lambda _bool: (-1. if _bool else 0.),
+        }
+        try:
+            return converter[(from_type, to_type)]
+        except KeyError:
+            raise ValueError("BASIC can't convert %s to %s." % (from_type, to_type))
+
+    def get_variable(self, name, as_type=None):
         """Get a variable in memory."""
         name = name.upper()
         if b'(' in name:
             name = name.split(b'(', 1)[0]
-            return self.arrays.to_list(name)
+            value = self.arrays.to_list(name)
+            if not value:
+                return []
+            convert = self.get_converter(type(value[0]), as_type)
+            return [convert(_item) for _item in value]
         else:
-            return self.memory.view_or_create_variable(name, []).to_value()
+            value = self.memory.view_or_create_variable(name, []).to_value()
+            convert = self.get_converter(type(value), as_type)
+            return convert(value)
 
     def interact(self):
         """Interactive interpreter session."""
@@ -720,9 +749,9 @@ class Implementation(object):
                 var, values, seps = [], [], []
                 for name, indices in readvar:
                     name = self.memory.complete_name(name)
-                    word, sep = inputstream.input_entry(name[-1], allow_past_end=True)
+                    word, sep = inputstream.input_entry(name[-1:], allow_past_end=True)
                     try:
-                        value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
+                        value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1:])
                     except error.BASICError as e:
                         # string entered into numeric field
                         value = None
@@ -750,10 +779,10 @@ class Implementation(object):
         """INPUT: retrieve input from file."""
         for v in readvar:
             name, indices = v
-            word, _ = finp.input_entry(name[-1], allow_past_end=False)
-            value = self.values.from_repr(word, allow_nonnum=True, typechar=name[-1])
+            word, _ = finp.input_entry(name[-1:], allow_past_end=False)
+            value = self.values.from_repr(word, allow_nonnum=True, typechar=name[-1:])
             if value is None:
-                value = self.values.new(name[-1])
+                value = self.values.new(name[-1:])
             self.memory.set_variable(name, indices, value)
 
     def line_input_(self, args):
@@ -774,7 +803,7 @@ class Implementation(object):
         if not readvar:
             raise error.BASICError(error.STX)
         readvar = self.memory.complete_name(readvar)
-        if readvar[-1] != values.STR:
+        if readvar[-1:] != values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
         # read the input
         if finp:

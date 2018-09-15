@@ -111,9 +111,10 @@ class VideoANSI(video_cli.VideoTextBase):
         self.height = mode_info.height
         self.width = mode_info.width
         self.num_pages = mode_info.num_pages
-        self.text = [[[(u' ', (7, 0, False, False))]*self.width
-                            for _ in range(self.height)]
-                            for _ in range(self.num_pages)]
+        self.text = [
+            [[(u' ', (7, 0, False, False))] * self.width for _ in range(self.height)]
+            for _ in range(self.num_pages)
+        ]
         self._set_default_colours(len(mode_info.palette))
         console.write(ansi.RESIZE_TERM % (self.height, self.width))
         self._set_attributes(7, 0, False, False)
@@ -137,8 +138,9 @@ class VideoANSI(video_cli.VideoTextBase):
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
         self.text[self.apagenum][start-1:stop] = [
-            [(u' ', (7, 0, False, False))]*len(self.text[self.apagenum][0])
-                        for _ in range(start-1, stop)]
+            [(u' ', (7, 0, False, False))] * len(self.text[self.apagenum][0])
+            for _ in range(start-1, stop)
+        ]
         if self.vpagenum == self.apagenum:
             self._set_attributes(7, back_attr, False, False)
             for r in range(start, stop+1):
@@ -202,8 +204,9 @@ class VideoANSI(video_cli.VideoTextBase):
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
         self.text[self.apagenum][from_line-1:scroll_height] = (
-                self.text[self.apagenum][from_line:scroll_height] +
-                [[(u' ', 0)]*len(self.text[self.apagenum][0])])
+            self.text[self.apagenum][from_line:scroll_height] +
+            [[(u' ', 0)] * len(self.text[self.apagenum][0])]
+        )
         if self.apagenum != self.vpagenum:
             return
         console.write(ansi.SET_SCROLL_REGION % (from_line, scroll_height))
@@ -214,8 +217,9 @@ class VideoANSI(video_cli.VideoTextBase):
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
         self.text[self.apagenum][from_line-1:scroll_height] = (
-                [[(u' ', 0)]*len(self.text[self.apagenum][0])] +
-                self.text[self.apagenum][from_line-1:scroll_height-1])
+            [[(u' ', 0)] * len(self.text[self.apagenum][0])] +
+            self.text[self.apagenum][from_line-1:scroll_height-1]
+        )
         if self.apagenum != self.vpagenum:
             return
         console.write(ansi.SET_SCROLL_REGION % (from_line, scroll_height))

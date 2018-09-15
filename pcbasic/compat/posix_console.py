@@ -14,6 +14,8 @@ import sys
 
 from .posix import read_all_available
 
+_PY2 = sys.version_info.major == 2
+
 
 # save termios state
 _term_attr = None
@@ -38,10 +40,16 @@ def unset_raw():
     """Leave raw terminal mode."""
     termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, _term_attr)
 
-def write(unicode_str):
-    """Write unicode to console."""
-    sys.stdout.write(unicode_str.encode(encoding))
-    sys.stdout.flush()
+if _PY2:
+    def write(unicode_str):
+        """Write unicode to console."""
+        sys.stdout.write(unicode_str.encode(encoding))
+        sys.stdout.flush()
+else:
+    def write(unicode_str):
+        """Write unicode to console."""
+        sys.stdout.write(unicode_str)
+        sys.stdout.flush()
 
 def read_char():
     """Read unicode char from console, non-blocking."""
@@ -56,7 +64,10 @@ def read_char():
     while _read_buffer:
         output.append(_read_buffer.popleft())
         try:
-            return b''.join(output).decode(sys.stdin.encoding or 'utf-8')
+            if _PY2:
+                return b''.join(output).decode(sys.stdin.encoding or 'utf-8')
+            else:
+                return u''.join(output)
         except UnicodeDecodeError:
             pass
     # not enough to decode, keep for next call

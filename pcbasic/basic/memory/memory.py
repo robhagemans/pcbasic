@@ -10,6 +10,8 @@ import struct
 from contextlib import contextmanager
 from collections import deque
 
+from ...compat import iteritems
+
 from ..base import error
 from ..base import tokens as tk
 from .. import values
@@ -213,40 +215,47 @@ class DataSegment(object):
                 name: self.scalars.get(name)
                 for name in preserve_sc if name in self.scalars
             }
-            for name, value in common_scalars.iteritems():
-                if name[-1] == values.STR:
-                    length, address = self.strings.copy_to(string_store, *value.to_pointer())
-                    value = self.values.new_string().from_pointer(length, address)
-                    common_scalars[name] = value
             # preserve arrays
             common_arrays = {
                 name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
                 for name in preserve_ar if name in self.arrays
             }
-            for name, value in common_arrays.iteritems():
-                if name[-1] == values.STR:
-                    dimensions, buf = value
-                    for i in range(0, len(buf), 3):
-                        # if the string array is not full, pointers are zero
-                        # but address is ignored for zero length
-                        length, address = self.strings.copy_to(
-                            string_store, *struct.unpack('<BH', buf[i:i+3])
-                        )
-                        # modify the stored bytearray
-                        buf[i:i+3] = struct.pack('<BH', length, address)
+            # FIXME: might have multiple names with the same pointer
+            scalar_strings = {
+                value.to_pointer(): name
+                for name, value in iteritems(common_scalars)
+                if name[-1:] == values.STR
+            }
+            array_strings = {
+                struct.unpack('<BH', value[1][_i:_i+3]): (name, _i)
+                for name, value in iteritems(common_arrays)
+                for _i in range(0, len(value[1]), 3)
+                if name[-1:] == values.STR
+            }
+            for pointer in sorted(scalar_strings, key=lambda _pair: _pair[1], reverse=True):
+                name = scalar_strings[pointer]
+                length, address = self.strings.copy_to(string_store, *pointer)
+                common_scalars[name] = self.values.new_string().from_pointer(length, address)
+            for pointer in sorted(array_strings, key=lambda _pair: _pair[1], reverse=True):
+                name, offset = array_strings[pointer]
+                # if the string array is not full, pointers are zero
+                # but address is ignored for zero length
+                length, address = self.strings.copy_to(string_store, *pointer)
+                # modify the stored bytearray
+                common_arrays[name][1][offset:offset+3] = struct.pack('<BH', length, address)
             yield
             # check if there is sufficient memory
             scalar_size = sum(self.scalars.memory_size(name) for name in common_scalars)
             array_size = sum(
                 self.arrays.memory_size(name, val[0])
-                for name, val in common_arrays.iteritems()
+                for name, val in iteritems(common_arrays)
             )
             if self.var_start() + scalar_size + array_size > string_store.current:
                 raise error.BASICError(error.OUT_OF_MEMORY)
             self.strings.rebuild(string_store)
-            for name, value in common_scalars.iteritems():
+            for name, value in iteritems(common_scalars):
                 self.scalars.set(name, value)
-            for name, value in common_arrays.iteritems():
+            for name, value in iteritems(common_arrays):
                 dimensions, buf = value
                 self.arrays.allocate(name, dimensions)
                 # copy the array buffers back
@@ -431,8 +440,8 @@ class DataSegment(object):
 
     def complete_name(self, name):
         """Add default sigil to a name, if missing."""
-        if name and name[-1] not in tk.SIGILS:
-            name += self.deftype[ord(name[0].upper()) - ord(b'A')]
+        if name and name[-1:] not in tk.SIGILS:
+            name += self.deftype[bytearray(name.upper())[0] - ord(b'A')]
         return name
 
     def view_or_create_variable(self, name, indices):

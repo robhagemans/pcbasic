@@ -26,12 +26,10 @@ import binascii
 import struct
 import math
 
+from ...compat import iterchar, int2byte
+
 from ..base import tokens as tk
 from ..base import error
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 # for to_str
@@ -58,17 +56,15 @@ class Value(object):
         self._buffer = memoryview(buffer)
         self._values = values
 
-    def __str__(self):
+    def __repr__(self):
         """String representation for debugging."""
         try:
-            return b'%s[%s %s]' % (
-                self.sigil, binascii.hexlify(bytes(self.to_bytes())), repr(self.to_value())
+            return '%s[%s %r]' % (
+                self.sigil, binascii.hexlify(self.to_bytes()),
+                self.to_value()
             )
         except Exception:
-            return b'%s[%s <detached>]' % (self.sigil, binascii.hexlify(bytes(self.to_bytes())))
-
-    __repr__ = __str__
-
+            return '%s[%s <detached>]' % (self.sigil, binascii.hexlify(self.to_bytes()))
 
     def __getstate__(self):
         # can't pickle memoryview
@@ -160,11 +156,16 @@ class Integer(Number):
 
     def is_negative(self):
         """Value is negative."""
-        return (ord(self._buffer[-1]) & 0x80) != 0
+        return (bytearray(self._buffer)[-1] & 0x80) != 0
 
     def sign(self):
         """Sign of value."""
-        return -1 if (ord(self._buffer[-1]) & 0x80) != 0 else (0 if self._buffer == b'\0\0' else 1)
+        if (bytearray(self._buffer)[-1] & 0x80) != 0:
+            return -1
+        elif bytearray(self._buffer) == bytearray(b'\0\0'):
+            return 0
+        else:
+            return 1
 
     def to_int(self, unsigned=False):
         """Return value as Python int."""
@@ -210,13 +211,13 @@ class Integer(Number):
 
     def to_token(self):
         """Return signed value as integer token."""
-        if self._buffer[1] == b'\0':
-            byte = ord(self._buffer[0])
+        if bytearray(self._buffer)[1] == 0:
+            byte = bytearray(self._buffer)[0]
             # although there is a one-byte token for '10', we don't write it.
             if byte < 10:
                 return int2byte(ord(tk.C_0) + byte)
             else:
-                return tk.T_BYTE + self._buffer[0]
+                return tk.T_BYTE + int2byte(bytearray(self._buffer)[0])
         else:
             return tk.T_INT + self._buffer.tobytes()
 
@@ -234,13 +235,13 @@ class Integer(Number):
 
     def from_token(self, token):
         """Set value to signed or unsigned integer token."""
-        d = bytes(token)[0]
-        if d in (tk.T_OCT, tk.T_HEX, tk.T_INT, tk.T_UINT):
+        d = bytearray(token)[0]
+        if d in (ord(_c) for _c in (tk.T_OCT, tk.T_HEX, tk.T_INT, tk.T_UINT)):
             self._buffer[:] = token[-2:]
-        elif d == tk.T_BYTE:
-            self._buffer[:] = token[-1] + b'\0'
-        elif tk.C_0 <= d <= tk.C_10:
-            self._buffer[:] = int2byte(ord(d) - 0x11) + b'\0'
+        elif d == ord(tk.T_BYTE):
+            self._buffer[:] = token[-1:] + b'\0'
+        elif ord(tk.C_0) <= d <= ord(tk.C_10):
+            self._buffer[:] = int2byte(d - 0x11) + b'\0'
         else:
             raise ValueError('%s is not an Integer token.' % repr(token))
         return self
@@ -251,16 +252,16 @@ class Integer(Number):
         """Convert integer to str in octal representation."""
         if self.is_zero():
             return b'0'
-        return oct(self.to_int(unsigned=True))[1:]
+        return b'%o' % (self.to_int(unsigned=True),)
 
     def to_hex(self):
         """Convert integer to str in hex representation."""
-        return hex(self.to_int(unsigned=True))[2:].upper()
+        return b'%X' % (self.to_int(unsigned=True),)
 
     def to_str(self, leading_space, type_sign):
         """Convert integer to str in decimal representation."""
-        intstr = bytes(self.to_int())
-        if leading_space and intstr[0] != b'-':
+        intstr = b'%d' % self.to_int()
+        if leading_space and intstr[0:1] != b'-':
             return b' ' + intstr
         else:
             return intstr
@@ -299,33 +300,37 @@ class Integer(Number):
         """Negate in-place."""
         if self._buffer == b'\x00\x80':
             raise error.BASICError(error.OVERFLOW)
-        lsb = (ord(self._buffer[0]) ^ 0xff) + 1
-        msb = ord(self._buffer[1]) ^ 0xff
+        lsb = (bytearray(self._buffer)[0] ^ 0xff) + 1
+        msb = bytearray(self._buffer)[1] ^ 0xff
         # apply carry
         if lsb > 0xff:
             lsb -= 0x100
             msb += 1
         # ignore overflow, since -0 == 0
-        self._buffer[:] = int2byte(lsb) + int2byte(msb & 0xff)
+        self._buffer[:] = bytearray([lsb, msb & 0xff])
         return self
 
     def iabs(self):
         """Absolute value in-place."""
-        if (ord(self._buffer[-1]) & 0x80):
+        if bytearray(self._buffer)[-1] & 0x80:
             return self.ineg()
 
     def iadd(self, rhs):
         """Add another Integer in-place."""
-        lsb = ord(self._buffer[0]) + ord(rhs._buffer[0])
-        msb = ord(self._buffer[1]) + ord(rhs._buffer[1])
+        lsb = bytearray(self._buffer)[0] + bytearray(rhs._buffer)[0]
+        msb = bytearray(self._buffer)[1] + bytearray(rhs._buffer)[1]
         # apply carry
         if lsb > 0xff:
             lsb -= 0x100
             msb += 1
         # overflow if signs were equal and have changed
-        if (ord(self._buffer[1]) > 0x7f) == (ord(rhs._buffer[1]) > 0x7f) != (msb > 0x7f):
+        if (
+                (bytearray(self._buffer)[1] > 0x7f) ==
+                (bytearray(rhs._buffer)[1] > 0x7f) !=
+                (msb > 0x7f)
+            ):
             raise error.BASICError(error.OVERFLOW)
-        self._buffer[:] = int2byte(lsb) + int2byte(msb & 0xff)
+        self._buffer[:] = bytearray([lsb, msb & 0xff])
         return self
 
     def isub(self, rhs):
@@ -378,17 +383,17 @@ class Integer(Number):
         if isinstance(rhs, Float):
             # upgrade to Float
             return rhs.new().from_integer(self).gt(rhs)
-        isneg = ord(self._buffer[-1]) & 0x80
-        if isneg != (ord(rhs._buffer[-1]) & 0x80):
+        isneg = bytearray(self._buffer)[-1] & 0x80
+        if isneg != (bytearray(rhs._buffer)[-1] & 0x80):
             return not(isneg)
         # compute the unsigned (not absolute!) >
-        lmsb = ord(self._buffer[1]) & 0x7f
-        rmsb = ord(rhs._buffer[1]) & 0x7f
+        lmsb = bytearray(self._buffer)[1] & 0x7f
+        rmsb = bytearray(rhs._buffer)[1] & 0x7f
         if lmsb > rmsb:
             return True
         elif lmsb < rmsb:
             return False
-        return ord(self._buffer[0]) > ord(rhs._buffer[0])
+        return bytearray(self._buffer)[0] > bytearray(rhs._buffer)[0]
 
     def eq(self, rhs):
         """Equals."""
@@ -414,17 +419,17 @@ class Float(Number):
 
     def is_zero(self):
         """Value is zero."""
-        return self._buffer[-1] == b'\0'
+        return bytearray(self._buffer)[-1] == 0
 
     def is_negative(self):
         """Value is negative."""
-        return self._buffer[-2] >= b'\x80'
+        return bytearray(self._buffer)[-2] >= 0x80
 
     def sign(self):
         """Sign of value."""
-        if self._buffer[-1] == b'\0':
+        if bytearray(self._buffer)[-1] == 0:
             return 0
-        elif (ord(self._buffer[-2]) & 0x80) != 0:
+        elif (bytearray(self._buffer)[-2] & 0x80) != 0:
             return -1
         return 1
 
@@ -442,11 +447,11 @@ class Float(Number):
 
     def to_value(self):
         """Return value as Python float."""
-        exp = ord(self._buffer[-1]) - self._bias
+        exp = bytearray(self._buffer)[-1] - self._bias
         if exp == -self._bias:
             return 0.
         # unpack as unsigned long int
-        man = struct.unpack(self._intformat, bytearray(self._buffer[:-1]) + b'\0')[0]
+        man = struct.unpack(self._intformat, bytearray(self._buffer)[:-1] + b'\0')[0]
         # prepend assumed bit and apply sign
         if man & self._signmask:
             man = -man
@@ -470,7 +475,7 @@ class Float(Number):
         struct.pack_into(
             self._intformat, self._buffer, 0, man & (self._mask if neg else self._posmask)
         )
-        self._buffer[-1] = int2byte(exp)
+        self._buffer[-1:] = int2byte(exp)
         return self
 
 
@@ -498,7 +503,7 @@ class Float(Number):
             struct.pack_into(
                 self._intformat, self._buffer, 0, man & (self._mask if neg else self._posmask)
             )
-            self._buffer[-1] = int2byte(exp)
+            self._buffer[-1:] = int2byte(exp)
         return self
 
     def to_int_truncate(self):
@@ -516,12 +521,12 @@ class Float(Number):
 
     def ineg(self):
         """Negate in-place."""
-        self._buffer[-2] = int2byte(ord(self._buffer[-2]) ^ 0x80)
+        self._buffer[-2:-1] = int2byte(bytearray(self._buffer)[-2] ^ 0x80)
         return self
 
     def iabs(self):
         """Absolute value in-place."""
-        self._buffer[-2] = int2byte(ord(self._buffer[-2]) & 0x7F)
+        self._buffer[-2:-1] = int2byte(bytearray(self._buffer)[-2] & 0x7F)
         return self
 
     def iround(self):
@@ -878,9 +883,9 @@ class Float(Number):
 
     def _denormalise(self):
         """Denormalise to shifted mantissa, exp, sign."""
-        exp = ord(self._buffer[-1])
+        exp = bytearray(self._buffer)[-1]
         man = struct.unpack(
-                self._intformat, b'\0' + bytearray(self._buffer[:-1])
+                self._intformat, b'\0' + bytearray(self._buffer)[:-1]
             )[0] | self._den_mask
         neg = self.is_negative()
         return exp, man, neg
@@ -906,7 +911,7 @@ class Float(Number):
             self._intformat, self._buffer, 0, (man>>8) & (self._mask if neg else self._posmask)
         )
         if self._check_limits(exp, neg):
-            self._buffer[-1] = int2byte(exp)
+            self._buffer[-1:] = int2byte(exp)
         return self
 
     def _to_int_den(self):
@@ -953,13 +958,12 @@ class Float(Number):
             return False
         rhscopy = bytearray(rhs._buffer)
         # so long as the sign is the same ...
-        rhscopy[-2] &= (ord(self._buffer[-2]) | 0x7f)
+        rhscopy[-2] &= (bytearray(self._buffer)[-2] | 0x7f)
         # ... we can compare floats as if they were ints
-        for l, r in reversed(zip(self._buffer, rhscopy)):
-            # memoryview elements are str, bytearray elements are int
-            if ord(l) > r:
+        for l, r in reversed(list(zip(bytearray(self._buffer), bytearray(rhscopy)))):
+            if l > r:
                 return True
-            elif ord(l) < r:
+            elif l < r:
                 return False
         # equal
         return False
@@ -1081,7 +1085,7 @@ class Single(Float):
 
     def from_token(self, token):
         """Set value to Single token."""
-        if bytes(token)[0] != tk.T_SINGLE:
+        if bytearray(token)[0] != ord(tk.T_SINGLE):
             raise ValueError('%s is not a Single token.' % repr(token))
         self._buffer[:] = token[-4:]
         return self
@@ -1144,7 +1148,7 @@ class Double(Float):
 
     def from_token(self, token):
         """Set value to Single token."""
-        if bytes(token)[0] != tk.T_DOUBLE:
+        if bytearray(token)[0] != ord(tk.T_DOUBLE):
             raise ValueError('%s is not a Double token.' % repr(token))
         self._buffer[:] = token[-8:]
         return self
@@ -1178,7 +1182,7 @@ def str_to_decimal(s, allow_nonnum=True):
     found_exp_sign, exp_neg, neg = False, False, False
     exp10, exponent, mantissa, digits, zeros = 0, 0, 0, 0, 0
     is_double, is_single = False, False
-    for c in s:
+    for c in iterchar(s):
         # ignore whitespace throughout (x = 1   234  56  .5  means x=123456.5 in gw!)
         if c in BLANKS:
             continue
@@ -1207,7 +1211,7 @@ def str_to_decimal(s, allow_nonnum=True):
                     else:
                         zeros = 0
                 continue
-            elif c == '.':
+            elif c == b'.':
                 found_point = True
                 continue
             elif c.upper() in b'DE':

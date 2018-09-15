@@ -72,7 +72,7 @@ class VideoCurses(VideoPlugin):
             raise InitFailed('`Module `curses` not found')
         # set the ESC-key delay to 25 ms unless otherwise set
         # set_escdelay seems to be unavailable on python curses.
-        if not os.environ.has_key('ESCDELAY'):
+        if 'ESCDELAY' not in os.environ:
             os.environ['ESCDELAY'] = '25'
         self.height, self.width = 25, 80
         self.border_y = int(round((self.height * border_width)/200.))
@@ -293,8 +293,8 @@ class VideoCurses(VideoPlugin):
         self._set_default_colours(len(mode_info.palette))
         bgcolor = self._curses_colour(7, 0, False)
         self.text = [
-            [[(u' ', bgcolor)]*self.width for _ in xrange(self.height)]
-            for _ in xrange(mode_info.num_pages)
+            [[(u' ', bgcolor)]*self.width for _ in range(self.height)]
+            for _ in range(mode_info.num_pages)
         ]
         self._resize(self.height, self.width)
         self._set_curses_palette()

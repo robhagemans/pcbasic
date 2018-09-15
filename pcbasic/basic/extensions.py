@@ -10,15 +10,18 @@ import logging
 from importlib import import_module
 from collections import Iterable
 
+from ..compat import text_type
+
 from .base import error
 from . import values
+
 
 class Extensions(object):
     """Extension handler."""
 
     def __init__(self, extension, values, codepage):
         """Initialise extension handler."""
-        if isinstance(extension, basestring) or not isinstance(extension, Iterable):
+        if isinstance(extension, (bytes, text_type)) or not isinstance(extension, Iterable):
             extension = [extension]
         self._extension = list(extension)
         self._values = values
@@ -53,7 +56,7 @@ class Extensions(object):
         ext_objs = []
         for ext in self._extension:
             try:
-                if isinstance(ext, basestring):
+                if isinstance(ext, (bytes, text_type)):
                     ext_objs.append(import_module(ext))
                 else:
                     ext_objs.append(ext)
@@ -61,9 +64,9 @@ class Extensions(object):
                 logging.error(u'Could not load extension module `%s`: %s', ext, repr(e))
                 raise error.BASICError(error.INTERNAL_ERROR)
         self._ext_funcs = {
-            n.upper(): getattr(ext_obj, n)
+            n.upper().encode('ascii', 'ignore'): getattr(ext_obj, n)
             for ext_obj in ext_objs
-                for n in dir(ext_obj) if not n.startswith('_')
+            for n in dir(ext_obj) if not n.startswith('_')
         }
 
     def call_as_statement(self, args):
@@ -83,7 +86,7 @@ class Extensions(object):
     def call_as_function(self, args):
         """Extension function: call a python function as a function."""
         result = self.call_as_statement(args)
-        if isinstance(result, unicode):
+        if isinstance(result, text_type):
             result = self._codepage.str_from_unicode(result)
         if isinstance(result, bytes):
             return self._values.from_value(result, values.STR)

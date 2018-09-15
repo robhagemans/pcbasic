@@ -7,20 +7,18 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import io
 import math
 import struct
 import logging
-import string
 from chunk import Chunk
-import io
+
+from ...compat import int2byte
 
 from ..base import error
 from ..base import tokens as tk
 from .devicebase import RawFile, TextFileBase, InputMixin, DeviceSettings, parse_protocol_string
 
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 # file types (data, bsaved memory, protected, ascii, tokenised)
 TOKEN_TO_TYPE = {
@@ -28,7 +26,7 @@ TOKEN_TO_TYPE = {
     0x20: b'P', 0x40: b'A', 0x80: b'B'
 }
 
-TYPE_TO_TOKEN = dict(reversed(item) for item in TOKEN_TO_TYPE.iteritems())
+TYPE_TO_TOKEN = dict(reversed(item) for item in TOKEN_TO_TYPE.items())
 
 
 #################################################################################
@@ -334,7 +332,7 @@ class CassetteStream(object):
     def _write_block(self, data):
         """Write a 256-byte block to tape."""
         # fill out short blocks with last byte
-        data += data[-1]*(256-len(data))
+        data += data[-1:]*(256-len(data))
         for b in data:
             self.bitstream.write_byte(ord(b))
         crc_word = crc(data)
@@ -485,7 +483,7 @@ class TapeBitStream(object):
         """Read a byte from the tape."""
         # NOTE: skip_start is ignored
         byte = 0
-        for i in xrange(8):
+        for i in range(8):
             bit = self.read_bit()
             if bit is None:
                 raise PulseError()
@@ -555,9 +553,9 @@ class CASBitStream(TapeBitStream):
             self.operating_mode = 'r'
             self.mask = 0x100
             try:
-                self.cas = open(self.cas_name, 'r+b')
+                self.cas = io.open(self.cas_name, 'r+b')
             except EnvironmentError:
-                self.cas = open(self.cas_name, 'rb')
+                self.cas = io.open(self.cas_name, 'rb')
             self.current_byte = self.cas.read(1)
             if self.current_byte == '' or not self.read_intro():
                 self.cas.close()
@@ -652,11 +650,11 @@ class CASBitStream(TapeBitStream):
         """Create a new CAS-file."""
         self.current_byte = b'\0'
         self.mask = 0x100
-        with open(self.cas_name, 'wb') as self.cas:
+        with io.open(self.cas_name, 'wb') as self.cas:
             self.operating_mode = 'w'
             self.current_byte = b'\0'
             self.write_intro()
-        self.cas = open(self.cas_name, 'r+b')
+        self.cas = io.open(self.cas_name, 'r+b')
         self.cas.seek(0, 2)
 
 
@@ -737,15 +735,15 @@ class WAVBitStream(TapeBitStream):
             self.framerate = 22050
             self.sampwidth = 1
             self.nchannels = 1
-            self.wav = open(self.filename, 'wb')
+            self.wav = io.open(self.filename, 'wb')
             self._write_wav_header()
             self.operating_mode = 'w'
         else:
             # open file for reading and find wave parameters
             try:
-                self.wav = open(self.filename, 'r+b')
+                self.wav = io.open(self.filename, 'r+b')
             except EnvironmentError:
-                self.wav = open(self.filename, 'rb')
+                self.wav = io.open(self.filename, 'rb')
             if not self._read_wav_header():
                 raise EndOfTape()
             self.operating_mode = 'r'

@@ -8,6 +8,8 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 
+from ...compat import iteritems, iterkeys
+
 from ..base import error
 from .. import values
 
@@ -27,12 +29,12 @@ class Scalars(object):
 
     def __iter__(self):
         """Return an iterable over all scalar names."""
-        return self._vars.iterkeys()
+        return iterkeys(self._vars)
 
-    def __str__(self):
+    def __repr__(self):
         """Debugging representation of variable dictionary."""
         return '\n'.join(
-            '%s: %s' % (n, self._values.from_bytes(v)) for n, v in self._vars.iteritems()
+            '%s: %s' % (n, self._values.from_bytes(v)) for n, v in iteritems(self._vars)
         )
 
     def clear(self):
@@ -61,7 +63,7 @@ class Scalars(object):
         """Assign a value to a variable."""
         if isinstance(value, values.String):
             self._memory.strings.fix_temporaries()
-        type_char = name[-1]
+        type_char = name[-1:]
         if value is not None:
             value = values.to_type(type_char, value)
         # update memory model
@@ -96,7 +98,7 @@ class Scalars(object):
             # we can't copy as we may end up with stale string pointers
             return self._values.create(self._vars[name])
         except KeyError:
-            return self._values.new(name[-1])
+            return self._values.new(name[-1:])
 
     def view(self, name):
         """Retrieve a view of an existing scalar variable."""
@@ -113,7 +115,7 @@ class Scalars(object):
 
     def dereference(self, address):
         """Get a value for a scalar given its pointer address."""
-        for name, data in self._var_memory.iteritems():
+        for name, data in iteritems(self._var_memory):
             if data[1] == address:
                 return self.get(name)
         return None
@@ -143,7 +145,7 @@ class Scalars(object):
     def get_strings(self):
         """Return a list of views of string scalars."""
         return [
-            memoryview(value) for name, value in self._vars.iteritems() if name[-1] == values.STR
+            memoryview(value) for name, value in iteritems(self._vars) if name[-1:] == values.STR
         ]
 
 
@@ -152,13 +154,14 @@ class Scalars(object):
 
 def get_name_in_memory(name, offset):
     """Memory representation of variable name."""
+    normname = bytearray(name.upper())
     if offset == 0:
         return values.size_bytes(name)
     elif offset == 1:
-        return ord(name[0].upper())
+        return normname[0]
     elif offset == 2:
         if len(name) > 2:
-            return ord(name[1].upper())
+            return normname[1]
         else:
             return 0
     elif offset == 3:
@@ -168,4 +171,4 @@ def get_name_in_memory(name, offset):
             return 0
     else:
         # rest of name is encoded such that c1 == 'A'
-        return ord(name[offset-1].upper()) - ord(b'A') + 0xC1
+        return normname[offset-1] - ord(b'A') + 0xC1

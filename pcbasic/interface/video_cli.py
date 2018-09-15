@@ -8,8 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import time
-import threading
-import Queue
 
 from . import ansi
 from .video import VideoPlugin
@@ -31,7 +29,7 @@ ESC_TO_SCAN = {
     ansi.DOWN: scancode.DOWN,  ansi.RIGHT: scancode.RIGHT,  ansi.LEFT: scancode.LEFT,
     ansi.INSERT: scancode.INSERT,  ansi.DELETE: scancode.DELETE,  ansi.PAGEUP: scancode.PAGEUP,
     ansi.PAGEDOWN: scancode.PAGEDOWN,
-    }
+}
 
 # escape sequence to e-ASCII
 ESC_TO_EASCII = {
@@ -42,7 +40,7 @@ ESC_TO_EASCII = {
     ansi.HOME: uea.HOME,  ansi.HOME2: uea.HOME,  ansi.UP: uea.UP,  ansi.DOWN: uea.DOWN,
     ansi.RIGHT: uea.RIGHT,  ansi.LEFT: uea.LEFT,  ansi.INSERT: uea.INSERT,
     ansi.DELETE: uea.DELETE,  ansi.PAGEUP: uea.PAGEUP,  ansi.PAGEDOWN: uea.PAGEDOWN,
-    }
+}
 
 
 class VideoTextBase(VideoPlugin):

@@ -7,18 +7,11 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from functools import partial
-import string
 import io
 
 from . import error
 from . import tokens as tk
-
-
-# bytes constants
-DIGITS = string.digits
-HEXDIGITS = string.hexdigits
-OCTDIGITS = string.octdigits
-LETTERS = string.ascii_letters
+from .tokens import DIGITS, HEXDIGITS, OCTDIGITS, LETTERS
 
 
 class CodeStream(io.BytesIO):
@@ -104,7 +97,7 @@ class CodeStream(io.BytesIO):
             self.seek(-len(d), 1)
             return b''
         name = b''
-        while d in tk.NAME_CHARS:
+        while d and d in tk.NAME_CHARS:
             name += d
             d = self.read(1)
         # only the first 40 chars are relevant in GW-BASIC, rest is discarded
@@ -166,7 +159,7 @@ class CodeStream(io.BytesIO):
                 else:
                     have_exp = True
                     word += c
-            elif c in b'-+' and (not word or word[-1] in b'ED'):
+            elif c in b'-+' and (not word or word[-1:] in b'ED'):
                 # must be first character or in exponent
                 word += c
             elif c in DIGITS + self.blanks + b'\x1c\x1d\x1f':
