@@ -190,7 +190,7 @@ class FieldFile(TextFile):
         pos = pickledict.pop('_pos')
         self. __dict__ = pickledict
         self._fhandle = ByteStream(self._field.view_buffer())
-        self.fhandle.seek(pos)
+        self._fhandle.seek(pos)
 
     def _switch_mode(self, new_mode):
         """Switch to input or output mode and fix readahaed buffer."""
