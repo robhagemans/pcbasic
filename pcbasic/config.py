@@ -17,7 +17,7 @@ import shutil
 import pkg_resources
 from collections import deque
 
-from .compat import iteritems, text_type
+from .compat import iteritems, text_type, iterchar
 from .compat import configparser
 from .compat import WIN32, get_short_pathname, argv
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
@@ -708,7 +708,7 @@ class Settings(object):
                 # if started from CMD.EXE, get the 'current working dir' for each drive
                 # if not in CMD.EXE, there's only one cwd
                 save_current = getcwdu()
-                for letter in UPPERCASE:
+                for letter in iterchar(UPPERCASE):
                     try:
                         os.chdir(letter + b':')
                         cwd = get_short_pathname(getcwdu()) or getcwdu()
