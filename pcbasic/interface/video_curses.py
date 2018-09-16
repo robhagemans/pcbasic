@@ -363,13 +363,13 @@ class VideoCurses(VideoPlugin):
         self.cursor_row, self.cursor_col = crow, ccol
 
     def set_cursor_attr(self, attr):
-        """Change attribute of cursor."""
-        # term.write(ansi.SET_CURSOR_COLOUR % ansi.COLOUR_NAMES[attr%16])
+        """Change attribute of cursor - not supported by curses."""
 
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on
-        curses.curs_set(self.cursor_shape if cursor_on else 0)
+        if cursor_on:
+            console.show_cursor(block=self.cursor_shape == 2)
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """Set the cursor shape."""
@@ -377,7 +377,9 @@ class VideoCurses(VideoPlugin):
             self.cursor_shape = 2
         else:
             self.cursor_shape = 1
-        curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
+        if self.cursor_visible:
+            console.show_cursor(block=self.cursor_shape == 2)
+        #curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
     def put_glyph(self, pagenum, row, col, c, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""

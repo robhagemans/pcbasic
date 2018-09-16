@@ -154,7 +154,7 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
-        console.set_cursor_colour(self.default_colours[attr])
+        console.set_cursor_colour(self.default_colours[attr%16])
 
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
