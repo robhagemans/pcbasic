@@ -38,8 +38,8 @@ class VideoANSI(video_cli.VideoTextBase):
         self.set_caption_message(u'')
         # cursor is visible
         self.cursor_visible = True
-        # 1 is line ('visible'), 2 is block ('highly visible'), 3 is invisible
-        self.cursor_shape = 1
+        # cursor is block-shaped (vs line-shaped)
+        self._block_cursor = False
         # current cursor position
         self.cursor_row = 1
         self.cursor_col = 1
@@ -67,7 +67,6 @@ class VideoANSI(video_cli.VideoTextBase):
             console.reset_attributes()
             console.resize(*console.original_size)
             console.clear()
-            #console.move_cursor_to(1, 1)
             self.show_cursor(True)
             # re-enable logger
             self.logger.disabled = False
@@ -155,28 +154,22 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
-        #console.write(ansi.SET_CURSOR_COLOUR % ansi.COLOUR_NAMES[attr%16])
+        console.set_cursor_colour(self.default_colours[attr])
 
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on
         if cursor_on:
-            console.show_cursor()
-            #console.write(ansi.SET_CURSOR_SHAPE % cursor_shape)
+            console.show_cursor(block=self._block_cursor)
         else:
             # force move when made visible again
             console.hide_cursor()
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """Set the cursor shape."""
-        if (to_line-from_line) >= 4:
-            self.cursor_shape = 1
-        else:
-            self.cursor_shape = 3
-        # 1 blinking block 2 block 3 blinking line 4 line
+        self._block_cursor = (to_line-from_line) >= 4
         if self.cursor_visible:
-            pass
-            #console.write(ansi.SET_CURSOR_SHAPE % cursor_shape)
+            console.show_cursor(block=self._block_cursor)
 
     def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""

@@ -138,15 +138,21 @@ class PosixConsole(object):
 
     def clear(self):
         """Clear the screen."""
-        self._emit_ansi(ansi.CLEAR_SCREEN)
+        self._emit_ansi(
+            ansi.CLEAR_SCREEN +
+            ansi.MOVE_CURSOR % (1, 1)
+        )
 
     def clear_row(self):
         """Clear the current row."""
         self._emit_ansi(ansi.CLEAR_LINE)
 
-    def show_cursor(self):
+    def show_cursor(self, block=False):
         """Show the cursor."""
-        self._emit_ansi(ansi.SHOW_CURSOR)
+        self._emit_ansi(
+            ansi.SHOW_CURSOR +
+            ansi.SET_CURSOR_SHAPE % (1 if block else 3)
+        )
 
     def hide_cursor(self):
         """Hide the cursor."""
@@ -180,9 +186,12 @@ class PosixConsole(object):
             ansi.SET_SCROLL_SCREEN
         )
 
-    def set_colour(self, colour):
-        """Set the current colour attribute."""
-        self._emit_ansi(ansi.SET_COLOUR % colour)
+    def set_cursor_colour(self, colour):
+        """Set the current cursor colour attribute."""
+        try:
+            self._emit_ansi(ansi.SET_CURSOR_COLOUR % ansi.COLOUR_NAMES[colour])
+        except KeyError:
+            pass
 
     def reset_attributes(self):
         """Reset to default attributes."""
@@ -197,6 +206,8 @@ class PosixConsole(object):
             ansi.SET_COLOUR % (style + fore)
         )
         if blink:
+            self._emit_ansi(ansi.SET_COLOUR % 5)
+        if underline:
             self._emit_ansi(ansi.SET_COLOUR % 5)
 
     ##########################################################################

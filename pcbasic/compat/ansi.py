@@ -9,7 +9,9 @@ This file is released under the GNU GPL version 3 or later.
 # for reference, see:
 # http://en.wikipedia.org/wiki/ANSI_escape_code
 # http://misc.flogisoft.com/bash/tip_colors_and_formatting
-# http://www.termsys.demon.co.uk/vtansi.htm#cursor
+# http://www.termsys.demon.co.uk/vtansi.htm
+# http://ascii-table.com/ansi-escape-sequences-vt-100.php
+# https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
 
 try:
     from types import SimpleNamespace
@@ -29,7 +31,17 @@ COLOURS = SimpleNamespace(
     WHITE = 7,
 )
 
-# ANSI colour names for EGA colours
+# ANSI colour names
+COLOUR_NAMES = {
+    COLOURS.BLACK: u'Black',
+    COLOURS.BLUE: u'Dark Blue',
+    COLOURS.GREEN: u'Dark Green',
+    COLOURS.CYAN: u'Dark Cyan',
+    COLOURS.RED: u'Dark Red',
+    COLOURS.MAGENTA: u'Dark Magenta',
+    COLOURS.YELLOW: u'Brown',
+    COLOURS.WHITE: u'Light Gray',
+}
 #COLOUR_NAMES = (
 #    'Black', 'Dark Blue', 'Dark Green', 'Dark Cyan',
 #    'Dark Red', 'Dark Magenta', 'Brown', 'Light Gray',
@@ -53,10 +65,10 @@ MOVE_CURSOR = u'\x1B[%i;%if'
 #SAVE_CURSOR_POS = u'\x1B[s'
 #RESTORE_CURSOR_POS = u'\x1B[u'
 #REQUEST_SIZE = u'\x1B[18;t'
-#SET_CURSOR_COLOUR = u'\x1B]12;%s\a'
+SET_CURSOR_COLOUR = u'\x1B]12;%s\a'
 #% (2*(is_line+1) - blinks)
 # 1 blinking block 2 block 3 blinking line 4 line
-#SET_CURSOR_SHAPE = u'\x1B[%i q'
+SET_CURSOR_SHAPE = u'\x1B[%i q'
 SET_COLOUR = u'\x1B[%im'
 SET_TITLE = u'\x1B]2;%s\a'
 MOVE_RIGHT = u'\x1B[C'

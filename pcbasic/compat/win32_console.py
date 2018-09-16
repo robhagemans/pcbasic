@@ -355,19 +355,21 @@ class Win32Console(object):
         # now set the buffer's attributes accordingly
         FillConsoleOutputAttribute(HSTDOUT, self._attrs, csbi.dwSize.X, from_coord)
 
-    def _set_cursor_visibility(self, visible):
-        """Set the visibility of the cursor."""
-        curs_info = GetConsoleCursorInfo(HSTDOUT)
-        curs_info.bVisible = visible
-        SetConsoleCursorInfo(HSTDOUT, curs_info);
+    def set_cursor_colour(self, colour):
+        """Set the current cursor colour attribute - not supported."""
 
-    def show_cursor(self):
+    def show_cursor(self, block=False):
         """Show the cursor."""
-        self._set_cursor_visibility(True)
+        curs_info = GetConsoleCursorInfo(HSTDOUT)
+        curs_info.bVisible = True
+        curs_info.dwSize = 100 if block else 20
+        SetConsoleCursorInfo(HSTDOUT, curs_info);
 
     def hide_cursor(self):
         """Hide the cursor."""
-        self._set_cursor_visibility(False)
+        curs_info = GetConsoleCursorInfo(HSTDOUT)
+        curs_info.bVisible = False
+        SetConsoleCursorInfo(HSTDOUT, curs_info);
 
     def move_cursor_left(self, n):
         """Move cursor n cells to the left."""
