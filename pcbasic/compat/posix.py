@@ -36,10 +36,9 @@ else:
 
 # text conventions
 # ctrl+D
-EOF = b'\x04'
-UEOF = u'\x04'
+EOF = u'\x04'
 # LF end-of-line
-EOL = b'\n'
+EOL = u'\n'
 
 # shell conventions
 # console encoding

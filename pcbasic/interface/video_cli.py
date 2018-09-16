@@ -14,7 +14,7 @@ from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from ..compat import UEOF, console, stdin, stdout
+from ..compat import EOF, console, stdin, stdout
 
 
 # escape sequence to scancode
@@ -222,7 +222,7 @@ class InputHandlerCLI(object):
             uc, sc = self._get_key()
             if not uc and not sc:
                 break
-            if uc == UEOF:
+            if uc == EOF:
                 # ctrl-D (unix) / ctrl-Z (windows)
                 self._input_queue.put(signals.Event(signals.KEYB_QUIT))
             elif uc == u'\x7f':

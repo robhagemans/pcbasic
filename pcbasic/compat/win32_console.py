@@ -21,44 +21,49 @@ from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
 from .base import PY2, wrap_input_stream, wrap_output_stream
 
-
-class Keys(object):
-    """Windows virtual key codes."""
-    PAGEUP = 0x21 # VK_PRIOR
-    PAGEDOWN = 0x22 # VK_NEXT
-    END = 0x23
-    HOME = 0x24
-    LEFT = 0x25
-    UP = 0x26
-    RIGHT = 0x27
-    DOWN = 0x28
-    INSERT = 0x2d
-    DELETE = 0x2e
-    F1 = 0x70
-    F2 = 0x71
-    F3 = 0x72
-    F4 = 0x73
-    F5 = 0x74
-    F6 = 0x75
-    F7 = 0x76
-    F8 = 0x77
-    F9 = 0x78
-    F10 = 0x79
-    F11 = 0x7a
-    F12 = 0x7b
+if PY2:
+    from .python2 import SimpleNamespace
+else:
+    from types import SimpleNamespace
 
 
-class Colours(object):
-    """Windows colour constants."""
-    BLACK = 0
-    BLUE = 1
-    GREEN = 2
-    CYAN = 3
-    RED = 4
-    MAGENTA = 5
-    YELLOW = 6
-    WHITE = 7 # GREY
+# Windows virtual key codes
+KEYS = SimpleNamespace(
+    PAGEUP = 0x21, # VK_PRIOR
+    PAGEDOWN = 0x22, # VK_NEXT
+    END = 0x23,
+    HOME = 0x24,
+    LEFT = 0x25,
+    UP = 0x26,
+    RIGHT = 0x27,
+    DOWN = 0x28,
+    INSERT = 0x2d,
+    DELETE = 0x2e,
+    F1 = 0x70,
+    F2 = 0x71,
+    F3 = 0x72,
+    F4 = 0x73,
+    F5 = 0x74,
+    F6 = 0x75,
+    F7 = 0x76,
+    F8 = 0x77,
+    F9 = 0x78,
+    F10 = 0x79,
+    F11 = 0x7a,
+    F12 = 0x7b,
+)
 
+# Windows colour constants
+COLOURS = SimpleNamespace(
+    BLACK = 0,
+    BLUE = 1,
+    GREEN = 2,
+    CYAN = 3,
+    RED = 4,
+    MAGENTA = 5,
+    YELLOW = 6,
+    WHITE = 7, # GREY
+)
 
 # windpws constants
 KEY_EVENT = 1
@@ -278,8 +283,8 @@ def _get_term_size():
 class Win32Console(object):
     """Win32API-based console implementation."""
 
-    keys = Keys
-    colours = Colours
+    keys = KEYS
+    colours = COLOURS
 
     def __init__(self):
         """Set up console"""

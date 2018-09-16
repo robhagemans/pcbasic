@@ -141,3 +141,23 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
                 if _access_check(name, mode):
                     return name
     return None
+
+
+class SimpleNamespace(object):
+    """Namespace with attribute access, like in Python 3
+    https://docs.python.org/dev/library/types.html#types.SimpleNamespace
+    """
+
+    def __init__(self, **kwargs):
+        """Initialise the namespace with keyword arguments."""
+        self.__dict__.update(kwargs)
+
+    def __repr__(self):
+        """Bytes representation (for Python 2)."""
+        keys = sorted(self.__dict__)
+        items = (b'{}={!r}'.format(k, self.__dict__[k]) for k in keys)
+        return b'{}({})'.format(type(self).__name__, b', '.join(items))
+
+    def __eq__(self, other):
+        """Namespaces are equal if their entries are equal."""
+        return self.__dict__ == other.__dict__

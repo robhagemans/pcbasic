@@ -6,18 +6,28 @@ Definitions for ANSI escape sequences
 This file is released under the GNU GPL version 3 or later.
 """
 
+# for reference, see:
+# http://en.wikipedia.org/wiki/ANSI_escape_code
+# http://misc.flogisoft.com/bash/tip_colors_and_formatting
+# http://www.termsys.demon.co.uk/vtansi.htm#cursor
 
-class Colours(object):
-    """ANSI colour constants."""
-    BLACK = 0
-    BLUE = 4
-    GREEN = 2
-    CYAN = 6
-    RED = 1
-    MAGENTA = 5
-    YELLOW = 3
-    WHITE = 7
+try:
+    from types import SimpleNamespace
+except ImportError:
+    from .python2 import SimpleNamespace
 
+
+# ANSI colour constants
+COLOURS = SimpleNamespace(
+    BLACK = 0,
+    BLUE = 4,
+    GREEN = 2,
+    CYAN = 6,
+    RED = 1,
+    MAGENTA = 5,
+    YELLOW = 3,
+    WHITE = 7,
+)
 
 # ANSI colour names for EGA colours
 #COLOUR_NAMES = (
@@ -26,10 +36,8 @@ class Colours(object):
 #    'Dark Gray', 'Blue', 'Green', 'Cyan',
 #    'Red', 'Magenta', 'Yellow', 'White')
 
+
 # ANSI escape sequences
-# for reference, see:
-# http://en.wikipedia.org/wiki/ANSI_escape_code
-# http://misc.flogisoft.com/bash/tip_colors_and_formatting
 ESC = u'\x1B'
 #RESET = u'\x1B[0m\x1Bc'
 SET_SCROLL_SCREEN = u'\x1B[r'

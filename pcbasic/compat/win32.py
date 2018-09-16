@@ -24,10 +24,9 @@ from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong
 
 # text conventions
 # ctrl+Z
-EOF = b'\x1A'
-UEOF = u'\x1A'
+EOF = u'\x1A'
 # CRLF end-of-line
-EOL = b'\r\n'
+EOL = u'\r\n'
 
 
 ##############################################################################

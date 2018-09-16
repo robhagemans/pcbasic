@@ -20,43 +20,49 @@ from collections import deque
 from .base import MACOS, PY2, HOME_DIR, wrap_input_stream, wrap_output_stream
 from . import ansi
 
+if PY2:
+    from .python2 import SimpleNamespace
+else:
+    from types import SimpleNamespace
 
-class Keys(object):
-    """Key codes -  these can be anythong so long as they're ints."""
-    PAGEUP = 0x21
-    PAGEDOWN = 0x22
-    END = 0x23
-    HOME = 0x24
-    LEFT = 0x25
-    UP = 0x26
-    RIGHT = 0x27
-    DOWN = 0x28
-    INSERT = 0x2d
-    DELETE = 0x2e
-    F1 = 0x70
-    F2 = 0x71
-    F3 = 0x72
-    F4 = 0x73
-    F5 = 0x74
-    F6 = 0x75
-    F7 = 0x76
-    F8 = 0x77
-    F9 = 0x78
-    F10 = 0x79
-    F11 = 0x7a
-    F12 = 0x7b
+
+# Key codes -  these can be anything so long as they're ints.
+KEYS = SimpleNamespace(
+    PAGEUP = 0x21,
+    PAGEDOWN = 0x22,
+    END = 0x23,
+    HOME = 0x24,
+    LEFT = 0x25,
+    UP = 0x26,
+    RIGHT = 0x27,
+    DOWN = 0x28,
+    INSERT = 0x2d,
+    DELETE = 0x2e,
+    F1 = 0x70,
+    F2 = 0x71,
+    F3 = 0x72,
+    F4 = 0x73,
+    F5 = 0x74,
+    F6 = 0x75,
+    F7 = 0x76,
+    F8 = 0x77,
+    F9 = 0x78,
+    F10 = 0x79,
+    F11 = 0x7a,
+    F12 = 0x7b,
+)
 
 
 ANSI_TO_KEY = {
-    ansi.F1: Keys.F1,  ansi.F2: Keys.F2,  ansi.F3: Keys.F3,  ansi.F4: Keys.F4,
-    ansi.F1_OLD: Keys.F1,  ansi.F2_OLD: Keys.F2,  ansi.F3_OLD: Keys.F3,
-    ansi.F4_OLD: Keys.F4,  ansi.F5: Keys.F5,  ansi.F6: Keys.F6,  ansi.F7: Keys.F7,
-    ansi.F8: Keys.F8,  ansi.F9: Keys.F9,  ansi.F10: Keys.F10,  ansi.F11: Keys.F11,
-    ansi.F12: Keys.F12,  ansi.END: Keys.END,  ansi.END2: Keys.END,
-    ansi.HOME: Keys.HOME,  ansi.HOME2: Keys.HOME,  ansi.UP: Keys.UP,
-    ansi.DOWN: Keys.DOWN,  ansi.RIGHT: Keys.RIGHT,  ansi.LEFT: Keys.LEFT,
-    ansi.INSERT: Keys.INSERT,  ansi.DELETE: Keys.DELETE,  ansi.PAGEUP: Keys.PAGEUP,
-    ansi.PAGEDOWN: Keys.PAGEDOWN,
+    ansi.F1: KEYS.F1,  ansi.F2: KEYS.F2,  ansi.F3: KEYS.F3,  ansi.F4: KEYS.F4,
+    ansi.F1_OLD: KEYS.F1,  ansi.F2_OLD: KEYS.F2,  ansi.F3_OLD: KEYS.F3,
+    ansi.F4_OLD: KEYS.F4,  ansi.F5: KEYS.F5,  ansi.F6: KEYS.F6,  ansi.F7: KEYS.F7,
+    ansi.F8: KEYS.F8,  ansi.F9: KEYS.F9,  ansi.F10: KEYS.F10,  ansi.F11: KEYS.F11,
+    ansi.F12: KEYS.F12,  ansi.END: KEYS.END,  ansi.END2: KEYS.END,
+    ansi.HOME: KEYS.HOME,  ansi.HOME2: KEYS.HOME,  ansi.UP: KEYS.UP,
+    ansi.DOWN: KEYS.DOWN,  ansi.RIGHT: KEYS.RIGHT,  ansi.LEFT: KEYS.LEFT,
+    ansi.INSERT: KEYS.INSERT,  ansi.DELETE: KEYS.DELETE,  ansi.PAGEUP: KEYS.PAGEUP,
+    ansi.PAGEDOWN: KEYS.PAGEDOWN,
 }
 
 
@@ -75,8 +81,8 @@ else:
 class PosixConsole(object):
     """POSIX-based console implementation."""
 
-    colours = ansi.Colours
-    keys = Keys
+    colours = ansi.COLOURS
+    keys = KEYS
 
     def __init__(self):
         """Set up the console."""
@@ -89,10 +95,6 @@ class PosixConsole(object):
 
     ##########################################################################
     # terminal modes
-
-    @property
-    def is_tty(self):
-        return stdin.isatty()
 
     def get_size(self):
         """Get terminal size."""
