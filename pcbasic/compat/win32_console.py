@@ -447,6 +447,7 @@ class Win32Console(object):
     def reset(self):
         """Reset to default attributes."""
         _SetConsoleScreenBufferInfoEx(HSTDOUT, byref(self._orig_csbie))
+        self._attrs = self._orig_csbie.wAttributes
         self.show_cursor()
 
     def set_attributes(self, fore, back, blink, underline):
