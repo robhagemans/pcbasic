@@ -25,7 +25,7 @@ COLOURS_2 = (0, 7) * 8
 class VideoANSI(video_cli.VideoTextBase):
     """Text interface implemented with ANSI escape sequences."""
 
-    def __init__(self, input_queue, video_queue, caption=u'', **kwargs):
+    def __init__(self, input_queue, video_queue, caption=u'', border_width=0, **kwargs):
         """Initialise the text interface."""
         video_cli.VideoTextBase.__init__(self, input_queue, video_queue)
         self.caption = caption
@@ -44,6 +44,9 @@ class VideoANSI(video_cli.VideoTextBase):
         self.vpagenum, self.apagenum = 0, 0
         self.height = 25
         self.width = 80
+        self._border_y = int(round((self.height * border_width)/200.))
+        self._border_x = int(round((self.width * border_width)/200.))
+        self._border_attr = 0
         self._set_default_colours(16)
         self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
         self.logger = logging.getLogger()
@@ -71,12 +74,20 @@ class VideoANSI(video_cli.VideoTextBase):
     def _redraw(self):
         """Redraw the screen."""
         console.clear()
-        for row, textrow in enumerate(self.text[self.vpagenum]):
+        # clear border
+        self._set_attributes(0, self._border_attr, False, False)
+        for row in range(0, self.height + 2 * self._border_y):
             console.move_cursor_to(row+1, 1)
+            console.clear_row()
+        # redraw screen
+        for row, textrow in enumerate(self.text[self.vpagenum]):
+            console.move_cursor_to(row+1 + self._border_y, 1 + self._border_x)
             for col, charattr in enumerate(textrow):
                 self._set_attributes(*charattr[1])
                 console.write(charattr[0])
-        console.move_cursor_to(self.cursor_row, self.cursor_col)
+        console.move_cursor_to(
+            self.cursor_row + self._border_y, self.cursor_col + self._border_x
+        )
 
     def _set_default_colours(self, num_attr):
         """Set colours for default palette."""
@@ -96,6 +107,11 @@ class VideoANSI(video_cli.VideoTextBase):
             self.default_colours[fore%16], self.default_colours[back%16], blink, underline
         )
 
+    def set_border_attr(self, attr):
+        """Change border attribute."""
+        self._border_attr = attr
+        self._redraw()
+
     def set_palette(self, new_palette, new_palette1):
         """Set the colour palette."""
         for attr, rgb in enumerate(new_palette):
@@ -111,8 +127,8 @@ class VideoANSI(video_cli.VideoTextBase):
             for _ in range(self.num_pages)
         ]
         self._set_default_colours(len(mode_info.palette))
-        console.resize(self.height, self.width)
-        console.clear()
+        console.resize(self.height + 2*self._border_y, self.width + 2*self._border_x)
+        self._redraw()
         return True
 
     def set_page(self, new_vpagenum, new_apagenum):
@@ -136,16 +152,29 @@ class VideoANSI(video_cli.VideoTextBase):
         ]
         if self.vpagenum == self.apagenum:
             self._set_attributes(7, back_attr, False, False)
-            for r in range(start, stop+1):
-                console.move_cursor_to(r, 1)
+            for row in range(start, stop+1):
+                console.move_cursor_to(row + self._border_y, 1 + self._border_x)
                 console.clear_row()
-            console.move_cursor_to(self.cursor_row, self.cursor_col)
+            # draw border
+            self._set_attributes(
+                0, self.default_colours[self._border_attr%16], False, False
+            )
+            for row in range(start, stop+1):
+                console.move_cursor_to(row + self._border_y, 1)
+                console.write(u' ' * self._border_x)
+                console.move_cursor_to(row + self._border_y, 1 + self.width + self._border_x)
+                console.write(u' ' * self._border_x)
+            console.move_cursor_to(
+                self.cursor_row + self._border_y, self.cursor_col + self._border_x
+            )
 
     def move_cursor(self, row, col):
         """Move the cursor to a new position."""
         if (row, col) != (self.cursor_row, self.cursor_col):
             self.cursor_row, self.cursor_col = row, col
-            console.move_cursor_to(self.cursor_row, self.cursor_col)
+            console.move_cursor_to(
+                self.cursor_row + self._border_y, self.cursor_col + self._border_x
+            )
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
@@ -176,7 +205,7 @@ class VideoANSI(video_cli.VideoTextBase):
         if self.vpagenum != pagenum:
             return
         if (row, col) != (self.cursor_row, self.cursor_col):
-            console.move_cursor_to(row, col)
+            console.move_cursor_to(row + self._border_y, col + self._border_x)
         self._set_attributes(fore, back, blink, underline)
         console.write(char)
         if is_fullwidth:
@@ -191,7 +220,7 @@ class VideoANSI(video_cli.VideoTextBase):
         )
         if self.apagenum != self.vpagenum:
             return
-        console.scroll_up(from_line, scroll_height)
+        console.scroll_up(from_line + self._border_y, scroll_height + self._border_y)
         self.clear_rows(back_attr, scroll_height, scroll_height)
 
     def scroll_down(self, from_line, scroll_height, back_attr):
@@ -202,7 +231,7 @@ class VideoANSI(video_cli.VideoTextBase):
         )
         if self.apagenum != self.vpagenum:
             return
-        console.scroll_down(from_line, scroll_height)
+        console.scroll_down(from_line + self._border_y, scroll_height + self._border_y)
         self.clear_rows(back_attr, from_line, from_line)
 
     def set_caption_message(self, msg):
