@@ -53,18 +53,6 @@ KEYS = SimpleNamespace(
     F12 = 0x7b,
 )
 
-# Windows colour constants
-COLOURS = SimpleNamespace(
-    BLACK = 0,
-    BLUE = 1,
-    GREEN = 2,
-    CYAN = 3,
-    RED = 4,
-    MAGENTA = 5,
-    YELLOW = 6,
-    WHITE = 7, # GREY
-)
-
 # windpws constants
 KEY_EVENT = 1
 VK_MENU = 0x12
@@ -117,6 +105,19 @@ class CONSOLE_CURSOR_INFO(Structure):
     _fields_ = (
         ("dwSize", wintypes.DWORD),
         ("bVisible", wintypes.BOOL),
+    )
+
+class CONSOLE_SCREEN_BUFFER_INFOEX(Structure):
+    _fields_ = (
+        ('cbSize', wintypes.ULONG),
+        ('dwSize', wintypes._COORD),
+        ('dwCursorPosition', wintypes._COORD),
+        ('wAttributes', wintypes.WORD),
+        ('srWindow', wintypes.SMALL_RECT),
+        ('dwMaximumWindowSize', wintypes._COORD),
+        ('wPopupAttributes', wintypes.WORD),
+        ('bFullscreenSupported', wintypes.BOOL),
+        ('ColorTable', wintypes.DWORD*16),
     )
 
 _GetStdHandle = windll.kernel32.GetStdHandle
@@ -179,6 +180,12 @@ _GetConsoleCursorInfo.argtypes = (wintypes.HANDLE, POINTER(CONSOLE_CURSOR_INFO))
 _SetConsoleCursorInfo = windll.kernel32.SetConsoleCursorInfo
 _SetConsoleCursorInfo.argtypes = (wintypes.HANDLE, POINTER(CONSOLE_CURSOR_INFO))
 
+_SetConsoleScreenBufferInfoEx = windll.kernel32.SetConsoleScreenBufferInfoEx
+_SetConsoleScreenBufferInfoEx.argtypes = (wintypes.HANDLE, POINTER(CONSOLE_SCREEN_BUFFER_INFOEX))
+
+_GetConsoleScreenBufferInfoEx = windll.kernel32.GetConsoleScreenBufferInfoEx
+_GetConsoleScreenBufferInfoEx.argtypes = (wintypes.HANDLE, POINTER(CONSOLE_SCREEN_BUFFER_INFOEX))
+
 _ScrollConsoleScreenBuffer = windll.kernel32.ScrollConsoleScreenBufferW
 _ScrollConsoleScreenBuffer.argtypes = (
     wintypes.HANDLE,
@@ -207,6 +214,16 @@ def GetConsoleScreenBufferInfo(handle):
     csbi = CONSOLE_SCREEN_BUFFER_INFO()
     _GetConsoleScreenBufferInfo(handle, byref(csbi))
     return csbi
+
+def GetConsoleScreenBufferInfoEx(handle):
+    csbie = CONSOLE_SCREEN_BUFFER_INFOEX()
+    csbie.cbSize = wintypes.ULONG(ctypes.sizeof(csbie))
+    _GetConsoleScreenBufferInfoEx(handle, byref(csbie))
+    # work around Windows bug
+    # see https://stackoverflow.com/questions/35901572/setconsolescreenbufferinfoex-bug
+    csbie.srWindow.Bottom += 1
+    csbie.srWindow.Right += 1
+    return csbie
 
 def FillConsoleOutputCharacter(handle, char, length, start):
     length = wintypes.DWORD(length)
@@ -261,18 +278,6 @@ def _write_console(handle, unistr):
             )
 
 
-# preserve original terminal size
-def _get_term_size():
-    """Get size of terminal window."""
-    try:
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
-        left, top = csbi.srWindow.Left, csbi.srWindow.Top,
-        right, bottom = csbi.srWindow.Right, csbi.srWindow.Bottom
-        return bottom-top+1, right-left+1
-    except Exception:
-        return 25, 80
-
-
 ##############################################################################
 # console class
 
@@ -280,14 +285,12 @@ class Win32Console(object):
     """Win32API-based console implementation."""
 
     keys = KEYS
-    colours = COLOURS
 
     def __init__(self):
         """Set up console"""
-        self.original_size = _get_term_size()
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
-        self._default = csbi.wAttributes
-        self._attrs = csbi.wAttributes
+        # preserve original settings
+        self._orig_csbie = GetConsoleScreenBufferInfoEx(HSTDOUT)
+        self._attrs = self._orig_csbie.wAttributes
         # input
         self._input_buffer = deque()
         self._echo = True
@@ -363,13 +366,13 @@ class Win32Console(object):
         curs_info = GetConsoleCursorInfo(HSTDOUT)
         curs_info.bVisible = True
         curs_info.dwSize = 100 if block else 20
-        SetConsoleCursorInfo(HSTDOUT, curs_info);
+        SetConsoleCursorInfo(HSTDOUT, curs_info)
 
     def hide_cursor(self):
         """Hide the cursor."""
         curs_info = GetConsoleCursorInfo(HSTDOUT)
         curs_info.bVisible = False
-        SetConsoleCursorInfo(HSTDOUT, curs_info);
+        SetConsoleCursorInfo(HSTDOUT, curs_info)
 
     def move_cursor_left(self, n):
         """Move cursor n cells to the left."""
@@ -441,15 +444,23 @@ class Win32Console(object):
         """Scroll the region between top and bottom one row down."""
         self._scroll(top-1, bottom-1, -1)
 
-    def reset_attributes(self):
+    def reset(self):
         """Reset to default attributes."""
-        self._attrs = self._default
-        _SetConsoleTextAttribute(HSTDOUT, self._default)
+        _SetConsoleScreenBufferInfoEx(HSTDOUT, byref(self._orig_csbie))
+        self.show_cursor()
 
-    def set_attributes(self, fore, back, bright, blink, underline):
+    def set_attributes(self, fore, back, blink, underline):
         """Set current attributes."""
-        self._attrs = fore + back * 16 + (BRIGHT if bright else NORMAL)
+        self._attrs = fore % 8 + back * 16 + (BRIGHT if fore > 8 else NORMAL)
         _SetConsoleTextAttribute(HSTDOUT, self._attrs)
+
+    def set_palette_entry(self, attr, red, green, blue):
+        """Set palette entry for attribute (0--16)."""
+        csbie = GetConsoleScreenBufferInfoEx(HSTDOUT)
+        csbie.ColorTable[attr] = (
+            0x00010000 * blue + 0x00000100 * green + 0x00000001 * red
+        )
+        _SetConsoleScreenBufferInfoEx(HSTDOUT, byref(csbie))
 
     ##########################################################################
     # input

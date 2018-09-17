@@ -15,16 +15,10 @@ from . import video_cli
 from ..compat import console
 
 
-COL = console.colours
-# ANSI colour numbers for EGA colours: black, blue, green, cyan, red, magenta, yellow, white
-COLOURS_8 = (
-    COL.BLACK, COL.BLUE, COL.GREEN, COL.CYAN,
-    COL.RED, COL.MAGENTA, COL.YELLOW, COL.WHITE
-) * 2
 # CGA colours: black, cyan, magenta, white
-COLOURS_4 = (COL.BLACK, COL.CYAN, COL.MAGENTA, COL.WHITE) * 4
+COLOURS_4 = (0, 3, 5, 7) * 4
 # Mono colours: black, white
-COLOURS_2 = (COL.BLACK, COL.WHITE) * 8
+COLOURS_2 = (0, 7) * 8
 
 
 @video_plugins.register('ansi')
@@ -64,10 +58,8 @@ class VideoANSI(video_cli.VideoTextBase):
     def __exit__(self, type, value, traceback):
         """Close ANSI interface."""
         try:
-            console.reset_attributes()
-            console.resize(*console.original_size)
+            console.reset()
             console.clear()
-            self.show_cursor(True)
             # re-enable logger
             self.logger.disabled = False
         finally:
@@ -93,17 +85,21 @@ class VideoANSI(video_cli.VideoTextBase):
         elif num_attr == 4:
             self.default_colours = COLOURS_4
         else:
-            self.default_colours = COLOURS_8
+            self.default_colours = range(16)
 
     def _set_attributes(self, fore, back, blink, underline):
         """Set ANSI colours based on split attribute."""
         if self.last_attributes == (fore, back, blink, underline):
             return
         self.last_attributes = fore, back, blink, underline
-        bright, fore = divmod(fore, 8)
         console.set_attributes(
-            self.default_colours[fore], self.default_colours[back], bright, blink, underline
+            self.default_colours[fore%16], self.default_colours[back%16], blink, underline
         )
+
+    def set_palette(self, new_palette, new_palette1):
+        """Set the colour palette."""
+        for attr, rgb in enumerate(new_palette):
+            console.set_palette_entry(attr, *rgb)
 
     def set_mode(self, mode_info):
         """Change screen mode."""
@@ -116,7 +112,6 @@ class VideoANSI(video_cli.VideoTextBase):
         ]
         self._set_default_colours(len(mode_info.palette))
         console.resize(self.height, self.width)
-        self._set_attributes(7, 0, False, False)
         console.clear()
         return True
 

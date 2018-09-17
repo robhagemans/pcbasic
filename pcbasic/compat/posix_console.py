@@ -27,6 +27,17 @@ else:
     from types import SimpleNamespace
 
 
+# output buffer for ioctl call
+_sock_size = array.array('i', [0])
+
+if PY2:
+    stdin = wrap_input_stream(sys.stdin)
+    stdout = wrap_output_stream(sys.stdout)
+    stderr = wrap_output_stream(sys.stderr)
+else:
+    stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
+
+
 # Key codes -  these can be anything so long as they're ints.
 KEYS = SimpleNamespace(
     PAGEUP = 0x21,
@@ -53,36 +64,39 @@ KEYS = SimpleNamespace(
     F12 = 0x7b,
 )
 
-
 ANSI_TO_KEY = {
-    ansi.F1: KEYS.F1,  ansi.F2: KEYS.F2,  ansi.F3: KEYS.F3,  ansi.F4: KEYS.F4,
-    ansi.F1_OLD: KEYS.F1,  ansi.F2_OLD: KEYS.F2,  ansi.F3_OLD: KEYS.F3,
-    ansi.F4_OLD: KEYS.F4,  ansi.F5: KEYS.F5,  ansi.F6: KEYS.F6,  ansi.F7: KEYS.F7,
-    ansi.F8: KEYS.F8,  ansi.F9: KEYS.F9,  ansi.F10: KEYS.F10,  ansi.F11: KEYS.F11,
-    ansi.F12: KEYS.F12,  ansi.END: KEYS.END,  ansi.END2: KEYS.END,
-    ansi.HOME: KEYS.HOME,  ansi.HOME2: KEYS.HOME,  ansi.UP: KEYS.UP,
-    ansi.DOWN: KEYS.DOWN,  ansi.RIGHT: KEYS.RIGHT,  ansi.LEFT: KEYS.LEFT,
-    ansi.INSERT: KEYS.INSERT,  ansi.DELETE: KEYS.DELETE,  ansi.PAGEUP: KEYS.PAGEUP,
-    ansi.PAGEDOWN: KEYS.PAGEDOWN,
+    ansi.KEYS.F1: KEYS.F1,  ansi.KEYS.F2: KEYS.F2,  ansi.KEYS.F3: KEYS.F3,  ansi.KEYS.F4: KEYS.F4,
+    ansi.KEYS.F1_OLD: KEYS.F1,  ansi.KEYS.F2_OLD: KEYS.F2,  ansi.KEYS.F3_OLD: KEYS.F3,
+    ansi.KEYS.F4_OLD: KEYS.F4,  ansi.KEYS.F5: KEYS.F5,  ansi.KEYS.F6: KEYS.F6,
+    ansi.KEYS.F7: KEYS.F7,  ansi.KEYS.F8: KEYS.F8,  ansi.KEYS.F9: KEYS.F9,
+    ansi.KEYS.F10: KEYS.F10,  ansi.KEYS.F11: KEYS.F11,  ansi.KEYS.F12: KEYS.F12,
+    ansi.KEYS.END: KEYS.END,  ansi.KEYS.END2: KEYS.END,
+    ansi.KEYS.HOME: KEYS.HOME,  ansi.KEYS.HOME2: KEYS.HOME,  ansi.KEYS.UP: KEYS.UP,
+    ansi.KEYS.DOWN: KEYS.DOWN,  ansi.KEYS.RIGHT: KEYS.RIGHT,  ansi.KEYS.LEFT: KEYS.LEFT,
+    ansi.KEYS.INSERT: KEYS.INSERT,  ansi.KEYS.DELETE: KEYS.DELETE,
+    ansi.KEYS.PAGEUP: KEYS.PAGEUP,  ansi.KEYS.PAGEDOWN: KEYS.PAGEDOWN,
 }
 
+# mapping of the first 8 attributes of the default CGA palette
+# so that non-RGB terminals use sensible colours
+EGA_TO_ANSI = (
+    ansi.COLOURS.BLACK, ansi.COLOURS.BLUE, ansi.COLOURS.GREEN, ansi.COLOURS.CYAN,
+    ansi.COLOURS.RED, ansi.COLOURS.MAGENTA, ansi.COLOURS.YELLOW, ansi.COLOURS.WHITE
+)
 
-# output buffer for ioctl call
-_sock_size = array.array('i', [0])
-
-
-if PY2:
-    stdin = wrap_input_stream(sys.stdin)
-    stdout = wrap_output_stream(sys.stdout)
-    stderr = wrap_output_stream(sys.stderr)
-else:
-    stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
+# default palette - these are in fact the 16 CGA colours
+# this gets overwritten anyway
+DEFAULT_PALETTE = (
+    (0x00, 0x00, 0x00), (0x00, 0x00, 0xaa), (0x00, 0xaa, 0x00), (0x00, 0xaa, 0xaa),
+    (0xaa, 0x00, 0x00), (0xaa, 0x00, 0xaa), (0xaa, 0x55, 0x00), (0xaa, 0xaa, 0xaa),
+    (0x55, 0x55, 0x55), (0x55, 0x55, 0xff), (0x55, 0xff, 0x55), (0x55, 0xff, 0xff),
+    (0xff, 0x55, 0x55), (0xff, 0x55, 0xff), (0xff, 0xff, 0x55), (0xff, 0xff, 0xff)
+)
 
 
 class PosixConsole(object):
     """POSIX-based console implementation."""
 
-    colours = ansi.COLOURS
     keys = KEYS
 
     def __init__(self):
@@ -90,9 +104,11 @@ class PosixConsole(object):
         # buffer to save termios state
         self._term_attr = termios.tcgetattr(sys.stdin.fileno())
         # preserve original terminal size
-        self.original_size = self.get_size()
+        self._orig_size = self.get_size()
         # input buffer
         self._read_buffer = deque()
+        # palette
+        self._palette = list(DEFAULT_PALETTE)
 
     ##########################################################################
     # terminal modes
@@ -151,7 +167,7 @@ class PosixConsole(object):
         """Show the cursor."""
         self._emit_ansi(
             ansi.SHOW_CURSOR +
-            ansi.SET_CURSOR_SHAPE % (1 if block else 3)
+            ansi.SET_CURSOR_SHAPE % (1 if block else 3,)
         )
 
     def hide_cursor(self):
@@ -174,7 +190,7 @@ class PosixConsole(object):
         """Scroll the region between top and bottom one row up."""
         self._emit_ansi(
             ansi.SET_SCROLL_REGION % (top, bottom) +
-            ansi.SCROLL_UP % 1 +
+            ansi.SCROLL_UP % (1,) +
             ansi.SET_SCROLL_SCREEN
         )
 
@@ -182,33 +198,50 @@ class PosixConsole(object):
         """Scroll the region between top and bottom one row down."""
         self._emit_ansi(
             ansi.SET_SCROLL_REGION % (top, bottom) +
-            ansi.SCROLL_DOWN % 1 +
+            ansi.SCROLL_DOWN % (1,) +
             ansi.SET_SCROLL_SCREEN
         )
 
     def set_cursor_colour(self, colour):
         """Set the current cursor colour attribute."""
         try:
-            self._emit_ansi(ansi.SET_CURSOR_COLOUR % ansi.COLOUR_NAMES[colour])
+            rgb = self._palette[colour]
+            self._emit_ansi(ansi.SET_CURSOR_COLOUR % rgb)
         except KeyError:
             pass
 
-    def reset_attributes(self):
-        """Reset to default attributes."""
-        self._emit_ansi(ansi.SET_COLOUR % 0)
-
-    def set_attributes(self, fore, back, bright, blink, underline):
-        """Set current attributes."""
-        style = 90 if bright else 30
+    def reset(self):
+        """Reset to defaults."""
         self._emit_ansi(
-            ansi.SET_COLOUR % 0 +
-            ansi.SET_COLOUR % (40 + back) +
-            ansi.SET_COLOUR % (style + fore)
+            ansi.RESIZE_TERM % self._orig_size +
+            u''.join(ansi.RESET_PALETTE_ENTRY % (attr,) for attr in range(16)) +
+            ansi.SET_COLOUR % (0,) +
+            ansi.SHOW_CURSOR +
+            ansi.SET_CURSOR_SHAPE % (1,)
+        )
+
+    def set_attributes(self, fore, back, blink, underline):
+        """Set current attributes."""
+        # use "bold" ANSI colours for the upper 8 EGA attributes
+        style = 90 if (fore > 8) else 30
+        self._emit_ansi(
+            ansi.SET_COLOUR % (0,) +
+            ansi.SET_COLOUR % (40 + EGA_TO_ANSI[back],) +
+            ansi.SET_COLOUR % (style + EGA_TO_ANSI[fore % 8],)
         )
         if blink:
-            self._emit_ansi(ansi.SET_COLOUR % 5)
+            self._emit_ansi(ansi.SET_COLOUR % (5,))
         if underline:
-            self._emit_ansi(ansi.SET_COLOUR % 5)
+            self._emit_ansi(ansi.SET_COLOUR % (4,))
+
+    def set_palette_entry(self, attr, red, green, blue):
+        """Set palette entry for attribute (0--16)."""
+        # keep a record, mainly for cursor colours
+        self._palette[attr] = red, green, blue
+        # set the ANSI palette
+        self._emit_ansi(ansi.SET_PALETTE_ENTRY % (
+            8*(attr//8) + EGA_TO_ANSI[attr%8], red, green, blue
+        ))
 
     ##########################################################################
     # input

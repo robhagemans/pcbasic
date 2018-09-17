@@ -31,27 +31,41 @@ COLOURS = SimpleNamespace(
     WHITE = 7,
 )
 
-# ANSI colour names
-COLOUR_NAMES = {
-    COLOURS.BLACK: u'Black',
-    COLOURS.BLUE: u'Dark Blue',
-    COLOURS.GREEN: u'Dark Green',
-    COLOURS.CYAN: u'Dark Cyan',
-    COLOURS.RED: u'Dark Red',
-    COLOURS.MAGENTA: u'Dark Magenta',
-    COLOURS.YELLOW: u'Brown',
-    COLOURS.WHITE: u'Light Gray',
-}
-#COLOUR_NAMES = (
-#    'Black', 'Dark Blue', 'Dark Green', 'Dark Cyan',
-#    'Dark Red', 'Dark Magenta', 'Brown', 'Light Gray',
-#    'Dark Gray', 'Blue', 'Green', 'Cyan',
-#    'Red', 'Magenta', 'Yellow', 'White')
-
+# keystrokes
+KEYS = SimpleNamespace(
+    F1 = u'\x1BOP',
+    F2 = u'\x1BOQ',
+    F3 = u'\x1BOR',
+    F4 = u'\x1BOS',
+    F1_OLD = u'\x1B[11~',
+    F2_OLD = u'\x1B[12~',
+    F3_OLD = u'\x1B[13~',
+    F4_OLD = u'\x1B[14~',
+    F5 = u'\x1B[15~',
+    F6 = u'\x1B[17~',
+    F7 = u'\x1B[18~',
+    F8 = u'\x1B[19~',
+    F9 = u'\x1B[20~',
+    F10 = u'\x1B[21~',
+    F11 = u'\x1B[23~',
+    F12 = u'\x1B[24~',
+    END = u'\x1BOF',
+    END2 = u'\x1B[F',
+    HOME = u'\x1BOH',
+    HOME2 = u'\x1B[H',
+    UP = u'\x1B[A',
+    DOWN = u'\x1B[B',
+    RIGHT = u'\x1B[C',
+    LEFT = u'\x1B[D',
+    INSERT = u'\x1B[2~',
+    DELETE = u'\x1B[3~',
+    PAGEUP = u'\x1B[5~',
+    PAGEDOWN = u'\x1B[6~',
+)
 
 # ANSI escape sequences
 ESC = u'\x1B'
-#RESET = u'\x1B[0m\x1Bc'
+RESET = u'\x1Bc'
 SET_SCROLL_SCREEN = u'\x1B[r'
 SET_SCROLL_REGION = u'\x1B[%i;%ir'
 CLEAR_SCREEN = u'\x1B[2J'
@@ -65,7 +79,6 @@ MOVE_CURSOR = u'\x1B[%i;%if'
 #SAVE_CURSOR_POS = u'\x1B[s'
 #RESTORE_CURSOR_POS = u'\x1B[u'
 #REQUEST_SIZE = u'\x1B[18;t'
-SET_CURSOR_COLOUR = u'\x1B]12;%s\a'
 #% (2*(is_line+1) - blinks)
 # 1 blinking block 2 block 3 blinking line 4 line
 SET_CURSOR_SHAPE = u'\x1B[%i q'
@@ -75,34 +88,8 @@ MOVE_RIGHT = u'\x1B[C'
 MOVE_LEFT = u'\x1B[D'
 MOVE_N_RIGHT = u'\x1B[%iC'
 MOVE_N_LEFT = u'\x1B[%iD'
-
-
-# keystrokes
-F1 = u'\x1BOP'
-F2 = u'\x1BOQ'
-F3 = u'\x1BOR'
-F4 = u'\x1BOS'
-F1_OLD = u'\x1B[11~'
-F2_OLD = u'\x1B[12~'
-F3_OLD = u'\x1B[13~'
-F4_OLD = u'\x1B[14~'
-F5 = u'\x1B[15~'
-F6 = u'\x1B[17~'
-F7 = u'\x1B[18~'
-F8 = u'\x1B[19~'
-F9 = u'\x1B[20~'
-F10 = u'\x1B[21~'
-F11 = u'\x1B[23~'
-F12 = u'\x1B[24~'
-END = u'\x1BOF'
-END2 = u'\x1B[F'
-HOME = u'\x1BOH'
-HOME2 = u'\x1B[H'
-UP = u'\x1B[A'
-DOWN = u'\x1B[B'
-RIGHT = u'\x1B[C'
-LEFT = u'\x1B[D'
-INSERT = u'\x1B[2~'
-DELETE = u'\x1B[3~'
-PAGEUP = u'\x1B[5~'
-PAGEDOWN = u'\x1B[6~'
+SET_CURSOR_COLOUR = u'\x1B]12;#%02x%02x%02x\a'
+SET_PALETTE_ENTRY = u'\x1B]4;%i;#%02x%02x%02x\a'
+RESET_PALETTE_ENTRY = u'\x1B]104;%i\a'
+#SET_FOREGROUND_RGB = u'\x1B[38;2;%i;%i;%im'
+#SET_BACKGROUND_RGB = u'\x1B[48;2;%i;%i;%im'
