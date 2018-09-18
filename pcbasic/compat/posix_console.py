@@ -109,6 +109,8 @@ class PosixConsole(object):
         self._read_buffer = deque()
         # palette
         self._palette = list(DEFAULT_PALETTE)
+        # start below the current output
+        self.clear()
 
     ##########################################################################
     # terminal modes
