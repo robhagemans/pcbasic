@@ -76,15 +76,22 @@ class VideoANSI(video_cli.VideoTextBase):
         console.clear()
         # clear border
         self._set_attributes(0, self._border_attr, False, False)
-        for row in range(0, self.height + 2 * self._border_y):
-            console.move_cursor_to(row+1, 1)
+        console.move_cursor_to(1, 1)
+        for _ in range(self._border_y):
+            console.clear_row()
+        console.move_cursor_to(self.height + 2 * self._border_y, 1)
+        for _ in range(self._border_y):
             console.clear_row()
         # redraw screen
         for row, textrow in enumerate(self.text[self.vpagenum]):
-            console.move_cursor_to(row+1 + self._border_y, 1 + self._border_x)
+            console.move_cursor_to(row+1 + self._border_y, 1)
+            #self._set_attributes(0, self._border_attr, False, False)
+            console.write(u' ' * self._border_x)
             for col, charattr in enumerate(textrow):
                 self._set_attributes(*charattr[1])
                 console.write(charattr[0])
+            self._set_attributes(0, self._border_attr, False, False)
+            console.write(u' ' * self._border_x)
         console.move_cursor_to(
             self.cursor_row + self._border_y, self.cursor_col + self._border_x
         )
@@ -109,8 +116,9 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def set_border_attr(self, attr):
         """Change border attribute."""
-        self._border_attr = attr
-        self._redraw()
+        if attr != self._border_attr:
+            self._border_attr = attr
+            self._redraw()
 
     def set_palette(self, new_palette, new_palette1):
         """Set the colour palette."""
