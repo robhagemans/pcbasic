@@ -143,7 +143,7 @@ class DebugSession(api.Session):
 
     def python(self, cmd):
         """Execute any Python code."""
-        buf = io.BytesIO() if PY2 else io.TextIO()
+        buf = io.BytesIO() if PY2 else io.StringIO()
         save_stdout = sys.stdout
         sys.stdout = buf
         try:
