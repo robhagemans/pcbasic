@@ -155,6 +155,10 @@ class VideoANSI(video_cli.VideoTextBase):
         if (self.vpagenum, self.apagenum) == (new_vpagenum, new_apagenum):
             return
         self.vpagenum, self.apagenum = new_vpagenum, new_apagenum
+        if self.vpagenum != self.apagenum:
+            console.hide_cursor()
+        elif self.cursor_visible:
+            console.show_cursor()
         self._redraw()
 
     def copy_page(self, src, dst):
@@ -202,6 +206,8 @@ class VideoANSI(video_cli.VideoTextBase):
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on
+        if self.vpagenum != self.apagenum:
+            return
         if cursor_on:
             console.show_cursor(block=self._block_cursor)
         else:
