@@ -81,7 +81,7 @@ class VideoANSI(video_cli.VideoTextBase):
             console.move_cursor_to(row+1, 1)
             console.clear_row()
         # draw sides
-        for row, textrow in enumerate(self.text[self.vpagenum]):
+        for row in range(self.height):
             console.move_cursor_to(row+1 + self._border_y, 1)
             console.write(u' ' * self._border_x)
             console.move_cursor_right(self.width)
@@ -96,14 +96,13 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def _redraw(self):
         """Redraw the screen."""
-        console.clear()
         self._redraw_border()
         # redraw screen
         for row, textrow in enumerate(self.text[self.vpagenum]):
             console.move_cursor_to(row+1 + self._border_y, 1 + self._border_x)
-            for col, charattr in enumerate(textrow):
-                self._set_attributes(*charattr[1])
-                console.write(charattr[0])
+            for char, attr in textrow:
+                self._set_attributes(*attr)
+                console.write(char)
         console.move_cursor_to(
             self.cursor_row + self._border_y, self.cursor_col + self._border_x
         )
