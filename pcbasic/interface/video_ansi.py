@@ -73,21 +73,23 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def _redraw_border(self):
         """Redraw the border."""
-        # clear border
+        if not self._border_x and not self._border_y:
+            return
         self._set_attributes(0, self._border_attr, False, False)
+        # draw top
         for row in range(self._border_y):
             console.move_cursor_to(row+1, 1)
             console.clear_row()
-        for row in range(self._border_y):
-            console.move_cursor_to(row+1 + self._border_y + self.height, 1)
-            console.clear_row()
-        # redraw screen
+        # draw sides
         for row, textrow in enumerate(self.text[self.vpagenum]):
             console.move_cursor_to(row+1 + self._border_y, 1)
-            #self._set_attributes(0, self._border_attr, False, False)
             console.write(u' ' * self._border_x)
             console.move_cursor_right(self.width)
             console.write(u' ' * self._border_x)
+        # draw bottom
+        for row in range(self._border_y):
+            console.move_cursor_to(row+1 + self._border_y + self.height, 1)
+            console.clear_row()
         console.move_cursor_to(
             self.cursor_row + self._border_y, self.cursor_col + self._border_x
         )
