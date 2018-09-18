@@ -71,27 +71,37 @@ class VideoANSI(video_cli.VideoTextBase):
     def _work(self):
         """Handle screen and interface events."""
 
-    def _redraw(self):
-        """Redraw the screen."""
-        console.clear()
+    def _redraw_border(self):
+        """Redraw the border."""
         # clear border
         self._set_attributes(0, self._border_attr, False, False)
-        console.move_cursor_to(1, 1)
-        for _ in range(self._border_y):
+        for row in range(self._border_y):
+            console.move_cursor_to(row+1, 1)
             console.clear_row()
-        console.move_cursor_to(self.height + 2 * self._border_y, 1)
-        for _ in range(self._border_y):
+        for row in range(self._border_y):
+            console.move_cursor_to(row+1 + self._border_y + self.height, 1)
             console.clear_row()
         # redraw screen
         for row, textrow in enumerate(self.text[self.vpagenum]):
             console.move_cursor_to(row+1 + self._border_y, 1)
             #self._set_attributes(0, self._border_attr, False, False)
             console.write(u' ' * self._border_x)
+            console.move_cursor_right(self.width)
+            console.write(u' ' * self._border_x)
+        console.move_cursor_to(
+            self.cursor_row + self._border_y, self.cursor_col + self._border_x
+        )
+
+    def _redraw(self):
+        """Redraw the screen."""
+        console.clear()
+        self._redraw_border()
+        # redraw screen
+        for row, textrow in enumerate(self.text[self.vpagenum]):
+            console.move_cursor_to(row+1 + self._border_y, 1 + self._border_x)
             for col, charattr in enumerate(textrow):
                 self._set_attributes(*charattr[1])
                 console.write(charattr[0])
-            self._set_attributes(0, self._border_attr, False, False)
-            console.write(u' ' * self._border_x)
         console.move_cursor_to(
             self.cursor_row + self._border_y, self.cursor_col + self._border_x
         )
@@ -118,7 +128,7 @@ class VideoANSI(video_cli.VideoTextBase):
         """Change border attribute."""
         if attr != self._border_attr:
             self._border_attr = attr
-            self._redraw()
+            self._redraw_border()
 
     def set_palette(self, new_palette, new_palette1):
         """Set the colour palette."""
