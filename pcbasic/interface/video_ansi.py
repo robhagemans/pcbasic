@@ -7,12 +7,11 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import sys
-import logging
 
 from .video import VideoPlugin
 from .base import video_plugins
 from . import video_cli
-from ..compat import console
+from ..compat import console, muffle
 
 
 # CGA colours: black, cyan, magenta, white
@@ -46,14 +45,13 @@ class VideoANSI(video_cli.VideoTextBase):
         self._border_attr = 0
         self._set_default_colours(16)
         self._text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
-        self.logger = logging.getLogger()
+        # prevent stderr from defacing the screen
+        self._muffle = muffle(sys.stderr)
 
     def __enter__(self):
         """Open ANSI interface."""
         video_cli.VideoTextBase.__enter__(self)
-        # prevent logger from defacing the screen
-        if logging.getLogger().handlers[0].stream.name == sys.stderr.name:
-            self.logger.disabled = True
+        self._muffle.__enter__()
 
     def __exit__(self, type, value, traceback):
         """Close ANSI interface."""
@@ -61,7 +59,7 @@ class VideoANSI(video_cli.VideoTextBase):
             console.reset()
             console.clear()
             # re-enable logger
-            self.logger.disabled = False
+            self._muffle.__exit__(type, value, traceback)
         finally:
             video_cli.VideoTextBase.__exit__(self, type, value, traceback)
 
