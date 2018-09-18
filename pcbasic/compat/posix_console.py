@@ -109,8 +109,6 @@ class PosixConsole(object):
         self._read_buffer = deque()
         # palette
         self._palette = list(DEFAULT_PALETTE)
-        # start below the current output
-        self.clear()
 
     ##########################################################################
     # terminal modes
@@ -153,6 +151,8 @@ class PosixConsole(object):
     def resize(self, height, width):
         """Resize terminal."""
         self._emit_ansi(ansi.RESIZE_TERM % (height, width))
+        # start below the current output
+        self.clear()
 
     def clear(self):
         """Clear the screen."""
