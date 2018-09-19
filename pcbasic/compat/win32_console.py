@@ -223,6 +223,15 @@ _GetConsoleMode.argtypes = (
 _GetConsoleMode.restype = wintypes.BOOL
 
 
+PHANDLER_ROUTINE = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
+_SetConsoleCtrlHandler = windll.kernel32.SetConsoleCtrlHandler
+_SetConsoleCtrlHandler.argtypes = (
+    PHANDLER_ROUTINE,
+    wintypes.BOOL,
+)
+_SetConsoleCtrlHandler.restype = wintypes.BOOL
+
+
 def GetConsoleScreenBufferInfo(handle):
     csbi = CONSOLE_SCREEN_BUFFER_INFO()
     _GetConsoleScreenBufferInfo(handle, byref(csbi))
@@ -299,6 +308,13 @@ def _write_console(handle, unistr):
 ##############################################################################
 # console class
 
+@PHANDLER_ROUTINE
+def _ctrl_handler(fdwCtrlType):
+    """Handle Ctrl-Break event."""
+    # CTRL_BREAK_EVENT
+    return (fdwCtrlType == 1)
+
+
 class Win32Console(object):
     """Win32API-based console implementation."""
 
@@ -319,6 +335,8 @@ class Win32Console(object):
         self._echo = False
         # unset ENABLE_PROCESSED_INPUT
         _SetConsoleMode(HSTDIN, wintypes.DWORD(self._orig_stdin_mode.value & ~0x0001))
+        # don't exit on ctrl-Break
+        _SetConsoleCtrlHandler(_ctrl_handler, True)
 
     def unset_raw(self):
         """Leave raw terminal mode."""
