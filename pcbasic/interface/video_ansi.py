@@ -27,6 +27,9 @@ class VideoANSI(video_cli.VideoTextBase):
     def __init__(self, input_queue, video_queue, caption=u'', border_width=0, **kwargs):
         """Initialise the text interface."""
         video_cli.VideoTextBase.__init__(self, input_queue, video_queue)
+        # don't quit on EOF - it's counterintuitive for the text interface
+        self._input_handler.quit_on_eof = False
+        # window caption
         self._caption = caption
         self.set_caption_message(u'')
         # cursor is visible

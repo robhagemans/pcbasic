@@ -209,6 +209,19 @@ _SetConsoleWindowInfo.argtypes = (
     POINTER(wintypes.SMALL_RECT),
 )
 
+_SetConsoleMode = windll.kernel32.SetConsoleMode
+_SetConsoleMode.argtypes = (
+    wintypes.HANDLE,
+    wintypes.DWORD,
+)
+
+_GetConsoleMode = windll.kernel32.GetConsoleMode
+_GetConsoleMode.argtypes = (
+    wintypes.HANDLE,
+    POINTER(wintypes.DWORD),
+)
+_GetConsoleMode.restype = wintypes.BOOL
+
 
 def GetConsoleScreenBufferInfo(handle):
     csbi = CONSOLE_SCREEN_BUFFER_INFO()
@@ -250,6 +263,11 @@ def ScrollConsoleScreenBuffer(handle, scroll_rect, clip_rect, new_position, char
         handle, byref(scroll_rect), byref(clip_rect), new_position, byref(char_info)
     )
 
+def GetConsoleMode(handle):
+    mode = wintypes.DWORD()
+    _GetConsoleMode(handle, mode)
+    return mode
+
 
 HSTDIN = _GetStdHandle(-10)
 HSTDOUT = _GetStdHandle(-11)
@@ -290,18 +308,22 @@ class Win32Console(object):
         """Set up console"""
         # preserve original settings
         self._orig_csbie = GetConsoleScreenBufferInfoEx(HSTDOUT)
+        self._orig_stdin_mode = GetConsoleMode(HSTDIN)
         self._attrs = self._orig_csbie.wAttributes
         # input
         self._input_buffer = deque()
         self._echo = True
 
     def set_raw(self):
-        """Enter raw terminal mode."""
+        """Enter raw terminal mode (no echo, don't exit on ctrl-C)."""
         self._echo = False
+        # unset ENABLE_PROCESSED_INPUT
+        _SetConsoleMode(HSTDIN, wintypes.DWORD(self._orig_stdin_mode.value & ~0x0001))
 
     def unset_raw(self):
         """Leave raw terminal mode."""
         self._echo = True
+        _SetConsoleMode(HSTDOUT, self._orig_stdin_mode)
 
     def key_pressed(self):
         """key pressed on keyboard."""
@@ -559,7 +581,7 @@ class Win32Console(object):
 def _has_console():
     """Determine if we have a console attached or are a GUI app."""
     try:
-        return bool(windll.kernel32.GetConsoleMode(HSTDOUT, byref(wintypes.DWORD())))
+        return bool(_GetConsoleMode(HSTDOUT, byref(wintypes.DWORD())))
     except Exception as e:
         return False
 

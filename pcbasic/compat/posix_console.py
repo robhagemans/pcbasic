@@ -123,7 +123,7 @@ class PosixConsole(object):
             return 25, 80
 
     def set_raw(self):
-        """Enter raw terminal mode."""
+        """Enter raw terminal mode (no echo, don't exit on ctrl-C, ...)."""
         tty.setraw(sys.stdin.fileno())
 
     def unset_raw(self):

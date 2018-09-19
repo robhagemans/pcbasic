@@ -214,6 +214,7 @@ class InputHandlerCLI(object):
         """Start the keyboard reader."""
         self._input_queue = queue
         self._f12_active = False
+        self.quit_on_eof = True
 
     def drain_queue(self):
         """Handle keyboard events."""
@@ -222,7 +223,7 @@ class InputHandlerCLI(object):
             uc, sc = self._get_key()
             if not uc and not sc:
                 break
-            if uc == EOF:
+            if uc == EOF and self.quit_on_eof:
                 # ctrl-D (unix) / ctrl-Z (windows)
                 self._input_queue.put(signals.Event(signals.KEYB_QUIT))
             elif uc == u'\x7f':
