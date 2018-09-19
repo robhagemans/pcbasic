@@ -202,10 +202,6 @@ _SetConsoleWindowInfo.argtypes = (
     POINTER(wintypes.SMALL_RECT),
 )
 
-def GetConsoleMode(handle):
-    mode = wintypes.DWORD()
-    _GetConsoleMode(handle, byref(mode))
-    return mode.value
 
 def GetConsoleScreenBufferInfo(handle):
     csbi = CONSOLE_SCREEN_BUFFER_INFO()

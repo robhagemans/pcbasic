@@ -15,6 +15,7 @@ import fcntl
 import termios
 import array
 import struct
+import select
 
 # set locale - this is necessary for curses and *maybe* for clipboard handling
 # there's only one locale setting so best to do it all upfront here
@@ -46,6 +47,10 @@ SHELL_ENCODING = sys.stdin.encoding or locale.getpreferredencoding()
 FS_ENCODING = sys.getfilesystemencoding()
 # window suppression not needed on Unix
 HIDE_WINDOW = None
+
+
+# output buffer for ioctl call
+_sock_size = array.array('i', [0])
 
 
 ##############################################################################

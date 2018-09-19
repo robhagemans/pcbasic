@@ -7,9 +7,10 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import sys
+import os
 
 from .base import PLATFORM, PY2, PY3, WIN32, MACOS, X64
-from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR
+from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
 from .base import split_quoted, suppress_output
 
 
