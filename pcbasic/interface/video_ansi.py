@@ -45,12 +45,12 @@ class VideoANSI(video_cli.VideoTextBase):
         self._border_attr = 0
         self._set_default_colours(16)
         self._text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
-        # prevent stderr from defacing the screen
-        self._muffle = muffle(sys.stderr)
 
     def __enter__(self):
         """Open ANSI interface."""
         video_cli.VideoTextBase.__enter__(self)
+        # prevent stderr from defacing the screen
+        self._muffle = muffle(sys.stderr)
         self._muffle.__enter__()
 
     def __exit__(self, type, value, traceback):
