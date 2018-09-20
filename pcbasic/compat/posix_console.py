@@ -252,19 +252,6 @@ class PosixConsole(object):
         """Return whether a character is ready to be read from the keyboard."""
         return select.select([sys.stdin], [], [], 0)[0] != []
 
-    def _read_char(self):
-        """Read keypress from console. Non-blocking. Returns unicode with ANSI sequences."""
-        s = read_all_available(stdin)
-        if s is None:
-            # stream closed, send ctrl-d
-            if not self._read_buffer:
-                return u'\x04'
-        else:
-            self._read_buffer.extend(list(s))
-        if self._read_buffer:
-            return self._read_buffer.popleft()
-        return u''
-
     def read_key(self):
         """
         Read keypress from console. Non-blocking. Returns:
@@ -272,31 +259,18 @@ class PosixConsole(object):
         - int out of console.keys, if special key
         - u'\x04' if closed
         """
-        sequence = self._read_char()
-        if not sequence:
+        sequence = read_all_available(stdin)
+        if sequence is None:
+            # stream closed, send ctrl-d
+            return u'\x04'
+        elif not sequence:
             return u''
         # ansi sequences start with \x1b
-        esc = (sequence == ansi.ESC)
-        # escape sequences are at most 5 chars long
-        more = 5
-        cutoff = 100
-        if not esc:
+        if len(sequence) > 1 and sequence[0] == ansi.ESC:
+            # drop unrecognised sequences
+            return ANSI_TO_KEY.get(sequence, u'')
+        else:
             return sequence
-        while (more > 0) and (cutoff > 0):
-            # see if we have a recognised sequence; if so, return keycode
-            try:
-                return ANSI_TO_KEY[sequence]
-            except KeyError:
-                pass
-            # give time for the queue to fill up
-            time.sleep(0.0005)
-            char = self._read_char()
-            cutoff -= 1
-            if not char:
-                continue
-            more -= 1
-            sequence += char
-        return sequence
 
 
 def _has_console():
