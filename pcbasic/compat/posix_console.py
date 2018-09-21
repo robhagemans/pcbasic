@@ -38,7 +38,7 @@ else:
     stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
 
 
-# Key codes -  these can be anything so long as they're ints.
+# Key codes -  these can be anything
 KEYS = SimpleNamespace(
     PAGEUP = 0x21,
     PAGEDOWN = 0x22,
@@ -64,18 +64,59 @@ KEYS = SimpleNamespace(
     F12 = 0x7b,
 )
 
-ANSI_TO_KEY = {
-    ansi.KEYS.F1: KEYS.F1,  ansi.KEYS.F2: KEYS.F2,  ansi.KEYS.F3: KEYS.F3,  ansi.KEYS.F4: KEYS.F4,
-    ansi.KEYS.F1_OLD: KEYS.F1,  ansi.KEYS.F2_OLD: KEYS.F2,  ansi.KEYS.F3_OLD: KEYS.F3,
-    ansi.KEYS.F4_OLD: KEYS.F4,  ansi.KEYS.F5: KEYS.F5,  ansi.KEYS.F6: KEYS.F6,
-    ansi.KEYS.F7: KEYS.F7,  ansi.KEYS.F8: KEYS.F8,  ansi.KEYS.F9: KEYS.F9,
-    ansi.KEYS.F10: KEYS.F10,  ansi.KEYS.F11: KEYS.F11,  ansi.KEYS.F12: KEYS.F12,
-    ansi.KEYS.END: KEYS.END,  ansi.KEYS.END2: KEYS.END,
-    ansi.KEYS.HOME: KEYS.HOME,  ansi.KEYS.HOME2: KEYS.HOME,  ansi.KEYS.UP: KEYS.UP,
-    ansi.KEYS.DOWN: KEYS.DOWN,  ansi.KEYS.RIGHT: KEYS.RIGHT,  ansi.KEYS.LEFT: KEYS.LEFT,
-    ansi.KEYS.INSERT: KEYS.INSERT,  ansi.KEYS.DELETE: KEYS.DELETE,
-    ansi.KEYS.PAGEUP: KEYS.PAGEUP,  ansi.KEYS.PAGEDOWN: KEYS.PAGEDOWN,
+MODS = SimpleNamespace(
+    SHIFT = 0x10,
+    CTRL = 0x0c,
+    ALT = 0x03,
+)
+
+
+ANSI_TO_KEYMOD = {
+    ansi.KEYS.F1: (KEYS.F1, ()),  ansi.KEYS.F2: (KEYS.F2, ()),
+    ansi.KEYS.F3: (KEYS.F3, ()),  ansi.KEYS.F4: (KEYS.F4, ()),
+    ansi.KEYS.F1_OLD: (KEYS.F1, ()),  ansi.KEYS.F2_OLD: (KEYS.F2, ()),
+    ansi.KEYS.F3_OLD: (KEYS.F3, ()),  ansi.KEYS.F4_OLD: (KEYS.F4, ()),
+    ansi.KEYS.F5: (KEYS.F5, ()),  ansi.KEYS.F6: (KEYS.F6, ()),
+    ansi.KEYS.F7: (KEYS.F7, ()),  ansi.KEYS.F8: (KEYS.F8, ()),
+    ansi.KEYS.F9: (KEYS.F9, ()),  ansi.KEYS.F10: (KEYS.F10, ()),
+    ansi.KEYS.F11: (KEYS.F11, ()),  ansi.KEYS.F12: (KEYS.F12, ()),
+    ansi.KEYS.END: (KEYS.END, ()),  ansi.KEYS.END2: (KEYS.END, ()),
+    ansi.KEYS.HOME: (KEYS.HOME, ()),  ansi.KEYS.HOME2: (KEYS.HOME, ()),
+    ansi.KEYS.UP: (KEYS.UP, ()),  ansi.KEYS.DOWN: (KEYS.DOWN, ()),
+    ansi.KEYS.RIGHT: (KEYS.RIGHT, ()),  ansi.KEYS.LEFT: (KEYS.LEFT, ()),
+    ansi.KEYS.INSERT: (KEYS.INSERT, ()),  ansi.KEYS.DELETE: (KEYS.DELETE, ()),
+    ansi.KEYS.PAGEUP: (KEYS.PAGEUP, ()),  ansi.KEYS.PAGEDOWN: (KEYS.PAGEDOWN, ()),
+
+    ansi.KEYS.CTRL_F1: (KEYS.F1, (MODS.CTRL,)),  ansi.KEYS.CTRL_F2: (KEYS.F2, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_F3: (KEYS.F3, (MODS.CTRL,)),  ansi.KEYS.CTRL_F4: (KEYS.F4, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_F5: (KEYS.F5, (MODS.CTRL,)),  ansi.KEYS.CTRL_F6: (KEYS.F6, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_F7: (KEYS.F7, (MODS.CTRL,)),  ansi.KEYS.CTRL_F8: (KEYS.F8, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_F9: (KEYS.F9, (MODS.CTRL,)),  ansi.KEYS.CTRL_F10: (KEYS.F10, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_F11: (KEYS.F11, (MODS.CTRL,)),  ansi.KEYS.CTRL_F12: (KEYS.F12, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_END: (KEYS.END, (MODS.CTRL,)),  ansi.KEYS.CTRL_HOME: (KEYS.HOME, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_UP: (KEYS.UP, (MODS.CTRL,)),   ansi.KEYS.CTRL_DOWN: (KEYS.DOWN, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_RIGHT: (KEYS.RIGHT, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_LEFT: (KEYS.LEFT, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_INSERT: (KEYS.INSERT, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_DELETE: (KEYS.DELETE, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_PAGEUP: (KEYS.PAGEUP, (MODS.CTRL,)),
+    ansi.KEYS.CTRL_PAGEDOWN: (KEYS.PAGEDOWN, (MODS.CTRL,)),
+
+    ansi.KEYS.ALT_F1: (KEYS.F1, (MODS.ALT,)),  ansi.KEYS.ALT_F2: (KEYS.F2, (MODS.ALT,)),
+    ansi.KEYS.ALT_F3: (KEYS.F3, (MODS.ALT,)),  ansi.KEYS.ALT_F4: (KEYS.F4, (MODS.ALT,)),
+    ansi.KEYS.ALT_F5: (KEYS.F5, (MODS.ALT,)),  ansi.KEYS.ALT_F6: (KEYS.F6, (MODS.ALT,)),
+    ansi.KEYS.ALT_F7: (KEYS.F7, (MODS.ALT,)),  ansi.KEYS.ALT_F8: (KEYS.F8, (MODS.ALT,)),
+    ansi.KEYS.ALT_F9: (KEYS.F9, (MODS.ALT,)),  ansi.KEYS.ALT_F10: (KEYS.F10, (MODS.ALT,)),
+    ansi.KEYS.ALT_F11: (KEYS.F11, (MODS.ALT,)),  ansi.KEYS.ALT_F12: (KEYS.F12, (MODS.ALT,)),
+    ansi.KEYS.ALT_END: (KEYS.END, (MODS.ALT,)),  ansi.KEYS.ALT_HOME: (KEYS.HOME, (MODS.ALT,)),
+    ansi.KEYS.ALT_UP: (KEYS.UP, (MODS.ALT,)),  ansi.KEYS.ALT_DOWN: (KEYS.DOWN, (MODS.ALT,)),
+    ansi.KEYS.ALT_RIGHT: (KEYS.RIGHT, (MODS.ALT,)),  ansi.KEYS.ALT_LEFT: (KEYS.LEFT, (MODS.ALT,)),
+    ansi.KEYS.ALT_INSERT: (KEYS.INSERT, (MODS.ALT,)),
+    ansi.KEYS.ALT_DELETE: (KEYS.DELETE, (MODS.ALT,)),
+    ansi.KEYS.ALT_PAGEUP: (KEYS.PAGEUP, (MODS.ALT,)),
+    ansi.KEYS.ALT_PAGEDOWN: (KEYS.PAGEDOWN, (MODS.ALT,)),
 }
+
 
 # mapping of the first 8 attributes of the default CGA palette
 # so that non-RGB terminals use sensible colours
@@ -98,6 +139,7 @@ class PosixConsole(object):
     """POSIX-based console implementation."""
 
     keys = KEYS
+    mods = MODS
 
     def __init__(self):
         """Set up the console."""
@@ -256,7 +298,7 @@ class PosixConsole(object):
         """
         Read keypress from console. Non-blocking. Returns:
         - unicode, if character key
-        - int out of console.keys, if special key
+        - tuple (key, (mods, ..)) out of console.keys, console.mods, if special key
         - u'\x04' if closed
         """
         sequence = read_all_available(stdin)
@@ -265,10 +307,14 @@ class PosixConsole(object):
             return u'\x04'
         elif not sequence:
             return u''
-        # ansi sequences start with \x1b
-        if len(sequence) > 1 and sequence[0] == ansi.ESC:
+        # ansi sequences start with ESC (\x1b), but let ESC by itself through
+        if len(sequence) > 1 and sequence[0] == u'\x1b':
+            # esc+character represents alt+key
+            if len(sequence) == 2:
+                return sequence[1], (MODS.ALT,)
+            # one-character sequences are alt-key combinations
             # drop unrecognised sequences
-            return ANSI_TO_KEY.get(sequence, u'')
+            return ANSI_TO_KEYMOD.get(sequence, u'')
         else:
             return sequence
 
