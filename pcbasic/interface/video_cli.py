@@ -137,7 +137,7 @@ ALT_KEY_TO_EASCII = {
     u'm': uea.ALT_m,  u'M': uea.ALT_m,
     u'\b': uea.ALT_BACKSPACE,
     u'\t': uea.ALT_TAB,
-    u'\n': uea.ALT_RETURN,
+    u'\r': uea.ALT_RETURN,
     u' ': uea.ALT_SPACE,
     KEYS.F1: uea.ALT_F1,
     KEYS.F2: uea.ALT_F2,
@@ -356,22 +356,21 @@ class InputHandlerCLI(object):
                     self._f12_active = False
 
     def _get_key(self):
-        """Retrieve one scancode sequence or one unicode char from keyboard."""
-        inp = console.read_key()
-        if inp == u'':
+        """Retrieve one keypress."""
+        char, key, mods = console.read_key()
+        if not char and not key:
             return None, None, []
-        if isinstance(inp, tuple):
-            # keycode
-            if inp[1] == (MODS.CTRL,):
-                uc = CTRL_KEY_TO_EASCII.get(inp[0], u'')
-            elif inp[1] == (MODS.ALT,):
-                uc = ALT_KEY_TO_EASCII.get(inp[0], u'')
-            elif inp[1] == (MODS.SHIFT,):
-                uc = SHIFT_KEY_TO_EASCII.get(inp[0], u'')
+        # override characters wth alt
+        if MODS.ALT in mods and MODS.CTRL not in mods:
+            char = ALT_KEY_TO_EASCII.get(key, u'')
+        # don't override ctrl characters
+        if not char:
+            if MODS.CTRL in mods and MODS.ALT not in mods:
+                char = CTRL_KEY_TO_EASCII.get(key, u'')
+            elif mods == {MODS.SHIFT}:
+                char = SHIFT_KEY_TO_EASCII.get(key, char)
             else:
-                uc = KEY_TO_EASCII.get(inp[0], u'')
-            scan = KEY_TO_SCAN.get(inp[0], None)
-            mods = [MOD_TO_SCAN[mod] for mod in inp[1] if mod in MOD_TO_SCAN]
-            return uc, scan, mods
-        # character
-        return inp, None, []
+                char = KEY_TO_EASCII.get(key, char)
+        scan = KEY_TO_SCAN.get(key, None)
+        modscan = [MOD_TO_SCAN[mod] for mod in mods if mod in MOD_TO_SCAN]
+        return char, scan, modscan

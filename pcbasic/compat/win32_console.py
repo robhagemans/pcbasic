@@ -25,6 +25,7 @@ if PY2:
     from .python2 import SimpleNamespace
 else:
     from types import SimpleNamespace
+    unichr = chr
 
 
 # Windows virtual key codes
@@ -53,9 +54,14 @@ KEYS = SimpleNamespace(
     F12 = 0x7b,
 )
 
-# windpws constants
-KEY_EVENT = 1
-VK_MENU = 0x12
+MODS = SimpleNamespace(
+    SHIFT = 0x10,
+    CTRL = 0x0c,
+    ALT = 0x03,
+)
+
+# windows constants
+VK_MENU = 0x12 # ALT
 
 # character attributes, from wincon.h
 NORMAL = 0x00
@@ -319,6 +325,7 @@ class Win32Console(object):
     """Win32API-based console implementation."""
 
     keys = KEYS
+    mods = MODS
 
     def __init__(self):
         """Set up console"""
@@ -508,28 +515,25 @@ class Win32Console(object):
 
     def read_key(self):
         """
-        Read keypress from console. Non-blocking. Returns:
-        - unicode, if character key
-        - int out of console.keys, if special key
-        - EOF if closed
+        Read keypress from console. Non-blocking.
+        Returns tuple (unicode, keycode, set of mods)
         """
         self._fill_buffer(blocking=False)
         if not self._input_buffer:
-            return u''
+            return (u'', None, {})
         return self._input_buffer.popleft()
 
     def read_all_chars(self):
         """Read all characters in the buffer."""
         self._fill_buffer(blocking=False)
         closed = False
-        if self._input_buffer and self._input_buffer[-1] == u'\x1a':
+        if self._input_buffer and self._input_buffer[-1][0] == u'\x1a':
             closed = True
             self._input_buffer.pop()
             if not self._input_buffer:
                 return None
         output = u''.join(
             _char for _char in self._input_buffer
-            if not isinstance(_char, int)
         )
         self._input_buffer.clear()
         if closed:
@@ -554,46 +558,54 @@ class Win32Console(object):
                     nevents.value, byref(nread)
                 )
                 for event in input_buffer:
-                    if event.EventType != KEY_EVENT:
+                    if event.EventType != 1: # KEY_EVENT
                         continue
-                    key = self._translate_event(event)
+                    char, key, mods = self._translate_event(event)
                     if key:
-                        self._input_buffer.append(key)
-                        if key == u'\x1a':
+                        self._input_buffer.append((char, key, mods))
+                        if char == u'\x1a':
                             # ctrl-z is end of input on windows console
                             return
                         if self._echo:
-                            self._echo_key(key)
+                            _write_console(HSTDOUT, char.replace(u'\r', u'\n'))
             time.sleep(0.01)
 
     def _translate_event(self, event):
         char = event.KeyEvent.UnicodeChar
         key = event.KeyEvent.wVirtualKeyCode
+        control = event.KeyEvent.dwControlKeyState
         if char == u'\0':
             # windows uses null-terminated strings so \0 means no output
             char = u''
         if not event.KeyEvent.bKeyDown:
             # key-up event for unicode Alt+HEX input
             if event.KeyEvent.wVirtualKeyCode == VK_MENU:
-                return char
+                return char, None, set()
             # ignore other key-up events
-            return u''
-        elif event.KeyEvent.dwControlKeyState & 0xf:
-            # ctrl or alt are down; don't parse arrow keys etc.
-            # but if any unicode is produced, send it on
-            return char
+            return u'', None, set()
+        # CAPSLOCK_ON 0x0080
+        # ENHANCED_KEY 0x0100
+        # LEFT_ALT_PRESSED 0x0002
+        # LEFT_CTRL_PRESSED 0x0008
+        # NUMLOCK_ON 0x0020
+        # RIGHT_ALT_PRESSED 0x0001
+        # RIGHT_CTRL_PRESSED 0x0004
+        # SCROLLLOCK_ON 0x0040
+        # SHIFT_PRESSED 0x0010
+        mods = set()
+        if control & 0x0c:
+            mods.add(MODS.CTRL)
+        if control & 0x03:
+            mods.add(MODS.ALT)
+        if control & 0x10:
+            mods.add(MODS.SHIFT)
         # this is hacky - is the key code a recognised one?
-        elif key in self.keys.__dict__.values():
-            return key
-        return char
-
-    def _echo_key(self, key):
-        """Echo a character or special key."""
-        if not isinstance(key, int):
-            # caracter echo
-            if key == u'\r':
-                key = u'\n'
-            _write_console(HSTDOUT, key)
+        if key in KEYS.__dict__.values():
+            return u'', key, mods
+        elif key in range(0x30, 0x5b):
+            # letter key codes
+            key = unichr(key)
+        return char, key, mods
 
 
 def _has_console():

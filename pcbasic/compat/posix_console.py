@@ -296,27 +296,26 @@ class PosixConsole(object):
 
     def read_key(self):
         """
-        Read keypress from console. Non-blocking. Returns:
-        - unicode, if character key
-        - tuple (key, (mods, ..)) out of console.keys, console.mods, if special key
-        - u'\x04' if closed
+        Read keypress from console. Non-blocking.
+        Returns tuple (unicode, keycode, set of mods)
         """
         sequence = read_all_available(stdin)
         if sequence is None:
             # stream closed, send ctrl-d
-            return u'\x04'
+            return (u'\x04', 'd', {mods.CTRL})
         elif not sequence:
-            return u''
+            return (u'', None, set())
         # ansi sequences start with ESC (\x1b), but let ESC by itself through
         if len(sequence) > 1 and sequence[0] == u'\x1b':
             # esc+character represents alt+key
             if len(sequence) == 2:
-                return sequence[1], (MODS.ALT,)
+                return (u'', sequence[1], {MODS.ALT})
             # one-character sequences are alt-key combinations
             # drop unrecognised sequences
-            return ANSI_TO_KEYMOD.get(sequence, u'')
+            key, mod = ANSI_TO_KEYMOD.get(sequence, u'')
+            return (u'', key, mod)
         else:
-            return sequence
+            return (sequence, None, set())
 
 
 def _has_console():
