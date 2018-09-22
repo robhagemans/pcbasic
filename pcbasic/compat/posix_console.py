@@ -1,8 +1,8 @@
 """
 PC-BASIC - compat.posix_console
-POSIX console support
+POSIX console support with ANSI escape sequences
 
-(c) 2018 Rob Hagemans
+(c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -19,7 +19,6 @@ import atexit
 from collections import deque
 
 from .base import MACOS, PY2, HOME_DIR, wrap_input_stream, wrap_output_stream
-from . import ansi
 
 if PY2:
     from .python2 import SimpleNamespace
@@ -27,18 +26,124 @@ else:
     from types import SimpleNamespace
 
 
-# output buffer for ioctl call
-_sock_size = array.array('i', [0])
-
-if PY2:
-    stdin = wrap_input_stream(sys.stdin)
-    stdout = wrap_output_stream(sys.stdout)
-    stderr = wrap_output_stream(sys.stderr)
-else:
-    stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
+# ANSI escape codes
+# for reference, see:
+# http://en.wikipedia.org/wiki/ANSI_escape_code
+# http://misc.flogisoft.com/bash/tip_colors_and_formatting
+# http://www.termsys.demon.co.uk/vtansi.htm
+# http://ascii-table.com/ansi-escape-sequences-vt-100.php
+# https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
 
 
-# Key codes -  these can be anything
+# ANSI escape sequences
+ANSI = SimpleNamespace(
+    RESET = u'\x1Bc',
+    SET_SCROLL_SCREEN = u'\x1B[r',
+    SET_SCROLL_REGION = u'\x1B[%i;%ir',
+    RESIZE_TERM = u'\x1B[8;%i;%i;t',
+    SET_TITLE = u'\x1B]2;%s\a',
+    CLEAR_SCREEN = u'\x1B[2J',
+    CLEAR_LINE = u'\x1B[2K',
+    SCROLL_UP = u'\x1B[%iS',
+    SCROLL_DOWN = u'\x1B[%iT',
+    MOVE_CURSOR = u'\x1B[%i;%if',
+    MOVE_RIGHT = u'\x1B[C',
+    MOVE_LEFT = u'\x1B[D',
+    MOVE_N_RIGHT = u'\x1B[%iC',
+    MOVE_N_LEFT = u'\x1B[%iD',
+    SHOW_CURSOR = u'\x1B[?25h',
+    HIDE_CURSOR = u'\x1B[?25l',
+    # 1 blinking block 2 block 3 blinking line 4 line
+    SET_CURSOR_SHAPE = u'\x1B[%i q',
+    SET_COLOUR = u'\x1B[%im',
+    SET_CURSOR_COLOUR = u'\x1B]12;#%02x%02x%02x\a',
+    SET_PALETTE_ENTRY = u'\x1B]4;%i;#%02x%02x%02x\a',
+    RESET_PALETTE_ENTRY = u'\x1B]104;%i\a',
+    #SAVE_CURSOR_POS = u'\x1B[s',
+    #RESTORE_CURSOR_POS = u'\x1B[u',
+    #REQUEST_SIZE = u'\x1B[18;t',
+    #SET_FOREGROUND_RGB = u'\x1B[38;2;%i;%i;%im',
+    #SET_BACKGROUND_RGB = u'\x1B[48;2;%i;%i;%im',
+)
+
+# keystrokes
+ANSIKEYS = SimpleNamespace(
+    F1 = u'\x1BOP',
+    F2 = u'\x1BOQ',
+    F3 = u'\x1BOR',
+    F4 = u'\x1BOS',
+    F1_OLD = u'\x1B[11~',
+    F2_OLD = u'\x1B[12~',
+    F3_OLD = u'\x1B[13~',
+    F4_OLD = u'\x1B[14~',
+    F5 = u'\x1B[15~',
+    F6 = u'\x1B[17~',
+    F7 = u'\x1B[18~',
+    F8 = u'\x1B[19~',
+    F9 = u'\x1B[20~',
+    F10 = u'\x1B[21~',
+    F11 = u'\x1B[23~',
+    F12 = u'\x1B[24~',
+    END = u'\x1BOF',
+    END2 = u'\x1B[F',
+    HOME = u'\x1BOH',
+    HOME2 = u'\x1B[H',
+    UP = u'\x1B[A',
+    DOWN = u'\x1B[B',
+    RIGHT = u'\x1B[C',
+    LEFT = u'\x1B[D',
+    INSERT = u'\x1B[2~',
+    DELETE = u'\x1B[3~',
+    PAGEUP = u'\x1B[5~',
+    PAGEDOWN = u'\x1B[6~',
+    CTRL_F1 = u'\x1b[1;5P',
+    CTRL_F2 = u'\x1b[1;5Q',
+    CTRL_F3 = u'\x1b[1;5R',
+    CTRL_F4 = u'\x1b[1;5S',
+    CTRL_F5 = u'\x1b[15;5~',
+    CTRL_F6 = u'\x1B[17;5~',
+    CTRL_F7 = u'\x1B[18;5~',
+    CTRL_F8 = u'\x1B[19;5~',
+    CTRL_F9 = u'\x1B[20;5~',
+    CTRL_F10 = u'\x1B[21;5~',
+    CTRL_F11 = u'\x1B[23;5~',
+    CTRL_F12 = u'\x1B[24;5~',
+    CTRL_END = u'\x1B[1;5F',
+    CTRL_HOME = u'\x1B[1;5H',
+    CTRL_UP = u'\x1B[1;5A',
+    CTRL_DOWN = u'\x1B[1;5B',
+    CTRL_RIGHT = u'\x1B[1;5C',
+    CTRL_LEFT = u'\x1B[1;5D',
+    CTRL_INSERT = u'\x1B[2;5~',
+    CTRL_DELETE = u'\x1B[3;5~',
+    CTRL_PAGEUP = u'\x1B[5;5~',
+    CTRL_PAGEDOWN = u'\x1B[6;5~',
+    ALT_F1 = u'\x1b[1;3P',
+    ALT_F2 = u'\x1b[1;3Q',
+    ALT_F3 = u'\x1b[1;3R',
+    ALT_F4 = u'\x1b[1;3S',
+    ALT_F5 = u'\x1b[15;3~',
+    ALT_F6 = u'\x1B[17;3~',
+    ALT_F7 = u'\x1B[18;3~',
+    ALT_F8 = u'\x1B[19;3~',
+    ALT_F9 = u'\x1B[20;3~',
+    ALT_F10 = u'\x1B[21;3~',
+    ALT_F11 = u'\x1B[23;3~',
+    ALT_F12 = u'\x1B[24;3~',
+    ALT_END = u'\x1B[1;3F',
+    ALT_HOME = u'\x1B[1;3H',
+    ALT_UP = u'\x1B[1;3A',
+    ALT_DOWN = u'\x1B[1;3B',
+    ALT_RIGHT = u'\x1B[1;3C',
+    ALT_LEFT = u'\x1B[1;3D',
+    ALT_INSERT = u'\x1B[2;3~',
+    ALT_DELETE = u'\x1B[3;3~',
+    ALT_PAGEUP = u'\x1B[5;3~',
+    ALT_PAGEDOWN = u'\x1B[6;3~',
+)
+
+
+# output key codes - these can be anything
 KEYS = SimpleNamespace(
     PAGEUP = 0x21,
     PAGEDOWN = 0x22,
@@ -72,58 +177,56 @@ MODS = SimpleNamespace(
 
 
 ANSI_TO_KEYMOD = {
-    ansi.KEYS.F1: (KEYS.F1, ()),  ansi.KEYS.F2: (KEYS.F2, ()),
-    ansi.KEYS.F3: (KEYS.F3, ()),  ansi.KEYS.F4: (KEYS.F4, ()),
-    ansi.KEYS.F1_OLD: (KEYS.F1, ()),  ansi.KEYS.F2_OLD: (KEYS.F2, ()),
-    ansi.KEYS.F3_OLD: (KEYS.F3, ()),  ansi.KEYS.F4_OLD: (KEYS.F4, ()),
-    ansi.KEYS.F5: (KEYS.F5, ()),  ansi.KEYS.F6: (KEYS.F6, ()),
-    ansi.KEYS.F7: (KEYS.F7, ()),  ansi.KEYS.F8: (KEYS.F8, ()),
-    ansi.KEYS.F9: (KEYS.F9, ()),  ansi.KEYS.F10: (KEYS.F10, ()),
-    ansi.KEYS.F11: (KEYS.F11, ()),  ansi.KEYS.F12: (KEYS.F12, ()),
-    ansi.KEYS.END: (KEYS.END, ()),  ansi.KEYS.END2: (KEYS.END, ()),
-    ansi.KEYS.HOME: (KEYS.HOME, ()),  ansi.KEYS.HOME2: (KEYS.HOME, ()),
-    ansi.KEYS.UP: (KEYS.UP, ()),  ansi.KEYS.DOWN: (KEYS.DOWN, ()),
-    ansi.KEYS.RIGHT: (KEYS.RIGHT, ()),  ansi.KEYS.LEFT: (KEYS.LEFT, ()),
-    ansi.KEYS.INSERT: (KEYS.INSERT, ()),  ansi.KEYS.DELETE: (KEYS.DELETE, ()),
-    ansi.KEYS.PAGEUP: (KEYS.PAGEUP, ()),  ansi.KEYS.PAGEDOWN: (KEYS.PAGEDOWN, ()),
+    ANSIKEYS.F1: (KEYS.F1, ()),  ANSIKEYS.F2: (KEYS.F2, ()),
+    ANSIKEYS.F3: (KEYS.F3, ()),  ANSIKEYS.F4: (KEYS.F4, ()),
+    ANSIKEYS.F1_OLD: (KEYS.F1, ()),  ANSIKEYS.F2_OLD: (KEYS.F2, ()),
+    ANSIKEYS.F3_OLD: (KEYS.F3, ()),  ANSIKEYS.F4_OLD: (KEYS.F4, ()),
+    ANSIKEYS.F5: (KEYS.F5, ()),  ANSIKEYS.F6: (KEYS.F6, ()),
+    ANSIKEYS.F7: (KEYS.F7, ()),  ANSIKEYS.F8: (KEYS.F8, ()),
+    ANSIKEYS.F9: (KEYS.F9, ()),  ANSIKEYS.F10: (KEYS.F10, ()),
+    ANSIKEYS.F11: (KEYS.F11, ()),  ANSIKEYS.F12: (KEYS.F12, ()),
+    ANSIKEYS.END: (KEYS.END, ()),  ANSIKEYS.END2: (KEYS.END, ()),
+    ANSIKEYS.HOME: (KEYS.HOME, ()),  ANSIKEYS.HOME2: (KEYS.HOME, ()),
+    ANSIKEYS.UP: (KEYS.UP, ()),  ANSIKEYS.DOWN: (KEYS.DOWN, ()),
+    ANSIKEYS.RIGHT: (KEYS.RIGHT, ()),  ANSIKEYS.LEFT: (KEYS.LEFT, ()),
+    ANSIKEYS.INSERT: (KEYS.INSERT, ()),  ANSIKEYS.DELETE: (KEYS.DELETE, ()),
+    ANSIKEYS.PAGEUP: (KEYS.PAGEUP, ()),  ANSIKEYS.PAGEDOWN: (KEYS.PAGEDOWN, ()),
 
-    ansi.KEYS.CTRL_F1: (KEYS.F1, (MODS.CTRL,)),  ansi.KEYS.CTRL_F2: (KEYS.F2, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_F3: (KEYS.F3, (MODS.CTRL,)),  ansi.KEYS.CTRL_F4: (KEYS.F4, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_F5: (KEYS.F5, (MODS.CTRL,)),  ansi.KEYS.CTRL_F6: (KEYS.F6, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_F7: (KEYS.F7, (MODS.CTRL,)),  ansi.KEYS.CTRL_F8: (KEYS.F8, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_F9: (KEYS.F9, (MODS.CTRL,)),  ansi.KEYS.CTRL_F10: (KEYS.F10, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_F11: (KEYS.F11, (MODS.CTRL,)),  ansi.KEYS.CTRL_F12: (KEYS.F12, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_END: (KEYS.END, (MODS.CTRL,)),  ansi.KEYS.CTRL_HOME: (KEYS.HOME, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_UP: (KEYS.UP, (MODS.CTRL,)),   ansi.KEYS.CTRL_DOWN: (KEYS.DOWN, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_RIGHT: (KEYS.RIGHT, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_LEFT: (KEYS.LEFT, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_INSERT: (KEYS.INSERT, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_DELETE: (KEYS.DELETE, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_PAGEUP: (KEYS.PAGEUP, (MODS.CTRL,)),
-    ansi.KEYS.CTRL_PAGEDOWN: (KEYS.PAGEDOWN, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_F1: (KEYS.F1, (MODS.CTRL,)),  ANSIKEYS.CTRL_F2: (KEYS.F2, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_F3: (KEYS.F3, (MODS.CTRL,)),  ANSIKEYS.CTRL_F4: (KEYS.F4, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_F5: (KEYS.F5, (MODS.CTRL,)),  ANSIKEYS.CTRL_F6: (KEYS.F6, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_F7: (KEYS.F7, (MODS.CTRL,)),  ANSIKEYS.CTRL_F8: (KEYS.F8, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_F9: (KEYS.F9, (MODS.CTRL,)),  ANSIKEYS.CTRL_F10: (KEYS.F10, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_F11: (KEYS.F11, (MODS.CTRL,)),  ANSIKEYS.CTRL_F12: (KEYS.F12, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_END: (KEYS.END, (MODS.CTRL,)),  ANSIKEYS.CTRL_HOME: (KEYS.HOME, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_UP: (KEYS.UP, (MODS.CTRL,)),   ANSIKEYS.CTRL_DOWN: (KEYS.DOWN, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_RIGHT: (KEYS.RIGHT, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_LEFT: (KEYS.LEFT, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_INSERT: (KEYS.INSERT, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_DELETE: (KEYS.DELETE, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_PAGEUP: (KEYS.PAGEUP, (MODS.CTRL,)),
+    ANSIKEYS.CTRL_PAGEDOWN: (KEYS.PAGEDOWN, (MODS.CTRL,)),
 
-    ansi.KEYS.ALT_F1: (KEYS.F1, (MODS.ALT,)),  ansi.KEYS.ALT_F2: (KEYS.F2, (MODS.ALT,)),
-    ansi.KEYS.ALT_F3: (KEYS.F3, (MODS.ALT,)),  ansi.KEYS.ALT_F4: (KEYS.F4, (MODS.ALT,)),
-    ansi.KEYS.ALT_F5: (KEYS.F5, (MODS.ALT,)),  ansi.KEYS.ALT_F6: (KEYS.F6, (MODS.ALT,)),
-    ansi.KEYS.ALT_F7: (KEYS.F7, (MODS.ALT,)),  ansi.KEYS.ALT_F8: (KEYS.F8, (MODS.ALT,)),
-    ansi.KEYS.ALT_F9: (KEYS.F9, (MODS.ALT,)),  ansi.KEYS.ALT_F10: (KEYS.F10, (MODS.ALT,)),
-    ansi.KEYS.ALT_F11: (KEYS.F11, (MODS.ALT,)),  ansi.KEYS.ALT_F12: (KEYS.F12, (MODS.ALT,)),
-    ansi.KEYS.ALT_END: (KEYS.END, (MODS.ALT,)),  ansi.KEYS.ALT_HOME: (KEYS.HOME, (MODS.ALT,)),
-    ansi.KEYS.ALT_UP: (KEYS.UP, (MODS.ALT,)),  ansi.KEYS.ALT_DOWN: (KEYS.DOWN, (MODS.ALT,)),
-    ansi.KEYS.ALT_RIGHT: (KEYS.RIGHT, (MODS.ALT,)),  ansi.KEYS.ALT_LEFT: (KEYS.LEFT, (MODS.ALT,)),
-    ansi.KEYS.ALT_INSERT: (KEYS.INSERT, (MODS.ALT,)),
-    ansi.KEYS.ALT_DELETE: (KEYS.DELETE, (MODS.ALT,)),
-    ansi.KEYS.ALT_PAGEUP: (KEYS.PAGEUP, (MODS.ALT,)),
-    ansi.KEYS.ALT_PAGEDOWN: (KEYS.PAGEDOWN, (MODS.ALT,)),
+    ANSIKEYS.ALT_F1: (KEYS.F1, (MODS.ALT,)),  ANSIKEYS.ALT_F2: (KEYS.F2, (MODS.ALT,)),
+    ANSIKEYS.ALT_F3: (KEYS.F3, (MODS.ALT,)),  ANSIKEYS.ALT_F4: (KEYS.F4, (MODS.ALT,)),
+    ANSIKEYS.ALT_F5: (KEYS.F5, (MODS.ALT,)),  ANSIKEYS.ALT_F6: (KEYS.F6, (MODS.ALT,)),
+    ANSIKEYS.ALT_F7: (KEYS.F7, (MODS.ALT,)),  ANSIKEYS.ALT_F8: (KEYS.F8, (MODS.ALT,)),
+    ANSIKEYS.ALT_F9: (KEYS.F9, (MODS.ALT,)),  ANSIKEYS.ALT_F10: (KEYS.F10, (MODS.ALT,)),
+    ANSIKEYS.ALT_F11: (KEYS.F11, (MODS.ALT,)),  ANSIKEYS.ALT_F12: (KEYS.F12, (MODS.ALT,)),
+    ANSIKEYS.ALT_END: (KEYS.END, (MODS.ALT,)),  ANSIKEYS.ALT_HOME: (KEYS.HOME, (MODS.ALT,)),
+    ANSIKEYS.ALT_UP: (KEYS.UP, (MODS.ALT,)),  ANSIKEYS.ALT_DOWN: (KEYS.DOWN, (MODS.ALT,)),
+    ANSIKEYS.ALT_RIGHT: (KEYS.RIGHT, (MODS.ALT,)),  ANSIKEYS.ALT_LEFT: (KEYS.LEFT, (MODS.ALT,)),
+    ANSIKEYS.ALT_INSERT: (KEYS.INSERT, (MODS.ALT,)),
+    ANSIKEYS.ALT_DELETE: (KEYS.DELETE, (MODS.ALT,)),
+    ANSIKEYS.ALT_PAGEUP: (KEYS.PAGEUP, (MODS.ALT,)),
+    ANSIKEYS.ALT_PAGEDOWN: (KEYS.PAGEDOWN, (MODS.ALT,)),
 }
 
 
 # mapping of the first 8 attributes of the default CGA palette
 # so that non-RGB terminals use sensible colours
-EGA_TO_ANSI = (
-    ansi.COLOURS.BLACK, ansi.COLOURS.BLUE, ansi.COLOURS.GREEN, ansi.COLOURS.CYAN,
-    ansi.COLOURS.RED, ansi.COLOURS.MAGENTA, ansi.COLOURS.YELLOW, ansi.COLOURS.WHITE
-)
+# black, blue, green, cyan, red, magenta, yellow, white
+EGA_TO_ANSI = (0, 4, 2, 6, 1, 5, 3, 7)
 
 # default palette - these are in fact the 16 CGA colours
 # this gets overwritten anyway
@@ -133,6 +236,19 @@ DEFAULT_PALETTE = (
     (0x55, 0x55, 0x55), (0x55, 0x55, 0xff), (0x55, 0xff, 0x55), (0x55, 0xff, 0xff),
     (0xff, 0x55, 0x55), (0xff, 0x55, 0xff), (0xff, 0xff, 0x55), (0xff, 0xff, 0xff)
 )
+
+
+# output buffer for ioctl call
+_sock_size = array.array('i', [0])
+
+
+# standard unicode streams
+if PY2:
+    stdin = wrap_input_stream(sys.stdin)
+    stdout = wrap_output_stream(sys.stdout)
+    stderr = wrap_output_stream(sys.stderr)
+else:
+    stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
 
 
 class PosixConsole(object):
@@ -188,80 +304,80 @@ class PosixConsole(object):
 
     def set_caption(self, caption):
         """Set terminal caption."""
-        self._emit_ansi(ansi.SET_TITLE % (caption,))
+        self._emit_ansi(ANSI.SET_TITLE % (caption,))
 
     def resize(self, height, width):
         """Resize terminal."""
-        self._emit_ansi(ansi.RESIZE_TERM % (height, width))
+        self._emit_ansi(ANSI.RESIZE_TERM % (height, width))
         # start below the current output
         self.clear()
 
     def clear(self):
         """Clear the screen."""
         self._emit_ansi(
-            ansi.CLEAR_SCREEN +
-            ansi.MOVE_CURSOR % (1, 1)
+            ANSI.CLEAR_SCREEN +
+            ANSI.MOVE_CURSOR % (1, 1)
         )
 
     def clear_row(self):
         """Clear the current row."""
-        self._emit_ansi(ansi.CLEAR_LINE)
+        self._emit_ansi(ANSI.CLEAR_LINE)
 
     def show_cursor(self, block=False):
         """Show the cursor."""
         self._emit_ansi(
-            ansi.SHOW_CURSOR +
-            ansi.SET_CURSOR_SHAPE % (1 if block else 3,)
+            ANSI.SHOW_CURSOR +
+            ANSI.SET_CURSOR_SHAPE % (1 if block else 3,)
         )
 
     def hide_cursor(self):
         """Hide the cursor."""
-        self._emit_ansi(ansi.HIDE_CURSOR)
+        self._emit_ansi(ANSI.HIDE_CURSOR)
 
     def move_cursor_left(self, n):
         """Move cursor n cells to the left."""
-        self._emit_ansi(ansi.MOVE_N_LEFT % (n,))
+        self._emit_ansi(ANSI.MOVE_N_LEFT % (n,))
 
     def move_cursor_right(self, n):
         """Move cursor n cells to the right."""
-        self._emit_ansi(ansi.MOVE_N_RIGHT % (n,))
+        self._emit_ansi(ANSI.MOVE_N_RIGHT % (n,))
 
     def move_cursor_to(self, row, col):
         """Move cursor to a new position."""
-        self._emit_ansi(ansi.MOVE_CURSOR % (row, col))
+        self._emit_ansi(ANSI.MOVE_CURSOR % (row, col))
 
     def scroll_up(self, top, bottom):
         """Scroll the region between top and bottom one row up."""
         self._emit_ansi(
-            ansi.SET_SCROLL_REGION % (top, bottom) +
-            ansi.SCROLL_UP % (1,) +
-            ansi.SET_SCROLL_SCREEN
+            ANSI.SET_SCROLL_REGION % (top, bottom) +
+            ANSI.SCROLL_UP % (1,) +
+            ANSI.SET_SCROLL_SCREEN
         )
 
     def scroll_down(self, top, bottom):
         """Scroll the region between top and bottom one row down."""
         self._emit_ansi(
-            ansi.SET_SCROLL_REGION % (top, bottom) +
-            ansi.SCROLL_DOWN % (1,) +
-            ansi.SET_SCROLL_SCREEN
+            ANSI.SET_SCROLL_REGION % (top, bottom) +
+            ANSI.SCROLL_DOWN % (1,) +
+            ANSI.SET_SCROLL_SCREEN
         )
 
     def set_cursor_colour(self, colour):
         """Set the current cursor colour attribute."""
         try:
             rgb = self._palette[colour]
-            self._emit_ansi(ansi.SET_CURSOR_COLOUR % rgb)
+            self._emit_ansi(ANSI.SET_CURSOR_COLOUR % rgb)
         except KeyError:
             pass
 
     def reset(self):
         """Reset to defaults."""
         self._emit_ansi(
-            ansi.RESIZE_TERM % self._orig_size +
-            u''.join(ansi.RESET_PALETTE_ENTRY % (attr,) for attr in range(16)) +
-            ansi.SET_COLOUR % (0,) +
-            ansi.SHOW_CURSOR +
-            ansi.SET_CURSOR_SHAPE % (1,)
+            ANSI.RESIZE_TERM % self._orig_size +
+            u''.join(ANSI.RESET_PALETTE_ENTRY % (attr,) for attr in range(16)) +
+            ANSI.SET_COLOUR % (0,) +
+            ANSI.SHOW_CURSOR +
+            ANSI.SET_CURSOR_SHAPE % (1,)
         )
 
     def set_attributes(self, fore, back, blink, underline):
@@ -269,21 +385,21 @@ class PosixConsole(object):
         # use "bold" ANSI colours for the upper 8 EGA attributes
         style = 90 if (fore > 8) else 30
         self._emit_ansi(
-            ansi.SET_COLOUR % (0,) +
-            ansi.SET_COLOUR % (40 + EGA_TO_ANSI[back],) +
-            ansi.SET_COLOUR % (style + EGA_TO_ANSI[fore % 8],)
+            ANSI.SET_COLOUR % (0,) +
+            ANSI.SET_COLOUR % (40 + EGA_TO_ANSI[back],) +
+            ANSI.SET_COLOUR % (style + EGA_TO_ANSI[fore % 8],)
         )
         if blink:
-            self._emit_ansi(ansi.SET_COLOUR % (5,))
+            self._emit_ansi(ANSI.SET_COLOUR % (5,))
         if underline:
-            self._emit_ansi(ansi.SET_COLOUR % (4,))
+            self._emit_ansi(ANSI.SET_COLOUR % (4,))
 
     def set_palette_entry(self, attr, red, green, blue):
         """Set palette entry for attribute (0--16)."""
         # keep a record, mainly for cursor colours
         self._palette[attr] = red, green, blue
         # set the ANSI palette
-        self._emit_ansi(ansi.SET_PALETTE_ENTRY % (
+        self._emit_ansi(ANSI.SET_PALETTE_ENTRY % (
             8*(attr//8) + EGA_TO_ANSI[attr%8], red, green, blue
         ))
 
