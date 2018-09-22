@@ -26,6 +26,42 @@ else:
     from types import SimpleNamespace
 
 
+
+# output key codes - these can be anything
+KEYS = SimpleNamespace(
+    PAGEUP = 0x21,
+    PAGEDOWN = 0x22,
+    END = 0x23,
+    HOME = 0x24,
+    LEFT = 0x25,
+    UP = 0x26,
+    RIGHT = 0x27,
+    DOWN = 0x28,
+    INSERT = 0x2d,
+    DELETE = 0x2e,
+    F1 = 0x70,
+    F2 = 0x71,
+    F3 = 0x72,
+    F4 = 0x73,
+    F5 = 0x74,
+    F6 = 0x75,
+    F7 = 0x76,
+    F8 = 0x77,
+    F9 = 0x78,
+    F10 = 0x79,
+    F11 = 0x7a,
+    F12 = 0x7b,
+)
+# can't access namespace with indexing directly
+KEYDICT = KEYS.__dict__
+
+MODS = SimpleNamespace(
+    SHIFT = 0x10,
+    CTRL = 0x0c,
+    ALT = 0x03,
+)
+
+
 # ANSI escape codes
 # for reference, see:
 # http://en.wikipedia.org/wiki/ANSI_escape_code
@@ -66,16 +102,12 @@ ANSI = SimpleNamespace(
     #SET_BACKGROUND_RGB = u'\x1B[48;2;%i;%i;%im',
 )
 
-# keystrokes
-ANSIKEYS = SimpleNamespace(
-    F1 = u'\x1BOP',
-    F2 = u'\x1BOQ',
-    F3 = u'\x1BOR',
-    F4 = u'\x1BOS',
-    F1_OLD = u'\x1B[11~',
-    F2_OLD = u'\x1B[12~',
-    F3_OLD = u'\x1B[13~',
-    F4_OLD = u'\x1B[14~',
+# ANSI base key codes
+BASE_KEYS = dict(
+    F1 = u'\x1B[11~',
+    F2 = u'\x1B[12~',
+    F3 = u'\x1B[13~',
+    F4 = u'\x1B[14~',
     F5 = u'\x1B[15~',
     F6 = u'\x1B[17~',
     F7 = u'\x1B[18~',
@@ -84,143 +116,65 @@ ANSIKEYS = SimpleNamespace(
     F10 = u'\x1B[21~',
     F11 = u'\x1B[23~',
     F12 = u'\x1B[24~',
-    END = u'\x1BOF',
-    END2 = u'\x1B[F',
-    HOME = u'\x1BOH',
-    HOME2 = u'\x1B[H',
-    UP = u'\x1B[A',
-    DOWN = u'\x1B[B',
-    RIGHT = u'\x1B[C',
-    LEFT = u'\x1B[D',
+    END = u'\x1B[1F',
+    HOME = u'\x1B[1H',
+    UP = u'\x1B[1A',
+    DOWN = u'\x1B[1B',
+    RIGHT = u'\x1B[1C',
+    LEFT = u'\x1B[1D',
     INSERT = u'\x1B[2~',
     DELETE = u'\x1B[3~',
     PAGEUP = u'\x1B[5~',
     PAGEDOWN = u'\x1B[6~',
-    CTRL_F1 = u'\x1b[1;5P',
-    CTRL_F2 = u'\x1b[1;5Q',
-    CTRL_F3 = u'\x1b[1;5R',
-    CTRL_F4 = u'\x1b[1;5S',
-    CTRL_F5 = u'\x1b[15;5~',
-    CTRL_F6 = u'\x1B[17;5~',
-    CTRL_F7 = u'\x1B[18;5~',
-    CTRL_F8 = u'\x1B[19;5~',
-    CTRL_F9 = u'\x1B[20;5~',
-    CTRL_F10 = u'\x1B[21;5~',
-    CTRL_F11 = u'\x1B[23;5~',
-    CTRL_F12 = u'\x1B[24;5~',
-    CTRL_END = u'\x1B[1;5F',
-    CTRL_HOME = u'\x1B[1;5H',
-    CTRL_UP = u'\x1B[1;5A',
-    CTRL_DOWN = u'\x1B[1;5B',
-    CTRL_RIGHT = u'\x1B[1;5C',
-    CTRL_LEFT = u'\x1B[1;5D',
-    CTRL_INSERT = u'\x1B[2;5~',
-    CTRL_DELETE = u'\x1B[3;5~',
-    CTRL_PAGEUP = u'\x1B[5;5~',
-    CTRL_PAGEDOWN = u'\x1B[6;5~',
-    ALT_F1 = u'\x1b[1;3P',
-    ALT_F2 = u'\x1b[1;3Q',
-    ALT_F3 = u'\x1b[1;3R',
-    ALT_F4 = u'\x1b[1;3S',
-    ALT_F5 = u'\x1b[15;3~',
-    ALT_F6 = u'\x1B[17;3~',
-    ALT_F7 = u'\x1B[18;3~',
-    ALT_F8 = u'\x1B[19;3~',
-    ALT_F9 = u'\x1B[20;3~',
-    ALT_F10 = u'\x1B[21;3~',
-    ALT_F11 = u'\x1B[23;3~',
-    ALT_F12 = u'\x1B[24;3~',
-    ALT_END = u'\x1B[1;3F',
-    ALT_HOME = u'\x1B[1;3H',
-    ALT_UP = u'\x1B[1;3A',
-    ALT_DOWN = u'\x1B[1;3B',
-    ALT_RIGHT = u'\x1B[1;3C',
-    ALT_LEFT = u'\x1B[1;3D',
-    ALT_INSERT = u'\x1B[2;3~',
-    ALT_DELETE = u'\x1B[3;3~',
-    ALT_PAGEUP = u'\x1B[5;3~',
-    ALT_PAGEDOWN = u'\x1B[6;3~',
 )
 
-
-# output key codes - these can be anything
-KEYS = SimpleNamespace(
-    PAGEUP = 0x21,
-    PAGEDOWN = 0x22,
-    END = 0x23,
-    HOME = 0x24,
-    LEFT = 0x25,
-    UP = 0x26,
-    RIGHT = 0x27,
-    DOWN = 0x28,
-    INSERT = 0x2d,
-    DELETE = 0x2e,
-    F1 = 0x70,
-    F2 = 0x71,
-    F3 = 0x72,
-    F4 = 0x73,
-    F5 = 0x74,
-    F6 = 0x75,
-    F7 = 0x76,
-    F8 = 0x77,
-    F9 = 0x78,
-    F10 = 0x79,
-    F11 = 0x7a,
-    F12 = 0x7b,
+# CSI-based key codes
+CSI_KEYS = dict(
+    END = u'\x1B[F',
+    HOME = u'\x1B[H',
+    UP = u'\x1B[A',
+    DOWN = u'\x1B[B',
+    RIGHT = u'\x1B[C',
+    LEFT = u'\x1B[D',
 )
 
-MODS = SimpleNamespace(
-    SHIFT = 0x10,
-    CTRL = 0x0c,
-    ALT = 0x03,
+# SS3-based key codes
+SS3_KEYS = dict(
+    F1 = u'\x1BOP',
+    F2 = u'\x1BOQ',
+    F3 = u'\x1BOR',
+    F4 = u'\x1BOS',
+    END = u'\x1BOF',
+    HOME = u'\x1BOH',
 )
 
+def _mod_csi(number):
+    """Generate dict of modified CSI key sequences."""
+    return {
+        key: sequence[:-1] + u';%d' % (number,) + sequence[-1]
+        for key, sequence in BASE_KEYS.items()
+    }
 
-ANSI_TO_KEYMOD = {
-    ANSIKEYS.F1: (KEYS.F1, ()),  ANSIKEYS.F2: (KEYS.F2, ()),
-    ANSIKEYS.F3: (KEYS.F3, ()),  ANSIKEYS.F4: (KEYS.F4, ()),
-    ANSIKEYS.F1_OLD: (KEYS.F1, ()),  ANSIKEYS.F2_OLD: (KEYS.F2, ()),
-    ANSIKEYS.F3_OLD: (KEYS.F3, ()),  ANSIKEYS.F4_OLD: (KEYS.F4, ()),
-    ANSIKEYS.F5: (KEYS.F5, ()),  ANSIKEYS.F6: (KEYS.F6, ()),
-    ANSIKEYS.F7: (KEYS.F7, ()),  ANSIKEYS.F8: (KEYS.F8, ()),
-    ANSIKEYS.F9: (KEYS.F9, ()),  ANSIKEYS.F10: (KEYS.F10, ()),
-    ANSIKEYS.F11: (KEYS.F11, ()),  ANSIKEYS.F12: (KEYS.F12, ()),
-    ANSIKEYS.END: (KEYS.END, ()),  ANSIKEYS.END2: (KEYS.END, ()),
-    ANSIKEYS.HOME: (KEYS.HOME, ()),  ANSIKEYS.HOME2: (KEYS.HOME, ()),
-    ANSIKEYS.UP: (KEYS.UP, ()),  ANSIKEYS.DOWN: (KEYS.DOWN, ()),
-    ANSIKEYS.RIGHT: (KEYS.RIGHT, ()),  ANSIKEYS.LEFT: (KEYS.LEFT, ()),
-    ANSIKEYS.INSERT: (KEYS.INSERT, ()),  ANSIKEYS.DELETE: (KEYS.DELETE, ()),
-    ANSIKEYS.PAGEUP: (KEYS.PAGEUP, ()),  ANSIKEYS.PAGEDOWN: (KEYS.PAGEDOWN, ()),
-
-    ANSIKEYS.CTRL_F1: (KEYS.F1, (MODS.CTRL,)),  ANSIKEYS.CTRL_F2: (KEYS.F2, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_F3: (KEYS.F3, (MODS.CTRL,)),  ANSIKEYS.CTRL_F4: (KEYS.F4, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_F5: (KEYS.F5, (MODS.CTRL,)),  ANSIKEYS.CTRL_F6: (KEYS.F6, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_F7: (KEYS.F7, (MODS.CTRL,)),  ANSIKEYS.CTRL_F8: (KEYS.F8, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_F9: (KEYS.F9, (MODS.CTRL,)),  ANSIKEYS.CTRL_F10: (KEYS.F10, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_F11: (KEYS.F11, (MODS.CTRL,)),  ANSIKEYS.CTRL_F12: (KEYS.F12, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_END: (KEYS.END, (MODS.CTRL,)),  ANSIKEYS.CTRL_HOME: (KEYS.HOME, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_UP: (KEYS.UP, (MODS.CTRL,)),   ANSIKEYS.CTRL_DOWN: (KEYS.DOWN, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_RIGHT: (KEYS.RIGHT, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_LEFT: (KEYS.LEFT, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_INSERT: (KEYS.INSERT, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_DELETE: (KEYS.DELETE, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_PAGEUP: (KEYS.PAGEUP, (MODS.CTRL,)),
-    ANSIKEYS.CTRL_PAGEDOWN: (KEYS.PAGEDOWN, (MODS.CTRL,)),
-
-    ANSIKEYS.ALT_F1: (KEYS.F1, (MODS.ALT,)),  ANSIKEYS.ALT_F2: (KEYS.F2, (MODS.ALT,)),
-    ANSIKEYS.ALT_F3: (KEYS.F3, (MODS.ALT,)),  ANSIKEYS.ALT_F4: (KEYS.F4, (MODS.ALT,)),
-    ANSIKEYS.ALT_F5: (KEYS.F5, (MODS.ALT,)),  ANSIKEYS.ALT_F6: (KEYS.F6, (MODS.ALT,)),
-    ANSIKEYS.ALT_F7: (KEYS.F7, (MODS.ALT,)),  ANSIKEYS.ALT_F8: (KEYS.F8, (MODS.ALT,)),
-    ANSIKEYS.ALT_F9: (KEYS.F9, (MODS.ALT,)),  ANSIKEYS.ALT_F10: (KEYS.F10, (MODS.ALT,)),
-    ANSIKEYS.ALT_F11: (KEYS.F11, (MODS.ALT,)),  ANSIKEYS.ALT_F12: (KEYS.F12, (MODS.ALT,)),
-    ANSIKEYS.ALT_END: (KEYS.END, (MODS.ALT,)),  ANSIKEYS.ALT_HOME: (KEYS.HOME, (MODS.ALT,)),
-    ANSIKEYS.ALT_UP: (KEYS.UP, (MODS.ALT,)),  ANSIKEYS.ALT_DOWN: (KEYS.DOWN, (MODS.ALT,)),
-    ANSIKEYS.ALT_RIGHT: (KEYS.RIGHT, (MODS.ALT,)),  ANSIKEYS.ALT_LEFT: (KEYS.LEFT, (MODS.ALT,)),
-    ANSIKEYS.ALT_INSERT: (KEYS.INSERT, (MODS.ALT,)),
-    ANSIKEYS.ALT_DELETE: (KEYS.DELETE, (MODS.ALT,)),
-    ANSIKEYS.ALT_PAGEUP: (KEYS.PAGEUP, (MODS.ALT,)),
-    ANSIKEYS.ALT_PAGEDOWN: (KEYS.PAGEDOWN, (MODS.ALT,)),
+# modified key codes
+MOD_KEYS = {
+    (MODS.SHIFT,): _mod_csi(2),
+    (MODS.ALT,): _mod_csi(3),
+    (MODS.SHIFT, MODS.ALT): _mod_csi(4),
+    (MODS.CTRL,): _mod_csi(5),
+    (MODS.SHIFT, MODS.CTRL): _mod_csi(6),
+    (MODS.CTRL, MODS.ALT): _mod_csi(7),
+    (MODS.SHIFT, MODS.CTRL, MODS.ALT): _mod_csi(8),
 }
+
+# construct ansi to output mapping
+ANSI_TO_KEYMOD = {
+    sequence: (KEYDICT[key], set(mods))
+    for mods, mod_key_dict in MOD_KEYS.items()
+    for key, sequence in mod_key_dict.items()
+}
+ANSI_TO_KEYMOD.update({sequence: (KEYDICT[key], ()) for key, sequence in BASE_KEYS.items()})
+ANSI_TO_KEYMOD.update({sequence: (KEYDICT[key], ()) for key, sequence in CSI_KEYS.items()})
+ANSI_TO_KEYMOD.update({sequence: (KEYDICT[key], ()) for key, sequence in SS3_KEYS.items()})
 
 
 # mapping of the first 8 attributes of the default CGA palette
@@ -418,20 +372,19 @@ class PosixConsole(object):
         sequence = read_all_available(stdin)
         if sequence is None:
             # stream closed, send ctrl-d
-            return (u'\x04', 'd', {mods.CTRL})
+            return u'\x04', 'd', {mods.CTRL}
         elif not sequence:
-            return (u'', None, set())
+            return u'', None, set()
         # ansi sequences start with ESC (\x1b), but let ESC by itself through
         if len(sequence) > 1 and sequence[0] == u'\x1b':
             # esc+character represents alt+key
             if len(sequence) == 2:
-                return (u'', sequence[1], {MODS.ALT})
-            # one-character sequences are alt-key combinations
+                return u'', sequence[1], {MODS.ALT}
             # drop unrecognised sequences
-            key, mod = ANSI_TO_KEYMOD.get(sequence, u'')
-            return (u'', key, mod)
+            key, mod = ANSI_TO_KEYMOD.get(sequence, (u'', ()))
+            return u'', key, mod
         else:
-            return (sequence, None, set())
+            return sequence, None, set()
 
 
 def _has_console():
