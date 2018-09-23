@@ -26,42 +26,6 @@ else:
     from types import SimpleNamespace
 
 
-
-# output key codes - these can be anything
-KEYS = SimpleNamespace(
-    PAGEUP = 0x21,
-    PAGEDOWN = 0x22,
-    END = 0x23,
-    HOME = 0x24,
-    LEFT = 0x25,
-    UP = 0x26,
-    RIGHT = 0x27,
-    DOWN = 0x28,
-    INSERT = 0x2d,
-    DELETE = 0x2e,
-    F1 = 0x70,
-    F2 = 0x71,
-    F3 = 0x72,
-    F4 = 0x73,
-    F5 = 0x74,
-    F6 = 0x75,
-    F7 = 0x76,
-    F8 = 0x77,
-    F9 = 0x78,
-    F10 = 0x79,
-    F11 = 0x7a,
-    F12 = 0x7b,
-)
-# can't access namespace with indexing directly
-KEYDICT = KEYS.__dict__
-
-MODS = SimpleNamespace(
-    SHIFT = 0x10,
-    CTRL = 0x0c,
-    ALT = 0x03,
-)
-
-
 # ANSI escape codes
 # for reference, see:
 # http://en.wikipedia.org/wiki/ANSI_escape_code
@@ -157,24 +121,32 @@ def _mod_csi(number):
 
 # modified key codes
 MOD_KEYS = {
-    (MODS.SHIFT,): _mod_csi(2),
-    (MODS.ALT,): _mod_csi(3),
-    (MODS.SHIFT, MODS.ALT): _mod_csi(4),
-    (MODS.CTRL,): _mod_csi(5),
-    (MODS.SHIFT, MODS.CTRL): _mod_csi(6),
-    (MODS.CTRL, MODS.ALT): _mod_csi(7),
-    (MODS.SHIFT, MODS.CTRL, MODS.ALT): _mod_csi(8),
+    ('SHIFT',): _mod_csi(2),
+    ('ALT',): _mod_csi(3),
+    ('SHIFT', 'ALT'): _mod_csi(4),
+    ('CTRL',): _mod_csi(5),
+    ('SHIFT', 'CTRL'): _mod_csi(6),
+    ('CTRL', 'ALT'): _mod_csi(7),
+    ('SHIFT', 'CTRL', 'ALT'): _mod_csi(8),
 }
 
 # construct ansi to output mapping
 ANSI_TO_KEYMOD = {
-    sequence: (KEYDICT[key], set(mods))
+    sequence: (key, set(mods))
     for mods, mod_key_dict in MOD_KEYS.items()
     for key, sequence in mod_key_dict.items()
 }
-ANSI_TO_KEYMOD.update({sequence: (KEYDICT[key], ()) for key, sequence in BASE_KEYS.items()})
-ANSI_TO_KEYMOD.update({sequence: (KEYDICT[key], ()) for key, sequence in CSI_KEYS.items()})
-ANSI_TO_KEYMOD.update({sequence: (KEYDICT[key], ()) for key, sequence in SS3_KEYS.items()})
+ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in BASE_KEYS.items()})
+ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in CSI_KEYS.items()})
+ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in SS3_KEYS.items()})
+
+# esc + char means alt+key; lowercase
+ANSI_TO_KEYMOD.update({u'\x1b%c' % (c + 32,): (chr(c + 32), {'ALT'}) for c in range(65, 91)})
+# uppercase
+ANSI_TO_KEYMOD.update({u'\x1b%c' % (c,): (chr(c + 32), {'ALT', 'SHIFT'}) for c in range(65, 91)})
+# digits, controls & everything else
+ANSI_TO_KEYMOD.update({u'\x1b%c' % (c,): (chr(c), {'ALT'}) for c in range(0, 65)})
+ANSI_TO_KEYMOD.update({u'\x1b%c' % (c,): (chr(c), {'ALT'}) for c in range(91, 128)})
 
 
 # mapping of the first 8 attributes of the default CGA palette
@@ -207,9 +179,6 @@ else:
 
 class PosixConsole(object):
     """POSIX-based console implementation."""
-
-    keys = KEYS
-    mods = MODS
 
     def __init__(self):
         """Set up the console."""
@@ -372,14 +341,11 @@ class PosixConsole(object):
         sequence = read_all_available(stdin)
         if sequence is None:
             # stream closed, send ctrl-d
-            return u'\x04', 'd', {mods.CTRL}
+            return u'\x04', 'd', {'CTRL'}
         elif not sequence:
             return u'', None, set()
         # ansi sequences start with ESC (\x1b), but let ESC by itself through
         if len(sequence) > 1 and sequence[0] == u'\x1b':
-            # esc+character represents alt+key
-            if len(sequence) == 2:
-                return u'', sequence[1], {MODS.ALT}
             # drop unrecognised sequences
             key, mod = ANSI_TO_KEYMOD.get(sequence, (u'', ()))
             return u'', key, mod

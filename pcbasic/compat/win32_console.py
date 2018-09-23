@@ -25,7 +25,6 @@ if PY2:
     from .python2 import SimpleNamespace
 else:
     from types import SimpleNamespace
-    unichr = chr
 
 
 # Windows virtual key codes
@@ -52,16 +51,15 @@ KEYS = SimpleNamespace(
     F10 = 0x79,
     F11 = 0x7a,
     F12 = 0x7b,
+    #
+    ALT = 0x12, # VK_MENU
 )
+VK_TO_KEY = {value: key for key, value in KEYS.__dict__.items()}
+# alpha key codes
+VK_TO_KEY.update({
+    value: chr(value).lower() for value in range(0x30, 0x5b)
+})
 
-MODS = SimpleNamespace(
-    SHIFT = 0x10,
-    CTRL = 0x0c,
-    ALT = 0x03,
-)
-
-# windows constants
-VK_MENU = 0x12 # ALT
 
 # character attributes, from wincon.h
 NORMAL = 0x00
@@ -324,9 +322,6 @@ def _ctrl_handler(fdwCtrlType):
 class Win32Console(object):
     """Win32API-based console implementation."""
 
-    keys = KEYS
-    mods = MODS
-
     def __init__(self):
         """Set up console"""
         # preserve original settings
@@ -561,7 +556,7 @@ class Win32Console(object):
                     if event.EventType != 1: # KEY_EVENT
                         continue
                     char, key, mods = self._translate_event(event)
-                    if key:
+                    if char or key:
                         self._input_buffer.append((char, key, mods))
                         if char == u'\x1a':
                             # ctrl-z is end of input on windows console
@@ -579,7 +574,7 @@ class Win32Console(object):
             char = u''
         if not event.KeyEvent.bKeyDown:
             # key-up event for unicode Alt+HEX input
-            if event.KeyEvent.wVirtualKeyCode == VK_MENU:
+            if event.KeyEvent.wVirtualKeyCode == KEYS.ALT:
                 return char, None, set()
             # ignore other key-up events
             return u'', None, set()
@@ -594,17 +589,12 @@ class Win32Console(object):
         # SHIFT_PRESSED 0x0010
         mods = set()
         if control & 0x0c:
-            mods.add(MODS.CTRL)
+            mods.add('CTRL')
         if control & 0x03:
-            mods.add(MODS.ALT)
+            mods.add('ALT')
         if control & 0x10:
-            mods.add(MODS.SHIFT)
-        # this is hacky - is the key code a recognised one?
-        if key in KEYS.__dict__.values():
-            return u'', key, mods
-        elif key in range(0x30, 0x5b):
-            # letter key codes
-            key = unichr(key)
+            mods.add('SHIFT')
+        key = VK_TO_KEY.get(key, None)
         return char, key, mods
 
 
