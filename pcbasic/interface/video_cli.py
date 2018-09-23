@@ -18,25 +18,136 @@ from ..compat import EOF, console, stdin, stdout
 
 
 # escape sequence to scancode
-KEYS = console.keys
 KEY_TO_SCAN = {
-    KEYS.F1: scancode.F1,  KEYS.F2: scancode.F2,  KEYS.F3: scancode.F3,  KEYS.F4: scancode.F4,
-    KEYS.F5: scancode.F5,  KEYS.F6: scancode.F6,  KEYS.F7: scancode.F7,
-    KEYS.F8: scancode.F8,  KEYS.F9: scancode.F9,  KEYS.F10: scancode.F10,  KEYS.F11: scancode.F11,
-    KEYS.F12: scancode.F12,  KEYS.END: scancode.END,
-    KEYS.HOME: scancode.HOME,  KEYS.UP: scancode.UP,
-    KEYS.DOWN: scancode.DOWN,  KEYS.RIGHT: scancode.RIGHT,  KEYS.LEFT: scancode.LEFT,
-    KEYS.INSERT: scancode.INSERT,  KEYS.DELETE: scancode.DELETE,  KEYS.PAGEUP: scancode.PAGEUP,
-    KEYS.PAGEDOWN: scancode.PAGEDOWN,
+    'F1': scancode.F1,  'F2': scancode.F2,  'F3': scancode.F3,  'F4': scancode.F4,
+    'F5': scancode.F5,  'F6': scancode.F6,  'F7': scancode.F7,  'F8': scancode.F8,
+    'F9': scancode.F9,  'F10': scancode.F10,  'F11': scancode.F11, 'F12': scancode.F12,
+    'END': scancode.END,  'HOME': scancode.HOME,
+    'UP': scancode.UP,  'DOWN': scancode.DOWN,  'RIGHT': scancode.RIGHT,  'LEFT': scancode.LEFT,
+    'INSERT': scancode.INSERT,  'DELETE': scancode.DELETE,  'PAGEUP': scancode.PAGEUP,
+    'PAGEDOWN': scancode.PAGEDOWN,
+}
+MOD_TO_SCAN = {
+    'SHIFT': scancode.LSHIFT,
+    'CTRL': scancode.CTRL,
+    'ALT': scancode.ALT,
 }
 # escape sequence to e-ASCII
 KEY_TO_EASCII = {
-    KEYS.F1: uea.F1,  KEYS.F2: uea.F2,  KEYS.F3: uea.F3,  KEYS.F4: uea.F4,  KEYS.F5: uea.F5,
-    KEYS.F6: uea.F6,  KEYS.F7: uea.F7,  KEYS.F8: uea.F8,  KEYS.F9: uea.F9,  KEYS.F10: uea.F10,
-    KEYS.F11: uea.F11,  KEYS.F12: uea.F12,  KEYS.END: uea.END,
-    KEYS.HOME: uea.HOME,  KEYS.UP: uea.UP,  KEYS.DOWN: uea.DOWN,
-    KEYS.RIGHT: uea.RIGHT,  KEYS.LEFT: uea.LEFT,  KEYS.INSERT: uea.INSERT,
-    KEYS.DELETE: uea.DELETE,  KEYS.PAGEUP: uea.PAGEUP,  KEYS.PAGEDOWN: uea.PAGEDOWN,
+    'F1': uea.F1,  'F2': uea.F2,  'F3': uea.F3,  'F4': uea.F4,  'F5': uea.F5,
+    'F6': uea.F6,  'F7': uea.F7,  'F8': uea.F8,  'F9': uea.F9,  'F10': uea.F10,
+    'F11': uea.F11,  'F12': uea.F12,  'END': uea.END,
+    'HOME': uea.HOME,  'UP': uea.UP,  'DOWN': uea.DOWN,
+    'RIGHT': uea.RIGHT,  'LEFT': uea.LEFT,  'INSERT': uea.INSERT,
+    'DELETE': uea.DELETE,  'PAGEUP': uea.PAGEUP,  'PAGEDOWN': uea.PAGEDOWN,
+}
+
+SHIFT_KEY_TO_EASCII = {
+    'F1': uea.SHIFT_F1,
+    'F2': uea.SHIFT_F2,
+    'F3': uea.SHIFT_F3,
+    'F4': uea.SHIFT_F4,
+    'F5': uea.SHIFT_F5,
+    'F6': uea.SHIFT_F6,
+    'F7': uea.SHIFT_F7,
+    'F8': uea.SHIFT_F8,
+    'F9': uea.SHIFT_F9,
+    'F10': uea.SHIFT_F10,
+    'F11': uea.SHIFT_F11,
+    'F12': uea.SHIFT_F12,
+    'HOME': uea.SHIFT_HOME,
+    'UP': uea.SHIFT_UP,
+    'PAGEUP': uea.SHIFT_PAGEUP,
+    'LEFT': uea.SHIFT_LEFT,
+    'RIGHT': uea.SHIFT_RIGHT,
+    'END': uea.SHIFT_END,
+    'DOWN': uea.SHIFT_DOWN,
+    'PAGEDOWN': uea.SHIFT_PAGEDOWN,
+    'INSERT': uea.SHIFT_INSERT,
+    'DELETE': uea.SHIFT_DELETE,
+}
+
+CTRL_KEY_TO_EASCII = {
+    'F1': uea.CTRL_F1,
+    'F2': uea.CTRL_F2,
+    'F3': uea.CTRL_F3,
+    'F4': uea.CTRL_F4,
+    'F5': uea.CTRL_F5,
+    'F6': uea.CTRL_F6,
+    'F7': uea.CTRL_F7,
+    'F8': uea.CTRL_F8,
+    'F9': uea.CTRL_F9,
+    'F10': uea.CTRL_F10,
+    'F11': uea.CTRL_F11,
+    'F12': uea.CTRL_F12,
+    'HOME': uea.CTRL_HOME,
+    'PAGEUP': uea.CTRL_PAGEUP,
+    'LEFT': uea.CTRL_LEFT,
+    'RIGHT': uea.CTRL_RIGHT,
+    'END': uea.CTRL_END,
+    'PAGEDOWN': uea.CTRL_PAGEDOWN,
+    #'ESCAPE': uea.CTRL_ESCAPE,
+    #'BACKSPACE': uea.CTRL_BACKSPACE,
+    #'2': uea.CTRL_2,
+    #'6': uea.CTRL_6,
+    #'MINUS': uea.CTRL_MINUS,
+}
+
+ALT_KEY_TO_EASCII = {
+    '1': uea.ALT_1,
+    '2': uea.ALT_2,
+    '3': uea.ALT_3,
+    '4': uea.ALT_4,
+    '5': uea.ALT_5,
+    '6': uea.ALT_6,
+    '7': uea.ALT_7,
+    '8': uea.ALT_8,
+    '9': uea.ALT_9,
+    '0': uea.ALT_0,
+    '-': uea.ALT_MINUS,
+    '=': uea.ALT_EQUALS,
+    'q': uea.ALT_q,
+    'w': uea.ALT_w,
+    'e': uea.ALT_e,
+    'r': uea.ALT_r,
+    't': uea.ALT_t,
+    'y': uea.ALT_y,
+    'u': uea.ALT_u,
+    'i': uea.ALT_i,
+    'o': uea.ALT_o,
+    'p': uea.ALT_p,
+    'a': uea.ALT_a,
+    's': uea.ALT_s,
+    'd': uea.ALT_d,
+    'f': uea.ALT_f,
+    'g': uea.ALT_g,
+    'h': uea.ALT_h,
+    'j': uea.ALT_j,
+    'k': uea.ALT_k,
+    'l': uea.ALT_l,
+    'z': uea.ALT_z,
+    'x': uea.ALT_x,
+    'c': uea.ALT_c,
+    'v': uea.ALT_v,
+    'b': uea.ALT_b,
+    'n': uea.ALT_n,
+    'm': uea.ALT_m,
+    '\b': uea.ALT_BACKSPACE,
+    '\t': uea.ALT_TAB,
+    '\r': uea.ALT_RETURN,
+    ' ': uea.ALT_SPACE,
+    'F1': uea.ALT_F1,
+    'F2': uea.ALT_F2,
+    'F3': uea.ALT_F3,
+    'F4': uea.ALT_F4,
+    'F5': uea.ALT_F5,
+    'F6': uea.ALT_F6,
+    'F7': uea.ALT_F7,
+    'F8': uea.ALT_F8,
+    'F9': uea.ALT_F9,
+    'F10': uea.ALT_F10,
+    'F11': uea.ALT_F11,
+    'F12': uea.ALT_F12,
 }
 
 
@@ -220,7 +331,7 @@ class InputHandlerCLI(object):
         """Handle keyboard events."""
         while True:
             # s is one unicode char or one scancode
-            uc, sc = self._get_key()
+            uc, sc, mods = self._get_key()
             if not uc and not sc:
                 break
             if uc == EOF and self.quit_on_eof:
@@ -233,7 +344,7 @@ class InputHandlerCLI(object):
                 )
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
-                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (uc, sc, [])))
+                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (uc, sc, mods)))
                 # this is needed since we don't send key-up events at all otherwise
                 if sc == scancode.F12:
                     self._f12_active = True
@@ -242,14 +353,21 @@ class InputHandlerCLI(object):
                     self._f12_active = False
 
     def _get_key(self):
-        """Retrieve one scancode sequence or one unicode char from keyboard."""
-        inp = console.read_key()
-        if inp == u'':
-            return None, None
-        if isinstance(inp, int):
-            # keycode
-            uc = KEY_TO_EASCII.get(inp, u'')
-            scan = KEY_TO_SCAN.get(inp, None)
-            return uc, scan
-        # character
-        return inp, None
+        """Retrieve one keypress."""
+        char, key, mods = console.read_key()
+        if not char and not key:
+            return None, None, []
+        # override characters wth alt
+        if 'ALT' in mods and 'CTRL' not in mods:
+            char = ALT_KEY_TO_EASCII.get(key, u'')
+        # don't override ctrl characters
+        if not char:
+            if 'CTRL' in mods and 'ALT' not in mods:
+                char = CTRL_KEY_TO_EASCII.get(key, u'')
+            elif mods == {'SHIFT'}:
+                char = SHIFT_KEY_TO_EASCII.get(key, char)
+            else:
+                char = KEY_TO_EASCII.get(key, char)
+        scan = KEY_TO_SCAN.get(key, None)
+        modscan = [MOD_TO_SCAN[mod] for mod in mods if mod in MOD_TO_SCAN]
+        return char, scan, modscan

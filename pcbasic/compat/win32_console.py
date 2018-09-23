@@ -27,7 +27,7 @@ else:
     from types import SimpleNamespace
 
 
-# Windows virtual key codes
+# Windows virtual key codes, mapped to standard key names
 KEYS = SimpleNamespace(
     PAGEUP = 0x21, # VK_PRIOR
     PAGEDOWN = 0x22, # VK_NEXT
@@ -51,11 +51,30 @@ KEYS = SimpleNamespace(
     F10 = 0x79,
     F11 = 0x7a,
     F12 = 0x7b,
+    #
+    ALT = 0x12, # VK_MENU
 )
+VK_TO_KEY = {value: key for key, value in KEYS.__dict__.items()}
+# alpha key codes
+VK_TO_KEY.update({
+    value: chr(value).lower() for value in range(0x30, 0x5b)
+})
 
-# windpws constants
-KEY_EVENT = 1
-VK_MENU = 0x12
+# control key state bit flags
+# CAPSLOCK_ON = 0x0080,
+# ENHANCED_KEY = 0x0100,
+# LEFT_ALT_PRESSED = 0x0002,
+# LEFT_CTRL_PRESSED = 0x0008,
+# NUMLOCK_ON = 0x0020,
+# RIGHT_ALT_PRESSED = 0x0001,
+# RIGHT_CTRL_PRESSED = 0x0004,
+# SCROLLLOCK_ON = 0x0040,
+# SHIFT_PRESSED = 0x0010,
+MODS = dict(
+    CTRL = 0x0c,
+    ALT = 0x03,
+    SHIFT = 0x10,
+)
 
 # character attributes, from wincon.h
 NORMAL = 0x00
@@ -318,8 +337,6 @@ def _ctrl_handler(fdwCtrlType):
 class Win32Console(object):
     """Win32API-based console implementation."""
 
-    keys = KEYS
-
     def __init__(self):
         """Set up console"""
         # preserve original settings
@@ -508,28 +525,25 @@ class Win32Console(object):
 
     def read_key(self):
         """
-        Read keypress from console. Non-blocking. Returns:
-        - unicode, if character key
-        - int out of console.keys, if special key
-        - EOF if closed
+        Read keypress from console. Non-blocking.
+        Returns tuple (unicode, keycode, set of mods)
         """
         self._fill_buffer(blocking=False)
         if not self._input_buffer:
-            return u''
+            return (u'', None, {})
         return self._input_buffer.popleft()
 
     def read_all_chars(self):
         """Read all characters in the buffer."""
         self._fill_buffer(blocking=False)
         closed = False
-        if self._input_buffer and self._input_buffer[-1] == u'\x1a':
+        if self._input_buffer and self._input_buffer[-1][0] == u'\x1a':
             closed = True
             self._input_buffer.pop()
             if not self._input_buffer:
                 return None
         output = u''.join(
             _char for _char in self._input_buffer
-            if not isinstance(_char, int)
         )
         self._input_buffer.clear()
         if closed:
@@ -554,46 +568,35 @@ class Win32Console(object):
                     nevents.value, byref(nread)
                 )
                 for event in input_buffer:
-                    if event.EventType != KEY_EVENT:
+                    if event.EventType != 1: # KEY_EVENT
                         continue
-                    key = self._translate_event(event)
-                    if key:
-                        self._input_buffer.append(key)
-                        if key == u'\x1a':
+                    char, key, mods = self._translate_event(event)
+                    if char or key:
+                        self._input_buffer.append((char, key, mods))
+                        if char == u'\x1a':
                             # ctrl-z is end of input on windows console
                             return
                         if self._echo:
-                            self._echo_key(key)
+                            _write_console(HSTDOUT, char.replace(u'\r', u'\n'))
             time.sleep(0.01)
 
     def _translate_event(self, event):
         char = event.KeyEvent.UnicodeChar
         key = event.KeyEvent.wVirtualKeyCode
+        control = event.KeyEvent.dwControlKeyState
         if char == u'\0':
             # windows uses null-terminated strings so \0 means no output
             char = u''
         if not event.KeyEvent.bKeyDown:
             # key-up event for unicode Alt+HEX input
-            if event.KeyEvent.wVirtualKeyCode == VK_MENU:
-                return char
+            if event.KeyEvent.wVirtualKeyCode == KEYS.ALT:
+                return char, None, set()
             # ignore other key-up events
-            return u''
-        elif event.KeyEvent.dwControlKeyState & 0xf:
-            # ctrl or alt are down; don't parse arrow keys etc.
-            # but if any unicode is produced, send it on
-            return char
-        # this is hacky - is the key code a recognised one?
-        elif key in self.keys.__dict__.values():
-            return key
-        return char
-
-    def _echo_key(self, key):
-        """Echo a character or special key."""
-        if not isinstance(key, int):
-            # caracter echo
-            if key == u'\r':
-                key = u'\n'
-            _write_console(HSTDOUT, key)
+            return u'', None, set()
+        # decode modifier bit flags
+        mods = set(key for key, mask in MODS.items() if control & mask)
+        key = VK_TO_KEY.get(key, None)
+        return char, key, mods
 
 
 def _has_console():

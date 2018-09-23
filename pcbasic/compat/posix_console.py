@@ -1,8 +1,8 @@
 """
 PC-BASIC - compat.posix_console
-POSIX console support
+POSIX console support with ANSI escape sequences
 
-(c) 2018 Rob Hagemans
+(c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -19,7 +19,6 @@ import atexit
 from collections import deque
 
 from .base import MACOS, PY2, HOME_DIR, wrap_input_stream, wrap_output_stream
-from . import ansi
 
 if PY2:
     from .python2 import SimpleNamespace
@@ -27,62 +26,133 @@ else:
     from types import SimpleNamespace
 
 
-# output buffer for ioctl call
-_sock_size = array.array('i', [0])
-
-if PY2:
-    stdin = wrap_input_stream(sys.stdin)
-    stdout = wrap_output_stream(sys.stdout)
-    stderr = wrap_output_stream(sys.stderr)
-else:
-    stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
+# ANSI escape codes
+# for reference, see:
+# http://en.wikipedia.org/wiki/ANSI_escape_code
+# http://misc.flogisoft.com/bash/tip_colors_and_formatting
+# http://www.termsys.demon.co.uk/vtansi.htm
+# http://ascii-table.com/ansi-escape-sequences-vt-100.php
+# https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
 
 
-# Key codes -  these can be anything so long as they're ints.
-KEYS = SimpleNamespace(
-    PAGEUP = 0x21,
-    PAGEDOWN = 0x22,
-    END = 0x23,
-    HOME = 0x24,
-    LEFT = 0x25,
-    UP = 0x26,
-    RIGHT = 0x27,
-    DOWN = 0x28,
-    INSERT = 0x2d,
-    DELETE = 0x2e,
-    F1 = 0x70,
-    F2 = 0x71,
-    F3 = 0x72,
-    F4 = 0x73,
-    F5 = 0x74,
-    F6 = 0x75,
-    F7 = 0x76,
-    F8 = 0x77,
-    F9 = 0x78,
-    F10 = 0x79,
-    F11 = 0x7a,
-    F12 = 0x7b,
+# ANSI escape sequences
+ANSI = SimpleNamespace(
+    RESET = u'\x1Bc',
+    SET_SCROLL_SCREEN = u'\x1B[r',
+    SET_SCROLL_REGION = u'\x1B[%i;%ir',
+    RESIZE_TERM = u'\x1B[8;%i;%i;t',
+    SET_TITLE = u'\x1B]2;%s\a',
+    CLEAR_SCREEN = u'\x1B[2J',
+    CLEAR_LINE = u'\x1B[2K',
+    SCROLL_UP = u'\x1B[%iS',
+    SCROLL_DOWN = u'\x1B[%iT',
+    MOVE_CURSOR = u'\x1B[%i;%if',
+    MOVE_RIGHT = u'\x1B[C',
+    MOVE_LEFT = u'\x1B[D',
+    MOVE_N_RIGHT = u'\x1B[%iC',
+    MOVE_N_LEFT = u'\x1B[%iD',
+    SHOW_CURSOR = u'\x1B[?25h',
+    HIDE_CURSOR = u'\x1B[?25l',
+    # 1 blinking block 2 block 3 blinking line 4 line
+    SET_CURSOR_SHAPE = u'\x1B[%i q',
+    SET_COLOUR = u'\x1B[%im',
+    SET_CURSOR_COLOUR = u'\x1B]12;#%02x%02x%02x\a',
+    SET_PALETTE_ENTRY = u'\x1B]4;%i;#%02x%02x%02x\a',
+    RESET_PALETTE_ENTRY = u'\x1B]104;%i\a',
+    #SAVE_CURSOR_POS = u'\x1B[s',
+    #RESTORE_CURSOR_POS = u'\x1B[u',
+    #REQUEST_SIZE = u'\x1B[18;t',
+    #SET_FOREGROUND_RGB = u'\x1B[38;2;%i;%i;%im',
+    #SET_BACKGROUND_RGB = u'\x1B[48;2;%i;%i;%im',
 )
 
-ANSI_TO_KEY = {
-    ansi.KEYS.F1: KEYS.F1,  ansi.KEYS.F2: KEYS.F2,  ansi.KEYS.F3: KEYS.F3,  ansi.KEYS.F4: KEYS.F4,
-    ansi.KEYS.F1_OLD: KEYS.F1,  ansi.KEYS.F2_OLD: KEYS.F2,  ansi.KEYS.F3_OLD: KEYS.F3,
-    ansi.KEYS.F4_OLD: KEYS.F4,  ansi.KEYS.F5: KEYS.F5,  ansi.KEYS.F6: KEYS.F6,
-    ansi.KEYS.F7: KEYS.F7,  ansi.KEYS.F8: KEYS.F8,  ansi.KEYS.F9: KEYS.F9,
-    ansi.KEYS.F10: KEYS.F10,  ansi.KEYS.F11: KEYS.F11,  ansi.KEYS.F12: KEYS.F12,
-    ansi.KEYS.END: KEYS.END,  ansi.KEYS.END2: KEYS.END,
-    ansi.KEYS.HOME: KEYS.HOME,  ansi.KEYS.HOME2: KEYS.HOME,  ansi.KEYS.UP: KEYS.UP,
-    ansi.KEYS.DOWN: KEYS.DOWN,  ansi.KEYS.RIGHT: KEYS.RIGHT,  ansi.KEYS.LEFT: KEYS.LEFT,
-    ansi.KEYS.INSERT: KEYS.INSERT,  ansi.KEYS.DELETE: KEYS.DELETE,
-    ansi.KEYS.PAGEUP: KEYS.PAGEUP,  ansi.KEYS.PAGEDOWN: KEYS.PAGEDOWN,
+# ANSI base key codes
+BASE_KEYS = dict(
+    F1 = u'\x1B[11~',
+    F2 = u'\x1B[12~',
+    F3 = u'\x1B[13~',
+    F4 = u'\x1B[14~',
+    F5 = u'\x1B[15~',
+    F6 = u'\x1B[17~',
+    F7 = u'\x1B[18~',
+    F8 = u'\x1B[19~',
+    F9 = u'\x1B[20~',
+    F10 = u'\x1B[21~',
+    F11 = u'\x1B[23~',
+    F12 = u'\x1B[24~',
+    END = u'\x1B[1F',
+    HOME = u'\x1B[1H',
+    UP = u'\x1B[1A',
+    DOWN = u'\x1B[1B',
+    RIGHT = u'\x1B[1C',
+    LEFT = u'\x1B[1D',
+    INSERT = u'\x1B[2~',
+    DELETE = u'\x1B[3~',
+    PAGEUP = u'\x1B[5~',
+    PAGEDOWN = u'\x1B[6~',
+)
+
+# CSI-based key codes
+CSI_KEYS = dict(
+    END = u'\x1B[F',
+    HOME = u'\x1B[H',
+    UP = u'\x1B[A',
+    DOWN = u'\x1B[B',
+    RIGHT = u'\x1B[C',
+    LEFT = u'\x1B[D',
+)
+
+# SS3-based key codes
+SS3_KEYS = dict(
+    F1 = u'\x1BOP',
+    F2 = u'\x1BOQ',
+    F3 = u'\x1BOR',
+    F4 = u'\x1BOS',
+    END = u'\x1BOF',
+    HOME = u'\x1BOH',
+)
+
+def _mod_csi(number):
+    """Generate dict of modified CSI key sequences."""
+    return {
+        key: sequence[:-1] + u';%d' % (number,) + sequence[-1]
+        for key, sequence in BASE_KEYS.items()
+    }
+
+# modified key codes
+MOD_KEYS = {
+    ('SHIFT',): _mod_csi(2),
+    ('ALT',): _mod_csi(3),
+    ('SHIFT', 'ALT'): _mod_csi(4),
+    ('CTRL',): _mod_csi(5),
+    ('SHIFT', 'CTRL'): _mod_csi(6),
+    ('CTRL', 'ALT'): _mod_csi(7),
+    ('SHIFT', 'CTRL', 'ALT'): _mod_csi(8),
 }
+
+# construct ansi to output mapping
+ANSI_TO_KEYMOD = {
+    sequence: (key, set(mods))
+    for mods, mod_key_dict in MOD_KEYS.items()
+    for key, sequence in mod_key_dict.items()
+}
+ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in BASE_KEYS.items()})
+ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in CSI_KEYS.items()})
+ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in SS3_KEYS.items()})
+
+# esc + char means alt+key; lowercase
+ANSI_TO_KEYMOD.update({u'\x1b%c' % (c + 32,): (chr(c + 32), {'ALT'}) for c in range(65, 91)})
+# uppercase
+ANSI_TO_KEYMOD.update({u'\x1b%c' % (c,): (chr(c + 32), {'ALT', 'SHIFT'}) for c in range(65, 91)})
+# digits, controls & everything else
+ANSI_TO_KEYMOD.update({u'\x1b%c' % (c,): (chr(c), {'ALT'}) for c in range(0, 65)})
+ANSI_TO_KEYMOD.update({u'\x1b%c' % (c,): (chr(c), {'ALT'}) for c in range(91, 128)})
+
 
 # mapping of the first 8 attributes of the default CGA palette
 # so that non-RGB terminals use sensible colours
-EGA_TO_ANSI = (
-    ansi.COLOURS.BLACK, ansi.COLOURS.BLUE, ansi.COLOURS.GREEN, ansi.COLOURS.CYAN,
-    ansi.COLOURS.RED, ansi.COLOURS.MAGENTA, ansi.COLOURS.YELLOW, ansi.COLOURS.WHITE
-)
+# black, blue, green, cyan, red, magenta, yellow, white
+EGA_TO_ANSI = (0, 4, 2, 6, 1, 5, 3, 7)
 
 # default palette - these are in fact the 16 CGA colours
 # this gets overwritten anyway
@@ -94,10 +164,21 @@ DEFAULT_PALETTE = (
 )
 
 
+# output buffer for ioctl call
+_sock_size = array.array('i', [0])
+
+
+# standard unicode streams
+if PY2:
+    stdin = wrap_input_stream(sys.stdin)
+    stdout = wrap_output_stream(sys.stdout)
+    stderr = wrap_output_stream(sys.stderr)
+else:
+    stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
+
+
 class PosixConsole(object):
     """POSIX-based console implementation."""
-
-    keys = KEYS
 
     def __init__(self):
         """Set up the console."""
@@ -146,80 +227,80 @@ class PosixConsole(object):
 
     def set_caption(self, caption):
         """Set terminal caption."""
-        self._emit_ansi(ansi.SET_TITLE % (caption,))
+        self._emit_ansi(ANSI.SET_TITLE % (caption,))
 
     def resize(self, height, width):
         """Resize terminal."""
-        self._emit_ansi(ansi.RESIZE_TERM % (height, width))
+        self._emit_ansi(ANSI.RESIZE_TERM % (height, width))
         # start below the current output
         self.clear()
 
     def clear(self):
         """Clear the screen."""
         self._emit_ansi(
-            ansi.CLEAR_SCREEN +
-            ansi.MOVE_CURSOR % (1, 1)
+            ANSI.CLEAR_SCREEN +
+            ANSI.MOVE_CURSOR % (1, 1)
         )
 
     def clear_row(self):
         """Clear the current row."""
-        self._emit_ansi(ansi.CLEAR_LINE)
+        self._emit_ansi(ANSI.CLEAR_LINE)
 
     def show_cursor(self, block=False):
         """Show the cursor."""
         self._emit_ansi(
-            ansi.SHOW_CURSOR +
-            ansi.SET_CURSOR_SHAPE % (1 if block else 3,)
+            ANSI.SHOW_CURSOR +
+            ANSI.SET_CURSOR_SHAPE % (1 if block else 3,)
         )
 
     def hide_cursor(self):
         """Hide the cursor."""
-        self._emit_ansi(ansi.HIDE_CURSOR)
+        self._emit_ansi(ANSI.HIDE_CURSOR)
 
     def move_cursor_left(self, n):
         """Move cursor n cells to the left."""
-        self._emit_ansi(ansi.MOVE_N_LEFT % (n,))
+        self._emit_ansi(ANSI.MOVE_N_LEFT % (n,))
 
     def move_cursor_right(self, n):
         """Move cursor n cells to the right."""
-        self._emit_ansi(ansi.MOVE_N_RIGHT % (n,))
+        self._emit_ansi(ANSI.MOVE_N_RIGHT % (n,))
 
     def move_cursor_to(self, row, col):
         """Move cursor to a new position."""
-        self._emit_ansi(ansi.MOVE_CURSOR % (row, col))
+        self._emit_ansi(ANSI.MOVE_CURSOR % (row, col))
 
     def scroll_up(self, top, bottom):
         """Scroll the region between top and bottom one row up."""
         self._emit_ansi(
-            ansi.SET_SCROLL_REGION % (top, bottom) +
-            ansi.SCROLL_UP % (1,) +
-            ansi.SET_SCROLL_SCREEN
+            ANSI.SET_SCROLL_REGION % (top, bottom) +
+            ANSI.SCROLL_UP % (1,) +
+            ANSI.SET_SCROLL_SCREEN
         )
 
     def scroll_down(self, top, bottom):
         """Scroll the region between top and bottom one row down."""
         self._emit_ansi(
-            ansi.SET_SCROLL_REGION % (top, bottom) +
-            ansi.SCROLL_DOWN % (1,) +
-            ansi.SET_SCROLL_SCREEN
+            ANSI.SET_SCROLL_REGION % (top, bottom) +
+            ANSI.SCROLL_DOWN % (1,) +
+            ANSI.SET_SCROLL_SCREEN
         )
 
     def set_cursor_colour(self, colour):
         """Set the current cursor colour attribute."""
         try:
             rgb = self._palette[colour]
-            self._emit_ansi(ansi.SET_CURSOR_COLOUR % rgb)
+            self._emit_ansi(ANSI.SET_CURSOR_COLOUR % rgb)
         except KeyError:
             pass
 
     def reset(self):
         """Reset to defaults."""
         self._emit_ansi(
-            ansi.RESIZE_TERM % self._orig_size +
-            u''.join(ansi.RESET_PALETTE_ENTRY % (attr,) for attr in range(16)) +
-            ansi.SET_COLOUR % (0,) +
-            ansi.SHOW_CURSOR +
-            ansi.SET_CURSOR_SHAPE % (1,)
+            ANSI.RESIZE_TERM % self._orig_size +
+            u''.join(ANSI.RESET_PALETTE_ENTRY % (attr,) for attr in range(16)) +
+            ANSI.SET_COLOUR % (0,) +
+            ANSI.SHOW_CURSOR +
+            ANSI.SET_CURSOR_SHAPE % (1,)
         )
 
     def set_attributes(self, fore, back, blink, underline):
@@ -227,21 +308,21 @@ class PosixConsole(object):
         # use "bold" ANSI colours for the upper 8 EGA attributes
         style = 90 if (fore > 8) else 30
         self._emit_ansi(
-            ansi.SET_COLOUR % (0,) +
-            ansi.SET_COLOUR % (40 + EGA_TO_ANSI[back],) +
-            ansi.SET_COLOUR % (style + EGA_TO_ANSI[fore % 8],)
+            ANSI.SET_COLOUR % (0,) +
+            ANSI.SET_COLOUR % (40 + EGA_TO_ANSI[back],) +
+            ANSI.SET_COLOUR % (style + EGA_TO_ANSI[fore % 8],)
         )
         if blink:
-            self._emit_ansi(ansi.SET_COLOUR % (5,))
+            self._emit_ansi(ANSI.SET_COLOUR % (5,))
         if underline:
-            self._emit_ansi(ansi.SET_COLOUR % (4,))
+            self._emit_ansi(ANSI.SET_COLOUR % (4,))
 
     def set_palette_entry(self, attr, red, green, blue):
         """Set palette entry for attribute (0--16)."""
         # keep a record, mainly for cursor colours
         self._palette[attr] = red, green, blue
         # set the ANSI palette
-        self._emit_ansi(ansi.SET_PALETTE_ENTRY % (
+        self._emit_ansi(ANSI.SET_PALETTE_ENTRY % (
             8*(attr//8) + EGA_TO_ANSI[attr%8], red, green, blue
         ))
 
@@ -254,23 +335,22 @@ class PosixConsole(object):
 
     def read_key(self):
         """
-        Read keypress from console. Non-blocking. Returns:
-        - unicode, if character key
-        - int out of console.keys, if special key
-        - u'\x04' if closed
+        Read keypress from console. Non-blocking.
+        Returns tuple (unicode, keycode, set of mods)
         """
         sequence = read_all_available(stdin)
         if sequence is None:
             # stream closed, send ctrl-d
-            return u'\x04'
+            return u'\x04', 'd', {'CTRL'}
         elif not sequence:
-            return u''
-        # ansi sequences start with \x1b
-        if len(sequence) > 1 and sequence[0] == ansi.ESC:
+            return u'', None, set()
+        # ansi sequences start with ESC (\x1b), but let ESC by itself through
+        if len(sequence) > 1 and sequence[0] == u'\x1b':
             # drop unrecognised sequences
-            return ANSI_TO_KEY.get(sequence, u'')
+            key, mod = ANSI_TO_KEYMOD.get(sequence, (u'', ()))
+            return u'', key, mod
         else:
-            return sequence
+            return sequence, None, set()
 
 
 def _has_console():
