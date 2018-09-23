@@ -27,7 +27,7 @@ else:
     from types import SimpleNamespace
 
 
-# Windows virtual key codes
+# Windows virtual key codes, mapped to standard key names
 KEYS = SimpleNamespace(
     PAGEUP = 0x21, # VK_PRIOR
     PAGEDOWN = 0x22, # VK_NEXT
@@ -60,6 +60,21 @@ VK_TO_KEY.update({
     value: chr(value).lower() for value in range(0x30, 0x5b)
 })
 
+# control key state bit flags
+# CAPSLOCK_ON = 0x0080,
+# ENHANCED_KEY = 0x0100,
+# LEFT_ALT_PRESSED = 0x0002,
+# LEFT_CTRL_PRESSED = 0x0008,
+# NUMLOCK_ON = 0x0020,
+# RIGHT_ALT_PRESSED = 0x0001,
+# RIGHT_CTRL_PRESSED = 0x0004,
+# SCROLLLOCK_ON = 0x0040,
+# SHIFT_PRESSED = 0x0010,
+MODS = dict(
+    CTRL = 0x0c,
+    ALT = 0x03,
+    SHIFT = 0x10,
+)
 
 # character attributes, from wincon.h
 NORMAL = 0x00
@@ -578,22 +593,8 @@ class Win32Console(object):
                 return char, None, set()
             # ignore other key-up events
             return u'', None, set()
-        # CAPSLOCK_ON 0x0080
-        # ENHANCED_KEY 0x0100
-        # LEFT_ALT_PRESSED 0x0002
-        # LEFT_CTRL_PRESSED 0x0008
-        # NUMLOCK_ON 0x0020
-        # RIGHT_ALT_PRESSED 0x0001
-        # RIGHT_CTRL_PRESSED 0x0004
-        # SCROLLLOCK_ON 0x0040
-        # SHIFT_PRESSED 0x0010
-        mods = set()
-        if control & 0x0c:
-            mods.add('CTRL')
-        if control & 0x03:
-            mods.add('ALT')
-        if control & 0x10:
-            mods.add('SHIFT')
+        # decode modifier bit flags
+        mods = set(key for key, mask in MODS.items() if control & mask)
         key = VK_TO_KEY.get(key, None)
         return char, key, mods
 
