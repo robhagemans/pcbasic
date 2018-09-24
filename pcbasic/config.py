@@ -1016,7 +1016,7 @@ class Settings(object):
             if first_arg and first_arg not in self.arguments[d][u'choices']:
                 logging.warning(
                     u'Value "%s=%s" ignored; should be one of (%s)',
-                    d, arg, u', '.join(self.arguments[d][u'choices'])
+                    d, arg, u', '.join(text_type(x) for x in self.arguments[d][u'choices'])
                 )
                 arg = u''
         return arg
