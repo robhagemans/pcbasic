@@ -305,24 +305,29 @@ class Settings(object):
         else:
             self._uargv = list(arguments)
         self._pre_init_logging()
-        self._temp_dir = temp_dir
-        # create state path if needed
-        if not os.path.exists(STATE_PATH):
-            os.makedirs(STATE_PATH)
-        # create user config file if needed
-        if not os.path.exists(self.user_config_path):
-            try:
-                os.makedirs(USER_CONFIG_DIR)
-            except OSError:
-                pass
-            self.build_default_config_file(self.user_config_path)
-        # create @: drive if not present
-        if not os.path.exists(PROGRAM_PATH):
-            os.makedirs(PROGRAM_PATH)
-            # unpack bundled programs
-            store_bundled_programs(PROGRAM_PATH)
-        # store options in options dictionary
-        self._options = self._retrieve_options(self._uargv)
+        try:
+            self._temp_dir = temp_dir
+            # create state path if needed
+            if not os.path.exists(STATE_PATH):
+                os.makedirs(STATE_PATH)
+            # create user config file if needed
+            if not os.path.exists(self.user_config_path):
+                try:
+                    os.makedirs(USER_CONFIG_DIR)
+                except OSError:
+                    pass
+                self.build_default_config_file(self.user_config_path)
+            # create @: drive if not present
+            if not os.path.exists(PROGRAM_PATH):
+                os.makedirs(PROGRAM_PATH)
+                # unpack bundled programs
+                store_bundled_programs(PROGRAM_PATH)
+            # store options in options dictionary
+            self._options = self._retrieve_options(self._uargv)
+        except:
+            # avoid losing exception messages occuring while logging was disabled
+            self._reset_logging()
+            raise
         # prepare global logger for use by main program
         self._prepare_logging()
         # initial validations
@@ -348,16 +353,21 @@ class Settings(object):
         handler.setFormatter(LOGGING_FORMATTER)
         root_logger.addHandler(handler)
 
-    def _prepare_logging(self):
-        """Set up the global logger."""
-        # get log stream and level from options
-        logfile = self.get('logfile')
-        loglevel = logging.DEBUG if self.get('debug') else logging.INFO
+    def _reset_logging(self):
+        """Reset root logger."""
         # o dear o dear what a horrible API
         root_logger = logging.getLogger()
         # remove all old handlers: temporary ones we set as well as any default ones
         for handler in root_logger.handlers:
             root_logger.removeHandler(handler)
+        return root_logger
+
+    def _prepare_logging(self):
+        """Set up the global logger."""
+        # get log stream and level from options
+        logfile = self.get('logfile')
+        loglevel = logging.DEBUG if self.get('debug') else logging.INFO
+        root_logger = self._reset_logging()
         root_logger.setLevel(loglevel)
         if logfile:
             logstream = open(logfile, 'w')
