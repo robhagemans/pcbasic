@@ -6,12 +6,13 @@ Sound interface based on PyGame
 This file is released under the GNU GPL version 3 or later.
 """
 
+import sys
 from collections import deque
 
-from ..compat import suppress_output
+from ..compat import muffle
 
 try:
-    with suppress_output():
+    with muffle(sys.stdout):
         import pygame
 except ImportError:
     pygame = None

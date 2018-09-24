@@ -78,29 +78,23 @@ def split_quoted(line, split_by=u'\s', quote=u'"', strip_quotes=False):
         chunks = [c.strip(quote) for c in chunks]
     return chunks
 
-
 @contextlib.contextmanager
-def suppress_output():
-    """Suppress stdout and stderr messages."""
+def muffle(std_stream):
+    """Suppress stdout or stderr messages."""
     try:
-        # save the file descriptors for /dev/stdout and /dev/stderr
-        save_0, save_1 = os.dup(sys.stdout.fileno()), os.dup(sys.stderr.fileno())
+        # save the file descriptor for the target stream
+        save = os.dup(std_stream.fileno())
         # http://stackoverflow.com/questions/977840/
         # redirecting-fortran-called-via-f2py-output-in-python/978264#978264
-        with open(os.devnull, 'w') as null_0:
-            with open(os.devnull, 'w') as null_1:
-                # put /dev/null fds on 1 (stdout) and 2 (stderr)
-                os.dup2(null_0.fileno(), sys.stdout.fileno())
-                os.dup2(null_1.fileno(), sys.stderr.fileno())
-                # do stuff
-                try:
-                    yield
-                finally:
-                    sys.stdout.flush()
-                    sys.stderr.flush()
-                    # restore file descriptors
-                    os.dup2(save_0, sys.stdout.fileno())
-                    os.dup2(save_1, sys.stderr.fileno())
+        with open(os.devnull, 'w') as null:
+            # put /dev/null fds on 1 (stdout) or 2 (stderr)
+            os.dup2(null.fileno(), std_stream.fileno())
+            # do stuff
+            try:
+                yield
+            finally:
+                std_stream.flush()
+                # restore file descriptors
+                os.dup2(save, std_stream.fileno())
     finally:
-        os.close(save_0)
-        os.close(save_1)
+        os.close(save)

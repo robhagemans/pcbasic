@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import sys
 from collections import deque
 from contextlib import contextmanager
 
@@ -20,7 +21,7 @@ try:
 except ImportError:
     numpy = None
 
-from ..compat import suppress_output
+from ..compat import muffle
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser
@@ -54,7 +55,7 @@ class AudioPortAudio(AudioPlugin):
 
     def __enter__(self):
         """Perform any necessary initialisations."""
-        with suppress_output():
+        with muffle(sys.stderr):
             self._dev = pyaudio.PyAudio()
             sample_format = self._dev.get_format_from_width(2)
             self._min_samples_buffer = 2 * BUFSIZE

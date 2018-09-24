@@ -629,8 +629,7 @@ class Settings(object):
         interface = self.get('interface')
         # categorical interfaces
         categories = {
-            # (video, audio), in order of preference
-            'text': ('curses', 'ansi'),
+            'text': ('ansi', 'curses'),
             'graphical': ('sdl2', 'pygame'),
         }
         if not interface:

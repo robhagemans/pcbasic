@@ -6,12 +6,13 @@ Graphical interface based on PyGame
 This file is released under the GNU GPL version 3 or later.
 """
 
+import sys
 import logging
 
-from ..compat import iteritems, unichr, suppress_output
+from ..compat import iteritems, unichr, muffle
 
 try:
-    with suppress_output():
+    with muffle(sys.stdout):
         import pygame
 except ImportError:
     pygame = None

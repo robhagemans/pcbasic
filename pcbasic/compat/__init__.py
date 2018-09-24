@@ -11,7 +11,7 @@ import os
 
 from .base import PLATFORM, PY2, PY3, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
-from .base import split_quoted, suppress_output
+from .base import split_quoted, muffle
 
 
 if WIN32:

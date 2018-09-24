@@ -42,8 +42,9 @@ def suppress_stdio(do_suppress):
     if not do_suppress:
         yield
     else:
-        with pcbasic.compat.suppress_output():
-            yield
+        with pcbasic.compat.muffle(sys.stdout):
+            with pcbasic.compat.muffle(sys.stderr):
+                yield
 
 def contained(arglist, elem):
     try:

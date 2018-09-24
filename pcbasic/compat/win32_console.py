@@ -27,7 +27,7 @@ else:
     from types import SimpleNamespace
 
 
-# Windows virtual key codes
+# Windows virtual key codes, mapped to standard key names
 KEYS = SimpleNamespace(
     PAGEUP = 0x21, # VK_PRIOR
     PAGEDOWN = 0x22, # VK_NEXT
@@ -51,27 +51,34 @@ KEYS = SimpleNamespace(
     F10 = 0x79,
     F11 = 0x7a,
     F12 = 0x7b,
+    #
+    ALT = 0x12, # VK_MENU
 )
+VK_TO_KEY = {value: key for key, value in KEYS.__dict__.items()}
+# alpha key codes
+VK_TO_KEY.update({
+    value: chr(value).lower() for value in range(0x30, 0x5b)
+})
 
-# Windows colour constants
-COLOURS = SimpleNamespace(
-    BLACK = 0,
-    BLUE = 1,
-    GREEN = 2,
-    CYAN = 3,
-    RED = 4,
-    MAGENTA = 5,
-    YELLOW = 6,
-    WHITE = 7, # GREY
+# control key state bit flags
+# CAPSLOCK_ON = 0x0080,
+# ENHANCED_KEY = 0x0100,
+# LEFT_ALT_PRESSED = 0x0002,
+# LEFT_CTRL_PRESSED = 0x0008,
+# NUMLOCK_ON = 0x0020,
+# RIGHT_ALT_PRESSED = 0x0001,
+# RIGHT_CTRL_PRESSED = 0x0004,
+# SCROLLLOCK_ON = 0x0040,
+# SHIFT_PRESSED = 0x0010,
+MODS = dict(
+    CTRL = 0x0c,
+    ALT = 0x03,
+    SHIFT = 0x10,
 )
-
-# windpws constants
-KEY_EVENT = 1
-VK_MENU = 0x12
 
 # character attributes, from wincon.h
-NORMAL              = 0x00 # dim text, dim background
-BRIGHT              = 0x08 # bright text, dim background
+NORMAL = 0x00
+BRIGHT = 0x08
 
 
 ##############################################################################
@@ -117,6 +124,19 @@ class CONSOLE_CURSOR_INFO(Structure):
     _fields_ = (
         ("dwSize", wintypes.DWORD),
         ("bVisible", wintypes.BOOL),
+    )
+
+class CONSOLE_SCREEN_BUFFER_INFOEX(Structure):
+    _fields_ = (
+        ('cbSize', wintypes.ULONG),
+        ('dwSize', wintypes._COORD),
+        ('dwCursorPosition', wintypes._COORD),
+        ('wAttributes', wintypes.WORD),
+        ('srWindow', wintypes.SMALL_RECT),
+        ('dwMaximumWindowSize', wintypes._COORD),
+        ('wPopupAttributes', wintypes.WORD),
+        ('bFullscreenSupported', wintypes.BOOL),
+        ('ColorTable', wintypes.DWORD*16),
     )
 
 _GetStdHandle = windll.kernel32.GetStdHandle
@@ -179,6 +199,12 @@ _GetConsoleCursorInfo.argtypes = (wintypes.HANDLE, POINTER(CONSOLE_CURSOR_INFO))
 _SetConsoleCursorInfo = windll.kernel32.SetConsoleCursorInfo
 _SetConsoleCursorInfo.argtypes = (wintypes.HANDLE, POINTER(CONSOLE_CURSOR_INFO))
 
+_SetConsoleScreenBufferInfoEx = windll.kernel32.SetConsoleScreenBufferInfoEx
+_SetConsoleScreenBufferInfoEx.argtypes = (wintypes.HANDLE, POINTER(CONSOLE_SCREEN_BUFFER_INFOEX))
+
+_GetConsoleScreenBufferInfoEx = windll.kernel32.GetConsoleScreenBufferInfoEx
+_GetConsoleScreenBufferInfoEx.argtypes = (wintypes.HANDLE, POINTER(CONSOLE_SCREEN_BUFFER_INFOEX))
+
 _ScrollConsoleScreenBuffer = windll.kernel32.ScrollConsoleScreenBufferW
 _ScrollConsoleScreenBuffer.argtypes = (
     wintypes.HANDLE,
@@ -202,11 +228,43 @@ _SetConsoleWindowInfo.argtypes = (
     POINTER(wintypes.SMALL_RECT),
 )
 
+_SetConsoleMode = windll.kernel32.SetConsoleMode
+_SetConsoleMode.argtypes = (
+    wintypes.HANDLE,
+    wintypes.DWORD,
+)
+
+_GetConsoleMode = windll.kernel32.GetConsoleMode
+_GetConsoleMode.argtypes = (
+    wintypes.HANDLE,
+    POINTER(wintypes.DWORD),
+)
+_GetConsoleMode.restype = wintypes.BOOL
+
+
+PHANDLER_ROUTINE = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
+_SetConsoleCtrlHandler = windll.kernel32.SetConsoleCtrlHandler
+_SetConsoleCtrlHandler.argtypes = (
+    PHANDLER_ROUTINE,
+    wintypes.BOOL,
+)
+_SetConsoleCtrlHandler.restype = wintypes.BOOL
+
 
 def GetConsoleScreenBufferInfo(handle):
     csbi = CONSOLE_SCREEN_BUFFER_INFO()
     _GetConsoleScreenBufferInfo(handle, byref(csbi))
     return csbi
+
+def GetConsoleScreenBufferInfoEx(handle):
+    csbie = CONSOLE_SCREEN_BUFFER_INFOEX()
+    csbie.cbSize = wintypes.ULONG(ctypes.sizeof(csbie))
+    _GetConsoleScreenBufferInfoEx(handle, byref(csbie))
+    # work around Windows bug
+    # see https://stackoverflow.com/questions/35901572/setconsolescreenbufferinfoex-bug
+    csbie.srWindow.Bottom += 1
+    csbie.srWindow.Right += 1
+    return csbie
 
 def FillConsoleOutputCharacter(handle, char, length, start):
     length = wintypes.DWORD(length)
@@ -232,6 +290,11 @@ def ScrollConsoleScreenBuffer(handle, scroll_rect, clip_rect, new_position, char
     _ScrollConsoleScreenBuffer(
         handle, byref(scroll_rect), byref(clip_rect), new_position, byref(char_info)
     )
+
+def GetConsoleMode(handle):
+    mode = wintypes.DWORD()
+    _GetConsoleMode(handle, mode)
+    return mode
 
 
 HSTDIN = _GetStdHandle(-10)
@@ -261,44 +324,41 @@ def _write_console(handle, unistr):
             )
 
 
-# preserve original terminal size
-def _get_term_size():
-    """Get size of terminal window."""
-    try:
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
-        left, top = csbi.srWindow.Left, csbi.srWindow.Top,
-        right, bottom = csbi.srWindow.Right, csbi.srWindow.Bottom
-        return bottom-top+1, right-left+1
-    except Exception:
-        return 25, 80
-
-
 ##############################################################################
 # console class
+
+@PHANDLER_ROUTINE
+def _ctrl_handler(fdwCtrlType):
+    """Handle Ctrl-Break event."""
+    # CTRL_BREAK_EVENT
+    return (fdwCtrlType == 1)
+
 
 class Win32Console(object):
     """Win32API-based console implementation."""
 
-    keys = KEYS
-    colours = COLOURS
-
     def __init__(self):
         """Set up console"""
-        self.original_size = _get_term_size()
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
-        self._default = csbi.wAttributes
-        self._attrs = csbi.wAttributes
+        # preserve original settings
+        self._orig_csbie = GetConsoleScreenBufferInfoEx(HSTDOUT)
+        self._orig_stdin_mode = GetConsoleMode(HSTDIN)
+        self._attrs = self._orig_csbie.wAttributes
         # input
         self._input_buffer = deque()
         self._echo = True
 
     def set_raw(self):
-        """Enter raw terminal mode."""
+        """Enter raw terminal mode (no echo, don't exit on ctrl-C)."""
         self._echo = False
+        # unset ENABLE_PROCESSED_INPUT
+        _SetConsoleMode(HSTDIN, wintypes.DWORD(self._orig_stdin_mode.value & ~0x0001))
+        # don't exit on ctrl-Break
+        _SetConsoleCtrlHandler(_ctrl_handler, True)
 
     def unset_raw(self):
         """Leave raw terminal mode."""
         self._echo = True
+        _SetConsoleMode(HSTDOUT, self._orig_stdin_mode)
 
     def key_pressed(self):
         """key pressed on keyboard."""
@@ -355,19 +415,21 @@ class Win32Console(object):
         # now set the buffer's attributes accordingly
         FillConsoleOutputAttribute(HSTDOUT, self._attrs, csbi.dwSize.X, from_coord)
 
-    def _set_cursor_visibility(self, visible):
-        """Set the visibility of the cursor."""
-        curs_info = GetConsoleCursorInfo(HSTDOUT)
-        curs_info.bVisible = visible
-        SetConsoleCursorInfo(HSTDOUT, curs_info);
+    def set_cursor_colour(self, colour):
+        """Set the current cursor colour attribute - not supported."""
 
-    def show_cursor(self):
+    def show_cursor(self, block=False):
         """Show the cursor."""
-        self._set_cursor_visibility(True)
+        curs_info = GetConsoleCursorInfo(HSTDOUT)
+        curs_info.bVisible = True
+        curs_info.dwSize = 100 if block else 20
+        SetConsoleCursorInfo(HSTDOUT, curs_info)
 
     def hide_cursor(self):
         """Hide the cursor."""
-        self._set_cursor_visibility(False)
+        curs_info = GetConsoleCursorInfo(HSTDOUT)
+        curs_info.bVisible = False
+        SetConsoleCursorInfo(HSTDOUT, curs_info)
 
     def move_cursor_left(self, n):
         """Move cursor n cells to the left."""
@@ -439,36 +501,53 @@ class Win32Console(object):
         """Scroll the region between top and bottom one row down."""
         self._scroll(top-1, bottom-1, -1)
 
-    def reset_attributes(self):
+    def reset(self):
         """Reset to default attributes."""
-        self._attrs = self._default
-        _SetConsoleTextAttribute(HSTDOUT, self._default)
+        _SetConsoleScreenBufferInfoEx(HSTDOUT, byref(self._orig_csbie))
+        self._attrs = self._orig_csbie.wAttributes
+        self.show_cursor()
 
-    def set_attributes(self, fore, back, bright, blink, underline):
+    def set_attributes(self, fore, back, blink, underline):
         """Set current attributes."""
-        self._attrs = fore + back * 16 + (BRIGHT if bright else NORMAL)
+        self._attrs = fore % 8 + back * 16 + (BRIGHT if fore > 8 else NORMAL)
         _SetConsoleTextAttribute(HSTDOUT, self._attrs)
+
+    def set_palette_entry(self, attr, red, green, blue):
+        """Set palette entry for attribute (0--16)."""
+        csbie = GetConsoleScreenBufferInfoEx(HSTDOUT)
+        csbie.ColorTable[attr] = (
+            0x00010000 * blue + 0x00000100 * green + 0x00000001 * red
+        )
+        _SetConsoleScreenBufferInfoEx(HSTDOUT, byref(csbie))
 
     ##########################################################################
     # input
 
     def read_key(self):
         """
-        Read keypress from console. Non-blocking. Returns:
-        - unicode, if character key
-        - int out of console.keys, if special key
-        - u'\x04' if closed
+        Read keypress from console. Non-blocking.
+        Returns tuple (unicode, keycode, set of mods)
         """
         self._fill_buffer(blocking=False)
         if not self._input_buffer:
-            return u''
+            return (u'', None, {})
         return self._input_buffer.popleft()
 
     def read_all_chars(self):
         """Read all characters in the buffer."""
         self._fill_buffer(blocking=False)
-        output = u''.join(_char for _char in self._input_buffer if not isinstance(_char, int))
+        closed = False
+        if self._input_buffer and self._input_buffer[-1][0] == u'\x1a':
+            closed = True
+            self._input_buffer.pop()
+            if not self._input_buffer:
+                return None
+        output = u''.join(
+            _char for _char in self._input_buffer
+        )
         self._input_buffer.clear()
+        if closed:
+            self._input_buffer.append(u'\x1a')
         return output
 
     def _fill_buffer(self, blocking):
@@ -489,52 +568,41 @@ class Win32Console(object):
                     nevents.value, byref(nread)
                 )
                 for event in input_buffer:
-                    if event.EventType != KEY_EVENT:
+                    if event.EventType != 1: # KEY_EVENT
                         continue
-                    key = self._translate_event(event)
-                    if key:
-                        self._input_buffer.append(key)
-                        if self._echo:
-                            self._echo_key(key)
-                        if key == u'\x1a':
+                    char, key, mods = self._translate_event(event)
+                    if char or key:
+                        self._input_buffer.append((char, key, mods))
+                        if char == u'\x1a':
                             # ctrl-z is end of input on windows console
                             return
+                        if self._echo:
+                            _write_console(HSTDOUT, char.replace(u'\r', u'\n'))
             time.sleep(0.01)
 
     def _translate_event(self, event):
         char = event.KeyEvent.UnicodeChar
         key = event.KeyEvent.wVirtualKeyCode
+        control = event.KeyEvent.dwControlKeyState
         if char == u'\0':
             # windows uses null-terminated strings so \0 means no output
             char = u''
         if not event.KeyEvent.bKeyDown:
             # key-up event for unicode Alt+HEX input
-            if event.KeyEvent.wVirtualKeyCode == VK_MENU:
-                return char
+            if event.KeyEvent.wVirtualKeyCode == KEYS.ALT:
+                return char, None, set()
             # ignore other key-up events
-            return u''
-        elif event.KeyEvent.dwControlKeyState & 0xf:
-            # ctrl or alt are down; don't parse arrow keys etc.
-            # but if any unicode is produced, send it on
-            return char
-        # this is hacky - is the key code a recognised one?
-        elif key in self.keys.__dict__.values():
-            return key
-        return char
-
-    def _echo_key(self, key):
-        """Echo a character or special key."""
-        if not isinstance(key, int):
-            # caracter echo
-            if key == u'\r':
-                key = u'\n'
-            _write_console(HSTDOUT, key)
+            return u'', None, set()
+        # decode modifier bit flags
+        mods = set(key for key, mask in MODS.items() if control & mask)
+        key = VK_TO_KEY.get(key, None)
+        return char, key, mods
 
 
 def _has_console():
     """Determine if we have a console attached or are a GUI app."""
     try:
-        return bool(windll.kernel32.GetConsoleMode(HSTDOUT, byref(wintypes.DWORD())))
+        return bool(_GetConsoleMode(HSTDOUT, byref(wintypes.DWORD())))
     except Exception as e:
         return False
 
@@ -554,9 +622,8 @@ def read_all_available(stream):
     if hasattr(stream, 'isatty') and stream.isatty():
         # this is shaky - try to identify unicode vs bytes stream
         is_unicode_stream = hasattr(stream, 'buffer')
-        #FIXME: we're not dealing with closed streams
         unistr = console.read_all_chars()
-        if is_unicode_stream:
+        if is_unicode_stream or unistr is None:
             return unistr
         else:
             return unistr.encode(stdin.encoding, 'replace')
