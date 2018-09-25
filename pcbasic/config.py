@@ -287,7 +287,7 @@ class Settings(object):
         u'allow-code-poke': {u'type': u'bool', u'default': False,},
         u'reserved-memory': {u'type': u'int', u'default': 3429,},
         u'caption': {u'type': u'string', u'default': NAME,},
-        u'text-width': {u'type': u'int', u'choices':(40, 80), u'default': 80,},
+        u'text-width': {u'type': u'int', u'choices':(u'40', u'80'), u'default': 80,},
         u'video-memory': {u'type': u'int', u'default': 262144,},
         u'shell': {u'type': u'string', u'default': u'',},
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},
