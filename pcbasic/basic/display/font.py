@@ -288,7 +288,7 @@ class GlyphCache(object):
             if char not in self._glyphs:
                 self._submit_char(char)
             mask = self._glyphs[char]
-            glyph = [[(fore if bit else back) for bit in row] for row in mask]
+            glyph = [[(fore if _bit else back) for _bit in _row] for _row in mask]
             x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height
             x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
             return x0, y0, x1, y1, glyph
