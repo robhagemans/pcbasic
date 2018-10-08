@@ -144,12 +144,12 @@ class Interpreter(object):
         # if we're in a program, save pointer
         pos = -1
         if self.run_mode:
+            pos = self.current_statement
             if self.parser.redo_on_break:
-                pos = self.current_statement
+                self.stop = pos
             else:
                 self._program.bytecode.skip_to(tk.END_STATEMENT)
-                pos = self._program.bytecode.tell()
-            self.stop = pos
+                self.stop = self._program.bytecode.tell()
         self._screen.start_line()
         self._screen.write(e.get_message(self._program.get_line_number(pos)))
         self.set_parse_mode(False)
