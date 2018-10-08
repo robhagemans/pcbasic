@@ -19,9 +19,11 @@ class InitFailed(Exception):
     """Initialisation failed."""
 
     def __init__(self, message=''):
+        """Set message."""
         self._message = message
 
-    def __repr__(self):
+    def __str__(self):
+        """Error description (overrides Python 2 default)."""
         return self._message
 
 
