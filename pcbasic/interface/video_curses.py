@@ -91,6 +91,8 @@ class VideoCurses(VideoPlugin):
         # we need to ensure setlocale() has been run first to allow unicode input
         if not curses:
             raise InitFailed('`Module `curses` not found')
+        if not console:
+            raise InitFailed('This interface requires a console terminal (tty).')
         # set the ESC-key delay to 25 ms unless otherwise set
         # set_escdelay seems to be unavailable on python curses.
         if 'ESCDELAY' not in os.environ:

@@ -156,7 +156,7 @@ class VideoTextBase(VideoPlugin):
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise text-based interface."""
-        if not stdin.isatty() or not stdout.isatty():
+        if not console:
             raise InitFailed('This interface requires a console terminal (tty).')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # start the stdin thread for non-blocking reads
