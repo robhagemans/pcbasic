@@ -708,7 +708,7 @@ GRAPHEME_BREAK = {
 
 def _get_grapheme_break(c):
     """Get grapheme break property of unicode char."""
-    for key, value in grapheme_break.iteritems():
+    for key, value in GRAPHEME_BREAK.iteritems():
         if ord(c) in value:
             return key
     # no grapheme break property found
