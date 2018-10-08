@@ -123,46 +123,55 @@ class VideoCurses(VideoPlugin):
     def __enter__(self):
         """Open ANSI interface."""
         VideoPlugin.__enter__(self)
-        self.screen = curses.initscr()
-        curses.noecho()
-        curses.cbreak()
-        curses.nonl()
-        curses.raw()
-        self.orig_size = self.screen.getmaxyx()
-        self.underlay = curses.newwin(
-            self.height + self.border_y*2, self.width + self.border_x*2, 0, 0
-        )
-        self.window = curses.newwin(self.height, self.width, self.border_y, self.border_x)
-        self.window.nodelay(True)
-        self.window.keypad(True)
-        self.window.scrollok(False)
-        curses.start_color()
-        # curses mistakenly believes changing palettes works on macOS's Terminal.app
-        self.can_change_palette = (not MACOS) and (
-            curses.can_change_color() and curses.COLORS >= 16 and curses.COLOR_PAIRS > 128
-        )
-        console.set_caption(self.caption)
-        self._set_default_colours(16)
-        bgcolor = self._curses_colour(7, 0, False)
-        # text and colour buffer
-        self.text = [[[(u' ', bgcolor)]*self.width for _ in range(self.height)]]
-        self.set_border_attr(0)
-        self.screen.clear()
+        try:
+            self.screen = curses.initscr()
+            curses.noecho()
+            curses.cbreak()
+            curses.nonl()
+            curses.raw()
+            self.orig_size = self.screen.getmaxyx()
+            self.underlay = curses.newwin(
+                self.height + self.border_y*2, self.width + self.border_x*2, 0, 0
+            )
+            self.window = curses.newwin(self.height, self.width, self.border_y, self.border_x)
+            self.window.nodelay(True)
+            self.window.keypad(True)
+            self.window.scrollok(False)
+            curses.start_color()
+            # curses mistakenly believes changing palettes works on macOS's Terminal.app
+            self.can_change_palette = (not MACOS) and (
+                curses.can_change_color() and curses.COLORS >= 16 and curses.COLOR_PAIRS > 128
+            )
+            console.set_caption(self.caption)
+            self._set_default_colours(16)
+            bgcolor = self._curses_colour(7, 0, False)
+            # text and colour buffer
+            self.text = [[[(u' ', bgcolor)]*self.width for _ in range(self.height)]]
+            self.set_border_attr(0)
+            self.screen.clear()
+        except Exception:
+            # if setup fails, don't leve the terminal raw
+            self._close()
 
     def __exit__(self, type, value, traceback):
         """Close the curses interface."""
         try:
-            # restore original terminal size
-            self._resize(*self.orig_size)
-            # restore sane terminal state
-            curses.noraw()
-            curses.nl()
-            curses.nocbreak()
-            self.screen.keypad(False)
-            curses.echo()
-            curses.endwin()
+            self._close()
         finally:
             VideoPlugin.__exit__(self, type, value, traceback)
+
+    def _close(self):
+        """Close the curses interface."""
+        # restore original terminal size
+        if self.orig_size and console:
+            self._resize(*self.orig_size)
+        curses.noraw()
+        curses.nl()
+        curses.nocbreak()
+        if self.screen:
+            self.screen.keypad(False)
+        curses.echo()
+        curses.endwin()
 
     def _work(self):
         """Handle screen and interface events."""
