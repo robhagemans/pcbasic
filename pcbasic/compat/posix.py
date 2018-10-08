@@ -120,30 +120,3 @@ else:
             pr = subprocess.Popen(b'lpr %s' % (options,), shell=True, stdin=subprocess.PIPE)
             pr.stdin.write(printbuf)
             pr.stdin.close()
-
-
-
-def read_all_available(stream):
-    """Read all available characters from a stream; nonblocking; None if closed."""
-    # this function works for everything on unix, and sockets on Windows
-    instr = []
-    # we're getting bytes counts for unicode which is pretty useless - so back to bytes
-    try:
-        encoding = stream.encoding
-        stream = stream.buffer
-    except:
-        encoding = None
-    # if buffer has characters/lines to read
-    if select.select([stream], [], [], 0)[0]:
-        # find number of bytes available
-        fcntl.ioctl(stream, termios.FIONREAD, _sock_size)
-        count = _sock_size[0]
-        # and read them all
-        c = stream.read(count)
-        if not c and not instr:
-            # break out, we're closed
-            return None
-        instr.append(c)
-    if encoding:
-        return b''.join(instr).decode(encoding, 'replace')
-    return b''.join(instr)
