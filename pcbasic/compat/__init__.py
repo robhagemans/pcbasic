@@ -15,9 +15,9 @@ from .base import split_quoted, muffle
 
 
 if WIN32:
-    from .win32_console import console, read_all_available, stdin, stdout, stderr
+    from .win32_console import console, read_all_available, stdin, stdout, stderr, IS_CONSOLE_APP
 else:
-    from .posix_console import console, read_all_available, stdin, stdout, stderr
+    from .posix_console import console, read_all_available, stdin, stdout, stderr, IS_CONSOLE_APP
 
 if PY2:
     from .python2 import add_str, iterchar

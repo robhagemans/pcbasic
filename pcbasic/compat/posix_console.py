@@ -183,6 +183,8 @@ class PosixConsole(object):
     def __init__(self):
         """Set up the console."""
         # buffer to save termios state
+        if not sys.stdin.isatty():
+            raise EnvironmentError('Not a terminal')
         self._term_attr = termios.tcgetattr(sys.stdin.fileno())
         # preserve original terminal size
         self._orig_size = self.get_size()
@@ -353,7 +355,7 @@ class PosixConsole(object):
             return sequence, None, set()
 
 
-def _has_console():
+def _is_console_app():
     """To see if we are a console app, check if we can treat stdin like a tty, file or socket."""
     if not sys.stdin.isatty():
         try:
@@ -363,10 +365,11 @@ def _has_console():
             return False
     return True
 
+IS_CONSOLE_APP = _is_console_app()
 
-if _has_console():
+try:
     console = PosixConsole()
-else:
+except EnvironmentError:
     console = None
 
 # don't crash into raw terminal

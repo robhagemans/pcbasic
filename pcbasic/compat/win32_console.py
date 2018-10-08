@@ -607,6 +607,8 @@ def _has_console():
         return False
 
 
+IS_CONSOLE_APP = _has_console()
+
 if _has_console():
     console = Win32Console()
 else:
