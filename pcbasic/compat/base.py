@@ -16,7 +16,6 @@ import codecs
 
 # Python major version
 PY2 = sys.version_info.major == 2
-PY3 = not PY2
 
 # platform constants
 WIN32 = sys.platform == 'win32'

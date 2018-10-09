@@ -9,15 +9,10 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import os
 
-from .base import PLATFORM, PY2, PY3, WIN32, MACOS, X64
+from .base import PLATFORM, PY2, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
 from .base import split_quoted, muffle
 
-
-if WIN32:
-    from .win32_console import console, read_all_available, stdin, stdout, stderr, IS_CONSOLE_APP
-else:
-    from .posix_console import console, read_all_available, stdin, stdout, stderr, IS_CONSOLE_APP
 
 if PY2:
     from .python2 import add_str, iterchar
@@ -44,11 +39,13 @@ else:
 
 
 if WIN32:
+    from .win32_console import console, read_all_available, stdin, stdout, stderr, IS_CONSOLE_APP
     from .win32 import set_dpi_aware, line_print
     from .win32 import get_free_bytes, get_short_pathname, is_hidden
     from .win32 import EOL, EOF
     from .win32 import SHELL_ENCODING, HIDE_WINDOW
 else:
+    from .posix_console import console, read_all_available, stdin, stdout, stderr, IS_CONSOLE_APP
     from .posix import set_dpi_aware, line_print
     from .posix import get_free_bytes, get_short_pathname, is_hidden
     from .posix import EOL, EOF
@@ -61,5 +58,5 @@ if MACOS:
     # for macOS - if no console, presumably we're launched as a bundle
     # set working directory to user home
     # bit of a hack but I don't know a better way
-    if not console:
+    if not IS_CONSOLE_APP:
         os.chdir(HOME_DIR)

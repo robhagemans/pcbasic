@@ -11,11 +11,7 @@ import sys
 import locale
 import logging
 import subprocess
-import fcntl
-import termios
 import array
-import struct
-import select
 
 # set locale - this is necessary for curses and *maybe* for clipboard handling
 # there's only one locale setting so best to do it all upfront here
