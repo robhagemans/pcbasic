@@ -273,19 +273,21 @@ class PosixConsole(object):
 
     def scroll_up(self, top, bottom):
         """Scroll the region between top and bottom one row up."""
-        self._emit_ansi(
-            ANSI.SET_SCROLL_REGION % (top, bottom) +
-            ANSI.SCROLL_UP % (1,) +
-            ANSI.SET_SCROLL_SCREEN
-        )
+        if bottom > top:
+            self._emit_ansi(
+                ANSI.SET_SCROLL_REGION % (top, bottom) +
+                ANSI.SCROLL_UP % (1,) +
+                ANSI.SET_SCROLL_SCREEN
+            )
 
     def scroll_down(self, top, bottom):
         """Scroll the region between top and bottom one row down."""
-        self._emit_ansi(
-            ANSI.SET_SCROLL_REGION % (top, bottom) +
-            ANSI.SCROLL_DOWN % (1,) +
-            ANSI.SET_SCROLL_SCREEN
-        )
+        if bottom > top:
+            self._emit_ansi(
+                ANSI.SET_SCROLL_REGION % (top, bottom) +
+                ANSI.SCROLL_DOWN % (1,) +
+                ANSI.SET_SCROLL_SCREEN
+            )
 
     def set_cursor_colour(self, colour):
         """Set the current cursor colour attribute."""
