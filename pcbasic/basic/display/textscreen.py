@@ -302,7 +302,7 @@ class TextScreen(object):
         # see if we need to move to the next row
         if self.current_col > self.mode.width:
             if self.current_row < self.scroll_area.bottom or scroll_ok:
-                # either we don't nee to scroll, or we're allowed to
+                # either we don't need to scroll, or we're allowed to
                 self.current_col -= self.mode.width
                 self.current_row += 1
             else:
@@ -576,8 +576,15 @@ class TextScreen(object):
 
     def insert_fullchars(self, row, col, sequence, attr):
         """Insert one or more single- or double-width characters at the current position."""
+        # keep track of where we started, so we can redraw from there
         start_row, start_col = row, col
+        # preserve_cursor
+        cursor = self.current_row, self.current_col
+        # insert one at a time at cursor location
+        # to let cursor position logic deal with scrolling
+        self.set_pos(row, col)
         for c in sequence:
+            row, col = self.current_row, self.current_col
             while True:
                 therow = self.text.pages[self.apagenum].row[row-1]
                 therow.buf.insert(col-1, (c, attr))
@@ -598,7 +605,10 @@ class TextScreen(object):
                     c, attr = therow.buf.pop()
                     row += 1
                     col = 1
-            col += 1
+            # move cursor by one character
+            # this will move to next row and scroll as necessary
+            self.set_pos(self.current_row, self.current_col+1)
+        self.set_pos(*cursor, scroll_ok=False)
         self._redraw_row(start_col-1, start_row)
 
     def line_feed(self):
