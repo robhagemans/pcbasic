@@ -630,7 +630,7 @@ class TextScreen(object):
                 self.scroll_down(self.current_row+1)
         # LF connects lines like word wrap
         self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
-        self.set_pos(self.current_row+1, 1)
+        # cursor stays in place after line feed!
 
     ###########################################################################
     # vpage text retrieval
