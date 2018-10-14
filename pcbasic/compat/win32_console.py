@@ -474,8 +474,9 @@ class Win32Console(object):
             region = wintypes.SMALL_RECT(window.Left, window.Top + rows, window.Right, window.Bottom)
             new_pos = wintypes._COORD(window.Left, window.Top)
         else:
-            region = wintypes.SMALL_RECT(window.Left, window.Top, window.Right, window.Bottom + rows)
-            new_pos = wintypes._COORD(window.Left, window.Top + rows)
+            # minus signs since rows is a negative number
+            region = wintypes.SMALL_RECT(window.Left, window.Top, window.Right, window.Bottom - rows)
+            new_pos = wintypes._COORD(window.Left, window.Top - rows)
         # workaround: in this particular case, Windows doesn't seem to respect the clip area.
         if (
                 clip_rect.Bottom == window.Bottom-1 and
