@@ -393,14 +393,7 @@ class VideoCurses(VideoPlugin):
         )
         if self.apagenum != self.vpagenum:
             return
-        self.window.scrollok(True)
-        self.window.setscrreg(from_line-1, scroll_height-1)
-        try:
-            self.window.scroll(1)
-        except curses.error:
-            pass
-        self.window.scrollok(False)
-        self.window.setscrreg(1, self.height-1)
+        self._scroll(from_line, scroll_height, 1)
         self.clear_rows(back_attr, scroll_height, scroll_height)
         if self.cursor_row > 1:
             self.window.move(self.cursor_row-2, self.cursor_col-1)
@@ -414,17 +407,22 @@ class VideoCurses(VideoPlugin):
         )
         if self.apagenum != self.vpagenum:
             return
-        self.window.scrollok(True)
-        self.window.setscrreg(from_line-1, scroll_height-1)
-        try:
-            self.window.scroll(-1)
-        except curses.error:
-            pass
-        self.window.scrollok(False)
-        self.window.setscrreg(1, self.height-1)
+        self._scroll(from_line, scroll_height, -1)
         self.clear_rows(back_attr, from_line, from_line)
         if self.cursor_row < self.height:
             self.window.move(self.cursor_row, self.cursor_col-1)
+
+    def _scroll(self, from_line, scroll_height, direction):
+        """Perform a scroll in curses."""
+        if from_line != scroll_height:
+            self.window.scrollok(True)
+            self.window.setscrreg(from_line-1, scroll_height-1)
+            try:
+                self.window.scroll(direction)
+            except curses.error:
+                pass
+            self.window.scrollok(False)
+            self.window.setscrreg(1, self.height-1)
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
