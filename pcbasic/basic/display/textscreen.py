@@ -575,41 +575,39 @@ class TextScreen(object):
                 self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col - 2
 
     def insert_fullchars(self, row, col, sequence, attr):
-        """Insert one or more single- or double-width characters at the current position."""
-        # keep track of where we started, so we can redraw from there
-        start_row, start_col = row, col
+        """Insert one or more single- or double-width characters at the given position."""
         # preserve_cursor
         cursor = self.current_row, self.current_col
         # insert one at a time at cursor location
         # to let cursor position logic deal with scrolling
         self.set_pos(row, col)
         for c in sequence:
-            row, col = self.current_row, self.current_col
-            while True:
-                therow = self.text.pages[self.apagenum].row[row-1]
-                therow.buf.insert(col-1, (c, attr))
-                if therow.end < self.mode.width:
-                    therow.buf.pop()
-                    if therow.end > col-1:
-                        therow.end += 1
-                    else:
-                        therow.end = col
-                    break
-                else:
-                    if row == self.scroll_area.bottom:
-                        self.scroll()
-                        row -= 1
-                    if not therow.wrap and row < self.mode.height:
-                        self.scroll_down(row+1)
-                        therow.wrap = True
-                    c, attr = therow.buf.pop()
-                    row += 1
-                    col = 1
+            self._insert_fullchar_at(self.current_row, self.current_col, c, attr)
             # move cursor by one character
-            # this will move to next row and scroll as necessary
+            # this will move to next row when necessary
             self.set_pos(self.current_row, self.current_col+1)
         self.set_pos(*cursor, scroll_ok=False)
-        self._redraw_row(start_col-1, start_row)
+        self._redraw_row(col-1, row)
+
+    def _insert_fullchar_at(self, row, col, c, attr):
+        """Insert one single- or double-width character at the given position."""
+        therow = self.text.pages[self.apagenum].row[row-1]
+        therow.buf.insert(col-1, (c, attr))
+        c, attr = therow.buf.pop()
+        if therow.end < self.mode.width:
+            if therow.end > col-1:
+                therow.end += 1
+            else:
+                therow.end = col
+        else:
+            # pushing the end of the row past the screen edge
+            # if we're not a wrapping line, make space by scrolling
+            if not therow.wrap and row < self.mode.height:
+                self.scroll_down(row+1)
+                therow.wrap = True
+            # insert the character in the next row
+            self._insert_fullchar_at(row+1, 1, c, attr)
+            # TODO: once the end of the line hits the bottom, start scrolling the top up
 
     def line_feed(self):
         """Move the remainder of the line to the next row and wrap (LF)."""
