@@ -611,23 +611,21 @@ class TextScreen(object):
 
     def line_feed(self):
         """Move the remainder of the line to the next row and wrap (LF)."""
-        row, col = self.current_row, self.current_col
-        if col < self.text.pages[self.apagenum].row[row-1].end:
-            self.insert_fullchars(row, col, b' ' * (self.mode.width-col+1), self.attr)
-            self.text.pages[self.apagenum].row[row-1].end = col - 1
+        col = self.current_col
+        if col < self.text.pages[self.apagenum].row[self.current_row-1].end:
+            self.insert_fullchars(self.current_row, col, b' ' * (self.mode.width-col+1), self.attr)
+            self.text.pages[self.apagenum].row[self.current_row-1].end = col - 1
+            # LF connects lines like word wrap
+            self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
         else:
-            while (
-                    self.text.pages[self.apagenum].row[row-1].wrap and
-                    row < self.scroll_area.bottom
-                ):
-                row += 1
-            if row >= self.scroll_area.bottom:
+            # find last row in logical line
+            end = self.text.find_end_of_line(self.apagenum, self.current_row)
+            if end >= self.scroll_area.bottom:
                 self.scroll()
             # self.current_row has changed, don't use row var
             if self.current_row < self.mode.height:
                 self.scroll_down(self.current_row+1)
-        # LF connects lines like word wrap
-        self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
+            self.text.pages[self.apagenum].row[self.current_row].wrap = True
         # cursor stays in place after line feed!
 
     ###########################################################################
