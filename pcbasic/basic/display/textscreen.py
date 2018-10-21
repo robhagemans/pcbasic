@@ -488,7 +488,7 @@ class TextScreen(object):
             signals.VIDEO_SCROLL_UP, (from_line, self.scroll_area.bottom, back)
         ))
         if self.current_row > from_line:
-            self.current_row -= 1
+            self._move_cursor(self.current_row - 1, self.current_col)
         # sync buffers with the new screen reality:
         self.text.scroll_up(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
@@ -505,7 +505,7 @@ class TextScreen(object):
             signals.VIDEO_SCROLL_DOWN, (from_line, self.scroll_area.bottom, back)
         ))
         if self.current_row >= from_line:
-            self.current_row += 1
+            self._move_cursor(self.current_row + 1, self.current_col)
         # sync buffers with the new screen reality:
         self.text.scroll_down(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
@@ -620,8 +620,14 @@ class TextScreen(object):
         else:
             # find last row in logical line
             end = self.text.find_end_of_line(self.apagenum, self.current_row)
+            # if the logical line hits the bottom, start scrolling up to make space...
             if end >= self.scroll_area.bottom:
-                self.scroll()
+                # ... until the it also hits the top; then do nothing
+                start = self.text.find_start_of_line(self.apagenum, self.current_row)
+                if start > self.scroll_area.top:
+                    self.scroll()
+                else:
+                    return
             # self.current_row has changed, don't use row var
             if self.current_row < self.mode.height:
                 self.scroll_down(self.current_row+1)
