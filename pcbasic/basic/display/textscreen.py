@@ -582,32 +582,39 @@ class TextScreen(object):
         # to let cursor position logic deal with scrolling
         self.set_pos(row, col)
         for c in sequence:
-            self._insert_fullchar_at(self.current_row, self.current_col, c, attr)
-            # move cursor by one character
-            # this will move to next row when necessary
-            self.set_pos(self.current_row, self.current_col+1)
+            if self._insert_fullchar_at(self.current_row, self.current_col, c, attr):
+                # move cursor by one character
+                # this will move to next row when necessary
+                self.set_pos(self.current_row, self.current_col+1)
+        new_pos = self.current_row, self.current_col
         self.set_pos(*cursor, scroll_ok=False)
         self._redraw_row(col-1, row)
+        return new_pos
 
     def _insert_fullchar_at(self, row, col, c, attr):
         """Insert one single- or double-width character at the given position."""
         therow = self.text.pages[self.apagenum].row[row-1]
-        therow.buf.insert(col-1, (c, attr))
-        c, attr = therow.buf.pop()
         if therow.end < self.mode.width:
+            therow.buf.insert(col-1, (c, attr))
+            c, attr = therow.buf.pop()
             if therow.end > col-1:
                 therow.end += 1
             else:
                 therow.end = col
+            return True
         else:
             # pushing the end of the row past the screen edge
             # if we're not a wrapping line, make space by scrolling
-            if not therow.wrap and row < self.mode.height:
+            if not therow.wrap and row < self.scroll_area.bottom:
                 self.scroll_down(row+1)
                 therow.wrap = True
-            # insert the character in the next row
-            self._insert_fullchar_at(row+1, 1, c, attr)
-            # TODO: once the end of the line hits the bottom, start scrolling the top up
+            if row < self.scroll_area.bottom:
+                therow.buf.insert(col-1, (c, attr))
+                c, attr = therow.buf.pop()
+                # insert the character in the next row
+                return self._insert_fullchar_at(row+1, 1, c, attr)
+                # TODO: once the end of the line hits the bottom, start scrolling the top up
+            return False
 
     def line_feed(self):
         """Move the remainder of the line to the next row and wrap (LF)."""

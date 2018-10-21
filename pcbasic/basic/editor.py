@@ -232,10 +232,9 @@ class Editor(object):
                         # ignore eascii by this point, but not dbcs
                         if d[0] not in (b'\0', b'\r'):
                             if not self._overwrite_mode:
-                                self._screen.insert_fullchars(
+                                new_pos = self._screen.insert_fullchars(
                                         self._screen.current_row, col, d, self._screen.attr)
-                                self._screen.set_pos(self._screen.current_row,
-                                        self._screen.current_col + len(d))
+                                self._screen.set_pos(*new_pos)
                             else:
                                 # put all dbcs in before messing with cursor position
                                 for c in d:
