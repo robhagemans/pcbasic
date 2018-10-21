@@ -272,8 +272,10 @@ class Editor(object):
         if self._overwrite_mode:
             self._screen.set_pos(row, newcol, scroll_ok=False)
         else:
-            self._screen.insert_fullchars(row, col, b' ' * 8, self._screen.attr)
-            self._screen.set_pos(row, newcol)
+            new_pos = self._screen.insert_fullchars(
+                row, col, b' ' * (newcol - col), self._screen.attr
+            )
+            self._screen.set_pos(*new_pos)
 
     def skip_word_right(self):
         """Skip one word to the right (CTRL+RIGHT)."""
