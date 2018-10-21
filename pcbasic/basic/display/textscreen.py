@@ -588,7 +588,6 @@ class TextScreen(object):
                 self.set_pos(self.current_row, self.current_col+1)
         new_pos = self.current_row, self.current_col
         self.set_pos(*cursor, scroll_ok=False)
-        self._redraw_row(col-1, row)
         return new_pos
 
     def _insert_fullchar_at(self, row, col, c, attr):
@@ -601,6 +600,7 @@ class TextScreen(object):
                 therow.end += 1
             else:
                 therow.end = col
+            self._redraw_row(col-1, row)
             return True
         else:
             # pushing the end of the row past the screen edge
@@ -608,13 +608,19 @@ class TextScreen(object):
             if not therow.wrap and row < self.scroll_area.bottom:
                 self.scroll_down(row+1)
                 therow.wrap = True
-            if row < self.scroll_area.bottom:
-                therow.buf.insert(col-1, (c, attr))
-                c, attr = therow.buf.pop()
-                # insert the character in the next row
-                return self._insert_fullchar_at(row+1, 1, c, attr)
-                # TODO: once the end of the line hits the bottom, start scrolling the top up
-            return False
+            if row >= self.scroll_area.bottom:
+                # once the end of the line hits the bottom, start scrolling the top up
+                start = self.text.find_start_of_line(self.apagenum, self.current_row)
+                if start > self.scroll_area.top:
+                    self.scroll()
+                    row -= 1
+                else:
+                    return False
+            therow.buf.insert(col-1, (c, attr))
+            c, attr = therow.buf.pop()
+            self._redraw_row(col-1, row)
+            # insert the character in the next row
+            return self._insert_fullchar_at(row+1, 1, c, attr)
 
     def line_feed(self):
         """Move the remainder of the line to the next row and wrap (LF)."""
