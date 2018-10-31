@@ -66,7 +66,6 @@ The following pages have GW-BASIC program downloads, lots of information and fur
 
 - [KindlyRat](http://www.oocities.org/KindlyRat/GWBASIC.html)'s archived Geocities page has a number of classic games and utilities.  
 - [PeatSoft](http://archive.is/AUm6G) provides GW-BASIC documentation, utilities and some more games.  
-- [Neil C. Obremski's gw-basic.com](http://www.gw-basic.com/) has some fun new games made recently in GW-BASIC.  
 - [Leon Peyre](http://peyre.x10.mx/GWBASIC/) has a nice collection of GW-BASIC programs, including the (in)famous first IBM PC game `DONKEY.BAS`.  
 - [Brooks deForest](https://web.archive.org/web/20170222075609/brooksdeforest.com/tandy1000) provides his amazing Tandy GW-BASIC games, all released into the public domain.  
 - [TVDog's Archive](http://www.oldskool.org/guides/tvdog/) is a great source of information and GW-BASIC programs for the Tandy 1000.  
