@@ -75,3 +75,4 @@ The following pages have GW-BASIC program downloads, lots of information and fur
 - [Joseph Sixpack's Last Book of GW-BASIC](http://www.geocities.ws/joseph_sixpack/btoc.html) has lots of office and utility programs, including the PC-CALC spreadsheet.  
 - [Thomas C. McIntyre](https://web.archive.org/web/20060410121551/http://scottserver.net/basically/geewhiz.html)'s GeeWhiz Collection has business applications, games and reference material.
 - [cd.textfiles.com](http://cd.textfiles.com) has tons of old shareware, among which some good GW-BASIC games.  
+- [PC-SIG Library 8th Edition CD-ROM (April 1990)](https://www.pcjs.org/disks/pcx86/shareware/pcsig08/) hosts many disk images and features a "live" dos box.
