@@ -54,7 +54,7 @@ DEFAULT_MACROS = (
 )
 
 # short beep (0.1s at 800Hz) emitted if buffer is full
-FULL_TONE = (0, 800, 0.01, 1, False, 15)
+FULL_TONE = (0, 800, 0.01, False, 15)
 
 
 ###############################################################################
