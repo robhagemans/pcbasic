@@ -24,4 +24,4 @@ about: Create a report to help us improve
 pcbasic version:
 
 <!-- Also, any additional context or information you feel may be relevant to the issue. -->
-<!-- (e.g rust version, OS platform/distribution/version.. -->
+<!-- (e.g OS platform/distribution/version.. -->
