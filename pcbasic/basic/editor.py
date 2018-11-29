@@ -232,10 +232,7 @@ class Editor(object):
                         # ignore eascii by this point, but not dbcs
                         if d[0] not in (b'\0', b'\r'):
                             if not self._overwrite_mode:
-                                self._screen.insert_fullchars(
-                                        self._screen.current_row, col, d, self._screen.attr)
-                                self._screen.set_pos(self._screen.current_row,
-                                        self._screen.current_col + len(d))
+                                self._screen.insert_fullchars(d)
                             else:
                                 # put all dbcs in before messing with cursor position
                                 for c in d:
@@ -268,13 +265,11 @@ class Editor(object):
 
     def tab(self):
         """Jump to next 8-position tab stop (TAB)."""
-        row, col = self._screen.current_row, self._screen.current_col
-        newcol = 9 + 8 * int((col-1) // 8)
+        newcol = 9 + 8 * int((self._screen.current_col-1) // 8)
         if self._overwrite_mode:
-            self._screen.set_pos(row, newcol, scroll_ok=False)
+            self._screen.set_pos(self._screen.current_row, newcol, scroll_ok=False)
         else:
-            self._screen.insert_fullchars(row, col, b' ' * 8, self._screen.attr)
-            self._screen.set_pos(row, newcol)
+            self._screen.insert_fullchars(b' '*(newcol-self._screen.current_col))
 
     def skip_word_right(self):
         """Skip one word to the right (CTRL+RIGHT)."""

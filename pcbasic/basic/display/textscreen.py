@@ -488,7 +488,7 @@ class TextScreen(object):
             signals.VIDEO_SCROLL_UP, (from_line, self.scroll_area.bottom, back)
         ))
         if self.current_row > from_line:
-            self.current_row -= 1
+            self._move_cursor(self.current_row - 1, self.current_col)
         # sync buffers with the new screen reality:
         self.text.scroll_up(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
@@ -505,7 +505,7 @@ class TextScreen(object):
             signals.VIDEO_SCROLL_DOWN, (from_line, self.scroll_area.bottom, back)
         ))
         if self.current_row >= from_line:
-            self.current_row += 1
+            self._move_cursor(self.current_row + 1, self.current_col)
         # sync buffers with the new screen reality:
         self.text.scroll_down(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
@@ -574,62 +574,74 @@ class TextScreen(object):
                 # adjust row end
                 self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col - 2
 
-    def insert_fullchars(self, row, col, sequence, attr):
-        """Insert one or more single- or double-width characters at the current position."""
-        # keep track of where we started, so we can redraw from there
-        start_row, start_col = row, col
-        # preserve_cursor
-        cursor = self.current_row, self.current_col
+    def insert_fullchars(self, sequence):
+        """Insert one or more single- or double-width characters and adjust cursor."""
         # insert one at a time at cursor location
         # to let cursor position logic deal with scrolling
-        self.set_pos(row, col)
         for c in sequence:
-            row, col = self.current_row, self.current_col
-            while True:
-                therow = self.text.pages[self.apagenum].row[row-1]
-                therow.buf.insert(col-1, (c, attr))
-                if therow.end < self.mode.width:
-                    therow.buf.pop()
-                    if therow.end > col-1:
-                        therow.end += 1
-                    else:
-                        therow.end = col
-                    break
+            if self._insert_fullchar_at(self.current_row, self.current_col, c, self.attr):
+                # move cursor by one character
+                # this will move to next row when necessary
+                self.set_pos(self.current_row, self.current_col+1)
+
+    def _insert_fullchar_at(self, row, col, c, attr):
+        """Insert one single- or double-width character at the given position."""
+        therow = self.text.pages[self.apagenum].row[row-1]
+        if therow.end < self.mode.width:
+            therow.buf.insert(col-1, (c, attr))
+            c, attr = therow.buf.pop()
+            if therow.end > col-1:
+                therow.end += 1
+            else:
+                therow.end = col
+            self._redraw_row(col-1, row)
+            return True
+        else:
+            # pushing the end of the row past the screen edge
+            # if we're not a wrapping line, make space by scrolling
+            if not therow.wrap and row < self.scroll_area.bottom:
+                self.scroll_down(row+1)
+                therow.wrap = True
+            if row >= self.scroll_area.bottom:
+                # once the end of the line hits the bottom, start scrolling the start of the line up
+                # until that hist the top of the screen. After that, stop inserting & drop chars
+                start = self.text.find_start_of_line(self.apagenum, self.current_row)
+                if start > self.scroll_area.top:
+                    self.scroll()
+                    row -= 1
                 else:
-                    if row == self.scroll_area.bottom:
-                        self.scroll()
-                        row -= 1
-                    if not therow.wrap and row < self.mode.height:
-                        self.scroll_down(row+1)
-                        therow.wrap = True
-                    c, attr = therow.buf.pop()
-                    row += 1
-                    col = 1
-            # move cursor by one character
-            # this will move to next row and scroll as necessary
-            self.set_pos(self.current_row, self.current_col+1)
-        self.set_pos(*cursor, scroll_ok=False)
-        self._redraw_row(start_col-1, start_row)
+                    return False
+            therow.buf.insert(col-1, (c, attr))
+            c, attr = therow.buf.pop()
+            self._redraw_row(col-1, row)
+            # insert the character in the next row
+            return self._insert_fullchar_at(row+1, 1, c, attr)
 
     def line_feed(self):
         """Move the remainder of the line to the next row and wrap (LF)."""
-        row, col = self.current_row, self.current_col
-        if col < self.text.pages[self.apagenum].row[row-1].end:
-            self.insert_fullchars(row, col, b' ' * (self.mode.width-col+1), self.attr)
-            self.text.pages[self.apagenum].row[row-1].end = col - 1
+        if self.current_col < self.text.pages[self.apagenum].row[self.current_row-1].end:
+            # insert characters, preserving cursor position
+            cursor = self.current_row, self.current_col
+            self.insert_fullchars(b' ' * (self.mode.width-self.current_col+1))
+            self.set_pos(*cursor, scroll_ok=False)
+            # adjust end of line and wrapping flag - LF connects lines like word wrap
+            self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col - 1
+            self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
         else:
-            while (
-                    self.text.pages[self.apagenum].row[row-1].wrap and
-                    row < self.scroll_area.bottom
-                ):
-                row += 1
-            if row >= self.scroll_area.bottom:
-                self.scroll()
+            # find last row in logical line
+            end = self.text.find_end_of_line(self.apagenum, self.current_row)
+            # if the logical line hits the bottom, start scrolling up to make space...
+            if end >= self.scroll_area.bottom:
+                # ... until the it also hits the top; then do nothing
+                start = self.text.find_start_of_line(self.apagenum, self.current_row)
+                if start > self.scroll_area.top:
+                    self.scroll()
+                else:
+                    return
             # self.current_row has changed, don't use row var
             if self.current_row < self.mode.height:
                 self.scroll_down(self.current_row+1)
-        # LF connects lines like word wrap
-        self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
+            self.text.pages[self.apagenum].row[self.current_row].wrap = True
         # cursor stays in place after line feed!
 
     ###########################################################################
