@@ -133,12 +133,20 @@ def get_digits(num, digits, remove_trailing=True):
 
 def _group_digits(digitstr):
     """Insert commas to group digits in a decimal number."""
-    before, after = digitstr.split('.')
+    if '.' in digitstr:
+        before, after = digitstr.split('.')
+    else:
+        before, after = digitstr, None
     first = len(before) % 3
     chunks = [before[i:i + 3] for i in range(first, len(before), 3)]
     if first:
         chunks = [before[:first]] + chunks
-    return ','.join(chunks) + '.' + after
+    before = ','.join(chunks)
+    if after is not None:
+        return before + '.' + after
+    else:
+        return before
+
 
 def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_dot=False, group_digits=False):
     """Put digits in scientific E-notation."""
@@ -258,6 +266,9 @@ def format_number(value, tokens, digits_before, decimals, comma):
         valstr += format_float_fixed(value, decimals, force_dot, comma)
     # trailing signs, if any
     valstr += post_sign
+    # remove leading zero before radix if number does not fit in field
+    if len(valstr) > len(tokens) and valstr[:2] == b'0.':
+        valstr = valstr[1:]
     if len(valstr) > len(tokens):
         valstr = '%' + valstr
     else:
