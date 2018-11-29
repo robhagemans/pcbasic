@@ -69,10 +69,16 @@ The following pages have GW-BASIC program downloads, lots of information and fur
 - [Leon Peyre](http://peyre.x10.mx/GWBASIC/) has a nice collection of GW-BASIC programs, including the (in)famous first IBM PC game `DONKEY.BAS`.  
 - [Brooks deForest](https://web.archive.org/web/20170222075609/brooksdeforest.com/tandy1000) provides his amazing Tandy GW-BASIC games, all released into the public domain.  
 - [TVDog's Archive](http://www.oldskool.org/guides/tvdog/) is a great source of information and GW-BASIC programs for the Tandy 1000.  
-- [Phillip Bigelow](http://www.scn.org/~bh162/basic_programs.html) provides scientific programs written in GW-BASIC.  
+- [Phillip Bigelow](https://web.archive.org/web/20160810162309/http://www.scn.org/~bh162/basic_programs.html) provides scientific programs written in GW-BASIC.  
 - [Gary Peek](http://www.garypeek.com/basic/gwprograms.htm) provides miscellaneous GW-BASIC sources which he released into the public domain.  
 - [S.A. Moore's Classic BASIC Games page](http://www.moorecad.com/classicbasic/index.html) provides the BASIC games from David Ahl's classic book.  
 - [Joseph Sixpack's Last Book of GW-BASIC](http://www.geocities.ws/joseph_sixpack/btoc.html) has lots of office and utility programs, including the PC-CALC spreadsheet.  
 - [Thomas C. McIntyre](https://web.archive.org/web/20060410121551/http://scottserver.net/basically/geewhiz.html)'s GeeWhiz Collection has business applications, games and reference material.
 - [cd.textfiles.com](http://cd.textfiles.com) has tons of old shareware, among which some good GW-BASIC games.  
-- [PC-SIG Library 8th Edition CD-ROM (April 1990)](https://www.pcjs.org/disks/pcx86/shareware/pcsig08/) hosts many disk images and features a "live" dos box.
+- [PC-SIG Library 8th Edition CD-ROM (April 1990)](https://www.pcjs.org/disks/pcx86/shareware/pcsig08/) hosts many disk images and features a "live" DOS box.  
+- [The MS-DOS source code](https://github.com/Microsoft/MS-DOS/tree/master/v1.25/bin), as released by Microsoft, contains the original IBM PC Samples BASIC demos and games.
+- [Antonis.de](http://antonis.de) focusses on Q-BASIC but has a number of GW-BASIC resources, tutorials, e-books etc.  
+- [Microsoft GW-BASIC Manual](http://antonis.de/qbebooks/index.htm#gwbasman): an online version of the original User' Guide and User's Reference.  
+- [BASIC Training](http://www.o-bizz.de/qbtuts/gw-train/): a GW-BASIC tutorial by Steve Estvanik.  
+- [Blast Off With BASIC](http://www.o-bizz.de/qbtuts/blastoff/_start.htm): a GW-BASIC tutorial by Brian R. Page.  
+- [The BLUE Book about GW-BASIC and QuickBASIC](http://www.antonis.de/qbebooks/bluebas.zip): the excellent "BASIC Language User Essay" by Thomas C. McIntire is full of expert knowledge about GW-BASIC.  
