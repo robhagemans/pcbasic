@@ -269,9 +269,14 @@ class NumberField(object):
             valstr += value.to_str_fixed(decimals, force_dot, comma)
         # trailing signs, if any
         valstr += post_sign
-        # remove leading zero before radix if number does not fit in field
-        if len(valstr) > len(tokens) and valstr[:2] == b'0.':
-            valstr = valstr[1:]
+        # add leading zero before radix if there's space
+        if len(valstr) < len(tokens):
+            if valstr.startswith(b'.'):
+                valstr = b'0' + valstr
+            elif valstr.startswith(b'+.'):
+                valstr = b'+0' + valstr[1:]
+            elif valstr.startswith(b'-.'):
+                valstr = b'-0' + valstr[1:]
         if len(valstr) > len(tokens):
             # number does not fit in field
             valstr = b'%' + valstr

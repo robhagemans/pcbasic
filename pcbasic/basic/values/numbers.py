@@ -707,21 +707,20 @@ class Float(Number):
 
     def to_str_scientific(self, n_before, n_decimals, force_dot, group_digits):
         """Put a float in scientific format."""
-        n_work = min(self.digits, n_before + n_decimals)
         if self.is_zero():
-            if not force_dot:
-                if self.exp_sign == b'E':
-                    return b'E+00'
-                return b'0D+00'  # matches GW output. odd, odd, odd
-            digitstr = b'0' * (n_before + n_decimals)
-            exp10 = 0
-        else:
-            # special case when work_digits == 0, see also below
-            # setting to 0 results in incorrect rounding (why?)
-            mantissa, exp10 = self.to_decimal(1 if n_work == 0 else n_work)
-            digitstr = _get_digits(mantissa, n_work, remove_trailing=True)
-            # append zeros if necessary
-            digitstr = digitstr.ljust(n_decimals + n_before, b'0')
+            if force_dot:
+                return b''.join((b'.', (b'0' * n_decimals), self.exp_sign, b'+00'))
+            # single/double difference: this matches GW output. odd, odd, odd
+            if self.exp_sign == b'E':
+                return b'E+00'
+            return b'0D+00'
+        n_work = min(self.digits, n_before + n_decimals)
+        # special case when work_digits == 0, see also below
+        # setting to 0 results in incorrect rounding (why?)
+        mantissa, exp10 = self.to_decimal(1 if n_work == 0 else n_work)
+        digitstr = _get_digits(mantissa, n_work, remove_trailing=True)
+        # append zeros if necessary
+        digitstr = digitstr.ljust(n_decimals + n_before, b'0')
         # this is just to reproduce GW results for no digits:
         # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
         if n_work == 0:
@@ -733,6 +732,12 @@ class Float(Number):
 
     def to_str_fixed(self, n_decimals, force_dot, group_digits):
         """Put a float in fixed-point representation."""
+        if self.is_zero():
+            if force_dot:
+                return b'.' + b'0'*n_decimals
+            if n_decimals:
+                return b'0'*n_decimals
+            return b'0'
         # convert to integer_mantissa * 10**exponent
         mantissa, exp10 = self.to_decimal()
         # -exp10 is the number of digits after the radix point
@@ -798,11 +803,7 @@ class Float(Number):
                 valstr = self._group_digits(valstr)
             valstr += b'.' + digitstr[exp10:]
         else:
-            if force_dot:
-                valstr = b'0'
-            else:
-                valstr = b''
-            valstr += b'.' + b'0'*(-exp10) + digitstr
+            valstr = b'.' + b'0'*(-exp10) + digitstr
         if (b'.' not in valstr) or (type_sign == b'#'):
             valstr += type_sign
         return valstr
