@@ -714,7 +714,7 @@ class Float(Number):
                     return b'E+00'
                 return b'0D+00'  # matches GW output. odd, odd, odd
             digitstr = b'0' * (n_before + n_decimals)
-            exp10 = 0
+            exp10 = n_before - 1
         else:
             # special case when work_digits == 0, see also below
             # setting to 0 results in incorrect rounding (why?)
@@ -722,11 +722,11 @@ class Float(Number):
             digitstr = _get_digits(mantissa, n_work, remove_trailing=True)
             # append zeros if necessary
             digitstr = digitstr.ljust(n_decimals + n_before, b'0')
-        # this is just to reproduce GW results for no digits:
-        # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
-        if n_work == 0:
-            exp10 += 1
-        exp10 += n_before + n_decimals - 1
+            # this is just to reproduce GW results for no digits:
+            # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
+            if n_work == 0:
+                exp10 += 1
+            exp10 += n_before + n_decimals - 1
         return self._scientific_notation(
             digitstr, exp10, digits_to_dot=n_before, force_dot=force_dot, group_digits=group_digits
         )
