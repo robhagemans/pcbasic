@@ -135,7 +135,34 @@ def makedoc(header=None, output=None, embedded_style=True):
     toc = StringIO()
     maketoc(predoc, toc)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    subheader_html = '<header>\n<h1>PC-BASIC {0} documentation</h1>\n<small>Last updated {1}.</small>\n</header>\n'.format(version, now)
+    if embedded_style:
+        subheader_html = """
+<header>
+    <h1>
+        PC-BASIC {0} documentation
+    </h1>
+    <small>
+        Last updated <em>{1}</em>
+    </small>
+</header>
+""".format(version, now)
+    else:
+        subheader_html = """
+<article>
+    <h2>
+        PC-BASIC {0}
+    </h2>
+    <p>
+        This is the documentation for <strong>PC-BASIC {0}</strong>, last updated <em>{1}</em>.
+    </p>
+    <p>
+        Documentation for other versions of PC-BASIC:
+    </p>
+    <ul>
+        <li><a href="http://pc-basic.org/doc/2.0/">PC-BASIC 2.0</a></li>
+    </ul>
+</article>
+""".format(version, now)
     header_html = open(header, 'r').read()
     with open(output, 'w') as outf:
         outf.write(header_html)
