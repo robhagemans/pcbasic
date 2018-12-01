@@ -709,7 +709,7 @@ class Float(Number):
         """Put a float in scientific format."""
         if self.is_zero():
             if force_dot:
-                return b''.join((b'0.', (b'0' * n_decimals), self.exp_sign, b'+00'))
+                return b''.join((b'.', (b'0' * n_decimals), self.exp_sign, b'+00'))
             # single/double difference: this matches GW output. odd, odd, odd
             if self.exp_sign == b'E':
                 return b'E+00'
@@ -732,6 +732,12 @@ class Float(Number):
 
     def to_str_fixed(self, n_decimals, force_dot, group_digits):
         """Put a float in fixed-point representation."""
+        if self.is_zero():
+            if force_dot:
+                return b'.' + b'0'*n_decimals
+            if n_decimals:
+                return b'0'*n_decimals
+            return b'0'
         # convert to integer_mantissa * 10**exponent
         mantissa, exp10 = self.to_decimal()
         # -exp10 is the number of digits after the radix point
@@ -797,11 +803,7 @@ class Float(Number):
                 valstr = self._group_digits(valstr)
             valstr += b'.' + digitstr[exp10:]
         else:
-            if force_dot:
-                valstr = b'0'
-            else:
-                valstr = b''
-            valstr += b'.' + b'0'*(-exp10) + digitstr
+            valstr = b'.' + b'0'*(-exp10) + digitstr
         if (b'.' not in valstr) or (type_sign == b'#'):
             valstr += type_sign
         return valstr
