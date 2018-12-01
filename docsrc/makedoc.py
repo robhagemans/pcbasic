@@ -195,7 +195,7 @@ def makedoc(header=None, output=None, embedded_style=True):
         Documentation for other versions of PC-BASIC:
     </p>
     <ul>
-        <li><a href="http://pc-basic.org/doc/">PC-BASIC 1.2</a></li>
+        <li><a href="http://pc-basic.org/doc/1.2/">PC-BASIC 1.2</a></li>
     </ul>
 </article>
 """
