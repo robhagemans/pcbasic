@@ -595,6 +595,9 @@ class TextScreen(object):
             else:
                 therow.end = col
             self._redraw_row(col-1, row)
+            if  therow.wrap and therow.end == self.mode.width:
+                self.scroll_down(row+1)
+                therow.wrap = True
             return True
         else:
             # pushing the end of the row past the screen edge
@@ -627,6 +630,7 @@ class TextScreen(object):
             # adjust end of line and wrapping flag - LF connects lines like word wrap
             self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col - 1
             self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
+            # cursor stays in place after line feed!
         else:
             # find last row in logical line
             end = self.text.find_end_of_line(self.apagenum, self.current_row)
@@ -641,8 +645,13 @@ class TextScreen(object):
             # self.current_row has changed, don't use row var
             if self.current_row < self.mode.height:
                 self.scroll_down(self.current_row+1)
-            self.text.pages[self.apagenum].row[self.current_row].wrap = True
-        # cursor stays in place after line feed!
+                # if we were already a wrapping row, make sure the new empty row wraps
+                #if self.text.pages[self.apagenum].row[self.current_row-1].wrap:
+                #    self.text.pages[self.apagenum].row[self.current_row].wrap = True
+            # ensure the current row now wraps
+            self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
+            # cursor moves to start of next line
+            self.set_pos(self.current_row+1, 1)
 
     ###########################################################################
     # vpage text retrieval
