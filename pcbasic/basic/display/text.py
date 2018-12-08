@@ -138,6 +138,9 @@ class TextBuffer(object):
         self.pages[pagenum].row.insert(
             from_line - 1, TextRow(attr, self.width, self._conv, self._dbcs_enabled)
         )
+        # if we were already a wrapping row, make sure the new empty row wraps
+        if self.pages[pagenum].row[from_line-2].wrap:
+            self.pages[pagenum].row[from_line-1].wrap = True
         del self.pages[pagenum].row[bottom-1]
 
     def get_char(self, pagenum, row, col):

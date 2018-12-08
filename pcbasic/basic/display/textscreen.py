@@ -645,7 +645,11 @@ class TextScreen(object):
             # self.current_row has changed, don't use row var
             if self.current_row < self.mode.height:
                 self.scroll_down(self.current_row+1)
-            self.text.pages[self.apagenum].row[self.current_row].wrap = True
+                # if we were already a wrapping row, make sure the new empty row wraps
+                #if self.text.pages[self.apagenum].row[self.current_row-1].wrap:
+                #    self.text.pages[self.apagenum].row[self.current_row].wrap = True
+            # ensure the current row now wraps
+            self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
             # cursor moves to start of next line
             self.set_pos(self.current_row+1, 1)
 
