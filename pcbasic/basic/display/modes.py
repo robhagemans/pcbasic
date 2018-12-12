@@ -898,7 +898,8 @@ class CGAMode(GraphicsMode):
 
     def record_to_sprite_size(self, byte_array):
         """Read 4-byte record of sprite size."""
-        return struct.unpack('<HH', byte_array[0:4])
+        w, dy = struct.unpack('<HH', byte_array[0:4])
+        return w // self.bitsperpixel, dy
 
     def sprite_to_array(self, attrs, dx, dy, byte_array, offs):
         """Build the sprite byte array."""
