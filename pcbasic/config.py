@@ -337,6 +337,8 @@ class Settings(object):
         u'current-device': {u'type': u'string', u'default': ''},
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
         u'options': {u'type': u'string', u'default': ''},
+        # depecated argument, use text-encoding instead
+        u'utf8': {u'type': u'bool', u'default': False,},
     }
 
     def __init__(self, temp_dir, arguments):
@@ -600,6 +602,15 @@ class Settings(object):
             # following GW, don't write greeting for redirected input or command-line filter run
             'greeting': (not params['input_streams']),
         })
+        # deprecated arguments
+        if self.get('utf8', get_default=False) is not None:
+            if self.get('text-encoding', get_default=False) is not None:
+                logging.warning(
+                    'Deprecated option `utf8` ignored: `text-encoding` takes precedence.'
+                )
+            else:
+                logging.warning('Option `utf8` is deprecated; use `text-encoding=utf-8` instead.')
+                params['textfile_encoding'] = u'utf-8' if self.get('utf8') else u''
         return params
 
     def _get_video_parameters(self):

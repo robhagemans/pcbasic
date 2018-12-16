@@ -907,6 +907,16 @@
             raw bytes in the current PC-BASIC codepage.
         </dd>
 
+        <dt id="--utf8">
+            <code><b>--utf8</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Set the text encoding to UTF-8.
+            <br />
+            This option is <em>deprecated</em> and ignored if <code>--text-encoding</code> is set.
+            Use <code><b><a href="#--text-encoding">--text-encoding</a></b></code> instead.
+        </dd>
+
         <dt id="--version">
             <code id="-v"><b>-v</b></code>
             <code><b>--version</b></code>
@@ -984,7 +994,7 @@
         </dt>
         <dd>
             Set GW-BASIC-style command-line switches. This is a convenience option to facilitate
-            migration from GW-BASIC. <code>gwbasic_options</var></code> is a string that may contain
+            migration from GW-BASIC. <code><var>gwbasic_options</var></code> is a string that may contain
             the following options:
             <dl>
                 <dt>
