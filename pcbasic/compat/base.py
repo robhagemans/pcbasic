@@ -8,9 +8,14 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import re
+import contextlib
 import sys
 import platform
+import codecs
 
+
+# Python major version
+PY2 = sys.version_info.major == 2
 
 # platform constants
 WIN32 = sys.platform == 'win32'
@@ -48,10 +53,47 @@ else:
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 
 
-# utility function, this has to go somewhere...
+# unicode stream wrappers
+
+def wrap_output_stream(stream):
+    """Wrap std bytes streams to make them behave more like in Python 3."""
+    wrapped = codecs.getwriter(stream.encoding or 'utf-8')(stream)
+    wrapped.buffer = stream
+    return wrapped
+
+def wrap_input_stream(stream):
+    """Wrap std bytes streams to make them behave more like in Python 3."""
+    wrapped = codecs.getreader(stream.encoding or 'utf-8')(stream)
+    wrapped.buffer = stream
+    return wrapped
+
+
+# utility functions, this has to go somewhere...
+
 def split_quoted(line, split_by=u'\s', quote=u'"', strip_quotes=False):
     """Split by separators, preserving quoted blocks."""
     chunks = re.findall(u'[^%s%s][^%s]*|%s.+?%s' % (quote, split_by, split_by, quote, quote), line)
     if strip_quotes:
         chunks = [c.strip(quote) for c in chunks]
     return chunks
+
+@contextlib.contextmanager
+def muffle(std_stream):
+    """Suppress stdout or stderr messages."""
+    try:
+        # save the file descriptor for the target stream
+        save = os.dup(std_stream.fileno())
+        # http://stackoverflow.com/questions/977840/
+        # redirecting-fortran-called-via-f2py-output-in-python/978264#978264
+        with open(os.devnull, 'w') as null:
+            # put /dev/null fds on 1 (stdout) or 2 (stderr)
+            os.dup2(null.fileno(), std_stream.fileno())
+            # do stuff
+            try:
+                yield
+            finally:
+                std_stream.flush()
+                # restore file descriptors
+                os.dup2(save, std_stream.fileno())
+    finally:
+        os.close(save)

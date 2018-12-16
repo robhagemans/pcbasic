@@ -9,27 +9,50 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import io
 import sys
-import ConfigParser
 import logging
 import zipfile
-import codecs
 import locale
 import tempfile
 import shutil
+import codecs
 import pkg_resources
-import string
 from collections import deque
 
-from .metadata import VERSION, NAME
-from .data import CODEPAGES, FONTS, PROGRAMS, ICON
-from .compat import WIN32, get_short_pathname, get_unicode_argv, HAS_CONSOLE
+from .compat import iteritems, text_type, iterchar
+from .compat import configparser
+from .compat import WIN32, get_short_pathname, argv
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
-from .compat import split_quoted
+from .compat import split_quoted, getcwdu
+from .compat import console, stdout, stdin, stderr, IS_CONSOLE_APP
+
+from .data import CODEPAGES, FONTS, PROGRAMS, ICON
+from .metadata import VERSION, NAME
 from . import data
 
 
-# minimum required python2 version
-MIN_PYTHON_VERSION = (2, 7, 12)
+# minimum required python versions
+MIN_PYTHON2_VERSION = (2, 7, 12)
+MIN_PYTHON3_VERSION = (3, 5, 0)
+
+def validate_version():
+    """Initial validations."""
+    # sys.version_info tuple's first three elements are guaranteed to be ints
+    python_version = sys.version_info[:3]
+    if (
+            (python_version[0] == 2 and python_version < MIN_PYTHON2_VERSION) or
+            (python_version[0] == 3 and python_version < MIN_PYTHON3_VERSION)
+        ):
+        msg = (
+            'PC-BASIC requires Python version %d.%d.%d, ' % MIN_PYTHON2_VERSION +
+            'version %d.%d.%d, or higher. ' % MIN_PYTHON3_VERSION +
+            'You have %d.%d.%d.' % python_version
+        )
+        logging.fatal(msg)
+        raise ImportError(msg)
+
+# raise ImportError if incorrect Python version
+validate_version()
+
 
 # base directory name
 MAJOR_VERSION = u'.'.join(VERSION.split(u'.')[:2])
@@ -47,7 +70,7 @@ LOGGING_FORMAT = u'[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
 LOGGING_FORMATTER = logging.Formatter(fmt=LOGGING_FORMAT, datefmt=u'%H:%M:%S')
 
 # drive letters except @, bytes constant
-UPPERCASE = string.uppercase
+UPPERCASE = b'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
 def append_arg(args, key, value):
@@ -71,9 +94,16 @@ def safe_split(s, sep):
 def store_bundled_programs(PROGRAM_PATH):
     """Retrieve contents of BASIC programs."""
     for name in PROGRAMS:
-        with open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
+        with io.open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
             f.write(data.read_program_file(name))
 
+def _check_text_encoding(arg):
+    """Check if text-encoding argument is acceptable."""
+    try:
+        codecs.lookup(arg)
+    except LookupError:
+        return False
+    return True
 
 class TemporaryDirectory():
     """Temporary directory context guard like in Python 3 tempfile."""
@@ -108,6 +138,17 @@ class WhitespaceStripper(object):
         """Read a line and strip whitespace (but not EOL)."""
         return self._file.readline().lstrip(u' \t')
 
+    def __next__(self):
+        """Make iterable for Python 3."""
+        line = self.readline()
+        if not line:
+            raise StopIteration()
+        return line
+
+    def __iter__(self):
+        """We are iterable."""
+        return self
+
 
 class Settings(object):
     """Read and retrieve command-line settings and options."""
@@ -121,7 +162,8 @@ class Settings(object):
     default_config = {
         u'strict': {
             u'hide-listing': u'65530',
-            u'soft-linefeed': u'True',
+            u'text-encoding': u'',
+            u'soft-linefeed': u'False',
             u'hide-protected': u'True',
             u'allow-code-poke': u'True',
             u'prevent-close': u'True',
@@ -257,7 +299,6 @@ class Settings(object):
         u'hide-protected': {u'type': u'bool', u'default': False,},
         u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
         u'resume': {u'type': u'bool', u'default': False,},
-        u'soft-linefeed': {u'type': u'bool', u'default': False,},
         u'syntax': {
             u'type': u'string', u'choices': (u'advanced', u'pcjr', u'tandy'),
             u'default': u'advanced',},
@@ -267,7 +308,8 @@ class Settings(object):
             u'choices': (
                 u'vga', u'ega', u'cga', u'cga_old', u'mda',
                 u'pcjr', u'tandy', u'hercules', u'olivetti'), },
-        u'utf8': {u'type': u'bool', u'default': False,},
+        u'text-encoding': {u'type': u'string', u'default': u'', u'check': _check_text_encoding},
+        u'soft-linefeed': {u'type': u'bool', u'default': False,},
         u'border': {u'type': u'int', u'default': 5,},
         u'mouse-clipboard': {u'type': u'bool', u'default': True,},
         u'state': {u'type': u'string', u'default': u'',},
@@ -295,13 +337,15 @@ class Settings(object):
         u'current-device': {u'type': u'string', u'default': ''},
         u'extension': {u'type': u'string', u'list': u'*', u'default': []},
         u'options': {u'type': u'string', u'default': ''},
+        # depecated argument, use text-encoding instead
+        u'utf8': {u'type': u'bool', u'default': False,},
     }
 
     def __init__(self, temp_dir, arguments):
         """Initialise settings."""
         # arguments should be unicode
         if not arguments:
-            self._uargv = get_unicode_argv()[1:]
+            self._uargv = argv[1:]
         else:
             self._uargv = list(arguments)
         self._pre_init_logging()
@@ -330,16 +374,6 @@ class Settings(object):
             raise
         # prepare global logger for use by main program
         self._prepare_logging()
-        # initial validations
-        # sys.version_info tuple's first three elements are guaranteed to be ints
-        python_version = sys.version_info[:3]
-        if python_version >= (3,) or python_version < MIN_PYTHON_VERSION:
-            msg = (
-                'PC-BASIC requires Python 2, version %d.%d.%d or higher. ' % MIN_PYTHON_VERSION +
-                'You have %d.%d.%d.' % python_version
-            )
-            logging.fatal(msg)
-            raise Exception(msg)
 
     def _pre_init_logging(self):
         """Set up the global logger temporarily until we know the log stream."""
@@ -370,9 +404,9 @@ class Settings(object):
         root_logger = self._reset_logging()
         root_logger.setLevel(loglevel)
         if logfile:
-            logstream = open(logfile, 'w')
+            logstream = io.open(logfile, 'w', encoding='utf_8', errors='replace')
         else:
-            logstream = sys.stderr
+            logstream = stderr
         # write out cached logs
         logstream.write(self._logstream.getvalue())
         handler = logging.StreamHandler(logstream)
@@ -392,7 +426,7 @@ class Settings(object):
         # local config file settings override preset settings
         self._merge_arguments(args, preset_dict[u'pcbasic'])
         # find unrecognised arguments
-        for key, value in args.iteritems():
+        for key, value in iteritems(args):
             if key not in self.arguments:
                 logging.warning(
                     'Ignored unrecognised option `%s=%s` in configuration file', key, value
@@ -428,21 +462,14 @@ class Settings(object):
     def _get_redirects(self):
         """Determine which i/o streams to attach."""
         input_streams, output_streams = [], []
-        # add stdio if redirected or no interface
-        if HAS_CONSOLE and (not self.interface or not sys.stdin.isatty()):
-            input_streams.append(sys.stdin)
-        # redirect output as well if input is redirected, but not the other way around
-        # this is because (1) GW-BASIC does this from the DOS prompt
-        # (2) otherwise we don't see anything - we quit after input closes
-        # isatty is also false if we run as a GUI exe, so check that here
-        if HAS_CONSOLE and (
-                not self.interface or not sys.stdout.isatty() or not sys.stdin.isatty()):
-            output_streams.append(sys.stdout)
         # explicit redirects
+        # input redirects
         infile_params = self.get('input').split(u':')
         if infile_params[0].upper() in (u'STDIO', u'STDIN'):
-            if sys.stdin not in input_streams:
-                input_streams.append(sys.stdin)
+            if u'RAW' in (_x.upper() for _x in infile_params):
+                input_streams.append(stdin.buffer)
+            else:
+                input_streams.append(stdin)
         else:
             if len(infile_params) > 1 and infile_params[0].upper() == u'FILE':
                 infile = infile_params[1]
@@ -450,13 +477,16 @@ class Settings(object):
                 infile = infile_params[0]
             if infile:
                 try:
-                    input_streams.append(open(infile, 'rb'))
+                    input_streams.append(io.open(infile, 'rb'))
                 except EnvironmentError as e:
                     logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
+        # output redirects
         outfile_params = self.get('output').split(u':')
         if outfile_params[0].upper() in (u'STDIO', u'STDOUT'):
-            if sys.stdout not in output_streams:
-                output_streams.append(sys.stdout)
+            if u'RAW' in (_x.upper() for _x in outfile_params):
+                output_streams.append(stdout.buffer)
+            else:
+                output_streams.append(stdout)
         else:
             if len(outfile_params) > 1 and outfile_params[0].upper() == u'FILE':
                 outfile_params = outfile_params[1:]
@@ -464,9 +494,27 @@ class Settings(object):
             append = len(outfile_params) > 1 and outfile_params[1].lower() == u'append'
             if outfile:
                 try:
-                    output_streams.append(open(outfile, 'ab' if append else 'wb'))
+                    output_streams.append(io.open(outfile, 'ab' if append else 'wb'))
                 except EnvironmentError as e:
                     logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
+        # implicit stdio redirects
+        # add stdio if redirected or no interface
+        if stdin not in input_streams and stdin.buffer not in input_streams:
+            if IS_CONSOLE_APP and not stdin.isatty():
+                # redirected on console; use bytes stream
+                input_streams.append(stdin.buffer)
+            elif IS_CONSOLE_APP and not self.interface:
+                # no interface & on console; use unicode stream
+                input_streams.append(stdin)
+        # redirect output as well if input is redirected, but not the other way around
+        # this is because (1) GW-BASIC does this from the DOS prompt
+        # (2) otherwise we don't see anything - we quit after input closes
+        # isatty is also false if we run as a GUI exe, so check that here
+        if stdout not in output_streams and stdout.buffer not in output_streams:
+            if IS_CONSOLE_APP and (not stdout.isatty() or not stdin.isatty()):
+                output_streams.append(stdout.buffer)
+            elif IS_CONSOLE_APP and not self.interface:
+                output_streams.append(stdout)
         return {
             'output_streams': output_streams,
             'input_streams': input_streams,
@@ -517,8 +565,9 @@ class Settings(object):
             'low_intensity': cga_low,
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
             # inserted keystrokes
-            'keys': self.get('keys').encode('utf-8', 'replace')
-                        .decode('string_escape').decode('utf-8', 'replace'),
+            # we first need to encode the unicode to bytes before we can decode it
+            # this preserves unicode as \x (if latin-1) and \u escapes
+            'keys': self.get('keys').encode('ascii', 'backslashreplace').decode('unicode-escape'),
             # find program for PCjr TERM command
             'term': self.get('term'),
             'shell': self.get('shell'),
@@ -529,7 +578,7 @@ class Settings(object):
             'mount': mount_dict,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
-            'utf8': self.get('utf8'),
+            'textfile_encoding': self.get('text-encoding'),
             'soft_linefeed': self.get('soft-linefeed'),
             # keyboard settings
             'ctrl_c_is_break': self.get('ctrl-c-break'),
@@ -553,6 +602,15 @@ class Settings(object):
             # following GW, don't write greeting for redirected input or command-line filter run
             'greeting': (not params['input_streams']),
         })
+        # deprecated arguments
+        if self.get('utf8', get_default=False) is not None:
+            if self.get('text-encoding', get_default=False) is not None:
+                logging.warning(
+                    'Deprecated option `utf8` ignored: `text-encoding` takes precedence.'
+                )
+            else:
+                logging.warning('Option `utf8` is deprecated; use `text-encoding=utf-8` instead.')
+                params['textfile_encoding'] = u'utf-8' if self.get('utf8') else u''
         return params
 
     def _get_video_parameters(self):
@@ -592,8 +650,7 @@ class Settings(object):
         interface = self.get('interface')
         # categorical interfaces
         categories = {
-            # (video, audio), in order of preference
-            'text': ('curses', 'ansi'),
+            'text': ('ansi', 'curses'),
             'graphical': ('sdl2', 'pygame'),
         }
         if not interface:
@@ -664,17 +721,17 @@ class Settings(object):
                     else:
                         mount_dict[letter] = (path, u'')
                 except (TypeError, ValueError) as e:
-                    logging.warning(u'Could not mount %s: %s', a, unicode(e))
+                    logging.warning(u'Could not mount %s: %s', a, e)
         else:
             if WIN32:
                 # get all drives in use by windows
                 # if started from CMD.EXE, get the 'current working dir' for each drive
                 # if not in CMD.EXE, there's only one cwd
-                save_current = os.getcwdu()
-                for letter in UPPERCASE:
+                save_current = getcwdu()
+                for letter in iterchar(UPPERCASE):
                     try:
                         os.chdir(letter + b':')
-                        cwd = get_short_pathname(os.getcwdu()) or os.getcwdu()
+                        cwd = get_short_pathname(getcwdu()) or getcwdu()
                     except EnvironmentError:
                         # doesn't exist or can't access, do not mount this drive
                         pass
@@ -692,7 +749,7 @@ class Settings(object):
                         pass
             else:
                 # non-Windows systems simply have 'Z:' set to their their cwd by default
-                mount_dict[b'Z'] = (os.getcwdu(), u'')
+                mount_dict[b'Z'] = (getcwdu(), u'')
                 current_device = b'Z'
         # fallbacks for current device
         if (
@@ -864,12 +921,12 @@ class Settings(object):
     def _read_config_file(self, config_file):
         """Read config file."""
         try:
-            config = ConfigParser.RawConfigParser(allow_no_value=True)
+            config = configparser.RawConfigParser(allow_no_value=True)
             # use utf_8_sig to ignore a BOM if it's at the start of the file
             # (e.g. created by Notepad)
-            with codecs.open(config_file, b'r', b'utf_8_sig') as f:
+            with io.open(config_file, 'r', encoding='utf_8_sig', errors='replace') as f:
                 config.readfp(WhitespaceStripper(f))
-        except (ConfigParser.Error, IOError):
+        except (configparser.Error, IOError):
             logging.warning(
                 u'Error in configuration file %s. Configuration not loaded.', config_file
             )
@@ -880,7 +937,7 @@ class Settings(object):
     def _parse_args(self, remaining):
         """Retrieve command line options."""
         # set arguments
-        known = self.arguments.keys() + range(self.positional)
+        known = list(self.arguments.keys()) + list(range(self.positional))
         args = {d: remaining[d] for d in remaining if d in known}
         not_recognised = {d: remaining[d] for d in remaining if d not in known}
         for d in not_recognised:
@@ -980,8 +1037,12 @@ class Settings(object):
             if first_arg and first_arg not in self.arguments[d][u'choices']:
                 logging.warning(
                     u'Value "%s=%s" ignored; should be one of (%s)',
-                    d, unicode(arg), u', '.join(self.arguments[d][u'choices'])
+                    d, arg, u', '.join(text_type(x) for x in self.arguments[d][u'choices'])
                 )
+                arg = u''
+        if u'check' in self.arguments[d]:
+            if arg and not self.arguments[d][u'check'](first_arg):
+                logging.warning(u'Value "%s=%s" ignored; not reognised', d, arg)
                 arg = u''
         return arg
 
@@ -997,7 +1058,7 @@ class Settings(object):
                 return None
         lst = [self._parse_type(d, arg) for arg in lst]
         # negative length: optional up-to
-        if length < 0:
+        if length != u'*' and length < 0:
             lst += [None]*(-length-len(lst))
         if length != u'*' and (len(lst) > abs(length) or len(lst) < length):
             logging.warning(u'Option "%s=%s" ignored, should have %d elements', d, s, abs(length))
@@ -1055,27 +1116,23 @@ class Settings(object):
         )
         argnames = sorted(self.arguments.keys())
         try:
-            with open(file_name, b'w') as f:
-                # write a BOM at start to ensure Notepad gets that it's utf-8
-                # but don't use codecs.open as that doesn't do CRLF on Windows
-                f.write(b'\xEF\xBB\xBF')
-                f.write(header.encode(b'utf-8'))
+            with io.open(file_name, 'w', encoding='utf_8_sig', errors='replace') as f:
+                f.write(header)
                 for a in argnames:
                     try:
                         f.write(
-                            (u'## choices: %s\n' %
-                                    u', '.join(map(unicode, self.arguments[a][u'choices']))
-                            ).encode(b'utf-8')
+                            u'## choices: %s\n' %
+                            u', '.join(u'%s' % (_s,) for _s in self.arguments[a][u'choices'])
                         )
                     except(KeyError, TypeError):
                         pass
                     try:
                         # check if it's a list
                         self.arguments[a][u'list']
-                        formatted = u','.join(map(unicode, self.arguments[a][u'default']))
+                        formatted = u','.join(u'%s' % (_s,) for _s in self.arguments[a][u'default'])
                     except(KeyError, TypeError):
-                        formatted = unicode(self.arguments[a][u'default'])
-                    f.write((u'#%s=%s\n' % (a, formatted)).encode(b'utf-8'))
+                        formatted = u'%s' % (self.arguments[a][u'default'],)
+                    f.write(u'#%s=%s\n' % (a, formatted))
                 f.write(footer)
         except (OSError, IOError):
             # can't create file, ignore. we'll get a message later.

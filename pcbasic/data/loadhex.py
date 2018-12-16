@@ -11,8 +11,11 @@ import pkg_resources
 import logging
 import binascii
 
+from ..compat import iteritems, itervalues, unichr
+
 from ..basic.codepage import PRINTABLE_ASCII
 from .resources import get_data, ResourceFailed
+
 
 FONT_DIR = u'fonts'
 FONT_PATTERN = u'{path}/{name}_{height:02d}.hex'
@@ -23,17 +26,17 @@ FONTS = sorted(
 )
 
 
-def read_fonts(codepage_dict, font_families, warn):
+def read_fonts(codepage_dict, font_families, warn=False):
     """Load font typefaces."""
     # load the graphics fonts, including the 8-pixel RAM font
     # use set() for speed - lookup is O(1) rather than O(n) for list
-    unicode_needed = set(codepage_dict.itervalues())
+    unicode_needed = set(itervalues(codepage_dict))
     # break up any grapheme clusters and add components to set of needed glyphs
     unicode_needed |= set(c for cluster in unicode_needed if len(cluster) > 1 for c in cluster)
     # substitutes is in reverse order: { yen: backslash }
     substitutes = {
         grapheme_cluster: unichr(ord(cp_point))
-        for cp_point, grapheme_cluster in codepage_dict.iteritems()
+        for cp_point, grapheme_cluster in iteritems(codepage_dict)
         if (
             cp_point in PRINTABLE_ASCII
             and (len(grapheme_cluster) > 1
@@ -65,11 +68,11 @@ def read_fonts(codepage_dict, font_families, warn):
     fonts = {
         height: {
             c: font._fontdict[uc]
-            for c, uc in codepage_dict.iteritems() if uc in font._fontdict
+            for c, uc in iteritems(codepage_dict) if uc in font._fontdict
         }
-        for height, font in fonts.iteritems()
+        for height, font in iteritems(fonts)
     }
-    return {height: font for height, font in fonts.iteritems()}
+    return {height: font for height, font in iteritems(fonts)}
 
 
 class FontLoader(object):
@@ -89,7 +92,7 @@ class FontLoader(object):
                 continue
             for line in hexres.splitlines():
                 # ignore empty lines and comment lines (first char is #)
-                if (not line) or (line[0] == b'#'):
+                if (not line) or (line[:1] == b'#'):
                     continue
                 # strip off comments
                 # split unicodepoint and hex string (max 32 chars)
@@ -120,7 +123,7 @@ class FontLoader(object):
         # substitute code points
         self._fontdict.update({
             old: self._fontdict[new]
-            for (new, old) in substitutes.iteritems()
+            for (new, old) in iteritems(substitutes)
             if new in self._fontdict
         })
         # char 0 should always be defined and empty

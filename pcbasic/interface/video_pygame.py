@@ -6,10 +6,14 @@ Graphical interface based on PyGame
 This file is released under the GNU GPL version 3 or later.
 """
 
+import sys
 import logging
 
+from ..compat import iteritems, unichr, muffle
+
 try:
-    import pygame
+    with muffle(sys.stdout):
+        import pygame
 except ImportError:
     pygame = None
 
@@ -18,11 +22,12 @@ try:
 except ImportError:
     numpy = None
 
+
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
-from ..compat import WIN32, MACOS
+from ..compat import WIN32, MACOS, PY2
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed, EnvironmentCache, NOKILL_MESSAGE
 from . import clipboard
@@ -117,8 +122,9 @@ class VideoPygame(VideoPlugin):
         # get physical screen dimensions (needs to be called before set_mode)
         display_info = pygame.display.Info()
         self._window_sizer = window.WindowSizer(
-                display_info.current_w, display_info.current_h,
-                scaling, dimensions, aspect_ratio, border_width, fullscreen)
+            display_info.current_w, display_info.current_h,
+            scaling, dimensions, aspect_ratio, border_width, fullscreen
+        )
         # determine initial display size
         self.display_size = self._window_sizer.find_display_size(720, 400)
         self._set_icon(icon)
@@ -129,10 +135,14 @@ class VideoPygame(VideoPlugin):
             raise InitFailed('Could not initialise display: %s' % e)
         if self._smooth and self.display.get_bitsize() < 24:
             logging.warning(
-                    'Smooth scaling not available on this display (depth %d < 24)',
-                    self.display.get_bitsize())
+                'Smooth scaling not available on this display (depth %d < 24)',
+                self.display.get_bitsize()
+            )
             self._smooth = False
-        pygame.display.set_caption(self.caption.encode('utf-8', 'replace'))
+        if PY2:
+            pygame.display.set_caption(self.caption.encode('utf-8', 'replace'))
+        else:
+            pygame.display.set_caption(self.caption)
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
@@ -200,16 +210,19 @@ class VideoPygame(VideoPlugin):
                     if event.button == 1:
                         # LEFT button: copy
                         pos = self._window_sizer.normalise_pos(*event.pos)
-                        self.clipboard.start(1 + pos[1] // self.font_height,
-                                1 + (pos[0]+self.font_width//2) // self.font_width)
+                        self.clipboard.start(
+                            1 + pos[1] // self.font_height,
+                            1 + (pos[0]+self.font_width//2) // self.font_width
+                        )
                     elif event.button == 2:
                         # MIDDLE button: paste
                         text = self.clipboard_handler.paste(mouse=True)
                         self.clipboard.paste(text)
                 if event.button == 1:
                     # right mouse button is a pen press
-                    self._input_queue.put(signals.Event(signals.PEN_DOWN,
-                                                self._window_sizer.normalise_pos(*event.pos)))
+                    self._input_queue.put(signals.Event(
+                        signals.PEN_DOWN, self._window_sizer.normalise_pos(*event.pos)
+                    ))
             elif event.type == pygame.MOUSEBUTTONUP:
                 self._input_queue.put(signals.Event(signals.PEN_UP))
                 if self._mouse_clip and event.button == 1:
@@ -219,18 +232,22 @@ class VideoPygame(VideoPlugin):
                 pos = self._window_sizer.normalise_pos(*event.pos)
                 self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
                 if self.clipboard.active():
-                    self.clipboard.move(1 + pos[1] // self.font_height,
-                           1 + (pos[0]+self.font_width//2) // self.font_width)
+                    self.clipboard.move(
+                        1 + pos[1] // self.font_height,
+                        1 + (pos[0]+self.font_width//2) // self.font_width
+                    )
             elif event.type == pygame.JOYBUTTONDOWN:
-                self._input_queue.put(signals.Event(signals.STICK_DOWN,
-                                                      (event.joy, event.button)))
+                self._input_queue.put(signals.Event(
+                    signals.STICK_DOWN, (event.joy, event.button)
+                ))
             elif event.type == pygame.JOYBUTTONUP:
-                self._input_queue.put(signals.Event(signals.STICK_UP,
-                                                      (event.joy, event.button)))
+                self._input_queue.put(signals.Event(
+                    signals.STICK_UP, (event.joy, event.button)
+                ))
             elif event.type == pygame.JOYAXISMOTION:
-                self._input_queue.put(signals.Event(signals.STICK_MOVED,
-                                                      (event.joy, event.axis,
-                                                      int(event.value*127 + 128))))
+                self._input_queue.put(signals.Event(
+                    signals.STICK_MOVED, (event.joy, event.axis, int(event.value*127 + 128))
+                ))
             elif event.type == pygame.VIDEORESIZE:
                 if not self.fullscreen:
                     self._resize_display(event.w, event.h)
@@ -243,27 +260,28 @@ class VideoPygame(VideoPlugin):
     def _handle_key_down(self, e):
         """Handle key-down event."""
         # get scancode
-        scan = key_to_scan.get(e.key, None)
+        scan = KEY_TO_SCAN.get(e.key, None)
         # get modifiers
-        mod = [s for m, s in mod_to_scan.iteritems() if e.mod & m]
+        mod = [s for m, s in iteritems(MOD_TO_SCAN) if e.mod & m]
         # compensate for missing l-alt down events (needed at least on Ubuntu Unity)
         if (e.mod & pygame.KMOD_LALT) and not self._alt_key_down:
             # insert an alt keydown event before the alt-modified keydown
             fake_event = pygame.event.Event(
-                    pygame.KEYDOWN, scancode=0, key=pygame.K_LALT, unicode=u'', mod=0)
+                pygame.KEYDOWN, scancode=0, key=pygame.K_LALT, unicode=u'', mod=0
+            )
             self._handle_key_down(fake_event)
         if e.key == pygame.K_LALT:
             self._alt_key_down = True
         # get eascii
         try:
             if e.mod & pygame.KMOD_LALT:
-                c = alt_key_to_eascii[e.key]
+                c = ALT_KEY_TO_EASCII[e.key]
             elif e.mod & pygame.KMOD_CTRL:
-                c = ctrl_key_to_eascii[e.key]
+                c = CTRL_KEY_TO_EASCII[e.key]
             elif e.mod & pygame.KMOD_SHIFT:
-                c = shift_key_to_eascii[e.key]
+                c = SHIFT_KEY_TO_EASCII[e.key]
             else:
-                c = key_to_eascii[e.key]
+                c = KEY_TO_EASCII[e.key]
         except KeyError:
             key = e.key
             if e.mod & pygame.KMOD_CTRL and key >= ord('a') and key <= ord('z'):
@@ -290,12 +308,11 @@ class VideoPygame(VideoPlugin):
             # fix missing ascii for numeric keypad on Windows
             if e.mod & pygame.KMOD_NUM:
                 try:
-                    c = key_to_eascii_num[e.key]
+                    c = KEY_TO_EASCII_NUM[e.key]
                 except KeyError:
                     pass
             # insert into keyboard queue
-            self._input_queue.put(signals.Event(
-                                    signals.KEYB_DOWN, (c, scan, mod)))
+            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, mod)))
 
     def _handle_key_up(self, e):
         """Handle key-up event."""
@@ -303,7 +320,8 @@ class VideoPygame(VideoPlugin):
         if (e.key == pygame.K_LALT or e.mod & pygame.KMOD_LALT) and not self._alt_key_down:
             # insert an alt keydown event before the alt-modified keydown
             fake_event = pygame.event.Event(
-                    pygame.KEYDOWN, scancode=0, key=pygame.K_LALT, unicode=u'', mod=0)
+                pygame.KEYDOWN, scancode=0, key=pygame.K_LALT, unicode=u'', mod=0
+            )
             self._handle_key_down(fake_event)
             if e.key != pygame.K_LALT:
                 # insert a keydown before the keyup
@@ -318,8 +336,7 @@ class VideoPygame(VideoPlugin):
             self.f11_active = False
         # last key released gets remembered
         try:
-            self._input_queue.put(signals.Event(
-                                    signals.KEYB_UP, (key_to_scan[e.key],)))
+            self._input_queue.put(signals.Event(signals.KEYB_UP, (KEY_TO_SCAN[e.key],)))
         except KeyError:
             pass
 
@@ -341,7 +358,8 @@ class VideoPygame(VideoPlugin):
             if self._cycle % BLINK_CYCLES == 0:
                 self.busy = True
         if self.cursor_visible and (
-                (self.cursor_row != self.last_row) or (self.cursor_col != self.last_col)):
+                (self.cursor_row != self.last_row) or (self.cursor_col != self.last_col)
+            ):
             self.busy = True
         tock = pygame.time.get_ticks()
         if tock - self.last_cycle >= CYCLE_TIME:
@@ -361,7 +379,8 @@ class VideoPygame(VideoPlugin):
         # pylint: disable=E1121,E1123
         screen = pygame.Surface(
             (self.size[0] + 2*border_x, self.size[1] + 2*border_y),
-            0, self.canvas[self.vpagenum])
+            0, self.canvas[self.vpagenum]
+        )
         screen.set_palette(self.work_palette)
         # border colour
         border_colour = pygame.Color(0, 0, self.border_attr % self.num_fore_attrs)
@@ -376,11 +395,13 @@ class VideoPygame(VideoPlugin):
             screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
         screen.set_palette(self._palette[self.blink_state])
         if self._smooth:
-            pygame.transform.smoothscale(screen.convert(self.display),
-                                         self.display.get_size(), self.display)
+            pygame.transform.smoothscale(
+                screen.convert(self.display), self.display.get_size(), self.display
+            )
         else:
-            pygame.transform.scale(screen.convert(self.display),
-                                   self.display.get_size(), self.display)
+            pygame.transform.scale(
+                screen.convert(self.display), self.display.get_size(), self.display
+            )
         pygame.display.flip()
 
     def _draw_cursor(self, screen):
@@ -389,25 +410,31 @@ class VideoPygame(VideoPlugin):
             return
         # copy screen under cursor
         self.under_top_left = (
-                (self.cursor_col-1) * self.font_width, (self.cursor_row-1) * self.font_height)
+            (self.cursor_col-1) * self.font_width,
+            (self.cursor_row-1) * self.font_height
+        )
         under_char_area = pygame.Rect(
-                (self.cursor_col-1) * self.font_width, (self.cursor_row-1) * self.font_height,
-                self.cursor_width, self.font_height)
+            (self.cursor_col-1) * self.font_width, (self.cursor_row-1) * self.font_height,
+            self.cursor_width, self.font_height
+        )
         if self.text_mode:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
             if self._cycle // BLINK_CYCLES in (1, 3):
-                screen.blit(self.cursor, (
-                        (self.cursor_col-1) * self.font_width,
-                        (self.cursor_row-1) * self.font_height) )
+                screen.blit(
+                    self.cursor,
+                    ((self.cursor_col-1) * self.font_width, (self.cursor_row-1) * self.font_height)
+                )
         else:
             index = self.cursor_attr % self.num_fore_attrs
             # reference the destination area
             dest_array = pygame.surfarray.pixels2d(
-                    screen.subsurface(pygame.Rect(
-                        (self.cursor_col-1) * self.font_width,
-                        (self.cursor_row-1) * self.font_height + self.cursor_from,
-                        self.cursor_width,
-                        self.cursor_to - self.cursor_from + 1)))
+                screen.subsurface(pygame.Rect(
+                    (self.cursor_col-1) * self.font_width,
+                    (self.cursor_row-1) * self.font_height + self.cursor_from,
+                    self.cursor_width,
+                    self.cursor_to - self.cursor_from + 1
+                ))
+            )
             dest_array ^= index
         self.last_row = self.cursor_row
         self.last_col = self.cursor_col
@@ -445,17 +472,19 @@ class VideoPygame(VideoPlugin):
         self._window_sizer.size = self.size
         self._resize_display(*self._window_sizer.find_display_size(*self.size))
         # set standard cursor
-        self.set_cursor_shape(self.font_width, self.font_height,
-                              0, self.font_height)
+        self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # whole screen (blink on & off)
-        self.canvas = [ pygame.Surface(self.size, depth=8) # pylint: disable=E1121,E1123
-                        for _ in range(self.num_pages)]
+        self.canvas = [
+            pygame.Surface(self.size, depth=8) # pylint: disable=E1121,E1123
+            for _ in range(self.num_pages)
+        ]
         for i in range(self.num_pages):
             self.canvas[i].set_palette(self.work_palette)
         # initialise clipboard
         self.clipboard = clipboard.ClipboardInterface(
-                self.clipboard_handler, self._input_queue,
-                mode_info.width, mode_info.height, self.font_width, self.font_height, self.size)
+            self.clipboard_handler, self._input_queue,
+            mode_info.width, mode_info.height, self.font_width, self.font_height, self.size
+        )
         self.busy = True
         self._has_window = True
 
@@ -478,8 +507,10 @@ class VideoPygame(VideoPlugin):
         # bottom 128 are non-blink, top 128 blink to background
         self._palette[0] = rgb_palette_0[:self.num_fore_attrs] * (256//self.num_fore_attrs)
         self._palette[1] = rgb_palette_1[:self.num_fore_attrs] * (128//self.num_fore_attrs)
-        for b in rgb_palette_1[:self.num_back_attrs] * (
-                    128 // self.num_fore_attrs // self.num_back_attrs):
+        for b in (
+                rgb_palette_1[:self.num_back_attrs] *
+                (128 // self.num_fore_attrs // self.num_back_attrs)
+            ):
             self._palette[1] += [b]*self.num_fore_attrs
         self.busy = True
 
@@ -501,7 +532,8 @@ class VideoPygame(VideoPlugin):
         """Clear a range of screen rows."""
         bg = (0, 0, back_attr)
         scroll_area = pygame.Rect(
-                0, (start-1)*self.font_height, self.size[0], (stop-start+1)*self.font_height)
+            0, (start-1)*self.font_height, self.size[0], (stop-start+1)*self.font_height
+        )
         self.canvas[self.apagenum].fill(bg, scroll_area)
         self.busy = True
 
@@ -593,7 +625,7 @@ class VideoPygame(VideoPlugin):
 
     def build_glyphs(self, new_dict):
         """Build a dict of glyphs for use in text mode."""
-        for char, glyph in new_dict.iteritems():
+        for char, glyph in iteritems(new_dict):
             self.glyph_dict[char] = glyph_to_surface(glyph)
 
     def set_cursor_shape(self, width, height, from_line, to_line):
@@ -627,8 +659,9 @@ class VideoPygame(VideoPlugin):
     def put_interval(self, pagenum, x, y, colours):
         """Write a list of attributes to a scanline interval."""
         # reference the interval on the canvas
-        pygame.surfarray.pixels2d(self.canvas[pagenum]
-                )[x:x+len(colours), y] = numpy.array(colours).astype(int)
+        pygame.surfarray.pixels2d(self.canvas[pagenum])[x:x+len(colours), y] = (
+            numpy.array(colours).astype(int)
+        )
         self.busy = True
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
@@ -636,8 +669,11 @@ class VideoPygame(VideoPlugin):
         if (x1 < x0) or (y1 < y0):
             return
         # reference the destination area
-        pygame.surfarray.pixels2d(self.canvas[pagenum].subsurface(
-            pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))[:] = numpy.array(array).T
+        pygame.surfarray.pixels2d(
+            self.canvas[pagenum].subsurface(
+                pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
+            )
+        )[:] = numpy.array(array).T
         self.busy = True
 
 
@@ -738,7 +774,7 @@ def create_feedback(surface, selection_rects):
 
 if pygame:
     # these are PC keyboard scancodes
-    key_to_scan = {
+    KEY_TO_SCAN = {
         # top row
         pygame.K_ESCAPE: scancode.ESCAPE, pygame.K_1: scancode.N1,
         pygame.K_2: scancode.N2, pygame.K_3: scancode.N3,
@@ -806,8 +842,7 @@ if pygame:
         pygame.K_BREAK: scancode.BREAK,
     }
 
-
-    key_to_eascii = {
+    KEY_TO_EASCII = {
         pygame.K_F1: uea.F1,
         pygame.K_F2: uea.F2,
         pygame.K_F3: uea.F3,
@@ -838,7 +873,7 @@ if pygame:
         pygame.K_DELETE: uea.DELETE,
     }
 
-    shift_key_to_eascii = {
+    SHIFT_KEY_TO_EASCII = {
         pygame.K_F1: uea.SHIFT_F1,
         pygame.K_F2: uea.SHIFT_F2,
         pygame.K_F3: uea.SHIFT_F3,
@@ -870,7 +905,7 @@ if pygame:
         pygame.K_KP5: uea.SHIFT_KP5,
     }
 
-    ctrl_key_to_eascii = {
+    CTRL_KEY_TO_EASCII = {
         pygame.K_F1: uea.CTRL_F1,
         pygame.K_F2: uea.CTRL_F2,
         pygame.K_F3: uea.CTRL_F3,
@@ -901,7 +936,7 @@ if pygame:
         pygame.K_MINUS: uea.CTRL_MINUS,
     }
 
-    alt_key_to_eascii = {
+    ALT_KEY_TO_EASCII = {
         pygame.K_1: uea.ALT_1,
         pygame.K_2: uea.ALT_2,
         pygame.K_3: uea.ALT_3,
@@ -961,7 +996,7 @@ if pygame:
         pygame.K_KP5: uea.ALT_KP5,
     }
 
-    mod_to_scan = {
+    MOD_TO_SCAN = {
         pygame.KMOD_LSHIFT: scancode.LSHIFT,
         pygame.KMOD_RSHIFT: scancode.RSHIFT,
         pygame.KMOD_LCTRL: scancode.CTRL,
@@ -971,7 +1006,7 @@ if pygame:
         #pygame.KMOD_RALT: scancode.ALT,
     }
 
-    key_to_eascii_num = {
+    KEY_TO_EASCII_NUM = {
         pygame.K_KP0: u'0',
         pygame.K_KP1: u'1',
         pygame.K_KP2: u'2',

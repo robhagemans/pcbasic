@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """
 PC-BASIC setup module.
 
@@ -6,13 +6,15 @@ PC-BASIC setup module.
 This file is released under the GNU GPL version 3 or later.
 """
 
+from __future__ import print_function
+
 import sys
 import os
 import platform
 import shutil
 import glob
 import subprocess
-from codecs import open
+from io import open
 from setuptools.command import sdist, build_py
 
 import distutils.cmd
@@ -34,7 +36,7 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 
 # this is the base MANIFEST.in
 # but I need it to change for different platforms/commands
-DUNMANIFESTIN = """
+DUNMANIFESTIN = u"""
 include *.md
 include GPL3.txt
 include doc/*
@@ -78,7 +80,7 @@ class BuildDocCommand(Command):
 
     def run(self):
         """Build documentation."""
-        from docsrc.prepare import build_docs
+        from docsrc import build_docs
         build_docs()
 
 
@@ -102,12 +104,12 @@ class WashCommand(Command):
 
 def _prune(path):
     """Recursively remove a directory."""
-    print 'pruning %s' % (path, )
+    print('pruning %s' % (path, ))
     shutil.rmtree(path)
 
 def _remove(path):
     """Remove a file."""
-    print 'removing %s' % (path, )
+    print('removing %s' % (path, ))
     os.remove(path)
 
 
@@ -122,28 +124,8 @@ class SDistCommand(sdist.sdist):
         with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
             f.write(DUNMANIFESTIN)
             f.write(
-                'include pcbasic/lib/README.md\n'
-                'include pcbasic/compat/*.c\n'
-                'prune test\n'
-            )
-        self.run_command('build_docs')
-        sdist.sdist.run(self)
-        os.remove(os.path.join(HERE, 'MANIFEST.in'))
-
-
-class SDistDevCommand(sdist.sdist):
-    """Custom sdist_dev command."""
-
-    def run(self):
-        """Run sdist_dev command."""
-        with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
-            f.write(DUNMANIFESTIN)
-            f.write(
-                'include pcbasic/lib/*\n'
-                'include pcbasic/lib/*/*\n'
-                'include pcbasic/compat/*.c\n'
-                'include pcbasic/compat/*.pyd\n'
-                'recursive-include test *'
+                u'include pcbasic/lib/README.md\n'
+                u'prune test\n'
             )
         self.run_command('build_docs')
         sdist.sdist.run(self)
@@ -157,13 +139,13 @@ class BuildPyCommand(build_py.build_py):
         """Run build_py command."""
         with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
             f.write(DUNMANIFESTIN)
-            f.write('prune test\n')
+            f.write(u'prune test\n')
             # include DLLs on Windows
             if sys.platform == 'win32':
                 if platform.architecture()[0] == '64bit':
-                    f.write('include pcbasic/lib/win32_x64/*.dll\n')
+                    f.write(u'include pcbasic/lib/win32_x64/*.dll\n')
                 else:
-                    f.write('include pcbasic/lib/win32_x86/*.dll\n')
+                    f.write(u'include pcbasic/lib/win32_x86/*.dll\n')
         build_py.build_py.run(self)
         os.remove(os.path.join(HERE, 'MANIFEST.in'))
 
@@ -200,8 +182,8 @@ SETUP_OPTIONS = {
     'include_package_data': True,
 
     # requirements
-    # need a Python-2 that's 2.7.12 or better
-    'python_requires': '~=2.7.12',
+    # need Python 2.7.12+ or Python 3.5+
+    'python_requires': '>=2.7.12,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*',
     'install_requires': ['numpy', 'pyserial', 'pyparallel'],
     # use e.g. pip install -e .[dev,full]
     'extras_require': {
@@ -219,7 +201,6 @@ SETUP_OPTIONS = {
     'cmdclass': {
         'build_docs': BuildDocCommand,
         'sdist': SDistCommand,
-        'sdist_dev': SDistDevCommand,
         'build_py': BuildPyCommand,
         'wash': WashCommand,
     },
@@ -229,14 +210,6 @@ SETUP_OPTIONS = {
 # platform-specific settings
 if sys.platform == 'win32':
     SETUP_OPTIONS['entry_points']['gui_scripts'] = ['pcbasicw=pcbasic:main']
-    # use different names for 32- and 64-bit pyds to allow them to stay side-by-side in place
-    if platform.architecture()[0] == '32bit':
-        console_name = 'win32_x86_console'
-    else:
-        console_name = 'win32_x64_console'
-    SETUP_OPTIONS['ext_modules'].append(
-            Extension('pcbasic.compat.' + console_name, ['pcbasic/compat/win32_console.c'])
-        )
 elif sys.platform == 'linux2':
     target = '/usr/local/'
     SETUP_OPTIONS['data_files'] = [
@@ -249,7 +222,7 @@ elif sys.platform == 'linux2':
 ###############################################################################
 # freezing options
 
-shortversion = '.'.join(VERSION.encode('ascii').split('.')[:2])
+shortversion = u'.'.join(VERSION.split('.')[:2])
 
 
 if CX_FREEZE and sys.platform == 'win32':
@@ -276,7 +249,7 @@ if CX_FREEZE and sys.platform == 'win32':
                             (testing and 'numpy' not in root) or
                             # we're only producing packages for win32_x86
                             'win32_x64' in name):
-                        print 'REMOVING %s' % (name,)
+                        print('REMOVING %s' % (name,))
                         os.remove(name)
             # remove lib dir altogether to avoid it getting copied into the msi
             # as everything in there is copied once already
@@ -393,7 +366,7 @@ if CX_FREEZE and sys.platform == 'win32':
             # enforce removal of old versions
             'upgrade_code': UPGRADE_CODE,
             'product_code': PRODUCT_CODE,
-            'initial_target_dir': 'c:\\Program Files\\%s %s' % (NAME.encode('ascii'), shortversion),
+            'initial_target_dir': 'c:\\Program Files\\%s %s' % (NAME, shortversion),
         },
     }
 
@@ -427,7 +400,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
                             (testing and 'numpy' not in root) or
                             # remove windows DLLs and PYDs
                             'win32_' in name):
-                        print 'REMOVING %s' % (name,)
+                        print('REMOVING %s' % (name,))
                         os.remove(name)
             # remove modules that can be left out (some numpy tests seem needed)
             for module in [
@@ -464,7 +437,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
             try:
                 cx_Freeze.bdist_mac.copy_file(self, src, dst)
             except Exception as e:
-                print 'ERROR: %s' % (e,)
+                print('ERROR: %s' % (e,))
                 # create an empty file
                 open(dst, 'w').close()
 
@@ -493,11 +466,11 @@ elif CX_FREEZE and sys.platform == 'darwin':
             try:
                 shutil.rmtree('build/dmg')
             except EnvironmentError as e:
-                print e
+                print(e)
             try:
                 os.mkdir('build/dmg')
             except EnvironmentError as e:
-                print e
+                print(e)
             shutil.copytree(self.bundleDir, 'build/dmg/' + os.path.basename(self.bundleDir))
             # include the docs at them top level in the dmg
             shutil.copy('doc/PC-BASIC_documentation.html', 'build/dmg/Documentation.html')

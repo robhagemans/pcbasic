@@ -6,10 +6,7 @@ Keyboard e-ASCII codes
 This file is released under the GNU GPL version 3 or later.
 """
 
-class Namespace(object):
-    """Simple namespace class."""
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+from ...compat import iteritems, unichr, SimpleNamespace
 
 
 # based on Tandy-1000 basic manual, modified for IBM PC keyboard
@@ -17,7 +14,7 @@ class Namespace(object):
 # nor the CTRL+a -> b'\x01' etc. series
 # except where convenient
 
-as_bytes = Namespace(
+as_bytes = SimpleNamespace(
 
     NUL = b'\0\0',
 
@@ -202,7 +199,7 @@ as_bytes = Namespace(
     ALT_F12 = b'\0\xB7',
 )
 
-as_unicode = Namespace(**{
-    key: u''.join([unichr(ord(c)) for c in value])
-    for key, value in as_bytes.__dict__.iteritems()
+as_unicode = SimpleNamespace(**{
+    key: value.decode('latin-1')
+    for key, value in iteritems(as_bytes.__dict__)
 })

@@ -40,7 +40,7 @@ class ResourceFailed(Exception):
     def __init__(self, name=u''):
         self._message = u'Failed to load {0}'.format(name)
 
-    def __str__(self):
+    def __repr__(self):
         return self._message
 
 

@@ -10,6 +10,8 @@ import struct
 import logging
 from operator import itemgetter
 
+from ...compat import iteritems
+
 from ..base import error
 from . import numbers
 
@@ -27,7 +29,7 @@ class String(numbers.Value):
 
     def length(self):
         """String length."""
-        return ord(self._buffer[0])
+        return bytearray(self._buffer)[0]
 
     def address(self):
         """Pointer address."""
@@ -40,6 +42,7 @@ class String(numbers.Value):
 
     def from_str(self, python_str):
         """Set to value of python str."""
+        assert isinstance(python_str, bytes), type(python_str)
         self._buffer[:] = struct.pack('<BH', *self._stringspace.store(python_str))
         return self
 
@@ -124,7 +127,7 @@ class String(numbers.Value):
             # to conform to GW overwriting of source string on overlap
             for i in range(num):
                 self._stringspace.view(*target)[i+offset:i+offset+1] = (
-                    self._stringspace.view(*source)[i]
+                    self._stringspace.view(*source)[i:i+1]
                 )
         return self
 
@@ -138,9 +141,9 @@ class String(numbers.Value):
 
     def asc(self):
         """ASC: ordinal ASCII value of a character."""
-        s = self.to_str()
+        s = bytearray(self.to_str())
         error.throw_if(not s)
-        return numbers.Integer(None, self._values).from_int(ord(s[0]))
+        return numbers.Integer(None, self._values).from_int(s[0])
 
     def space(self, num):
         """SPACE$: repeat spaces."""
@@ -159,9 +162,9 @@ class StringSpace(object):
         self._temp = None
         self.clear()
 
-    def __str__(self):
+    def __repr__(self):
         """Debugging representation of string table."""
-        return '\n'.join('%x: %r' % (n, v) for n, v in self._strings.iteritems())
+        return '\n'.join('%x: %r' % (n, v) for n, v in iteritems(self._strings))
 
     def clear(self):
         """Empty string space."""
@@ -178,6 +181,11 @@ class StringSpace(object):
     def copy_to(self, string_space, length, address):
         """Copy a string to another string space."""
         return string_space.store(self.view(length, address).tobytes())
+
+    def iterpointers(self):
+        """Iterate over strings in order of addresses."""
+        # we need to enforce the order as it's undefined otherwise
+        return ((len(self._strings[_addr]), _addr )for _addr in sorted(self._strings))
 
     def _retrieve(self, length, address):
         """Retrieve a string by its pointer."""
@@ -281,7 +289,7 @@ class StringSpace(object):
     def get_memory(self, address):
         """Retrieve data from data memory: string space """
         # find the variable we're in
-        for try_address, value in self._strings.iteritems():
+        for try_address, value in iteritems(self._strings):
             length = len(value)
             if try_address <= address < try_address + length:
                 return value[address - try_address]

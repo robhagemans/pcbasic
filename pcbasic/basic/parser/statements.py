@@ -7,20 +7,16 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
-import string
 import struct
 from functools import partial
 
+from ...compat import iterchar
 from ..base import error
 from ..base import tokens as tk
+from ..base.tokens import DIGITS, LETTERS
 from .. import values
 from . import expressions
 from . import userfunctions
-
-
-# bytes constants
-DIGITS = string.digits
-LETTERS = string.ascii_letters
 
 
 class Parser(object):
@@ -76,7 +72,7 @@ class Parser(object):
             parse_args = stat_dict[selector]
         else:
             ins.seek(-len(c), 1)
-            if c in set(LETTERS):
+            if c in set(iterchar(LETTERS)):
                 # implicit LET
                 c = tk.LET
                 parse_args = self._simple[tk.LET]
@@ -675,7 +671,7 @@ class Parser(object):
 
     def _parse_def_usr(self, ins):
         """Parse DEF USR syntax."""
-        ins.require_read((tk.USR))
+        ins.require_read((tk.USR,))
         yield ins.skip_blank_read_if(tk.DIGIT)
         ins.require_read((tk.O_EQ,))
         yield self.parse_expression(ins)
@@ -910,14 +906,14 @@ class Parser(object):
         if ins.skip_blank_read_if((tk.LOCK,), 2):
             yield self._parse_read_write(ins)
         else:
-            yield ins.skip_blank_read_if((tk.W_SHARED), 6)
+            yield ins.skip_blank_read_if((tk.W_SHARED,), 6)
         # AS file number clause
         ins.require_read((tk.W_AS,))
         ins.skip_blank_read_if((b'#',))
         yield self.parse_expression(ins)
         # LEN clause
         if ins.skip_blank_read_if((tk.LEN,), 2):
-            ins.require_read(tk.O_EQ)
+            ins.require_read((tk.O_EQ,))
             yield self.parse_expression(ins)
         else:
             yield None
@@ -1164,7 +1160,7 @@ class Parser(object):
 
     def _parse_def_fn(self, ins):
         """DEF FN: define a function."""
-        ins.require_read((tk.FN))
+        ins.require_read((tk.FN,))
         yield self.parse_name(ins)
 
     def _parse_var_list(self, ins):
@@ -1177,10 +1173,10 @@ class Parser(object):
     def _parse_deftype(self, ins):
         """Parse DEFSTR/DEFINT/DEFSNG/DEFDBL syntax."""
         while True:
-            start = ins.require_read(LETTERS)
+            start = ins.require_read(tuple(iterchar(LETTERS)))
             stop = None
             if ins.skip_blank_read_if((tk.O_MINUS,)):
-                stop = ins.require_read(LETTERS)
+                stop = ins.require_read(tuple(iterchar(LETTERS)))
             yield start, stop
             if not ins.skip_blank_read_if((b',',)):
                 break
@@ -1378,7 +1374,7 @@ class Parser(object):
             yield self.parse_expression(ins)
         else:
             yield None
-            if ins.peek() in set(DIGITS) | set(tk.NUMBER):
+            if ins.peek() in set(iterchar(DIGITS)) | set(tk.NUMBER):
                 expr = self.expression_parser.read_number_literal(ins)
             else:
                 expr = self.parse_expression(ins)

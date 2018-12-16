@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import sys
 from collections import deque
 from contextlib import contextmanager
 
@@ -20,6 +21,7 @@ try:
 except ImportError:
     numpy = None
 
+from ..compat import muffle
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser
@@ -30,26 +32,6 @@ from . import synthesiser
 CHUNK_LENGTH = 1192 * 4
 # buffer size in sample frames
 BUFSIZE = 1024
-
-@contextmanager
-def suppress_output():
-    """Suppress stdout and stderr messages from linked library."""
-    # http://stackoverflow.com/questions/977840/redirecting-fortran-called-via-f2py-output-in-python/978264#978264
-    # open file descriptors to /dev/null
-    null_fds = [os.open(os.devnull, os.O_RDWR) for _ in xrange(2)]
-    # save the file descriptors for /dev/stdout and /dev/stderr
-    save = os.dup(1), os.dup(2)
-    # put /dev/null fds on 1 (stdout) and 2 (stderr)
-    os.dup2(null_fds[0], 1)
-    os.dup2(null_fds[1], 2)
-    # do stuff
-    yield
-    # restore file descriptors
-    os.dup2(save[0], 1)
-    os.dup2(save[1], 2)
-    # close the /dev/null fds
-    os.close(null_fds[0])
-    os.close(null_fds[1])
 
 
 @audio_plugins.register('portaudio')
@@ -73,7 +55,7 @@ class AudioPortAudio(AudioPlugin):
 
     def __enter__(self):
         """Perform any necessary initialisations."""
-        with suppress_output():
+        with muffle(sys.stderr):
             self._dev = pyaudio.PyAudio()
             sample_format = self._dev.get_format_from_width(2)
             self._min_samples_buffer = 2 * BUFSIZE

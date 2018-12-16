@@ -7,16 +7,13 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import struct
-from itertools import izip
+
+from ...compat import int2byte, zip
 
 from ..base import error
 from ..base import codestream
 from ..base import tokens as tk
 from .. import values
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 class UserFunction(object):
@@ -29,7 +26,7 @@ class UserFunction(object):
         self._is_parsing = False
         self._memory = memory
         self._varnames = varnames
-        self._sigil = name[-1]
+        self._sigil = name[-1:]
         self._expression_parser = expression_parser
 
     def number_arguments(self):
@@ -39,8 +36,8 @@ class UserFunction(object):
     def evaluate(self, iargs):
         """Evaluate user-defined function."""
         # parse/evaluate arguments
-        conversions = (values.TYPE_TO_CONV[self._memory.complete_name(name)[-1]] for name in self._varnames)
-        args = [conv(arg) for arg, conv in izip(iargs, conversions)]
+        conversions = (values.TYPE_TO_CONV[self._memory.complete_name(name)[-1:]] for name in self._varnames)
+        args = [conv(arg) for arg, conv in zip(iargs, conversions)]
         # recursion is not allowed as there's no way to terminate it
         if self._is_parsing:
             raise error.BASICError(error.OUT_OF_MEMORY)
@@ -133,7 +130,7 @@ class UserFunctionManager(object):
         # allocate function pointer
         pointer = struct.pack('<H', pointer_loc) + bytearray(values.size_bytes(fnname)-2)
         # function name is represented with first char shifted by 128
-        memory_name = int2byte(128+ord(fnname[0])) + fnname[1:]
+        memory_name = int2byte(128+ord(fnname[0:1])) + fnname[1:]
         self._memory.scalars.set(memory_name, self._values.from_bytes(pointer))
         for name in fnvars:
             # allocate, but don't set, variables

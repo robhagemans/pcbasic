@@ -6,18 +6,13 @@ Convert plain-text BASIC code to tokenised form
 This file is released under the GNU GPL version 3 or later.
 """
 
-import string
 import struct
 import io
 
 from ..base import tokens as tk
+from ..base.tokens import DIGITS, LETTERS
 from ..base import codestream
 from .. import values
-
-
-# bytes constants
-DIGITS = string.digits
-LETTERS = string.ascii_letters
 
 
 class PlainTextStream(codestream.CodeStream):
@@ -237,14 +232,14 @@ class Tokeniser(object):
                         ins.seek(pos)
                 if word in (tk.KW_GOTO, tk.KW_GOSUB):
                     nxt = ins.peek()
-                    if nxt in tk.NAME_CHARS:
+                    if nxt and nxt in tk.NAME_CHARS:
                         ins.seek(pos)
                         word = b'GO'
             if word in self._keyword_to_token:
                 # ignore if part of a longer name, except FN, SPC(, TAB(, USR
                 if word not in (tk.KW_FN, tk.KW_SPC, tk.KW_TAB, tk.KW_USR):
                     nxt = ins.peek()
-                    if nxt in tk.NAME_CHARS:
+                    if nxt and nxt in tk.NAME_CHARS:
                         continue
                 token = self._keyword_to_token[word]
                 # handle special case ELSE -> :ELSE
@@ -279,7 +274,7 @@ class Tokeniser(object):
             # octal constant
             # read_number converts &1 into &O1
             return self._values.new_integer().from_oct(word[2:]).to_token_oct()
-        elif word[0] in DIGITS + b'.+-':
+        elif word[:1] in DIGITS + b'.+-':
             # handle other numbers
             # note GW passes signs separately as a token
             # and only stores positive numbers in the program

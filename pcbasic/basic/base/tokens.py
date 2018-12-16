@@ -6,10 +6,22 @@ BASIC keyword tokens
 This file is released under the GNU GPL version 3 or later.
 """
 
-import string
+from ...compat import iteritems
+
+
+# ascii constants in bytes form
+# note that strings module equivanets are unicode in python 3
+DIGITS = b'0123456789'
+UPPERCASE = b'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+LOWERCASE = UPPERCASE.lower()
+LETTERS = UPPERCASE + LOWERCASE
+ALPHANUMERIC = LETTERS + DIGITS
+HEXDIGITS = DIGITS + b'abcdefABCDEF'
+OCTDIGITS = b'01234567'
+
 
 # allowable as chars 2.. in a variable name (first char must be a letter)
-NAME_CHARS = tuple(string.ascii_letters + string.digits + b'.')
+NAME_CHARS = ALPHANUMERIC + b'.'
 # type characters
 SIGILS = (b'#', b'!', b'%', b'$')
 
@@ -501,4 +513,4 @@ class TokenKeywordDict(object):
             # pcjr, tandy; incompatible with Sperry PC.
             self.to_keyword[NOISE] = KW_NOISE
             self.to_keyword[TERM] = KW_TERM
-        self.to_token = dict((reversed(item) for item in self.to_keyword.items()))
+        self.to_token = dict((reversed(item) for item in iteritems(self.to_keyword)))

@@ -18,7 +18,7 @@ import subprocess
 import importlib
 
 from .base import error
-from ..compat import WIN32, X64, BASE_DIR, which
+from ..compat import PY2, WIN32, X64, BASE_DIR, which
 from . import values
 from . import api
 
@@ -26,58 +26,58 @@ from . import api
 def get_platform_info():
     """Show information about operating system and installed modules."""
     info = []
-    info.append('\nPLATFORM')
-    info.append('os: %s' % platform.platform())
+    info.append(u'\nPLATFORM')
+    info.append(u'os: %s' % platform.platform())
     frozen = getattr(sys, 'frozen', '') or ''
     info.append(
-        'python: %s %s %s' % (
+        u'python: %s %s %s' % (
         sys.version.replace('\n', ''), ' '.join(platform.architecture()), frozen))
-    info.append('\nMODULES')
+    info.append(u'\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
     modules = ('numpy', 'pygame', 'curses', 'serial', 'parallel')
     for module in modules:
         try:
             m = importlib.import_module(module)
         except Exception:
-            info.append('%s: --' % module)
+            info.append(u'%s: --' % module)
         else:
             for version_attr in ('__version__', 'version', 'VERSION'):
                 try:
                     name = module.split('.')[-1]
                     version = getattr(m, version_attr)
-                    info.append('%s: %s' % (name, version))
+                    info.append(u'%s: %s' % (name, version))
                     break
                 except AttributeError:
                     pass
             else:
-                info.append('%s: available' % module)
+                info.append(u'%s: available' % module)
     if WIN32:
-        info.append('\nLIBRARIES')
+        info.append(u'\nLIBRARIES')
         dlls = ('sdl2.dll', 'sdl2_gfx.dll')
         if X64:
-            LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x64')
+            LIB_DIR = os.path.join(BASE_DIR, u'lib', u'win32_x64')
         else:
-            LIB_DIR = os.path.join(BASE_DIR, 'lib', 'win32_x86')
+            LIB_DIR = os.path.join(BASE_DIR, u'lib', u'win32_x86')
         for dll in dlls:
             path = os.path.join(LIB_DIR, dll)
             if os.path.isfile(path):
-                info.append('%s: %s' % (dll, path))
+                info.append(u'%s: %s' % (dll, path))
             else:
-                info.append('%s: --' % dll)
-    info.append('\nEXTERNAL TOOLS')
-    tools = ('notepad', 'lpr', 'paps', 'beep', 'pbcopy', 'pbpaste')
+                info.append(u'%s: --' % dll)
+    info.append(u'\nEXTERNAL TOOLS')
+    tools = (u'notepad', u'lpr', u'paps', u'beep', u'pbcopy', u'pbpaste')
     for tool in tools:
-        location = which(tool) or '--'
-        info.append('%s: %s' % (tool, location))
-    info.append('')
-    return '\n'.join(info)
+        location = which(tool) or u'--'
+        info.append(u'%s: %s' % (tool, location))
+    info.append(u'')
+    return u'\n'.join(info)
 
 
 class DebugException(BaseException):
     """Test exception for debugging purposes"""
     # inherit from BaseException to circumvent extension manager catching Exception
 
-    def __str__(self):
+    def __repr__(self):
         return self.__doc__
 
 
@@ -106,7 +106,7 @@ class DebugSession(api.Session):
             linum = struct.unpack_from('<H', token, 2)
             outstr += u'[%i]' % linum
         for (expr, outs) in self._watch_list:
-            outstr += u' %s = ' % str(expr)
+            outstr += u' %r = ' % (expr,)
             outs.seek(2)
             try:
                 val = self._impl.parser.expression_parser.parse(outs)
@@ -115,7 +115,7 @@ class DebugSession(api.Session):
                 else:
                     outstr += values.to_repr(val, leading_space=False, type_sign=True)
             except Exception as e:
-                logging.debug(str(type(e))+' '+str(e))
+                logging.debug('%s %s', type(e), e)
                 traceback.print_tb(sys.exc_info()[2])
         if outstr:
             logging.debug(outstr)
@@ -143,7 +143,7 @@ class DebugSession(api.Session):
 
     def python(self, cmd):
         """Execute any Python code."""
-        buf = io.BytesIO()
+        buf = io.BytesIO() if PY2 else io.StringIO()
         save_stdout = sys.stdout
         sys.stdout = buf
         try:
@@ -182,23 +182,23 @@ class DebugSession(api.Session):
         """Dump all variables to the log."""
         repr_vars = '\n'.join((
             '==== Scalars ='.ljust(100, '='),
-            str(self._impl.scalars),
+            repr(self._impl.scalars),
             '==== Arrays ='.ljust(100, '='),
-            str(self._impl.arrays),
+            repr(self._impl.arrays),
             '==== Strings ='.ljust(100, '='),
-            str(self._impl.strings),
+            repr(self._impl.strings),
         ))
         for s in repr_vars.split('\n'):
             logging.debug(s)
 
     def showscreen(self):
         """Copy the screen buffer to the log."""
-        for s in str(self._impl.display.text_screen).split('\n'):
+        for s in repr(self._impl.display.text_screen).split('\n'):
             logging.debug(self._impl.codepage.str_to_unicode(s))
 
     def showprogram(self):
         """Write a marked-up hex dump of the program to the log."""
-        for s in str(self._impl.program).split('\n'):
+        for s in repr(self._impl.program).split('\n'):
             logging.debug(s)
 
     def showplatform(self):

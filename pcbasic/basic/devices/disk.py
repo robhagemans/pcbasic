@@ -14,15 +14,16 @@ import re
 import io
 import sys
 import errno
-import string
 import random
 import ntpath
 import logging
-import codecs
+
+from ...compat import xrange, text_type, add_str
+from ...compat import get_short_pathname, get_free_bytes, is_hidden, iterchar
 
 from ..base import error
+from ..base.tokens import ALPHANUMERIC
 from ..codepage import CONTROL
-from ...compat import get_short_pathname, get_free_bytes, is_hidden
 from .. import values
 from . import devicebase
 from .diskfiles import BinaryFile, TextFile, RandomFile, Locks
@@ -92,10 +93,13 @@ OS_ERROR = {
 # GW-BASIC also allows 0x7F and up, but replaces accented chars with unaccented
 # based on CHCP code page, which may differ from display codepage in COUNTRY.SYS
 # this is complex and leads to unpredictable results depending on host platform.
-ALLOWABLE_CHARS = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~")
+ALLOWABLE_CHARS = set(ALPHANUMERIC + b" !#$%&'()-@^_`{}~")
 
 # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
-ACCESS_MODES = {b'I': 'rb', b'O': 'wb', b'R': 'r+b', b'A': 'ab'}
+ACCESS_MODES = {b'I': 'r', b'O': 'w', b'R': 'r+', b'A': 'a'}
+
+# aliases for the utf-8 encoding
+UTF_8 = ('utf_8', 'utf-8', 'utf', 'u8', 'utf8')
 
 
 ##############################################################################
@@ -113,7 +117,7 @@ def handle_oserror(e):
     try:
         basic_err = OS_ERROR[e.errno]
     except KeyError:
-        logging.error(u'Unmapped environment exception: %d', e.errno)
+        logging.error(u'Unmapped environment exception: %s', e.errno)
         basic_err = error.DEVICE_IO_ERROR
     raise error.BASICError(basic_err)
 
@@ -128,6 +132,7 @@ def dos_splitext(dos_name):
     # differs from ntpath.splitext:
     # - does not include . in extension; no extension equals ending in .
     # - dotfiles are trunks starting with . in ntpath but extensions here.
+    assert isinstance(dos_name, bytes), type(dos_name)
     elements = dos_name.split(b'.', 1)
     if len(elements) == 1:
         trunk, ext = elements[0], b''
@@ -158,6 +163,7 @@ def dos_normalise_name(dos_name):
 
 def dos_is_legal_name(dos_name):
     """Check if a (bytes) name is a legal DOS name."""
+    assert isinstance(dos_name, bytes), type(dos_name)
     if dos_name in (b'.', b'..'):
         return True
     trunk, ext = dos_splitext(dos_name)
@@ -173,7 +179,7 @@ def dos_is_legal_name(dos_name):
 def dos_to_native_name(native_path, dosname, isdir):
     """Find a matching native file name for a given normalised DOS name."""
     try:
-        uni_name = dosname.decode(b'ascii')
+        uni_name = dosname.decode('ascii')
     except UnicodeDecodeError:
         # non-ascii characters are not allowable for DOS filenames, no match
         return None
@@ -189,7 +195,7 @@ def dos_to_native_name(native_path, dosname, isdir):
     for f in sorted(all_names):
         # we won't match non-ascii anyway
         try:
-            ascii_name = f.encode(b'ascii')
+            ascii_name = f.encode('ascii')
         except UnicodeEncodeError:
             continue
         # don't match long names or non-legal dos names
@@ -203,7 +209,7 @@ def dos_name_matches(name, mask):
     """Whether native name element matches DOS wildcard mask."""
     # convert wildcard mask to regexp
     regexp = b'\\A'
-    for c in mask.upper():
+    for c in iterchar(mask.upper()):
         if c == b'?':
             regexp += b'.'
         elif c == b'*':
@@ -224,31 +230,30 @@ class DiskDevice(object):
 
     allowed_modes = b'IOR'
 
-    def __init__(self, letter, path, dos_cwd, codepage, utf8, universal):
+    def __init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed):
         """Initialise a disk device."""
+        assert isinstance(cwd, text_type), type(cwd)
         # DOS drive letter
         self.letter = letter
         # mount root: this is a native filesystem path, using os.sep
         self._native_root = path
         # code page for file system names and text file conversion
         self._codepage = codepage
-        # current DOS working directory on this drive
-        # this is a DOS relative path, no drive letter; including leading \\
-        # stored with os.sep but given using backslash separators
+        # current native working directory on this drive
         self._native_cwd = u''
         if self._native_root:
             try:
-                self._native_cwd = self._get_native_reldir(dos_cwd)
+                self._native_cwd = cwd
             except error.BASICError:
                 logging.warning(
                     'Could not open working directory %s on drive %s:. Using drive root instead.',
-                    dos_cwd, letter
+                    cwd, letter
                 )
         # locks are drive-specific
         self._locks = Locks()
         # text file settings
-        self._utf8 = utf8
-        self._universal = universal
+        self._text_mode = text_mode
+        self._soft_linefeed = soft_linefeed
 
     def close(self):
         """Close disk device."""
@@ -260,13 +265,14 @@ class DiskDevice(object):
 
     def _create_file_object(
             self, fhandle, filetype, mode, number=0,
-            field=None, reclen=128, seg=0, offset=0, length=0):
+            field=None, reclen=128, seg=0, offset=0, length=0
+        ):
         """Create disk file object of requested type."""
         # determine file type if needed
         if len(filetype) > 1 and mode == b'I':
             # read magic
             first = fhandle.read(1)
-            fhandle.seek(-len(first), 1)
+            fhandle.seek(0)
             try:
                 filetype_found = devicebase.MAGIC_TO_TYPE[first]
                 if filetype_found not in filetype:
@@ -274,27 +280,29 @@ class DiskDevice(object):
                 filetype = filetype_found
             except KeyError:
                 filetype = b'A'
-        # utf8 input for text & ascii-program files
+        # unicode or bytes input for text & ascii-program files
         if filetype in b'DA':
-            if self._utf8:
-                if mode == b'I':
-                    # accept BOM \xef\xbb\xbf
-                    fhandle = CodecReader(fhandle, self._codepage, 'utf-8-sig')
-                elif mode == b'O':
-                    # start UTF-8 files with BOM as many Windows readers expect this
-                    fhandle = CodecWriter(fhandle, self._codepage, 'utf-8-sig')
-                elif mode == b'A':
-                    fhandle = CodecWriter(fhandle, self._codepage, 'utf-8')
+            if mode in (b'O', b'A'):
+                # if the input stream is unicode: decode codepage bytes
+                fhandle = self._codepage.wrap_output_stream(
+                    fhandle, preserve=CONTROL+(b'\x1A',)
+                )
+            else:
+                # if the input stream is unicode: encode codepage bytes
+                # replace newlines with \r in text mode
+                fhandle = self._codepage.wrap_input_stream(
+                    fhandle, replace_newlines=not self._soft_linefeed
+                )
         if filetype in b'BPM':
             # binary [B]LOAD, [B]SAVE
             return BinaryFile(fhandle, filetype, number, mode, seg, offset, length, self._locks)
         elif filetype == b'A':
             # ascii program file
-            return TextFile(fhandle, filetype, number, mode, self._locks, self._universal)
+            return TextFile(fhandle, filetype, number, mode, self._locks)
         elif filetype == b'D':
             if mode in b'IAO':
                 # data file for input, output, append
-                return TextFile(fhandle, filetype, number, mode, self._locks, self._universal)
+                return TextFile(fhandle, filetype, number, mode, self._locks)
             else:
                 # data file for random
                 return RandomFile(fhandle, number, field, reclen, self._locks)
@@ -305,7 +313,8 @@ class DiskDevice(object):
 
     def open(
             self, number, filespec, filetype, mode, access, lock,
-            reclen, seg, offset, length, field):
+            reclen, seg, offset, length, field
+        ):
         """Open a file on a disk drive."""
         # parse the file spec to a definite native name
         if not self._native_root:
@@ -331,15 +340,16 @@ class DiskDevice(object):
         self._locks.open_file(dos_basename, number, mode, lock, access)
         try:
             # open the underlying stream
-            fhandle = self._open_stream(native_name, filetype, mode)
+            fhandle = self.open_stream(native_name, filetype, mode)
             # apply the BASIC file wrapper
             return self._create_file_object(
-                    fhandle, filetype, mode, number, field, reclen, seg, offset, length)
+                fhandle, filetype, mode, number, field, reclen, seg, offset, length
+            )
         except Exception:
             self._locks.close_file(number)
             raise
 
-    def _open_stream(self, native_name, filetype, mode):
+    def open_stream(self, native_name, filetype, mode):
         """Open a stream on disk by os-native name with BASIC mode and access level."""
         try:
             # create file if in RANDOM or APPEND mode and doesn't exist yet
@@ -358,7 +368,19 @@ class DiskDevice(object):
                 except IOError:
                     pass
                 f.close()
-            return io.open(native_name, ACCESS_MODES[mode])
+            access_mode = ACCESS_MODES[mode]
+            text_mode = self._text_mode
+            # access 'raw' text files as bytes
+            if not text_mode:
+                return io.open(native_name, access_mode + 'b')
+            # encoded text files
+            # use a BOM on input and output, but not append
+            if text_mode.lower() in UTF_8:
+                text_mode = 'utf-8-sig'
+            # preserve original newlines on reading and writing
+            return io.open(
+                native_name, access_mode, encoding=text_mode, errors='replace', newline=''
+            )
         except EnvironmentError as e:
             handle_oserror(e)
         except TypeError:
@@ -375,7 +397,7 @@ class DiskDevice(object):
             # this drive letter is not available (not mounted)
             raise error.BASICError(error.PATH_NOT_FOUND)
         # find starting directory
-        if dospath and dospath[0] == b'\\':
+        if dospath and dospath[:1] == b'\\':
             # absolute path specified
             cwd = []
         else:
@@ -391,7 +413,7 @@ class DiskDevice(object):
             dospath_elements = dospath_elements[1:]
         # prepend drive root path to allow filename matching
         path = os.path.join(self._native_root, *cwd)
-        root_len = len(self._native_root) + (self._native_root[-1] != os.sep)
+        root_len = len(self._native_root) + (self._native_root[-1:] != os.sep)
         # find the native matches for each step in the path
         for dos_elem in dospath_elements:
             # find a matching directory for every step in the path;
@@ -473,9 +495,11 @@ class DiskDevice(object):
     def rename(self, old_dospath, new_dospath):
         """Rename a file or directory."""
         old_native_path = self._get_native_abspath(
-                old_dospath, defext=b'', isdir=False, create=False)
+            old_dospath, defext=b'', isdir=False, create=False
+        )
         new_native_path = self._get_native_abspath(
-                new_dospath, defext=b'', isdir=False, create=True)
+            new_dospath, defext=b'', isdir=False, create=True
+        )
         if os.path.exists(new_native_path):
             raise error.BASICError(error.FILE_ALREADY_EXISTS)
         safe(os.rename, old_native_path, new_native_path)
@@ -510,7 +534,7 @@ class DiskDevice(object):
         fils = []
         if dos_mask in (b'.', b'..'):
             # following GW, we just show a single dot if asked for either . or ..
-            dirs = [(u'', u'')]
+            dirs = [(b'', b'')]
         else:
             dirs, fils = self._get_dirs_files(native_path)
             # remove hidden files
@@ -583,7 +607,7 @@ class DiskDevice(object):
         if dos_name != dos_name.lstrip():
             raise error.BASICError(name_err)
         dos_name = self._get_dos_name_defext(dos_name, defext)
-        if dos_name[-1] == b'.' and b'.' not in dos_name[:-1]:
+        if dos_name[-1:] == b'.' and b'.' not in dos_name[:-1]:
             # ends in single dot; first try with dot
             # but if it doesn't exist, base everything off dotless name
             uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
@@ -607,7 +631,7 @@ class DiskDevice(object):
         if create:
             # create a new filename
             # we should have only ascii due to dos_is_legal_name check above
-            return norm_name.decode(b'ascii', errors='replace')
+            return norm_name.decode('ascii', errors='replace')
         else:
             raise error.BASICError(name_err)
 
@@ -661,75 +685,17 @@ def istype(native_path, native_name, isdir):
 
 
 ##############################################################################
-# Disk stream wrappers
-
-class StreamWrapperBase(object):
-    """Base class for delegated stream wrappers."""
-
-    def __getattr__(self, name):
-        """Delegate methods to stream."""
-        if hasattr(self, '_stream'):
-            return getattr(self._stream, name)
-        else:
-            # this is needed for pickle to be able to reconstruct the class
-            raise AttributeError()
-
-
-class CodecReader(StreamWrapperBase):
-    """Read binary streams, converting from Python codec to BASIC codepage."""
-
-    def __init__(self, stream, codepage, encoding):
-        """Wrap the stream."""
-        # don't convert universal newline (input setting)
-        #self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='\r\n')
-        # in Python 2, io.TextIOWrapper doesn't work on file objects such as sys.stdout
-        self._stream = codecs.getreader(encoding)(stream, errors='replace')
-        self._buffer = b''
-        self._codepage = codepage
-        self._encoding = encoding
-
-    def read(self, n=-1):
-        """Read n bytes from stream with cdepage conversion."""
-        if n > len(self._buffer):
-            unistr = self._stream.read(n - len(self._buffer))
-        elif n == -1:
-            unistr = self._stream.read()
-        else:
-            unistr = u''
-        converted = (self._buffer + self._codepage.str_from_unicode(unistr, errors='replace'))
-        if n < 0:
-            return converted
-        else:
-            output, self._buffer = converted[:n], converted[n:]
-            return output
-
-
-class CodecWriter(StreamWrapperBase):
-    """Write binary streams, converting from BASIC codepage to Python codec."""
-
-    def __init__(self, stream, codepage, encoding):
-        """Wrap the stream."""
-        self._encoding = encoding
-        self._converter = codepage.get_converter(preserve=CONTROL  + (b'\x1A',))
-        # don't convert universal newline (output setting)
-        #self._stream = io.TextIOWrapper(stream, encoding, 'replace', newline='')
-        # in Python 2, io.TextIOWrapper doesn't work on file objects such as sys.stdout
-        self._stream = codecs.getwriter(encoding)(stream, errors='replace')
-
-    def write(self, s):
-        """Write to stream with codepage conversion."""
-        self._stream.write(self._converter.to_unicode(s))
-
-
-##############################################################################
 # Internal disk and bound files
 
+@add_str
 class BoundFile(object):
     """Bound internal file."""
 
-    def __init__(self, device, file_name_or_object, name):
+    def __init__(self, device, codepage, file_name_or_object, name):
         """Initialise."""
+        assert isinstance(name, bytes)
         self._device = device
+        self._codepage = codepage
         self._file = file_name_or_object
         self._name = name
 
@@ -741,27 +707,35 @@ class BoundFile(object):
         """Context guard."""
         self._device.unbind(self._name)
 
-    def get_stream(self, mode):
+    def get_stream(self, filetype, mode):
         """Get a native stream for the bound file."""
         try:
-            if isinstance(self._file, basestring):
-                return io.open(self._file, ACCESS_MODES[mode])
+            if isinstance(self._file, (bytes, text_type)):
+                return self._device.open_stream(self._file, filetype, mode)
             else:
                 return self._file
         except EnvironmentError as e:
             handle_oserror(e)
 
-    def __str__(self):
+    def __bytes__(self):
         """Get BASIC file name."""
         return b'%s:%s' % (self._device.letter, self._name)
 
+    def __unicode__(self):
+        """Get BASIC file name."""
+        return self._codepage.str_to_unicode(bytes(self))
 
+
+@add_str
 class NameWrapper(object):
     """Use normal file name as return value from bind_file."""
 
-    def __init__(self, name):
+    def __init__(self, codepage, name):
         """Initialise."""
+        if isinstance(name, text_type):
+            name = codepage.str_from_unicode(name)
         self._file = name
+        self._codepage = codepage
 
     def __enter__(self):
         """Context guard."""
@@ -770,18 +744,22 @@ class NameWrapper(object):
     def __exit__(self, *dummies):
         """Context guard."""
 
-    def __str__(self):
+    def __bytes__(self):
         """Get BASIC file name."""
         return self._file
+
+    def __unicode__(self):
+        """Get BASIC file name."""
+        return self._codepage.str_to_unicode(bytes(self))
 
 
 class InternalDiskDevice(DiskDevice):
     """Internal disk device for special operations."""
 
-    def __init__(self, letter, path, cwd, codepage, utf8, universal):
+    def __init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed):
         """Initialise internal disk."""
         self._bound_files = {}
-        DiskDevice.__init__(self, letter, path, cwd, codepage, utf8, universal)
+        DiskDevice.__init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed)
 
     def bind(self, file_name_or_object, name=None):
         """Bind a native file name or object to an internal name."""
@@ -796,11 +774,15 @@ class InternalDiskDevice(DiskDevice):
                 # unlikely
                 logging.error('No internal bound-file names available')
                 raise error.BASICError(error.TOO_MANY_FILES)
-        self._bound_files[name] = BoundFile(self, file_name_or_object, name)
+        elif isinstance(name, text_type):
+            name = self._codepage.str_from_unicode(name)
+        self._bound_files[name] = BoundFile(self, self._codepage, file_name_or_object, name)
         return self._bound_files[name]
 
     def unbind(self, name):
         """Unbind bound file."""
+        if isinstance(name, text_type):
+            name = self._codepage.str_from_unicode(name)
         del self._bound_files[name]
 
     def open(
@@ -809,15 +791,17 @@ class InternalDiskDevice(DiskDevice):
         ):
         """Open a file on the internal disk drive."""
         if filespec in self._bound_files:
-            fhandle = self._bound_files[filespec].get_stream(mode)
+            fhandle = self._bound_files[filespec].get_stream(filetype, mode)
             try:
                 return self._create_file_object(fhandle, filetype, mode)
             except EnvironmentError as e:
+                raise
                 handle_oserror(e)
         else:
             return DiskDevice.open(
-                    self, number, filespec, filetype, mode, access, lock,
-                    reclen, seg, offset, length, field)
+                self, number, filespec, filetype, mode, access, lock,
+                reclen, seg, offset, length, field
+            )
 
     def _split_pathmask(self, pathmask):
         """Split pathmask into path and mask."""

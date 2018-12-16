@@ -24,10 +24,9 @@ from ctypes import cdll, windll, POINTER, pointer, c_int, c_wchar_p, c_ulonglong
 
 # text conventions
 # ctrl+Z
-EOF = b'\x1A'
-UEOF = u'\x1A'
+EOF = u'\x1A'
 # CRLF end-of-line
-EOL = b'\r\n'
+EOL = u'\r\n'
 
 
 ##############################################################################
@@ -35,11 +34,6 @@ EOL = b'\r\n'
 
 # register cp65001 as an alias for utf-8
 codecs.register(lambda name: codecs.lookup('utf-8') if name == 'cp65001' else None)
-
-# original stdin codepage
-_CONSOLE_ENCODING = sys.stdin.encoding
-# there's also an ACP codepage - this seems to be locale.getpreferredencoding()
-#_ACP_ENCODING = 'cp' + str(cdll.kernel32.GetACP())
 
 # get OEM codepage - the one used when cmd is launched from a non-console application
 HKEY_LOCAL_MACHINE = 0x80000002
@@ -49,20 +43,25 @@ def _get_oem_encoding():
     """Get Windows OEM codepage."""
     hkey = HKEY()
     windll.advapi32.RegOpenKeyExW(
-        HKEY_LOCAL_MACHINE, LPWSTR(u"SYSTEM\\CurrentControlSet\\Control\\Nls\\CodePage"),
+        HKEY_LOCAL_MACHINE, LPWSTR(u'SYSTEM\\CurrentControlSet\\Control\\Nls\\CodePage'),
         DWORD(0), DWORD(KEY_QUERY_VALUE), byref(hkey))
     strval = ctypes.create_unicode_buffer(255)
     # key HKLM SYSTEM\\CurrentControlSet\\Control\\Nls\\CodePage value OEMCP
     size = DWORD(0)
-    windll.advapi32.RegQueryValueExW(hkey, LPWSTR(u"OEMCP"), DWORD(0), None, None, byref(size))
-    windll.advapi32.RegQueryValueExW(hkey, LPWSTR(u"OEMCP"), DWORD(0), None, byref(strval), byref(size))
+    windll.advapi32.RegQueryValueExW(hkey, LPWSTR(u'OEMCP'), DWORD(0), None, None, byref(size))
+    windll.advapi32.RegQueryValueExW(
+        hkey, LPWSTR(u'OEMCP'), DWORD(0), None, byref(strval), byref(size)
+    )
     windll.advapi32.RegCloseKey(hkey)
     return 'cp' + strval.value
 
 
 # if starting from a console, shell will inherit its codepage
 # if starting from the gui (stdin.encoding == None), we're using OEM codepage
-SHELL_ENCODING = _CONSOLE_ENCODING or _get_oem_encoding()
+SHELL_ENCODING = sys.stdin.encoding or _get_oem_encoding()
+# there's also an ACP codepage - this seems to be locale.getpreferredencoding()
+#_ACP_ENCODING = 'cp' + str(cdll.kernel32.GetACP())
+
 
 # avoid having an empty CMD window popping up in front of ours
 HIDE_WINDOW = subprocess.STARTUPINFO()
@@ -72,34 +71,6 @@ HIDE_WINDOW.wShowWindow = 0 # SW_HIDE
 
 ##############################################################################
 # various
-
-# determine if we have a console attached or are a GUI app
-def _has_console():
-    try:
-        STD_OUTPUT_HANDLE = -11
-        handle = windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
-        dummy_mode = DWORD(0)
-        return bool(windll.kernel32.GetConsoleMode(handle, pointer(dummy_mode)))
-    except Exception as e:
-        return False
-
-HAS_CONSOLE = _has_console()
-
-# preserve original terminal size
-def _get_term_size():
-    """Get size of terminal window."""
-    try:
-        STD_OUTPUT_HANDLE = -11
-        handle = windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
-        csbi = ctypes.create_string_buffer(22)
-        res = windll.kernel32.GetConsoleScreenBufferInfo(handle, csbi)
-        if res:
-            _, _, _, _, _, left, top, right, bottom, _, _ = struct.unpack("hhhhHhhhhhh", csbi.raw)
-            return bottom-top+1, right-left+1
-    except Exception:
-        return 25, 80
-
-TERM_SIZE = _get_term_size()
 
 # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
 # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
@@ -154,7 +125,7 @@ _CommandLineToArgvW = windll.shell32.CommandLineToArgvW
 _CommandLineToArgvW.argtypes = [LPCWSTR, POINTER(c_int)]
 _CommandLineToArgvW.restype = POINTER(LPWSTR)
 
-def get_unicode_argv():
+def _get_unicode_argv():
     """Convert command-line arguments to unicode."""
     # we need to go to the Windows API as argv may not be in a full unicode encoding
     # note that this will not be necessary in Python 3 where sys.argv is unicode
@@ -162,11 +133,14 @@ def get_unicode_argv():
     cmd = _GetCommandLineW()
     argc = c_int(0)
     argv = _CommandLineToArgvW(cmd, byref(argc))
-    argv = [argv[i] for i in xrange(argc.value)]
+    argv = [argv[i] for i in range(argc.value)]
     # clip off the python interpreter call, if we use it
     # anything that didn't get included in sys.argv is not for us either
     argv = argv[-len(sys.argv):]
     return argv
+
+argv = _get_unicode_argv()
+
 
 _GetFileAttributesW = windll.kernel32.GetFileAttributesW
 _GetFileAttributesW.argtypes = [LPCWSTR]
@@ -257,40 +231,3 @@ def line_print(printbuf, printer):
             # launch non-daemon thread to wait for handle
             # to ensure we don't lose the print if triggered on exit
             threading.Thread(target=_wait_for_process, args=(sei.hProcess, f.name)).start()
-
-
-##############################################################################
-# non-blocking input
-
-# key pressed on keyboard
-from msvcrt import kbhit as key_pressed
-
-try:
-    # set stdio as binary, to avoid Windows messing around with CRLFs
-    # only do this for redirected output, as it breaks interactive Python sessions
-    # pylint: disable=no-member
-    if not sys.stdin.isatty():
-        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-    if not sys.stdout.isatty():
-        msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-    pass
-except EnvironmentError:
-    # raises an error if started in gui mode, as we have no stdio
-    pass
-
-def read_all_available(stream):
-    """Read all available characters from a stream; nonblocking; None if closed."""
-    if stream == sys.stdin and sys.stdin.isatty():
-        instr = []
-        # get characters while keyboard buffer has them available
-        # this does not echo
-        while msvcrt.kbhit():
-            c = msvcrt.getch()
-            if not c:
-                return None
-            instr.append(c)
-        return b''.join(instr)
-    else:
-        # this would work on unix too
-        # just read the whole file and be done with it
-        return stream.read() or None

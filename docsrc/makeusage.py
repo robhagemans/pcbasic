@@ -1,11 +1,15 @@
-#!/usr/bin/env python2
 from lxml import etree, html
 import re
-from cStringIO import StringIO
+from io import StringIO
+from io import open
 import textwrap
 import os
 
 basepath = os.path.dirname(os.path.realpath(__file__))
+
+
+if str != bytes:
+    unicode = str
 
 
 class TextBlock(object):
@@ -22,19 +26,16 @@ class TextBlock(object):
 
 
 def html_to_text(html):
-    indent_tags = 'DD',
-    block_tags = 'P', 'H1', 'H2', 'H3', 'DT'
-    break_after_tags = 'DD', 'P', 'H1', 'H2', 'H3'
-    upper_tags = 'H1', 'H2', 'H3'
-
-    def massage(text):
-        return text.encode('utf-8')
+    indent_tags = u'DD',
+    block_tags = u'P', u'H1', u'H2', u'H3', u'DT'
+    break_after_tags = u'DD', u'P', u'H1', u'H2', u'H3'
+    upper_tags = u'H1', u'H2', u'H3'
 
     def parse_element(e, blocklist):
         last_indent = blocklist[-1].indent
         tag = e.tag.upper()
-        inner = massage(e.text) if e.text else ''
-        tail = massage(e.tail) if e.tail else ''
+        inner = e.text if e.text else ''
+        tail = e.tail if e.tail else ''
         if tag in upper_tags:
             inner = inner.upper()
         break_after = (tag in break_after_tags or e.get('class') == 'block')
@@ -56,7 +57,7 @@ def html_to_text(html):
     docroot = doc.getroot()
     blocklist = [TextBlock(0, '')]
     parse_element(docroot, blocklist)
-    return '\n'.join(str(block) for block in blocklist[1:] if str(block).strip())
+    return u'\n'.join(unicode(block) for block in blocklist[1:] if unicode(block).strip())
 
 
 def makeusage():
@@ -64,6 +65,3 @@ def makeusage():
     # output usage
     with open(basepath + '/../pcbasic/data/USAGE.txt', 'w') as textfile:
         textfile.write(html_to_text(usage_html))
-
-if __name__ == '__main__':
-    makeusage()

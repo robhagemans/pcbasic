@@ -2,16 +2,15 @@
 import sys
 import os
 from binascii import hexlify
+
+
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
+from pcbasic.compat import int2byte
 from pcbasic.basic.values import *
 import pcbasic.basic.values
 from pcbasic.basic.values.numbers import *
 from pcbasic.basic.values import numbers
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 if __name__ == '__main__':
@@ -21,7 +20,7 @@ if __name__ == '__main__':
         r = vm.new_single().from_int(2**23)
         r.iadd(a)
         s = r.clone()
-        s.view()[-1:] = int2byte(ord(s.view()[-1])+8)
+        s.view()[-1:] = int2byte(bytearray(s.view())[-1]+8)
         t = s.clone()
         print s.iadd(r).isub(t).isub(r).to_value(),
 

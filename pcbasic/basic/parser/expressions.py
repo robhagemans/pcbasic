@@ -9,21 +9,16 @@ This file is released under the GNU GPL version 3 or later.
 from collections import deque
 from functools import partial
 import logging
-import string
 import struct
 import types
 
 from ..base import tokens as tk
+from ..base.tokens import DIGITS, LETTERS
 from ..base import error
 from .. import values
 from .. import dos
 from . import operators as op
 from . import userfunctions
-
-
-# bytes constants
-DIGITS = string.digits
-LETTERS = string.ascii_letters
 
 
 class ExpressionParser(object):
@@ -137,7 +132,7 @@ class ExpressionParser(object):
             tk.FN: None,
             b'_': self._gen_parse_call_extension,
         }
-        self._functions = set(self._complex.keys() + self._simple.keys())
+        self._functions = set(self._complex.keys()) | set(self._simple.keys())
 
     def init_functions(self, session):
         """Initialise function callbacks."""
@@ -422,7 +417,7 @@ class ExpressionParser(object):
         ins.require_read((b'(',))
         for i in range(length-1):
             yield self.parse(ins)
-            ins.require_read((b','),)
+            ins.require_read((b',',))
         yield self.parse(ins)
         ins.require_read((b')',))
 
@@ -431,9 +426,9 @@ class ExpressionParser(object):
         ins.require_read((b'(',))
         yield self.parse(ins)
         for _ in range(length-2):
-            ins.require_read((b','),)
+            ins.require_read((b',',))
             yield self.parse(ins)
-        if ins.skip_blank_read_if((b',',),):
+        if ins.skip_blank_read_if((b',',)):
             yield self.parse(ins)
         else:
             yield None

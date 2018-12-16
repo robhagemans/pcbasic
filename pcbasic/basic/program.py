@@ -11,14 +11,12 @@ import logging
 import struct
 import io
 
+from ..compat import int2byte
+
 from .base import error
 from .base import tokens as tk
 from . import values
 from . import converter
-
-
-# mark bytes conversion explicitly
-int2byte = chr
 
 
 class Program(object):
@@ -41,7 +39,7 @@ class Program(object):
         self.tokeniser = tokeniser
         self.lister = lister
 
-    def __str__(self):
+    def __repr__(self):
         """Return a marked-up hex dump of the program (for debugging)."""
         code = self.bytecode.getvalue()
         offset_val, p = 0, 0
@@ -51,7 +49,7 @@ class Program(object):
             last_offset = offset_val
             offset_val = struct.unpack('<H', offset)[0] - (self.code_start + 1)
             linum_val, = struct.unpack('<H', linum)
-            output.append(b'%s %s (+%03d) %s [%05d] %s' % (
+            output.append('%s %s (+%03d) %s [%05d] %s' % (
                 binascii.hexlify(code[p:p+1]),
                 binascii.hexlify(offset),
                 offset_val - last_offset,
@@ -60,13 +58,13 @@ class Program(object):
                 binascii.hexlify(code[p+5:])
             ))
             p = self.line_numbers[key]
-        output.append(b'%s %s (ENDS) %s %s' % (
+        output.append('%s %s (ENDS) %s %s' % (
             binascii.hexlify(code[p:p+1]),
             binascii.hexlify(code[p+1:p+3]),
             binascii.hexlify(code[p+3:p+5]),
             binascii.hexlify(code[p+5:])
         ))
-        return b'\n'.join(output)
+        return '\n'.join(output)
 
     def size(self):
         """Size of code space """
@@ -196,8 +194,8 @@ class Program(object):
             if self.code_start + 1 + pos + length > self._memory.stack_start():
                 raise error.BASICError(error.OUT_OF_MEMORY)
             self.bytecode.write(
-                    struct.pack('<BH', 0, self.code_start + 1 + pos + length) +
-                    linebuf.read())
+                struct.pack('<BH', 0, self.code_start + 1 + pos + length) + linebuf.read()
+            )
         # write back the remainder of the program
         self.truncate(rest)
         # update all next offsets by shifting them by the length of the added line
@@ -405,8 +403,10 @@ class Program(object):
         # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
         if to_line is None:
             to_line = self.max_list_line
-        numbers = [num for num in self.line_numbers
-                            if num >= from_line and num <= to_line]
+        numbers = [
+            num for num in self.line_numbers
+            if (from_line is None or num >= from_line) and num <= to_line
+        ]
         # sort by positions, not line numbers!
         listable = sorted([self.line_numbers[num] for num in numbers])
         if numbers:
@@ -423,7 +423,7 @@ class Program(object):
         offset -= self.code_start
         code = self.bytecode.getvalue()
         try:
-            return ord(code[offset])
+            return ord(code[offset:offset+1])
         except IndexError:
             return -1
 

@@ -16,7 +16,7 @@ from datetime import datetime
 from contextlib import contextmanager
 
 from .metadata import VERSION
-from basic.base import error, signals
+from .basic.base import error, signals
 
 
 LOG_PATTERN = u'crash-%Y%m%d-'
@@ -97,7 +97,7 @@ class ExceptionGuard(object):
             (0x1f, VERSION),
             (0x17, u'\npython    '),
             (0x1f, u'%s [%s] %s' % (
-                platform.python_version(), b' '.join(platform.architecture()), frozen
+                platform.python_version(), u' '.join(platform.architecture()), frozen
             )),
             (0x17, u'\nplatform  '),
             (0x1f, platform.platform()),
@@ -134,15 +134,15 @@ class ExceptionGuard(object):
             u''.join(text for _, text in message),
             u''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
             u'==== Screen Pages ='.ljust(100, u'='),
-            str(impl.display.text_screen),
+            repr(impl.display.text_screen),
             u'==== Scalars ='.ljust(100, u'='),
-            str(impl.scalars),
+            repr(impl.scalars),
             u'==== Arrays ='.ljust(100, u'='),
-            str(impl.arrays),
+            repr(impl.arrays),
             u'==== Strings ='.ljust(100, u'='),
-            str(impl.strings),
+            repr(impl.strings),
             u'==== Program Buffer ='.ljust(100, u'='),
-            str(impl.program),
+            repr(impl.program),
         ]
         impl.program.bytecode.seek(1)
         crashlog.append(u'==== Program ='.ljust(100, u'='))
@@ -159,14 +159,14 @@ class ExceptionGuard(object):
         impl.display.set_attr(0x17)
         impl.display.set_border(1)
         impl.display.text_screen.clear()
+        impl.display.text_screen._bottom_row_allowed = True
         # show message on screen
         for attr, text in message:
             impl.display.set_attr(attr)
             impl.display.text_screen.write(text.encode('cp437', 'replace').replace('\n', '\r'))
-        impl.display.text_screen._bottom_row_allowed = True
         impl.display.text_screen.set_pos(25, 1)
         impl.display.set_attr(bottom[0])
-        impl.display.text_screen.write(bottom[1])
+        impl.display.text_screen.write(bottom[1].encode('cp437', 'replace').replace('\n', '\r'))
         # write crash log
         crashlog = u'\n'.join(
             line.decode('cp437', 'replace') if isinstance(line, bytes) else line

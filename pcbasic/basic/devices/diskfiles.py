@@ -7,9 +7,10 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import struct
-import string
 import ntpath
 from contextlib import contextmanager
+
+from ...compat import iteritems, iterchar
 
 from ..base.bytestream import ByteStream
 from ..base import error
@@ -68,12 +69,11 @@ class BinaryFile(RawFile):
 class TextFile(TextFileBase, InputMixin):
     """Text file on disk device."""
 
-    def __init__(self, fhandle, filetype, number, mode, locks, universal):
+    def __init__(self, fhandle, filetype, number, mode, locks):
         """Initialise text file object."""
         TextFileBase.__init__(self, fhandle, filetype, mode)
         self._locks = locks
         self._number = number
-        self._universal = universal
         # in append mode, we need to start at end of file
         if self.mode == b'A':
             with safe_io():
@@ -104,13 +104,10 @@ class TextFile(TextFileBase, InputMixin):
             last, char = self._previous, self._current
             self.read(1)
             self._previous, self._current = last, char
-        # universal newlines: report \n as line break
-        if (self._universal and c == b'\n'):
-            c = b'\r'
         return c
 
     def read_line(self):
-        """Read line from text file, break on CR or CRLF (not LF, unless universal newlines)."""
+        """Read line from text file, break on CR or CRLF (not LF)."""
         s = []
         while True:
             c = self.read_one()
@@ -166,7 +163,7 @@ class FieldFile(TextFile):
     def __init__(self, field, reclen):
         """Initialise text file object."""
         # don't let the field file use device locks
-        TextFile.__init__(self, ByteStream(field.view_buffer()), b'D', None, b'I', Locks(), False)
+        TextFile.__init__(self, ByteStream(field.view_buffer()), b'D', None, b'I', Locks())
         self._field = field
         self._reclen = reclen
 
@@ -394,7 +391,7 @@ class Locks(object):
     def list_open(self, name, exclude_number=None):
         """Retrieve a list of files open on the same disk device."""
         return [
-            f for number, f in self._locking_parameters.iteritems()
+            f for number, f in iteritems(self._locking_parameters)
             if f.name == ntpath.basename(name).upper() and number != exclude_number
         ]
 
@@ -416,14 +413,14 @@ class Locks(object):
                     # LOCK READ or LOCK WRITE: accept based on ACCESS of open file
                     (
                         lock_type and lock_type != b'SHARED' and
-                        f.access and set(lock_type) & set(f.access)
+                        f.access and set(iterchar(lock_type)) & set(iterchar(f.access))
                     ) or
                     (
                         f.lock_type and f.lock_type != b'SHARED' and
                         (
-                            (access and set(f.lock_type) & set(access)) or
+                            (access and set(iterchar(f.lock_type)) & set(iterchar(access))) or
                             # can't open with unspecified access if other is LOCK READ WRITE
-                            (not access and set(f.lock_type) == set(b'RW'))
+                            (not access and set(iterchar(f.lock_type)) == {b'R', b'W'})
                         )
                     )
                 ):
@@ -479,9 +476,11 @@ class Locks(object):
         else:
             # range access sought
             for start_1, stop_1 in other_lock_set:
-                if (stop_1 is None and start_1 is None
-                            or (start >= start_1 and start <= stop_1)
-                            or (stop >= start_1 and stop <= stop_1)):
+                if (
+                        stop_1 is None and start_1 is None
+                        or (start >= start_1 and start <= stop_1)
+                        or (stop >= start_1 and stop <= stop_1)
+                    ):
                     raise error.BASICError(error.PERMISSION_DENIED)
 
     def acquire_record_lock(self, number, start, stop):

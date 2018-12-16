@@ -19,9 +19,11 @@ class InitFailed(Exception):
     """Initialisation failed."""
 
     def __init__(self, message=''):
+        """Set message."""
         self._message = message
 
     def __str__(self):
+        """Error description (overrides Python 2 default)."""
         return self._message
 
 
@@ -76,7 +78,7 @@ class EnvironmentCache(object):
 
     def close(self):
         """Restore all environment variables."""
-        for key in self._saved.keys():
+        for key in list(self._saved.keys()):
             self.reset(key)
 
     def __del__(self):

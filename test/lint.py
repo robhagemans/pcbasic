@@ -1,15 +1,21 @@
-#!/usr/bin/env python2
-from pylint import epylint
+#!/usr/bin/env python
+
+from __future__ import print_function
+
 import os
 import sys
 
+from pylint import epylint
+
+
 CONFIG = [
     '--ignored-modules=pygame,numpy,pygame.mixer,msvcrt',
-    '--ignored-classes=Serial,pygame.Surface,Namespace',
+    '--ignored-classes=Serial,pygame.Surface,SimpleNamespace',
     '--errors-only',
 ]
 
-def lint_files(path, filenames, exclude=[]):
+
+def lint_files(path, filenames, exclude=()):
     for namext in filenames:
         name, ext = os.path.splitext(namext)
         if ext != '.py':
@@ -17,7 +23,7 @@ def lint_files(path, filenames, exclude=[]):
         if name in exclude:
             continue
         fullname = os.path.join(path, namext)
-        print fullname
+        print(fullname)
         epylint.lint(fullname, CONFIG)
 
 

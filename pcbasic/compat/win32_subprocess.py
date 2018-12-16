@@ -15,7 +15,6 @@ import _subprocess
 from ctypes import byref, windll, c_wchar_p, c_void_p, Structure, sizeof, c_wchar, WinError
 from ctypes.wintypes import BYTE, WORD, BOOL, DWORD, LPWSTR, LPVOID, HANDLE, LPCWSTR
 
-
 ##
 ## Types
 ##

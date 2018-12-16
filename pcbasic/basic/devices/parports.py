@@ -16,7 +16,7 @@ try:
 except Exception:
     parallel = None
 
-from ...compat import line_print
+from ...compat import line_print, iterchar, stdout
 from ..base import error
 from ..codepage import CONTROL
 from .devicebase import Device, DeviceSettings, TextFileBase, parse_protocol_string, safe_io
@@ -107,8 +107,9 @@ class LPTFile(TextFileBase):
 
     def write(self, s, can_break=True):
         """Write a string to the printer buffer."""
+        assert isinstance(s, bytes), type(s)
         with safe_io():
-            for c in bytes(s):
+            for c in iterchar(s):
                 # don't replace CR or LF with
                 self._fhandle.write(c)
                 # col reverts to 1 on CR (\r) and LF (\n) but not FF (\f)
@@ -134,7 +135,8 @@ class LPTFile(TextFileBase):
 
     def write_line(self, s=b''):
         """Write string or bytearray and newline to file."""
-        self.write(bytes(s) + b'\r\n')
+        assert isinstance(s, bytes), type(s)
+        self.write(s + b'\r\n')
 
     def lof(self):
         """LOF: bad file mode """
@@ -180,7 +182,7 @@ class PrinterStream(io.BytesIO):
 
     def write(self, s):
         """Write to printer stream."""
-        for c in s:
+        for c in iterchar(s):
             if c == b'\b':
                 # backspace: drop a non-newline character from the buffer
                 self.seek(-1, 1)
@@ -200,7 +202,8 @@ class PrinterStream(io.BytesIO):
         self.truncate()
         # any naked lead bytes in DBCS will remain just that - avoid in-line flushes.
         utf8buf = self.codepage.str_to_unicode(
-                    printbuf, preserve=CONTROL).encode('utf-8', 'replace')
+            printbuf, preserve=CONTROL
+        ).encode('utf-8', 'replace')
         line_print(utf8buf, self.printer_name)
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
@@ -240,7 +243,7 @@ class ParallelStream(object):
         with safe_io():
             if self._parallel.getInPaperOut():
                 raise error.BASICError(error.OUT_OF_PAPER)
-            for c in s:
+            for c in iterchar(s):
                 self._parallel.setData(ord(c))
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
@@ -282,15 +285,14 @@ class StdIOParallelStream(object):
 
     def write(self, s):
         """Write to stdout."""
-        for c in s:
-            if self._crlf and c == b'\r':
-                c = b'\n'
-            sys.stdout.write(c)
+        if self._crlf:
+            s = s.replace(b'\r', b'\n')
+        stdout.buffer.write(s)
         self.flush()
 
     def flush(self):
         """Flush stdout."""
-        sys.stdout.flush()
+        stdout.flush()
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
         """Set the values of the control pins."""

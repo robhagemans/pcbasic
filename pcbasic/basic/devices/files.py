@@ -8,9 +8,11 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import sys
-import string
 import logging
 import io
+
+from ...compat import xrange, int2byte, text_type
+from ...compat import iterchar, getcwdu
 
 from ..base import error
 from ..base import tokens as tk
@@ -27,10 +29,10 @@ from . import parports
 DOS_DEVICE_FILES = (b'AUX', b'CON', b'NUL', b'PRN')
 
 # default mount dictionary
-DEFAULT_MOUNTS = {b'Z': (os.getcwdu(), u'')}
+DEFAULT_MOUNTS = {b'Z': (getcwdu(), u'')}
 
 # allowable drive letters in GW-BASIC are letters or @
-DRIVE_LETTERS = b'@' + string.ascii_uppercase
+DRIVE_LETTERS = b'@' + tk.UPPERCASE
 
 
 ############################################################################
@@ -43,7 +45,7 @@ class Files(object):
             self, values, memory, queues, keyboard, display,
             max_files, max_reclen, serial_buffer_size,
             device_params, current_device, mount_dict,
-            utf8, universal
+            text_mode, soft_linefeed
         ):
         """Initialise files."""
         # for wait() in files_
@@ -56,7 +58,7 @@ class Files(object):
         self._init_devices(
             values, queues, display, keyboard,
             device_params, current_device, mount_dict,
-            serial_buffer_size, utf8, universal
+            serial_buffer_size, text_mode, soft_linefeed
         )
 
     ###########################################################################
@@ -126,7 +128,7 @@ class Files(object):
     def _init_devices(
             self, values, queues, display, keyboard,
             device_params, current_device, mount_dict,
-            serial_in_size, utf8, universal
+            serial_in_size, text_mode, soft_linefeed
         ):
         """Initialise devices."""
         # screen device, for files_()
@@ -154,7 +156,7 @@ class Files(object):
         self.kybd_file = self._devices[b'KYBD:'].device_file
         self.lpt1_file = self._devices[b'LPT1:'].device_file
         # disks
-        self._init_disk_devices(mount_dict, current_device, codepage, utf8, universal)
+        self._init_disk_devices(mount_dict, current_device, codepage, text_mode, soft_linefeed)
 
     def close_devices(self):
         """Close device master files."""
@@ -566,14 +568,14 @@ class Files(object):
 
     def _init_disk_devices(
             self, mount_dict, current_device,
-            codepage, utf8, universal
+            codepage, text_mode, soft_linefeed
         ):
         """Initialise disk devices."""
         # use None to request default mounts, use {} for no mounts
         if mount_dict is None:
             mount_dict = DEFAULT_MOUNTS
         # disk devices
-        for letter in DRIVE_LETTERS:
+        for letter in iterchar(DRIVE_LETTERS):
             if not mount_dict:
                 mount_dict = {}
             if letter in mount_dict:
@@ -582,9 +584,11 @@ class Files(object):
                 path, cwd = None, u''
             # treat device @: separately - internal disk
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
-            self._devices[letter + b':'] = disk_class(letter, path, cwd, codepage, utf8, universal)
-        # allow upper or lower case, unicode or str, with or without :
-        if isinstance(current_device, unicode):
+            self._devices[letter + b':'] = disk_class(
+                letter, path, cwd, codepage, text_mode, soft_linefeed
+            )
+        # allow upper or lower case, unicode or bytes, with or without :
+        if isinstance(current_device, text_type):
             current_device = current_device.encode('ascii')
         self._current_device = current_device.split(b':')[0].upper()
 

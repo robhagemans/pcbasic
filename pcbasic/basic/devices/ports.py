@@ -13,7 +13,9 @@ import datetime
 import io
 from contextlib import contextmanager
 
-from ...compat import key_pressed
+from ...compat import iteritems
+from ...compat import console, stdin, stdout
+
 from .devicebase import safe_io
 
 try:
@@ -197,7 +199,7 @@ class COMDevice(Device):
         """Get pickling dict for stream."""
         # copy as we still need _serial for close()
         # which gets called after __getstate__() on shutdown
-        pickle_dict = {k:v for k,v in self.__dict__.iteritems()}
+        pickle_dict = {k:v for k,v in iteritems(self.__dict__)}
         del pickle_dict['_serial']
         return pickle_dict
 
@@ -444,8 +446,8 @@ class SerialStdIO(object):
         s = []
         # note that kbhit assumes keyboard
         # so won't work with redirects on Windows
-        while key_pressed() and len(s) < num:
-            c = sys.stdin.read(1)
+        while console.key_pressed() and len(s) < num:
+            c = stdin.buffer.read(1)
             if self._crlf and c == b'\n':
                 c = b'\r'
             if c:
@@ -456,13 +458,13 @@ class SerialStdIO(object):
         """Write to stdout."""
         if self._crlf:
             s = s.replace(b'\r', b'\n')
-        sys.stdout.write(s)
-        sys.stdout.flush()
+        stdout.buffer.write(s)
+        stdout.buffer.flush()
 
     @property
     def in_waiting(self):
         """Number of characters waiting to be read."""
         # we get at most 1 char waiting this way
-        return key_pressed()
+        return console.key_pressed()
 
     out_waiting = 0

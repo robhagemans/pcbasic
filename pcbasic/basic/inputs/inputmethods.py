@@ -1,6 +1,6 @@
 """
 PC-BASIC - inputmethods.py
-Keyboard, pen and joystick handling
+Pen and joystick handling
 
 (c) 2013--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.

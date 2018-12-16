@@ -430,7 +430,7 @@
         </dd>
 
         <dt id="--input">
-            <code><b>--input=</b><var>input_file</var></code>
+            <code><b>--input=</b>{<var>input_file</var>|{<b>STDIO</b>|<b>STDIN</b>}[<b>:RAW</b>]}</code>
         </dt>
         <dd>
             Retrieve keyboard input from <code><var>input_file</var></code>,
@@ -440,6 +440,8 @@
             <br />
             If <code><var>input_file</var></code> is <code><b>STDIO:</b></code>
             or <code><b>STDIN:</b></code>, keyboard input will be read from standard input.
+            If <code><b>RAW</b></code> is specified, input will be treated as codepage bytes.
+            If not, it will be treated as the locale's encoding (probably UTF-8).
         </dd>
 
         <dt id="--interface">
@@ -811,7 +813,7 @@
         <dd>
             Do not treat <code>LF</code> in text and program files as a line break. This enables
             the highest level of compatibility with GW-BASIC files. If this option is set,
-            any Linux or Mac text files need to be converted to DOS text before using then with PC-BASIC.
+            any Linux or Mac text files need to be converted to DOS text before using them with PC-BASIC.
         </dd>
 
         <dt id="--sound">
@@ -885,15 +887,34 @@
             Default is <code><b>80</b></code>.
         </dd>
 
-        <dt id="--utf-8">
+        <dt id="--text-encoding">
+            <code><b>--text-encoding=</b>[<var>encoding</var>]</code>
+        </dt>
+        <dd>
+            Set the text encoding.
+            <br />
+            Text files (i.e. plain-text programs and files opened for <code>INPUT</code>
+            and <code>OUTPUT</code>) stored on a disk device will be assumed to be encoded in
+            <code><var>encoding</var></code>. Examples of valid encodings are
+            <code>utf-8</code>, <code>utf-16</code>, <code>latin-1</code>.
+            <br />
+            Please ensure that all characters in the
+            current codepage are included in the encoding you choose; if
+            this is not the case then such characters will be replaced by
+            <samp>&#xfffd;</samp> or <samp>?</samp>.
+            <br />
+            If <code><var>encoding</var></code> is not set, text files will be treated as
+            raw bytes in the current PC-BASIC codepage.
+        </dd>
+
+        <dt id="--utf8">
             <code><b>--utf8</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
         <dd>
-            Use UTF-8 for plain-text programs and redirected I/O. If <code><b>True</b></code>,
-            programs stored as plain text will be converted
-            from UTF-8 on <code><a href="#LOAD">LOAD</a></code> and to UTF-8 on
-            <code><a href="#SAVE">SAVE</a></code>. If <code><b>False</b></code>,
-            the PC-BASIC codepage will be used.
+            Set the text encoding to UTF-8.
+            <br />
+            This option is <em>deprecated</em> and ignored if <code>--text-encoding</code> is set.
+            Use <code><b><a href="#--text-encoding">--text-encoding</a></b></code> instead.
         </dd>
 
         <dt id="--version">
@@ -973,7 +994,7 @@
         </dt>
         <dd>
             Set GW-BASIC-style command-line switches. This is a convenience option to facilitate
-            migration from GW-BASIC. <code>gwbasic_options</var></code> is a string that may contain
+            migration from GW-BASIC. <code><var>gwbasic_options</var></code> is a string that may contain
             the following options:
             <dl>
                 <dt>
