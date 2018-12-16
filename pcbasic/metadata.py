@@ -1,7 +1,7 @@
 
 NAME = u'PC-BASIC'
 PACKAGE = b'pcbasic'
-VERSION = u'2.0.1'
+VERSION = u'2.0.2'
 COPYRIGHT = u'(C) Copyright 2013--2018 Rob Hagemans.'
 LICENCE = u'GPLv3'
 AUTHOR = u'Rob Hagemans'
