@@ -14,6 +14,7 @@ import zipfile
 import locale
 import tempfile
 import shutil
+import codecs
 import pkg_resources
 from collections import deque
 
@@ -96,6 +97,13 @@ def store_bundled_programs(PROGRAM_PATH):
         with io.open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
             f.write(data.read_program_file(name))
 
+def _check_text_encoding(arg):
+    """Check if text-encoding argument is acceptable."""
+    try:
+        codecs.lookup(arg)
+    except LookupError:
+        return False
+    return True
 
 class TemporaryDirectory():
     """Temporary directory context guard like in Python 3 tempfile."""
@@ -300,7 +308,7 @@ class Settings(object):
             u'choices': (
                 u'vga', u'ega', u'cga', u'cga_old', u'mda',
                 u'pcjr', u'tandy', u'hercules', u'olivetti'), },
-        u'text-encoding': {u'type': u'string', u'default': u'',},
+        u'text-encoding': {u'type': u'string', u'default': u'', u'check': _check_text_encoding},
         u'soft-linefeed': {u'type': u'bool', u'default': False,},
         u'border': {u'type': u'int', u'default': 5,},
         u'mouse-clipboard': {u'type': u'bool', u'default': True,},
@@ -1020,6 +1028,10 @@ class Settings(object):
                     u'Value "%s=%s" ignored; should be one of (%s)',
                     d, arg, u', '.join(text_type(x) for x in self.arguments[d][u'choices'])
                 )
+                arg = u''
+        if u'check' in self.arguments[d]:
+            if arg and not self.arguments[d][u'check'](first_arg):
+                logging.warning(u'Value "%s=%s" ignored; not reognised', d, arg)
                 arg = u''
         return arg
 
