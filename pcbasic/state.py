@@ -23,7 +23,7 @@ from .metadata import VERSION
 from .compat import PY2, copyreg, stdout, stdin
 
 # session file header
-HEADER_FORMAT = '<IIIIII'
+HEADER_FORMAT = '<lIIIII'
 HEADER_KEYS = [
     'checksum', 'format_version', 'python_major', 'python_minor', 'pcbasic_major', 'pcbasic_minor'
 ]
