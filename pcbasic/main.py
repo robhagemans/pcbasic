@@ -99,7 +99,8 @@ def launch_session(settings):
 def run_session(
         interface=None, guard=NOGUARD,
         resume=False, debug=False, state_file=None,
-        prog=None, commands=(), **session_params):
+        prog=None, commands=(), **session_params
+    ):
     """Run an interactive BASIC session."""
     Session = basic.DebugSession if debug else basic.Session
     with Session(interface, **session_params) as s:

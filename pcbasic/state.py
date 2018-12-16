@@ -24,12 +24,21 @@ from .compat import PY2, copyreg, stdout, stdin
 @contextmanager
 def manage_state(session, state_file, do_resume):
     """Resume a session if requested; save upon exit"""
-    if do_resume:
-        session = zunpickle(state_file).attach(session.interface)
+    if do_resume and state_file:
+        try:
+            session = load_session(state_file).attach(session.interface)
+        except Exception as e:
+            # if we were told to resume but can't, give up
+            logging.fatal('Failed to resume session from %s: %s', state_file, e)
+            sys.exit(1)
     try:
         yield session
     finally:
-        zpickle(session, state_file)
+        if state_file:
+            try:
+                save_session(session, state_file)
+            except Exception as e:
+                logging.error('Failed to save session to %s: %s', state_file, e)
 
 
 def unpickle_file(name, mode, pos):
@@ -74,21 +83,13 @@ copyreg.pickle(io.TextIOWrapper, pickle_file)
 copyreg.pickle(io.BufferedRandom, pickle_file)
 
 
-def zunpickle(state_file):
-    """Read a compressed pickle string."""
-    if state_file:
-        try:
-            with open(state_file, 'rb') as f:
-                s = zlib.decompress(f.read())
-                return pickle.loads(s)
-        except EnvironmentError:
-            logging.error('Could not read from %s', state_file)
+def load_session(state_file):
+    """Read state from a compressed pickle."""
+    with open(state_file, 'rb') as f:
+        s = zlib.decompress(f.read())
+        return pickle.loads(s)
 
-def zpickle(obj, state_file):
-    """Retuen a compressed pickle string."""
-    if state_file:
-        try:
-            with open(state_file, 'wb') as f:
-                f.write(zlib.compress(pickle.dumps(obj, 2)))
-        except EnvironmentError:
-            logging.error('Could not write to %s', state_file)
+def save_session(obj, state_file):
+    """Write state to a compressed pickle."""
+    with open(state_file, 'wb') as f:
+        f.write(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
