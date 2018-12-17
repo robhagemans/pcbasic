@@ -626,7 +626,8 @@ class VideoSDL2(VideoPlugin):
                 ))
             elif event.type == sdl2.SDL_WINDOWEVENT:
                 if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
-                    self._resize_display(event.window.data1, event.window.data2)
+                    # width, hwight = event.window.data1, event.window.data2
+                    self._adjust_to_resized_display()
                 # unset Alt modifiers on entering/leaving the window
                 # workaround for what seems to be an SDL2 bug
                 # where the ALT modifier sticks on the first Alt-Tab out
@@ -870,8 +871,8 @@ class VideoSDL2(VideoPlugin):
         self._last_row = self.cursor_row
         self._last_col = self.cursor_col
 
-    def _resize_display(self, width, height):
-        """Change the display size."""
+    def __old_resize_display(self, width, height):
+        """Change display size."""
         maximised = sdl2.SDL_GetWindowFlags(self._display) & sdl2.SDL_WINDOW_MAXIMIZED
         # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
         # detect if window is very large compared to screen; force maximise if so.
@@ -881,12 +882,19 @@ class VideoSDL2(VideoPlugin):
                 # force maximise for large windows
                 sdl2.SDL_MaximizeWindow(self._display)
             else:
-                # regular resize on non-maximised windows
                 sdl2.SDL_SetWindowSize(self._display, width, height)
         else:
             # resizing throws us out of maximised mode
             if not to_maximised:
                 sdl2.SDL_RestoreWindow(self._display)
+
+    def _resize_display(self, width, height):
+        """Change display size."""
+        sdl2.SDL_SetWindowSize(self._display, width, height)
+        self._adjust_to_resized_display()
+
+    def _adjust_to_resized_display(self):
+        """Respond to change of display size."""
         # get window size
         w, h = ctypes.c_int(), ctypes.c_int()
         sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
@@ -914,7 +922,8 @@ class VideoSDL2(VideoPlugin):
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
         self._window_sizer.size = self.size
-        self._resize_display(*self._window_sizer.find_display_size(*self.size))
+        width, height = self._window_sizer.find_display_size(*self.size)
+        self._resize_display(width, height)
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # screen pages
