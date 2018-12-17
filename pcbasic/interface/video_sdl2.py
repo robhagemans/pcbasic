@@ -558,11 +558,6 @@ class VideoSDL2(VideoPlugin):
         self._window_sizer.window_size = width, height
         self.busy = True
 
-    def _resize_display(self, width, height):
-        """Change display size."""
-        sdl2.SDL_SetWindowSize(self._display, width, height)
-        self._adjust_to_resized_display()
-
     def _adjust_to_resized_display(self):
         """Respond to change of display size."""
         # get window size
@@ -749,7 +744,7 @@ class VideoSDL2(VideoPlugin):
                 self._fullscreen = not self._fullscreen
                 width, height = self._window_sizer.find_display_size(*self.size)
                 self._do_create_window(width, height)
-                self._resize_display(width, height)
+                self._adjust_to_resized_display()
             self._clipboard_interface.handle_key(None, c)
         # the text input event follows the key down event immediately
         elif self._last_down is None:
@@ -908,7 +903,8 @@ class VideoSDL2(VideoPlugin):
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
         self._window_sizer.size = self.size
         width, height = self._window_sizer.find_display_size(*self.size)
-        self._resize_display(width, height)
+        sdl2.SDL_SetWindowSize(self._display, width, height)
+        self._adjust_to_resized_display()
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # screen pages

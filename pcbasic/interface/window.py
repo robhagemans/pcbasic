@@ -35,7 +35,7 @@ def apply_composite_artifacts(src_array, pixels=4):
 
 
 class WindowSizer(object):
-    """Graphical video plugin, base class."""
+    """Physical/logical window size operations."""
 
     def __init__(self, screen_width, screen_height,
             scaling=None, dimensions=None, aspect_ratio=(4, 3), border_width=0,
@@ -50,7 +50,6 @@ class WindowSizer(object):
         self._aspect = aspect_ratio
         # border width percentage
         self._border_width = border_width
-        # start in fullscreen mode
         # the following attributes must be set separately
         # physical size of screen
         self._screen_size = screen_width, screen_height
