@@ -38,8 +38,9 @@ class WindowSizer(object):
     """Graphical video plugin, base class."""
 
     def __init__(self, screen_width, screen_height,
-            scaling=None, dimensions=None, aspect_ratio=(4, 3),
-            border_width=0, fullscreen=False, **kwargs):
+            scaling=None, dimensions=None, aspect_ratio=(4, 3), border_width=0,
+            **kwargs
+        ):
         """Initialise size parameters."""
         # use native pixel sizes
         self._force_native_pixel = scaling == 'native'
@@ -50,8 +51,6 @@ class WindowSizer(object):
         # border width percentage
         self._border_width = border_width
         # start in fullscreen mode
-        #FIXME: only used to see if we should ignore dimensions, let config deal with that?
-        self._fullscreen = fullscreen
         # the following attributes must be set separately
         # physical size of screen
         self._screen_size = screen_width, screen_height
@@ -76,7 +75,7 @@ class WindowSizer(object):
     def find_display_size(self, canvas_x, canvas_y):
         """Determine the optimal size for the window."""
         # comply with requested size unless we're fullscreening
-        if self._force_display_size and not self._fullscreen:
+        if self._force_display_size:
             return self._force_display_size
         if not self._force_native_pixel:
             # this assumes actual display aspect ratio is wider than 4:3
@@ -107,7 +106,8 @@ class WindowSizer(object):
             apx = xmult, ymult
             for mx in range(1, xmult+1):
                 my = min(
-                    ymult, int(round(mx*canvas_x*self._aspect[1] / (1.0*canvas_y*self._aspect[0]))))
+                    ymult, int(round(mx*canvas_x*self._aspect[1] / (1.0*canvas_y*self._aspect[0])))
+                )
                 current = mx*pixel_x / (1.0*my*pixel_y)
                 dist = max(current, target) / min(current, target)
                 # prefer larger multipliers if distance is equal
@@ -121,13 +121,15 @@ class WindowSizer(object):
         border_x, border_y = self.border_start()
         return (
             self.window_size[0] / (self.size[0] + 2.0*border_x),
-            self.window_size[1] / (self.size[1] + 2.0*border_y))
+            self.window_size[1] / (self.size[1] + 2.0*border_y)
+        )
 
     def border_start(self):
         """Top left physical coordinates of canvas."""
         return (
             int(self.size[0] * self._border_width / 200.),
-            int(self.size[1] * self._border_width / 200.))
+            int(self.size[1] * self._border_width / 200.)
+        )
 
     def is_maximal(self, width, height):
         """Compare dimensions to threshold for maximising."""

@@ -1062,6 +1062,7 @@ class Settings(object):
             lst += [None]*(-length-len(lst))
         if length != u'*' and (len(lst) > abs(length) or len(lst) < length):
             logging.warning(u'Option "%s=%s" ignored, should have %d elements', d, s, abs(length))
+            lst = []
         return lst
 
     def _parse_bool(self, d, s):

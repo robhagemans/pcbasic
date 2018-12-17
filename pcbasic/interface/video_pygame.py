@@ -126,7 +126,7 @@ class VideoPygame(VideoPlugin):
         display_info = pygame.display.Info()
         self._window_sizer = window.WindowSizer(
             display_info.current_w, display_info.current_h,
-            scaling, dimensions, aspect_ratio, border_width, fullscreen
+            scaling, dimensions, aspect_ratio, border_width,
         )
         # determine initial display size
         self.display_size = self._window_sizer.find_display_size(720, 400)

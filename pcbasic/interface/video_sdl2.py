@@ -455,7 +455,7 @@ class VideoSDL2(VideoPlugin):
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
         self._window_sizer = window.WindowSizer(
             display_mode.w, display_mode.h,
-            scaling, dimensions, aspect_ratio, border_width, fullscreen
+            scaling, dimensions, aspect_ratio, border_width,
         )
         # create the window initially as 640*400 black
         # "NOTE: You should not expect to be able to create a window, render,
@@ -556,6 +556,20 @@ class VideoSDL2(VideoPlugin):
         self._set_icon()
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         self._window_sizer.window_size = width, height
+        self.busy = True
+
+    def _resize_display(self, width, height):
+        """Change display size."""
+        sdl2.SDL_SetWindowSize(self._display, width, height)
+        self._adjust_to_resized_display()
+
+    def _adjust_to_resized_display(self):
+        """Respond to change of display size."""
+        # get window size
+        w, h = ctypes.c_int(), ctypes.c_int()
+        sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
+        self._window_sizer.window_size = w.value, h.value
+        self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         self.busy = True
 
 
@@ -872,38 +886,6 @@ class VideoSDL2(VideoPlugin):
             )
         self._last_row = self.cursor_row
         self._last_col = self.cursor_col
-
-    # FIXME: remove dead code
-    def __old_resize_display(self, width, height):
-        """Change display size."""
-        maximised = sdl2.SDL_GetWindowFlags(self._display) & sdl2.SDL_WINDOW_MAXIMIZED
-        # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
-        # detect if window is very large compared to screen; force maximise if so.
-        to_maximised = self._window_sizer.is_maximal(width, height)
-        if not maximised:
-            if to_maximised:
-                # force maximise for large windows
-                sdl2.SDL_MaximizeWindow(self._display)
-            else:
-                sdl2.SDL_SetWindowSize(self._display, width, height)
-        else:
-            # resizing throws us out of maximised mode
-            if not to_maximised:
-                sdl2.SDL_RestoreWindow(self._display)
-
-    def _resize_display(self, width, height):
-        """Change display size."""
-        sdl2.SDL_SetWindowSize(self._display, width, height)
-        self._adjust_to_resized_display()
-
-    def _adjust_to_resized_display(self):
-        """Respond to change of display size."""
-        # get window size
-        w, h = ctypes.c_int(), ctypes.c_int()
-        sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
-        self._window_sizer.window_size = w.value, h.value
-        self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
-        self.busy = True
 
 
     ###########################################################################
