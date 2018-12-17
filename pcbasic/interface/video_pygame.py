@@ -54,6 +54,9 @@ class VideoPygame(VideoPlugin):
             **kwargs
         ):
         """Initialise pygame interface."""
+
+        #TODO: deprecation warning?
+
         VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
         self._smooth = scaling == 'smooth'

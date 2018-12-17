@@ -733,7 +733,9 @@ class VideoSDL2(VideoPlugin):
             # F11+f to toggle fullscreen mode
             if c.upper() == u'F':
                 self._fullscreen = not self._fullscreen
-                self._do_create_window(*self._window_sizer.find_display_size(*self.size))
+                width, height = self._window_sizer.find_display_size(*self.size)
+                self._do_create_window(width, height)
+                self._resize_display(width, height)
             self._clipboard_interface.handle_key(None, c)
         # the text input event follows the key down event immediately
         elif self._last_down is None:
@@ -871,6 +873,7 @@ class VideoSDL2(VideoPlugin):
         self._last_row = self.cursor_row
         self._last_col = self.cursor_col
 
+    # FIXME: remove dead code
     def __old_resize_display(self, width, height):
         """Change display size."""
         maximised = sdl2.SDL_GetWindowFlags(self._display) & sdl2.SDL_WINDOW_MAXIMIZED

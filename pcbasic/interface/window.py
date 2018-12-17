@@ -50,6 +50,7 @@ class WindowSizer(object):
         # border width percentage
         self._border_width = border_width
         # start in fullscreen mode
+        #FIXME: only used to see if we should ignore dimensions, let config deal with that?
         self._fullscreen = fullscreen
         # the following attributes must be set separately
         # physical size of screen
