@@ -269,7 +269,7 @@ class Integer(Number):
     def from_oct(self, oct_repr):
         """Convert str in octal representation to integer."""
         # oct representations may be interrupted by blanks
-        val = int(oct_repr.strip(BLANKS), 8) if oct_repr else 0
+        val = int(oct_repr.strip(BLANKS), 8) if oct_repr.strip(BLANKS) else 0
         return self.from_int(val, unsigned=True)
 
     def from_hex(self, hex_repr):
