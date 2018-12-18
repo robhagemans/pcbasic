@@ -372,10 +372,10 @@ if CX_FREEZE and sys.platform == 'win32':
 
     SETUP_OPTIONS['executables'] = [
         Executable(
-            'run.py', base='Console', targetName='pcbasic.exe', icon='icons/pcbasic.ico',
+            'pc-basic', base='Console', targetName='pcbasic.exe', icon='icons/pcbasic.ico',
             copyright=COPYRIGHT),
         Executable(
-            'run.py', base='Win32GUI', targetName='pcbasicw.exe', icon='icons/pcbasic.ico',
+            'pc-basic', base='Win32GUI', targetName='pcbasicw.exe', icon='icons/pcbasic.ico',
             #shortcutName='PC-BASIC %s' % VERSION, shortcutDir='MyProgramMenu',
             copyright=COPYRIGHT),
     ]
@@ -511,7 +511,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
     }
     SETUP_OPTIONS['executables'] = [
         Executable(
-            'run.py', base='Console', targetName='pcbasic', icon='icons/pcbasic.icns',
+            'pc-basic', base='Console', targetName='pcbasic', icon='icons/pcbasic.icns',
             copyright=COPYRIGHT),
     ]
 
