@@ -23,7 +23,7 @@ from .metadata import VERSION
 from .compat import PY2, copyreg, stdout, stdin
 
 # session file header
-HEADER_FORMAT = '<lIIIII'
+HEADER_FORMAT = '<LIIIII'
 HEADER_KEYS = [
     'checksum', 'format_version', 'python_major', 'python_minor', 'pcbasic_major', 'pcbasic_minor'
 ]
@@ -103,7 +103,9 @@ def load_session(state_file):
     with open(state_file, 'rb') as in_file:
         header = in_file.read(struct.calcsize(HEADER_FORMAT))
         blob = in_file.read()
-    checksum = zlib.crc32(blob)
+    # mask checksum to deal with different signs on Py2/Py3
+    # see https://docs.python.org/3.5/library/zlib.html#zlib.crc32
+    checksum = zlib.crc32(blob) & 0xffffffff
     try:
         header_dict = dict(zip(HEADER_KEYS, struct.unpack(HEADER_FORMAT, header)))
     except struct.error:
@@ -127,7 +129,8 @@ def load_session(state_file):
 def save_session(obj, state_file):
     """Write state to a compressed pickle."""
     blob = zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL))
-    header_dict = dict(checksum=zlib.crc32(blob), **HEADER)
+    checksum = zlib.crc32(blob) & 0xffffffff
+    header_dict = dict(checksum=checksum, **HEADER)
     header = struct.pack(HEADER_FORMAT, *(header_dict[_key] for _key in HEADER_KEYS))
     with open(state_file, 'wb') as out_file:
         out_file.write(header)
