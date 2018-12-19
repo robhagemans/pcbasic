@@ -98,17 +98,18 @@ class WindowSizer(object):
         ypos = min(self.size[1]-1, max(0, int(y//yscale - border_y)))
         return xpos, ypos
 
-    def find_display_size(self, canvas_x, canvas_y):
+    def find_display_size(self, canvas_x, canvas_y, slack=True):
         """Determine the optimal size for the window."""
         # comply with requested size
         if self._force_display_size:
             return self._force_display_size
-        elif not self._force_native_pixel:
-            return self._find_nonnative_window_size(canvas_x, canvas_y)
+        slack_ratio = _SLACK_RATIO if slack else 1.
+        if not self._force_native_pixel:
+            return self._find_nonnative_window_size(canvas_x, canvas_y, slack_ratio)
         else:
-            return self._find_native_window_size(canvas_x, canvas_y)
+            return self._find_native_window_size(canvas_x, canvas_y, slack_ratio)
 
-    def _find_nonnative_window_size(self, canvas_x, canvas_y):
+    def _find_nonnative_window_size(self, canvas_x, canvas_y, slack_ratio):
         """Determine the optimal size for a non-natively scaled window."""
         # border is given as a percentage of canvas size
         border_ratio = 1. + self._border_width / 100.
@@ -117,13 +118,13 @@ class WindowSizer(object):
         lcd = 1 - mcd
         # scale MCD to fit screen height, leaving slack
         canvas = [0, 0]
-        canvas[mcd] = _SLACK_RATIO * self._screen_size[mcd] / border_ratio
+        canvas[mcd] = slack_ratio * self._screen_size[mcd] / border_ratio
         # scale LCD to match aspect ratio
         canvas[lcd] = (canvas[mcd] * self._aspect[lcd]) / float(self._aspect[mcd])
         # add back border and ensure pixel sizes are integers
         return int(canvas[0] * border_ratio), int(canvas[1] * border_ratio)
 
-    def _find_native_window_size(self, canvas_x, canvas_y):
+    def _find_native_window_size(self, canvas_x, canvas_y, slack_ratio):
         """Determine the optimal size for a natively scaled window."""
         border_ratio = 1. + self._border_width / 100.
         window = int(canvas_x * border_ratio), int(canvas_y * border_ratio)
@@ -131,7 +132,7 @@ class WindowSizer(object):
         mcd = _most_constraining(self._screen_size, self._aspect)
         lcd = 1 - mcd
         mult = [1, 1]
-        mult[mcd] = max(1, int(_SLACK_RATIO * self._screen_size[mcd] / float(window[mcd])))
+        mult[mcd] = max(1, int(slack_ratio * self._screen_size[mcd] / float(window[mcd])))
         target_aspect_ratio = self._aspect[lcd] / float(self._aspect[mcd])
         #target_size_x = ymult * pixel_y * target_aspect_ratio
         target_lcd = mult[mcd] * window[mcd] * target_aspect_ratio / window[lcd]
