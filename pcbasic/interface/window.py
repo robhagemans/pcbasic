@@ -126,28 +126,20 @@ class WindowSizer(object):
     def _find_native_window_size(self, canvas_x, canvas_y):
         """Determine the optimal size for a natively scaled window."""
         border_ratio = 1. + self._border_width / 100.
-        pixel_x = int(canvas_x * border_ratio)
-        pixel_y = int(canvas_y * border_ratio)
-        # leave part of the screen in either direction unused
-        # to account for task bars, window decorations, etc.
-        target_aspect_ratio = self._aspect[0] / float(self._aspect[1])
-        constraining_dim = _most_constraining(self._screen_size, self._aspect)
-        if constraining_dim == 1:
-            ymult = max(1, int(_SLACK_RATIO * self._screen_size[1] / float(pixel_y)))
-            target_size_x = ymult * pixel_y * target_aspect_ratio
-            target_xmult = target_size_x / pixel_x
-            # find the multiplier that gets us closest to the target aspect ratio
-            xmult = max(1, int(target_xmult))
-            if xmult + 1 - target_xmult < target_xmult - xmult:
-                xmult += 1
-        else:
-            xmult = max(1, int(_SLACK_RATIO * self._screen_size[0] / float(pixel_x)))
-            target_size_y = xmult * pixel_x / target_aspect_ratio
-            target_ymult = target_size_y / pixel_y
-            ymult = max(1, int(target_ymult))
-            if ymult + 1 - target_ymult < target_ymult - ymult:
-                ymult += 1
-        return xmult*pixel_x, ymult*pixel_y
+        window = int(canvas_x * border_ratio), int(canvas_y * border_ratio)
+        # shrink the window in the most constraining dimension
+        mcd = _most_constraining(self._screen_size, self._aspect)
+        lcd = 1 - mcd
+        mult = [1, 1]
+        mult[mcd] = max(1, int(_SLACK_RATIO * self._screen_size[mcd] / float(window[mcd])))
+        target_aspect_ratio = self._aspect[lcd] / float(self._aspect[mcd])
+        #target_size_x = ymult * pixel_y * target_aspect_ratio
+        target_lcd = mult[mcd] * window[mcd] * target_aspect_ratio / window[lcd]
+        # find the multiplier that gets us closest to the target aspect ratio
+        mult[lcd] = max(1, int(target_lcd))
+        if mult[lcd] + 1 - target_lcd < target_lcd - mult[lcd]:
+            mult[lcd] += 1
+        return mult[0]*window[0], mult[1]*window[1]
 
     def scale(self):
         """Get scale factors from logical to window size."""
