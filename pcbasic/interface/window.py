@@ -73,47 +73,55 @@ class WindowSizer(object):
 
     def find_display_size(self, canvas_x, canvas_y):
         """Determine the optimal size for the window."""
-        # comply with requested size unless we're fullscreening
+        # comply with requested size
         if self._force_display_size:
             return self._force_display_size
-        if not self._force_native_pixel:
-            # this assumes actual display aspect ratio is wider than 4:3
-            # scale y to fit screen
-            canvas_y = (1-DISPLAY_SLACK/100.) * (
-                self._screen_size[1] // int(1+self._border_width/100.)
-            )
-            # scale x to match aspect ratio
-            canvas_x = (canvas_y * self._aspect[0]) / float(self._aspect[1])
-            # add back border
-            pixel_x = int(canvas_x * (1 + self._border_width/100.))
-            pixel_y = int(canvas_y * (1 + self._border_width/100.))
-            return pixel_x, pixel_y
+        elif not self._force_native_pixel:
+            return self._find_nonnative_display_size(canvas_x, canvas_y)
         else:
-            pixel_x = int(canvas_x * (1 + self._border_width/100.))
-            pixel_y = int(canvas_y * (1 + self._border_width/100.))
-            # leave part of the screen either direction unused
-            # to account for task bars, window decorations, etc.
-            xmult = max(1, int((100.-DISPLAY_SLACK) * self._screen_size[0] / (100.*pixel_x)))
-            ymult = max(1, int((100.-DISPLAY_SLACK) * self._screen_size[1] / (100.*pixel_y)))
-            # find the multipliers mx <= xmult, my <= ymult
-            # such that mx * pixel_x / my * pixel_y
-            # is multiplicatively closest to aspect[0] / aspect[1]
-            target = self._aspect[0] / (1.0 * self._aspect[1])
-            current = xmult * canvas_x / (1.0 * ymult * canvas_y)
-            # find the absolute multiplicative distance (always > 1)
-            best = max(current, target) / min(current, target)
-            apx = xmult, ymult
-            for mx in range(1, xmult+1):
-                my = min(
-                    ymult, int(round(mx*canvas_x*self._aspect[1] / (1.0*canvas_y*self._aspect[0])))
-                )
-                current = mx*pixel_x / (1.0*my*pixel_y)
-                dist = max(current, target) / min(current, target)
-                # prefer larger multipliers if distance is equal
-                if dist <= best:
-                    best = dist
-                    apx = mx, my
-            return apx[0] * pixel_x, apx[1] * pixel_y
+            return self._find_native_display_size(canvas_x, canvas_y)
+
+    def _find_nonnative_display_size(self, canvas_x, canvas_y):
+        """Determine the optimal size for a non-natively scaled window."""
+        # this assumes actual display aspect ratio is wider than 4:3
+        # scale y to fit screen
+        canvas_y = (1-DISPLAY_SLACK/100.) * (
+            self._screen_size[1] // int(1+self._border_width/100.)
+        )
+        # scale x to match aspect ratio
+        canvas_x = (canvas_y * self._aspect[0]) / float(self._aspect[1])
+        # add back border
+        pixel_x = int(canvas_x * (1 + self._border_width/100.))
+        pixel_y = int(canvas_y * (1 + self._border_width/100.))
+        return pixel_x, pixel_y
+
+    def _find_native_display_size(self, canvas_x, canvas_y):
+        """Determine the optimal size for a natively scaled window."""
+        pixel_x = int(canvas_x * (1 + self._border_width/100.))
+        pixel_y = int(canvas_y * (1 + self._border_width/100.))
+        # leave part of the screen in either direction unused
+        # to account for task bars, window decorations, etc.
+        xmult = max(1, int((100.-DISPLAY_SLACK) * self._screen_size[0] / (100.*pixel_x)))
+        ymult = max(1, int((100.-DISPLAY_SLACK) * self._screen_size[1] / (100.*pixel_y)))
+        # find the multipliers mx <= xmult, my <= ymult
+        # such that mx * pixel_x / my * pixel_y
+        # is multiplicatively closest to aspect[0] / aspect[1]
+        target = self._aspect[0] / (1.0 * self._aspect[1])
+        current = xmult * canvas_x / (1.0 * ymult * canvas_y)
+        # find the absolute multiplicative distance (always > 1)
+        best = max(current, target) / min(current, target)
+        apx = xmult, ymult
+        for mx in range(1, xmult+1):
+            my = min(
+                ymult, int(round(mx*canvas_x*self._aspect[1] / (1.0*canvas_y*self._aspect[0])))
+            )
+            current = mx*pixel_x / (1.0*my*pixel_y)
+            dist = max(current, target) / min(current, target)
+            # prefer larger multipliers if distance is equal
+            if dist <= best:
+                best = dist
+                apx = mx, my
+        return apx[0] * pixel_x, apx[1] * pixel_y
 
     def scale(self):
         """Get scale factors from logical to window size."""
