@@ -915,8 +915,13 @@ class VideoSDL2(VideoPlugin):
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
         self._window_sizer.size = self.size
         width, height = self._window_sizer.find_display_size(*self.size, slack=not self._fullscreen)
-        sdl2.SDL_SetWindowSize(self._display, width, height)
-        self._adjust_to_resized_display()
+        if self._fullscreen:
+            self._window_sizer.window_size = width, height
+            # clear any areas now outside the window
+            sdl2.SDL_FillRect(self._display_surface, None, 0)
+        else:
+            sdl2.SDL_SetWindowSize(self._display, width, height)
+            self._adjust_to_resized_display()
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # screen pages
