@@ -29,9 +29,34 @@ def apply_composite_artifacts(src_array, pixels=4):
     s = [None] * pixels
     for p in range(pixels):
         s[p] = src_array[p:width:pixels] & (4//pixels)
-    for p in range(1,pixels):
+    for p in range(1, pixels):
         s[0] = s[0]*2 + s[p]
     return numpy.repeat(s[0], pixels, axis=0)
+
+
+def _most_constraining(constraining, target_aspect):
+    """Find most constraining dimension to scale."""
+    # we're assuming native pixels are square
+    # so physical screen's aspect ratio is simply ratio of pixel numbers
+    if constraining[0] / float(constraining[1]) >= target_aspect[0] / float(target_aspect[1]):
+        # constraining screen has wider aspect than target screen
+        # so Y is the constraining dimension
+        # +------------+
+        # |     +----+ |
+        # |     |    | |
+        # |     +----+ |
+        # +------------+
+        return 1
+    else:
+        # constraining screen has taller aspect than target screen
+        # so X is the constraining dimension
+        # +-----------+
+        # | +-------+ |
+        # | |       | |
+        # | +-------+ |
+        # |           |
+        # +-----------+
+        return 0
 
 
 class WindowSizer(object):
@@ -43,19 +68,20 @@ class WindowSizer(object):
         ):
         """Initialise size parameters."""
         # use native pixel sizes
+        # i.e. logical pixel boundaries coincide with physical pixel boundaries
         self._force_native_pixel = scaling == 'native'
-        # display dimensions
+        # override physical pixel size of window
         self._force_display_size = dimensions
-        # aspect ratio
+        # canvas aspect ratio
         self._aspect = aspect_ratio
-        # border width percentage
+        # border width as a percentage of canvas width
         self._border_width = border_width
         # the following attributes must be set separately
-        # physical size of screen
+        # physical pixel size of screen
         self._screen_size = screen_width, screen_height
-        # logical size of canvas
+        # logical pixel size of canvas
         self.size = ()
-        # physical size of window (canvas+border)
+        # physical pixel size of window (canvas+border)
         self.window_size = ()
 
     def normalise_pos(self, x, y):
@@ -77,25 +103,35 @@ class WindowSizer(object):
         if self._force_display_size:
             return self._force_display_size
         elif not self._force_native_pixel:
-            return self._find_nonnative_display_size(canvas_x, canvas_y)
+            return self._find_nonnative_window_size(canvas_x, canvas_y)
         else:
-            return self._find_native_display_size(canvas_x, canvas_y)
+            return self._find_native_window_size(canvas_x, canvas_y)
 
-    def _find_nonnative_display_size(self, canvas_x, canvas_y):
+    def _find_nonnative_window_size(self, canvas_x, canvas_y):
         """Determine the optimal size for a non-natively scaled window."""
-        # this assumes actual display aspect ratio is wider than 4:3
-        # scale y to fit screen
-        canvas_y = (1-DISPLAY_SLACK/100.) * (
-            self._screen_size[1] // int(1+self._border_width/100.)
-        )
-        # scale x to match aspect ratio
-        canvas_x = (canvas_y * self._aspect[0]) / float(self._aspect[1])
-        # add back border
-        pixel_x = int(canvas_x * (1 + self._border_width/100.))
-        pixel_y = int(canvas_y * (1 + self._border_width/100.))
-        return pixel_x, pixel_y
+        # leave part of the screen in either direction unused
+        # to account for task bars, window decorations, etc.
+        slack_ratio = 1. - DISPLAY_SLACK / 100.
+        # border is given as a percentage of canvas size
+        border_ratio = 1. + self._border_width / 100.
+        # shrink the window in the most constraining dimension
+        if _most_constraining(self._screen_size, self._aspect) == 1:
+            # actual display aspect ratio (e.g. 16:8) is wider than target aspect ratio (e.g. 4:3)
+            # scale y to fit screen height, leaving slack
+            canvas_y = slack_ratio * self._screen_size[1] / border_ratio
+            # scale x to match aspect ratio
+            canvas_x = (canvas_y * self._aspect[0]) / float(self._aspect[1])
+        else:
+            # scale x to fit screen width, leaving slack
+            canvas_x = slack_ratio * self._screen_size[0] / border_ratio
+            # scale x to match aspect ratio
+            canvas_y = (canvas_x * self._aspect[1]) / float(self._aspect[0])
+        # add back border and ensure pixel sizes are integers
+        window_x = int(canvas_x * border_ratio)
+        window_y = int(canvas_y * border_ratio)
+        return window_x, window_y
 
-    def _find_native_display_size(self, canvas_x, canvas_y):
+    def _find_native_window_size(self, canvas_x, canvas_y):
         """Determine the optimal size for a natively scaled window."""
         pixel_x = int(canvas_x * (1 + self._border_width/100.))
         pixel_y = int(canvas_y * (1 + self._border_width/100.))
