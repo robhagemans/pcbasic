@@ -133,31 +133,30 @@ class WindowSizer(object):
 
     def _find_native_window_size(self, canvas_x, canvas_y):
         """Determine the optimal size for a natively scaled window."""
-        pixel_x = int(canvas_x * (1 + self._border_width/100.))
-        pixel_y = int(canvas_y * (1 + self._border_width/100.))
+        slack_ratio = 1. - DISPLAY_SLACK / 100.
+        border_ratio = 1. + self._border_width / 100.
+        pixel_x = int(canvas_x * border_ratio)
+        pixel_y = int(canvas_y * border_ratio)
         # leave part of the screen in either direction unused
         # to account for task bars, window decorations, etc.
-        xmult = max(1, int((100.-DISPLAY_SLACK) * self._screen_size[0] / (100.*pixel_x)))
-        ymult = max(1, int((100.-DISPLAY_SLACK) * self._screen_size[1] / (100.*pixel_y)))
-        # find the multipliers mx <= xmult, my <= ymult
-        # such that mx * pixel_x / my * pixel_y
-        # is multiplicatively closest to aspect[0] / aspect[1]
-        target = self._aspect[0] / (1.0 * self._aspect[1])
-        current = xmult * canvas_x / (1.0 * ymult * canvas_y)
-        # find the absolute multiplicative distance (always > 1)
-        best = max(current, target) / min(current, target)
-        apx = xmult, ymult
-        for mx in range(1, xmult+1):
-            my = min(
-                ymult, int(round(mx*canvas_x*self._aspect[1] / (1.0*canvas_y*self._aspect[0])))
-            )
-            current = mx*pixel_x / (1.0*my*pixel_y)
-            dist = max(current, target) / min(current, target)
-            # prefer larger multipliers if distance is equal
-            if dist <= best:
-                best = dist
-                apx = mx, my
-        return apx[0] * pixel_x, apx[1] * pixel_y
+        target_aspect_ratio = self._aspect[0] / float(self._aspect[1])
+        constraining_dim = _most_constraining(self._screen_size, self._aspect)
+        if constraining_dim == 1:
+            ymult = max(1, int(slack_ratio * self._screen_size[1] / float(pixel_y)))
+            target_size_x = ymult * pixel_y * target_aspect_ratio
+            target_xmult = target_size_x / pixel_x
+            # find the multiplier that gets us closest to the target aspect ratio
+            xmult = max(1, int(target_xmult))
+            if xmult + 1 - target_xmult < target_xmult - xmult:
+                xmult += 1
+        else:
+            xmult = max(1, int(slack_ratio * self._screen_size[0] / float(pixel_x)))
+            target_size_y = xmult * pixel_x / target_aspect_ratio
+            target_ymult = target_size_y / pixel_y
+            ymult = max(1, int(target_ymult))
+            if ymult + 1 - target_ymult < target_ymult - ymult:
+                ymult += 1
+        return xmult*pixel_x, ymult*pixel_y
 
     def scale(self):
         """Get scale factors from logical to window size."""
