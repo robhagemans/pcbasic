@@ -21,6 +21,7 @@ set_dpi_aware()
 
 # percentage of the screen to leave unused for window decorations etc.
 DISPLAY_SLACK = 15
+_SLACK_RATIO = 1. - DISPLAY_SLACK / 100.
 
 
 def apply_composite_artifacts(src_array, pixels=4):
@@ -109,31 +110,21 @@ class WindowSizer(object):
 
     def _find_nonnative_window_size(self, canvas_x, canvas_y):
         """Determine the optimal size for a non-natively scaled window."""
-        # leave part of the screen in either direction unused
-        # to account for task bars, window decorations, etc.
-        slack_ratio = 1. - DISPLAY_SLACK / 100.
         # border is given as a percentage of canvas size
         border_ratio = 1. + self._border_width / 100.
         # shrink the window in the most constraining dimension
-        if _most_constraining(self._screen_size, self._aspect) == 1:
-            # actual display aspect ratio (e.g. 16:8) is wider than target aspect ratio (e.g. 4:3)
-            # scale y to fit screen height, leaving slack
-            canvas_y = slack_ratio * self._screen_size[1] / border_ratio
-            # scale x to match aspect ratio
-            canvas_x = (canvas_y * self._aspect[0]) / float(self._aspect[1])
-        else:
-            # scale x to fit screen width, leaving slack
-            canvas_x = slack_ratio * self._screen_size[0] / border_ratio
-            # scale x to match aspect ratio
-            canvas_y = (canvas_x * self._aspect[1]) / float(self._aspect[0])
+        mcd = _most_constraining(self._screen_size, self._aspect)
+        lcd = 1 - mcd
+        # scale MCD to fit screen height, leaving slack
+        canvas = [0, 0]
+        canvas[mcd] = _SLACK_RATIO * self._screen_size[mcd] / border_ratio
+        # scale LCD to match aspect ratio
+        canvas[lcd] = (canvas[mcd] * self._aspect[lcd]) / float(self._aspect[mcd])
         # add back border and ensure pixel sizes are integers
-        window_x = int(canvas_x * border_ratio)
-        window_y = int(canvas_y * border_ratio)
-        return window_x, window_y
+        return int(canvas[0] * border_ratio), int(canvas[1] * border_ratio)
 
     def _find_native_window_size(self, canvas_x, canvas_y):
         """Determine the optimal size for a natively scaled window."""
-        slack_ratio = 1. - DISPLAY_SLACK / 100.
         border_ratio = 1. + self._border_width / 100.
         pixel_x = int(canvas_x * border_ratio)
         pixel_y = int(canvas_y * border_ratio)
@@ -142,7 +133,7 @@ class WindowSizer(object):
         target_aspect_ratio = self._aspect[0] / float(self._aspect[1])
         constraining_dim = _most_constraining(self._screen_size, self._aspect)
         if constraining_dim == 1:
-            ymult = max(1, int(slack_ratio * self._screen_size[1] / float(pixel_y)))
+            ymult = max(1, int(_SLACK_RATIO * self._screen_size[1] / float(pixel_y)))
             target_size_x = ymult * pixel_y * target_aspect_ratio
             target_xmult = target_size_x / pixel_x
             # find the multiplier that gets us closest to the target aspect ratio
@@ -150,7 +141,7 @@ class WindowSizer(object):
             if xmult + 1 - target_xmult < target_xmult - xmult:
                 xmult += 1
         else:
-            xmult = max(1, int(slack_ratio * self._screen_size[0] / float(pixel_x)))
+            xmult = max(1, int(_SLACK_RATIO * self._screen_size[0] / float(pixel_x)))
             target_size_y = xmult * pixel_x / target_aspect_ratio
             target_ymult = target_size_y / pixel_y
             ymult = max(1, int(target_ymult))
