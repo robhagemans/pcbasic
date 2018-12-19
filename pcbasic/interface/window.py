@@ -160,3 +160,8 @@ class WindowSizer(object):
     def is_maximal(self, width, height):
         """Compare dimensions to threshold for maximising."""
         return (width >= 0.95*self._screen_size[0] and height >= 0.9*self._screen_size[1])
+
+    @property
+    def screen_size(self):
+        """Width and height of physical screen in pixels."""
+        return self._screen_size
