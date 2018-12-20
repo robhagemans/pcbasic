@@ -1,6 +1,6 @@
 """
 This is a condensed version of Marcus von Appen's pysdl2,
-containing only the functions I need.
+containing only the functions I need. It is based on version 0.9.5.
 The original package is at https://github.com/marcusva/py-sdl2
 
 pysdl2 licence
@@ -32,7 +32,6 @@ freely, subject to the following restrictions:
 2. Altered source versions must be plainly marked as such, and must not be
    misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
-
 """
 
 import sys
@@ -578,7 +577,6 @@ SDL_UpdateWindowSurfaceRects = _bind("SDL_UpdateWindowSurfaceRects", [POINTER(SD
 SDL_DestroyWindow = _bind("SDL_DestroyWindow", [POINTER(SDL_Window)])
 SDL_SetWindowResizable = _bind("SDL_SetWindowResizable", [POINTER(SDL_Window), SDL_bool], optfunc=nullfunc)
 
-
 # keyboard.py
 
 SDL_Keycode = c_int32
@@ -1051,5 +1049,8 @@ SDL_QuitSubSystem = _bind("SDL_QuitSubSystem", [Uint32])
 SDL_WasInit = _bind("SDL_WasInit", [Uint32], Uint32)
 SDL_Quit = _bind("SDL_Quit")
 
-__version__ = "0.9.5"
-version_info = (0, 9, 5, "")
+
+# added RH
+SDL_SetWindowGrab = _bind("SDL_SetWindowGrab", [POINTER(SDL_Window), SDL_bool])
+SDL_SetHint = _bind("SDL_SetHint", [c_char_p, c_char_p])
+SDL_HINT_GRAB_KEYBOARD = "SDL_GRAB_KEYBOARD"

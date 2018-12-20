@@ -418,7 +418,7 @@ class VideoSDL2(VideoPlugin):
         # start in fullscreen mode if True
         self._fullscreen = fullscreen
         # don't resize native windows
-        self._resizable = scaling!= 'native'
+        self._resizable = scaling != 'native'
         # display & border
         # border attribute
         self._border_attr = 0
@@ -559,6 +559,11 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED,
             width, height, flags
         )
+        # on fullscreen, grab keyboard exclusively
+        # this allows BASIC to capture Alt-F4, Alt-TAB etc.
+        if self._fullscreen:
+            sdl2.SDL_SetHint(sdl2.SDL_HINT_GRAB_KEYBOARD, '1')
+            sdl2.SDL_SetWindowGrab(self._display, sdl2.SDL_TRUE)
         self._set_icon()
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         self._window_sizer.window_size = width, height
