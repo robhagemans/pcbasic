@@ -417,6 +417,8 @@ class VideoSDL2(VideoPlugin):
         self._caption = caption
         # start in fullscreen mode if True
         self._fullscreen = fullscreen
+        # don't resize native windows
+        self._resizable = scaling!= 'native'
         # display & border
         # border attribute
         self._border_attr = 0
@@ -546,7 +548,9 @@ class VideoSDL2(VideoPlugin):
 
     def _do_create_window(self, width, height):
         """Create a new SDL window """
-        flags = sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN
+        flags = sdl2.SDL_WINDOW_SHOWN
+        if self._resizable:
+            flags |= sdl2.SDL_WINDOW_RESIZABLE
         if self._fullscreen:
             flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
         sdl2.SDL_DestroyWindow(self._display)
