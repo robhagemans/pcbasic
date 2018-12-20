@@ -569,16 +569,6 @@ class VideoSDL2(VideoPlugin):
         self._window_sizer.window_size = width, height
         self.busy = True
 
-    def _adjust_to_resized_display(self):
-        """Respond to change of display size."""
-        if not self._fullscreen:
-            # get window size
-            w, h = ctypes.c_int(), ctypes.c_int()
-            sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
-            self._window_sizer.window_size = w.value, h.value
-            self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
-        self.busy = True
-
 
     ###########################################################################
     # input cycle
@@ -647,8 +637,7 @@ class VideoSDL2(VideoPlugin):
                 ))
             elif event.type == sdl2.SDL_WINDOWEVENT:
                 if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
-                    # width, hwight = event.window.data1, event.window.data2
-                    self._adjust_to_resized_display()
+                    self._handle_resize_event(event)
                 # unset Alt modifiers on entering/leaving the window
                 # workaround for what seems to be an SDL2 bug
                 # where the ALT modifier sticks on the first Alt-Tab out
@@ -666,6 +655,18 @@ class VideoSDL2(VideoPlugin):
                 else:
                     self._input_queue.put(signals.Event(signals.KEYB_QUIT))
         self._flush_keypress()
+
+    def _handle_resize_event(self, event):
+        """Respond to change of display size."""
+        # width, height = event.window.data1, event.window.data2
+        # get actual window size
+        w, h = ctypes.c_int(), ctypes.c_int()
+        sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
+        # update the size calculator
+        self._window_sizer.window_size = w.value, h.value
+        # we need to update the surface pointer
+        self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
+        self.busy = True
 
     def _handle_key_down(self, e):
         """Handle key-down event."""
@@ -758,7 +759,9 @@ class VideoSDL2(VideoPlugin):
                     *self.size, slack=not self._fullscreen
                 )
                 self._do_create_window(width, height)
-                self._adjust_to_resized_display()
+                if not self._fullscreen:
+                    self._window_sizer.window_size = width, height
+                self.busy = True
             self._clipboard_interface.handle_key(None, c)
         # the text input event follows the key down event immediately
         elif self._last_down is None:
@@ -928,13 +931,14 @@ class VideoSDL2(VideoPlugin):
             _width, _height = self._window_sizer.find_display_size(
                 *self.size, slack=not self._fullscreen
             )
+            self._window_sizer.window_size = _width, _height
             if self._fullscreen:
-                self._window_sizer.window_size = _width, _height
                 # clear any areas now outside the window
                 sdl2.SDL_FillRect(self._display_surface, None, 0)
             else:
                 sdl2.SDL_SetWindowSize(self._display, _width, _height)
-                self._adjust_to_resized_display()
+                # need to update surface pointer after a change in window size
+                self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # screen pages
