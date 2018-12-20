@@ -457,7 +457,7 @@ class VideoSDL2(VideoPlugin):
             display_mode.w, display_mode.h,
             scaling, dimensions, aspect_ratio, border_width,
         )
-        # create the window initially as 640*400 black
+        # create the window initially as 720*400 black
         # "NOTE: You should not expect to be able to create a window, render,
         #        or receive events on any thread other than the main one"
         # https://wiki.libsdl.org/CategoryThread
@@ -914,14 +914,18 @@ class VideoSDL2(VideoPlugin):
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
         self._window_sizer.size = self.size
-        width, height = self._window_sizer.find_display_size(*self.size, slack=not self._fullscreen)
-        if self._fullscreen:
-            self._window_sizer.window_size = width, height
-            # clear any areas now outside the window
-            sdl2.SDL_FillRect(self._display_surface, None, 0)
-        else:
-            sdl2.SDL_SetWindowSize(self._display, width, height)
-            self._adjust_to_resized_display()
+        # only ever adjust window size if we're in native pixel mode
+        if self._window_sizer._force_native_pixel:
+            _width, _height = self._window_sizer.find_display_size(
+                *self.size, slack=not self._fullscreen
+            )
+            if self._fullscreen:
+                self._window_sizer.window_size = _width, _height
+                # clear any areas now outside the window
+                sdl2.SDL_FillRect(self._display_surface, None, 0)
+            else:
+                sdl2.SDL_SetWindowSize(self._display, _width, _height)
+                self._adjust_to_resized_display()
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # screen pages

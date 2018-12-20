@@ -105,11 +105,11 @@ class WindowSizer(object):
             return self._force_display_size
         slack_ratio = _SLACK_RATIO if slack else 1.
         if not self._force_native_pixel:
-            return self._find_nonnative_window_size(canvas_x, canvas_y, slack_ratio)
+            return self._find_nonnative_window_size(slack_ratio)
         else:
             return self._find_native_window_size(canvas_x, canvas_y, slack_ratio)
 
-    def _find_nonnative_window_size(self, canvas_x, canvas_y, slack_ratio):
+    def _find_nonnative_window_size(self, slack_ratio):
         """Determine the optimal size for a non-natively scaled window."""
         # border is given as a percentage of canvas size
         border_ratio = 1. + self._border_width / 100.
@@ -156,10 +156,6 @@ class WindowSizer(object):
             int(self.size[0] * self._border_width / 200.),
             int(self.size[1] * self._border_width / 200.)
         )
-
-    def is_maximal(self, width, height):
-        """Compare dimensions to threshold for maximising."""
-        return (width >= 0.95*self._screen_size[0] and height >= 0.9*self._screen_size[1])
 
     @property
     def screen_size(self):
