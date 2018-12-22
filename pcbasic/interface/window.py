@@ -126,21 +126,23 @@ class WindowSizer(object):
 
     def _find_native_window_size(self, canvas_x, canvas_y, slack_ratio):
         """Determine the optimal size for a natively scaled window."""
-        border_ratio = 1. + self._border_width / 100.
-        window = int(canvas_x * border_ratio), int(canvas_y * border_ratio)
+        # logical-pixel window size
+        logical = self.window_size_logical
         # shrink the window in the most constraining dimension
         mcd = _most_constraining(self._screen_size, self._aspect)
         lcd = 1 - mcd
+        # find the integer multiplier for the most constraining dimension by rounding down
         mult = [1, 1]
-        mult[mcd] = max(1, int(slack_ratio * self._screen_size[mcd] / float(window[mcd])))
+        mult[mcd] = max(1, int(slack_ratio * self._screen_size[mcd] / float(logical[mcd])))
+        # find the integer multiplier for the other dimension
+        # such that we get closest to the target aspect ratio
         target_aspect_ratio = self._aspect[lcd] / float(self._aspect[mcd])
-        #target_size_x = ymult * pixel_y * target_aspect_ratio
-        target_lcd = mult[mcd] * window[mcd] * target_aspect_ratio / window[lcd]
-        # find the multiplier that gets us closest to the target aspect ratio
+        target_lcd = mult[mcd] * logical[mcd] * target_aspect_ratio / logical[lcd]
         mult[lcd] = max(1, int(target_lcd))
         if mult[lcd] + 1 - target_lcd < target_lcd - mult[lcd]:
             mult[lcd] += 1
-        return mult[0]*window[0], mult[1]*window[1]
+        # physical-pixel window size
+        return mult[0]*logical[0], mult[1]*logical[1]
 
     def scale(self):
         """Get scale factors from logical to window size."""
@@ -156,6 +158,13 @@ class WindowSizer(object):
             int(self.size[0] * self._border_width / 200.),
             int(self.size[1] * self._border_width / 200.)
         )
+
+    @property
+    def window_size_logical(self):
+        """Window (canvas+border) size in logical pixels."""
+        # express border as interger number of logical pixels
+        border = self.border_start()
+        return self.size[0] + 2 * border[0], self.size[1] + 2 * border[1]
 
     @property
     def screen_size(self):

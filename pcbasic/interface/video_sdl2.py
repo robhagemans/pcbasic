@@ -466,6 +466,7 @@ class VideoSDL2(VideoPlugin):
         # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
         self._display = None
         self._work_surface = None
+        self._window_sizer.size = 720, 400
         self._do_create_window(
             *self._window_sizer.find_display_size(720, 400, slack=not self._fullscreen)
         )
@@ -954,8 +955,7 @@ class VideoSDL2(VideoPlugin):
         self.pixels = [_pixels2d(canvas.contents) for canvas in self.canvas]
         # create work surface for border and composite
         self.border_x, self.border_y = self._window_sizer.border_start()
-        work_width = canvas_width + 2 * self.border_x
-        work_height = canvas_height + 2 * self.border_y
+        work_width, work_height = self._window_sizer.window_size_logical
         sdl2.SDL_FreeSurface(self._work_surface)
         self._work_surface = sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
         self._work_pixels = _pixels2d(self._work_surface.contents)[
