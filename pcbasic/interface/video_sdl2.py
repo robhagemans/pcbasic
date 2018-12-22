@@ -931,14 +931,18 @@ class VideoSDL2(VideoPlugin):
             _width, _height = self._window_sizer.find_display_size(
                 *self.size, slack=not self._fullscreen
             )
-            self._window_sizer.window_size = _width, _height
             if self._fullscreen:
                 # clear any areas now outside the window
                 sdl2.SDL_FillRect(self._display_surface, None, 0)
-            else:
+            elif self._window_sizer.window_size != (_width, _height):
+                # resize and recentre
                 sdl2.SDL_SetWindowSize(self._display, _width, _height)
+                sdl2.SDL_SetWindowPosition(
+                    self._display, sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED
+                )
                 # need to update surface pointer after a change in window size
                 self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
+            self._window_sizer.window_size = _width, _height
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # screen pages
