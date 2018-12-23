@@ -127,10 +127,10 @@ class VideoPygame(VideoPlugin):
             scaling, dimensions, aspect_ratio, border_width,
         )
         # determine initial display size
-        self.display_size = self._window_sizer.find_display_size(720, 400)
+        self._window_sizer.set_canvas_size(720, 400)
         self._set_icon(icon)
         try:
-            self._resize_display(*self.display_size)
+            self._resize_display()
         except pygame.error as e:
             self._close_pygame()
             raise InitFailed('Could not initialise display: %s' % e)
@@ -251,7 +251,8 @@ class VideoPygame(VideoPlugin):
                 ))
             elif event.type == pygame.VIDEORESIZE:
                 if not self.fullscreen:
-                    self._resize_display(event.w, event.h)
+                    self._window_sizer.set_window_size(event.w, event.h)
+                    self._resize_display()
             elif event.type == pygame.QUIT:
                 if self._nokill:
                     self.set_caption_message(NOKILL_MESSAGE)
@@ -299,7 +300,8 @@ class VideoPygame(VideoPlugin):
             # F11+f to toggle fullscreen mode
             if e.key == pygame.K_f:
                 self.fullscreen = not self.fullscreen
-                self._resize_display(*self._window_sizer.find_display_size(*self.size))
+                self._window_sizer.set_canvas_size(*self.size)
+                self._resize_display()
             self.clipboard.handle_key(scan, c)
             self.busy = True
         else:
@@ -443,16 +445,15 @@ class VideoPygame(VideoPlugin):
     ###########################################################################
     # miscellaneous helper functions
 
-    def _resize_display(self, width, height):
+    def _resize_display(self):
         """Change the display size."""
         if self.fullscreen:
-            info = pygame.display.Info()
             width, height = self._window_sizer.screen_size
             flags = pygame.NOFRAME
         else:
+            width, height = self._window_sizer.window_size
             flags = pygame.RESIZABLE
         self.display = pygame.display.set_mode((width, height), flags)
-        self._window_sizer.window_size = width, height
         # load display if requested
         self.busy = True
 
@@ -472,8 +473,8 @@ class VideoPygame(VideoPlugin):
             self.bitsperpixel = mode_info.bitsperpixel
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
-        self._window_sizer.size = self.size
-        self._resize_display(*self._window_sizer.find_display_size(*self.size))
+        self._window_sizer.set_canvas_size(*self.size)
+        self._resize_display()
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # whole screen (blink on & off)

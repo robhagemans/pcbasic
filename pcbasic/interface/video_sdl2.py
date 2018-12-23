@@ -466,10 +466,8 @@ class VideoSDL2(VideoPlugin):
         # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
         self._display = None
         self._work_surface = None
-        self._window_sizer.size = 720, 400
-        self._do_create_window(
-            *self._window_sizer.find_display_size(720, 400, slack=not self._fullscreen)
-        )
+        self._window_sizer.set_canvas_size(720, 400, slack=not self._fullscreen)
+        self._do_create_window()
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self._display)
         # workaround for duplicated keypresses after Alt (at least on Ubuntu Unity)
@@ -547,13 +545,14 @@ class VideoSDL2(VideoPlugin):
         sdl2.SDL_FreeSurface(icon)
         sdl2.SDL_FreePalette(icon_palette)
 
-    def _do_create_window(self, width, height):
+    def _do_create_window(self):
         """Create a new SDL window """
         flags = sdl2.SDL_WINDOW_SHOWN
         if self._resizable:
             flags |= sdl2.SDL_WINDOW_RESIZABLE
         if self._fullscreen:
             flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
+        width, height = self._window_sizer.window_size
         sdl2.SDL_DestroyWindow(self._display)
         self._display = sdl2.SDL_CreateWindow(
             self._caption.encode('utf-8', errors='replace'),
@@ -567,7 +566,6 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_SetWindowGrab(self._display, sdl2.SDL_TRUE)
         self._set_icon()
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
-        self._window_sizer.window_size = width, height
         self.busy = True
 
 
@@ -664,7 +662,7 @@ class VideoSDL2(VideoPlugin):
         w, h = ctypes.c_int(), ctypes.c_int()
         sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
         # update the size calculator
-        self._window_sizer.window_size = w.value, h.value
+        self._window_sizer.set_window_size(w.value, h.value)
         # we need to update the surface pointer
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         self.busy = True
@@ -756,12 +754,8 @@ class VideoSDL2(VideoPlugin):
             # F11+f to toggle fullscreen mode
             if c.upper() == u'F':
                 self._fullscreen = not self._fullscreen
-                width, height = self._window_sizer.find_display_size(
-                    *self.size, slack=not self._fullscreen
-                )
-                self._do_create_window(width, height)
-                if not self._fullscreen:
-                    self._window_sizer.window_size = width, height
+                self._window_sizer.set_canvas_size(*self.size, slack=not self._fullscreen)
+                self._do_create_window()
                 self.busy = True
             self._clipboard_interface.handle_key(None, c)
         # the text input event follows the key down event immediately
@@ -926,24 +920,22 @@ class VideoSDL2(VideoPlugin):
             self.bitsperpixel = mode_info.bitsperpixel
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
-        self._window_sizer.size = self.size
+        size_changed = self._window_sizer.set_canvas_size(
+            *self.size, slack=not self._fullscreen, resize_window=False
+        )
         # only ever adjust window size if we're in native pixel mode
-        if self._window_sizer._force_native_pixel:
-            _width, _height = self._window_sizer.find_display_size(
-                *self.size, slack=not self._fullscreen
-            )
+        if size_changed:
             if self._fullscreen:
                 # clear any areas now outside the window
                 sdl2.SDL_FillRect(self._display_surface, None, 0)
-            elif self._window_sizer.window_size != (_width, _height):
+            else:
                 # resize and recentre
-                sdl2.SDL_SetWindowSize(self._display, _width, _height)
+                sdl2.SDL_SetWindowSize(self._display, *self._window_sizer.window_size)
                 sdl2.SDL_SetWindowPosition(
                     self._display, sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED
                 )
                 # need to update surface pointer after a change in window size
                 self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
-            self._window_sizer.window_size = _width, _height
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # screen pages

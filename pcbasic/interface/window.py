@@ -98,16 +98,26 @@ class WindowSizer(object):
         ypos = min(self.size[1]-1, max(0, int(y//yscale - border_y)))
         return xpos, ypos
 
-    def find_display_size(self, canvas_x, canvas_y, slack=True):
-        """Determine the optimal size for the window."""
+    def set_canvas_size(self, canvas_x, canvas_y, slack=True, resize_window=True):
+        """Change the logical canvas size and determine window sizes."""
+        self.size = canvas_x, canvas_y
+        if not resize_window and not self._force_native_pixel:
+            return False
+        old_window_size = self.window_size
         # comply with requested size
         if self._force_display_size:
-            return self._force_display_size
-        slack_ratio = _SLACK_RATIO if slack else 1.
-        if not self._force_native_pixel:
-            return self._find_nonnative_window_size(slack_ratio)
+            self.window_size = self._force_display_size
         else:
-            return self._find_native_window_size(canvas_x, canvas_y, slack_ratio)
+            slack_ratio = _SLACK_RATIO if slack else 1.
+            if not self._force_native_pixel:
+                self.window_size = self._find_nonnative_window_size(slack_ratio)
+            else:
+                self.window_size = self._find_native_window_size(slack_ratio)
+        return self.window_size != old_window_size
+
+    def set_window_size(self, new_size_x, new_size_y):
+        """Change the physical window size."""
+        self.window_size = new_size_x, new_size_y
 
     def _find_nonnative_window_size(self, slack_ratio):
         """Determine the optimal size for a non-natively scaled window."""
@@ -124,7 +134,7 @@ class WindowSizer(object):
         # add back border and ensure pixel sizes are integers
         return int(canvas[0] * border_ratio), int(canvas[1] * border_ratio)
 
-    def _find_native_window_size(self, canvas_x, canvas_y, slack_ratio):
+    def _find_native_window_size(self, slack_ratio):
         """Determine the optimal size for a natively scaled window."""
         # logical-pixel window size
         logical = self.window_size_logical
