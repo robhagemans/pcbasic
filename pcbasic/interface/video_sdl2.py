@@ -590,70 +590,43 @@ class VideoSDL2(VideoPlugin):
             elif event.type == sdl2.SDL_TEXTEDITING:
                 self.set_caption_message(event.text.text.decode('utf-8'))
             elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
-                pos = self._window_sizer.normalise_pos(event.button.x, event.button.y)
-                if self._mouse_clip:
-                    if event.button.button == sdl2.SDL_BUTTON_LEFT:
-                        # LEFT button: copy
-                        self._clipboard_interface.start(
-                            1 + pos[1] // self.font_height,
-                            1 + (pos[0]+self.font_width//2) // self.font_width
-                        )
-                    elif event.button.button == sdl2.SDL_BUTTON_MIDDLE:
-                        # MIDDLE button: paste
-                        text = self._clipboard_handler.paste(mouse=True)
-                        self._clipboard_interface.paste(text)
-                if event.button.button == sdl2.SDL_BUTTON_LEFT:
-                    # right mouse button is a pen press
-                    self._input_queue.put(signals.Event(signals.PEN_DOWN, pos))
+                self._handle_mouse_down(event)
             elif event.type == sdl2.SDL_MOUSEBUTTONUP:
-                self._input_queue.put(signals.Event(signals.PEN_UP))
-                if self._mouse_clip and event.button.button == sdl2.SDL_BUTTON_LEFT:
-                    self._clipboard_interface.copy(mouse=True)
-                    self._clipboard_interface.stop()
+                self._handle_mouse_up(event)
             elif event.type == sdl2.SDL_MOUSEMOTION:
-                pos = self._window_sizer.normalise_pos(event.motion.x, event.motion.y)
-                self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
-                if self._clipboard_interface.active():
-                    self._clipboard_interface.move(
-                        1 + pos[1] // self.font_height,
-                        1 + (pos[0]+self.font_width//2) // self.font_width
-                    )
-                    self.busy = True
+                self._handle_mouse_motion(event)
             elif event.type == sdl2.SDL_JOYBUTTONDOWN:
-                self._input_queue.put(signals.Event(
-                    signals.STICK_DOWN,
-                    (event.jbutton.which, event.jbutton.button)
-                ))
+                self._handle_stick_down(event)
             elif event.type == sdl2.SDL_JOYBUTTONUP:
-                self._input_queue.put(signals.Event(
-                    signals.STICK_UP,
-                    (event.jbutton.which, event.jbutton.button)
-                ))
+                self._handle_stick_up(event)
             elif event.type == sdl2.SDL_JOYAXISMOTION:
-                self._input_queue.put(signals.Event(
-                    signals.STICK_MOVED,
-                    (event.jaxis.which, event.jaxis.axis, int((event.jaxis.value/32768.)*127 + 128))
-                ))
+                self._handle_stick_motion(event)
             elif event.type == sdl2.SDL_WINDOWEVENT:
-                if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
-                    self._handle_resize_event(event)
-                # unset Alt modifiers on entering/leaving the window
-                # workaround for what seems to be an SDL2 bug
-                # where the ALT modifier sticks on the first Alt-Tab out
-                # of the window
-                elif event.window.event in (
-                        sdl2.SDL_WINDOWEVENT_LEAVE,
-                        sdl2.SDL_WINDOWEVENT_ENTER,
-                        sdl2.SDL_WINDOWEVENT_FOCUS_LOST,
-                        sdl2.SDL_WINDOWEVENT_FOCUS_GAINED
-                    ):
-                    sdl2.SDL_SetModState(sdl2.SDL_GetModState() & ~sdl2.KMOD_ALT)
+                self._handle_window_event(event)
             elif event.type == sdl2.SDL_QUIT:
                 if self._nokill:
                     self.set_caption_message(NOKILL_MESSAGE)
                 else:
                     self._input_queue.put(signals.Event(signals.KEYB_QUIT))
         self._flush_keypress()
+
+    # window events
+
+    def _handle_window_event(self, event):
+        """Handle window event."""
+        if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
+            self._handle_resize_event(event)
+        # unset Alt modifiers on entering/leaving the window
+        # workaround for what seems to be an SDL2 bug
+        # where the ALT modifier sticks on the first Alt-Tab out
+        # of the window
+        elif event.window.event in (
+                sdl2.SDL_WINDOWEVENT_LEAVE,
+                sdl2.SDL_WINDOWEVENT_ENTER,
+                sdl2.SDL_WINDOWEVENT_FOCUS_LOST,
+                sdl2.SDL_WINDOWEVENT_FOCUS_GAINED
+            ):
+            sdl2.SDL_SetModState(sdl2.SDL_GetModState() & ~sdl2.KMOD_ALT)
 
     def _handle_resize_event(self, event):
         """Respond to change of display size."""
@@ -666,6 +639,71 @@ class VideoSDL2(VideoPlugin):
         # we need to update the surface pointer
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         self.busy = True
+
+    # mouse events
+
+    def _handle_mouse_down(self, event):
+        """Handle mouse-down event."""
+        pos = self._window_sizer.normalise_pos(event.button.x, event.button.y)
+        if self._mouse_clip:
+            if event.button.button == sdl2.SDL_BUTTON_LEFT:
+                # LEFT button: copy
+                self._clipboard_interface.start(
+                    1 + pos[1] // self.font_height,
+                    1 + (pos[0]+self.font_width//2) // self.font_width
+                )
+            elif event.button.button == sdl2.SDL_BUTTON_MIDDLE:
+                # MIDDLE button: paste
+                text = self._clipboard_handler.paste(mouse=True)
+                self._clipboard_interface.paste(text)
+            self.busy = True
+        if event.button.button == sdl2.SDL_BUTTON_LEFT:
+            # pen press
+            self._input_queue.put(signals.Event(signals.PEN_DOWN, pos))
+
+    def _handle_mouse_up(self, event):
+        """Handle mouse-up event."""
+        self._input_queue.put(signals.Event(signals.PEN_UP))
+        if self._mouse_clip and event.button.button == sdl2.SDL_BUTTON_LEFT:
+            self._clipboard_interface.copy(mouse=True)
+            self._clipboard_interface.stop()
+            self.busy = True
+
+    def _handle_mouse_motion(self, event):
+        """Handle mouse-motion event."""
+        pos = self._window_sizer.normalise_pos(event.motion.x, event.motion.y)
+        self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
+        if self._clipboard_interface.active():
+            self._clipboard_interface.move(
+                1 + pos[1] // self.font_height,
+                1 + (pos[0]+self.font_width//2) // self.font_width
+            )
+            self.busy = True
+
+    # joystick events
+
+    def _handle_stick_down(self, event):
+        """Handle joystick button-down event."""
+        self._input_queue.put(signals.Event(
+            signals.STICK_DOWN,
+            (event.jbutton.which, event.jbutton.button)
+        ))
+
+    def _handle_stick_up(self, event):
+        """Handle joystick button-up event."""
+        self._input_queue.put(signals.Event(
+            signals.STICK_UP,
+            (event.jbutton.which, event.jbutton.button)
+        ))
+
+    def _handle_stick_motion(self, event):
+        """Handle joystick axis-motion event."""
+        self._input_queue.put(signals.Event(
+            signals.STICK_MOVED,
+            (event.jaxis.which, event.jaxis.axis, int((event.jaxis.value/32768.)*127 + 128))
+        ))
+
+    # keyboard events
 
     def _handle_key_down(self, e):
         """Handle key-down event."""
