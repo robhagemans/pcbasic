@@ -552,7 +552,9 @@ class VideoSDL2(VideoPlugin):
             flags |= sdl2.SDL_WINDOW_RESIZABLE
         if self._fullscreen:
             flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
-        width, height = self._window_sizer.window_size
+            width, height = self._window_sizer.screen_size
+        else:
+            width, height = self._window_sizer.window_size
         sdl2.SDL_DestroyWindow(self._display)
         self._display = sdl2.SDL_CreateWindow(
             self._caption.encode('utf-8', errors='replace'),
