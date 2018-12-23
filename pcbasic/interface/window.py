@@ -104,11 +104,12 @@ class WindowSizer(object):
         return xpos, ypos
 
     def set_canvas_size(
-            self, canvas_x, canvas_y,
+            self, canvas_x=None, canvas_y=None,
             resize_window=True, fullscreen=False
         ):
         """Change the logical canvas size and determine window/display sizes."""
-        self._canvas_logical = canvas_x, canvas_y
+        if canvas_x is not None and canvas_y is not None:
+            self._canvas_logical = canvas_x, canvas_y
         if not resize_window and not self._force_native_pixel:
             return False
         old_display_size = self._display_size
@@ -192,6 +193,21 @@ class WindowSizer(object):
             int(max(0., self._display_size[0] - self._window_size[0]) // 2),
             int(max(0., self._display_size[1] - self._window_size[1]) // 2)
         )
+
+    @property
+    def canvas_size_logical(self):
+        """Canvas size in logical pixels."""
+        return self._canvas_logical
+
+    @property
+    def width(self):
+        """Canvas width in logical pixels."""
+        return self._canvas_logical[0]
+
+    @property
+    def height(self):
+        """Canvas size in logical pixels."""
+        return self._canvas_logical[1]
 
     @property
     def window_size_logical(self):

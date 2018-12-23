@@ -428,6 +428,9 @@ class VideoSDL2(VideoPlugin):
         # update cycle
         self._cycle = 0
         self._last_tick = 0
+        # blink cycle
+        self._allow_blink = True
+        self._blink_state = 0
         # cursor
         # current cursor location
         self._last_row, self._last_col = 1, 1
@@ -453,6 +456,7 @@ class VideoSDL2(VideoPlugin):
             # to not throw PyGame off if we try that later
             self._env.close()
             raise InitFailed('Could not initialise SDL2: %s' % sdl2.SDL_GetError())
+        # get physical screen dimensions (needs to be called before set_mode)
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
         self._window_sizer = window.WindowSizer(
@@ -460,13 +464,22 @@ class VideoSDL2(VideoPlugin):
             scaling, dimensions, aspect_ratio, border_width,
         )
         # create the window initially as 720*400 black
+        self._window_sizer.set_canvas_size(720, 400, fullscreen=self._fullscreen)
+        # canvas surfaces
+        self._canvas = []
+        # pixel views of canvases
+        self._pixels = []
+        # main window object
+        self._display = None
+        self._work_surface = None
+        # overlay surface for clipboard feedback
+        self._overlay = None
+        # pointer to the zoomed surface
+        self._zoomed_surface = None
         # "NOTE: You should not expect to be able to create a window, render,
         #        or receive events on any thread other than the main one"
         # https://wiki.libsdl.org/CategoryThread
         # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
-        self._display = None
-        self._work_surface = None
-        self._window_sizer.set_canvas_size(720, 400, fullscreen=self._fullscreen)
         self._do_create_window()
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self._display)
@@ -481,7 +494,6 @@ class VideoSDL2(VideoPlugin):
         # display palettes for blink states 0, 1
         self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         self._saved_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
-        # get physical screen dimensions (needs to be called before set_mode)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0, 0, 0)] * 16, None)
         self.move_cursor(1, 1)
@@ -489,13 +501,10 @@ class VideoSDL2(VideoPlugin):
         # set_mode should be first event on queue
         # check if we can honour scaling=smooth
         if self._smooth:
-            # pointer to the zoomed surface
-            self.zoomed = None
-            pixelformat = self._display_surface.contents.format
-            if pixelformat.contents.BitsPerPixel != 32:
+            bpp = self._display_surface.contents.format.contents.BitsPerPixel
+            if bpp != 32:
                 logging.warning(
-                    'Smooth scaling not available: need 32-bit colour, have %d-bit.',
-                    self._display_surface.format.contents.BitsPerPixel
+                    'Smooth scaling not available: need 32-bit colour, have %d-bit.', bpp
                 )
                 self._smooth = False
             if not sdlgfx:
@@ -519,10 +528,10 @@ class VideoSDL2(VideoPlugin):
             # free windows
             sdl2.SDL_DestroyWindow(self._display)
             # free surfaces
-            for s in self.canvas:
+            for s in self._canvas:
                 sdl2.SDL_FreeSurface(s)
             sdl2.SDL_FreeSurface(self._work_surface)
-            sdl2.SDL_FreeSurface(self.overlay)
+            sdl2.SDL_FreeSurface(self._overlay)
             # free palettes
             for p in self._palette + self._saved_palette:
                 sdl2.SDL_FreePalette(p)
@@ -790,7 +799,7 @@ class VideoSDL2(VideoPlugin):
             # F11+f to toggle fullscreen mode
             if c.upper() == u'F':
                 self._fullscreen = not self._fullscreen
-                self._window_sizer.set_canvas_size(*self.size, fullscreen=self._fullscreen)
+                self._window_sizer.set_canvas_size(fullscreen=self._fullscreen)
                 self._do_create_window()
                 self.busy = True
             self._clipboard_interface.handle_key(None, c)
@@ -833,9 +842,9 @@ class VideoSDL2(VideoPlugin):
         """Check screen and blink events; update screen if necessary."""
         if not self._has_window:
             return
-        self.blink_state = 0
-        if self.mode_has_blink:
-            self.blink_state = 0 if self._cycle < BLINK_CYCLES * 2 else 1
+        self._blink_state = 0
+        if self._allow_blink:
+            self._blink_state = 0 if self._cycle < BLINK_CYCLES * 2 else 1
             if self._cycle % BLINK_CYCLES == 0:
                 self.busy = True
         if self._cursor_visible and (
@@ -856,11 +865,11 @@ class VideoSDL2(VideoPlugin):
         sdl2.SDL_FillRect(self._work_surface, None, self._border_attr)
         if self._composite:
             self._work_pixels[:] = window.apply_composite_artifacts(
-                self.pixels[self.vpagenum], 4//self.bitsperpixel
+                self._pixels[self.vpagenum], 4 // self.bitsperpixel
             )
         else:
-            self._work_pixels[:] = self.pixels[self.vpagenum]
-        sdl2.SDL_SetSurfacePalette(self._work_surface, self._palette[self.blink_state])
+            self._work_pixels[:] = self._pixels[self.vpagenum]
+        sdl2.SDL_SetSurfacePalette(self._work_surface, self._palette[self._blink_state])
         # apply cursor to work surface
         self._show_cursor(True)
         # convert 8-bit work surface to (usually) 32-bit display surface format
@@ -880,10 +889,10 @@ class VideoSDL2(VideoPlugin):
             # only free the surface just before zoomSurface needs to re-allocate
             # so that the memory block is highly likely to be easily available
             # this seems to avoid unpredictable delays
-            sdl2.SDL_FreeSurface(self.zoomed)
-            self.zoomed = zoomSurface(conv, zoomx, zoomy, SMOOTHING_ON)
+            sdl2.SDL_FreeSurface(self._zoomed_surface)
+            self._zoomed_surface = zoomSurface(conv, zoomx, zoomy, SMOOTHING_ON)
             # blit onto display
-            sdl2.SDL_BlitSurface(self.zoomed, None, self._display_surface, target_rect)
+            sdl2.SDL_BlitSurface(self._zoomed_surface, None, self._display_surface, target_rect)
         # create clipboard feedback
         if self._clipboard_interface.active():
             rects = (
@@ -891,11 +900,11 @@ class VideoSDL2(VideoPlugin):
                 for r in self._clipboard_interface.selection_rect
             )
             sdl_rects = (sdl2.SDL_Rect*len(self._clipboard_interface.selection_rect))(*rects)
-            sdl2.SDL_FillRect(self.overlay, None,
-                sdl2.SDL_MapRGBA(self.overlay.contents.format, 0, 0, 0, 0))
-            sdl2.SDL_FillRects(self.overlay, sdl_rects, len(sdl_rects),
-                sdl2.SDL_MapRGBA(self.overlay.contents.format, 128, 0, 128, 0))
-            sdl2.SDL_BlitScaled(self.overlay, None, self._display_surface, target_rect)
+            sdl2.SDL_FillRect(self._overlay, None,
+                sdl2.SDL_MapRGBA(self._overlay.contents.format, 0, 0, 0, 0))
+            sdl2.SDL_FillRects(self._overlay, sdl_rects, len(sdl_rects),
+                sdl2.SDL_MapRGBA(self._overlay.contents.format, 128, 0, 128, 0))
+            sdl2.SDL_BlitScaled(self._overlay, None, self._display_surface, target_rect)
         # flip the display
         sdl2.SDL_UpdateWindowSurface(self._display)
         # destroy the temporary surface
@@ -948,13 +957,13 @@ class VideoSDL2(VideoPlugin):
         # NOTE: [x][y] format - change this if we change _pixels2d
         self.glyph_dict = {u'\0': numpy.zeros((self.font_width, self.font_height))}
         self.num_pages = mode_info.num_pages
-        self.mode_has_blink = mode_info.has_blink
+        self._allow_blink = mode_info.has_blink
         if not self.text_mode:
             self.bitsperpixel = mode_info.bitsperpixel
         # logical size
-        self.size = (mode_info.pixel_width, mode_info.pixel_height)
+        canvas_width, canvas_height = mode_info.pixel_width, mode_info.pixel_height
         size_changed = self._window_sizer.set_canvas_size(
-            *self.size, fullscreen=self._fullscreen, resize_window=False
+            canvas_width, canvas_height, fullscreen=self._fullscreen, resize_window=False
         )
         # only ever adjust window size if we're in native pixel mode
         if size_changed:
@@ -972,12 +981,11 @@ class VideoSDL2(VideoPlugin):
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
         # screen pages
-        canvas_width, canvas_height = self.size
-        self.canvas = [
+        self._canvas = [
             sdl2.SDL_CreateRGBSurface(0, canvas_width, canvas_height, 8, 0, 0, 0, 0)
             for _ in range(self.num_pages)
         ]
-        self.pixels = [_pixels2d(canvas.contents) for canvas in self.canvas]
+        self._pixels = [_pixels2d(canvas.contents) for canvas in self._canvas]
         # create work surface for border and composite
         self.border_x, self.border_y = self._window_sizer.border_shift
         work_width, work_height = self._window_sizer.window_size_logical
@@ -989,12 +997,13 @@ class VideoSDL2(VideoPlugin):
         # create overlay for clipboard selection feedback
         # use convertsurface to create a copy of the display surface format
         pixelformat = self._display_surface.contents.format
-        self.overlay = sdl2.SDL_ConvertSurface(self._work_surface, pixelformat, 0)
-        sdl2.SDL_SetSurfaceBlendMode(self.overlay, sdl2.SDL_BLENDMODE_ADD)
+        self._overlay = sdl2.SDL_ConvertSurface(self._work_surface, pixelformat, 0)
+        sdl2.SDL_SetSurfaceBlendMode(self._overlay, sdl2.SDL_BLENDMODE_ADD)
         # initialise clipboard
         self._clipboard_interface = clipboard.ClipboardInterface(
             self._clipboard_handler, self._input_queue,
-            mode_info.width, mode_info.height, self.font_width, self.font_height, self.size
+            mode_info.width, mode_info.height, self.font_width, self.font_height,
+            (canvas_width, canvas_height)
         )
         self.busy = True
         self._has_window = True
@@ -1057,9 +1066,10 @@ class VideoSDL2(VideoPlugin):
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
         scroll_area = sdl2.SDL_Rect(
-            0, (start-1)*self.font_height, self.size[0], (stop-start+1)*self.font_height
+            0, (start-1)*self.font_height,
+            self._window_sizer.width, (stop-start+1)*self.font_height
         )
-        sdl2.SDL_FillRect(self.canvas[self.apagenum], scroll_area, back_attr)
+        sdl2.SDL_FillRect(self._canvas[self.apagenum], scroll_area, back_attr)
         self.busy = True
 
     def set_page(self, vpage, apage):
@@ -1069,9 +1079,9 @@ class VideoSDL2(VideoPlugin):
 
     def copy_page(self, src, dst):
         """Copy source to destination page."""
-        self.pixels[dst][:] = self.pixels[src][:]
+        self._pixels[dst][:] = self._pixels[src][:]
         # alternative:
-        # sdl2.SDL_BlitSurface(self.canvas[src], None, self.canvas[dst], None)
+        # sdl2.SDL_BlitSurface(self._canvas[src], None, self._canvas[dst], None)
         self.busy = True
 
     def show_cursor(self, cursor_on):
@@ -1089,9 +1099,9 @@ class VideoSDL2(VideoPlugin):
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
-        pixels = self.pixels[self.apagenum]
+        pixels = self._pixels[self.apagenum]
         # these are exclusive ranges [x0, x1) etc
-        x0, x1 = 0, self.size[0]
+        x0, x1 = 0, self._window_sizer.width
         new_y0, new_y1 = (from_line-1)*self.font_height, (scroll_height-1)*self.font_height
         old_y0, old_y1 = from_line*self.font_height, scroll_height*self.font_height
         pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
@@ -1100,9 +1110,9 @@ class VideoSDL2(VideoPlugin):
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
-        pixels = self.pixels[self.apagenum]
+        pixels = self._pixels[self.apagenum]
         # these are exclusive ranges [x0, x1) etc
-        x0, x1 = 0, self.size[0]
+        x0, x1 = 0, self._window_sizer.width
         old_y0, old_y1 = (from_line-1)*self.font_height, (scroll_height-1)*self.font_height
         new_y0, new_y1 = from_line*self.font_height, scroll_height*self.font_height
         pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
@@ -1130,13 +1140,13 @@ class VideoSDL2(VideoPlugin):
         # _pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
         glyph_width = glyph.shape[0]
         # changle glyph color by numpy scalar mult (is there a better way?)
-        self.pixels[pagenum][
+        self._pixels[pagenum][
             x0:x0+glyph_width, y0:y0+self.font_height] = (
                 glyph*(attr-back) + back
             )
         if underline:
             sdl2.SDL_FillRect(
-                self.canvas[self.apagenum],
+                self._canvas[self.apagenum],
                 sdl2.SDL_Rect(x0, y0 + self.font_height - 1, glyph_width, 1),
                 attr
             )
@@ -1157,25 +1167,25 @@ class VideoSDL2(VideoPlugin):
 
     def put_pixel(self, pagenum, x, y, index):
         """Put a pixel on the screen; callback to empty character buffer."""
-        self.pixels[pagenum][x, y] = index
+        self._pixels[pagenum][x, y] = index
         self.busy = True
 
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         rect = sdl2.SDL_Rect(x0, y0, x1-x0+1, y1-y0+1)
-        sdl2.SDL_FillRect(self.canvas[pagenum], rect, index)
+        sdl2.SDL_FillRect(self._canvas[pagenum], rect, index)
         self.busy = True
 
     def fill_interval(self, pagenum, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
         rect = sdl2.SDL_Rect(x0, y, x1-x0+1, 1)
-        sdl2.SDL_FillRect(self.canvas[pagenum], rect, index)
+        sdl2.SDL_FillRect(self._canvas[pagenum], rect, index)
         self.busy = True
 
     def put_interval(self, pagenum, x, y, colours):
         """Write a list of attributes to a scanline interval."""
         # reference the interval on the canvas
-        self.pixels[pagenum][x:x+len(colours), y] = numpy.array(colours).astype(int)
+        self._pixels[pagenum][x:x+len(colours), y] = numpy.array(colours).astype(int)
         self.busy = True
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
@@ -1183,5 +1193,5 @@ class VideoSDL2(VideoPlugin):
         if (x1 < x0) or (y1 < y0):
             return
         # reference the destination area
-        self.pixels[pagenum][x0:x1+1, y0:y1+1] = numpy.array(array).T
+        self._pixels[pagenum][x0:x1+1, y0:y1+1] = numpy.array(array).T
         self.busy = True
