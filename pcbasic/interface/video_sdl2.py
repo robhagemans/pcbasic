@@ -466,7 +466,7 @@ class VideoSDL2(VideoPlugin):
         # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
         self._display = None
         self._work_surface = None
-        self._window_sizer.set_canvas_size(720, 400, slack=not self._fullscreen)
+        self._window_sizer.set_canvas_size(720, 400, fullscreen=self._fullscreen)
         self._do_create_window()
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self._display)
@@ -552,9 +552,7 @@ class VideoSDL2(VideoPlugin):
             flags |= sdl2.SDL_WINDOW_RESIZABLE
         if self._fullscreen:
             flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
-            width, height = self._window_sizer.screen_size
-        else:
-            width, height = self._window_sizer.window_size
+        width, height = self._window_sizer.display_size
         sdl2.SDL_DestroyWindow(self._display)
         self._display = sdl2.SDL_CreateWindow(
             self._caption.encode('utf-8', errors='replace'),
@@ -664,7 +662,7 @@ class VideoSDL2(VideoPlugin):
         w, h = ctypes.c_int(), ctypes.c_int()
         sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
         # update the size calculator
-        self._window_sizer.set_window_size(w.value, h.value)
+        self._window_sizer.set_display_size(w.value, h.value)
         # we need to update the surface pointer
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         self.busy = True
@@ -756,7 +754,7 @@ class VideoSDL2(VideoPlugin):
             # F11+f to toggle fullscreen mode
             if c.upper() == u'F':
                 self._fullscreen = not self._fullscreen
-                self._window_sizer.set_canvas_size(*self.size, slack=not self._fullscreen)
+                self._window_sizer.set_canvas_size(*self.size, fullscreen=self._fullscreen)
                 self._do_create_window()
                 self.busy = True
             self._clipboard_interface.handle_key(None, c)
@@ -832,13 +830,10 @@ class VideoSDL2(VideoPlugin):
         # convert 8-bit work surface to (usually) 32-bit display surface format
         pixelformat = self._display_surface.contents.format
         conv = sdl2.SDL_ConvertSurface(self._work_surface, pixelformat, 0)
-        if self._fullscreen:
-            window_w, window_h = self._window_sizer.window_size
-            xshift = int(max(0., self._display_surface.contents.w - window_w) // 2)
-            yshift = int(max(0., self._display_surface.contents.h - window_h) // 2)
-            target_rect = sdl2.SDL_Rect(xshift, yshift, window_w, window_h)
-        else:
-            target_rect = None
+        # determine letterbox dimensions
+        xshift, yshift = self._window_sizer.letterbox_shift
+        window_w, window_h = self._window_sizer.window_size
+        target_rect = sdl2.SDL_Rect(xshift, yshift, window_w, window_h)
         # scale converted surface and blit onto display
         if not self._smooth:
             sdl2.SDL_BlitScaled(conv, None, self._display_surface, target_rect)
@@ -923,7 +918,7 @@ class VideoSDL2(VideoPlugin):
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
         size_changed = self._window_sizer.set_canvas_size(
-            *self.size, slack=not self._fullscreen, resize_window=False
+            *self.size, fullscreen=self._fullscreen, resize_window=False
         )
         # only ever adjust window size if we're in native pixel mode
         if size_changed:
@@ -932,7 +927,7 @@ class VideoSDL2(VideoPlugin):
                 sdl2.SDL_FillRect(self._display_surface, None, 0)
             else:
                 # resize and recentre
-                sdl2.SDL_SetWindowSize(self._display, *self._window_sizer.window_size)
+                sdl2.SDL_SetWindowSize(self._display, *self._window_sizer.display_size)
                 sdl2.SDL_SetWindowPosition(
                     self._display, sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED
                 )
@@ -948,7 +943,7 @@ class VideoSDL2(VideoPlugin):
         ]
         self.pixels = [_pixels2d(canvas.contents) for canvas in self.canvas]
         # create work surface for border and composite
-        self.border_x, self.border_y = self._window_sizer.border_start()
+        self.border_x, self.border_y = self._window_sizer.border_shift
         work_width, work_height = self._window_sizer.window_size_logical
         sdl2.SDL_FreeSurface(self._work_surface)
         self._work_surface = sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)

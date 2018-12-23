@@ -76,7 +76,7 @@ class WindowSizer(object):
         # canvas aspect ratio
         self._aspect = aspect_ratio
         # border width as a percentage of canvas width
-        self._border_width = border_width
+        self._border_pct = border_width
         # the following attributes must be set separately
         # physical pixel size of screen
         self._screen_size = screen_width, screen_height
@@ -84,45 +84,56 @@ class WindowSizer(object):
         self._canvas_logical = ()
         # physical pixel size of window (canvas+border)
         self._window_size = ()
+        # physical pixel size of display (canvas+border+letterbox)
+        self._display_size = ()
 
     def normalise_pos(self, x, y):
         """Convert physical to logical coordinates within screen bounds."""
-        if not self._canvas_logical:
+        if not self._canvas_logical or not self._window_size:
             # window not initialised
             return 0, 0
-        border_x = int(self._canvas_logical[0] * self._border_width / 200.)
-        border_y = int(self._canvas_logical[1] * self._border_width / 200.)
+        border_x = int(self._canvas_logical[0] * self._border_pct / 200.)
+        border_y = int(self._canvas_logical[1] * self._border_pct / 200.)
         xscale = self._window_size[0] / float(self._canvas_logical[0] + 2*border_x)
         yscale = self._window_size[1] / float(self._canvas_logical[1] + 2*border_y)
         xpos = min(self._canvas_logical[0]-1, max(0, int(x//xscale - border_x)))
         ypos = min(self._canvas_logical[1]-1, max(0, int(y//yscale - border_y)))
         return xpos, ypos
 
-    def set_canvas_size(self, canvas_x, canvas_y, slack=True, resize_window=True):
-        """Change the logical canvas size and determine window sizes."""
+    def set_canvas_size(
+            self, canvas_x, canvas_y,
+            resize_window=True, fullscreen=False
+        ):
+        """Change the logical canvas size and determine window/display sizes."""
         self._canvas_logical = canvas_x, canvas_y
         if not resize_window and not self._force_native_pixel:
             return False
-        old_window_size = self._window_size
+        old_display_size = self._display_size
+        old_window_size = self._display_size
         # comply with requested size
         if self._force_window_size:
             self._window_size = self._force_window_size
         else:
-            slack_ratio = _SLACK_RATIO if slack else 1.
+            slack_ratio = _SLACK_RATIO if not fullscreen else 1.
             if not self._force_native_pixel:
                 self._window_size = self._find_nonnative_window_size(slack_ratio)
             else:
                 self._window_size = self._find_native_window_size(slack_ratio)
-        return self._window_size != old_window_size
+        if fullscreen:
+            self._display_size = self._screen_size
+        else:
+            self._display_size = self._window_size
+        return self._display_size != old_display_size or self._window_size != old_window_size
 
-    def set_window_size(self, new_size_x, new_size_y):
-        """Change the physical window size."""
+    def set_display_size(self, new_size_x, new_size_y):
+        """Change the physical display size."""
         self._window_size = new_size_x, new_size_y
+        self._display_size = self._window_size
 
     def _find_nonnative_window_size(self, slack_ratio):
         """Determine the optimal size for a non-natively scaled window."""
         # border is given as a percentage of canvas size
-        border_ratio = 1. + self._border_width / 100.
+        border_ratio = 1. + self._border_pct / 100.
         # shrink the window in the most constraining dimension
         mcd = _most_constraining(self._screen_size, self._aspect)
         lcd = 1 - mcd
@@ -156,30 +167,44 @@ class WindowSizer(object):
 
     def scale(self):
         """Get scale factors from logical to window size."""
-        border_x, border_y = self.border_start()
+        border_x, border_y = self.border_shift
         return (
             self._window_size[0] / (self._canvas_logical[0] + 2.0*border_x),
             self._window_size[1] / (self._canvas_logical[1] + 2.0*border_y)
         )
 
-    def border_start(self):
-        """Top left physical coordinates of canvas."""
+    @property
+    def border_shift(self):
+        """Top left physical coordinates of canvas relative to letterbox."""
         return (
-            int(self._canvas_logical[0] * self._border_width / 200.),
-            int(self._canvas_logical[1] * self._border_width / 200.)
+            int(self._canvas_logical[0] * self._border_pct / 200.),
+            int(self._canvas_logical[1] * self._border_pct / 200.)
+        )
+
+    @property
+    def letterbox_shift(self):
+        """Top left physical coordinates of border."""
+        return (
+            int(max(0., self._display_size[0] - self._window_size[0]) // 2),
+            int(max(0., self._display_size[1] - self._window_size[1]) // 2)
         )
 
     @property
     def window_size_logical(self):
         """Window (canvas+border) size in logical pixels."""
         # express border as interger number of logical pixels
-        border = self.border_start()
+        border = self.border_shift
         return self._canvas_logical[0] + 2 * border[0], self._canvas_logical[1] + 2 * border[1]
 
     @property
     def window_size(self):
         """Window (canvas+border) size in physical pixels."""
         return self._window_size
+
+    @property
+    def display_size(self):
+        """Display (canvas+border+letterbox) size in physical pixels."""
+        return self._display_size
 
     @property
     def screen_size(self):

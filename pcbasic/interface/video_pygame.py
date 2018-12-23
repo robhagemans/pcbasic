@@ -251,7 +251,7 @@ class VideoPygame(VideoPlugin):
                 ))
             elif event.type == pygame.VIDEORESIZE:
                 if not self.fullscreen:
-                    self._window_sizer.set_window_size(event.w, event.h)
+                    self._window_sizer.set_display_size(event.w, event.h)
                     self._resize_display()
             elif event.type == pygame.QUIT:
                 if self._nokill:
@@ -377,7 +377,7 @@ class VideoPygame(VideoPlugin):
     def _do_flip(self):
         """Draw the canvas to the screen."""
         # create the screen that will be stretched onto the display
-        border_x, border_y = self._window_sizer.border_start()
+        border_x, border_y = self._window_sizer.border_shift
         # surface depth and flags match those of canvas
         # pylint: disable=E1121,E1123
         screen = pygame.Surface(
