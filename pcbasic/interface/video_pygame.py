@@ -219,6 +219,7 @@ class VideoPygame(VideoPlugin):
                         # MIDDLE button: paste
                         text = self.clipboard_handler.paste(mouse=True)
                         self.clipboard.paste(text)
+                    self.busy = True
                 if event.button == 1:
                     # right mouse button is a pen press
                     self._input_queue.put(signals.Event(
@@ -229,6 +230,7 @@ class VideoPygame(VideoPlugin):
                 if self._mouse_clip and event.button == 1:
                     self.clipboard.copy(mouse=True)
                     self.clipboard.stop()
+                    self.busy = True
             elif event.type == pygame.MOUSEMOTION:
                 pos = self._window_sizer.normalise_pos(*event.pos)
                 self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
@@ -237,6 +239,7 @@ class VideoPygame(VideoPlugin):
                         1 + pos[1] // self.font_height,
                         1 + (pos[0]+self.font_width//2) // self.font_width
                     )
+                    self.busy = True
             elif event.type == pygame.JOYBUTTONDOWN:
                 self._input_queue.put(signals.Event(
                     signals.STICK_DOWN, (event.joy, event.button)
