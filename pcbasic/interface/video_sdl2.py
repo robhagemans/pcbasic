@@ -470,8 +470,6 @@ class VideoSDL2(VideoPlugin):
         self._do_create_window()
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self._display)
-        # workaround for duplicated keypresses after Alt (at least on Ubuntu Unity)
-        self._alt_counter = Counter()
         self._clipboard_handler = None
         # event handlers
         self._event_handlers = self._register_handlers()
@@ -715,16 +713,6 @@ class VideoSDL2(VideoPlugin):
         """Handle key-down event."""
         # get scancode
         scan = SCAN_TO_SCAN.get(e.key.keysym.scancode, None)
-        # workaround: on some Ubuntu systems with Unity, the Alt key activates the HUD
-        # after that, every alt keypress is reported twice (down-ALT down-ALT ... up-ALT)
-        # and every alt+X keypress becomes down-ALT down-X down-X ... up-X ... up-ALT
-        if self._alt_counter[scancode.ALT] or scan == scancode.ALT:
-            self._alt_counter[scan] += 1
-            # after double-ALT, ignore every second keypress
-            if self._alt_counter[scan] > 1 and (
-                    not(self._alt_counter[scan] % 2) or scan == scancode.ALT
-                ):
-                return
         # get modifiers
         mod = [s for m, s in iteritems(MOD_TO_SCAN) if e.key.keysym.mod & m]
         # get eascii
@@ -756,10 +744,11 @@ class VideoSDL2(VideoPlugin):
             self._clipboard_interface.handle_key(scan, c)
             self.busy = True
         else:
-            # keep scancode in buffer
-            # to combine with text event
+            # keep scancode in last-down buffer to combine with text event
             # flush buffer on next key down, text event or end of loop
-            if scan is not None:
+            # if the same key is reported twice with the same timestamp, ignore
+            # (this deals with the Unity double-ALT-bug and maybe others)
+            if scan is not None and (c, scan, mod, e.key.timestamp) != self._last_down:
                 self._flush_keypress()
                 self._last_down = c, scan, mod, e.key.timestamp
 
@@ -777,9 +766,6 @@ class VideoSDL2(VideoPlugin):
             scan = SCAN_TO_SCAN[e.key.keysym.scancode]
         except KeyError:
             return
-        # reset ALT workaround counter
-        if scan == scancode.ALT:
-            self._alt_counter = Counter()
         # check for emulator key
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self._clipboard_interface.stop()
