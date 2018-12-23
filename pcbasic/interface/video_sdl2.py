@@ -431,11 +431,6 @@ class VideoSDL2(VideoPlugin):
         # blink cycle
         self._allow_blink = True
         self._blink_state = 0
-        # cursor
-        # current cursor location
-        self._last_row, self._last_col = 1, 1
-        # cursor is visible
-        self._cursor_visible = True
         # load the icon
         self._icon = icon
         # mouse setups
@@ -483,9 +478,42 @@ class VideoSDL2(VideoPlugin):
         self._do_create_window()
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self._display)
+        # clipboard handler
         self._clipboard_handler = None
         # event handlers
         self._event_handlers = self._register_handlers()
+        # glyph cache
+        self._glyph_dict = {}
+        # video mode settings
+        self._is_text_mode = True
+        self._font_height = None
+        self._font_width = None
+        self._num_pages = None
+        self._bitsperpixel = None
+        # cursor
+        # current cursor location
+        self._last_row, self._last_col = 1, 1
+        # cursor is visible
+        self._cursor_visible = True
+        # cursor position
+        self._cursor_row = None
+        self._cursor_col = None
+        # buffer for part of display obscured by cursor
+        self._under_cursor = None
+        # cursor shape
+        self._cursor_from = None
+        self._cursor_to = None
+        self._cursor_width = None
+        self._cursor_attr = None
+        # display pages
+        self._vpagenum = None
+        self._apagenum = None
+        # palette
+        self._palette = []
+        self._saved_palette = []
+        self._num_fore_attrs = None
+        self._num_back_attrs = None
+
 
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
@@ -512,11 +540,11 @@ class VideoSDL2(VideoPlugin):
                 self._smooth = False
         # available joysticks
         num_joysticks = sdl2.SDL_NumJoysticks()
-        for j in range(num_joysticks):
-            sdl2.SDL_JoystickOpen(j)
+        for stick in range(num_joysticks):
+            sdl2.SDL_JoystickOpen(stick)
             # if a joystick is present, its axes report 128 for mid, not 0
             for axis in (0, 1):
-                self._input_queue.put(signals.Event(signals.STICK_MOVED, (j, axis, 128)))
+                self._input_queue.put(signals.Event(signals.STICK_MOVED, (stick, axis, 128)))
         # enable IME
         sdl2.SDL_StartTextInput()
         return VideoPlugin.__enter__(self)
@@ -528,8 +556,8 @@ class VideoSDL2(VideoPlugin):
             # free windows
             sdl2.SDL_DestroyWindow(self._display)
             # free surfaces
-            for s in self._canvas:
-                sdl2.SDL_FreeSurface(s)
+            for surface in self._canvas:
+                sdl2.SDL_FreeSurface(surface)
             sdl2.SDL_FreeSurface(self._work_surface)
             sdl2.SDL_FreeSurface(self._overlay)
             # free palettes
@@ -547,7 +575,7 @@ class VideoSDL2(VideoPlugin):
         _pixels2d(icon.contents)[:] = mask
         # icon palette (black & white)
         icon_palette = sdl2.SDL_AllocPalette(256)
-        icon_colors = [ sdl2.SDL_Color(x, x, x, 255) for x in [0, 255] + [255]*254 ]
+        icon_colors = [sdl2.SDL_Color(_c, _c, _c, 255) for _c in [0, 255] + [255]*254]
         sdl2.SDL_SetPaletteColors(icon_palette, (sdl2.SDL_Color * 256)(*icon_colors), 0, 2)
         sdl2.SDL_SetSurfacePalette(icon, icon_palette)
         sdl2.SDL_SetWindowIcon(self._display, icon)
@@ -589,7 +617,7 @@ class VideoSDL2(VideoPlugin):
         # check and handle input events
         self._last_down = None
         event = sdl2.SDL_Event()
-        while sdl2.SDL_PollEvent(ctypes.byref(event)) != 0:
+        while sdl2.SDL_PollEvent(ctypes.byref(event)):
             try:
                 self._event_handlers[event.type](event)
             except KeyError:
@@ -662,8 +690,8 @@ class VideoSDL2(VideoPlugin):
             if event.button.button == sdl2.SDL_BUTTON_LEFT:
                 # LEFT button: copy
                 self._clipboard_interface.start(
-                    1 + pos[1] // self.font_height,
-                    1 + (pos[0]+self.font_width//2) // self.font_width
+                    1 + pos[1] // self._font_height,
+                    1 + (pos[0]+self._font_width//2) // self._font_width
                 )
             elif event.button.button == sdl2.SDL_BUTTON_MIDDLE:
                 # MIDDLE button: paste
@@ -688,8 +716,8 @@ class VideoSDL2(VideoPlugin):
         self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
         if self._clipboard_interface.active():
             self._clipboard_interface.move(
-                1 + pos[1] // self.font_height,
-                1 + (pos[0]+self.font_width//2) // self.font_width
+                1 + pos[1] // self._font_height,
+                1 + (pos[0]+self._font_width//2) // self._font_width
             )
             self.busy = True
 
@@ -748,7 +776,7 @@ class VideoSDL2(VideoPlugin):
         # handle F11 home-key combinations
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self._f11_active = True
-            self._clipboard_interface.start(self.cursor_row, self.cursor_col)
+            self._clipboard_interface.start(self._cursor_row, self._cursor_col)
         elif self._f11_active:
             self._clipboard_interface.handle_key(scan, c)
             self.busy = True
@@ -798,10 +826,7 @@ class VideoSDL2(VideoPlugin):
         if self._f11_active:
             # F11+f to toggle fullscreen mode
             if c.upper() == u'F':
-                self._fullscreen = not self._fullscreen
-                self._window_sizer.set_canvas_size(fullscreen=self._fullscreen)
-                self._do_create_window()
-                self.busy = True
+                self._toggle_fullscreen()
             self._clipboard_interface.handle_key(None, c)
         # the text input event follows the key down event immediately
         elif self._last_down is None:
@@ -830,6 +855,13 @@ class VideoSDL2(VideoPlugin):
                 self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
             self._last_down = None
 
+    def _toggle_fullscreen(self):
+        """Togggle fullscreen mode."""
+        self._fullscreen = not self._fullscreen
+        self._window_sizer.set_canvas_size(fullscreen=self._fullscreen)
+        self._do_create_window()
+        self.busy = True
+
 
     ###########################################################################
     # screen drawing cycle
@@ -847,8 +879,13 @@ class VideoSDL2(VideoPlugin):
             self._blink_state = 0 if self._cycle < BLINK_CYCLES * 2 else 1
             if self._cycle % BLINK_CYCLES == 0:
                 self.busy = True
-        if self._cursor_visible and (
-                (self.cursor_row != self._last_row) or (self.cursor_col != self._last_col)):
+        if (
+                self._cursor_visible
+                and (
+                    (self._cursor_row != self._last_row)
+                    or (self._cursor_col != self._last_col)
+                )
+            ):
             self.busy = True
         tock = sdl2.SDL_GetTicks()
         if tock - self._last_tick >= CYCLE_TIME:
@@ -865,10 +902,10 @@ class VideoSDL2(VideoPlugin):
         sdl2.SDL_FillRect(self._work_surface, None, self._border_attr)
         if self._composite:
             self._work_pixels[:] = window.apply_composite_artifacts(
-                self._pixels[self.vpagenum], 4 // self.bitsperpixel
+                self._pixels[self._vpagenum], 4 // self._bitsperpixel
             )
         else:
-            self._work_pixels[:] = self._pixels[self.vpagenum]
+            self._work_pixels[:] = self._pixels[self._vpagenum]
         sdl2.SDL_SetSurfacePalette(self._work_surface, self._palette[self._blink_state])
         # apply cursor to work surface
         self._show_cursor(True)
@@ -878,6 +915,7 @@ class VideoSDL2(VideoPlugin):
         # determine letterbox dimensions
         xshift, yshift = self._window_sizer.letterbox_shift
         window_w, window_h = self._window_sizer.window_size
+        border_x, border_y = self._window_sizer.border_shift
         target_rect = sdl2.SDL_Rect(xshift, yshift, window_w, window_h)
         # scale converted surface and blit onto display
         if not self._smooth:
@@ -896,7 +934,7 @@ class VideoSDL2(VideoPlugin):
         # create clipboard feedback
         if self._clipboard_interface.active():
             rects = (
-                sdl2.SDL_Rect(r[0]+self.border_x, r[1]+self.border_y, r[2], r[3])
+                sdl2.SDL_Rect(r[0]+border_x, r[1]+border_y, r[2], r[3])
                 for r in self._clipboard_interface.selection_rect
             )
             sdl_rects = (sdl2.SDL_Rect*len(self._clipboard_interface.selection_rect))(*rects)
@@ -912,36 +950,37 @@ class VideoSDL2(VideoPlugin):
 
     def _show_cursor(self, do_show):
         """Draw or remove the cursor on the visible page."""
-        if not self._cursor_visible or self.vpagenum != self.apagenum:
+        if not self._cursor_visible or self._vpagenum != self._apagenum:
             return
         screen = self._work_surface
         pixels = self._work_pixels
-        top = (self.cursor_row-1) * self.font_height
-        left = (self.cursor_col-1) * self.font_width
+        top = (self._cursor_row-1) * self._font_height
+        left = (self._cursor_col-1) * self._font_width
         if not do_show:
-            pixels[left:left+self.font_width, top:top+self.font_height] = self.under_cursor
+            pixels[left:left+self._font_width, top:top+self._font_height] = self._under_cursor
             return
         # copy area under cursor
-        self.under_cursor = numpy.copy(
-            pixels[left : left+self.font_width, top : top+self.font_height]
+        self._under_cursor = numpy.copy(
+            pixels[left : left+self._font_width, top : top+self._font_height]
         )
-        if self.text_mode:
+        if self._is_text_mode:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
             if self._cycle // BLINK_CYCLES in (1, 3):
                 curs_height = min(
-                    self.cursor_to - self.cursor_from+1, self.font_height - self.cursor_from
+                    self._cursor_to - self._cursor_from+1, self._font_height - self._cursor_from
                 )
+                border_x, border_y = self._window_sizer.border_shift
                 curs_rect = sdl2.SDL_Rect(
-                    self.border_x + left, self.border_y + top + self.cursor_from,
-                    self.cursor_width, curs_height
+                    border_x + left, border_y + top + self._cursor_from,
+                    self._cursor_width, curs_height
                 )
-                sdl2.SDL_FillRect(screen, curs_rect, self.cursor_attr)
+                sdl2.SDL_FillRect(screen, curs_rect, self._cursor_attr)
         else:
-            pixels[left:left+self.cursor_width, top+self.cursor_from:top+self.cursor_to+1] ^= (
-                self.cursor_attr
+            pixels[left:left+self._cursor_width, top+self._cursor_from:top+self._cursor_to+1] ^= (
+                self._cursor_attr
             )
-        self._last_row = self.cursor_row
-        self._last_col = self.cursor_col
+        self._last_row = self._cursor_row
+        self._last_col = self._cursor_col
 
 
     ###########################################################################
@@ -949,17 +988,17 @@ class VideoSDL2(VideoPlugin):
 
     def set_mode(self, mode_info):
         """Initialise a given text or graphics mode."""
-        self.text_mode = mode_info.is_text_mode
         # unpack mode info struct
-        self.font_height = mode_info.font_height
-        self.font_width = mode_info.font_width
+        self._is_text_mode = mode_info.is_text_mode
+        self._font_height = mode_info.font_height
+        self._font_width = mode_info.font_width
+        self._num_pages = mode_info.num_pages
+        self._allow_blink = mode_info.has_blink
+        if not self._is_text_mode:
+            self._bitsperpixel = mode_info.bitsperpixel
         # prebuilt glyphs
         # NOTE: [x][y] format - change this if we change _pixels2d
-        self.glyph_dict = {u'\0': numpy.zeros((self.font_width, self.font_height))}
-        self.num_pages = mode_info.num_pages
-        self._allow_blink = mode_info.has_blink
-        if not self.text_mode:
-            self.bitsperpixel = mode_info.bitsperpixel
+        self._glyph_dict = {u'\0': numpy.zeros((self._font_width, self._font_height))}
         # logical size
         canvas_width, canvas_height = mode_info.pixel_width, mode_info.pixel_height
         size_changed = self._window_sizer.set_canvas_size(
@@ -979,20 +1018,21 @@ class VideoSDL2(VideoPlugin):
                 # need to update surface pointer after a change in window size
                 self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         # set standard cursor
-        self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
+        self.set_cursor_shape(self._font_width, self._font_height, 0, self._font_height)
         # screen pages
         self._canvas = [
             sdl2.SDL_CreateRGBSurface(0, canvas_width, canvas_height, 8, 0, 0, 0, 0)
-            for _ in range(self.num_pages)
+            for _ in range(self._num_pages)
         ]
         self._pixels = [_pixels2d(canvas.contents) for canvas in self._canvas]
         # create work surface for border and composite
-        self.border_x, self.border_y = self._window_sizer.border_shift
+        border_x, border_y = self._window_sizer.border_shift
         work_width, work_height = self._window_sizer.window_size_logical
         sdl2.SDL_FreeSurface(self._work_surface)
         self._work_surface = sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
         self._work_pixels = _pixels2d(self._work_surface.contents)[
-            self.border_x:work_width-self.border_x, self.border_y:work_height-self.border_y
+            border_x : work_width - border_x,
+            border_y : work_height - border_y
         ]
         # create overlay for clipboard selection feedback
         # use convertsurface to create a copy of the display surface format
@@ -1002,7 +1042,7 @@ class VideoSDL2(VideoPlugin):
         # initialise clipboard
         self._clipboard_interface = clipboard.ClipboardInterface(
             self._clipboard_handler, self._input_queue,
-            mode_info.width, mode_info.height, self.font_width, self.font_height,
+            mode_info.width, mode_info.height, self._font_width, self._font_height,
             (canvas_width, canvas_height)
         )
         self.busy = True
@@ -1019,19 +1059,19 @@ class VideoSDL2(VideoPlugin):
 
     def set_palette(self, rgb_palette_0, rgb_palette_1):
         """Build the palette."""
-        self.num_fore_attrs = min(16, len(rgb_palette_0))
-        self.num_back_attrs = min(8, self.num_fore_attrs)
+        self._num_fore_attrs = min(16, len(rgb_palette_0))
+        self._num_back_attrs = min(8, self._num_fore_attrs)
         rgb_palette_1 = rgb_palette_1 or rgb_palette_0
         # fill up the 8-bit palette with all combinations we need
         # blink states: 0 light up, 1 light down
         # bottom 128 are non-blink, top 128 blink to background
-        show_palette_0 = rgb_palette_0[:self.num_fore_attrs] * (256//self.num_fore_attrs)
-        show_palette_1 = rgb_palette_1[:self.num_fore_attrs] * (128//self.num_fore_attrs)
+        show_palette_0 = rgb_palette_0[:self._num_fore_attrs] * (256//self._num_fore_attrs)
+        show_palette_1 = rgb_palette_1[:self._num_fore_attrs] * (128//self._num_fore_attrs)
         for b in (
-                rgb_palette_1[:self.num_back_attrs] *
-                (128 // self.num_fore_attrs // self.num_back_attrs)
+                rgb_palette_1[:self._num_back_attrs] *
+                (128 // self._num_fore_attrs // self._num_back_attrs)
             ):
-            show_palette_1 += [b]*self.num_fore_attrs
+            show_palette_1 += [b]*self._num_fore_attrs
         colors_0 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(r, g, b, 255)
             for (r, g, b) in show_palette_0)
@@ -1055,8 +1095,8 @@ class VideoSDL2(VideoPlugin):
             self._palette, self._saved_palette = self._saved_palette, self._palette
         if on:
             colors = (sdl2.SDL_Color * 256)(*(
-                sdl2.SDL_Color(r, g, b, 255)
-                for (r, g, b) in composite_colors
+                sdl2.SDL_Color(_r, _g, _b, 255)
+                for (_r, _g, _b) in composite_colors
             ))
             sdl2.SDL_SetPaletteColors(self._palette[0], colors, 0, 256)
             sdl2.SDL_SetPaletteColors(self._palette[1], colors, 0, 256)
@@ -1066,15 +1106,15 @@ class VideoSDL2(VideoPlugin):
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
         scroll_area = sdl2.SDL_Rect(
-            0, (start-1)*self.font_height,
-            self._window_sizer.width, (stop-start+1)*self.font_height
+            0, (start-1)*self._font_height,
+            self._window_sizer.width, (stop-start+1)*self._font_height
         )
-        sdl2.SDL_FillRect(self._canvas[self.apagenum], scroll_area, back_attr)
+        sdl2.SDL_FillRect(self._canvas[self._apagenum], scroll_area, back_attr)
         self.busy = True
 
     def set_page(self, vpage, apage):
         """Set the visible and active page."""
-        self.vpagenum, self.apagenum = vpage, apage
+        self._vpagenum, self._apagenum = vpage, apage
         self.busy = True
 
     def copy_page(self, src, dst):
@@ -1091,63 +1131,60 @@ class VideoSDL2(VideoPlugin):
 
     def move_cursor(self, crow, ccol):
         """Move the cursor to a new position."""
-        self.cursor_row, self.cursor_col = crow, ccol
+        self._cursor_row, self._cursor_col = crow, ccol
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
-        self.cursor_attr = attr % self.num_fore_attrs
+        self._cursor_attr = attr % self._num_fore_attrs
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
-        pixels = self._pixels[self.apagenum]
+        pixels = self._pixels[self._apagenum]
         # these are exclusive ranges [x0, x1) etc
         x0, x1 = 0, self._window_sizer.width
-        new_y0, new_y1 = (from_line-1)*self.font_height, (scroll_height-1)*self.font_height
-        old_y0, old_y1 = from_line*self.font_height, scroll_height*self.font_height
+        new_y0, new_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
+        old_y0, old_y1 = from_line*self._font_height, scroll_height*self._font_height
         pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
         pixels[x0:x1, new_y1:old_y1] = numpy.full((x1-x0, old_y1-new_y1), back_attr, dtype=int)
         self.busy = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
-        pixels = self._pixels[self.apagenum]
+        pixels = self._pixels[self._apagenum]
         # these are exclusive ranges [x0, x1) etc
         x0, x1 = 0, self._window_sizer.width
-        old_y0, old_y1 = (from_line-1)*self.font_height, (scroll_height-1)*self.font_height
-        new_y0, new_y1 = from_line*self.font_height, scroll_height*self.font_height
+        old_y0, old_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
+        new_y0, new_y1 = from_line*self._font_height, scroll_height*self._font_height
         pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
         pixels[x0:x1, old_y0:new_y0] = numpy.full((x1-x0, new_y0-old_y0), back_attr, dtype=int)
         self.busy = True
 
     def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""
-        if not self.text_mode:
+        if not self._is_text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
-        attr = fore + self.num_fore_attrs*back + 128*blink
-        x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
+        attr = fore + self._num_fore_attrs*back + 128*blink
+        x0, y0 = (col-1)*self._font_width, (row-1)*self._font_height
         # NOTE: in pygame plugin we used a surface fill for the NUL character
         # which was an optimisation early on -- consider if we need speedup.
         try:
-            glyph = self.glyph_dict[cp]
+            glyph = self._glyph_dict[cp]
         except KeyError:
             logging.warning('No glyph received for code point %s', hex(ord(cp)))
             try:
-                glyph = self.glyph_dict[u'\0']
+                glyph = self._glyph_dict[u'\0']
             except KeyError:
                 logging.error('No glyph received for code point 0')
                 return
         # _pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
         glyph_width = glyph.shape[0]
         # changle glyph color by numpy scalar mult (is there a better way?)
-        self._pixels[pagenum][
-            x0:x0+glyph_width, y0:y0+self.font_height] = (
-                glyph*(attr-back) + back
-            )
+        self._pixels[pagenum][x0:x0+glyph_width, y0:y0+self._font_height] = glyph*(attr-back) + back
         if underline:
             sdl2.SDL_FillRect(
-                self._canvas[self.apagenum],
-                sdl2.SDL_Rect(x0, y0 + self.font_height - 1, glyph_width, 1),
+                self._canvas[self._apagenum],
+                sdl2.SDL_Rect(x0, y0 + self._font_height - 1, glyph_width, 1),
                 attr
             )
         self.busy = True
@@ -1157,13 +1194,13 @@ class VideoSDL2(VideoPlugin):
         for char, glyph in iteritems(new_dict):
             # transpose because _pixels2d uses column-major mode and hence [x][y] indexing
             # (we can change this)
-            self.glyph_dict[char] = numpy.asarray(glyph).T
+            self._glyph_dict[char] = numpy.asarray(glyph).T
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """Build a sprite for the cursor."""
-        self.cursor_width = width
-        self.cursor_from, self.cursor_to = from_line, to_line
-        self.under_cursor = numpy.zeros((width, height))
+        self._cursor_width = width
+        self._cursor_from, self._cursor_to = from_line, to_line
+        self._under_cursor = numpy.zeros((width, height))
 
     def put_pixel(self, pagenum, x, y, index):
         """Put a pixel on the screen; callback to empty character buffer."""
