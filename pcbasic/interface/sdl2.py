@@ -1053,4 +1053,4 @@ SDL_Quit = _bind("SDL_Quit")
 # added RH
 SDL_SetWindowGrab = _bind("SDL_SetWindowGrab", [POINTER(SDL_Window), SDL_bool])
 SDL_SetHint = _bind("SDL_SetHint", [c_char_p, c_char_p])
-SDL_HINT_GRAB_KEYBOARD = "SDL_GRAB_KEYBOARD"
+SDL_HINT_GRAB_KEYBOARD = b"SDL_GRAB_KEYBOARD"
