@@ -473,6 +473,8 @@ class VideoSDL2(VideoPlugin):
         # workaround for duplicated keypresses after Alt (at least on Ubuntu Unity)
         self._alt_counter = Counter()
         self._clipboard_handler = None
+        # event handlers
+        self._event_handlers = self._register_handlers()
 
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
@@ -581,34 +583,37 @@ class VideoSDL2(VideoPlugin):
         self._last_down = None
         event = sdl2.SDL_Event()
         while sdl2.SDL_PollEvent(ctypes.byref(event)) != 0:
-            if event.type == sdl2.SDL_KEYDOWN:
-                self._handle_key_down(event)
-            elif event.type == sdl2.SDL_KEYUP:
-                self._handle_key_up(event)
-            elif event.type == sdl2.SDL_TEXTINPUT:
-                self._handle_text_input(event)
-            elif event.type == sdl2.SDL_TEXTEDITING:
-                self.set_caption_message(event.text.text.decode('utf-8'))
-            elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
-                self._handle_mouse_down(event)
-            elif event.type == sdl2.SDL_MOUSEBUTTONUP:
-                self._handle_mouse_up(event)
-            elif event.type == sdl2.SDL_MOUSEMOTION:
-                self._handle_mouse_motion(event)
-            elif event.type == sdl2.SDL_JOYBUTTONDOWN:
-                self._handle_stick_down(event)
-            elif event.type == sdl2.SDL_JOYBUTTONUP:
-                self._handle_stick_up(event)
-            elif event.type == sdl2.SDL_JOYAXISMOTION:
-                self._handle_stick_motion(event)
-            elif event.type == sdl2.SDL_WINDOWEVENT:
-                self._handle_window_event(event)
-            elif event.type == sdl2.SDL_QUIT:
-                if self._nokill:
-                    self.set_caption_message(NOKILL_MESSAGE)
-                else:
-                    self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+            try:
+                self._event_handlers[event.type](event)
+            except KeyError:
+                pass
         self._flush_keypress()
+
+    def _register_handlers(self):
+        """Create table of event handlers."""
+        return {
+            sdl2.SDL_KEYDOWN: self._handle_key_down,
+            sdl2.SDL_KEYUP: self._handle_key_up,
+            sdl2.SDL_TEXTINPUT: self._handle_text_input,
+            sdl2.SDL_TEXTEDITING: self._handle_text_editing,
+            sdl2.SDL_MOUSEBUTTONDOWN: self._handle_mouse_down,
+            sdl2.SDL_MOUSEBUTTONUP: self._handle_mouse_up,
+            sdl2.SDL_MOUSEMOTION: self._handle_mouse_motion,
+            sdl2.SDL_JOYBUTTONDOWN: self._handle_stick_down,
+            sdl2.SDL_JOYBUTTONUP: self._handle_stick_up,
+            sdl2.SDL_JOYAXISMOTION: self._handle_stick_motion,
+            sdl2.SDL_WINDOWEVENT: self._handle_window_event,
+            sdl2.SDL_QUIT: self._handle_quit,
+        }
+
+    # quit events
+
+    def _handle_quit(self, event):
+        """Handle quit event."""
+        if self._nokill:
+            self.set_caption_message(NOKILL_MESSAGE)
+        else:
+            self._input_queue.put(signals.Event(signals.KEYB_QUIT))
 
     # window events
 
@@ -784,6 +789,12 @@ class VideoSDL2(VideoPlugin):
             self._input_queue.put(signals.Event(signals.KEYB_UP, (scan,)))
         except KeyError:
             pass
+
+    # text input method events
+
+    def _handle_text_editing(self, event):
+        """Handle text-editing event."""
+        self.set_caption_message(event.text.text.decode('utf-8'))
 
     def _handle_text_input(self, event):
         """Handle text-input event."""
