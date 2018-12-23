@@ -635,12 +635,13 @@ class VideoSDL2(VideoPlugin):
 
     def _handle_resize_event(self, event):
         """Respond to change of display size."""
-        # width, height = event.window.data1, event.window.data2
-        # get actual window size
-        w, h = ctypes.c_int(), ctypes.c_int()
-        sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
-        # update the size calculator
-        self._window_sizer.set_display_size(w.value, h.value)
+        if not self._fullscreen:
+            # width, height = event.window.data1, event.window.data2
+            # get actual window size
+            width, height = ctypes.c_int(), ctypes.c_int()
+            sdl2.SDL_GetWindowSize(self._display, ctypes.byref(width), ctypes.byref(height))
+            # update the size calculator
+            self._window_sizer.set_display_size(width.value, height.value)
         # we need to update the surface pointer
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         self.busy = True
