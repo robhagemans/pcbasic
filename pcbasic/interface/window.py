@@ -92,12 +92,15 @@ class WindowSizer(object):
         if not self._canvas_logical or not self._window_size:
             # window not initialised
             return 0, 0
-        border_x = int(self._canvas_logical[0] * self._border_pct / 200.)
-        border_y = int(self._canvas_logical[1] * self._border_pct / 200.)
-        xscale = self._window_size[0] / float(self._canvas_logical[0] + 2*border_x)
-        yscale = self._window_size[1] / float(self._canvas_logical[1] + 2*border_y)
-        xpos = min(self._canvas_logical[0]-1, max(0, int(x//xscale - border_x)))
-        ypos = min(self._canvas_logical[1]-1, max(0, int(y//yscale - border_y)))
+        border_shift = self.border_shift
+        letterbox_shift = self.letterbox_shift
+        scale = self.scale
+        xpos = min(self._canvas_logical[0] - 1, max(
+            0, int((x-letterbox_shift[0]) // scale[0] - border_shift[0])
+        ))
+        ypos = min(self._canvas_logical[1] - 1, max(
+            0, int((y-letterbox_shift[1]) // scale[1] - border_shift[1])
+        ))
         return xpos, ypos
 
     def set_canvas_size(
@@ -165,6 +168,7 @@ class WindowSizer(object):
         # physical-pixel window size
         return mult[0]*logical[0], mult[1]*logical[1]
 
+    @property
     def scale(self):
         """Get scale factors from logical to window size."""
         border_x, border_y = self.border_shift
@@ -175,7 +179,7 @@ class WindowSizer(object):
 
     @property
     def border_shift(self):
-        """Top left physical coordinates of canvas relative to letterbox."""
+        """Top left logical coordinates of canvas relative to window."""
         return (
             int(self._canvas_logical[0] * self._border_pct / 200.),
             int(self._canvas_logical[1] * self._border_pct / 200.)
@@ -183,7 +187,7 @@ class WindowSizer(object):
 
     @property
     def letterbox_shift(self):
-        """Top left physical coordinates of border."""
+        """Top left physical coordinates of letterbox relative to screen."""
         return (
             int(max(0., self._display_size[0] - self._window_size[0]) // 2),
             int(max(0., self._display_size[1] - self._window_size[1]) // 2)

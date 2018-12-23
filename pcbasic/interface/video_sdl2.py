@@ -839,7 +839,7 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_BlitScaled(conv, None, self._display_surface, target_rect)
         else:
             # smooth-scale converted surface
-            scalex, scaley = self._window_sizer.scale()
+            scalex, scaley = self._window_sizer.scale
             zoomx, zoomy = ctypes.c_double(scalex), ctypes.c_double(scaley)
             # only free the surface just before zoomSurface needs to re-allocate
             # so that the memory block is highly likely to be easily available

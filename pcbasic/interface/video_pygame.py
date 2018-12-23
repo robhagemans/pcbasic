@@ -300,7 +300,7 @@ class VideoPygame(VideoPlugin):
             # F11+f to toggle fullscreen mode
             if e.key == pygame.K_f:
                 self.fullscreen = not self.fullscreen
-                self._window_sizer.set_canvas_size(*self.size)
+                self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
                 self._resize_display()
             self.clipboard.handle_key(scan, c)
             self.busy = True
@@ -397,13 +397,20 @@ class VideoPygame(VideoPlugin):
         if self._composite:
             screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
         screen.set_palette(self._palette[self.blink_state])
+        letterbox = pygame.Rect(
+            self._window_sizer.letterbox_shift, self._window_sizer.window_size
+        )
         if self._smooth:
+            # smoothscale to subsurface does not work correctly, so create a new surface and blit
+            dest_surf = pygame.Surface(self._window_sizer.window_size) #, self.display)
             pygame.transform.smoothscale(
-                screen.convert(self.display), self.display.get_size(), self.display
+                screen.convert(dest_surf), self._window_sizer.window_size, dest_surf
             )
+            self.display.blit(dest_surf, letterbox)
         else:
+            dest_surf = self.display.subsurface(letterbox)
             pygame.transform.scale(
-                screen.convert(self.display), self.display.get_size(), self.display
+                screen.convert(dest_surf), self._window_sizer.window_size, dest_surf
             )
         pygame.display.flip()
 
@@ -448,12 +455,10 @@ class VideoPygame(VideoPlugin):
     def _resize_display(self):
         """Change the display size."""
         if self.fullscreen:
-            width, height = self._window_sizer.screen_size
             flags = pygame.NOFRAME
         else:
-            width, height = self._window_sizer.window_size
             flags = pygame.RESIZABLE
-        self.display = pygame.display.set_mode((width, height), flags)
+        self.display = pygame.display.set_mode(self._window_sizer.display_size, flags)
         # load display if requested
         self.busy = True
 
@@ -473,7 +478,7 @@ class VideoPygame(VideoPlugin):
             self.bitsperpixel = mode_info.bitsperpixel
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
-        self._window_sizer.set_canvas_size(*self.size)
+        self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
         self._resize_display()
         # set standard cursor
         self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
@@ -718,8 +723,8 @@ class PygameClipboard(clipboard.Clipboard):
                 )
             else:
                 pygame.scrap.put(pygame.SCRAP_TEXT, text.encode('utf-8', 'replace'))
-        except KeyError:
-            logging.debug('Clipboard copy failed for clip %s', repr(text))
+        except Exception as e:# KeyError:
+            logging.debug('Clipboard copy failed for clip %r: %s', text, e)
 
     def paste(self, mouse=False):
         """Return unicode text from clipboard."""
@@ -728,6 +733,7 @@ class PygameClipboard(clipboard.Clipboard):
         else:
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         us = u''
+        s = b''
         available = pygame.scrap.get_types()
         for text_type in self.text:
             if text_type not in available:
@@ -753,11 +759,13 @@ class PygameClipboard(clipboard.Clipboard):
 
 def get_clipboard_handler():
     """Get a working Clipboard handler object."""
-    # Pygame.Scrap doesn't work on OSX
+    # Pygame.Scrap doesn't work on OSX and crashes on Linux
     if MACOS:
         handler = clipboard.MacClipboard()
-    else:
+    elif WIN32:
         handler = PygameClipboard()
+    else:
+        handler = clipboard.XClipboard()
     if not handler.ok:
         logging.warning('Clipboard copy and paste not available.')
         handler = clipboard.Clipboard()
