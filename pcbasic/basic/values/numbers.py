@@ -280,7 +280,13 @@ class Integer(Number):
 
     def from_str(self, dec_repr):
         """Convert str in decimal representation to integer."""
-        return self.from_int(int(dec_repr.strip(BLANKS)))
+        valstr = dec_repr.strip(BLANKS)
+        if set(valstr) - set(tk.DIGITS):
+            raise ValueError(
+                'string %r contains non-digits, cannot convert to Integer.' %
+                (valstr,)
+            )
+        return self.from_int(int(valstr))
 
     # operations
 
