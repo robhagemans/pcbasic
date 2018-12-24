@@ -466,18 +466,12 @@ class VideoSDL2(VideoPlugin):
         self._pixels = []
         # main window object
         self._display = None
+        self._display_surface = None
         self._work_surface = None
         # overlay surface for clipboard feedback
         self._overlay = None
         # pointer to the zoomed surface
         self._zoomed_surface = None
-        # "NOTE: You should not expect to be able to create a window, render,
-        #        or receive events on any thread other than the main one"
-        # https://wiki.libsdl.org/CategoryThread
-        # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
-        self._do_create_window()
-        # pop up as black rather than background, looks nicer
-        sdl2.SDL_UpdateWindowSurface(self._display)
         # clipboard handler
         self._clipboard_handler = None
         # event handlers
@@ -496,8 +490,7 @@ class VideoSDL2(VideoPlugin):
         # cursor is visible
         self._cursor_visible = True
         # cursor position
-        self._cursor_row = None
-        self._cursor_col = None
+        self._cursor_row, self._cursor_col = 1, 1
         # buffer for part of display obscured by cursor
         self._under_cursor = None
         # cursor shape
@@ -506,27 +499,32 @@ class VideoSDL2(VideoPlugin):
         self._cursor_width = None
         self._cursor_attr = None
         # display pages
-        self._vpagenum = None
-        self._apagenum = None
+        self._vpagenum, self._apagenum = 0, 0
         # palette
-        self._palette = []
-        self._saved_palette = []
-        self._num_fore_attrs = None
-        self._num_back_attrs = None
-
-
-    def __enter__(self):
-        """Complete SDL2 interface initialisation."""
-        # set clipboard handler to SDL2
-        self._clipboard_handler = SDL2Clipboard()
         # display palettes for blink states 0, 1
         self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         self._saved_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
-        # load an all-black 16-colour game palette to get started
-        self.set_palette([(0, 0, 0)] * 16, None)
-        self.move_cursor(1, 1)
-        self.set_page(0, 0)
-        # set_mode should be first event on queue
+        self._num_fore_attrs = 16
+        self._num_back_attrs = 8
+        # set clipboard handler to SDL2
+        self._clipboard_handler = SDL2Clipboard()
+        # available joysticks
+        num_joysticks = sdl2.SDL_NumJoysticks()
+        for stick in range(num_joysticks):
+            sdl2.SDL_JoystickOpen(stick)
+            # if a joystick is present, its axes report 128 for mid, not 0
+            for axis in (0, 1):
+                self._input_queue.put(signals.Event(signals.STICK_MOVED, (stick, axis, 128)))
+
+    def __enter__(self):
+        """Complete SDL2 interface initialisation."""
+        # "NOTE: You should not expect to be able to create a window, render,
+        #        or receive events on any thread other than the main one"
+        # https://wiki.libsdl.org/CategoryThread
+        # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
+        self._do_create_window()
+        # pop up as black rather than background, looks nicer
+        sdl2.SDL_UpdateWindowSurface(self._display)
         # check if we can honour scaling=smooth
         if self._smooth:
             bpp = self._display_surface.contents.format.contents.BitsPerPixel
@@ -538,16 +536,10 @@ class VideoSDL2(VideoPlugin):
             if not sdlgfx:
                 logging.warning('Smooth scaling not available: `sdlgfx` extension not found.')
                 self._smooth = False
-        # available joysticks
-        num_joysticks = sdl2.SDL_NumJoysticks()
-        for stick in range(num_joysticks):
-            sdl2.SDL_JoystickOpen(stick)
-            # if a joystick is present, its axes report 128 for mid, not 0
-            for axis in (0, 1):
-                self._input_queue.put(signals.Event(signals.STICK_MOVED, (stick, axis, 128)))
         # enable IME
         sdl2.SDL_StartTextInput()
         return VideoPlugin.__enter__(self)
+        # set_mode should be first event on queue
 
     def __exit__(self, type, value, traceback):
         """Close the SDL2 interface."""
