@@ -29,8 +29,38 @@ from . import window
 from . import clipboard
 
 
+###############################################################################
+# locate and load SDL libraries
+
 # platform-specific dll location
 LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
+# possible names of sdl_gfx library
+GFX_NAMES = ['SDL2_gfx', 'SDL2_gfx-1.0']
+
+
+def _bind_gfx_zoomsurface():
+    """Bind smooth-zoom function."""
+    # look for SDL2_gfx.dll:
+    # first in SDL2.dll location
+    # if not found, in LIB_DIR; then in standard search path
+    try:
+        sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, os.path.dirname(sdl2.dll.libfile))
+    except Exception:
+        try:
+            sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, LIB_DIR)
+        except Exception:
+            try:
+                sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES)
+            except Exception:
+                sdlgfx = None
+    if sdlgfx:
+        return sdlgfx.bind_function(
+            'zoomSurface',
+            [ctypes.POINTER(sdl2.SDL_Surface), ctypes.c_double, ctypes.c_double, ctypes.c_int],
+            ctypes.POINTER(sdl2.SDL_Surface)
+        )
+    return None
+
 
 with EnvironmentCache() as _sdl_env:
     # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
@@ -45,29 +75,7 @@ with EnvironmentCache() as _sdl_env:
             from . import sdl2
         except ImportError:
             sdl2 = None
-
-    # look for SDL2_gfx.dll:
-    # first in SDL2.dll location
-    # if not found, in LIB_DIR; then in standard search path
-    GFX_NAMES = ['SDL2_gfx', 'SDL2_gfx-1.0']
-    try:
-        sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, os.path.dirname(sdl2.dll.libfile))
-    except Exception:
-        try:
-            sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, LIB_DIR)
-        except Exception:
-            try:
-                sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES)
-            except Exception:
-                sdlgfx = None
-
-if sdlgfx:
-    SMOOTHING_ON = 1
-    zoomSurface = sdlgfx.bind_function(
-        'zoomSurface',
-        [ctypes.POINTER(sdl2.SDL_Surface), ctypes.c_double, ctypes.c_double, ctypes.c_int],
-        ctypes.POINTER(sdl2.SDL_Surface)
-    )
+    _smooth_zoom = _bind_gfx_zoomsurface()
 
 
 ###############################################################################
@@ -542,7 +550,7 @@ class VideoSDL2(VideoPlugin):
                     'Smooth scaling not available: need 32-bit colour, have %d-bit.', bpp
                 )
                 self._smooth = False
-            if not sdlgfx:
+            if not _smooth_zoom:
                 logging.warning('Smooth scaling not available: `sdlgfx` extension not found.')
                 self._smooth = False
         # enable IME
@@ -929,7 +937,8 @@ class VideoSDL2(VideoPlugin):
             # so that the memory block is highly likely to be easily available
             # this seems to avoid unpredictable delays
             sdl2.SDL_FreeSurface(self._zoomed_surface)
-            self._zoomed_surface = zoomSurface(conv, zoomx, zoomy, SMOOTHING_ON)
+            # SMOOTHING_ON = 1
+            self._zoomed_surface = _smooth_zoom(conv, zoomx, zoomy, 1)
             # blit onto display
             sdl2.SDL_BlitSurface(self._zoomed_surface, None, self._display_surface, target_rect)
         # create clipboard feedback
