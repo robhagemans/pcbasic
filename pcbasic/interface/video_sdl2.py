@@ -35,7 +35,7 @@ from . import clipboard
 # platform-specific dll location
 LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
 # possible names of sdl_gfx library
-GFX_NAMES = ['SDL2_gfx', 'SDL2_gfx-1.0']
+GFX_NAMES = ('SDL2_gfx', 'SDL2_gfx-1.0')
 
 
 def _bind_gfx_zoomsurface():
@@ -379,7 +379,7 @@ class VideoSDL2(VideoPlugin):
         self._display = None
         self._display_surface = None
         self._work_surface = None
-        self._work_pixels = None
+        self._canvas_pixels = None
         # overlay surface for clipboard feedback
         self._overlay = None
         # pointer to the zoomed surface
@@ -787,14 +787,6 @@ class VideoSDL2(VideoPlugin):
             self._blink_state = 0 if self._cycle < BLINK_CYCLES * 2 else 1
             if self._cycle % BLINK_CYCLES == 0:
                 self.busy = True
-        if (
-                self._cursor_visible
-                and (
-                    (self._cursor_row != self._last_row)
-                    or (self._cursor_col != self._last_col)
-                )
-            ):
-            self.busy = True
         tock = sdl2.SDL_GetTicks()
         if tock - self._last_tick >= CYCLE_TIME:
             self._last_tick = tock
@@ -809,11 +801,11 @@ class VideoSDL2(VideoPlugin):
         """Draw the canvas to the screen."""
         sdl2.SDL_FillRect(self._work_surface, None, self._border_attr)
         if self._composite:
-            self._work_pixels[:] = window.apply_composite_artifacts(
+            self._canvas_pixels[:] = window.apply_composite_artifacts(
                 self._pixels[self._vpagenum], 4 // self._bitsperpixel
             )
         else:
-            self._work_pixels[:] = self._pixels[self._vpagenum]
+            self._canvas_pixels[:] = self._pixels[self._vpagenum]
         sdl2.SDL_SetSurfacePalette(self._work_surface, self._palette[self._blink_state])
         # apply cursor to work surface
         self._show_cursor(True)
@@ -831,13 +823,12 @@ class VideoSDL2(VideoPlugin):
         else:
             # smooth-scale converted surface
             scalex, scaley = self._window_sizer.scale
-            zoomx, zoomy = ctypes.c_double(scalex), ctypes.c_double(scaley)
             # only free the surface just before zoomSurface needs to re-allocate
             # so that the memory block is highly likely to be easily available
             # this seems to avoid unpredictable delays
             sdl2.SDL_FreeSurface(self._zoomed_surface)
             # SMOOTHING_ON = 1
-            self._zoomed_surface = _smooth_zoom(conv, zoomx, zoomy, 1)
+            self._zoomed_surface = _smooth_zoom(conv, scalex, scaley, 1)
             # blit onto display
             sdl2.SDL_BlitSurface(self._zoomed_surface, None, self._display_surface, target_rect)
         # create clipboard feedback
@@ -865,8 +856,7 @@ class VideoSDL2(VideoPlugin):
         """Draw or remove the cursor on the visible page."""
         if not self._cursor_visible or self._vpagenum != self._apagenum:
             return
-        screen = self._work_surface
-        pixels = self._work_pixels
+        pixels = self._canvas_pixels
         top = (self._cursor_row-1) * self._font_height
         left = (self._cursor_col-1) * self._font_width
         if not do_show:
@@ -887,7 +877,7 @@ class VideoSDL2(VideoPlugin):
                     border_x + left, border_y + top + self._cursor_from,
                     self._cursor_width, curs_height
                 )
-                sdl2.SDL_FillRect(screen, curs_rect, self._cursor_attr)
+                sdl2.SDL_FillRect(self._work_surface, curs_rect, self._cursor_attr)
         else:
             pixels[left:left+self._cursor_width, top+self._cursor_from:top+self._cursor_to+1] ^= (
                 self._cursor_attr
@@ -943,7 +933,7 @@ class VideoSDL2(VideoPlugin):
         work_width, work_height = self._window_sizer.window_size_logical
         sdl2.SDL_FreeSurface(self._work_surface)
         self._work_surface = sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
-        self._work_pixels = _pixels2d(self._work_surface.contents)[
+        self._canvas_pixels = _pixels2d(self._work_surface.contents)[
             border_x : work_width - border_x,
             border_y : work_height - border_y
         ]
@@ -1042,13 +1032,18 @@ class VideoSDL2(VideoPlugin):
         self._cursor_visible = cursor_on
         self.busy = True
 
-    def move_cursor(self, crow, ccol):
+    def move_cursor(self, new_row, new_col):
         """Move the cursor to a new position."""
-        self._cursor_row, self._cursor_col = crow, ccol
+        if self._cursor_visible and (self._cursor_row, self._cursor_col) != (new_row, new_col):
+            self.busy = True
+        self._cursor_row, self._cursor_col = new_row, new_col
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
-        self._cursor_attr = attr % self._num_fore_attrs
+        new_attr = attr % self._num_fore_attrs
+        if self._cursor_visible and self._cursor_attr != new_attr:
+            self.busy = True
+        self._cursor_attr = new_attr
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
@@ -1117,6 +1112,8 @@ class VideoSDL2(VideoPlugin):
         self._cursor_width = width
         self._cursor_from, self._cursor_to = from_line, to_line
         self._under_cursor = numpy.zeros((width, height))
+        if self._cursor_visible:
+            self.busy = True
 
     def put_pixel(self, pagenum, x, y, index):
         """Put a pixel on the screen; callback to empty character buffer."""
