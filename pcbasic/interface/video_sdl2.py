@@ -9,9 +9,6 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 import ctypes
 import os
-import sys
-from collections import Counter
-from ctypes import POINTER, c_int, c_double
 
 try:
     import numpy
@@ -22,6 +19,14 @@ from ..compat import iteritems, unichr
 from ..compat import WIN32, BASE_DIR, PLATFORM
 
 from .base import EnvironmentCache
+from .base import video_plugins, InitFailed, NOKILL_MESSAGE
+from ..basic.base import signals
+from ..basic.base import scancode
+from ..basic.base.eascii import as_unicode as uea
+from ..data.resources import ICON
+from .video import VideoPlugin
+from . import window
+from . import clipboard
 
 
 # platform-specific dll location
@@ -59,18 +64,10 @@ with EnvironmentCache() as _sdl_env:
 if sdlgfx:
     SMOOTHING_ON = 1
     zoomSurface = sdlgfx.bind_function(
-            'zoomSurface',
-            [POINTER(sdl2.SDL_Surface), c_double, c_double, c_int], POINTER(sdl2.SDL_Surface)
-        )
-
-from .base import video_plugins, InitFailed, NOKILL_MESSAGE
-from ..basic.base import signals
-from ..basic.base import scancode
-from ..basic.base.eascii import as_unicode as uea
-from ..data.resources import ICON
-from .video import VideoPlugin
-from . import window
-from . import clipboard
+        'zoomSurface',
+        [ctypes.POINTER(sdl2.SDL_Surface), ctypes.c_double, ctypes.c_double, ctypes.c_int],
+        ctypes.POINTER(sdl2.SDL_Surface)
+    )
 
 
 ###############################################################################
@@ -101,24 +98,30 @@ if sdl2:
         sdl2.SDL_SCANCODE_BACKSPACE: scancode.BACKSPACE,
         # row 1
         sdl2.SDL_SCANCODE_TAB: scancode.TAB, sdl2.SDL_SCANCODE_Q: scancode.q,
-        sdl2.SDL_SCANCODE_W: scancode.w, sdl2.SDL_SCANCODE_E: scancode.e, sdl2.SDL_SCANCODE_R: scancode.r,
-        sdl2.SDL_SCANCODE_T: scancode.t, sdl2.SDL_SCANCODE_Y: scancode.y, sdl2.SDL_SCANCODE_U: scancode.u,
-        sdl2.SDL_SCANCODE_I: scancode.i, sdl2.SDL_SCANCODE_O: scancode.o, sdl2.SDL_SCANCODE_P: scancode.p,
+        sdl2.SDL_SCANCODE_W: scancode.w, sdl2.SDL_SCANCODE_E: scancode.e,
+        sdl2.SDL_SCANCODE_R: scancode.r, sdl2.SDL_SCANCODE_T: scancode.t,
+        sdl2.SDL_SCANCODE_Y: scancode.y, sdl2.SDL_SCANCODE_U: scancode.u,
+        sdl2.SDL_SCANCODE_I: scancode.i, sdl2.SDL_SCANCODE_O: scancode.o,
+        sdl2.SDL_SCANCODE_P: scancode.p,
         sdl2.SDL_SCANCODE_LEFTBRACKET: scancode.LEFTBRACKET,
         sdl2.SDL_SCANCODE_RIGHTBRACKET: scancode.RIGHTBRACKET,
         sdl2.SDL_SCANCODE_RETURN: scancode.RETURN, sdl2.SDL_SCANCODE_KP_ENTER: scancode.RETURN,
         # row 2
         sdl2.SDL_SCANCODE_RCTRL: scancode.CTRL, sdl2.SDL_SCANCODE_LCTRL: scancode.CTRL,
-        sdl2.SDL_SCANCODE_A: scancode.a, sdl2.SDL_SCANCODE_S: scancode.s, sdl2.SDL_SCANCODE_D: scancode.d,
-        sdl2.SDL_SCANCODE_F: scancode.f, sdl2.SDL_SCANCODE_G: scancode.g, sdl2.SDL_SCANCODE_H: scancode.h,
-        sdl2.SDL_SCANCODE_J: scancode.j, sdl2.SDL_SCANCODE_K: scancode.k, sdl2.SDL_SCANCODE_L: scancode.l,
-        sdl2.SDL_SCANCODE_SEMICOLON: scancode.SEMICOLON, sdl2.SDL_SCANCODE_APOSTROPHE: scancode.QUOTE,
+        sdl2.SDL_SCANCODE_A: scancode.a, sdl2.SDL_SCANCODE_S: scancode.s,
+        sdl2.SDL_SCANCODE_D: scancode.d, sdl2.SDL_SCANCODE_F: scancode.f,
+        sdl2.SDL_SCANCODE_G: scancode.g, sdl2.SDL_SCANCODE_H: scancode.h,
+        sdl2.SDL_SCANCODE_J: scancode.j, sdl2.SDL_SCANCODE_K: scancode.k,
+        sdl2.SDL_SCANCODE_L: scancode.l,
+        sdl2.SDL_SCANCODE_SEMICOLON: scancode.SEMICOLON,
+        sdl2.SDL_SCANCODE_APOSTROPHE: scancode.QUOTE,
         sdl2.SDL_SCANCODE_GRAVE: scancode.BACKQUOTE,
         # row 3
         sdl2.SDL_SCANCODE_LSHIFT: scancode.LSHIFT,
         sdl2.SDL_SCANCODE_BACKSLASH: scancode.BACKSLASH,
-        sdl2.SDL_SCANCODE_Z: scancode.z, sdl2.SDL_SCANCODE_X: scancode.x, sdl2.SDL_SCANCODE_C: scancode.c,
-        sdl2.SDL_SCANCODE_V: scancode.v, sdl2.SDL_SCANCODE_B: scancode.b, sdl2.SDL_SCANCODE_N: scancode.n,
+        sdl2.SDL_SCANCODE_Z: scancode.z, sdl2.SDL_SCANCODE_X: scancode.x,
+        sdl2.SDL_SCANCODE_C: scancode.c, sdl2.SDL_SCANCODE_V: scancode.v,
+        sdl2.SDL_SCANCODE_B: scancode.b, sdl2.SDL_SCANCODE_N: scancode.n,
         sdl2.SDL_SCANCODE_M: scancode.m, sdl2.SDL_SCANCODE_COMMA: scancode.COMMA,
         sdl2.SDL_SCANCODE_PERIOD: scancode.PERIOD, sdl2.SDL_SCANCODE_SLASH: scancode.SLASH,
         sdl2.SDL_SCANCODE_RSHIFT: scancode.RSHIFT,
@@ -360,6 +363,7 @@ class SDL2Clipboard(clipboard.Clipboard):
 
     def __init__(self):
         """Initialise the clipboard handler."""
+        clipboard.Clipboard.__init__(self)
         self.ok = (sdl2 is not None)
 
     def copy(self, text, mouse=False):
@@ -468,12 +472,15 @@ class VideoSDL2(VideoPlugin):
         self._display = None
         self._display_surface = None
         self._work_surface = None
+        self._work_pixels = None
         # overlay surface for clipboard feedback
         self._overlay = None
         # pointer to the zoomed surface
         self._zoomed_surface = None
         # clipboard handler
         self._clipboard_handler = None
+        # clipboard visual feedback
+        self._clipboard_interface = None
         # event handlers
         self._event_handlers = self._register_handlers()
         # glyph cache
@@ -506,6 +513,8 @@ class VideoSDL2(VideoPlugin):
         self._saved_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         self._num_fore_attrs = 16
         self._num_back_attrs = 8
+        # last keypress
+        self._last_down = None
         # set clipboard handler to SDL2
         self._clipboard_handler = SDL2Clipboard()
         # available joysticks
@@ -541,9 +550,9 @@ class VideoSDL2(VideoPlugin):
         return VideoPlugin.__enter__(self)
         # set_mode should be first event on queue
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, value, traceback):
         """Close the SDL2 interface."""
-        VideoPlugin.__exit__(self, type, value, traceback)
+        VideoPlugin.__exit__(self, exc_type, value, traceback)
         if sdl2 and numpy and self._has_window:
             # free windows
             sdl2.SDL_DestroyWindow(self._display)
@@ -553,8 +562,8 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_FreeSurface(self._work_surface)
             sdl2.SDL_FreeSurface(self._overlay)
             # free palettes
-            for p in self._palette + self._saved_palette:
-                sdl2.SDL_FreePalette(p)
+            for palette in self._palette + self._saved_palette:
+                sdl2.SDL_FreePalette(palette)
             # close IME
             sdl2.SDL_StopTextInput()
             # close SDL2
@@ -738,65 +747,65 @@ class VideoSDL2(VideoPlugin):
 
     # keyboard events
 
-    def _handle_key_down(self, e):
+    def _handle_key_down(self, event):
         """Handle key-down event."""
         # get scancode
-        scan = SCAN_TO_SCAN.get(e.key.keysym.scancode, None)
+        scan = SCAN_TO_SCAN.get(event.key.keysym.scancode, None)
         # get modifiers
-        mod = [s for m, s in iteritems(MOD_TO_SCAN) if e.key.keysym.mod & m]
+        mod = [_s for _m, _s in iteritems(MOD_TO_SCAN) if event.key.keysym.mod & _m]
         # get eascii
         try:
             if scancode.ALT in mod:
-                c = ALT_SCAN_TO_EASCII[e.key.keysym.scancode]
+                char = ALT_SCAN_TO_EASCII[event.key.keysym.scancode]
             elif scancode.CTRL in mod:
-                c = CTRL_KEY_TO_EASCII[e.key.keysym.sym]
+                char = CTRL_KEY_TO_EASCII[event.key.keysym.sym]
             elif scancode.LSHIFT in mod or scancode.RSHIFT in mod:
-                c = SHIFT_KEY_TO_EASCII[e.key.keysym.sym]
+                char = SHIFT_KEY_TO_EASCII[event.key.keysym.sym]
             else:
-                c = KEY_TO_EASCII[e.key.keysym.sym]
+                char = KEY_TO_EASCII[event.key.keysym.sym]
         except KeyError:
             # try control+letter -> control codes
-            key = e.key.keysym.sym
+            key = event.key.keysym.sym
             if scancode.CTRL in mod and key >= ord(u'a') and key <= ord(u'z'):
-                c = unichr(key - ord(u'a') + 1)
+                char = unichr(key - ord(u'a') + 1)
             elif scancode.CTRL in mod and key >= ord(u'[') and key <= ord(u'_'):
-                c = unichr(key - ord(u'A') + 1)
+                char = unichr(key - ord(u'A') + 1)
             else:
-                c = u''
-        if c == u'\0':
-            c = uea.NUL
+                char = u''
+        if char == u'\0':
+            char = uea.NUL
         # handle F11 home-key combinations
-        if e.key.keysym.sym == sdl2.SDLK_F11:
+        if event.key.keysym.sym == sdl2.SDLK_F11:
             self._f11_active = True
             self._clipboard_interface.start(self._cursor_row, self._cursor_col)
         elif self._f11_active:
-            self._clipboard_interface.handle_key(scan, c)
+            self._clipboard_interface.handle_key(scan, char)
             self.busy = True
         else:
             # keep scancode in last-down buffer to combine with text event
             # flush buffer on next key down, text event or end of loop
             # if the same key is reported twice with the same timestamp, ignore
             # (this deals with the Unity double-ALT-bug and maybe others)
-            if scan is not None and (c, scan, mod, e.key.timestamp) != self._last_down:
+            if scan is not None and (char, scan, mod, event.key.timestamp) != self._last_down:
                 self._flush_keypress()
-                self._last_down = c, scan, mod, e.key.timestamp
+                self._last_down = char, scan, mod, event.key.timestamp
 
     def _flush_keypress(self):
         """Flush last keypress from buffer."""
         if self._last_down is not None:
             # insert into keyboard queue; no text event
-            c, scan, mod, _ = self._last_down
-            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, mod)))
+            char, scan, mod, _ = self._last_down
+            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, scan, mod)))
             self._last_down = None
 
-    def _handle_key_up(self, e):
+    def _handle_key_up(self, event):
         """Handle key-up event."""
         try:
-            scan = SCAN_TO_SCAN[e.key.keysym.scancode]
+            scan = SCAN_TO_SCAN[event.key.keysym.scancode]
         except KeyError:
             return
         # check for emulator key
-        if e.key.keysym.sym == sdl2.SDLK_F11:
+        if event.key.keysym.sym == sdl2.SDLK_F11:
             self._clipboard_interface.stop()
             self.busy = True
             self._f11_active = False
@@ -814,37 +823,37 @@ class VideoSDL2(VideoPlugin):
 
     def _handle_text_input(self, event):
         """Handle text-input event."""
-        c = event.text.text.decode('utf-8', errors='replace')
+        char = event.text.text.decode('utf-8', errors='replace')
         if self._f11_active:
             # F11+f to toggle fullscreen mode
-            if c.upper() == u'F':
+            if char.upper() == u'F':
                 self._toggle_fullscreen()
-            self._clipboard_interface.handle_key(None, c)
+            self._clipboard_interface.handle_key(None, char)
         # the text input event follows the key down event immediately
         elif self._last_down is None:
             # no key down event waiting: other input method
-            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
+            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
         else:
-            eascii, scan, mod, ts = self._last_down
+            eascii, scan, mod, timestamp = self._last_down
             # timestamps for kepdown and textinput may differ by one on mac
-            if ts + 1 >= event.text.timestamp:
+            if timestamp + 1 >= event.text.timestamp:
                 # combine if same time stamp
-                if eascii and c != eascii:
+                if eascii and char != eascii:
                     # filter out chars being sent with alt+key on Linux
                     if scancode.ALT not in mod:
                         # with IME, the text is sent together with the final Enter keypress.
-                        self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
+                        self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
                     else:
                         # final keypress such as space, CR have IME meaning, we should ignore them
                         self._input_queue.put(signals.Event(signals.KEYB_DOWN, (eascii, scan, mod)))
                 else:
-                    self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, mod)))
+                    self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, scan, mod)))
             else:
                 # two separate events
                 # previous keypress has no corresponding textinput
                 self._flush_keypress()
                 # current textinput has no corresponding keypress
-                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
+                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
             self._last_down = None
 
     def _toggle_fullscreen(self):
@@ -930,10 +939,14 @@ class VideoSDL2(VideoPlugin):
                 for r in self._clipboard_interface.selection_rect
             )
             sdl_rects = (sdl2.SDL_Rect*len(self._clipboard_interface.selection_rect))(*rects)
-            sdl2.SDL_FillRect(self._overlay, None,
-                sdl2.SDL_MapRGBA(self._overlay.contents.format, 0, 0, 0, 0))
-            sdl2.SDL_FillRects(self._overlay, sdl_rects, len(sdl_rects),
-                sdl2.SDL_MapRGBA(self._overlay.contents.format, 128, 0, 128, 0))
+            sdl2.SDL_FillRect(
+                self._overlay, None,
+                sdl2.SDL_MapRGBA(self._overlay.contents.format, 0, 0, 0, 0)
+            )
+            sdl2.SDL_FillRects(
+                self._overlay, sdl_rects, len(sdl_rects),
+                sdl2.SDL_MapRGBA(self._overlay.contents.format, 128, 0, 128, 0)
+            )
             sdl2.SDL_BlitScaled(self._overlay, None, self._display_surface, target_rect)
         # flip the display
         sdl2.SDL_UpdateWindowSurface(self._display)
@@ -1059,19 +1072,19 @@ class VideoSDL2(VideoPlugin):
         # bottom 128 are non-blink, top 128 blink to background
         show_palette_0 = rgb_palette_0[:self._num_fore_attrs] * (256//self._num_fore_attrs)
         show_palette_1 = rgb_palette_1[:self._num_fore_attrs] * (128//self._num_fore_attrs)
-        for b in (
+        for attr in (
                 rgb_palette_1[:self._num_back_attrs] *
                 (128 // self._num_fore_attrs // self._num_back_attrs)
             ):
-            show_palette_1 += [b]*self._num_fore_attrs
+            show_palette_1 += [attr]*self._num_fore_attrs
         colors_0 = (sdl2.SDL_Color * 256)(*(
-            sdl2.SDL_Color(r, g, b, 255)
-            for (r, g, b) in show_palette_0)
-        )
+            sdl2.SDL_Color(_r, _g, _b, 255)
+            for (_r, _g, _b) in show_palette_0
+        ))
         colors_1 = (sdl2.SDL_Color * 256)(*(
-            sdl2.SDL_Color(r, g, b, 255)
-            for (r, g, b) in show_palette_1)
-        )
+            sdl2.SDL_Color(_r, _g, _b, 255)
+            for (_r, _g, _b) in show_palette_1
+        ))
         sdl2.SDL_SetPaletteColors(self._palette[0], colors_0, 0, 256)
         sdl2.SDL_SetPaletteColors(self._palette[1], colors_1, 0, 256)
         self.busy = True
@@ -1133,37 +1146,35 @@ class VideoSDL2(VideoPlugin):
         """Scroll the screen up between from_line and scroll_height."""
         pixels = self._pixels[self._apagenum]
         # these are exclusive ranges [x0, x1) etc
-        x0, x1 = 0, self._window_sizer.width
+        width = self._window_sizer.width
         new_y0, new_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
         old_y0, old_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
-        pixels[x0:x1, new_y1:old_y1] = numpy.full((x1-x0, old_y1-new_y1), back_attr, dtype=int)
+        pixels[0:width, new_y0:new_y1] = pixels[0:width, old_y0:old_y1]
+        pixels[0:width, new_y1:old_y1] = numpy.full((width, old_y1-new_y1), back_attr, dtype=int)
         self.busy = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
         pixels = self._pixels[self._apagenum]
         # these are exclusive ranges [x0, x1) etc
-        x0, x1 = 0, self._window_sizer.width
+        width = self._window_sizer.width
         old_y0, old_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
         new_y0, new_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
-        pixels[x0:x1, old_y0:new_y0] = numpy.full((x1-x0, new_y0-old_y0), back_attr, dtype=int)
+        pixels[0:width, new_y0:new_y1] = pixels[0:width, old_y0:old_y1]
+        pixels[0:width, old_y0:new_y0] = numpy.full((width, new_y0-old_y0), back_attr, dtype=int)
         self.busy = True
 
-    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline):
+    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""
         if not self._is_text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
-        attr = fore + self._num_fore_attrs*back + 128*blink
-        x0, y0 = (col-1)*self._font_width, (row-1)*self._font_height
         # NOTE: in pygame plugin we used a surface fill for the NUL character
         # which was an optimisation early on -- consider if we need speedup.
         try:
-            glyph = self._glyph_dict[cp]
+            glyph = self._glyph_dict[char]
         except KeyError:
-            logging.warning('No glyph received for code point %s', hex(ord(cp)))
+            logging.warning('No glyph received for code point %s', hex(ord(char)))
             try:
                 glyph = self._glyph_dict[u'\0']
             except KeyError:
@@ -1171,12 +1182,17 @@ class VideoSDL2(VideoPlugin):
                 return
         # _pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
         glyph_width = glyph.shape[0]
+        left, top = (col-1)*self._font_width, (row-1)*self._font_height
+        attr = fore + self._num_fore_attrs*back + 128*blink
         # changle glyph color by numpy scalar mult (is there a better way?)
-        self._pixels[pagenum][x0:x0+glyph_width, y0:y0+self._font_height] = glyph*(attr-back) + back
+        self._pixels[pagenum][
+            left : left+glyph_width,
+            top : top+self._font_height
+        ] = glyph*(attr-back) + back
         if underline:
             sdl2.SDL_FillRect(
                 self._canvas[self._apagenum],
-                sdl2.SDL_Rect(x0, y0 + self._font_height - 1, glyph_width, 1),
+                sdl2.SDL_Rect(left, top + self._font_height - 1, glyph_width, 1),
                 attr
             )
         self.busy = True
