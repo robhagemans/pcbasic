@@ -791,13 +791,7 @@ class VideoSDL2(VideoPlugin):
     def _do_flip(self):
         """Draw the canvas to the screen."""
         if self._composite:
-            lwindow_w, lwindow_h = self._window_sizer.window_size_logical
-            work_surface = sdl2.SDL_CreateRGBSurface(
-                0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0
-            )
-            _pixels2d(work_surface)[:] = window.apply_composite_artifacts(
-                self._canvas_pixels[self._vpagenum], 4 // self._bitsperpixel
-            )
+            work_surface = self._create_composite_surface()
         else:
             work_surface = self._window_surface[self._vpagenum]
         pixelformat = self._display_surface.contents.format
@@ -882,6 +876,21 @@ class VideoSDL2(VideoPlugin):
         sdl2.SDL_BlitSurface(overlay, None, conv, overlay_target)
         sdl2.SDL_FreeSurface(overlay)
 
+    def _create_composite_surface(self):
+        """Apply composite artifacts."""
+        lwindow_w, lwindow_h = self._window_sizer.window_size_logical
+        border_x, border_y = self._window_sizer.border_shift
+        work_surface = sdl2.SDL_CreateRGBSurface(
+            0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0
+        )
+        _pixels2d(work_surface.contents)[
+            border_x : lwindow_w - border_x,
+            border_y : lwindow_h - border_y
+        ] = window.apply_composite_artifacts(
+            self._canvas_pixels[self._vpagenum], 4 // self._bitsperpixel
+        )
+        return work_surface
+
 
     ###########################################################################
     # signal handlers
@@ -919,11 +928,10 @@ class VideoSDL2(VideoPlugin):
                 self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         # set standard cursor
         self.set_cursor_shape(self._font_width, self._font_height, 0, self._font_height)
-        # create work surface for border and composite
-        work_width, work_height = self._window_sizer.window_size_logical
         # screen pages
         for surface in self._window_surface:
             sdl2.SDL_FreeSurface(surface)
+        work_width, work_height = self._window_sizer.window_size_logical
         self._window_surface = [
             sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
             for _ in range(self._num_pages)
