@@ -1116,7 +1116,7 @@ class VideoSDL2(VideoPlugin):
 
     def fill_interval(self, pagenum, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
-        self._canvas_pixels[pagenum][x:x+len(colours), y] = index
+        self._canvas_pixels[pagenum][x0:x1+1, y] = index
         self.busy = True
 
     def put_interval(self, pagenum, x, y, colours):
