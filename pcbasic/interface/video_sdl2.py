@@ -790,10 +790,8 @@ class VideoSDL2(VideoPlugin):
 
     def _do_flip(self):
         """Draw the canvas to the screen."""
-        lwindow_w, lwindow_h = self._window_sizer.window_size_logical
-        lcanvas_w, lcanvas_h = self._window_sizer.canvas_size_logical
-        border_x, border_y = self._window_sizer.border_shift
         if self._composite:
+            lwindow_w, lwindow_h = self._window_sizer.window_size_logical
             work_surface = sdl2.SDL_CreateRGBSurface(
                 0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0
             )
@@ -812,26 +810,18 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_FreeSurface(work_surface)
         # create clipboard feedback
         if self._clipboard_interface.active():
-            n_rects = len(self._clipboard_interface.selection_rect)
-            if n_rects:
-                # create overlay for clipboard selection feedback
-                overlay = sdl2.SDL_CreateRGBSurface(0, lcanvas_w, lcanvas_h, 32, 0, 0, 0, 0)
-                sdl2.SDL_SetSurfaceBlendMode(overlay, sdl2.SDL_BLENDMODE_ADD)
-                overlay_target = sdl2.SDL_Rect(border_x, border_y, lcanvas_w, lcanvas_h)
-                rects = (sdl2.SDL_Rect * n_rects)(*(
-                    sdl2.SDL_Rect(*r) for r in self._clipboard_interface.selection_rect
-                ))
-                sdl2.SDL_FillRects(
-                    overlay, rects, n_rects,
-                    sdl2.SDL_MapRGBA(overlay.contents.format, 128, 0, 128, 0)
-                )
-                sdl2.SDL_BlitSurface(overlay, None, conv, overlay_target)
-                sdl2.SDL_FreeSurface(overlay)
+            self._show_clipboard(conv)
+        # scale surface to final dimensions and flip
+        self._scale_and_flip(conv)
+        # destroy the temporary surface
+        sdl2.SDL_FreeSurface(conv)
+
+    def _scale_and_flip(self, conv):
+        """Scale converted surface and flip onto display."""
         # determine letterbox dimensions
         xshift, yshift = self._window_sizer.letterbox_shift
         window_w, window_h = self._window_sizer.window_size
         target_rect = sdl2.SDL_Rect(xshift, yshift, window_w, window_h)
-        # scale converted surface and blit onto display
         if not self._smooth:
             sdl2.SDL_BlitScaled(conv, None, self._display_surface, target_rect)
         else:
@@ -847,8 +837,6 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_BlitSurface(self._zoomed_surface, None, self._display_surface, target_rect)
         # flip the display
         sdl2.SDL_UpdateWindowSurface(self._display)
-        # destroy the temporary surface
-        sdl2.SDL_FreeSurface(conv)
 
     @contextmanager
     def _show_cursor(self):
@@ -872,6 +860,27 @@ class VideoSDL2(VideoPlugin):
             cursor_area[:] ^= self._cursor_attr
         yield
         cursor_area[:] = under_cursor
+
+    def _show_clipboard(self, conv):
+        """Show clipboard feedback overlay."""
+        n_rects = len(self._clipboard_interface.selection_rect)
+        if not n_rects:
+            return
+        border_x, border_y = self._window_sizer.border_shift
+        lcanvas_w, lcanvas_h = self._window_sizer.canvas_size_logical
+        # create overlay for clipboard selection feedback
+        overlay = sdl2.SDL_CreateRGBSurface(0, lcanvas_w, lcanvas_h, 32, 0, 0, 0, 0)
+        sdl2.SDL_SetSurfaceBlendMode(overlay, sdl2.SDL_BLENDMODE_ADD)
+        overlay_target = sdl2.SDL_Rect(border_x, border_y, lcanvas_w, lcanvas_h)
+        rects = (sdl2.SDL_Rect * n_rects)(*(
+            sdl2.SDL_Rect(*r) for r in self._clipboard_interface.selection_rect
+        ))
+        sdl2.SDL_FillRects(
+            overlay, rects, n_rects,
+            sdl2.SDL_MapRGBA(overlay.contents.format, 128, 0, 128, 0)
+        )
+        sdl2.SDL_BlitSurface(overlay, None, conv, overlay_target)
+        sdl2.SDL_FreeSurface(overlay)
 
 
     ###########################################################################
