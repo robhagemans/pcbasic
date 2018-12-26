@@ -790,11 +790,12 @@ class VideoSDL2(VideoPlugin):
 
     def _do_flip(self):
         """Draw the canvas to the screen."""
-        window_w, window_h = self._window_sizer.window_size
+        lwindow_w, lwindow_h = self._window_sizer.window_size_logical
+        lcanvas_w, lcanvas_h = self._window_sizer.canvas_size_logical
         border_x, border_y = self._window_sizer.border_shift
         if self._composite:
             work_surface = sdl2.SDL_CreateRGBSurface(
-                0, window_w, window_h, 8, 0, 0, 0, 0
+                0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0
             )
             _pixels2d(work_surface)[:] = window.apply_composite_artifacts(
                 self._canvas_pixels[self._vpagenum], 4 // self._bitsperpixel
@@ -811,25 +812,24 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_FreeSurface(work_surface)
         # create clipboard feedback
         if self._clipboard_interface.active():
-            # create overlay for clipboard selection feedback
-            # create a copy of the display surface format
-            overlay = sdl2.SDL_CreateRGBSurface(
-                0, window_w, window_h, 32, 0, 0, 0, 0
-            )
-            sdl2.SDL_SetSurfaceBlendMode(overlay, sdl2.SDL_BLENDMODE_ADD)
-            rects = (
-                sdl2.SDL_Rect(r[0]+border_x, r[1]+border_y, r[2], r[3])
-                for r in self._clipboard_interface.selection_rect
-            )
-            sdl_rects = (sdl2.SDL_Rect*len(self._clipboard_interface.selection_rect))(*rects)
-            sdl2.SDL_FillRects(
-                overlay, sdl_rects, len(sdl_rects),
-                sdl2.SDL_MapRGBA(overlay.contents.format, 128, 0, 128, 0)
-            )
-            sdl2.SDL_BlitSurface(overlay, None, conv, None)
-            sdl2.SDL_FreeSurface(overlay)
+            n_rects = len(self._clipboard_interface.selection_rect)
+            if n_rects:
+                # create overlay for clipboard selection feedback
+                overlay = sdl2.SDL_CreateRGBSurface(0, lcanvas_w, lcanvas_h, 32, 0, 0, 0, 0)
+                sdl2.SDL_SetSurfaceBlendMode(overlay, sdl2.SDL_BLENDMODE_ADD)
+                overlay_target = sdl2.SDL_Rect(border_x, border_y, lcanvas_w, lcanvas_h)
+                rects = (sdl2.SDL_Rect * n_rects)(*(
+                    sdl2.SDL_Rect(*r) for r in self._clipboard_interface.selection_rect
+                ))
+                sdl2.SDL_FillRects(
+                    overlay, rects, n_rects,
+                    sdl2.SDL_MapRGBA(overlay.contents.format, 128, 0, 128, 0)
+                )
+                sdl2.SDL_BlitSurface(overlay, None, conv, overlay_target)
+                sdl2.SDL_FreeSurface(overlay)
         # determine letterbox dimensions
         xshift, yshift = self._window_sizer.letterbox_shift
+        window_w, window_h = self._window_sizer.window_size
         target_rect = sdl2.SDL_Rect(xshift, yshift, window_w, window_h)
         # scale converted surface and blit onto display
         if not self._smooth:
