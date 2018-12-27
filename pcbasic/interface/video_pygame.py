@@ -1035,10 +1035,15 @@ if pygame:
     }
 
 
-def apply_composite_artifacts(screen, bpp):
+def apply_composite_artifacts(screen, bpp_in):
     """Process the canvas to apply composite colour artifacts."""
     src_array = pygame.surfarray.array2d(screen)
-    return pygame.surfarray.make_surface(window.pack_pixels(src_array, 4, bpp))
+    width, _ = src_array.shape
+    mask = 1<<bpp_in - 1
+    step = 4 // bpp_in
+    s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
+    packed = numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
+    return pygame.surfarray.make_surface(packed)
 
 
 def glyph_to_surface(glyph):

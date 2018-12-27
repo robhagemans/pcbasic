@@ -6,13 +6,6 @@ Graphical interface common utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
-import sys
-
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 from ..compat import set_dpi_aware
 
 
@@ -22,15 +15,6 @@ set_dpi_aware()
 # percentage of the screen to leave unused for window decorations etc.
 DISPLAY_SLACK = 15
 _SLACK_RATIO = 1. - DISPLAY_SLACK / 100.
-
-
-def pack_pixels(src_array, bpp_out, bpp_in):
-    """Pack pixels in a [x][y] matrix."""
-    width, _ = src_array.shape
-    mask = 1<<bpp_in - 1
-    step = bpp_out // bpp_in
-    s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
-    return numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
 
 
 def _most_constraining(constraining, target_aspect):

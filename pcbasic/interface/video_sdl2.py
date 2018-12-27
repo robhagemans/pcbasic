@@ -303,6 +303,15 @@ def _pixels2d(psurface):
     return numpy.ndarray(shape, numpy.uint8, pxbuf, 0, strides, 'C').transpose()
 
 
+def _pack_pixels(src_array, bpp_out, bpp_in):
+    """Pack pixels in a [x][y] matrix."""
+    width, _ = src_array.shape
+    mask = 1<<bpp_in - 1
+    step = bpp_out // bpp_in
+    s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
+    return numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
+
+
 ###############################################################################
 # video plugin
 
@@ -927,16 +936,17 @@ class VideoSDL2(VideoPlugin):
         sdl2.SDL_FreeSurface(overlay)
 
     def _create_composite_surface(self):
-        """Apply composite artifacts."""
+        """Pack multiple pixels into one for composite artifacts."""
         lwindow_w, lwindow_h = self._window_sizer.window_size_logical
         border_x, border_y = self._window_sizer.border_shift
+        step = (4//self._bitsperpixel)
         work_surface = sdl2.SDL_CreateRGBSurface(
-            0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0
+            0, lwindow_w // step, lwindow_h, 8, 0, 0, 0, 0
         )
         _pixels2d(work_surface.contents)[
-            border_x : lwindow_w - border_x,
+            border_x//step : (lwindow_w - border_x)//step,
             border_y : lwindow_h - border_y
-        ] = window.pack_pixels(self._canvas_pixels[self._vpagenum], 4, self._bitsperpixel)
+        ] = _pack_pixels(self._canvas_pixels[self._vpagenum], 4, self._bitsperpixel)
         return work_surface
 
 
