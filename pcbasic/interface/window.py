@@ -1,20 +1,14 @@
 """
 PC-BASIC - window.py
-Graphical interface common utilities
+Window scaling calculations
 
 (c) 2015--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
-from ..compat import set_dpi_aware
 
-
-# Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
-set_dpi_aware()
-
-# percentage of the screen to leave unused for window decorations etc.
-DISPLAY_SLACK = 15
-_SLACK_RATIO = 1. - DISPLAY_SLACK / 100.
+# leave 15% of the screen (in most constraining direction) unused for window decorations etc.
+_SLACK_RATIO = 0.85
 
 
 def _most_constraining(constraining, target_aspect):

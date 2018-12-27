@@ -28,6 +28,7 @@ from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
 from ..compat import WIN32, MACOS, PY2
+from ..compat import set_dpi_aware
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed, EnvironmentCache, NOKILL_MESSAGE
 from . import clipboard
@@ -56,6 +57,7 @@ class VideoPygame(VideoPlugin):
         """Initialise pygame interface."""
         logging.warning('The PyGame interface is deprecated, use the SDL2 interface instead.')
         VideoPlugin.__init__(self, input_queue, video_queue)
+
         # request smooth scaling
         self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
@@ -70,6 +72,8 @@ class VideoPygame(VideoPlugin):
             raise InitFailed('Module `pygame` not found')
         if not numpy:
             raise InitFailed('Module `numpy` not found')
+        # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
+        set_dpi_aware()
         # ensure we have the correct video driver for SDL 1.2
         # pygame sets this on import, but if we've tried SDL2 we've had to
         # reset this value

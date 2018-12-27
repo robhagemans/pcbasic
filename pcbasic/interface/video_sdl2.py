@@ -18,6 +18,7 @@ except ImportError:
 
 from ..compat import iteritems, unichr
 from ..compat import WIN32, BASE_DIR, PLATFORM
+from ..compat import set_dpi_aware
 
 from .base import EnvironmentCache
 from .base import video_plugins, InitFailed, NOKILL_MESSAGE
@@ -332,6 +333,8 @@ class VideoSDL2(VideoPlugin):
         if not numpy:
             raise InitFailed('Module `numpy` not found')
         VideoPlugin.__init__(self, input_queue, video_queue)
+        # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
+        set_dpi_aware()
         # request smooth scaling
         self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
