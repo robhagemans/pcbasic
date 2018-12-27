@@ -936,9 +936,7 @@ class VideoSDL2(VideoPlugin):
         _pixels2d(work_surface.contents)[
             border_x : lwindow_w - border_x,
             border_y : lwindow_h - border_y
-        ] = window.apply_composite_artifacts(
-            self._canvas_pixels[self._vpagenum], 4 // self._bitsperpixel
-        )
+        ] = window.pack_pixels(self._canvas_pixels[self._vpagenum], 4, self._bitsperpixel)
         return work_surface
 
 

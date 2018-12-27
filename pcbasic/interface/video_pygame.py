@@ -398,7 +398,7 @@ class VideoPygame(VideoPlugin):
         if self.clipboard.active():
             create_feedback(workscreen, self.clipboard.selection_rect)
         if self._composite:
-            screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
+            screen = apply_composite_artifacts(screen, self.bitsperpixel)
         screen.set_palette(self._palette[self.blink_state])
         letterbox = pygame.Rect(
             self._window_sizer.letterbox_shift, self._window_sizer.window_size
@@ -1035,11 +1035,10 @@ if pygame:
     }
 
 
-def apply_composite_artifacts(screen, pixels=4):
+def apply_composite_artifacts(screen, bpp):
     """Process the canvas to apply composite colour artifacts."""
     src_array = pygame.surfarray.array2d(screen)
-    return pygame.surfarray.make_surface(
-                    window.apply_composite_artifacts(src_array, pixels))
+    return pygame.surfarray.make_surface(window.pack_pixels(src_array, 4, bpp))
 
 
 def glyph_to_surface(glyph):

@@ -24,11 +24,13 @@ DISPLAY_SLACK = 15
 _SLACK_RATIO = 1. - DISPLAY_SLACK / 100.
 
 
-def apply_composite_artifacts(src_array, pixels=4):
-    """Process the canvas to apply composite colour artifacts."""
-    width, _ = src_array.shape
-    s = [(src_array[_p:width:pixels] & (4//pixels)) << _p for _p in range(pixels)]
-    return numpy.repeat(numpy.array(s).sum(axis=0), pixels, axis=0)
+def pack_pixels(src_array, bpp_out, bpp_in):
+    """Pack pixels in a [x][y] matrix."""
+    width, = src_array.shape
+    mask = 1<<bpp_in - 1
+    step = bpp_out // bpp_in
+    s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
+    return numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
 
 
 def _most_constraining(constraining, target_aspect):
