@@ -85,10 +85,11 @@ with EnvironmentCache() as _sdl_env:
 # refresh cycle parameters
 # number of cycles to change blink state
 BLINK_CYCLES = 5
+# number of distinct blink states
+N_BLINK_STATES = 4
 # ms duration of a blink
 BLINK_TIME = 120
 CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
-
 
 ###############################################################################
 # keyboard codes
@@ -380,7 +381,8 @@ class VideoSDL2(VideoPlugin):
         self._display = None
         self._display_surface = None
         # one cache per blink state
-        self._display_cache = [None] * 4
+        self._display_cache = [None] * N_BLINK_STATES
+        self._has_display_cache = [False] * N_BLINK_STATES
         # pointer to the zoomed surface
         self._zoomed_surface = None
         # clipboard handler
@@ -459,6 +461,9 @@ class VideoSDL2(VideoPlugin):
         if sdl2 and numpy and self._has_window:
             # free windows
             sdl2.SDL_DestroyWindow(self._display)
+            # free caches
+            for surface in self._display_cache:
+                sdl2.SDL_FreeSurface(surface)
             # free surfaces
             for surface in self._window_surface:
                 sdl2.SDL_FreeSurface(surface)
@@ -504,8 +509,21 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_SetHint(sdl2.SDL_HINT_GRAB_KEYBOARD, b'1')
             sdl2.SDL_SetWindowGrab(self._display, sdl2.SDL_TRUE)
         self._set_icon()
-        self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
+        self._reset_display_caches()
         self.busy = True
+
+    def _reset_display_caches(self):
+        """Reset caches and references to display object."""
+        self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
+        # reset cache sizes
+        for surface in self._display_cache:
+            sdl2.SDL_FreeSurface(surface)
+        # clone the surface four times for blink caches
+        self._display_cache = [
+            sdl2.SDL_ConvertSurface(self._display_surface, self._display_surface.contents.format, 0)
+            for _ in range(N_BLINK_STATES)
+        ]
+        self._has_display_cache = [False] * N_BLINK_STATES
 
 
     ###########################################################################
@@ -580,7 +598,7 @@ class VideoSDL2(VideoPlugin):
             # update the size calculator
             self._window_sizer.set_display_size(width.value, height.value)
         # we need to update the surface pointer
-        self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
+        self._reset_display_caches()
         self.busy = True
 
     # mouse events
@@ -790,7 +808,7 @@ class VideoSDL2(VideoPlugin):
         if tick - self._last_tick >= CYCLE_TIME:
             self._last_tick = tick
             self._cycle += 1
-            if self._cycle == BLINK_CYCLES * 4:
+            if self._cycle == BLINK_CYCLES * N_BLINK_STATES:
                 self._cycle = 0
             # blink state
             blink_state, blink_tock = divmod(self._cycle, BLINK_CYCLES)
@@ -806,14 +824,12 @@ class VideoSDL2(VideoPlugin):
 
     def _clear_display_cache(self):
         """Clear cursor cache on busy flip."""
-        for surface in self._display_cache:
-             sdl2.SDL_FreeSurface(surface)
         # one cache per blink state
-        self._display_cache = [None] * 4
+        self._has_display_cache = [False] * N_BLINK_STATES
 
     def _flip_lazy(self, blink_state):
         """Blink the cursor only, to avoid doing all the scaling and converting work."""
-        if self._display_cache[blink_state]:
+        if self._has_display_cache[blink_state]:
             sdl2.SDL_BlitSurface(
                 self._display_cache[blink_state], None, self._display_surface, None
             )
@@ -864,10 +880,8 @@ class VideoSDL2(VideoPlugin):
             # blit onto display
             sdl2.SDL_BlitSurface(self._zoomed_surface, None, self._display_surface, target_rect)
         # save in display cache for this blink state
-        self._display_cache[blink_state] = sdl2.SDL_CreateRGBSurface(
-            0, self._display_surface.contents.w, self._display_surface.contents.h, 32, 0, 0, 0, 0
-        )
         sdl2.SDL_BlitSurface(self._display_surface, None, self._display_cache[blink_state], None)
+        self._has_display_cache[blink_state] = True
         # flip the display
         sdl2.SDL_UpdateWindowSurface(self._display)
 
@@ -962,7 +976,7 @@ class VideoSDL2(VideoPlugin):
                     self._display, sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED
                 )
                 # need to update surface pointer after a change in window size
-                self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
+                self._reset_display_caches()
         # set standard cursor
         self.set_cursor_shape(self._font_width, self._font_height, 0, self._font_height)
         # screen pages
