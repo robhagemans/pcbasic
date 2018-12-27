@@ -348,9 +348,6 @@ class VideoSDL2(VideoPlugin):
         # display & border
         # border attribute
         self._border_attr = 0
-        # palette and colours
-        # composite colour artifacts are active
-        self._composite = False
         # update cycle
         self._cycle = 0
         self._last_tick = 0
@@ -428,9 +425,10 @@ class VideoSDL2(VideoPlugin):
         # palette
         # display palettes for blink states 0, 1
         self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
-        self._saved_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         self._num_fore_attrs = 16
         self._num_back_attrs = 8
+        # pixel packing is active (composite artifacts)
+        self._composite = False
         # last keypress
         self._last_keypress = None
         # set clipboard handler to SDL2
@@ -481,7 +479,7 @@ class VideoSDL2(VideoPlugin):
             for surface in self._window_surface:
                 sdl2.SDL_FreeSurface(surface)
             # free palettes
-            for palette in self._palette + self._saved_palette:
+            for palette in self._palette:
                 sdl2.SDL_FreePalette(palette)
             # close IME
             sdl2.SDL_StopTextInput()
@@ -1020,7 +1018,7 @@ class VideoSDL2(VideoPlugin):
         """Put text on the clipboard."""
         self._clipboard_handler.copy(text, mouse)
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1):
+    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
         """Build the palette."""
         self._num_fore_attrs = min(16, len(rgb_palette_0))
         self._num_back_attrs = min(8, self._num_fore_attrs)
@@ -1045,6 +1043,7 @@ class VideoSDL2(VideoPlugin):
         ))
         sdl2.SDL_SetPaletteColors(self._palette[0], colors_0, 0, 256)
         sdl2.SDL_SetPaletteColors(self._palette[1], colors_1, 0, 256)
+        self._composite = pack_pixels
         self.busy = True
 
     def set_border_attr(self, attr):
@@ -1060,20 +1059,6 @@ class VideoSDL2(VideoPlugin):
         for canvas in self._window_surface:
             sdl2.SDL_FillRects(canvas, border_rects, 4, attr)
         self._border_attr = attr
-        self.busy = True
-
-    def set_composite(self, on, composite_colors):
-        """Enable/disable composite artifacts."""
-        if on != self._composite:
-            self._palette, self._saved_palette = self._saved_palette, self._palette
-        if on:
-            colors = (sdl2.SDL_Color * 256)(*(
-                sdl2.SDL_Color(_r, _g, _b, 255)
-                for (_r, _g, _b) in composite_colors
-            ))
-            sdl2.SDL_SetPaletteColors(self._palette[0], colors, 0, 256)
-            sdl2.SDL_SetPaletteColors(self._palette[1], colors, 0, 256)
-        self._composite = on
         self.busy = True
 
     def clear_rows(self, back_attr, start, stop):

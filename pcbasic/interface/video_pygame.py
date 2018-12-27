@@ -93,13 +93,12 @@ class VideoPygame(VideoPlugin):
         # border attribute
         self.border_attr = 0
         # palette and colours
-        # composite colour artifacts
-        self._composite = False
         # working palette - attribute index in blue channel
         self.work_palette = [(0, 0, index) for index in range(256)]
         # display palettes for blink states 0, 1
         self._palette = [None, None]
-        self._saved_palette = [None, None]
+        # composite colour artifacts
+        self._composite = False
         # text attributes supported
         self.mode_has_blink = True
         # update cycle
@@ -150,7 +149,7 @@ class VideoPygame(VideoPlugin):
             pygame.display.set_caption(self.caption)
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
-        self.set_palette([(0,0,0)]*16, None)
+        self.set_palette([(0,0,0)]*16, None, None)
         pygame.joystick.init()
         self.joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
         for j in self.joysticks:
@@ -513,7 +512,7 @@ class VideoPygame(VideoPlugin):
         """Put text on the clipboard."""
         self.clipboard_handler.copy(text, mouse)
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1):
+    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
         """Build the palette."""
         self.num_fore_attrs = min(16, len(rgb_palette_0))
         self.num_back_attrs = min(8, self.num_fore_attrs)
@@ -528,20 +527,12 @@ class VideoPygame(VideoPlugin):
                 (128 // self.num_fore_attrs // self.num_back_attrs)
             ):
             self._palette[1] += [b]*self.num_fore_attrs
+        self._composite = pack_pixels
         self.busy = True
 
     def set_border_attr(self, attr):
         """Change the border attribute."""
         self.border_attr = attr
-        self.busy = True
-
-    def set_composite(self, on, composite_colors):
-        """Enable/disable composite artifacts."""
-        if on != self._composite:
-            self._palette, self._saved_palette = self._saved_palette, self._palette
-        if on:
-            self._palette = [composite_colors] * 2
-        self._composite = on
         self.busy = True
 
     def clear_rows(self, back_attr, start, stop):
