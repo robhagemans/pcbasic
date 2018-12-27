@@ -405,6 +405,7 @@ class VideoSDL2(VideoPlugin):
         self._cursor_to = None
         self._cursor_width = None
         self._cursor_attr = None
+        self._cursor_cache = [None, None]
         # display pages
         self._vpagenum, self._apagenum = 0, 0
         # palette
@@ -773,11 +774,14 @@ class VideoSDL2(VideoPlugin):
         """Check screen and blink events; update screen if necessary."""
         if not self._has_window:
             return
-        self._blink_state = 0
-        if self._allow_blink:
-            self._blink_state = 0 if self._cycle < BLINK_CYCLES * 2 else 1
-            if self._cycle % BLINK_CYCLES == 0:
-                self.busy = True
+        # blink state changes
+        new_blink_state = int(self._allow_blink and self._cycle >= BLINK_CYCLES * 2)
+        #if new_blink_state != self._blink_state:
+        #    self.busy = True
+        self._blink_state = new_blink_state
+        cursor_blink = (self._cycle % BLINK_CYCLES == 0) and self._is_text_mode
+        # cursor visible every cycle between 5 and 10, 15 and 20
+        cursor_state = self._cycle // BLINK_CYCLES in (1, 3) or not self._is_text_mode
         tock = sdl2.SDL_GetTicks()
         if tock - self._last_tick >= CYCLE_TIME:
             self._last_tick = tock
@@ -785,10 +789,33 @@ class VideoSDL2(VideoPlugin):
             if self._cycle == BLINK_CYCLES * 4:
                 self._cycle = 0
             if self.busy:
-                self._do_flip()
+                # clear cursor cache on busy flip
+                for surface in self._cursor_cache:
+                     sdl2.SDL_FreeSurface(surface)
+                self._cursor_cache = [None, None]
+                self._flip_busy(cursor_state)
                 self.busy = False
+            elif cursor_blink:
+                self._flip_lazy(cursor_state)
 
-    def _do_flip(self):
+    def _flip_lazy(self, cursor_state):
+        """Blink the cursor only, to avoid doing all the scaling and converting work."""
+        if self._cursor_cache[cursor_state]:
+            scalex, scaley = self._window_sizer.scale
+            border_x, border_y = self._window_sizer.border_shift
+            left = max(0, int(scalex * (border_x - 1 + (self._cursor_col-1) * self._font_width)))
+            top = max(0, int(scaley * (border_y - 1 + (self._cursor_row-1) * self._font_height)))
+            cursor_w = int(scalex * (self._cursor_width + 2))
+            cursor_h = int(scaley * (self._font_height + 2))
+            cursor_rect = sdl2.SDL_Rect(left, top, cursor_w, cursor_h)
+            sdl2.SDL_BlitSurface(self._cursor_cache[cursor_state], None, self._display_surface, cursor_rect)
+            # the dirty rect update hardly makes a difference, but we have the rect anyway
+            sdl2.SDL_UpdateWindowSurfaceRects(self._display, cursor_rect, 1)
+            #sdl2.SDL_UpdateWindowSurface(self._display)
+        else:
+            self._flip_busy(cursor_state)
+
+    def _flip_busy(self, cursor_state):
         """Draw the canvas to the screen."""
         if self._composite:
             work_surface = self._create_composite_surface()
@@ -796,7 +823,7 @@ class VideoSDL2(VideoPlugin):
             work_surface = self._window_surface[self._vpagenum]
         pixelformat = self._display_surface.contents.format
         # apply cursor to work surface
-        with self._show_cursor():
+        with self._show_cursor(cursor_state):
             # convert 8-bit work surface to (usually) 32-bit display surface format
             sdl2.SDL_SetSurfacePalette(work_surface, self._palette[self._blink_state])
             conv = sdl2.SDL_ConvertSurface(work_surface, pixelformat, 0)
@@ -806,11 +833,11 @@ class VideoSDL2(VideoPlugin):
         if self._clipboard_interface.active():
             self._show_clipboard(conv)
         # scale surface to final dimensions and flip
-        self._scale_and_flip(conv)
+        self._scale_and_flip(conv, cursor_state)
         # destroy the temporary surface
         sdl2.SDL_FreeSurface(conv)
 
-    def _scale_and_flip(self, conv):
+    def _scale_and_flip(self, conv, cursor_state):
         """Scale converted surface and flip onto display."""
         # determine letterbox dimensions
         xshift, yshift = self._window_sizer.letterbox_shift
@@ -829,16 +856,23 @@ class VideoSDL2(VideoPlugin):
             self._zoomed_surface = _smooth_zoom(conv, scalex, scaley, 1)
             # blit onto display
             sdl2.SDL_BlitSurface(self._zoomed_surface, None, self._display_surface, target_rect)
+        # copy the area containing the cursor; include one extra pixel on all sides for smoothing
+        scalex, scaley = self._window_sizer.scale
+        border_x, border_y = self._window_sizer.border_shift
+        left = max(0, int(scalex * (border_x - 1 + (self._cursor_col-1) * self._font_width)))
+        top = max(0, int(scaley * (border_y - 1 + (self._cursor_row-1) * self._font_height)))
+        cursor_w = int(scalex * (self._cursor_width + 2))
+        cursor_h = int(scaley * (self._font_height + 2))
+        self._cursor_cache[cursor_state] = sdl2.SDL_CreateRGBSurface(0, cursor_w, cursor_h, 32, 0, 0, 0, 0)
+        cursor_rect = sdl2.SDL_Rect(left, top, cursor_w, cursor_h)
+        sdl2.SDL_BlitSurface(self._display_surface, cursor_rect, self._cursor_cache[cursor_state], None)
         # flip the display
         sdl2.SDL_UpdateWindowSurface(self._display)
 
     @contextmanager
-    def _show_cursor(self):
+    def _show_cursor(self, cursor_state):
         """Draw or remove the cursor on the visible page."""
-        if not self._cursor_visible or self._vpagenum != self._apagenum or (
-                # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
-                self._is_text_mode and not (self._cycle // BLINK_CYCLES in (1, 3))
-            ):
+        if not self._cursor_visible or self._vpagenum != self._apagenum or not cursor_state:
             yield
             return
         pixels = self._canvas_pixels[self._apagenum]
