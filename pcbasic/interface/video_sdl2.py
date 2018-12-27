@@ -942,12 +942,9 @@ class VideoSDL2(VideoPlugin):
         """Pack multiple pixels into one for composite artifacts."""
         lwindow_w, lwindow_h = self._window_sizer.window_size_logical
         border_x, border_y = self._window_sizer.border_shift
-        step = (4//self._bitsperpixel)
-        work_surface = sdl2.SDL_CreateRGBSurface(
-            0, lwindow_w // step, lwindow_h, 8, 0, 0, 0, 0
-        )
+        work_surface = sdl2.SDL_CreateRGBSurface(0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0)
         _pixels2d(work_surface.contents)[
-            border_x//step : (lwindow_w - border_x)//step,
+            border_x : (lwindow_w - border_x),
             border_y : lwindow_h - border_y
         ] = _pack_pixels(self._canvas_pixels[self._vpagenum], 4, self._bitsperpixel)
         return work_surface
