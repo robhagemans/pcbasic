@@ -340,9 +340,9 @@ class VideoSDL2(VideoPlugin):
         # update cycle
         self._cycle = 0
         self._last_tick = 0
-        # blink cycle
-        self._allow_blink = True
-        self._blink_state = 0
+        # blink is enabled, should be True in text modes with blink and ega mono
+        # cursor blinks if _is_text_mode and _blink_enabled
+        self._blink_enabled = True
         # load the icon
         self._icon = icon
         # mouse setups
@@ -379,6 +379,8 @@ class VideoSDL2(VideoPlugin):
         # main window object
         self._display = None
         self._display_surface = None
+        # one cache per blink state
+        self._display_cache = [None] * 4
         # pointer to the zoomed surface
         self._zoomed_surface = None
         # clipboard handler
@@ -774,48 +776,53 @@ class VideoSDL2(VideoPlugin):
         """Check screen and blink events; update screen if necessary."""
         if not self._has_window:
             return
-        # blink state changes
-        new_blink_state = int(self._allow_blink and self._cycle >= BLINK_CYCLES * 2)
-        #if new_blink_state != self._blink_state:
-        #    self.busy = True
-        self._blink_state = new_blink_state
-        cursor_blink = (self._cycle % BLINK_CYCLES == 0) and self._is_text_mode
+        #               0      0      1      1
+        # cycle         0 1234 5 6789 0 1234 5 6789 (0)
+        # blink state   0 ---- 1 ---- 2 ---- 3 ---- (0)
+        # cursor        off    on     off    on
+        # blink         on     on     off    off
+        #
+        # blink state remains constant if blink not enabled
+        # cursor blinks only if _is_text_mode and _blink_enabled
         # cursor visible every cycle between 5 and 10, 15 and 20
-        cursor_state = self._cycle // BLINK_CYCLES in (1, 3) or not self._is_text_mode
-        tock = sdl2.SDL_GetTicks()
-        if tock - self._last_tick >= CYCLE_TIME:
-            self._last_tick = tock
+        #cursor_state = self._cycle // BLINK_CYCLES in (1, 3) or not self._is_text_mode
+        tick = sdl2.SDL_GetTicks()
+        if tick - self._last_tick >= CYCLE_TIME:
+            self._last_tick = tick
             self._cycle += 1
             if self._cycle == BLINK_CYCLES * 4:
                 self._cycle = 0
+            # blink state
+            blink_state, blink_tock = divmod(self._cycle, BLINK_CYCLES)
+            if not self._blink_enabled:
+                blink_state = 1
+            # flip display fully if changed, use cache if just blinking
             if self.busy:
-                # clear cursor cache on busy flip
-                for surface in self._cursor_cache:
-                     sdl2.SDL_FreeSurface(surface)
-                self._cursor_cache = [None, None]
-                self._flip_busy(cursor_state)
+                self._clear_display_cache()
+                self._flip_busy(blink_state)
                 self.busy = False
-            elif cursor_blink:
-                self._flip_lazy(cursor_state)
+            elif self._blink_enabled and blink_tock == 0:
+                self._flip_lazy(blink_state)
 
-    def _flip_lazy(self, cursor_state):
+    def _clear_display_cache(self):
+        """Clear cursor cache on busy flip."""
+        for surface in self._display_cache:
+             sdl2.SDL_FreeSurface(surface)
+        # one cache per blink state
+        self._display_cache = [None] * 4
+
+    def _flip_lazy(self, blink_state):
         """Blink the cursor only, to avoid doing all the scaling and converting work."""
-        if self._cursor_cache[cursor_state]:
-            scalex, scaley = self._window_sizer.scale
-            border_x, border_y = self._window_sizer.border_shift
-            left = max(0, int(scalex * (border_x - 1 + (self._cursor_col-1) * self._font_width)))
-            top = max(0, int(scaley * (border_y - 1 + (self._cursor_row-1) * self._font_height)))
-            cursor_w = int(scalex * (self._cursor_width + 2))
-            cursor_h = int(scaley * (self._font_height + 2))
-            cursor_rect = sdl2.SDL_Rect(left, top, cursor_w, cursor_h)
-            sdl2.SDL_BlitSurface(self._cursor_cache[cursor_state], None, self._display_surface, cursor_rect)
-            # the dirty rect update hardly makes a difference, but we have the rect anyway
-            sdl2.SDL_UpdateWindowSurfaceRects(self._display, cursor_rect, 1)
-            #sdl2.SDL_UpdateWindowSurface(self._display)
+        if self._display_cache[blink_state]:
+            sdl2.SDL_BlitSurface(
+                self._display_cache[blink_state], None, self._display_surface, None
+            )
+            sdl2.SDL_UpdateWindowSurface(self._display)
         else:
-            self._flip_busy(cursor_state)
+            # if we don't have a cache for this state, build it
+            self._flip_busy(blink_state)
 
-    def _flip_busy(self, cursor_state):
+    def _flip_busy(self, blink_state):
         """Draw the canvas to the screen."""
         if self._composite:
             work_surface = self._create_composite_surface()
@@ -823,9 +830,9 @@ class VideoSDL2(VideoPlugin):
             work_surface = self._window_surface[self._vpagenum]
         pixelformat = self._display_surface.contents.format
         # apply cursor to work surface
-        with self._show_cursor(cursor_state):
+        with self._show_cursor(blink_state % 2):
             # convert 8-bit work surface to (usually) 32-bit display surface format
-            sdl2.SDL_SetSurfacePalette(work_surface, self._palette[self._blink_state])
+            sdl2.SDL_SetSurfacePalette(work_surface, self._palette[blink_state // 2])
             conv = sdl2.SDL_ConvertSurface(work_surface, pixelformat, 0)
         if self._composite:
             sdl2.SDL_FreeSurface(work_surface)
@@ -833,11 +840,11 @@ class VideoSDL2(VideoPlugin):
         if self._clipboard_interface.active():
             self._show_clipboard(conv)
         # scale surface to final dimensions and flip
-        self._scale_and_flip(conv, cursor_state)
+        self._scale_and_flip(conv, blink_state)
         # destroy the temporary surface
         sdl2.SDL_FreeSurface(conv)
 
-    def _scale_and_flip(self, conv, cursor_state):
+    def _scale_and_flip(self, conv, blink_state):
         """Scale converted surface and flip onto display."""
         # determine letterbox dimensions
         xshift, yshift = self._window_sizer.letterbox_shift
@@ -856,16 +863,11 @@ class VideoSDL2(VideoPlugin):
             self._zoomed_surface = _smooth_zoom(conv, scalex, scaley, 1)
             # blit onto display
             sdl2.SDL_BlitSurface(self._zoomed_surface, None, self._display_surface, target_rect)
-        # copy the area containing the cursor; include one extra pixel on all sides for smoothing
-        scalex, scaley = self._window_sizer.scale
-        border_x, border_y = self._window_sizer.border_shift
-        left = max(0, int(scalex * (border_x - 1 + (self._cursor_col-1) * self._font_width)))
-        top = max(0, int(scaley * (border_y - 1 + (self._cursor_row-1) * self._font_height)))
-        cursor_w = int(scalex * (self._cursor_width + 2))
-        cursor_h = int(scaley * (self._font_height + 2))
-        self._cursor_cache[cursor_state] = sdl2.SDL_CreateRGBSurface(0, cursor_w, cursor_h, 32, 0, 0, 0, 0)
-        cursor_rect = sdl2.SDL_Rect(left, top, cursor_w, cursor_h)
-        sdl2.SDL_BlitSurface(self._display_surface, cursor_rect, self._cursor_cache[cursor_state], None)
+        # save in display cache for this blink state
+        self._display_cache[blink_state] = sdl2.SDL_CreateRGBSurface(
+            0, self._display_surface.contents.w, self._display_surface.contents.h, 32, 0, 0, 0, 0
+        )
+        sdl2.SDL_BlitSurface(self._display_surface, None, self._display_cache[blink_state], None)
         # flip the display
         sdl2.SDL_UpdateWindowSurface(self._display)
 
@@ -936,8 +938,9 @@ class VideoSDL2(VideoPlugin):
         self._font_height = mode_info.font_height
         self._font_width = mode_info.font_width
         self._num_pages = mode_info.num_pages
-        self._allow_blink = mode_info.has_blink
+        self._blink_enabled = mode_info.has_blink
         if not self._is_text_mode:
+            # only needed for composite
             self._bitsperpixel = mode_info.bitsperpixel
         # prebuilt glyphs
         # NOTE: [x][y] format - change this if we change _pixels2d
