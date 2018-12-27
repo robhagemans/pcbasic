@@ -91,6 +91,7 @@ N_BLINK_STATES = 4
 BLINK_TIME = 120
 CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
 
+
 ###############################################################################
 # keyboard codes
 
@@ -419,7 +420,7 @@ class VideoSDL2(VideoPlugin):
         self._num_fore_attrs = 16
         self._num_back_attrs = 8
         # last keypress
-        self._last_down = None
+        self._last_keypress = None
         # set clipboard handler to SDL2
         self._clipboard_handler = SDL2Clipboard()
         # available joysticks
@@ -535,7 +536,7 @@ class VideoSDL2(VideoPlugin):
         if not self._has_window:
             return
         # check and handle input events
-        self._last_down = None
+        self._last_keypress = None
         event = sdl2.SDL_Event()
         while sdl2.SDL_PollEvent(ctypes.byref(event)):
             try:
@@ -705,17 +706,17 @@ class VideoSDL2(VideoPlugin):
             # flush buffer on next key down, text event or end of loop
             # if the same key is reported twice with the same timestamp, ignore
             # (this deals with the Unity double-ALT-bug and maybe others)
-            if scan is not None and (char, scan, mod, event.key.timestamp) != self._last_down:
+            if scan is not None and (char, scan, mod, event.key.timestamp) != self._last_keypress:
                 self._flush_keypress()
-                self._last_down = char, scan, mod, event.key.timestamp
+                self._last_keypress = char, scan, mod, event.key.timestamp
 
     def _flush_keypress(self):
         """Flush last keypress from buffer."""
-        if self._last_down is not None:
+        if self._last_keypress is not None:
             # insert into keyboard queue; no text event
-            char, scan, mod, _ = self._last_down
+            char, scan, mod, _ = self._last_keypress
             self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, scan, mod)))
-            self._last_down = None
+            self._last_keypress = None
 
     def _handle_key_up(self, event):
         """Handle key-up event."""
@@ -749,11 +750,11 @@ class VideoSDL2(VideoPlugin):
                 self._toggle_fullscreen()
             self._clipboard_interface.handle_key(None, char)
         # the text input event follows the key down event immediately
-        elif self._last_down is None:
+        elif self._last_keypress is None:
             # no key down event waiting: other input method
             self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
         else:
-            eascii, scan, mod, timestamp = self._last_down
+            eascii, scan, mod, timestamp = self._last_keypress
             # timestamps for kepdown and textinput may differ by one on mac
             if timestamp + 1 >= event.text.timestamp:
                 # combine if same time stamp
@@ -773,7 +774,7 @@ class VideoSDL2(VideoPlugin):
                 self._flush_keypress()
                 # current textinput has no corresponding keypress
                 self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
-            self._last_down = None
+            self._last_keypress = None
 
     def _toggle_fullscreen(self):
         """Togggle fullscreen mode."""
@@ -803,7 +804,6 @@ class VideoSDL2(VideoPlugin):
         # blink state remains constant if blink not enabled
         # cursor blinks only if _is_text_mode and _blink_enabled
         # cursor visible every cycle between 5 and 10, 15 and 20
-        #cursor_state = self._cycle // BLINK_CYCLES in (1, 3) or not self._is_text_mode
         tick = sdl2.SDL_GetTicks()
         if tick - self._last_tick >= CYCLE_TIME:
             self._last_tick = tick
@@ -890,20 +890,20 @@ class VideoSDL2(VideoPlugin):
         """Draw or remove the cursor on the visible page."""
         if not self._cursor_visible or self._vpagenum != self._apagenum or not cursor_state:
             yield
-            return
-        pixels = self._canvas_pixels[self._apagenum]
-        height = self._cursor_to + 1 - self._cursor_from
-        top = (self._cursor_row-1) * self._font_height + self._cursor_from
-        left = (self._cursor_col-1) * self._font_width
-        cursor_area = pixels[left:left+self._cursor_width, top:top+height]
-        # copy area under cursor
-        under_cursor = numpy.copy(cursor_area)
-        if self._is_text_mode:
-            cursor_area[:] = self._cursor_attr
         else:
-            cursor_area[:] ^= self._cursor_attr
-        yield
-        cursor_area[:] = under_cursor
+            pixels = self._canvas_pixels[self._apagenum]
+            height = self._cursor_to + 1 - self._cursor_from
+            top = (self._cursor_row-1) * self._font_height + self._cursor_from
+            left = (self._cursor_col-1) * self._font_width
+            cursor_area = pixels[left:left+self._cursor_width, top:top+height]
+            # copy area under cursor
+            under_cursor = numpy.copy(cursor_area)
+            if self._is_text_mode:
+                cursor_area[:] = self._cursor_attr
+            else:
+                cursor_area[:] ^= self._cursor_attr
+            yield
+            cursor_area[:] = under_cursor
 
     def _show_clipboard(self, conv):
         """Show clipboard feedback overlay."""
@@ -1173,7 +1173,7 @@ class VideoSDL2(VideoPlugin):
             self.busy = True
 
     def put_pixel(self, pagenum, x, y, index):
-        """Put a pixel on the screen; callback to empty character buffer."""
+        """Put a pixel on the screen."""
         self._canvas_pixels[pagenum][x, y] = index
         self.busy = True
 
@@ -1194,7 +1194,7 @@ class VideoSDL2(VideoPlugin):
         self.busy = True
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
-        """Apply numpy array [y][x] of attribytes to an area."""
+        """Apply numpy array [y][x] of attributes to an area."""
         if (x1 < x0) or (y1 < y0):
             return
         # reference the destination area
