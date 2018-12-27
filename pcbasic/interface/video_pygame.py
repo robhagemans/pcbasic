@@ -98,7 +98,7 @@ class VideoPygame(VideoPlugin):
         # display palettes for blink states 0, 1
         self._palette = [None, None]
         # composite colour artifacts
-        self._composite = False
+        self._pixel_packing = False
         # text attributes supported
         self.mode_has_blink = True
         # update cycle
@@ -400,8 +400,8 @@ class VideoPygame(VideoPlugin):
         self._draw_cursor(workscreen)
         if self.clipboard.active():
             create_feedback(workscreen, self.clipboard.selection_rect)
-        if self._composite:
-            screen = apply_composite_artifacts(screen, self.bitsperpixel)
+        if self._pixel_packing:
+            screen = apply_composite_artifacts(screen, *self._pixel_packing)
         screen.set_palette(self._palette[self.blink_state])
         letterbox = pygame.Rect(
             self._window_sizer.letterbox_shift, self._window_sizer.window_size
@@ -480,8 +480,6 @@ class VideoPygame(VideoPlugin):
         self.font_width = mode_info.font_width
         self.num_pages = mode_info.num_pages
         self.mode_has_blink = mode_info.has_blink
-        if not self.text_mode:
-            self.bitsperpixel = mode_info.bitsperpixel
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
         self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
@@ -527,7 +525,7 @@ class VideoPygame(VideoPlugin):
                 (128 // self.num_fore_attrs // self.num_back_attrs)
             ):
             self._palette[1] += [b]*self.num_fore_attrs
-        self._composite = pack_pixels
+        self._pixel_packing = pack_pixels
         self.busy = True
 
     def set_border_attr(self, attr):
@@ -1030,12 +1028,12 @@ if pygame:
     }
 
 
-def apply_composite_artifacts(screen, bpp_in):
+def apply_composite_artifacts(screen, bpp_out, bpp_in):
     """Process the canvas to apply composite colour artifacts."""
     src_array = pygame.surfarray.array2d(screen)
     width, _ = src_array.shape
     mask = 1<<bpp_in - 1
-    step = 4 // bpp_in
+    step = bpp_out // bpp_in
     s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
     packed = numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
     return pygame.surfarray.make_surface(packed)

@@ -304,15 +304,6 @@ def _pixels2d(psurface):
     return numpy.ndarray(shape, numpy.uint8, pxbuf, 0, strides, 'C').transpose()
 
 
-def _pack_pixels(src_array, bpp_out, bpp_in):
-    """Pack pixels in a [x][y] matrix."""
-    width, _ = src_array.shape
-    mask = 1<<bpp_in - 1
-    step = bpp_out // bpp_in
-    s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
-    return numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
-
-
 ###############################################################################
 # video plugin
 
@@ -408,7 +399,6 @@ class VideoSDL2(VideoPlugin):
         self._font_height = None
         self._font_width = None
         self._num_pages = None
-        self._bitsperpixel = None
         # cursor
         # cursor is visible
         self._cursor_visible = True
@@ -428,7 +418,7 @@ class VideoSDL2(VideoPlugin):
         self._num_fore_attrs = 16
         self._num_back_attrs = 8
         # pixel packing is active (composite artifacts)
-        self._composite = False
+        self._pixel_packing = False
         # last keypress
         self._last_keypress = None
         # set clipboard handler to SDL2
@@ -850,7 +840,7 @@ class VideoSDL2(VideoPlugin):
 
     def _flip_busy(self, blink_state):
         """Draw the canvas to the screen."""
-        if self._composite:
+        if self._pixel_packing:
             work_surface = self._create_composite_surface()
         else:
             work_surface = self._window_surface[self._vpagenum]
@@ -860,7 +850,7 @@ class VideoSDL2(VideoPlugin):
             # convert 8-bit work surface to (usually) 32-bit display surface format
             sdl2.SDL_SetSurfacePalette(work_surface, self._palette[blink_state // 2])
             conv = sdl2.SDL_ConvertSurface(work_surface, pixelformat, 0)
-        if self._composite:
+        if self._pixel_packing:
             sdl2.SDL_FreeSurface(work_surface)
         # create clipboard feedback
         if self._clipboard_interface.active():
@@ -941,10 +931,19 @@ class VideoSDL2(VideoPlugin):
         lwindow_w, lwindow_h = self._window_sizer.window_size_logical
         border_x, border_y = self._window_sizer.border_shift
         work_surface = sdl2.SDL_CreateRGBSurface(0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0)
+        # pack pixels into higher bpp
+        bpp_out, bpp_in = self._pixel_packing
+        src_array = self._canvas_pixels[self._vpagenum]
+        width, _ = src_array.shape
+        mask = 1<<bpp_in - 1
+        step = bpp_out // bpp_in
+        s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
+        packed = numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
+        # apply packed array onto work surface
         _pixels2d(work_surface.contents)[
             border_x : (lwindow_w - border_x),
             border_y : lwindow_h - border_y
-        ] = _pack_pixels(self._canvas_pixels[self._vpagenum], 4, self._bitsperpixel)
+        ] = packed
         return work_surface
 
 
@@ -959,9 +958,6 @@ class VideoSDL2(VideoPlugin):
         self._font_width = mode_info.font_width
         self._num_pages = mode_info.num_pages
         self._blink_enabled = mode_info.has_blink
-        if not self._is_text_mode:
-            # only needed for composite
-            self._bitsperpixel = mode_info.bitsperpixel
         # prebuilt glyphs
         # NOTE: [x][y] format - change this if we change _pixels2d
         self._glyph_dict = {u'\0': numpy.zeros((self._font_width, self._font_height))}
@@ -1043,7 +1039,7 @@ class VideoSDL2(VideoPlugin):
         ))
         sdl2.SDL_SetPaletteColors(self._palette[0], colors_0, 0, 256)
         sdl2.SDL_SetPaletteColors(self._palette[1], colors_1, 0, 256)
-        self._composite = pack_pixels
+        self._pixel_packing = pack_pixels
         self.busy = True
 
     def set_border_attr(self, attr):
