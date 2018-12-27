@@ -26,7 +26,7 @@ _SLACK_RATIO = 1. - DISPLAY_SLACK / 100.
 
 def pack_pixels(src_array, bpp_out, bpp_in):
     """Pack pixels in a [x][y] matrix."""
-    width, = src_array.shape
+    width, _ = src_array.shape
     mask = 1<<bpp_in - 1
     step = bpp_out // bpp_in
     s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
