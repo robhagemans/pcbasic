@@ -1153,8 +1153,6 @@ class VideoSDL2(VideoPlugin):
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attributes to an area."""
-        if (x1 < x0) or (y1 < y0):
-            return
         # reference the destination area
         self._canvas_pixels[pagenum][x0:x1+1, y0:y1+1] = numpy.array(array).T
         self.busy = True

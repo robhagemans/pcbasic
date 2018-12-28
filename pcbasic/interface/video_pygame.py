@@ -637,8 +637,6 @@ class VideoPygame(VideoPlugin):
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attribytes to an area."""
-        if (x1 < x0) or (y1 < y0):
-            return
         # reference the destination area
         pygame.surfarray.pixels2d(
             self.canvas[pagenum].subsurface(
