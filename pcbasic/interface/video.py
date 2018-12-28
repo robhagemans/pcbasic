@@ -38,7 +38,6 @@ class VideoPlugin(object):
             signals.VIDEO_BUILD_GLYPHS: self.build_glyphs,
             signals.VIDEO_PUT_PIXEL: self.put_pixel,
             signals.VIDEO_PUT_INTERVAL: self.put_interval,
-            signals.VIDEO_FILL_INTERVAL: self.fill_interval,
             signals.VIDEO_PUT_RECT: self.put_rect,
             signals.VIDEO_FILL_RECT: self.fill_rect,
             signals.VIDEO_SET_CAPTION: self.set_caption_message,
@@ -149,9 +148,6 @@ class VideoPlugin(object):
 
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
-
-    def fill_interval(self, pagenum, x0, x1, y, index):
-        """Fill a scanline interval in a solid attribute."""
 
     def put_interval(self, pagenum, x, y, colours):
         """Write a list of attributes to a scanline interval."""

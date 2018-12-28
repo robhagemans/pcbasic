@@ -655,12 +655,6 @@ class VideoPygame(VideoPlugin):
         self.canvas[pagenum].fill(index, rect)
         self.busy = True
 
-    def fill_interval(self, pagenum, x0, x1, y, index):
-        """Fill a scanline interval in a solid attribute."""
-        dx = x1 - x0 + 1
-        self.canvas[pagenum].fill(index, (x0, y, dx, 1))
-        self.busy = True
-
     def put_interval(self, pagenum, x, y, colours):
         """Write a list of attributes to a scanline interval."""
         # reference the interval on the canvas

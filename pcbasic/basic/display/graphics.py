@@ -216,7 +216,7 @@ class Drawing(object):
         x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
         self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
         self._queues.video.put(
-            signals.Event(signals.VIDEO_FILL_INTERVAL, (self._apagenum, x0, x1, y, index))
+            signals.Event(signals.VIDEO_FILL_RECT, (self._apagenum, x0, y, x1, y, index))
         )
         self.clear_text_area(x0, y, x1, y)
 
