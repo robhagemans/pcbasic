@@ -1163,11 +1163,6 @@ class VideoSDL2(VideoPlugin):
         if self._cursor_visible:
             self.busy = True
 
-    def put_pixel(self, pagenum, x, y, index):
-        """Put a pixel on the screen."""
-        self._canvas_pixels[pagenum][x, y] = index
-        self.busy = True
-
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         self._canvas_pixels[pagenum][x0:x1+1, y0:y1+1] = index

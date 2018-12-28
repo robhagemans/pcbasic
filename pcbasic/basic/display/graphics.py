@@ -189,7 +189,9 @@ class Drawing(object):
             pagenum = self._apagenum
         if self.graph_view.contains(x, y):
             self._pixels.pages[pagenum].put_pixel(x, y, index)
-            self._queues.video.put(signals.Event(signals.VIDEO_PUT_PIXEL, (pagenum, x, y, index)))
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_FILL_RECT, (pagenum, x, y, x, y, index))
+            )
             self.clear_text_at(x, y)
 
     def get_pixel(self, x, y, pagenum=None):
