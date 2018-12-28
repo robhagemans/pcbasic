@@ -97,9 +97,9 @@ class PixelPage(object):
             try:
                 self.buffer[y, x:x+len(colours)] &= inv_mask
                 self.buffer[y, x:x+len(colours)] |= colours
-                return self.buffer[y, x:x+len(colours)]
+                return self.buffer[y:y+1, x:x+len(colours)]
             except IndexError:
-                return numpy.zeros(len(colours), dtype=numpy.int8)
+                return numpy.zeros((1, len(colours)), dtype=numpy.int8)
 
         def get_interval(self, x, y, length):
             """Return *view of* attributes of a scanline interval."""
@@ -182,7 +182,7 @@ class PixelPage(object):
                 (c & mask) | (self.buffer[y][x+i] & inv_mask)
                 for i, c in enumerate(colours)
             ]
-            return self.buffer[y][x:x+len(colours)]
+            return [self.buffer[y][x:x+len(colours)]]
 
         def get_interval(self, x, y, length):
             """Return *view of* attributes of a scanline interval."""

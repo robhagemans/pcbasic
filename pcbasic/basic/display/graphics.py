@@ -205,9 +205,9 @@ class Drawing(object):
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
         x, y, colours = self.graph_view.clip_list(x, y, colours)
-        newcolours = self._pixels.pages[pagenum].put_interval(x, y, colours, mask)
+        new_rect = self._pixels.pages[pagenum].put_interval(x, y, colours, mask)
         self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours))
+            signals.Event(signals.VIDEO_PUT_RECT, (pagenum, x, y, x+len(colours), y, new_rect))
         )
         self.clear_text_area(x, y, x+len(colours), y)
 

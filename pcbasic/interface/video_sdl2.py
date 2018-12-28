@@ -1173,12 +1173,6 @@ class VideoSDL2(VideoPlugin):
         self._canvas_pixels[pagenum][x0:x1+1, y0:y1+1] = index
         self.busy = True
 
-    def put_interval(self, pagenum, x, y, colours):
-        """Write a list of attributes to a scanline interval."""
-        # reference the interval on the canvas
-        self._canvas_pixels[pagenum][x:x+len(colours), y] = numpy.array(colours).astype(int)
-        self.busy = True
-
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attributes to an area."""
         if (x1 < x0) or (y1 < y0):
