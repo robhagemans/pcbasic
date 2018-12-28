@@ -190,9 +190,9 @@ class Drawing(object):
         if pagenum is None:
             pagenum = self._apagenum
         if self.graph_view.contains(x, y):
-            self._pixels.pages[pagenum].put_pixel(x, y, index)
+            rect = self._pixels.pages[pagenum].put_pixel(x, y, index)
             self._queues.video.put(signals.Event(
-                signals.VIDEO_FILL_RECT, (pagenum, x, y, x, y, index))
+                signals.VIDEO_PUT_RECT, (pagenum, x, y, x, y, rect))
             )
             self.clear_text_at(x, y)
 
@@ -218,9 +218,9 @@ class Drawing(object):
     def fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
         x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
-        self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
+        rect = self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
         self._queues.video.put(
-            signals.Event(signals.VIDEO_FILL_RECT, (self._apagenum, x0, y, x1, y, index))
+            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y, x1, y, rect))
         )
         self.clear_text_area(x0, y, x1, y)
 
@@ -246,9 +246,9 @@ class Drawing(object):
     def fill_rect(self, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
-        self._pixels.pages[self._apagenum].fill_rect(x0, y0, x1, y1, index)
+        rect = self._pixels.pages[self._apagenum].fill_rect(x0, y0, x1, y1, index)
         self._queues.video.put(
-            signals.Event(signals.VIDEO_FILL_RECT, (self._apagenum, x0, y0, x1, y1, index))
+            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, x1, y1, rect))
         )
         self.clear_text_area(x0, y0, x1, y1)
 

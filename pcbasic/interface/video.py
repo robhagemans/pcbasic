@@ -36,7 +36,6 @@ class VideoPlugin(object):
             signals.VIDEO_COPY_PAGE: self.copy_page,
             signals.VIDEO_SET_BORDER_ATTR: self.set_border_attr,
             signals.VIDEO_PUT_RECT: self.put_rect,
-            signals.VIDEO_FILL_RECT: self.fill_rect,
             signals.VIDEO_SET_CAPTION: self.set_caption_message,
             signals.VIDEO_SET_CLIPBOARD_TEXT: self.set_clipboard_text,
         }
@@ -136,9 +135,6 @@ class VideoPlugin(object):
 
     def set_cursor_shape(self, width, from_line, to_line):
         """Build a sprite for the cursor."""
-
-    def fill_rect(self, pagenum, x0, y0, x1, y1, index):
-        """Fill a rectangle in a solid attribute."""
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attribytes to an area."""

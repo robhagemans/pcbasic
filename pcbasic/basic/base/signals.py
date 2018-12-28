@@ -53,7 +53,6 @@ VIDEO_SCROLL_DOWN = 12
 VIDEO_SET_PALETTE = 15
 # put rect
 VIDEO_PUT_RECT = 20
-VIDEO_FILL_RECT = 21
 # set caption message
 VIDEO_SET_CAPTION = 29
 # clipboard copy reply
