@@ -118,8 +118,6 @@ class VideoPygame(VideoPlugin):
         # buffer for text under cursor
         self.under_top_left = None
         # fonts
-        # prebuilt glyphs
-        self.glyph_dict = {}
         # joystick and mouse
         # available joysticks
         self.joysticks = []
@@ -599,7 +597,7 @@ class VideoPygame(VideoPlugin):
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
-    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, glyph):
         """Put a single-byte character at a given position."""
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
@@ -611,14 +609,6 @@ class VideoPygame(VideoPlugin):
             # guaranteed to be blank, saves time on some BLOADs
             self.canvas[pagenum].fill(bg, (x0, y0, self.font_width, self.font_height))
         else:
-            try:
-                glyph = self.glyph_dict[cp]
-            except KeyError:
-                if u'\0' not in self.glyph_dict:
-                    logging.error('No glyph received for code point 0')
-                    return
-                logging.warning('No glyph received for code point %s', hex(ord(cp)))
-                glyph = self.glyph_dict[u'\0']
             if glyph.get_palette_at(0) != bg:
                 glyph.set_palette_at(0, bg)
             if glyph.get_palette_at(1) != color:
@@ -627,11 +617,6 @@ class VideoPygame(VideoPlugin):
         if underline:
             self.canvas[pagenum].fill(color, (x0, y0 + self.font_height - 1, self.font_width, 1))
         self.busy = True
-
-    def build_glyphs(self, new_dict):
-        """Build a dict of glyphs for use in text mode."""
-        for char, glyph in iteritems(new_dict):
-            self.glyph_dict[char] = glyph_to_surface(glyph)
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """Build a sprite for the cursor."""

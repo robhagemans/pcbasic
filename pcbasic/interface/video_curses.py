@@ -392,7 +392,7 @@ class VideoCurses(VideoPlugin):
             console.show_cursor(block=self.cursor_shape == 2)
         #curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
-    def put_glyph(self, pagenum, row, col, c, is_fullwidth, fore, back, blink, underline):
+    def put_glyph(self, pagenum, row, col, c, is_fullwidth, fore, back, blink, underline, glyph):
         """Put a character at a given position."""
         if c == u'\0':
             c = u' '

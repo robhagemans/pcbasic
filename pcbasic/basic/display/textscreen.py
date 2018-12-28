@@ -94,8 +94,6 @@ class TextScreen(object):
 
     def rebuild(self):
         """Completely resubmit the text screen to the interface."""
-        # send the glyph dict to interface if necessary
-        self._glyphs.submit()
         # fix the cursor
         self.queues.video.put(signals.Event(
             signals.VIDEO_SET_CURSOR_SHAPE,
@@ -371,12 +369,12 @@ class TextScreen(object):
             char, attr = self.text.get_fullchar_attr(pagenum, row, col)
             col += len(char)
             # ensure glyph is stored
-            self._glyphs.check_char(char)
+            glyph = self._glyphs.check_char(char)
             fore, back, blink, underline = self.mode.split_attr(attr)
             self.queues.video.put(signals.Event(
                 signals.VIDEO_PUT_GLYPH, (
                     pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
-                    len(char) > 1, fore, back, blink, underline,
+                    len(char) > 1, fore, back, blink, underline, glyph
                 )
             ))
             if not self.mode.is_text_mode and not text_only:

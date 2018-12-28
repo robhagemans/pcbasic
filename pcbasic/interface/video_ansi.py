@@ -217,7 +217,7 @@ class VideoANSI(video_cli.VideoTextBase):
         if self._cursor_visible:
             console.show_cursor(block=self._block_cursor)
 
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
+    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, glyph):
         """Put a character at a given position."""
         if char == u'\0':
             char = u' '

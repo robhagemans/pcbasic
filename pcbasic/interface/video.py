@@ -35,7 +35,6 @@ class VideoPlugin(object):
             signals.VIDEO_SET_PAGE: self.set_page,
             signals.VIDEO_COPY_PAGE: self.copy_page,
             signals.VIDEO_SET_BORDER_ATTR: self.set_border_attr,
-            signals.VIDEO_BUILD_GLYPHS: self.build_glyphs,
             signals.VIDEO_PUT_RECT: self.put_rect,
             signals.VIDEO_FILL_RECT: self.fill_rect,
             signals.VIDEO_SET_CAPTION: self.set_caption_message,
@@ -132,11 +131,8 @@ class VideoPlugin(object):
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
 
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
+    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, glyph):
         """Put a character at a given position."""
-
-    def build_glyphs(self, new_dict):
-        """Build a dict of glyphs for use in text mode."""
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """Build a sprite for the cursor."""

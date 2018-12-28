@@ -394,8 +394,6 @@ class VideoSDL2(VideoPlugin):
         self._clipboard_interface = None
         # event handlers
         self._event_handlers = self._register_handlers()
-        # glyph cache
-        self._glyph_dict = {}
         # video mode settings
         self._is_text_mode = True
         self._font_height = None
@@ -961,8 +959,6 @@ class VideoSDL2(VideoPlugin):
         self._num_pages = mode_info.num_pages
         self._blink_enabled = mode_info.has_blink
         # prebuilt glyphs
-        # NOTE: [x][y] format - change this if we change _pixels2d
-        self._glyph_dict = {u'\0': numpy.zeros((self._font_width, self._font_height))}
         # logical size
         canvas_width, canvas_height = mode_info.pixel_width, mode_info.pixel_height
         size_changed = self._window_sizer.set_canvas_size(
@@ -1117,22 +1113,16 @@ class VideoSDL2(VideoPlugin):
         pixels[0:width, old_y0:new_y0] = numpy.full((width, new_y0-old_y0), back_attr, dtype=int)
         self.busy = True
 
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
+    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, glyph):
         """Put a character at a given position."""
         if not self._is_text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
+        glyph = numpy.array(glyph).T
         # NOTE: in pygame plugin we used a surface fill for the NUL character
-        # which was an optimisation early on -- consider if we need speedup.
-        try:
-            glyph = self._glyph_dict[char]
-        except KeyError:
-            logging.warning('No glyph received for code point %s', hex(ord(char)))
-            try:
-                glyph = self._glyph_dict[u'\0']
-            except KeyError:
-                logging.error('No glyph received for code point 0')
-                return
+        #       which was an optimisation early on -- consider if we need speedup.
+        ##if char == u'\0':
+        ##    glyph = numpy.zeros((self._font_width, self._font_height))
         # _pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
         glyph_width = glyph.shape[0]
         left, top = (col-1)*self._font_width, (row-1)*self._font_height
@@ -1148,13 +1138,6 @@ class VideoSDL2(VideoPlugin):
             top + self._font_height - 1 : top + self._font_height
         ] = attr
         self.busy = True
-
-    def build_glyphs(self, new_dict):
-        """Build a dict of glyphs for use in text mode."""
-        for char, glyph in iteritems(new_dict):
-            # transpose because _pixels2d uses column-major mode and hence [x][y] indexing
-            # (we can change this)
-            self._glyph_dict[char] = numpy.asarray(glyph).T
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """Build a sprite for the cursor."""

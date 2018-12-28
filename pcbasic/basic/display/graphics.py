@@ -170,10 +170,12 @@ class Drawing(object):
         if col >= 1 and row >= 1 and col <= self._mode.width and row <= self._mode.height:
             self._text.put_char_attr(self._apagenum, row, col, b' ', self._attr)
         fore, back, blink, underline = self._mode.split_attr(self._attr)
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_GLYPH,
-            (self._apagenum, row, col, u' ', False, fore, back, blink, underline))
-        )
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_PUT_GLYPH,
+            # glyph=None only works because this gets ignored by graphical interface in text mode
+            # and gets ignored by text interface in all cases.
+            (self._apagenum, row, col, u' ', False, fore, back, blink, underline, None)
+        ))
 
     def clear_text_area(self, x0, y0, x1, y1):
         """Remove all characters from the text buffer on a rectangle of the graphics screen."""
