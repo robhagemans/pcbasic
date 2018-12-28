@@ -211,7 +211,7 @@ class VideoANSI(video_cli.VideoTextBase):
             # force move when made visible again
             console.hide_cursor()
 
-    def set_cursor_shape(self, width, height, from_line, to_line):
+    def set_cursor_shape(self, width, from_line, to_line):
         """Set the cursor shape."""
         self._block_cursor = (to_line-from_line) >= 4
         if self._cursor_visible:

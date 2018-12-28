@@ -483,7 +483,7 @@ class VideoPygame(VideoPlugin):
         self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
         self._resize_display()
         # set standard cursor
-        self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
+        self.set_cursor_shape(self.font_width, 0, self.font_height)
         # whole screen (blink on & off)
         self.canvas = [
             pygame.Surface(self.size, depth=8) # pylint: disable=E1121,E1123
@@ -618,8 +618,9 @@ class VideoPygame(VideoPlugin):
             self.canvas[pagenum].fill(color, (x0, y0 + self.font_height - 1, self.font_width, 1))
         self.busy = True
 
-    def set_cursor_shape(self, width, height, from_line, to_line):
+    def set_cursor_shape(self, width, from_line, to_line):
         """Build a sprite for the cursor."""
+        height = self.font_height
         self.cursor_width = width
         self.cursor_from, self.cursor_to = from_line, to_line
         self.cursor = pygame.Surface((width, height), depth=8) # pylint: disable=E1121,E1123

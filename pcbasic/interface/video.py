@@ -134,7 +134,7 @@ class VideoPlugin(object):
     def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, glyph):
         """Put a character at a given position."""
 
-    def set_cursor_shape(self, width, height, from_line, to_line):
+    def set_cursor_shape(self, width, from_line, to_line):
         """Build a sprite for the cursor."""
 
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):

@@ -30,12 +30,16 @@ VIDEO_QUIT = 0
 VIDEO_SET_MODE = 1
 # switch page
 VIDEO_SET_PAGE = 2
+# copy page
+VIDEO_COPY_PAGE = 28
+# show/hide cursor
+VIDEO_SHOW_CURSOR = 14
 # set cursor shape
 VIDEO_SET_CURSOR_SHAPE = 3
-# move cursor
-VIDEO_MOVE_CURSOR = 5
 # set cursor attribute
 VIDEO_SET_CURSOR_ATTR = 6
+# move cursor
+VIDEO_MOVE_CURSOR = 5
 # set border attribute
 VIDEO_SET_BORDER_ATTR = 7
 # put character glyph
@@ -45,15 +49,11 @@ VIDEO_CLEAR_ROWS = 10
 # scroll
 VIDEO_SCROLL_UP = 11
 VIDEO_SCROLL_DOWN = 12
-# show/hide cursor
-VIDEO_SHOW_CURSOR = 14
 # set palette
 VIDEO_SET_PALETTE = 15
 # put rect
 VIDEO_PUT_RECT = 20
 VIDEO_FILL_RECT = 21
-# copy page
-VIDEO_COPY_PAGE = 28
 # set caption message
 VIDEO_SET_CAPTION = 29
 # clipboard copy reply

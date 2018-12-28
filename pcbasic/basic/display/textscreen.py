@@ -97,7 +97,7 @@ class TextScreen(object):
         # fix the cursor
         self.queues.video.put(signals.Event(
             signals.VIDEO_SET_CURSOR_SHAPE,
-            (self.cursor.width, self.mode.font_height, self.cursor.from_line, self.cursor.to_line)
+            (self.cursor.width, self.cursor.from_line, self.cursor.to_line)
         ))
         self.queues.video.put(signals.Event(
             signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col)
