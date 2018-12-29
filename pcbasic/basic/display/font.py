@@ -154,7 +154,7 @@ if numpy:
             face, code_height, code_width, req_height, req_width,
             force_double, force_single, carry_col_9, carry_row_9
         ):
-        """Convert byte list to glyph pixels, numpy implementation."""
+        """Convert byte list to glyph matrix [y][x], numpy implementation."""
         glyph = numpy.unpackbits(face, axis=0).reshape((code_height, code_width)).astype(bool)
         # repeat last rows (e.g. for 9-bit high chars)
         if req_height > glyph.shape[0]:
@@ -184,7 +184,7 @@ else:
             face, code_height, code_width, req_height, req_width,
             force_double, force_single, carry_col_9, carry_row_9
         ):
-        """Convert byte list to glyph pixels, non-numpy implementation."""
+        """Convert byte list to glyph matrix [y][x], non-numpy implementation."""
         # req_width can be 8, 9 (SBCS), 16, 18 (DBCS) only
         req_width_base = req_width if req_width <= 9 else req_width // 2
         # if our code glyph is too wide for request, we need to make space
