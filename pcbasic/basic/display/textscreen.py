@@ -202,6 +202,9 @@ class TextScreen(object):
         if len(line) == self.mode.width and self.current_row > 2:
             self.text.pages[self.apagenum].row[self.current_row-3].wrap = False
 
+
+    ###########################################################################
+
     def write_char(self, c, do_scroll_down=False):
         """Put one character at the current position."""
         # check if scroll& repositioning needed
@@ -213,7 +216,10 @@ class TextScreen(object):
         # move cursor and see if we need to scroll up
         self._check_pos(scroll_ok=True)
         # put the character
-        self._put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
+        start, stop = self.text.put_char_attr(
+            self.apagenum, self.current_row, self.current_col, c, self.attr
+        )
+        self.refresh_range(self.apagenum, self.current_row, start, stop)
         # adjust end of line marker
         if (self.current_col > self.text.pages[self.apagenum].row[self.current_row-1].end):
             self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col
@@ -345,16 +351,6 @@ class TextScreen(object):
             self.overflow = True
         else:
             self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end+1)
-
-    ###########################################################################
-
-    def _put_char_attr(self, pagenum, row, col, c, attr):
-        """Put a byte to the screen, redrawing as necessary."""
-        if not self.mode.is_text_mode:
-            attr = attr & 0xf
-        start, stop = self.text.put_char_attr(pagenum, row, col, c, attr)
-        # update the screen
-        self.refresh_range(pagenum, row, start, stop)
 
     ###########################################################################
 
@@ -574,13 +570,17 @@ class TextScreen(object):
         """Rewrite text contents (with the current attribute)."""
         for c in iterchar(text):
             if c == b'\n':
-                self._put_char_attr(
+                start, stop = self.text.put_char_attr(
                     self.apagenum, self.current_row, self.current_col, b' ', self.attr
                 )
+                self.refresh_range(self.apagenum, self.current_row, start, stop)
                 self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col-1
                 break
             else:
-                self._put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
+                start, stop = self.text.put_char_attr(
+                    self.apagenum, self.current_row, self.current_col, c, self.attr
+                )
+                self.refresh_range(self.apagenum, self.current_row, start, stop)
                 self.set_pos(self.current_row, self.current_col+1)
         else:
             # we're on the position after the additional space
