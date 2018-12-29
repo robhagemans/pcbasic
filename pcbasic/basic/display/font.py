@@ -182,6 +182,10 @@ class Font(object):
         x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
         return x0, y0, x1, y1, glyph
 
+    def get_glyphs(self, char_list):
+        """Retrieve a row of text as a single matrix [y][x]."""
+        return _hstack(self._glyphs.get_glyph(_c) for _c in char_list)
+
 
 if numpy:
 
@@ -219,6 +223,10 @@ if numpy:
     def _force_halfwidth(glyph):
         """Halve the width of a given glyph."""
         return glyph[:, ::2]
+
+    def _hstack(glyphs):
+        """Horizontally concatenate glyph matrices."""
+        return numpy.hstack(glyphs)
 
 else:
 
@@ -265,3 +273,10 @@ else:
     def _force_halfwidth(glyph):
         """Halve the width of a given glyph."""
         return [_row[::2] for _row in glyph]
+
+    def _hstack(glyphs):
+        """Horizontally concatenate glyph matrices."""
+        return [
+            sum((_glyphrow for _glyphrow in _row), [])
+            for _row in zip(*_glyphs)
+        ]
