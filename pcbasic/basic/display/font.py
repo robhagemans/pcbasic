@@ -277,5 +277,5 @@ else:
         """Horizontally concatenate glyph matrices."""
         return [
             sum((_glyphrow for _glyphrow in _row), [])
-            for _row in zip(*_glyphs)
+            for _row in zip(*glyphs)
         ]
