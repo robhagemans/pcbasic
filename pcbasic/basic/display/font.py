@@ -109,26 +109,46 @@ class Font(object):
 
     def __init__(self, height=8, fontdict=None):
         """Initialise the font."""
+        self._width = None
         self._height = height
-        if height == 8 and not fontdict:
-            fontdict = DEFAULT_FONT
+        if not fontdict:
+            if height == 8:
+                fontdict = DEFAULT_FONT
+            else:
+                raise ValueError(
+                    'No font dictionary specified and no %d-pixel default available.', height
+                )
         self._fontdict = fontdict
+        self._glyphs = {}
 
-    def get_byte(self, charvalue, offset):
-        """Get byte sequency for character."""
-        return ord(self._fontdict[int2byte(charvalue)][offset])
+    def init_mode(self, width):
+        """Preload SBCS glyphs at mode switch."""
+        if self._width != width:
+            self._width = width
+            for _c in map(int2byte, range(256)):
+                self._build_glyph(_c)
+        return self
 
-    def set_byte(self, charvalue, offset, byte):
-        """Set byte sequency for character."""
-        old = self._fontdict[int2byte(charvalue)]
-        self._fontdict[int2byte(charvalue)] = old[:offset%8] + byte + old[offset%8+1:]
+    def get_byte(self, char, offset):
+        """Get byte value from character sequence."""
+        return ord(self._fontdict[char][offset])
 
-    def build_glyph(self, c, req_width, req_height):
+    def set_byte(self, char, offset, byte_value):
+        """Set byte value for character sequence."""
+        old = self._fontdict[char]
+        self._fontdict[char] = old[:offset%8] + byte_value + old[offset%8+1:]
+        if char in self._glyphs:
+            self._build_glyph(char)
+
+    def _build_glyph(self, char):
         """Build a glyph for the given codepage character."""
+        req_width, req_height = self._width*len(char), self._height
         try:
-            face = bytearray(self._fontdict[c])
+            face = bytearray(self._fontdict[char])
         except KeyError:
-            logging.debug('Code point [%r] not represented in font, replacing with blank glyph.', c)
+            logging.debug(
+                'Code point [%r] not represented in font, replacing with blank glyph.', char
+            )
             face = bytearray(int(self._height))
         # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
         code_height = 8 if req_height == 9 else req_height
@@ -139,13 +159,42 @@ class Font(object):
             # i.e. we need a double-width char but got single or v.v.
             logging.debug(
                 'Incorrect glyph width for code point [%r]: %d-pixel requested, %d-pixel found.',
-                c, req_width, code_width
+                char, req_width, code_width
             )
-        return _unpack_glyph(
+        self._glyphs[char] = _unpack_glyph(
             face, code_height, code_width, req_height, req_width,
             force_double, force_single,
-            c in CARRY_COL_9_CHARS, c in CARRY_ROW_9_CHARS
+            char in CARRY_COL_9_CHARS, char in CARRY_ROW_9_CHARS
         )
+
+    def get_glyph(self, char):
+        """Retrieve a glyph, building if needed."""
+        try:
+            return self._glyphs[char]
+        except KeyError:
+            self._build_glyph(char)
+            return self._glyphs[char]
+
+    if numpy:
+        def get_sprite(self, row, col, char, fore, back):
+            """Return a sprite for a given character."""
+            mask = self.get_glyph(char)
+            # set background
+            glyph = numpy.full(mask.shape, back, dtype=int)
+            # stamp foreground mask
+            glyph[mask] = fore
+            x0, y0 = (col-1) * self._width, (row-1) * self._height
+            x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
+            return x0, y0, x1, y1, glyph
+    else:
+        def get_sprite(self, row, col, char, fore, back):
+            """Return a sprite for a given character."""
+            mask = self.get_glyph(char)
+            glyph = [[(fore if _bit else back) for _bit in _row] for _row in mask]
+            x0, y0 = (col-1) * self._width, (row-1) * self._height
+            x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
+            return x0, y0, x1, y1, glyph
+
 
 if numpy:
 
@@ -213,52 +262,3 @@ else:
                     glyph[yy][2*xx+1] = glyph[yy][xx]
                     glyph[yy][2*xx] = glyph[yy][xx]
         return glyph
-
-
-#######################################################################################
-# glyph cache
-
-class GlyphCache(object):
-
-    def __init__(self, font, width, height):
-        """Initialise glyph set."""
-        self._font = font
-        self._width = width
-        self._height = height
-        # preload SBCS glyphs at mode switch
-        self._glyphs = {
-            _c: self._font.build_glyph(_c, self._width, self._height)
-            for _c in map(int2byte, range(256))
-        }
-
-    def build_glyph(self, char):
-        """(Re-)build glyph for halfwidth/fullwidth character."""
-        self._glyphs[char] = self._font.build_glyph(char, self._width*len(char), self._height)
-
-    def get_glyph(self, char):
-        """Retrieve a glyph, building if needed."""
-        try:
-            return self._glyphs[char]
-        except KeyError:
-            self.build_glyph(char)
-            return self._glyphs[char]
-
-    if numpy:
-        def get_sprite(self, row, col, char, fore, back):
-            """Return a sprite for a given character."""
-            mask = self._glyphs.get_glyph(char)
-            # set background
-            glyph = numpy.full(mask.shape, back, dtype=int)
-            # stamp foreground mask
-            glyph[mask] = fore
-            x0, y0 = (col-1) * self._width, (row-1) * self._height
-            x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
-            return x0, y0, x1, y1, glyph
-    else:
-        def get_sprite(self, row, col, char, fore, back):
-            """Return a sprite for a given character."""
-            mask = self._glyphs.get_glyph(char)
-            glyph = [[(fore if _bit else back) for _bit in _row] for _row in mask]
-            x0, y0 = (col-1) * self._width, (row-1) * self._height
-            x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
-            return x0, y0, x1, y1, glyph

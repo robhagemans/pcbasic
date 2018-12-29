@@ -509,7 +509,7 @@ class Memory(object):
             char = addr // 8
             if char > 127 or char < 0:
                 return -1
-            return self.font_8.get_byte(char, addr%8)
+            return self.font_8.get_byte(int2byte(char), addr%8)
 
     def _get_font_memory(self, addr):
         """Retrieve RAM font data."""
@@ -517,7 +517,7 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return -1
-        return self.font_8.get_byte(char, addr%8)
+        return self.font_8.get_byte(int2byte(char), addr%8)
 
     def _set_font_memory(self, addr, value):
         """Retrieve RAM font data."""
@@ -525,8 +525,7 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return
-        self.font_8.set_byte(char, addr%8, value)
-        self.screen._glyphs.build_glyph(int2byte(char))
+        self.font_8.set_byte(int2byte(char), addr%8, value)
 
     #################################################################################
 
