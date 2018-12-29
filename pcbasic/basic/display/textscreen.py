@@ -402,8 +402,8 @@ class TextScreen(object):
                 signals.VIDEO_PUT_RECT, (self.apagenum, left, top, right, bottom, sprite)
             ))
 
-    def _redraw_row(self, start, row, wrap=True):
-        """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
+    def _redraw_from(self, start, row, wrap=True):
+        """Redraw until the end of the logical screen line, reconstructing DBCS buffer."""
         start_row = row
         while True:
             for i in range(start, self.text.pages[self.apagenum].row[row-1].end):
@@ -440,7 +440,7 @@ class TextScreen(object):
         save_end = therow.end
         therow.end = self.mode.width
         if scol > 1:
-            self._redraw_row(scol-1, srow)
+            self._redraw_from(scol-1, srow)
         else:
             # inelegant: we're clearing the text buffer for a second time now
             self.clear_rows(srow, srow)
@@ -611,7 +611,7 @@ class TextScreen(object):
                 therow.end += 1
             else:
                 therow.end = col
-            self._redraw_row(col-1, row)
+            self._redraw_from(col-1, row)
             if  therow.wrap and therow.end == self.mode.width:
                 self.scroll_down(row+1)
                 therow.wrap = True
@@ -633,7 +633,7 @@ class TextScreen(object):
                     return False
             therow.buf.insert(col-1, (c, attr))
             c, attr = therow.buf.pop()
-            self._redraw_row(col-1, row)
+            self._redraw_from(col-1, row)
             # insert the character in the next row
             return self._insert_fullchar_at(row+1, 1, c, attr)
 
