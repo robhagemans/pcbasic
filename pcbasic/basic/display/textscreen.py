@@ -362,28 +362,43 @@ class TextScreen(object):
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Redraw a section of a screen row, assuming DBCS buffer has been set."""
-        therow = self.text.pages[pagenum].row[row-1]
-        col = start
+        col, last_col = start, start
+        last_attr = None
+        chars = []
+        chunks = []
+        # collect chars in chunks with the same attribute
         while col <= stop:
-            r, c = row, col
             char, attr = self.text.get_fullchar_attr(pagenum, row, col)
+            if attr != last_attr and last_attr is not None:
+                chunks.append((last_col, chars, last_attr))
+                last_col, last_attr = col, attr
+                chars = []
+            chars.append(char)
             col += len(char)
-            # ensure glyph is stored
+        if chars:
+            chunks.append((last_col, chars, attr))
+        for col, chars, attr in chunks:
+            self._draw_text(pagenum, row, col, chars, attr)
+
+    def _draw_text(self, pagenum, row, col, chars, attr):
+        """Draw a chunk of text in a single attribute."""
+        fore, back, blink, underline = self.mode.split_attr(attr)
+        for char in chars:
             glyph = self._glyphs.check_char(char)
-            fore, back, blink, underline = self.mode.split_attr(attr)
             self.queues.video.put(signals.Event(
                 signals.VIDEO_PUT_GLYPH, (
-                    pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
+                    pagenum, row, col, self.codepage.to_unicode(char, u'\0'),
                     len(char) > 1, fore, back, blink, underline, glyph
                 )
             ))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
-                x0, y0, x1, y1, sprite = self._glyphs.get_sprite(r, c, char, fore, back)
+                x0, y0, x1, y1, sprite = self._glyphs.get_sprite(row, col, char, fore, back)
                 self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1, sprite, tk.PSET)
                 self.queues.video.put(signals.Event(
                     signals.VIDEO_PUT_RECT, (self.apagenum, x0, y0, x1, y1, sprite)
                 ))
+
 
     def _redraw_row(self, start, row, wrap=True):
         """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
