@@ -386,8 +386,8 @@ class TextScreen(object):
         fore, back, blink, underline = self.mode.split_attr(attr)
         glyphs = self._glyphs.get_glyphs(chars)
         # mark full-width chars by a trailing empty string to preserve column counts
-        chars = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
-        text = [self.codepage.to_unicode(_c, u'\0') for _list in chars for _c in _list]
+        text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
+        text = [self.codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
         self.queues.video.put(signals.Event(
             signals.VIDEO_PUT_TEXT, (
                 pagenum, row, col, text,
@@ -395,16 +395,14 @@ class TextScreen(object):
                 glyphs
             )
         ))
-        for char in chars:
-            if not self.mode.is_text_mode and not text_only:
-                # update pixel buffer
-                x0, y0, x1, y1, sprite = self._glyphs.get_sprite(row, col, char, fore, back)
-                self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1, sprite, tk.PSET)
-                self.queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_RECT, (self.apagenum, x0, y0, x1, y1, sprite)
-                ))
-            col += len(char)
-
+        if not self.mode.is_text_mode and not text_only:
+            left, top = self.mode.text_to_pixel_pos(row, col)
+            sprite, width, height = self._glyphs.render_text(chars, fore, back)
+            right, bottom = left+width-1, top+height-1
+            self.pixels.pages[self.apagenum].put_rect(left, top, right, bottom, sprite, tk.PSET)
+            self.queues.video.put(signals.Event(
+                signals.VIDEO_PUT_RECT, (self.apagenum, left, top, right, bottom, sprite)
+            ))
 
     def _redraw_row(self, start, row, wrap=True):
         """Draw the screen row, wrapping around and reconstructing DBCS buffer."""

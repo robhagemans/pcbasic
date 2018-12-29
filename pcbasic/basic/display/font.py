@@ -174,13 +174,11 @@ class Font(object):
             glyph = _extend_width(glyph, char in CARRY_COL_9_CHARS)
         self._glyphs[char] = glyph
 
-    def get_sprite(self, row, col, char, fore, back):
-        """Return a sprite for a given character."""
-        mask = self.get_glyph(char)
-        glyph = _render_glyph(mask, fore, back)
-        x0, y0 = (col-1) * self._width, (row-1) * self._height
-        x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
-        return x0, y0, x1, y1, glyph
+    def render_text(self, char_list, fore, back):
+        """Return a sprite, width and height for given row of text."""
+        mask = self.get_glyphs(char_list)
+        glyph = _render(mask, fore, back)
+        return glyph, len(glyph[0]), len(glyph)
 
     def get_glyphs(self, char_list):
         """Retrieve a row of text as a single matrix [y][x]."""
@@ -189,7 +187,7 @@ class Font(object):
 
 if numpy:
 
-    def _render_glyph(mask, fore, back):
+    def _render(mask, fore, back):
         """Set attributes of glyph."""
         return mask*(fore-back) + back
 
@@ -230,7 +228,7 @@ if numpy:
 
 else:
 
-    def _render_glyph(mask, fore, back):
+    def _render(mask, fore, back):
         """Set attributes of glyph."""
         return [[(fore if _bit else back) for _bit in _row] for _row in mask]
 
