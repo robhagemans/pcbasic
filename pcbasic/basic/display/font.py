@@ -122,7 +122,6 @@ class Font(object):
         """Set byte sequency for character."""
         old = self._fontdict[int2byte(charvalue)]
         self._fontdict[int2byte(charvalue)] = old[:offset%8] + byte + old[offset%8+1:]
-        #self.screen.rebuild_glyph(charvalue)
 
     def build_glyph(self, c, req_width, req_height):
         """Build a glyph for the given codepage character."""
@@ -232,11 +231,9 @@ class GlyphCache(object):
             for _c in map(int2byte, range(256))
         }
 
-    def _submit_char(self, char):
-        """Rebuild glyph."""
-        self._glyphs[char] = self._font.build_glyph(
-            char, self._width*2, self._height
-        )
+    def build_glyph(self, char):
+        """(Re-)build glyph for halfwidth/fullwidth character."""
+        self._glyphs[char] = self._font.build_glyph(char, self._width*len(char), self._height)
 
     def check_char(self, char):
         """Retrieve a glyph, building if needed."""
