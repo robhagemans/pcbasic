@@ -384,14 +384,18 @@ class TextScreen(object):
     def _draw_text(self, pagenum, row, col, chars, attr, text_only):
         """Draw a chunk of text in a single attribute."""
         fore, back, blink, underline = self.mode.split_attr(attr)
+        glyphs = self._glyphs.get_glyphs(chars)
+        # mark full-width chars by a trailing empty string to preserve column counts
+        chars = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
+        text = [self.codepage.to_unicode(_c, u'\0') for _list in chars for _c in _list]
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_PUT_TEXT, (
+                pagenum, row, col, text,
+                fore, back, blink, underline,
+                glyphs
+            )
+        ))
         for char in chars:
-            glyph = self._glyphs.get_glyph(char)
-            self.queues.video.put(signals.Event(
-                signals.VIDEO_PUT_GLYPH, (
-                    pagenum, row, col, self.codepage.to_unicode(char, u'\0'),
-                    len(char) > 1, fore, back, blink, underline, glyph
-                )
-            ))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
                 x0, y0, x1, y1, sprite = self._glyphs.get_sprite(row, col, char, fore, back)

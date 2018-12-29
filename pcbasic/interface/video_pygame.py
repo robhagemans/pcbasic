@@ -597,23 +597,20 @@ class VideoPygame(VideoPlugin):
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
-    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, glyph):
-        """Put a single-byte character at a given position."""
+    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+        """Put text at a given position."""
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
         color = (0, 0, fore + self.num_fore_attrs*back + 128*blink)
         bg = (0, 0, back)
         x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
-        if cp == u'\0':
-            # guaranteed to be blank, saves time on some BLOADs
-            self.canvas[pagenum].fill(bg, (x0, y0, self.font_width, self.font_height))
-        else:
-            if glyph.get_palette_at(0) != bg:
-                glyph.set_palette_at(0, bg)
-            if glyph.get_palette_at(1) != color:
-                glyph.set_palette_at(1, color)
-            self.canvas[pagenum].blit(glyph, (x0, y0))
+        glyphs = glyph_to_surface(glyphs)
+        if glyphs.get_palette_at(0) != bg:
+            glyphs.set_palette_at(0, bg)
+        if glyphs.get_palette_at(1) != color:
+            glyphs.set_palette_at(1, color)
+        self.canvas[pagenum].blit(glyphs, (x0, y0))
         if underline:
             self.canvas[pagenum].fill(color, (x0, y0 + self.font_height - 1, self.font_width, 1))
         self.busy = True

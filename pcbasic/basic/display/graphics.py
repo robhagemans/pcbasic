@@ -171,10 +171,10 @@ class Drawing(object):
             self._text.put_char_attr(self._apagenum, row, col, b' ', self._attr)
         fore, back, blink, underline = self._mode.split_attr(self._attr)
         self._queues.video.put(signals.Event(
-            signals.VIDEO_PUT_GLYPH,
+            signals.VIDEO_PUT_TEXT,
             # glyph=None only works because this gets ignored by graphical interface in text mode
             # and gets ignored by text interface in all cases.
-            (self._apagenum, row, col, u' ', False, fore, back, blink, underline, None)
+            (self._apagenum, row, col, [u' '], fore, back, blink, underline, None)
         ))
 
     def clear_text_area(self, x0, y0, x1, y1):

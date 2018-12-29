@@ -217,22 +217,19 @@ class VideoANSI(video_cli.VideoTextBase):
         if self._cursor_visible:
             console.show_cursor(block=self._block_cursor)
 
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, glyph):
-        """Put a character at a given position."""
-        if char == u'\0':
-            char = u' '
-        self._text[pagenum][row-1][col-1] = char, (fore, back, blink, underline)
-        if is_fullwidth:
-            self._text[pagenum][row-1][col] = u'', (fore, back, blink, underline)
+    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+        """Put text at a given position."""
+        unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
+        self._text[pagenum][row-1][col-1:col-1+len(unicode_list)] = [
+            (_c, (fore, back, blink, underline)) for _c in unicode_list
+        ]
         if self._vpagenum != pagenum:
             return
         if (row, col) != (self._cursor_row, self._cursor_col):
             console.move_cursor_to(row + self._border_y, col + self._border_x)
         self._set_attributes(fore, back, blink, underline)
-        console.write(char)
-        if is_fullwidth:
-            console.write(u' ')
-        self._cursor_row, self._cursor_col = row, col+1
+        console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
+        self._cursor_row, self._cursor_col = row, col+len(unicode_list)
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""

@@ -1113,28 +1113,23 @@ class VideoSDL2(VideoPlugin):
         pixels[0:width, old_y0:new_y0] = numpy.full((width, new_y0-old_y0), back_attr, dtype=int)
         self.busy = True
 
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, glyph):
-        """Put a character at a given position."""
+    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+        """Put text at a given position."""
         if not self._is_text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
-        glyph = numpy.array(glyph).T
-        # NOTE: in pygame plugin we used a surface fill for the NUL character
-        #       which was an optimisation early on -- consider if we need speedup.
-        ##if char == u'\0':
-        ##    glyph = numpy.zeros((self._font_width, self._font_height))
-        # _pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
-        glyph_width = glyph.shape[0]
+        chunk = numpy.array(glyphs).T
+        chunk_width = chunk.shape[0]
         left, top = (col-1)*self._font_width, (row-1)*self._font_height
+        # render text with attributes
         attr = fore + self._num_fore_attrs*back + 128*blink
-        # changle glyph color by numpy scalar mult (is there a better way?)
         self._canvas_pixels[pagenum][
-            left : left+glyph_width,
-            top : top+self._font_height
-        ] = glyph*(attr-back) + back
+            left : left + chunk_width,
+            top : top + self._font_height
+        ] = chunk*(attr-back) + back
         if underline:
             self._canvas_pixels[pagenum][
-            left : left+glyph_width,
+            left : left + chunk_width,
             top + self._font_height - 1 : top + self._font_height
         ] = attr
         self.busy = True
