@@ -384,9 +384,9 @@ class TextScreen(object):
         if chars:
             chunks.append((last_col, chars, attr))
         for col, chars, attr in chunks:
-            self._draw_text(pagenum, row, col, chars, attr)
+            self._draw_text(pagenum, row, col, chars, attr, text_only)
 
-    def _draw_text(self, pagenum, row, col, chars, attr):
+    def _draw_text(self, pagenum, row, col, chars, attr, text_only):
         """Draw a chunk of text in a single attribute."""
         fore, back, blink, underline = self.mode.split_attr(attr)
         for char in chars:
