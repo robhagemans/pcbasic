@@ -94,12 +94,6 @@ class TextScreen(object):
             )
             raise error.BASICError(error.IFC)
 
-    def rebuild_glyph(self, ordval):
-        """Rebuild a text-mode character after POKE."""
-        if self.mode.is_text_mode:
-            # force rebuilding the character by deleting and requesting
-            self._glyphs.build_glyph(int2byte(ordval))
-
     def rebuild(self):
         """Completely resubmit the text screen to the interface."""
         # fix the cursor

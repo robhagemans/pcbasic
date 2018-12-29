@@ -266,8 +266,10 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, values, data_memory, files, display, keyboard,
-                font_8, interpreter, peek_values, syntax):
+    def __init__(
+            self, values, data_memory, files, display, keyboard,
+            font_8, interpreter, peek_values, syntax
+        ):
         """Initialise memory."""
         self._values = values
         # data segment initialised elsewhere
@@ -524,7 +526,7 @@ class Memory(object):
         if char < 128 or char > 254:
             return
         self.font_8.set_byte(char, addr%8, value)
-        self.screen.rebuild_glyph(char)
+        self.screen._glyphs.build_glyph(int2byte(char))
 
     #################################################################################
 
