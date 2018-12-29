@@ -221,27 +221,26 @@ else:
 
 class GlyphCache(object):
 
-    def __init__(self, mode, fonts, codepage, queues):
+    def __init__(self, font, width, height):
         """Initialise glyph set."""
-        self._queues = queues
-        self._mode = mode
-        self._fonts = fonts
-        self._codepage = codepage
-        # preload SBCS glyphs
+        self._font = font
+        self._width = width
+        self._height = height
+        # preload SBCS glyphs at mode switch
         self._glyphs = {
-            c: self._fonts[mode.font_height].build_glyph(c, mode.font_width, mode.font_height)
-            for c in map(int2byte, range(256))
+            _c: self._font.build_glyph(_c, self._width, self._height)
+            for _c in map(int2byte, range(256))
         }
 
     def _submit_char(self, char):
         """Rebuild glyph."""
-        self._glyphs[char] = self._fonts[self._mode.font_height].build_glyph(
-            char, self._mode.font_width*2, self._mode.font_height
+        self._glyphs[char] = self._font.build_glyph(
+            char, self._width*2, self._height
         )
 
     def check_char(self, char):
         """Retrieve a glyph, building if needed."""
-        if self._mode.is_text_mode and char not in self._glyphs:
+        if char not in self._glyphs:
             self._submit_char(char)
         return self._glyphs[char]
 
@@ -255,7 +254,7 @@ class GlyphCache(object):
             glyph = numpy.full(mask.shape, back, dtype=int)
             # stamp foreground mask
             glyph[mask] = fore
-            x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height
+            x0, y0 = (col-1) * self._width, (row-1) * self._height
             x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
             return x0, y0, x1, y1, glyph
     else:
@@ -265,6 +264,6 @@ class GlyphCache(object):
                 self._submit_char(char)
             mask = self._glyphs[char]
             glyph = [[(fore if _bit else back) for _bit in _row] for _row in mask]
-            x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height
+            x0, y0 = (col-1) * self._width, (row-1) * self._height
             x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
             return x0, y0, x1, y1, glyph

@@ -58,7 +58,9 @@ class TextScreen(object):
         self.apagenum = apagenum
         self.vpagenum = vpagenum
         # set up glyph cache and preload halfwidth glyphs (i.e. single-byte code points)
-        self._glyphs = font.GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
+        self._glyphs = font.GlyphCache(
+            self.fonts[self.mode.font_height], self.mode.font_width, self.mode.font_height
+        )
         # build the screen buffer
         self.text = TextBuffer(
             self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
