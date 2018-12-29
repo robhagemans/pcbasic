@@ -15,7 +15,7 @@ try:
 except ImportError:
     numpy = None
 
-from ...compat import iteritems, int2byte
+from ...compat import iteritems, int2byte, zip
 
 from ..base import signals
 
@@ -236,14 +236,13 @@ else:
 
     def _unpack_sequence(byteseq, code_height):
         """Return base glyph for sequence."""
-        code_width = (8 * len(byteseq)) // code_height
-        glyph = [[0] * code_width for _ in range(code_height)]
-        for yy in range(code_height):
-            for half in range(code_width//8):
-                line = byteseq[yy*(code_width//8)+half]
-                for xx in range(8):
-                    if (line >> (7-xx)) & 1 == 1:
-                        glyph[yy][half*8 + xx] = True
+        glyph = [
+            [(_char >> (7 - _row)) & 1 for _row in range(8)]
+            for _char in byteseq
+        ]
+        # pairwise join rows for fullwidth chars
+        if len(glyph) >= code_height*2:
+            glyph = [_left + _right for _left, _right in zip(glyph[::2], glyph[1::2])]
         return glyph
 
     def _extend_height(glyph, carry_last):
