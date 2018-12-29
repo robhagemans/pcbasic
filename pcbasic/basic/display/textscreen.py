@@ -213,7 +213,7 @@ class TextScreen(object):
         # move cursor and see if we need to scroll up
         self._check_pos(scroll_ok=True)
         # put the character
-        self.put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
+        self._put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
         # adjust end of line marker
         if (self.current_col > self.text.pages[self.apagenum].row[self.current_row-1].end):
             self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col
@@ -348,13 +348,11 @@ class TextScreen(object):
 
     ###########################################################################
 
-    def put_char_attr(self, pagenum, row, col, c, attr, one_only=False):
+    def _put_char_attr(self, pagenum, row, col, c, attr):
         """Put a byte to the screen, redrawing as necessary."""
         if not self.mode.is_text_mode:
             attr = attr & 0xf
         start, stop = self.text.put_char_attr(pagenum, row, col, c, attr)
-        if one_only:
-            stop = start
         # update the screen
         self.refresh_range(pagenum, row, start, stop)
 
@@ -406,12 +404,13 @@ class TextScreen(object):
 
     def _redraw_row(self, start, row, wrap=True):
         """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
+        start_row = row
         while True:
             for i in range(start, self.text.pages[self.apagenum].row[row-1].end):
                 # redrawing changes colour attributes to current foreground (cf. GW)
-                # don't update all dbcs chars behind at each put
                 char = int2byte(self.text.get_char(self.apagenum, row, i+1))
-                self.put_char_attr(self.apagenum, row, i+1, char, self.attr, one_only=True)
+                # text.put_char_attr will reconstruct the dbcs buffer
+                start, _ = self.text.put_char_attr(self.apagenum, row, i+1, char, self.attr)
             if (
                     wrap and self.text.pages[self.apagenum].row[row-1].wrap and
                     row >= 0 and row < self.text.height-1
@@ -420,6 +419,9 @@ class TextScreen(object):
                 start = 0
             else:
                 break
+        for refresh_row in range(start_row, row):
+            # update the screen
+            self.refresh_range(pagenum, row, start+1, self.text.width)
 
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
@@ -572,13 +574,13 @@ class TextScreen(object):
         """Rewrite text contents (with the current attribute)."""
         for c in iterchar(text):
             if c == b'\n':
-                self.put_char_attr(
+                self._put_char_attr(
                     self.apagenum, self.current_row, self.current_col, b' ', self.attr
                 )
                 self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col-1
                 break
             else:
-                self.put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
+                self._put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
                 self.set_pos(self.current_row, self.current_col+1)
         else:
             # we're on the position after the additional space
