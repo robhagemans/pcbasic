@@ -233,13 +233,6 @@ class GlyphCache(object):
             for c in map(int2byte, range(256))
         }
 
-    def rebuild_glyph(self, ordval):
-        """Rebuild a text-mode character after POKE."""
-        if self._mode.is_text_mode:
-            # force rebuilding the character by deleting and requesting
-            del self._glyphs[int2byte(ordval)]
-            self._submit_char(int2byte(ordval))
-
     def _submit_char(self, char):
         """Rebuild glyph."""
         self._glyphs[char] = self._fonts[self._mode.font_height].build_glyph(
