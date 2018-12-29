@@ -184,7 +184,7 @@ class Font(object):
 
     def get_glyphs(self, char_list):
         """Retrieve a row of text as a single matrix [y][x]."""
-        return _hstack(self._glyphs.get_glyph(_c) for _c in char_list)
+        return _hstack(self.get_glyph(_c) for _c in char_list)
 
 
 if numpy:
