@@ -369,8 +369,9 @@ class TextScreen(object):
         # collect chars in chunks with the same attribute
         while col <= stop:
             char, attr = self.text.get_fullchar_attr(pagenum, row, col)
-            if attr != last_attr and last_attr is not None:
-                chunks.append((last_col, chars, last_attr))
+            if attr != last_attr:
+                if last_attr is not None:
+                    chunks.append((last_col, chars, last_attr))
                 last_col, last_attr = col, attr
                 chars = []
             chars.append(char)
@@ -398,6 +399,7 @@ class TextScreen(object):
                 self.queues.video.put(signals.Event(
                     signals.VIDEO_PUT_RECT, (self.apagenum, x0, y0, x1, y1, sprite)
                 ))
+            col += len(char)
 
 
     def _redraw_row(self, start, row, wrap=True):
