@@ -60,8 +60,10 @@ class BottomBar(object):
             for i in range((screen.mode.width//8) * 8):
                 c, reverse = self._contents[i]
                 a = reverse_attr if reverse else screen.attr
-                screen.put_char_attr(screen.apagenum, key_row, i+1, c, a)
+                start, stop = screen.text.put_char_attr(screen.apagenum, key_row, i+1, c, a)
             screen.text.pages[screen.apagenum].row[key_row-1].end = screen.mode.width
+            # update the screen
+            screen.refresh_range(screen.apagenum, key_row, 1, screen.mode.width)
 
 
 #######################################################################################
