@@ -235,18 +235,18 @@ class GlyphCache(object):
         """(Re-)build glyph for halfwidth/fullwidth character."""
         self._glyphs[char] = self._font.build_glyph(char, self._width*len(char), self._height)
 
-    def check_char(self, char):
+    def get_glyph(self, char):
         """Retrieve a glyph, building if needed."""
-        if char not in self._glyphs:
-            self._submit_char(char)
-        return self._glyphs[char]
+        try:
+            return self._glyphs[char]
+        except KeyError:
+            self.build_glyph(char)
+            return self._glyphs[char]
 
     if numpy:
         def get_sprite(self, row, col, char, fore, back):
             """Return a sprite for a given character."""
-            if char not in self._glyphs:
-                self._submit_char(char)
-            mask = self._glyphs[char]
+            mask = self._glyphs.get_glyph(char)
             # set background
             glyph = numpy.full(mask.shape, back, dtype=int)
             # stamp foreground mask
@@ -257,9 +257,7 @@ class GlyphCache(object):
     else:
         def get_sprite(self, row, col, char, fore, back):
             """Return a sprite for a given character."""
-            if char not in self._glyphs:
-                self._submit_char(char)
-            mask = self._glyphs[char]
+            mask = self._glyphs.get_glyph(char)
             glyph = [[(fore if _bit else back) for _bit in _row] for _row in mask]
             x0, y0 = (col-1) * self._width, (row-1) * self._height
             x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1

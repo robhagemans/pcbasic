@@ -392,7 +392,7 @@ class TextScreen(object):
         """Draw a chunk of text in a single attribute."""
         fore, back, blink, underline = self.mode.split_attr(attr)
         for char in chars:
-            glyph = self._glyphs.check_char(char)
+            glyph = self._glyphs.get_glyph(char)
             self.queues.video.put(signals.Event(
                 signals.VIDEO_PUT_GLYPH, (
                     pagenum, row, col, self.codepage.to_unicode(char, u'\0'),
