@@ -180,8 +180,14 @@ class Drawing(object):
     def clear_text_area(self, x0, y0, x1, y1):
         """Remove all characters from the text buffer on a rectangle of the graphics screen."""
         row0, col0, row1, col1 = self._mode.pixel_to_text_area(x0, y0, x1, y1)
-        # use attr = 0 ? pagenum parameter? are we actually sending anything to the queue?
+        # use attr = 0 ? pagenum parameter?
         self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
+        fore, back, blink, underline = self._mode.split_attr(self._attr)
+        for row in range(row0, row1+1):
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_PUT_TEXT,
+                (self._apagenum, row, col0, [u' ']*(col1-col0), fore, back, blink, underline, None)
+            ))
 
     ### graphics primitives
 
