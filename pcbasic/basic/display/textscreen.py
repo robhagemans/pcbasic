@@ -241,6 +241,15 @@ class TextScreen(object):
         step = self.text.step_left(self.apagenum, self.current_row, self.current_col)
         self.set_pos(self.current_row, self.current_col - step, scroll_ok=False)
 
+    def move_to_end(self):
+        """Jump to end of logical line; follow wraps (END)."""
+        row = self.text.find_end_of_line(self.apagenum, self.current_row)
+        if self.text.pages[self.apagenum].row[row-1].end == self.mode.width:
+            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end)
+            self.overflow = True
+        else:
+            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end+1)
+
     def set_pos(self, to_row, to_col, scroll_ok=True):
         """Set the current position."""
         self.overflow = False
@@ -467,37 +476,7 @@ class TextScreen(object):
     ###########################################################################
     # console operations
 
-    def move_to_end(self):
-        """Jump to end of logical line; follow wraps (END)."""
-        row = self.text.find_end_of_line(self.apagenum, self.current_row)
-        if self.text.pages[self.apagenum].row[row-1].end == self.mode.width:
-            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end)
-            self.overflow = True
-        else:
-            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end+1)
-
-    def clear_from(self, srow, scol):
-        """Clear from given position to end of logical line (CTRL+END)."""
-        self.text.pages[self.apagenum].row[srow-1].clear_from(scol, self.attr)
-        row = srow
-        # can use self.text.find_end_of_line
-        while self.text.pages[self.apagenum].row[row-1].wrap:
-            row += 1
-            self.text.pages[self.apagenum].row[row-1].clear(self.attr)
-        for r in range(row, srow, -1):
-            self.text.pages[self.apagenum].row[r-1].wrap = False
-            self.scroll(r)
-        therow = self.text.pages[self.apagenum].row[srow-1]
-        therow.wrap = False
-        self.set_pos(srow, scol)
-        save_end = therow.end
-        therow.end = self.mode.width
-        if scol > 1:
-            self._redraw_from(scol-1, srow)
-        else:
-            # inelegant: we're clearing the text buffer for a second time now
-            self.clear_rows(srow, srow)
-        therow.end = save_end
+    # delete
 
     def delete_fullchar(self):
         """Delete the character (single/double width) at the current position."""
@@ -559,6 +538,8 @@ class TextScreen(object):
                 # adjust row end
                 self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col - 2
 
+    # insert
+
     def insert_fullchars(self, sequence):
         """Insert one or more single- or double-width characters and adjust cursor."""
         # insert one at a time at cursor location
@@ -605,6 +586,29 @@ class TextScreen(object):
             # insert the character in the next row
             return self._insert_fullchar_at(row+1, 1, c, attr)
 
+    def clear_from(self, srow, scol):
+        """Clear from given position to end of logical line (CTRL+END)."""
+        self.text.pages[self.apagenum].row[srow-1].clear_from(scol, self.attr)
+        row = srow
+        # can use self.text.find_end_of_line
+        while self.text.pages[self.apagenum].row[row-1].wrap:
+            row += 1
+            self.text.pages[self.apagenum].row[row-1].clear(self.attr)
+        for r in range(row, srow, -1):
+            self.text.pages[self.apagenum].row[r-1].wrap = False
+            self.scroll(r)
+        therow = self.text.pages[self.apagenum].row[srow-1]
+        therow.wrap = False
+        self.set_pos(srow, scol)
+        save_end = therow.end
+        therow.end = self.mode.width
+        if scol > 1:
+            self._redraw_from(scol-1, srow)
+        else:
+            # inelegant: we're clearing the text buffer for a second time now
+            self.clear_rows(srow, srow)
+        therow.end = save_end
+
     def _redraw_from(self, start, row, wrap=True):
         """Redraw until the end of the logical screen line, reconstructing DBCS buffer."""
         start_row = row
@@ -623,6 +627,8 @@ class TextScreen(object):
                 start = 0
             else:
                 break
+
+    # line feed
 
     def line_feed(self):
         """Move the remainder of the line to the next row and wrap (LF)."""

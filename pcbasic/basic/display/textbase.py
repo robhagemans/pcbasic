@@ -239,11 +239,6 @@ class ScrollArea(object):
         # _top and _bottom are inclusive and count rows from 1
         self._top = start
         self._bottom = stop
-        #  need this:
-        #set_pos(start, 1)
-        #  or this:
-        #self.overflow = False
-        #self._move_cursor(start, 1)
 
     def unset(self):
         """Unset scroll area."""
