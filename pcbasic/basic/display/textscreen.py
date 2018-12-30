@@ -369,6 +369,9 @@ class TextScreen(object):
 
     def _draw_text(self, pagenum, row, col, chars, attr, text_only):
         """Draw a chunk of text in a single attribute to pixels and interface."""
+        if row < 1 or col < 1 or row > self.mode.height or col > self.mode.width:
+            logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
+            return
         fore, back, blink, underline = self.mode.split_attr(attr)
         glyphs = self._glyphs.get_glyphs(chars)
         # mark full-width chars by a trailing empty string to preserve column counts
@@ -507,21 +510,26 @@ class TextScreen(object):
         elif therow.end == therow.width:
             # case 1
             wrap_char_attr = nextrow.buf[0]
+            if nextrow.end == 0:
+                wrap_char_attr = None
             start_col, stop_col = therow.delete_char_attr(col, self.attr, wrap_char_attr)
             self._delete_at(row+1, 1, remove_depleted=True)
         elif col < therow.end:
             # case 2a
             start_col, stop_col = therow.delete_char_attr(col, self.attr)
         elif remove_depleted and col == therow.end:
-            # case 2b-ii: while on the first LF row deleting the last char immediately appends
+            # case 2b (ii) while on the first LF row deleting the last char immediately appends
             # the next row, any subsequent LF rows are only removed once they are fully empty and
             # DEL is pressed another time
             start_col, stop_col = therow.delete_char_attr(col, self.attr)
+        elif remove_depleted and therow.end == 0:
+            # case 2b (iii) this is where the empty row mentioned at 2b (ii) gets removed
+            self.scroll(row)
+            return
         else:
-            # case 2b, trouble
+            # case 2b (i) perform multi_character delete by looping single chars
             for newcol in range(col, therow.width+1):
                 if nextrow.end == 0:
-                    self.scroll(row+1)
                     break
                 wrap_char, _ = nextrow.buf[0]
                 therow.put_char_attr(newcol, wrap_char, self.attr, adjust_end=True)
