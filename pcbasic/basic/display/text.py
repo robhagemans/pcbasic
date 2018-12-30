@@ -159,7 +159,7 @@ class TextBuffer(object):
             for i, row in enumerate(page.row):
                 # convert non-ascii bytes to \x81 etc
                 # dbcs is encoded as double char in left column, '' in right
-                rowbytes = (chr(_pair[1]) for _pair in row.buf)
+                rowbytes = (_pair[0] for _pair in row.buf)
                 # replace non-ascii with ? - this is not ideal but
                 # for python2 we need to stick to ascii-128 so implicit conversion to bytes works
                 # and for python3 we must use unicode
