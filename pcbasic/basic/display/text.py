@@ -35,7 +35,7 @@ class TextRow(object):
         self.end = src_row.end
         self.wrap = src_row.wrap
 
-    def clear(self, attr, from_col=1, to_col=None, adjust_end=True):
+    def clear(self, attr, from_col=1, to_col=None, adjust_end=True, clear_wrap=False):
         """Clear the screen row between given columns (inclusive; base-1 index)."""
         if to_col is None:
             to_col = self.width
@@ -45,12 +45,15 @@ class TextRow(object):
         self.double[start:stop] = [0] * width
         if adjust_end and self.end <= to_col:
             self.end = min(self.end, start)
+        if clear_wrap:
+            self.wrap = False
+        return self._rebuild_char_widths_from(from_col)
 
-    def put_char_attr(self, col, c, attr):
+    def put_char_attr(self, col, char, attr):
         """Put a byte to the screen."""
-        assert isinstance(c, bytes), type(c)
+        assert isinstance(char, bytes), type(char)
         # update the screen buffer
-        self.buf[col-1] = (c, attr)
+        self.buf[col-1] = (char, attr)
         self.double[col-1] = 0
         return self._rebuild_char_widths_from(col)
 
@@ -60,7 +63,8 @@ class TextRow(object):
         if not self._dbcs_enabled:
             return col, col
         # mark out replaced char and changed following dbcs characters to be redrawn
-        sequences = self._conv.mark(b''.join(entry[0] for entry in self.buf), flush=True)
+        text = self.get_text_raw()
+        sequences = self._conv.mark(text, flush=True)
         flags = ((0,) if len(seq) == 1 else (1, 2) for seq in sequences)
         old_double = self.double
         self.double = [entry for flag in flags for entry in flag]
@@ -74,6 +78,29 @@ class TextRow(object):
         if self.double[start_col-1] == 2:
             start_col -= 1
         return min(col, start), max(col, stop)
+
+    def insert_char_attr(self, col, c, attr):
+        """
+        Insert a character,
+        NOTE: This sets the attribute of *everything that has moved* to attr.
+        Return the character dropping off at the end.
+        """
+        self.buf.insert(col-1, (c, attr))
+        pop_char, pop_attr = self.buf.pop()
+        self.double.insert(col-1, 0)
+        self.double.pop()
+        if self.end >= col:
+            self.end = min(self.end + 1, self.width)
+        else:
+            self.end = col
+        # reset the attribute of all moved chars
+        self.buf[col-1:max(self.end, col)] = [
+            (_c, attr) for _c, _ in self.buf[col-1:max(self.end, col)]
+        ]
+        start_col, stop_col = self._rebuild_char_widths_from(col)
+        # attrs change only up to logical end of row but dbcs can change up to row width
+        stop_col = max(self.end, stop_col)
+        return pop_char, pop_attr, start_col, stop_col
 
     def get_text_raw(self, from_col=1, to_col=None):
         """Get the raw text between given columns (inclusive)."""
@@ -91,8 +118,7 @@ class TextRow(object):
 
     def get_text_logical(self, from_col=1, to_col=None):
         """Get the text between given columns (inclusive), don't go beyond end."""
-        raw = self.get_text_raw(from_col, to_col)
-        text = raw[:self.end-from_col+1]
+        text = self.get_text_raw(from_col, min(to_col, self.end))
         # wrap on line that is not full means LF
         if self.end < self.width or not self.wrap:
             text += b'\n'
@@ -133,7 +159,7 @@ class TextBuffer(object):
             for i, row in enumerate(page.row):
                 # convert non-ascii bytes to \x81 etc
                 # dbcs is encoded as double char in left column, '' in right
-                rowbytes = (_pair[0] for _pair in row.buf)
+                rowbytes = (chr(_pair[1]) for _pair in row.buf)
                 # replace non-ascii with ? - this is not ideal but
                 # for python2 we need to stick to ascii-128 so implicit conversion to bytes works
                 # and for python3 we must use unicode
@@ -159,7 +185,12 @@ class TextBuffer(object):
     def clear_area(self, pagenum, from_row, from_col, to_row, to_col, attr):
         """Clear a rectangular area of the screen (inclusive bounds; 1-based indexing)."""
         for row in self.pages[pagenum].row[from_row-1:to_row]:
-            row.clear(attr, from_col=from_col, to_col=to_col)
+            row.clear(attr, from_col=from_col, to_col=to_col, clear_wrap=False)
+
+    def clear_rows(self, pagenum, from_row, to_row, attr):
+        """Clear (inclusive) text row range."""
+        for row in self.pages[pagenum].row[from_row-1:to_row]:
+            row.clear(attr, clear_wrap=True)
 
     def put_char_attr(self, pagenum, row, col, c, attr):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
