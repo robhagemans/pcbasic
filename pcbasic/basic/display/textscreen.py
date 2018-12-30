@@ -50,7 +50,7 @@ class TextScreen(object):
             for height, font_dict in iteritems(fonts)
         }
         # function key macros
-        self.bottom_bar = BottomBar()
+        self._bottom_bar = BottomBar()
 
     def init_mode(self, mode, pixels, attr, vpagenum, apagenum):
         """Reset the text screen for new video mode."""
@@ -68,7 +68,7 @@ class TextScreen(object):
         # pixel buffer
         self.pixels = pixels
         # redraw key line
-        self.bottom_bar.redraw(self)
+        self.redraw_bar()
         # initialise text viewport & move cursor home
         self.scroll_area.init_mode(self.mode)
         self.set_pos(self.scroll_area.top, 1)
@@ -408,17 +408,16 @@ class TextScreen(object):
     def clear_view(self):
         """Clear the scroll area."""
         with self._modify_attr_on_clear():
-            self.clear_rows(self.scroll_area.top, self.scroll_area.bottom)
+            self._clear_rows(self.scroll_area.top, self.scroll_area.bottom)
             self.set_pos(self.scroll_area.top, 1)
 
     def clear(self):
         """Clear the screen."""
         with self._modify_attr_on_clear():
-            self.clear_rows(1, self.mode.height)
+            self._clear_rows(1, self.mode.height)
             self.set_pos(1, 1)
 
-    # called externally only by BottomBar.redraw()
-    def clear_rows(self, start, stop):
+    def _clear_rows(self, start, stop):
         """Clear text and graphics on given (inclusive) text row range."""
         self.text.clear_rows(self.apagenum, start, stop, self.attr)
         self._clear_rows_refresh(start, stop)
@@ -645,6 +644,48 @@ class TextScreen(object):
             self.set_pos(self.current_row+1, 1)
 
     ###########################################################################
+    # bottom bar
+
+    def update_bar(self, descriptions):
+        """Update thekey descriptions in the bottom bar."""
+        self._bottom_bar.clear()
+        for i, text in enumerate(descriptions):
+            kcol = 1 + 8*i
+            self._bottom_bar.write((b'%d' % (i+1,))[-1:], kcol, False)
+            self._bottom_bar.write(text, kcol+1, True)
+
+    def show_bar(self, on):
+        """Switch bottom bar visibility."""
+        # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
+        error.throw_if(on and self.scroll_area.bottom == self.mode.height)
+        self._bottom_bar.visible, was_visible = on, self._bottom_bar.visible
+        if self._bottom_bar.visible != was_visible:
+            self.redraw_bar()
+
+    def redraw_bar(self):
+        """Redraw bottom bar if visible, clear if not."""
+        key_row = self.mode.height
+        # Keys will only be visible on the active page at which KEY ON was given,
+        # and only deleted on page at which KEY OFF given.
+        self._clear_rows(key_row, key_row)
+        if not self.mode.is_text_mode:
+            reverse_attr = self.attr
+        elif (self.attr >> 4) & 0x7 == 0:
+            reverse_attr = 0x70
+        else:
+            reverse_attr = 0x07
+        if self._bottom_bar.visible:
+            # always show only complete 8-character cells
+            # this matters on pcjr/tandy width=20 mode
+            for i in range((self.mode.width//8) * 8):
+                c, reverse = self._bottom_bar.get_char_reverse(i)
+                a = reverse_attr if reverse else self.attr
+                start, stop = self.text.put_char_attr(self.apagenum, key_row, i+1, c, a)
+            self.text.pages[self.apagenum].row[-1].end = self.mode.width
+            # update the screen
+            self.refresh_range(self.apagenum, key_row, 1, self.mode.width)
+
+    ###########################################################################
     # vpage text retrieval
 
     def print_screen(self, target_file):
@@ -661,7 +702,7 @@ class TextScreen(object):
         )
         text = u''.join(self.codepage.str_to_unicode(_chunk) for _chunk in text.split(b'\n'))
         self.queues.video.put(signals.Event(
-                signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)
+            signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)
         ))
 
     ###########################################################################
@@ -675,7 +716,7 @@ class TextScreen(object):
         row = self.current_row if row is None else row
         col = self.current_col if col is None else col
         cmode = self.mode
-        error.throw_if(row == cmode.height and self.bottom_bar.visible)
+        error.throw_if(row == cmode.height and self._bottom_bar.visible)
         if self.scroll_area.active:
             error.range_check(self.scroll_area.top, self.scroll_area.bottom, row)
         else:
@@ -701,8 +742,10 @@ class TextScreen(object):
     def csrlin_(self, args):
         """CSRLIN: get the current screen row."""
         list(args)
-        if (self.overflow and self.current_col == self.mode.width and
-                                    self.current_row < self.scroll_area.bottom):
+        if (
+                self.overflow and self.current_col == self.mode.width
+                and self.current_row < self.scroll_area.bottom
+            ):
             # in overflow position, return row+1 except on the last row
             csrlin = self.current_row + 1
         else:
@@ -752,7 +795,7 @@ class TextScreen(object):
         if start is None and stop is None:
             self.scroll_area.unset()
         else:
-            if self.capabilities in ('pcjr', 'tandy') and not self.bottom_bar.visible:
+            if self.capabilities in ('pcjr', 'tandy') and not self._bottom_bar.visible:
                 max_line = 25
             else:
                 max_line = 24

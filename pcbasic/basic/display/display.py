@@ -573,7 +573,7 @@ class Display(object):
         # cls is only executed if no errors have occurred
         if val == 0:
             self.text_screen.clear()
-            self.text_screen.bottom_bar.redraw(self.text_screen)
+            self.text_screen.redraw_bar()
             self.drawing.reset()
         elif val == 1:
             # clear the graphics viewport

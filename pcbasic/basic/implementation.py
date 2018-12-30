@@ -849,7 +849,7 @@ class Implementation(object):
         list(args)
         if keynum <= self.basic_events.num_fn_keys:
             self.fkey_macros.set(keynum, text)
-            self.screen.bottom_bar.redraw(self.screen)
+            self.screen.redraw_bar()
         else:
             # only length-2 expressions can be assigned to KEYs over 10
             # in which case it's a key scancode definition
