@@ -157,6 +157,8 @@ class TextRow(object):
 
     def get_text_logical(self, from_col=1, to_col=None):
         """Get the text between given columns (inclusive), don't go beyond end."""
+        if to_col is None:
+            to_col = self.width
         text = self.get_text_raw(from_col, min(to_col, self.end))
         # wrap on line that is not full means LF
         if self.end < self.width or not self.wrap:

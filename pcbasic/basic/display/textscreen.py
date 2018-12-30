@@ -659,10 +659,10 @@ class TextScreen(object):
 
     def copy_clipboard(self, start_row, start_col, stop_row, stop_col, is_mouse_selection):
         """Copy selected screen area to clipboard."""
-        clips = self.text.get_text_logical(
+        text = self.text.get_text_logical(
             self.vpagenum, start_row, start_col, stop_row, stop_col
         )
-        text = u'\n'.join(self.codepage.str_to_unicode(clip) for clip in clips)
+        text = u''.join(self.codepage.str_to_unicode(_chunk) for _chunk in text.split(b'\n'))
         self.queues.video.put(signals.Event(
                 signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)
         ))
