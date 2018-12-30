@@ -494,6 +494,7 @@ class TextScreen(object):
         #                   -> if next row now empty, scroll it up & stop; otherwise recurse
         # note that the last line recurses into a multi-character delete!
         therow = self.text.pages[self.apagenum].row[row-1]
+        nextrow = self.text.pages[self.apagenum].row[row]
         if not therow.wrap:
             # case 0b
             if col > therow.end:
@@ -505,7 +506,6 @@ class TextScreen(object):
                 self.scroll(row)
         elif therow.end == therow.width:
             # case 1
-            nextrow = self.text.pages[self.apagenum].row[row]
             wrap_char_attr = nextrow.buf[0]
             start_col, stop_col = therow.delete_char_attr(col, self.attr, wrap_char_attr)
             self._delete_at(row+1, 1, remove_depleted=True)
@@ -514,8 +514,13 @@ class TextScreen(object):
             start_col, stop_col = therow.delete_char_attr(col, self.attr)
         else:
             # case 2b, trouble
-            pass # for now
-            return
+            for newcol in range(col, therow.width+1):
+                if nextrow.end == 0:
+                    break
+                wrap_char, _ = nextrow.buf[0]
+                therow.put_char_attr(newcol, wrap_char, self.attr, adjust_end=True)
+                self._delete_at(row+1, 1, remove_depleted=True)
+            start_col, stop_col = col, newcol
         # refresh all that has been changed
         self.refresh_range(self.apagenum, row, start_col, stop_col)
 
