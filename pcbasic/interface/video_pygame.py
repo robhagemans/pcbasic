@@ -28,6 +28,7 @@ from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
 from ..compat import WIN32, MACOS, PY2
+from ..compat import set_dpi_aware
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed, EnvironmentCache, NOKILL_MESSAGE
 from . import clipboard
@@ -56,6 +57,7 @@ class VideoPygame(VideoPlugin):
         """Initialise pygame interface."""
         logging.warning('The PyGame interface is deprecated, use the SDL2 interface instead.')
         VideoPlugin.__init__(self, input_queue, video_queue)
+
         # request smooth scaling
         self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
@@ -70,6 +72,8 @@ class VideoPygame(VideoPlugin):
             raise InitFailed('Module `pygame` not found')
         if not numpy:
             raise InitFailed('Module `numpy` not found')
+        # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
+        set_dpi_aware()
         # ensure we have the correct video driver for SDL 1.2
         # pygame sets this on import, but if we've tried SDL2 we've had to
         # reset this value
@@ -89,13 +93,12 @@ class VideoPygame(VideoPlugin):
         # border attribute
         self.border_attr = 0
         # palette and colours
-        # composite colour artifacts
-        self._composite = False
         # working palette - attribute index in blue channel
         self.work_palette = [(0, 0, index) for index in range(256)]
         # display palettes for blink states 0, 1
         self._palette = [None, None]
-        self._saved_palette = [None, None]
+        # composite colour artifacts
+        self._pixel_packing = False
         # text attributes supported
         self.mode_has_blink = True
         # update cycle
@@ -146,7 +149,7 @@ class VideoPygame(VideoPlugin):
             pygame.display.set_caption(self.caption)
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
-        self.set_palette([(0,0,0)]*16, None)
+        self.set_palette([(0,0,0)]*16, None, None)
         pygame.joystick.init()
         self.joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
         for j in self.joysticks:
@@ -397,8 +400,8 @@ class VideoPygame(VideoPlugin):
         self._draw_cursor(workscreen)
         if self.clipboard.active():
             create_feedback(workscreen, self.clipboard.selection_rect)
-        if self._composite:
-            screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
+        if self._pixel_packing:
+            screen = apply_composite_artifacts(screen, *self._pixel_packing)
         screen.set_palette(self._palette[self.blink_state])
         letterbox = pygame.Rect(
             self._window_sizer.letterbox_shift, self._window_sizer.window_size
@@ -477,8 +480,6 @@ class VideoPygame(VideoPlugin):
         self.font_width = mode_info.font_width
         self.num_pages = mode_info.num_pages
         self.mode_has_blink = mode_info.has_blink
-        if not self.text_mode:
-            self.bitsperpixel = mode_info.bitsperpixel
         # logical size
         self.size = (mode_info.pixel_width, mode_info.pixel_height)
         self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
@@ -509,7 +510,7 @@ class VideoPygame(VideoPlugin):
         """Put text on the clipboard."""
         self.clipboard_handler.copy(text, mouse)
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1):
+    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
         """Build the palette."""
         self.num_fore_attrs = min(16, len(rgb_palette_0))
         self.num_back_attrs = min(8, self.num_fore_attrs)
@@ -524,20 +525,12 @@ class VideoPygame(VideoPlugin):
                 (128 // self.num_fore_attrs // self.num_back_attrs)
             ):
             self._palette[1] += [b]*self.num_fore_attrs
+        self._pixel_packing = pack_pixels
         self.busy = True
 
     def set_border_attr(self, attr):
         """Change the border attribute."""
         self.border_attr = attr
-        self.busy = True
-
-    def set_composite(self, on, composite_colors):
-        """Enable/disable composite artifacts."""
-        if on != self._composite:
-            self._palette, self._saved_palette = self._saved_palette, self._palette
-        if on:
-            self._palette = [composite_colors] * 2
-        self._composite = on
         self.busy = True
 
     def clear_rows(self, back_attr, start, stop):
@@ -1035,11 +1028,15 @@ if pygame:
     }
 
 
-def apply_composite_artifacts(screen, pixels=4):
+def apply_composite_artifacts(screen, bpp_out, bpp_in):
     """Process the canvas to apply composite colour artifacts."""
     src_array = pygame.surfarray.array2d(screen)
-    return pygame.surfarray.make_surface(
-                    window.apply_composite_artifacts(src_array, pixels))
+    width, _ = src_array.shape
+    mask = 1<<bpp_in - 1
+    step = bpp_out // bpp_in
+    s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
+    packed = numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
+    return pygame.surfarray.make_surface(packed)
 
 
 def glyph_to_surface(glyph):

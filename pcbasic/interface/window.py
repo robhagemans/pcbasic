@@ -1,38 +1,14 @@
 """
 PC-BASIC - window.py
-Graphical interface common utilities
+Window scaling calculations
 
 (c) 2015--2018 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
-import sys
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
-from ..compat import set_dpi_aware
-
-
-# Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
-set_dpi_aware()
-
-# percentage of the screen to leave unused for window decorations etc.
-DISPLAY_SLACK = 15
-_SLACK_RATIO = 1. - DISPLAY_SLACK / 100.
-
-
-def apply_composite_artifacts(src_array, pixels=4):
-    """Process the canvas to apply composite colour artifacts."""
-    width, _ = src_array.shape
-    s = [None] * pixels
-    for p in range(pixels):
-        s[p] = src_array[p:width:pixels] & (4//pixels)
-    for p in range(1, pixels):
-        s[0] = s[0]*2 + s[p]
-    return numpy.repeat(s[0], pixels, axis=0)
+# leave 15% of the screen (in most constraining direction) unused for window decorations etc.
+_SLACK_RATIO = 0.85
 
 
 def _most_constraining(constraining, target_aspect):
