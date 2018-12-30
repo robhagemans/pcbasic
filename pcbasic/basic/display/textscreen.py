@@ -178,7 +178,7 @@ class TextScreen(object):
 
     def write_char(self, c, do_scroll_down=False):
         """Put one character at the current position."""
-        # check if scroll& repositioning needed
+        # check if scroll & repositioning needed
         if self.overflow:
             self.current_col += 1
             self.overflow = False
@@ -188,12 +188,9 @@ class TextScreen(object):
         self._check_pos(scroll_ok=True)
         # put the character
         start, stop = self.text.put_char_attr(
-            self.apagenum, self.current_row, self.current_col, c, self.attr
+            self.apagenum, self.current_row, self.current_col, c, self.attr, adjust_end=True
         )
         self.refresh_range(self.apagenum, self.current_row, start, stop)
-        # adjust end of line marker
-        if (self.current_col > self.text.pages[self.apagenum].row[self.current_row-1].end):
-            self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col
         # move cursor. if on col 80, only move cursor to the next row
         # when the char is printed
         if self.current_col < self.mode.width:
@@ -207,12 +204,12 @@ class TextScreen(object):
         """Wrap if we need to."""
         if self.current_col > self.mode.width:
             if self.current_row < self.mode.height:
-                # wrap line
-                self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
                 if do_scroll_down:
                     # scroll down (make space by shifting the next rows down)
                     if self.current_row < self.scroll_area.bottom:
                         self.scroll_down(self.current_row+1)
+                # wrap line
+                self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
                 # move cursor and reset cursor attribute
                 self._move_cursor(self.current_row + 1, 1)
             else:
@@ -594,18 +591,19 @@ class TextScreen(object):
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
         end_row = self.text.find_end_of_line(self.apagenum, srow)
+        # clear the first row of te logical line
         self.text.pages[self.apagenum].row[srow-1].clear(
             self.attr, from_col=scol, clear_wrap=True,
         )
-        # remove the cleared additional rows in the logical line by scrolling up
-        for row in range(end_row-1, srow, -1):
-            self.scroll(row)
         if scol > 1:
             # redraw the last char before the clear too, as it may have been changed by dbcs logic
             self.refresh_range(self.apagenum, srow, scol-1, self.mode.width)
         else:
             # just clear out the whole row
             self._clear_rows_refresh(srow, srow)
+        # remove the additional rows in the logical line by scrolling up
+        for row in range(end_row, srow, -1):
+            self.scroll(row)
         self.set_pos(srow, scol)
 
     # line feed

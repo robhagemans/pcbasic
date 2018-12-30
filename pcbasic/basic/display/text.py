@@ -49,12 +49,14 @@ class TextRow(object):
             self.wrap = False
         return self._rebuild_char_widths_from(from_col)
 
-    def put_char_attr(self, col, char, attr):
+    def put_char_attr(self, col, char, attr, adjust_end=False):
         """Put a byte to the screen."""
         assert isinstance(char, bytes), type(char)
         # update the screen buffer
         self.buf[col-1] = (char, attr)
         self.double[col-1] = 0
+        if adjust_end:
+            self.end = max(self.end, col)
         return self._rebuild_char_widths_from(col)
 
     def _rebuild_char_widths_from(self, col):
@@ -192,9 +194,9 @@ class TextBuffer(object):
         for row in self.pages[pagenum].row[from_row-1:to_row]:
             row.clear(attr, clear_wrap=True)
 
-    def put_char_attr(self, pagenum, row, col, c, attr):
+    def put_char_attr(self, pagenum, row, col, c, attr, adjust_end=False):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
-        return self.pages[pagenum].row[row-1].put_char_attr(col, c, attr)
+        return self.pages[pagenum].row[row-1].put_char_attr(col, c, attr, adjust_end=adjust_end)
 
     def scroll_up(self, pagenum, from_line, bottom, attr):
         """Scroll up."""
