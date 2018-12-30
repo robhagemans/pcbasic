@@ -92,36 +92,6 @@ class TextScreen(object):
             )
             raise error.BASICError(error.IFC)
 
-    def rebuild(self):
-        """Completely resubmit the text screen to the interface."""
-        # fix the cursor
-        self.queues.video.put(signals.Event(
-            signals.VIDEO_SET_CURSOR_SHAPE,
-            (self.cursor.width, self.cursor.from_line, self.cursor.to_line)
-        ))
-        self.queues.video.put(signals.Event(
-            signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col)
-        ))
-        if self.mode.is_text_mode:
-            attr = self.text.get_attr(self.apagenum, self.current_row, self.current_col)
-            fore, _, _, _ = self.mode.split_attr(attr & 0xf)
-        else:
-            fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (fore,)))
-        self.cursor.reset_visibility()
-        # redraw the text screen and rebuild text buffers in video plugin
-        for pagenum in range(self.mode.num_pages):
-            for row in range(self.mode.height):
-                self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
-            # redraw graphics
-            if not self.mode.is_text_mode:
-                self.queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_RECT, (
-                        pagenum, 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
-                        self.pixels.pages[pagenum].buffer
-                    )
-                ))
-
     def __repr__(self):
         """Return an ascii representation of the screen buffer (for debugging)."""
         return repr(self.text)
@@ -336,6 +306,38 @@ class TextScreen(object):
         )
 
     ###########################################################################
+    # update pixel buffer and interface
+
+    def rebuild(self):
+        """Completely resubmit the text and graphics screen to the interface."""
+        # fix the cursor
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_SET_CURSOR_SHAPE,
+            (self.cursor.width, self.cursor.from_line, self.cursor.to_line)
+        ))
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col)
+        ))
+        if self.mode.is_text_mode:
+            attr = self.text.get_attr(self.apagenum, self.current_row, self.current_col)
+            fore, _, _, _ = self.mode.split_attr(attr & 0xf)
+        else:
+            fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (fore,)))
+        self.cursor.reset_visibility()
+        # redraw the text screen and rebuild text buffers in video plugin
+        for pagenum in range(self.mode.num_pages):
+            # resubmit the text buffer without changing the pixel buffer
+            for row in range(self.mode.height):
+                self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
+            # redraw graphics
+            if not self.mode.is_text_mode:
+                self.queues.video.put(signals.Event(
+                    signals.VIDEO_PUT_RECT, (
+                        pagenum, 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
+                        self.pixels.pages[pagenum].buffer
+                    )
+                ))
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Draw a section of a screen row to pixels and interface."""
