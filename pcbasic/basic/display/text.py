@@ -165,6 +165,12 @@ class TextRow(object):
             text += b'\n'
         return text
 
+    def put_line_feed(self, col):
+        """Put a line feed in the row."""
+        # adjust end of line and wrapping flag - LF connects lines like word wrap
+        self.end = col - 1
+        self.wrap = True
+
 
 class TextPage(object):
     """Buffer for a screen page."""
