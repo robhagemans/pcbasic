@@ -407,6 +407,7 @@ class TextScreen(object):
                 char = int2byte(self.text.get_char(self.apagenum, row, i+1))
                 # text.put_char_attr will reconstruct the dbcs buffer
                 start, _ = self.text.put_char_attr(self.apagenum, row, i+1, char, self.attr)
+                self.refresh_range(self.apagenum, row, start, start)
             if (
                     wrap and self.text.pages[self.apagenum].row[row-1].wrap and
                     row >= 0 and row < self.text.height-1
@@ -415,9 +416,6 @@ class TextScreen(object):
                 start = 0
             else:
                 break
-        for refresh_row in range(start_row, row):
-            # update the screen
-            self.refresh_range(pagenum, row, start+1, self.text.width)
 
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
