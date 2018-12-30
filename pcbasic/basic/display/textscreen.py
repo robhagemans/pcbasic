@@ -477,20 +477,12 @@ class TextScreen(object):
     # delete
 
     def delete_fullchar(self):
-        """Delete the character (single/double width) at the current position."""
+        """Delete the character (half/fullwidth) at the current position."""
         # todo: deal width deleting fullwidth chars
         self._delete_at(self.current_row, self.current_col)
 
     def _delete_at(self, row, col, remove_depleted=False):
-
-        # case 0) non-wrapping row, beyond logical end. delete does nothing (!)
-        # case 1) non-wrapping row, left of or at logical end. delete redraws until logical end
-        # case 2) full wrapping row. delete wraps & redraws until logical end of logical line or LF
-        # case 3) wrapping (LF) row, left of logical end. delete redraws until LF, *does not wrap*
-        # case 4) wrapping (LF) row, at logical end. delete attaches next row(s) until another LF
-        # case 5) wrapping (LF) row, beyond logical end. delete attaches next row(s) at cursor position until another LF
-
-        # simplify:
+        """Delete the halfwidth character at the given position."""
         # case 0) non-wrapping row:
         #           0a) left of or at logical end -> redraw until logical end
         #           0b) beyond logical end -> do nothing
@@ -530,17 +522,17 @@ class TextScreen(object):
     # insert
 
     def insert_fullchars(self, sequence):
-        """Insert one or more single- or double-width characters and adjust cursor."""
+        """Insert one or more half- or fullwidth characters and adjust cursor."""
         # insert one at a time at cursor location
         # to let cursor position logic deal with scrolling
         for c in iterchar(sequence):
-            if self._insert_fullchar_at(self.current_row, self.current_col, c, self.attr):
+            if self._insert_at(self.current_row, self.current_col, c, self.attr):
                 # move cursor by one character
                 # this will move to next row when necessary
                 self.incr_pos()
 
-    def _insert_fullchar_at(self, row, col, c, attr):
-        """Insert one single- or double-width character at the given position."""
+    def _insert_at(self, row, col, c, attr):
+        """Insert one halfwidth character at the given position."""
         therow = self.text.pages[self.apagenum].row[row-1]
         if therow.end < self.mode.width:
             # insert the new char and ignore what drops off at the end
@@ -577,7 +569,7 @@ class TextScreen(object):
             # redraw everything that has changed on this row
             self.refresh_range(self.apagenum, row, start_col, stop_col)
             # insert the character in the next row
-            return self._insert_fullchar_at(row+1, 1, c, attr)
+            return self._insert_at(row+1, 1, c, attr)
 
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
