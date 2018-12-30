@@ -481,8 +481,12 @@ class TextScreen(object):
 
     def delete_fullchar(self):
         """Delete the character (half/fullwidth) at the current position."""
-        # todo: deal width deleting fullwidth chars
-        self._delete_at(self.current_row, self.current_col)
+        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
+        # on a halfwidth char, delete once; lead byte, delete twice; trail byte, do nothing
+        if width > 0:
+            self._delete_at(self.current_row, self.current_col)
+        if width == 2:
+            self._delete_at(self.current_row, self.current_col)
 
     def _delete_at(self, row, col, remove_depleted=False):
         """Delete the halfwidth character at the given position."""

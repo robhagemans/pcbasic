@@ -80,7 +80,7 @@ class TextRow(object):
         # if the tail byte has changed, the lead byte needs to be redrawn as well
         if self.double[start_col-1] == 2:
             start_col -= 1
-        return min(col, start), max(col, stop)
+        return min(col, start_col), max(col, stop_col)
 
     def insert_char_attr(self, col, c, attr):
         """
@@ -117,10 +117,11 @@ class TextRow(object):
         adjust_end = fill_char_attr is None
         if adjust_end:
             fill_char_attr = (b' ', attr)
+        # before we delete it, what is the dbcs type of this char?
+        dbcs = self.double[index]
         self.buf[:self.end] = self.buf[:index] + self.buf[index+1:self.end] + [fill_char_attr]
         self.double[:self.end] = self.double[:index] + self.double[index+1:self.end] + [0]
         # clear trail byte if lead deleted and vice versa
-        dbcs = self.double[index]
         if dbcs == 2:
             logging.debug('Trail byte delete')
             self.buf[index-1] = (b' ', attr)
@@ -369,7 +370,7 @@ class TextBuffer(object):
             therow = self.pages[pagenum].row[row-1]
             # exclude prompt, if any; only go from furthest_left to furthest_right
             if row == prompt_row:
-                text.append(therow.get_text_logical(start_col=left, stop_col=right))
+                text.append(therow.get_text_logical(from_col=left, to_col=right))
             else:
                 text.append(therow.get_text_logical())
             if not therow.wrap:
