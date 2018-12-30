@@ -161,10 +161,32 @@ class TextBuffer(object):
         """Retrieve DBCS character width in bytes."""
         dbcs = self.pages[pagenum].row[row-1].double[col-1]
         if dbcs == 0:
+            # halfwidth
             return 1
         elif dbcs == 1:
+            # fullwidth
             return 2
+        # trail byte
         return 0
+
+    def step_right(self, pagenum, row, col):
+        """Get the distance in columns to the next position, accounting for character width."""
+        width = self.get_charwidth(pagenum, row, col)
+        # on a trail byte: just go one to the right
+        return width or 1
+
+    def step_left(self, pagenum, row, col):
+        """Get the distance in columns to the previous position, accounting for character width."""
+        # previous is trail byte: go two to the left
+        # lead byte: go three to the left
+        width = self.get_charwidth(pagenum, row, col-1)
+        if width == 0:
+            skip = 2
+        elif width == 2:
+            skip = 3
+        else:
+            skip = 1
+        return skip
 
     def get_fullchar_attr(self, pagenum, row, col):
         """Retrieve SBCS or DBCS character."""
