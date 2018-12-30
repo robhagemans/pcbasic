@@ -588,7 +588,7 @@ class TextScreen(object):
 
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
-        self.text.pages[self.apagenum].row[srow-1].clear_from(scol, self.attr)
+        self.text.pages[self.apagenum].row[srow-1].clear(self.attr, from_col=scol)
         row = srow
         # can use self.text.find_end_of_line
         while self.text.pages[self.apagenum].row[row-1].wrap:
