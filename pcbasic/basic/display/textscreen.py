@@ -512,10 +512,16 @@ class TextScreen(object):
         elif col < therow.end:
             # case 2a
             start_col, stop_col = therow.delete_char_attr(col, self.attr)
+        elif remove_depleted and col == therow.end:
+            # case 2b-ii: while on the first LF row deleting the last char immediately appends
+            # the next row, any subsequent LF rows are only removed once they are fully empty and
+            # DEL is pressed another time
+            start_col, stop_col = therow.delete_char_attr(col, self.attr)
         else:
             # case 2b, trouble
             for newcol in range(col, therow.width+1):
                 if nextrow.end == 0:
+                    self.scroll(row+1)
                     break
                 wrap_char, _ = nextrow.buf[0]
                 therow.put_char_attr(newcol, wrap_char, self.attr, adjust_end=True)

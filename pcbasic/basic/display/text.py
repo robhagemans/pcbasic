@@ -238,10 +238,10 @@ class TextBuffer(object):
         """Scroll up."""
         new_row = TextRow(attr, self.width, self._conv, self._dbcs_enabled)
         self.pages[pagenum].row.insert(bottom, new_row)
-        del self.pages[pagenum].row[from_line-1]
         # remove any wrap above/into deleted row, unless the deleted row wrapped into the next
         if self.pages[pagenum].row[from_line-2].wrap:
             self.pages[pagenum].row[from_line-2].wrap = self.pages[pagenum].row[from_line-1].wrap
+        del self.pages[pagenum].row[from_line-1]
 
     def scroll_down(self, pagenum, from_line, bottom, attr):
         """Scroll down."""
