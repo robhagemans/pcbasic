@@ -478,63 +478,54 @@ class TextScreen(object):
 
     def delete_fullchar(self):
         """Delete the character (single/double width) at the current position."""
-        row, col = self.current_row, self.current_col
-        cwidth = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
-        if cwidth == 0:
-            logging.debug('DBCS trail byte delete at %d, %d.', self.current_row, self.current_col)
-            self.set_pos(self.current_row, self.current_col-1)
-            cwidth = 2
-        text = self.text.get_logical_line(self.apagenum, self.current_row, self.current_col)
-        lastrow = self.text.find_end_of_line(self.apagenum, self.current_row)
-        if self.current_col > self.text.pages[self.apagenum].row[self.current_row-1].end:
-            # past the end. if this row ended with LF, attach next row and scroll further rows up
-            # if not, do nothing
-            if not self.text.pages[self.apagenum].row[self.current_row-1].wrap:
-                return
-            # else: LF case; scroll up without changing attributes
-            self.text.pages[self.apagenum].row[self.current_row-1].wrap = (
-                self.text.pages[self.apagenum].row[self.current_row].wrap
-            )
-            self.scroll(self.current_row + 1)
-            # redraw from the LF
-            self._rewrite_for_delete(text[1:] + b' ' * cwidth)
-        else:
-            # rewrite the contents (with the current attribute!)
-            self._rewrite_for_delete(text[cwidth:] + b' ' * cwidth)
-            # if last row was empty, scroll up.
-            if (
-                    self.text.pages[self.apagenum].row[lastrow-1].end == 0 and
-                    self.text.pages[self.apagenum].row[lastrow-2].wrap
-                ):
-                self.text.pages[self.apagenum].row[lastrow-2].wrap = False
-                self.scroll(lastrow)
-        # restore original position
-        self.set_pos(row, col)
+        # todo: deal width deleting fullwidth chars
+        self._delete_at(self.current_row, self.current_col)
 
-    def _rewrite_for_delete(self, text):
-        """Rewrite text contents (with the current attribute)."""
-        for c in iterchar(text):
-            if c == b'\n':
-                start, stop = self.text.put_char_attr(
-                    self.apagenum, self.current_row, self.current_col, b' ', self.attr
-                )
-                self.refresh_range(self.apagenum, self.current_row, start, stop)
-                self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col-1
-                break
-            else:
-                start, stop = self.text.put_char_attr(
-                    self.apagenum, self.current_row, self.current_col, c, self.attr
-                )
-                self.refresh_range(self.apagenum, self.current_row, start, stop)
-                self.set_pos(self.current_row, self.current_col+1)
+    def _delete_at(self, row, col, remove_depleted=False):
+
+        # case 0) non-wrapping row, beyond logical end. delete does nothing (!)
+        # case 1) non-wrapping row, left of or at logical end. delete redraws until logical end
+        # case 2) full wrapping row. delete wraps & redraws until logical end of logical line or LF
+        # case 3) wrapping (LF) row, left of logical end. delete redraws until LF, *does not wrap*
+        # case 4) wrapping (LF) row, at logical end. delete attaches next row(s) until another LF
+        # case 5) wrapping (LF) row, beyond logical end. delete attaches next row(s) at cursor position until another LF
+
+        # simplify:
+        # case 0) non-wrapping row:
+        #           0a) left of or at logical end -> redraw until logical end
+        #           0b) beyond logical end -> do nothing
+        # case 1) full wrapping row -> redraw until physical end -> recurse for next row
+        # case 2) LF row:
+        #           2a) left of LF logical end ->  redraw until logical end
+        #           2b) at or beyond LF logical end
+        #                   -> attach next row's contents at current postion until physical end
+        #                   -> if next row now empty, scroll it up & stop; otherwise recurse
+        # note that the last line recurses into a multi-character delete!
+        therow = self.text.pages[self.apagenum].row[row-1]
+        if not therow.wrap:
+            # case 0b
+            if col > therow.end:
+                return
+            # case 0a
+            start_col, stop_col = therow.delete_char_attr(col, self.attr)
+            # if the row is depleted, drop it and scroll up from below
+            if remove_depleted and therow.end == 0:
+                self.scroll(row)
+        elif therow.end == therow.width:
+            # case 1
+            nextrow = self.text.pages[self.apagenum].row[row]
+            wrap_char_attr = nextrow.buf[0]
+            start_col, stop_col = therow.delete_char_attr(col, self.attr, wrap_char_attr)
+            self._delete_at(row+1, 1, remove_depleted=True)
+        elif col < therow.end:
+            # case 2a
+            start_col, stop_col = therow.delete_char_attr(col, self.attr)
         else:
-            # we're on the position after the additional space
-            if self.current_col == 1:
-                self.current_row -= 1
-                self.text.pages[self.apagenum].row[self.current_row-1].end = self.mode.width - 1
-            else:
-                # adjust row end
-                self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col - 2
+            # case 2b, trouble
+            pass # for now
+            return
+        # refresh all that has been changed
+        self.refresh_range(self.apagenum, row, start_col, stop_col)
 
     # insert
 

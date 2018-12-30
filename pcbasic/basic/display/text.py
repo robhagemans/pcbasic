@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
+
 from ...compat import zip
 
 
@@ -83,7 +84,7 @@ class TextRow(object):
 
     def insert_char_attr(self, col, c, attr):
         """
-        Insert a character,
+        Insert a halfwidth character,
         NOTE: This sets the attribute of *everything that has moved* to attr.
         Return the character dropping off at the end.
         """
@@ -103,6 +104,41 @@ class TextRow(object):
         # attrs change only up to logical end of row but dbcs can change up to row width
         stop_col = max(self.end, stop_col)
         return pop_char, pop_attr, start_col, stop_col
+
+    def delete_char_attr(self, col, attr, fill_char_attr=None):
+        """
+        Delete a halfwidth character, filling with space(s) at the logical end.
+        NOTE: This sets the attribute of *everything that has moved* to attr.
+        """
+        # do nothing beyond logical end of row
+        if self.end < col:
+            return 0, 0
+        index = col-1
+        adjust_end = fill_char_attr is None
+        if adjust_end:
+            fill_char_attr = (b' ', attr)
+        self.buf[:self.end] = self.buf[:index] + self.buf[index+1:self.end] + [fill_char_attr]
+        self.double[:self.end] = self.double[:index] + self.double[index+1:self.end] + [0]
+        # clear trail byte if lead deleted and vice versa
+        dbcs = self.double[index]
+        if dbcs == 2:
+            logging.debug('Trail byte delete')
+            self.buf[index-1] = (b' ', attr)
+            self.double[index-1] = 0
+        elif dbcs == 1:
+            self.buf[index] = (b' ', attr)
+            self.double[index] = 0
+        # reset the attribute of all moved chars
+        self.buf[col-1:max(self.end, col)] = [
+            (_c, attr) for _c, _ in self.buf[col-1:max(self.end, col)]
+        ]
+        start_col, stop_col = self._rebuild_char_widths_from(col)
+        # attrs change only up to old logical end of row but dbcs can change up to row width
+        stop_col = max(self.end, stop_col)
+        # change the logical end
+        if adjust_end:
+            self.end = max(self.end - 1, 0)
+        return start_col, stop_col
 
     def get_text_raw(self, from_col=1, to_col=None):
         """Get the raw text between given columns (inclusive)."""
@@ -203,6 +239,9 @@ class TextBuffer(object):
         new_row = TextRow(attr, self.width, self._conv, self._dbcs_enabled)
         self.pages[pagenum].row.insert(bottom, new_row)
         del self.pages[pagenum].row[from_line-1]
+        # remove any wrap above/into deleted row, unless the deleted row wrapped into the next
+        if self.pages[pagenum].row[from_line-2].wrap:
+            self.pages[pagenum].row[from_line-2].wrap = self.pages[pagenum].row[from_line-1].wrap
 
     def scroll_down(self, pagenum, from_line, bottom, attr):
         """Scroll down."""
