@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
+from contextlib import contextmanager
 
 from ...compat import iterchar, iteritems, int2byte
 
@@ -386,12 +387,25 @@ class TextScreen(object):
     ###########################################################################
     # clearing text screen
 
+    def clear_view(self):
+        """Clear the scroll area."""
+        with self._modify_attr_on_clear():
+            self.clear_rows(self.scroll_area.top, self.scroll_area.bottom)
+            self.set_pos(self.scroll_area.top, 1)
+
+    def clear(self):
+        """Clear the screen."""
+        with self._modify_attr_on_clear():
+            self.clear_rows(1, self.mode.height)
+            self.set_pos(1, 1)
+
+    # called externally only by BottomBar.redraw()
     def clear_rows(self, start, stop):
         """Clear text and graphics on given (inclusive) text row range."""
-        for r in self.text.pages[self.apagenum].row[start-1:stop]:
-            r.clear(self.attr)
+        for row in self.text.pages[self.apagenum].row[start-1:stop]:
+            row.clear(self.attr)
             # can't we just do this in row.clear?
-            r.wrap = False
+            row.wrap = False
         if not self.mode.is_text_mode:
             x0, y0, x1, y1 = self.mode.text_to_pixel_area(start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
@@ -399,36 +413,17 @@ class TextScreen(object):
         _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
-    def _clear_area(self, start_row, stop_row):
-        """Clear the screen or the scroll area."""
+    @contextmanager
+    def _modify_attr_on_clear(self):
+        """On some adapters, modify current attributes when clearing the scroll area."""
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
-        self.clear_rows(start_row, stop_row)
-        # ensure the cursor is shown in the right position
-        self.set_pos(start_row, 1)
-        if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
-            # restore attr
+            yield
             self.set_attr(attr_save)
-
-    def clear_view(self):
-        """Clear the scroll area."""
-        self._clear_area(self.scroll_area.top, self.scroll_area.bottom)
-
-    def clear(self):
-        """Clear the screen."""
-        self._clear_area(1, self.mode.height)
-
-    ###########################################################################
-    # text viewport / scroll area
-
-    def _set_scroll_area(self, start, stop):
-        """Set the scroll area."""
-        self.scroll_area.set(start, stop)
-        #set_pos(start, 1)
-        self.overflow = False
-        self._move_cursor(start, 1)
+        else:
+            yield
 
     ###########################################################################
     # scrolling
@@ -776,4 +771,7 @@ class TextScreen(object):
                 max_line = 24
             error.range_check(1, max_line, start, stop)
             error.throw_if(stop < start)
-            self._set_scroll_area(start, stop)
+            self.scroll_area.set(start, stop)
+            #set_pos(start, 1)
+            self.overflow = False
+            self._move_cursor(start, 1)
