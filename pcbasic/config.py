@@ -30,11 +30,47 @@ from .metadata import VERSION, NAME
 from . import data
 
 
+# base directory name
+MAJOR_VERSION = u'.'.join(VERSION.split(u'.')[:2])
+BASENAME = u'pcbasic-{0}'.format(MAJOR_VERSION)
+
+# user configuration and state directories
+USER_CONFIG_DIR = os.path.join(USER_CONFIG_HOME, BASENAME)
+STATE_PATH = os.path.join(USER_DATA_HOME, BASENAME)
+
+# default config file name
+CONFIG_NAME = u'PCBASIC.INI'
+
+# user and local config files
+USER_CONFIG_PATH = os.path.join(USER_CONFIG_DIR, CONFIG_NAME)
+
+# save-state file name
+STATE_NAME = 'pcbasic.session'
+
+
+# @: target drive for bundled programs
+PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
+
+# format for log files
+LOGGING_FORMAT = u'[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
+LOGGING_FORMATTER = logging.Formatter(fmt=LOGGING_FORMAT, datefmt=u'%H:%M:%S')
+
+# drive letters except @, bytes constant
+UPPERCASE = b'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+# bool strings
+TRUES = (u'YES', u'TRUE', u'ON', u'1')
+FALSES = (u'NO', u'FALSE', u'OFF', u'0')
+
+
+##############################################################################
+# version checks
+
 # minimum required python versions
 MIN_PYTHON2_VERSION = (2, 7, 12)
 MIN_PYTHON3_VERSION = (3, 5, 0)
 
-def validate_version():
+def _validate_version():
     """Initial validations."""
     # sys.version_info tuple's first three elements are guaranteed to be ints
     python_version = sys.version_info[:3]
@@ -51,51 +87,9 @@ def validate_version():
         raise ImportError(msg)
 
 # raise ImportError if incorrect Python version
-validate_version()
+_validate_version()
 
 
-# base directory name
-MAJOR_VERSION = u'.'.join(VERSION.split(u'.')[:2])
-BASENAME = u'pcbasic-{0}'.format(MAJOR_VERSION)
-
-# user configuration and state directories
-USER_CONFIG_DIR = os.path.join(USER_CONFIG_HOME, BASENAME)
-STATE_PATH = os.path.join(USER_DATA_HOME, BASENAME)
-
-# @: target drive for bundled programs
-PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
-
-# format for log files
-LOGGING_FORMAT = u'[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
-LOGGING_FORMATTER = logging.Formatter(fmt=LOGGING_FORMAT, datefmt=u'%H:%M:%S')
-
-# drive letters except @, bytes constant
-UPPERCASE = b'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-
-def append_arg(args, key, value):
-    """Update a single list-type argument by appending a value."""
-    if key in args and args[key]:
-        if value:
-            args[key] += u',' + value
-    else:
-        args[key] = value
-
-def safe_split(s, sep):
-    """Split an argument by separator, always return two elements."""
-    slist = s.split(sep, 1)
-    s0 = slist[0]
-    if len(slist) > 1:
-        s1 = slist[1]
-    else:
-        s1 = u''
-    return s0, s1
-
-def store_bundled_programs(PROGRAM_PATH):
-    """Retrieve contents of BASIC programs."""
-    for name in PROGRAMS:
-        with io.open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
-            f.write(data.read_program_file(name))
 
 def _check_text_encoding(arg):
     """Check if text-encoding argument is acceptable."""
@@ -105,52 +99,13 @@ def _check_text_encoding(arg):
         return False
     return True
 
-class TemporaryDirectory():
-    """Temporary directory context guard like in Python 3 tempfile."""
 
-    def __init__(self, prefix=u''):
-        """Initialise context guard."""
-        self._prefix = prefix
-        self._temp_dir = None
+def store_bundled_programs(PROGRAM_PATH):
+    """Retrieve contents of BASIC programs."""
+    for name in PROGRAMS:
+        with io.open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
+            f.write(data.read_program_file(name))
 
-    def __enter__(self):
-        """Create temp directory."""
-        self._temp_dir = tempfile.mkdtemp(prefix=self._prefix)
-        return self._temp_dir
-
-    def __exit__(self, dummy_1, dummy_2, dummy_3):
-        """Clean up temp directory."""
-        if self._temp_dir:
-            try:
-                shutil.rmtree(self._temp_dir)
-            except EnvironmentError as e:
-                logging.error('Could not clean up temporary directory: %s', e)
-
-
-class WhitespaceStripper(object):
-    """File wrapper for ConfigParser that strips leading whitespace."""
-
-    def __init__(self, file):
-        """Initialise to file object."""
-        self._file = file
-
-    def readline(self):
-        """Read a line and strip whitespace (but not EOL)."""
-        return self._file.readline().lstrip(u' \t')
-
-    def __next__(self):
-        """Make iterable for Python 3."""
-        line = self.readline()
-        if not line:
-            raise StopIteration()
-        return line
-
-    # we don't need this as iterator in Python2 but this silences pylint
-    next = __next__
-
-    def __iter__(self):
-        """We are iterable."""
-        return self
 
 
 class Settings(object):
@@ -229,12 +184,6 @@ class Settings(object):
             },
         }
 
-    # user and local config files
-    config_name = u'PCBASIC.INI'
-    user_config_path = os.path.join(USER_CONFIG_DIR, config_name)
-
-    # save-state file name
-    state_name = 'pcbasic.session'
 
     # by default, load what's in section [pcbasic] and override with anything
     # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
@@ -358,12 +307,12 @@ class Settings(object):
             if not os.path.exists(STATE_PATH):
                 os.makedirs(STATE_PATH)
             # create user config file if needed
-            if not os.path.exists(self.user_config_path):
+            if not os.path.exists(USER_CONFIG_PATH):
                 try:
                     os.makedirs(USER_CONFIG_DIR)
                 except OSError:
                     pass
-                self.build_default_config_file(self.user_config_path)
+                self.build_default_config_file(USER_CONFIG_PATH)
             # create @: drive if not present
             if not os.path.exists(PROGRAM_PATH):
                 os.makedirs(PROGRAM_PATH)
@@ -377,6 +326,64 @@ class Settings(object):
             raise
         # prepare global logger for use by main program
         self._prepare_logging()
+
+    def _retrieve_options(self, uargv):
+        """Retrieve command line and option file options."""
+        # convert command line arguments to string dictionary form
+        remaining = self._get_arguments(uargv)
+        # unpack any packages
+        package = self._parse_package(remaining)
+        # get preset groups from specified config file
+        preset_dict = self._parse_config(remaining)
+        # parse default presets nested in config presets
+        preset_dict = {
+            _key: self._merge_arguments(
+                self._parse_presets(_dict, self.default_config),
+                _dict
+            )
+            for _key, _dict in iteritems(preset_dict)
+        }
+        # set defaults based on presets
+        args = self._parse_presets(remaining, preset_dict)
+        # local config file settings override preset settings
+        self._merge_arguments(args, preset_dict[u'pcbasic'])
+        # find unrecognised arguments
+        unrecognised = ((_k, _v) for _k, _v in iteritems(args) if _k not in self.arguments)
+        for key, value in unrecognised:
+            logging.warning(
+                'Ignored unrecognised option `%s=%s` in configuration file', key, value
+            )
+        args = {_k: _v for _k, _v in iteritems(args) if _k in self.arguments}
+        # parse rest of command line
+        self._merge_arguments(args, self._parse_args(remaining))
+        # parse GW-BASIC style options
+        self._parse_gw_options(args)
+        # clean up arguments
+        self._convert_types(args)
+        if package:
+            # do not resume from a package
+            args['resume'] = False
+        return args
+
+    def get(self, name, get_default=True):
+        """Get value of option; choose whether to get default or None if unspecified."""
+        try:
+            value = self._options[name]
+            if value is None or value == u'':
+                raise KeyError
+        except KeyError:
+            if get_default:
+                try:
+                    value = self.arguments[name][u'default']
+                except KeyError:
+                    if name in range(self.positional):
+                        return u''
+            else:
+                value = None
+        return value
+
+    ##########################################################################
+    # logging setup
 
     def _pre_init_logging(self):
         """Set up the global logger temporarily until we know the log stream."""
@@ -416,120 +423,8 @@ class Settings(object):
         handler.setFormatter(LOGGING_FORMATTER)
         root_logger.addHandler(handler)
 
-    def _retrieve_options(self, uargv):
-        """Retrieve command line and option file options."""
-        # convert command line arguments to string dictionary form
-        remaining = self._get_arguments(uargv)
-        # unpack any packages
-        package = self._parse_package(remaining)
-        # get preset groups from specified config file
-        preset_dict = self._parse_config(remaining)
-        # parse default presets nested in config presets
-        preset_dict = {
-            _key: self._merge_arguments(
-                self._parse_presets(_dict, self.default_config),
-                _dict
-            )
-            for _key, _dict in iteritems(preset_dict)
-        }
-        # set defaults based on presets
-        args = self._parse_presets(remaining, preset_dict)
-        # local config file settings override preset settings
-        self._merge_arguments(args, preset_dict[u'pcbasic'])
-        # find unrecognised arguments
-        for key, value in iteritems(args):
-            if key not in self.arguments:
-                logging.warning(
-                    'Ignored unrecognised option `%s=%s` in configuration file', key, value
-                )
-        # parse rest of command line
-        self._merge_arguments(args, self._parse_args(remaining))
-        # parse GW-BASIC style options
-        self._parse_gw_options(args)
-        # clean up arguments
-        self._clean_arguments(args)
-        if package:
-            # do not resume from a package
-            args['resume'] = False
-        return args
-
-    def get(self, name, get_default=True):
-        """Get value of option; choose whether to get default or None if unspecified."""
-        try:
-            value = self._options[name]
-            if value is None or value == u'':
-                raise KeyError
-        except KeyError:
-            if get_default:
-                try:
-                    value = self.arguments[name][u'default']
-                except KeyError:
-                    if name in range(self.positional):
-                        return u''
-            else:
-                value = None
-        return value
-
-    def _get_redirects(self):
-        """Determine which i/o streams to attach."""
-        input_streams, output_streams = [], []
-        # explicit redirects
-        # input redirects
-        infile_params = self.get('input').split(u':')
-        if infile_params[0].upper() in (u'STDIO', u'STDIN'):
-            if u'RAW' in (_x.upper() for _x in infile_params):
-                input_streams.append(stdin.buffer)
-            else:
-                input_streams.append(stdin)
-        else:
-            if len(infile_params) > 1 and infile_params[0].upper() == u'FILE':
-                infile = infile_params[1]
-            else:
-                infile = infile_params[0]
-            if infile:
-                try:
-                    input_streams.append(io.open(infile, 'rb'))
-                except EnvironmentError as e:
-                    logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
-        # output redirects
-        outfile_params = self.get('output').split(u':')
-        if outfile_params[0].upper() in (u'STDIO', u'STDOUT'):
-            if u'RAW' in (_x.upper() for _x in outfile_params):
-                output_streams.append(stdout.buffer)
-            else:
-                output_streams.append(stdout)
-        else:
-            if len(outfile_params) > 1 and outfile_params[0].upper() == u'FILE':
-                outfile_params = outfile_params[1:]
-            outfile = outfile_params[0]
-            append = len(outfile_params) > 1 and outfile_params[1].lower() == u'append'
-            if outfile:
-                try:
-                    output_streams.append(io.open(outfile, 'ab' if append else 'wb'))
-                except EnvironmentError as e:
-                    logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
-        # implicit stdio redirects
-        # add stdio if redirected or no interface
-        if stdin not in input_streams and stdin.buffer not in input_streams:
-            if IS_CONSOLE_APP and not stdin.isatty():
-                # redirected on console; use bytes stream
-                input_streams.append(stdin.buffer)
-            elif IS_CONSOLE_APP and not self.interface:
-                # no interface & on console; use unicode stream
-                input_streams.append(stdin)
-        # redirect output as well if input is redirected, but not the other way around
-        # this is because (1) GW-BASIC does this from the DOS prompt
-        # (2) otherwise we don't see anything - we quit after input closes
-        # isatty is also false if we run as a GUI exe, so check that here
-        if stdout not in output_streams and stdout.buffer not in output_streams:
-            if IS_CONSOLE_APP and (not stdout.isatty() or not stdin.isatty()):
-                output_streams.append(stdout.buffer)
-            elif IS_CONSOLE_APP and not self.interface:
-                output_streams.append(stdout)
-        return {
-            'output_streams': output_streams,
-            'input_streams': input_streams,
-        }
+    ##########################################################################
+    # session parameters
 
     @property
     def session_params(self):
@@ -621,93 +516,66 @@ class Settings(object):
                 params['textfile_encoding'] = u'utf-8' if self.get('utf8') else u''
         return params
 
-    def _get_video_parameters(self):
-        """Return a dictionary of parameters for the video plugin."""
-        return {
-            'dimensions': self.get('dimensions'),
-            'aspect_ratio': self.get('aspect'),
-            'border_width': self.get('border'),
-            'scaling': self.get('scaling'),
-            'fullscreen': self.get('fullscreen'),
-            'prevent_close': self.get('prevent-close'),
-            'caption': self.get('caption'),
-            'mouse_clipboard': self.get('mouse-clipboard'),
-            'icon': ICON,
-            'wait': self.get('wait'),
-            }
-
-    def _get_audio_parameters(self):
-        """Return a dictionary of parameters for the audio plugin."""
-        return {}
-
-    def _get_state_file(self):
-        """Name of state file"""
-        state_name = self.get('state') or self.state_name
-        if not os.path.exists(state_name):
-            state_name = os.path.join(STATE_PATH, state_name)
-        return state_name
-
-    @property
-    def interface(self):
-        """Run with interface."""
-        return self.get('interface') != 'none'
-
-    @property
-    def iface_params(self):
-        """Dict of interface parameters."""
-        interface = self.get('interface')
-        # categorical interfaces
-        categories = {
-            'text': ('ansi', 'curses'),
-            'graphical': ('sdl2', 'pygame'),
-        }
-        if not interface:
-            # default: try graphical first, then text, then cli
-            iface_list = categories['graphical'] + categories['text'] + ('cli',)
+    def _get_redirects(self):
+        """Determine which i/o streams to attach."""
+        input_streams, output_streams = [], []
+        # explicit redirects
+        # input redirects
+        infile_params = self.get('input').split(u':')
+        if infile_params[0].upper() in (u'STDIO', u'STDIN'):
+            if u'RAW' in (_x.upper() for _x in infile_params):
+                input_streams.append(stdin.buffer)
+            else:
+                input_streams.append(stdin)
         else:
-            try:
-                iface_list = categories[interface]
-            except KeyError:
-                iface_list = (interface,)
-        iface_params = {
-            'try_interfaces': iface_list,
-            'audio_override': self.get('sound') != 'interface' and self.get('sound'),
-        }
-        iface_params.update(self._get_video_parameters())
-        iface_params.update(self._get_audio_parameters())
-        return iface_params
-
-    @property
-    def launch_params(self):
-        """Dict of launch parameters."""
-        # build list of commands to execute on session startup
-        commands = []
-        if not self.get('resume'):
-            run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
-            # treat colons as CRs
-            commands = split_quoted(self.get('exec'), split_by=u':', quote=u"'", strip_quotes=True)
-            # note that executing commands (or RUN) will suppress greeting
-            if run:
-                commands.append('RUN')
-            if self.get('quit'):
-                commands.append('SYSTEM')
-        launch_params = {
-            'prog': self.get('run') or self.get('load') or self.get(0),
-            'resume': self.get('resume'),
-            'state_file': self._get_state_file(),
-            'commands': commands,
-            'debug': self.get('debug'),
-            }
-        launch_params.update(self.session_params)
-        return launch_params
-
-    @property
-    def guard_params(self):
-        """Dict of exception guard parameters."""
+            if len(infile_params) > 1 and infile_params[0].upper() == u'FILE':
+                infile = infile_params[1]
+            else:
+                infile = infile_params[0]
+            if infile:
+                try:
+                    input_streams.append(io.open(infile, 'rb'))
+                except EnvironmentError as e:
+                    logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
+        # output redirects
+        outfile_params = self.get('output').split(u':')
+        if outfile_params[0].upper() in (u'STDIO', u'STDOUT'):
+            if u'RAW' in (_x.upper() for _x in outfile_params):
+                output_streams.append(stdout.buffer)
+            else:
+                output_streams.append(stdout)
+        else:
+            if len(outfile_params) > 1 and outfile_params[0].upper() == u'FILE':
+                outfile_params = outfile_params[1:]
+            outfile = outfile_params[0]
+            append = len(outfile_params) > 1 and outfile_params[1].lower() == u'append'
+            if outfile:
+                try:
+                    output_streams.append(io.open(outfile, 'ab' if append else 'wb'))
+                except EnvironmentError as e:
+                    logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
+        # implicit stdio redirects
+        # add stdio if redirected or no interface
+        if stdin not in input_streams and stdin.buffer not in input_streams:
+            if IS_CONSOLE_APP and not stdin.isatty():
+                # redirected on console; use bytes stream
+                input_streams.append(stdin.buffer)
+            elif IS_CONSOLE_APP and not self.interface:
+                # no interface & on console; use unicode stream
+                input_streams.append(stdin)
+        # redirect output as well if input is redirected, but not the other way around
+        # this is because (1) GW-BASIC does this from the DOS prompt
+        # (2) otherwise we don't see anything - we quit after input closes
+        # isatty is also false if we run as a GUI exe, so check that here
+        if stdout not in output_streams and stdout.buffer not in output_streams:
+            if IS_CONSOLE_APP and (not stdout.isatty() or not stdin.isatty()):
+                output_streams.append(stdout.buffer)
+            elif IS_CONSOLE_APP and not self.interface:
+                output_streams.append(stdout)
         return {
-            'uargv': self._uargv,
-            'log_dir': STATE_PATH,
-            }
+            'output_streams': output_streams,
+            'input_streams': input_streams,
+        }
 
     def _get_drives(self):
         """Assign disk locations to disk devices."""
@@ -774,6 +642,107 @@ class Settings(object):
         mount_dict[b'@'] = (PROGRAM_PATH, u'')
         return current_device, mount_dict
 
+
+    ##########################################################################
+    # interface parameters
+
+    @property
+    def interface(self):
+        """Run with interface."""
+        return self.get('interface') != 'none'
+
+    @property
+    def iface_params(self):
+        """Dict of interface parameters."""
+        interface = self.get('interface')
+        # categorical interfaces
+        categories = {
+            'text': ('ansi', 'curses'),
+            'graphical': ('sdl2', 'pygame'),
+        }
+        if not interface:
+            # default: try graphical first, then text, then cli
+            iface_list = categories['graphical'] + categories['text'] + ('cli',)
+        else:
+            try:
+                iface_list = categories[interface]
+            except KeyError:
+                iface_list = (interface,)
+        iface_params = {
+            'try_interfaces': iface_list,
+            'audio_override': self.get('sound') != 'interface' and self.get('sound'),
+        }
+        iface_params.update(self._get_video_parameters())
+        iface_params.update(self._get_audio_parameters())
+        return iface_params
+
+    def _get_video_parameters(self):
+        """Return a dictionary of parameters for the video plugin."""
+        return {
+            'dimensions': self.get('dimensions'),
+            'aspect_ratio': self.get('aspect'),
+            'border_width': self.get('border'),
+            'scaling': self.get('scaling'),
+            'fullscreen': self.get('fullscreen'),
+            'prevent_close': self.get('prevent-close'),
+            'caption': self.get('caption'),
+            'mouse_clipboard': self.get('mouse-clipboard'),
+            'icon': ICON,
+            'wait': self.get('wait'),
+            }
+
+    def _get_audio_parameters(self):
+        """Return a dictionary of parameters for the audio plugin."""
+        return {}
+
+
+    ##########################################################################
+    # launch parameters
+
+    @property
+    def launch_params(self):
+        """Dict of launch parameters."""
+        # build list of commands to execute on session startup
+        commands = []
+        if not self.get('resume'):
+            run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
+            # treat colons as CRs
+            commands = split_quoted(self.get('exec'), split_by=u':', quote=u"'", strip_quotes=True)
+            # note that executing commands (or RUN) will suppress greeting
+            if run:
+                commands.append('RUN')
+            if self.get('quit'):
+                commands.append('SYSTEM')
+        launch_params = {
+            'prog': self.get('run') or self.get('load') or self.get(0),
+            'resume': self.get('resume'),
+            'state_file': self._get_state_file(),
+            'commands': commands,
+            'debug': self.get('debug'),
+            }
+        launch_params.update(self.session_params)
+        return launch_params
+
+    def _get_state_file(self):
+        """Name of state file"""
+        state_name = self.get('state') or STATE_NAME
+        if not os.path.exists(state_name):
+            state_name = os.path.join(STATE_PATH, state_name)
+        return state_name
+
+
+    ##########################################################################
+    # other calls
+
+    @property
+    def guard_params(self):
+        """Dict of exception guard parameters."""
+        return {
+            'uargv': self._uargv,
+            'log_dir': STATE_PATH,
+            }
+
+
     @property
     def conv_params(self):
         """Get parameters for file conversion."""
@@ -805,6 +774,10 @@ class Settings(object):
     def debug(self):
         """Debugging mode."""
         return self.get('debug')
+
+
+    ##########################################################################
+    # general argument parsing
 
     def _append_short_args(self, args, key, value):
         """Append short arguments and value to dict."""
@@ -866,7 +839,7 @@ class Settings(object):
                         logging.warning(u'Ignored undefined preset "%s"', p)
             # look for more presets in expended arglist
             try:
-                presets = self._parse_list(u'preset', argdict.pop(u'preset'))
+                presets = self._to_list(u'preset', argdict.pop(u'preset'))
             except KeyError:
                 break
         return argdict
@@ -914,14 +887,14 @@ class Settings(object):
         # always read default config files; private config overrides system config
         # we update a whole preset at once, there's no joining of settings.
         conf_dict = dict(self.default_config)
-        conf_dict.update(self._read_config_file(self.user_config_path))
+        conf_dict.update(self._read_config_file(USER_CONFIG_PATH))
         # find any local overriding config file & read it
         config_file = None
         try:
             config_file = remaining.pop(u'config')
         except KeyError:
-            if os.path.exists(self.config_name):
-                config_file = self.config_name
+            if os.path.exists(CONFIG_NAME):
+                config_file = CONFIG_NAME
         if config_file:
             conf_dict.update(self._read_config_file(config_file))
         return conf_dict
@@ -1008,27 +981,30 @@ class Settings(object):
 
     ################################################
 
-    def _merge_arguments(self, args0, args1):
-        """Update args0 with args1. Lists of indefinite length are appended."""
-        for a in args1:
+    def _merge_arguments(self, target_dict, new_dict):
+        """Update target_dict with new_dict. Lists of indefinite length are appended."""
+        for a in new_dict:
             try:
-                if (a in args0 and self.arguments[a][u'list'] == u'*' and args0[a]):
-                    args0[a] += u',' + args1[a]
+                if (a in target_dict and self.arguments[a][u'list'] == u'*' and target_dict[a]):
+                    target_dict[a] += u',' + new_dict[a]
                     continue
             except KeyError:
                 pass
             # override
-            args0[a] = args1[a]
-        return args0
+            target_dict[a] = new_dict[a]
+        return target_dict
 
-    def _clean_arguments(self, args):
+    def _convert_types(self, args):
         """Convert arguments to required type and list length."""
-        for d in args:
+        for name in args:
             try:
-                args[d] = self._parse_list(d, args[d], self.arguments[d][u'list'])
+                args[name] = self._to_list(name, args[name], self.arguments[name][u'list'])
             except KeyError:
                 # not a list
-                args[d] = self._parse_type(d, args[d])
+                args[name] = self._parse_type(name, args[name])
+
+    ##########################################################################
+    # type conversions
 
     def _parse_type(self, d, arg):
         """Convert argument to required type."""
@@ -1039,9 +1015,9 @@ class Settings(object):
         first_arg = arg.split(u':')[0]
         if u'type' in self.arguments[d]:
             if (self.arguments[d][u'type'] == u'int'):
-                arg = self._parse_int(d, arg)
+                arg = self._to_int(d, arg)
             elif (self.arguments[d][u'type'] == u'bool'):
-                arg = self._parse_bool(d, arg)
+                arg = self._to_bool(d, arg)
         if u'choices' in self.arguments[d]:
             if first_arg and first_arg not in self.arguments[d][u'choices']:
                 logging.warning(
@@ -1051,13 +1027,13 @@ class Settings(object):
                 arg = u''
         if u'check' in self.arguments[d]:
             if arg and not self.arguments[d][u'check'](first_arg):
-                logging.warning(u'Value "%s=%s" ignored; not reognised', d, arg)
+                logging.warning(u'Value "%s=%s" ignored; not recognised', d, arg)
                 arg = u''
         return arg
 
-    def _parse_list(self, d, s, length='*'):
+    def _to_list(self, argname, strval, length='*'):
         """Convert list strings to typed lists."""
-        lst = s.split(u',')
+        lst = strval.split(u',')
         if lst == [u'']:
             if length == '*':
                 return []
@@ -1065,39 +1041,44 @@ class Settings(object):
                 return [None] * (-length)  # pylint: disable=invalid-unary-operand-type
             else:
                 return None
-        lst = [self._parse_type(d, arg) for arg in lst]
+        parsed = (self._parse_type(argname, _arg) for _arg in lst)
+        lst = [_arg for _arg in parsed if _arg]
         # negative length: optional up-to
         if length != u'*' and length < 0:
             lst += [None] * (-length-len(lst))  # pylint: disable=invalid-unary-operand-type
         if length != u'*' and (len(lst) > abs(length) or len(lst) < length):
-            logging.warning(u'Option "%s=%s" ignored, should have %d elements', d, s, abs(length))
+            logging.warning(
+                u'Option "%s=%s" ignored, should have %d elements',
+                argname, strval, abs(length)
+            )
             lst = []
         return lst
 
-    def _parse_bool(self, d, s):
-        """Parse bool option. Empty string (i.e. specified) means True."""
-        if s == u'':
+    def _to_bool(self, argname, strval):
+        """Convert bool string to bool. Empty string (i.e. specified) means True."""
+        if strval == u'':
             return True
         try:
-            if s.upper() in (u'YES', u'TRUE', u'ON', u'1'):
+            if strval.upper() in TRUES:
                 return True
-            elif s.upper() in (u'NO', u'FALSE', u'OFF', u'0'):
+            elif strval.upper() in FALSES:
                 return False
         except AttributeError:
-            logging.warning(u'Option "%s=%s" ignored; should be a boolean', d, s)
-            return None
+            logging.warning(u'Option "%s=%s" ignored; should be a boolean', argname, strval)
+        return None
 
-    def _parse_int(self, d, s):
-        """Parse int option provided as a one-element list of string."""
-        if s:
+    def _to_int(self, argname, strval):
+        """Convert int string to int."""
+        if strval:
             try:
-                return int(s)
+                return int(strval)
             except ValueError:
-                logging.warning(u'Option "%s=%s" ignored; should be an integer', d, s)
+                logging.warning(u'Option "%s=%s" ignored; should be an integer', argname, strval)
         return None
 
 
-    #########################################################
+    ##########################################################################
+    # write config file
 
     def build_default_config_file(self, file_name):
         """Write a default config file."""
@@ -1147,3 +1128,74 @@ class Settings(object):
         except (OSError, IOError):
             # can't create file, ignore. we'll get a message later.
             pass
+
+
+
+##############################################################################
+# utilities
+
+def append_arg(args, key, value):
+    """Update a single list-type argument by appending a value."""
+    if key in args and args[key]:
+        if value:
+            args[key] += u',' + value
+    else:
+        args[key] = value
+
+def safe_split(s, sep):
+    """Split an argument by separator, always return two elements."""
+    slist = s.split(sep, 1)
+    s0 = slist[0]
+    if len(slist) > 1:
+        s1 = slist[1]
+    else:
+        s1 = u''
+    return s0, s1
+
+
+class TemporaryDirectory():
+    """Temporary directory context guard like in Python 3 tempfile."""
+
+    def __init__(self, prefix=u''):
+        """Initialise context guard."""
+        self._prefix = prefix
+        self._temp_dir = None
+
+    def __enter__(self):
+        """Create temp directory."""
+        self._temp_dir = tempfile.mkdtemp(prefix=self._prefix)
+        return self._temp_dir
+
+    def __exit__(self, dummy_1, dummy_2, dummy_3):
+        """Clean up temp directory."""
+        if self._temp_dir:
+            try:
+                shutil.rmtree(self._temp_dir)
+            except EnvironmentError as e:
+                logging.error('Could not clean up temporary directory: %s', e)
+
+
+class WhitespaceStripper(object):
+    """File wrapper for ConfigParser that strips leading whitespace."""
+
+    def __init__(self, file):
+        """Initialise to file object."""
+        self._file = file
+
+    def readline(self):
+        """Read a line and strip whitespace (but not EOL)."""
+        return self._file.readline().lstrip(u' \t')
+
+    def __next__(self):
+        """Make iterable for Python 3."""
+        line = self.readline()
+        if not line:
+            raise StopIteration()
+        return line
+
+    # iterability not actually needed in Python 2, but this keeps pylint happy
+    next = __next__
+
+    def __iter__(self):
+        """We are iterable."""
+        return self
