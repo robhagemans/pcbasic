@@ -627,12 +627,6 @@ class VideoPygame(VideoPlugin):
         self.cursor.fill(color, (0, from_line, width, min(to_line-from_line+1, height-from_line)))
         self.busy = True
 
-    def fill_rect(self, pagenum, x0, y0, x1, y1, index):
-        """Fill a rectangle in a solid attribute."""
-        rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
-        self.canvas[pagenum].fill(index, rect)
-        self.busy = True
-
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attribytes to an area."""
         # reference the destination area
