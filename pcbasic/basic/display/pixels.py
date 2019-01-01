@@ -155,14 +155,13 @@ class PixelPage(object):
             try:
                 # pyton2 won't do bytearray.index(int)
                 index = row.index(int2byte(c))
+                return row[:index]
             except ValueError:
-                index = x1-x0
-            return row[:index]
+                return row
         else:
-            x0, x1 = x1+1, x0+1
-            row = self._buffer[y, x0:x1]._rows[0]
+            row = self._buffer[y, x1+1:x0+1]._rows[0]
             try:
-                index = bytearray(reversed(row)).index(int2byte(c))
+                index = row.rindex(int2byte(c))
+                return row[index+1:]
             except ValueError:
-                index = x0-x1
-            return self._buffer[y, x1-index:x1]._rows[0]
+                return row
