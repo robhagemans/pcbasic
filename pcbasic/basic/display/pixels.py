@@ -143,11 +143,16 @@ class PixelPage(object):
         """Get the attribute values of a scanline interval [x0, x1-1]."""
         if x0 == x1:
             return []
-        toright = x1 > x0
-        if not toright:
+        elif x1 > x0:
+            try:
+                index = self._buffer[y][x0:x1].index(c)
+            except ValueError:
+                index = x1-x0
+            return self._buffer[y][x0:x0+index]
+        else:
             x0, x1 = x1+1, x0+1
-        try:
-            index = self._buffer[y][x0:x1].index(c)
-        except ValueError:
-            index = x1-x0
-        return self._buffer[y][x0:x0+index]
+            try:
+                index = list(reversed(self._buffer[y][x0:x1])).index(c)
+            except ValueError:
+                index = x0-x1
+            return self._buffer[y][x1-index:x1]
