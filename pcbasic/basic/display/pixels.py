@@ -6,8 +6,12 @@ Graphics buffer operations
 This file is released under the GNU GPL version 3 or later.
 """
 
+import operator
+
+from ...compat import zip, int2byte
 from ..base import error
 from ..base import tokens as tk
+from ..base import bytematrix
 from .. import values
 
 
@@ -26,7 +30,7 @@ class PixelPage(object):
 
     def __init__(self, width, height, bitsperpixel):
         """Initialise the screen buffer to given dimensions."""
-        self._buffer = [[0]*width for _ in range(height)]
+        self._buffer = bytematrix.ByteMatrix(height, width)
         self.width = width
         self.height = height
         # operations closures
@@ -38,11 +42,11 @@ class PixelPage(object):
     def _init_operations(self, mask):
         """Initialise operations closures."""
         self._operations = {
-            tk.PSET: lambda x, y: y,
-            tk.PRESET: lambda x, y: y ^ mask,
-            tk.AND: lambda x, y: x & y,
-            tk.OR: lambda x, y: x | y,
-            tk.XOR: lambda x, y: x ^ y,
+            tk.PSET: lambda _x, _y: _y,
+            tk.PRESET: lambda _x, _y: _y ^ mask,
+            tk.AND: operator.iand,
+            tk.OR: operator.ior,
+            tk.XOR: operator.ixor,
         }
 
     def __getstate__(self):
@@ -59,44 +63,45 @@ class PixelPage(object):
 
     def copy_from(self, src):
         """Copy from another page."""
-        self._buffer[:] = src._buffer[:]
+        self._buffer[:, :] = src._buffer
 
     def put_pixel(self, x, y, attr):
         """Put a pixel in the buffer."""
         try:
-            self._buffer[y][x] = attr
-            return self._buffer[y][x:x+1]
+            self._buffer[y, x] = attr
+            return self._buffer[y, x:x+1]._rows
         except IndexError:
             pass
 
     def get_pixel(self, x, y):
         """Get attribute of a pixel in the buffer."""
         try:
-            return self._buffer[y][x]
+            return self._buffer[y, x]
         except IndexError:
             return 0
 
     def fill_interval(self, x0, x1, y, attr):
         """Write a list of attributes to a scanline interval."""
         try:
-            self._buffer[y][x0:x1+1] = [attr]*(x1-x0+1)
-            return [self._buffer[y][x0:x1+1]]
+            self._buffer[y, x0:x1+1] = [[attr] * (x1-x0+1)]
+            return self._buffer[y, x0:x1+1]._rows
         except IndexError:
             pass
 
     def put_interval(self, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
         inv_mask = 0xff ^ mask
-        self._buffer[y][x:x+len(colours)] = [
-            (c & mask) | (self._buffer[y][x+i] & inv_mask)
-            for i, c in enumerate(colours)
+        width = len(colours)
+        self._buffer[y, x:x+width] = [
+            (_c & mask) | (_b & inv_mask)
+            for _c, _b in zip(colours, self._buffer[y, x:x+width])
         ]
-        return [self._buffer[y][x:x+len(colours)]]
+        return self._buffer[y, x:x+width]._rows
 
     def get_interval(self, x, y, length):
         """Return attributes of a scanline interval."""
         try:
-            return self._buffer[y][x:x+length]
+            return self._buffer[y, x:x+length]._rows
         except IndexError:
             return [0] * length
 
@@ -105,9 +110,8 @@ class PixelPage(object):
         if (x1 < x0) or (y1 < y0):
             return
         try:
-            for y in range(y0, y1+1):
-                self._buffer[y][x0:x1+1] = [attr] * (x1-x0+1)
-            return [self._buffer[y][x0:x1+1] for y in range(y0, y1+1)]
+            self._buffer[y0: y1+1, x0:x1+1] = [[attr] * (x1-x0+1) for _ in range(y0, y1+1)]
+            return self._buffer[y0: y1+1, x0:x1+1]._rows
         except IndexError:
             pass
 
@@ -116,43 +120,49 @@ class PixelPage(object):
         if (x1 < x0) or (y1 < y0):
             return
         try:
-            for y in range(y0, y1+1):
-                self._buffer[y][x0:x1+1] = [
-                    self._operations[operation_token](a, b)
-                    for a, b in zip(self._buffer[y][x0:x1+1], array[y-y0])
-                ]
-            return [self._buffer[y][x0:x1+1] for y in range(y0, y1+1)]
+            array = bytematrix.ByteMatrix._create_from_rows(array)
+            # can use in-place operaton method to avoid second slicing operation?
+            # no, we still need a slice assignment after the in-place operation
+            # or the result will be discarded along with the slice
+            result = self._operations[operation_token](
+                self._buffer[y0:y1+1, x0:x1+1], array
+            )
+            self._buffer[y0:y1+1, x0:x1+1] = result
+            return result._rows
         except IndexError:
             return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
 
     def get_rect(self, x0, y0, x1, y1):
         """Get 2d list [y][x] of target area."""
         try:
-            return [self._buffer[y][x0:x1+1] for y in range(y0, y1+1)]
+            return self._buffer[y0:y1+1, x0:x1+1]._rows
         except IndexError:
             return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
 
     def move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
         """Move pixels from an area to another, replacing with attribute 0."""
-        for y in range(0, sy1-sy0+1):
-            row = self._buffer[sy0+y][sx0:sx1+1]
-            self._buffer[sy0+y][sx0:sx1+1] = [0] * (sx1-sx0+1)
-            self._buffer[ty0+y][tx0:tx0+(sx1-sx0+1)] = row
+        clip = self._buffer[sy0:sy1+1, sx0:sx1+1]
+        height, width = sy1 - sy0 + 1, sx1 - sx0 + 1
+        self._buffer[sy0:sy1+1, sx0:sx1+1] = [[0] * width for _ in range(height)]
+        self._buffer[ty0 : ty0+height, tx0 : tx0+width] = clip
 
     def get_until(self, x0, x1, y, c):
         """Get the attribute values of a scanline interval [x0, x1-1]."""
         if x0 == x1:
             return []
         elif x1 > x0:
+            row = self._buffer[y, x0:x1]._rows[0]
             try:
-                index = self._buffer[y][x0:x1].index(c)
+                # pyton2 won't do bytearray.index(int)
+                index = row.index(int2byte(c))
             except ValueError:
                 index = x1-x0
-            return self._buffer[y][x0:x0+index]
+            return row[:index]
         else:
             x0, x1 = x1+1, x0+1
+            row = self._buffer[y, x0:x1]._rows[0]
             try:
-                index = list(reversed(self._buffer[y][x0:x1])).index(c)
+                index = bytearray(reversed(row)).index(int2byte(c))
             except ValueError:
                 index = x0-x1
-            return self._buffer[y][x1-index:x1]
+            return self._buffer[y, x1-index:x1]._rows[0]
