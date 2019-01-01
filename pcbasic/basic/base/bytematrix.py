@@ -60,21 +60,33 @@ class ByteMatrix(object):
     def __setitem__(self, index, value):
         """Set items by [y, x] indexing or slicing."""
         y, x = index
-        if isinstance(value, ByteMatrix):
-            value = value._rows
-        if isinstance(y, slice):
-            for _dst, _src in zip(self._rows[y], value):
-                # if x is a slice, this will copy too -> e.g. array[:] = another_array
-                _dst[x] = _src
-        elif isinstance(x, slice):
-            assert len(value) == 1
-            self._rows[y][x] = value[0]
+        if isinstance(value, int):
+            if isinstance(x, slice):
+                if isinstance(y, slice):
+                    for row in self._rows[y]:
+                        row[x] = [value for _ in row[x]]
+                else:
+                    self._rows[y][x] = [value for _ in self._rows[y][x]]
+            else:
+                if isinstance(y, slice):
+                    for row in self._rows[y]:
+                        row[x] = value
+                else:
+                    self._rows[y][x] = value
         else:
-            self._rows[y][x] = value
-
-    #def __len__(self):
-    #    """Size in bytes."""
-    #    return self._width * self._height
+            if isinstance(value, ByteMatrix):
+                value = value._rows
+            if isinstance(y, slice):
+                for _dst, _src in zip(self._rows[y], value):
+                    # if x is a slice, this will copy too -> e.g. array[:] = another_array
+                    _dst[x] = _src
+            elif isinstance(x, slice):
+                assert len(value) == 1
+                self._rows[y][x] = value[0]
+            else:
+                raise TypeError(
+                    'Can only assign ByteMatrix, list of bytes-like or int, not %s.' % type(value)
+                )
 
 
     def _elementwise_list(self, rhs, oper):

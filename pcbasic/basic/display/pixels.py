@@ -83,7 +83,7 @@ class PixelPage(object):
     def fill_interval(self, x0, x1, y, attr):
         """Write a list of attributes to a scanline interval."""
         try:
-            self._buffer[y, x0:x1+1] = [[attr] * (x1-x0+1)]
+            self._buffer[y, x0:x1+1] = attr
             return self._buffer[y, x0:x1+1]._rows
         except IndexError:
             pass
@@ -92,11 +92,10 @@ class PixelPage(object):
         """Write a list of attributes to a scanline interval."""
         inv_mask = 0xff ^ mask
         width = len(colours)
-        self._buffer[y, x:x+width] = [
-            (_c & mask) | (_b & inv_mask)
-            for _c, _b in zip(colours, self._buffer[y, x:x+width])
-        ]
-        return self._buffer[y, x:x+width]._rows
+        colours = bytematrix.ByteMatrix._create_from_rows([colours])
+        result = (colours & mask) | (self._buffer[y, x:x+width] & inv_mask)
+        self._buffer[y, x:x+width] = result
+        return result._rows
 
     def get_interval(self, x, y, length):
         """Return attributes of a scanline interval."""
@@ -110,7 +109,7 @@ class PixelPage(object):
         if (x1 < x0) or (y1 < y0):
             return
         try:
-            self._buffer[y0: y1+1, x0:x1+1] = [[attr] * (x1-x0+1) for _ in range(y0, y1+1)]
+            self._buffer[y0: y1+1, x0:x1+1] = attr
             return self._buffer[y0: y1+1, x0:x1+1]._rows
         except IndexError:
             pass
@@ -143,7 +142,7 @@ class PixelPage(object):
         """Move pixels from an area to another, replacing with attribute 0."""
         clip = self._buffer[sy0:sy1+1, sx0:sx1+1]
         height, width = sy1 - sy0 + 1, sx1 - sx0 + 1
-        self._buffer[sy0:sy1+1, sx0:sx1+1] = [[0] * width for _ in range(height)]
+        self._buffer[sy0:sy1+1, sx0:sx1+1] = 0
         self._buffer[ty0 : ty0+height, tx0 : tx0+width] = clip
 
     def get_until(self, x0, x1, y, c):
