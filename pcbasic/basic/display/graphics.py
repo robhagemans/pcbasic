@@ -118,10 +118,10 @@ class Drawing(object):
         self._pixels = None
         self.graph_view = None
         self._apagenum = None
-        self.last_point = None
-        self.last_attr = None
-        self.draw_scale = None
-        self.draw_angle = None
+        self._last_point = None
+        self._last_attr = None
+        self._draw_scale = None
+        self._draw_angle = None
 
     def init_mode(self, mode, text, pixels):
         """Initialise for new graphics mode."""
@@ -137,10 +137,10 @@ class Drawing(object):
         """Reset graphics state."""
         if self._mode.is_text_mode:
             return
-        self.last_point = self.graph_view.get_mid()
-        self.last_attr = self._mode.attr
-        self.draw_scale = 4
-        self.draw_angle = 0
+        self._last_point = self.graph_view.get_mid()
+        self._last_attr = self._mode.attr
+        self._draw_scale = 4
+        self._draw_angle = 0
 
     def set_attr(self, attr):
         """Set the current attribute."""
@@ -152,7 +152,7 @@ class Drawing(object):
 
     ### attributes
 
-    def get_attr_index(self, c):
+    def _get_attr_index(self, c):
         """Get the index of the specified attribute."""
         if c == -1:
             # foreground; graphics 'background' attrib is always 0
@@ -163,30 +163,19 @@ class Drawing(object):
 
     ### text/graphics interaction
 
-    def clear_text_at(self, x, y):
-        """Remove the character covering a single pixel."""
-        row, col = self._mode.pixel_to_text_pos(x, y)
-        # use attr = 0 ?
-        if col >= 1 and row >= 1 and col <= self._mode.width and row <= self._mode.height:
-            self._text.put_char_attr(self._apagenum, row, col, b' ', self._attr)
-        fore, back, blink, underline = self._mode.split_attr(self._attr)
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_PUT_TEXT,
-            # glyph=None only works because this gets ignored by graphical interface in text mode
-            # and gets ignored by text interface in all cases.
-            (self._apagenum, row, col, [u' '], fore, back, blink, underline, None)
-        ))
-
-    def clear_text_area(self, x0, y0, x1, y1):
+    def _clear_text(self, x0, y0, x1, y1):
         """Remove all characters from the text buffer on a rectangle of the graphics screen."""
         row0, col0, row1, col1 = self._mode.pixel_to_text_area(x0, y0, x1, y1)
-        # use attr = 0 ? pagenum parameter?
-        self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
+        # single cell
+        if row0 == row1 and col0 == col1 and 1 <= row0 <= self._mode.height and 1 <= col0 <= self._mode.width:
+            self._text.put_char_attr(self._apagenum, row0, col0, b' ', self._attr)
+        else:
+            self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
         fore, back, blink, underline = self._mode.split_attr(self._attr)
         for row in range(row0, row1+1):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_PUT_TEXT,
-                (self._apagenum, row, col0, [u' ']*(col1-col0), fore, back, blink, underline, None)
+                (self._apagenum, row, col0, [u' ']*(col1-col0+1), fore, back, blink, underline, None)
             ))
 
     ### graphics primitives
@@ -200,17 +189,7 @@ class Drawing(object):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_PUT_RECT, (pagenum, x, y, x, y, rect))
             )
-            self.clear_text_at(x, y)
-
-    def get_pixel(self, x, y, pagenum=None):
-        """Return the attribute a pixel on the screen."""
-        if pagenum is None:
-            pagenum = self._apagenum
-        return self._pixels.pages[pagenum].get_pixel(x, y)
-
-    def get_interval(self, pagenum, x, y, length):
-        """Read a scanline interval into a list of attributes."""
-        return self._pixels.pages[pagenum].get_interval(x, y, length)
+            self._clear_text(x, y, x, y)
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
@@ -219,7 +198,7 @@ class Drawing(object):
         self._queues.video.put(
             signals.Event(signals.VIDEO_PUT_RECT, (pagenum, x, y, x+len(colours), y, new_rect))
         )
-        self.clear_text_area(x, y, x+len(colours), y)
+        self._clear_text(x, y, x+len(colours), y)
 
     def fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
@@ -228,15 +207,7 @@ class Drawing(object):
         self._queues.video.put(
             signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y, x1, y, rect))
         )
-        self.clear_text_area(x0, y, x1, y)
-
-    def get_until(self, x0, x1, y, c):
-        """Get the attribute values of a scanline interval."""
-        return self._pixels.pages[self._apagenum].get_until(x0, x1, y, c)
-
-    def get_rect(self, x0, y0, x1, y1):
-        """Read a screen rect into an [y][x] array of attributes."""
-        return self._pixels.pages[self._apagenum].get_rect(x0, y0, x1, y1)
+        self._clear_text(x0, y, x1, y)
 
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """Apply an [y][x] array of attributes onto a screen rect."""
@@ -247,7 +218,7 @@ class Drawing(object):
         self._queues.video.put(
             signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, x1, y1, rect))
         )
-        self.clear_text_area(x0, y0, x1, y1)
+        self._clear_text(x0, y0, x1, y1)
 
     def fill_rect(self, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
@@ -256,7 +227,8 @@ class Drawing(object):
         self._queues.video.put(
             signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, x1, y1, rect))
         )
-        self.clear_text_area(x0, y0, x1, y1)
+        self._clear_text(x0, y0, x1, y1)
+
 
     ## VIEW graphics viewport
 
@@ -290,19 +262,19 @@ class Drawing(object):
         self.graph_view.unset()
         if fill is not None:
             self.draw_box_filled(x0, y0, x1, y1, fill)
-            self.last_attr = fill
+            self._last_attr = fill
         if border is not None:
             self.draw_box(x0-1, y0-1, x1+1, y1+1, border)
-            self.last_attr = border
+            self._last_attr = border
         self.graph_view.set(x0, y0, x1, y1, absolute)
-        self.last_point = self.graph_view.get_mid()
+        self._last_point = self.graph_view.get_mid()
         if self.window_bounds is not None:
             self.set_window(*self.window_bounds)
 
     def unset_view(self):
         """Unset the graphics viewport."""
         self.graph_view.unset()
-        self.last_point = self.graph_view.get_mid()
+        self._last_point = self.graph_view.get_mid()
         if self.window_bounds is not None:
             self.set_window(*self.window_bounds)
 
@@ -355,13 +327,13 @@ class Drawing(object):
         if self.window:
             scalex, scaley, offsetx, offsety = self.window
             if step:
-                fx0, fy0 = self.get_window_logical(*self.last_point)
+                fx0, fy0 = self.get_window_logical(*self._last_point)
             else:
                 fx0, fy0 = 0., 0.
             x = int(round(offsetx + (fx0+fx) * scalex))
             y = int(round(offsety + (fy0+fy) * scaley))
         else:
-            x, y = self.last_point if step else (0, 0)
+            x, y = self._last_point if step else (0, 0)
             x += int(round(fx))
             y += int(round(fy))
         # overflow check
@@ -413,10 +385,10 @@ class Drawing(object):
             error.range_check(0, 255, c)
         list(args)
         x, y = self.graph_view.coords(*self.get_window_physical(x, y, step))
-        c = self.get_attr_index(c)
+        c = self._get_attr_index(c)
         self.put_pixel(x, y, c)
-        self.last_attr = c
-        self.last_point = x, y
+        self._last_attr = c
+        self._last_point = x, y
 
     ### LINE
 
@@ -447,17 +419,17 @@ class Drawing(object):
         if coord0 != (None, None, None):
             x0, y0 = self.graph_view.coords(*self.get_window_physical(*coord0))
         else:
-            x0, y0 = self.last_point
+            x0, y0 = self._last_point
         x1, y1 = self.graph_view.coords(*self.get_window_physical(*coord1))
-        c = self.get_attr_index(c)
+        c = self._get_attr_index(c)
         if not shape:
             self.draw_line(x0, y0, x1, y1, c, pattern)
         elif shape == b'B':
             self.draw_box(x0, y0, x1, y1, c, pattern)
         elif shape == b'BF':
             self.draw_box_filled(x0, y0, x1, y1, c)
-        self.last_point = x1, y1
-        self.last_attr = c
+        self._last_point = x1, y1
+        self._last_attr = c
 
     def draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
         """Draw a line between the given physical points."""
@@ -598,7 +570,7 @@ class Drawing(object):
             c = -1
         else:
             error.range_check(0, 255, c)
-        c = self.get_attr_index(c)
+        c = self._get_attr_index(c)
         if aspect is None:
             aspect = self._mode.pixel_aspect[0] / float(self._mode.pixel_aspect[1])
         if aspect == 1.:
@@ -635,8 +607,8 @@ class Drawing(object):
                 start_octant//2, startx, starty, start_line,
                 stop_octant//2, stopx, stopy, stop_line
             )
-        self.last_attr = c
-        self.last_point = x0, y0
+        self._last_attr = c
+        self._last_point = x0, y0
 
     def draw_circle(
             self, x0, y0, r, c,
@@ -805,7 +777,7 @@ class Drawing(object):
         # it also stops on scanlines in fill_colour
         # pattern tiling stops at intervals that equal the pattern to be drawn,
         # unless this pattern is also equal to the background pattern.
-        c, border = self.get_attr_index(c), self.get_attr_index(border)
+        c, border = self._get_attr_index(c), self._get_attr_index(border)
         solid = (pattern is None)
         if not solid:
             tile = self._mode.build_tile(bytearray(pattern)) if pattern else None
@@ -818,16 +790,20 @@ class Drawing(object):
         # paint nothing if seed is out of bounds
         if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
             return
-        self.last_point = x, y
+        self._last_point = x, y
         # paint nothing if we start on border attrib
-        if self.get_pixel(x,y) == border:
+        if self._pixels.pages[self._apagenum].get_pixel(x, y) == border:
             return
         while len(line_seed) > 0:
             # consider next interval
             x_start, x_stop, y, ydir = line_seed.pop()
             # extend interval as far as it goes to left and right
-            x_left = x_start - len(self.get_until(x_start-1, bound_x0-1, y, border))
-            x_right = x_stop + len(self.get_until(x_stop+1, bound_x1+1, y, border))
+            x_left = x_start - len(
+                self._pixels.pages[self._apagenum].get_until(x_start-1, bound_x0-1, y, border)
+            )
+            x_right = x_stop + len(
+                self._pixels.pages[self._apagenum].get_until(x_stop+1, bound_x1+1, y, border)
+            )
             # check next scanlines and add intervals to the list
             if ydir == 0:
                 if y + 1 <= bound_y1:
@@ -862,7 +838,7 @@ class Drawing(object):
             # allow interrupting the paint
             if y%4 == 0:
                 self._input_methods.wait()
-        self.last_attr = c
+        self._last_attr = c
 
     def check_scanline(
             self, line_seed, x_start, x_stop, y,
@@ -879,7 +855,7 @@ class Drawing(object):
         x = x_start
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
-            pattern = self.get_until(x, x_stop+1, y, border)
+            pattern = self._pixels.pages[self._apagenum].get_until(x, x_stop+1, y, border)
             x_stop_next = x + len(pattern) - 1
             x = x_stop_next + 1
             # never match zero pattern (special case)
@@ -914,7 +890,7 @@ class Drawing(object):
         elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
-        self.last_point = x0, y0
+        self._last_point = x0, y0
         try:
             byte_array = self._memory.arrays.view_full_buffer(array_name)
             spriterec = self._memory.arrays.get_cache(array_name)
@@ -957,7 +933,7 @@ class Drawing(object):
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
         x1, y1 = self.graph_view.coords(*self.get_window_physical(*lcoord1))
-        self.last_point = x1, y1
+        self._last_point = x1, y1
         try:
             byte_array = self._memory.arrays.view_full_buffer(array_name)
         except KeyError:
@@ -975,7 +951,7 @@ class Drawing(object):
         # set size record
         byte_array[0:4] = self._mode.sprite_size_to_record(dx, dy)
         # read from screen and convert to byte array
-        sprite = self.get_rect(x0, y0, x1, y1)
+        sprite = self._pixels.pages[self._apagenum].get_rect(x0, y0, x1, y1)
         try:
             self._mode.sprite_to_array(sprite, dx, dy, byte_array, 4)
         except ValueError as e:
@@ -1018,43 +994,43 @@ class Drawing(object):
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
                 if gmls.skip_blank() == b';':
-                    self.last_attr = 0
+                    self._last_attr = 0
                 else:
                     attr = gmls.parse_number()
                     # 100000 seems to be GW's limit
                     error.range_check(-99999, 99999, attr)
-                    self.last_attr = attr
+                    self._last_attr = attr
             elif c == b'S':
                 # set scale
                 scale = gmls.parse_number()
                 error.range_check(1, 255, scale)
-                self.draw_scale = scale
+                self._draw_scale = scale
             elif c == b'A':
                 # set angle
                 # allow empty spec (default 0), but only if followed by a semicolon
                 if gmls.skip_blank() == b';':
-                    self.draw_angle = 0
+                    self._draw_angle = 0
                 else:
                     angle = gmls.parse_number()
                     error.range_check(0, 3, angle)
-                    self.draw_angle = 90 * angle
+                    self._draw_angle = 90 * angle
             elif c == b'T':
                 # 'turn angle' - set (don't turn) the angle to any value
                 if gmls.read(1).upper() != b'A':
                     raise error.BASICError(error.IFC)
                 # allow empty spec (default 0), but only if followed by a semicolon
                 if gmls.skip_blank() == b';':
-                    self.draw_angle = 0
+                    self._draw_angle = 0
                 else:
                     angle = gmls.parse_number()
                     error.range_check(-360, 360, angle)
-                    self.draw_angle = angle
+                    self._draw_angle = angle
             # one-variable movement commands:
             elif c in (b'U', b'D', b'L', b'R', b'E', b'F', b'G', b'H'):
                 step = gmls.parse_number(default=1)
                 # 100000 seems to be GW's limit
                 error.range_check(-99999, 99999, step)
-                x0, y0 = self.last_point
+                x0, y0 = self._last_point
                 x1, y1 = 0, 0
                 if c in (b'U', b'E', b'H'):
                     y1 -= step
@@ -1078,15 +1054,15 @@ class Drawing(object):
                     gmls.read(1)
                 y = gmls.parse_number()
                 error.range_check(-9999, 9999, y)
-                x0, y0 = self.last_point
+                x0, y0 = self._last_point
                 if relative:
                     self.draw_step(x0, y0, x, y, plot, goback)
                 else:
                     if plot:
-                        self.draw_line(x0, y0, x, y, self.last_attr)
-                    self.last_point = x, y
+                        self.draw_line(x0, y0, x, y, self._last_attr)
+                    self._last_point = x, y
                     if goback:
-                        self.last_point = x0, y0
+                        self._last_point = x0, y0
                 plot = True
                 goback = False
             elif c == b'P':
@@ -1097,15 +1073,15 @@ class Drawing(object):
                     raise error.BASICError(error.IFC)
                 bound = gmls.parse_number()
                 error.range_check(0, 9999, bound)
-                x, y = self.get_window_logical(*self.last_point)
+                x, y = self.get_window_logical(*self._last_point)
                 self.flood_fill((x, y, False), colour, None, bound, None)
             else:
                 raise error.BASICError(error.IFC)
 
     def draw_step(self, x0, y0, sx, sy, plot, goback):
         """Make a DRAW step, drawing a line and returning if requested."""
-        scale = self.draw_scale
-        rotate = self.draw_angle
+        scale = self._draw_scale
+        rotate = self._draw_angle
         aspect = self._mode.pixel_aspect
         yfac = aspect[1] / (1.*aspect[0])
         x1 = (scale*sx) // 4
@@ -1130,10 +1106,10 @@ class Drawing(object):
         y1 += y0
         x1 += x0
         if plot:
-            self.draw_line(x0, y0, x1, y1, self.last_attr)
-        self.last_point = x1, y1
+            self.draw_line(x0, y0, x1, y1, self._last_attr)
+        self._last_point = x1, y1
         if goback:
-            self.last_point = x0, y0
+            self._last_point = x0, y0
 
     ### POINT and PMAP
 
@@ -1152,9 +1128,9 @@ class Drawing(object):
             if self._mode.is_text_mode:
                 return self._values.new_single()
             if fn in (0, 1):
-                point = self.last_point[fn]
+                point = self._last_point[fn]
             elif fn in (2, 3):
-                point = self.get_window_logical(*self.last_point)[fn - 2]
+                point = self.get_window_logical(*self._last_point)[fn - 2]
             return self._values.new_single().from_value(point)
         else:
             if self._mode.is_text_mode:
@@ -1166,7 +1142,7 @@ class Drawing(object):
             if x < 0 or x >= self._mode.pixel_width or y < 0 or y >= self._mode.pixel_height:
                 point = -1
             else:
-                point = self.get_pixel(x, y)
+                point = self._pixels.pages[self._apagenum].get_pixel(x, y)
             return self._values.new_integer().from_int(point)
 
     def pmap_(self, args):
