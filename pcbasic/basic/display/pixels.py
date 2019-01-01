@@ -20,17 +20,13 @@ class PixelBuffer(object):
         self.width = bwidth
         self.height = bheight
 
-    def copy_page(self, src, dst):
-        """Copy source to destination page."""
-        self.pages[dst].buffer[:] = self.pages[src].buffer[:]
-
 
 class PixelPage(object):
     """Buffer for a screen page."""
 
     def __init__(self, width, height, pagenum, bitsperpixel):
         """Initialise the screen buffer to given dimensions."""
-        self.buffer = [[0]*width for _ in range(height)]
+        self._buffer = [[0]*width for _ in range(height)]
         self.width = width
         self.height = height
         self.pagenum = pagenum
@@ -49,26 +45,30 @@ class PixelPage(object):
         self.__dict__.update(pagedict)
         self.init_operations()
 
+    def copy_from(self, src):
+        """Copy from another page."""
+        self._buffer[:] = src._buffer[:]
+
     def put_pixel(self, x, y, attr):
         """Put a pixel in the buffer."""
         try:
-            self.buffer[y][x] = attr
-            return self.buffer[y][x:x+1]
+            self._buffer[y][x] = attr
+            return self._buffer[y][x:x+1]
         except IndexError:
             pass
 
     def get_pixel(self, x, y):
         """Get attribute of a pixel in the buffer."""
         try:
-            return self.buffer[y][x]
+            return self._buffer[y][x]
         except IndexError:
             return 0
 
     def fill_interval(self, x0, x1, y, attr):
         """Write a list of attributes to a scanline interval."""
         try:
-            self.buffer[y][x0:x1+1] = [attr]*(x1-x0+1)
-            return [self.buffer[y][x0:x1+1]]
+            self._buffer[y][x0:x1+1] = [attr]*(x1-x0+1)
+            return [self._buffer[y][x0:x1+1]]
         except IndexError:
             pass
 
@@ -85,16 +85,16 @@ class PixelPage(object):
     def put_interval(self, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
         inv_mask = 0xff ^ mask
-        self.buffer[y][x:x+len(colours)] = [
-            (c & mask) | (self.buffer[y][x+i] & inv_mask)
+        self._buffer[y][x:x+len(colours)] = [
+            (c & mask) | (self._buffer[y][x+i] & inv_mask)
             for i, c in enumerate(colours)
         ]
-        return [self.buffer[y][x:x+len(colours)]]
+        return [self._buffer[y][x:x+len(colours)]]
 
     def get_interval(self, x, y, length):
-        """Return *view of* attributes of a scanline interval."""
+        """Return attributes of a scanline interval."""
         try:
-            return self.buffer[y][x:x+length]
+            return self._buffer[y][x:x+length]
         except IndexError:
             return [0] * length
 
@@ -104,8 +104,8 @@ class PixelPage(object):
             return
         try:
             for y in range(y0, y1+1):
-                self.buffer[y][x0:x1+1] = [attr] * (x1-x0+1)
-            return [self.buffer[y][x0:x1+1] for y in range(y0, y1+1)]
+                self._buffer[y][x0:x1+1] = [attr] * (x1-x0+1)
+            return [self._buffer[y][x0:x1+1] for y in range(y0, y1+1)]
         except IndexError:
             pass
 
@@ -115,27 +115,27 @@ class PixelPage(object):
             return
         try:
             for y in range(y0, y1+1):
-                self.buffer[y][x0:x1+1] = [
+                self._buffer[y][x0:x1+1] = [
                     self.operations[operation_token](a, b)
-                    for a, b in zip(self.buffer[y][x0:x1+1], array[y-y0])
+                    for a, b in zip(self._buffer[y][x0:x1+1], array[y-y0])
                 ]
-            return [self.buffer[y][x0:x1+1] for y in range(y0, y1+1)]
+            return [self._buffer[y][x0:x1+1] for y in range(y0, y1+1)]
         except IndexError:
             return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
 
     def get_rect(self, x0, y0, x1, y1):
-        """Get *copy of* 2d list [y][x] of target area."""
+        """Get 2d list [y][x] of target area."""
         try:
-            return [self.buffer[y][x0:x1+1] for y in range(y0, y1+1)]
+            return [self._buffer[y][x0:x1+1] for y in range(y0, y1+1)]
         except IndexError:
             return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
 
     def move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
         """Move pixels from an area to another, replacing with attribute 0."""
         for y in range(0, sy1-sy0+1):
-            row = self.buffer[sy0+y][sx0:sx1+1]
-            self.buffer[sy0+y][sx0:sx1+1] = [0] * (sx1-sx0+1)
-            self.buffer[ty0+y][tx0:tx0+(sx1-sx0+1)] = row
+            row = self._buffer[sy0+y][sx0:sx1+1]
+            self._buffer[sy0+y][sx0:sx1+1] = [0] * (sx1-sx0+1)
+            self._buffer[ty0+y][tx0:tx0+(sx1-sx0+1)] = row
 
     def get_until(self, x0, x1, y, c):
         """Get the attribute values of a scanline interval [x0, x1-1]."""
@@ -145,7 +145,7 @@ class PixelPage(object):
         if not toright:
             x0, x1 = x1+1, x0+1
         try:
-            index = self.buffer[y][x0:x1].index(c)
+            index = self._buffer[y][x0:x1].index(c)
         except ValueError:
             index = x1-x0
-        return self.buffer[y][x0:x0+index]
+        return self._buffer[y][x0:x0+index]

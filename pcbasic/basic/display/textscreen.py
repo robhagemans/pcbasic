@@ -342,7 +342,9 @@ class TextScreen(object):
                 self.queues.video.put(signals.Event(
                     signals.VIDEO_PUT_RECT, (
                         pagenum, 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
-                        self.pixels.pages[pagenum].buffer
+                        self.pixels.pages[pagenum].get_rect(
+                            0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
+                        )
                     )
                 ))
 

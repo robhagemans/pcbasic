@@ -474,7 +474,7 @@ class Display(object):
         error.range_check(0, self.mode.num_pages-1, dst)
         self.text_screen.text.copy_page(src, dst)
         if not self.mode.is_text_mode:
-            self.pixels.copy_page(src, dst)
+            self.pixels.pages[dst].copy_from(self.pixels.pages[src])
         self.queues.video.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
 
     def color_(self, args):
