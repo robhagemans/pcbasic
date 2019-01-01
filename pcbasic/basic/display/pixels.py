@@ -61,7 +61,7 @@ class PixelPage(object):
         """Put a pixel in the buffer."""
         try:
             self.buffer[y][x] = attr
-            return self.buffer[y:y+1][x:x+1]
+            return self.buffer[y][x:x+1]
         except IndexError:
             pass
 
@@ -76,7 +76,7 @@ class PixelPage(object):
         """Write a list of attributes to a scanline interval."""
         try:
             self.buffer[y][x0:x1+1] = [attr]*(x1-x0+1)
-            return self.buffer[y:y+1][x0:x1+1]
+            return self.buffer[y][x0:x1+1]
         except IndexError:
             pass
 
