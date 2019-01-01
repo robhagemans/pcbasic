@@ -6,11 +6,6 @@ Graphics operations
 This file is released under the GNU GPL version 3 or later.
 """
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 import math
 
 from ..base import error
@@ -66,10 +61,7 @@ class GraphicsViewPort(object):
         """Return area buffer in [y][x] format clipped to view."""
         vx0, vy0, vx1, vy1 = self.get()
         nx0, ny0, nx1, ny1 =  max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
-        if numpy and type(area_buffer) == numpy.ndarray:
-            nbuf = area_buffer[ny0-y0:ny1-y0+1, nx0-x0:nx1-x0+1]
-        else:
-            nbuf = [row[nx0-x0:nx1-x0+1] for row in area_buffer[ny0-y0:ny1-y0+1]]
+        nbuf = [row[nx0-x0:nx1-x0+1] for row in area_buffer[ny0-y0:ny1-y0+1]]
         return nx0, ny0, nx1, ny1, nbuf
 
     def clip_interval(self, x0, x1, y):
@@ -1173,12 +1165,7 @@ def tile_to_interval(x0, x1, y, tile):
     dx = x1 - x0 + 1
     h = len(tile)
     w = len(tile[0])
-    if numpy:
-        # fast method using numpy instead of loop
-        ntile = numpy.roll(numpy.array(tile).astype(int)[y % h], int(-x0 % 8))
-        return numpy.tile(ntile, (dx+w-1) // w)[:dx]
-    else:
-        return [tile[y % h][x % 8] for x in range(x0, x1+1)]
+    return [tile[y % h][x % 8] for x in range(x0, x1+1)]
 
 
 ###############################################################################

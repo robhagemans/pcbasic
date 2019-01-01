@@ -8,11 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 from ...compat import xrange, int2byte
 
 from .. import values
@@ -632,79 +627,33 @@ class MonoTextMode(TextMode):
 
 # helper functions: convert between attribute lists and byte arrays
 
-if numpy:
-    def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
-        """Convert masked attributes packed into bytes to a scanline interval."""
-        bpp = 8 // pixels_per_byte
-        attrmask = (1<<bpp) - 1
-        bitval = numpy.array([128, 64, 32, 16, 8, 4, 2, 1], dtype=numpy.uint8)
-        bitmask = bitval[0::bpp]
-        for i in range(1, bpp):
-            bitmask |= bitval[i::bpp]
-        pre_mask = numpy.tile(bitmask, len(byte_array))
-        post_shift = numpy.tile(
-            numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp], len(byte_array)
-        )
-        attrs = numpy.right_shift(
-            numpy.repeat(numpy.array(byte_array).astype(int), pixels_per_byte) & pre_mask,
-            post_shift
-        ) & attrmask
-        return numpy.array(attrs) * mask
+def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
+    """Convert masked attributes packed into bytes to a scanline interval."""
+    bpp = 8 // pixels_per_byte
+    attrmask = (1<<bpp) - 1
+    return [
+        ((byte >> (8-bpp-shift)) & attrmask) * mask
+        for byte in byte_array for shift in range(0, 8, bpp)
+    ]
 
-else:
-    def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
-        """Convert masked attributes packed into bytes to a scanline interval."""
-        bpp = 8 // pixels_per_byte
-        attrmask = (1<<bpp) - 1
-        return [
-            ((byte >> (8-bpp-shift)) & attrmask) * mask
-            for byte in byte_array for shift in range(0, 8, bpp)
-        ]
-
-if numpy:
-    def interval_to_bytes(colours, pixels_per_byte, plane=0):
-        """Convert a scanline interval into masked attributes packed into bytes."""
-        num_pixels = len(colours)
-        num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
-        if odd_out:
-            num_bytes += 1
-        bpp = 8 // pixels_per_byte
-        attrmask = (1<<bpp) - 1
-        colours = numpy.array(colours).astype(int)
-        if odd_out:
-            colours.resize(len(colours)+pixels_per_byte-odd_out)
-        shift = numpy.tile(numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp], num_bytes)
-        attrs = numpy.right_shift(colours, plane)
-        attrs = numpy.left_shift(attrs & attrmask, shift)
-        # below is much faster than:
-        #   return list([ sum(attrs[i:i+pixels_per_byte])
-        #                 for i in range(0, len(attrs), pixels_per_byte) ])
-        # and anything involving numpy.array_split or numpy.dot is even slower.
-        # numpy.roll is ok but this is the fastest I've found:
-        nattrs = attrs[0::pixels_per_byte]
-        for i in range(1, pixels_per_byte):
-            nattrs |= attrs[i::pixels_per_byte]
-        return bytearray(list(nattrs))
-
-else:
-    def interval_to_bytes(colours, pixels_per_byte, plane=0):
-        """Convert a scanline interval into masked attributes packed into bytes."""
-        num_pixels = len(colours)
-        num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
-        if odd_out:
-            num_bytes += 1
-        bpp = 8//pixels_per_byte
-        attrmask = (1<<bpp) - 1
-        colours = list(colours)
-        byte_list = bytearray(num_bytes)
-        shift, byte = -1, -1
-        for x in xrange(num_pixels):
-            if shift < 0:
-                shift = 8 - bpp
-                byte += 1
-            byte_list[byte] |= ((colours[x] >> plane) & attrmask) << shift
-            shift -= bpp
-        return byte_list
+def interval_to_bytes(colours, pixels_per_byte, plane=0):
+    """Convert a scanline interval into masked attributes packed into bytes."""
+    num_pixels = len(colours)
+    num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
+    if odd_out:
+        num_bytes += 1
+    bpp = 8//pixels_per_byte
+    attrmask = (1<<bpp) - 1
+    colours = list(colours)
+    byte_list = bytearray(num_bytes)
+    shift, byte = -1, -1
+    for x in xrange(num_pixels):
+        if shift < 0:
+            shift = 8 - bpp
+            byte += 1
+        byte_list[byte] |= ((colours[x] >> plane) & attrmask) << shift
+        shift -= bpp
+    return byte_list
 
 def walk_memory(self, addr, num_bytes, factor=1):
     """Yield parts of graphics memory corresponding to pixels."""
@@ -768,12 +717,9 @@ def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offs):
             byte_array[offs:offs+row_bytes] = interval_to_bytes(row, 8, plane)
             offs += row_bytes
 
-# elementwise OR, in-place if possible
-if numpy:
-    or_i = numpy.ndarray.__ior__
-else:
-    def or_i(list0, list1):
-        return [ x | y for x, y in zip(list0, list1) ]
+def or_i(list0, list1):
+    """Elementwise or."""
+    return [x | y for x, y in zip(list0, list1)]
 
 def array_to_sprite_ega(self, byte_array, offset, dx, dy):
     """Build sprite from byte_array in EGA modes."""
