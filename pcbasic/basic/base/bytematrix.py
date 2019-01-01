@@ -6,9 +6,10 @@ PC-BASIC - bytematrix.py
 This file is released under the GNU GPL version 3 or later.
 """
 
+import operator
 from binascii import hexlify, unhexlify
 
-from ...compat import zip
+from ...compat import zip, int2byte
 
 
 class ByteMatrix(object):
@@ -63,6 +64,7 @@ class ByteMatrix(object):
             value = value._rows
         if isinstance(y, slice):
             for _dst, _src in zip(self._rows[y], value):
+                # if x is a slice, this will copy too -> e.g. array[:] = another_array
                 _dst[x] = _src
         elif isinstance(x, slice):
             assert len(value) == 1
@@ -73,6 +75,49 @@ class ByteMatrix(object):
     #def __len__(self):
     #    """Size in bytes."""
     #    return self._width * self._height
+
+
+    def _elementwise_iter(self, matrix, oper):
+        """Helper for elementwise operations."""
+        assert self._height == matrix._height
+        assert self._width == matrix._width
+        return (
+            bytearray(oper(_lbyte, _rbyte) for _lbyte, _rbyte in zip(_lrow, _rrow))
+            for _lrow, _rrow in zip(self._rows, matrix._rows)
+        )
+
+    def elementwise(self, matrix, oper):
+        """Element-wise operation with another matrix."""
+        return self._create_from_rows(self._elementwise_iter(matrix, oper))
+
+    def __or__(self, matrix):
+        """Bitwise or."""
+        return self.elementwise(matrix, operator.__or__)
+
+    def __and__(self, matrix):
+        """Bitwise and."""
+        return self.elementwise(matrix, operator.__and__)
+
+    def __xor__(self, matrix):
+        """Bitwise exclusive or."""
+        return self.elementwise(matrix, operator.__xor__)
+
+    def elementwise_inplace(self, matrix, oper):
+        """In-place element-wise operation with another matrix."""
+        self._rows = list(self._elementwise_iter(matrix, oper))
+
+    def __ior__(self, matrix):
+        """In-place bitwise or."""
+        return self.elementwise_inplace(matrix, operator.__ior__)
+
+    def __iand__(self, matrix):
+        """In-place bitwise and."""
+        return self.elementwise_inplace(matrix, operator.__iand__)
+
+    def __ixor__(self, matrix):
+        """In-place bitwise exclusive or."""
+        return self.elementwise_inplace(matrix, operator.__ixor__)
+
 
     @property
     def width(self):
@@ -95,7 +140,7 @@ class ByteMatrix(object):
         return new
 
     @classmethod
-    def frompacked(cls, packed, height, items_per_byte=8):
+    def frompacked(cls, packed, height, items_per_byte):
         """Unpack from packed-bits representation."""
         width = items_per_byte * len(packed) // height
         unpacked = unpack_bytes(packed, items_per_byte)
@@ -110,18 +155,18 @@ class ByteMatrix(object):
         return pack_bytes(joined, items_per_byte)
 
     @classmethod
-    def fromhex(cls, hex, height, items_per_byte=8):
+    def fromhex(cls, hex, height, items_per_byte):
         """Unpack from hex representation."""
         return cls.frompacked(unhexlify(hex), height, items_per_byte)
 
-    def hex(self, items_per_byte=8):
+    def hex(self, items_per_byte):
         """Pack to hex representation."""
         return hexlify(self.packed(items_per_byte))
 
     def render(self, back, fore):
         """Set attributes on bit matrix."""
         return self._create_from_rows([
-            _row.replace(b'\0', chr(back)).replace(b'\x01', chr(fore))
+            _row.replace(b'\0', int2byte(back)).replace(b'\x01', int2byte(fore))
             for _row in self._rows
         ])
 
