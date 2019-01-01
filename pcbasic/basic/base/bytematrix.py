@@ -14,10 +14,10 @@ from ...compat import zip
 class ByteMatrix(object):
     """2D byte matrix."""
 
-    def __init__(self, width=0, height=0, data=0):
+    def __init__(self, height=0, width=0, data=0):
         """Create a new matrix."""
-        self._width = width
         self._height = height
+        self._width = width
         if not width and not height:
             self._data = None
         elif isinstance(data, int):
@@ -40,17 +40,13 @@ class ByteMatrix(object):
     def __repr__(self):
         """Debugging representation."""
         hexreps = [''.join('\\x{:02x}'.format(_c) for _c in _row) for _row in self._rows]
-        return "ByteMatrix({0._width}, {0._height}, [\n    '{1}' ])".format(
+        return "ByteMatrix({0._height}, {0._width}, [\n    '{1}' ])".format(
             self, "',\n    '".join(hexreps)
         )
 
-    #def __str__(self):
-    #    """Represent as string."""
-    #    return '\n    ' + '\n    '.join(hexlify(bytes(_row)) for _row in self._rows)
-
     def __getitem__(self, index):
-        """Extract items by [x, y] indexing or slicing or 1D index."""
-        x, y = index
+        """Extract items by [y, x] indexing or slicing or 1D index."""
+        y, x = index
         if isinstance(y, slice):
             if isinstance(x, slice):
                 return self._create_from_rows([_row[x] for _row in self._rows[y]])
@@ -61,8 +57,8 @@ class ByteMatrix(object):
         return self._rows[y][x]
 
     def __setitem__(self, index, value):
-        """Extract items by indexing or slicing."""
-        x, y = index
+        """Set items by [y, x] indexing or slicing."""
+        y, x = index
         if isinstance(value, ByteMatrix):
             value = value._rows
         if isinstance(y, slice):

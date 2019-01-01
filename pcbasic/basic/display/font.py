@@ -161,7 +161,7 @@ class Font(object):
             glyph = glyph.hrepeat(2)
         elif glyph.width >= (req_width-1) * 2:
             logging.debug('Code point %r squeezed to half-width.', char)
-            glyph = glyph[::2, :]
+            glyph = glyph[:, ::2]
         # repeat last rows (e.g. for 9-bit high chars)
         if self._height > glyph.height:
             glyph = _extend_height(glyph, char in CARRY_ROW_9_CHARS)
@@ -183,11 +183,10 @@ class Font(object):
         glyphs = bytematrix.hstack(self._get_glyph(_c) for _c in char_list)._rows
         return glyphs
 
-
 def _extend_height(glyph, carry_last):
     """Extend the character height by a row."""
     if carry_last:
-        return bytematrix.vstack((glyph, glyph[:, -1]))
+        return bytematrix.vstack((glyph, glyph[-1, :]))
     else:
         return glyph.vextend(1)
 
@@ -197,5 +196,5 @@ def _extend_width(glyph, carry_last):
     if glyph.width >= 16:
         return glyph.hextend(2)
     if carry_last:
-        return bytematrix.hstack((glyph, glyph[-1, :]))
+        return bytematrix.hstack((glyph, glyph[:, -1]))
     return glyph.hextend(1)
