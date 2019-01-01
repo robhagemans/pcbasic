@@ -77,46 +77,53 @@ class ByteMatrix(object):
     #    return self._width * self._height
 
 
-    def _elementwise_iter(self, matrix, oper):
+    def _elementwise_list(self, rhs, oper):
         """Helper for elementwise operations."""
-        assert self._height == matrix._height
-        assert self._width == matrix._width
-        return (
-            bytearray(oper(_lbyte, _rbyte) for _lbyte, _rbyte in zip(_lrow, _rrow))
-            for _lrow, _rrow in zip(self._rows, matrix._rows)
-        )
+        if isinstance(rhs, int):
+            return [
+                bytearray(oper(_lbyte, rhs) for _lbyte in _lrow)
+                for _lrow in self._rows
+            ]
+        else:
+            assert self._height == rhs._height
+            assert self._width == rhs._width
+            return [
+                bytearray(oper(_lbyte, _rbyte) for _lbyte, _rbyte in zip(_lrow, _rrow))
+                for _lrow, _rrow in zip(self._rows, rhs._rows)
+            ]
 
-    def elementwise(self, matrix, oper):
-        """Element-wise operation with another matrix."""
-        return self._create_from_rows(self._elementwise_iter(matrix, oper))
+    def elementwise(self, rhs, oper):
+        """Element-wise operation with another matrix or a scalar."""
+        return self._create_from_rows(self._elementwise_list(rhs, oper))
 
-    def __or__(self, matrix):
+    def __or__(self, rhs):
         """Bitwise or."""
-        return self.elementwise(matrix, operator.__or__)
+        return self.elementwise(rhs, operator.__or__)
 
-    def __and__(self, matrix):
+    def __and__(self, rhs):
         """Bitwise and."""
-        return self.elementwise(matrix, operator.__and__)
+        return self.elementwise(rhs, operator.__and__)
 
-    def __xor__(self, matrix):
+    def __xor__(self, rhs):
         """Bitwise exclusive or."""
-        return self.elementwise(matrix, operator.__xor__)
+        return self.elementwise(rhs, operator.__xor__)
 
-    def elementwise_inplace(self, matrix, oper):
-        """In-place element-wise operation with another matrix."""
-        self._rows = list(self._elementwise_iter(matrix, oper))
+    def elementwise_inplace(self, rhs, oper):
+        """In-place element-wise operation with another matrix or a scalar."""
+        self._rows = self._elementwise_list(rhs, oper)
+        return self
 
-    def __ior__(self, matrix):
+    def __ior__(self, rhs):
         """In-place bitwise or."""
-        return self.elementwise_inplace(matrix, operator.__ior__)
+        return self.elementwise_inplace(rhs, operator.__ior__)
 
-    def __iand__(self, matrix):
+    def __iand__(self, rhs):
         """In-place bitwise and."""
-        return self.elementwise_inplace(matrix, operator.__iand__)
+        return self.elementwise_inplace(rhs, operator.__iand__)
 
-    def __ixor__(self, matrix):
+    def __ixor__(self, rhs):
         """In-place bitwise exclusive or."""
-        return self.elementwise_inplace(matrix, operator.__ixor__)
+        return self.elementwise_inplace(rhs, operator.__ixor__)
 
 
     @property
