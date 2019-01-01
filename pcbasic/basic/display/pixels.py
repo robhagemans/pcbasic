@@ -76,7 +76,7 @@ class PixelPage(object):
         """Write a list of attributes to a scanline interval."""
         try:
             self.buffer[y][x0:x1+1] = [attr]*(x1-x0+1)
-            return self.buffer[y][x0:x1+1]
+            return [self.buffer[y][x0:x1+1]]
         except IndexError:
             pass
 
