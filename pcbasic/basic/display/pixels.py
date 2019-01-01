@@ -14,36 +14,48 @@ from .. import values
 class PixelBuffer(object):
     """Buffer for graphics on all screen pages."""
 
-    def __init__(self, bwidth, bheight, bpages, bitsperpixel):
+    def __init__(self, width, height, pages, bitsperpixel):
         """Initialise the graphics buffer to given pages and dimensions."""
-        self.pages = [PixelPage(bwidth, bheight, num, bitsperpixel) for num in range(bpages)]
-        self.width = bwidth
-        self.height = bheight
+        self.pages = [PixelPage(width, height, bitsperpixel) for _ in range(pages)]
+        self.width = width
+        self.height = height
 
 
 class PixelPage(object):
     """Buffer for a screen page."""
 
-    def __init__(self, width, height, pagenum, bitsperpixel):
+    def __init__(self, width, height, bitsperpixel):
         """Initialise the screen buffer to given dimensions."""
         self._buffer = [[0]*width for _ in range(height)]
         self.width = width
         self.height = height
-        self.pagenum = pagenum
-        self.bitsperpixel = bitsperpixel
-        self.init_operations()
+        # operations closures
+        self._operations = {}
+        # we need to store the mask so we can reconstruct the operations dict on unpickling
+        self._mask = (1 << bitsperpixel) - 1
+        self._init_operations(self._mask)
+
+    def _init_operations(self, mask):
+        """Initialise operations closures."""
+        self._operations = {
+            tk.PSET: lambda x, y: y,
+            tk.PRESET: lambda x, y: y ^ mask,
+            tk.AND: lambda x, y: x & y,
+            tk.OR: lambda x, y: x | y,
+            tk.XOR: lambda x, y: x ^ y,
+        }
 
     def __getstate__(self):
         """Pickle the page."""
         pagedict = self.__dict__.copy()
         # lambdas can't be pickled
-        pagedict['operations'] = None
+        pagedict['_operations'] = None
         return pagedict
 
     def __setstate__(self, pagedict):
         """Initialise from pickled page."""
         self.__dict__.update(pagedict)
-        self.init_operations()
+        self.init_operations(self._mask)
 
     def copy_from(self, src):
         """Copy from another page."""
@@ -71,16 +83,6 @@ class PixelPage(object):
             return [self._buffer[y][x0:x1+1]]
         except IndexError:
             pass
-
-    def init_operations(self):
-        """Initialise operations closures."""
-        self.operations = {
-            tk.PSET: lambda x, y: y,
-            tk.PRESET: lambda x, y: y ^ ((1<<self.bitsperpixel)-1),
-            tk.AND: lambda x, y: x & y,
-            tk.OR: lambda x, y: x | y,
-            tk.XOR: lambda x, y: x ^ y,
-        }
 
     def put_interval(self, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
@@ -116,7 +118,7 @@ class PixelPage(object):
         try:
             for y in range(y0, y1+1):
                 self._buffer[y][x0:x1+1] = [
-                    self.operations[operation_token](a, b)
+                    self._operations[operation_token](a, b)
                     for a, b in zip(self._buffer[y][x0:x1+1], array[y-y0])
                 ]
             return [self._buffer[y][x0:x1+1] for y in range(y0, y1+1)]
