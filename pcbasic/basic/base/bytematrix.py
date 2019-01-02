@@ -120,6 +120,14 @@ class ByteMatrix(object):
         """Bitwise exclusive or."""
         return self.elementwise(rhs, operator.__xor__)
 
+    def __rshift__(self, rhs):
+        """Right-shift."""
+        return self.elementwise(rhs, operator.__rshift__)
+
+    def __lshift__(self, rhs):
+        """Left-shift."""
+        return self.elementwise(rhs, operator.__lshift__)
+
     def elementwise_inplace(self, rhs, oper):
         """In-place element-wise operation with another matrix or a scalar."""
         self._rows = self._elementwise_list(rhs, oper)
@@ -136,6 +144,14 @@ class ByteMatrix(object):
     def __ixor__(self, rhs):
         """In-place bitwise exclusive or."""
         return self.elementwise_inplace(rhs, operator.__ixor__)
+
+    def __irshift__(self, rhs):
+        """In-place right-shift."""
+        return self.elementwise_inplace(rhs, operator.__irshift__)
+
+    def __ilshift__(self, rhs):
+        """In-place left-shift."""
+        return self.elementwise_inplace(rhs, operator.__ilshift__)
 
 
     @property
@@ -161,17 +177,17 @@ class ByteMatrix(object):
     @classmethod
     def frompacked(cls, packed, height, items_per_byte):
         """Unpack from packed-bits representation."""
-        width = items_per_byte * len(packed) // height
-        unpacked = unpack_bytes(packed, items_per_byte)
+        width = len(packed) // height
         return cls._create_from_rows([
-            unpacked[_offs : _offs+width]
-            for _offs in range(0, len(unpacked), width)
+            unpack_bytes(packed[_offs : _offs+width], items_per_byte)
+            for _offs in range(0, len(packed), width)
         ])
 
     def packed(self, items_per_byte):
-        """Pack into packed-bits representation."""
-        joined = bytearray().join(self._rows)
-        return pack_bytes(joined, items_per_byte)
+        """Pack into packed-bits representation, byte aligned on rows."""
+        return bytearray().join(
+            pack_bytes(_r, items_per_byte) for _r in self._rows
+        )
 
     @classmethod
     def fromhex(cls, hex, height, items_per_byte):
@@ -246,7 +262,8 @@ def pack_bytes(unpacked, items_per_byte):
     bpp = 8 // items_per_byte
     mask = (1 << bpp) - 1
     shifts = [8 - bpp - _sh for _sh in range(0, 8, bpp)]
-    packed_width = len(unpacked) // items_per_byte
+    # ceildiv(a,b) == -(floowrdiv(-a,b))
+    packed_width = -(-len(unpacked) // items_per_byte)
     prepacked = [(_byte & mask) << _shift for _byte, _shift in zip(unpacked, shifts*packed_width)]
     return bytearray([
         sum(prepacked[_offs : _offs+items_per_byte])

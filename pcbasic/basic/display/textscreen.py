@@ -344,7 +344,7 @@ class TextScreen(object):
                         pagenum, 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
                         self.pixels.pages[pagenum].get_rect(
                             0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
-                        )
+                        )._rows
                     )
                 ))
 

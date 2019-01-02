@@ -7,11 +7,13 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import struct
+import functools
 
-from ...compat import xrange, int2byte
+from ...compat import xrange, int2byte, zip, PY2
 
 from .. import values
 from ..base import error
+from ..base import bytematrix
 
 
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
@@ -625,38 +627,11 @@ class MonoTextMode(TextMode):
         return fore, back, blink, underline
 
 
-# helper functions: convert between attribute lists and byte arrays
-
-def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
-    """Convert masked attributes packed into bytes to a scanline interval."""
-    bpp = 8 // pixels_per_byte
-    attrmask = (1<<bpp) - 1
-    return [
-        ((byte >> (8-bpp-shift)) & attrmask) * mask
-        for byte in byte_array for shift in range(0, 8, bpp)
-    ]
-
-def interval_to_bytes(colours, pixels_per_byte, plane=0):
-    """Convert a scanline interval into masked attributes packed into bytes."""
-    num_pixels = len(colours)
-    num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
-    if odd_out:
-        num_bytes += 1
-    bpp = 8//pixels_per_byte
-    attrmask = (1<<bpp) - 1
-    colours = list(colours)
-    byte_list = bytearray(num_bytes)
-    shift, byte = -1, -1
-    for x in xrange(num_pixels):
-        if shift < 0:
-            shift = 8 - bpp
-            byte += 1
-        byte_list[byte] |= ((colours[x] >> plane) & attrmask) << shift
-        shift -= bpp
-    return byte_list
+##############################################################################
+# graphical memory model
 
 def walk_memory(self, addr, num_bytes, factor=1):
-    """Yield parts of graphics memory corresponding to pixels."""
+    """Iterate over graphical memory (pixel-by-pixel, contiguous rows)."""
     # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
     # with alternating planes in even and odd bytes (i.e. ppb==8)
     ppb = factor * self.ppb
@@ -690,6 +665,10 @@ def walk_memory(self, addr, num_bytes, factor=1):
                 yield page, 0, y, ofs, row_size
         offset += row_size
 
+
+##############################################################################
+# sprite & tile helper functions
+
 def sprite_size_to_record_ega(self, dx, dy):
     """Write 4-byte record of sprite size in EGA modes."""
     return struct.pack('<HH', dx, dy)
@@ -698,41 +677,87 @@ def record_to_sprite_size_ega(self, byte_array):
     """Read 4-byte record of sprite size in EGA modes."""
     return struct.unpack('<HH', byte_array[0:4])
 
-def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offs):
+def interval_to_bytes(colours, pixels_per_byte, plane=0):
+    """Convert a scanline interval into masked attributes packed into bytes."""
+    colours = colours[0]
+    num_pixels = len(colours)
+    num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
+    if odd_out:
+        num_bytes += 1
+    bpp = 8//pixels_per_byte
+    attrmask = (1<<bpp) - 1
+    colours = list(colours)
+    byte_list = bytearray(num_bytes)
+    shift, byte = -1, -1
+    for x in xrange(num_pixels):
+        if shift < 0:
+            shift = 8 - bpp
+            byte += 1
+        byte_list[byte] |= ((colours[x] >> plane) & attrmask) << shift
+        shift -= bpp
+    return byte_list
+
+def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
+    """Convert masked attributes packed into bytes to a scanline interval."""
+    bpp = 8 // pixels_per_byte
+    attrmask = (1<<bpp) - 1
+    return [
+        ((byte >> (8-bpp-shift)) & attrmask) * mask
+        for byte in byte_array for shift in range(0, 8, bpp)
+    ]
+
+def sprite_to_array_ega(self, sprite, dx, dy, byte_array, offs):
     """Build the sprite byte array in EGA modes."""
-    # for EGA modes, sprites have 8 pixels per byte
+    # ** byte mapping for sprites in EGA modes
+    # sprites have 8 pixels per byte
     # with colour planes in consecutive rows
     # each new row is aligned on a new byte
-    #
-    # this is much faster for wide selections
-    # but for narrow selections storing in an array and indexing take longer
-    # than just getting each pixel separately
+    n_planes = self.bitsperpixel
+    # extract colour planes
+    # note that to get the plane this should be bit-masked - (s >> _p) & 1
+    # but bytematrix.packbytes will do this for us
+    sprite_planes = list(
+        (sprite >> _plane)  # & 1
+        for _plane in range(n_planes)
+    )
+    # pack the bits into bytes
+    #interval_to_bytes
+    packed_planes = list(
+        _sprite.packed(items_per_byte=8)
+        for _sprite in sprite_planes
+    )
+    # interlace row-by-row
     row_bytes = (dx+7) // 8
-    length = dy * self.bitsperpixel * row_bytes
-    if offs+length > len(byte_array):
+    length = dy * n_planes * row_bytes
+    interlaced = bytearray().join(
+        _packed[_row_offs : _row_offs+row_bytes]
+        for _row_offs in range(0, length, row_bytes)
+        for _packed in packed_planes
+    )
+    # copy into memoryview
+    if offs + length > len(byte_array):
         raise ValueError('Sprite exceeds array byte size')
-    byte_array[offs:offs+length] = b'\0'*length
-    for row in attrs:
-        for plane in range(self.bitsperpixel):
-            byte_array[offs:offs+row_bytes] = interval_to_bytes(row, 8, plane)
-            offs += row_bytes
-
-def or_i(list0, list1):
-    """Elementwise or."""
-    return [x | y for x, y in zip(list0, list1)]
+    byte_array[offs:offs+length] = interlaced
 
 def array_to_sprite_ega(self, byte_array, offset, dx, dy):
     """Build sprite from byte_array in EGA modes."""
-    row_bytes = (dx+7) // 8
-    attrs = []
-    for y in range(dy):
-        row = bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 1)
-        offset += row_bytes
-        for plane in range(1, self.bitsperpixel):
-            row = or_i(row, bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 1 << plane))
-            offset += row_bytes
-        attrs.append(row[:dx])
-    return attrs
+    # ** see sprite_to_array_ega for a description of the byte mapping
+    packed = byte_array[offset:offset+row_bytes]
+    if PY2 and isinstance(packed, memoryview):
+        # ensure iterations over memoryview yield int, not bytes
+        packed = (ord(_c) for c in packed)
+    # unpack all planes
+    n_planes = self.bitsperpixel
+    #bytes_to_interval
+    allplanes = bytematrix.ByteMatrix.frompacked(packed, height=dy*n_planes, items_per_byte=8)
+    # de-interlace planes
+    sprite_planes = (
+        allplanes[_plane::dy, :] << _plane
+        for _plane in range(n_planes)
+    )
+    # combine planes
+    sprite = functools.reduce(operator.__ior__, sprite_planes)
+    return sprite
 
 def build_tile_cga(self, pattern):
     """Build a flood-fill tile for CGA screens."""
@@ -857,29 +882,28 @@ class CGAMode(GraphicsMode):
         w, dy = struct.unpack('<HH', byte_array[0:4])
         return w // self.bitsperpixel, dy
 
-    def sprite_to_array(self, attrs, dx, dy, byte_array, offs):
+    def sprite_to_array(self, sprite, dx, dy, byte_array, offs):
         """Build the sprite byte array."""
-        row_bytes = (dx * self.bitsperpixel + 7) // 8
-        length = row_bytes*dy
-        if offs+length > len(byte_array):
-            # NOTE: if we use memoryviews instead of bytearrays, we won't need
-            # this check as the assignment will fail with ValueError anyway
+        items_per_byte = 8 // self.bitsperpixel
+        # interval_to_bytes
+        packed = sprite.packed(items_per_byte)
+        if offs + len(packed) > len(byte_array):
             raise ValueError('Sprite exceeds array byte size')
-        byte_array[offs:offs+length] = b'\0'*length
-        for row in attrs:
-            byte_array[offs:offs+row_bytes] = interval_to_bytes(row, 8//self.bitsperpixel, 0)
-            offs += row_bytes
+        byte_array[offs : offs+len(packed)] = packed
 
     def array_to_sprite(self, byte_array, offset, dx, dy):
         """Build sprite from byte_array."""
         row_bytes = (dx * self.bitsperpixel + 7) // 8
-        # illegal fn call if outside screen boundary
-        attrs = []
-        for y in range(dy):
-            row = bytes_to_interval(byte_array[offset:offset+row_bytes], 8//self.bitsperpixel, 1)
-            offset += row_bytes
-            attrs.append(row[:dx])
-        return attrs
+        length = row_bytes * dy
+        items_per_byte = 8 // self.bitsperpixel
+        # bytes_to_interval
+        packed = byte_array[offset : offset+length]
+        if PY2:
+            # will read str if not cast to bytearray
+            # could be an iterator...
+            packed = bytearray(packed)
+        sprite = bytematrix.ByteMatrix.frompacked(packed, dy, items_per_byte)
+        return sprite
 
     build_tile = build_tile_cga
 

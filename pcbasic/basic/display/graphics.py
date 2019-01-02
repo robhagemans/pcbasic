@@ -58,11 +58,9 @@ class GraphicsViewPort(object):
         return max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
 
     def clip_area(self, x0, y0, x1, y1, area_buffer):
-        """Return area buffer in [y][x] format clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get()
-        nx0, ny0, nx1, ny1 =  max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
-        nbuf = [row[nx0-x0:nx1-x0+1] for row in area_buffer[ny0-y0:ny1-y0+1]]
-        return nx0, ny0, nx1, ny1, nbuf
+        """Return area buffer in ByteMatrix format clipped to view."""
+        nx0, ny0, nx1, ny1 = self.clip_rect(x0, y0, x1, y1)
+        return nx0, ny0, nx1, ny1, area_buffer[ny0-y0 : ny1-y0+1, nx0-x0 : nx1-x0+1]
 
     def clip_interval(self, x0, x1, y):
         """Return rect clipped to view."""

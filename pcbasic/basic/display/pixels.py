@@ -59,7 +59,7 @@ class PixelPage(object):
     def __setstate__(self, pagedict):
         """Initialise from pickled page."""
         self.__dict__.update(pagedict)
-        self.init_operations(self._mask)
+        self._init_operations(self._mask)
 
     def copy_from(self, src):
         """Copy from another page."""
@@ -119,7 +119,8 @@ class PixelPage(object):
         if (x1 < x0) or (y1 < y0):
             return
         try:
-            array = bytematrix.ByteMatrix._create_from_rows(array)
+            if not isinstance(array, bytematrix.ByteMatrix):
+                array = bytematrix.ByteMatrix._create_from_rows(array)
             # can use in-place operaton method to avoid second slicing operation?
             # no, we still need a slice assignment after the in-place operation
             # or the result will be discarded along with the slice
@@ -132,11 +133,8 @@ class PixelPage(object):
             return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
 
     def get_rect(self, x0, y0, x1, y1):
-        """Get 2d list [y][x] of target area."""
-        try:
-            return self._buffer[y0:y1+1, x0:x1+1]._rows
-        except IndexError:
-            return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
+        """Get ByteMatrix of target area."""
+        return self._buffer[y0:y1+1, x0:x1+1]
 
     def move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
         """Move pixels from an area to another, replacing with attribute 0."""
