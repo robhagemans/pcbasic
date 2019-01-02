@@ -20,7 +20,7 @@ class ByteMatrix(object):
         self._height = height
         self._width = width
         if not width and not height:
-            self._data = None
+            self._rows = [bytearray()]
         elif isinstance(data, int):
             self._rows = [bytearray([data])*width for _ in range(self._height)]
         else:
@@ -88,7 +88,6 @@ class ByteMatrix(object):
                     'Can only assign ByteMatrix, list of bytes-like or int, not %s.' % type(value)
                 )
 
-
     def _elementwise_list(self, rhs, oper):
         """Helper for elementwise operations."""
         if isinstance(rhs, int):
@@ -153,7 +152,6 @@ class ByteMatrix(object):
         """In-place left-shift."""
         return self.elementwise_inplace(rhs, lambda _l, _r: (_l << _r) & 0xff)
 
-
     @property
     def width(self):
         """Number of columns."""
@@ -177,6 +175,8 @@ class ByteMatrix(object):
     @classmethod
     def frompacked(cls, packed, height, items_per_byte):
         """Unpack from packed-bits representation."""
+        if not packed:
+            return cls(0, 0)
         width = len(packed) // height
         return cls._create_from_rows([
             unpack_bytes(packed[_offs : _offs+width], items_per_byte)

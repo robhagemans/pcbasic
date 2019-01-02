@@ -677,15 +677,6 @@ def record_to_sprite_size_ega(self, byte_array):
     """Read 4-byte record of sprite size in EGA modes."""
     return struct.unpack('<HH', byte_array[0:4])
 
-def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
-    """Convert masked attributes packed into bytes to a scanline interval."""
-    bpp = 8 // pixels_per_byte
-    attrmask = (1<<bpp) - 1
-    return [
-        ((byte >> (8-bpp-shift)) & attrmask) * mask
-        for byte in byte_array for shift in range(0, 8, bpp)
-    ]
-
 def sprite_to_array_ega(self, sprite, dx, dy, byte_array, offs):
     """Build the sprite byte array in EGA modes."""
     # ** byte mapping for sprites in EGA modes
@@ -948,10 +939,10 @@ class EGAMode(GraphicsMode):
         if plane not in self.planes_used:
             return byte_array
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
-            pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
+            pixarray = screen.pixels.pages[page].get_interval(x, y, length*8)
             pixarray = bytematrix.ByteMatrix._create_from_rows(pixarray)
             #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
-            byte_array[ofs:ofs+length] = (pixarray >> plane).packed(self.ppb)
+            byte_array[ofs:ofs+length] = (pixarray >> plane).packed(8)
         return byte_array
 
     def set_memory(self, screen, addr, byte_array):
@@ -965,9 +956,13 @@ class EGAMode(GraphicsMode):
         if mask == 0:
             return
         for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array)):
-            screen.drawing.put_interval(page, x, y,
-                bytes_to_interval(byte_array[ofs:ofs+length], self.ppb, mask), mask
-            )
+            #pixarray = bytes_to_interval(byte_array[ofs:ofs+length], self.ppb, mask)
+            pixarray = (
+                bytematrix.ByteMatrix.frompacked(
+                    byte_array[ofs:ofs+length], height=1, items_per_byte=8
+                ).render(0, mask)
+            )._rows[0]
+            screen.drawing.put_interval(page, x, y, pixarray, mask)
 
     sprite_to_array = sprite_to_array_ega
     array_to_sprite = array_to_sprite_ega
@@ -1028,13 +1023,13 @@ class Tandy6Mode(GraphicsMode):
         # low attribute bits stored in even bytes, high bits in odd bytes.
         half_len = (num_bytes+1) // 2
         hbytes = bytearray(half_len), bytearray(half_len)
-        for parity in (0, 1):
+        for parity, byte_array in enumerate(hbytes):
+            plane = parity ^ (addr % 2)
             for page, x, y, ofs, length in walk_memory(self, addr, num_bytes, 2):
-                pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb*2)
+                pixarray = screen.pixels.pages[page].get_interval(x, y, length * self.ppb * 2)
                 pixarray = bytematrix.ByteMatrix._create_from_rows(pixarray)
-                plane = parity ^ (addr%2)
                 #hbytes[parity][ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb*2, plane)
-                hbytes[parity][ofs:ofs+length] = (pixarray >> plane).packed(self.ppb * 2)
+                byte_array[ofs:ofs+length] = (pixarray >> plane).packed(self.ppb * 2)
         # resulting array may be too long by one byte, so cut to size
         return [_item for _pair in zip(*hbytes) for _item in _pair] [:num_bytes]
 
@@ -1043,14 +1038,17 @@ class Tandy6Mode(GraphicsMode):
         hbytes = byte_array[0::2], byte_array[1::2]
         # Tandy-6 encodes 8 pixels per byte, alternating colour planes.
         # I.e. even addresses are 'colour plane 0', odd ones are 'plane 1'
-        for parity in (0, 1):
-            mask = 2 ** (parity^(addr%2))
+        for parity, half in enumerate(hbytes):
+            plane = parity ^ (addr % 2)
+            mask = 2 ** plane
             for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array), 2):
-                screen.drawing.put_interval(
-                    page, x, y,
-                    bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self.ppb, mask),
-                    mask
-                )
+                #pixarray = bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self.ppb, mask)
+                pixarray = (
+                    bytematrix.ByteMatrix.frompacked(
+                        half[ofs:ofs+length], height=1, items_per_byte=2*self.ppb
+                    ) << plane
+                )._rows[0]
+                screen.drawing.put_interval(page, x, y, pixarray, mask)
 
     sprite_to_array = sprite_to_array_ega
     array_to_sprite = array_to_sprite_ega
