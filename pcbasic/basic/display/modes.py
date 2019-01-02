@@ -677,26 +677,6 @@ def record_to_sprite_size_ega(self, byte_array):
     """Read 4-byte record of sprite size in EGA modes."""
     return struct.unpack('<HH', byte_array[0:4])
 
-def interval_to_bytes(colours, pixels_per_byte, plane=0):
-    """Convert a scanline interval into masked attributes packed into bytes."""
-    colours = colours[0]
-    num_pixels = len(colours)
-    num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
-    if odd_out:
-        num_bytes += 1
-    bpp = 8//pixels_per_byte
-    attrmask = (1<<bpp) - 1
-    colours = list(colours)
-    byte_list = bytearray(num_bytes)
-    shift, byte = -1, -1
-    for x in xrange(num_pixels):
-        if shift < 0:
-            shift = 8 - bpp
-            byte += 1
-        byte_list[byte] |= ((colours[x] >> plane) & attrmask) << shift
-        shift -= bpp
-    return byte_list
-
 def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
     """Convert masked attributes packed into bytes to a scanline interval."""
     bpp = 8 // pixels_per_byte
@@ -970,8 +950,8 @@ class EGAMode(GraphicsMode):
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
             pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
             pixarray = bytematrix.ByteMatrix._create_from_rows(pixarray)
-            byte_array[ofs:ofs+length] = (pixarray >> plane).packed(items_per_byte=8)
             #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
+            byte_array[ofs:ofs+length] = (pixarray >> plane).packed(self.ppb)
         return byte_array
 
     def set_memory(self, screen, addr, byte_array):
@@ -1050,12 +1030,13 @@ class Tandy6Mode(GraphicsMode):
         hbytes = bytearray(half_len), bytearray(half_len)
         for parity in (0, 1):
             for page, x, y, ofs, length in walk_memory(self, addr, num_bytes, 2):
-                hbytes[parity][ofs:ofs+length] = interval_to_bytes(
-                    screen.pixels.pages[page].get_interval(x, y, length*self.ppb*2),
-                    self.ppb*2, parity ^ (addr%2)
-                )
+                pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb*2)
+                pixarray = bytematrix.ByteMatrix._create_from_rows(pixarray)
+                plane = parity ^ (addr%2)
+                #hbytes[parity][ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb*2, plane)
+                hbytes[parity][ofs:ofs+length] = (pixarray >> plane).packed(self.ppb * 2)
         # resulting array may be too long by one byte, so cut to size
-        return [item for pair in zip(*hbytes) for item in pair] [:num_bytes]
+        return [_item for _pair in zip(*hbytes) for _item in _pair] [:num_bytes]
 
     def set_memory(self, screen, addr, byte_array):
         """Set bytes in Tandy 640x200x4 memory."""
