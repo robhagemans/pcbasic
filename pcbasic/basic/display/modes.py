@@ -732,24 +732,11 @@ def array_to_sprite_ega(self, byte_array, offset, dx, dy):
 
 def build_tile_cga(self, pattern):
     """Build a flood-fill tile for CGA screens."""
-    tile = []
-    bpp = self.bitsperpixel
-    strlen = len(pattern)
     # in modes 1, (2), 3, 4, 5, 6 colours are encoded in consecutive bits
     # each byte represents one scan line
-    mask = 8 - bpp
-    for y in range(strlen):
-        line = []
-        for x in range(8): # width is 8//bpp
-            c = 0
-            for b in range(bpp-1, -1, -1):
-                c = (c<<1) + ((pattern[y] >> (mask+b)) & 1)
-            mask -= bpp
-            if mask < 0:
-                mask = 8 - bpp
-            line.append(c)
-        tile.append(line)
-    return tile
+    return bytematrix.ByteMatrix.frompacked(
+        pattern, height=len(pattern), items_per_byte=8//self.bitsperpixel
+    )._rows
 
 
 class GraphicsMode(VideoMode):

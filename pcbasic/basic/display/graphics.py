@@ -1163,7 +1163,7 @@ def tile_to_interval(x0, x1, y, tile):
     dx = x1 - x0 + 1
     h = len(tile)
     w = len(tile[0])
-    return [tile[y % h][x % 8] for x in range(x0, x1+1)]
+    return [tile[y % h][_x % w] for _x in range(x0, x1+1)]
 
 
 ###############################################################################
