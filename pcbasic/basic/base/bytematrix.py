@@ -125,8 +125,8 @@ class ByteMatrix(object):
         return self.elementwise(rhs, operator.__rshift__)
 
     def __lshift__(self, rhs):
-        """Left-shift."""
-        return self.elementwise(rhs, operator.__lshift__)
+        """Byte-masked left-shift."""
+        return self.elementwise(rhs, lambda _l, _r: (_l << _r) & 0xff)
 
     def elementwise_inplace(self, rhs, oper):
         """In-place element-wise operation with another matrix or a scalar."""
@@ -151,7 +151,7 @@ class ByteMatrix(object):
 
     def __ilshift__(self, rhs):
         """In-place left-shift."""
-        return self.elementwise_inplace(rhs, operator.__ilshift__)
+        return self.elementwise_inplace(rhs, lambda _l, _r: (_l << _r) & 0xff)
 
 
     @property

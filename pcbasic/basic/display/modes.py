@@ -860,6 +860,7 @@ class CGAMode(GraphicsMode):
     def set_memory(self, screen, addr, byte_array):
         """Set bytes in CGA memory."""
         for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array)):
+            #bytes_to_interval
             pixarray = bytematrix.ByteMatrix.frompacked(
                 byte_array[ofs:ofs+length], height=1, items_per_byte=self.ppb
             )
@@ -962,15 +963,15 @@ class EGAMode(GraphicsMode):
 
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from EGA memory."""
-        plane = self.plane % (max(self.planes_used)+1)
+        plane = self.plane % (max(self.planes_used) + 1)
         byte_array = bytearray(num_bytes)
         if plane not in self.planes_used:
             return byte_array
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
-            byte_array[ofs:ofs+length] = interval_to_bytes(
-                screen.pixels.pages[page].get_interval(x, y, length*self.ppb),
-                self.ppb, plane
-            )
+            pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
+            pixarray = bytematrix.ByteMatrix._create_from_rows(pixarray)
+            byte_array[ofs:ofs+length] = (pixarray >> plane).packed(items_per_byte=8)
+            #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
         return byte_array
 
     def set_memory(self, screen, addr, byte_array):
