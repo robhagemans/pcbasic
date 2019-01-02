@@ -90,10 +90,10 @@ class PixelPage(object):
 
     def put_interval(self, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
-        inv_mask = 0xff ^ mask
-        width = len(colours)
-        colours = bytematrix.ByteMatrix._create_from_rows([colours])
-        result = (colours & mask) | (self._buffer[y, x:x+width] & inv_mask)
+        if not isinstance(colours, bytematrix.ByteMatrix):
+            colours = bytematrix.ByteMatrix._create_from_rows([colours])
+        width = colours.width
+        result = (colours & mask) | (self._buffer[y, x:x+width] & ~mask)
         self._buffer[y, x:x+width] = result
         return result._rows
 
