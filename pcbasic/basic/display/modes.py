@@ -860,16 +860,19 @@ class CGAMode(GraphicsMode):
     def set_memory(self, screen, addr, byte_array):
         """Set bytes in CGA memory."""
         for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array)):
-            screen.drawing.put_interval(
-                page, x, y, bytes_to_interval(byte_array[ofs:ofs+length], self.ppb)
+            pixarray = bytematrix.ByteMatrix.frompacked(
+                byte_array[ofs:ofs+length], height=1, items_per_byte=self.ppb
             )
+            screen.drawing.put_interval(page, x, y, pixarray._rows[0])
 
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from CGA memory."""
         byte_array = bytearray(num_bytes)
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
             #interval_to_bytes
-            pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
+            pixarray = bytematrix.ByteMatrix._create_from_rows(
+                screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
+            )
             byte_array[ofs:ofs+length] = pixarray.packed(self.ppb)
         return byte_array
 
