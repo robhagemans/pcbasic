@@ -716,7 +716,7 @@ def sprite_to_array_ega(self, sprite, dx, dy, byte_array, offs):
     # extract colour planes
     # note that to get the plane this should be bit-masked - (s >> _p) & 1
     # but bytematrix.packbytes will do this for us
-    sprite_planes = list(
+    sprite_planes = (
         (sprite >> _plane)  # & 1
         for _plane in range(n_planes)
     )
@@ -868,9 +868,9 @@ class CGAMode(GraphicsMode):
         """Retrieve bytes from CGA memory."""
         byte_array = bytearray(num_bytes)
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
-            byte_array[ofs:ofs+length] = interval_to_bytes(
-                screen.pixels.pages[page].get_interval(x, y, length*self.ppb), self.ppb
-            )
+            #interval_to_bytes
+            pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
+            byte_array[ofs:ofs+length] = pixarray.packed(self.ppb)
         return byte_array
 
     def sprite_size_to_record(self, dx, dy):
