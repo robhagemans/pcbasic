@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 import functools
+import operator
 
 from ...compat import xrange, int2byte, zip, PY2
 
@@ -959,27 +960,18 @@ class EGAMode(GraphicsMode):
 
     def build_tile(self, pattern):
         """Build a flood-fill tile."""
-        tile = []
         bpp = self.bitsperpixel
-        while len(pattern) % bpp != 0:
-            # finish off the pattern with zeros
-            pattern.append(0)
-        strlen = len(pattern)
-        # in modes (2), 7, 8, 9 each byte represents 8 bits
-        # colour planes encoded in consecutive bytes
-        mask = 7
-        for y in range(strlen//bpp):
-            line = []
-            for x in range(8):
-                c = 0
-                for b in range(bpp-1, -1, -1):
-                    c = (c<<1) + ((pattern[(y*bpp+b)%strlen] >> mask) & 1)
-                mask -= 1
-                if mask < 0:
-                    mask = 7
-                line.append(c)
-            tile.append(line)
-        return tile
+        # append nulls until we can cleanly partition into planes
+        extra_chars = len(pattern) % bpp
+        if extra_chars:
+            pattern.extend(bytearray(bpp - extra_chars))
+        # unpack bytes into pattern
+        allplanes = bytematrix.ByteMatrix.frompacked(
+            pattern, height=len(pattern), items_per_byte=8
+        )
+        planes = (allplanes[_plane::bpp, :] << _plane for _plane in range(bpp))
+        tile = functools.reduce(operator.__ior__, planes)
+        return tile._rows
 
 
 class Tandy6Mode(GraphicsMode):
@@ -1032,6 +1024,7 @@ class Tandy6Mode(GraphicsMode):
                 #pixarray = bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self.ppb, mask)
                 pixarray = (
                     bytematrix.ByteMatrix.frompacked(
+                        # what's the deal with the empty bytearrays here in some of the tests?
                         half[ofs:ofs+length], height=1, items_per_byte=2*self.ppb
                     ) << plane
                 )._rows[0]
