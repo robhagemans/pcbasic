@@ -88,6 +88,11 @@ class ByteMatrix(object):
                     'Can only assign ByteMatrix, list of bytes-like or int, not %s.' % type(value)
                 )
 
+    def __eq__(self, rhs):
+        """Equality to other byte matrix."""
+        # do quick checks first
+        return self.width == rhs.width and self.height == rhs.height and self._rows == rhs._rows
+
     def _elementwise_list(self, rhs, oper):
         """Helper for elementwise operations."""
         if isinstance(rhs, int):
@@ -223,6 +228,26 @@ class ByteMatrix(object):
             bytearray(_byte for _byte in _row for _ in range(times))
             for _row in self._rows
         ])
+
+    def row_until(self, element, y, x0, x1):
+        """Get row until given element."""
+        if x0 == x1:
+            return self.__class__()
+        elif x1 > x0:
+            row = self._rows[y][x0:x1]
+            try:
+                # pyton2 won't do bytearray.index(int)
+                index = row.index(int2byte(element))
+                return self[y, x0:x0+index]
+            except ValueError:
+                return self[y, x0:x1]
+        else:
+            row = self._rows[y][x1+1:x0+1]
+            try:
+                index = 1 + row.rindex(int2byte(element))
+                return self[y, x1+1+index:x0+1]
+            except ValueError:
+                return self[y, x1+1:x0+1]
 
 
 ##############################################################################

@@ -11,8 +11,12 @@ import math
 from ..base import error
 from ..base import tokens as tk
 from ..base import signals
+from ..base import bytematrix
 from .. import values
 from .. import mlparser
+
+
+ZERO_TILE = bytematrix.ByteMatrix(1, 8)
 
 
 class GraphicsViewPort(object):
@@ -773,7 +777,7 @@ class Drawing(object):
             tile = self._mode.build_tile(bytearray(pattern)) if pattern else None
             back = self._mode.build_tile(bytearray(background)) if background else None
         else:
-            tile, back = [[c]*8], None
+            tile, back = bytematrix.ByteMatrix(1, 8, c), None
         bound_x0, bound_y0, bound_x1, bound_y1 = self.graph_view.get()
         x, y = self.graph_view.coords(*self.get_window_physical(*lcoord))
         line_seed = [(x, x, y, 0)]
@@ -788,12 +792,12 @@ class Drawing(object):
             # consider next interval
             x_start, x_stop, y, ydir = line_seed.pop()
             # extend interval as far as it goes to left and right
-            x_left = x_start - len(
+            x_left = x_start - (
                 self._pixels.pages[self._apagenum].get_until(x_start-1, bound_x0-1, y, border)
-            )
-            x_right = x_stop + len(
+            ).width
+            x_right = x_stop + (
                 self._pixels.pages[self._apagenum].get_until(x_stop+1, bound_x1+1, y, border)
-            )
+            ).width
             # check next scanlines and add intervals to the list
             if ydir == 0:
                 if y + 1 <= bound_y1:
@@ -821,12 +825,16 @@ class Drawing(object):
                     )
             # draw the pixels for the current interval
             if solid:
-                self.fill_interval(x_left, x_right, y, tile[0][0])
+                self.fill_interval(x_left, x_right, y, tile[0, 0])
             else:
-                interval = tile_to_interval(x_left, x_right, y, tile)
+                # convert tile to a list of attributes
+                interval = [
+                    tile[y % tile.height, _x % tile.width]
+                    for _x in range(x_left, x_right+1)
+                ]
                 self.put_interval(self._apagenum, x_left, y, interval)
             # allow interrupting the paint
-            if y%4 == 0:
+            if y % 4 == 0:
                 self._input_methods.wait()
         self._last_attr = c
 
@@ -839,23 +847,23 @@ class Drawing(object):
             return line_seed
         x_start_next = x_start
         x_stop_next = x_start_next-1
-        rtile = tile[y%len(tile)]
+        rtile = tile[y % tile.height, :]
         if back:
-            rback = back[y%len(back)]
+            rback = back[y % back.height, :]
         x = x_start
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
             pattern = self._pixels.pages[self._apagenum].get_until(x, x_stop+1, y, border)
-            x_stop_next = x + len(pattern) - 1
+            x_stop_next = x + pattern.width - 1
             x = x_stop_next + 1
             # never match zero pattern (special case)
-            has_same_pattern = (rtile != [0]*8)
-            for pat_x in range(len(pattern)):
+            has_same_pattern = (rtile != ZERO_TILE)
+            for pat_x in range(pattern.width):
                 if not has_same_pattern:
                     break
                 tile_x = (x_start_next + pat_x) % 8
-                has_same_pattern &= (pattern[pat_x] == rtile[tile_x])
-                has_same_pattern &= (not back or pattern[pat_x] != rback[tile_x])
+                has_same_pattern &= (pattern[0, pat_x] == rtile[0, tile_x])
+                has_same_pattern &= (not back or pattern[0, pat_x] != rback[0, tile_x])
             # we've reached a border colour, append our interval & start a new one
             # don't append if same fill colour/pattern,
             # to avoid infinite loops over bits already painted (eg. 00 shape)
@@ -1155,13 +1163,6 @@ class Drawing(object):
             _, value = self.get_window_logical(0, values.to_integer(coord).to_int())
         return self._values.new_single().from_value(value)
 
-
-def tile_to_interval(x0, x1, y, tile):
-    """Convert a tile to a list of attributes."""
-    dx = x1 - x0 + 1
-    h = len(tile)
-    w = len(tile[0])
-    return [tile[y % h][_x % w] for _x in range(x0, x1+1)]
 
 
 ###############################################################################

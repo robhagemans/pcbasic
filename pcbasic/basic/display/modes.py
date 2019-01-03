@@ -654,7 +654,7 @@ class PackedTileBuilder(object):
         # each byte represents one scan line
         return bytematrix.ByteMatrix.frompacked(
             pattern, height=len(pattern), items_per_byte=8//self._bitsperpixel
-        )._rows
+        )
 
 
 class PlanedTileBuilder(object):
@@ -680,7 +680,7 @@ class PlanedTileBuilder(object):
             for _plane in range(self._number_planes)
         )
         tile = functools.reduce(operator.__ior__, planes)
-        return tile._rows
+        return tile
 
 
 class PackedSpriteBuilder(object):
@@ -820,7 +820,6 @@ class GraphicsMode(VideoMode):
         # sprite and tile builders
         self.build_tile = self._tile_builder(self.bitsperpixel)
         self.sprite_builder = self._sprite_builder(self.bitsperpixel)
-
 
     def coord_ok(self, page, x, y):
         """Check if a page and coordinates are within limits."""

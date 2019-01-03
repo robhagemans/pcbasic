@@ -145,20 +145,4 @@ class PixelPage(object):
 
     def get_until(self, x0, x1, y, c):
         """Get the attribute values of a scanline interval [x0, x1-1]."""
-        if x0 == x1:
-            return []
-        elif x1 > x0:
-            row = self._buffer[y, x0:x1]._rows[0]
-            try:
-                # pyton2 won't do bytearray.index(int)
-                index = row.index(int2byte(c))
-                return row[:index]
-            except ValueError:
-                return row
-        else:
-            row = self._buffer[y, x1+1:x0+1]._rows[0]
-            try:
-                index = row.rindex(int2byte(c))
-                return row[index+1:]
-            except ValueError:
-                return row
+        return self._buffer.row_until(c, y, x0, x1)
