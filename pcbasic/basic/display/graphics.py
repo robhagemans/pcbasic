@@ -883,19 +883,17 @@ class Drawing(object):
         self._last_point = x0, y0
         try:
             byte_array = self._memory.arrays.view_full_buffer(array_name)
-            spriterec = self._memory.arrays.get_cache(array_name)
+            sprite = self._memory.arrays.get_cache(array_name)
         except KeyError:
             byte_array = bytearray()
-            spriterec = None
-        if spriterec is not None:
-            dx, dy, sprite = spriterec
-        else:
+            sprite = None
+        if sprite is None:
             # we don't have it stored or it has been modified
-            dx, dy = self._mode.record_to_sprite_size(byte_array)
-            sprite = self._mode.array_to_sprite(byte_array, 4, dx, dy)
+            sprite = self._mode.sprite_builder.unpack(byte_array)
             # store it now that we have it!
-            self._memory.arrays.set_cache(array_name, (dx, dy, sprite))
+            self._memory.arrays.set_cache(array_name, sprite)
         # sprite must be fully inside *viewport* boundary
+        dx, dy = sprite.width, sprite.height
         x1, y1 = x0+dx-1, y0+dy-1
         # Tandy screen 6 sprites are twice as wide as claimed
         if self._mode.name == '640x200x4':
@@ -914,7 +912,6 @@ class Drawing(object):
         x0, y0 = (values.to_single(next(args)).to_value() for _ in range(2))
         step = next(args)
         x, y = (values.to_single(next(args)).to_value() for _ in range(2))
-        lcoord1 = x, y, step
         array_name, = args
         array_name = self._memory.complete_name(array_name)
         if array_name not in self._memory.arrays:
@@ -922,7 +919,7 @@ class Drawing(object):
         elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
-        x1, y1 = self.graph_view.coords(*self.get_window_physical(*lcoord1))
+        x1, y1 = self.graph_view.coords(*self.get_window_physical(x, y, step))
         self._last_point = x1, y1
         try:
             byte_array = self._memory.arrays.view_full_buffer(array_name)
@@ -930,24 +927,25 @@ class Drawing(object):
             raise error.BASICError(error.IFC)
         y0, y1 = sorted((y0, y1))
         x0, x1 = sorted((x0, x1))
-        dx, dy = x1-x0+1, y1-y0+1
         # Tandy screen 6 simply GETs twice the width, it seems
         if self._mode.name == '640x200x4':
+            dx = x1 - x0 + 1
             x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
         vx0, vy0, vx1, vy1 = self.graph_view.get()
         error.range_check(vx0, vx1, x0, x1)
         error.range_check(vy0, vy1, y0, y1)
         # set size record
-        byte_array[0:4] = self._mode.sprite_size_to_record(dx, dy)
         # read from screen and convert to byte array
         sprite = self._pixels.pages[self._apagenum].get_rect(x0, y0, x1, y1)
+        packed_sprite = self._mode.sprite_builder.pack(sprite)
         try:
-            self._mode.sprite_to_array(sprite, dx, dy, byte_array, 4)
-        except ValueError as e:
+            byte_array[:len(packed_sprite)] = packed_sprite
+        except ValueError:
+            # cannot modify size of memoryview object - sprite larger than array
             raise error.BASICError(error.IFC)
         # store a copy in the sprite store
-        self._memory.arrays.set_cache(array_name, (dx, dy, sprite))
+        self._memory.arrays.set_cache(array_name, sprite)
 
     ### DRAW statement
 

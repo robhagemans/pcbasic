@@ -689,68 +689,52 @@ class PackedSpriteBuilder(object):
     def __init__(self, bits_per_pixel):
         self._bitsperpixel = bits_per_pixel
 
-    def sprite_size_to_record(self, dx, dy):
-        """Write 4-byte record of sprite size."""
-        return struct.pack('<HH', dx * self._bitsperpixel, dy)
-
-    def record_to_sprite_size(self, byte_array):
-        """Read 4-byte record of sprite size."""
-        w, dy = struct.unpack('<HH', byte_array[0:4])
-        return w // self._bitsperpixel, dy
-
-    def sprite_to_array(self, sprite, dx, dy, byte_array, offs):
-        """Build the sprite byte array."""
-        items_per_byte = 8 // self._bitsperpixel
+    def pack(self, sprite):
+        """Pack the sprite into bytearray."""
+        # sprite size record
+        size_record = struct.pack('<HH', sprite.width * self._bitsperpixel, sprite.height)
         # interval_to_bytes
-        packed = sprite.packed(items_per_byte)
-        if offs + len(packed) > len(byte_array):
-            raise ValueError('Sprite exceeds array byte size')
-        byte_array[offs : offs+len(packed)] = packed
+        packed = sprite.packed(items_per_byte=8 // self._bitsperpixel)
+        return size_record + packed
 
-    def array_to_sprite(self, byte_array, offset, dx, dy):
-        """Build sprite from byte_array."""
-        row_bytes = (dx * self._bitsperpixel + 7) // 8
-        length = row_bytes * dy
-        items_per_byte = 8 // self._bitsperpixel
+    def unpack(self, array):
+        """Unpack bytearray into sprite."""
+        row_bits, height = struct.unpack('<HH', array[0:4])
+        width = row_bits // self._bitsperpixel
+        row_bytes = (width * self._bitsperpixel + 7) // 8
+        byte_size = row_bytes * height
         # bytes_to_interval
-        packed = byte_array[offset : offset+length]
-        if PY2:
-            # will read str if not cast to bytearray
-            # could be an iterator...
+        packed = array[4:4+byte_size]
+        if PY2 and isinstance(packed, memoryview):
+            # ensure iterations over memoryview yield int, not bytes
             packed = bytearray(packed)
-        sprite = bytematrix.ByteMatrix.frompacked(packed, dy, items_per_byte)
+        sprite = bytematrix.ByteMatrix.frompacked(
+            packed, height, items_per_byte=8 // self._bitsperpixel
+        )
         return sprite
 
 
 class PlanedSpriteBuilder(object):
     """Sprite builder with interlaced colour planes (EGA sprites)."""
 
+    # ** byte mapping for sprites in EGA modes
+    # sprites have 8 pixels per byte
+    # with colour planes in consecutive rows
+    # each new row is aligned on a new byte
+
     def __init__(self, number_planes):
         """Initialise sprite builder."""
         # number of colour planes
         self._number_planes = number_planes
 
-    def sprite_size_to_record(self, dx, dy):
-        """Write 4-byte record of sprite size in EGA modes."""
-        return struct.pack('<HH', dx, dy)
-
-    def record_to_sprite_size(self, byte_array):
-        """Read 4-byte record of sprite size in EGA modes."""
-        return struct.unpack('<HH', byte_array[0:4])
-
-    def sprite_to_array(self, sprite, dx, dy, byte_array, offs):
-        """Build the sprite byte array in EGA modes."""
-        # ** byte mapping for sprites in EGA modes
-        # sprites have 8 pixels per byte
-        # with colour planes in consecutive rows
-        # each new row is aligned on a new byte
-        n_planes = self._number_planes
+    def pack(self, sprite):
+        """Pack the sprite into bytearray."""
         # extract colour planes
         # note that to get the plane this should be bit-masked - (s >> _p) & 1
         # but bytematrix.packbytes will do this for us
         sprite_planes = (
             (sprite >> _plane)  # & 1
-            for _plane in range(n_planes)
+            for _plane in range(self._number_planes)
         )
         # pack the bits into bytes
         #interval_to_bytes
@@ -759,33 +743,32 @@ class PlanedSpriteBuilder(object):
             for _sprite in sprite_planes
         )
         # interlace row-by-row
-        row_bytes = (dx+7) // 8
-        length = dy * n_planes * row_bytes
+        row_bytes = (sprite.width + 7) // 8
+        length = sprite.height * self._number_planes * row_bytes
         interlaced = bytearray().join(
             _packed[_row_offs : _row_offs+row_bytes]
             for _row_offs in range(0, length, row_bytes)
             for _packed in packed_planes
         )
-        # copy into memoryview
-        if offs + length > len(byte_array):
-            raise ValueError('Sprite exceeds array byte size')
-        byte_array[offs:offs+length] = interlaced
+        size_record = struct.pack('<HH', sprite.width, sprite.height)
+        return size_record + interlaced
 
-    def array_to_sprite(self, byte_array, offset, dx, dy):
+    def unpack(self, array):
         """Build sprite from byte_array in EGA modes."""
-        # ** see sprite_to_array_ega for a description of the byte mapping
-        packed = byte_array[offset:offset+row_bytes]
+        width, height = struct.unpack('<HH', array[0:4])
+        packed = byte_array[4:4+row_bytes]
         if PY2 and isinstance(packed, memoryview):
             # ensure iterations over memoryview yield int, not bytes
-            packed = (ord(_c) for c in packed)
+            packed = bytearray(packed)
         # unpack all planes
-        n_planes = self._number_planes
         #bytes_to_interval
-        allplanes = bytematrix.ByteMatrix.frompacked(packed, height=dy*n_planes, items_per_byte=8)
+        allplanes = bytematrix.ByteMatrix.frompacked(
+            packed, height=height*self._number_planes, items_per_byte=8
+        )
         # de-interlace planes
         sprite_planes = (
-            allplanes[_plane::dy, :] << _plane
-            for _plane in range(n_planes)
+            allplanes[_plane::height, :] << _plane
+            for _plane in range(self._number_planes)
         )
         # combine planes
         sprite = functools.reduce(operator.__ior__, sprite_planes)
@@ -836,11 +819,7 @@ class GraphicsMode(VideoMode):
             self.pixel_aspect = (self.pixel_height * aspect[0], self.pixel_width * aspect[1])
         # sprite and tile builders
         self.build_tile = self._tile_builder(self.bitsperpixel)
-        self._build_sprite = self._sprite_builder(self.bitsperpixel)
-        self.sprite_size_to_record = self._build_sprite.sprite_size_to_record
-        self.record_to_sprite_size = self._build_sprite.record_to_sprite_size
-        self.sprite_to_array = self._build_sprite.sprite_to_array
-        self.array_to_sprite = self._build_sprite.array_to_sprite
+        self.sprite_builder = self._sprite_builder(self.bitsperpixel)
 
 
     def coord_ok(self, page, x, y):
