@@ -73,14 +73,6 @@ class GraphicsViewPort(object):
             return x0, x0-1, y
         return max(x0, vx0), min(x1, vx1), y
 
-    def clip_list(self, x0, y0, attr_list):
-        """Return rect clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get()
-        if not (vy0 <= y0 <= vy1):
-            return x0, y0, []
-        nx0, nx1 = max(x0, vx0), min(x0+len(attr_list), vx1)
-        return nx0, y0, attr_list[nx0-x0:nx1-x0+1]
-
     def get_mid(self):
         """Get the midpoint of the current graphics view."""
         x0, y0, x1, y1 = self.get()
@@ -187,12 +179,12 @@ class Drawing(object):
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
-        x, y, colours = self.graph_view.clip_list(x, y, colours)
+        x, y, _, _, colours = self.graph_view.clip_area(x, y, x + colours.width, y, colours)
         new_rect = self._pixels.pages[pagenum].put_interval(x, y, colours, mask)
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_RECT, (pagenum, x, y, x+len(colours), y, new_rect))
-        )
-        self._clear_text(x, y, x+len(colours), y)
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_PUT_RECT, (pagenum, x, y, x+colours.width, y, new_rect)
+        ))
+        self._clear_text(x, y, x+colours.width, y)
 
     def fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
@@ -828,10 +820,10 @@ class Drawing(object):
                 self.fill_interval(x_left, x_right, y, tile[0, 0])
             else:
                 # convert tile to a list of attributes
-                interval = [
+                interval = bytematrix.ByteMatrix._create_from_rows([
                     tile[y % tile.height, _x % tile.width]
                     for _x in range(x_left, x_right+1)
-                ]
+                ])
                 self.put_interval(self._apagenum, x_left, y, interval)
             # allow interrupting the paint
             if y % 4 == 0:

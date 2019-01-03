@@ -375,24 +375,25 @@ class TextScreen(object):
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
             return
         fore, back, blink, underline = self.mode.split_attr(attr)
-        glyphs = self._glyphs.get_glyphs(chars)
         # mark full-width chars by a trailing empty string to preserve column counts
         text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
         text = [self.codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
+        glyphs = self._glyphs.get_glyphs(chars)
         self.queues.video.put(signals.Event(
             signals.VIDEO_PUT_TEXT, (
                 pagenum, row, col, text,
                 fore, back, blink, underline,
-                glyphs
+                glyphs._rows
             )
         ))
         if not self.mode.is_text_mode and not text_only:
             left, top = self.mode.text_to_pixel_pos(row, col)
-            sprite, width, height = self._glyphs.render_text(chars, fore, back)
+            sprite = self._glyphs.render_text(chars, fore, back)
+            width, height = sprite.width, sprite.height
             right, bottom = left+width-1, top+height-1
             self.pixels.pages[self.apagenum].put_rect(left, top, right, bottom, sprite, tk.PSET)
             self.queues.video.put(signals.Event(
-                signals.VIDEO_PUT_RECT, (self.apagenum, left, top, right, bottom, sprite)
+                signals.VIDEO_PUT_RECT, (self.apagenum, left, top, right, bottom, sprite._rows)
             ))
 
     def _clear_rows_refresh(self, start, stop):

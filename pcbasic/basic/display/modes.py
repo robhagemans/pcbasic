@@ -902,16 +902,14 @@ class CGAMode(GraphicsMode):
             pixarray = bytematrix.ByteMatrix.frompacked(
                 byte_array[ofs:ofs+length], height=1, items_per_byte=self.ppb
             )
-            screen.drawing.put_interval(page, x, y, pixarray._rows[0])
+            screen.drawing.put_interval(page, x, y, pixarray)
 
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from CGA memory."""
         byte_array = bytearray(num_bytes)
         for page, x, y, ofs, length in self.walk_memory(addr, num_bytes):
             #interval_to_bytes
-            pixarray = bytematrix.ByteMatrix._create_from_rows(
-                screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
-            )
+            pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
             byte_array[ofs:ofs+length] = pixarray.packed(self.ppb)
         return byte_array
 
@@ -976,7 +974,6 @@ class EGAMode(GraphicsMode):
             return byte_array
         for page, x, y, ofs, length in self.walk_memory(addr, num_bytes):
             pixarray = screen.pixels.pages[page].get_interval(x, y, length*8)
-            pixarray = bytematrix.ByteMatrix._create_from_rows(pixarray)
             #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
             byte_array[ofs:ofs+length] = (pixarray >> plane).packed(8)
         return byte_array
@@ -997,7 +994,7 @@ class EGAMode(GraphicsMode):
                 bytematrix.ByteMatrix.frompacked(
                     byte_array[ofs:ofs+length], height=1, items_per_byte=8
                 ).render(0, mask)
-            )._rows[0]
+            )
             screen.drawing.put_interval(page, x, y, pixarray, mask)
 
 
@@ -1037,7 +1034,6 @@ class Tandy6Mode(GraphicsMode):
             plane = parity ^ (addr % 2)
             for page, x, y, ofs, length in self.walk_memory(addr, num_bytes, 2):
                 pixarray = screen.pixels.pages[page].get_interval(x, y, length * self.ppb * 2)
-                pixarray = bytematrix.ByteMatrix._create_from_rows(pixarray)
                 #hbytes[parity][ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb*2, plane)
                 byte_array[ofs:ofs+length] = (pixarray >> plane).packed(self.ppb * 2)
         # resulting array may be too long by one byte, so cut to size
@@ -1058,5 +1054,5 @@ class Tandy6Mode(GraphicsMode):
                         # what's the deal with the empty bytearrays here in some of the tests?
                         half[ofs:ofs+length], height=1, items_per_byte=2*self.ppb
                     ) << plane
-                )._rows[0]
+                )
                 screen.drawing.put_interval(page, x, y, pixarray, mask)

@@ -172,16 +172,12 @@ class Font(object):
 
     def render_text(self, char_list, fore, back):
         """Return a sprite, width and height for given row of text."""
-        mask = bytematrix.hstack(self._get_glyph(_c) for _c in char_list)
-        #mask = self.get_glyphs(char_list)
-        glyph = mask.render(back, fore)
-        return glyph._rows, glyph.width, glyph.height
+        return self.get_glyphs(char_list).render(back, fore)
 
     def get_glyphs(self, char_list):
         """Retrieve a row of text as a single matrix [y][x]."""
-        #return bytematrix.hstack(self._get_glyph(_c) for _c in char_list)
-        glyphs = bytematrix.hstack(self._get_glyph(_c) for _c in char_list)._rows
-        return glyphs
+        return bytematrix.hstack(self._get_glyph(_c) for _c in char_list)
+
 
 def _extend_height(glyph, carry_last):
     """Extend the character height by a row."""
