@@ -1141,8 +1141,10 @@ class VideoSDL2(VideoPlugin):
         if self._cursor_visible:
             self.busy = True
 
-    def put_rect(self, pagenum, x0, y0, x1, y1, array):
+    def put_rect(self, pagenum, x0, y0, array):
         """Apply numpy array [y][x] of attributes to an area."""
         # reference the destination area
-        self._canvas_pixels[pagenum][y0:y1+1, x0:x1+1] = numpy.array(array)
+        array = numpy.array(array)
+        height, width = array.shape
+        self._canvas_pixels[pagenum][y0:y0+height, x0:x0+width] = array
         self.busy = True

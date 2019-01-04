@@ -627,14 +627,16 @@ class VideoPygame(VideoPlugin):
         self.cursor.fill(color, (0, from_line, width, min(to_line-from_line+1, height-from_line)))
         self.busy = True
 
-    def put_rect(self, pagenum, x0, y0, x1, y1, array):
+    def put_rect(self, pagenum, x0, y0, array):
         """Apply numpy array [y][x] of attribytes to an area."""
+        array = numpy.array(array)
+        height, width = array.shape
         # reference the destination area
         pygame.surfarray.pixels2d(
             self.canvas[pagenum].subsurface(
-                pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
+                pygame.Rect(x0, y0, width, height)
             )
-        )[:] = numpy.array(array).T
+        )[:] = array.T
         self.busy = True
 
 

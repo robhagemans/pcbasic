@@ -173,7 +173,7 @@ class Drawing(object):
         if self.graph_view.contains(x, y):
             rect = self._pixels.pages[pagenum].put_pixel(x, y, index)
             self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_RECT, (pagenum, x, y, x, y, rect._rows))
+                signals.VIDEO_PUT_RECT, (pagenum, x, y, rect._rows))
             )
             self._clear_text(x, y, x, y)
 
@@ -182,7 +182,7 @@ class Drawing(object):
         x, y, _, _, colours = self.graph_view.clip_area(x, y, x + colours.width, y, colours)
         new_rect = self._pixels.pages[pagenum].put_interval(x, y, colours, mask)
         self._queues.video.put(signals.Event(
-            signals.VIDEO_PUT_RECT, (pagenum, x, y, x+colours.width, y, new_rect._rows)
+            signals.VIDEO_PUT_RECT, (pagenum, x, y, new_rect._rows)
         ))
         self._clear_text(x, y, x+colours.width, y)
 
@@ -191,7 +191,7 @@ class Drawing(object):
         x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
         rect = self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
         self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y, x1, y, rect._rows))
+            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y, rect._rows))
         )
         self._clear_text(x0, y, x1, y)
 
@@ -202,7 +202,7 @@ class Drawing(object):
             x0, y0, x1, y1, sprite, operation_token
         )
         self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, x1, y1, rect._rows))
+            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, rect._rows))
         )
         self._clear_text(x0, y0, x1, y1)
 
@@ -211,7 +211,7 @@ class Drawing(object):
         x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
         rect = self._pixels.pages[self._apagenum].fill_rect(x0, y0, x1, y1, index)
         self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, x1, y1, rect._rows))
+            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, rect._rows))
         )
         self._clear_text(x0, y0, x1, y1)
 
