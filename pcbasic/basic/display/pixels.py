@@ -50,18 +50,12 @@ class PixelPage(object):
 
     def put_pixel(self, x, y, attr):
         """Put a pixel in the buffer."""
-        try:
-            self._buffer[y, x] = attr
-            return self._buffer[y, x:x+1]
-        except IndexError:
-            pass
+        self._buffer[y, x] = attr
+        return self._buffer[y, x:x+1]
 
     def get_pixel(self, x, y):
         """Get attribute of a pixel in the buffer."""
-        try:
-            return self._buffer[y, x]
-        except IndexError:
-            return 0
+        return self._buffer[y, x]
 
     def fill_interval(self, x0, x1, y, attr):
         """Write a list of attributes to a scanline interval."""
