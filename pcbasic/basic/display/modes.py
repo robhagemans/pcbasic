@@ -12,7 +12,6 @@ import operator
 
 from ...compat import xrange, int2byte, zip, PY2
 
-from .. import values
 from ..base import error
 from ..base import bytematrix
 
@@ -754,9 +753,10 @@ class PlanedSpriteBuilder(object):
         return size_record + interlaced
 
     def unpack(self, array):
-        """Build sprite from byte_array in EGA modes."""
+        """Build sprite from bytearray in EGA modes."""
         width, height = struct.unpack('<HH', array[0:4])
-        packed = byte_array[4:4+row_bytes]
+        row_bytes = (width + 7) // 8
+        packed = array[4:4+row_bytes]
         if PY2 and isinstance(packed, memoryview):
             # ensure iterations over memoryview yield int, not bytes
             packed = bytearray(packed)
@@ -780,6 +780,10 @@ class PlanedSpriteBuilder(object):
 
 class GraphicsMode(VideoMode):
     """Default settings for a graphics mode."""
+
+    # override these
+    _tile_builder = lambda _: None
+    _sprite_builder = lambda _: None
 
     def __init__(
             self, name, pixel_width, pixel_height,
@@ -820,6 +824,12 @@ class GraphicsMode(VideoMode):
         # sprite and tile builders
         self.build_tile = self._tile_builder(self.bitsperpixel)
         self.sprite_builder = self._sprite_builder(self.bitsperpixel)
+
+
+    def get_coords(self, addr):
+        """Get video page and coordinates for address."""
+        # override
+        return 0, 0, 0
 
     def coord_ok(self, page, x, y):
         """Check if a page and coordinates are within limits."""
