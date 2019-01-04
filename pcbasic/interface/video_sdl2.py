@@ -1118,19 +1118,17 @@ class VideoSDL2(VideoPlugin):
         if not self._is_text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
-        chunk = numpy.array(glyphs._rows, dtype=numpy.uint8)
-        chunk_width = chunk.shape[1]
         left, top = (col-1)*self._font_width, (row-1)*self._font_height
         # render text with attributes
         attr = fore + self._num_fore_attrs*back + 128*blink
         self._canvas_pixels[pagenum][
-            top : top + self._font_height,
-            left : left + chunk_width
-        ] = chunk*(attr-back) + back
+            top : top + glyphs.height,
+            left : left + glyphs.width
+        ] = glyphs.render(back, attr)._rows
         if underline:
             self._canvas_pixels[pagenum][
-                top + self._font_height - 1 : top + self._font_height,
-                left : left + chunk_width
+                top + glyphs.height - 1 : top + glyphs.height,
+                left : left + glyphs.width
             ] = attr
         self.busy = True
 
@@ -1142,9 +1140,8 @@ class VideoSDL2(VideoPlugin):
             self.busy = True
 
     def put_rect(self, pagenum, x0, y0, array):
-        """Apply numpy array [y][x] of attributes to an area."""
+        """Apply bytematrix [y, x] of attributes to an area."""
         # reference the destination area
-        array = numpy.array(array._rows)
-        height, width = array.shape
-        self._canvas_pixels[pagenum][y0:y0+height, x0:x0+width] = array
+        height, width = array.height, array.width
+        self._canvas_pixels[pagenum][y0:y0+height, x0:x0+width] = array._rows
         self.busy = True
