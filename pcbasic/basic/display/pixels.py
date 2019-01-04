@@ -8,11 +8,8 @@ This file is released under the GNU GPL version 3 or later.
 
 import operator
 
-from ...compat import zip, int2byte
-from ..base import error
 from ..base import tokens as tk
 from ..base import bytematrix
-from .. import values
 
 
 # pixel operations
