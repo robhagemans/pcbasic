@@ -69,7 +69,7 @@ class PixelPage(object):
         """Put a pixel in the buffer."""
         try:
             self._buffer[y, x] = attr
-            return self._buffer[y, x:x+1]._rows
+            return self._buffer[y, x:x+1]
         except IndexError:
             pass
 
@@ -82,18 +82,15 @@ class PixelPage(object):
 
     def fill_interval(self, x0, x1, y, attr):
         """Write a list of attributes to a scanline interval."""
-        try:
-            self._buffer[y, x0:x1+1] = attr
-            return self._buffer[y, x0:x1+1]._rows
-        except IndexError:
-            pass
+        self._buffer[y, x0:x1+1] = attr
+        return self._buffer[y, x0:x1+1]
 
     def put_interval(self, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
         width = colours.width
         result = (colours & mask) | (self._buffer[y, x:x+width] & ~mask)
         self._buffer[y, x:x+width] = result
-        return result._rows
+        return result
 
     def get_interval(self, x, y, length):
         """Return attributes of a scanline interval."""
@@ -101,31 +98,19 @@ class PixelPage(object):
 
     def fill_rect(self, x0, y0, x1, y1, attr):
         """Apply solid attribute to an area."""
-        if (x1 < x0) or (y1 < y0):
-            return
-        try:
-            self._buffer[y0: y1+1, x0:x1+1] = attr
-            return self._buffer[y0: y1+1, x0:x1+1]._rows
-        except IndexError:
-            pass
+        self._buffer[y0:y1+1, x0:x1+1] = attr
+        return self._buffer[y0:y1+1, x0:x1+1]
 
     def put_rect(self, x0, y0, x1, y1, array, operation_token):
         """Apply 2d list [y][x] of attributes to an area."""
-        if (x1 < x0) or (y1 < y0):
-            return
-        try:
-            if not isinstance(array, bytematrix.ByteMatrix):
-                array = bytematrix.ByteMatrix._create_from_rows(array)
-            # can use in-place operaton method to avoid second slicing operation?
-            # no, we still need a slice assignment after the in-place operation
-            # or the result will be discarded along with the slice
-            result = self._operations[operation_token](
-                self._buffer[y0:y1+1, x0:x1+1], array
-            )
-            self._buffer[y0:y1+1, x0:x1+1] = result
-            return result._rows
-        except IndexError:
-            return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
+        # can use in-place operaton method to avoid second slicing operation?
+        # no, we still need a slice assignment after the in-place operation
+        # or the result will be discarded along with the slice
+        result = self._operations[operation_token](
+            self._buffer[y0:y1+1, x0:x1+1], array
+        )
+        self._buffer[y0:y1+1, x0:x1+1] = result
+        return result
 
     def get_rect(self, x0, y0, x1, y1):
         """Get ByteMatrix of target area."""

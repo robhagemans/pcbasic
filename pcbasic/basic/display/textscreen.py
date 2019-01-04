@@ -339,13 +339,12 @@ class TextScreen(object):
                 self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
             # redraw graphics
             if not self.mode.is_text_mode:
+                rect = self.pixels.pages[pagenum].get_rect(
+                    0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
+                )
                 self.queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_RECT, (
-                        pagenum, 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
-                        self.pixels.pages[pagenum].get_rect(
-                            0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
-                        )._rows
-                    )
+                    signals.VIDEO_PUT_RECT,
+                    (pagenum, 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1, rect._rows)
                 ))
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):

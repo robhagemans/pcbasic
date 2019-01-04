@@ -171,10 +171,15 @@ class ByteMatrix(object):
     def _create_from_rows(cls, data):
         """Construct byte matrix from rows of bytearrays."""
         new = cls()
-        new._height = len(data)
-        new._width = len(data[0])
-        new._rows = data
-        assert len(set(len(_r) for _r in data)) == 1, 'ByteMatrix rows must all be same length'
+        if not data:
+            new._height = len(data)
+            new._width = 0
+            new._rows = [bytearray()]
+        else:
+            new._height = len(data)
+            new._width = len(data[0])
+            new._rows = data
+        assert len(set(len(_r) for _r in new._rows)) == 1, 'ByteMatrix rows must all be same length'
         return new
 
     @classmethod
