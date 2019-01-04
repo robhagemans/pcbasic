@@ -1118,7 +1118,7 @@ class VideoSDL2(VideoPlugin):
         if not self._is_text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
-        chunk = numpy.array(glyphs, dtype=numpy.uint8)
+        chunk = numpy.array(glyphs._rows, dtype=numpy.uint8)
         chunk_width = chunk.shape[1]
         left, top = (col-1)*self._font_width, (row-1)*self._font_height
         # render text with attributes
@@ -1144,7 +1144,7 @@ class VideoSDL2(VideoPlugin):
     def put_rect(self, pagenum, x0, y0, array):
         """Apply numpy array [y][x] of attributes to an area."""
         # reference the destination area
-        array = numpy.array(array)
+        array = numpy.array(array._rows)
         height, width = array.shape
         self._canvas_pixels[pagenum][y0:y0+height, x0:x0+width] = array
         self.busy = True

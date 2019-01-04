@@ -343,7 +343,7 @@ class TextScreen(object):
                     0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
                 )
                 self.queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_RECT, (pagenum, 0, 0, rect._rows)
+                    signals.VIDEO_PUT_RECT, (pagenum, 0, 0, rect)
                 ))
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
@@ -381,7 +381,7 @@ class TextScreen(object):
             signals.VIDEO_PUT_TEXT, (
                 pagenum, row, col, text,
                 fore, back, blink, underline,
-                glyphs._rows
+                glyphs
             )
         ))
         if not self.mode.is_text_mode and not text_only:
@@ -391,7 +391,7 @@ class TextScreen(object):
             right, bottom = left+width-1, top+height-1
             self.pixels.pages[self.apagenum].put_rect(left, top, right, bottom, sprite, tk.PSET)
             self.queues.video.put(signals.Event(
-                signals.VIDEO_PUT_RECT, (self.apagenum, left, top, sprite._rows)
+                signals.VIDEO_PUT_RECT, (self.apagenum, left, top, sprite)
             ))
 
     def _clear_rows_refresh(self, start, stop):
