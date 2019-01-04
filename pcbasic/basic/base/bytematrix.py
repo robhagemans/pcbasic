@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import operator
 from binascii import hexlify, unhexlify
 
-from ...compat import zip, int2byte
+from ...compat import zip, int2byte, xrange
 
 
 class ByteMatrix(object):
@@ -22,12 +22,12 @@ class ByteMatrix(object):
         if not width and not height:
             self._rows = [bytearray()]
         elif isinstance(data, int):
-            self._rows = [bytearray([data])*width for _ in range(self._height)]
+            self._rows = [bytearray([data])*width for _ in xrange(self._height)]
         else:
             # assume iterable, TypeError if not
             data = list(data)
             if len(data) == 1:
-                self._rows = [bytearray(data)*width for _ in range(self._height)]
+                self._rows = [bytearray(data)*width for _ in xrange(self._height)]
             elif len(data) == height:
                 assert len(data[0]) == width
                 self._rows = [bytearray(_row) for _row in data]
@@ -35,7 +35,7 @@ class ByteMatrix(object):
                 assert len(data) == height * width
                 self._rows = [
                     bytearray(data[_offs : _offs+width])
-                    for _offs in range(0, len(data), width)
+                    for _offs in xrange(0, len(data), width)
                 ]
 
     def __repr__(self):
@@ -64,9 +64,9 @@ class ByteMatrix(object):
             if isinstance(x, slice):
                 if isinstance(y, slice):
                     for row in self._rows[y]:
-                        row[x] = [value for _ in row[x]]
+                        row[x] = bytearray(value for _ in row[x])
                 else:
-                    self._rows[y][x] = [value for _ in self._rows[y][x]]
+                    self._rows[y][x] = bytearray(value for _ in self._rows[y][x])
             else:
                 if isinstance(y, slice):
                     for row in self._rows[y]:
@@ -190,7 +190,7 @@ class ByteMatrix(object):
         width = len(packed) // height
         return cls._create_from_rows([
             unpack_bytes(packed[_offs : _offs+width], items_per_byte)
-            for _offs in range(0, len(packed), width)
+            for _offs in xrange(0, len(packed), width)
         ])
 
     def packed(self, items_per_byte):
@@ -261,6 +261,31 @@ class ByteMatrix(object):
             except ValueError:
                 return self[y, x1+1:x0+1]
 
+    # views
+
+    @property
+    def view(self):
+        """Create a bytematrixview of the current bytematrix."""
+        return self._create_from_rows([
+            memoryview(_row) for _row in self._rows
+        ])
+
+
+    @property
+    def copy(self):
+        """Create a copy of the current bytematrix (as slicing views produces views)."""
+        return self._create_from_rows([
+            bytearray(_row) for _row in self._rows
+        ])
+
+    @classmethod
+    def view_from_buffer(cls, height, width, pitch, buffer):
+        """Create a byte matrix as a view on a contiguous row-major buffer."""
+        return cls._create_from_rows([
+            memoryview(buffer)[_offset:_offset+width]
+            for _offset in xrange(0, height*pitch, pitch)
+        ])
+
 
 ##############################################################################
 # concatenation
@@ -304,5 +329,5 @@ def pack_bytes(unpacked, items_per_byte):
     prepacked = [(_byte & mask) << _shift for _byte, _shift in zip(unpacked, shifts*packed_width)]
     return bytearray([
         sum(prepacked[_offs : _offs+items_per_byte])
-        for _offs in range(0, len(prepacked), items_per_byte)
+        for _offs in xrange(0, len(prepacked), items_per_byte)
     ])
