@@ -24,6 +24,7 @@ from .base import EnvironmentCache
 from .base import video_plugins, InitFailed, NOKILL_MESSAGE
 from ..basic.base import signals
 from ..basic.base import scancode
+from ..basic.base import bytematrix
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
 from .video import VideoPlugin
@@ -348,7 +349,7 @@ class VideoSDL2(VideoPlugin):
         # cursor blinks if _is_text_mode and _blink_enabled
         self._blink_enabled = True
         # load the icon
-        self._icon = icon
+        self._icon = bytematrix.ByteMatrix(len(ICON), len(ICON[0]), ICON).hrepeat(2).vrepeat(2)
         # mouse setups
         self._mouse_clip = mouse_clipboard
         # keyboard setup
@@ -478,9 +479,8 @@ class VideoSDL2(VideoPlugin):
 
     def _set_icon(self):
         """Set the icon on the SDL window."""
-        mask = numpy.array(self._icon).repeat(2, axis=0).repeat(2, axis=1)
-        icon = sdl2.SDL_CreateRGBSurface(0, mask.shape[1], mask.shape[0], 8, 0, 0, 0, 0)
-        _pixels2d(icon.contents)[:] = mask
+        icon = sdl2.SDL_CreateRGBSurface(0, self._icon.width, self._icon.height, 8, 0, 0, 0, 0)
+        _pixels2d(icon.contents)[:] = self._icon._rows
         # icon palette (black & white)
         icon_palette = sdl2.SDL_AllocPalette(256)
         icon_colors = [sdl2.SDL_Color(_c, _c, _c, 255) for _c in [0, 255] + [255]*254]

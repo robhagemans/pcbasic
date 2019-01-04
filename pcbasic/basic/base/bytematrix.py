@@ -234,6 +234,13 @@ class ByteMatrix(object):
             for _row in self._rows
         ])
 
+    def vrepeat(self, times=1):
+        """Multiply height by row repetition."""
+        return self._create_from_rows([
+            bytearray(_row) for _row in self._rows
+            for _ in range(times)
+        ])
+
     def row_until(self, element, y, x0, x1):
         """Get row until given element."""
         if x0 == x1:
