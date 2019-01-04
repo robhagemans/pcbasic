@@ -10,7 +10,7 @@ import struct
 import functools
 import operator
 
-from ...compat import xrange, int2byte, zip, PY2
+from ...compat import xrange, int2byte, zip, iterbytes
 
 from ..base import error
 from ..base import bytematrix
@@ -704,9 +704,8 @@ class PackedSpriteBuilder(object):
         byte_size = row_bytes * height
         # bytes_to_interval
         packed = array[4:4+byte_size]
-        if PY2 and isinstance(packed, memoryview):
-            # ensure iterations over memoryview yield int, not bytes
-            packed = bytearray(packed)
+        # ensure iterations over memoryview yield int, not bytes, in Python 2
+        packed = iterbytes(packed)
         sprite = bytematrix.ByteMatrix.frompacked(
             packed, height, items_per_byte=8 // self._bitsperpixel
         )
@@ -757,9 +756,8 @@ class PlanedSpriteBuilder(object):
         width, height = struct.unpack('<HH', array[0:4])
         row_bytes = (width + 7) // 8
         packed = array[4:4+row_bytes]
-        if PY2 and isinstance(packed, memoryview):
-            # ensure iterations over memoryview yield int, not bytes
-            packed = bytearray(packed)
+        # ensure iterations over memoryview yield int, not bytes, in Python 2
+        packed = iterbytes(packed)
         # unpack all planes
         #bytes_to_interval
         allplanes = bytematrix.ByteMatrix.frompacked(

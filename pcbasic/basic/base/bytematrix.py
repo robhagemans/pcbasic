@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import operator
 from binascii import hexlify, unhexlify
 
-from ...compat import zip, int2byte, xrange
+from ...compat import zip, int2byte, xrange, iterbytes
 
 
 class ByteMatrix(object):
@@ -64,9 +64,9 @@ class ByteMatrix(object):
             if isinstance(x, slice):
                 if isinstance(y, slice):
                     for row in self._rows[y]:
-                        row[x] = bytearray(value for _ in row[x])
+                        row[x] = bytearray(value for _ in iterbytes(row[x]))
                 else:
-                    self._rows[y][x] = bytearray(value for _ in self._rows[y][x])
+                    self._rows[y][x] = bytearray(value for _ in iterbytes(self._rows[y][x]))
             else:
                 if isinstance(y, slice):
                     for row in self._rows[y]:
@@ -97,14 +97,17 @@ class ByteMatrix(object):
         """Helper for elementwise operations."""
         if isinstance(rhs, int):
             return [
-                bytearray(oper(_lbyte, rhs) for _lbyte in _lrow)
+                bytearray(oper(_lbyte, rhs) for _lbyte in iterbytes(_lrow))
                 for _lrow in self._rows
             ]
         else:
             assert self._height == rhs._height
             assert self._width == rhs._width
             return [
-                bytearray(oper(_lbyte, _rbyte) for _lbyte, _rbyte in zip(_lrow, _rrow))
+                bytearray(
+                    oper(_lbyte, _rbyte)
+                    for _lbyte, _rbyte in zip(iterbytes(_lrow), iterbytes(_rrow))
+                )
                 for _lrow, _rrow in zip(self._rows, rhs._rows)
             ]
 

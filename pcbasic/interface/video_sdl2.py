@@ -934,7 +934,7 @@ class VideoSDL2(VideoPlugin):
         step = bpp_out // bpp_in
         # this makes no sense, I think it works because it happens to be 1
         mask = 1<<bpp_in - 1
-        planes = [(self._canvas_pixels[self._vpagenum][:, _p::step] & mask) << _p for _p in range(step)]
+        planes = [(self._canvas_pixels[self._vpagenum].copy[:, _p::step] & mask) << _p for _p in range(step)]
         packed = functools.reduce(operator.__ior__, planes)
         # apply packed array onto work surface
         _pixels2d(work_surface)[
