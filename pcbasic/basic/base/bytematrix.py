@@ -329,7 +329,10 @@ def pack_bytes(unpacked, items_per_byte):
     shifts = [8 - bpp - _sh for _sh in range(0, 8, bpp)]
     # ceildiv(a,b) == -(floowrdiv(-a,b))
     packed_width = -(-len(unpacked) // items_per_byte)
-    prepacked = [(_byte & mask) << _shift for _byte, _shift in zip(unpacked, shifts*packed_width)]
+    prepacked = [
+        (_byte & mask) << _shift
+        for _byte, _shift in zip(iterbytes(unpacked), shifts*packed_width)
+    ]
     return bytearray([
         sum(prepacked[_offs : _offs+items_per_byte])
         for _offs in xrange(0, len(prepacked), items_per_byte)

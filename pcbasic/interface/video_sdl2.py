@@ -928,19 +928,17 @@ class VideoSDL2(VideoPlugin):
         """Pack multiple pixels into one for composite artifacts."""
         lwindow_w, lwindow_h = self._window_sizer.window_size_logical
         border_x, border_y = self._window_sizer.border_shift
-        work_surface = sdl2.SDL_CreateRGBSurface(0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0)
         # pack pixels into higher bpp
         bpp_out, bpp_in = self._pixel_packing
-        step = bpp_out // bpp_in
-        # this makes no sense, I think it works because it happens to be 1
-        mask = 1<<bpp_in - 1
-        planes = [(self._canvas_pixels[self._vpagenum].copy[:, _p::step] & mask) << _p for _p in range(step)]
-        packed = functools.reduce(operator.__ior__, planes)
+        packed = self._canvas_pixels[self._vpagenum].packed(8//bpp_in)
+        height = lwindow_h - border_y*2
+        unpacked = bytematrix.ByteMatrix.frompacked(packed, height, 8//bpp_out)
+        work_surface = sdl2.SDL_CreateRGBSurface(0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0)
         # apply packed array onto work surface
         _pixels2d(work_surface)[
             border_y : lwindow_h - border_y,
             border_x : lwindow_w - border_x
-        ] = packed.hrepeat(step)
+        ] = unpacked.hrepeat(bpp_out // bpp_in)
         return work_surface
 
 
