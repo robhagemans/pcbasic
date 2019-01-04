@@ -451,10 +451,12 @@ class TextScreen(object):
         # sync buffers with the new screen reality:
         self.text.scroll_up(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
-            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(from_line+1, 1,
-                self.scroll_area.bottom, self.mode.width)
-            tx0, ty0, _, _ = self.mode.text_to_pixel_area(from_line, 1,
-                self.scroll_area.bottom-1, self.mode.width)
+            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
+                from_line+1, 1, self.scroll_area.bottom, self.mode.width
+            )
+            tx0, ty0, _, _ = self.mode.text_to_pixel_area(
+                from_line, 1, self.scroll_area.bottom-1, self.mode.width
+            )
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
     def scroll_down(self, from_line):
@@ -468,10 +470,12 @@ class TextScreen(object):
         # sync buffers with the new screen reality:
         self.text.scroll_down(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
-            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(from_line, 1,
-                self.scroll_area.bottom-1, self.mode.width)
-            tx0, ty0, _, _ = self.mode.text_to_pixel_area(from_line+1, 1,
-                self.scroll_area.bottom, self.mode.width)
+            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
+                from_line, 1, self.scroll_area.bottom-1, self.mode.width
+            )
+            tx0, ty0, _, _ = self.mode.text_to_pixel_area(
+                from_line+1, 1, self.scroll_area.bottom, self.mode.width
+            )
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
     ###########################################################################

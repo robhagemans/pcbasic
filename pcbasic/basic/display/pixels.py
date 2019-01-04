@@ -15,6 +15,16 @@ from ..base import bytematrix
 from .. import values
 
 
+# pixel operations
+OPERATIONS = {
+    tk.PSET: lambda _x, _y: _y,
+    tk.PRESET: lambda _x, _y: _y ^ 0xff,
+    tk.AND: operator.iand,
+    tk.OR: operator.ior,
+    tk.XOR: operator.ixor,
+}
+
+
 class PixelBuffer(object):
     """Buffer for graphics on all screen pages."""
 
@@ -33,33 +43,6 @@ class PixelPage(object):
         self._buffer = bytematrix.ByteMatrix(height, width)
         self.width = width
         self.height = height
-        # operations closures
-        self._operations = {}
-        # we need to store the mask so we can reconstruct the operations dict on unpickling
-        self._mask = (1 << bitsperpixel) - 1
-        self._init_operations(self._mask)
-
-    def _init_operations(self, mask):
-        """Initialise operations closures."""
-        self._operations = {
-            tk.PSET: lambda _x, _y: _y,
-            tk.PRESET: lambda _x, _y: _y ^ mask,
-            tk.AND: operator.iand,
-            tk.OR: operator.ior,
-            tk.XOR: operator.ixor,
-        }
-
-    def __getstate__(self):
-        """Pickle the page."""
-        pagedict = self.__dict__.copy()
-        # lambdas can't be pickled
-        pagedict['_operations'] = None
-        return pagedict
-
-    def __setstate__(self, pagedict):
-        """Initialise from pickled page."""
-        self.__dict__.update(pagedict)
-        self._init_operations(self._mask)
 
     def copy_from(self, src):
         """Copy from another page."""
@@ -106,7 +89,7 @@ class PixelPage(object):
         # can use in-place operaton method to avoid second slicing operation?
         # no, we still need a slice assignment after the in-place operation
         # or the result will be discarded along with the slice
-        result = self._operations[operation_token](
+        result = OPERATIONS[operation_token](
             self._buffer[y0:y1+1, x0:x1+1], array
         )
         self._buffer[y0:y1+1, x0:x1+1] = result
