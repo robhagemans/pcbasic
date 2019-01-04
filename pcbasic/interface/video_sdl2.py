@@ -302,8 +302,8 @@ def _pixels2d(psurface):
     srcsize = psurface.h * psurface.pitch
     shape = psurface.h, psurface.w
     pxbuf = ctypes.cast(psurface.pixels, ctypes.POINTER(ctypes.c_ubyte * srcsize)).contents
-    # NOTE: transpose() brings it on [x][y] form - we may prefer [y][x] instead
-    return numpy.ndarray(shape, numpy.uint8, pxbuf, 0, strides, 'C').transpose()
+    # NOTE: transpose() would bring it on [x][y] form - we prefer [y][x] instead
+    return numpy.ndarray(shape, numpy.uint8, pxbuf, 0, strides, 'C')
 
 
 ###############################################################################
@@ -478,8 +478,8 @@ class VideoSDL2(VideoPlugin):
 
     def _set_icon(self):
         """Set the icon on the SDL window."""
-        mask = numpy.array(self._icon).T.repeat(2, 0).repeat(2, 1)
-        icon = sdl2.SDL_CreateRGBSurface(0, mask.shape[0], mask.shape[1], 8, 0, 0, 0, 0)
+        mask = numpy.array(self._icon).repeat(2, axis=0).repeat(2, axis=1)
+        icon = sdl2.SDL_CreateRGBSurface(0, mask.shape[1], mask.shape[0], 8, 0, 0, 0, 0)
         _pixels2d(icon.contents)[:] = mask
         # icon palette (black & white)
         icon_palette = sdl2.SDL_AllocPalette(256)
@@ -895,7 +895,7 @@ class VideoSDL2(VideoPlugin):
             height = self._cursor_to + 1 - self._cursor_from
             top = (self._cursor_row-1) * self._font_height + self._cursor_from
             left = (self._cursor_col-1) * self._font_width
-            cursor_area = pixels[left:left+self._cursor_width, top:top+height]
+            cursor_area = pixels[top:top+height, left:left+self._cursor_width]
             # copy area under cursor
             under_cursor = numpy.copy(cursor_area)
             if self._is_text_mode:
@@ -934,15 +934,15 @@ class VideoSDL2(VideoPlugin):
         # pack pixels into higher bpp
         bpp_out, bpp_in = self._pixel_packing
         src_array = self._canvas_pixels[self._vpagenum]
-        width, _ = src_array.shape
+        _, width = src_array.shape
         mask = 1<<bpp_in - 1
         step = bpp_out // bpp_in
-        s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
-        packed = numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
+        s = [(src_array[:, _p:width:step] & mask) << _p for _p in range(step)]
+        packed = numpy.repeat(numpy.array(s).sum(axis=0), step, axis=1)
         # apply packed array onto work surface
         _pixels2d(work_surface.contents)[
-            border_x : (lwindow_w - border_x),
-            border_y : lwindow_h - border_y
+            border_y : lwindow_h - border_y,
+            border_x : (lwindow_w - border_x)
         ] = packed
         return work_surface
 
@@ -990,8 +990,8 @@ class VideoSDL2(VideoPlugin):
         border_x, border_y = self._window_sizer.border_shift
         self._canvas_pixels = [
             _pixels2d(canvas.contents)[
-                border_x : work_width - border_x,
-                border_y : work_height - border_y
+                border_y : work_height - border_y,
+                border_x : work_width - border_x
             ] for canvas in self._window_surface
         ]
         # initialise clipboard
@@ -1058,8 +1058,8 @@ class VideoSDL2(VideoPlugin):
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
         self._canvas_pixels[self._apagenum][
-            0 : self._window_sizer.width,
-            (start-1)*self._font_height : stop*self._font_height
+            (start-1)*self._font_height : stop*self._font_height,
+            0 : self._window_sizer.width
         ] = back_attr
         self.busy = True
 
@@ -1098,8 +1098,8 @@ class VideoSDL2(VideoPlugin):
         width = self._window_sizer.width
         new_y0, new_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
         old_y0, old_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[0:width, new_y0:new_y1] = pixels[0:width, old_y0:old_y1]
-        pixels[0:width, new_y1:old_y1] = numpy.full((width, old_y1-new_y1), back_attr, dtype=int)
+        pixels[new_y0:new_y1, 0:width] = pixels[old_y0:old_y1, 0:width]
+        pixels[new_y1:old_y1, 0:width] = numpy.full((old_y1-new_y1, width), back_attr, dtype=int)
         self.busy = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
@@ -1109,8 +1109,8 @@ class VideoSDL2(VideoPlugin):
         width = self._window_sizer.width
         old_y0, old_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
         new_y0, new_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[0:width, new_y0:new_y1] = pixels[0:width, old_y0:old_y1]
-        pixels[0:width, old_y0:new_y0] = numpy.full((width, new_y0-old_y0), back_attr, dtype=int)
+        pixels[new_y0:new_y1, 0:width] = pixels[old_y0:old_y1, 0:width]
+        pixels[old_y0:new_y0, 0:width] = numpy.full((new_y0-old_y0, width), back_attr, dtype=int)
         self.busy = True
 
     def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
@@ -1118,20 +1118,20 @@ class VideoSDL2(VideoPlugin):
         if not self._is_text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
-        chunk = numpy.array(glyphs).T
-        chunk_width = chunk.shape[0]
+        chunk = numpy.array(glyphs, dtype=numpy.uint8)
+        chunk_width = chunk.shape[1]
         left, top = (col-1)*self._font_width, (row-1)*self._font_height
         # render text with attributes
         attr = fore + self._num_fore_attrs*back + 128*blink
         self._canvas_pixels[pagenum][
-            left : left + chunk_width,
-            top : top + self._font_height
+            top : top + self._font_height,
+            left : left + chunk_width
         ] = chunk*(attr-back) + back
         if underline:
             self._canvas_pixels[pagenum][
-            left : left + chunk_width,
-            top + self._font_height - 1 : top + self._font_height
-        ] = attr
+                top + self._font_height - 1 : top + self._font_height,
+                left : left + chunk_width
+            ] = attr
         self.busy = True
 
     def set_cursor_shape(self, width, from_line, to_line):
@@ -1144,5 +1144,5 @@ class VideoSDL2(VideoPlugin):
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attributes to an area."""
         # reference the destination area
-        self._canvas_pixels[pagenum][x0:x1+1, y0:y1+1] = numpy.array(array).T
+        self._canvas_pixels[pagenum][y0:y1+1, x0:x1+1] = numpy.array(array)
         self.busy = True
