@@ -304,12 +304,12 @@ class TextScreen(object):
         if self.mode.is_text_mode:
             # set halfwidth/fullwidth cursor
             width = self.text.get_charwidth(self.apagenum, row, col)
-            self.cursor.set_width(width)
             # set the cursor attribute
             attr = self.text.get_attr(self.apagenum, row, col)
-            self.cursor.set_attr(attr)
-        # move the cursor
-        self.cursor.move(row, col)
+            self.cursor.move(row, col, attr, width)
+        else:
+            # move the cursor
+            self.cursor.move(row, col)
 
     ###########################################################################
     # update pixel buffer and interface

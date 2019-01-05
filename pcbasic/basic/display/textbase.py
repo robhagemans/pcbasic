@@ -87,7 +87,7 @@ class Cursor(object):
         self.reset_visibility()
 
     def set_attr(self, new_attr):
-        """Set the text cursor attribute."""
+        """Set the text cursor attribute and submit."""
         fore, _, _, _ = self._mode.split_attr(new_attr)
         if fore == self._fore_attr:
             return
@@ -98,16 +98,37 @@ class Cursor(object):
 
     def show(self, do_show):
         """Force cursor to be visible/invisible."""
+        self._visibility = do_show
         self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (do_show,)))
 
-    def move(self, new_row, new_column):
-        """Move the cursor."""
-        if (new_row, new_column) == self._position:
+    def move(self, new_row, new_column, new_attr=None, new_width=None):
+        """Move the cursor and submit."""
+        if new_attr:
+            fore, _, _, _ = self._mode.split_attr(new_attr)
+        else:
+            fore = self._fore_attr
+        if not new_width:
+            new_width = self._width
+        else:
+            new_width = new_width * self._mode.font_width
+        if (
+                (new_row, new_column) == self._position
+                and fore == self._fore_attr and new_width == self._width
+            ):
             return
         self._position = new_row, new_column
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_MOVE_CURSOR, self._position)
-        )
+        self._fore_attr = fore
+        self._width = new_width
+        if self._visible:
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_SET_CURSOR_ATTR, (self._fore_attr,)
+            ))
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line))
+            )
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_MOVE_CURSOR, self._position)
+            )
 
     def set_visibility(self, visible_run):
         """Set cursor visibility when a program is being run."""
@@ -187,27 +208,18 @@ class Cursor(object):
             # half-block cursor for insert
             self.set_shape(self._height//2, self._height-1)
 
-    def set_width(self, num_chars):
-        """Set the cursor with to num_chars characters."""
-        new_width = num_chars * self._mode.font_width
-        # update cursor shape to new width if necessary
-        if new_width != self._width:
-            self._width = new_width
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line))
-            )
-
     def rebuild(self):
         """Rebuild the cursor on resume."""
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line)
-        ))
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_CURSOR_ATTR, (self._fore_attr,)
-        ))
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_MOVE_CURSOR, self._position
-        ))
+        if self._visible:
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line)
+            ))
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_SET_CURSOR_ATTR, (self._fore_attr,)
+            ))
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_MOVE_CURSOR, self._position
+            ))
         self._queues.video.put(signals.Event(
             signals.VIDEO_SHOW_CURSOR, (self._visible,)
         ))
