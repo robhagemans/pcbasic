@@ -12,6 +12,11 @@ from ..base import error
 from .. import values
 
 
+EGA_CURSOR_MODES = (
+    'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules'
+)
+
+
 #######################################################################################
 # function key macro guide
 
@@ -49,21 +54,25 @@ class Cursor(object):
         """Initialise the cursor."""
         self._queues = queues
         self._mode = mode
-        self._capabilities = capabilities
+        # odd treatment of cursors on EGA machines
+        self._ega_quirks = capabilities in EGA_CURSOR_MODES
+        # do all text modes with >8 pixels have an ega-cursor?
+        # cursor on the second last line in EGA mode
+        self._ega_cursor = capabilities == 'ega'
         # are we in parse mode? invisible unless visible_run is True
-        self.default_visible = True
+        self._default_visible = True
         # cursor visible in parse mode? user override
-        self.visible_run = False
+        self._visible_run = False
         # cursor shape
-        self.from_line = 0
-        self.to_line = 0
-        self.width = self._mode.font_width
+        self._from_line = 0
+        self._to_line = 0
+        self._width = self._mode.font_width
         self._height = self._mode.font_height
 
     def init_mode(self, mode, attr):
         """Change the cursor for a new screen mode."""
         self._mode = mode
-        self.width = mode.font_width
+        self._width = mode.font_width
         self._height = mode.font_height
         # set the cursor attribute
         if not mode.is_text_mode:
@@ -84,31 +93,34 @@ class Cursor(object):
 
     def set_visibility(self, visible_run):
         """Set cursor visibility when a program is being run."""
-        self.visible_run = visible_run
+        self._visible_run = visible_run
         self.reset_visibility()
 
     def reset_visibility(self):
         """Set cursor visibility to its default state."""
         # visible if in interactive mode and invisible when a program is being run
-        visible = self.default_visible
+        visible = self._default_visible
         # unless forced to be visible
         # in graphics mode, we can't force the cursor to be visible on execute.
         if self._mode.is_text_mode:
-            visible = visible or self.visible_run
+            visible = visible or self._visible_run
         self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (visible,)))
+
+    @property
+    def shape(self):
+        """Cursor shape (from, to)."""
+        return self._from_line, self._to_line
 
     def set_shape(self, from_line, to_line):
         """Set the cursor shape."""
         # A block from from_line to to_line in 8-line modes.
         # Use compatibility algo in higher resolutions
-        fx, fy = self.width, self._height
-        # do all text modes with >8 pixels have an ega-cursor?
-        if self._capabilities in (
-                'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules'):
-            # odd treatment of cursors on EGA machines,
-            # presumably for backward compatibility
-            # the following algorithm is based on DOSBox source int10_char.cpp
-            #     INT10_SetCursorShape(Bit8u first,Bit8u last)
+        fx, fy = self._width, self._height
+        # odd treatment of cursors on EGA machines,
+        # presumably for backward compatibility
+        # the following algorithm is based on DOSBox source int10_char.cpp
+        #     INT10_SetCursorShape(Bit8u first,Bit8u last)
+        if self._ega_quirks:
             max_line = fy - 1
             if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
                 if (to_line < from_line):
@@ -130,10 +142,10 @@ class Cursor(object):
                             if max_line > 0xc:
                                 from_line -= 1
                                 to_line -= 1
-        self.from_line = max(0, min(from_line, fy-1))
-        self.to_line = max(0, min(to_line, fy-1))
+        self._from_line = max(0, min(from_line, fy-1))
+        self._to_line = max(0, min(to_line, fy-1))
         self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_CURSOR_SHAPE, (self.width, self.from_line, self.to_line))
+            signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line))
         )
 
     def set_default_shape(self, overwrite_shape):
@@ -142,7 +154,7 @@ class Cursor(object):
             if not self._mode.is_text_mode:
                 # always a block cursor in graphics mode
                 self.set_shape(0, self._height-1)
-            elif self._capabilities == 'ega':
+            elif self._ega_cursor:
                 # EGA cursor is on second last line
                 self.set_shape(self._height-2, self._height-2)
             elif self._height == 9:
@@ -159,11 +171,21 @@ class Cursor(object):
         """Set the cursor with to num_chars characters."""
         new_width = num_chars * self._mode.font_width
         # update cursor shape to new width if necessary
-        if new_width != self.width:
-            self.width = new_width
+        if new_width != self._width:
+            self._width = new_width
             self._queues.video.put(signals.Event(
-                signals.VIDEO_SET_CURSOR_SHAPE, (self.width, self.from_line, self.to_line))
+                signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line))
             )
+
+    def rebuild(self, attr):
+        """Rebuild the cursor on resume."""
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_CURSOR_SHAPE,
+            (self._width, self._from_line, self._to_line)
+        ))
+        fore, _, _, _ = self._mode.split_attr(attr)
+        self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (fore,)))
+        self.reset_visibility()
 
 
 ###############################################################################

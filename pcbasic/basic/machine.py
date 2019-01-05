@@ -653,9 +653,11 @@ class Memory(object):
             return self.screen.current_row - 1
         # 1120, 1121 cursor shape
         elif addr == 1120:
-            return self.screen.cursor.to_line
+            # to_line
+            return self.screen.cursor.shape[1]
         elif addr == 1121:
-            return self.screen.cursor.from_line
+            # from_line
+            return self.screen.cursor.shape[0]
         # 1122 visual page number
         elif addr == 1122:
             return self.display.vpagenum
