@@ -68,6 +68,7 @@ class Cursor(object):
         self._to_line = 0
         self._width = self._mode.font_width
         self._height = self._mode.font_height
+        self._fore_attr = None
 
     def init_mode(self, mode, attr):
         """Change the cursor for a new screen mode."""
@@ -82,10 +83,15 @@ class Cursor(object):
         self.set_default_shape(True)
         self.reset_visibility()
 
-    def reset_attr(self, new_attr):
+    def set_attr(self, new_attr):
         """Set the text cursor attribute."""
-        if self._mode.is_text_mode:
-            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (new_attr,)))
+        fore, _, _, _ = self._mode.split_attr(new_attr)
+        if fore == self._fore_attr:
+            return
+        self._fore_attr = fore
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_CURSOR_ATTR, (self._fore_attr,)
+        ))
 
     def show(self, do_show):
         """Force cursor to be visible/invisible."""
@@ -177,14 +183,13 @@ class Cursor(object):
                 signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line))
             )
 
-    def rebuild(self, attr):
+    def rebuild(self):
         """Rebuild the cursor on resume."""
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_CURSOR_SHAPE,
             (self._width, self._from_line, self._to_line)
         ))
-        fore, _, _, _ = self._mode.split_attr(attr)
-        self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (fore,)))
+        self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (self._fore_attr,)))
         self.reset_visibility()
 
 

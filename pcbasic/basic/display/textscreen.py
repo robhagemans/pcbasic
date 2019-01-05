@@ -300,14 +300,15 @@ class TextScreen(object):
     def _move_cursor(self, row, col):
         """Move the cursor to a new position."""
         self.current_row, self.current_col = row, col
-        # set halfwidth/fullwidth cursor
-        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
-        self.cursor.set_width(width)
-        # set the cursor's attribute to that of the current location
-        fore, _, _, _ = self.mode.split_attr(
-            0xf & self.text.get_attr(self.apagenum, self.current_row, self.current_col)
-        )
-        self.cursor.reset_attr(fore)
+        # in text mode, set the cursor width and attriute to that of the new location
+        if self.mode.is_text_mode:
+            # set halfwidth/fullwidth cursor
+            width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
+            self.cursor.set_width(width)
+            # set the cursor attribute
+            attr = self.text.get_attr(self.apagenum, self.current_row, self.current_col)
+            self.cursor.set_attr(attr)
+        # move the cursor
         self.queues.video.put(signals.Event(
             signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col))
         )
@@ -317,12 +318,7 @@ class TextScreen(object):
 
     def rebuild(self):
         """Completely resubmit the text and graphics screen to the interface."""
-        # find cursor attribute
-        if self.mode.is_text_mode:
-            attr = 0xf & self.text.get_attr(self.apagenum, self.current_row, self.current_col)
-        else:
-            attr = self.mode.cursor_index or self.attr
-        self.cursor.rebuild(attr)
+        self.cursor.rebuild()
         self.queues.video.put(signals.Event(
             signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col)
         ))
