@@ -974,7 +974,8 @@ class VideoSDL2(VideoPlugin):
                 # need to update surface pointer after a change in window size
                 self._reset_display_caches()
         # set standard cursor
-        self.set_cursor_shape(self._font_width, 0, self._font_height)
+        self._cursor_width = self._font_width
+        self._cursor_from, self._cursor_height = 0, self._font_height
         # screen pages
         for surface in self._window_surface:
             sdl2.SDL_FreeSurface(surface)
@@ -1074,11 +1075,15 @@ class VideoSDL2(VideoPlugin):
         self._cursor_visible = cursor_on
         self.busy = True
 
-    def move_cursor(self, new_row, new_col):
+    def move_cursor(self, new_row, new_col, new_attr, new_width):
         """Move the cursor to a new position."""
-        if self._cursor_visible and (self._cursor_row, self._cursor_col) != (new_row, new_col):
+        if self._cursor_visible and (
+                self._cursor_row, self._cursor_col, self._cursor_attr, self._cursor_width
+            ) != (new_row, new_col, new_attr, new_width):
             self.busy = True
         self._cursor_row, self._cursor_col = new_row, new_col
+        self._cursor_attr = new_attr
+        self._cursor_width = new_width
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
@@ -1087,9 +1092,8 @@ class VideoSDL2(VideoPlugin):
             self.busy = True
         self._cursor_attr = new_attr
 
-    def set_cursor_shape(self, width, from_line, to_line):
+    def set_cursor_shape(self, from_line, to_line):
         """Build a sprite for the cursor."""
-        self._cursor_width = width
         self._cursor_from = from_line
         self._cursor_height = to_line + 1 - from_line
         if self._cursor_visible:

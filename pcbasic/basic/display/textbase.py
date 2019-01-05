@@ -121,14 +121,8 @@ class Cursor(object):
         self._width = new_width
         if self._visible:
             self._queues.video.put(signals.Event(
-                signals.VIDEO_SET_CURSOR_ATTR, (self._fore_attr,)
+                signals.VIDEO_MOVE_CURSOR, (new_row, new_column, fore, new_width)
             ))
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line))
-            )
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_MOVE_CURSOR, self._position)
-            )
 
     def set_visibility(self, visible_run):
         """Set cursor visibility when a program is being run."""
@@ -186,7 +180,7 @@ class Cursor(object):
         self._from_line = max(0, min(from_line, fy-1))
         self._to_line = max(0, min(to_line, fy-1))
         self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line))
+            signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line))
         )
 
     def set_default_shape(self, overwrite_shape):
@@ -212,13 +206,11 @@ class Cursor(object):
         """Rebuild the cursor on resume."""
         if self._visible:
             self._queues.video.put(signals.Event(
-                signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line)
+                signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line)
             ))
+            row, column = self._position
             self._queues.video.put(signals.Event(
-                signals.VIDEO_SET_CURSOR_ATTR, (self._fore_attr,)
-            ))
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_MOVE_CURSOR, self._position
+                signals.VIDEO_MOVE_CURSOR, (row, column, self._fore_attr, self._width)
             ))
         self._queues.video.put(signals.Event(
             signals.VIDEO_SHOW_CURSOR, (self._visible,)

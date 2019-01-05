@@ -118,7 +118,7 @@ class VideoPlugin(object):
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
 
-    def move_cursor(self, crow, ccol):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
 
     def set_cursor_attr(self, attr):
@@ -133,7 +133,7 @@ class VideoPlugin(object):
     def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
         """Put text at a given position."""
 
-    def set_cursor_shape(self, width, from_line, to_line):
+    def set_cursor_shape(self, from_line, to_line):
         """Build a sprite for the cursor."""
 
     def put_rect(self, pagenum, x0, y0, array):
