@@ -268,15 +268,19 @@ class ByteMatrix(object):
 
     @property
     def view(self):
-        """Create a bytematrixview of the current bytematrix."""
+        """
+        Create a bytematrixview of the current bytematrix.
+        Use bm.view[yslice, xslice]
+        """
         return self._create_from_rows([
             memoryview(_row) for _row in self._rows
         ])
 
-
-    @property
     def copy(self):
-        """Create a copy of the current bytematrix (as slicing views produces views)."""
+        """
+        Create a copy of the current bytematrix or view - as slicing views produces views.
+        Use bm[yslice, xslice].copy()
+        """
         return self._create_from_rows([
             bytearray(_row) for _row in self._rows
         ])

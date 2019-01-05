@@ -888,14 +888,14 @@ class VideoSDL2(VideoPlugin):
         if not self._cursor_visible or self._vpagenum != self._apagenum or not cursor_state:
             yield
         else:
-            pixels = self._canvas_pixels[self._apagenum]
-            height = self._cursor_to + 1 - self._cursor_from
+            # cursor shape
             top = (self._cursor_row-1) * self._font_height + self._cursor_from
             left = (self._cursor_col-1) * self._font_width
-            # pixels is a view
-            cursor_area = pixels[top:top+height, left:left+self._cursor_width]
+            cursor_slice = slice(top, top+self._cursor_height), slice(left, left+self._cursor_width)
+            # canvas_pixels is a view
+            cursor_area = self._canvas_pixels[self._apagenum][cursor_slice]
             # copy area under cursor
-            under_cursor = pixels.copy[top:top+height, left:left+self._cursor_width]
+            under_cursor = cursor_area.copy()
             if self._is_text_mode:
                 cursor_area[:, :] = self._cursor_attr
             else:
@@ -928,17 +928,18 @@ class VideoSDL2(VideoPlugin):
         """Pack multiple pixels into one for composite artifacts."""
         lwindow_w, lwindow_h = self._window_sizer.window_size_logical
         border_x, border_y = self._window_sizer.border_shift
-        # pack pixels into higher bpp
+        # pack pixels into higher bpp, then unpack into lower bpp
         bpp_out, bpp_in = self._pixel_packing
         packed = self._canvas_pixels[self._vpagenum].packed(8//bpp_in)
         height = lwindow_h - border_y*2
         unpacked = bytematrix.ByteMatrix.frompacked(packed, height, 8//bpp_out)
+        unpacked = unpacked.hrepeat(bpp_out // bpp_in)
+        # copy packed array onto work surface
         work_surface = sdl2.SDL_CreateRGBSurface(0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0)
-        # apply packed array onto work surface
         _pixels2d(work_surface)[
             border_y : lwindow_h - border_y,
             border_x : lwindow_w - border_x
-        ] = unpacked.hrepeat(bpp_out // bpp_in)
+        ] = unpacked
         return work_surface
 
 
@@ -1065,7 +1066,7 @@ class VideoSDL2(VideoPlugin):
 
     def copy_page(self, src, dst):
         """Copy source to destination page."""
-        self._canvas_pixels[dst][:] = self._canvas_pixels[src][:]
+        self._canvas_pixels[dst][:] = self._canvas_pixels[src]
         self.busy = True
 
     def show_cursor(self, cursor_on):
@@ -1085,6 +1086,14 @@ class VideoSDL2(VideoPlugin):
         if self._cursor_visible and self._cursor_attr != new_attr:
             self.busy = True
         self._cursor_attr = new_attr
+
+    def set_cursor_shape(self, width, from_line, to_line):
+        """Build a sprite for the cursor."""
+        self._cursor_width = width
+        self._cursor_from = from_line
+        self._cursor_height = to_line + 1 - from_line
+        if self._cursor_visible:
+            self.busy = True
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
@@ -1126,13 +1135,6 @@ class VideoSDL2(VideoPlugin):
                 left : left + glyphs.width
             ] = attr
         self.busy = True
-
-    def set_cursor_shape(self, width, from_line, to_line):
-        """Build a sprite for the cursor."""
-        self._cursor_width = width
-        self._cursor_from, self._cursor_to = from_line, to_line
-        if self._cursor_visible:
-            self.busy = True
 
     def put_rect(self, pagenum, x0, y0, array):
         """Apply bytematrix [y, x] of attributes to an area."""
