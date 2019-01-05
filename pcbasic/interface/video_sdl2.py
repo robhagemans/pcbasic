@@ -1119,7 +1119,7 @@ class VideoSDL2(VideoPlugin):
         self._canvas_pixels[pagenum][
             top : top + glyphs.height,
             left : left + glyphs.width
-        ] = glyphs.render(back, attr)._rows
+        ] = glyphs.render(back, attr)
         if underline:
             self._canvas_pixels[pagenum][
                 top + glyphs.height - 1 : top + glyphs.height,
@@ -1138,5 +1138,5 @@ class VideoSDL2(VideoPlugin):
         """Apply bytematrix [y, x] of attributes to an area."""
         # reference the destination area
         height, width = array.height, array.width
-        self._canvas_pixels[pagenum][y0:y0+height, x0:x0+width] = array._rows
+        self._canvas_pixels[pagenum][y0:y0+height, x0:x0+width] = array
         self.busy = True
