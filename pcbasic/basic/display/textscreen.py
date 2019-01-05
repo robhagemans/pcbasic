@@ -303,15 +303,13 @@ class TextScreen(object):
         # in text mode, set the cursor width and attriute to that of the new location
         if self.mode.is_text_mode:
             # set halfwidth/fullwidth cursor
-            width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
+            width = self.text.get_charwidth(self.apagenum, row, col)
             self.cursor.set_width(width)
             # set the cursor attribute
-            attr = self.text.get_attr(self.apagenum, self.current_row, self.current_col)
+            attr = self.text.get_attr(self.apagenum, row, col)
             self.cursor.set_attr(attr)
         # move the cursor
-        self.queues.video.put(signals.Event(
-            signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col))
-        )
+        self.cursor.move(row, col)
 
     ###########################################################################
     # update pixel buffer and interface
@@ -319,9 +317,6 @@ class TextScreen(object):
     def rebuild(self):
         """Completely resubmit the text and graphics screen to the interface."""
         self.cursor.rebuild()
-        self.queues.video.put(signals.Event(
-            signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col)
-        ))
         # redraw the text screen and rebuild text buffers in video plugin
         for pagenum in range(self.mode.num_pages):
             # resubmit the text buffer without changing the pixel buffer

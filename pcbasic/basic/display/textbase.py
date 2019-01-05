@@ -63,12 +63,15 @@ class Cursor(object):
         self._default_visible = True
         # cursor visible in parse mode? user override
         self._visible_run = False
+        # actually visible at present
+        self._visible = False
         # cursor shape
         self._from_line = 0
         self._to_line = 0
         self._width = self._mode.font_width
         self._height = self._mode.font_height
         self._fore_attr = None
+        self._position = 1, 1
 
     def init_mode(self, mode, attr):
         """Change the cursor for a new screen mode."""
@@ -97,6 +100,15 @@ class Cursor(object):
         """Force cursor to be visible/invisible."""
         self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (do_show,)))
 
+    def move(self, new_row, new_column):
+        """Move the cursor."""
+        if (new_row, new_column) == self._position:
+            return
+        self._position = new_row, new_column
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_MOVE_CURSOR, self._position)
+        )
+
     def set_visibility(self, visible_run):
         """Set cursor visibility when a program is being run."""
         self._visible_run = visible_run
@@ -110,7 +122,9 @@ class Cursor(object):
         # in graphics mode, we can't force the cursor to be visible on execute.
         if self._mode.is_text_mode:
             visible = visible or self._visible_run
-        self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (visible,)))
+        if self._visible != visible:
+            self._visible = visible
+            self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (visible,)))
 
     @property
     def shape(self):
@@ -186,11 +200,17 @@ class Cursor(object):
     def rebuild(self):
         """Rebuild the cursor on resume."""
         self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_CURSOR_SHAPE,
-            (self._width, self._from_line, self._to_line)
+            signals.VIDEO_SET_CURSOR_SHAPE, (self._width, self._from_line, self._to_line)
         ))
-        self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (self._fore_attr,)))
-        self.reset_visibility()
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_CURSOR_ATTR, (self._fore_attr,)
+        ))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_MOVE_CURSOR, self._position
+        ))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SHOW_CURSOR, (self._visible,)
+        ))
 
 
 ###############################################################################
