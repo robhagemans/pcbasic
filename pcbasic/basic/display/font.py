@@ -170,9 +170,13 @@ class Font(object):
             glyph = _extend_width(glyph, char in CARRY_COL_9_CHARS)
         self._glyphs[char] = glyph
 
-    def render_text(self, char_list, fore, back):
+    def render_text(self, char_list, fore, back, blink, underline):
         """Return a sprite, width and height for given row of text."""
-        return self.get_glyphs(char_list).render(back, fore)
+        attr = fore + 16*back + 128*blink
+        sprite = self.get_glyphs(char_list).render(back, attr)
+        if underline:
+            sprite[-1:, :] = attr
+        return sprite
 
     def get_glyphs(self, char_list):
         """Retrieve a row of text as a single matrix [y][x]."""

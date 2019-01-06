@@ -57,7 +57,6 @@ class VideoPygame(VideoPlugin):
         """Initialise pygame interface."""
         logging.warning('The PyGame interface is deprecated, use the SDL2 interface instead.')
         VideoPlugin.__init__(self, input_queue, video_queue)
-
         # request smooth scaling
         self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
@@ -584,24 +583,6 @@ class VideoPygame(VideoPlugin):
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
-        """Put text at a given position."""
-        if not self.text_mode:
-            # in graphics mode, a put_rect call does the actual drawing
-            return
-        color = (0, 0, fore + self.num_fore_attrs*back + 128*blink)
-        bg = (0, 0, back)
-        x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
-        glyphs = glyph_to_surface(glyphs._rows)
-        if glyphs.get_palette_at(0) != bg:
-            glyphs.set_palette_at(0, bg)
-        if glyphs.get_palette_at(1) != color:
-            glyphs.set_palette_at(1, color)
-        self.canvas[pagenum].blit(glyphs, (x0, y0))
-        if underline:
-            self.canvas[pagenum].fill(color, (x0, y0 + self.font_height - 1, self.font_width, 1))
-        self.busy = True
-
     def set_cursor_shape(self, from_line, to_line):
         """Build a sprite for the cursor."""
         self.cursor_from, self.cursor_to = from_line, to_line
@@ -618,6 +599,13 @@ class VideoPygame(VideoPlugin):
         self.cursor.fill(bg)
         self.cursor.fill(color, (0, from_line, width, min(to_line-from_line+1, height-from_line)))
         self.busy = True
+
+    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+        """Put text at a given position."""
+        if not glyphs:
+            return
+        x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
+        self.put_rect(pagenum, x0, y0, glyphs)
 
     def put_rect(self, pagenum, x0, y0, array):
         """Apply numpy array [y][x] of attribytes to an area."""

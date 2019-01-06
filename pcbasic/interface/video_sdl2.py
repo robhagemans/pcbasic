@@ -413,8 +413,6 @@ class VideoSDL2(VideoPlugin):
         # palette
         # display palettes for blink states 0, 1
         self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
-        self._num_fore_attrs = 16
-        self._num_back_attrs = 8
         # pixel packing is active (composite artifacts)
         self._pixel_packing = False
         # last keypress
@@ -1011,19 +1009,23 @@ class VideoSDL2(VideoPlugin):
 
     def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
         """Build the palette."""
-        self._num_fore_attrs = min(16, len(rgb_palette_0))
-        self._num_back_attrs = min(8, self._num_fore_attrs)
+        num_fore_attrs = 16
+        num_back_attrs = 8
+        black = (0, 0, 0)
+        # fill palettes with zeros if needed
         rgb_palette_1 = rgb_palette_1 or rgb_palette_0
+        rgb_palette_0 += [black] * (num_fore_attrs-len(rgb_palette_0))
+        rgb_palette_1 += [black] * (num_fore_attrs-len(rgb_palette_1))
         # fill up the 8-bit palette with all combinations we need
         # blink states: 0 light up, 1 light down
+        show_palette_0 = rgb_palette_0[:num_fore_attrs] * (256//num_fore_attrs)
         # bottom 128 are non-blink, top 128 blink to background
-        show_palette_0 = rgb_palette_0[:self._num_fore_attrs] * (256//self._num_fore_attrs)
-        show_palette_1 = rgb_palette_1[:self._num_fore_attrs] * (128//self._num_fore_attrs)
+        show_palette_1 = rgb_palette_1[:num_fore_attrs] * (128//num_fore_attrs)
         for attr in (
-                rgb_palette_1[:self._num_back_attrs] *
-                (128 // self._num_fore_attrs // self._num_back_attrs)
+                rgb_palette_1[:num_back_attrs] *
+                (128 // num_fore_attrs // num_back_attrs)
             ):
-            show_palette_1 += [attr]*self._num_fore_attrs
+            show_palette_1 += [attr] * num_fore_attrs
         colors_0 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)
             for (_r, _g, _b) in show_palette_0
@@ -1114,22 +1116,11 @@ class VideoSDL2(VideoPlugin):
 
     def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
         """Put text at a given position."""
-        if not self._is_text_mode:
-            # in graphics mode, a put_rect call does the actual drawing
+        if not glyphs:
             return
-        left, top = (col-1)*self._font_width, (row-1)*self._font_height
-        # render text with attributes
-        attr = fore + self._num_fore_attrs*back + 128*blink
-        self._canvas_pixels[pagenum][
-            top : top + glyphs.height,
-            left : left + glyphs.width
-        ] = glyphs.render(back, attr)
-        if underline:
-            self._canvas_pixels[pagenum][
-                top + glyphs.height - 1 : top + glyphs.height,
-                left : left + glyphs.width
-            ] = attr
-        self.busy = True
+        top = (row-1) * self._font_height
+        left = (col-1) * self._font_width
+        self.put_rect(pagenum, left, top, glyphs)
 
     def put_rect(self, pagenum, x0, y0, array):
         """Apply bytematrix [y, x] of attributes to an area."""
