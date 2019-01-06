@@ -371,7 +371,7 @@ class VideoCurses(VideoPlugin):
 
     def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
-        self.cursor_row, self.cursor_col = crow, ccol
+        self.cursor_row, self.cursor_col = row, col
         # cursor attr and width not supported
 
     def show_cursor(self, cursor_on):
@@ -406,7 +406,7 @@ class VideoCurses(VideoPlugin):
             except curses.error:
                 pass
 
-    def scroll(self, from_line, scroll_height, back_attr):
+    def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
         if direction == -1:
             self._scroll_up(from_line, scroll_height, back_attr)
@@ -436,7 +436,7 @@ class VideoCurses(VideoPlugin):
         )
         if self.apagenum != self.vpagenum:
             return
-        self._scroll(from_line, scroll_height, 1)
+        self._curses_scroll(from_line, scroll_height, 1)
         self.clear_rows(back_attr, from_line, from_line)
         if self.cursor_row < self.height:
             self.window.move(self.cursor_row, self.cursor_col-1)

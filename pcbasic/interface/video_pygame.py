@@ -218,7 +218,7 @@ class VideoPygame(VideoPlugin):
                         )
                     elif event.button == 2:
                         # MIDDLE button: paste
-                        text = self.clipboard_handler.paste(mouse=True)
+                        text = self.clipboard_handler.paste()
                         self.clipboard.paste(text)
                     self.busy = True
                 if event.button == 1:
@@ -229,7 +229,7 @@ class VideoPygame(VideoPlugin):
             elif event.type == pygame.MOUSEBUTTONUP:
                 self._input_queue.put(signals.Event(signals.PEN_UP))
                 if self._mouse_clip and event.button == 1:
-                    self.clipboard.copy(mouse=True)
+                    self.clipboard.copy()
                     self.clipboard.stop()
                     self.busy = True
             elif event.type == pygame.MOUSEMOTION:
@@ -505,9 +505,9 @@ class VideoPygame(VideoPlugin):
         title = self.caption + (u' - ' + msg if msg else u'')
         pygame.display.set_caption(title.encode('utf-8', 'replace'))
 
-    def set_clipboard_text(self, text, mouse):
+    def set_clipboard_text(self, text):
         """Put text on the clipboard."""
-        self.clipboard_handler.copy(text, mouse)
+        self.clipboard_handler.copy(text)
 
     def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
         """Build the palette."""
@@ -654,12 +654,9 @@ class PygameClipboard(clipboard.Clipboard):
                 logging.warning('PyGame.Scrap clipboard handling module not found.')
             self.ok = False
 
-    def copy(self, text, mouse=False):
+    def copy(self, text):
         """Put unicode text on clipboard."""
-        if mouse:
-            pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
-        else:
-            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+        pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         try:
             if WIN32:
                 # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
@@ -672,12 +669,9 @@ class PygameClipboard(clipboard.Clipboard):
         except Exception as e:# KeyError:
             logging.debug('Clipboard copy failed for clip %r: %s', text, e)
 
-    def paste(self, mouse=False):
+    def paste(self):
         """Return unicode text from clipboard."""
-        if mouse:
-            pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
-        else:
-            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+        pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         us = u''
         s = b''
         available = pygame.scrap.get_types()
