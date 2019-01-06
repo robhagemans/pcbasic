@@ -1085,13 +1085,6 @@ class VideoSDL2(VideoPlugin):
         self._cursor_attr = attr
         self._cursor_width = width
 
-    def set_cursor_attr(self, attr):
-        """Change attribute of cursor."""
-        new_attr = attr % self._num_fore_attrs
-        if self._cursor_visible and self._cursor_attr != new_attr:
-            self.busy = True
-        self._cursor_attr = new_attr
-
     def set_cursor_shape(self, from_line, to_line):
         """Build a sprite for the cursor."""
         self._cursor_from = from_line

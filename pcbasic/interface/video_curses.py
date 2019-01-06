@@ -374,9 +374,6 @@ class VideoCurses(VideoPlugin):
         self.cursor_row, self.cursor_col = crow, ccol
         # cursor attr and width not supported
 
-    def set_cursor_attr(self, attr):
-        """Change attribute of cursor - not supported by curses."""
-
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on

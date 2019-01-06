@@ -559,15 +559,13 @@ class VideoPygame(VideoPlugin):
     def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
         self.cursor_row, self.cursor_col = row, col
-        self.set_cursor_attr(attr)
+        # set attribute
+        self.cursor_attr = attr % self.num_fore_attrs
+        self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
+        # set width
         if width != self.cursor_width:
             self.cursor_width = width
             self._rebuild_cursor()
-
-    def set_cursor_attr(self, attr):
-        """Change attribute of cursor."""
-        self.cursor_attr = attr % self.num_fore_attrs
-        self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""

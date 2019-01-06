@@ -196,12 +196,8 @@ class VideoANSI(video_cli.VideoTextBase):
             console.move_cursor_to(
                 self._cursor_row + self._border_y, self._cursor_col + self._border_x
             )
-        self.set_cursor_attr(attr)
+        # change attribute of cursor
         # cursor width is controlled by terminal
-        console.set_cursor_colour(self.default_colours[attr%16])
-
-    def set_cursor_attr(self, attr):
-        """Change attribute of cursor."""
         if attr != self._cursor_attr:
             self._cursor_attr = attr
             console.set_cursor_colour(self.default_colours[attr%16])
