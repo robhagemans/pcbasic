@@ -96,7 +96,7 @@ class VideoPlugin(object):
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
 
-    def set_clipboard_text(self, text, mouse):
+    def set_clipboard_text(self, text):
         """Put text on the clipboard."""
 
     def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):

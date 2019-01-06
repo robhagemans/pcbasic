@@ -23,11 +23,11 @@ class Clipboard(object):
         """Initialise the clipboard handler."""
         self.ok = True
 
-    def copy(self, text, mouse=False):
+    def copy(self, text):
         """Put unicode text on clipboard."""
         pass
 
-    def paste(self, mouse=False):
+    def paste(self):
         """Return unicode text from clipboard."""
         return u''
 
@@ -35,14 +35,14 @@ class Clipboard(object):
 class MacClipboard(Clipboard):
     """Clipboard handling for OSX."""
 
-    def paste(self, mouse=False):
+    def paste(self):
         """Get unicode text from clipboard."""
         return (
             subprocess.check_output('pbpaste').decode(ENCODING, 'replace')
             .replace(u'\r\n', u'\r').replace(u'\n', u'\r')
         )
 
-    def copy(self, text, mouse=False):
+    def copy(self, text):
         """Put unicode text on clipboard."""
         try:
             p = subprocess.Popen('pbcopy', stdin=subprocess.PIPE)
@@ -69,21 +69,15 @@ class XClipboard(Clipboard):
         else:
             self.ok = False
 
-    def paste(self, mouse=False):
+    def paste(self):
         """Get unicode text from clipboard."""
-        if mouse:
-            output = subprocess.check_output((self._command, '-o'))
-        else:
-            output = subprocess.check_output([self._command, '-o'] + self._notmouse)
+        output = subprocess.check_output([self._command, '-o'] + self._notmouse)
         return (output.decode(ENCODING, 'replace').replace(u'\r\n', u'\r').replace(u'\n', u'\r'))
 
-    def copy(self, text, mouse=False):
+    def copy(self, text):
         """Put unicode text on clipboard."""
         try:
-            if mouse:
-                p = subprocess.Popen((self._command, '-i'), stdin=subprocess.PIPE)
-            else:
-                p = subprocess.Popen([self._command, '-i'] + self._notmouse, stdin=subprocess.PIPE)
+            p = subprocess.Popen([self._command, '-i'] + self._notmouse, stdin=subprocess.PIPE)
             p.communicate(text.encode(ENCODING, 'replace'))
         except subprocess.CalledProcessError:
             pass
@@ -138,7 +132,7 @@ class ClipboardInterface(object):
         self.select_stop = None
         self.selection_rect = None
 
-    def copy(self, mouse=False):
+    def copy(self):
         """Copy screen characters from selection into clipboard."""
         start, stop = self.select_start, self.select_stop
         if not start or not stop:
@@ -148,7 +142,7 @@ class ClipboardInterface(object):
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
         self._input_queue.put(signals.Event(
-                signals.CLIP_COPY, (start[0], start[1], stop[0], stop[1], mouse)))
+                signals.CLIP_COPY, (start[0], start[1], stop[0], stop[1])))
 
     def paste(self, text):
         """Paste from clipboard into keyboard buffer."""
@@ -192,7 +186,7 @@ class ClipboardInterface(object):
         if c.upper() == u'C':
             self.copy()
         elif c.upper() == u'V':
-            text = self._clipboard_handler.paste(mouse=False)
+            text = self._clipboard_handler.paste()
             self.paste(text)
         elif c.upper() == u'A':
             # select all
