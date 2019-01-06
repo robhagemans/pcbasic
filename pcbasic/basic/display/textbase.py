@@ -78,7 +78,7 @@ class Cursor(object):
         self._mode = mode
         self._height = mode.font_height
         # set the cursor position and attribute
-        self.move(1, 1, attr, width=1)
+        self.move(1, 1, attr, new_width=1)
         # cursor width starts out as single char
         self.set_default_shape(True)
         self.reset_visibility()
