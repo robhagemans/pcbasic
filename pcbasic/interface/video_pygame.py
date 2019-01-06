@@ -158,7 +158,7 @@ class VideoPygame(VideoPlugin):
                 self._input_queue.put(signals.Event(signals.STICK_MOVED, (joy, axis, 128)))
         # mouse setups
         self._mouse_clip = mouse_clipboard
-        self.move_cursor(0, 0)
+        self.cursor_row, self.cursor_col = 1, 1
         self.set_page(0, 0)
         # set_mode should be first event on queue
         self.f11_active = False
@@ -483,7 +483,8 @@ class VideoPygame(VideoPlugin):
         self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
         self._resize_display()
         # set standard cursor
-        self.set_cursor_shape(self.font_width, 0, self.font_height)
+        self.cursor_width = self.font_width
+        self.set_cursor_shape(0, self.font_height)
         # whole screen (blink on & off)
         self.canvas = [
             pygame.Surface(self.size, depth=8) # pylint: disable=E1121,E1123
@@ -555,9 +556,13 @@ class VideoPygame(VideoPlugin):
         self.cursor_visible = cursor_on
         self.busy = True
 
-    def move_cursor(self, crow, ccol):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
-        self.cursor_row, self.cursor_col = crow, ccol
+        self.cursor_row, self.cursor_col = row, col
+        self.set_cursor_attr(attr)
+        if width != self.cursor_width:
+            self.cursor_width = width
+            self._rebuild_cursor()
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
@@ -615,11 +620,16 @@ class VideoPygame(VideoPlugin):
             self.canvas[pagenum].fill(color, (x0, y0 + self.font_height - 1, self.font_width, 1))
         self.busy = True
 
-    def set_cursor_shape(self, width, from_line, to_line):
+    def set_cursor_shape(self, from_line, to_line):
         """Build a sprite for the cursor."""
-        height = self.font_height
-        self.cursor_width = width
         self.cursor_from, self.cursor_to = from_line, to_line
+        self._rebuild_cursor()
+
+    def _rebuild_cursor(self):
+        """Rebuild cursor surface."""
+        height = self.font_height
+        width = self.cursor_width
+        from_line, to_line = self.cursor_from, self.cursor_to
         self.cursor = pygame.Surface((width, height), depth=8) # pylint: disable=E1121,E1123
         color, bg = 254, 255
         self.cursor.set_colorkey(bg)

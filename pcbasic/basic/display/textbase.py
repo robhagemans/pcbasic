@@ -80,8 +80,7 @@ class Cursor(object):
         self._height = mode.font_height
         # set the cursor attribute
         if not mode.is_text_mode:
-            fore, _, _, _ = mode.split_attr(mode.cursor_index or attr)
-            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (fore,)))
+            self.set_attr(mode.cursor_index or attr)
         # cursor width starts out as single char
         self.set_default_shape(True)
         self.reset_visibility()

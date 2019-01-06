@@ -230,7 +230,7 @@ class VideoCLI(VideoTextBase):
         # if that's not where we want to be
         # but often it is anyway
 
-    def move_cursor(self, row, col):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
         # update cursor row only if it's changed from last work-cycle
         # or if actual printing takes place on the new cursor row

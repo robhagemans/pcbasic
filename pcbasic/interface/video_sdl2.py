@@ -1075,15 +1075,15 @@ class VideoSDL2(VideoPlugin):
         self._cursor_visible = cursor_on
         self.busy = True
 
-    def move_cursor(self, new_row, new_col, new_attr, new_width):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
         if self._cursor_visible and (
                 self._cursor_row, self._cursor_col, self._cursor_attr, self._cursor_width
-            ) != (new_row, new_col, new_attr, new_width):
+            ) != (row, col, attr, width):
             self.busy = True
-        self._cursor_row, self._cursor_col = new_row, new_col
-        self._cursor_attr = new_attr
-        self._cursor_width = new_width
+        self._cursor_row, self._cursor_col = row, col
+        self._cursor_attr = attr
+        self._cursor_width = width
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""

@@ -369,9 +369,10 @@ class VideoCurses(VideoPlugin):
         self.underlay.refresh()
         self._redraw()
 
-    def move_cursor(self, crow, ccol):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
         self.cursor_row, self.cursor_col = crow, ccol
+        # cursor attr and width not supported
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor - not supported by curses."""
@@ -382,7 +383,7 @@ class VideoCurses(VideoPlugin):
         if cursor_on:
             console.show_cursor(block=self.cursor_shape == 2)
 
-    def set_cursor_shape(self, width, from_line, to_line):
+    def set_cursor_shape(self, from_line, to_line):
         """Set the cursor shape."""
         if (to_line-from_line) >= 4:
             self.cursor_shape = 2

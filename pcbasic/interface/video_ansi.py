@@ -40,6 +40,7 @@ class VideoANSI(video_cli.VideoTextBase):
         self._cursor_row, self._cursor_col = 1, 1
         # last used colour attributes
         self._last_attributes = None
+        self._cursor_attr = None
         # text and colour buffer
         self._vpagenum, self._apagenum = 0, 0
         self._height, self._width = 25, 80
@@ -188,17 +189,22 @@ class VideoANSI(video_cli.VideoTextBase):
                 self._cursor_row + self._border_y, self._cursor_col + self._border_x
             )
 
-    def move_cursor(self, row, col):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
         if (row, col) != (self._cursor_row, self._cursor_col):
             self._cursor_row, self._cursor_col = row, col
             console.move_cursor_to(
                 self._cursor_row + self._border_y, self._cursor_col + self._border_x
             )
+        self.set_cursor_attr(attr)
+        # cursor width is controlled by terminal
+        console.set_cursor_colour(self.default_colours[attr%16])
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
-        console.set_cursor_colour(self.default_colours[attr%16])
+        if attr != self._cursor_attr:
+            self._cursor_attr = attr
+            console.set_cursor_colour(self.default_colours[attr%16])
 
     def show_cursor(self, cursor_on):
         """Change visibility of cursor."""
@@ -211,7 +217,7 @@ class VideoANSI(video_cli.VideoTextBase):
             # force move when made visible again
             console.hide_cursor()
 
-    def set_cursor_shape(self, width, from_line, to_line):
+    def set_cursor_shape(self, from_line, to_line):
         """Set the cursor shape."""
         self._block_cursor = (to_line-from_line) >= 4
         if self._cursor_visible:
