@@ -432,7 +432,7 @@ class TextScreen(object):
             from_line = self.scroll_area.top
         _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(
-            signals.VIDEO_SCROLL_UP, (from_line, self.scroll_area.bottom, back)
+            signals.VIDEO_SCROLL, (-1, from_line, self.scroll_area.bottom, back)
         ))
         if self.current_row > from_line:
             self._move_cursor(self.current_row - 1, self.current_col)
@@ -451,7 +451,7 @@ class TextScreen(object):
         """Scroll the scroll region down by one line, starting at from_line."""
         _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(
-            signals.VIDEO_SCROLL_DOWN, (from_line, self.scroll_area.bottom, back)
+            signals.VIDEO_SCROLL, (1, from_line, self.scroll_area.bottom, back)
         ))
         if self.current_row >= from_line:
             self._move_cursor(self.current_row + 1, self.current_col)

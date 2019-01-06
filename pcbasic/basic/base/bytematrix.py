@@ -77,8 +77,12 @@ class ByteMatrix(object):
             if isinstance(value, ByteMatrix):
                 value = value._rows
             if isinstance(y, slice):
+                # this will fail if we're self-assigning a slice of a view to the original view
+                # as we'll be overwriting the source while writing to the destination.
+                # in those cases, we'll need to copy first
                 for _dst, _src in zip(self._rows[y], value):
                     # if x is a slice, this will copy too -> e.g. array[:] = another_array
+                    # but not if rhs is a view?
                     _dst[x] = _src
             elif isinstance(x, slice):
                 assert len(value) == 1

@@ -233,7 +233,14 @@ class VideoANSI(video_cli.VideoTextBase):
         console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
         self._cursor_row, self._cursor_col = row, col+len(unicode_list)
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
+    def scroll(self, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height."""
+        if direction == -1:
+            self._scroll_up(from_line, scroll_height, back_attr)
+        else:
+            self._scroll_down(from_line, scroll_height, back_attr)
+
+    def _scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
         self._text[self._apagenum][from_line-1:scroll_height] = (
             self._text[self._apagenum][from_line:scroll_height] +
@@ -244,7 +251,7 @@ class VideoANSI(video_cli.VideoTextBase):
         console.scroll_up(from_line + self._border_y, scroll_height + self._border_y)
         self.clear_rows(back_attr, scroll_height, scroll_height)
 
-    def scroll_down(self, from_line, scroll_height, back_attr):
+    def _scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
         self._text[self._apagenum][from_line-1:scroll_height] = (
             [[(u' ', 0)] * len(self._text[self._apagenum][0])] +

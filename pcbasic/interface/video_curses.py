@@ -406,7 +406,14 @@ class VideoCurses(VideoPlugin):
             except curses.error:
                 pass
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
+    def scroll(self, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height."""
+        if direction == -1:
+            self._scroll_up(from_line, scroll_height, back_attr)
+        else:
+            self._scroll_down(from_line, scroll_height, back_attr)
+
+    def _scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
         bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][from_line-1:scroll_height] = (
@@ -415,12 +422,12 @@ class VideoCurses(VideoPlugin):
         )
         if self.apagenum != self.vpagenum:
             return
-        self._scroll(from_line, scroll_height, 1)
+        self._curses_scroll(from_line, scroll_height, -1)
         self.clear_rows(back_attr, scroll_height, scroll_height)
         if self.cursor_row > 1:
             self.window.move(self.cursor_row-2, self.cursor_col-1)
 
-    def scroll_down(self, from_line, scroll_height, back_attr):
+    def _scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
         bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][from_line-1:scroll_height] = (
@@ -429,18 +436,18 @@ class VideoCurses(VideoPlugin):
         )
         if self.apagenum != self.vpagenum:
             return
-        self._scroll(from_line, scroll_height, -1)
+        self._scroll(from_line, scroll_height, 1)
         self.clear_rows(back_attr, from_line, from_line)
         if self.cursor_row < self.height:
             self.window.move(self.cursor_row, self.cursor_col-1)
 
-    def _scroll(self, from_line, scroll_height, direction):
+    def _curses_scroll(self, from_line, scroll_height, direction):
         """Perform a scroll in curses."""
         if from_line != scroll_height:
             self.window.scrollok(True)
             self.window.setscrreg(from_line-1, scroll_height-1)
             try:
-                self.window.scroll(direction)
+                self.window.scroll(-direction)
             except curses.error:
                 pass
             self.window.scrollok(False)

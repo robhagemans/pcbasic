@@ -25,8 +25,7 @@ class VideoPlugin(object):
             signals.VIDEO_SET_MODE: self.set_mode,
             signals.VIDEO_PUT_TEXT: self.put_text,
             signals.VIDEO_CLEAR_ROWS: self.clear_rows,
-            signals.VIDEO_SCROLL_UP: self.scroll_up,
-            signals.VIDEO_SCROLL_DOWN: self.scroll_down,
+            signals.VIDEO_SCROLL: self.scroll,
             signals.VIDEO_SET_PALETTE: self.set_palette,
             signals.VIDEO_SET_CURSOR_SHAPE: self.set_cursor_shape,
             signals.VIDEO_SHOW_CURSOR: self.show_cursor,
@@ -120,11 +119,8 @@ class VideoPlugin(object):
     def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position and set attribute and width."""
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
-        """Scroll the screen up between from_line and scroll_height."""
-
-    def scroll_down(self, from_line, scroll_height, back_attr):
-        """Scroll the screen down between from_line and scroll_height."""
+    def scroll(self, direction, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height. direction 1 is down, -1 up."""
 
     def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
         """Put text at a given position."""

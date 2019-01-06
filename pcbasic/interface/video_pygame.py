@@ -567,35 +567,19 @@ class VideoPygame(VideoPlugin):
             self.cursor_width = width
             self._rebuild_cursor()
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
-        """Scroll the screen up between from_line and scroll_height."""
+    def scroll(self, direction, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height."""
         temp_scroll_area = pygame.Rect(
             0, (from_line-1)*self.font_height,
             self.size[0], (scroll_height-from_line+1) * self.font_height
         )
         # scroll
         self.canvas[self.apagenum].set_clip(temp_scroll_area)
-        self.canvas[self.apagenum].scroll(0, -self.font_height)
+        self.canvas[self.apagenum].scroll(0, direction * self.font_height)
         # empty new line
         bg = (0, 0, back_attr)
         self.canvas[self.apagenum].fill(
             bg, (0, (scroll_height-1) * self.font_height, self.size[0], self.font_height)
-        )
-        self.canvas[self.apagenum].set_clip(None)
-        self.busy = True
-
-    def scroll_down(self, from_line, scroll_height, back_attr):
-        """Scroll the screen down between from_line and scroll_height."""
-        temp_scroll_area = pygame.Rect(
-            0, (from_line-1) * self.font_height,
-            self.size[0], (scroll_height-from_line+1) * self.font_height
-        )
-        self.canvas[self.apagenum].set_clip(temp_scroll_area)
-        self.canvas[self.apagenum].scroll(0, self.font_height)
-        # empty new line
-        bg = (0, 0, back_attr)
-        self.canvas[self.apagenum].fill(
-            bg, (0, (from_line-1) * self.font_height, self.size[0], self.font_height)
         )
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True

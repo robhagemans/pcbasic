@@ -45,8 +45,7 @@ VIDEO_PUT_TEXT = 8
 # clear rows
 VIDEO_CLEAR_ROWS = 10
 # scroll
-VIDEO_SCROLL_UP = 11
-VIDEO_SCROLL_DOWN = 12
+VIDEO_SCROLL = 12
 # set palette
 VIDEO_SET_PALETTE = 15
 # put rect

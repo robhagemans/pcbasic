@@ -1092,26 +1092,24 @@ class VideoSDL2(VideoPlugin):
         if self._cursor_visible:
             self.busy = True
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
-        """Scroll the screen up between from_line and scroll_height."""
+    def scroll(self, direction, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height."""
         pixels = self._canvas_pixels[self._apagenum]
-        # these are exclusive ranges [x0, x1) etc
-        width = self._window_sizer.width
-        new_y0, new_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
-        old_y0, old_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[new_y0:new_y1, 0:width] = pixels[old_y0:old_y1, 0:width]
-        pixels[new_y1:old_y1, 0:width] = back_attr
-        self.busy = True
-
-    def scroll_down(self, from_line, scroll_height, back_attr):
-        """Scroll the screen down between from_line and scroll_height."""
-        pixels = self._canvas_pixels[self._apagenum]
-        # these are exclusive ranges [x0, x1) etc
-        width = self._window_sizer.width
-        old_y0, old_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
-        new_y0, new_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[new_y0:new_y1, 0:width] = pixels[old_y0:old_y1, 0:width]
-        pixels[old_y0:new_y0, 0:width] = back_attr
+        # scroll window, top of rows
+        hi_y0, hi_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
+        # scroll window, bottom of rows
+        lo_y0, lo_y1 = from_line*self._font_height, scroll_height*self._font_height
+        if direction == -1:
+            # scroll up
+            pixels[hi_y0:hi_y1, :] = pixels[lo_y0:lo_y1, :]
+            # clear the new empty line
+            pixels[hi_y1:lo_y1, :] = back_attr
+        else:
+            # scroll down
+            # copy is needed here as bytearray-view self-slice assignment will self-overwrite
+            pixels[lo_y0:lo_y1, :] = pixels[hi_y0:hi_y1, :].copy()
+            # clear the new empty line
+            pixels[hi_y0:lo_y0, :] = back_attr
         self.busy = True
 
     def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
