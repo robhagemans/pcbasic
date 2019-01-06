@@ -404,7 +404,7 @@ class VideoSDL2(VideoPlugin):
         self._cursor_row, self._cursor_col = 1, 1
         # cursor shape
         self._cursor_from = None
-        self._cursor_to = None
+        self._cursor_height = None
         self._cursor_width = None
         self._cursor_attr = None
         self._cursor_cache = [None, None]
