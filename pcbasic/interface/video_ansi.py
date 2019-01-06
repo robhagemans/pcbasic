@@ -233,7 +233,7 @@ class VideoANSI(video_cli.VideoTextBase):
         console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
         self._cursor_row, self._cursor_col = row, col+len(unicode_list)
 
-    def scroll(self, from_line, scroll_height, back_attr):
+    def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
         if direction == -1:
             self._scroll_up(from_line, scroll_height, back_attr)
@@ -248,7 +248,7 @@ class VideoANSI(video_cli.VideoTextBase):
         )
         if self._apagenum != self._vpagenum:
             return
-        console.scroll_up(from_line + self._border_y, scroll_height + self._border_y)
+        console.scroll(from_line + self._border_y, scroll_height + self._border_y, rows=-1)
         self.clear_rows(back_attr, scroll_height, scroll_height)
 
     def _scroll_down(self, from_line, scroll_height, back_attr):
@@ -259,7 +259,7 @@ class VideoANSI(video_cli.VideoTextBase):
         )
         if self._apagenum != self._vpagenum:
             return
-        console.scroll_down(from_line + self._border_y, scroll_height + self._border_y)
+        console.scroll(from_line + self._border_y, scroll_height + self._border_y, rows=1)
         self.clear_rows(back_attr, from_line, from_line)
 
     def set_caption_message(self, msg):

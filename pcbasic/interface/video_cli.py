@@ -247,7 +247,7 @@ class VideoCLI(VideoTextBase):
             self._update_position(self._cursor_row, 1)
             console.clear_row()
 
-    def scroll(self, from_line, scroll_height, back_attr):
+    def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
         if direction == -1:
             self._scroll_up(from_line, scroll_height, back_attr)
