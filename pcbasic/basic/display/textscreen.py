@@ -73,7 +73,10 @@ class TextScreen(object):
         self.scroll_area.init_mode(self.mode)
         self.set_pos(self.scroll_area.top, 1)
         # rebuild the cursor
-        self.cursor.init_mode(self.mode, self.attr)
+        if not mode.is_text_mode and mode.cursor_index:
+            self.cursor.init_mode(self.mode, mode.cursor_index)
+        else:
+            self.cursor.init_mode(self.mode, self.attr)
 
     def set_page(self, vpagenum, apagenum):
         """Set visible and active page."""

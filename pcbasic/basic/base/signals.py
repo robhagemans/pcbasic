@@ -36,8 +36,6 @@ VIDEO_COPY_PAGE = 28
 VIDEO_SHOW_CURSOR = 14
 # set cursor shape
 VIDEO_SET_CURSOR_SHAPE = 3
-# set cursor attribute
-VIDEO_SET_CURSOR_ATTR = 6
 # move cursor
 VIDEO_MOVE_CURSOR = 5
 # set border attribute

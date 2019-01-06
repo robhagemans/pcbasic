@@ -29,7 +29,6 @@ class VideoPlugin(object):
             signals.VIDEO_SCROLL_DOWN: self.scroll_down,
             signals.VIDEO_SET_PALETTE: self.set_palette,
             signals.VIDEO_SET_CURSOR_SHAPE: self.set_cursor_shape,
-            signals.VIDEO_SET_CURSOR_ATTR: self.set_cursor_attr,
             signals.VIDEO_SHOW_CURSOR: self.show_cursor,
             signals.VIDEO_MOVE_CURSOR: self.move_cursor,
             signals.VIDEO_SET_PAGE: self.set_page,
@@ -119,10 +118,7 @@ class VideoPlugin(object):
         """Change visibility of cursor."""
 
     def move_cursor(self, row, col, attr, width):
-        """Move the cursor to a new position."""
-
-    def set_cursor_attr(self, attr):
-        """Change attribute of cursor."""
+        """Move the cursor to a new position and set attribute and width."""
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""

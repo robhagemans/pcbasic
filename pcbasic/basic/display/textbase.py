@@ -76,24 +76,17 @@ class Cursor(object):
     def init_mode(self, mode, attr):
         """Change the cursor for a new screen mode."""
         self._mode = mode
-        self._width = mode.font_width
         self._height = mode.font_height
-        # set the cursor attribute
-        if not mode.is_text_mode:
-            self.set_attr(mode.cursor_index or attr)
+        # set the cursor position and attribute
+        self.move(1, 1, attr, width=1)
         # cursor width starts out as single char
         self.set_default_shape(True)
         self.reset_visibility()
 
     def set_attr(self, new_attr):
         """Set the text cursor attribute and submit."""
-        fore, _, _, _ = self._mode.split_attr(new_attr)
-        if fore == self._fore_attr:
-            return
-        self._fore_attr = fore
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_CURSOR_ATTR, (self._fore_attr,)
-        ))
+        row, column = self._position
+        self.move(row, column, new_attr, None)
 
     def show(self, do_show):
         """Force cursor to be visible/invisible."""
