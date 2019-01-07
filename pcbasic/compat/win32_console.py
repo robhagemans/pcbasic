@@ -500,14 +500,6 @@ class Win32Console(object):
         else:
             ScrollConsoleScreenBuffer(HSTDOUT, region, clip_rect, new_pos, u' ', self._attrs)
 
-    def scroll_up(self, top, bottom):
-        """Scroll the region between top and bottom one row up."""
-        self._scroll(top-1, bottom-1, 1)
-
-    def scroll_down(self, top, bottom):
-        """Scroll the region between top and bottom one row down."""
-        self._scroll(top-1, bottom-1, -1)
-
     def reset(self):
         """Reset to default attributes."""
         _SetConsoleScreenBufferInfoEx(HSTDOUT, byref(self._orig_csbie))
