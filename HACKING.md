@@ -15,17 +15,17 @@ The following packages are needed or recommended when installing PC-BASIC:
 |-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
 | [Python 2.7.12](https://www.python.org/downloads/release/python-2712/)        | all                | required     |
 | [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | sound and graphics
-| [NumPy](https://sourceforge.net/projects/numpy/files/)                        | all                | recommended  | sound and graphics
+| [NumPy](https://sourceforge.net/projects/numpy/files/)                        | all                | recommended  | sound
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound when using text-based interface
 | [PySerial 3.4](https://pypi.python.org/pypi/pyserial)                         | all                | optional     | physical or emulated serial port access
 | [PyParallel](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/) | Windows, Linux     | optional     | physical parallel port access
-| [PyGame 1.9.3](http://www.pygame.org)                                         | all                | optional     | sound and graphics (PyGame interface)
-| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound (PortAudio engine)
+| [PyGame 1.9.3](http://www.pygame.org)                                         | all                | deprecated   | sound and graphics (requires NumPy)
 
 
 `setuptools` and `pip` are included with Python.
 Once you have a working Python installation, most dependencies can be installed with `pip`:
 
-        pip install numpy pygame pyaudio pyserial
+        pip install numpy pyaudio pyserial
 
 To use the graphical interface, you will also need to install the [SDL2](https://www.libsdl.org/download-2.0.php) library.
 Install the library in your OS's standard location for libraries.
@@ -126,13 +126,6 @@ Those who prefer to use the [MinGW](http://mingw.org/) GCC compiler, follow thes
         make
         gcc -shared -o SDL2_gfx.dll *.o SDL2.dll
 
-
-#### Installing with PyGame ####
-The preferred graphical interface is SDL2. However, a PyGame interface is also available.
-
-The 1.9.1 release of PyGame, currently still standard on some distributions (e.g. Ubuntu 16.04 LTS),
-unfortunately contains a few bugs that have been resolved in newer releases. Please use the latest
-PyGame release from pygame.org, or install with `pip install pygame`.
 
 #### Contributing code ####
 
