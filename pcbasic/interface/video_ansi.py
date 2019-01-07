@@ -135,15 +135,18 @@ class VideoANSI(video_cli.VideoTextBase):
         for attr, rgb in enumerate(new_palette):
             console.set_palette_entry(attr, *rgb)
 
-    def set_mode(self, mode_info):
+    def set_mode(
+            self, num_pages, canvas_height, canvas_width, text_height, text_width,
+            num_attr, enable_blink, text_cursor
+        ):
         """Change screen mode."""
-        self._height = mode_info.height
-        self._width = mode_info.width
+        self._height = text_height
+        self._width = text_width
         self._text = [
             [[(u' ', (7, 0, False, False))] * self._width for _ in range(self._height)]
-            for _ in range(mode_info.num_pages)
+            for _ in range(num_pages)
         ]
-        self._set_default_colours(len(mode_info.palette))
+        self._set_default_colours(num_attr)
         console.resize(self._height + 2*self._border_y, self._width + 2*self._border_x)
         self._redraw()
         return True

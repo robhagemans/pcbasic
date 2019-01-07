@@ -343,7 +343,7 @@ class VideoSDL2(VideoPlugin):
         self._cycle = 0
         self._last_tick = 0
         # blink is enabled, should be True in text modes with blink and ega mono
-        # cursor blinks if _is_text_mode and _blink_enabled
+        # cursor blinks if _text_cursor and _blink_enabled
         self._blink_enabled = True
         # load the icon
         self._icon = bytematrix.ByteMatrix(len(ICON), len(ICON[0]), ICON).hrepeat(2).vrepeat(2)
@@ -393,7 +393,7 @@ class VideoSDL2(VideoPlugin):
         # event handlers
         self._event_handlers = self._register_handlers()
         # video mode settings
-        self._is_text_mode = True
+        self._text_cursor = True
         self._font_height = None
         self._font_width = None
         self._num_pages = None
@@ -797,7 +797,7 @@ class VideoSDL2(VideoPlugin):
         # blink         on     on     off    off
         #
         # blink state remains constant if blink not enabled
-        # cursor blinks only if _is_text_mode and _blink_enabled
+        # cursor blinks only if _text_cursor and _blink_enabled
         # cursor visible every cycle between 5 and 10, 15 and 20
         tick = sdl2.SDL_GetTicks()
         if tick - self._last_tick >= CYCLE_TIME:
@@ -894,7 +894,7 @@ class VideoSDL2(VideoPlugin):
             cursor_area = self._canvas_pixels[self._apagenum][cursor_slice]
             # copy area under cursor
             under_cursor = cursor_area.copy()
-            if self._is_text_mode:
+            if self._text_cursor:
                 cursor_area[:, :] = self._cursor_attr
             else:
                 cursor_area[:, :] ^= self._cursor_attr
@@ -944,17 +944,19 @@ class VideoSDL2(VideoPlugin):
     ###########################################################################
     # signal handlers
 
-    def set_mode(self, mode_info):
+    def set_mode(
+            self, num_pages, canvas_height, canvas_width, text_height, text_width,
+            num_attr, enable_blink, text_cursor
+        ):
         """Initialise a given text or graphics mode."""
         # unpack mode info struct
-        self._is_text_mode = mode_info.is_text_mode
-        self._font_height = mode_info.font_height
-        self._font_width = mode_info.font_width
-        self._num_pages = mode_info.num_pages
-        self._blink_enabled = mode_info.has_blink
+        self._font_height = canvas_height // text_height
+        self._font_width = canvas_width // text_width
+        self._num_pages = num_pages
+        self._blink_enabled = enable_blink
+        self._text_cursor = text_cursor
         # prebuilt glyphs
         # logical size
-        canvas_width, canvas_height = mode_info.pixel_width, mode_info.pixel_height
         size_changed = self._window_sizer.set_canvas_size(
             canvas_width, canvas_height, fullscreen=self._fullscreen, resize_window=False
         )
@@ -992,7 +994,7 @@ class VideoSDL2(VideoPlugin):
         # initialise clipboard
         self._clipboard_interface = clipboard.ClipboardInterface(
             self._clipboard_handler, self._input_queue,
-            mode_info.width, mode_info.height, self._font_width, self._font_height,
+            text_width, text_height, self._font_width, self._font_height,
             (canvas_width, canvas_height)
         )
         self.busy = True

@@ -309,15 +309,18 @@ class VideoCurses(VideoPlugin):
             cursattr |= curses.A_BLINK
         return cursattr
 
-    def set_mode(self, mode_info):
+    def set_mode(
+            self, num_pages, canvas_height, canvas_width, text_height, text_width,
+            num_attr, enable_blink, text_cursor
+        ):
         """Change screen mode."""
-        self.height = mode_info.height
-        self.width = mode_info.width
-        self._set_default_colours(len(mode_info.palette))
+        self.height = text_height
+        self.width = text_width
+        self._set_default_colours(num_attr)
         bgcolor = self._curses_colour(7, 0, False)
         self.text = [
             [[(u' ', bgcolor)]*self.width for _ in range(self.height)]
-            for _ in range(mode_info.num_pages)
+            for _ in range(num_pages)
         ]
         self._resize(self.height, self.width)
         self._set_curses_palette()

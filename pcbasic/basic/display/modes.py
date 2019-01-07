@@ -487,7 +487,7 @@ class VideoMode(object):
         self.colours = colours
         # colours1 is only used by EGA mono mode
         self.colours1 = None
-        # this is used by interface plugins (which use this object as mode_info)
+        # this mode has blinking attributes
         self.has_blink = has_blink
         self.video_segment = int(video_segment)
         self.page_size = int(page_size)

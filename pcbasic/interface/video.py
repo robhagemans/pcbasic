@@ -89,7 +89,10 @@ class VideoPlugin(object):
 
     # signal handlers
 
-    def set_mode(self, mode_info):
+    def set_mode(
+            self, num_pages, canvas_height, canvas_width, text_height, text_width,
+            num_attr, enable_blink, text_cursor
+        ):
         """Initialise a given text or graphics mode."""
 
     def set_caption_message(self, msg):

@@ -228,7 +228,12 @@ class Display(object):
         # illegal fn call if we don't have a font for this mode
         self.text_screen.check_font_available(spec)
         # if we made it here we're ready to commit to the new mode
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, (spec,)))
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_SET_MODE, (
+                spec.num_pages, spec.pixel_height, spec.pixel_width, spec.height, spec.width,
+                spec.num_attr, spec.has_blink, spec.is_text_mode
+            )
+        ))
         # switching to another text mode (width-only change)
         width_only = (self.mode.is_text_mode and spec.is_text_mode)
         # attribute and border persist on width-only change
@@ -360,7 +365,13 @@ class Display(object):
     def rebuild(self):
         """Completely resubmit the screen to the interface."""
         # set the screen mode
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_MODE, (self.mode,)))
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_SET_MODE, (
+                self.mode.num_pages, self.mode.pixel_height, self.mode.pixel_width,
+                self.mode.height, self.mode.width,
+                self.mode.num_attr, self.mode.has_blink, self.mode.is_text_mode
+            )
+        ))
         # set the visible and active pages
         self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
         # rebuild palette

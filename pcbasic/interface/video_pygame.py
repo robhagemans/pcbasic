@@ -430,7 +430,7 @@ class VideoPygame(VideoPlugin):
             (self.cursor_col-1) * self.font_width, (self.cursor_row-1) * self.font_height,
             self.cursor_width, self.font_height
         )
-        if self.text_mode:
+        if self.text_cursor:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
             if self._cycle // BLINK_CYCLES in (1, 3):
                 screen.blit(
@@ -469,16 +469,19 @@ class VideoPygame(VideoPlugin):
     ###########################################################################
     # signal handlers
 
-    def set_mode(self, mode_info):
+    def set_mode(
+            self, num_pages, canvas_height, canvas_width, text_height, text_width,
+            num_attr, enable_blink, text_cursor
+        ):
         """Initialise a given text or graphics mode."""
-        self.text_mode = mode_info.is_text_mode
+        self.text_cursor = text_cursor
         # unpack mode info struct
-        self.font_height = mode_info.font_height
-        self.font_width = mode_info.font_width
-        self.num_pages = mode_info.num_pages
-        self.mode_has_blink = mode_info.has_blink
+        self.font_height = canvas_height // text_height
+        self.font_width = canvas_width // text_width
+        self.num_pages = num_pages
+        self.mode_has_blink = enable_blink
         # logical size
-        self.size = (mode_info.pixel_width, mode_info.pixel_height)
+        self.size = canvas_width, canvas_height
         self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
         self._resize_display()
         # set standard cursor
@@ -494,7 +497,7 @@ class VideoPygame(VideoPlugin):
         # initialise clipboard
         self.clipboard = clipboard.ClipboardInterface(
             self.clipboard_handler, self._input_queue,
-            mode_info.width, mode_info.height, self.font_width, self.font_height, self.size
+            text_width, text_height, self.font_width, self.font_height, self.size
         )
         self.busy = True
         self._has_window = True
