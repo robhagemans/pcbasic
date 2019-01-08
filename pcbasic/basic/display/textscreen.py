@@ -362,7 +362,7 @@ class TextScreen(object):
             return
         fore, back, blink, underline = self.mode.split_attr(attr)
         # mark full-width chars by a trailing empty string to preserve column counts
-        sprite = self._glyphs.render_text(chars, fore, back, blink, underline)
+        sprite = self._glyphs.render_text(chars, attr, back, underline)
         if not self.mode.is_text_mode and not text_only:
             left, top = self.mode.text_to_pixel_pos(row, col)
             width, height = sprite.width, sprite.height
