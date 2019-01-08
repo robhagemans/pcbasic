@@ -214,7 +214,7 @@ class ByteMatrix(object):
     def render(self, back, fore):
         """Set attributes on bit matrix."""
         return self._create_from_rows([
-            _row.replace(b'\0', int2byte(back)).replace(b'\x01', int2byte(fore))
+            bytearray(fore if _c else back for _c in _row)
             for _row in self._rows
         ])
 
