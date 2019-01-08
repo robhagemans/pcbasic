@@ -411,6 +411,8 @@ class VideoSDL2(VideoPlugin):
         # display pages
         self._vpagenum, self._apagenum = 0, 0
         # palette
+        # { attr: (fore, back, blink, underline) }
+        self._attributes = {}
         # display palettes for blink states 0, 1
         self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         # pixel packing is active (composite artifacts)
@@ -1009,32 +1011,19 @@ class VideoSDL2(VideoPlugin):
         """Put text on the clipboard."""
         self._clipboard_handler.copy(text, mouse)
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
+    def set_palette(self, attributes, pack_pixels):
         """Build the palette."""
-        num_fore_attrs = 16
-        num_back_attrs = 8
-        black = (0, 0, 0)
-        # fill palettes with zeros if needed
-        rgb_palette_1 = rgb_palette_1 or rgb_palette_0
-        rgb_palette_0 += [black] * (num_fore_attrs-len(rgb_palette_0))
-        rgb_palette_1 += [black] * (num_fore_attrs-len(rgb_palette_1))
-        # fill up the 8-bit palette with all combinations we need
+        self._attributes = attributes
+        palette_blink_up = (_fore for _fore, _, _, _ in attributes)
+        palette_blink_down = (_back if _blink else _fore for _fore, _back, _blink, _ in attributes)
         # blink states: 0 light up, 1 light down
-        show_palette_0 = rgb_palette_0[:num_fore_attrs] * (256//num_fore_attrs)
-        # bottom 128 are non-blink, top 128 blink to background
-        show_palette_1 = rgb_palette_1[:num_fore_attrs] * (128//num_fore_attrs)
-        for attr in (
-                rgb_palette_1[:num_back_attrs] *
-                (128 // num_fore_attrs // num_back_attrs)
-            ):
-            show_palette_1 += [attr] * num_fore_attrs
         colors_0 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)
-            for (_r, _g, _b) in show_palette_0
+            for (_r, _g, _b) in palette_blink_up
         ))
         colors_1 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)
-            for (_r, _g, _b) in show_palette_1
+            for (_r, _g, _b) in palette_blink_down
         ))
         sdl2.SDL_SetPaletteColors(self._palette[0], colors_0, 0, 256)
         sdl2.SDL_SetPaletteColors(self._palette[1], colors_1, 0, 256)

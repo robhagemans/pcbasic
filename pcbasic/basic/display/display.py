@@ -27,55 +27,56 @@ class Palette(object):
 
     def __init__(self, queues, mode, capabilities, memory):
         """Initialise palette."""
-        self.capabilities = capabilities
+        self._capabilities = capabilities
         self._memory = memory
         self._queues = queues
-        self.mode = mode
-        self.set_all(mode.palette, check_mode=False)
+        self._mode = mode
+        # map from fore/back attr to video adapter colour
+        # interpretation is video mode dependent
+        self._palette = []
+        self.set_all(mode.default_palette)
 
     def init_mode(self, mode):
         """Initialise for new mode."""
-        self.mode = mode
-        self.set_all(mode.palette, check_mode=False)
+        self._mode = mode
+        self.set_all(mode.default_palette)
 
-    def set_entry(self, index, colour, check_mode=True):
+    def set_all(self, new_palette):
+        """Set the colours for all attributes."""
+        # map from fore/back attr to video adapter colour
+        self._palette = list(new_palette)
+        self.submit()
+
+    def set_entry(self, index, colour):
         """Set a new colour for a given attribute."""
-        mode = self.mode
-        if check_mode and not self.mode_allows_palette(mode):
-            return
-        self.palette[index] = colour
-        self.rgb_palette[index] = mode.colours[colour]
-        if mode.colours1:
-            self.rgb_palette1[index] = mode.colours1[colour]
+        self._palette[index] = colour
+        # in text mode, we'd be setting more than one attribute
+        # e.g. all true attributes with this number as foreground or background
+        # and attr_to_rgb decides which
+        self.submit()
+
+    def submit(self):
+        """Submit to interface."""
+        # all attributes split into foreground RGB, background RGB, blink and underline
+        rgb_table = [
+            self._mode.attr_to_rgb(_attr, self._palette)
+            for _attr in range(self._mode.num_attr)
+        ]
         self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1, None)
+            signals.VIDEO_SET_PALETTE, (rgb_table, None)
         ))
 
     def get_entry(self, index):
         """Retrieve the colour for a given attribute."""
-        return self.palette[index]
+        return self._palette[index]
 
-    def set_all(self, new_palette, check_mode=True):
-        """Set the colours for all attributes."""
-        if check_mode and new_palette and not self.mode_allows_palette(self.mode):
-            return
-        self.palette = list(new_palette)
-        self.rgb_palette = [self.mode.colours[i] for i in self.palette]
-        if self.mode.colours1:
-            self.rgb_palette1 = [self.mode.colours1[i] for i in self.palette]
-        else:
-            self.rgb_palette1 = None
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1, None)
-        ))
-
-    def mode_allows_palette(self, mode):
+    def _mode_allows_palette(self):
         """Check if the video mode allows palette change."""
         # effective palette change is an error in CGA
-        if self.capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
+        if self._capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
             raise error.BASICError(error.IFC)
         # ignore palette changes in Tandy/PCjr SCREEN 0
-        elif self.capabilities in ('tandy', 'pcjr') and mode.is_text_mode:
+        elif self._capabilities in ('tandy', 'pcjr') and self._mode.is_text_mode:
             return False
         else:
             return True
@@ -90,22 +91,22 @@ class Palette(object):
             colour = values.to_int(colour)
         list(args)
         if attrib is None and colour is None:
-            self.set_all(self.mode.palette)
+            if self._mode_allows_palette():
+                self.set_all(self._mode.default_palette)
         else:
             # can't set blinking colours separately
-            num_palette_entries = self.mode.num_attr if self.mode.num_attr != 32 else 16
-            error.range_check(0, num_palette_entries-1, attrib)
-            colour = (colour+1) % 256 -1
-            error.range_check(-1, len(self.mode.colours)-1, colour)
+            error.range_check(0, len(self._mode.default_palette)-1, attrib)
+            error.range_check(-1, len(self._mode.colours)-1, colour)
             if colour != -1:
-                self.set_entry(attrib, colour)
+                if self._mode_allows_palette():
+                    self.set_entry(attrib, colour)
 
     def palette_using_(self, args):
         """PALETTE USING: set palette from array buffer."""
         array_name, start_indices = next(args)
         array_name = self._memory.complete_name(array_name)
         list(args)
-        num_palette_entries = self.mode.num_attr if self.mode.num_attr != 32 else 16
+        num_palette_entries = self._mode.num_attr if self._mode.num_attr != 32 else 16
         try:
             dimensions = self._memory.arrays.dimensions(array_name)
         except KeyError:
@@ -119,9 +120,10 @@ class Palette(object):
             offset = (start+i) * 2
             ## signed int, as -1 means don't set
             val, = struct.unpack('<h', lst[offset:offset+2])
-            error.range_check(-1, len(self.mode.colours)-1, val)
+            error.range_check(-1, len(self._mode.colours)-1, val)
             new_palette.append(val if val > -1 else self.get_entry(i))
-        self.set_all(new_palette)
+        if self._mode_allows_palette():
+            self.set_all(new_palette)
 
 
 #######################################################################################
@@ -149,7 +151,7 @@ class Display(object):
         # current attribute
         self.attr = 7
         # border attribute
-        self.border_attr = 0
+        self._border_attr = 0
         # text screen
         self.text_screen = TextScreen(
             self.queues, self._values, self.mode, self.capabilities,
@@ -340,11 +342,7 @@ class Display(object):
                 ))
             else:
                 # set normal palette
-                self.queues.video.put(signals.Event(
-                    signals.VIDEO_SET_PALETTE,
-                    (self.palette.rgb_palette, self.palette.rgb_palette1, None)
-                ))
-
+                self.palette.submit()
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
@@ -375,10 +373,9 @@ class Display(object):
         # set the visible and active pages
         self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
         # rebuild palette
-        self.palette.set_all(self.palette.palette, check_mode=False)
+        self.palette.submit()
         # set the border
-        fore, _, _, _ = self.mode.split_attr(self.border_attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
         self.text_screen.rebuild()
 
 
@@ -408,9 +405,13 @@ class Display(object):
 
     def set_border(self, attr):
         """Set the border attribute."""
-        self.border_attr = attr
         fore, _, _, _ = self.mode.split_attr(attr)
+        self._border_attr = fore
         self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
+
+    def get_border_attr(self):
+        """Get the border attribute, in range 0 <= attr < 16."""
+        return self._border_attr
 
     ###########################################################################
     # memory operations
@@ -504,10 +505,29 @@ class Display(object):
         if self.mode.name in ('640x200x2', '720x348x2'):
             # screen 2; hercules: illegal fn call
             raise error.BASICError(error.IFC)
+        elif self.mode.is_text_mode:
+            self._color_mode_0(fore, back, bord)
         elif self.mode.name == '320x200x4':
             self._color_mode_1(fore, back, bord)
         else:
             self._color_other_modes(fore, back, bord)
+
+    def _color_mode_0(self, fore, back, bord):
+        """Helper function for COLOR in text mode (SCREEN 0)."""
+        if back is None:
+            _, back, _, _ = self.mode.split_attr(self.attr)
+        # for screens other than 1, no distinction between 3rd parm zero and not supplied
+        bord = bord or 0
+        error.range_check(0, 255, bord)
+        # allow twice the number of foreground attributes (16) - because of blink
+        num_fore_attr = self.mode.num_palette
+        error.range_check(0, num_fore_attr*2-1, fore)
+        # allow background attributes up to 15 though highest bit is ignored
+        error.range_check(0, num_fore_attr-1, back, bord)
+        # COLOR > 17 means blink, but the blink bit is the top bit of the true attribute
+        blink, fore = divmod(fore, num_fore_attr)
+        self.set_attr(self.mode.join_attr(fore, back, blink, False))
+        self.set_border(bord)
 
     def _color_mode_1(self, back, pal, override):
         """Helper function for COLOR in SCREEN 1."""
@@ -519,32 +539,24 @@ class Display(object):
         if pal is not None:
             error.range_check(0, 255, pal)
             self.video.set_cga4_palette(pal % 2)
-            palette = list(self.mode.palette)
+            palette = list(self.mode.default_palette)
             palette[0] = back & 0xf
             # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
             # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15
-            self.palette.set_all(palette, check_mode=False)
+            self.palette.set_all(palette)
         else:
-            self.palette.set_entry(0, back & 0xf, check_mode=False)
+            self.palette.set_entry(0, back & 0xf)
 
     def _color_other_modes(self, fore, back, bord):
         """Helper function for COLOR in modes other than SCREEN 1."""
         mode = self.mode
         if back is None:
             # graphics mode bg is always 0; sets palette instead
-            if mode.is_text_mode:
-                back = (self.attr >> 4) & 0x7
-            else:
-                back = self.palette.get_entry(0)
+            back = self.palette.get_entry(0)
         # for screens other than 1, no distinction between 3rd parm zero and not supplied
         bord = bord or 0
         error.range_check(0, 255, bord)
-        if mode.is_text_mode:
-            error.range_check(0, mode.num_attr-1, fore)
-            error.range_check(0, 15, back, bord)
-            self.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf))
-            self.set_border(bord)
-        elif mode.name in (
+        if mode.name in (
                 '160x200x16', '320x200x4pcjr', '320x200x16pcjr'
                 '640x200x4', '320x200x16', '640x200x16'
             ):
@@ -552,17 +564,17 @@ class Display(object):
             error.range_check(0, mode.num_attr-1, back)
             self.set_attr(fore)
             # in screen 7 and 8, only low intensity palette is used.
-            self.palette.set_entry(0, back % 8, check_mode=False)
+            self.palette.set_entry(0, back % 8)
         elif mode.name in ('640x350x16', '640x350x4'):
             error.range_check(1, mode.num_attr-1, fore)
-            error.range_check(0, len(mode.colours)-1, back)
+            error.range_check(0, mode.num_colours-1, back)
             self.set_attr(fore)
-            self.palette.set_entry(0, back, check_mode=False)
+            self.palette.set_entry(0, back)
         elif mode.name == '640x400x2':
-            error.range_check(0, len(mode.colours)-1, fore)
+            error.range_check(0, mode.num_colours-1, fore)
             if back != 0:
                 raise error.BASICError(error.IFC)
-            self.palette.set_entry(1, fore, check_mode=False)
+            self.palette.set_entry(1, fore)
 
     def cls_(self, args):
         """CLS: clear the screen."""

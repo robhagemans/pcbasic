@@ -16,25 +16,32 @@ from ..base import error
 from ..base import bytematrix
 
 
-# SCREEN 10 EGA pseudocolours, blink state 0 and 1
-INTENSITY_EGA_MONO_0 = (0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xff, 0xff, 0xff)
-INTENSITY_EGA_MONO_1 = (0x00, 0xaa, 0xff, 0x00, 0xaa, 0xff, 0x00, 0xaa, 0xff)
+
 # MDA text intensities: black, dark green, green, bright green
 INTENSITY_MDA_MONO = (0x00, 0x40, 0xc0, 0xff)
+# SCREEN 10 intensities
+INTENSITY_EGA_MONO = (0x00, 0xaa, 0xff)
 
 # default 16-color and ega palettes
 CGA16_PALETTE = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 EGA_PALETTE = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
+# from GW-BASIC manual:
+# Attribute Value	Displayed Pseudo-Color
+# 0	Off
+# 1	On, normal intensity
+# 2	Blink
+# 3	On, high intensity
 EGA_MONO_PALETTE = (0, 4, 1, 8)
-# adding dark-green (foreground for some exceptional attributes) as #3
-MDA_PALETTE = (0, 2, 3, 1)
+
 CGA2_PALETTE = (0, 15)
 
 # http://qbhlp.uebergeord.net/screen-statement-details-colors.html
 # underline/intensity/reverse video attributes are slightly different from mda
 # attributes 1, 9 should have underlining.
 # EGA_MONO_TEXT_PALETTE = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
-# MDA_PALETTE = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
+
+# this is actually ignored, see MonoTextMode class
+MDA_PALETTE = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
 
 # CGA mono intensities
 INTENSITY16 = range(0x00, 0x100, 0x11)
@@ -172,7 +179,7 @@ class Video(object):
     def set_cga4_palette(self, num):
         """set the default 4-colour CGA palette."""
         self.cga4_palette_num = num
-        # we need to copy into cga4_palette as it's referenced by mode.palette
+        # we need to copy into cga4_palette as it's referenced by mode.default_palette
         if self.cga_mode_5 and self.capabilities in ('cga', 'cga_old'):
             self.cga4_palette[:] = self.cga4_palettes[5]
         else:
@@ -208,11 +215,8 @@ class Video(object):
         """Build lists of allowed graphics modes."""
         video_mem_size = int(video_mem_size)
         # initialise tinted monochrome palettes
-        colours_ega_mono_0 = tuple(
-            tuple(tint*i//255 for tint in self.mono_tint) for i in INTENSITY_EGA_MONO_0
-        )
-        colours_ega_mono_1 = tuple(
-            tuple(tint*i//255 for tint in self.mono_tint) for i in INTENSITY_EGA_MONO_1
+        colours_ega_mono = tuple(
+            tuple(tint*i//255 for tint in self.mono_tint) for i in INTENSITY_EGA_MONO
         )
         colours_mda_mono = tuple(
             tuple(tint*i//255 for tint in self.mono_tint) for i in INTENSITY_MDA_MONO
@@ -306,13 +310,13 @@ class Video(object):
                 interleave_times=1, bank_size=0x8000
             ),
             # 0Fh 640x350x4     EGA monochrome screen 10
-            '640x350x4': EGAMode(
+            '640x350x4': EGAMonoMode(
                 '640x350x16', 640, 350, 25, 80, 1,
-                EGA_MONO_PALETTE, colours_ega_mono_0, bitsperpixel=2,
+                EGA_MONO_PALETTE, colours_ega_mono, bitsperpixel=2,
                 interleave_times=1, bank_size=0x8000,
                 num_pages=video_mem_size//(2*0x8000),
                 aspect=self.aspect,
-                colours1=colours_ega_mono_1, has_blink=True,
+                has_blink=True,
                 planes_used=(1, 3)
             ),
             # 40h 640x400x2   1bpp  olivetti screen 3
@@ -480,21 +484,34 @@ class VideoMode(object):
         self.pixel_height = self.height*self.font_height
         self.pixel_width = self.width*self.font_width
         self.attr = int(attr)
-        # palette is a reference (changes with cga_mode_5 and cga4_palette_num)
-        self.palette = palette
-        self.num_attr = len(palette)
+        # palette - maps the valid attributes to colour values
+        # these are "palette attributes" - e.g. the 16 foreground attributes for text mode.
+        # default_palette is a reference (changes with cga_mode_5 and cga4_palette_num)
+        self.default_palette = palette
+        # number of true attribute bytes. This is 256 for text modes.
+        self.num_attr = None
+        # colour set - maps the valid colour values to RGB
+        # can be used as the right hand side of a palette assignment
         # colours is a reference (changes with colorburst on composite)
         self.colours = colours
-        # colours1 is only used by EGA mono mode
-        self.colours1 = None
         # this mode has blinking attributes
         self.has_blink = has_blink
         self.video_segment = int(video_segment)
         self.page_size = int(page_size)
         self.num_pages = int(num_pages) # or video_mem_size // self.page_size)
 
+    @property
+    def num_colours(self):
+        """Number of colour values."""
+        return len(self.colours)
+
+    @property
+    def num_palette(self):
+        """Number of values in aplette."""
+        return len(self.default_palette)
+
     def split_attr(self, attr):
-        """Split attribute byte into constituent parts."""
+        """Split textmode attribute byte into constituent parts."""
         # 7  6 5 4  3 2 1 0
         # Bl b b b  f f f f
         back = (attr >> 4) & 7
@@ -502,6 +519,17 @@ class VideoMode(object):
         fore = attr & 0xf
         underline = False
         return fore, back, blink, underline
+
+    def join_attr(self, fore, back, blink, underline):
+        """Join constituent parts into textmode attribute byte."""
+        return ((blink & 1) << 7) + ((back & 7) << 4) + (fore & 0xf)
+
+    def attr_to_rgb(self, attr, palette):
+        """Convert colour attribute to RGB/blink/underline, given a palette."""
+        fore, back, blink, underline = self.split_attr(attr)
+        fore_rgb = self.colours[palette[fore]]
+        back_rgb = self.colours[palette[back]]
+        return fore_rgb, back_rgb, blink, underline
 
     def pixel_to_text_pos(self, x, y):
         """Convert pixel position to text position."""
@@ -565,7 +593,7 @@ class TextMode(VideoMode):
             num_pages, has_blink, video_segment, page_size
         )
         self.is_text_mode = True
-        self.num_attr = 32
+        self.num_attr = 256
 
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from textmode video memory."""
@@ -614,25 +642,55 @@ class TextMode(VideoMode):
 class MonoTextMode(TextMode):
     """MDA-style text mode with underlining."""
 
+    # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
+    # The attribute bytes mostly behave like a bitmap:
+    #
+    # Bit 1: Underline.
+    # Bit 3: High intensity.
+    # Bit 7: Blink
+    # but there are eight exceptions:
+    #
+    # Attributes 00h, 08h, 80h and 88h display as black space.
+    # Attribute 70h displays as black on green.
+    # Attribute 78h displays as dark green on green. In fact, depending on timing and on the design of the monitor, it may have a bright green 'halo' where the dark green and bright green bits meet.
+    # Attribute F0h displays as a blinking version of 70h (if blinking is enabled); as black on bright green otherwise.
+    # Attribute F8h displays as a blinking version of 78h (if blinking is enabled); as dark green on bright green otherwise.
+
+    # see also http://support.microsoft.com/KB/35148
+    # --> archived on https://github.com/jeffpar/kbarchive/tree/master/kb/035/Q35148
+
+    # adding dark-green (foreground for some exceptional attributes) as #3
+    #MDA_PALETTE = (0, 2, 3, 1)
+
+    @property
+    def num_palette(self):
+        """Number of foreground attributes is the same as in colour text modes."""
+        return 16
+
     def split_attr(self, attr):
         """Split attribute byte into constituent parts."""
-        # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
-        # see also http://support.microsoft.com/KB/35148
-        # don't try to change this with PALETTE, it won't work correctly
         underline = (attr % 8) == 1
         blink = (attr & 0x80) != 0
         # background is almost always black
         back = 0
         # intensity set by bit 3
-        fore = 1 if not (attr & 0x8) else 2
+        fore = 2 if not (attr & 0x8) else 3
         # exceptions
         if attr in (0x00, 0x08, 0x80, 0x88):
             fore, back = 0, 0
         elif attr in (0x70, 0xf0):
-            fore, back = 0, 1
+            fore, back = 0, 2
         elif attr in (0x78, 0xf8):
-            fore, back = 3, 1
+            fore, back = 1, 3
         return fore, back, blink, underline
+
+    def attr_to_rgb(self, attr, dummy_palette):
+        """Convert colour attribute to RGB/blink/underline, given a palette."""
+        fore, back, blink, underline = self.split_attr(attr)
+        # palette is ignored
+        fore_rgb = self.colours[fore]
+        back_rgb = self.colours[back]
+        return fore_rgb, back_rgb, blink, underline
 
 
 
@@ -933,7 +991,7 @@ class EGAMode(GraphicsMode):
             text_height, text_width,
             attr, palette, colours, bitsperpixel,
             interleave_times, bank_size, num_pages,
-            colours1=None, has_blink=False, planes_used=range(4),
+            has_blink=False, planes_used=range(4),
             aspect=None
         ):
         """Initialise video mode settings."""
@@ -951,8 +1009,6 @@ class EGAMode(GraphicsMode):
         self.planes_used = planes_used
         # additional colour plane mask
         self.master_plane_mask = sum([ 2**x for x in planes_used ])
-        # this is a reference
-        self.colours1 = colours1
         # current ega memory colour plane to read
         self.plane = 0
         # current ega memory colour planes to write to
@@ -1004,6 +1060,41 @@ class EGAMode(GraphicsMode):
                 ).render(0, mask)
             )
             screen.drawing.put_interval(page, x, y, pixarray, mask)
+
+
+class EGAMonoMode(EGAMode):
+    """Default settings for a EGA monochrome graphics mode (mode 10)."""
+
+    # from GW-BASIC manual:
+    # Color Value	Displayed Pseudo-Color
+    # 0	Off
+    # 1	Blink, off to on
+    # 2	Blink, off to high intensity
+    # 3	Blink, on to off
+    # 4	On
+    # 5	Blink, on to high intensity
+    # 6	Blink, high intensity to off
+    # 7	Blink, high intensity to on
+    # 8	High intensity
+
+    # fore, back intensities. blink is from fore to back
+    _pseudocolours = (
+        (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)
+    )
+
+    @property
+    def num_colours(self):
+        """Number of colour values."""
+        return len(self._pseudocolours)
+
+    def attr_to_rgb(self, attr, palette):
+        """Convert colour attribute to RGB/blink/underline, given a palette."""
+        fore, back = self._pseudocolours[palette[attr] % len(self._pseudocolours)]
+        # intensity 0, 1, 2 to RGB; apply mono tint
+        fore_rgb = self.colours[fore]
+        back_rgb = self.colours[back]
+        # fore, back, blink, underline
+        return fore_rgb, back_rgb, fore == back, False
 
 
 class Tandy6Mode(GraphicsMode):

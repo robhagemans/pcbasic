@@ -680,7 +680,7 @@ class Memory(object):
                     + 32 * self.display.video.cga4_palette_num
                 )
             elif self.display.mode.is_text_mode:
-                return self.display.border_attr % 16
+                return self.display.get_border_attr()
                 # not implemented: + 16 "if current color specified through
                 # COLOR f,b with f in [0,15] and b > 7
         # 1296, 1297: zero (PCmag says data segment address)
