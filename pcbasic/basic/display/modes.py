@@ -564,8 +564,14 @@ class MonoTextColourMapper(ColourMapper):
     # see also http://support.microsoft.com/KB/35148
     # --> archived on https://github.com/jeffpar/kbarchive/tree/master/kb/035/Q35148
 
-    # this agrees with palettes for EGA mono, see:
+    # https://www.pcjs.org/pubs/pc/reference/microsoft/kb/Q44412/
+
+    # this should agree with palettes for EGA mono for COLOR values, see:
     # http://qbhlp.uebergeord.net/screen-statement-details-colors.html
+
+    # EGA mono attributes are actually different on the intermediate, non-standard byte attributes
+    # see https://nerdlypleasures.blogspot.com/2014/03/the-monochrome-experience-cga-ega-and.html
+    # and http://www.vcfed.org/forum/showthread.php?50674-EGA-Monochrome-Compatibility
 
     @property
     def num_palette(self):
@@ -633,10 +639,8 @@ class EGAMonoColourMapper(ColourMapper):
         return fore_rgb, back_rgb, fore != back, False
 
 
-
 ##############################################################################
 # sprites & tiles
-
 
 class PackedTileBuilder(object):
     """Packed-pixel (CGA) tiles."""
