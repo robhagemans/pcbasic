@@ -1094,7 +1094,7 @@ class EGAMonoMode(EGAMode):
         fore_rgb = self.colours[fore]
         back_rgb = self.colours[back]
         # fore, back, blink, underline
-        return fore_rgb, back_rgb, fore == back, False
+        return fore_rgb, back_rgb, fore != back, False
 
 
 class Tandy6Mode(GraphicsMode):
