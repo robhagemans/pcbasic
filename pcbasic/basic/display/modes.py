@@ -16,43 +16,43 @@ from ..base import error
 from ..base import bytematrix
 
 
+###############################################################################
+# colourserts and default palettes
 
-# MDA text intensities: black, dark green, green, bright green
-INTENSITY_MDA_MONO = (0x00, 0x40, 0xc0, 0xff)
-# SCREEN 10 intensities
-INTENSITY_EGA_MONO = (0x00, 0xaa, 0xff)
-
-# default 16-color and ega palettes
-CGA16_PALETTE = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
-EGA_PALETTE = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
-# from GW-BASIC manual:
-# Attribute Value	Displayed Pseudo-Color
-# 0	Off
-# 1	On, normal intensity
-# 2	Blink
-# 3	On, high intensity
-EGA_MONO_PALETTE = (0, 4, 1, 8)
-
+# 2-colour CGA (SCREEN 2) palette
 CGA2_PALETTE = (0, 15)
+# 16 colour CGA palette (CGA text mode)
+CGA16_PALETTE = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+# EGA palette - these are the same colours as 16-colour CGA but picked from different coloursets
+EGA_PALETTE = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
 
-# http://qbhlp.uebergeord.net/screen-statement-details-colors.html
-# underline/intensity/reverse video attributes are slightly different from mda
-# attributes 1, 9 should have underlining.
-# EGA_MONO_TEXT_PALETTE = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
+# CGA 4-colour palettes
+# palette 0: Black, Green, Red, Brown/Yellow
+# palette 1: Black, Ugh, Yuck, Bleah
+# "Mode 5" (SCREEN 1 + colorburst on RGB) has red instead of magenta
+# low intensity
+CGA4_LO_PALETTE_0 = (0, 2, 4, 6)
+CGA4_LO_PALETTE_1 = (0, 3, 5, 7)
+CGA4_LO_PALETTE_RED = (0, 3, 4, 7)
+# high intensity
+CGA4_HI_PALETTE_0 = (0, 10, 12, 14)
+CGA4_HI_PALETTE_1 = (0, 11, 13, 15)
+CGA4_HI_PALETTE_RED = (0, 11, 12, 15)
 
-# this is actually ignored, see MonoTextMode class
-MDA_PALETTE = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
+# PCjr/Tandy 4-colour palettes
+# like CGA 4-colour, but low-intensity colours with high-intensity white
+TANDY4_PALETTE_0 = (0, 2, 4, 6)
+TANDY4_PALETTE_1 = (0, 3, 5, 15)
 
-# CGA mono intensities
-INTENSITY16 = range(0x00, 0x100, 0x11)
-# CGA colours
+# CGA colourset
+# note 'CGA brown' in position 6
 COLOURS16 = (
     (0x00, 0x00, 0x00), (0x00, 0x00, 0xaa), (0x00, 0xaa, 0x00), (0x00, 0xaa, 0xaa),
     (0xaa, 0x00, 0x00), (0xaa, 0x00, 0xaa), (0xaa, 0x55, 0x00), (0xaa, 0xaa, 0xaa),
     (0x55, 0x55, 0x55), (0x55, 0x55, 0xff), (0x55, 0xff, 0x55), (0x55, 0xff, 0xff),
     (0xff, 0x55, 0x55), (0xff, 0x55, 0xff), (0xff, 0xff, 0x55), (0xff, 0xff, 0xff)
 )
-# EGA colours
+# EGA colourset
 COLOURS64 = (
     (0x00, 0x00, 0x00), (0x00, 0x00, 0xaa), (0x00, 0xaa, 0x00), (0x00, 0xaa, 0xaa),
     (0xaa, 0x00, 0x00), (0xaa, 0x00, 0xaa), (0xaa, 0xaa, 0x00), (0xaa, 0xaa, 0xaa),
@@ -72,42 +72,64 @@ COLOURS64 = (
     (0xff, 0x55, 0x55), (0xff, 0x55, 0xff), (0xff, 0xff, 0x55), (0xff, 0xff, 0xff)
 )
 
-# composite palettes, see http://nerdlypleasures.blogspot.co.uk/2013_11_01_archive.html
+# composite palettes
+# see http://nerdlypleasures.blogspot.co.uk/2013_11_01_archive.html
 COMPOSITE = {
-    'cga_old': [
-        (0x00, 0x00, 0x00),   (0x00, 0x71, 0x00),   (0x00, 0x3f, 0xff),   (0x00, 0xab, 0xff),
-        (0xc3, 0x00, 0x67),   (0x73, 0x73, 0x73),   (0xe6, 0x39, 0xff),   (0x8c, 0xa8, 0xff),
-        (0x53, 0x44, 0x00),   (0x00, 0xcd, 0x00),   (0x73, 0x73, 0x73),   (0x00, 0xfc, 0x7e),
-        (0xff, 0x39, 0x00),   (0xe2, 0xca, 0x00),   (0xff, 0x7c, 0xf4),   (0xff, 0xff, 0xff)
-    ],
-    'cga': [
-        (0x00, 0x00, 0x00),   (0x00, 0x6a, 0x2c),   (0x00, 0x39, 0xff),   (0x00, 0x94, 0xff),
-        (0xca, 0x00, 0x2c),   (0x77, 0x77, 0x77),   (0xff, 0x31, 0xff),   (0xc0, 0x98, 0xff),
-        (0x1a, 0x57, 0x00),   (0x00, 0xd6, 0x00),   (0x77, 0x77, 0x77),   (0x00, 0xf4, 0xb8),
-        (0xff, 0x57, 0x00),   (0xb0, 0xdd, 0x00),   (0xff, 0x7c, 0xb8),   (0xff, 0xff, 0xff)
-    ],
-    'tandy': [
-        (0x00, 0x00, 0x00),   (0x7c, 0x30, 0x00),   (0x00, 0x75, 0x00),   (0x00, 0xbe, 0x00),
-        (0x00, 0x47, 0xee),   (0x77, 0x77, 0x77),   (0x00, 0xbb, 0xc4),   (0x00, 0xfb, 0x3f),
-        (0xb2, 0x0f, 0x9d),   (0xff, 0x1e, 0x0f),   (0x77, 0x77, 0x77),   (0xff, 0xb8, 0x00),
-        (0xb2, 0x44, 0xff),   (0xff, 0x78, 0xff),   (0x4b, 0xba, 0xff),   (0xff, 0xff, 0xff)
-    ],
-    'pcjr': [
-        (0x00, 0x00, 0x00),
-        (0x98, 0x20, 0xcb),   (0x9f, 0x1c, 0x00),   (0xff, 0x11, 0x71),   (0x00, 0x76, 0x00),
-        (0x77, 0x77, 0x77),   (0x5b, 0xaa, 0x00),   (0xff, 0xa5, 0x00),   (0x00, 0x4e, 0xcb),
-        (0x74, 0x53, 0xff),   (0x77, 0x77, 0x77),   (0xff, 0x79, 0xff),   (0x00, 0xc8, 0x71),
-        (0x00, 0xcc, 0xff),   (0x00, 0xfa, 0x00),   (0xff, 0xff, 0xff)
-    ]
+    'cga_old': (
+        (0x00, 0x00, 0x00), (0x00, 0x71, 0x00), (0x00, 0x3f, 0xff), (0x00, 0xab, 0xff),
+        (0xc3, 0x00, 0x67), (0x73, 0x73, 0x73), (0xe6, 0x39, 0xff), (0x8c, 0xa8, 0xff),
+        (0x53, 0x44, 0x00), (0x00, 0xcd, 0x00), (0x73, 0x73, 0x73), (0x00, 0xfc, 0x7e),
+        (0xff, 0x39, 0x00), (0xe2, 0xca, 0x00), (0xff, 0x7c, 0xf4), (0xff, 0xff, 0xff)
+    ),
+    'cga': (
+        (0x00, 0x00, 0x00), (0x00, 0x6a, 0x2c), (0x00, 0x39, 0xff), (0x00, 0x94, 0xff),
+        (0xca, 0x00, 0x2c), (0x77, 0x77, 0x77), (0xff, 0x31, 0xff), (0xc0, 0x98, 0xff),
+        (0x1a, 0x57, 0x00), (0x00, 0xd6, 0x00), (0x77, 0x77, 0x77), (0x00, 0xf4, 0xb8),
+        (0xff, 0x57, 0x00), (0xb0, 0xdd, 0x00), (0xff, 0x7c, 0xb8), (0xff, 0xff, 0xff)
+    ),
+    'tandy': (
+        (0x00, 0x00, 0x00), (0x7c, 0x30, 0x00), (0x00, 0x75, 0x00), (0x00, 0xbe, 0x00),
+        (0x00, 0x47, 0xee), (0x77, 0x77, 0x77), (0x00, 0xbb, 0xc4), (0x00, 0xfb, 0x3f),
+        (0xb2, 0x0f, 0x9d), (0xff, 0x1e, 0x0f), (0x77, 0x77, 0x77), (0xff, 0xb8, 0x00),
+        (0xb2, 0x44, 0xff), (0xff, 0x78, 0xff), (0x4b, 0xba, 0xff), (0xff, 0xff, 0xff)
+    ),
+    'pcjr': (
+        (0x00, 0x00, 0x00), (0x98, 0x20, 0xcb), (0x9f, 0x1c, 0x00), (0xff, 0x11, 0x71),
+        (0x00, 0x76, 0x00), (0x77, 0x77, 0x77), (0x5b, 0xaa, 0x00), (0xff, 0xa5, 0x00),
+        (0x00, 0x4e, 0xcb), (0x74, 0x53, 0xff), (0x77, 0x77, 0x77), (0xff, 0x79, 0xff),
+        (0x00, 0xc8, 0x71), (0x00, 0xcc, 0xff), (0x00, 0xfa, 0x00), (0xff, 0xff, 0xff)
+    )
 }
+
+
+###############################################################################
+# monochrome coloursets and default palettes
 
 MONO_TINT = {
-    'green': [0, 255, 0],
-    'amber': [255, 128, 0],
-    'grey': [255, 255, 255],
-    'mono': [0, 255, 0],
+    'green': (0, 255, 0),
+    'amber': (255, 128, 0),
+    'grey': (255, 255, 255),
+    'mono': (0, 255, 0),
 }
 
+# CGA mono intensities
+INTENSITY16 = range(0x00, 0x100, 0x11)
+# MDA text intensities: black, dark green, green, bright green
+INTENSITY_MDA_MONO = (0x00, 0x40, 0xc0, 0xff)
+# SCREEN 10 intensities
+INTENSITY_EGA_MONO = (0x00, 0xaa, 0xff)
+
+# this is actually ignored, see MonoTextMode class
+MDA_PALETTE = (0,) * 16
+
+# monochrome EGA, these refer to the fixed pseudocolor palette defined in EGAMonoMode
+# from GW-BASIC manual:
+# Attribute Value	Displayed Pseudo-Color
+# 0	Off
+# 1	On, normal intensity
+# 2	Blink
+# 3	On, high intensity
+EGA_MONO_PALETTE = (0, 4, 1, 8)
 
 
 ###############################################################################
@@ -123,6 +145,9 @@ class Video(object):
         if capabilities == 'ega' and monitor in MONO_TINT:
             capabilities = 'ega_mono'
         self.capabilities = capabilities
+        # screen aspect ratio, for CIRCLE
+        self.aspect = aspect
+        # colourset preparations
         # monochrome tint in rgb
         self.mono_tint = MONO_TINT.get(monitor, MONO_TINT['green'])
         # emulated monitor type - rgb, composite, mono
@@ -137,22 +162,22 @@ class Video(object):
         else:
             self.colours16 = list(COLOURS16)
         # CGA 4-colour palette / mode 5 settings
-        # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
-        # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
-        # tandy/pcjr have high-intensity white, but low-intensity colours
-        # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
         if capabilities in ('pcjr', 'tandy'):
             # pcjr does not have mode 5
-            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
+            self.cga4_palettes = {
+                0: TANDY4_PALETTE_0, 1: TANDY4_PALETTE_1, 5: None
+            }
         elif low_intensity:
-            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
+            self.cga4_palettes = {
+                0: CGA4_LO_PALETTE_0, 1: CGA4_LO_PALETTE_1, 5: CGA4_LO_PALETTE_RED
+            }
         else:
-            self.cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
+            self.cga4_palettes = {
+                0: CGA4_HI_PALETTE_0, 1: CGA4_HI_PALETTE_1, 5: CGA4_HI_PALETTE_RED
+            }
         self.cga4_palette = list(self.cga4_palettes[1])
         self.cga4_palette_num = 1
         self.cga_mode_5 = False
-        # screen aspect ratio, for CIRCLE
-        self.aspect = aspect
         # set up text_data and mode_data
         self.prepare_modes(video_mem_size)
 
@@ -166,6 +191,14 @@ class Video(object):
         except KeyError:
             # no such mode
             raise error.BASICError(error.IFC)
+
+    def get_allowed_widths(self):
+        """Get allowed screen widths."""
+        return set(
+            mode.width for mode in list(self._text_data.values()) + list(self._mode_data.values())
+        )
+
+    # colourset changes
 
     def toggle_colour(self, has_colour):
         """Toggle between colour and monochrome (for NTSC colorburst)."""
@@ -202,11 +235,6 @@ class Video(object):
             self.toggle_colour(self.monitor != 'mono' and (on or self.monitor != 'composite'))
         return on and colorburst_capable
 
-    def get_allowed_widths(self):
-        """Get allowed screen widths."""
-        return set(
-            mode.width for mode in list(self._text_data.values()) + list(self._mode_data.values())
-        )
 
     ###########################################################################
     # video modes
@@ -659,8 +687,8 @@ class MonoTextMode(TextMode):
     # see also http://support.microsoft.com/KB/35148
     # --> archived on https://github.com/jeffpar/kbarchive/tree/master/kb/035/Q35148
 
-    # adding dark-green (foreground for some exceptional attributes) as #3
-    #MDA_PALETTE = (0, 2, 3, 1)
+    # this agrees with palettes for EGA mono, see:
+    # http://qbhlp.uebergeord.net/screen-statement-details-colors.html
 
     @property
     def num_palette(self):
@@ -691,7 +719,6 @@ class MonoTextMode(TextMode):
         fore_rgb = self.colours[fore]
         back_rgb = self.colours[back]
         return fore_rgb, back_rgb, blink, underline
-
 
 
 ##############################################################################
