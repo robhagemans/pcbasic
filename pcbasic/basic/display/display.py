@@ -95,8 +95,8 @@ class Palette(object):
                 self.set_all(self._mode.default_palette)
         else:
             # can't set blinking colours separately
-            error.range_check(0, len(self._mode.default_palette)-1, attrib)
-            error.range_check(-1, len(self._mode.colours)-1, colour)
+            error.range_check(0, self._mode.num_palette-1, attrib)
+            error.range_check(-1, self._mode.num_colours-1, colour)
             if colour != -1:
                 if self._mode_allows_palette():
                     self.set_entry(attrib, colour)
@@ -120,7 +120,7 @@ class Palette(object):
             offset = (start+i) * 2
             ## signed int, as -1 means don't set
             val, = struct.unpack('<h', lst[offset:offset+2])
-            error.range_check(-1, len(self._mode.colours)-1, val)
+            error.range_check(-1, self._mode.num_colours-1, val)
             new_palette.append(val if val > -1 else self.get_entry(i))
         if self._mode_allows_palette():
             self.set_all(new_palette)
