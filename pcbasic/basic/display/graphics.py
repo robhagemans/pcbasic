@@ -144,7 +144,7 @@ class Drawing(object):
             # foreground; graphics 'background' attrib is always 0
             c = self._attr & 0xf
         else:
-            c = min(self._mode.num_attr-1, max(0, c))
+            c = min(self._mode.colourmap.num_attr-1, max(0, c))
         return c
 
     ### text/graphics interaction
@@ -157,7 +157,7 @@ class Drawing(object):
             self._text.put_char_attr(self._apagenum, row0, col0, b' ', self._attr)
         else:
             self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
-        fore, back, blink, underline = self._mode.split_attr(self._attr)
+        fore, back, blink, underline = self._mode.colourmap.split_attr(self._attr)
         for row in range(row0, row1+1):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_PUT_TEXT,

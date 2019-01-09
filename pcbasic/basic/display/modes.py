@@ -10,7 +10,7 @@ import struct
 import functools
 import operator
 
-from ...compat import xrange, int2byte, zip, iterbytes
+from ...compat import xrange, int2byte, zip, iterbytes, PY2
 
 from ..base import error
 from ..base import bytematrix
@@ -490,48 +490,32 @@ class Video(object):
                 self._mode_data[mode] = graphics_mode['640x400x2']
 
 
-##############################################################################
-# video mode base class
 
-class VideoMode(object):
-    """Base class for video modes."""
-    def __init__(
-                self, name, height, width,
-                font_height, font_width,
-                attr, palette, colours,
-                num_pages, has_blink,
-                video_segment, page_size
-            ):
-        """Initialise video mode settings."""
-        self.is_text_mode = False
-        self.name = name
-        self.height = int(height)
-        self.width = int(width)
-        self.font_height = int(font_height)
-        self.font_width = int(font_width)
-        self.pixel_height = self.height*self.font_height
-        self.pixel_width = self.width*self.font_width
-        self.attr = int(attr)
+##############################################################################
+# palettes & coloursets
+
+class ColourMapper(object):
+    """Palette and colourset."""
+
+    def __init__(self, palette, colours, has_blink, num_attr):
+        """Initialise colour mapper."""
         # palette - maps the valid attributes to colour values
         # these are "palette attributes" - e.g. the 16 foreground attributes for text mode.
         # default_palette is a reference (changes with cga_mode_5 and cga4_palette_num)
         self.default_palette = palette
         # number of true attribute bytes. This is 256 for text modes.
-        self.num_attr = None
+        self.num_attr = num_attr
         # colour set - maps the valid colour values to RGB
         # can be used as the right hand side of a palette assignment
         # colours is a reference (changes with colorburst on composite)
-        self.colours = colours
+        self._colours = colours
         # this mode has blinking attributes
         self.has_blink = has_blink
-        self.video_segment = int(video_segment)
-        self.page_size = int(page_size)
-        self.num_pages = int(num_pages) # or video_mem_size // self.page_size)
 
     @property
     def num_colours(self):
         """Number of colour values."""
-        return len(self.colours)
+        return len(self._colours)
 
     @property
     def num_palette(self):
@@ -555,120 +539,13 @@ class VideoMode(object):
     def attr_to_rgb(self, attr, palette):
         """Convert colour attribute to RGB/blink/underline, given a palette."""
         fore, back, blink, underline = self.split_attr(attr)
-        fore_rgb = self.colours[palette[fore]]
-        back_rgb = self.colours[palette[back]]
+        fore_rgb = self._colours[palette[fore]]
+        back_rgb = self._colours[palette[back]]
         return fore_rgb, back_rgb, blink, underline
 
-    def pixel_to_text_pos(self, x, y):
-        """Convert pixel position to text position."""
-        return 1 + y // self.font_height, 1 + x // self.font_width
 
-    def pixel_to_text_area(self, x0, y0, x1, y1):
-        """Convert from pixel area to text area."""
-        col0 = min(self.width, max(1, 1 + x0 // self.font_width))
-        row0 = min(self.height, max(1, 1 + y0 // self.font_height))
-        col1 = min(self.width, max(1, 1 + x1 // self.font_width))
-        row1 = min(self.height, max(1, 1 + y1 // self.font_height))
-        return row0, col0, row1, col1
-
-    def text_to_pixel_pos(self, row, col):
-        """Convert text position to pixel position."""
-        # area bounds are all inclusive
-        return (
-            (col-1) * self.font_width, (row-1) * self.font_height,
-        )
-
-    def text_to_pixel_area(self, row0, col0, row1, col1):
-        """Convert text area to pixel area."""
-        # area bounds are all inclusive
-        return (
-            (col0-1) * self.font_width, (row0-1) * self.font_height,
-            (col1-col0+1) * self.font_width-1, (row1-row0+1) * self.font_height-1
-        )
-
-    def get_all_memory(self, screen):
-        """Obtain a copy of all video memory."""
-        return self.get_memory(screen, self.video_segment*0x10, self.page_size*self.num_pages)
-
-    def set_all_memory(self, screen, mem_copy):
-        """Restore a copy of all video memory."""
-        return self.set_memory(screen, self.video_segment*0x10, mem_copy)
-
-    def get_memory(self, screen, addr, num_bytes):
-        """Retrieve bytes from video memory, stub."""
-
-    def set_memory(self, screen, addr, bytes):
-        """Set bytes in video memory, stub."""
-
-
-##############################################################################
-# text modes
-
-class TextMode(VideoMode):
-    """Default settings for a text mode."""
-
-    def __init__(
-            self, name, height, width,
-            font_height, font_width, attr, palette, colours,
-            num_pages, is_mono=False, has_blink=True
-        ):
-        """Initialise video mode settings."""
-        video_segment = 0xb000 if is_mono else 0xb800
-        page_size = 0x1000 if width == 80 else 0x800
-        VideoMode.__init__(
-            self, name, height, width,
-            font_height, font_width, attr, palette, colours,
-            num_pages, has_blink, video_segment, page_size
-        )
-        self.is_text_mode = True
-        self.num_attr = 256
-
-    def get_memory(self, screen, addr, num_bytes):
-        """Retrieve bytes from textmode video memory."""
-        addr -= self.video_segment*0x10
-        mem_bytes = bytearray(num_bytes)
-        for i in xrange(num_bytes):
-            page = (addr+i) // self.page_size
-            offset = (addr+i) % self.page_size
-            ccol = 1 + (offset % (self.width*2)) // 2
-            crow = 1 + offset // (self.width*2)
-            try:
-                if (addr+i) % 2:
-                    mem_bytes[i] = screen.text_screen.text.get_attr(page, crow, ccol)
-                else:
-                    mem_bytes[i] = screen.text_screen.text.get_char(page, crow, ccol)
-            except IndexError:
-                pass
-        return mem_bytes
-
-    def set_memory(self, screen, addr, mem_bytes):
-        """Set bytes in textmode video memory."""
-        addr -= self.video_segment*0x10
-        last_row = 0
-        for i in xrange(len(mem_bytes)):
-            page = (addr+i) // self.page_size
-            offset = (addr+i) % self.page_size
-            ccol = 1 + (offset % (self.width*2)) // 2
-            crow = 1 + offset // (self.width*2)
-            try:
-                if (addr+i) % 2:
-                    c = screen.text_screen.text.get_char(page, crow, ccol)
-                    a = mem_bytes[i]
-                else:
-                    c = mem_bytes[i]
-                    a = screen.text_screen.text.get_attr(page, crow, ccol)
-                screen.text_screen.text.put_char_attr(page, crow, ccol, int2byte(c), a)
-                if last_row > 0 and last_row != crow:
-                    screen.text_screen.refresh_range(page, last_row, 1, self.width)
-            except IndexError:
-                pass
-            last_row = crow
-        if last_row >= 1 and last_row <= self.height and page >= 0 and page < self.num_pages:
-            screen.text_screen.refresh_range(page, last_row, 1, self.width)
-
-
-class MonoTextMode(TextMode):
-    """MDA-style text mode with underlining."""
+class MonoTextColourMapper(ColourMapper):
+    """Attribute mapper for MDA-style text mode with underlining."""
 
     # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
     # The attribute bytes mostly behave like a bitmap:
@@ -716,9 +593,45 @@ class MonoTextMode(TextMode):
         """Convert colour attribute to RGB/blink/underline, given a palette."""
         fore, back, blink, underline = self.split_attr(attr)
         # palette is ignored
-        fore_rgb = self.colours[fore]
-        back_rgb = self.colours[back]
+        fore_rgb = self._colours[fore]
+        back_rgb = self._colours[back]
         return fore_rgb, back_rgb, blink, underline
+
+
+class EGAMonoColourMapper(ColourMapper):
+    """Colour mapper for EGA monochrome graphics mode (mode 10)."""
+
+    # from GW-BASIC manual:
+    # Color Value	Displayed Pseudo-Color
+    # 0	Off
+    # 1	Blink, off to on
+    # 2	Blink, off to high intensity
+    # 3	Blink, on to off
+    # 4	On
+    # 5	Blink, on to high intensity
+    # 6	Blink, high intensity to off
+    # 7	Blink, high intensity to on
+    # 8	High intensity
+
+    # fore, back intensities. blink is from fore to back
+    _pseudocolours = (
+        (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)
+    )
+
+    @property
+    def num_colours(self):
+        """Number of colour values."""
+        return len(self._pseudocolours)
+
+    def attr_to_rgb(self, attr, palette):
+        """Convert colour attribute to RGB/blink/underline, given a palette."""
+        fore, back = self._pseudocolours[palette[attr] % len(self._pseudocolours)]
+        # intensity 0, 1, 2 to RGB; apply mono tint
+        fore_rgb = self._colours[fore]
+        back_rgb = self._colours[back]
+        # fore, back, blink, underline
+        return fore_rgb, back_rgb, fore != back, False
+
 
 
 ##############################################################################
@@ -790,7 +703,10 @@ class PackedSpriteBuilder(object):
         # bytes_to_interval
         packed = array[4:4+byte_size]
         # ensure iterations over memoryview yield int, not bytes, in Python 2
-        packed = iterbytes(packed)
+        # frompacked can't take interators, would need a width argument
+        #packed = iterbytes(packed)
+        if PY2:
+            packed = bytearray(packed)
         sprite = bytematrix.ByteMatrix.frompacked(
             packed, height, items_per_byte=8 // self._bitsperpixel
         )
@@ -859,6 +775,151 @@ class PlanedSpriteBuilder(object):
 
 
 ##############################################################################
+# video mode base class
+
+class VideoMode(object):
+    """Base class for video modes."""
+
+    _colourmapper = ColourMapper
+
+    def __init__(
+                self, name, height, width,
+                font_height, font_width,
+                attr, palette, colours,
+                num_pages, has_blink,
+                video_segment, page_size,
+                num_attr
+            ):
+        """Initialise video mode settings."""
+        self.is_text_mode = False
+        self.name = name
+        self.height = int(height)
+        self.width = int(width)
+        self.font_height = int(font_height)
+        self.font_width = int(font_width)
+        self.pixel_height = self.height*self.font_height
+        self.pixel_width = self.width*self.font_width
+        self.attr = int(attr)
+        self.video_segment = int(video_segment)
+        self.page_size = int(page_size)
+        self.num_pages = int(num_pages) # or video_mem_size // self.page_size)
+        self.colourmap = self._colourmapper(palette, colours, has_blink, num_attr)
+
+    def pixel_to_text_pos(self, x, y):
+        """Convert pixel position to text position."""
+        return 1 + y // self.font_height, 1 + x // self.font_width
+
+    def pixel_to_text_area(self, x0, y0, x1, y1):
+        """Convert from pixel area to text area."""
+        col0 = min(self.width, max(1, 1 + x0 // self.font_width))
+        row0 = min(self.height, max(1, 1 + y0 // self.font_height))
+        col1 = min(self.width, max(1, 1 + x1 // self.font_width))
+        row1 = min(self.height, max(1, 1 + y1 // self.font_height))
+        return row0, col0, row1, col1
+
+    def text_to_pixel_pos(self, row, col):
+        """Convert text position to pixel position."""
+        # area bounds are all inclusive
+        return (
+            (col-1) * self.font_width, (row-1) * self.font_height,
+        )
+
+    def text_to_pixel_area(self, row0, col0, row1, col1):
+        """Convert text area to pixel area."""
+        # area bounds are all inclusive
+        return (
+            (col0-1) * self.font_width, (row0-1) * self.font_height,
+            (col1-col0+1) * self.font_width-1, (row1-row0+1) * self.font_height-1
+        )
+
+    def get_all_memory(self, screen):
+        """Obtain a copy of all video memory."""
+        return self.get_memory(screen, self.video_segment*0x10, self.page_size*self.num_pages)
+
+    def set_all_memory(self, screen, mem_copy):
+        """Restore a copy of all video memory."""
+        return self.set_memory(screen, self.video_segment*0x10, mem_copy)
+
+    def get_memory(self, screen, addr, num_bytes):
+        """Retrieve bytes from video memory, stub."""
+
+    def set_memory(self, screen, addr, bytes):
+        """Set bytes in video memory, stub."""
+
+
+##############################################################################
+# text modes
+
+class TextMode(VideoMode):
+    """Default settings for a text mode."""
+
+    def __init__(
+            self, name, height, width,
+            font_height, font_width, attr, palette, colours,
+            num_pages, is_mono=False, has_blink=True
+        ):
+        """Initialise video mode settings."""
+        video_segment = 0xb000 if is_mono else 0xb800
+        page_size = 0x1000 if width == 80 else 0x800
+        num_attr = 256
+        VideoMode.__init__(
+            self, name, height, width,
+            font_height, font_width, attr, palette, colours,
+            num_pages, has_blink, video_segment, page_size, num_attr
+        )
+        self.is_text_mode = True
+
+    def get_memory(self, screen, addr, num_bytes):
+        """Retrieve bytes from textmode video memory."""
+        addr -= self.video_segment*0x10
+        mem_bytes = bytearray(num_bytes)
+        for i in xrange(num_bytes):
+            page = (addr+i) // self.page_size
+            offset = (addr+i) % self.page_size
+            ccol = 1 + (offset % (self.width*2)) // 2
+            crow = 1 + offset // (self.width*2)
+            try:
+                if (addr+i) % 2:
+                    mem_bytes[i] = screen.text_screen.text.get_attr(page, crow, ccol)
+                else:
+                    mem_bytes[i] = screen.text_screen.text.get_char(page, crow, ccol)
+            except IndexError:
+                pass
+        return mem_bytes
+
+    def set_memory(self, screen, addr, mem_bytes):
+        """Set bytes in textmode video memory."""
+        addr -= self.video_segment*0x10
+        last_row = 0
+        for i in xrange(len(mem_bytes)):
+            page = (addr+i) // self.page_size
+            offset = (addr+i) % self.page_size
+            ccol = 1 + (offset % (self.width*2)) // 2
+            crow = 1 + offset // (self.width*2)
+            try:
+                if (addr+i) % 2:
+                    c = screen.text_screen.text.get_char(page, crow, ccol)
+                    a = mem_bytes[i]
+                else:
+                    c = mem_bytes[i]
+                    a = screen.text_screen.text.get_attr(page, crow, ccol)
+                screen.text_screen.text.put_char_attr(page, crow, ccol, int2byte(c), a)
+                if last_row > 0 and last_row != crow:
+                    screen.text_screen.refresh_range(page, last_row, 1, self.width)
+            except IndexError:
+                pass
+            last_row = crow
+        if last_row >= 1 and last_row <= self.height and page >= 0 and page < self.num_pages:
+            screen.text_screen.refresh_range(page, last_row, 1, self.width)
+
+
+class MonoTextMode(TextMode):
+    """MDA-style text mode with underlining."""
+
+    _colourmapper = MonoTextColourMapper
+
+
+##############################################################################
 # graphics modes
 
 class GraphicsMode(VideoMode):
@@ -887,16 +948,16 @@ class GraphicsMode(VideoMode):
         # cga bank_size = 0x2000 interleave_times=2
         self.bank_size = int(bank_size)
         page_size = self.interleave_times * self.bank_size
+        num_attr = 2**bitsperpixel
         VideoMode.__init__(
             self, name, text_height, text_width,
             font_height, font_width, attr, palette, colours,
-            num_pages, has_blink, video_segment, page_size
+            num_pages, has_blink, video_segment, page_size, num_attr
         )
         self.is_text_mode = False
         self.bitsperpixel = int(bitsperpixel)
         # number of pixels referenced in each byte of a plane
         self.ppb = 8 // self.bitsperpixel
-        self.num_attr = 2**self.bitsperpixel
         self.bytes_per_row = int(pixel_width) * self.bitsperpixel // 8
         self.supports_artifacts = supports_artifacts
         self.cursor_index = cursor_index
@@ -907,7 +968,6 @@ class GraphicsMode(VideoMode):
         # sprite and tile builders
         self.build_tile = self._tile_builder(self.bitsperpixel)
         self.sprite_builder = self._sprite_builder(self.bitsperpixel)
-
 
     def get_coords(self, addr):
         """Get video page and coordinates for address."""
@@ -1092,36 +1152,7 @@ class EGAMode(GraphicsMode):
 class EGAMonoMode(EGAMode):
     """Default settings for a EGA monochrome graphics mode (mode 10)."""
 
-    # from GW-BASIC manual:
-    # Color Value	Displayed Pseudo-Color
-    # 0	Off
-    # 1	Blink, off to on
-    # 2	Blink, off to high intensity
-    # 3	Blink, on to off
-    # 4	On
-    # 5	Blink, on to high intensity
-    # 6	Blink, high intensity to off
-    # 7	Blink, high intensity to on
-    # 8	High intensity
-
-    # fore, back intensities. blink is from fore to back
-    _pseudocolours = (
-        (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)
-    )
-
-    @property
-    def num_colours(self):
-        """Number of colour values."""
-        return len(self._pseudocolours)
-
-    def attr_to_rgb(self, attr, palette):
-        """Convert colour attribute to RGB/blink/underline, given a palette."""
-        fore, back = self._pseudocolours[palette[attr] % len(self._pseudocolours)]
-        # intensity 0, 1, 2 to RGB; apply mono tint
-        fore_rgb = self.colours[fore]
-        back_rgb = self.colours[back]
-        # fore, back, blink, underline
-        return fore_rgb, back_rgb, fore != back, False
+    _colourmapper = EGAMonoColourMapper
 
 
 class Tandy6Mode(GraphicsMode):

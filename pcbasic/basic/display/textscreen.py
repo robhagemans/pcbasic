@@ -360,7 +360,7 @@ class TextScreen(object):
         if row < 1 or col < 1 or row > self.mode.height or col > self.mode.width:
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
             return
-        fore, back, blink, underline = self.mode.split_attr(attr)
+        fore, back, blink, underline = self.mode.colourmap.split_attr(attr)
         # mark full-width chars by a trailing empty string to preserve column counts
         sprite = self._glyphs.render_text(chars, attr, back, underline)
         if not self.mode.is_text_mode and not text_only:
@@ -386,7 +386,7 @@ class TextScreen(object):
             x0, y0, x1, y1 = self.mode.text_to_pixel_area(start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
             self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
-        _, back, _, _ = self.mode.split_attr(self.attr)
+        _, back, _, _ = self.mode.colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
     ###########################################################################
@@ -428,7 +428,7 @@ class TextScreen(object):
         """Scroll the scroll region up by one line, starting at from_line."""
         if from_line is None:
             from_line = self.scroll_area.top
-        _, back, _, _ = self.mode.split_attr(self.attr)
+        _, back, _, _ = self.mode.colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(
             signals.VIDEO_SCROLL, (-1, from_line, self.scroll_area.bottom, back)
         ))
@@ -447,7 +447,7 @@ class TextScreen(object):
 
     def scroll_down(self, from_line):
         """Scroll the scroll region down by one line, starting at from_line."""
-        _, back, _, _ = self.mode.split_attr(self.attr)
+        _, back, _, _ = self.mode.colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(
             signals.VIDEO_SCROLL, (1, from_line, self.scroll_area.bottom, back)
         ))

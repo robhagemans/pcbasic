@@ -103,7 +103,7 @@ class Cursor(object):
     def move(self, new_row, new_column, new_attr=None, new_width=None):
         """Move the cursor and submit."""
         if new_attr:
-            fore, _, _, _ = self._mode.split_attr(new_attr)
+            fore, _, _, _ = self._mode.colourmap.split_attr(new_attr)
         else:
             fore = self._fore_attr
         if not new_width:
