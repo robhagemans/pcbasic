@@ -843,7 +843,7 @@ class VideoSDL2(VideoPlugin):
             work_surface = self._window_surface[self._vpagenum]
         pixelformat = self._display_surface.contents.format
         # apply cursor to work surface
-        with self._show_cursor(blink_state % 2):
+        with self._show_cursor((blink_state % 2) or not self._text_cursor):
             # convert 8-bit work surface to (usually) 32-bit display surface format
             sdl2.SDL_SetSurfacePalette(work_surface, self._palette[blink_state // 2])
             conv = sdl2.SDL_ConvertSurface(work_surface, pixelformat, 0)
