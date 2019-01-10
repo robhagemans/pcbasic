@@ -222,8 +222,6 @@ class Display(object):
         save_mem = None
         if (not erase and self.mode.video_segment == spec.video_segment):
             save_mem = self.mode.get_all_memory(self)
-        # reset palette happens even if the SCREEN call fails
-        self.video.set_cga4_palette(1)
         # if the new mode has fewer pages than current vpage/apage,
         # illegal fn call before anything happens.
         # signal the signals to change the screen resolution
@@ -541,11 +539,9 @@ class Display(object):
         error.range_check(0, 255, back)
         if pal is not None:
             error.range_check(0, 255, pal)
-            self.video.set_cga4_palette(pal % 2)
+            self.mode.colourmap.set_cga4_palette(pal % 2)
             palette = list(self.mode.colourmap.default_palette)
             palette[0] = back & 0xf
-            # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
-            # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15
             self.palette.set_all(palette)
         else:
             self.palette.set_entry(0, back & 0xf)
