@@ -131,6 +131,7 @@ EGA_MONO_PALETTE = (0, 4, 1, 8)
 
 # ignored, remove after refactoring
 NONE_PALETTE = None
+NONE_COLOURS = None
 # this is actually ignored, see MonoTextMode class
 # remove after refactoring
 MDA_PALETTE = (0,) * 16
@@ -156,15 +157,6 @@ class Video(object):
         self.mono_tint = MONO_TINT.get(monitor, MONO_TINT['green'])
         # emulated monitor type - rgb, composite, mono
         self.monitor = 'mono' if monitor in MONO_TINT else monitor
-        # build 16-greyscale and 16-colour sets
-        self.colours16_mono = tuple(
-            tuple(tint*i//255 for tint in self.mono_tint) for i in INTENSITY16
-        )
-        # NTSC colorburst settings
-        if monitor == 'mono':
-            self.colours16 = list(self.colours16_mono)
-        else:
-            self.colours16 = list(COLOURS16)
         # set up text_data and mode_data
         self.prepare_modes(video_mem_size)
 
@@ -184,39 +176,6 @@ class Video(object):
         return set(
             mode.width for mode in list(self._text_data.values()) + list(self._mode_data.values())
         )
-
-    # colourset changes
-
-
-    # FIXME - move to colourmappers
-    def toggle_colour(self, has_colour):
-        """Toggle between colour and monochrome (for NTSC colorburst)."""
-        # note that colours16 member is only used in certain mode/adapter combinations
-        # e.g. in text mode it's only used for 'cga', 'cga_old', 'pcjr', 'tandy'
-        if has_colour:
-            self.colours16[:] = COLOURS16
-        else:
-            self.colours16[:] = self.colours16_mono
-
-    # FIXME - move to colourmappers
-    def set_colorburst(self, on, is_cga):
-        """Set the NTSC colorburst bit."""
-        # On a composite monitor with CGA adapter (not EGA, VGA):
-        # - on SCREEN 2 this enables artifacting
-        # - on SCREEN 1 and 0 this switches between colour and greyscale
-        # On an RGB monitor:
-        # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
-        # - ignored on other screens
-        colorburst_capable = self.capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
-        if is_cga and self.monitor != 'composite':
-            # ega ignores colorburst; tandy and pcjr have no mode 5
-            self.cga_mode_5 = not on
-            # FIXME - this is in colourmapper now
-            #self.set_cga4_palette(1)
-        else:
-            self.toggle_colour(self.monitor != 'mono' and (on or self.monitor != 'composite'))
-        return on and colorburst_capable
-
 
 
     ###########################################################################
@@ -244,7 +203,7 @@ class Video(object):
             # tandy:2 pages if 32k memory; ega: 1 page only
             '320x200x4': CGA4Mode(
                 '320x200x4', 320, 200, 25, 40, 3,
-                NONE_PALETTE, self.colours16, bitsperpixel=2,
+                NONE_PALETTE, NONE_COLOURS, bitsperpixel=2,
                 interleave_times=2, bank_size=0x2000,
                 aspect=self.aspect,
                 num_pages=(
@@ -256,7 +215,7 @@ class Video(object):
             # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
             '640x200x2': CGAMode(
                 '640x200x2', 640, 200, 25, 80, 1,
-                CGA2_PALETTE, self.colours16, bitsperpixel=1,
+                CGA2_PALETTE, NONE_COLOURS, bitsperpixel=1,
                 interleave_times=2, bank_size=0x2000, num_pages=1,
                 aspect=self.aspect,
                 supports_artifacts=True
@@ -264,7 +223,7 @@ class Video(object):
             # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
             '160x200x16': CGAMode(
                 '160x200x16', 160, 200, 25, 20, 15,
-                CGA16_PALETTE, self.colours16, bitsperpixel=4,
+                CGA16_PALETTE, NONE_COLOURS, bitsperpixel=4,
                 interleave_times=2, bank_size=0x2000,
                 num_pages=video_mem_size//(2*0x2000),
                 pixel_aspect=(1968, 1000), cursor_index=3
@@ -272,7 +231,7 @@ class Video(object):
             #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
             '320x200x4pcjr': CGA4Mode(
                 '320x200x4pcjr', 320, 200, 25, 40, 3,
-                NONE_PALETTE, self.colours16, bitsperpixel=2,
+                NONE_PALETTE, NONE_COLOURS, bitsperpixel=2,
                 interleave_times=2, bank_size=0x2000,
                 num_pages=video_mem_size//(2*0x2000),
                 aspect=self.aspect,
@@ -281,7 +240,7 @@ class Video(object):
             # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
             '320x200x16pcjr': CGAMode(
                 '320x200x16pcjr', 320, 200, 25, 40, 15,
-                CGA16_PALETTE, self.colours16, bitsperpixel=4,
+                CGA16_PALETTE, NONE_COLOURS, bitsperpixel=4,
                 interleave_times=4, bank_size=0x2000,
                 num_pages=video_mem_size//(4*0x2000),
                 aspect=self.aspect,
@@ -290,7 +249,7 @@ class Video(object):
             # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
             '640x200x4': Tandy6Mode(
                 '640x200x4', 640, 200, 25, 80, 3,
-                NONE_PALETTE, self.colours16, bitsperpixel=2,
+                NONE_PALETTE, COLOURS16, bitsperpixel=2,
                 interleave_times=4, bank_size=0x2000,
                 num_pages=video_mem_size//(4*0x2000),
                 aspect=self.aspect,
@@ -299,7 +258,7 @@ class Video(object):
             # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
             '320x200x16': EGAMode(
                 '320x200x16', 320, 200, 25, 40, 15,
-                CGA16_PALETTE, self.colours16, bitsperpixel=4,
+                CGA16_PALETTE, COLOURS16, bitsperpixel=4,
                 num_pages=video_mem_size//(4*0x2000),
                 aspect=self.aspect,
                 interleave_times=1, bank_size=0x2000
@@ -307,7 +266,7 @@ class Video(object):
             # 0Eh 640x200x16    EGA screen 8
             '640x200x16': EGAMode(
                 '640x200x16', 640, 200, 25, 80, 15,
-                CGA16_PALETTE, self.colours16, bitsperpixel=4,
+                CGA16_PALETTE, COLOURS16, bitsperpixel=4,
                 num_pages=video_mem_size//(4*0x4000),
                 aspect=self.aspect,
                 interleave_times=1, bank_size=0x4000
@@ -333,17 +292,17 @@ class Video(object):
             # 40h 640x400x2   1bpp  olivetti screen 3
             '640x400x2': CGAMode(
                 '640x400x2', 640, 400, 25, 80, 1,
-                CGA2_PALETTE, self.colours16, bitsperpixel=1,
+                CGA2_PALETTE, NONE_COLOURS, bitsperpixel=1,
                 interleave_times=4, bank_size=0x2000,
                 num_pages=1,
                 aspect=self.aspect,
                 has_blink=True
             ),
             # hercules screen 3
-            '720x348x2': CGAMode(
+            '720x348x2': HerculesMode(
                 # this actually produces 350, not 348
                 '720x348x2', 720, 350, 25, 80, 1,
-                CGA2_PALETTE, self.colours16_mono, bitsperpixel=1,
+                CGA2_PALETTE, NONE_COLOURS, bitsperpixel=1,
                 interleave_times=4, bank_size=0x2000,
                 num_pages=2,
                 aspect=self.aspect,
@@ -407,21 +366,21 @@ class Video(object):
             if self.capabilities == 'tandy':
                 self._text_data = {
                     40: TextMode(
-                        'tandytext40', 25, 40, 9, 8, 7, CGA16_PALETTE, self.colours16, num_pages=8
+                        'tandytext40', 25, 40, 9, 8, 7, CGA16_PALETTE, COLOURS16, num_pages=8
                     ),
                     80: TextMode(
-                        'tandytext80', 25, 80, 9, 8, 7, CGA16_PALETTE, self.colours16, num_pages=4
+                        'tandytext80', 25, 80, 9, 8, 7, CGA16_PALETTE, COLOURS16, num_pages=4
                     )
                 }
             else:
                 self._text_data = {
                     40: TextMode(
                         'cgatext40', 25, 40, 8, 8, 7,
-                        CGA16_PALETTE, self.colours16, num_pages=8
+                        CGA16_PALETTE, COLOURS16, num_pages=8
                     ),
                     80: TextMode(
                         'cgatext80', 25, 80, 8, 8, 7,
-                        CGA16_PALETTE, self.colours16, num_pages=4
+                        CGA16_PALETTE, COLOURS16, num_pages=4
                     )
                 }
             if self.capabilities in ('cga', 'cga_old'):
@@ -457,10 +416,10 @@ class Video(object):
         elif self.capabilities == 'olivetti':
             self._text_data = {
                 40: TextMode(
-                    'olivettitext40', 25, 40, 16, 8, 7, CGA16_PALETTE, self.colours16, num_pages=8
+                    'olivettitext40', 25, 40, 16, 8, 7, CGA16_PALETTE, COLOURS16, num_pages=8
                 ),
                 80: TextMode(
-                    'olivettitext80', 25, 80, 16, 8, 7, CGA16_PALETTE, self.colours16, num_pages=4
+                    'olivettitext80', 25, 80, 16, 8, 7, CGA16_PALETTE, COLOURS16, num_pages=4
                 )
             }
             self._mode_data = {
@@ -537,21 +496,87 @@ class ColourMapper(object):
     def set_cga4_palette(self, num):
         """Set the default 4-colour CGA palette."""
 
+    def set_colorburst(self, on):
+        """Set the NTSC colorburst bit."""
+        # not colourburst capable
+        return False
+
+
+class HerculesColourMapper(ColourMapper):
+    """Hercules 16-greyscale palette."""
+
+    def __init__(self, palette, colours_dummy, has_blink, num_attr):
+        """Initialise colour mapper."""
+        ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
+
+    #FIXME - not being called
+    def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
+        self._colours = tuple(
+            tuple(_tint * _int//255 for _tint in mono_tint) for _int in INTENSITY16
+        )
+
+
+class CGAColourMapper(ColourMapper):
+    """CGA 2-colour, 16-colour palettes."""
+
+    def __init__(self, palette, colours_dummy, has_blink, num_attr):
+        """Initialise colour mapper."""
+        ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
+        self._force_mono = False
+        self._force_colour = False
+        self._colours = COLOURS16
+
+    #FIXME - not being called
+    def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
+        """CGA 4-colour palette / mode 5 settings"""
+        self._force_mono = monitor == 'mono'
+        # rgb monitor
+        self._force_colour = monitor not in ('mono', 'composite')
+        self._mono_tint = mono_tint
+
+    def set_colorburst(self, on):
+        """Set the NTSC colorburst bit."""
+        # On a composite monitor with CGA adapter (not EGA, VGA):
+        # - on SCREEN 2 this enables artifacting
+        # - on SCREEN 1 and 0 this switches between colour and greyscale
+        # On an RGB monitor:
+        # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
+        # - ignored on other screens
+        self._toggle_colour(on)
+        return on
+
+    def _toggle_colour(self, colour_on):
+        """Toggle between colour and monochrome (for NTSC colorburst)."""
+        if (colour_on and not self._force_mono) or self._force_colour:
+            self._colours = COLOURS16
+        else:
+            # FIXME - should be intensity-mapped CGA colours
+            # with potential hue adjustment to ensure all shades are different
+            # this is the Hercules palette
+            self._colours = tuple(
+                tuple(_tint * _int//255 for _tint in self._mono_tint) for _int in INTENSITY16
+            )
+
 
 class CGA4ColourMapper(ColourMapper):
     """CGA 4-colour palettes."""
 
-    def __init__(self, palette, colours, has_blink, num_attr):
+    def __init__(self, palette, colours_dummy, has_blink, num_attr):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, palette, colours, has_blink, num_attr)
+        ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
         self._tandy = False
         self._low_intensity = False
         self._has_mode_5 = True
         self._palette_number = 1
         self._mode_5 = False
+        self._force_mono = False
+        self._force_colour = False
+        # greyscale mono
+        self._mono_tint = (255, 255, 255)
+        self._colours = COLOURS16
 
     #FIXME - not being called
-    def set_defaults(capabilities, low_intensity):
+    def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
         """CGA 4-colour palette / mode 5 settings"""
         self._tandy = capabilities not in ('pcjr', 'tandy')
         # pcjr does not have mode 5
@@ -560,6 +585,10 @@ class CGA4ColourMapper(ColourMapper):
         # start with the cyan-magenta-white palette
         self._palette_number = 1
         self._mode_5 = False
+        self._force_mono = monitor == 'mono'
+        # rgb monitor
+        self._force_colour = monitor not in ('mono', 'composite')
+        self._mono_tint = mono_tint
 
     def get_cga4_palette(self):
         """CGA palette setting (accessible from memory)."""
@@ -593,6 +622,34 @@ class CGA4ColourMapper(ColourMapper):
             else:
                 return CGA4_HI_PALETTE_0
 
+    def set_colorburst(self, on):
+        """Set the NTSC colorburst bit."""
+        # On a composite monitor with CGA adapter (not EGA, VGA):
+        # - on SCREEN 2 this enables artifacting
+        # - on SCREEN 1 and 0 this switches between colour and greyscale
+        # On an RGB monitor:
+        # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
+        # - ignored on other screens
+        if self._force_colour:
+            # ega ignores colorburst; tandy and pcjr have no mode 5
+            self._mode_5 = not on
+            self.set_cga4_palette(1)
+        else:
+            self._toggle_colour(on)
+        return on
+
+    def _toggle_colour(self, colour_on):
+        """Toggle between colour and monochrome (for NTSC colorburst)."""
+        if (colour_on and not self._force_mono) or self._force_colour:
+            self._colours = COLOURS16
+        else:
+            # FIXME - should be intensity-mapped CGA colours
+            # with potential hue adjustment to ensure all shades are different
+            # this is the Hercules palette
+            self._colours = tuple(
+                tuple(_tint * _int//255 for _tint in self._mono_tint) for _int in INTENSITY16
+            )
+
 
 class MonoTextColourMapper(ColourMapper):
     """Attribute mapper for MDA-style text mode with underlining."""
@@ -607,9 +664,13 @@ class MonoTextColourMapper(ColourMapper):
     #
     # Attributes 00h, 08h, 80h and 88h display as black space.
     # Attribute 70h displays as black on green.
-    # Attribute 78h displays as dark green on green. In fact, depending on timing and on the design of the monitor, it may have a bright green 'halo' where the dark green and bright green bits meet.
-    # Attribute F0h displays as a blinking version of 70h (if blinking is enabled); as black on bright green otherwise.
-    # Attribute F8h displays as a blinking version of 78h (if blinking is enabled); as dark green on bright green otherwise.
+    # Attribute 78h displays as dark green on green.
+    #       In fact, depending on timing and on the design of the monitor,
+    #       it may have a bright green 'halo' where the dark green and bright green bits meet.
+    # Attribute F0h displays as a blinking version of 70h
+    #       (if blinking is enabled); as black on bright green otherwise.
+    # Attribute F8h displays as a blinking version of 78h
+    #       (if blinking is enabled); as dark green on bright green otherwise.
 
     # see also http://support.microsoft.com/KB/35148
     # --> archived on https://github.com/jeffpar/kbarchive/tree/master/kb/035/Q35148
@@ -973,6 +1034,12 @@ class MonoTextMode(TextMode):
     _colourmapper = MonoTextColourMapper
 
 
+class CGATextMode(TextMode):
+    """MDA-style text mode with underlining."""
+
+    _colourmapper = CGAColourMapper
+
+
 ##############################################################################
 # graphics modes
 
@@ -1087,6 +1154,7 @@ class GraphicsMode(VideoMode):
 class CGAMode(GraphicsMode):
     """Default settings for a CGA graphics mode."""
 
+    _colourmapper = CGAColourMapper
     _tile_builder = PackedTileBuilder
     _sprite_builder = PackedSpriteBuilder
 
@@ -1125,6 +1193,12 @@ class CGA4Mode(CGAMode):
     """Default settings for a CGA graphics mode."""
 
     _colourmapper = CGA4ColourMapper
+
+
+class HerculesMode(CGAMode):
+    """Default settings for a CGA graphics mode."""
+
+    _colourmapper = HerculesColourMapper
 
 
 class EGAMode(GraphicsMode):

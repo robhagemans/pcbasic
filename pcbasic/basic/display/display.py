@@ -324,7 +324,7 @@ class Display(object):
 
     def set_colorburst(self, on=True):
         """Set the composite colorburst bit."""
-        colorburst = self.video.set_colorburst(on, is_cga=(self.mode.name == '320x200x4'))
+        colorburst = self.mode.colourmap.set_colorburst(on)
         # reset the palette to reflect the new mono or mode-5 situation
         # this sends the signal to the interface as well
         self.palette.init_mode(self.mode)
