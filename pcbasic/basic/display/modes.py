@@ -208,7 +208,7 @@ class Video(object):
             # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
             '640x200x2': CGAMode(
                 '640x200x2', 640, 200, 25, 80, 1,
-                CGA2_PALETTE, NONE_COLOURS, bitsperpixel=1,
+                NONE_PALETTE, NONE_COLOURS, bitsperpixel=1,
                 interleave_times=2, bank_size=0x2000, num_pages=1,
                 aspect=self.aspect,
                 supports_artifacts=True
@@ -216,7 +216,7 @@ class Video(object):
             # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
             '160x200x16': CGAMode(
                 '160x200x16', 160, 200, 25, 20, 15,
-                CGA16_PALETTE, NONE_COLOURS, bitsperpixel=4,
+                NONE_PALETTE, NONE_COLOURS, bitsperpixel=4,
                 interleave_times=2, bank_size=0x2000,
                 num_pages=video_mem_size//(2*0x2000),
                 pixel_aspect=(1968, 1000), cursor_index=3
@@ -233,7 +233,7 @@ class Video(object):
             # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
             '320x200x16pcjr': CGAMode(
                 '320x200x16pcjr', 320, 200, 25, 40, 15,
-                CGA16_PALETTE, NONE_COLOURS, bitsperpixel=4,
+                NONE_PALETTE, NONE_COLOURS, bitsperpixel=4,
                 interleave_times=4, bank_size=0x2000,
                 num_pages=video_mem_size//(4*0x2000),
                 aspect=self.aspect,
@@ -275,7 +275,7 @@ class Video(object):
             # 0Fh 640x350x4     EGA monochrome screen 10
             '640x350x4': EGAMonoMode(
                 '640x350x16', 640, 350, 25, 80, 1,
-                EGA_MONO_PALETTE, NONE_COLOURS, bitsperpixel=2,
+                NONE_PALETTE, NONE_COLOURS, bitsperpixel=2,
                 interleave_times=1, bank_size=0x8000,
                 num_pages=video_mem_size//(2*0x8000),
                 aspect=self.aspect,
@@ -285,7 +285,7 @@ class Video(object):
             # 40h 640x400x2   1bpp  olivetti screen 3
             '640x400x2': CGAMode(
                 '640x400x2', 640, 400, 25, 80, 1,
-                CGA2_PALETTE, NONE_COLOURS, bitsperpixel=1,
+                NONE_PALETTE, NONE_COLOURS, bitsperpixel=1,
                 interleave_times=4, bank_size=0x2000,
                 num_pages=1,
                 aspect=self.aspect,
@@ -295,7 +295,7 @@ class Video(object):
             '720x348x2': HerculesMode(
                 # this actually produces 350, not 348
                 '720x348x2', 720, 350, 25, 80, 1,
-                CGA2_PALETTE, NONE_COLOURS, bitsperpixel=1,
+                NONE_PALETTE, NONE_COLOURS, bitsperpixel=1,
                 interleave_times=4, bank_size=0x2000,
                 num_pages=2,
                 aspect=self.aspect,
@@ -498,9 +498,10 @@ class ColourMapper(object):
 class HerculesColourMapper(ColourMapper):
     """Hercules 16-greyscale palette."""
 
-    def __init__(self, palette, colours_dummy, has_blink, num_attr):
+    def __init__(self, palette_dummy, colours_dummy, has_blink, num_attr):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
+        ColourMapper.__init__(self, palette_dummy, colours_dummy, has_blink, num_attr)
+        self._default_palette = CGA2_PALETTE
 
     #FIXME - not being called
     def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
@@ -511,13 +512,19 @@ class HerculesColourMapper(ColourMapper):
 class CGAColourMapper(ColourMapper):
     """CGA 2-colour, 16-colour palettes."""
 
-    def __init__(self, palette, colours_dummy, has_blink, num_attr):
+    def __init__(self, palette_dummy, colours_dummy, has_blink, num_attr):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
+        ColourMapper.__init__(self, palette_dummy, colours_dummy, has_blink, num_attr)
         self._force_mono = False
         self._force_colour = False
         self._has_colorburst = False
         self._colours = COLOURS16
+        if num_attr == 2:
+            self._default_palette = CGA2_PALETTE
+        elif num_attr == 16:
+            self._default_palette = CGA16_PALETTE
+        else:
+            raise ValueError
 
     #FIXME - not being called
     def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
@@ -753,11 +760,12 @@ class EGAMonoColourMapper(ColourMapper):
         (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)
     )
 
-    def __init__(self, palette, colours_dummy, has_blink, num_attr):
+    def __init__(self, palette_dummy, colours_dummy, has_blink, num_attr):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
+        ColourMapper.__init__(self, palette_dummy, colours_dummy, has_blink, num_attr)
         # greyscale mono
         self._mono_tint = (255, 255, 255)
+        self._default_palette = EGA_MONO_PALETTE
         self._set_colours()
 
     #FIXME - not being called
