@@ -333,11 +333,11 @@ class Video(object):
             self._text_data = {
                 40: MonoTextMode(
                     'ega_monotext40', 25, 40, 14, 8, 7,
-                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=8
+                    NONE_PALETTE, NONE_COLOURS, is_mono=True, num_pages=8
                 ),
                 80: MonoTextMode(
                     'ega_monotext80', 25, 80, 14, 8, 7,
-                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=4
+                    NONE_PALETTE, NONE_COLOURS, is_mono=True, num_pages=4
                 )
             }
             self._mode_data = {
@@ -347,11 +347,11 @@ class Video(object):
             self._text_data = {
                 40: MonoTextMode(
                     'mdatext40', 25, 40, 14, 9, 7,
-                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=1
+                    NONE_PALETTE, NONE_COLOURS, is_mono=True, num_pages=1
                 ),
                 80: MonoTextMode(
                     'mdatext80', 25, 80, 14, 9, 7,
-                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=1
+                    NONE_PALETTE, NONE_COLOURS, is_mono=True, num_pages=1
                 )
             }
             self._mode_data = {}
@@ -396,11 +396,11 @@ class Video(object):
             self._text_data = {
                 40: MonoTextMode(
                     'herculestext40', 25, 40, 14, 9, 7,
-                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=2
+                    NONE_PALETTE, NONE_COLOURS, is_mono=True, num_pages=2
                 ),
                 80: MonoTextMode(
                     'herculestext80', 25, 80, 14, 9, 7,
-                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=2
+                    NONE_PALETTE, NONE_COLOURS, is_mono=True, num_pages=2
                 )
             }
             self._mode_data = {
@@ -689,9 +689,9 @@ class MonoTextColourMapper(ColourMapper):
     # see https://nerdlypleasures.blogspot.com/2014/03/the-monochrome-experience-cga-ega-and.html
     # and http://www.vcfed.org/forum/showthread.php?50674-EGA-Monochrome-Compatibility
 
-    def __init__(self, palette, colours_dummy, has_blink, num_attr):
+    def __init__(self, palette_dummy, colours_dummy, has_blink, num_attr):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
+        ColourMapper.__init__(self, palette_dummy, colours_dummy, has_blink, num_attr)
         # greyscale mono
         self._mono_tint = (255, 255, 255)
         self._set_colours()
@@ -708,6 +708,11 @@ class MonoTextColourMapper(ColourMapper):
         self._colours = tuple(
             tuple(tint*i//255 for tint in self._mono_tint) for i in INTENSITY_MDA_MONO
         )
+
+    @property
+    def default_palette(self):
+        """Default palette."""
+        return MDA_PALETTE
 
     @property
     def num_palette(self):
