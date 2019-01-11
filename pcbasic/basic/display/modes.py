@@ -184,13 +184,6 @@ class Video(object):
     def prepare_modes(self, video_mem_size):
         """Build lists of allowed graphics modes."""
         video_mem_size = int(video_mem_size)
-        # initialise tinted monochrome palettes
-        colours_ega_mono = tuple(
-            tuple(tint*i//255 for tint in self.mono_tint) for i in INTENSITY_EGA_MONO
-        )
-        colours_mda_mono = tuple(
-            tuple(tint*i//255 for tint in self.mono_tint) for i in INTENSITY_MDA_MONO
-        )
         # Tandy/PCjr pixel aspect ratio is different from normal
         # suggesting screen aspect ratio is not 4/3.
         # Tandy pixel aspect ratios, experimentally found with CIRCLE:
@@ -249,7 +242,7 @@ class Video(object):
             # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
             '640x200x4': Tandy6Mode(
                 '640x200x4', 640, 200, 25, 80, 3,
-                NONE_PALETTE, COLOURS16, bitsperpixel=2,
+                NONE_PALETTE, NONE_COLOURS, bitsperpixel=2,
                 interleave_times=4, bank_size=0x2000,
                 num_pages=video_mem_size//(4*0x2000),
                 aspect=self.aspect,
@@ -282,7 +275,7 @@ class Video(object):
             # 0Fh 640x350x4     EGA monochrome screen 10
             '640x350x4': EGAMonoMode(
                 '640x350x16', 640, 350, 25, 80, 1,
-                EGA_MONO_PALETTE, colours_ega_mono, bitsperpixel=2,
+                EGA_MONO_PALETTE, NONE_COLOURS, bitsperpixel=2,
                 interleave_times=1, bank_size=0x8000,
                 num_pages=video_mem_size//(2*0x8000),
                 aspect=self.aspect,
@@ -340,11 +333,11 @@ class Video(object):
             self._text_data = {
                 40: MonoTextMode(
                     'ega_monotext40', 25, 40, 14, 8, 7,
-                    MDA_PALETTE, colours_mda_mono, is_mono=True, num_pages=8
+                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=8
                 ),
                 80: MonoTextMode(
                     'ega_monotext80', 25, 80, 14, 8, 7,
-                    MDA_PALETTE, colours_mda_mono, is_mono=True, num_pages=4
+                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=4
                 )
             }
             self._mode_data = {
@@ -354,11 +347,11 @@ class Video(object):
             self._text_data = {
                 40: MonoTextMode(
                     'mdatext40', 25, 40, 14, 9, 7,
-                    MDA_PALETTE, colours_mda_mono, is_mono=True, num_pages=1
+                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=1
                 ),
                 80: MonoTextMode(
                     'mdatext80', 25, 80, 14, 9, 7,
-                    MDA_PALETTE, colours_mda_mono, is_mono=True, num_pages=1
+                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=1
                 )
             }
             self._mode_data = {}
@@ -403,11 +396,11 @@ class Video(object):
             self._text_data = {
                 40: MonoTextMode(
                     'herculestext40', 25, 40, 14, 9, 7,
-                    MDA_PALETTE, colours_mda_mono, is_mono=True, num_pages=2
+                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=2
                 ),
                 80: MonoTextMode(
                     'herculestext80', 25, 80, 14, 9, 7,
-                    MDA_PALETTE, colours_mda_mono, is_mono=True, num_pages=2
+                    MDA_PALETTE, NONE_COLOURS, is_mono=True, num_pages=2
                 )
             }
             self._mode_data = {
@@ -689,6 +682,26 @@ class MonoTextColourMapper(ColourMapper):
     # see https://nerdlypleasures.blogspot.com/2014/03/the-monochrome-experience-cga-ega-and.html
     # and http://www.vcfed.org/forum/showthread.php?50674-EGA-Monochrome-Compatibility
 
+    def __init__(self, palette, colours_dummy, has_blink, num_attr):
+        """Initialise colour mapper."""
+        ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
+        # greyscale mono
+        self._mono_tint = (255, 255, 255)
+        self._set_colours()
+
+    #FIXME - not being called
+    def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
+        """Palette / mode settings"""
+        self._mono_tint = mono_tint
+        self._set_colours()
+
+    def _set_colours(self):
+        """Calculate tinted monochromes."""
+        # initialise tinted monochrome palettes
+        self._colours = tuple(
+            tuple(tint*i//255 for tint in self._mono_tint) for i in INTENSITY_MDA_MONO
+        )
+
     @property
     def num_palette(self):
         """Number of foreground attributes is the same as in colour text modes."""
@@ -739,6 +752,25 @@ class EGAMonoColourMapper(ColourMapper):
     _pseudocolours = (
         (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)
     )
+
+    def __init__(self, palette, colours_dummy, has_blink, num_attr):
+        """Initialise colour mapper."""
+        ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
+        # greyscale mono
+        self._mono_tint = (255, 255, 255)
+        self._set_colours()
+
+    #FIXME - not being called
+    def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
+        """Palette / mode settings"""
+        self._mono_tint = mono_tint
+        self._set_colours()
+
+    def _set_colours(self):
+        """Calculate tinted monochromes."""
+        self._colours = tuple(
+            tuple(tint*i//255 for tint in self._mono_tint) for i in INTENSITY_EGA_MONO
+        )
 
     @property
     def num_colours(self):
