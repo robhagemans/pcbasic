@@ -515,7 +515,6 @@ class HerculesColourMapper(ColourMapper):
             tuple(_tint * _int//255 for _tint in mono_tint) for _int in INTENSITY16
         )
 
-#FIXME - we should ignore colorburst completely on EGA, VGA adapters
 class CGAColourMapper(ColourMapper):
     """CGA 2-colour, 16-colour palettes."""
 
@@ -524,15 +523,18 @@ class CGAColourMapper(ColourMapper):
         ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
         self._force_mono = False
         self._force_colour = False
+        self._has_colorburst = False
         self._colours = COLOURS16
 
     #FIXME - not being called
     def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
         """CGA 4-colour palette / mode 5 settings"""
+        self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
+        # monochrome
         self._force_mono = monitor == 'mono'
+        self._mono_tint = mono_tint
         # rgb monitor
         self._force_colour = monitor not in ('mono', 'composite')
-        self._mono_tint = mono_tint
 
     def set_colorburst(self, on):
         """Set the NTSC colorburst bit."""
@@ -542,7 +544,8 @@ class CGAColourMapper(ColourMapper):
         # On an RGB monitor:
         # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
         # - ignored on other screens
-        self._toggle_colour(on)
+        if self._has_colorburst:
+            self._toggle_colour(on)
 
     def _toggle_colour(self, colour_on):
         """Toggle between colour and monochrome (for NTSC colorburst)."""
@@ -566,19 +569,21 @@ class CGA4ColourMapper(ColourMapper):
         self._tandy = False
         self._low_intensity = False
         self._has_mode_5 = False
-        self._palette_number = 1
         self._mode_5 = False
+        self._has_colorburst = False
         self._force_mono = False
         self._force_colour = True
         # greyscale mono
         self._mono_tint = (255, 255, 255)
+        self._palette_number = 1
         self._colours = COLOURS16
 
     #FIXME - not being called
     def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
         """CGA 4-colour palette / mode 5 settings"""
+        self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
+        # pcjr/tandy does not have mode 5
         self._tandy = capabilities not in ('pcjr', 'tandy')
-        # pcjr does not have mode 5
         self._has_mode_5 = capabilities in ('cga', 'cga_old')
         self._low_intensity = low_intensity
         # start with the cyan-magenta-white palette
@@ -623,6 +628,8 @@ class CGA4ColourMapper(ColourMapper):
 
     def set_colorburst(self, on):
         """Set the NTSC colorburst bit."""
+        if not self._has_colorburst:
+            return
         # On a composite monitor with CGA adapter (not EGA, VGA):
         # - on SCREEN 2 this enables artifacting
         # - on SCREEN 1 and 0 this switches between colour and greyscale
