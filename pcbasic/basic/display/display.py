@@ -324,14 +324,14 @@ class Display(object):
 
     def set_colorburst(self, on=True):
         """Set the composite colorburst bit."""
-        colorburst = self.mode.colourmap.set_colorburst(on)
+        self.mode.colourmap.set_colorburst(on)
         # reset the palette to reflect the new mono or mode-5 situation
         # this sends the signal to the interface as well
         self.palette.init_mode(self.mode)
         # don't try composite unless our video card supports it
         if self.capabilities in modes.COMPOSITE:
             composite_artifacts = (
-                colorburst and self.video.monitor == 'composite' and
+                on and self.video.monitor == 'composite' and
                 (not self.mode.is_text_mode) and self.mode.supports_artifacts
             )
             if composite_artifacts:

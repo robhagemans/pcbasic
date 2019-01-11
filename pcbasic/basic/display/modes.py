@@ -515,7 +515,7 @@ class HerculesColourMapper(ColourMapper):
             tuple(_tint * _int//255 for _tint in mono_tint) for _int in INTENSITY16
         )
 
-
+#FIXME - we should ignore colorburst completely on EGA, VGA adapters
 class CGAColourMapper(ColourMapper):
     """CGA 2-colour, 16-colour palettes."""
 
@@ -543,7 +543,6 @@ class CGAColourMapper(ColourMapper):
         # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
         # - ignored on other screens
         self._toggle_colour(on)
-        return on
 
     def _toggle_colour(self, colour_on):
         """Toggle between colour and monochrome (for NTSC colorburst)."""
@@ -566,11 +565,11 @@ class CGA4ColourMapper(ColourMapper):
         ColourMapper.__init__(self, palette, colours_dummy, has_blink, num_attr)
         self._tandy = False
         self._low_intensity = False
-        self._has_mode_5 = True
+        self._has_mode_5 = False
         self._palette_number = 1
         self._mode_5 = False
         self._force_mono = False
-        self._force_colour = False
+        self._force_colour = True
         # greyscale mono
         self._mono_tint = (255, 255, 255)
         self._colours = COLOURS16
@@ -636,7 +635,6 @@ class CGA4ColourMapper(ColourMapper):
             self.set_cga4_palette(1)
         else:
             self._toggle_colour(on)
-        return on
 
     def _toggle_colour(self, colour_on):
         """Toggle between colour and monochrome (for NTSC colorburst)."""
