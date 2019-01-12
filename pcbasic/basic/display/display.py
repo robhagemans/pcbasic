@@ -26,35 +26,36 @@ from .modes import Video
 class Palette(object):
     """Colour palette."""
 
-    def __init__(self, queues, mode, capabilities, memory):
+    def __init__(self, queues, mode, capabilities):
         """Initialise palette."""
         self._capabilities = capabilities
-        self._memory = memory
         self._queues = queues
         self._mode = mode
         # map from fore/back attr to video adapter colour
         # interpretation is video mode dependent
-        self._palette = []
-        self.set_all(mode.colourmap.default_palette)
+        self._palette = list(mode.colourmap.default_palette)
+        self.submit()
 
     def init_mode(self, mode):
         """Initialise for new mode."""
         self._mode = mode
-        self.set_all(mode.colourmap.default_palette)
+        self._palette = list(mode.colourmap.default_palette)
+        self.submit()
 
-    def set_all(self, new_palette):
+    def set_all(self, new_palette, force=False):
         """Set the colours for all attributes."""
-        # map from fore/back attr to video adapter colour
-        self._palette = list(new_palette)
-        self.submit()
+        if force or self._mode_allows_palette():
+            self._palette = list(new_palette)
+            self.submit()
 
-    def set_entry(self, index, colour):
+    def set_entry(self, index, colour, force=False):
         """Set a new colour for a given attribute."""
-        self._palette[index] = colour
-        # in text mode, we'd be setting more than one attribute
-        # e.g. all true attributes with this number as foreground or background
-        # and attr_to_rgb decides which
-        self.submit()
+        if force or self._mode_allows_palette():
+            self._palette[index] = colour
+            # in text mode, we'd be setting more than one attribute
+            # e.g. all true attributes with this number as foreground or background
+            # and attr_to_rgb decides which
+            self.submit()
 
     def submit(self):
         """Submit to interface."""
@@ -81,52 +82,6 @@ class Palette(object):
             return False
         else:
             return True
-
-    def palette_(self, args):
-        """PALETTE: assign colour to attribute."""
-        attrib = next(args)
-        if attrib is not None:
-            attrib = values.to_int(attrib)
-        colour = next(args)
-        if colour is not None:
-            colour = values.to_int(colour)
-        list(args)
-        if attrib is None and colour is None:
-            if self._mode_allows_palette():
-                self.set_all(self._mode.colourmap.default_palette)
-        else:
-            # can't set blinking colours separately
-            error.range_check(0, self._mode.colourmap.num_palette-1, attrib)
-            # numbers 255 and up are in fact allowed, 255 -> -1, 256 -> 0, etc
-            colour = -1 + (colour + 1) % 256
-            error.range_check(-1, self._mode.colourmap.num_colours-1, colour)
-            if colour != -1:
-                if self._mode_allows_palette():
-                    self.set_entry(attrib, colour)
-
-    def palette_using_(self, args):
-        """PALETTE USING: set palette from array buffer."""
-        array_name, start_indices = next(args)
-        array_name = self._memory.complete_name(array_name)
-        list(args)
-        try:
-            dimensions = self._memory.arrays.dimensions(array_name)
-        except KeyError:
-            raise error.BASICError(error.IFC)
-        error.throw_if(array_name[-1:] != values.INT, error.TYPE_MISMATCH)
-        lst = self._memory.arrays.view_full_buffer(array_name)
-        start = self._memory.arrays.index(start_indices, dimensions)
-        num_palette_entries = self._mode.colourmap.num_palette
-        error.throw_if(self._memory.arrays.array_len(dimensions) - start < num_palette_entries)
-        new_palette = []
-        for i in range(num_palette_entries):
-            offset = (start+i) * 2
-            ## signed int, as -1 means don't set
-            val, = struct.unpack('<h', lst[offset:offset+2])
-            error.range_check(-1, self._mode.colourmap.num_colours-1, val)
-            new_palette.append(val if val > -1 else self.get_entry(i))
-        if self._mode_allows_palette():
-            self.set_all(new_palette)
 
 
 #######################################################################################
@@ -163,7 +118,7 @@ class Display(object):
         # graphics operations
         self.drawing = graphics.Drawing(self.queues, input_methods, self._values, self._memory)
         # colour palette
-        self.palette = Palette(self.queues, self.mode, self.capabilities, self._memory)
+        self.palette = Palette(self.queues, self.mode, self.capabilities)
         # initialise a fresh textmode screen
         self._set_mode(self.mode, 0, 1, 0, 0)
 
@@ -532,9 +487,9 @@ class Display(object):
             self.mode.colourmap.set_cga4_palette(pal % 2)
             palette = list(self.mode.colourmap.default_palette)
             palette[0] = back & 0xf
-            self.palette.set_all(palette)
+            self.palette.set_all(palette, force=True)
         else:
-            self.palette.set_entry(0, back & 0xf)
+            self.palette.set_entry(0, back & 0xf, force=True)
 
     def _color_other_modes(self, fore, back, bord):
         """Helper function for COLOR in modes other than SCREEN 1."""
@@ -554,17 +509,60 @@ class Display(object):
             error.range_check(0, max_attr, back)
             self.set_attr(fore)
             # in screen 7 and 8, only low intensity palette is used.
-            self.palette.set_entry(0, back % 8)
+            self.palette.set_entry(0, back % 8, force=True)
         elif self.mode.name in ('640x350x16', '640x350x4'):
             error.range_check(1, max_attr, fore)
             error.range_check(0, max_colour, back)
             self.set_attr(fore)
-            self.palette.set_entry(0, back)
+            self.palette.set_entry(0, back, force=True)
         elif self.mode.name == '640x400x2':
             error.range_check(0, max_colour, fore)
             if back != 0:
                 raise error.BASICError(error.IFC)
-            self.palette.set_entry(1, fore)
+            self.palette.set_entry(1, fore, fotrce=True)
+
+    def palette_(self, args):
+        """PALETTE: assign colour to attribute."""
+        attrib = next(args)
+        if attrib is not None:
+            attrib = values.to_int(attrib)
+        colour = next(args)
+        if colour is not None:
+            colour = values.to_int(colour)
+        list(args)
+        if attrib is None and colour is None:
+            self.palette.set_all(self.mode.colourmap.default_palette)
+        else:
+            # can't set blinking colours separately
+            error.range_check(0, self.mode.colourmap.num_palette-1, attrib)
+            # numbers 255 and up are in fact allowed, 255 -> -1, 256 -> 0, etc
+            colour = -1 + (colour + 1) % 256
+            error.range_check(-1, self.mode.colourmap.num_colours-1, colour)
+            if colour != -1:
+                self.palette.set_entry(attrib, colour)
+
+    def palette_using_(self, args):
+        """PALETTE USING: set palette from array buffer."""
+        array_name, start_indices = next(args)
+        array_name = self._memory.complete_name(array_name)
+        list(args)
+        try:
+            dimensions = self._memory.arrays.dimensions(array_name)
+        except KeyError:
+            raise error.BASICError(error.IFC)
+        error.throw_if(array_name[-1:] != values.INT, error.TYPE_MISMATCH)
+        lst = self._memory.arrays.view_full_buffer(array_name)
+        start = self._memory.arrays.index(start_indices, dimensions)
+        num_palette_entries = self.mode.colourmap.num_palette
+        error.throw_if(self._memory.arrays.array_len(dimensions) - start < num_palette_entries)
+        new_palette = []
+        for i in range(num_palette_entries):
+            offset = (start+i) * 2
+            ## signed int, as -1 means don't set
+            val, = struct.unpack('<h', lst[offset:offset+2])
+            error.range_check(-1, self.mode.colourmap.num_colours-1, val)
+            new_palette.append(val if val > -1 else self.palette.get_entry(i))
+        self.palette.set_all(new_palette)
 
     def cls_(self, args):
         """CLS: clear the screen."""
