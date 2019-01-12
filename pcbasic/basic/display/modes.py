@@ -193,8 +193,7 @@ class Video(object):
             # tandy:2 pages if 32k memory; ega: 1 page only
             '320x200x4': CGA4Mode(
                 '320x200x4', 320, 200, 25, 40, 3,
-                num_colours=16, bitsperpixel=2,
-                interleave_times=2, bank_size=0x2000,
+                num_colours=16, bitsperpixel=2, interleave_times=2, bank_size=0x2000,
                 aspect=self.aspect,
                 num_pages=(
                     video_mem_size // (2*0x2000)
@@ -205,88 +204,63 @@ class Video(object):
             # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
             '640x200x2': CGAMode(
                 '640x200x2', 640, 200, 25, 80, 1,
-                num_colours=16, bitsperpixel=1,
-                interleave_times=2, bank_size=0x2000, num_pages=1,
-                aspect=self.aspect,
-                supports_artifacts=True
+                num_colours=16, bitsperpixel=1, interleave_times=2, bank_size=0x2000, num_pages=1,
+                aspect=self.aspect, supports_artifacts=True
             ),
             # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
             '160x200x16': CGAMode(
                 '160x200x16', 160, 200, 25, 20, 15,
-                num_colours=16, bitsperpixel=4,
-                interleave_times=2, bank_size=0x2000,
-                num_pages=video_mem_size//(2*0x2000),
-                pixel_aspect=(1968, 1000), cursor_index=3
+                num_colours=16, bitsperpixel=4, interleave_times=2, bank_size=0x2000,
+                num_pages=video_mem_size//(2*0x2000), pixel_aspect=(1968, 1000), cursor_index=3
             ),
             #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
             '320x200x4pcjr': CGA4Mode(
                 '320x200x4pcjr', 320, 200, 25, 40, 3,
-                num_colours=4, bitsperpixel=2,
-                interleave_times=2, bank_size=0x2000,
-                num_pages=video_mem_size//(2*0x2000),
-                aspect=self.aspect,
-                cursor_index=3
+                num_colours=4, bitsperpixel=2, interleave_times=2, bank_size=0x2000,
+                num_pages=video_mem_size//(2*0x2000), aspect=self.aspect, cursor_index=3
             ),
             # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
             '320x200x16pcjr': CGAMode(
                 '320x200x16pcjr', 320, 200, 25, 40, 15,
-                num_colours=16, bitsperpixel=4,
-                interleave_times=4, bank_size=0x2000,
-                num_pages=video_mem_size//(4*0x2000),
-                aspect=self.aspect,
-                cursor_index=3
+                num_colours=16, bitsperpixel=4, interleave_times=4, bank_size=0x2000,
+                num_pages=video_mem_size // (4*0x2000), aspect=self.aspect, cursor_index=3
             ),
             # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
             '640x200x4': Tandy6Mode(
                 '640x200x4', 640, 200, 25, 80, 3,
-                num_colours=4, bitsperpixel=2,
-                interleave_times=4, bank_size=0x2000,
-                num_pages=video_mem_size//(4*0x2000),
-                aspect=self.aspect,
-                cursor_index=3
+                num_colours=4, bitsperpixel=2, interleave_times=4, bank_size=0x2000,
+                num_pages=video_mem_size // (4*0x2000), aspect=self.aspect, cursor_index=3
             ),
             # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
             '320x200x16': EGAMode(
                 '320x200x16', 320, 200, 25, 40, 15,
-                num_colours=16, bitsperpixel=4,
-                num_pages=video_mem_size//(4*0x2000),
-                aspect=self.aspect,
-                interleave_times=1, bank_size=0x2000
+                num_colours=16, bitsperpixel=4, interleave_times=1, bank_size=0x2000,
+                num_pages=video_mem_size // (4*0x2000), aspect=self.aspect
             ),
             # 0Eh 640x200x16    EGA screen 8
             '640x200x16': EGAMode(
                 '640x200x16', 640, 200, 25, 80, 15,
-                num_colours=16, bitsperpixel=4,
-                num_pages=video_mem_size//(4*0x4000),
-                aspect=self.aspect,
-                interleave_times=1, bank_size=0x4000
+                num_colours=16, bitsperpixel=4, interleave_times=1, bank_size=0x4000,
+                num_pages=video_mem_size // (4*0x4000), aspect=self.aspect,
             ),
             # 10h 640x350x16    EGA screen 9
             '640x350x16': EGAMode(
                 '640x350x16', 640, 350, 25, 80, 15,
-                num_colours=64, bitsperpixel=4,
-                num_pages=video_mem_size//(4*0x8000),
-                aspect=self.aspect,
-                interleave_times=1, bank_size=0x8000
+                num_colours=64, bitsperpixel=4, interleave_times=1, bank_size=0x8000,
+                num_pages=video_mem_size // (4*0x8000), aspect=self.aspect
             ),
             # 0Fh 640x350x4     EGA monochrome screen 10
             '640x350x4': EGAMonoMode(
                 '640x350x16', 640, 350, 25, 80, 1,
-                num_colours=9, bitsperpixel=2,
-                interleave_times=1, bank_size=0x8000,
-                num_pages=video_mem_size//(2*0x8000),
-                aspect=self.aspect,
-                has_blink=True,
-                planes_used=(1, 3)
+                num_colours=9, bitsperpixel=2, interleave_times=1, bank_size=0x8000,
+                num_pages=video_mem_size // (2*0x8000),
+                aspect=self.aspect, has_blink=True, planes_used=(1, 3)
             ),
             # 40h 640x400x2   1bpp  olivetti screen 3
             '640x400x2': CGAMode(
                 '640x400x2', 640, 400, 25, 80, 1,
-                num_colours=2, bitsperpixel=1,
-                interleave_times=4, bank_size=0x2000,
-                num_pages=1,
-                aspect=self.aspect,
-                has_blink=True
+                num_colours=2, bitsperpixel=1, interleave_times=4, bank_size=0x2000,
+                num_pages=1, aspect=self.aspect, has_blink=True
             ),
             # hercules screen 3
             '720x348x2': HerculesMode(
@@ -329,12 +303,10 @@ class Video(object):
         elif self.capabilities == 'ega_mono':
             self._text_data = {
                 40: MonoTextMode(
-                    'ega_monotext40', 25, 40, 14, 8, 7,
-                    num_colours=None, is_mono=True, num_pages=8
+                    'ega_monotext40', 25, 40, 14, 8, 7, num_colours=None, is_mono=True, num_pages=8
                 ),
                 80: MonoTextMode(
-                    'ega_monotext80', 25, 80, 14, 8, 7,
-                    num_colours=None, is_mono=True, num_pages=4
+                    'ega_monotext80', 25, 80, 14, 8, 7, num_colours=None, is_mono=True, num_pages=4
                 )
             }
             self._mode_data = {
@@ -343,35 +315,23 @@ class Video(object):
         elif self.capabilities == 'mda':
             self._text_data = {
                 40: MonoTextMode(
-                    'mdatext40', 25, 40, 14, 9, 7,
-                    num_colours=None, is_mono=True, num_pages=1
+                    'mdatext40', 25, 40, 14, 9, 7, num_colours=None, is_mono=True, num_pages=1
                 ),
                 80: MonoTextMode(
-                    'mdatext80', 25, 80, 14, 9, 7,
-                    num_colours=None, is_mono=True, num_pages=1
+                    'mdatext80', 25, 80, 14, 9, 7, num_colours=None, is_mono=True, num_pages=1
                 )
             }
             self._mode_data = {}
         elif self.capabilities in ('cga', 'cga_old', 'pcjr', 'tandy'):
             if self.capabilities == 'tandy':
                 self._text_data = {
-                    40: TextMode(
-                        'tandytext40', 25, 40, 9, 8, 7, num_colours=16, num_pages=8
-                    ),
-                    80: TextMode(
-                        'tandytext80', 25, 80, 9, 8, 7, num_colours=16, num_pages=4
-                    )
+                    40: TextMode('tandytext40', 25, 40, 9, 8, 7, num_colours=16, num_pages=8),
+                    80: TextMode('tandytext80', 25, 80, 9, 8, 7, num_colours=16, num_pages=4)
                 }
             else:
                 self._text_data = {
-                    40: TextMode(
-                        'cgatext40', 25, 40, 8, 8, 7,
-                        num_colours=16, num_pages=8
-                    ),
-                    80: TextMode(
-                        'cgatext80', 25, 80, 8, 8, 7,
-                        num_colours=16, num_pages=4
-                    )
+                    40: TextMode('cgatext40', 25, 40, 8, 8, 7, num_colours=16, num_pages=8),
+                    80: TextMode('cgatext80', 25, 80, 8, 8, 7, num_colours=16, num_pages=4)
                 }
             if self.capabilities in ('cga', 'cga_old'):
                 self._mode_data = {
@@ -392,12 +352,10 @@ class Video(object):
             # see http://www.seasip.info/VintagePC/hercplus.html
             self._text_data = {
                 40: MonoTextMode(
-                    'herculestext40', 25, 40, 14, 9, 7,
-                    num_colours=None, is_mono=True, num_pages=2
+                    'herculestext40', 25, 40, 14, 9, 7, num_colours=None, is_mono=True, num_pages=2
                 ),
                 80: MonoTextMode(
-                    'herculestext80', 25, 80, 14, 9, 7,
-                    num_colours=None, is_mono=True, num_pages=2
+                    'herculestext80', 25, 80, 14, 9, 7, num_colours=None, is_mono=True, num_pages=2
                 )
             }
             self._mode_data = {
@@ -405,12 +363,8 @@ class Video(object):
             }
         elif self.capabilities == 'olivetti':
             self._text_data = {
-                40: TextMode(
-                    'olivettitext40', 25, 40, 16, 8, 7, num_colours=16, num_pages=8
-                ),
-                80: TextMode(
-                    'olivettitext80', 25, 80, 16, 8, 7, num_colours=16, num_pages=4
-                )
+                40: TextMode('olivettitext40', 25, 40, 16, 8, 7, num_colours=16, num_pages=8),
+                80: TextMode('olivettitext80', 25, 80, 16, 8, 7, num_colours=16, num_pages=4)
             }
             self._mode_data = {
                 1: graphics_mode['320x200x4'],
