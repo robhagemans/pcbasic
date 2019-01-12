@@ -26,9 +26,11 @@ from .modes import Video
 class Display(object):
     """Display and video mode manipulation operations."""
 
-    def __init__(self, queues, values, input_methods, memory,
-                initial_width, video_mem_size, capabilities, monitor, sound, io_streams,
-                low_intensity, screen_aspect, codepage, fonts):
+    def __init__(
+            self, queues, values, input_methods, memory,
+            initial_width, video_mem_size, capabilities, monitor, sound, io_streams,
+            low_intensity, screen_aspect, codepage, fonts
+        ):
         """Initialise the display."""
         self.queues = queues
         self._values = values
@@ -61,85 +63,86 @@ class Display(object):
     ###########################################################################
     # video modes
 
-    def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
-               erase=1, new_width=None, force_reset=False):
+    def screen(
+            self, new_mode_nr, new_colorswitch, new_apagenum, new_vpagenum,
+            erase=1, new_width=None, force_reset=False
+        ):
         """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
         self.palette.init_mode(self.mode)
         # set default arguments
-        new_mode = self._mode_nr if (new_mode is None) else new_mode
+        new_mode_nr = self._mode_nr if (new_mode_nr is None) else new_mode_nr
         # set colorswitch
         if new_colorswitch is None:
             new_colorswitch = True
             if self.capabilities == 'pcjr':
                 new_colorswitch = False
             elif self.capabilities == 'tandy':
-                new_colorswitch = not new_mode
+                new_colorswitch = not new_mode_nr
         new_colorswitch = bool(new_colorswitch)
-        if new_mode == 0 and new_width is None:
+        if new_mode_nr == 0 and new_width is None:
             # if we switch out of a 20-col mode (Tandy screen 3), switch to 40-col.
             # otherwise, width persists on change to screen 0
             new_width = 40 if (self.mode.width == 20) else self.mode.width
         # retrieve the specs for the new video mode
-        info = self.video.get_mode(new_mode, new_width)
+        new_mode = self.video.get_mode(new_mode_nr, new_width)
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
         # in other adapters, that's going to raise an IFC later on.
         if new_vpagenum is None:
             new_vpagenum = self.vpagenum
-            if (self.capabilities == 'pcjr' and new_vpagenum >= info.num_pages):
+            if (self.capabilities == 'pcjr' and new_vpagenum >= new_mode.num_pages):
                 new_vpagenum = 0
         if new_apagenum is None:
             new_apagenum = self.apagenum
-            if (self.capabilities == 'pcjr' and new_apagenum >= info.num_pages):
+            if (self.capabilities == 'pcjr' and new_apagenum >= new_mode.num_pages):
                 new_apagenum = 0
+        # if the new mode has fewer pages than current vpage/apage
+        # illegal fn call before anything happens.
+        # signal the signals to change the screen resolution
+        if (new_apagenum >= new_mode.num_pages or new_vpagenum >= new_mode.num_pages):
+            raise error.BASICError(error.IFC)
         if (
-                (not info.is_text_mode and info.name != self.mode.name) or
-                (info.is_text_mode and not self.mode.is_text_mode) or
-                (info.width != self.mode.width) or
+                (not new_mode.is_text_mode and new_mode.name != self.mode.name) or
+                (new_mode.is_text_mode and not self.mode.is_text_mode) or
+                (new_mode.width != self.mode.width) or
                 (new_colorswitch != self.colorswitch) or force_reset
             ):
-            self._set_mode(
-                    info, new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase)
+            self._set_mode(new_mode, new_mode_nr, new_colorswitch, new_apagenum, new_vpagenum, erase)
         else:
             # only switch pages
-            if (new_apagenum >= info.num_pages or new_vpagenum >= info.num_pages):
-                raise error.BASICError(error.IFC)
             self.set_page(new_vpagenum, new_apagenum)
 
-    def _set_mode(self, spec, new_mode, new_colorswitch,
-                 new_apagenum, new_vpagenum, erase=True):
+    def _set_mode(
+            self, new_mode, new_mode_nr, new_colorswitch, new_apagenum, new_vpagenum, erase=True
+        ):
         """Change the video mode, colourburst, visible or active page."""
         # preserve memory if erase==0; don't distingush erase==1 and erase==2
         if not erase:
             saved_addr, saved_buffer = self.mode.memorymap.get_all_memory(self)
-        # if the new mode has fewer pages than current vpage/apage,
-        # illegal fn call before anything happens.
-        # signal the signals to change the screen resolution
-        if (not spec or new_apagenum >= spec.num_pages or new_vpagenum >= spec.num_pages):
-            raise error.BASICError(error.IFC)
         # illegal fn call if we don't have a font for this mode
-        self.text_screen.check_font_available(spec)
+        self.text_screen.check_font_available(new_mode)
         # if we made it here we're ready to commit to the new mode
         self.queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
-                spec.num_pages, spec.pixel_height, spec.pixel_width, spec.height, spec.width,
-                spec.colourmap.num_attr, spec.colourmap.has_blink, spec.is_text_mode
+                new_mode.num_pages, new_mode.pixel_height, new_mode.pixel_width,
+                new_mode.height, new_mode.width,
+                new_mode.colourmap.num_attr, new_mode.colourmap.has_blink, new_mode.is_text_mode
             )
         ))
         # switching to another text mode (width-only change)
-        width_only = (self.mode.is_text_mode and spec.is_text_mode)
+        width_only = (self.mode.is_text_mode and new_mode.is_text_mode)
         # attribute and border persist on width-only change
         # otherwise start with black border and default attr
         if (
                 not width_only or self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
                 or self.colorswitch != new_colorswitch
             ):
-            self.attr = spec.attr
-        if (not width_only and spec.name != self.mode.name):
+            self.attr = new_mode.attr
+        if (not width_only and new_mode.name != self.mode.name):
             self.set_border(0)
         # set the screen mode parameters
-        self.mode, self._mode_nr = spec, new_mode
+        self.mode, self._mode_nr = new_mode, new_mode_nr
         # initialise the palette
         self.palette.init_mode(self.mode)
         # set the colorswitch
@@ -455,7 +458,7 @@ class Display(object):
             error.range_check(0, max_colour, fore)
             if back != 0:
                 raise error.BASICError(error.IFC)
-            self.palette.set_entry(1, fore, fotrce=True)
+            self.palette.set_entry(1, fore, force=True)
 
     def palette_(self, args):
         """PALETTE: assign colour to attribute."""
