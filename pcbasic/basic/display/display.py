@@ -219,9 +219,8 @@ class Display(object):
                  new_apagenum, new_vpagenum, erase=True):
         """Change the video mode, colourburst, visible or active page."""
         # preserve memory if erase==0; don't distingush erase==1 and erase==2
-        save_mem = None
-        if (not erase and self.mode.video_segment == spec.video_segment):
-            save_mem = self.mode.memorymap.get_all_memory(self)
+        if not erase:
+            saved_addr, saved_buffer = self.mode.memorymap.get_all_memory(self)
         # if the new mode has fewer pages than current vpage/apage,
         # illegal fn call before anything happens.
         # signal the signals to change the screen resolution
@@ -267,8 +266,8 @@ class Display(object):
         # NOTE this requires active page to have beet set!
         self.text_screen.init_mode(self.mode, self.pixels, self.attr, new_vpagenum, new_apagenum)
         # restore emulated video memory in new mode
-        if save_mem:
-            self.mode.memorymap.set_all_memory(self, save_mem)
+        if not erase:
+            self.mode.memorymap.set_memory(self, saved_addr, saved_buffer)
         # center graphics cursor, reset window, etc.
         self.drawing.init_mode(self.mode, self.text_screen.text, self.pixels)
         self.drawing.set_attr(self.attr)

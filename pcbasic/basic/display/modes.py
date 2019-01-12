@@ -984,11 +984,9 @@ class MemoryMapper(object):
 
     def get_all_memory(self, screen):
         """Obtain a copy of all video memory."""
-        return self.get_memory(screen, self._video_segment*0x10, self._page_size*self._num_pages)
-
-    def set_all_memory(self, screen, mem_copy):
-        """Restore a copy of all video memory."""
-        return self.set_memory(screen, self._video_segment*0x10, mem_copy)
+        addr = self._video_segment*0x10
+        buffer = self.get_memory(screen, addr, self._page_size*self._num_pages)
+        return addr, buffer
 
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from video memory, stub."""
@@ -1325,8 +1323,6 @@ class VideoMode(object):
         self.pixel_height = height * font_height
         self.pixel_width = width * font_width
         self.attr = attr
-        # still used in two spots, graphics.py and display.py
-        self.video_segment = video_segment
         self.num_pages = num_pages # or video_mem_size // page_size
         # override this
         self.memorymap = None
