@@ -219,10 +219,11 @@ class Display(object):
         # this sends the signal to the interface as well
         self.palette.init_mode(self.mode)
         # don't try composite unless our video card supports it
+        # only '640x200x2' currently supports artifacts
         if self.capabilities in COMPOSITE:
             if (
                     on and self.video.monitor == 'composite' and
-                    (not self.mode.is_text_mode) and self.mode.supports_artifacts
+                    (not self.mode.is_text_mode) and self.mode.name == '640x200x2'
                 ):
                 # set a composite palette
                 self.queues.video.put(signals.Event(

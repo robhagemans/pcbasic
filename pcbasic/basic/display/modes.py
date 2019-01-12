@@ -84,7 +84,7 @@ class Video(object):
             '640x200x2': CGAMode(
                 '640x200x2', 640, 200, 25, 80, 1,
                 num_colours=16, bitsperpixel=1, interleave_times=2, bank_size=0x2000, num_pages=1,
-                aspect=self.aspect, supports_artifacts=True
+                aspect=self.aspect,
             ),
             # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
             '160x200x16': CGAMode(
@@ -354,7 +354,7 @@ class GraphicsMode(VideoMode):
             self, name, pixel_width, pixel_height, text_height, text_width,
             attr, num_colours, bitsperpixel, interleave_times, bank_size,
             num_pages=None,
-            supports_artifacts=False, cursor_index=None, pixel_aspect=None, aspect=None
+            cursor_index=None, pixel_aspect=None, aspect=None
         ):
         """Initialise video mode settings."""
         font_width = pixel_width // text_width
@@ -371,7 +371,6 @@ class GraphicsMode(VideoMode):
         )
         num_attr = 2**bitsperpixel
         self.colourmap = self._colourmapper(num_attr, num_colours)
-        self.supports_artifacts = supports_artifacts
         self.cursor_index = cursor_index
         if pixel_aspect:
             self.pixel_aspect = pixel_aspect
