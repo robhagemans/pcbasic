@@ -20,9 +20,6 @@ from .pixels import PixelBuffer
 from .modes import Video
 
 
-#######################################################################################
-# display
-
 class Display(object):
     """Display and video mode manipulation operations."""
 
@@ -224,11 +221,10 @@ class Display(object):
         self.palette.init_mode(self.mode)
         # don't try composite unless our video card supports it
         if self.capabilities in COMPOSITE:
-            composite_artifacts = (
-                on and self.video.monitor == 'composite' and
-                (not self.mode.is_text_mode) and self.mode.supports_artifacts
-            )
-            if composite_artifacts:
+            if (
+                    on and self.video.monitor == 'composite' and
+                    (not self.mode.is_text_mode) and self.mode.supports_artifacts
+                ):
                 # set a composite palette
                 self.queues.video.put(signals.Event(
                     signals.VIDEO_SET_PALETTE,

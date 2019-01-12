@@ -677,7 +677,7 @@ class Memory(object):
             if self.display.mode.name == '320x200x4':
                 return (
                     self.display.palette.get_entry(0)
-                    + 32 * self.display.mode.colourmapper.get_cga4_palette()
+                    + 32 * self.display.mode.colourmap.get_cga4_palette()
                 )
             elif self.display.mode.is_text_mode:
                 return self.display.get_border_attr()

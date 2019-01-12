@@ -745,12 +745,9 @@ class VideoMode(object):
     _colourmapper = ColourMapper
 
     def __init__(
-                self, name, height, width,
-                font_height, font_width,
-                attr, num_colours, num_attr,
-                num_pages, has_blink,
-                video_segment
-            ):
+            self, name, height, width, font_height, font_width,
+            attr, num_colours, num_attr, num_pages, has_blink
+        ):
         """Initialise video mode settings."""
         self.is_text_mode = False
         self.name = name
@@ -815,7 +812,7 @@ class TextMode(VideoMode):
         VideoMode.__init__(
             self, name, height, width,
             font_height, font_width, attr, num_colours, num_attr,
-            num_pages, has_blink, video_segment
+            num_pages, has_blink
         )
         self.is_text_mode = True
         self.memorymap = self._textmemorymapper(
@@ -866,7 +863,7 @@ class GraphicsMode(VideoMode):
         VideoMode.__init__(
             self, name, text_height, text_width,
             font_height, font_width, attr, num_colours, num_attr,
-            num_pages, has_blink, video_segment
+            num_pages, has_blink
         )
         self.is_text_mode = False
         # used in display.py to initialise pixelbuffer
