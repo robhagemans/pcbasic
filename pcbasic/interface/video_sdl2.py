@@ -343,6 +343,7 @@ class VideoSDL2(VideoPlugin):
         self._cycle = 0
         self._last_tick = 0
         # blink is enabled, should be True in text modes with blink and ega mono
+        # set to true if blinking attributes occur in palette
         # cursor blinks if _text_cursor and _blink_enabled
         self._blink_enabled = True
         # load the icon
@@ -948,15 +949,15 @@ class VideoSDL2(VideoPlugin):
 
     def set_mode(
             self, num_pages, canvas_height, canvas_width, text_height, text_width,
-            num_attr, enable_blink, text_cursor
+            num_attr, text_cursor
         ):
         """Initialise a given text or graphics mode."""
         # unpack mode info struct
         self._font_height = canvas_height // text_height
         self._font_width = canvas_width // text_width
         self._num_pages = num_pages
-        self._blink_enabled = enable_blink
         self._text_cursor = text_cursor
+        self._blink_enabled = text_cursor
         # prebuilt glyphs
         # logical size
         size_changed = self._window_sizer.set_canvas_size(
@@ -1014,8 +1015,9 @@ class VideoSDL2(VideoPlugin):
     def set_palette(self, attributes, pack_pixels):
         """Build the palette."""
         self._attributes = attributes
-        palette_blink_up = (_fore for _fore, _, _, _ in attributes)
-        palette_blink_down = (_back if _blink else _fore for _fore, _back, _blink, _ in attributes)
+        palette_blink_up = [_fore for _fore, _, _, _ in attributes]
+        palette_blink_down = [_back if _blink else _fore for _fore, _back, _blink, _ in attributes]
+        self._blink_enabled = palette_blink_up != palette_blink_down or self._text_cursor
         # blink states: 0 light up, 1 light down
         colors_0 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)

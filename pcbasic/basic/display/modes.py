@@ -133,23 +133,20 @@ class Video(object):
                 '640x350x16', 640, 350, 25, 80, 1,
                 num_colours=9, bitsperpixel=2, interleave_times=1, bank_size=0x8000,
                 num_pages=video_mem_size // (2*0x8000),
-                aspect=self.aspect, has_blink=True, planes_used=(1, 3)
+                aspect=self.aspect, planes_used=(1, 3)
             ),
             # 40h 640x400x2   1bpp  olivetti screen 3
             '640x400x2': CGAMode(
                 '640x400x2', 640, 400, 25, 80, 1,
                 num_colours=2, bitsperpixel=1, interleave_times=4, bank_size=0x2000,
-                num_pages=1, aspect=self.aspect, has_blink=True
+                num_pages=1, aspect=self.aspect
             ),
             # hercules screen 3
             '720x348x2': HerculesMode(
                 # this actually produces 350, not 348
                 '720x348x2', 720, 350, 25, 80, 1,
-                num_colours=16, bitsperpixel=1,
-                interleave_times=4, bank_size=0x2000,
-                num_pages=2,
-                aspect=self.aspect,
-                has_blink=True
+                num_colours=16, bitsperpixel=1, interleave_times=4, bank_size=0x2000,
+                num_pages=2, aspect=self.aspect
             ),
         }
         if self.capabilities == 'vga':
@@ -326,8 +323,7 @@ class TextMode(VideoMode):
            height, width, self.pixel_height, self.pixel_width, num_pages, is_mono
         )
         num_attr = 256
-        has_blink = True
-        self.colourmap = self._colourmapper(has_blink, num_attr, num_colours)
+        self.colourmap = self._colourmapper(num_attr, num_colours)
 
 
 class MonoTextMode(TextMode):
@@ -357,7 +353,7 @@ class GraphicsMode(VideoMode):
     def __init__(
             self, name, pixel_width, pixel_height, text_height, text_width,
             attr, num_colours, bitsperpixel, interleave_times, bank_size,
-            num_pages=None, has_blink=False,
+            num_pages=None,
             supports_artifacts=False, cursor_index=None, pixel_aspect=None, aspect=None
         ):
         """Initialise video mode settings."""
@@ -374,7 +370,7 @@ class GraphicsMode(VideoMode):
             num_pages, interleave_times, bank_size, bitsperpixel
         )
         num_attr = 2**bitsperpixel
-        self.colourmap = self._colourmapper(has_blink, num_attr, num_colours)
+        self.colourmap = self._colourmapper(num_attr, num_colours)
         self.supports_artifacts = supports_artifacts
         self.cursor_index = cursor_index
         if pixel_aspect:
@@ -420,7 +416,7 @@ class EGAMode(GraphicsMode):
             text_height, text_width,
             attr, num_colours, bitsperpixel,
             interleave_times, bank_size, num_pages,
-            has_blink=False, planes_used=range(4),
+            planes_used=range(4),
             aspect=None
         ):
         """Initialise video mode settings."""
@@ -429,7 +425,7 @@ class EGAMode(GraphicsMode):
             text_height, text_width,
             attr, num_colours, bitsperpixel,
             interleave_times, bank_size,
-            num_pages, has_blink, aspect=aspect
+            num_pages, aspect=aspect
         )
         # EGA memorymap settings
         self.memorymap.set_planes_used(planes_used)

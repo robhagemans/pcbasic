@@ -193,7 +193,7 @@ class Palette(object):
 class ColourMapper(object):
     """Palette and colourset."""
 
-    def __init__(self, has_blink, num_attr, num_colours):
+    def __init__(self, num_attr, num_colours):
         """Initialise colour mapper."""
         # palette - maps the valid attributes to colour values
         # these are "palette attributes" - e.g. the 16 foreground attributes for text mode.
@@ -204,8 +204,6 @@ class ColourMapper(object):
         # can be used as the right hand side of a palette assignment
         # colours is a reference (changes with colorburst on composite)
         self._colours = None
-        # this mode has blinking attributes
-        self.has_blink = has_blink
 
     @property
     def default_palette(self):
@@ -259,9 +257,9 @@ class ColourMapper(object):
 class HerculesColourMapper(ColourMapper):
     """Hercules 16-greyscale palette."""
 
-    def __init__(self, has_blink, num_attr, num_colours):
+    def __init__(self, num_attr, num_colours):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, has_blink, num_attr, num_colours)
+        ColourMapper.__init__(self, num_attr, num_colours)
         self._default_palette = CGA2_PALETTE
 
     #FIXME - not being called
@@ -274,9 +272,9 @@ class HerculesColourMapper(ColourMapper):
 class CGAColourMapper(ColourMapper):
     """CGA 2-colour, 16-colour palettes."""
 
-    def __init__(self, has_blink, num_attr, num_colours):
+    def __init__(self, num_attr, num_colours):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, has_blink, num_attr, num_colours)
+        ColourMapper.__init__(self, num_attr, num_colours)
         self._force_mono = False
         self._force_colour = False
         self._has_colorburst = False
@@ -325,9 +323,9 @@ class CGAColourMapper(ColourMapper):
 class CGA4ColourMapper(ColourMapper):
     """CGA 4-colour palettes."""
 
-    def __init__(self, has_blink, num_attr, num_colours):
+    def __init__(self, num_attr, num_colours):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, has_blink, num_attr, num_colours)
+        ColourMapper.__init__(self, num_attr, num_colours)
         self._tandy = False
         self._low_intensity = False
         self._has_mode_5 = False
@@ -421,9 +419,9 @@ class CGA4ColourMapper(ColourMapper):
 class EGAColourMapper(ColourMapper):
     """EGA 16-colour or 64-colour mapper."""
 
-    def __init__(self, has_blink, num_attr, num_colours):
+    def __init__(self, num_attr, num_colours):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, has_blink, num_attr, num_colours)
+        ColourMapper.__init__(self, num_attr, num_colours)
         #if num_attr == 4
         #    # SCREEN 9 with less than 128k EGA memory
         #    # attribute mapping is different
@@ -472,9 +470,9 @@ class MonoTextColourMapper(ColourMapper):
     # see https://nerdlypleasures.blogspot.com/2014/03/the-monochrome-experience-cga-ega-and.html
     # and http://www.vcfed.org/forum/showthread.php?50674-EGA-Monochrome-Compatibility
 
-    def __init__(self, has_blink, num_attr, num_colours):
+    def __init__(self, num_attr, num_colours):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, has_blink, num_attr, num_colours)
+        ColourMapper.__init__(self, num_attr, num_colours)
         # greyscale mono
         self._mono_tint = (255, 255, 255)
         self._set_colours()
@@ -548,9 +546,9 @@ class EGAMonoColourMapper(ColourMapper):
         (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)
     )
 
-    def __init__(self, has_blink, num_attr, num_colours):
+    def __init__(self, num_attr, num_colours):
         """Initialise colour mapper."""
-        ColourMapper.__init__(self, has_blink, num_attr, num_colours)
+        ColourMapper.__init__(self, num_attr, num_colours)
         # greyscale mono
         self._mono_tint = (255, 255, 255)
         self._default_palette = EGA_MONO_PALETTE
