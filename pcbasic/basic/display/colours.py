@@ -126,8 +126,14 @@ MONO_TINT = {
     'mono': (0, 255, 0),
 }
 
-# from bright to dim: green, red, blue
-_RGB_INTENSITY = (0.3, 0.4, 0.2)
+# apparent intensity
+# these correspond to NTSC, ITU-R Recommendation BT.  601-2
+# see https://poynton.ca/notes/colour_and_gamma/ColorFAQ.html#RTFToC3
+#_RGB_INTENSITY = (0.299, 0.587, 0.114)
+# some monitors seemed to show increasing intensity for the 16 shades,
+# see https://www.vogons.org/viewtopic.php?t=29101
+# also https://nerdlypleasures.blogspot.com/2014/03/the-monochrome-experience-cga-ega-and.html
+_RGB_INTENSITY = (0.5, 0.3, 0.2)
 
 
 def _adjust_tint(rgb, mono_tint, mono):
@@ -218,6 +224,12 @@ class ColourMapper(object):
     # interpret colours as monochrome intensity
     mono_tint = MONO_TINT['mono']
     mono = False
+
+    def __init__(self, monitor):
+        """CGA 4-colour palette / mode 5 settings"""
+        if monitor in MONO_TINT:
+            self.mono = monitor in MONO_TINT
+            self.mono_tint = MONO_TINT[monitor]
 
     @property
     def num_palette(self):
@@ -512,8 +524,8 @@ class MonoTextColourMapper(ColourMapper):
         """Convert colour attribute to RGB/blink/underline, given a palette."""
         fore, back, blink, underline = self.split_attr(attr)
         # palette is ignored
-        fore_rgb = self._colours[fore]
-        back_rgb = self._colours[back]
+        fore_rgb = _adjust_tint(self._colours[fore], self.mono_tint, self.mono)
+        back_rgb = _adjust_tint(self._colours[back], self.mono_tint, self.mono)
         return fore_rgb, back_rgb, blink, underline
 
 
@@ -549,7 +561,7 @@ class EGAMonoColourMapper(ColourMapper):
         """Convert colour attribute to RGB/blink/underline, given a palette."""
         fore, back = self._pseudocolours[palette[attr] % len(self._pseudocolours)]
         # intensity 0, 1, 2 to RGB; apply mono tint
-        fore_rgb = self._colours[fore]
-        back_rgb = self._colours[back]
+        fore_rgb = _adjust_tint(self._colours[fore], self.mono_tint, self.mono)
+        back_rgb = _adjust_tint(self._colours[back], self.mono_tint, self.mono)
         # fore, back, blink, underline
         return fore_rgb, back_rgb, fore != back, False

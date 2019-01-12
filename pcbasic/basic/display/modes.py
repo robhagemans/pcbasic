@@ -124,21 +124,21 @@ class Video(object):
                 '320x200x16', 320, 200, 25, 40, 15,
                 bitsperpixel=4, interleave_times=1, bank_size=0x2000,
                 num_pages=video_mem_size // (4*0x2000), aspect=self.aspect,
-                colourmap=EGA16ColourMapper()
+                colourmap=EGA16ColourMapper(self.monitor)
             ),
             # 0Eh 640x200x16    EGA screen 8
             '640x200x16': EGAMode(
                 '640x200x16', 640, 200, 25, 80, 15,
                 bitsperpixel=4, interleave_times=1, bank_size=0x4000,
                 num_pages=video_mem_size // (4*0x4000), aspect=self.aspect,
-                colourmap=EGA16ColourMapper()
+                colourmap=EGA16ColourMapper(self.monitor)
             ),
             # 10h 640x350x16    EGA screen 9
             '640x350x16': EGAMode(
                 '640x350x16', 640, 350, 25, 80, 15,
                 bitsperpixel=4, interleave_times=1, bank_size=0x8000,
                 num_pages=video_mem_size // (4*0x8000), aspect=self.aspect,
-                colourmap=EGA64ColourMapper()
+                colourmap=EGA64ColourMapper(self.monitor)
             ),
             # 0Fh 640x350x4     EGA monochrome screen 10
             '640x350x4': EGAMode(
@@ -146,7 +146,7 @@ class Video(object):
                 bitsperpixel=2, interleave_times=1, bank_size=0x8000,
                 num_pages=video_mem_size // (2*0x8000),
                 aspect=self.aspect, planes_used=(1, 3),
-                colourmap=EGAMonoColourMapper()
+                colourmap=EGAMonoColourMapper(self.monitor)
             ),
             # 40h 640x400x2   1bpp  olivetti screen 3
             '640x400x2': CGAMode(
@@ -161,7 +161,7 @@ class Video(object):
                 '720x348x2', 720, 350, 25, 80, 1,
                 bitsperpixel=1, interleave_times=4, bank_size=0x2000,
                 num_pages=2, aspect=self.aspect,
-                colourmap=HerculesColourMapper()
+                colourmap=HerculesColourMapper(self.monitor)
             ),
         }
         if self.capabilities == 'vga':
@@ -171,11 +171,11 @@ class Video(object):
             self._text_data = {
                 40: TextMode(
                     'vgatext40', 25, 40, 16, 9, 7, num_pages=8,
-                    colourmap=EGA64TextColourMapper()
+                    colourmap=EGA64TextColourMapper(self.monitor)
                 ),
                 80: TextMode(
                     'vgatext80', 25, 80, 16, 9, 7, num_pages=4,
-                    colourmap=EGA64TextColourMapper()
+                    colourmap=EGA64TextColourMapper(self.monitor)
                 )
             }
             self._mode_data = {
@@ -189,12 +189,12 @@ class Video(object):
             self._text_data = {
                 40: TextMode(
                     'egatext40', 25, 40, 14, 8, 7, num_pages=8,
-                    colourmap=EGA64TextColourMapper()
+                    colourmap=EGA64TextColourMapper(self.monitor)
 
                 ),
                 80: TextMode(
                     'egatext80', 25, 80, 14, 8, 7, num_pages=4,
-                    colourmap=EGA64TextColourMapper()
+                    colourmap=EGA64TextColourMapper(self.monitor)
                 )
             }
             self._mode_data = {
@@ -208,11 +208,11 @@ class Video(object):
             self._text_data = {
                 40: TextMode(
                     'ega_monotext40', 25, 40, 14, 8, 7, is_mono=True, num_pages=8,
-                    colourmap=MonoTextColourMapper()
+                    colourmap=MonoTextColourMapper(self.monitor)
                 ),
                 80: TextMode(
                     'ega_monotext80', 25, 80, 14, 8, 7, is_mono=True, num_pages=4,
-                    colourmap=MonoTextColourMapper()
+                    colourmap=MonoTextColourMapper(self.monitor)
                 )
             }
             self._mode_data = {
@@ -222,11 +222,11 @@ class Video(object):
             self._text_data = {
                 40: TextMode(
                     'mdatext40', 25, 40, 14, 9, 7, is_mono=True, num_pages=1,
-                    colourmap=MonoTextColourMapper()
+                    colourmap=MonoTextColourMapper(self.monitor)
                 ),
                 80: TextMode(
                     'mdatext80', 25, 80, 14, 9, 7, is_mono=True, num_pages=1,
-                    colourmap=MonoTextColourMapper()
+                    colourmap=MonoTextColourMapper(self.monitor)
                 )
             }
             self._mode_data = {}
@@ -235,22 +235,22 @@ class Video(object):
                 self._text_data = {
                     40: TextMode(
                         'tandytext40', 25, 40, 9, 8, 7, num_pages=8,
-                        colourmap=EGA16TextColourMapper()
+                        colourmap=EGA16TextColourMapper(self.monitor)
                     ),
                     80: TextMode(
                         'tandytext80', 25, 80, 9, 8, 7, num_pages=4,
-                        colourmap=EGA16TextColourMapper()
+                        colourmap=EGA16TextColourMapper(self.monitor)
                     )
                 }
             else:
                 self._text_data = {
                     40: TextMode(
                         'cgatext40', 25, 40, 8, 8, 7, num_pages=8,
-                        colourmap=EGA16TextColourMapper()
+                        colourmap=EGA16TextColourMapper(self.monitor)
                     ),
                     80: TextMode(
                         'cgatext80', 25, 80, 8, 8, 7, num_pages=4,
-                        colourmap=EGA16TextColourMapper()
+                        colourmap=EGA16TextColourMapper(self.monitor)
                     )
                 }
             if self.capabilities in ('cga', 'cga_old'):
@@ -273,11 +273,11 @@ class Video(object):
             self._text_data = {
                 40: TextMode(
                     'herculestext40', 25, 40, 14, 9, 7, is_mono=True, num_pages=2,
-                    colourmap=MonoTextColourMapper()
+                    colourmap=MonoTextColourMapper(self.monitor)
                 ),
                 80: TextMode(
                     'herculestext80', 25, 80, 14, 9, 7, is_mono=True, num_pages=2,
-                    colourmap=MonoTextColourMapper()
+                    colourmap=MonoTextColourMapper(self.monitor)
                 )
             }
             self._mode_data = {
@@ -287,11 +287,11 @@ class Video(object):
             self._text_data = {
                 40: TextMode(
                     'olivettitext40', 25, 40, 16, 8, 7, num_pages=8,
-                    colourmap=EGA16ColourMapper()
+                    colourmap=EGA16ColourMapper(self.monitor)
                 ),
                 80: TextMode(
                     'olivettitext80', 25, 80, 16, 8, 7, num_pages=4,
-                    colourmap=EGA16ColourMapper()
+                    colourmap=EGA16ColourMapper(self.monitor)
                 )
             }
             self._mode_data = {
