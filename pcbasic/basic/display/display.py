@@ -13,6 +13,7 @@ from ..base import error
 from .. import values
 from . import graphics
 from . import modes
+from . import colours
 
 from .textscreen import TextScreen
 from .pixels import PixelBuffer
@@ -328,7 +329,7 @@ class Display(object):
         # this sends the signal to the interface as well
         self.palette.init_mode(self.mode)
         # don't try composite unless our video card supports it
-        if self.capabilities in modes.COMPOSITE:
+        if self.capabilities in colours.COMPOSITE:
             composite_artifacts = (
                 on and self.video.monitor == 'composite' and
                 (not self.mode.is_text_mode) and self.mode.supports_artifacts
@@ -337,7 +338,7 @@ class Display(object):
                 # set a composite palette
                 self.queues.video.put(signals.Event(
                     signals.VIDEO_SET_PALETTE,
-                    (modes.COMPOSITE[self.capabilities], None, (4, self.mode.bitsperpixel))
+                    (colours.COMPOSITE[self.capabilities], None, (4, self.mode.bitsperpixel))
                 ))
             else:
                 # set normal palette
