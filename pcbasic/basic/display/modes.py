@@ -959,6 +959,348 @@ class PlanedSpriteBuilder(object):
 
 
 ##############################################################################
+# framebuffer memory map
+
+class MemoryMapper(object):
+    """Map between coordinates and locations in the framebuffer."""
+
+    def __init__(
+                self, text_height, text_width, pixel_height, pixel_width,
+                num_pages, video_segment, page_size
+            ):
+        """Initialise video mode settings."""
+        self._text_height = text_height
+        self._text_width = text_width
+        self._pixel_height = pixel_height
+        self._pixel_width = pixel_width
+        self._video_segment = video_segment
+        self._page_size = page_size
+        self._num_pages = num_pages # or video_mem_size // self.page_size)
+
+    @property
+    def page_size(self):
+        """Size in bytes of video page."""
+        return self._page_size
+
+    def get_all_memory(self, screen):
+        """Obtain a copy of all video memory."""
+        return self.get_memory(screen, self._video_segment*0x10, self._page_size*self._num_pages)
+
+    def set_all_memory(self, screen, mem_copy):
+        """Restore a copy of all video memory."""
+        return self.set_memory(screen, self._video_segment*0x10, mem_copy)
+
+    def get_memory(self, screen, addr, num_bytes):
+        """Retrieve bytes from video memory, stub."""
+
+    def set_memory(self, screen, addr, bytes):
+        """Set bytes in video memory, stub."""
+
+
+class TextMemoryMapper(MemoryMapper):
+    """Map between coordinates and locations in the textmode framebuffer."""
+
+    def get_memory(self, screen, addr, num_bytes):
+        """Retrieve bytes from textmode video memory."""
+        addr -= self._video_segment*0x10
+        mem_bytes = bytearray(num_bytes)
+        for i in xrange(num_bytes):
+            page = (addr+i) // self._page_size
+            offset = (addr+i) % self._page_size
+            ccol = 1 + (offset % (self._text_width*2)) // 2
+            crow = 1 + offset // (self._text_width*2)
+            try:
+                if (addr+i) % 2:
+                    mem_bytes[i] = screen.text_screen.text.get_attr(page, crow, ccol)
+                else:
+                    mem_bytes[i] = screen.text_screen.text.get_char(page, crow, ccol)
+            except IndexError:
+                pass
+        return mem_bytes
+
+    def set_memory(self, screen, addr, mem_bytes):
+        """Set bytes in textmode video memory."""
+        addr -= self._video_segment*0x10
+        last_row = 0
+        for i in xrange(len(mem_bytes)):
+            page = (addr+i) // self._page_size
+            offset = (addr+i) % self._page_size
+            ccol = 1 + (offset % (self._text_width*2)) // 2
+            crow = 1 + offset // (self._text_width*2)
+            try:
+                if (addr+i) % 2:
+                    c = screen.text_screen.text.get_char(page, crow, ccol)
+                    a = mem_bytes[i]
+                else:
+                    c = mem_bytes[i]
+                    a = screen.text_screen.text.get_attr(page, crow, ccol)
+                screen.text_screen.text.put_char_attr(page, crow, ccol, int2byte(c), a)
+                if last_row > 0 and last_row != crow:
+                    screen.text_screen.refresh_range(page, last_row, 1, self._text_width)
+            except IndexError:
+                pass
+            last_row = crow
+        if last_row >= 1 and last_row <= self._text_height and page >= 0 and page < self._num_pages:
+            screen.text_screen.refresh_range(page, last_row, 1, self._text_width)
+
+
+class GraphicsMemoryMapper(MemoryMapper):
+    """Map between coordinates and locations in the graphical framebuffer."""
+
+    def __init__(
+            self, text_height, text_width, pixel_height, pixel_width,
+            num_pages, video_segment, interleave_times, bank_size,
+            bitsperpixel
+        ):
+        """Initialise video mode settings."""
+        page_size = interleave_times * bank_size
+        MemoryMapper.__init__(
+            self, text_height, text_width, pixel_height, pixel_width,
+            num_pages, video_segment, page_size
+        )
+        # cga bank_size = 0x2000 interleave_times=2
+        self._interleave_times = interleave_times
+        self._bank_size = bank_size
+        self._bitsperpixel = bitsperpixel
+        # number of pixels referenced in each byte of a plane
+        self._ppb = 8 // bitsperpixel
+        # strides
+        self._bytes_per_row = self._pixel_width * bitsperpixel // 8
+
+    def _get_coords(self, addr):
+        """Get video page and coordinates for address."""
+        # override
+        return 0, 0, 0
+
+    def _coord_ok(self, page, x, y):
+        """Check if a page and coordinates are within limits."""
+        return (
+            page >= 0 and page < self._num_pages and
+            x >= 0 and x < self._pixel_width and
+            y >= 0 and y < self._pixel_height
+        )
+
+    def set_plane(self, plane):
+        """Set the current colour plane (EGA only)."""
+
+    def set_plane_mask(self, mask):
+        """Set the current colour plane mask (EGA only)."""
+
+    def _walk_memory(self, addr, num_bytes, factor=1):
+        """Iterate over graphical memory (pixel-by-pixel, contiguous rows)."""
+        # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
+        # with alternating planes in even and odd bytes (i.e. ppb==8)
+        ppb = factor * self._ppb
+        page_size = self._page_size // factor
+        bank_size = self._bank_size // factor
+        row_size = self._bytes_per_row // factor
+        # first row
+        page, x, y = self._get_coords(addr)
+        offset = min(row_size - x//ppb, num_bytes)
+        if self._coord_ok(page, x, y):
+            yield page, x, y, 0, offset
+        # full rows
+        bank_offset, page_offset, start_y = 0, 0, y
+        while page_offset + bank_offset + offset < num_bytes:
+            y += self._interleave_times
+            # not an integer number of rows in a bank
+            if offset >= bank_size:
+                bank_offset += bank_size
+                start_y += 1
+                offset, y = 0, start_y
+                if bank_offset >= page_size:
+                    page_offset += page_size
+                    page += 1
+                    bank_offset, offset = 0, 0
+                    y, start_y = 0, 0
+            if self._coord_ok(page, 0, y):
+                ofs = page_offset + bank_offset + offset
+                if ofs + row_size > num_bytes:
+                    yield page, 0, y, ofs, num_bytes - ofs
+                else:
+                    yield page, 0, y, ofs, row_size
+            offset += row_size
+
+
+class CGAMemoryMapper(GraphicsMemoryMapper):
+    """Map between coordinates and locations in the CGA framebuffer."""
+
+    def _get_coords(self, addr):
+        """Get video page and coordinates for address."""
+        addr = int(addr) - self._video_segment * 0x10
+        # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
+        page, addr = addr//self._page_size, addr%self._page_size
+        # 2 x interleaved scan lines of 80bytes
+        bank, offset = addr//self._bank_size, addr%self._bank_size
+        row, col = offset//self._bytes_per_row, offset%self._bytes_per_row
+        x = col * 8 // self._bitsperpixel
+        y = bank + self._interleave_times * row
+        return page, x, y
+
+    def set_memory(self, screen, addr, byte_array):
+        """Set bytes in CGA memory."""
+        for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array)):
+            #bytes_to_interval
+            pixarray = bytematrix.ByteMatrix.frompacked(
+                byte_array[ofs:ofs+length], height=1, items_per_byte=self._ppb
+            )
+            screen.drawing.put_interval(page, x, y, pixarray)
+
+    def get_memory(self, screen, addr, num_bytes):
+        """Retrieve bytes from CGA memory."""
+        byte_array = bytearray(num_bytes)
+        for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
+            #interval_to_bytes
+            pixarray = screen.pixels.pages[page].get_interval(x, y, length*self._ppb)
+            byte_array[ofs:ofs+length] = pixarray.packed(self._ppb)
+        return byte_array
+
+
+class EGAMemoryMapper(GraphicsMemoryMapper):
+    """Map between coordinates and locations in the EGA framebuffer."""
+
+    def __init__(
+            self, text_height, text_width, pixel_height, pixel_width,
+            num_pages, video_segment, interleave_times, bank_size,
+            bitsperpixel
+        ):
+        """Initialise video mode settings."""
+        video_segment = 0xa000
+        GraphicsMemoryMapper.__init__(
+            self, text_height, text_width, pixel_height, pixel_width,
+            num_pages, video_segment, interleave_times, bank_size,
+            bitsperpixel
+        )
+        # EGA uses colour planes, 1 bpp for each plane
+        #self._ppb = 8
+        self._bytes_per_row = self._pixel_width // 8
+        self._planes_used = range(4)
+        # additional colour plane mask
+        self._master_plane_mask = 0x07
+        # current ega memory colour plane to read
+        self._plane = 0
+        # current ega memory colour planes to write to
+        self._plane_mask = 0xff
+
+    def set_planes_used(self, planes_used):
+        """EGA specific settings."""
+        self._planes_used = planes_used
+        # additional colour plane mask
+        self._master_plane_mask = sum(2**_plane for _plane in planes_used)
+
+    def set_plane(self, plane):
+        """Set the current colour plane."""
+        self._plane = plane
+
+    def set_plane_mask(self, mask):
+        """Set the current colour plane mask."""
+        self._plane_mask = mask
+
+    def _get_coords(self, addr):
+        """Get video page and coordinates for address."""
+        addr = int(addr) - self._video_segment * 0x10
+        # modes 7-9: 1 bit per pixel per colour plane
+        page, addr = addr//self._page_size, addr%self._page_size
+        x, y = (addr%self._bytes_per_row)*8, addr//self._bytes_per_row
+        return page, x, y
+
+    def get_memory(self, screen, addr, num_bytes):
+        """Retrieve bytes from EGA memory."""
+        plane = self._plane % (max(self._planes_used) + 1)
+        byte_array = bytearray(num_bytes)
+        if plane not in self._planes_used:
+            return byte_array
+        for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
+            pixarray = screen.pixels.pages[page].get_interval(x, y, length*8)
+            #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
+            byte_array[ofs:ofs+length] = (pixarray >> plane).packed(8)
+        return byte_array
+
+    def set_memory(self, screen, addr, byte_array):
+        """Set bytes in EGA video memory."""
+        # EGA memory is planar with memory-mapped colour planes.
+        # Within a plane, 8 pixels are encoded into each byte.
+        # The colour plane is set through a port OUT and
+        # determines which bit of each pixel's attribute is affected.
+        mask = self._plane_mask & self._master_plane_mask
+        # return immediately for unused colour planes
+        if mask == 0:
+            return
+        for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array)):
+            #pixarray = bytes_to_interval(byte_array[ofs:ofs+length], self.ppb, mask)
+            pixarray = (
+                bytematrix.ByteMatrix.frompacked(
+                    byte_array[ofs:ofs+length], height=1, items_per_byte=8
+                ).render(0, mask)
+            )
+            screen.drawing.put_interval(page, x, y, pixarray, mask)
+
+
+class Tandy6MemoryMapper(GraphicsMemoryMapper):
+    """Map between coordinates and locations in the Tandy SCREEN 6 framebuffer."""
+
+    def __init__(
+            self, text_height, text_width, pixel_height, pixel_width,
+            num_pages, video_segment, interleave_times, bank_size,
+            bitsperpixel
+        ):
+        """Initialise video mode settings."""
+        video_segment = 0xb800
+        GraphicsMemoryMapper.__init__(
+            self, text_height, text_width, pixel_height, pixel_width,
+            num_pages, video_segment, interleave_times, bank_size,
+            bitsperpixel
+        )
+        # mode 6: 4x interleaved scan lines, 8 pixels per two bytes,
+        # low attribute bits stored in even bytes, high bits in odd bytes.
+        self._bytes_per_row = self._pixel_width * 2 // 8
+
+    def _get_coords(self, addr):
+        """Get video page and coordinates for address."""
+        addr =  int(addr) - self._video_segment * 0x10
+        page, addr = addr//self._page_size, addr%self._page_size
+        # 4 x interleaved scan lines of 160bytes
+        bank, offset = addr//self._bank_size, addr%self._bank_size
+        row, col = offset//self._bytes_per_row, offset%self._bytes_per_row
+        x = (col // 2) * 8
+        y = bank + 4 * row
+        return page, x, y
+
+    def get_memory(self, screen, addr, num_bytes):
+        """Retrieve bytes from Tandy 640x200x4 """
+        # 8 pixels per 2 bytes
+        # low attribute bits stored in even bytes, high bits in odd bytes.
+        half_len = (num_bytes+1) // 2
+        hbytes = bytearray(half_len), bytearray(half_len)
+        for parity, byte_array in enumerate(hbytes):
+            plane = parity ^ (addr % 2)
+            for page, x, y, ofs, length in self._walk_memory(addr, num_bytes, 2):
+                pixarray = screen.pixels.pages[page].get_interval(x, y, length * self._ppb * 2)
+                #hbytes[parity][ofs:ofs+length] = interval_to_bytes(pixarray, self._ppb*2, plane)
+                byte_array[ofs:ofs+length] = (pixarray >> plane).packed(self._ppb * 2)
+        # resulting array may be too long by one byte, so cut to size
+        return [_item for _pair in zip(*hbytes) for _item in _pair] [:num_bytes]
+
+    def set_memory(self, screen, addr, byte_array):
+        """Set bytes in Tandy 640x200x4 memory."""
+        hbytes = byte_array[0::2], byte_array[1::2]
+        # Tandy-6 encodes 8 pixels per byte, alternating colour planes.
+        # I.e. even addresses are 'colour plane 0', odd ones are 'plane 1'
+        for parity, half in enumerate(hbytes):
+            plane = parity ^ (addr % 2)
+            mask = 2 ** plane
+            for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array), 2):
+                #pixarray = bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self._ppb, mask)
+                pixarray = (
+                    bytematrix.ByteMatrix.frompacked(
+                        # what's the deal with the empty bytearrays here in some of the tests?
+                        half[ofs:ofs+length], height=1, items_per_byte=2*self._ppb
+                    ) << plane
+                )
+                screen.drawing.put_interval(page, x, y, pixarray, mask)
+
+
+##############################################################################
 # video mode base class
 
 class VideoMode(object):
@@ -971,21 +1313,23 @@ class VideoMode(object):
                 font_height, font_width,
                 attr, num_colours, num_attr,
                 num_pages, has_blink,
-                video_segment, page_size,
+                video_segment
             ):
         """Initialise video mode settings."""
         self.is_text_mode = False
         self.name = name
-        self.height = int(height)
-        self.width = int(width)
-        self.font_height = int(font_height)
-        self.font_width = int(font_width)
-        self.pixel_height = self.height*self.font_height
-        self.pixel_width = self.width*self.font_width
-        self.attr = int(attr)
-        self.video_segment = int(video_segment)
-        self.page_size = int(page_size)
-        self.num_pages = int(num_pages) # or video_mem_size // self.page_size)
+        self.height = height
+        self.width = width
+        self.font_height = font_height
+        self.font_width = font_width
+        self.pixel_height = height * font_height
+        self.pixel_width = width * font_width
+        self.attr = attr
+        # still used in two spots, graphics.py and display.py
+        self.video_segment = video_segment
+        self.num_pages = num_pages # or video_mem_size // page_size
+        # override this
+        self.memorymap = None
         self.colourmap = self._colourmapper(has_blink, num_attr, num_colours)
 
     def pixel_to_text_pos(self, x, y):
@@ -1015,20 +1359,6 @@ class VideoMode(object):
             (col1-col0+1) * self.font_width-1, (row1-row0+1) * self.font_height-1
         )
 
-    def get_all_memory(self, screen):
-        """Obtain a copy of all video memory."""
-        return self.get_memory(screen, self.video_segment*0x10, self.page_size*self.num_pages)
-
-    def set_all_memory(self, screen, mem_copy):
-        """Restore a copy of all video memory."""
-        return self.set_memory(screen, self.video_segment*0x10, mem_copy)
-
-    def get_memory(self, screen, addr, num_bytes):
-        """Retrieve bytes from video memory, stub."""
-
-    def set_memory(self, screen, addr, bytes):
-        """Set bytes in video memory, stub."""
-
 
 ##############################################################################
 # text modes
@@ -1037,6 +1367,7 @@ class TextMode(VideoMode):
     """Default settings for a text mode."""
 
     _colourmapper = EGAColourMapper
+    _textmemorymapper = TextMemoryMapper
 
     def __init__(
             self, name, height, width,
@@ -1050,52 +1381,13 @@ class TextMode(VideoMode):
         VideoMode.__init__(
             self, name, height, width,
             font_height, font_width, attr, num_colours, num_attr,
-            num_pages, has_blink, video_segment, page_size
+            num_pages, has_blink, video_segment
         )
         self.is_text_mode = True
-
-    def get_memory(self, screen, addr, num_bytes):
-        """Retrieve bytes from textmode video memory."""
-        addr -= self.video_segment*0x10
-        mem_bytes = bytearray(num_bytes)
-        for i in xrange(num_bytes):
-            page = (addr+i) // self.page_size
-            offset = (addr+i) % self.page_size
-            ccol = 1 + (offset % (self.width*2)) // 2
-            crow = 1 + offset // (self.width*2)
-            try:
-                if (addr+i) % 2:
-                    mem_bytes[i] = screen.text_screen.text.get_attr(page, crow, ccol)
-                else:
-                    mem_bytes[i] = screen.text_screen.text.get_char(page, crow, ccol)
-            except IndexError:
-                pass
-        return mem_bytes
-
-    def set_memory(self, screen, addr, mem_bytes):
-        """Set bytes in textmode video memory."""
-        addr -= self.video_segment*0x10
-        last_row = 0
-        for i in xrange(len(mem_bytes)):
-            page = (addr+i) // self.page_size
-            offset = (addr+i) % self.page_size
-            ccol = 1 + (offset % (self.width*2)) // 2
-            crow = 1 + offset // (self.width*2)
-            try:
-                if (addr+i) % 2:
-                    c = screen.text_screen.text.get_char(page, crow, ccol)
-                    a = mem_bytes[i]
-                else:
-                    c = mem_bytes[i]
-                    a = screen.text_screen.text.get_attr(page, crow, ccol)
-                screen.text_screen.text.put_char_attr(page, crow, ccol, int2byte(c), a)
-                if last_row > 0 and last_row != crow:
-                    screen.text_screen.refresh_range(page, last_row, 1, self.width)
-            except IndexError:
-                pass
-            last_row = crow
-        if last_row >= 1 and last_row <= self.height and page >= 0 and page < self.num_pages:
-            screen.text_screen.refresh_range(page, last_row, 1, self.width)
+        self.memorymap = self._textmemorymapper(
+           height, width, self.pixel_height, self.pixel_width,
+           num_pages, video_segment, page_size
+        )
 
 
 class MonoTextMode(TextMode):
@@ -1116,6 +1408,7 @@ class CGATextMode(TextMode):
 class GraphicsMode(VideoMode):
     """Default settings for a graphics mode."""
 
+    _memorymapper = GraphicsMemoryMapper
     # override these
     _tile_builder = lambda _: None
     _sprite_builder = lambda _: None
@@ -1133,23 +1426,22 @@ class GraphicsMode(VideoMode):
             video_segment=0xb800,
         ):
         """Initialise video mode settings."""
-        font_width = int(pixel_width // text_width)
-        font_height = int(pixel_height // text_height)
-        self.interleave_times = int(interleave_times)
-        # cga bank_size = 0x2000 interleave_times=2
-        self.bank_size = int(bank_size)
-        page_size = self.interleave_times * self.bank_size
+        font_width = pixel_width // text_width
+        font_height = pixel_height // text_height
         num_attr = 2**bitsperpixel
         VideoMode.__init__(
             self, name, text_height, text_width,
             font_height, font_width, attr, num_colours, num_attr,
-            num_pages, has_blink, video_segment, page_size
+            num_pages, has_blink, video_segment
         )
         self.is_text_mode = False
-        self.bitsperpixel = int(bitsperpixel)
-        # number of pixels referenced in each byte of a plane
-        self.ppb = 8 // self.bitsperpixel
-        self.bytes_per_row = int(pixel_width) * self.bitsperpixel // 8
+        # used in display.py to initialise pixelbuffer
+        self.bitsperpixel = bitsperpixel
+        self.memorymap = self._memorymapper(
+            text_height, text_width, pixel_height, pixel_width,
+            num_pages, video_segment, interleave_times, bank_size,
+            bitsperpixel
+        )
         self.supports_artifacts = supports_artifacts
         self.cursor_index = cursor_index
         if pixel_aspect:
@@ -1160,99 +1452,14 @@ class GraphicsMode(VideoMode):
         self.build_tile = self._tile_builder(self.bitsperpixel)
         self.sprite_builder = self._sprite_builder(self.bitsperpixel)
 
-    def _get_coords(self, addr):
-        """Get video page and coordinates for address."""
-        # override
-        return 0, 0, 0
-
-    def _coord_ok(self, page, x, y):
-        """Check if a page and coordinates are within limits."""
-        return (
-            page >= 0 and page < self.num_pages and
-            x >= 0 and x < self.pixel_width and
-            y >= 0 and y < self.pixel_height
-        )
-
-    def set_plane(self, plane):
-        """Set the current colour plane (EGA only)."""
-        pass
-
-    def set_plane_mask(self, mask):
-        """Set the current colour plane mask (EGA only)."""
-        pass
-
-    def _walk_memory(self, addr, num_bytes, factor=1):
-        """Iterate over graphical memory (pixel-by-pixel, contiguous rows)."""
-        # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
-        # with alternating planes in even and odd bytes (i.e. ppb==8)
-        ppb = factor * self.ppb
-        page_size = self.page_size//factor
-        bank_size = self.bank_size//factor
-        row_size = self.bytes_per_row//factor
-        # first row
-        page, x, y = self._get_coords(addr)
-        offset = min(row_size - x//ppb, num_bytes)
-        if self._coord_ok(page, x, y):
-            yield page, x, y, 0, offset
-        # full rows
-        bank_offset, page_offset, start_y = 0, 0, y
-        while page_offset + bank_offset + offset < num_bytes:
-            y += self.interleave_times
-            # not an integer number of rows in a bank
-            if offset >= bank_size:
-                bank_offset += bank_size
-                start_y += 1
-                offset, y = 0, start_y
-                if bank_offset >= page_size:
-                    page_offset += page_size
-                    page += 1
-                    bank_offset, offset = 0, 0
-                    y, start_y = 0, 0
-            if self._coord_ok(page, 0, y):
-                ofs = page_offset + bank_offset + offset
-                if ofs + row_size > num_bytes:
-                    yield page, 0, y, ofs, num_bytes - ofs
-                else:
-                    yield page, 0, y, ofs, row_size
-            offset += row_size
-
 
 class CGAMode(GraphicsMode):
     """Default settings for a CGA graphics mode."""
 
+    _memorymapper = CGAMemoryMapper
     _colourmapper = CGAColourMapper
     _tile_builder = PackedTileBuilder
     _sprite_builder = PackedSpriteBuilder
-
-    def _get_coords(self, addr):
-        """Get video page and coordinates for address."""
-        addr = int(addr) - self.video_segment * 0x10
-        # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
-        page, addr = addr//self.page_size, addr%self.page_size
-        # 2 x interleaved scan lines of 80bytes
-        bank, offset = addr//self.bank_size, addr%self.bank_size
-        row, col = offset//self.bytes_per_row, offset%self.bytes_per_row
-        x = col * 8 // self.bitsperpixel
-        y = bank + self.interleave_times * row
-        return page, x, y
-
-    def set_memory(self, screen, addr, byte_array):
-        """Set bytes in CGA memory."""
-        for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array)):
-            #bytes_to_interval
-            pixarray = bytematrix.ByteMatrix.frompacked(
-                byte_array[ofs:ofs+length], height=1, items_per_byte=self.ppb
-            )
-            screen.drawing.put_interval(page, x, y, pixarray)
-
-    def get_memory(self, screen, addr, num_bytes):
-        """Retrieve bytes from CGA memory."""
-        byte_array = bytearray(num_bytes)
-        for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
-            #interval_to_bytes
-            pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
-            byte_array[ofs:ofs+length] = pixarray.packed(self.ppb)
-        return byte_array
 
 
 class CGA4Mode(CGAMode):
@@ -1270,6 +1477,7 @@ class HerculesMode(CGAMode):
 class EGAMode(GraphicsMode):
     """Default settings for a EGA graphics mode."""
 
+    _memorymapper = EGAMemoryMapper
     _colourmapper = EGAColourMapper
     _tile_builder = PlanedTileBuilder
     _sprite_builder = PlanedSpriteBuilder
@@ -1290,64 +1498,8 @@ class EGAMode(GraphicsMode):
             interleave_times, bank_size,
             num_pages, has_blink, aspect=aspect
         )
-        # EGA uses colour planes, 1 bpp for each plane
-        #self.ppb = 8
-        self.bytes_per_row = pixel_width // 8
-        self.video_segment = 0xa000
-        self.planes_used = planes_used
-        # additional colour plane mask
-        self.master_plane_mask = sum([ 2**x for x in planes_used ])
-        # current ega memory colour plane to read
-        self.plane = 0
-        # current ega memory colour planes to write to
-        self.plane_mask = 0xff
-
-    def set_plane(self, plane):
-        """Set the current colour plane."""
-        self.plane = plane
-
-    def set_plane_mask(self, mask):
-        """Set the current colour plane mask."""
-        self.plane_mask = mask
-
-    def _get_coords(self, addr):
-        """Get video page and coordinates for address."""
-        addr = int(addr) - self.video_segment * 0x10
-        # modes 7-9: 1 bit per pixel per colour plane
-        page, addr = addr//self.page_size, addr%self.page_size
-        x, y = (addr%self.bytes_per_row)*8, addr//self.bytes_per_row
-        return page, x, y
-
-    def get_memory(self, screen, addr, num_bytes):
-        """Retrieve bytes from EGA memory."""
-        plane = self.plane % (max(self.planes_used) + 1)
-        byte_array = bytearray(num_bytes)
-        if plane not in self.planes_used:
-            return byte_array
-        for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
-            pixarray = screen.pixels.pages[page].get_interval(x, y, length*8)
-            #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
-            byte_array[ofs:ofs+length] = (pixarray >> plane).packed(8)
-        return byte_array
-
-    def set_memory(self, screen, addr, byte_array):
-        """Set bytes in EGA video memory."""
-        # EGA memory is planar with memory-mapped colour planes.
-        # Within a plane, 8 pixels are encoded into each byte.
-        # The colour plane is set through a port OUT and
-        # determines which bit of each pixel's attribute is affected.
-        mask = self.plane_mask & self.master_plane_mask
-        # return immediately for unused colour planes
-        if mask == 0:
-            return
-        for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array)):
-            #pixarray = bytes_to_interval(byte_array[ofs:ofs+length], self.ppb, mask)
-            pixarray = (
-                bytematrix.ByteMatrix.frompacked(
-                    byte_array[ofs:ofs+length], height=1, items_per_byte=8
-                ).render(0, mask)
-            )
-            screen.drawing.put_interval(page, x, y, pixarray, mask)
+        # EGA memorymap settings
+        self.memorymap.set_planes_used(planes_used)
 
 
 class EGAMonoMode(EGAMode):
@@ -1359,59 +1511,8 @@ class EGAMonoMode(EGAMode):
 class Tandy6Mode(GraphicsMode):
     """Default settings for Tandy graphics mode 6."""
 
+    _memorymapper = Tandy6MemoryMapper
     _colourmapper = CGA4ColourMapper
     _tile_builder = PackedTileBuilder
     # initialising this with self.bitsperpixel should do the right thing
     _sprite_builder = PlanedSpriteBuilder
-
-    def __init__(self, *args, **kwargs):
-        """Initialise video mode settings."""
-        GraphicsMode.__init__(self, *args, **kwargs)
-        # mode 6: 4x interleaved scan lines, 8 pixels per two bytes,
-        # low attribute bits stored in even bytes, high bits in odd bytes.
-        self.bytes_per_row = self.pixel_width * 2 // 8
-        self.video_segment = 0xb800
-
-    def _get_coords(self, addr):
-        """Get video page and coordinates for address."""
-        addr =  int(addr) - self.video_segment * 0x10
-        page, addr = addr//self.page_size, addr%self.page_size
-        # 4 x interleaved scan lines of 160bytes
-        bank, offset = addr//self.bank_size, addr%self.bank_size
-        row, col = offset//self.bytes_per_row, offset%self.bytes_per_row
-        x = (col // 2) * 8
-        y = bank + 4 * row
-        return page, x, y
-
-    def get_memory(self, screen, addr, num_bytes):
-        """Retrieve bytes from Tandy 640x200x4 """
-        # 8 pixels per 2 bytes
-        # low attribute bits stored in even bytes, high bits in odd bytes.
-        half_len = (num_bytes+1) // 2
-        hbytes = bytearray(half_len), bytearray(half_len)
-        for parity, byte_array in enumerate(hbytes):
-            plane = parity ^ (addr % 2)
-            for page, x, y, ofs, length in self._walk_memory(addr, num_bytes, 2):
-                pixarray = screen.pixels.pages[page].get_interval(x, y, length * self.ppb * 2)
-                #hbytes[parity][ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb*2, plane)
-                byte_array[ofs:ofs+length] = (pixarray >> plane).packed(self.ppb * 2)
-        # resulting array may be too long by one byte, so cut to size
-        return [_item for _pair in zip(*hbytes) for _item in _pair] [:num_bytes]
-
-    def set_memory(self, screen, addr, byte_array):
-        """Set bytes in Tandy 640x200x4 memory."""
-        hbytes = byte_array[0::2], byte_array[1::2]
-        # Tandy-6 encodes 8 pixels per byte, alternating colour planes.
-        # I.e. even addresses are 'colour plane 0', odd ones are 'plane 1'
-        for parity, half in enumerate(hbytes):
-            plane = parity ^ (addr % 2)
-            mask = 2 ** plane
-            for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array), 2):
-                #pixarray = bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self.ppb, mask)
-                pixarray = (
-                    bytematrix.ByteMatrix.frompacked(
-                        # what's the deal with the empty bytearrays here in some of the tests?
-                        half[ofs:ofs+length], height=1, items_per_byte=2*self.ppb
-                    ) << plane
-                )
-                screen.drawing.put_interval(page, x, y, pixarray, mask)

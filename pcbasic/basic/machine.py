@@ -157,10 +157,10 @@ class MachinePorts(object):
             self._stick.reset_decay()
         elif addr == 0x3c5:
             # officially, requires OUT &H3C4, 2 first (not implemented)
-            self._display.mode.set_plane_mask(val)
+            self._display.mode.memorymap.set_plane_mask(val)
         elif addr == 0x3cf:
             # officially, requires OUT &H3CE, 4 first (not implemented)
-            self._display.mode.set_plane(val)
+            self._display.mode.memorymap.set_plane(val)
         elif addr == 0x3d8:
             #OUT &H3D8,&H1A: REM enable color burst
             #OUT &H3D8,&H1E: REM disable color burst
@@ -458,19 +458,19 @@ class Memory(object):
 
     def _get_video_memory(self, addr):
         """Retrieve a byte from video memory."""
-        return self.display.get_memory(addr, 1)[0]
+        return self.display.mode.memorymap.get_memory(addr, 1)[0]
 
     def _set_video_memory(self, addr, val):
         """Set a byte in video memory."""
-        return self.display.set_memory(addr, [val])
+        return self.display.mode.memorymap.set_memory(addr, [val])
 
     def _get_video_memory_block(self, addr, length):
         """Retrieve a contiguous block of bytes from video memory."""
-        return bytearray(self.display.get_memory(addr, length))
+        return bytearray(self.display.mode.memorymap.get_memory(addr, length))
 
     def _set_video_memory_block(self, addr, some_bytes):
         """Set a contiguous block of bytes in video memory."""
-        self.display.set_memory(addr, some_bytes)
+        self.display.mode.memorymap.set_memory(addr, some_bytes)
 
     ###############################################################################
 
@@ -641,9 +641,9 @@ class Memory(object):
         # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
         # 1102, 1103 zero (PCmag says graphics page buffer offset)
         elif addr == 1100:
-            return self.display.mode.page_size % 256
+            return self.display.mode.memorymap.page_size % 256
         elif addr == 1101:
-            return self.display.mode.page_size // 256
+            return self.display.mode.memorymap.page_size // 256
         # 1104 + 2*n (cursor column of page n) - 1
         # 1105 + 2*n (cursor row of page n) - 1
         # we only keep track of one row,col position

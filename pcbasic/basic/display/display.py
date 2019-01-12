@@ -221,7 +221,7 @@ class Display(object):
         # preserve memory if erase==0; don't distingush erase==1 and erase==2
         save_mem = None
         if (not erase and self.mode.video_segment == spec.video_segment):
-            save_mem = self.mode.get_all_memory(self)
+            save_mem = self.mode.memorymap.get_all_memory(self)
         # if the new mode has fewer pages than current vpage/apage,
         # illegal fn call before anything happens.
         # signal the signals to change the screen resolution
@@ -268,7 +268,7 @@ class Display(object):
         self.text_screen.init_mode(self.mode, self.pixels, self.attr, new_vpagenum, new_apagenum)
         # restore emulated video memory in new mode
         if save_mem:
-            self.mode.set_all_memory(self, save_mem)
+            self.mode.memorymap.set_all_memory(self, save_mem)
         # center graphics cursor, reset window, etc.
         self.drawing.init_mode(self.mode, self.text_screen.text, self.pixels)
         self.drawing.set_attr(self.attr)
@@ -414,16 +414,6 @@ class Display(object):
         """Get the border attribute, in range 0 <= attr < 16."""
         return self._border_attr
 
-    ###########################################################################
-    # memory operations
-
-    def get_memory(self, addr, num_bytes):
-        """Retrieve bytes from video memory."""
-        return self.mode.get_memory(self, addr, num_bytes)
-
-    def set_memory(self, addr, bytestr):
-        """Set bytes in video memory."""
-        self.mode.set_memory(self, addr, bytestr)
 
     ###########################################################################
     # callbacks
