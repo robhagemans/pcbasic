@@ -319,9 +319,7 @@ class TextMode(VideoMode):
         """Initialise video mode settings."""
         VideoMode.__init__(self, name, height, width, font_height, font_width, attr, num_pages)
         self.is_text_mode = True
-        self.memorymap = self._textmemorymapper(
-           height, width, self.pixel_height, self.pixel_width, num_pages, is_mono
-        )
+        self.memorymap = self._textmemorymapper(height, width, num_pages, is_mono)
         num_attr = 256
         self.colourmap = self._colourmapper(num_attr, num_colours)
 
@@ -366,8 +364,7 @@ class GraphicsMode(VideoMode):
         # used in display.py to initialise pixelbuffer
         self.bitsperpixel = bitsperpixel
         self.memorymap = self._memorymapper(
-            text_height, text_width, pixel_height, pixel_width,
-            num_pages, interleave_times, bank_size, bitsperpixel
+            pixel_height, pixel_width, num_pages, interleave_times, bank_size, bitsperpixel
         )
         num_attr = 2**bitsperpixel
         self.colourmap = self._colourmapper(num_attr, num_colours)

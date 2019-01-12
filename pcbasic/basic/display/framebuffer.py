@@ -196,7 +196,7 @@ class _MemoryMapper(object):
 class TextMemoryMapper(_MemoryMapper):
     """Map between coordinates and locations in the textmode framebuffer."""
 
-    def __init__(self, text_height, text_width, pixel_height, pixel_width, num_pages, is_mono):
+    def __init__(self, text_height, text_width, num_pages, is_mono):
         """Initialise video mode settings."""
         page_size = 0x1000 if text_width == 80 else 0x800
         _MemoryMapper.__init__(self, num_pages, page_size)
@@ -252,9 +252,7 @@ class GraphicsMemoryMapper(_MemoryMapper):
     """Map between coordinates and locations in the graphical framebuffer."""
 
     def __init__(
-            self, text_height, text_width, pixel_height, pixel_width,
-            num_pages, interleave_times, bank_size,
-            bitsperpixel
+            self, pixel_height, pixel_width, num_pages, interleave_times, bank_size, bitsperpixel
         ):
         """Initialise video mode settings."""
         page_size = interleave_times * bank_size
