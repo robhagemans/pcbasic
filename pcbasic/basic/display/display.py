@@ -13,75 +13,11 @@ from ..base import error
 from .. import values
 from . import graphics
 from . import modes
-from . import colours
 
+from .colours import Palette, COMPOSITE
 from .textscreen import TextScreen
 from .pixels import PixelBuffer
 from .modes import Video
-
-
-#######################################################################################
-# palette
-
-class Palette(object):
-    """Colour palette."""
-
-    def __init__(self, queues, mode, capabilities):
-        """Initialise palette."""
-        self._capabilities = capabilities
-        self._queues = queues
-        self._mode = mode
-        # map from fore/back attr to video adapter colour
-        # interpretation is video mode dependent
-        self._palette = list(mode.colourmap.default_palette)
-        self.submit()
-
-    def init_mode(self, mode):
-        """Initialise for new mode."""
-        self._mode = mode
-        self._palette = list(mode.colourmap.default_palette)
-        self.submit()
-
-    def set_all(self, new_palette, force=False):
-        """Set the colours for all attributes."""
-        if force or self._mode_allows_palette():
-            self._palette = list(new_palette)
-            self.submit()
-
-    def set_entry(self, index, colour, force=False):
-        """Set a new colour for a given attribute."""
-        if force or self._mode_allows_palette():
-            self._palette[index] = colour
-            # in text mode, we'd be setting more than one attribute
-            # e.g. all true attributes with this number as foreground or background
-            # and attr_to_rgb decides which
-            self.submit()
-
-    def submit(self):
-        """Submit to interface."""
-        # all attributes split into foreground RGB, background RGB, blink and underline
-        rgb_table = [
-            self._mode.colourmap.attr_to_rgb(_attr, self._palette)
-            for _attr in range(self._mode.colourmap.num_attr)
-        ]
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_PALETTE, (rgb_table, None)
-        ))
-
-    def get_entry(self, index):
-        """Retrieve the colour for a given attribute."""
-        return self._palette[index]
-
-    def _mode_allows_palette(self):
-        """Check if the video mode allows palette change."""
-        # effective palette change is an error in CGA
-        if self._capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
-            raise error.BASICError(error.IFC)
-        # ignore palette changes in Tandy/PCjr SCREEN 0
-        elif self._capabilities in ('tandy', 'pcjr') and self._mode.is_text_mode:
-            return False
-        else:
-            return True
 
 
 #######################################################################################
@@ -284,7 +220,7 @@ class Display(object):
         # this sends the signal to the interface as well
         self.palette.init_mode(self.mode)
         # don't try composite unless our video card supports it
-        if self.capabilities in colours.COMPOSITE:
+        if self.capabilities in COMPOSITE:
             composite_artifacts = (
                 on and self.video.monitor == 'composite' and
                 (not self.mode.is_text_mode) and self.mode.supports_artifacts
@@ -293,7 +229,7 @@ class Display(object):
                 # set a composite palette
                 self.queues.video.put(signals.Event(
                     signals.VIDEO_SET_PALETTE,
-                    (colours.COMPOSITE[self.capabilities], None, (4, self.mode.bitsperpixel))
+                    (COMPOSITE[self.capabilities], None, (4, self.mode.bitsperpixel))
                 ))
             else:
                 # set normal palette

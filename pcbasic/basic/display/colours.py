@@ -6,6 +6,9 @@ Palettes and colour sets
 This file is released under the GNU GPL version 3 or later.
 """
 
+from ..base import error
+from ..base import signals
+
 
 # 2-colour CGA (SCREEN 2) palette
 CGA2_PALETTE = (0, 15)
@@ -118,6 +121,70 @@ EGA_MONO_PALETTE = (0, 4, 1, 8)
 # this is actually ignored, see MonoTextMode class
 # remove after refactoring
 MDA_PALETTE = (0,) * 16
+
+
+#######################################################################################
+# palette
+
+class Palette(object):
+    """Colour palette."""
+
+    def __init__(self, queues, mode, capabilities):
+        """Initialise palette."""
+        self._capabilities = capabilities
+        self._queues = queues
+        self._mode = mode
+        # map from fore/back attr to video adapter colour
+        # interpretation is video mode dependent
+        self._palette = list(mode.colourmap.default_palette)
+        self.submit()
+
+    def init_mode(self, mode):
+        """Initialise for new mode."""
+        self._mode = mode
+        self._palette = list(mode.colourmap.default_palette)
+        self.submit()
+
+    def set_all(self, new_palette, force=False):
+        """Set the colours for all attributes."""
+        if force or self._mode_allows_palette():
+            self._palette = list(new_palette)
+            self.submit()
+
+    def set_entry(self, index, colour, force=False):
+        """Set a new colour for a given attribute."""
+        if force or self._mode_allows_palette():
+            self._palette[index] = colour
+            # in text mode, we'd be setting more than one attribute
+            # e.g. all true attributes with this number as foreground or background
+            # and attr_to_rgb decides which
+            self.submit()
+
+    def submit(self):
+        """Submit to interface."""
+        # all attributes split into foreground RGB, background RGB, blink and underline
+        rgb_table = [
+            self._mode.colourmap.attr_to_rgb(_attr, self._palette)
+            for _attr in range(self._mode.colourmap.num_attr)
+        ]
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_PALETTE, (rgb_table, None)
+        ))
+
+    def get_entry(self, index):
+        """Retrieve the colour for a given attribute."""
+        return self._palette[index]
+
+    def _mode_allows_palette(self):
+        """Check if the video mode allows palette change."""
+        # effective palette change is an error in CGA
+        if self._capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
+            raise error.BASICError(error.IFC)
+        # ignore palette changes in Tandy/PCjr SCREEN 0
+        elif self._capabilities in ('tandy', 'pcjr') and self._mode.is_text_mode:
+            return False
+        else:
+            return True
 
 
 ###############################################################################
