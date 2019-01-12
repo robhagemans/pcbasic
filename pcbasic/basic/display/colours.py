@@ -93,13 +93,6 @@ COMPOSITE = {
 }
 
 
-# tinted monochrome monitors
-MONO_TINT = {
-    'green': (0, 255, 0),
-    'amber': (255, 128, 0),
-    'grey': (255, 255, 255),
-    'mono': (0, 255, 0),
-}
 
 # CGA mono intensities
 INTENSITY16 = range(0x00, 0x100, 0x11)
@@ -121,6 +114,28 @@ EGA_MONO_PALETTE = (0, 4, 1, 8)
 # this is actually ignored, see MonoTextMode class
 # remove after refactoring
 MDA_PALETTE = (0,) * 16
+
+
+#######################################################################################
+# tinted monochrome monitors
+
+MONO_TINT = {
+    'green': (0, 255, 0),
+    'amber': (255, 128, 0),
+    'grey': (255, 255, 255),
+    'mono': (0, 255, 0),
+}
+
+# from bright to dim: green, red, blue
+_RGB_INTENSITY = (192, 255, 128)
+
+
+def _adjust_tint(rgb, mono_tint, mono):
+    """Convert (r, g, b) tuple to tinted monochrome."""
+    if not mono:
+        return rgb
+    intensity = sum(_value * _weight // 255 for _value, _weight in zip(rgb, _RGB_INTENSITY))
+    return tuple(_tint * intensity // 255 for _tint in mono_tint)
 
 
 #######################################################################################
@@ -163,10 +178,7 @@ class Palette(object):
     def submit(self):
         """Submit to interface."""
         # all attributes split into foreground RGB, background RGB, blink and underline
-        rgb_table = [
-            self._mode.colourmap.attr_to_rgb(_attr, self._palette)
-            for _attr in range(self._mode.colourmap.num_attr)
-        ]
+        rgb_table = self._mode.colourmap.get_rgb_table(self._palette)
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_PALETTE, (rgb_table, None)
         ))
@@ -193,32 +205,81 @@ class Palette(object):
 class ColourMapper(object):
     """Palette and colourset."""
 
-    def __init__(self, num_attr, num_colours):
-        """Initialise colour mapper."""
-        # palette - maps the valid attributes to colour values
-        # these are "palette attributes" - e.g. the 16 foreground attributes for text mode.
-        self._default_palette = None
-        # number of true attribute bytes. This is 256 for text modes.
-        self.num_attr = num_attr
-        # colour set - maps the valid colour values to RGB
-        # can be used as the right hand side of a palette assignment
-        # colours is a reference (changes with colorburst on composite)
-        self._colours = None
+    # override these
 
-    @property
-    def default_palette(self):
-        """Default palette."""
-        return self._default_palette
+    # palette - lookup table that maps the valid attributes to colour values
+    # these are "palette attributes" - e.g. the 16 foreground attributes for text mode.
+    default_palette = ()
+
+    # colour set - maps the valid colour values to RGB
+    # int values that can be used as the right hand side of a palette assignment
+    _colours = ()
+
+    # interpret colours as monochrome intensity
+    mono_tint = MONO_TINT['mono']
+    mono = False
 
     @property
     def num_palette(self):
         """Number of values in palette."""
-        return len(self._default_palette)
+        return len(self.default_palette)
 
     @property
     def num_colours(self):
-        """Number of colour values."""
+        """Number of values in colour set."""
         return len(self._colours)
+
+    @property
+    def num_attr(self):
+        """Number of attributes."""
+        # attributes
+        # there's 256 of these in text mode (fore/back/blink/underscore)
+        # and in graphics mode this is likely the same as num_palette
+        return len(self.default_palette)
+
+    def split_attr(self, attr):
+        """Split attribute byte into constituent parts."""
+        return attr & 0xf, 0, False, False
+
+    def join_attr(self, fore, back, blink, underline):
+        """Join constituent parts into textmode attribute byte."""
+        return fore & 0xf
+
+    def get_rgb_table(self, palette):
+        """List of RGB/blink/underline for all attributes, given a palette."""
+        return [
+            self.attr_to_rgb(_attr, palette)
+            for _attr in range(self.num_attr)
+        ]
+
+    def attr_to_rgb(self, attr, palette):
+        """Convert attribute to RGB/blink/underline, given a palette."""
+        rgb = _adjust_tint(self._colours[palette[attr]], self.mono_tint, self.mono)
+        return rgb, rgb, False, False
+
+    def get_cga4_palette(self):
+        """CGA palette setting (accessible from memory)."""
+        return 1
+
+    def set_cga4_palette(self, num):
+        """Set the default 4-colour CGA palette."""
+
+    def set_colorburst(self, on):
+        """Set the NTSC colorburst bit."""
+        # not colourburst capable
+        return False
+
+
+class TextColourMixin(object):
+    """Translate text attributes to palette attributes."""
+
+    @property
+    def num_attr(self):
+        """Number of attributes."""
+        # attributes
+        # there's 256 of these in text mode (fore/back/blink/underscore)
+        # and in graphics mode this is likely the same as num_palette
+        return 256
 
     def split_attr(self, attr):
         """Split textmode attribute byte into constituent parts."""
@@ -235,68 +296,39 @@ class ColourMapper(object):
         return ((blink & 1) << 7) + ((back & 7) << 4) + (fore & 0xf)
 
     def attr_to_rgb(self, attr, palette):
-        """Convert colour attribute to RGB/blink/underline, given a palette."""
+        """Convert attribute to RGB/blink/underline, given a palette."""
         fore, back, blink, underline = self.split_attr(attr)
-        fore_rgb = self._colours[palette[fore]]
-        back_rgb = self._colours[palette[back]]
+        fore_rgb = _adjust_tint(self._colours[palette[fore]], self.mono_tint, self.mono)
+        back_rgb = _adjust_tint(self._colours[palette[back]], self.mono_tint, self.mono)
         return fore_rgb, back_rgb, blink, underline
-
-    def get_cga4_palette(self):
-        """CGA palette setting (accessible from memory)."""
-        return 1
-
-    def set_cga4_palette(self, num):
-        """Set the default 4-colour CGA palette."""
-
-    def set_colorburst(self, on):
-        """Set the NTSC colorburst bit."""
-        # not colourburst capable
-        return False
 
 
 class HerculesColourMapper(ColourMapper):
     """Hercules 16-greyscale palette."""
 
-    def __init__(self, num_attr, num_colours):
-        """Initialise colour mapper."""
-        ColourMapper.__init__(self, num_attr, num_colours)
-        self._default_palette = CGA2_PALETTE
-
-    #FIXME - not being called
-    def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
-        self._colours = tuple(
-            tuple(_tint * _int//255 for _tint in mono_tint) for _int in INTENSITY16
-        )
+    # Hercules graphics has no PALETTE
+    # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
+    default_palette = (0, 1)
+    _colours = ((0, 0, 0), (255, 255, 255))
+    num_attr = 2
+    mono = True
 
 
-class CGAColourMapper(ColourMapper):
+class _CGAColourMapper(ColourMapper):
     """CGA 2-colour, 16-colour palettes."""
 
-    def __init__(self, num_attr, num_colours):
-        """Initialise colour mapper."""
-        ColourMapper.__init__(self, num_attr, num_colours)
-        self._force_mono = False
-        self._force_colour = False
-        self._has_colorburst = False
-        self._colours = COLOURS16
-        if num_attr == 2:
-            self._default_palette = CGA2_PALETTE
-        elif num_attr == 16:
-            self._default_palette = CGA16_PALETTE
-        else:
-            raise ValueError
+    _colours = COLOURS16
 
-    #FIXME - not being called
-    def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
+    def __init__(self, capabilities, monitor):
         """CGA 4-colour palette / mode 5 settings"""
         self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
         # monochrome
         self._force_mono = monitor == 'mono'
-        self._mono_tint = mono_tint
         # rgb monitor
         self._force_colour = monitor not in ('mono', 'composite')
+        self.set_colorburst(True)
 
-    def set_colorburst(self, on):
+    def set_colorburst(self, colour_on):
         """Set the NTSC colorburst bit."""
         # On a composite monitor with CGA adapter (not EGA, VGA):
         # - on SCREEN 2 this enables artifacting
@@ -305,42 +337,27 @@ class CGAColourMapper(ColourMapper):
         # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
         # - ignored on other screens
         if self._has_colorburst:
-            self._toggle_colour(on)
-
-    def _toggle_colour(self, colour_on):
-        """Toggle between colour and monochrome (for NTSC colorburst)."""
-        if (colour_on and not self._force_mono) or self._force_colour:
-            self._colours = COLOURS16
-        else:
-            # FIXME - should be intensity-mapped CGA colours
-            # with potential hue adjustment to ensure all shades are different
-            # this is the Hercules palette
-            self._colours = tuple(
-                tuple(_tint * _int//255 for _tint in self._mono_tint) for _int in INTENSITY16
-            )
+            self.mono = self._force_mono or (not colour_on and not self._force_colour)
 
 
-class CGA4ColourMapper(ColourMapper):
+class CGA2ColourMapper(_CGAColourMapper):
+    """CGA 2-colour palettes."""
+
+    default_palette = CGA2_PALETTE
+
+
+class CGA16ColourMapper(_CGAColourMapper):
+    """CGA 16-colour palettes."""
+
+    default_palette = CGA16_PALETTE
+
+
+class CGA4ColourMapper(_CGAColourMapper):
     """CGA 4-colour palettes."""
 
-    def __init__(self, num_attr, num_colours):
-        """Initialise colour mapper."""
-        ColourMapper.__init__(self, num_attr, num_colours)
-        self._tandy = False
-        self._low_intensity = False
-        self._has_mode_5 = False
-        self._mode_5 = False
-        self._has_colorburst = False
-        self._force_mono = False
-        self._force_colour = True
-        # greyscale mono
-        self._mono_tint = (255, 255, 255)
-        self._palette_number = 1
-        self._colours = COLOURS16
-
-    #FIXME - not being called
-    def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
+    def __init__(self, capabilities, monitor, low_intensity):
         """CGA 4-colour palette / mode 5 settings"""
+        _CGAColourMapper.__init__(self, capabilities, monitor)
         self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
         # pcjr/tandy does not have mode 5
         self._tandy = capabilities not in ('pcjr', 'tandy')
@@ -349,10 +366,6 @@ class CGA4ColourMapper(ColourMapper):
         # start with the cyan-magenta-white palette
         self._palette_number = 1
         self._mode_5 = False
-        self._force_mono = monitor == 'mono'
-        # rgb monitor
-        self._force_colour = monitor not in ('mono', 'composite')
-        self._mono_tint = mono_tint
 
     def get_cga4_palette(self):
         """CGA palette setting (accessible from memory)."""
@@ -386,7 +399,7 @@ class CGA4ColourMapper(ColourMapper):
             else:
                 return CGA4_HI_PALETTE_0
 
-    def set_colorburst(self, on):
+    def set_colorburst(self, colour_on):
         """Set the NTSC colorburst bit."""
         if not self._has_colorburst:
             return
@@ -398,43 +411,37 @@ class CGA4ColourMapper(ColourMapper):
         # - ignored on other screens
         if self._force_colour:
             # ega ignores colorburst; tandy and pcjr have no mode 5
-            self._mode_5 = not on
+            self._mode_5 = not colour_on
             self.set_cga4_palette(1)
         else:
-            self._toggle_colour(on)
-
-    def _toggle_colour(self, colour_on):
-        """Toggle between colour and monochrome (for NTSC colorburst)."""
-        if (colour_on and not self._force_mono) or self._force_colour:
-            self._colours = COLOURS16
-        else:
-            # FIXME - should be intensity-mapped CGA colours
-            # with potential hue adjustment to ensure all shades are different
-            # this is the Hercules palette
-            self._colours = tuple(
-                tuple(_tint * _int//255 for _tint in self._mono_tint) for _int in INTENSITY16
-            )
+            self.mono = self._force_mono or not colour_on
 
 
-class EGAColourMapper(ColourMapper):
-    """EGA 16-colour or 64-colour mapper."""
+class EGA16ColourMapper(ColourMapper):
+    """EGA 16-colour mapper."""
 
-    def __init__(self, num_attr, num_colours):
-        """Initialise colour mapper."""
-        ColourMapper.__init__(self, num_attr, num_colours)
-        #if num_attr == 4
-        #    # SCREEN 9 with less than 128k EGA memory
-        #    # attribute mapping is different
-        #    self._colours = COLOURS16
-        #    self._default_palette = EGA4_PALETTE
-        if num_colours == 16:
-            self._colours = COLOURS16
-            self._default_palette = CGA16_PALETTE
-        elif num_colours == 64:
-            self._colours = COLOURS64
-            self._default_palette = EGA_PALETTE
-        else:
-            raise ValueError
+    #if num_attr == 4
+    #    # SCREEN 9 with less than 128k EGA memory
+    #    # attribute mapping is different
+    #    self._colours = COLOURS16
+    #    self._default_palette = EGA4_PALETTE
+
+    _colours = COLOURS16
+    default_palette = CGA16_PALETTE
+
+
+class EGA64ColourMapper(ColourMapper):
+    """EGA 64-colour mapper."""
+
+    _colours = COLOURS64
+    default_palette = EGA_PALETTE
+
+
+class EGA16TextColourMapper(TextColourMixin, EGA16ColourMapper):
+    """EGA 16-colour mapper for text."""
+
+class EGA64TextColourMapper(TextColourMixin, EGA64ColourMapper):
+    """EGA 64-colour mapper for text."""
 
 
 class MonoTextColourMapper(ColourMapper):
@@ -470,25 +477,7 @@ class MonoTextColourMapper(ColourMapper):
     # see https://nerdlypleasures.blogspot.com/2014/03/the-monochrome-experience-cga-ega-and.html
     # and http://www.vcfed.org/forum/showthread.php?50674-EGA-Monochrome-Compatibility
 
-    def __init__(self, num_attr, num_colours):
-        """Initialise colour mapper."""
-        ColourMapper.__init__(self, num_attr, num_colours)
-        # greyscale mono
-        self._mono_tint = (255, 255, 255)
-        self._set_colours()
-
-    #FIXME - not being called
-    def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
-        """Palette / mode settings"""
-        self._mono_tint = mono_tint
-        self._set_colours()
-
-    def _set_colours(self):
-        """Calculate tinted monochromes."""
-        # initialise tinted monochrome palettes
-        self._colours = tuple(
-            tuple(tint*i//255 for tint in self._mono_tint) for i in INTENSITY_MDA_MONO
-        )
+    _colours = tuple((_i, _i, _i) for _i in INTENSITY_MDA_MONO)
 
     @property
     def default_palette(self):
@@ -546,25 +535,8 @@ class EGAMonoColourMapper(ColourMapper):
         (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)
     )
 
-    def __init__(self, num_attr, num_colours):
-        """Initialise colour mapper."""
-        ColourMapper.__init__(self, num_attr, num_colours)
-        # greyscale mono
-        self._mono_tint = (255, 255, 255)
-        self._default_palette = EGA_MONO_PALETTE
-        self._set_colours()
-
-    #FIXME - not being called
-    def set_defaults(self, capabilities, low_intensity, monitor, mono_tint):
-        """Palette / mode settings"""
-        self._mono_tint = mono_tint
-        self._set_colours()
-
-    def _set_colours(self):
-        """Calculate tinted monochromes."""
-        self._colours = tuple(
-            tuple(tint*i//255 for tint in self._mono_tint) for i in INTENSITY_EGA_MONO
-        )
+    default_palette = EGA_MONO_PALETTE
+    _colours = tuple((_i, _i, _i) for _i in INTENSITY_EGA_MONO)
 
     @property
     def num_colours(self):
