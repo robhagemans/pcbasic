@@ -32,10 +32,8 @@ class Video(object):
         # screen aspect ratio, for CIRCLE
         self.aspect = aspect
         # colourset preparations
-        # monochrome tint in rgb
-        self.mono_tint = MONO_TINT.get(monitor, MONO_TINT['green'])
         # emulated monitor type - rgb, composite, mono
-        self.monitor = 'mono' if monitor in MONO_TINT else monitor
+        self.monitor = monitor
         # CGA low intensity palette
         self.low_intensity = low_intensity
         # set up text_data and mode_data

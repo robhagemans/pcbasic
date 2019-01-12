@@ -127,15 +127,15 @@ MONO_TINT = {
 }
 
 # from bright to dim: green, red, blue
-_RGB_INTENSITY = (192, 255, 128)
+_RGB_INTENSITY = (0.3, 0.4, 0.2)
 
 
 def _adjust_tint(rgb, mono_tint, mono):
     """Convert (r, g, b) tuple to tinted monochrome."""
     if not mono:
         return rgb
-    intensity = sum(_value * _weight // 255 for _value, _weight in zip(rgb, _RGB_INTENSITY))
-    return tuple(_tint * intensity // 255 for _tint in mono_tint)
+    intensity = sum(_value * _weight for _value, _weight in zip(rgb, _RGB_INTENSITY))
+    return tuple(int(_tint * intensity) // 255 for _tint in mono_tint)
 
 
 #######################################################################################
@@ -323,10 +323,12 @@ class _CGAColourMapper(ColourMapper):
         """CGA 4-colour palette / mode 5 settings"""
         self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
         # monochrome
-        self._force_mono = monitor == 'mono'
+        self._force_mono = monitor in MONO_TINT
+        if self._force_mono:
+            self.mono = True
+            self.mono_tint = MONO_TINT[monitor]
         # rgb monitor
         self._force_colour = monitor not in ('mono', 'composite')
-        self.set_colorburst(True)
 
     def set_colorburst(self, colour_on):
         """Set the NTSC colorburst bit."""
