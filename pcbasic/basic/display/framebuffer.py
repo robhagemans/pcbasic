@@ -15,6 +15,12 @@ from ...compat import xrange, int2byte, zip, iterbytes, PY2
 from ..base import bytematrix
 
 
+# video segment
+MDA_SEGMENT = 0xb000
+CGA_SEGMENT = 0xb800
+EGA_SEGMENT = 0xa000
+
+
 ##############################################################################
 # sprites & tiles
 
@@ -157,19 +163,15 @@ class PlanedSpriteBuilder(object):
 ##############################################################################
 # framebuffer memory map
 
-class MemoryMapper(object):
+class _MemoryMapper(object):
     """Map between coordinates and locations in the framebuffer."""
 
     def __init__(
-                self, text_height, text_width, pixel_height, pixel_width,
-                num_pages, video_segment, page_size
-            ):
+            self, num_pages, page_size
+        ):
         """Initialise video mode settings."""
-        self._text_height = text_height
-        self._text_width = text_width
-        self._pixel_height = pixel_height
-        self._pixel_width = pixel_width
-        self._video_segment = video_segment
+        # override this
+        self._video_segment = None
         self._page_size = page_size
         self._num_pages = num_pages # or video_mem_size // self.page_size)
 
@@ -180,8 +182,8 @@ class MemoryMapper(object):
 
     def get_all_memory(self, screen):
         """Obtain a copy of all video memory."""
-        addr = self._video_segment*0x10
-        buffer = self.get_memory(screen, addr, self._page_size*self._num_pages)
+        addr = self._video_segment * 0x10
+        buffer = self.get_memory(screen, addr, self._page_size * self._num_pages)
         return addr, buffer
 
     def get_memory(self, screen, addr, num_bytes):
@@ -191,12 +193,20 @@ class MemoryMapper(object):
         """Set bytes in video memory, stub."""
 
 
-class TextMemoryMapper(MemoryMapper):
+class TextMemoryMapper(_MemoryMapper):
     """Map between coordinates and locations in the textmode framebuffer."""
+
+    def __init__(self, text_height, text_width, pixel_height, pixel_width, num_pages, is_mono):
+        """Initialise video mode settings."""
+        page_size = 0x1000 if text_width == 80 else 0x800
+        _MemoryMapper.__init__(self, num_pages, page_size)
+        self._video_segment = MDA_SEGMENT if is_mono else CGA_SEGMENT
+        self._text_height = text_height
+        self._text_width = text_width
 
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from textmode video memory."""
-        addr -= self._video_segment*0x10
+        addr -= self._video_segment * 0x10
         mem_bytes = bytearray(num_bytes)
         for i in xrange(num_bytes):
             page = (addr+i) // self._page_size
@@ -238,20 +248,19 @@ class TextMemoryMapper(MemoryMapper):
             screen.text_screen.refresh_range(page, last_row, 1, self._text_width)
 
 
-class GraphicsMemoryMapper(MemoryMapper):
+class GraphicsMemoryMapper(_MemoryMapper):
     """Map between coordinates and locations in the graphical framebuffer."""
 
     def __init__(
             self, text_height, text_width, pixel_height, pixel_width,
-            num_pages, video_segment, interleave_times, bank_size,
+            num_pages, interleave_times, bank_size,
             bitsperpixel
         ):
         """Initialise video mode settings."""
         page_size = interleave_times * bank_size
-        MemoryMapper.__init__(
-            self, text_height, text_width, pixel_height, pixel_width,
-            num_pages, video_segment, page_size
-        )
+        _MemoryMapper.__init__(self, num_pages, page_size)
+        self._pixel_height = pixel_height
+        self._pixel_width = pixel_width
         # cga bank_size = 0x2000 interleave_times=2
         self._interleave_times = interleave_times
         self._bank_size = bank_size
@@ -319,6 +328,18 @@ class GraphicsMemoryMapper(MemoryMapper):
 class CGAMemoryMapper(GraphicsMemoryMapper):
     """Map between coordinates and locations in the CGA framebuffer."""
 
+    def __init__(
+            self, text_height, text_width, pixel_height, pixel_width,
+            num_pages, interleave_times, bank_size, bitsperpixel
+        ):
+        """Initialise video mode settings."""
+        GraphicsMemoryMapper.__init__(
+            self, text_height, text_width, pixel_height, pixel_width,
+            num_pages, interleave_times, bank_size,
+            bitsperpixel
+        )
+        self._video_segment = CGA_SEGMENT
+
     def _get_coords(self, addr):
         """Get video page and coordinates for address."""
         addr = int(addr) - self._video_segment * 0x10
@@ -355,16 +376,15 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
 
     def __init__(
             self, text_height, text_width, pixel_height, pixel_width,
-            num_pages, video_segment, interleave_times, bank_size,
-            bitsperpixel
+            num_pages, interleave_times, bank_size, bitsperpixel
         ):
         """Initialise video mode settings."""
-        video_segment = 0xa000
         GraphicsMemoryMapper.__init__(
             self, text_height, text_width, pixel_height, pixel_width,
-            num_pages, video_segment, interleave_times, bank_size,
+            num_pages, interleave_times, bank_size,
             bitsperpixel
         )
+        self._video_segment = EGA_SEGMENT
         # EGA uses colour planes, 1 bpp for each plane
         #self._ppb = 8
         self._bytes_per_row = self._pixel_width // 8
@@ -435,16 +455,15 @@ class Tandy6MemoryMapper(GraphicsMemoryMapper):
 
     def __init__(
             self, text_height, text_width, pixel_height, pixel_width,
-            num_pages, video_segment, interleave_times, bank_size,
-            bitsperpixel
+            num_pages, interleave_times, bank_size, bitsperpixel
         ):
         """Initialise video mode settings."""
-        video_segment = 0xb800
         GraphicsMemoryMapper.__init__(
             self, text_height, text_width, pixel_height, pixel_width,
-            num_pages, video_segment, interleave_times, bank_size,
+            num_pages, interleave_times, bank_size,
             bitsperpixel
         )
+        self._video_segment = CGA_SEGMENT
         # mode 6: 4x interleaved scan lines, 8 pixels per two bytes,
         # low attribute bits stored in even bytes, high bits in odd bytes.
         self._bytes_per_row = self._pixel_width * 2 // 8

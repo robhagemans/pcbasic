@@ -261,14 +261,8 @@ class Video(object):
 class VideoMode(object):
     """Base class for video modes."""
 
-    _colourmapper = ColourMapper
-
-    def __init__(
-            self, name, height, width, font_height, font_width,
-            attr, num_colours, num_attr, num_pages, has_blink
-        ):
+    def __init__(self, name, height, width, font_height, font_width, attr, num_pages):
         """Initialise video mode settings."""
-        self.is_text_mode = False
         self.name = name
         self.height = height
         self.width = width
@@ -278,9 +272,10 @@ class VideoMode(object):
         self.pixel_width = width * font_width
         self.attr = attr
         self.num_pages = num_pages # or video_mem_size // page_size
-        # override this
+        # override these
+        self.is_text_mode = None
         self.memorymap = None
-        self.colourmap = self._colourmapper(has_blink, num_attr, num_colours)
+        self.colourmap = None
 
     def pixel_to_text_pos(self, x, y):
         """Convert pixel position to text position."""
@@ -322,22 +317,17 @@ class TextMode(VideoMode):
     def __init__(
             self, name, height, width,
             font_height, font_width, attr, num_colours,
-            num_pages, is_mono=False, has_blink=True
+            num_pages, is_mono=False
         ):
         """Initialise video mode settings."""
-        video_segment = 0xb000 if is_mono else 0xb800
-        page_size = 0x1000 if width == 80 else 0x800
-        num_attr = 256
-        VideoMode.__init__(
-            self, name, height, width,
-            font_height, font_width, attr, num_colours, num_attr,
-            num_pages, has_blink
-        )
+        VideoMode.__init__(self, name, height, width, font_height, font_width, attr, num_pages)
         self.is_text_mode = True
         self.memorymap = self._textmemorymapper(
-           height, width, self.pixel_height, self.pixel_width,
-           num_pages, video_segment, page_size
+           height, width, self.pixel_height, self.pixel_width, num_pages, is_mono
         )
+        num_attr = 256
+        has_blink = True
+        self.colourmap = self._colourmapper(has_blink, num_attr, num_colours)
 
 
 class MonoTextMode(TextMode):
@@ -347,7 +337,7 @@ class MonoTextMode(TextMode):
 
 
 class CGATextMode(TextMode):
-    """MDA-style text mode with underlining."""
+    """CGA text mode."""
 
     _colourmapper = CGAColourMapper
 
@@ -358,40 +348,33 @@ class CGATextMode(TextMode):
 class GraphicsMode(VideoMode):
     """Default settings for a graphics mode."""
 
-    _memorymapper = GraphicsMemoryMapper
     # override these
+    _colourmapper = ColourMapper
+    _memorymapper = GraphicsMemoryMapper
     _tile_builder = lambda _: None
     _sprite_builder = lambda _: None
 
     def __init__(
-            self, name, pixel_width, pixel_height,
-            text_height, text_width,
-            attr, num_colours, bitsperpixel,
-            interleave_times, bank_size,
-            num_pages=None,
-            has_blink=False,
-            supports_artifacts=False,
-            cursor_index=None,
-            pixel_aspect=None, aspect=None,
-            video_segment=0xb800,
+            self, name, pixel_width, pixel_height, text_height, text_width,
+            attr, num_colours, bitsperpixel, interleave_times, bank_size,
+            num_pages=None, has_blink=False,
+            supports_artifacts=False, cursor_index=None, pixel_aspect=None, aspect=None
         ):
         """Initialise video mode settings."""
         font_width = pixel_width // text_width
         font_height = pixel_height // text_height
-        num_attr = 2**bitsperpixel
         VideoMode.__init__(
-            self, name, text_height, text_width,
-            font_height, font_width, attr, num_colours, num_attr,
-            num_pages, has_blink
+            self, name, text_height, text_width, font_height, font_width, attr, num_pages
         )
         self.is_text_mode = False
         # used in display.py to initialise pixelbuffer
         self.bitsperpixel = bitsperpixel
         self.memorymap = self._memorymapper(
             text_height, text_width, pixel_height, pixel_width,
-            num_pages, video_segment, interleave_times, bank_size,
-            bitsperpixel
+            num_pages, interleave_times, bank_size, bitsperpixel
         )
+        num_attr = 2**bitsperpixel
+        self.colourmap = self._colourmapper(has_blink, num_attr, num_colours)
         self.supports_artifacts = supports_artifacts
         self.cursor_index = cursor_index
         if pixel_aspect:
