@@ -12,7 +12,6 @@ import binascii
 
 from ...compat import iteritems, int2byte, zip
 
-from ..base import signals
 from ..base import bytematrix
 
 
