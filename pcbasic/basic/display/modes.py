@@ -1160,22 +1160,18 @@ class GraphicsMode(VideoMode):
         self.build_tile = self._tile_builder(self.bitsperpixel)
         self.sprite_builder = self._sprite_builder(self.bitsperpixel)
 
-    def get_coords(self, addr):
+    def _get_coords(self, addr):
         """Get video page and coordinates for address."""
         # override
         return 0, 0, 0
 
-    def coord_ok(self, page, x, y):
+    def _coord_ok(self, page, x, y):
         """Check if a page and coordinates are within limits."""
         return (
             page >= 0 and page < self.num_pages and
             x >= 0 and x < self.pixel_width and
             y >= 0 and y < self.pixel_height
         )
-
-    def cutoff_coord(self, x, y):
-        """Ensure coordinates are within screen + 1 pixel."""
-        return min(self.pixel_width, max(-1, x)), min(self.pixel_height, max(-1, y))
 
     def set_plane(self, plane):
         """Set the current colour plane (EGA only)."""
@@ -1185,7 +1181,7 @@ class GraphicsMode(VideoMode):
         """Set the current colour plane mask (EGA only)."""
         pass
 
-    def walk_memory(self, addr, num_bytes, factor=1):
+    def _walk_memory(self, addr, num_bytes, factor=1):
         """Iterate over graphical memory (pixel-by-pixel, contiguous rows)."""
         # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
         # with alternating planes in even and odd bytes (i.e. ppb==8)
@@ -1194,9 +1190,9 @@ class GraphicsMode(VideoMode):
         bank_size = self.bank_size//factor
         row_size = self.bytes_per_row//factor
         # first row
-        page, x, y = self.get_coords(addr)
+        page, x, y = self._get_coords(addr)
         offset = min(row_size - x//ppb, num_bytes)
-        if self.coord_ok(page, x, y):
+        if self._coord_ok(page, x, y):
             yield page, x, y, 0, offset
         # full rows
         bank_offset, page_offset, start_y = 0, 0, y
@@ -1212,7 +1208,7 @@ class GraphicsMode(VideoMode):
                     page += 1
                     bank_offset, offset = 0, 0
                     y, start_y = 0, 0
-            if self.coord_ok(page, 0, y):
+            if self._coord_ok(page, 0, y):
                 ofs = page_offset + bank_offset + offset
                 if ofs + row_size > num_bytes:
                     yield page, 0, y, ofs, num_bytes - ofs
@@ -1228,7 +1224,7 @@ class CGAMode(GraphicsMode):
     _tile_builder = PackedTileBuilder
     _sprite_builder = PackedSpriteBuilder
 
-    def get_coords(self, addr):
+    def _get_coords(self, addr):
         """Get video page and coordinates for address."""
         addr = int(addr) - self.video_segment * 0x10
         # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
@@ -1242,7 +1238,7 @@ class CGAMode(GraphicsMode):
 
     def set_memory(self, screen, addr, byte_array):
         """Set bytes in CGA memory."""
-        for page, x, y, ofs, length in self.walk_memory(addr, len(byte_array)):
+        for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array)):
             #bytes_to_interval
             pixarray = bytematrix.ByteMatrix.frompacked(
                 byte_array[ofs:ofs+length], height=1, items_per_byte=self.ppb
@@ -1252,7 +1248,7 @@ class CGAMode(GraphicsMode):
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from CGA memory."""
         byte_array = bytearray(num_bytes)
-        for page, x, y, ofs, length in self.walk_memory(addr, num_bytes):
+        for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
             #interval_to_bytes
             pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
             byte_array[ofs:ofs+length] = pixarray.packed(self.ppb)
@@ -1314,7 +1310,7 @@ class EGAMode(GraphicsMode):
         """Set the current colour plane mask."""
         self.plane_mask = mask
 
-    def get_coords(self, addr):
+    def _get_coords(self, addr):
         """Get video page and coordinates for address."""
         addr = int(addr) - self.video_segment * 0x10
         # modes 7-9: 1 bit per pixel per colour plane
@@ -1328,7 +1324,7 @@ class EGAMode(GraphicsMode):
         byte_array = bytearray(num_bytes)
         if plane not in self.planes_used:
             return byte_array
-        for page, x, y, ofs, length in self.walk_memory(addr, num_bytes):
+        for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
             pixarray = screen.pixels.pages[page].get_interval(x, y, length*8)
             #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
             byte_array[ofs:ofs+length] = (pixarray >> plane).packed(8)
@@ -1344,7 +1340,7 @@ class EGAMode(GraphicsMode):
         # return immediately for unused colour planes
         if mask == 0:
             return
-        for page, x, y, ofs, length in self.walk_memory(addr, len(byte_array)):
+        for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array)):
             #pixarray = bytes_to_interval(byte_array[ofs:ofs+length], self.ppb, mask)
             pixarray = (
                 bytematrix.ByteMatrix.frompacked(
@@ -1376,7 +1372,7 @@ class Tandy6Mode(GraphicsMode):
         self.bytes_per_row = self.pixel_width * 2 // 8
         self.video_segment = 0xb800
 
-    def get_coords(self, addr):
+    def _get_coords(self, addr):
         """Get video page and coordinates for address."""
         addr =  int(addr) - self.video_segment * 0x10
         page, addr = addr//self.page_size, addr%self.page_size
@@ -1395,7 +1391,7 @@ class Tandy6Mode(GraphicsMode):
         hbytes = bytearray(half_len), bytearray(half_len)
         for parity, byte_array in enumerate(hbytes):
             plane = parity ^ (addr % 2)
-            for page, x, y, ofs, length in self.walk_memory(addr, num_bytes, 2):
+            for page, x, y, ofs, length in self._walk_memory(addr, num_bytes, 2):
                 pixarray = screen.pixels.pages[page].get_interval(x, y, length * self.ppb * 2)
                 #hbytes[parity][ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb*2, plane)
                 byte_array[ofs:ofs+length] = (pixarray >> plane).packed(self.ppb * 2)
@@ -1410,7 +1406,7 @@ class Tandy6Mode(GraphicsMode):
         for parity, half in enumerate(hbytes):
             plane = parity ^ (addr % 2)
             mask = 2 ** plane
-            for page, x, y, ofs, length in self.walk_memory(addr, len(byte_array), 2):
+            for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array), 2):
                 #pixarray = bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self.ppb, mask)
                 pixarray = (
                     bytematrix.ByteMatrix.frompacked(

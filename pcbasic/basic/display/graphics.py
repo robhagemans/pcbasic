@@ -166,6 +166,10 @@ class Drawing(object):
 
     ### graphics primitives
 
+    def _cutoff_coord(self, x, y):
+        """Ensure coordinates are within screen + 1 pixel."""
+        return min(self._mode.pixel_width, max(-1, x)), min(self._mode.pixel_height, max(-1, y))
+
     def put_pixel(self, x, y, index, pagenum=None):
         """Put a pixel on the screen; empty character buffer."""
         if pagenum is None:
@@ -420,8 +424,8 @@ class Drawing(object):
     def draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
         """Draw a line between the given physical points."""
         # cut off any out-of-bound coordinates
-        x0, y0 = self._mode.cutoff_coord(x0, y0)
-        x1, y1 = self._mode.cutoff_coord(x1, y1)
+        x0, y0 = self._cutoff_coord(x0, y0)
+        x1, y1 = self._cutoff_coord(x1, y1)
         if y1 <= y0:
             # work from top to bottom, or from x1,y1 if at the same height. this matters for mask.
             x1, y1, x0, y0 = x0, y0, x1, y1
@@ -452,8 +456,8 @@ class Drawing(object):
 
     def draw_box_filled(self, x0, y0, x1, y1, c):
         """Draw a filled box between the given corner points."""
-        x0, y0 = self._mode.cutoff_coord(x0, y0)
-        x1, y1 = self._mode.cutoff_coord(x1, y1)
+        x0, y0 = self._cutoff_coord(x0, y0)
+        x1, y1 = self._cutoff_coord(x1, y1)
         if y1 < y0:
             y0, y1 = y1, y0
         if x1 < x0:
@@ -462,8 +466,8 @@ class Drawing(object):
 
     def draw_box(self, x0, y0, x1, y1, c, pattern=0xffff):
         """Draw an empty box between the given corner points."""
-        x0, y0 = self._mode.cutoff_coord(x0, y0)
-        x1, y1 = self._mode.cutoff_coord(x1, y1)
+        x0, y0 = self._cutoff_coord(x0, y0)
+        x1, y1 = self._cutoff_coord(x1, y1)
         mask = 0x8000
         mask = self.draw_straight(x1, y1, x0, y1, c, pattern, mask)
         mask = self.draw_straight(x1, y0, x0, y0, c, pattern, mask)
