@@ -22,20 +22,17 @@ from .framebuffer import PackedSpriteBuilder, PlanedSpriteBuilder
 class Video(object):
     """Mode factory."""
 
-    def __init__(self, capabilities, monitor, low_intensity, aspect, video_mem_size):
+    def __init__(self, capabilities, monitor, aspect, video_mem_size):
         """Initialise colour sets."""
         # public members - used by VideoMode
         # video adapter type - cga, ega, etc
         if capabilities == 'ega' and monitor in MONO_TINT:
             capabilities = 'ega_mono'
         self.capabilities = capabilities
-        # screen aspect ratio, for CIRCLE
-        self.aspect = aspect
-        # colourset preparations
         # emulated monitor type - rgb, composite, mono
         self.monitor = monitor
-        # CGA low intensity palette
-        self.low_intensity = low_intensity
+        # screen aspect ratio, for CIRCLE
+        self.aspect = aspect
         # set up text_data and mode_data
         self.prepare_modes(video_mem_size)
 
@@ -82,7 +79,7 @@ class Video(object):
                     if self.capabilities in ('pcjr', 'tandy')
                     else 1
                 ),
-                colourmap=CGA4ColourMapper(self.capabilities, self.monitor, self.low_intensity)
+                colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
             ),
             # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
             '640x200x2': CGAMode(
@@ -103,7 +100,7 @@ class Video(object):
                 '320x200x4pcjr', 320, 200, 25, 40, 3,
                 bitsperpixel=2, interleave_times=2, bank_size=0x2000,
                 num_pages=video_mem_size//(2*0x2000), aspect=self.aspect, cursor_index=3,
-                colourmap=CGA4ColourMapper(self.capabilities, self.monitor, self.low_intensity)
+                colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
             ),
             # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
             '320x200x16pcjr': CGAMode(
@@ -117,7 +114,7 @@ class Video(object):
                 '640x200x4', 640, 200, 25, 80, 3,
                 bitsperpixel=2, interleave_times=4, bank_size=0x2000,
                 num_pages=video_mem_size // (4*0x2000), aspect=self.aspect, cursor_index=3,
-                colourmap=CGA4ColourMapper(self.capabilities, self.monitor, self.low_intensity)
+                colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
             ),
             # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
             '320x200x16': EGAMode(

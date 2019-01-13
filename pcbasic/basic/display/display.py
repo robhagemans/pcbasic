@@ -26,7 +26,7 @@ class Display(object):
     def __init__(
             self, queues, values, input_methods, memory,
             initial_width, video_mem_size, capabilities, monitor, sound, io_streams,
-            low_intensity, screen_aspect, codepage, fonts
+            screen_aspect, codepage, fonts
         ):
         """Initialise the display."""
         self.queues = queues
@@ -34,7 +34,7 @@ class Display(object):
         self._memory = memory
         # low level settings
         self.video = Video(
-            capabilities, monitor, low_intensity, screen_aspect, video_mem_size
+            capabilities, monitor, screen_aspect, video_mem_size
         )
         self.capabilities = self.video.capabilities
         # video mode settings

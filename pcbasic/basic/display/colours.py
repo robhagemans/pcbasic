@@ -66,12 +66,6 @@ COLOURS64 = (
 # composite palettes
 # see http://nerdlypleasures.blogspot.co.uk/2013_11_01_archive.html
 COMPOSITE = {
-    'cga_old': (
-        (0x00, 0x00, 0x00), (0x00, 0x71, 0x00), (0x00, 0x3f, 0xff), (0x00, 0xab, 0xff),
-        (0xc3, 0x00, 0x67), (0x73, 0x73, 0x73), (0xe6, 0x39, 0xff), (0x8c, 0xa8, 0xff),
-        (0x53, 0x44, 0x00), (0x00, 0xcd, 0x00), (0x73, 0x73, 0x73), (0x00, 0xfc, 0x7e),
-        (0xff, 0x39, 0x00), (0xe2, 0xca, 0x00), (0xff, 0x7c, 0xf4), (0xff, 0xff, 0xff)
-    ),
     'cga': (
         (0x00, 0x00, 0x00), (0x00, 0x6a, 0x2c), (0x00, 0x39, 0xff), (0x00, 0x94, 0xff),
         (0xca, 0x00, 0x2c), (0x77, 0x77, 0x77), (0xff, 0x31, 0xff), (0xc0, 0x98, 0xff),
@@ -89,9 +83,15 @@ COMPOSITE = {
         (0x00, 0x76, 0x00), (0x77, 0x77, 0x77), (0x5b, 0xaa, 0x00), (0xff, 0xa5, 0x00),
         (0x00, 0x4e, 0xcb), (0x74, 0x53, 0xff), (0x77, 0x77, 0x77), (0xff, 0x79, 0xff),
         (0x00, 0xc8, 0x71), (0x00, 0xcc, 0xff), (0x00, 0xfa, 0x00), (0xff, 0xff, 0xff)
-    )
+    ),
+    # not used, retained for reference
+    'cga_old': (
+        (0x00, 0x00, 0x00), (0x00, 0x71, 0x00), (0x00, 0x3f, 0xff), (0x00, 0xab, 0xff),
+        (0xc3, 0x00, 0x67), (0x73, 0x73, 0x73), (0xe6, 0x39, 0xff), (0x8c, 0xa8, 0xff),
+        (0x53, 0x44, 0x00), (0x00, 0xcd, 0x00), (0x73, 0x73, 0x73), (0x00, 0xfc, 0x7e),
+        (0xff, 0x39, 0x00), (0xe2, 0xca, 0x00), (0xff, 0x7c, 0xf4), (0xff, 0xff, 0xff)
+    ),
 }
-
 
 
 # CGA mono intensities
@@ -166,6 +166,16 @@ class Palette(object):
         # reset the palette to reflect the new mono or mode-5 situation
         # this sends the signal to the interface as well
         self.reset()
+
+    def set_cga4_palette(self, num):
+        """Set the default 4-colour CGA palette."""
+        self._colourmap.set_cga4_palette(num)
+        self.submit()
+
+    def set_cga4_intensity(self, high):
+        """Set/unset the palette intensity."""
+        self._colourmap.set_cga4_intensity(high)
+        self.submit()
 
     def reset(self):
         """Initialise for new mode."""
@@ -290,6 +300,9 @@ class _ColourMapper(object):
 
     def set_cga4_palette(self, num):
         """Set the default 4-colour CGA palette."""
+
+    def set_cga4_intensity(self, high):
+        """Set/unset the palette intensity."""
 
     def set_colorswitch(self, colorswitch):
         """Set the SCREEN colorswitch parameter."""
@@ -433,13 +446,13 @@ class CGA16ColourMapper(_CGAColourMapper):
 class CGA4ColourMapper(_CGAColourMapper):
     """CGA 4-colour palettes, with colorburst setting, intensity setting and mode 5."""
 
-    def __init__(self, capabilities, monitor, low_intensity):
+    def __init__(self, capabilities, monitor):
         """Initialise colour map."""
         self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
         # pcjr/tandy does not have mode 5
-        self._tandy = capabilities not in ('pcjr', 'tandy')
+        self._tandy = capabilities in ('pcjr', 'tandy')
         self._has_mode_5 = capabilities in ('cga', 'cga_old')
-        self._low_intensity = low_intensity
+        self._low_intensity = False
         # start with the cyan-magenta-white palette
         self._palette_number = 1
         self._mode_5 = False
@@ -452,6 +465,12 @@ class CGA4ColourMapper(_CGAColourMapper):
     def set_cga4_palette(self, num):
         """Set the default 4-colour CGA palette."""
         self._palette_number = num % 2
+        self.reset_palette()
+
+    def set_cga4_intensity(self, high):
+        """Set/unset the palette intensity."""
+        self._low_intensity = not high
+        self.reset_palette()
 
     @property
     def default_palette(self):

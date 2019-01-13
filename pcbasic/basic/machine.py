@@ -162,10 +162,29 @@ class MachinePorts(object):
             # officially, requires OUT &H3CE, 4 first (not implemented)
             self._display.mode.memorymap.set_plane(val)
         elif addr == 0x3d8:
+            # CGA mode control register, see http://www.seasip.info/VintagePC/cga.html
+            # bit 5 - enable blink (1) show blink as bright background (0) (not implemented)
+            # bit 4 - select 640x200x2 mode (not implemented)
+            # bit 3 - (1) enable video output (0) disable, show all as background (not implemented)
+            # bit 2 - (1) disable colorburst (0) enable colorburst
+            # bit 1 - (1) graphics mode (0) text mode (not implemented)
+            # bit 0 - high resolution text (?) (not implemented)
             #OUT &H3D8,&H1A: REM enable color burst
             #OUT &H3D8,&H1E: REM disable color burst
             # 0x1a == 0001 1010     0x1e == 0001 1110
             self._display.palette.set_colorburst(val & 4 == 0)
+        elif addr == 0x3d9:
+            # CGA colour control register, see http://www.seasip.info/VintagePC/cga.html
+            # bit 5 - palette 0 = r/g/y 1 = c/m/y/k (320x200x4 only)
+            # bit 4 - 1 = high intensity 0 = low intensity (320x200x4 only)
+            # bits 3-0: Border / Background / Foreground (not implemented)
+            #    These 4 bits select one of the 16 CGA colours
+            #    (bit 3 = Intensity, Bit 2 = Red, Bit 1 = Green, Bit 0 = Blue).
+            #    In text modes, this colour is used for the border (overscan).
+            #    In 320x200 graphics modes, it is used for the background and border.
+            #    In 640x200 mode, it is used for the foreground colour.
+            self._display.palette.set_cga4_palette(bool(val & 0x10))
+            self._display.palette.set_cga4_intensity(bool(val & 0x8))
         elif addr in (0x378, 0x37A, 0x278, 0x27A):
             # parallel port output ports
             # http://www.aaroncake.net/electronics/qblpt.htm
