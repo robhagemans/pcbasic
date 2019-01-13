@@ -106,15 +106,11 @@ class Display(object):
         # signal the signals to change the screen resolution
         if (new_apagenum >= new_mode.num_pages or new_vpagenum >= new_mode.num_pages):
             raise error.BASICError(error.IFC)
-        if (
-                (not new_mode.is_text_mode and new_mode.name != self.mode.name) or
-                (new_mode.is_text_mode and not self.mode.is_text_mode) or
-                (new_mode.width != self.mode.width) or
-                (new_colorswitch != self.colorswitch) or force_reset
-            ):
+        # if mode or colorswitch changed, do a full reset
+        # otherwise only change pages
+        if force_reset or new_mode != self.mode or new_colorswitch != self.colorswitch:
             self._set_mode(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase)
         else:
-            # only switch pages
             self.set_page(new_vpagenum, new_apagenum)
 
     def _set_mode(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase):
@@ -132,15 +128,16 @@ class Display(object):
             )
         ))
         # switching to another text mode (width-only change)
-        width_only = (self.mode.is_text_mode and new_mode.is_text_mode)
+        width_only = self.mode.is_text_mode and new_mode.is_text_mode
         # attribute and border persist on width-only change
         # otherwise start with black border and default attr
         if (
-                not width_only or self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
+                not width_only
+                or self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
                 or self.colorswitch != new_colorswitch
             ):
             self.attr = new_mode.attr
-        if (not width_only and new_mode.name != self.mode.name):
+        if not width_only and new_mode != self.mode:
             self.set_border(0)
         # set the screen mode parameters
         self.mode = new_mode
@@ -159,7 +156,6 @@ class Display(object):
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # initialise text screen
-        # NOTE this requires active page to have beet set!
         self.text_screen.init_mode(self.mode, self.pixels, self.attr, new_vpagenum, new_apagenum)
         # restore emulated video memory in new mode
         if not erase:

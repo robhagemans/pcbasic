@@ -383,6 +383,13 @@ class VideoMode(object):
             (col1-col0+1) * self.font_width-1, (row1-row0+1) * self.font_height-1
         )
 
+    def __eq__(self, rhs):
+        """Check equality with another mode or mode name."""
+        if isinstance(rhs, VideoMode):
+            return self.name == rhs.name
+        else:
+            return self.name == rhs
+
 
 ##############################################################################
 # text modes
