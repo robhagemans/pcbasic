@@ -203,8 +203,7 @@ class Display(object):
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
-        # redefine number of available video pages
-        self.video.prepare_modes(new_size)
+        self.video.set_video_memory_size(new_size)
         # text screen modes don't depend on video memory size
         if self._mode_nr == 0:
             return

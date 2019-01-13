@@ -540,12 +540,20 @@ class EGA64ColourMapper(_ColourMapper):
 class EGA16TextColourMapper(_TextColourMixin, EGA16ColourMapper):
     """EGA 16-colour mapper for text."""
 
+
 class EGA64TextColourMapper(_TextColourMixin, EGA64ColourMapper):
     """EGA 64-colour mapper for text."""
+
+    # technically, VGA text does have underline
+    # but it's set to an invisible scanline
+    # so not, so long as we're not allowing to set the scanline
 
 
 class MonoTextColourMapper(_ColourMapper):
     """Attribute mapper for MDA-style text mode with underlining."""
+
+    # herc attributes shld distinguish black, dim, normal, bright
+    # see http://www.seasip.info/VintagePC/hercplus.html
 
     # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
     # The attribute bytes mostly behave like a bitmap:
