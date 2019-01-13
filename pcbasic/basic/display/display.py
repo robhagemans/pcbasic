@@ -225,10 +225,11 @@ class Display(object):
                     on and self.video.monitor == 'composite' and
                     (not self.mode.is_text_mode) and self.mode.name == '640x200x2'
                 ):
+                compo_palette = tuple((_c, _c, False, False) for _c in COMPOSITE[self.capabilities])
                 # set a composite palette
                 self.queues.video.put(signals.Event(
                     signals.VIDEO_SET_PALETTE,
-                    (COMPOSITE[self.capabilities], None, (4, self.mode.bitsperpixel))
+                    (compo_palette, (4, self.mode.bitsperpixel))
                 ))
             else:
                 # set normal palette
