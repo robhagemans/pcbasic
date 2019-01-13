@@ -146,7 +146,7 @@ class VideoPygame(VideoPlugin):
             pygame.display.set_caption(self.caption)
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
-        self.set_palette([(0,0,0)]*16, None, None)
+        self.set_palette([((0,0,0), (0,0,0), False, False)]*16, None)
         pygame.joystick.init()
         self.joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
         for j in self.joysticks:
@@ -471,7 +471,7 @@ class VideoPygame(VideoPlugin):
 
     def set_mode(
             self, num_pages, canvas_height, canvas_width, text_height, text_width,
-            num_attr, enable_blink, text_cursor
+            num_attr, text_cursor
         ):
         """Initialise a given text or graphics mode."""
         self.text_cursor = text_cursor
@@ -479,7 +479,8 @@ class VideoPygame(VideoPlugin):
         self.font_height = canvas_height // text_height
         self.font_width = canvas_width // text_width
         self.num_pages = num_pages
-        self.mode_has_blink = enable_blink
+        # this assumes only text modes have blink
+        self.mode_has_blink = text_cursor
         # logical size
         self.size = canvas_width, canvas_height
         self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
@@ -511,21 +512,17 @@ class VideoPygame(VideoPlugin):
         """Put text on the clipboard."""
         self.clipboard_handler.copy(text)
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
+    def set_palette(self, attributes, pack_pixels):
         """Build the palette."""
-        self.num_fore_attrs = min(16, len(rgb_palette_0))
-        self.num_back_attrs = min(8, self.num_fore_attrs)
-        rgb_palette_1 = rgb_palette_1 or rgb_palette_0
+        self.num_fore_attrs = 16
+        self.num_back_attrs = 8
         # fill up the 8-bit palette with all combinations we need
         # blink states: 0 light up, 1 light down
         # bottom 128 are non-blink, top 128 blink to background
-        self._palette[0] = rgb_palette_0[:self.num_fore_attrs] * (256//self.num_fore_attrs)
-        self._palette[1] = rgb_palette_1[:self.num_fore_attrs] * (128//self.num_fore_attrs)
-        for b in (
-                rgb_palette_1[:self.num_back_attrs] *
-                (128 // self.num_fore_attrs // self.num_back_attrs)
-            ):
-            self._palette[1] += [b]*self.num_fore_attrs
+        self._palette[0] = [_fore for _fore, _, _, _ in attributes]
+        self._palette[1] = [_back if _blink else _fore for _fore, _back, _blink, _ in attributes]
+        if self._palette[0] != self._palette[1]:
+            self.mode_has_blink = True
         self._pixel_packing = pack_pixels
         self.busy = True
 

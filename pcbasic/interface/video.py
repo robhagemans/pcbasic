@@ -91,7 +91,7 @@ class VideoPlugin(object):
 
     def set_mode(
             self, num_pages, canvas_height, canvas_width, text_height, text_width,
-            num_attr, enable_blink, text_cursor
+            num_attr, text_cursor
         ):
         """Initialise a given text or graphics mode."""
 
@@ -101,7 +101,7 @@ class VideoPlugin(object):
     def set_clipboard_text(self, text):
         """Put text on the clipboard."""
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
+    def set_palette(self, attributes, pack_pixels):
         """Build the palette."""
 
     def set_border_attr(self, attr):

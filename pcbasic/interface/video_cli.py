@@ -273,7 +273,7 @@ class VideoCLI(VideoTextBase):
 
     def set_mode(
             self, num_pages, canvas_height, canvas_width, text_height, text_width,
-            num_attr, enable_blink, text_cursor
+            num_attr, text_cursor
         ):
         """Initialise video mode """
         self._text = [
