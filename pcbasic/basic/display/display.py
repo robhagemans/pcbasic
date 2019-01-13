@@ -66,7 +66,7 @@ class Display(object):
         ):
         """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
-        self.palette.init_mode(self.mode)
+        self.palette.reset()
         # set default arguments
         new_mode_nr = self._mode_nr if (new_mode_nr is None) else new_mode_nr
         # set colorswitch
@@ -217,7 +217,7 @@ class Display(object):
         self.mode.colourmap.set_colorburst(on)
         # reset the palette to reflect the new mono or mode-5 situation
         # this sends the signal to the interface as well
-        self.palette.init_mode(self.mode)
+        self.palette.reset()
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""

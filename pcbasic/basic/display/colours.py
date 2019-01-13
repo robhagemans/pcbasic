@@ -111,11 +111,6 @@ INTENSITY_EGA_MONO = (0x00, 0xaa, 0xff)
 EGA_MONO_PALETTE = (0, 4, 1, 8)
 
 
-# this is actually ignored, see MonoTextMode class
-# remove after refactoring
-MDA_PALETTE = (0,) * 16
-
-
 #######################################################################################
 # tinted monochrome monitors
 
@@ -157,25 +152,29 @@ class Palette(object):
         self._mode = mode
         # map from fore/back attr to video adapter colour
         # interpretation is video mode dependent
-        self._palette = list(mode.colourmap.default_palette)
+        self._mode.colourmap.reset_palette()
         self.submit()
 
     def init_mode(self, mode):
         """Initialise for new mode."""
         self._mode = mode
-        self._palette = list(mode.colourmap.default_palette)
+        self.reset()
+
+    def reset(self):
+        """Initialise for new mode."""
+        self._mode.colourmap.reset_palette()
         self.submit()
 
     def set_all(self, new_palette, force=False):
         """Set the colours for all attributes."""
         if force or self._mode_allows_palette():
-            self._palette = list(new_palette)
+            self._mode.colourmap.palette = list(new_palette)
             self.submit()
 
     def set_entry(self, index, colour, force=False):
         """Set a new colour for a given attribute."""
         if force or self._mode_allows_palette():
-            self._palette[index] = colour
+            self._mode.colourmap.palette[index] = colour
             # in text mode, we'd be setting more than one attribute
             # e.g. all true attributes with this number as foreground or background
             # and attr_to_rgb decides which
@@ -184,14 +183,14 @@ class Palette(object):
     def submit(self):
         """Submit to interface."""
         # all attributes split into foreground RGB, background RGB, blink and underline
-        rgb_table, compo_parms = self._mode.colourmap.get_rgb_table(self._palette)
+        rgb_table, compo_parms = self._mode.colourmap.get_rgb_table()
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_PALETTE, (rgb_table, compo_parms)
         ))
 
     def get_entry(self, index):
         """Retrieve the colour for a given attribute."""
-        return self._palette[index]
+        return self._mode.colourmap.palette[index]
 
     def _mode_allows_palette(self):
         """Check if the video mode allows palette change."""
@@ -230,6 +229,11 @@ class ColourMapper(object):
         if monitor in MONO_TINT:
             self.mono = monitor in MONO_TINT
             self.mono_tint = MONO_TINT[monitor]
+        self.palette = list(self.default_palette)
+
+    def reset_palette(self):
+        """Reset to default palette."""
+        self.palette = list(self.default_palette)
 
     @property
     def num_palette(self):
@@ -257,16 +261,16 @@ class ColourMapper(object):
         """Join constituent parts into textmode attribute byte."""
         return fore & 0xf
 
-    def get_rgb_table(self, palette):
+    def get_rgb_table(self):
         """List of RGB/blink/underline for all attributes, given a palette."""
         return (
-            [self.attr_to_rgb(_attr, palette) for _attr in range(self.num_attr)],
+            [self.attr_to_rgb(_attr) for _attr in range(self.num_attr)],
             None
         )
 
-    def attr_to_rgb(self, attr, palette):
+    def attr_to_rgb(self, attr):
         """Convert attribute to RGB/blink/underline, given a palette."""
-        rgb = _adjust_tint(self._colours[palette[attr]], self.mono_tint, self.mono)
+        rgb = _adjust_tint(self._colours[self.palette[attr]], self.mono_tint, self.mono)
         return rgb, rgb, False, False
 
     def get_cga4_palette(self):
@@ -307,11 +311,11 @@ class TextColourMixin(object):
         """Join constituent parts into textmode attribute byte."""
         return ((blink & 1) << 7) + ((back & 7) << 4) + (fore & 0xf)
 
-    def attr_to_rgb(self, attr, palette):
+    def attr_to_rgb(self, attr):
         """Convert attribute to RGB/blink/underline, given a palette."""
         fore, back, blink, underline = self.split_attr(attr)
-        fore_rgb = _adjust_tint(self._colours[palette[fore]], self.mono_tint, self.mono)
-        back_rgb = _adjust_tint(self._colours[palette[back]], self.mono_tint, self.mono)
+        fore_rgb = _adjust_tint(self._colours[self.palette[fore]], self.mono_tint, self.mono)
+        back_rgb = _adjust_tint(self._colours[self.palette[back]], self.mono_tint, self.mono)
         return fore_rgb, back_rgb, blink, underline
 
 
@@ -381,13 +385,13 @@ class CGA2ColourMapper(_CGAColourMapper):
         else:
             return len(self.default_palette)
 
-    def get_rgb_table(self, palette):
+    def get_rgb_table(self):
         """List of RGB/blink/underline for all attributes, given a palette."""
         if self._composite:
             compo_palette = tuple((_c, _c, False, False) for _c in COMPOSITE[self._composite])
             # 4bpp composite (16 shades), 1bpp original
             return (compo_palette, (4, 1))
-        return _CGAColourMapper.get_rgb_table(self, palette)
+        return _CGAColourMapper.get_rgb_table(self)
 
 
 class CGA16ColourMapper(_CGAColourMapper):
@@ -524,7 +528,9 @@ class MonoTextColourMapper(ColourMapper):
     @property
     def default_palette(self):
         """Default palette."""
-        return MDA_PALETTE
+        # this is actually ignored
+        # remove after refactoring
+        return (0,) * 16
 
     @property
     def num_palette(self):
