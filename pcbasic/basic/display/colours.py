@@ -184,9 +184,9 @@ class Palette(object):
     def submit(self):
         """Submit to interface."""
         # all attributes split into foreground RGB, background RGB, blink and underline
-        rgb_table = self._mode.colourmap.get_rgb_table(self._palette)
+        rgb_table, compo_parms = self._mode.colourmap.get_rgb_table(self._palette)
         self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_PALETTE, (rgb_table, None)
+            signals.VIDEO_SET_PALETTE, (rgb_table, compo_parms)
         ))
 
     def get_entry(self, index):
@@ -259,10 +259,10 @@ class ColourMapper(object):
 
     def get_rgb_table(self, palette):
         """List of RGB/blink/underline for all attributes, given a palette."""
-        return [
-            self.attr_to_rgb(_attr, palette)
-            for _attr in range(self.num_attr)
-        ]
+        return (
+            [self.attr_to_rgb(_attr, palette) for _attr in range(self.num_attr)],
+            None
+        )
 
     def attr_to_rgb(self, attr, palette):
         """Convert attribute to RGB/blink/underline, given a palette."""
@@ -340,7 +340,7 @@ class _CGAColourMapper(ColourMapper):
             self.mono = True
             self.mono_tint = MONO_TINT[monitor]
         # rgb monitor
-        self._force_colour = monitor not in ('mono', 'composite')
+        self._force_colour = not self._force_mono and monitor != 'composite'
 
     def set_colorburst(self, colour_on):
         """Set the NTSC colorburst bit."""
@@ -358,6 +358,36 @@ class CGA2ColourMapper(_CGAColourMapper):
     """CGA 2-colour palettes."""
 
     default_palette = CGA2_PALETTE
+
+    # overrides to deal with NTSC composite artifacts
+
+    def __init__(self, capabilities, monitor):
+        """CGA 4-colour palette / mode 5 / composite settings"""
+        _CGAColourMapper.__init__(self, capabilities, monitor)
+        self._has_composite = monitor == 'composite' and self._has_colorburst and capabilities
+        self._composite = False
+
+    def set_colorburst(self, colour_on):
+        """Set the NTSC colorburst bit."""
+        # On a composite monitor with CGA adapter (not EGA, VGA):
+        # - on SCREEN 2 this enables artifacting
+        self._composite = colour_on and self._has_composite
+
+    @property
+    def num_attr(self):
+        """Number of attributes."""
+        if self._composite:
+            return len(COMPOSITE[self._composite])
+        else:
+            return len(self.default_palette)
+
+    def get_rgb_table(self, palette):
+        """List of RGB/blink/underline for all attributes, given a palette."""
+        if self._composite:
+            compo_palette = tuple((_c, _c, False, False) for _c in COMPOSITE[self._composite])
+            # 4bpp composite (16 shades), 1bpp original
+            return (compo_palette, (4, 1))
+        return _CGAColourMapper.get_rgb_table(self, palette)
 
 
 class CGA16ColourMapper(_CGAColourMapper):
@@ -418,11 +448,9 @@ class CGA4ColourMapper(_CGAColourMapper):
         if not self._has_colorburst:
             return
         # On a composite monitor with CGA adapter (not EGA, VGA):
-        # - on SCREEN 2 this enables artifacting
         # - on SCREEN 1 and 0 this switches between colour and greyscale
         # On an RGB monitor:
         # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
-        # - ignored on other screens
         if self._force_colour:
             # ega ignores colorburst; tandy and pcjr have no mode 5
             self._mode_5 = not colour_on

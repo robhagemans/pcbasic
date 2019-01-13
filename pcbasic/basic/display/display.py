@@ -14,7 +14,7 @@ from .. import values
 from . import graphics
 from . import modes
 
-from .colours import Palette, COMPOSITE
+from .colours import Palette
 from .textscreen import TextScreen
 from .pixels import PixelBuffer
 from .modes import Video
@@ -213,27 +213,11 @@ class Display(object):
             self.set_colorburst(False)
 
     def set_colorburst(self, on=True):
-        """Set the composite colorburst bit."""
+        """Set the NTSC colorburst bit."""
         self.mode.colourmap.set_colorburst(on)
         # reset the palette to reflect the new mono or mode-5 situation
         # this sends the signal to the interface as well
         self.palette.init_mode(self.mode)
-        # don't try composite unless our video card supports it
-        # only '640x200x2' currently supports artifacts
-        if self.capabilities in COMPOSITE:
-            if (
-                    on and self.video.monitor == 'composite' and
-                    (not self.mode.is_text_mode) and self.mode.name == '640x200x2'
-                ):
-                compo_palette = tuple((_c, _c, False, False) for _c in COMPOSITE[self.capabilities])
-                # set a composite palette
-                self.queues.video.put(signals.Event(
-                    signals.VIDEO_SET_PALETTE,
-                    (compo_palette, (4, self.mode.bitsperpixel))
-                ))
-            else:
-                # set normal palette
-                self.palette.submit()
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
