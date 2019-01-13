@@ -139,10 +139,10 @@ class Display(object):
             self.set_border(0)
         # set the screen mode parameters
         self.mode, self._mode_nr = new_mode, new_mode_nr
-        # initialise the palette
-        self.palette.init_mode(self.mode)
         # set the colorswitch
-        self._init_mode_colorburst(new_colorswitch)
+        self.colorswitch = new_colorswitch
+        # initialise the palette
+        self.palette.init_mode(self.mode, self.colorswitch)
         # initialise pixel buffers
         if not self.mode.is_text_mode:
             self.pixels = PixelBuffer(
@@ -200,24 +200,6 @@ class Display(object):
                 self.screen(8, None, 0, 0)
         else:
             raise error.BASICError(error.IFC)
-
-    def _init_mode_colorburst(self, new_colorswitch):
-        """Initialise colorburst settings for new screen mode and colorswitch."""
-        self.colorswitch = new_colorswitch
-        # in screen 0, 1, set colorburst (not in SCREEN 2!)
-        if self.mode.is_text_mode:
-            self.set_colorburst(new_colorswitch)
-        elif self.mode.name == '320x200x4':
-            self.set_colorburst(not new_colorswitch)
-        elif self.mode.name == '640x200x2':
-            self.set_colorburst(False)
-
-    def set_colorburst(self, on=True):
-        """Set the NTSC colorburst bit."""
-        self.mode.colourmap.set_colorburst(on)
-        # reset the palette to reflect the new mono or mode-5 situation
-        # this sends the signal to the interface as well
-        self.palette.reset()
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""

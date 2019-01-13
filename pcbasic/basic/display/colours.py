@@ -154,9 +154,17 @@ class Palette(object):
         self._colourmap.reset_palette()
         self.submit()
 
-    def init_mode(self, mode):
-        """Initialise for new mode."""
+    def init_mode(self, mode, colorswitch):
+        """Initialise for new mode and colorswitch parameter."""
         self._colourmap = mode.colourmap
+        self._colourmap.set_colorswitch(colorswitch)
+        self.reset()
+
+    def set_colorburst(self, on=True):
+        """Set the NTSC colorburst bit (machine port &h03d8)."""
+        self._colourmap.set_colorburst(on)
+        # reset the palette to reflect the new mono or mode-5 situation
+        # this sends the signal to the interface as well
         self.reset()
 
     def reset(self):
@@ -283,6 +291,12 @@ class ColourMapper(object):
     def set_cga4_palette(self, num):
         """Set the default 4-colour CGA palette."""
 
+    def set_colorswitch(self, colorswitch):
+        """Set the SCREEN colorswitch parameter."""
+        # in SCREEN 0, set the colorburst
+        # in SCREEN 1, set the colorburst (inverted)
+        # in SCREEN 2, ignore parameter and turn off colorburst
+
     def set_colorburst(self, on):
         """Set the NTSC colorburst bit."""
         # not colourburst capable
@@ -320,6 +334,10 @@ class TextColourMixin(object):
         fore_rgb = _adjust_tint(self._colours[self.palette[fore]], self.mono_tint, self.mono)
         back_rgb = _adjust_tint(self._colours[self.palette[back]], self.mono_tint, self.mono)
         return fore_rgb, back_rgb, blink, underline
+
+    def set_colorswitch(self, colorswitch):
+        """Set the SCREEN colorswitch parameter."""
+        self.set_colorburst(colorswitch)
 
 
 class HerculesColourMapper(ColourMapper):
@@ -363,6 +381,12 @@ class CGA2ColourMapper(_CGAColourMapper):
     """CGA 2-colour palettes."""
 
     default_palette = CGA2_PALETTE
+
+    def set_colorswitch(self, colorswitch):
+        """Set the SCREEN colorswitch parameter."""
+        # in SCREEN 2 the colorswitch parameter has no effect
+        # the color burst can only be changed through the CGA mode control register at port 03D8h
+        self.set_colorburst(False)
 
     # overrides to deal with NTSC composite artifacts
 
@@ -447,6 +471,11 @@ class CGA4ColourMapper(_CGAColourMapper):
                 return CGA4_HI_PALETTE_1
             else:
                 return CGA4_HI_PALETTE_0
+
+    def set_colorswitch(self, colorswitch):
+        """Set the SCREEN colorswitch parameter."""
+        # in SCREEN 1 the SCREEN colorswitch parameter works the other way around
+        self.set_colorburst(not colorswitch)
 
     def set_colorburst(self, colour_on):
         """Set the NTSC colorburst bit."""

@@ -165,7 +165,7 @@ class MachinePorts(object):
             #OUT &H3D8,&H1A: REM enable color burst
             #OUT &H3D8,&H1E: REM disable color burst
             # 0x1a == 0001 1010     0x1e == 0001 1110
-            self._display.set_colorburst(val & 4 == 0)
+            self._display.palette.set_colorburst(val & 4 == 0)
         elif addr in (0x378, 0x37A, 0x278, 0x27A):
             # parallel port output ports
             # http://www.aaroncake.net/electronics/qblpt.htm
