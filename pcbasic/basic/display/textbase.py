@@ -91,6 +91,13 @@ class Cursor(object):
     def show(self, do_show):
         """Force cursor to be visible/invisible."""
         self._visible = do_show
+        if do_show:
+            # update position and looks
+            row, column = self._position
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_MOVE_CURSOR, (row, column, self._fore_attr, self._width)
+            ))
+        # show or hide the cursor
         self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (do_show,)))
 
     def move(self, new_row, new_column, new_attr=None, new_width=None):
@@ -134,8 +141,7 @@ class Cursor(object):
         if self._mode.is_text_mode:
             visible = visible or self._visible_run
         if self._visible != visible:
-            self._visible = visible
-            self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (visible,)))
+            self.show(visible)
 
     @property
     def shape(self):
