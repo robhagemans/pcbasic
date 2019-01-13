@@ -143,38 +143,37 @@ def _adjust_tint(rgb, mono_tint, mono):
 # palette
 
 class Palette(object):
-    """Colour palette."""
+    """Wrapper for ColourMapper to submit to interface on palette changes."""
 
-    def __init__(self, queues, mode, capabilities):
+    def __init__(self, queues, mode):
         """Initialise palette."""
-        self._capabilities = capabilities
         self._queues = queues
-        self._mode = mode
+        self._colourmap = mode.colourmap
         # map from fore/back attr to video adapter colour
         # interpretation is video mode dependent
-        self._mode.colourmap.reset_palette()
+        self._colourmap.reset_palette()
         self.submit()
 
     def init_mode(self, mode):
         """Initialise for new mode."""
-        self._mode = mode
+        self._colourmap = mode.colourmap
         self.reset()
 
     def reset(self):
         """Initialise for new mode."""
-        self._mode.colourmap.reset_palette()
+        self._colourmap.reset_palette()
         self.submit()
 
     def set_all(self, new_palette, force=False):
         """Set the colours for all attributes."""
-        if force or self._mode_allows_palette():
-            self._mode.colourmap.palette = list(new_palette)
+        if force or self._colourmap.allows_palette_change():
+            self._colourmap.palette = list(new_palette)
             self.submit()
 
     def set_entry(self, index, colour, force=False):
         """Set a new colour for a given attribute."""
-        if force or self._mode_allows_palette():
-            self._mode.colourmap.palette[index] = colour
+        if force or self._colourmap.allows_palette_change():
+            self._colourmap.palette[index] = colour
             # in text mode, we'd be setting more than one attribute
             # e.g. all true attributes with this number as foreground or background
             # and attr_to_rgb decides which
@@ -183,25 +182,14 @@ class Palette(object):
     def submit(self):
         """Submit to interface."""
         # all attributes split into foreground RGB, background RGB, blink and underline
-        rgb_table, compo_parms = self._mode.colourmap.get_rgb_table()
+        rgb_table, compo_parms = self._colourmap.get_rgb_table()
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_PALETTE, (rgb_table, compo_parms)
         ))
 
     def get_entry(self, index):
         """Retrieve the colour for a given attribute."""
-        return self._mode.colourmap.palette[index]
-
-    def _mode_allows_palette(self):
-        """Check if the video mode allows palette change."""
-        # effective palette change is an error in CGA
-        if self._capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
-            raise error.BASICError(error.IFC)
-        # ignore palette changes in Tandy/PCjr SCREEN 0
-        elif self._capabilities in ('tandy', 'pcjr') and self._mode.is_text_mode:
-            return False
-        else:
-            return True
+        return self._colourmap.palette[index]
 
 
 ###############################################################################
@@ -224,12 +212,27 @@ class ColourMapper(object):
     mono_tint = MONO_TINT['mono']
     mono = False
 
-    def __init__(self, monitor):
+    def __init__(self, capabilities, monitor):
         """CGA 4-colour palette / mode 5 settings"""
         if monitor in MONO_TINT:
             self.mono = monitor in MONO_TINT
             self.mono_tint = MONO_TINT[monitor]
         self.palette = list(self.default_palette)
+        # policy on PALETTE changes
+        # effective palette change is an error in CGA
+        if capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
+            self._palette_change_policy = 'error'
+        # ignore palette changes in Tandy/PCjr SCREEN 0
+        elif capabilities in ('tandy', 'pcjr') and self.num_attr == 256:
+            self._palette_change_policy = 'deny'
+        else:
+            self._palette_change_policy = 'allow'
+
+    def allows_palette_change(self):
+        """Check if the video mode allows palette change."""
+        if self._palette_change_policy == 'error':
+            raise error.BASICError(error.IFC)
+        return self._palette_change_policy != 'deny'
 
     def reset_palette(self):
         """Reset to default palette."""
@@ -337,12 +340,10 @@ class _CGAColourMapper(ColourMapper):
 
     def __init__(self, capabilities, monitor):
         """CGA 4-colour palette / mode 5 settings"""
+        ColourMapper.__init__(self, capabilities, monitor)
         self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
         # monochrome
         self._force_mono = monitor in MONO_TINT
-        if self._force_mono:
-            self.mono = True
-            self.mono_tint = MONO_TINT[monitor]
         # rgb monitor
         self._force_colour = not self._force_mono and monitor != 'composite'
 
@@ -405,7 +406,6 @@ class CGA4ColourMapper(_CGAColourMapper):
 
     def __init__(self, capabilities, monitor, low_intensity):
         """CGA 4-colour palette / mode 5 settings"""
-        _CGAColourMapper.__init__(self, capabilities, monitor)
         self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
         # pcjr/tandy does not have mode 5
         self._tandy = capabilities not in ('pcjr', 'tandy')
@@ -414,6 +414,7 @@ class CGA4ColourMapper(_CGAColourMapper):
         # start with the cyan-magenta-white palette
         self._palette_number = 1
         self._mode_5 = False
+        _CGAColourMapper.__init__(self, capabilities, monitor)
 
     def get_cga4_palette(self):
         """CGA palette setting (accessible from memory)."""

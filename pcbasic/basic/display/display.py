@@ -53,7 +53,7 @@ class Display(object):
         # graphics operations
         self.drawing = graphics.Drawing(self.queues, input_methods, self._values, self._memory)
         # colour palette
-        self.palette = Palette(self.queues, self.mode, self.capabilities)
+        self.palette = Palette(self.queues, self.mode)
         # initialise a fresh textmode screen
         self._set_mode(self.mode, 0, 1, 0, 0)
 
