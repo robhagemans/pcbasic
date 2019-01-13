@@ -203,7 +203,7 @@ class Palette(object):
 ###############################################################################
 # colour mappers
 
-class ColourMapper(object):
+class _ColourMapper(object):
     """Palette and colourset."""
 
     # override these
@@ -217,14 +217,14 @@ class ColourMapper(object):
     _colours = ()
 
     # interpret colours as monochrome intensity
-    mono_tint = MONO_TINT['mono']
-    mono = False
+    _mono_tint = MONO_TINT['mono']
+    _mono = False
 
     def __init__(self, capabilities, monitor):
-        """CGA 4-colour palette / mode 5 settings"""
+        """Initialise colour map."""
         if monitor in MONO_TINT:
-            self.mono = monitor in MONO_TINT
-            self.mono_tint = MONO_TINT[monitor]
+            self._mono = monitor in MONO_TINT
+            self._mono_tint = MONO_TINT[monitor]
         self.palette = list(self.default_palette)
         # policy on PALETTE changes
         # effective palette change is an error in CGA
@@ -281,7 +281,7 @@ class ColourMapper(object):
 
     def attr_to_rgb(self, attr):
         """Convert attribute to RGB/blink/underline, given a palette."""
-        rgb = _adjust_tint(self._colours[self.palette[attr]], self.mono_tint, self.mono)
+        rgb = _adjust_tint(self._colours[self.palette[attr]], self._mono_tint, self._mono)
         return rgb, rgb, False, False
 
     def get_cga4_palette(self):
@@ -303,7 +303,7 @@ class ColourMapper(object):
         return False
 
 
-class TextColourMixin(object):
+class _TextColourMixin(object):
     """Translate text attributes to palette attributes."""
 
     @property
@@ -331,8 +331,8 @@ class TextColourMixin(object):
     def attr_to_rgb(self, attr):
         """Convert attribute to RGB/blink/underline, given a palette."""
         fore, back, blink, underline = self.split_attr(attr)
-        fore_rgb = _adjust_tint(self._colours[self.palette[fore]], self.mono_tint, self.mono)
-        back_rgb = _adjust_tint(self._colours[self.palette[back]], self.mono_tint, self.mono)
+        fore_rgb = _adjust_tint(self._colours[self.palette[fore]], self._mono_tint, self._mono)
+        back_rgb = _adjust_tint(self._colours[self.palette[back]], self._mono_tint, self._mono)
         return fore_rgb, back_rgb, blink, underline
 
     def set_colorswitch(self, colorswitch):
@@ -340,25 +340,24 @@ class TextColourMixin(object):
         self.set_colorburst(colorswitch)
 
 
-class HerculesColourMapper(ColourMapper):
+class HerculesColourMapper(_ColourMapper):
     """Hercules 16-greyscale palette."""
 
     # Hercules graphics has no PALETTE
     # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
     default_palette = (0, 1)
     _colours = ((0, 0, 0), (255, 255, 255))
-    num_attr = 2
-    mono = True
+    _mono = True
 
 
-class _CGAColourMapper(ColourMapper):
+class _CGAColourMapper(_ColourMapper):
     """CGA 2-colour, 16-colour palettes."""
 
     _colours = COLOURS16
 
     def __init__(self, capabilities, monitor):
-        """CGA 4-colour palette / mode 5 settings"""
-        ColourMapper.__init__(self, capabilities, monitor)
+        """Initialise colour map."""
+        _ColourMapper.__init__(self, capabilities, monitor)
         self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
         # monochrome
         self._force_mono = monitor in MONO_TINT
@@ -374,25 +373,14 @@ class _CGAColourMapper(ColourMapper):
         # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
         # - ignored on other screens
         if self._has_colorburst:
-            self.mono = self._force_mono or (not colour_on and not self._force_colour)
+            self._mono = self._force_mono or (not colour_on and not self._force_colour)
 
 
-class CGA2ColourMapper(_CGAColourMapper):
-    """CGA 2-colour palettes."""
-
-    default_palette = CGA2_PALETTE
-
-    def set_colorswitch(self, colorswitch):
-        """Set the SCREEN colorswitch parameter."""
-        # in SCREEN 2 the colorswitch parameter has no effect
-        # the color burst can only be changed through the CGA mode control register at port 03D8h
-        self.set_colorburst(False)
-
-    # overrides to deal with NTSC composite artifacts
+class _CompositeMixin(object):
+    """Overrides to deal with NTSC composite artifacts."""
 
     def __init__(self, capabilities, monitor):
-        """CGA 4-colour palette / mode 5 / composite settings"""
-        _CGAColourMapper.__init__(self, capabilities, monitor)
+        """Initialise colour map."""
         self._has_composite = monitor == 'composite' and self._has_colorburst and capabilities
         self._composite = False
 
@@ -419,6 +407,23 @@ class CGA2ColourMapper(_CGAColourMapper):
         return _CGAColourMapper.get_rgb_table(self)
 
 
+class CGA2ColourMapper(_CompositeMixin, _CGAColourMapper):
+    """CGA 2-colour palettes, with composite support."""
+
+    default_palette = CGA2_PALETTE
+
+    def __init__(self, capabilities, monitor):
+        """Initialise colour map."""
+        _CompositeMixin.__init__(self, capabilities, monitor)
+        _CGAColourMapper.__init__(self, capabilities, monitor)
+
+    def set_colorswitch(self, colorswitch):
+        """Set the SCREEN colorswitch parameter."""
+        # in SCREEN 2 the colorswitch parameter has no effect
+        # the color burst can only be changed through the CGA mode control register at port 03D8h
+        self.set_colorburst(False)
+
+
 class CGA16ColourMapper(_CGAColourMapper):
     """CGA 16-colour palettes."""
 
@@ -426,10 +431,10 @@ class CGA16ColourMapper(_CGAColourMapper):
 
 
 class CGA4ColourMapper(_CGAColourMapper):
-    """CGA 4-colour palettes."""
+    """CGA 4-colour palettes, with colorburst setting, intensity setting and mode 5."""
 
     def __init__(self, capabilities, monitor, low_intensity):
-        """CGA 4-colour palette / mode 5 settings"""
+        """Initialise colour map."""
         self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
         # pcjr/tandy does not have mode 5
         self._tandy = capabilities not in ('pcjr', 'tandy')
@@ -490,10 +495,10 @@ class CGA4ColourMapper(_CGAColourMapper):
             self._mode_5 = not colour_on
             self.set_cga4_palette(1)
         else:
-            self.mono = self._force_mono or not colour_on
+            self._mono = self._force_mono or not colour_on
 
 
-class EGA16ColourMapper(ColourMapper):
+class EGA16ColourMapper(_ColourMapper):
     """EGA 16-colour mapper."""
 
     #if num_attr == 4
@@ -506,21 +511,21 @@ class EGA16ColourMapper(ColourMapper):
     default_palette = CGA16_PALETTE
 
 
-class EGA64ColourMapper(ColourMapper):
+class EGA64ColourMapper(_ColourMapper):
     """EGA 64-colour mapper."""
 
     _colours = COLOURS64
     default_palette = EGA_PALETTE
 
 
-class EGA16TextColourMapper(TextColourMixin, EGA16ColourMapper):
+class EGA16TextColourMapper(_TextColourMixin, EGA16ColourMapper):
     """EGA 16-colour mapper for text."""
 
-class EGA64TextColourMapper(TextColourMixin, EGA64ColourMapper):
+class EGA64TextColourMapper(_TextColourMixin, EGA64ColourMapper):
     """EGA 64-colour mapper for text."""
 
 
-class MonoTextColourMapper(ColourMapper):
+class MonoTextColourMapper(_ColourMapper):
     """Attribute mapper for MDA-style text mode with underlining."""
 
     # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
@@ -588,12 +593,12 @@ class MonoTextColourMapper(ColourMapper):
         """Convert colour attribute to RGB/blink/underline, given a palette."""
         fore, back, blink, underline = self.split_attr(attr)
         # palette is ignored
-        fore_rgb = _adjust_tint(self._colours[fore], self.mono_tint, self.mono)
-        back_rgb = _adjust_tint(self._colours[back], self.mono_tint, self.mono)
+        fore_rgb = _adjust_tint(self._colours[fore], self._mono_tint, self._mono)
+        back_rgb = _adjust_tint(self._colours[back], self._mono_tint, self._mono)
         return fore_rgb, back_rgb, blink, underline
 
 
-class EGAMonoColourMapper(ColourMapper):
+class EGAMonoColourMapper(_ColourMapper):
     """Colour mapper for EGA monochrome graphics mode (mode 10)."""
 
     # from GW-BASIC manual:
@@ -625,7 +630,7 @@ class EGAMonoColourMapper(ColourMapper):
         """Convert colour attribute to RGB/blink/underline, given a palette."""
         fore, back = self._pseudocolours[palette[attr] % len(self._pseudocolours)]
         # intensity 0, 1, 2 to RGB; apply mono tint
-        fore_rgb = _adjust_tint(self._colours[fore], self.mono_tint, self.mono)
-        back_rgb = _adjust_tint(self._colours[back], self.mono_tint, self.mono)
+        fore_rgb = _adjust_tint(self._colours[fore], self._mono_tint, self._mono)
+        back_rgb = _adjust_tint(self._colours[back], self._mono_tint, self._mono)
         # fore, back, blink, underline
         return fore_rgb, back_rgb, fore != back, False

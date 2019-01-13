@@ -190,7 +190,6 @@ class Video(object):
                 40: TextMode(
                     'egatext40', 25, 40, 14, 8, 7, num_pages=8,
                     colourmap=EGA64TextColourMapper(self.capabilities, self.monitor)
-
                 ),
                 80: TextMode(
                     'egatext80', 25, 80, 14, 8, 7, num_pages=4,

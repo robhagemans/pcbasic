@@ -180,16 +180,16 @@ class _MemoryMapper(object):
         """Size in bytes of video page."""
         return self._page_size
 
-    def get_all_memory(self, screen):
+    def get_all_memory(self, display):
         """Obtain a copy of all video memory."""
         addr = self._video_segment * 0x10
-        buffer = self.get_memory(screen, addr, self._page_size * self._num_pages)
+        buffer = self.get_memory(display, addr, self._page_size * self._num_pages)
         return addr, buffer
 
-    def get_memory(self, screen, addr, num_bytes):
+    def get_memory(self, display, addr, num_bytes):
         """Retrieve bytes from video memory, stub."""
 
-    def set_memory(self, screen, addr, bytes):
+    def set_memory(self, display, addr, bytes):
         """Set bytes in video memory, stub."""
 
 
@@ -204,7 +204,7 @@ class TextMemoryMapper(_MemoryMapper):
         self._text_height = text_height
         self._text_width = text_width
 
-    def get_memory(self, screen, addr, num_bytes):
+    def get_memory(self, display, addr, num_bytes):
         """Retrieve bytes from textmode video memory."""
         addr -= self._video_segment * 0x10
         mem_bytes = bytearray(num_bytes)
@@ -215,14 +215,14 @@ class TextMemoryMapper(_MemoryMapper):
             crow = 1 + offset // (self._text_width*2)
             try:
                 if (addr+i) % 2:
-                    mem_bytes[i] = screen.text_screen.text.get_attr(page, crow, ccol)
+                    mem_bytes[i] = display.text_screen.text.get_attr(page, crow, ccol)
                 else:
-                    mem_bytes[i] = screen.text_screen.text.get_char(page, crow, ccol)
+                    mem_bytes[i] = display.text_screen.text.get_char(page, crow, ccol)
             except IndexError:
                 pass
         return mem_bytes
 
-    def set_memory(self, screen, addr, mem_bytes):
+    def set_memory(self, display, addr, mem_bytes):
         """Set bytes in textmode video memory."""
         addr -= self._video_segment*0x10
         last_row = 0
@@ -233,19 +233,19 @@ class TextMemoryMapper(_MemoryMapper):
             crow = 1 + offset // (self._text_width*2)
             try:
                 if (addr+i) % 2:
-                    c = screen.text_screen.text.get_char(page, crow, ccol)
+                    c = display.text_screen.text.get_char(page, crow, ccol)
                     a = mem_bytes[i]
                 else:
                     c = mem_bytes[i]
-                    a = screen.text_screen.text.get_attr(page, crow, ccol)
-                screen.text_screen.text.put_char_attr(page, crow, ccol, int2byte(c), a)
+                    a = display.text_screen.text.get_attr(page, crow, ccol)
+                display.text_screen.text.put_char_attr(page, crow, ccol, int2byte(c), a)
                 if last_row > 0 and last_row != crow:
-                    screen.text_screen.refresh_range(page, last_row, 1, self._text_width)
+                    display.text_screen.refresh_range(page, last_row, 1, self._text_width)
             except IndexError:
                 pass
             last_row = crow
         if last_row >= 1 and last_row <= self._text_height and page >= 0 and page < self._num_pages:
-            screen.text_screen.refresh_range(page, last_row, 1, self._text_width)
+            display.text_screen.refresh_range(page, last_row, 1, self._text_width)
 
 
 class GraphicsMemoryMapper(_MemoryMapper):
@@ -347,21 +347,21 @@ class CGAMemoryMapper(GraphicsMemoryMapper):
         y = bank + self._interleave_times * row
         return page, x, y
 
-    def set_memory(self, screen, addr, byte_array):
+    def set_memory(self, display, addr, byte_array):
         """Set bytes in CGA memory."""
         for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array)):
             #bytes_to_interval
             pixarray = bytematrix.ByteMatrix.frompacked(
                 byte_array[ofs:ofs+length], height=1, items_per_byte=self._ppb
             )
-            screen.drawing.put_interval(page, x, y, pixarray)
+            display.drawing.put_interval(page, x, y, pixarray)
 
-    def get_memory(self, screen, addr, num_bytes):
+    def get_memory(self, display, addr, num_bytes):
         """Retrieve bytes from CGA memory."""
         byte_array = bytearray(num_bytes)
         for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
             #interval_to_bytes
-            pixarray = screen.pixels.pages[page].get_interval(x, y, length*self._ppb)
+            pixarray = display.pixels.pages[page].get_interval(x, y, length*self._ppb)
             byte_array[ofs:ofs+length] = pixarray.packed(self._ppb)
         return byte_array
 
@@ -410,19 +410,19 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
         x, y = (addr%self._bytes_per_row)*8, addr//self._bytes_per_row
         return page, x, y
 
-    def get_memory(self, screen, addr, num_bytes):
+    def get_memory(self, display, addr, num_bytes):
         """Retrieve bytes from EGA memory."""
         plane = self._plane % (max(self._planes_used) + 1)
         byte_array = bytearray(num_bytes)
         if plane not in self._planes_used:
             return byte_array
         for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
-            pixarray = screen.pixels.pages[page].get_interval(x, y, length*8)
+            pixarray = display.pixels.pages[page].get_interval(x, y, length*8)
             #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
             byte_array[ofs:ofs+length] = (pixarray >> plane).packed(8)
         return byte_array
 
-    def set_memory(self, screen, addr, byte_array):
+    def set_memory(self, display, addr, byte_array):
         """Set bytes in EGA video memory."""
         # EGA memory is planar with memory-mapped colour planes.
         # Within a plane, 8 pixels are encoded into each byte.
@@ -439,7 +439,7 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
                     byte_array[ofs:ofs+length], height=1, items_per_byte=8
                 ).render(0, mask)
             )
-            screen.drawing.put_interval(page, x, y, pixarray, mask)
+            display.drawing.put_interval(page, x, y, pixarray, mask)
 
 
 class Tandy6MemoryMapper(GraphicsMemoryMapper):
@@ -468,7 +468,7 @@ class Tandy6MemoryMapper(GraphicsMemoryMapper):
         y = bank + 4 * row
         return page, x, y
 
-    def get_memory(self, screen, addr, num_bytes):
+    def get_memory(self, display, addr, num_bytes):
         """Retrieve bytes from Tandy 640x200x4 """
         # 8 pixels per 2 bytes
         # low attribute bits stored in even bytes, high bits in odd bytes.
@@ -477,13 +477,13 @@ class Tandy6MemoryMapper(GraphicsMemoryMapper):
         for parity, byte_array in enumerate(hbytes):
             plane = parity ^ (addr % 2)
             for page, x, y, ofs, length in self._walk_memory(addr, num_bytes, 2):
-                pixarray = screen.pixels.pages[page].get_interval(x, y, length * self._ppb * 2)
+                pixarray = display.pixels.pages[page].get_interval(x, y, length * self._ppb * 2)
                 #hbytes[parity][ofs:ofs+length] = interval_to_bytes(pixarray, self._ppb*2, plane)
                 byte_array[ofs:ofs+length] = (pixarray >> plane).packed(self._ppb * 2)
         # resulting array may be too long by one byte, so cut to size
         return [_item for _pair in zip(*hbytes) for _item in _pair] [:num_bytes]
 
-    def set_memory(self, screen, addr, byte_array):
+    def set_memory(self, display, addr, byte_array):
         """Set bytes in Tandy 640x200x4 memory."""
         hbytes = byte_array[0::2], byte_array[1::2]
         # Tandy-6 encodes 8 pixels per byte, alternating colour planes.
@@ -499,4 +499,4 @@ class Tandy6MemoryMapper(GraphicsMemoryMapper):
                         half[ofs:ofs+length], height=1, items_per_byte=2*self._ppb
                     ) << plane
                 )
-                screen.drawing.put_interval(page, x, y, pixarray, mask)
+                display.drawing.put_interval(page, x, y, pixarray, mask)
