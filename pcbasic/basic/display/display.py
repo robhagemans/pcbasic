@@ -16,7 +16,7 @@ from . import graphics
 from .colours import Palette
 from .textscreen import TextScreen
 from .pixels import PixelBuffer
-from .modes import Video
+from .modes import Video, TO_WIDTH
 
 
 class Display(object):
@@ -166,41 +166,18 @@ class Display(object):
 
     def set_width(self, to_width):
         """Set the character width of the screen, reset pages and change modes."""
-        # raise an error if the width value doesn't make sense
-        if to_width not in self.video.get_allowed_widths():
-            raise error.BASICError(error.IFC)
         # if we're currently at that width, do nothing
         if to_width == self.mode.width:
             return
-        elif to_width == 20:
-            self.screen(3, None, 0, 0)
-        elif self.mode.is_text_mode:
-            self.screen(0, None, 0, 0, new_width=to_width)
-        elif to_width == 40:
-            if self.mode.name == '640x200x2':
-                self.screen(1, None, 0, 0)
-            elif self.mode.name == '160x200x16':
-                self.screen(1, None, 0, 0)
-            elif self.mode.name == '640x200x4':
-                self.screen(5, None, 0, 0)
-            elif self.mode.name == '640x200x16':
-                self.screen(7, None, 0, 0)
-            elif self.mode.name == '640x350x16':
-                # screen 9 switches to screen 1 (not 7) on WIDTH 40
-                self.screen(1, None, 0, 0)
-        elif to_width == 80:
-            if self.mode.name == '320x200x4':
-                self.screen(2, None, 0, 0)
-            elif self.mode.name == '160x200x16':
-                self.screen(2, None, 0, 0)
-            elif self.mode.name == '320x200x4pcjr':
-                self.screen(2, None, 0, 0)
-            elif self.mode.name == '320x200x16pcjr':
-                self.screen(6, None, 0, 0)
-            elif self.mode.name == '320x200x16':
-                self.screen(8, None, 0, 0)
+        if self.mode.is_text_mode and to_width in (40, 80):
+            new_mode = 0
         else:
-            raise error.BASICError(error.IFC)
+            try:
+                new_mode = TO_WIDTH[self.capabilities][self.mode.name][to_width]
+            except KeyError:
+                # raise an error if the width value doesn't make sense
+                raise error.BASICError(error.IFC)
+        self.screen(new_mode, None, 0, 0, new_width=to_width)
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""

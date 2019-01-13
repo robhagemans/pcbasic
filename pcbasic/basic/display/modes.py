@@ -91,6 +91,60 @@ _MODES = {
 _MODES['olivetti'].update({_mode: '640x400x2' for _mode in range(4, 256)})
 
 
+# screen number switches on WIDTH
+# if we're in mode x, what mode y does WIDTH w take us to? {x: {w: y}}
+TO_WIDTH = {
+    'cga': {
+        0: {40: 0, 80: 0},
+        1: {40: 1, 80: 2},
+        2: {40: 1, 80: 2},
+    },
+    'ega': {
+        0: {40: 0, 80: 0},
+        1: {40: 1, 80: 2},
+        2: {40: 1, 80: 2},
+        7: {40: 7, 80: 8},
+        8: {40: 7, 80: 8},
+        9: {40: 1, 80: 9},
+    },
+    'mda': {
+        0: {40: 0, 80: 0},
+    },
+    'ega_mono': {
+        0: {40: 0, 80: 0},
+        10: {40: 0, 80: 10},
+    },
+    'hercules': {
+        0: {40: 0, 80: 0},
+        3: {40: 0, 80: 3},
+    },
+    'pcjr': {
+        0: {20: 3, 40: 0, 80: 0},
+        1: {20: 3, 40: 1, 80: 2},
+        2: {20: 3, 40: 1, 80: 2},
+        3: {20: 3, 40: 1, 80: 2},
+        4: {20: 3, 40: 4, 80: 2},
+        5: {20: 3, 40: 5, 80: 6},
+        6: {20: 3, 40: 5, 80: 6},
+    },
+    'olivetti': {
+        0: {40: 0, 80: 0},
+        1: {40: 1, 80: 2},
+        2: {40: 1, 80: 2},
+        3: {40: 1, 80: 3}, # assumption
+    },
+}
+
+# also look up graphics modes by name
+for _adapter in TO_WIDTH:
+    TO_WIDTH[_adapter].update({
+        _MODES[_adapter][_nr]: _switches for _nr, _switches in TO_WIDTH[_adapter].items() if _nr
+    })
+
+TO_WIDTH['vga'] = TO_WIDTH['ega']
+TO_WIDTH['tandy'] = TO_WIDTH['pcjr']
+
+
 class Video(object):
     """Video mode factory."""
 
@@ -111,13 +165,6 @@ class Video(object):
     def set_video_memory_size(self, video_mem_size):
         """Set video memory size."""
         self._video_mem_size = int(video_mem_size)
-
-    def get_allowed_widths(self):
-        """Get allowed screen widths."""
-        # there's only one 20-column mode; 40 and 80 are always available
-        if '160x200x16' in _MODES[self.capabilities]:
-            return set((20, 40, 80))
-        return set((40, 80))
 
     def get_mode(self, number, width=None):
         """Retrieve text or graphical mode by screen number."""
