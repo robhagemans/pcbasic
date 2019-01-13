@@ -121,18 +121,19 @@ class Video(object):
 
     def get_mode(self, number, width=None):
         """Retrieve text or graphical mode by screen number."""
-        if number:
-            return self._get_graphics_mode(number)
-        else:
-            return self._get_text_mode(width)
-
-    def _get_graphics_mode(self, number):
-        """Retrieve graphical mode by screen number."""
         try:
-            name = _MODES[self.capabilities][number]
+            if number:
+                name = _MODES[self.capabilities][number]
+                return self.get_graphics_mode(name)
+            else:
+                name = _MODES[self.capabilities][0, width]
+                return self.get_text_mode(name)
         except KeyError:
             # no such mode
             raise error.BASICError(error.IFC)
+
+    def get_graphics_mode(self, name):
+        """Retrieve graphical mode by name."""
         # Tandy/PCjr pixel aspect ratio is different from normal
         # suggesting screen aspect ratio is not 4/3.
         # Tandy pixel aspect ratios, experimentally found with CIRCLE:
@@ -246,13 +247,8 @@ class Video(object):
                 colourmap=HerculesColourMapper(self.capabilities, self.monitor)
             )
 
-    def _get_text_mode(self, width):
-        """Retrieve graphical mode by screen number."""
-        try:
-            name = _MODES[self.capabilities][0, width]
-        except KeyError:
-            # no such mode
-            raise error.BASICError(error.IFC)
+    def get_text_mode(self, name):
+        """Retrieve graphical mode by name."""
         if name == 'vgatext40':
             return TextMode(
                 'vgatext40', 25, 40, 16, 9, 7, num_pages=8,

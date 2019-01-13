@@ -205,12 +205,12 @@ class Display(object):
         """Change the amount of memory available to the video card."""
         self.video.set_video_memory_size(new_size)
         # text screen modes don't depend on video memory size
-        if self._mode_nr == 0:
+        if self.mode.is_text_mode:
             return
         # check if we need to drop out of our current mode
         page = max(self.vpagenum, self.apagenum)
         # reload max number of pages; do we fit? if not, drop to text
-        new_mode = self.video.get_mode(self._mode_nr)
+        new_mode = self.video.get_graphics_mode(self.mode.name)
         if (page >= new_mode.num_pages):
             self.screen(0, 0, 0, 0, force_reset=True)
         else:
