@@ -374,8 +374,6 @@ class TextMode(VideoMode):
         )
         self.is_text_mode = True
         self.memorymap = self._textmemorymapper(height, width, num_pages, is_mono)
-        #FIXME
-        num_attr = 256
 
 
 ##############################################################################
