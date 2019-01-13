@@ -12,7 +12,6 @@ from ..base import signals
 from ..base import error
 from .. import values
 from . import graphics
-from . import modes
 
 from .colours import Palette
 from .textscreen import TextScreen
@@ -37,12 +36,12 @@ class Display(object):
             capabilities, monitor, screen_aspect, video_mem_size
         )
         self.capabilities = self.video.capabilities
-        # video mode settings
-        self._mode_nr, self.colorswitch, self.apagenum, self.vpagenum = 0, 1, 0, 0
         # prepare video modes
         self.mode = self.video.get_mode(0, initial_width)
+        # video mode settings
+        self.colorswitch, self.apagenum, self.vpagenum = 1, 0, 0
         # current attribute
-        self.attr = 7
+        self.attr = self.mode.attr
         # border attribute
         self._border_attr = 0
         # text screen
@@ -50,12 +49,14 @@ class Display(object):
             self.queues, self._values, self.mode, self.capabilities,
             fonts, codepage, io_streams, sound
         )
+        # pixel buffer, set by _set_mode
+        self.pixels = None
         # graphics operations
         self.drawing = graphics.Drawing(self.queues, input_methods, self._values, self._memory)
         # colour palette
         self.palette = Palette(self.queues, self.mode)
         # initialise a fresh textmode screen
-        self._set_mode(self.mode, 0, 1, 0, 0)
+        self._set_mode(self.mode, 1, 0, 0, erase=True)
 
     ###########################################################################
     # video modes
@@ -67,16 +68,22 @@ class Display(object):
         """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
         self.palette.reset()
-        # set default arguments
-        new_mode_nr = self._mode_nr if (new_mode_nr is None) else new_mode_nr
-        new_colorswitch = bool(new_colorswitch)
-        if new_mode_nr == 0 and new_width is None:
-            # if we switch out of a 20-col mode (Tandy screen 3), switch to 40-col.
-            # otherwise, width persists on change to screen 0
-            new_width = 40 if (self.mode.width == 20) else self.mode.width
-        # retrieve the specs for the new video mode
-        new_mode = self.video.get_mode(new_mode_nr, new_width)
+        # find the new mode we're trying to get into
+        if new_mode_nr is None:
+            # keep current mode if graphics but maybe change width if text
+            if self.mode.is_text_mode and new_width is not None:
+                new_mode = self.video.get_mode(0, new_width)
+            else:
+                new_mode = self.mode
+        else:
+            if new_mode_nr == 0 and new_width is None:
+                # if we switch out of a 20-col mode (Tandy screen 3), switch to 40-col.
+                # otherwise, width persists on change to screen 0
+                new_width = 40 if (self.mode.width == 20) else self.mode.width
+            # retrieve the specs for the new video mode
+            new_mode = self.video.get_mode(new_mode_nr, new_width)
         # set colorswitch
+        new_colorswitch = bool(new_colorswitch)
         if new_colorswitch is None:
             new_colorswitch = True
             if self.capabilities == 'pcjr':
@@ -105,14 +112,12 @@ class Display(object):
                 (new_mode.width != self.mode.width) or
                 (new_colorswitch != self.colorswitch) or force_reset
             ):
-            self._set_mode(new_mode, new_mode_nr, new_colorswitch, new_apagenum, new_vpagenum, erase)
+            self._set_mode(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase)
         else:
             # only switch pages
             self.set_page(new_vpagenum, new_apagenum)
 
-    def _set_mode(
-            self, new_mode, new_mode_nr, new_colorswitch, new_apagenum, new_vpagenum, erase=True
-        ):
+    def _set_mode(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase):
         """Change the video mode, colourburst, visible or active page."""
         # preserve memory if erase==0; don't distingush erase==1 and erase==2
         if not erase:
@@ -138,7 +143,7 @@ class Display(object):
         if (not width_only and new_mode.name != self.mode.name):
             self.set_border(0)
         # set the screen mode parameters
-        self.mode, self._mode_nr = new_mode, new_mode_nr
+        self.mode = new_mode
         # set the colorswitch
         self.colorswitch = new_colorswitch
         # initialise the palette
@@ -211,7 +216,7 @@ class Display(object):
         page = max(self.vpagenum, self.apagenum)
         # reload max number of pages; do we fit? if not, drop to text
         new_mode = self.video.get_graphics_mode(self.mode.name)
-        if (page >= new_mode.num_pages):
+        if page >= new_mode.num_pages:
             self.screen(0, 0, 0, 0, force_reset=True)
         else:
             self.mode = new_mode
