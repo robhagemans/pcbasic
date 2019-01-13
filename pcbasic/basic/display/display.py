@@ -69,13 +69,6 @@ class Display(object):
         self.palette.reset()
         # set default arguments
         new_mode_nr = self._mode_nr if (new_mode_nr is None) else new_mode_nr
-        # set colorswitch
-        if new_colorswitch is None:
-            new_colorswitch = True
-            if self.capabilities == 'pcjr':
-                new_colorswitch = False
-            elif self.capabilities == 'tandy':
-                new_colorswitch = not new_mode_nr
         new_colorswitch = bool(new_colorswitch)
         if new_mode_nr == 0 and new_width is None:
             # if we switch out of a 20-col mode (Tandy screen 3), switch to 40-col.
@@ -83,6 +76,13 @@ class Display(object):
             new_width = 40 if (self.mode.width == 20) else self.mode.width
         # retrieve the specs for the new video mode
         new_mode = self.video.get_mode(new_mode_nr, new_width)
+        # set colorswitch
+        if new_colorswitch is None:
+            new_colorswitch = True
+            if self.capabilities == 'pcjr':
+                new_colorswitch = False
+            elif self.capabilities == 'tandy':
+                new_colorswitch = new_mode.is_text_mode
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
         # in other adapters, that's going to raise an IFC later on.
