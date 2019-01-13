@@ -90,7 +90,7 @@ class Cursor(object):
 
     def show(self, do_show):
         """Force cursor to be visible/invisible."""
-        self._visibility = do_show
+        self._visible = do_show
         self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (do_show,)))
 
     def move(self, new_row, new_column, new_attr=None, new_width=None):
@@ -120,6 +120,10 @@ class Cursor(object):
         """Set cursor visibility when a program is being run."""
         self._visible_run = visible_run
         self.reset_visibility()
+
+    def set_default_visible(self, on):
+        """Set default visibility (parse mode)."""
+        self._default_visible = on
 
     def reset_visibility(self):
         """Set cursor visibility to its default state."""
