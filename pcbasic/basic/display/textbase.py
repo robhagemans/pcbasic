@@ -71,7 +71,7 @@ class Cursor(object):
         self._width = self._mode.font_width
         self._height = self._mode.font_height
         self._fore_attr = None
-        self._position = 1, 1
+        self._row, self._col = 1, 1
 
     def init_mode(self, mode, attr):
         """Change the cursor for a new screen mode."""
@@ -85,17 +85,15 @@ class Cursor(object):
 
     def set_attr(self, new_attr):
         """Set the text cursor attribute and submit."""
-        row, column = self._position
-        self.move(row, column, new_attr, None)
+        self.move(self._row, self._col, new_attr, None)
 
     def show(self, do_show):
         """Force cursor to be visible/invisible."""
         self._visible = do_show
         if do_show:
             # update position and looks
-            row, column = self._position
             self._queues.video.put(signals.Event(
-                signals.VIDEO_MOVE_CURSOR, (row, column, self._fore_attr, self._width)
+                signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
             ))
         # show or hide the cursor
         self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (do_show,)))
@@ -111,17 +109,19 @@ class Cursor(object):
         else:
             new_width = new_width * self._mode.font_width
         if (
-                (new_row, new_column) == self._position
+                (new_row, new_column) == (self._row, self._col)
                 and fore == self._fore_attr and new_width == self._width
             ):
             return
-        self._position = new_row, new_column
-        self._fore_attr = fore
-        self._width = new_width
-        if self._visible:
+        # only submit move signal if visible (so that we see it in the right place)
+        # or if the row changes (so that row-based cli interface can keep up with current row
+        if self._visible or new_row != self._row:
             self._queues.video.put(signals.Event(
                 signals.VIDEO_MOVE_CURSOR, (new_row, new_column, fore, new_width)
             ))
+        self._row, self._col = new_row, new_column
+        self._fore_attr = fore
+        self._width = new_width
 
     def set_visibility(self, visible_run):
         """Set cursor visibility when a program is being run."""
@@ -210,9 +210,8 @@ class Cursor(object):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line)
             ))
-            row, column = self._position
             self._queues.video.put(signals.Event(
-                signals.VIDEO_MOVE_CURSOR, (row, column, self._fore_attr, self._width)
+                signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
             ))
         self._queues.video.put(signals.Event(
             signals.VIDEO_SHOW_CURSOR, (self._visible,)
