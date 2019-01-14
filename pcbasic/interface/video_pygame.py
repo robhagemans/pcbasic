@@ -114,6 +114,7 @@ class VideoPygame(VideoPlugin):
         self.last_col = 1
         # cursor is visible
         self.cursor_visible = True
+        self.cursor_attr = 7
         # buffer for text under cursor
         self.under_top_left = None
         # fonts
@@ -560,11 +561,12 @@ class VideoPygame(VideoPlugin):
         self.cursor_row, self.cursor_col = row, col
         # set attribute
         self.cursor_attr = attr % self.num_fore_attrs
-        self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
         # set width
         if width != self.cursor_width:
             self.cursor_width = width
             self._rebuild_cursor()
+        else:
+            self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
@@ -598,6 +600,7 @@ class VideoPygame(VideoPlugin):
         self.cursor.set_colorkey(bg)
         self.cursor.fill(bg)
         self.cursor.fill(color, (0, from_line, width, min(to_line-from_line+1, height-from_line)))
+        self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
         self.busy = True
 
     def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
