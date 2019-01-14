@@ -616,7 +616,7 @@ class MonoTextColourMapper(_ColourMapper):
             fore, back = 1, 3
         return fore, back, blink, underline
 
-    def attr_to_rgb(self, attr, dummy_palette):
+    def attr_to_rgb(self, attr):
         """Convert colour attribute to RGB/blink/underline, given a palette."""
         fore, back, blink, underline = self.split_attr(attr)
         # palette is ignored
@@ -653,9 +653,9 @@ class EGAMonoColourMapper(_ColourMapper):
         """Number of colour values."""
         return len(self._pseudocolours)
 
-    def attr_to_rgb(self, attr, palette):
+    def attr_to_rgb(self, attr):
         """Convert colour attribute to RGB/blink/underline, given a palette."""
-        fore, back = self._pseudocolours[palette[attr] % len(self._pseudocolours)]
+        fore, back = self._pseudocolours[self.palette[attr] % len(self._pseudocolours)]
         # intensity 0, 1, 2 to RGB; apply mono tint
         fore_rgb = _adjust_tint(self._colours[fore], self._mono_tint, self._mono)
         back_rgb = _adjust_tint(self._colours[back], self._mono_tint, self._mono)

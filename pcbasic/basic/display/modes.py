@@ -55,8 +55,8 @@ _MODES = {
         10: '640x350x4',
     },
     'hercules': {
-        (0, 40): 'herculestext40',
-        (0, 80): 'herculestext80',
+        (0, 40): 'mdatext40',
+        (0, 80): 'mdatext80',
         3: '720x348x2',
     },
     'tandy': {
@@ -286,6 +286,9 @@ class Video(object):
             )
         elif name == '720x348x2':
             # hercules screen 3
+            # SCREEN 3 supports two pages (0 and 1);
+            # SCREEN 0 used with Hercules supports only one page.
+            # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
             return CGAMode(
                 # this actually produces 350, not 348
                 '720x348x2', 720, 350, 25, 80, 1,
@@ -355,16 +358,6 @@ class Video(object):
             return TextMode(
                 'cgatext80', 25, 80, 8, 8, 7, num_pages=4,
                 colourmap=EGA16TextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'herculestext40':
-            return TextMode(
-                'herculestext40', 25, 40, 14, 9, 7, is_mono=True, num_pages=2,
-                colourmap=MonoTextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'herculestext80':
-            return TextMode(
-                'herculestext80', 25, 80, 14, 9, 7, is_mono=True, num_pages=2,
-                colourmap=MonoTextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'olivettitext40':
             return TextMode(
