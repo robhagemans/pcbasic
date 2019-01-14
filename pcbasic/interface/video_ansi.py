@@ -131,7 +131,6 @@ class VideoANSI(video_cli.VideoTextBase):
             self._border_attr = attr
             self._redraw_border()
 
-
     def set_palette(self, attributes, dummy_pack_pixels):
         """Set the colour palette."""
         rgb_table = [_fore for _fore, _, _, _ in attributes[:16]]

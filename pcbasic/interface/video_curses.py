@@ -119,6 +119,7 @@ class VideoCurses(VideoPlugin):
         self.window = None
         self.can_change_palette = None
         self.text = None
+        self._attributes = []
 
     def __enter__(self):
         """Open ANSI interface."""
@@ -311,7 +312,7 @@ class VideoCurses(VideoPlugin):
 
     def set_mode(
             self, num_pages, canvas_height, canvas_width, text_height, text_width,
-            num_attr, enable_blink, text_cursor
+            num_attr, text_cursor
         ):
         """Change screen mode."""
         self.height = text_height
@@ -356,11 +357,26 @@ class VideoCurses(VideoPlugin):
             except curses.error:
                 pass
 
-    def set_palette(self, new_palette, dummy_new_palette1, dummy_pack_pixels):
+    def set_palette(self, attributes, dummy_pack_pixels):
         """Build the game palette."""
+        rgb_table = [_fore for _fore, _, _, _ in attributes[:16]]
+        if len(attributes) > 16:
+            # *assume* the first 16 attributes are foreground-on-black
+            # this is the usual textmode byte attribute arrangement
+            fore = range(16) * 16
+            back = tuple(_b for _b in range(8) for _ in range(16)) * 2
+        else:
+            fore = range(len(attributes))
+            # assume black background
+            # blink dim-to-bright etc won't work on terminals anyway
+            back = (0,) * len(attributes)
+        blink = tuple(_blink for _, _, _blink, _ in attributes)
+        under = tuple(_under for _, _, _, _under in attributes)
+        int_attributes = zip(fore, back, blink, under)
+        self._attributes = int_attributes
         if self.can_change_palette:
-            for i in range(len(new_palette)):
-                r, g, b = new_palette[i]
+            for i, rgb in enumerate(rgb_table):
+                r, g, b = rgb
                 curses.init_color(
                     self.default_colors[i], (r*1000)//255, (g*1000)//255, (b*1000)//255
                 )
@@ -393,8 +409,9 @@ class VideoCurses(VideoPlugin):
             console.show_cursor(block=self.cursor_shape == 2)
         #curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
+        fore, back, blink, underline = self._attributes[attr]
         unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
         colour = self._curses_colour(fore, back, blink)
         self.text[pagenum][row-1][col-1:col-1+len(unicode_list)] = [
