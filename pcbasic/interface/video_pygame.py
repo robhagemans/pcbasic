@@ -603,7 +603,7 @@ class VideoPygame(VideoPlugin):
         self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
         self.busy = True
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
         if not glyphs:
             return

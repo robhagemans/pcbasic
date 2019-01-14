@@ -49,6 +49,7 @@ class VideoANSI(video_cli.VideoTextBase):
         self._border_attr = 0
         self._set_default_colours(16)
         self._text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
+        self._attributes = []
 
     def __enter__(self):
         """Open ANSI interface."""
@@ -130,14 +131,30 @@ class VideoANSI(video_cli.VideoTextBase):
             self._border_attr = attr
             self._redraw_border()
 
-    def set_palette(self, new_palette, dummy_new_palette1, dummy_pack_pixels):
+
+    def set_palette(self, attributes, dummy_pack_pixels):
         """Set the colour palette."""
-        for attr, rgb in enumerate(new_palette):
-            console.set_palette_entry(attr, *rgb)
+        rgb_table = [_fore for _fore, _, _, _ in attributes[:16]]
+        if len(attributes) > 16:
+            # *assume* the first 16 attributes are foreground-on-black
+            # this is the usual textmode byte attribute arrangement
+            fore = range(16) * 16
+            back = tuple(_b for _b in range(8) for _ in range(16)) * 2
+        else:
+            fore = range(len(attributes))
+            # assume black background
+            # blink dim-to-bright etc won't work on terminals anyway
+            back = (0,) * len(attributes)
+        blink = tuple(_blink for _, _, _blink, _ in attributes)
+        under = tuple(_under for _, _, _, _under in attributes)
+        int_attributes = zip(fore, back, blink, under)
+        self._attributes = int_attributes
+        for index, rgb in enumerate(rgb_table):
+            console.set_palette_entry(index, *rgb)
 
     def set_mode(
             self, num_pages, canvas_height, canvas_width, text_height, text_width,
-            num_attr, enable_blink, text_cursor
+            num_attr, text_cursor
         ):
         """Change screen mode."""
         self._height = text_height
@@ -222,8 +239,9 @@ class VideoANSI(video_cli.VideoTextBase):
         if self._cursor_visible:
             console.show_cursor(block=self._block_cursor)
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
+        fore, back, blink, underline = self._attributes[attr]
         unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
         self._text[pagenum][row-1][col-1:col-1+len(unicode_list)] = [
             (_c, (fore, back, blink, underline)) for _c in unicode_list

@@ -360,7 +360,7 @@ class TextScreen(object):
         if row < 1 or col < 1 or row > self.mode.height or col > self.mode.width:
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
             return
-        fore, back, blink, underline = self.mode.colourmap.split_attr(attr)
+        _, back, _, underline = self.mode.colourmap.split_attr(attr)
         # mark full-width chars by a trailing empty string to preserve column counts
         sprite = self._glyphs.render_text(chars, attr, back, underline)
         if not self.mode.is_text_mode and not text_only:
@@ -373,11 +373,7 @@ class TextScreen(object):
         text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
         text = [self.codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
         self.queues.video.put(signals.Event(
-            signals.VIDEO_PUT_TEXT, (
-                pagenum, row, col, text,
-                fore, back, blink, underline,
-                sprite
-            )
+            signals.VIDEO_PUT_TEXT, (pagenum, row, col, text, attr, sprite)
         ))
 
     def _clear_rows_refresh(self, start, stop):

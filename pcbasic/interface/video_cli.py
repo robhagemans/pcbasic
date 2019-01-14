@@ -215,7 +215,7 @@ class VideoCLI(VideoTextBase):
 
     ###############################################################################
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
         unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
         self._text[pagenum][row-1][col-1:col-1+len(unicode_list)] = unicode_list

@@ -1107,7 +1107,7 @@ class VideoSDL2(VideoPlugin):
             pixels[hi_y0:lo_y0, :] = back_attr
         self.busy = True
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
         if not glyphs:
             return

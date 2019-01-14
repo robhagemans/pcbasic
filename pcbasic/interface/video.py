@@ -125,7 +125,7 @@ class VideoPlugin(object):
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height. direction 1 is down, -1 up."""
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
 
     def set_cursor_shape(self, from_line, to_line):

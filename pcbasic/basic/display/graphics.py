@@ -157,11 +157,10 @@ class Drawing(object):
             self._text.put_char_attr(self._apagenum, row0, col0, b' ', self._attr)
         else:
             self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
-        fore, back, blink, underline = self._mode.colourmap.split_attr(self._attr)
         for row in range(row0, row1+1):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_PUT_TEXT,
-                (self._apagenum, row, col0, [u' ']*(col1-col0+1), fore, back, blink, underline, None)
+                (self._apagenum, row, col0, [u' ']*(col1-col0+1), self._attr, None)
             ))
 
     ### graphics primitives
