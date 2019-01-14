@@ -209,15 +209,14 @@ class TextMemoryMapper(_MemoryMapper):
         addr -= self._video_segment * 0x10
         mem_bytes = bytearray(num_bytes)
         for i in xrange(num_bytes):
-            page = (addr+i) // self._page_size
-            offset = (addr+i) % self._page_size
-            ccol = 1 + (offset % (self._text_width*2)) // 2
-            crow = 1 + offset // (self._text_width*2)
+            page, offset = divmod(addr+i, self._page_size)
+            row, row_offset = divmod(offset, self._text_width*2)
+            col = row_offset // 2
             try:
                 if (addr+i) % 2:
-                    mem_bytes[i] = display.text_screen.text.get_attr(page, crow, ccol)
+                    mem_bytes[i] = display.text_screen.text.get_attr(page, 1 + row, 1 + col)
                 else:
-                    mem_bytes[i] = display.text_screen.text.get_char(page, crow, ccol)
+                    mem_bytes[i] = display.text_screen.text.get_char(page, 1 + row, 1 + col)
             except IndexError:
                 pass
         return mem_bytes
@@ -227,23 +226,22 @@ class TextMemoryMapper(_MemoryMapper):
         addr -= self._video_segment*0x10
         last_row = 0
         for i in xrange(len(mem_bytes)):
-            page = (addr+i) // self._page_size
-            offset = (addr+i) % self._page_size
-            ccol = 1 + (offset % (self._text_width*2)) // 2
-            crow = 1 + offset // (self._text_width*2)
+            page, offset = divmod(addr+i, self._page_size)
+            row, row_offset = divmod(offset, self._text_width*2)
+            col = row_offset // 2
             try:
                 if (addr+i) % 2:
-                    c = display.text_screen.text.get_char(page, crow, ccol)
+                    c = display.text_screen.text.get_char(page, 1+row, 1+col)
                     a = mem_bytes[i]
                 else:
                     c = mem_bytes[i]
-                    a = display.text_screen.text.get_attr(page, crow, ccol)
-                display.text_screen.text.put_char_attr(page, crow, ccol, int2byte(c), a)
-                if last_row > 0 and last_row != crow:
+                    a = display.text_screen.text.get_attr(page, 1+row, 1+col)
+                display.text_screen.text.put_char_attr(page, 1+row, 1+col, int2byte(c), a)
+                if last_row > 0 and last_row != 1+row:
                     display.text_screen.refresh_range(page, last_row, 1, self._text_width)
             except IndexError:
                 pass
-            last_row = crow
+            last_row = 1+row
         if last_row >= 1 and last_row <= self._text_height and page >= 0 and page < self._num_pages:
             display.text_screen.refresh_range(page, last_row, 1, self._text_width)
 
@@ -339,10 +337,10 @@ class CGAMemoryMapper(GraphicsMemoryMapper):
         """Get video page and coordinates for address."""
         addr = int(addr) - self._video_segment * 0x10
         # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
-        page, addr = addr//self._page_size, addr%self._page_size
+        page, addr = divmod(addr, self._page_size)
         # 2 x interleaved scan lines of 80bytes
-        bank, offset = addr//self._bank_size, addr%self._bank_size
-        row, col = offset//self._bytes_per_row, offset%self._bytes_per_row
+        bank, offset = divmod(addr, self._bank_size)
+        row, col = divmod(offset, self._bytes_per_row)
         x = col * 8 // self._bitsperpixel
         y = bank + self._interleave_times * row
         return page, x, y
@@ -406,8 +404,9 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
         """Get video page and coordinates for address."""
         addr = int(addr) - self._video_segment * 0x10
         # modes 7-9: 1 bit per pixel per colour plane
-        page, addr = addr//self._page_size, addr%self._page_size
-        x, y = (addr%self._bytes_per_row)*8, addr//self._bytes_per_row
+        page, addr = divmod(addr, self._page_size)
+        row, row_offs = divmod(addr, self._bytes_per_row)
+        x, y = row_offs*8, row
         return page, x, y
 
     def get_memory(self, display, addr, num_bytes):
@@ -460,10 +459,10 @@ class Tandy6MemoryMapper(GraphicsMemoryMapper):
     def _get_coords(self, addr):
         """Get video page and coordinates for address."""
         addr =  int(addr) - self._video_segment * 0x10
-        page, addr = addr//self._page_size, addr%self._page_size
+        page, addr = divmod(addr, self._page_size)
         # 4 x interleaved scan lines of 160bytes
-        bank, offset = addr//self._bank_size, addr%self._bank_size
-        row, col = offset//self._bytes_per_row, offset%self._bytes_per_row
+        bank, offset = divmod(addr, self._bank_size)
+        row, col = divmod(offset, self._bytes_per_row)
         x = (col // 2) * 8
         y = bank + 4 * row
         return page, x, y
