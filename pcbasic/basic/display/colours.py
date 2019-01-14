@@ -549,7 +549,7 @@ class EGA64TextColourMapper(_TextColourMixin, EGA64ColourMapper):
     # so not, so long as we're not allowing to set the scanline
 
 
-class MonoTextColourMapper(_ColourMapper):
+class MonoTextColourMapper(_TextColourMixin, _ColourMapper):
     """Attribute mapper for MDA-style text mode with underlining."""
 
     # herc attributes shld distinguish black, dim, normal, bright
