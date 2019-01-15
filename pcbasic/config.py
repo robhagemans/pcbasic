@@ -569,7 +569,6 @@ class Settings(object):
             'box_protect': not nobox,
             'monitor': self.get('monitor'),
             # screen settings
-            'aspect_ratio': (3072, 2000) if self.get('video') == 'tandy' else (4, 3),
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
             'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),

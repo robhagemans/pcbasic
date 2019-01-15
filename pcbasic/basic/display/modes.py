@@ -148,7 +148,7 @@ TO_WIDTH['tandy'] = TO_WIDTH['pcjr']
 class Video(object):
     """Video mode factory."""
 
-    def __init__(self, capabilities, monitor, aspect, video_mem_size):
+    def __init__(self, capabilities, monitor, video_mem_size):
         """Initialise colour sets."""
         # public members - used by VideoMode
         # video adapter type - cga, ega, etc
@@ -158,7 +158,7 @@ class Video(object):
         # emulated monitor type - rgb, composite, mono
         self.monitor = monitor
         # screen aspect ratio, for CIRCLE
-        self.aspect = aspect
+        self.aspect = (3072, 2000) if capabilities == 'tandy' else (4, 3)
         # video memory size
         self._video_mem_size = int(video_mem_size)
 
