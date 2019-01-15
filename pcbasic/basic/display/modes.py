@@ -180,15 +180,16 @@ class Video(object):
     def get_graphics_mode(self, name):
         """Retrieve graphical mode by name."""
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
-        # all adapters target 4x3 except Tandy
+        # all adapters target 4x3 except Tandy (what about PCjr ?)
         aspect = (3072, 2000) if self.capabilities == 'tandy' else (4, 3)
-        # Tandy/PCjr pixel aspect ratio is different from normal
+        # Tandy/PCjr (?) pixel aspect ratio is different from normal
         # suggesting screen aspect ratio is not 4/3.
         # Tandy pixel aspect ratios, experimentally found with CIRCLE:
         # screen 2, 6:     48/100   normal if aspect = 3072, 2000
         # screen 1, 4, 5:  96/100   normal if aspect = 3072, 2000
         # screen 3:      1968/1000
         # screen 3 is strange, slighly off the 192/100 you'd expect
+        # FIXME: currently, on PCjr only SCREEN 3 has strange aspect, while on Tandy all screens do. is that correct??
         if name == '320x200x4':
             # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
             # tandy:2 pages if 32k memory; ega: 1 page only
@@ -213,11 +214,12 @@ class Video(object):
             )
         elif name == '160x200x16':
             # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
-            return CGAMode(
+            return Tandy3Mode(
                 '160x200x16', 160, 200, 25, 20, 15,
                 bitsperpixel=4, interleave_times=2, bank_size=0x2000,
-                num_pages=self._video_mem_size//(2*0x2000), pixel_aspect=(1968, 1000),
+                num_pages=self._video_mem_size//(2*0x2000),
                 cursor_index=3,
+                aspect=aspect, # overridden in init
                 colourmap=CGA16ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '320x200x4pcjr':
@@ -466,7 +468,7 @@ class GraphicsMode(VideoMode):
     def __init__(
             self, name, pixel_width, pixel_height, text_height, text_width,
             attr, bitsperpixel, interleave_times, bank_size,
-            num_pages=None, cursor_index=None, pixel_aspect=None, aspect=None, colourmap=None
+            num_pages=None, cursor_index=None, aspect=None, colourmap=None
         ):
         """Initialise video mode settings."""
         font_width = pixel_width // text_width
@@ -488,11 +490,8 @@ class GraphicsMode(VideoMode):
         )
         # cursor attribute
         self.cursor_index = cursor_index
-        if pixel_aspect:
-            self.pixel_aspect = pixel_aspect
-        else:
-            # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
-            self.pixel_aspect = (self.pixel_height * aspect[0], self.pixel_width * aspect[1])
+        # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
+        self.pixel_aspect = (self.pixel_height * aspect[0], self.pixel_width * aspect[1])
         # sprite and tile builders
         self.build_tile = self._tile_builder(self.bitsperpixel)
         self.sprite_builder = self._sprite_builder(self.bitsperpixel)
@@ -504,6 +503,7 @@ class CGAMode(GraphicsMode):
     _memorymapper = CGAMemoryMapper
     _tile_builder = PackedTileBuilder
     _sprite_builder = PackedSpriteBuilder
+
 
 
 class EGAMode(GraphicsMode):
@@ -526,6 +526,23 @@ class EGAMode(GraphicsMode):
         )
         # EGA memorymap settings
         self.memorymap.set_planes_used(planes_used)
+
+
+class Tandy3Mode(CGAMode):
+    """Default settings for Tandy graphics mode 6."""
+
+    def __init__(
+            self, name, pixel_width, pixel_height, text_height, text_width,
+            attr, bitsperpixel, interleave_times, bank_size,
+            num_pages=None, cursor_index=None, aspect=None, colourmap=None
+        ):
+        CGAMode.__init__(
+            self, name, pixel_width, pixel_height, text_height, text_width,
+            attr, bitsperpixel, interleave_times, bank_size,
+            num_pages, cursor_index, aspect, colourmap
+        )
+        # override pixel aspect ratio
+        self.pixel_aspect = (1968, 1000)
 
 
 class Tandy6Mode(GraphicsMode):
