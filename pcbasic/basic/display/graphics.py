@@ -821,7 +821,7 @@ class Drawing(object):
             else:
                 # convert tile to a list of attributes
                 tilerow = tile[y % tile.height, :]
-                n_tiles = 1 + (x_right+1) // 8 - (x_left // 8)
+                n_tiles = 1 + (x_right+1) // tile.width - (x_left // tile.width)
                 tiles = bytematrix.hstack((tilerow,) * n_tiles)
                 interval = tiles[:, x_left % tile.width : x_right - x_left + 1]
                 # put to screen
@@ -854,7 +854,7 @@ class Drawing(object):
             for pat_x in range(pattern.width):
                 if not has_same_pattern:
                     break
-                tile_x = (x_start_next + pat_x) % 8
+                tile_x = (x_start_next + pat_x) % tile.width
                 has_same_pattern &= (pattern[0, pat_x] == rtile[0, tile_x])
                 has_same_pattern &= (not back or pattern[0, pat_x] != rback[0, tile_x])
             # we've reached a border colour, append our interval & start a new one
