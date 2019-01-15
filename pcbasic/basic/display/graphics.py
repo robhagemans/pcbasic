@@ -838,19 +838,19 @@ class Drawing(object):
         """Append all subintervals between border colours to the scanning stack."""
         if x_stop < x_start:
             return line_seed
-        x_start_next = x_start
-        x_stop_next = x_start_next-1
+        max_width = x_stop - x_start + 1
+        # repeat row ceildiv + 1 times to ensure we can start in the middle of the first tile
         rtile = tile[y % tile.height, :]
+        repeated_tile = rtile.htile(1 - (-max_width // rtile.width))
         if back:
             rback = back[y % back.height, :]
+            repeated_back = rback.htile(1 - (-max_width // rback.width))
         x = x_start
+        x_start_next = x_start
+        x_stop_next = x_start_next-1
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
             pattern = self._pixels.pages[self._apagenum].get_until(x, x_stop+1, y, border)
-            # repeat ceildiv + 1 times to ensure we can start in the middle of the first tile
-            repeated_tile = rtile.htile(1 - (-pattern.width // rtile.width))
-            if back:
-                repeated_back = rback.htile(1 - (-pattern.width // rback.width))
             # never match zero pattern (special case)
             tile_x = x_start_next % rtile.width
             has_same_pattern = (
