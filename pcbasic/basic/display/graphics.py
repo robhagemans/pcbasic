@@ -847,19 +847,25 @@ class Drawing(object):
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
             pattern = self._pixels.pages[self._apagenum].get_until(x, x_stop+1, y, border)
-            x_stop_next = x + pattern.width - 1
-            x = x_stop_next + 1
+            # repeat ceildiv + 1 times to ensure we can start in the middle of the first tile
+            repeated_tile = rtile.htile(1 - (-pattern.width // rtile.width))
+            if back:
+                repeated_back = rback.htile(1 - (-pattern.width // rback.width))
             # never match zero pattern (special case)
-            has_same_pattern = (rtile != ZERO_TILE[0, :rtile.width])
-            for pat_x in range(pattern.width):
-                if not has_same_pattern:
-                    break
-                tile_x = (x_start_next + pat_x) % rtile.width
-                has_same_pattern &= (pattern[0, pat_x] == rtile[0, tile_x])
-                has_same_pattern &= (not back or pattern[0, pat_x] != rback[0, tile_x])
+            tile_x = x_start_next % rtile.width
+            has_same_pattern = (
+                rtile != ZERO_TILE[0, :rtile.width]
+                and pattern == repeated_tile[0, tile_x : tile_x+pattern.width]
+                and (
+                    not back
+                    or pattern != repeated_back[0, tile_x : tile_x+pattern.width]
+                )
+            )
             # we've reached a border colour, append our interval & start a new one
             # don't append if same fill colour/pattern,
             # to avoid infinite loops over bits already painted (eg. 00 shape)
+            x_stop_next = x + pattern.width - 1
+            x = x_stop_next + 1
             if x_stop_next >= x_start_next and not has_same_pattern:
                 line_seed.append([x_start_next, x_stop_next, y, ydir])
             x_start_next = x + 1

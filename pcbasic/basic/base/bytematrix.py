@@ -235,7 +235,7 @@ class ByteMatrix(object):
         )
 
     def hrepeat(self, times=1):
-        """Multiply width by byte repetition (00 11 22 ...) ."""
+        """Multiply width by byte repetition (00 11 22 ...)."""
         return self._create_from_rows([
             bytearray(_byte for _byte in _row for _ in range(times))
             for _row in self._rows
@@ -246,6 +246,21 @@ class ByteMatrix(object):
         return self._create_from_rows([
             bytearray(_row) for _row in self._rows
             for _ in range(times)
+        ])
+
+    def htile(self, times=1):
+        """Multiply width by tiling (012 012 ...)."""
+        return self._create_from_rows([
+            bytearray(_row*times)
+            for _row in self._rows
+        ])
+
+    def vtile(self, times=1):
+        """Multiply height by row tiling."""
+        return self._create_from_rows([
+            bytearray(_row)
+            for _ in range(times)
+            for _row in self._rows
         ])
 
     def row_until(self, element, y, x0, x1):
