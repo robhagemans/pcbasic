@@ -953,7 +953,7 @@ class VideoSDL2(VideoPlugin):
         ):
         """Initialise a given text or graphics mode."""
         # unpack mode info struct
-        self._font_height = canvas_height // text_height
+        self._font_height = -(-canvas_height // text_height)
         self._font_width = canvas_width // text_width
         self._num_pages = num_pages
         self._text_cursor = text_cursor
@@ -1118,6 +1118,9 @@ class VideoSDL2(VideoPlugin):
     def put_rect(self, pagenum, x0, y0, array):
         """Apply bytematrix [y, x] of attributes to an area."""
         # reference the destination area
-        height, width = array.height, array.width
-        self._canvas_pixels[pagenum][y0:y0+height, x0:x0+width] = array
+        pixels = self._canvas_pixels[self._apagenum]
+        # clip to size if needed
+        if y0 + array.height > pixels.height or x0 + array.width > pixels.width:
+            array = array[:pixels.height-y0, :pixels.width-x0]
+        self._canvas_pixels[pagenum][y0:y0+array.height, x0:x0+array.width] = array
         self.busy = True

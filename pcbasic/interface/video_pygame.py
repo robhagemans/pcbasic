@@ -477,7 +477,7 @@ class VideoPygame(VideoPlugin):
         """Initialise a given text or graphics mode."""
         self.text_cursor = text_cursor
         # unpack mode info struct
-        self.font_height = canvas_height // text_height
+        self.font_height = -(-canvas_height // text_height)
         self.font_width = canvas_width // text_width
         self.num_pages = num_pages
         # this assumes only text modes have blink
@@ -613,6 +613,9 @@ class VideoPygame(VideoPlugin):
     def put_rect(self, pagenum, x0, y0, array):
         """Apply numpy array [y][x] of attribytes to an area."""
         array = numpy.array(array._rows)
+        height, width = array.shape
+        if y0 + height > self.size[1] or x0 + width > self.size[0]:
+            array = array[:self.size[1]-y0, :self.size[0]-x0]
         height, width = array.shape
         # reference the destination area
         pygame.surfarray.pixels2d(

@@ -291,7 +291,7 @@ class Video(object):
             # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
             return CGAMode(
                 # this actually produces 350, not 348
-                '720x348x2', 720, 350, 25, 80, 1,
+                '720x348x2', 720, 348, 25, 80, 1,
                 bitsperpixel=1, interleave_times=4, bank_size=0x2000,
                 num_pages=2, aspect=self.aspect,
                 colourmap=HerculesColourMapper(self.capabilities, self.monitor)
@@ -469,11 +469,16 @@ class GraphicsMode(VideoMode):
         ):
         """Initialise video mode settings."""
         font_width = pixel_width // text_width
-        font_height = pixel_height // text_height
+        # ceildiv for hercules (14-px font on 348 lines)
+        font_height = -(-pixel_height // text_height)
         VideoMode.__init__(
             self, name, text_height, text_width, font_height, font_width, attr, num_pages,
             colourmap
         )
+        # override pixel dimensions
+        self.pixel_height = pixel_height
+        self.pixel_width = pixel_width
+        # text mode flag
         self.is_text_mode = False
         # used in display.py to initialise pixelbuffer
         self.bitsperpixel = bitsperpixel
