@@ -93,6 +93,10 @@ class ByteMatrix(object):
         # do quick checks first
         return self.width == rhs.width and self.height == rhs.height and self._rows == rhs._rows
 
+    def __ne__(self, rhs):
+        """Non-equality to other byte matrix."""
+        return not self.__eq__(rhs)
+
     def _elementwise_list(self, rhs, oper):
         """Helper for elementwise operations."""
         if isinstance(rhs, int):

@@ -850,11 +850,11 @@ class Drawing(object):
             x_stop_next = x + pattern.width - 1
             x = x_stop_next + 1
             # never match zero pattern (special case)
-            has_same_pattern = (rtile != ZERO_TILE)
+            has_same_pattern = (rtile != ZERO_TILE[0, :rtile.width])
             for pat_x in range(pattern.width):
                 if not has_same_pattern:
                     break
-                tile_x = (x_start_next + pat_x) % tile.width
+                tile_x = (x_start_next + pat_x) % rtile.width
                 has_same_pattern &= (pattern[0, pat_x] == rtile[0, tile_x])
                 has_same_pattern &= (not back or pattern[0, pat_x] != rback[0, tile_x])
             # we've reached a border colour, append our interval & start a new one
