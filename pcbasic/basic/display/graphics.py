@@ -846,14 +846,13 @@ class Drawing(object):
             rback = back[y % back.height, :]
             repeated_back = rback.htile(1 - (-max_width // rback.width))
         x = x_start
-        x_start_next = x_start
-        x_stop_next = x_start_next-1
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
             pattern = self._pixels.pages[self._apagenum].get_until(x, x_stop+1, y, border)
-            # never match zero pattern (special case)
-            tile_x = x_start_next % rtile.width
+            # check if scanline pattern matches fill pattern
+            tile_x = x % rtile.width
             has_same_pattern = (
+                # never match zero pattern (special case)
                 rtile != ZERO_TILE[0, :rtile.width]
                 and pattern == repeated_tile[0, tile_x : tile_x+pattern.width]
                 and (
@@ -864,11 +863,10 @@ class Drawing(object):
             # we've reached a border colour, append our interval & start a new one
             # don't append if same fill colour/pattern,
             # to avoid infinite loops over bits already painted (eg. 00 shape)
-            x_stop_next = x + pattern.width - 1
-            x = x_stop_next + 1
-            if x_stop_next >= x_start_next and not has_same_pattern:
-                line_seed.append([x_start_next, x_stop_next, y, ydir])
-            x_start_next = x + 1
+            x_start = x
+            x += pattern.width
+            if x - 1 >= x_start and not has_same_pattern:
+                line_seed.append([x_start, x - 1, y, ydir])
             x += 1
         return line_seed
 
