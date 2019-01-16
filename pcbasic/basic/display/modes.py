@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 from ..base import error
 from ..base import bytematrix
-from .colours import MONO_TINT
 from .colours import CGA2ColourMapper, CGA4ColourMapper, CGA16ColourMapper
 from .colours import EGA16ColourMapper, EGA64ColourMapper
 from .colours import EGA16TextColourMapper, EGA64TextColourMapper
@@ -145,230 +144,211 @@ TO_WIDTH['vga'] = TO_WIDTH['ega']
 TO_WIDTH['tandy'] = TO_WIDTH['pcjr']
 
 
-class Video(object):
-    """Video mode factory."""
+def get_mode(number, width, adapter, monitor, video_mem_size):
+    """Retrieve text or graphical mode by screen number."""
+    try:
+        if number:
+            name = _MODES[adapter][number]
+            return _get_graphics_mode(name, adapter, monitor, video_mem_size)
+        else:
+            name = _MODES[adapter][0, width]
+            return _get_text_mode(name, adapter, monitor, video_mem_size)
+    except KeyError:
+        # no such mode
+        raise error.BASICError(error.IFC)
 
-    def __init__(self, capabilities, monitor, video_mem_size):
-        """Initialise colour sets."""
-        # public members - used by VideoMode
-        # video adapter type - cga, ega, etc
-        if capabilities == 'ega' and monitor in MONO_TINT:
-            capabilities = 'ega_mono'
-        self.capabilities = capabilities
-        # emulated monitor type - rgb, composite, mono
-        self.monitor = monitor
-        # video memory size
-        self._video_mem_size = int(video_mem_size)
+def _get_graphics_mode(name, adapter, monitor, video_mem_size):
+    """Retrieve graphical mode by name."""
+    if name == '320x200x4':
+        # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
+        # tandy:2 pages if 32k memory; ega: 1 page only
+        return CGAMode(
+            '320x200x4', 320, 200, 25, 40, 3,
+            bitsperpixel=2, interleave_times=2, bank_size=0x2000,
+            video_mem_size=video_mem_size,
+            max_pages=(2 if adapter in ('pcjr', 'tandy') else 1),
+            cursor_index=None,
+            colourmap=CGA4ColourMapper(adapter, monitor)
+        )
+    elif name == '640x200x2':
+        # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
+        return CGAMode(
+            '640x200x2', 640, 200, 25, 80, 1,
+            bitsperpixel=1, interleave_times=2, bank_size=0x2000,
+            video_mem_size=video_mem_size, max_pages=1, cursor_index=None,
+            colourmap=CGA2ColourMapper(adapter, monitor)
+        )
+    elif name == '160x200x16':
+        # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
+        return CGAMode(
+            '160x200x16', 160, 200, 25, 20, 15,
+            bitsperpixel=4, interleave_times=2, bank_size=0x2000,
+            video_mem_size=video_mem_size, max_pages=None, cursor_index=3,
+            colourmap=CGA16ColourMapper(adapter, monitor)
+        )
+    elif name == '320x200x4pcjr':
+        #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
+        return CGAMode(
+            '320x200x4pcjr', 320, 200, 25, 40, 3,
+            bitsperpixel=2, interleave_times=2, bank_size=0x2000,
+            video_mem_size=video_mem_size, max_pages=None, cursor_index=3,
+            colourmap=CGA4ColourMapper(adapter, monitor)
+        )
+    elif name == '320x200x16pcjr':
+        # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
+        return CGAMode(
+            '320x200x16pcjr', 320, 200, 25, 40, 15,
+            bitsperpixel=4, interleave_times=4, bank_size=0x2000,
+            video_mem_size=video_mem_size, max_pages=None, cursor_index=3,
+            colourmap=CGA16ColourMapper(adapter, monitor)
+        )
+    elif name == '640x200x4':
+        # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
+        return Tandy6Mode(
+            '640x200x4', 640, 200, 25, 80, 3,
+            bitsperpixel=2, interleave_times=4, bank_size=0x2000,
+            video_mem_size=video_mem_size, max_pages=None, cursor_index=3,
+            colourmap=CGA4ColourMapper(adapter, monitor)
+        )
+    elif name == '320x200x16':
+        # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
+        return EGAMode(
+            '320x200x16', 320, 200, 25, 40, 15,
+            bitsperpixel=4, interleave_times=1, bank_size=0x2000,
+            video_mem_size=video_mem_size, max_pages=None, cursor_index=None,
+            colourmap=EGA16ColourMapper(adapter, monitor)
+        )
+    elif name == '640x200x16':
+        # 0Eh 640x200x16    EGA screen 8
+        return EGAMode(
+            '640x200x16', 640, 200, 25, 80, 15,
+            bitsperpixel=4, interleave_times=1, bank_size=0x4000,
+            video_mem_size=video_mem_size, max_pages=None, cursor_index=None,
+            colourmap=EGA16ColourMapper(adapter, monitor)
+        )
+    elif name == '640x350x16':
+        # 10h 640x350x16    EGA screen 9
+        return EGAMode(
+            '640x350x16', 640, 350, 25, 80, 15,
+            bitsperpixel=4, interleave_times=1, bank_size=0x8000,
+            video_mem_size=video_mem_size, max_pages=None, cursor_index=None,
+            colourmap=EGA64ColourMapper(adapter, monitor)
+        )
+    elif name == '640x350x4':
+        # 0Fh 640x350x4     EGA monochrome screen 10
+        return EGAMode(
+            '640x350x16', 640, 350, 25, 80, 1,
+            bitsperpixel=2, interleave_times=1, bank_size=0x8000,
+            video_mem_size=video_mem_size, max_pages=None, cursor_index=None,
+            planes_used=(1, 3),
+            colourmap=EGAMonoColourMapper(adapter, monitor)
+        )
+    elif name == '640x400x2':
+        # 40h 640x400x2   1bpp  olivetti screen 3-255
+        return CGAMode(
+            '640x400x2', 640, 400, 25, 80, 1,
+            bitsperpixel=1, interleave_times=4, bank_size=0x2000,
+            video_mem_size=video_mem_size, max_pages=1, cursor_index=None,
+            colourmap=CGA2ColourMapper(adapter, monitor)
+        )
+    elif name == '720x348x2':
+        # hercules screen 3
+        # SCREEN 3 supports two pages (0 and 1);
+        # SCREEN 0 used with Hercules supports only one page.
+        # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
+        return CGAMode(
+            '720x348x2', 720, 348, 25, 80, 1,
+            bitsperpixel=1, interleave_times=4, bank_size=0x2000,
+            video_mem_size=video_mem_size, max_pages=2, cursor_index=None,
+            colourmap=HerculesColourMapper(adapter, monitor)
+        )
 
-    def set_video_memory_size(self, video_mem_size):
-        """Set video memory size."""
-        self._video_mem_size = int(video_mem_size)
-
-    def get_mode(self, number, width=None):
-        """Retrieve text or graphical mode by screen number."""
-        try:
-            if number:
-                name = _MODES[self.capabilities][number]
-                return self.get_graphics_mode(name)
-            else:
-                name = _MODES[self.capabilities][0, width]
-                return self.get_text_mode(name)
-        except KeyError:
-            # no such mode
-            raise error.BASICError(error.IFC)
-
-    def get_graphics_mode(self, name):
-        """Retrieve graphical mode by name."""
-        if name == '320x200x4':
-            # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
-            # tandy:2 pages if 32k memory; ega: 1 page only
-            return CGAMode(
-                '320x200x4', 320, 200, 25, 40, 3,
-                bitsperpixel=2, interleave_times=2, bank_size=0x2000,
-                video_mem_size=self._video_mem_size,
-                max_pages=(2 if self.capabilities in ('pcjr', 'tandy') else 1),
-                cursor_index=None,
-                colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '640x200x2':
-            # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
-            return CGAMode(
-                '640x200x2', 640, 200, 25, 80, 1,
-                bitsperpixel=1, interleave_times=2, bank_size=0x2000,
-                video_mem_size=self._video_mem_size, max_pages=1, cursor_index=None,
-                colourmap=CGA2ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '160x200x16':
-            # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
-            return CGAMode(
-                '160x200x16', 160, 200, 25, 20, 15,
-                bitsperpixel=4, interleave_times=2, bank_size=0x2000,
-                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=3,
-                colourmap=CGA16ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '320x200x4pcjr':
-            #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
-            return CGAMode(
-                '320x200x4pcjr', 320, 200, 25, 40, 3,
-                bitsperpixel=2, interleave_times=2, bank_size=0x2000,
-                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=3,
-                colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '320x200x16pcjr':
-            # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
-            return CGAMode(
-                '320x200x16pcjr', 320, 200, 25, 40, 15,
-                bitsperpixel=4, interleave_times=4, bank_size=0x2000,
-                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=3,
-                colourmap=CGA16ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '640x200x4':
-            # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
-            return Tandy6Mode(
-                '640x200x4', 640, 200, 25, 80, 3,
-                bitsperpixel=2, interleave_times=4, bank_size=0x2000,
-                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=3,
-                colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '320x200x16':
-            # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
-            return EGAMode(
-                '320x200x16', 320, 200, 25, 40, 15,
-                bitsperpixel=4, interleave_times=1, bank_size=0x2000,
-                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=None,
-                colourmap=EGA16ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '640x200x16':
-            # 0Eh 640x200x16    EGA screen 8
-            return EGAMode(
-                '640x200x16', 640, 200, 25, 80, 15,
-                bitsperpixel=4, interleave_times=1, bank_size=0x4000,
-                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=None,
-                colourmap=EGA16ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '640x350x16':
-            # 10h 640x350x16    EGA screen 9
-            return EGAMode(
-                '640x350x16', 640, 350, 25, 80, 15,
-                bitsperpixel=4, interleave_times=1, bank_size=0x8000,
-                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=None,
-                colourmap=EGA64ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '640x350x4':
-            # 0Fh 640x350x4     EGA monochrome screen 10
-            return EGAMode(
-                '640x350x16', 640, 350, 25, 80, 1,
-                bitsperpixel=2, interleave_times=1, bank_size=0x8000,
-                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=None,
-                planes_used=(1, 3),
-                colourmap=EGAMonoColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '640x400x2':
-            # 40h 640x400x2   1bpp  olivetti screen 3-255
-            return CGAMode(
-                '640x400x2', 640, 400, 25, 80, 1,
-                bitsperpixel=1, interleave_times=4, bank_size=0x2000,
-                video_mem_size=self._video_mem_size, max_pages=1, cursor_index=None,
-                colourmap=CGA2ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == '720x348x2':
-            # hercules screen 3
-            # SCREEN 3 supports two pages (0 and 1);
-            # SCREEN 0 used with Hercules supports only one page.
-            # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
-            return CGAMode(
-                '720x348x2', 720, 348, 25, 80, 1,
-                bitsperpixel=1, interleave_times=4, bank_size=0x2000,
-                video_mem_size=self._video_mem_size, max_pages=2, cursor_index=None,
-                colourmap=HerculesColourMapper(self.capabilities, self.monitor)
-            )
-
-    def get_text_mode(self, name):
-        """Retrieve graphical mode by name."""
-        if name == 'vgatext40':
-            return TextMode(
-                'vgatext40', 25, 40, 16, 9, 7,
-                video_mem_size=self._video_mem_size, max_pages=8, mono=False,
-                colourmap=EGA64TextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'vgatext80':
-            return TextMode(
-                'vgatext80', 25, 80, 16, 9, 7,
-                video_mem_size=self._video_mem_size, max_pages=4, mono=False,
-                colourmap=EGA64TextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'egatext40':
-            return TextMode(
-                'egatext40', 25, 40, 14, 8, 7,
-                video_mem_size=self._video_mem_size, max_pages=8, mono=False,
-                colourmap=EGA64TextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'egatext80':
-            return TextMode(
-                'egatext80', 25, 80, 14, 8, 7,
-                video_mem_size=self._video_mem_size, max_pages=4, mono=False,
-                colourmap=EGA64TextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'ega_monotext40':
-            return TextMode(
-                'ega_monotext40', 25, 40, 14, 8, 7,
-                video_mem_size=self._video_mem_size, max_pages=8, mono=True,
-                colourmap=MonoTextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'ega_monotext80':
-            return TextMode(
-                'ega_monotext80', 25, 80, 14, 8, 7,
-                video_mem_size=self._video_mem_size, max_pages=4, mono=True,
-                colourmap=MonoTextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'mdatext40':
-            return TextMode(
-                'mdatext40', 25, 40, 14, 9, 7,
-                video_mem_size=self._video_mem_size, max_pages=1, mono=True,
-                colourmap=MonoTextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'mdatext80':
-            return TextMode(
-                'mdatext80', 25, 80, 14, 9, 7,
-                video_mem_size=self._video_mem_size, max_pages=1, mono=True,
-                colourmap=MonoTextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'tandytext40':
-            return TextMode(
-                'tandytext40', 25, 40, 9, 8, 7,
-                video_mem_size=self._video_mem_size, max_pages=8, mono=False,
-                colourmap=EGA16TextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'tandytext80':
-            return TextMode(
-                'tandytext80', 25, 80, 9, 8, 7,
-                video_mem_size=self._video_mem_size, max_pages=4, mono=False,
-                colourmap=EGA16TextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'cgatext40':
-            return TextMode(
-                'cgatext40', 25, 40, 8, 8, 7,
-                video_mem_size=self._video_mem_size, max_pages=8, mono=False,
-                colourmap=EGA16TextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'cgatext80':
-            return TextMode(
-                'cgatext80', 25, 80, 8, 8, 7,
-                video_mem_size=self._video_mem_size, max_pages=4, mono=False,
-                colourmap=EGA16TextColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'olivettitext40':
-            return TextMode(
-                'olivettitext40', 25, 40, 16, 8, 7,
-                video_mem_size=self._video_mem_size, max_pages=8, mono=False,
-                colourmap=EGA16ColourMapper(self.capabilities, self.monitor)
-            )
-        elif name == 'olivettitext80':
-            return TextMode(
-                'olivettitext80', 25, 80, 16, 8, 7,
-                video_mem_size=self._video_mem_size, max_pages=4, mono=False,
-                colourmap=EGA16ColourMapper(self.capabilities, self.monitor)
-            )
+def _get_text_mode(name, adapter, monitor, video_mem_size):
+    """Retrieve graphical mode by name."""
+    if name == 'vgatext40':
+        return TextMode(
+            'vgatext40', 25, 40, 16, 9, 7,
+            video_mem_size=video_mem_size, max_pages=8, mono=False,
+            colourmap=EGA64TextColourMapper(adapter, monitor)
+        )
+    elif name == 'vgatext80':
+        return TextMode(
+            'vgatext80', 25, 80, 16, 9, 7,
+            video_mem_size=video_mem_size, max_pages=4, mono=False,
+            colourmap=EGA64TextColourMapper(adapter, monitor)
+        )
+    elif name == 'egatext40':
+        return TextMode(
+            'egatext40', 25, 40, 14, 8, 7,
+            video_mem_size=video_mem_size, max_pages=8, mono=False,
+            colourmap=EGA64TextColourMapper(adapter, monitor)
+        )
+    elif name == 'egatext80':
+        return TextMode(
+            'egatext80', 25, 80, 14, 8, 7,
+            video_mem_size=video_mem_size, max_pages=4, mono=False,
+            colourmap=EGA64TextColourMapper(adapter, monitor)
+        )
+    elif name == 'ega_monotext40':
+        return TextMode(
+            'ega_monotext40', 25, 40, 14, 8, 7,
+            video_mem_size=video_mem_size, max_pages=8, mono=True,
+            colourmap=MonoTextColourMapper(adapter, monitor)
+        )
+    elif name == 'ega_monotext80':
+        return TextMode(
+            'ega_monotext80', 25, 80, 14, 8, 7,
+            video_mem_size=video_mem_size, max_pages=4, mono=True,
+            colourmap=MonoTextColourMapper(adapter, monitor)
+        )
+    elif name == 'mdatext40':
+        return TextMode(
+            'mdatext40', 25, 40, 14, 9, 7,
+            video_mem_size=video_mem_size, max_pages=1, mono=True,
+            colourmap=MonoTextColourMapper(adapter, monitor)
+        )
+    elif name == 'mdatext80':
+        return TextMode(
+            'mdatext80', 25, 80, 14, 9, 7,
+            video_mem_size=video_mem_size, max_pages=1, mono=True,
+            colourmap=MonoTextColourMapper(adapter, monitor)
+        )
+    elif name == 'tandytext40':
+        return TextMode(
+            'tandytext40', 25, 40, 9, 8, 7,
+            video_mem_size=video_mem_size, max_pages=8, mono=False,
+            colourmap=EGA16TextColourMapper(adapter, monitor)
+        )
+    elif name == 'tandytext80':
+        return TextMode(
+            'tandytext80', 25, 80, 9, 8, 7,
+            video_mem_size=video_mem_size, max_pages=4, mono=False,
+            colourmap=EGA16TextColourMapper(adapter, monitor)
+        )
+    elif name == 'cgatext40':
+        return TextMode(
+            'cgatext40', 25, 40, 8, 8, 7,
+            video_mem_size=video_mem_size, max_pages=8, mono=False,
+            colourmap=EGA16TextColourMapper(adapter, monitor)
+        )
+    elif name == 'cgatext80':
+        return TextMode(
+            'cgatext80', 25, 80, 8, 8, 7,
+            video_mem_size=video_mem_size, max_pages=4, mono=False,
+            colourmap=EGA16TextColourMapper(adapter, monitor)
+        )
+    elif name == 'olivettitext40':
+        return TextMode(
+            'olivettitext40', 25, 40, 16, 8, 7,
+            video_mem_size=video_mem_size, max_pages=8, mono=False,
+            colourmap=EGA16ColourMapper(adapter, monitor)
+        )
+    elif name == 'olivettitext80':
+        return TextMode(
+            'olivettitext80', 25, 80, 16, 8, 7,
+            video_mem_size=video_mem_size, max_pages=4, mono=False,
+            colourmap=EGA16ColourMapper(adapter, monitor)
+        )
 
 
 ##############################################################################

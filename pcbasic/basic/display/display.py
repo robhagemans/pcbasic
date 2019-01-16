@@ -12,11 +12,13 @@ from ..base import signals
 from ..base import error
 from .. import values
 from . import graphics
+from . import modes
 
 from .colours import Palette
 from .textscreen import TextScreen
 from .pixels import PixelBuffer
-from .modes import Video, TO_WIDTH
+from .colours import MONO_TINT
+from .modes import TO_WIDTH
 
 
 class Display(object):
@@ -32,10 +34,15 @@ class Display(object):
         self._values = values
         self._memory = memory
         # low level settings
-        self.video = Video(capabilities, monitor, video_mem_size)
-        self.capabilities = self.video.capabilities
+        if capabilities == 'ega' and monitor in MONO_TINT:
+            capabilities = 'ega_mono'
+        self.capabilities = capabilities
+        self._monitor = monitor
+        self._video_mem_size = video_mem_size
         # prepare video modes
-        self.mode = self.video.get_mode(0, initial_width)
+        self.mode = modes.get_mode(
+            0, initial_width, self.capabilities, self._monitor, self._video_mem_size
+        )
         # video mode settings
         self.colorswitch, self.apagenum, self.vpagenum = 1, 0, 0
         # current attribute
@@ -88,7 +95,9 @@ class Display(object):
         if new_mode_nr is None:
             # keep current mode if graphics but maybe change width if text
             if self.mode.is_text_mode and new_width is not None:
-                new_mode = self.video.get_mode(0, new_width)
+                new_mode = modes.get_mode(
+                    0, new_width, self.capabilities, self._monitor, self._video_mem_size
+                )
             else:
                 new_mode = self.mode
         else:
@@ -97,7 +106,9 @@ class Display(object):
                 # otherwise, width persists on change to screen 0
                 new_width = 40 if (self.mode.width == 20) else self.mode.width
             # retrieve the specs for the new video mode
-            new_mode = self.video.get_mode(new_mode_nr, new_width)
+            new_mode = modes.get_mode(
+                new_mode_nr, new_width, self.capabilities, self._monitor, self._video_mem_size
+            )
         # set colorswitch
         new_colorswitch = bool(new_colorswitch)
         if new_colorswitch is None:
@@ -197,18 +208,13 @@ class Display(object):
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
-        self.video.set_video_memory_size(new_size)
-        # text screen modes don't depend on video memory size
-        if self.mode.is_text_mode:
-            return
+        self._video_mem_size = int(new_size)
         # check if we need to drop out of our current mode
         page = max(self.vpagenum, self.apagenum)
         # reload max number of pages; do we fit? if not, drop to text
-        new_mode = self.video.get_graphics_mode(self.mode.name)
-        if page >= new_mode.num_pages:
+        self.mode.memorymap.set_video_mem_size(self._video_mem_size)
+        if page >= self.mode.num_pages:
             self.screen(0, 0, 0, 0, force_reset=True)
-        else:
-            self.mode = new_mode
 
     def rebuild(self):
         """Completely resubmit the screen to the interface."""
