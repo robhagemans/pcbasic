@@ -185,18 +185,17 @@ class Video(object):
             return CGAMode(
                 '320x200x4', 320, 200, 25, 40, 3,
                 bitsperpixel=2, interleave_times=2, bank_size=0x2000,
-                num_pages=(
-                    self._video_mem_size // (2*0x2000)
-                    if self.capabilities in ('pcjr', 'tandy')
-                    else 1
-                ),
+                video_mem_size=self._video_mem_size,
+                max_pages=(2 if self.capabilities in ('pcjr', 'tandy') else 1),
+                cursor_index=None,
                 colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '640x200x2':
             # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
             return CGAMode(
                 '640x200x2', 640, 200, 25, 80, 1,
-                bitsperpixel=1, interleave_times=2, bank_size=0x2000, num_pages=1,
+                bitsperpixel=1, interleave_times=2, bank_size=0x2000,
+                video_mem_size=self._video_mem_size, max_pages=1, cursor_index=None,
                 colourmap=CGA2ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '160x200x16':
@@ -204,8 +203,7 @@ class Video(object):
             return CGAMode(
                 '160x200x16', 160, 200, 25, 20, 15,
                 bitsperpixel=4, interleave_times=2, bank_size=0x2000,
-                num_pages=self._video_mem_size//(2*0x2000),
-                cursor_index=3,
+                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=3,
                 colourmap=CGA16ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '320x200x4pcjr':
@@ -213,7 +211,7 @@ class Video(object):
             return CGAMode(
                 '320x200x4pcjr', 320, 200, 25, 40, 3,
                 bitsperpixel=2, interleave_times=2, bank_size=0x2000,
-                num_pages=self._video_mem_size//(2*0x2000), cursor_index=3,
+                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=3,
                 colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '320x200x16pcjr':
@@ -221,7 +219,7 @@ class Video(object):
             return CGAMode(
                 '320x200x16pcjr', 320, 200, 25, 40, 15,
                 bitsperpixel=4, interleave_times=4, bank_size=0x2000,
-                num_pages=self._video_mem_size // (4*0x2000), cursor_index=3,
+                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=3,
                 colourmap=CGA16ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '640x200x4':
@@ -229,7 +227,7 @@ class Video(object):
             return Tandy6Mode(
                 '640x200x4', 640, 200, 25, 80, 3,
                 bitsperpixel=2, interleave_times=4, bank_size=0x2000,
-                num_pages=self._video_mem_size // (4*0x2000), cursor_index=3,
+                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=3,
                 colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '320x200x16':
@@ -237,7 +235,7 @@ class Video(object):
             return EGAMode(
                 '320x200x16', 320, 200, 25, 40, 15,
                 bitsperpixel=4, interleave_times=1, bank_size=0x2000,
-                num_pages=self._video_mem_size // (4*0x2000),
+                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=None,
                 colourmap=EGA16ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '640x200x16':
@@ -245,7 +243,7 @@ class Video(object):
             return EGAMode(
                 '640x200x16', 640, 200, 25, 80, 15,
                 bitsperpixel=4, interleave_times=1, bank_size=0x4000,
-                num_pages=self._video_mem_size // (4*0x4000),
+                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=None,
                 colourmap=EGA16ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '640x350x16':
@@ -253,7 +251,7 @@ class Video(object):
             return EGAMode(
                 '640x350x16', 640, 350, 25, 80, 15,
                 bitsperpixel=4, interleave_times=1, bank_size=0x8000,
-                num_pages=self._video_mem_size // (4*0x8000),
+                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=None,
                 colourmap=EGA64ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '640x350x4':
@@ -261,7 +259,7 @@ class Video(object):
             return EGAMode(
                 '640x350x16', 640, 350, 25, 80, 1,
                 bitsperpixel=2, interleave_times=1, bank_size=0x8000,
-                num_pages=self._video_mem_size // (2*0x8000),
+                video_mem_size=self._video_mem_size, max_pages=None, cursor_index=None,
                 planes_used=(1, 3),
                 colourmap=EGAMonoColourMapper(self.capabilities, self.monitor)
             )
@@ -269,7 +267,8 @@ class Video(object):
             # 40h 640x400x2   1bpp  olivetti screen 3-255
             return CGAMode(
                 '640x400x2', 640, 400, 25, 80, 1,
-                bitsperpixel=1, interleave_times=4, bank_size=0x2000, num_pages=1,
+                bitsperpixel=1, interleave_times=4, bank_size=0x2000,
+                video_mem_size=self._video_mem_size, max_pages=1, cursor_index=None,
                 colourmap=CGA2ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '720x348x2':
@@ -279,7 +278,8 @@ class Video(object):
             # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
             return CGAMode(
                 '720x348x2', 720, 348, 25, 80, 1,
-                bitsperpixel=1, interleave_times=4, bank_size=0x2000, num_pages=2,
+                bitsperpixel=1, interleave_times=4, bank_size=0x2000,
+                video_mem_size=self._video_mem_size, max_pages=2, cursor_index=None,
                 colourmap=HerculesColourMapper(self.capabilities, self.monitor)
             )
 
@@ -287,72 +287,86 @@ class Video(object):
         """Retrieve graphical mode by name."""
         if name == 'vgatext40':
             return TextMode(
-                'vgatext40', 25, 40, 16, 9, 7, num_pages=8,
+                'vgatext40', 25, 40, 16, 9, 7,
+                video_mem_size=self._video_mem_size, max_pages=8, mono=False,
                 colourmap=EGA64TextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'vgatext80':
             return TextMode(
-                'vgatext80', 25, 80, 16, 9, 7, num_pages=4,
+                'vgatext80', 25, 80, 16, 9, 7,
+                video_mem_size=self._video_mem_size, max_pages=4, mono=False,
                 colourmap=EGA64TextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'egatext40':
             return TextMode(
-                'egatext40', 25, 40, 14, 8, 7, num_pages=8,
+                'egatext40', 25, 40, 14, 8, 7,
+                video_mem_size=self._video_mem_size, max_pages=8, mono=False,
                 colourmap=EGA64TextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'egatext80':
             return TextMode(
-                'egatext80', 25, 80, 14, 8, 7, num_pages=4,
+                'egatext80', 25, 80, 14, 8, 7,
+                video_mem_size=self._video_mem_size, max_pages=4, mono=False,
                 colourmap=EGA64TextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'ega_monotext40':
             return TextMode(
-                'ega_monotext40', 25, 40, 14, 8, 7, is_mono=True, num_pages=8,
+                'ega_monotext40', 25, 40, 14, 8, 7,
+                video_mem_size=self._video_mem_size, max_pages=8, mono=True,
                 colourmap=MonoTextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'ega_monotext80':
             return TextMode(
-                'ega_monotext80', 25, 80, 14, 8, 7, is_mono=True, num_pages=4,
+                'ega_monotext80', 25, 80, 14, 8, 7,
+                video_mem_size=self._video_mem_size, max_pages=4, mono=True,
                 colourmap=MonoTextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'mdatext40':
             return TextMode(
-                'mdatext40', 25, 40, 14, 9, 7, is_mono=True, num_pages=1,
+                'mdatext40', 25, 40, 14, 9, 7,
+                video_mem_size=self._video_mem_size, max_pages=1, mono=True,
                 colourmap=MonoTextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'mdatext80':
             return TextMode(
-                'mdatext80', 25, 80, 14, 9, 7, is_mono=True, num_pages=1,
+                'mdatext80', 25, 80, 14, 9, 7,
+                video_mem_size=self._video_mem_size, max_pages=1, mono=True,
                 colourmap=MonoTextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'tandytext40':
             return TextMode(
-                'tandytext40', 25, 40, 9, 8, 7, num_pages=8,
+                'tandytext40', 25, 40, 9, 8, 7,
+                video_mem_size=self._video_mem_size, max_pages=8, mono=False,
                 colourmap=EGA16TextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'tandytext80':
             return TextMode(
-                'tandytext80', 25, 80, 9, 8, 7, num_pages=4,
+                'tandytext80', 25, 80, 9, 8, 7,
+                video_mem_size=self._video_mem_size, max_pages=4, mono=False,
                 colourmap=EGA16TextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'cgatext40':
             return TextMode(
-                'cgatext40', 25, 40, 8, 8, 7, num_pages=8,
+                'cgatext40', 25, 40, 8, 8, 7,
+                video_mem_size=self._video_mem_size, max_pages=8, mono=False,
                 colourmap=EGA16TextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'cgatext80':
             return TextMode(
-                'cgatext80', 25, 80, 8, 8, 7, num_pages=4,
+                'cgatext80', 25, 80, 8, 8, 7,
+                video_mem_size=self._video_mem_size, max_pages=4, mono=False,
                 colourmap=EGA16TextColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'olivettitext40':
             return TextMode(
-                'olivettitext40', 25, 40, 16, 8, 7, num_pages=8,
+                'olivettitext40', 25, 40, 16, 8, 7,
+                video_mem_size=self._video_mem_size, max_pages=8, mono=False,
                 colourmap=EGA16ColourMapper(self.capabilities, self.monitor)
             )
         elif name == 'olivettitext80':
             return TextMode(
-                'olivettitext80', 25, 80, 16, 8, 7, num_pages=4,
+                'olivettitext80', 25, 80, 16, 8, 7,
+                video_mem_size=self._video_mem_size, max_pages=4, mono=False,
                 colourmap=EGA16ColourMapper(self.capabilities, self.monitor)
             )
 
@@ -364,7 +378,7 @@ class VideoMode(object):
     """Base class for video modes."""
 
     def __init__(
-            self, name, height, width, font_height, font_width, attr, num_pages, colourmap
+            self, name, height, width, font_height, font_width, attr, colourmap
         ):
         """Initialise video mode settings."""
         self.name = name
@@ -376,11 +390,15 @@ class VideoMode(object):
         self.pixel_width = width * font_width
         # initial/default attribute
         self.attr = attr
-        self.num_pages = num_pages # or video_mem_size // page_size
         # override these
         self.is_text_mode = None
         self.memorymap = None
         self.colourmap = colourmap
+
+    @property
+    def num_pages(self):
+        """Number of available pages."""
+        return self.memorymap.num_pages
 
     def pixel_to_text_pos(self, x, y):
         """Convert pixel position to text position."""
@@ -427,14 +445,14 @@ class TextMode(VideoMode):
 
     def __init__(
             self, name, height, width, font_height, font_width, attr,
-            num_pages, is_mono=False, colourmap=None
+            video_mem_size, max_pages, mono, colourmap
         ):
         """Initialise video mode settings."""
         VideoMode.__init__(
-            self, name, height, width, font_height, font_width, attr, num_pages, colourmap
+            self, name, height, width, font_height, font_width, attr, colourmap
         )
         self.is_text_mode = True
-        self.memorymap = self._textmemorymapper(height, width, num_pages, is_mono)
+        self.memorymap = self._textmemorymapper(height, width, video_mem_size, max_pages, mono)
 
 
 ##############################################################################
@@ -448,19 +466,17 @@ class GraphicsMode(VideoMode):
     _tile_builder = lambda _: None
     _sprite_builder = lambda _: None
 
-
     def __init__(
             self, name, pixel_width, pixel_height, text_height, text_width,
-            attr, bitsperpixel, interleave_times, bank_size,
-            num_pages=None, cursor_index=None, colourmap=None
+            attr, bitsperpixel, interleave_times, bank_size, video_mem_size, max_pages,
+            cursor_index, colourmap
         ):
         """Initialise video mode settings."""
         font_width = pixel_width // text_width
         # ceildiv for hercules (14-px font on 348 lines)
         font_height = -(-pixel_height // text_height)
         VideoMode.__init__(
-            self, name, text_height, text_width, font_height, font_width, attr, num_pages,
-            colourmap
+            self, name, text_height, text_width, font_height, font_width, attr, colourmap
         )
         # override pixel dimensions
         self.pixel_height = pixel_height
@@ -470,7 +486,8 @@ class GraphicsMode(VideoMode):
         # used in display.py to initialise pixelbuffer
         self.bitsperpixel = bitsperpixel
         self.memorymap = self._memorymapper(
-            pixel_height, pixel_width, num_pages, interleave_times, bank_size, bitsperpixel
+            pixel_height, pixel_width, video_mem_size, max_pages,
+            interleave_times, bank_size, bitsperpixel
         )
         # cursor attribute
         self.cursor_index = cursor_index
@@ -496,14 +513,14 @@ class EGAMode(GraphicsMode):
 
     def __init__(
             self, name, pixel_width, pixel_height, text_height, text_width,
-            attr, bitsperpixel, interleave_times, bank_size, num_pages,
-            planes_used=range(4), colourmap=None
+            attr, bitsperpixel, interleave_times, bank_size, video_mem_size, max_pages,
+            cursor_index, colourmap, planes_used=range(4)
         ):
         """Initialise video mode settings."""
         GraphicsMode.__init__(
             self, name, pixel_width, pixel_height, text_height, text_width,
-            attr, bitsperpixel, interleave_times, bank_size,
-            num_pages, colourmap=colourmap
+            attr, bitsperpixel, interleave_times, bank_size, video_mem_size, max_pages,
+            cursor_index, colourmap
         )
         # EGA memorymap settings
         self.memorymap.set_planes_used(planes_used)
