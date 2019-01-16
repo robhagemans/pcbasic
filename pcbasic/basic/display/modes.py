@@ -167,93 +167,12 @@ def _get_graphics_mode(name, adapter, monitor, video_mem_size):
     colourmap = mode_data.pop('colourmap')(adapter, monitor)
     return cls(name=name, video_mem_size=video_mem_size, colourmap=colourmap, **mode_data)
 
-
 def _get_text_mode(name, adapter, monitor, video_mem_size):
-    """Retrieve graphical mode by name."""
-    if name == 'vgatext40':
-        return TextMode(
-            'vgatext40', 25, 40, 16, 9, 7,
-            video_mem_size=video_mem_size, max_pages=8, mono=False,
-            colourmap=EGA64TextColourMapper(adapter, monitor)
-        )
-    elif name == 'vgatext80':
-        return TextMode(
-            'vgatext80', 25, 80, 16, 9, 7,
-            video_mem_size=video_mem_size, max_pages=4, mono=False,
-            colourmap=EGA64TextColourMapper(adapter, monitor)
-        )
-    elif name == 'egatext40':
-        return TextMode(
-            'egatext40', 25, 40, 14, 8, 7,
-            video_mem_size=video_mem_size, max_pages=8, mono=False,
-            colourmap=EGA64TextColourMapper(adapter, monitor)
-        )
-    elif name == 'egatext80':
-        return TextMode(
-            'egatext80', 25, 80, 14, 8, 7,
-            video_mem_size=video_mem_size, max_pages=4, mono=False,
-            colourmap=EGA64TextColourMapper(adapter, monitor)
-        )
-    elif name == 'ega_monotext40':
-        return TextMode(
-            'ega_monotext40', 25, 40, 14, 8, 7,
-            video_mem_size=video_mem_size, max_pages=8, mono=True,
-            colourmap=MonoTextColourMapper(adapter, monitor)
-        )
-    elif name == 'ega_monotext80':
-        return TextMode(
-            'ega_monotext80', 25, 80, 14, 8, 7,
-            video_mem_size=video_mem_size, max_pages=4, mono=True,
-            colourmap=MonoTextColourMapper(adapter, monitor)
-        )
-    elif name == 'mdatext40':
-        return TextMode(
-            'mdatext40', 25, 40, 14, 9, 7,
-            video_mem_size=video_mem_size, max_pages=1, mono=True,
-            colourmap=MonoTextColourMapper(adapter, monitor)
-        )
-    elif name == 'mdatext80':
-        return TextMode(
-            'mdatext80', 25, 80, 14, 9, 7,
-            video_mem_size=video_mem_size, max_pages=1, mono=True,
-            colourmap=MonoTextColourMapper(adapter, monitor)
-        )
-    elif name == 'tandytext40':
-        return TextMode(
-            'tandytext40', 25, 40, 9, 8, 7,
-            video_mem_size=video_mem_size, max_pages=8, mono=False,
-            colourmap=EGA16TextColourMapper(adapter, monitor)
-        )
-    elif name == 'tandytext80':
-        return TextMode(
-            'tandytext80', 25, 80, 9, 8, 7,
-            video_mem_size=video_mem_size, max_pages=4, mono=False,
-            colourmap=EGA16TextColourMapper(adapter, monitor)
-        )
-    elif name == 'cgatext40':
-        return TextMode(
-            'cgatext40', 25, 40, 8, 8, 7,
-            video_mem_size=video_mem_size, max_pages=8, mono=False,
-            colourmap=EGA16TextColourMapper(adapter, monitor)
-        )
-    elif name == 'cgatext80':
-        return TextMode(
-            'cgatext80', 25, 80, 8, 8, 7,
-            video_mem_size=video_mem_size, max_pages=4, mono=False,
-            colourmap=EGA16TextColourMapper(adapter, monitor)
-        )
-    elif name == 'olivettitext40':
-        return TextMode(
-            'olivettitext40', 25, 40, 16, 8, 7,
-            video_mem_size=video_mem_size, max_pages=8, mono=False,
-            colourmap=EGA16ColourMapper(adapter, monitor)
-        )
-    elif name == 'olivettitext80':
-        return TextMode(
-            'olivettitext80', 25, 80, 16, 8, 7,
-            video_mem_size=video_mem_size, max_pages=4, mono=False,
-            colourmap=EGA16ColourMapper(adapter, monitor)
-        )
+    """Retrieve text mode by name."""
+    mode_data = dict(**_TEXT_MODES[name])
+    cls = mode_data.pop('layout')
+    colourmap = mode_data.pop('colourmap')(adapter, monitor)
+    return cls(name=name, video_mem_size=video_mem_size, colourmap=colourmap, **mode_data)
 
 
 ##############################################################################
@@ -329,15 +248,15 @@ class TextMode(VideoMode):
     _textmemorymapper = TextMemoryMapper
 
     def __init__(
-            self, name, height, width, font_height, font_width, attr,
+            self, name, rows, columns, font_height, font_width, attr,
             video_mem_size, max_pages, mono, colourmap
         ):
         """Initialise video mode settings."""
         VideoMode.__init__(
-            self, name, height, width, font_height, font_width, attr, colourmap
+            self, name, rows, columns, font_height, font_width, attr, colourmap
         )
         self.is_text_mode = True
-        self.memorymap = self._textmemorymapper(height, width, video_mem_size, max_pages, mono)
+        self.memorymap = self._textmemorymapper(rows, columns, video_mem_size, max_pages, mono)
 
 
 ##############################################################################
@@ -520,3 +439,63 @@ _GRAPHICS_MODES['320x200x4_8pg'] = _GRAPHICS_MODES['320x200x4']
 _GRAPHICS_MODES['640x200x2_8pg'] = _GRAPHICS_MODES['640x200x2']
 _GRAPHICS_MODES['320x200x4_8pg']['max_pages'] = 8
 _GRAPHICS_MODES['640x200x2_8pg']['max_pages'] = 8
+
+
+_TEXT_MODES = {
+    'vgatext40': dict(
+        rows=25, columns=40, font_height=16, font_width=9, attr=7, max_pages=8, mono=False,
+        layout=TextMode, colourmap=EGA64TextColourMapper
+    ),
+    'vgatext80': dict(
+        rows=25, columns=80, font_height=16, font_width=9, attr=7, max_pages=4, mono=False,
+        layout=TextMode, colourmap=EGA64TextColourMapper
+    ),
+    'egatext40': dict(
+        rows=25, columns=40, font_height=14, font_width=8, attr=7, max_pages=8, mono=False,
+        layout=TextMode, colourmap=EGA64TextColourMapper
+    ),
+    'egatext80': dict(
+        rows=25, columns=80, font_height=14, font_width=8, attr=7, max_pages=4, mono=False,
+        layout=TextMode, colourmap=EGA64TextColourMapper
+    ),
+    'ega_monotext40': dict(
+        rows=25, columns=40, font_height=14, font_width=8, attr=7, max_pages=8, mono=True,
+        layout=TextMode, colourmap=MonoTextColourMapper
+    ),
+    'ega_monotext80': dict(
+        rows=25, columns=80, font_height=14, font_width=8, attr=7, max_pages=4, mono=True,
+        layout=TextMode, colourmap=MonoTextColourMapper
+    ),
+    'mdatext40': dict(
+        rows=25, columns=40, font_height=14, font_width=9, attr=7, max_pages=1, mono=True,
+        layout=TextMode, colourmap=MonoTextColourMapper
+    ),
+    'mdatext80': dict(
+        rows=25, columns=80, font_height=14, font_width=9, attr=7, max_pages=1, mono=True,
+        layout=TextMode, colourmap=MonoTextColourMapper
+    ),
+    'tandytext40': dict(
+        rows=25, columns=40, font_height=9, font_width=8, attr=7, max_pages=8, mono=False,
+        layout=TextMode, colourmap=EGA16TextColourMapper
+    ),
+    'tandytext80': dict(
+        rows=25, columns=80, font_height=9, font_width=8, attr=7, max_pages=4, mono=False,
+        layout=TextMode, colourmap=EGA16TextColourMapper
+    ),
+    'cgatext40': dict(
+        rows=25, columns=40, font_height=8, font_width=8, attr=7, max_pages=8, mono=False,
+        layout=TextMode, colourmap=EGA16TextColourMapper
+    ),
+    'cgatext80': dict(
+        rows=25, columns=80, font_height=8, font_width=8, attr=7, max_pages=4, mono=False,
+        layout=TextMode, colourmap=EGA16TextColourMapper
+    ),
+    'olivettitext40': dict(
+        rows=25, columns=40, font_height=16, font_width=8, attr=7, max_pages=8, mono=False,
+        layout=TextMode, colourmap=EGA16ColourMapper
+    ),
+    'olivettitext80': dict(
+        rows=25, columns=80, font_height=16, font_width=8, attr=7, max_pages=4, mono=False,
+        layout=TextMode, colourmap=EGA16ColourMapper
+    ),
+}
