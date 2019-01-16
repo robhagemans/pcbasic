@@ -166,7 +166,7 @@ def _get_graphics_mode(name, adapter, monitor, video_mem_size):
             '320x200x4', 320, 200, 25, 40, 3,
             bitsperpixel=2, interleave_times=2, bank_size=0x2000,
             video_mem_size=video_mem_size,
-            max_pages=(2 if adapter in ('pcjr', 'tandy') else 1),
+            max_pages=(8 if adapter in ('pcjr', 'tandy') else 1),
             cursor_index=None,
             colourmap=CGA4ColourMapper(adapter, monitor)
         )
@@ -183,7 +183,7 @@ def _get_graphics_mode(name, adapter, monitor, video_mem_size):
         return CGAMode(
             '160x200x16', 160, 200, 25, 20, 15,
             bitsperpixel=4, interleave_times=2, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=None, cursor_index=3,
+            video_mem_size=video_mem_size, max_pages=8, cursor_index=3,
             colourmap=CGA16ColourMapper(adapter, monitor)
         )
     elif name == '320x200x4pcjr':
@@ -191,7 +191,7 @@ def _get_graphics_mode(name, adapter, monitor, video_mem_size):
         return CGAMode(
             '320x200x4pcjr', 320, 200, 25, 40, 3,
             bitsperpixel=2, interleave_times=2, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=None, cursor_index=3,
+            video_mem_size=video_mem_size, max_pages=8, cursor_index=3,
             colourmap=CGA4ColourMapper(adapter, monitor)
         )
     elif name == '320x200x16pcjr':
@@ -199,7 +199,7 @@ def _get_graphics_mode(name, adapter, monitor, video_mem_size):
         return CGAMode(
             '320x200x16pcjr', 320, 200, 25, 40, 15,
             bitsperpixel=4, interleave_times=4, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=None, cursor_index=3,
+            video_mem_size=video_mem_size, max_pages=4, cursor_index=3,
             colourmap=CGA16ColourMapper(adapter, monitor)
         )
     elif name == '640x200x4':
@@ -207,7 +207,7 @@ def _get_graphics_mode(name, adapter, monitor, video_mem_size):
         return Tandy6Mode(
             '640x200x4', 640, 200, 25, 80, 3,
             bitsperpixel=2, interleave_times=4, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=None, cursor_index=3,
+            video_mem_size=video_mem_size, max_pages=4, cursor_index=3,
             colourmap=CGA4ColourMapper(adapter, monitor)
         )
     elif name == '320x200x16':
