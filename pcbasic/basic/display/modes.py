@@ -18,7 +18,9 @@ from .framebuffer import PackedTileBuilder, PlanedTileBuilder
 from .framebuffer import PackedSpriteBuilder, PlanedSpriteBuilder
 
 
+##############################################################################
 # SCREEN modes by number for each adapter
+
 _MODES = {
     'cga': {
         (0, 40): 'cgatext40',
@@ -61,8 +63,8 @@ _MODES = {
     'tandy': {
         (0, 40): 'tandytext40',
         (0, 80): 'tandytext80',
-        1: '320x200x4',
-        2: '640x200x2',
+        1: '320x200x4_8pg',
+        2: '640x200x2_8pg',
         3: '160x200x16',
         4: '320x200x4pcjr',
         5: '320x200x16pcjr',
@@ -71,8 +73,8 @@ _MODES = {
     'pcjr': {
         (0, 40): 'cgatext40',
         (0, 80): 'cgatext80',
-        1: '320x200x4',
-        2: '640x200x2',
+        1: '320x200x4_8pg',
+        2: '640x200x2_8pg',
         3: '160x200x16',
         4: '320x200x4pcjr',
         5: '320x200x16pcjr',
@@ -90,6 +92,7 @@ _MODES = {
 _MODES['olivetti'].update({_mode: '640x400x2' for _mode in range(4, 256)})
 
 
+##############################################################################
 # screen number switches on WIDTH
 # if we're in mode x, what mode y does WIDTH w take us to? {x: {w: y}}
 TO_WIDTH = {
@@ -159,109 +162,11 @@ def get_mode(number, width, adapter, monitor, video_mem_size):
 
 def _get_graphics_mode(name, adapter, monitor, video_mem_size):
     """Retrieve graphical mode by name."""
-    if name == '320x200x4':
-        # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
-        # tandy:2 pages if 32k memory; ega: 1 page only
-        return CGAMode(
-            '320x200x4', 320, 200, 25, 40, 3,
-            bitsperpixel=2, interleave_times=2, bank_size=0x2000,
-            video_mem_size=video_mem_size,
-            max_pages=(8 if adapter in ('pcjr', 'tandy') else 1),
-            cursor_index=None,
-            colourmap=CGA4ColourMapper(adapter, monitor)
-        )
-    elif name == '640x200x2':
-        # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
-        return CGAMode(
-            '640x200x2', 640, 200, 25, 80, 1,
-            bitsperpixel=1, interleave_times=2, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=1, cursor_index=None,
-            colourmap=CGA2ColourMapper(adapter, monitor)
-        )
-    elif name == '160x200x16':
-        # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
-        return CGAMode(
-            '160x200x16', 160, 200, 25, 20, 15,
-            bitsperpixel=4, interleave_times=2, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=8, cursor_index=3,
-            colourmap=CGA16ColourMapper(adapter, monitor)
-        )
-    elif name == '320x200x4pcjr':
-        #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
-        return CGAMode(
-            '320x200x4pcjr', 320, 200, 25, 40, 3,
-            bitsperpixel=2, interleave_times=2, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=8, cursor_index=3,
-            colourmap=CGA4ColourMapper(adapter, monitor)
-        )
-    elif name == '320x200x16pcjr':
-        # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
-        return CGAMode(
-            '320x200x16pcjr', 320, 200, 25, 40, 15,
-            bitsperpixel=4, interleave_times=4, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=4, cursor_index=3,
-            colourmap=CGA16ColourMapper(adapter, monitor)
-        )
-    elif name == '640x200x4':
-        # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
-        return Tandy6Mode(
-            '640x200x4', 640, 200, 25, 80, 3,
-            bitsperpixel=2, interleave_times=4, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=4, cursor_index=3,
-            colourmap=CGA4ColourMapper(adapter, monitor)
-        )
-    elif name == '320x200x16':
-        # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
-        return EGAMode(
-            '320x200x16', 320, 200, 25, 40, 15,
-            bitsperpixel=4, interleave_times=1, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=None, cursor_index=None,
-            colourmap=EGA16ColourMapper(adapter, monitor)
-        )
-    elif name == '640x200x16':
-        # 0Eh 640x200x16    EGA screen 8
-        return EGAMode(
-            '640x200x16', 640, 200, 25, 80, 15,
-            bitsperpixel=4, interleave_times=1, bank_size=0x4000,
-            video_mem_size=video_mem_size, max_pages=None, cursor_index=None,
-            colourmap=EGA16ColourMapper(adapter, monitor)
-        )
-    elif name == '640x350x16':
-        # 10h 640x350x16    EGA screen 9
-        return EGAMode(
-            '640x350x16', 640, 350, 25, 80, 15,
-            bitsperpixel=4, interleave_times=1, bank_size=0x8000,
-            video_mem_size=video_mem_size, max_pages=None, cursor_index=None,
-            colourmap=EGA64ColourMapper(adapter, monitor)
-        )
-    elif name == '640x350x4':
-        # 0Fh 640x350x4     EGA monochrome screen 10
-        return EGAMode(
-            '640x350x16', 640, 350, 25, 80, 1,
-            bitsperpixel=2, interleave_times=1, bank_size=0x8000,
-            video_mem_size=video_mem_size, max_pages=None, cursor_index=None,
-            planes_used=(1, 3),
-            colourmap=EGAMonoColourMapper(adapter, monitor)
-        )
-    elif name == '640x400x2':
-        # 40h 640x400x2   1bpp  olivetti screen 3-255
-        return CGAMode(
-            '640x400x2', 640, 400, 25, 80, 1,
-            bitsperpixel=1, interleave_times=4, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=1, cursor_index=None,
-            colourmap=CGA2ColourMapper(adapter, monitor)
-        )
-    elif name == '720x348x2':
-        # hercules screen 3
-        # SCREEN 3 supports two pages (0 and 1);
-        # SCREEN 0 used with Hercules supports only one page.
-        # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
-        return CGAMode(
-            '720x348x2', 720, 348, 25, 80, 1,
-            bitsperpixel=1, interleave_times=4, bank_size=0x2000,
-            video_mem_size=video_mem_size, max_pages=2, cursor_index=None,
-            colourmap=HerculesColourMapper(adapter, monitor)
-        )
+    mode_data = dict(**_GRAPHICS_MODES[name])
+    cls = mode_data.pop('layout')
+    colourmap = mode_data.pop('colourmap')(adapter, monitor)
+    return cls(name=name, video_mem_size=video_mem_size, colourmap=colourmap, **mode_data)
+
 
 def _get_text_mode(name, adapter, monitor, video_mem_size):
     """Retrieve graphical mode by name."""
@@ -438,6 +343,7 @@ class TextMode(VideoMode):
 ##############################################################################
 # graphics modes
 
+
 class GraphicsMode(VideoMode):
     """Default settings for a graphics mode."""
 
@@ -447,27 +353,26 @@ class GraphicsMode(VideoMode):
     _sprite_builder = lambda _: None
 
     def __init__(
-            self, name, pixel_width, pixel_height, text_height, text_width,
+            self, name, width, height, rows, columns,
             attr, bitsperpixel, interleave_times, bank_size, video_mem_size, max_pages,
             cursor_index, colourmap
         ):
         """Initialise video mode settings."""
-        font_width = pixel_width // text_width
+        font_width = width // columns
         # ceildiv for hercules (14-px font on 348 lines)
-        font_height = -(-pixel_height // text_height)
+        font_height = -(-height // rows)
         VideoMode.__init__(
-            self, name, text_height, text_width, font_height, font_width, attr, colourmap
+            self, name, rows, columns, font_height, font_width, attr, colourmap
         )
         # override pixel dimensions
-        self.pixel_height = pixel_height
-        self.pixel_width = pixel_width
+        self.pixel_height = height
+        self.pixel_width = width
         # text mode flag
         self.is_text_mode = False
         # used in display.py to initialise pixelbuffer
         self.bitsperpixel = bitsperpixel
         self.memorymap = self._memorymapper(
-            pixel_height, pixel_width, video_mem_size, max_pages,
-            interleave_times, bank_size, bitsperpixel
+            height, width, video_mem_size, max_pages, interleave_times, bank_size, bitsperpixel
         )
         # cursor attribute
         self.cursor_index = cursor_index
@@ -492,13 +397,13 @@ class EGAMode(GraphicsMode):
     _sprite_builder = PlanedSpriteBuilder
 
     def __init__(
-            self, name, pixel_width, pixel_height, text_height, text_width,
+            self, name, width, height, rows, columns,
             attr, bitsperpixel, interleave_times, bank_size, video_mem_size, max_pages,
             cursor_index, colourmap, planes_used=range(4)
         ):
         """Initialise video mode settings."""
         GraphicsMode.__init__(
-            self, name, pixel_width, pixel_height, text_height, text_width,
+            self, name, width, height, rows, columns,
             attr, bitsperpixel, interleave_times, bank_size, video_mem_size, max_pages,
             cursor_index, colourmap
         )
@@ -513,3 +418,105 @@ class Tandy6Mode(GraphicsMode):
     _tile_builder = PackedTileBuilder
     # initialising this with self.bitsperpixel should do the right thing
     _sprite_builder = PlanedSpriteBuilder
+
+
+
+##############################################################################
+# mode definitions
+
+_GRAPHICS_MODES = {
+    '320x200x4': dict(
+        # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
+        # cga/ega: 1 page only
+        width=320, height=200, rows=25, columns=40, attr=3,
+        bitsperpixel=2, interleave_times=2, bank_size=0x2000, max_pages=1,
+        cursor_index=None,
+        layout=CGAMode, colourmap=CGA4ColourMapper
+    ),
+    '640x200x2': dict(
+        # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
+        width=640, height=200, rows=25, columns=80, attr=1,
+        bitsperpixel=1, interleave_times=2, bank_size=0x2000, max_pages=1,
+        cursor_index=None,
+        layout=CGAMode, colourmap=CGA2ColourMapper
+    ),
+    '160x200x16': dict(
+        # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
+        width=160, height=200, rows=25, columns=20, attr=15,
+        bitsperpixel=4, interleave_times=2, bank_size=0x2000, max_pages=8,
+        cursor_index=3,
+        layout=CGAMode, colourmap=CGA16ColourMapper
+    ),
+    '320x200x4pcjr': dict(
+        #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
+        width=320, height=200, rows=25, columns=40, attr=3,
+        bitsperpixel=2, interleave_times=2, bank_size=0x2000, max_pages=8,
+        cursor_index=3,
+        layout=CGAMode, colourmap=CGA4ColourMapper
+    ),
+    '320x200x16pcjr': dict(
+        # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
+        width=320, height=200, rows=25, columns=40, attr=15,
+        bitsperpixel=4, interleave_times=4, bank_size=0x2000, max_pages=4,
+        cursor_index=3,
+        layout=CGAMode, colourmap=CGA16ColourMapper
+    ),
+    '640x200x4': dict(
+        # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
+        width=640, height=200, rows=25, columns=80, attr=3,
+        bitsperpixel=2, interleave_times=4, bank_size=0x2000, max_pages=4,
+        cursor_index=3,
+        layout=Tandy6Mode, colourmap=CGA4ColourMapper
+    ),
+    '320x200x16': dict(
+        # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
+        width=320, height=200, rows=25, columns=40, attr=15,
+        bitsperpixel=4, interleave_times=1, bank_size=0x2000, max_pages=None,
+        cursor_index=None,
+        layout=EGAMode, colourmap=EGA16ColourMapper
+    ),
+    '640x200x16': dict(
+        # 0Eh 640x200x16    EGA screen 8
+        width=640, height=200, rows=25, columns=80, attr=15,
+        bitsperpixel=4, interleave_times=1, bank_size=0x4000, max_pages=None,
+        cursor_index=None,
+        layout=EGAMode, colourmap=EGA16ColourMapper
+    ),
+    '640x350x16': dict(
+        # 10h 640x350x16    EGA screen 9
+        width=640, height=350, rows=25, columns=80, attr=15,
+        bitsperpixel=4, interleave_times=1, bank_size=0x8000, max_pages=None,
+        cursor_index=None,
+        layout=EGAMode, colourmap=EGA64ColourMapper
+    ),
+    '640x350x4': dict(
+        # 0Fh 640x350x4     EGA monochrome screen 10
+        width=640, height=350, rows=25, columns=80, attr=1,
+        bitsperpixel=2, interleave_times=1, bank_size=0x8000, max_pages=None,
+        cursor_index=None, planes_used=(1, 3),
+        layout=EGAMode, colourmap=EGAMonoColourMapper
+    ),
+    '640x400x2': dict(
+        # 40h 640x400x2   1bpp  olivetti screen 3-255
+        width=640, height=400, rows=25, columns=80, attr=1,
+        bitsperpixel=1, interleave_times=4, bank_size=0x2000, max_pages=1,
+        cursor_index=None,
+        layout=CGAMode, colourmap=CGA2ColourMapper
+    ),
+    '720x348x2': dict(
+        # hercules screen 3
+        # SCREEN 3 supports two pages (0 and 1);
+        # SCREEN 0 used with Hercules supports only one page.
+        # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
+        width=720, height=348, rows=25, columns=80, attr=1,
+        bitsperpixel=1, interleave_times=4, bank_size=0x2000, max_pages=2,
+        cursor_index=None,
+        layout=CGAMode, colourmap=HerculesColourMapper
+    ),
+}
+
+# tandy/pcjr 8-page versions of standard CGA modes (?)
+_GRAPHICS_MODES['320x200x4_8pg'] = _GRAPHICS_MODES['320x200x4']
+_GRAPHICS_MODES['640x200x2_8pg'] = _GRAPHICS_MODES['640x200x2']
+_GRAPHICS_MODES['320x200x4_8pg']['max_pages'] = 8
+_GRAPHICS_MODES['640x200x2_8pg']['max_pages'] = 8
