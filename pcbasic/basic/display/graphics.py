@@ -90,7 +90,7 @@ class GraphicsViewPort(object):
 class Drawing(object):
     """Graphical drawing operations."""
 
-    def __init__(self, queues, input_methods, values, memory):
+    def __init__(self, queues, input_methods, values, memory, aspect):
         """Initialise graphics object."""
         # for apagenum and attr
         self._queues = queues
@@ -108,6 +108,8 @@ class Drawing(object):
         self._last_attr = None
         self._draw_scale = None
         self._draw_angle = None
+        # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
+        self._screen_aspect = aspect
 
     def init_mode(self, mode, text, pixels):
         """Initialise for new graphics mode."""
@@ -537,6 +539,11 @@ class Drawing(object):
         """CIRCLE: Draw a circle, ellipse, arc or sector."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
+        # determine pixel aspect ratio
+        pixel_aspect = (
+            self._mode.pixel_height * self._screen_aspect[0],
+            self._mode.pixel_width * self._screen_aspect[1]
+        )
         step = next(args)
         x, y = (values.to_single(next(args)).to_value() for _ in range(2))
         r = values.to_single(next(args)).to_value()
@@ -561,7 +568,7 @@ class Drawing(object):
             error.range_check(0, 255, c)
         c = self._get_attr_index(c)
         if aspect is None:
-            aspect = self._mode.pixel_aspect[0] / float(self._mode.pixel_aspect[1])
+            aspect = pixel_aspect[0] / float(pixel_aspect[1])
         if aspect == 1.:
             rx, _ = self._get_window_scale(r, 0.)
             ry = rx
@@ -1081,7 +1088,11 @@ class Drawing(object):
         """Make a DRAW step, drawing a line and returning if requested."""
         scale = self._draw_scale
         rotate = self._draw_angle
-        aspect = self._mode.pixel_aspect
+        # pixel aspect ratio
+        aspect = (
+            self._mode.pixel_height * self._screen_aspect[0],
+            self._mode.pixel_width * self._screen_aspect[1]
+        )
         yfac = aspect[1] / (1.*aspect[0])
         x1 = (scale*sx) // 4
         y1 = (scale*sy) // 4

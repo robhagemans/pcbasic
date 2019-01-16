@@ -179,29 +179,12 @@ class Video(object):
 
     def get_graphics_mode(self, name):
         """Retrieve graphical mode by name."""
-        # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
-        # all adapters target 4x3 except Tandy
-        if self.capabilities == 'tandy':
-            aspect = (3072, 2000)
-        else:
-            aspect = (4, 3)
-        # Tandy/PCjr (?) pixel aspect ratio is different from normal
-        # suggesting screen aspect ratio is not 4/3.
-        # Tandy pixel aspect ratios, experimentally found with CIRCLE:
-        # screen 2, 6:     48/100   normal if aspect = 3072, 2000
-        # screen 1, 4, 5:  96/100   normal if aspect = 3072, 2000
-        # pcjr: screen 1: .833, s2: .833/2, s3: .833*2 s4:.833 s5:.833 s6: .833/2
-        # (checked with CIRCLE on MAME)
-        # .833 == 5:6 corresponding to screen aspect ratio of 4:3
-        # --> old value for SCREEN 3 1968/1000 not quite (but almost) consitent with this
-        #     and I don't think it was really checked on Tandy -- dosbox won't run SCREEN 3
         if name == '320x200x4':
             # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
             # tandy:2 pages if 32k memory; ega: 1 page only
             return CGAMode(
                 '320x200x4', 320, 200, 25, 40, 3,
                 bitsperpixel=2, interleave_times=2, bank_size=0x2000,
-                aspect=aspect,
                 num_pages=(
                     self._video_mem_size // (2*0x2000)
                     if self.capabilities in ('pcjr', 'tandy')
@@ -214,7 +197,6 @@ class Video(object):
             return CGAMode(
                 '640x200x2', 640, 200, 25, 80, 1,
                 bitsperpixel=1, interleave_times=2, bank_size=0x2000, num_pages=1,
-                aspect=aspect,
                 colourmap=CGA2ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '160x200x16':
@@ -224,7 +206,6 @@ class Video(object):
                 bitsperpixel=4, interleave_times=2, bank_size=0x2000,
                 num_pages=self._video_mem_size//(2*0x2000),
                 cursor_index=3,
-                aspect=aspect, # overridden in init
                 colourmap=CGA16ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '320x200x4pcjr':
@@ -232,7 +213,7 @@ class Video(object):
             return CGAMode(
                 '320x200x4pcjr', 320, 200, 25, 40, 3,
                 bitsperpixel=2, interleave_times=2, bank_size=0x2000,
-                num_pages=self._video_mem_size//(2*0x2000), aspect=aspect, cursor_index=3,
+                num_pages=self._video_mem_size//(2*0x2000), cursor_index=3,
                 colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '320x200x16pcjr':
@@ -240,7 +221,7 @@ class Video(object):
             return CGAMode(
                 '320x200x16pcjr', 320, 200, 25, 40, 15,
                 bitsperpixel=4, interleave_times=4, bank_size=0x2000,
-                num_pages=self._video_mem_size // (4*0x2000), aspect=aspect, cursor_index=3,
+                num_pages=self._video_mem_size // (4*0x2000), cursor_index=3,
                 colourmap=CGA16ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '640x200x4':
@@ -248,7 +229,7 @@ class Video(object):
             return Tandy6Mode(
                 '640x200x4', 640, 200, 25, 80, 3,
                 bitsperpixel=2, interleave_times=4, bank_size=0x2000,
-                num_pages=self._video_mem_size // (4*0x2000), aspect=aspect, cursor_index=3,
+                num_pages=self._video_mem_size // (4*0x2000), cursor_index=3,
                 colourmap=CGA4ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '320x200x16':
@@ -256,7 +237,7 @@ class Video(object):
             return EGAMode(
                 '320x200x16', 320, 200, 25, 40, 15,
                 bitsperpixel=4, interleave_times=1, bank_size=0x2000,
-                num_pages=self._video_mem_size // (4*0x2000), aspect=aspect,
+                num_pages=self._video_mem_size // (4*0x2000),
                 colourmap=EGA16ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '640x200x16':
@@ -264,7 +245,7 @@ class Video(object):
             return EGAMode(
                 '640x200x16', 640, 200, 25, 80, 15,
                 bitsperpixel=4, interleave_times=1, bank_size=0x4000,
-                num_pages=self._video_mem_size // (4*0x4000), aspect=aspect,
+                num_pages=self._video_mem_size // (4*0x4000),
                 colourmap=EGA16ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '640x350x16':
@@ -272,7 +253,7 @@ class Video(object):
             return EGAMode(
                 '640x350x16', 640, 350, 25, 80, 15,
                 bitsperpixel=4, interleave_times=1, bank_size=0x8000,
-                num_pages=self._video_mem_size // (4*0x8000), aspect=aspect,
+                num_pages=self._video_mem_size // (4*0x8000),
                 colourmap=EGA64ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '640x350x4':
@@ -281,15 +262,14 @@ class Video(object):
                 '640x350x16', 640, 350, 25, 80, 1,
                 bitsperpixel=2, interleave_times=1, bank_size=0x8000,
                 num_pages=self._video_mem_size // (2*0x8000),
-                aspect=aspect, planes_used=(1, 3),
+                planes_used=(1, 3),
                 colourmap=EGAMonoColourMapper(self.capabilities, self.monitor)
             )
         elif name == '640x400x2':
             # 40h 640x400x2   1bpp  olivetti screen 3-255
             return CGAMode(
                 '640x400x2', 640, 400, 25, 80, 1,
-                bitsperpixel=1, interleave_times=4, bank_size=0x2000,
-                num_pages=1, aspect=aspect,
+                bitsperpixel=1, interleave_times=4, bank_size=0x2000, num_pages=1,
                 colourmap=CGA2ColourMapper(self.capabilities, self.monitor)
             )
         elif name == '720x348x2':
@@ -299,8 +279,7 @@ class Video(object):
             # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
             return CGAMode(
                 '720x348x2', 720, 348, 25, 80, 1,
-                bitsperpixel=1, interleave_times=4, bank_size=0x2000,
-                num_pages=2, aspect=aspect,
+                bitsperpixel=1, interleave_times=4, bank_size=0x2000, num_pages=2,
                 colourmap=HerculesColourMapper(self.capabilities, self.monitor)
             )
 
@@ -473,7 +452,7 @@ class GraphicsMode(VideoMode):
     def __init__(
             self, name, pixel_width, pixel_height, text_height, text_width,
             attr, bitsperpixel, interleave_times, bank_size,
-            num_pages=None, cursor_index=None, aspect=None, colourmap=None
+            num_pages=None, cursor_index=None, colourmap=None
         ):
         """Initialise video mode settings."""
         font_width = pixel_width // text_width
@@ -495,8 +474,6 @@ class GraphicsMode(VideoMode):
         )
         # cursor attribute
         self.cursor_index = cursor_index
-        # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
-        self.pixel_aspect = (self.pixel_height * aspect[0], self.pixel_width * aspect[1])
         # sprite and tile builders
         self.build_tile = self._tile_builder(self.bitsperpixel)
         self.sprite_builder = self._sprite_builder(self.bitsperpixel)
@@ -510,7 +487,6 @@ class CGAMode(GraphicsMode):
     _sprite_builder = PackedSpriteBuilder
 
 
-
 class EGAMode(GraphicsMode):
     """Default settings for a EGA graphics mode."""
 
@@ -521,13 +497,13 @@ class EGAMode(GraphicsMode):
     def __init__(
             self, name, pixel_width, pixel_height, text_height, text_width,
             attr, bitsperpixel, interleave_times, bank_size, num_pages,
-            planes_used=range(4), aspect=None, colourmap=None
+            planes_used=range(4), colourmap=None
         ):
         """Initialise video mode settings."""
         GraphicsMode.__init__(
             self, name, pixel_width, pixel_height, text_height, text_width,
             attr, bitsperpixel, interleave_times, bank_size,
-            num_pages, aspect=aspect, colourmap=colourmap
+            num_pages, colourmap=colourmap
         )
         # EGA memorymap settings
         self.memorymap.set_planes_used(planes_used)

@@ -49,8 +49,26 @@ class Display(object):
         )
         # pixel buffer, set by _set_mode
         self.pixels = None
+        # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
+        # all adapters including PCjr target 4x3, except Tandy
+        if self.capabilities == 'tandy':
+            aspect = (3072, 2000)
+        else:
+            aspect = (4, 3)
+        # Tandy pixel aspect ratio is different from normal
+        # suggesting screen aspect ratio is not 4/3.
+        # Tandy pixel aspect ratios, experimentally found with CIRCLE (on DOSBox?):
+        # screen 2, 6:     48/100   normal if aspect = 3072, 2000
+        # screen 1, 4, 5:  96/100   normal if aspect = 3072, 2000
+        # pcjr: screen 1: .833, s2: .833/2, s3: .833*2 s4:.833 s5:.833 s6: .833/2
+        # (checked with CIRCLE on MAME)
+        # .833 == 5:6 corresponding to screen aspect ratio of 4:3
+        # --> old value SCREEN 3 pixel aspect 1968/1000 not quite (but almost) consistent with this
+        #     and I don't think it was really checked on Tandy -- dosbox won't run SCREEN 3
         # graphics operations
-        self.drawing = graphics.Drawing(self.queues, input_methods, self._values, self._memory)
+        self.drawing = graphics.Drawing(
+            self.queues, input_methods, self._values, self._memory, aspect
+        )
         # colour palette
         self.palette = Palette(self.queues, self.mode)
         # initialise a fresh textmode screen
