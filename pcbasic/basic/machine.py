@@ -566,7 +566,7 @@ class Memory(object):
             return self.ram_font_segment // 256
         # 1040 monitor type
         elif addr == 1040:
-            if self.display.video.monitor == 'mono':
+            if self.display.monitor == 'mono':
                 # mono
                 return 48 + 6
             else:
@@ -664,26 +664,10 @@ class Memory(object):
             return self.display.vpagenum
         # 1125 screen mode info
         elif addr == 1125:
-            # bit 0: only in text mode?
-            # bit 2: should this be colorswitch or colorburst_is_enabled?
-            return (
-                (self.display.mode.width == 80) * 1 +
-                (not self.display.mode.is_text_mode) * 2 +
-                self.display.colorswitch * 4 + 8 +
-                (self.display.mode.name == '640x200x2') * 16 +
-                self.blink_enabled * 32
-            )
+            return self.display.get_mode_info_byte()
         # 1126 color
         elif addr == 1126:
-            if self.display.mode.name == '320x200x4':
-                return (
-                    self.display.palette.get_entry(0)
-                    + 32 * self.display.mode.colourmap.get_cga4_palette()
-                )
-            elif self.display.mode.is_text_mode:
-                return self.display.get_border_attr()
-                # not implemented: + 16 "if current color specified through
-                # COLOR f,b with f in [0,15] and b > 7
+            return self.display.get_colour_info_byte()
         # 1296, 1297: zero (PCmag says data segment address)
         return -1
 

@@ -234,6 +234,32 @@ class Display(object):
         self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
         self.text_screen.rebuild()
 
+    def get_mode_info_byte(self):
+        """Screen mode info byte in low memory address 1125."""
+        # blink vs bright
+        # this can in theory be set with OUT 984 (&h3d8), but not implemented
+        blink_enabled = True
+        # bit 0: only in text mode?
+        # bit 2: should this be colorswitch or colorburst_is_enabled?
+        return (
+            (self.mode.is_text_mode and self.mode.width == 80) * 1 +
+            (not self.mode.is_text_mode) * 2 +
+            self.colorswitch * 4 + 8 +
+            (self.mode.name == '640x200x2') * 16 +
+            blink_enabled * 32
+        )
+
+    def get_colour_info_byte(self):
+        """Colour info byte in low memory address 1126."""
+        if self.mode.name == '320x200x4':
+            return (
+                self.palette.get_entry(0)
+                + 32 * self.mode.colourmap.get_cga4_palette()
+            )
+        elif self.mode.is_text_mode:
+            return self.get_border_attr()
+            # not implemented: + 16 "if current color specified through
+            # COLOR f,b with f in [0,15] and b > 7
 
     ###########################################################################
 
