@@ -36,12 +36,12 @@ class Display(object):
         # low level settings
         if capabilities == 'ega' and monitor in MONO_TINT:
             capabilities = 'ega_mono'
-        self.capabilities = capabilities
+        self._adapter = capabilities
         self._monitor = monitor
         self._video_mem_size = video_mem_size
         # prepare video modes
         self.mode = modes.get_mode(
-            0, initial_width, self.capabilities, self._monitor, self._video_mem_size
+            0, initial_width, self._adapter, self._monitor, self._video_mem_size
         )
         # video mode settings
         self.colorswitch, self.apagenum, self.vpagenum = 1, 0, 0
@@ -51,14 +51,14 @@ class Display(object):
         self._border_attr = 0
         # text screen
         self.text_screen = TextScreen(
-            self.queues, self._values, self.mode, self.capabilities,
+            self.queues, self._values, self.mode, self._adapter,
             fonts, codepage, io_streams, sound
         )
         # pixel buffer, set by _set_mode
         self.pixels = None
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         # all adapters including PCjr target 4x3, except Tandy
-        if self.capabilities == 'tandy':
+        if self._adapter == 'tandy':
             aspect = (3072, 2000)
         else:
             aspect = (4, 3)
@@ -96,7 +96,7 @@ class Display(object):
             # keep current mode if graphics but maybe change width if text
             if self.mode.is_text_mode and new_width is not None:
                 new_mode = modes.get_mode(
-                    0, new_width, self.capabilities, self._monitor, self._video_mem_size
+                    0, new_width, self._adapter, self._monitor, self._video_mem_size
                 )
             else:
                 new_mode = self.mode
@@ -107,26 +107,26 @@ class Display(object):
                 new_width = 40 if (self.mode.width == 20) else self.mode.width
             # retrieve the specs for the new video mode
             new_mode = modes.get_mode(
-                new_mode_nr, new_width, self.capabilities, self._monitor, self._video_mem_size
+                new_mode_nr, new_width, self._adapter, self._monitor, self._video_mem_size
             )
         # set colorswitch
         new_colorswitch = bool(new_colorswitch)
         if new_colorswitch is None:
             new_colorswitch = True
-            if self.capabilities == 'pcjr':
+            if self._adapter == 'pcjr':
                 new_colorswitch = False
-            elif self.capabilities == 'tandy':
+            elif self._adapter == 'tandy':
                 new_colorswitch = new_mode.is_text_mode
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
         # in other adapters, that's going to raise an IFC later on.
         if new_vpagenum is None:
             new_vpagenum = self.vpagenum
-            if (self.capabilities == 'pcjr' and new_vpagenum >= new_mode.num_pages):
+            if (self._adapter == 'pcjr' and new_vpagenum >= new_mode.num_pages):
                 new_vpagenum = 0
         if new_apagenum is None:
             new_apagenum = self.apagenum
-            if (self.capabilities == 'pcjr' and new_apagenum >= new_mode.num_pages):
+            if (self._adapter == 'pcjr' and new_apagenum >= new_mode.num_pages):
                 new_apagenum = 0
         # if the new mode has fewer pages than current vpage/apage
         # illegal fn call before anything happens.
@@ -200,7 +200,7 @@ class Display(object):
             new_mode = 0
         else:
             try:
-                new_mode = TO_WIDTH[self.capabilities][self.mode.name][to_width]
+                new_mode = TO_WIDTH[self._adapter][self.mode.name][to_width]
             except KeyError:
                 # raise an error if the width value doesn't make sense
                 raise error.BASICError(error.IFC)
@@ -307,7 +307,7 @@ class Display(object):
         # (e.g. not implemented screen mode, pagenum beyond max)
         # then the error is only raised after changing the palette.
         error.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
-        if self.capabilities == 'tandy':
+        if self._adapter == 'tandy':
             error.range_check(0, 1, colorswitch)
         erase = next(args)
         if erase is not None:
@@ -316,7 +316,7 @@ class Display(object):
         list(args)
         if erase is not None:
             # erase can only be set on pcjr/tandy 5-argument syntax
-            if self.capabilities not in ('pcjr', 'tandy'):
+            if self._adapter not in ('pcjr', 'tandy'):
                 raise error.BASICError(error.IFC)
         else:
             erase = 1
@@ -470,7 +470,7 @@ class Display(object):
         if val is not None:
             val = values.to_int(val)
             # tandy gives illegal function call on CLS number
-            error.throw_if(self.capabilities == 'tandy')
+            error.throw_if(self._adapter == 'tandy')
             error.range_check(0, 2, val)
         else:
             if self.drawing.graph_view.is_set():

@@ -230,7 +230,7 @@ class _ColourMapper(object):
     _mono_tint = MONO_TINT['mono']
     _mono = False
 
-    def __init__(self, capabilities, monitor):
+    def __init__(self, adapter, monitor):
         """Initialise colour map."""
         if monitor in MONO_TINT:
             self._mono = monitor in MONO_TINT
@@ -238,10 +238,10 @@ class _ColourMapper(object):
         self.palette = list(self.default_palette)
         # policy on PALETTE changes
         # effective palette change is an error in CGA
-        if capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
+        if adapter in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
             self._palette_change_policy = 'error'
         # ignore palette changes in Tandy/PCjr SCREEN 0
-        elif capabilities in ('tandy', 'pcjr') and self.num_attr == 256:
+        elif adapter in ('tandy', 'pcjr') and self.num_attr == 256:
             self._palette_change_policy = 'deny'
         else:
             self._palette_change_policy = 'allow'
@@ -368,10 +368,10 @@ class _CGAColourMapper(_ColourMapper):
 
     _colours = COLOURS16
 
-    def __init__(self, capabilities, monitor):
+    def __init__(self, adapter, monitor):
         """Initialise colour map."""
-        _ColourMapper.__init__(self, capabilities, monitor)
-        self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
+        _ColourMapper.__init__(self, adapter, monitor)
+        self._has_colorburst = adapter in ('cga', 'cga_old', 'pcjr', 'tandy')
         # monochrome
         self._force_mono = monitor in MONO_TINT
         # rgb monitor
@@ -392,9 +392,9 @@ class _CGAColourMapper(_ColourMapper):
 class _CompositeMixin(object):
     """Overrides to deal with NTSC composite artifacts."""
 
-    def __init__(self, capabilities, monitor):
+    def __init__(self, adapter, monitor):
         """Initialise colour map."""
-        self._has_composite = monitor == 'composite' and self._has_colorburst and capabilities
+        self._has_composite = monitor == 'composite' and self._has_colorburst and adapter
         self._composite = False
 
     def set_colorburst(self, colour_on):
@@ -425,10 +425,10 @@ class CGA2ColourMapper(_CompositeMixin, _CGAColourMapper):
 
     default_palette = CGA2_PALETTE
 
-    def __init__(self, capabilities, monitor):
+    def __init__(self, adapter, monitor):
         """Initialise colour map."""
-        _CompositeMixin.__init__(self, capabilities, monitor)
-        _CGAColourMapper.__init__(self, capabilities, monitor)
+        _CompositeMixin.__init__(self, adapter, monitor)
+        _CGAColourMapper.__init__(self, adapter, monitor)
 
     def set_colorswitch(self, colorswitch):
         """Set the SCREEN colorswitch parameter."""
@@ -446,17 +446,17 @@ class CGA16ColourMapper(_CGAColourMapper):
 class CGA4ColourMapper(_CGAColourMapper):
     """CGA 4-colour palettes, with colorburst setting, intensity setting and mode 5."""
 
-    def __init__(self, capabilities, monitor):
+    def __init__(self, adapter, monitor):
         """Initialise colour map."""
-        self._has_colorburst = capabilities in ('cga', 'cga_old', 'pcjr', 'tandy')
+        self._has_colorburst = adapter in ('cga', 'cga_old', 'pcjr', 'tandy')
         # pcjr/tandy does not have mode 5
-        self._tandy = capabilities in ('pcjr', 'tandy')
-        self._has_mode_5 = capabilities in ('cga', 'cga_old')
+        self._tandy = adapter in ('pcjr', 'tandy')
+        self._has_mode_5 = adapter in ('cga', 'cga_old')
         self._low_intensity = False
         # start with the cyan-magenta-white palette
         self._palette_number = 1
         self._mode_5 = False
-        _CGAColourMapper.__init__(self, capabilities, monitor)
+        _CGAColourMapper.__init__(self, adapter, monitor)
 
     def get_cga4_palette(self):
         """CGA palette setting (accessible from memory)."""
