@@ -192,7 +192,7 @@ class Display(object):
         self.drawing.set_attr(self.attr)
 
     def set_width(self, to_width):
-        """Set the character width of the screen, reset pages and change modes."""
+        """Set the number of columns of the screen, reset pages and change modes."""
         # if we're currently at that width, do nothing
         if to_width == self.mode.width:
             return

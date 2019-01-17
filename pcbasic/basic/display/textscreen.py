@@ -78,6 +78,10 @@ class TextScreen(object):
         else:
             self.cursor.init_mode(self.mode, self.attr)
 
+    def __repr__(self):
+        """Return an ascii representation of the screen buffer (for debugging)."""
+        return repr(self.text)
+
     def set_page(self, vpagenum, apagenum):
         """Set visible and active page."""
         self.vpagenum = vpagenum
@@ -96,9 +100,14 @@ class TextScreen(object):
             )
             raise error.BASICError(error.IFC)
 
-    def __repr__(self):
-        """Return an ascii representation of the screen buffer (for debugging)."""
-        return repr(self.text)
+    def set_height(self, to_height):
+        """Try to change the number of rows."""
+        # number != 25 is ignored on tandy, error elsewhere
+        # otherwise nothing happens
+        if self.capabilities in ('pcjr', 'tandy'):
+            error.range_check(0, 25, to_height)
+        else:
+            error.range_check(25, 25, to_height)
 
     ##########################################################################
 
