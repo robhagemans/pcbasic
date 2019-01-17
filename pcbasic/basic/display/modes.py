@@ -147,6 +147,35 @@ TO_WIDTH['vga'] = TO_WIDTH['ega']
 TO_WIDTH['tandy'] = TO_WIDTH['pcjr']
 
 
+##############################################################################
+# video mode number
+
+_MODE_NUMBER = {
+    '640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
+    '640x200x4': 10, '320x200x16': 13, '640x200x16': 14,
+    '640x350x4': 15, '640x350x16': 16, '640x400x2': 0x40,
+    '320x200x4pcjr': 4, '320x200x4': 4
+    # '720x348x2': ? # hercules - unknown
+}
+
+def get_mode_number(mode, colorswitch):
+    """Get the low-level mode number used by mode switching interrupt."""
+    if mode.is_text_mode:
+        if mode.name in ('mdatext80', 'ega_monotext80'):
+            return 7
+        return (mode.width == 40) * 2 + colorswitch % 2
+    elif mode.name == '320x200x4':
+        return 4 + mode.colourmap.mode_5
+    else:
+        try:
+            return _MODE_NUMBER[mode.name]
+        except KeyError:
+            return 0xff
+
+
+##############################################################################
+# video mode factory
+
 def get_mode(number, width, adapter, monitor, video_mem_size):
     """Retrieve text or graphical mode by screen number."""
     try:

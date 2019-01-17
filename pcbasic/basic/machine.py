@@ -15,6 +15,7 @@ from ..metadata import NAME, VERSION, COPYRIGHT
 from .base import error
 from . import values
 from . import devices
+from .display import modes
 
 
 # ROM copyright notice
@@ -632,26 +633,7 @@ class Memory(object):
         # 1097 screen mode number
         elif addr == 1097:
             # these are the low-level mode numbers used by mode switching interrupt
-            cval = self.display.colorswitch % 2
-            if self.display.mode.is_text_mode:
-                if (self.display.capabilities in ('mda', 'ega_mono') and
-                        self.display.mode.width == 80):
-                    return 7
-                return (self.display.mode.width == 40)*2 + cval
-            elif self.display.mode.name == '320x200x4':
-                return 4 + cval
-            else:
-                mode_num = {
-                    '640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
-                    '640x200x4': 10, '320x200x16': 13, '640x200x16': 14,
-                    '640x350x4': 15, '640x350x16': 16, '640x400x2': 0x40,
-                    '320x200x4pcjr': 4
-                    # '720x348x2': ? # hercules - unknown
-                }
-                try:
-                    return mode_num[self.display.mode.name]
-                except KeyError:
-                    return 0xff
+            return modes.get_mode_number(self.display.mode, self.display.colorswitch)
         # 1098, 1099 screen width
         elif addr == 1098:
             return self.display.mode.width % 256

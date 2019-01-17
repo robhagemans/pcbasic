@@ -473,6 +473,11 @@ class CGA4ColourMapper(_CGAColourMapper):
         self.reset_palette()
 
     @property
+    def mode_5(self):
+        """Mode 5 is active."""
+        return self._mode_5 and self._has_mode_5
+
+    @property
     def default_palette(self):
         """Default palette."""
         if self._tandy:
