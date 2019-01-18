@@ -181,24 +181,12 @@ def get_mode(number, width, adapter, monitor, video_mem_size):
     try:
         if number:
             name = _MODES[adapter][number]
-            return _get_graphics_mode(name, adapter, monitor, video_mem_size)
         else:
             name = _MODES[adapter][0, width]
-            return _get_text_mode(name, adapter, monitor, video_mem_size)
     except KeyError:
         # no such mode
         raise error.BASICError(error.IFC)
-
-def _get_graphics_mode(name, adapter, monitor, video_mem_size):
-    """Retrieve graphical mode by name."""
-    mode_data = dict(**_GRAPHICS_MODES[name])
-    cls = mode_data.pop('layout')
-    colourmap = mode_data.pop('colourmap')(adapter, monitor)
-    return cls(name=name, video_mem_size=video_mem_size, colourmap=colourmap, **mode_data)
-
-def _get_text_mode(name, adapter, monitor, video_mem_size):
-    """Retrieve text mode by name."""
-    mode_data = dict(**_TEXT_MODES[name])
+    mode_data = dict(**_MODE_INFO[name])
     cls = mode_data.pop('layout')
     colourmap = mode_data.pop('colourmap')(adapter, monitor)
     return cls(name=name, video_mem_size=video_mem_size, colourmap=colourmap, **mode_data)
@@ -372,7 +360,68 @@ class Tandy6Mode(GraphicsMode):
 ##############################################################################
 # mode definitions
 
-_GRAPHICS_MODES = {
+_MODE_INFO = {
+    # text modes
+
+    'vgatext40': dict(
+        rows=25, columns=40, font_height=16, font_width=9, attr=7, max_pages=8, mono=False,
+        layout=TextMode, colourmap=EGA64TextColourMapper
+    ),
+    'vgatext80': dict(
+        rows=25, columns=80, font_height=16, font_width=9, attr=7, max_pages=4, mono=False,
+        layout=TextMode, colourmap=EGA64TextColourMapper
+    ),
+    'egatext40': dict(
+        rows=25, columns=40, font_height=14, font_width=8, attr=7, max_pages=8, mono=False,
+        layout=TextMode, colourmap=EGA64TextColourMapper
+    ),
+    'egatext80': dict(
+        rows=25, columns=80, font_height=14, font_width=8, attr=7, max_pages=4, mono=False,
+        layout=TextMode, colourmap=EGA64TextColourMapper
+    ),
+    'ega_monotext40': dict(
+        rows=25, columns=40, font_height=14, font_width=8, attr=7, max_pages=8, mono=True,
+        layout=TextMode, colourmap=MonoTextColourMapper
+    ),
+    'ega_monotext80': dict(
+        rows=25, columns=80, font_height=14, font_width=8, attr=7, max_pages=4, mono=True,
+        layout=TextMode, colourmap=MonoTextColourMapper
+    ),
+    'mdatext40': dict(
+        rows=25, columns=40, font_height=14, font_width=9, attr=7, max_pages=1, mono=True,
+        layout=TextMode, colourmap=MonoTextColourMapper
+    ),
+    'mdatext80': dict(
+        rows=25, columns=80, font_height=14, font_width=9, attr=7, max_pages=1, mono=True,
+        layout=TextMode, colourmap=MonoTextColourMapper
+    ),
+    'tandytext40': dict(
+        rows=25, columns=40, font_height=9, font_width=8, attr=7, max_pages=8, mono=False,
+        layout=TextMode, colourmap=EGA16TextColourMapper
+    ),
+    'tandytext80': dict(
+        rows=25, columns=80, font_height=9, font_width=8, attr=7, max_pages=4, mono=False,
+        layout=TextMode, colourmap=EGA16TextColourMapper
+    ),
+    'cgatext40': dict(
+        rows=25, columns=40, font_height=8, font_width=8, attr=7, max_pages=8, mono=False,
+        layout=TextMode, colourmap=EGA16TextColourMapper
+    ),
+    'cgatext80': dict(
+        rows=25, columns=80, font_height=8, font_width=8, attr=7, max_pages=4, mono=False,
+        layout=TextMode, colourmap=EGA16TextColourMapper
+    ),
+    'olivettitext40': dict(
+        rows=25, columns=40, font_height=16, font_width=8, attr=7, max_pages=8, mono=False,
+        layout=TextMode, colourmap=EGA16ColourMapper
+    ),
+    'olivettitext80': dict(
+        rows=25, columns=80, font_height=16, font_width=8, attr=7, max_pages=4, mono=False,
+        layout=TextMode, colourmap=EGA16ColourMapper
+    ),
+
+    # graphics modes
+
     '320x200x4': dict(
         # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
         # cga/ega: 1 page only
@@ -464,67 +513,7 @@ _GRAPHICS_MODES = {
 }
 
 # tandy/pcjr 8-page versions of standard CGA modes (?)
-_GRAPHICS_MODES['320x200x4_8pg'] = _GRAPHICS_MODES['320x200x4']
-_GRAPHICS_MODES['640x200x2_8pg'] = _GRAPHICS_MODES['640x200x2']
-_GRAPHICS_MODES['320x200x4_8pg']['max_pages'] = 8
-_GRAPHICS_MODES['640x200x2_8pg']['max_pages'] = 8
-
-
-_TEXT_MODES = {
-    'vgatext40': dict(
-        rows=25, columns=40, font_height=16, font_width=9, attr=7, max_pages=8, mono=False,
-        layout=TextMode, colourmap=EGA64TextColourMapper
-    ),
-    'vgatext80': dict(
-        rows=25, columns=80, font_height=16, font_width=9, attr=7, max_pages=4, mono=False,
-        layout=TextMode, colourmap=EGA64TextColourMapper
-    ),
-    'egatext40': dict(
-        rows=25, columns=40, font_height=14, font_width=8, attr=7, max_pages=8, mono=False,
-        layout=TextMode, colourmap=EGA64TextColourMapper
-    ),
-    'egatext80': dict(
-        rows=25, columns=80, font_height=14, font_width=8, attr=7, max_pages=4, mono=False,
-        layout=TextMode, colourmap=EGA64TextColourMapper
-    ),
-    'ega_monotext40': dict(
-        rows=25, columns=40, font_height=14, font_width=8, attr=7, max_pages=8, mono=True,
-        layout=TextMode, colourmap=MonoTextColourMapper
-    ),
-    'ega_monotext80': dict(
-        rows=25, columns=80, font_height=14, font_width=8, attr=7, max_pages=4, mono=True,
-        layout=TextMode, colourmap=MonoTextColourMapper
-    ),
-    'mdatext40': dict(
-        rows=25, columns=40, font_height=14, font_width=9, attr=7, max_pages=1, mono=True,
-        layout=TextMode, colourmap=MonoTextColourMapper
-    ),
-    'mdatext80': dict(
-        rows=25, columns=80, font_height=14, font_width=9, attr=7, max_pages=1, mono=True,
-        layout=TextMode, colourmap=MonoTextColourMapper
-    ),
-    'tandytext40': dict(
-        rows=25, columns=40, font_height=9, font_width=8, attr=7, max_pages=8, mono=False,
-        layout=TextMode, colourmap=EGA16TextColourMapper
-    ),
-    'tandytext80': dict(
-        rows=25, columns=80, font_height=9, font_width=8, attr=7, max_pages=4, mono=False,
-        layout=TextMode, colourmap=EGA16TextColourMapper
-    ),
-    'cgatext40': dict(
-        rows=25, columns=40, font_height=8, font_width=8, attr=7, max_pages=8, mono=False,
-        layout=TextMode, colourmap=EGA16TextColourMapper
-    ),
-    'cgatext80': dict(
-        rows=25, columns=80, font_height=8, font_width=8, attr=7, max_pages=4, mono=False,
-        layout=TextMode, colourmap=EGA16TextColourMapper
-    ),
-    'olivettitext40': dict(
-        rows=25, columns=40, font_height=16, font_width=8, attr=7, max_pages=8, mono=False,
-        layout=TextMode, colourmap=EGA16ColourMapper
-    ),
-    'olivettitext80': dict(
-        rows=25, columns=80, font_height=16, font_width=8, attr=7, max_pages=4, mono=False,
-        layout=TextMode, colourmap=EGA16ColourMapper
-    ),
-}
+_MODE_INFO['320x200x4_8pg'] = _MODE_INFO['320x200x4']
+_MODE_INFO['640x200x2_8pg'] = _MODE_INFO['640x200x2']
+_MODE_INFO['320x200x4_8pg']['max_pages'] = 8
+_MODE_INFO['640x200x2_8pg']['max_pages'] = 8

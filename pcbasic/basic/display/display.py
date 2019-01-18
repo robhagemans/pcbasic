@@ -1,6 +1,6 @@
 """
 PC-BASIC - display.py
-Display mode and colour palette operations
+Display and video mode operations
 
 (c) 2013--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -22,7 +22,7 @@ from .modes import TO_WIDTH
 
 
 class Display(object):
-    """Display and video mode manipulation operations."""
+    """Display and video mode operations."""
 
     def __init__(
             self, queues, values, input_methods, memory,
