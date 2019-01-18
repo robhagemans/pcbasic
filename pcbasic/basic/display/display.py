@@ -7,12 +7,15 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import struct
+import logging
 
+from ...compat import iteritems
 from ..base import signals
 from ..base import error
 from .. import values
 from . import graphics
 from . import modes
+from . import font
 
 from .colours import Palette
 from .textscreen import TextScreen
@@ -49,10 +52,16 @@ class Display(object):
         self.attr = self.mode.attr
         # border attribute
         self._border_attr = 0
+        # prepare fonts
+        if not fonts:
+            fonts = {8: {}}
+        self._fonts = {
+            height: font.Font(height, font_dict)
+            for height, font_dict in iteritems(fonts)
+        }
         # text screen
         self.text_screen = TextScreen(
-            self.queues, self._values, self.mode, self._adapter,
-            fonts, codepage, io_streams, sound
+            self.queues, self._values, self.mode, self._adapter, codepage, io_streams, sound
         )
         # pixel buffer, set by _set_mode
         self.pixels = None
@@ -80,6 +89,7 @@ class Display(object):
         self.palette = Palette(self.queues, self.mode)
         # initialise a fresh textmode screen
         self._set_mode(self.mode, 1, 0, 0, erase=True)
+
 
     ###########################################################################
     # video modes
@@ -146,7 +156,15 @@ class Display(object):
         if not erase:
             saved_addr, saved_buffer = self.mode.memorymap.get_all_memory(self)
         # illegal fn call if we don't have a font for this mode
-        self.text_screen.check_font_available(new_mode)
+        try:
+            # get font and initialise for this mode's font width (8 or 9 pixels)
+            font = self._fonts[new_mode.font_height].init_mode(new_mode.font_width)
+        except KeyError:
+            logging.warning(
+                'No %d-pixel font available. Could not enter video mode %s.',
+                new_mode.font_height, new_mode.name
+            )
+            raise error.BASICError(error.IFC)
         # if we made it here we're ready to commit to the new mode
         self.queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
@@ -183,7 +201,9 @@ class Display(object):
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # initialise text screen
-        self.text_screen.init_mode(self.mode, self.pixels, self.attr, new_vpagenum, new_apagenum)
+        self.text_screen.init_mode(
+            self.mode, self.pixels, self.attr, new_vpagenum, new_apagenum, font
+        )
         # restore emulated video memory in new mode
         if not erase:
             self.mode.memorymap.set_memory(self, saved_addr, saved_buffer)
@@ -234,6 +254,9 @@ class Display(object):
         self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
         self.text_screen.rebuild()
 
+    ###########################################################################
+    # memory accessible properties
+
     def get_mode_info_byte(self):
         """Screen mode info byte in low memory address 1125."""
         # blink vs bright
@@ -260,6 +283,12 @@ class Display(object):
             return self.get_border_attr()
             # not implemented: + 16 "if current color specified through
             # COLOR f,b with f in [0,15] and b > 7
+
+    @property
+    def rom_font(self):
+        """8-bit ROM font."""
+        return self._fonts[8]
+
 
     ###########################################################################
 

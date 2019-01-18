@@ -208,7 +208,7 @@ class Implementation(object):
         # set up non-data segment memory
         self.all_memory = machine.Memory(
             self.values, self.memory, self.files,
-            self.display, self.keyboard, self.screen.fonts[8],
+            self.display, self.keyboard, self.display.rom_font,
             self.interpreter, peek_values, syntax
         )
         # initialise machine ports

@@ -9,13 +9,12 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 from contextlib import contextmanager
 
-from ...compat import iterchar, iteritems, int2byte
+from ...compat import iterchar, int2byte
 
 from ..base import signals
 from ..base import error
 from ..base import tokens as tk
 from .. import values
-from . import font
 from .text import TextBuffer, TextRow
 from .textbase import BottomBar, Cursor, ScrollArea
 
@@ -23,7 +22,7 @@ from .textbase import BottomBar, Cursor, ScrollArea
 class TextScreen(object):
     """Text screen."""
 
-    def __init__(self, queues, values, mode, capabilities, fonts, codepage, io_streams, sound):
+    def __init__(self, queues, values, mode, capabilities, codepage, io_streams, sound):
         """Initialise text-related members."""
         self.queues = queues
         self._values = values
@@ -42,24 +41,16 @@ class TextScreen(object):
         self.scroll_area = ScrollArea(mode)
         # writing on bottom row is allowed
         self._bottom_row_allowed = False
-        # prepare fonts
-        if not fonts:
-            fonts = {8: {}}
-        self.fonts = {
-            height: font.Font(height, font_dict)
-            for height, font_dict in iteritems(fonts)
-        }
         # function key macros
         self._bottom_bar = BottomBar()
 
-    def init_mode(self, mode, pixels, attr, vpagenum, apagenum):
+    def init_mode(self, mode, pixels, attr, vpagenum, apagenum, font):
         """Reset the text screen for new video mode."""
         self.mode = mode
         self.attr = attr
         self.apagenum = apagenum
         self.vpagenum = vpagenum
-        # get glyph cache and initialise for this mode's font width (8 or 9 pixels)
-        self._glyphs = self.fonts[self.mode.font_height].init_mode(self.mode.font_width)
+        self._glyphs = font
         # build the screen buffer
         self.text = TextBuffer(
             self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
@@ -90,15 +81,6 @@ class TextScreen(object):
     def set_attr(self, attr):
         """Set attribute."""
         self.attr = attr
-
-    def check_font_available(self, mode):
-        """Raise IFC if no suitable font available for this mode."""
-        if mode.font_height not in self.fonts:
-            logging.warning(
-                'No %d-pixel font available. Could not enter video mode %s.',
-                mode.font_height, mode.name
-            )
-            raise error.BASICError(error.IFC)
 
     def set_height(self, to_height):
         """Try to change the number of rows."""
