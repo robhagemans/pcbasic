@@ -15,7 +15,7 @@ from .colours import MonoTextColourMapper, EGAMonoColourMapper, HerculesColourMa
 from .framebuffer import TextMemoryMapper, GraphicsMemoryMapper
 from .framebuffer import CGAMemoryMapper, EGAMemoryMapper, Tandy6MemoryMapper
 from .framebuffer import PackedTileBuilder, PlanedTileBuilder
-from .framebuffer import PackedSpriteBuilder, PlanedSpriteBuilder
+from .framebuffer import PackedSpriteBuilder, PlanedSpriteBuilder, Tandy6SpriteBuilder
 
 
 ##############################################################################
@@ -365,7 +365,7 @@ class Tandy6Mode(GraphicsMode):
     _memorymapper = Tandy6MemoryMapper
     _tile_builder = PackedTileBuilder
     # initialising this with self.bitsperpixel should do the right thing
-    _sprite_builder = PlanedSpriteBuilder
+    _sprite_builder = Tandy6SpriteBuilder
 
 
 

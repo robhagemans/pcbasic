@@ -75,6 +75,9 @@ class PlanedTileBuilder(object):
 class PackedSpriteBuilder(object):
     """Packed-pixel (CGA) sprite builder."""
 
+    # no width quirks
+    width_factor = 1
+
     def __init__(self, bits_per_pixel):
         self._bitsperpixel = bits_per_pixel
 
@@ -107,6 +110,9 @@ class PackedSpriteBuilder(object):
 
 class PlanedSpriteBuilder(object):
     """Sprite builder with interlaced colour planes (EGA sprites)."""
+
+    # no width quirks
+    width_factor = 1
 
     # ** byte mapping for sprites in EGA modes
     # sprites have 8 pixels per byte
@@ -146,7 +152,7 @@ class PlanedSpriteBuilder(object):
 
     def unpack(self, array):
         """Build sprite from bytearray in EGA modes."""
-        width, height = struct.unpack('<HH', array[0:4])
+        width, height = struct.unpack('<HH', array[:4])
         row_bytes = (width + 7) // 8
         packed = array[4:4+row_bytes]
         # ensure iterations over memoryview yield int, not bytes, in Python 2
@@ -164,6 +170,25 @@ class PlanedSpriteBuilder(object):
         # combine planes
         sprite = functools.reduce(operator.__ior__, sprite_planes)
         return sprite
+
+
+class Tandy6SpriteBuilder(PlanedSpriteBuilder):
+    """Wrapper for Tandy mode 6's sprite-size record quirks."""
+
+    # width is twice what's recorded
+    width_factor = 2
+
+    def pack(self, sprite):
+        """Pack sprite, report only half the width packed."""
+        record = PlanedSpriteBuilder.pack(self, sprite)
+        width_record = struct.pack('<H', sprite.width // 2)
+        return width_record + record[2:]
+
+    def unpack(self, array):
+        """Unpack sprite, twice the width reported."""
+        width = 2 * struct.unpack('<H', array[:2])
+        size_record = struct.pack('<H', width)
+        return PlanedSpriteBuilder.unpack(self, size_record + array[2:])
 
 
 ##############################################################################

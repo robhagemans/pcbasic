@@ -909,12 +909,8 @@ class Drawing(object):
             # store it now that we have it!
             self._memory.arrays.set_cache(array_name, sprite)
         # sprite must be fully inside *viewport* boundary
-        dx, dy = sprite.width, sprite.height
-        x1, y1 = x0+dx-1, y0+dy-1
-        # Tandy screen 6 sprites are twice as wide as claimed
-        if self._mode.name == '640x200x4':
-            x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
+        x1, y1 = x0 + sprite.width - 1, y0 + sprite.height - 1
         vx0, vy0, vx1, vy1 = self.graph_view.get()
         error.range_check(vx0, vx1, x0, x1)
         error.range_check(vy0, vy1, y0, y1)
@@ -944,9 +940,10 @@ class Drawing(object):
         y0, y1 = sorted((y0, y1))
         x0, x1 = sorted((x0, x1))
         # Tandy screen 6 simply GETs twice the width, it seems
-        if self._mode.name == '640x200x4':
-            dx = x1 - x0 + 1
-            x1 = x0 + 2*dx - 1
+        print x0, x1
+        width = x1 - x0 + 1
+        x1 = x0 + self._mode.sprite_builder.width_factor * width - 1
+        print self._mode.sprite_builder.width_factor, x0, x1
         # illegal fn call if outside viewport boundary
         vx0, vy0, vx1, vy1 = self.graph_view.get()
         error.range_check(vx0, vx1, x0, x1)
