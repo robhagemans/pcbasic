@@ -760,12 +760,10 @@ class Drawing(object):
         # if paint *attribute* specified, border default = current foreground
         if border is None:
             border = c
-        # filling with the background pattern: only in screen 7,8,9 (,10?) is this an error
-        bg_match_not_allowed = ('320x200x16', '640x200x16', '640x350x16', '640x350x4')
         if (
-                pattern and background
+                not self._mode.build_tile.background_match_allowed
+                and pattern and background
                 and background[:len(pattern)] == pattern
-                and self._mode.name in bg_match_not_allowed
             ):
             raise error.BASICError(error.IFC)
         self.flood_fill(coord, c, pattern, border, background)

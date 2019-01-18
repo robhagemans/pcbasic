@@ -27,6 +27,9 @@ EGA_SEGMENT = 0xa000
 class PackedTileBuilder(object):
     """Packed-pixel (CGA) tiles."""
 
+    # tiling over with the background pattern is allowed in CGA modes
+    background_match_allowed = True
+
     def __init__(self, bits_per_pixel):
         """Initialise tile builder."""
         self._bitsperpixel = bits_per_pixel
@@ -42,6 +45,9 @@ class PackedTileBuilder(object):
 
 class PlanedTileBuilder(object):
     """Interlaced-plane (EGA) tiles."""
+
+    # tiling over with the background pattern is an error in EGA modes screen 7, 8, 9
+    background_match_allowed = False
 
     def __init__(self, number_planes):
         """Initialise sprite builder."""
