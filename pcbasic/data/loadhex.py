@@ -25,8 +25,18 @@ FONTS = sorted(
     if name.lower().endswith(u'.hex'))
 )
 
+_HEIGHTS = (8, 14, 16)
 
-def read_fonts(codepage_dict, font_families, warn=False):
+
+def _get_font(name, height):
+    """Load font from file."""
+    try:
+        return get_data(FONT_PATTERN, path=FONT_DIR, name=name, height=height)
+    except ResourceFailed as e:
+        logging.debug('Failed to load font `%s` with height %d: %s', name, height, e)
+
+
+def read_fonts(codepage_dict, font_families):
     """Load font typefaces."""
     # load the graphics fonts, including the 8-pixel RAM font
     # use set() for speed - lookup is O(1) rather than O(n) for list
@@ -35,148 +45,119 @@ def read_fonts(codepage_dict, font_families, warn=False):
     unicode_needed |= set(c for cluster in unicode_needed if len(cluster) > 1 for c in cluster)
     # substitutes is in reverse order: { yen: backslash }
     substitutes = {
-        grapheme_cluster: unichr(ord(cp_point))
-        for cp_point, grapheme_cluster in iteritems(codepage_dict)
+        _grapheme_cluster: unichr(ord(_cp_point))
+        for _cp_point, _grapheme_cluster in iteritems(codepage_dict)
         if (
-            cp_point in PRINTABLE_ASCII
-            and (len(grapheme_cluster) > 1
-            or ord(grapheme_cluster) != ord(cp_point))
+            _cp_point in PRINTABLE_ASCII
+            and (
+                len(_grapheme_cluster) > 1
+                or ord(_grapheme_cluster) != ord(_cp_point)
+            )
         )
     }
-    fonts = {}
-    # load fonts, height-16 first
-    for height in (16, 14, 8):
-        # load a Unifont .hex font and take the codepage subset
-        font_files = []
-        for name in font_families:
-            try:
-                font_files.append(
-                    get_data(FONT_PATTERN, path=FONT_DIR, name=name, height=height)
-                )
-            except ResourceFailed as e:
-                if warn:
-                    logging.debug('Failed to load font `%s` with height %d: %s', name, height, e)
-        fonts[height] = FontLoader(height).load_hex(
-            font_files, unicode_needed, substitutes, warn=warn
-        )
-        # fix missing code points font based on 16-line font
-        if fonts[16]:
-            fonts[height].fix_missing(unicode_needed, fonts[16])
-    if 8 in fonts:
-        fonts[9] = fonts[8]
+    # load font resources
+    font_files = {
+        _height: [
+            _font for _font in
+            (_get_font(_name, _height) for _name in font_families)
+            if _font is not None
+        ]
+        for _height in _HEIGHTS
+    }
+    # convert
+    uc_fonts = {
+        _height: load_hex(_font_file, _height, unicode_needed, substitutes)
+        for _height, _font_file in iteritems(font_files)
+        if _font_file
+    }
     # convert keys from unicode to codepage
     fonts = {
-        height: {
-            c: font._fontdict[uc]
-            for c, uc in iteritems(codepage_dict) if uc in font._fontdict
+        _height: {
+            _c: _font[_uc]
+            for _c, _uc in iteritems(codepage_dict) if _uc in _font
         }
-        for height, font in iteritems(fonts)
+        for _height, _font in iteritems(uc_fonts)
     }
-    return {height: font for height, font in iteritems(fonts)}
+    return fonts
 
 
-class FontLoader(object):
-    """Single-height bitfont."""
-
-    def __init__(self, height):
-        """Initialise the font."""
-        self._height = height
-        self._fontdict = {}
-
-    def load_hex(self, hex_resources, unicode_needed, substitutes, warn=True):
-        """Load a set of overlaying unifont .hex files."""
-        self._fontdict = {}
-        all_needed = unicode_needed | set(substitutes)
-        for hexres in reversed(hex_resources):
-            if hexres is None:
+def load_hex(hex_resources, height, unicode_needed, substitutes):
+    """Load a set of overlaying unifont .hex files."""
+    fontdict = {}
+    all_needed = unicode_needed | set(substitutes)
+    for hexres in reversed(hex_resources):
+        if hexres is None:
+            continue
+        for line in hexres.splitlines():
+            # ignore empty lines and comment lines (first char is #)
+            if (not line) or (line[:1] == b'#'):
                 continue
-            for line in hexres.splitlines():
-                # ignore empty lines and comment lines (first char is #)
-                if (not line) or (line[:1] == b'#'):
+            # strip off comments
+            # split unicodepoint and hex string (max 32 chars)
+            ucs_str, fonthex = line.split(b'#')[0].split(b':')
+            ucs_sequence = ucs_str.split(b',')
+            fonthex = fonthex.strip()
+            # extract codepoint and hex string;
+            # discard anything following whitespace; ignore malformed lines
+            try:
+                # construct grapheme cluster
+                c = u''.join(unichr(int(ucshex.strip(), 16)) for ucshex in ucs_sequence)
+                # skip grapheme clusters we won't need
+                if c not in all_needed:
                     continue
-                # strip off comments
-                # split unicodepoint and hex string (max 32 chars)
-                ucs_str, fonthex = line.split(b'#')[0].split(b':')
-                ucs_sequence = ucs_str.split(b',')
-                fonthex = fonthex.strip()
-                # extract codepoint and hex string;
-                # discard anything following whitespace; ignore malformed lines
+                # skip chars we already have
+                if (c in fontdict):
+                    continue
+                # string must be 32-byte or 16-byte; cut to required font size
+                if len(fonthex) < 32:
+                    raise ValueError
+                if len(fonthex) < 64:
+                    fonthex = fonthex[:2*height]
+                else:
+                    fonthex = fonthex[:4*height]
+                fontdict[c] = binascii.unhexlify(fonthex)
+            except Exception as e:
+                logging.warning('Could not parse line in font file: %s', repr(line))
+    # substitute code points
+    fontdict.update({
+        old: fontdict[new]
+        for (new, old) in iteritems(substitutes)
+        if new in fontdict
+    })
+    # fill missing with nulls
+    missing = unicode_needed - set(fontdict)
+    fontdict.update({_u: b'\0' * height for _u in missing})
+    # char 0 should always be defined and empty
+    fontdict[u'\0'] = b'\0' * height
+    _combine_glyphs(height, fontdict, unicode_needed)
+    # warn if we miss needed glyphs
+    _warn_missing(missing)
+    return fontdict
+
+def _combine_glyphs(height, fontdict, unicode_needed):
+    """Fix missing grapheme clusters by combining components."""
+    for cluster in unicode_needed:
+        if cluster not in fontdict:
+            # try to combine grapheme clusters first
+            if len(cluster) > 1:
+                # combine strings
+                clusterglyph = bytearray(height)
                 try:
-                    # construct grapheme cluster
-                    c = u''.join(unichr(int(ucshex.strip(), 16)) for ucshex in ucs_sequence)
-                    # skip grapheme clusters we won't need
-                    if c not in all_needed:
-                        continue
-                    # skip chars we already have
-                    if (c in self._fontdict):
-                        continue
-                    # string must be 32-byte or 16-byte; cut to required font size
-                    if len(fonthex) < 32:
-                        raise ValueError
-                    if len(fonthex) < 64:
-                        fonthex = fonthex[:2*self._height]
-                    else:
-                        fonthex = fonthex[:4*self._height]
-                    self._fontdict[c] = binascii.unhexlify(fonthex)
-                except Exception as e:
-                    logging.warning('Could not parse line in font file: %s', repr(line))
-        # substitute code points
-        self._fontdict.update({
-            old: self._fontdict[new]
-            for (new, old) in iteritems(substitutes)
-            if new in self._fontdict
-        })
-        # char 0 should always be defined and empty
-        self._fontdict[u'\0'] = b'\0' * self._height
-        self._combine_glyphs(unicode_needed)
-        # in debug mode, check if we have all needed glyphs
-        if warn:
-            self._warn_missing(unicode_needed)
-        return self
+                    for c in cluster:
+                        for y, row in enumerate(fontdict[c]):
+                            clusterglyph[y] |= ord(row)
+                except KeyError as e:
+                    logging.debug(
+                        'Could not combine grapheme cluster %s, missing %r [%s]', cluster, c, c
+                    )
+                fontdict[cluster] = bytes(clusterglyph)
 
-    def _combine_glyphs(self, unicode_needed):
-        """Fix missing grapheme clusters by combining components."""
-        for cluster in unicode_needed:
-            if cluster not in self._fontdict:
-                # try to combine grapheme clusters first
-                if len(cluster) > 1:
-                    # combine strings
-                    clusterglyph = bytearray(self._height)
-                    try:
-                        for c in cluster:
-                            for y, row in enumerate(self._fontdict[c]):
-                                clusterglyph[y] |= ord(row)
-                    except KeyError as e:
-                        logging.debug(
-                            'Could not combine grapheme cluster %s, missing %r [%s]', cluster, c, c
-                        )
-                    self._fontdict[cluster] = bytes(clusterglyph)
-
-    def _warn_missing(self, unicode_needed, max_warnings=3):
-        """Check if we have all needed glyphs."""
-        # fontdict: unicode char -> glyph
-        missing = unicode_needed - set(self._fontdict)
-        warnings = 0
-        for u in missing:
-            warnings += 1
-            logging.debug('Code point u+%x not represented in font', ord(u))
-            if warnings == max_warnings:
-                logging.debug('Further code point warnings suppressed.')
-                break
-
-    def fix_missing(self, unicode_needed, font16):
-        """Fill in missing codepoints in font using 16-line font or blanks."""
-        if self._height == 16:
-            return
-        for c in unicode_needed:
-            if c not in self._fontdict:
-                # try to construct from 16-bit font
-                try:
-                    s16 = list(font16.fontdict[c])
-                    start = (16 - self._height) // 2
-                    if len(s16) == 16:
-                        self._fontdict[c] = b''.join([s16[i] for i in range(start, 16-start)])
-                    else:
-                        self._fontdict[c] = b''.join([s16[i] for i in range(start*2, 32-start*2)])
-                except (KeyError, AttributeError) as e:
-                    self._fontdict[c] = b'\0' * self._height
+def _warn_missing(missing, max_warnings=3):
+    """Warn if we miss needed glyphs."""
+    warnings = 0
+    for u in missing:
+        warnings += 1
+        logging.debug('Code point u+%x not represented in font', ord(u))
+        if warnings == max_warnings:
+            logging.debug('Further code point warnings suppressed.')
+            break

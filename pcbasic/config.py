@@ -571,7 +571,7 @@ class Settings(object):
             # screen settings
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
-            'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
+            'font': data.read_fonts(codepage_dict, self.get('font')),
             # inserted keystrokes
             # we first need to encode the unicode to bytes before we can decode it
             # this preserves unicode as \x (if latin-1) and \u escapes

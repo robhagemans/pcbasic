@@ -53,12 +53,16 @@ class Display(object):
         # border attribute
         self._border_attr = 0
         # prepare fonts
-        if not fonts:
-            fonts = {8: {}}
-        self._fonts = {
-            height: font.Font(height, font_dict)
-            for height, font_dict in iteritems(fonts)
-        }
+        self._fonts = {}
+        if fonts:
+            self._fonts = {
+                height: font.Font(height, font_dict)
+                for height, font_dict in iteritems(fonts) if font_dict
+            }
+        # use the default rom font if no 8-pixel font provided
+        if 8 not in self._fonts:
+            self._fonts[8] = font.Font(8, None)
+        self._fonts[9] = self._fonts[8]
         # text screen
         self.text_screen = TextScreen(
             self.queues, self._values, self.mode, self._adapter, codepage, io_streams, sound
@@ -161,10 +165,10 @@ class Display(object):
             font = self._fonts[new_mode.font_height].init_mode(new_mode.font_width)
         except KeyError:
             logging.warning(
-                'No %d-pixel font available. Could not enter video mode %s.',
-                new_mode.font_height, new_mode.name
+                'No %d-pixel font available. Using 8-pixel default font instead.',
+                new_mode.font_height
             )
-            raise error.BASICError(error.IFC)
+            font = self.rom_font.init_mode(new_mode.font_width)
         # if we made it here we're ready to commit to the new mode
         self.queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
