@@ -198,6 +198,8 @@ def get_mode(number, width, adapter, monitor, video_mem_size):
 class VideoMode(object):
     """Base class for video modes."""
 
+    is_text_mode = None
+
     def __init__(
             self, name, height, width, font_height, font_width, attr, colourmap
         ):
@@ -212,7 +214,6 @@ class VideoMode(object):
         # initial/default attribute
         self.attr = attr
         # override these
-        self.is_text_mode = None
         self.memorymap = None
         self.colourmap = colourmap
 
@@ -263,6 +264,7 @@ class TextMode(VideoMode):
     """Default settings for a text mode."""
 
     _textmemorymapper = TextMemoryMapper
+    is_text_mode = True
 
     def __init__(
             self, name, rows, columns, font_height, font_width, attr,
@@ -272,7 +274,6 @@ class TextMode(VideoMode):
         VideoMode.__init__(
             self, name, rows, columns, font_height, font_width, attr, colourmap
         )
-        self.is_text_mode = True
         self.memorymap = self._textmemorymapper(rows, columns, video_mem_size, max_pages, mono)
 
 
@@ -288,10 +289,13 @@ class GraphicsMode(VideoMode):
     _tile_builder = lambda _: None
     _sprite_builder = lambda _: None
 
+    # text mode flag
+    is_text_mode = False
+
     def __init__(
             self, name, width, height, rows, columns,
             attr, bitsperpixel, interleave_times, bank_size, video_mem_size, max_pages,
-            cursor_index, colourmap
+            cursor_attr, colourmap,
         ):
         """Initialise video mode settings."""
         font_width = width // columns
@@ -303,15 +307,13 @@ class GraphicsMode(VideoMode):
         # override pixel dimensions
         self.pixel_height = height
         self.pixel_width = width
-        # text mode flag
-        self.is_text_mode = False
         # used in display.py to initialise pixelbuffer
         self.bitsperpixel = bitsperpixel
         self.memorymap = self._memorymapper(
             height, width, video_mem_size, max_pages, interleave_times, bank_size, bitsperpixel
         )
         # cursor attribute
-        self.cursor_index = cursor_index
+        self.cursor_attr = cursor_attr
         # sprite and tile builders
         self.build_tile = self._tile_builder(self.bitsperpixel)
         self.sprite_builder = self._sprite_builder(self.bitsperpixel)
@@ -335,13 +337,13 @@ class EGAMode(GraphicsMode):
     def __init__(
             self, name, width, height, rows, columns,
             attr, bitsperpixel, interleave_times, bank_size, video_mem_size, max_pages,
-            cursor_index, colourmap, planes_used=range(4)
+            cursor_attr, colourmap, planes_used=range(4)
         ):
         """Initialise video mode settings."""
         GraphicsMode.__init__(
             self, name, width, height, rows, columns,
             attr, bitsperpixel, interleave_times, bank_size, video_mem_size, max_pages,
-            cursor_index, colourmap
+            cursor_attr, colourmap
         )
         # EGA memorymap settings
         self.memorymap.set_planes_used(planes_used)
@@ -427,77 +429,77 @@ _MODE_INFO = {
         # cga/ega: 1 page only
         width=320, height=200, rows=25, columns=40, attr=3,
         bitsperpixel=2, interleave_times=2, bank_size=0x2000, max_pages=1,
-        cursor_index=None,
+        cursor_attr=None,
         layout=CGAMode, colourmap=CGA4ColourMapper
     ),
     '640x200x2': dict(
         # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
         width=640, height=200, rows=25, columns=80, attr=1,
         bitsperpixel=1, interleave_times=2, bank_size=0x2000, max_pages=1,
-        cursor_index=None,
+        cursor_attr=None,
         layout=CGAMode, colourmap=CGA2ColourMapper
     ),
     '160x200x16': dict(
         # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
         width=160, height=200, rows=25, columns=20, attr=15,
         bitsperpixel=4, interleave_times=2, bank_size=0x2000, max_pages=8,
-        cursor_index=3,
+        cursor_attr=3,
         layout=CGAMode, colourmap=CGA16ColourMapper
     ),
     '320x200x4pcjr': dict(
         #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
         width=320, height=200, rows=25, columns=40, attr=3,
         bitsperpixel=2, interleave_times=2, bank_size=0x2000, max_pages=8,
-        cursor_index=3,
+        cursor_attr=3,
         layout=CGAMode, colourmap=CGA4ColourMapper
     ),
     '320x200x16pcjr': dict(
         # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
         width=320, height=200, rows=25, columns=40, attr=15,
         bitsperpixel=4, interleave_times=4, bank_size=0x2000, max_pages=4,
-        cursor_index=3,
+        cursor_attr=3,
         layout=CGAMode, colourmap=CGA16ColourMapper
     ),
     '640x200x4': dict(
         # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
         width=640, height=200, rows=25, columns=80, attr=3,
         bitsperpixel=2, interleave_times=4, bank_size=0x2000, max_pages=4,
-        cursor_index=3,
+        cursor_attr=3,
         layout=Tandy6Mode, colourmap=CGA4ColourMapper
     ),
     '320x200x16': dict(
         # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
         width=320, height=200, rows=25, columns=40, attr=15,
         bitsperpixel=4, interleave_times=1, bank_size=0x2000, max_pages=None,
-        cursor_index=None,
+        cursor_attr=None,
         layout=EGAMode, colourmap=EGA16ColourMapper
     ),
     '640x200x16': dict(
         # 0Eh 640x200x16    EGA screen 8
         width=640, height=200, rows=25, columns=80, attr=15,
         bitsperpixel=4, interleave_times=1, bank_size=0x4000, max_pages=None,
-        cursor_index=None,
+        cursor_attr=None,
         layout=EGAMode, colourmap=EGA16ColourMapper
     ),
     '640x350x16': dict(
         # 10h 640x350x16    EGA screen 9
         width=640, height=350, rows=25, columns=80, attr=15,
         bitsperpixel=4, interleave_times=1, bank_size=0x8000, max_pages=None,
-        cursor_index=None,
+        cursor_attr=None,
         layout=EGAMode, colourmap=EGA64ColourMapper
     ),
     '640x350x4': dict(
         # 0Fh 640x350x4     EGA monochrome screen 10
         width=640, height=350, rows=25, columns=80, attr=1,
         bitsperpixel=2, interleave_times=1, bank_size=0x8000, max_pages=None,
-        cursor_index=None, planes_used=(1, 3),
+        cursor_attr=None, planes_used=(1, 3),
         layout=EGAMode, colourmap=EGAMonoColourMapper
     ),
     '640x400x2': dict(
         # 40h 640x400x2   1bpp  olivetti screen 3-255
         width=640, height=400, rows=25, columns=80, attr=1,
         bitsperpixel=1, interleave_times=4, bank_size=0x2000, max_pages=1,
-        cursor_index=None,
+        cursor_attr=None,
         layout=CGAMode, colourmap=CGA2ColourMapper
     ),
     '720x348x2': dict(
@@ -507,7 +509,7 @@ _MODE_INFO = {
         # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
         width=720, height=348, rows=25, columns=80, attr=1,
         bitsperpixel=1, interleave_times=4, bank_size=0x2000, max_pages=2,
-        cursor_index=None,
+        cursor_attr=None,
         layout=CGAMode, colourmap=HerculesColourMapper
     ),
 }

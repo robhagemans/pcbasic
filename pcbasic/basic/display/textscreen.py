@@ -73,8 +73,8 @@ class TextScreen(object):
         self.scroll_area.init_mode(self.mode)
         self.set_pos(self.scroll_area.top, 1)
         # rebuild the cursor
-        if not mode.is_text_mode and mode.cursor_index:
-            self.cursor.init_mode(self.mode, mode.cursor_index)
+        if not mode.is_text_mode and mode.cursor_attr:
+            self.cursor.init_mode(self.mode, mode.cursor_attr)
         else:
             self.cursor.init_mode(self.mode, self.attr)
 

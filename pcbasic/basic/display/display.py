@@ -282,7 +282,7 @@ class Display(object):
         self.attr = attr
         self.drawing.set_attr(attr)
         self.text_screen.set_attr(attr)
-        if not self.mode.is_text_mode and self.mode.cursor_index is None:
+        if not self.mode.is_text_mode and self.mode.cursor_attr is None:
             self.text_screen.cursor.set_attr(attr)
 
     def set_border(self, attr):
