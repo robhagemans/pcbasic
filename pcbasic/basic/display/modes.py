@@ -427,79 +427,68 @@ _MODE_INFO = {
     '320x200x4': dict(
         # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
         # cga/ega: 1 page only
-        width=320, height=200, rows=25, columns=40, attr=3,
+        width=320, height=200, rows=25, columns=40, attr=3, cursor_attr=None,
         bitsperpixel=2, interleave_times=2, bank_size=0x2000, max_pages=1,
-        cursor_attr=None,
         layout=CGAMode, colourmap=CGA4ColourMapper
     ),
     '640x200x2': dict(
         # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
-        width=640, height=200, rows=25, columns=80, attr=1,
+        width=640, height=200, rows=25, columns=80, attr=1, cursor_attr=None,
         bitsperpixel=1, interleave_times=2, bank_size=0x2000, max_pages=1,
-        cursor_attr=None,
         layout=CGAMode, colourmap=CGA2ColourMapper
     ),
     '160x200x16': dict(
         # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
-        width=160, height=200, rows=25, columns=20, attr=15,
+        width=160, height=200, rows=25, columns=20, attr=15, cursor_attr=3,
         bitsperpixel=4, interleave_times=2, bank_size=0x2000, max_pages=8,
-        cursor_attr=3,
         layout=CGAMode, colourmap=CGA16ColourMapper
     ),
     '320x200x4pcjr': dict(
         #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
-        width=320, height=200, rows=25, columns=40, attr=3,
+        width=320, height=200, rows=25, columns=40, attr=3, cursor_attr=3,
         bitsperpixel=2, interleave_times=2, bank_size=0x2000, max_pages=8,
-        cursor_attr=3,
         layout=CGAMode, colourmap=CGA4ColourMapper
     ),
     '320x200x16pcjr': dict(
         # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
-        width=320, height=200, rows=25, columns=40, attr=15,
+        width=320, height=200, rows=25, columns=40, attr=15, cursor_attr=3,
         bitsperpixel=4, interleave_times=4, bank_size=0x2000, max_pages=4,
-        cursor_attr=3,
         layout=CGAMode, colourmap=CGA16ColourMapper
     ),
     '640x200x4': dict(
         # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
-        width=640, height=200, rows=25, columns=80, attr=3,
+        width=640, height=200, rows=25, columns=80, attr=3, cursor_attr=3,
         bitsperpixel=2, interleave_times=4, bank_size=0x2000, max_pages=4,
-        cursor_attr=3,
         layout=Tandy6Mode, colourmap=CGA4ColourMapper
     ),
     '320x200x16': dict(
         # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
-        width=320, height=200, rows=25, columns=40, attr=15,
+        width=320, height=200, rows=25, columns=40, attr=15, cursor_attr=None,
         bitsperpixel=4, interleave_times=1, bank_size=0x2000, max_pages=None,
-        cursor_attr=None,
         layout=EGAMode, colourmap=EGA16ColourMapper
     ),
     '640x200x16': dict(
         # 0Eh 640x200x16    EGA screen 8
-        width=640, height=200, rows=25, columns=80, attr=15,
+        width=640, height=200, rows=25, columns=80, attr=15, cursor_attr=None,
         bitsperpixel=4, interleave_times=1, bank_size=0x4000, max_pages=None,
-        cursor_attr=None,
         layout=EGAMode, colourmap=EGA16ColourMapper
     ),
     '640x350x16': dict(
         # 10h 640x350x16    EGA screen 9
-        width=640, height=350, rows=25, columns=80, attr=15,
+        width=640, height=350, rows=25, columns=80, attr=15, cursor_attr=None,
         bitsperpixel=4, interleave_times=1, bank_size=0x8000, max_pages=None,
-        cursor_attr=None,
         layout=EGAMode, colourmap=EGA64ColourMapper
     ),
     '640x350x4': dict(
         # 0Fh 640x350x4     EGA monochrome screen 10
-        width=640, height=350, rows=25, columns=80, attr=1,
-        bitsperpixel=2, interleave_times=1, bank_size=0x8000, max_pages=None,
-        cursor_attr=None, planes_used=(1, 3),
+        width=640, height=350, rows=25, columns=80, attr=1, cursor_attr=None,
+        bitsperpixel=2, interleave_times=1, bank_size=0x8000, max_pages=None, planes_used=(1, 3),
         layout=EGAMode, colourmap=EGAMonoColourMapper
     ),
     '640x400x2': dict(
         # 40h 640x400x2   1bpp  olivetti screen 3-255
-        width=640, height=400, rows=25, columns=80, attr=1,
+        width=640, height=400, rows=25, columns=80, attr=1, cursor_attr=None,
         bitsperpixel=1, interleave_times=4, bank_size=0x2000, max_pages=1,
-        cursor_attr=None,
         layout=CGAMode, colourmap=CGA2ColourMapper
     ),
     '720x348x2': dict(
@@ -507,9 +496,8 @@ _MODE_INFO = {
         # SCREEN 3 supports two pages (0 and 1);
         # SCREEN 0 used with Hercules supports only one page.
         # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
-        width=720, height=348, rows=25, columns=80, attr=1,
+        width=720, height=348, rows=25, columns=80, attr=1, cursor_attr=None,
         bitsperpixel=1, interleave_times=4, bank_size=0x2000, max_pages=2,
-        cursor_attr=None,
         layout=CGAMode, colourmap=HerculesColourMapper
     ),
 }
