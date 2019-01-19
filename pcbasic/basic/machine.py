@@ -173,7 +173,7 @@ class MachinePorts(object):
             #OUT &H3D8,&H1A: REM enable color burst
             #OUT &H3D8,&H1E: REM disable color burst
             # 0x1a == 0001 1010     0x1e == 0001 1110
-            self._display.palette.set_colorburst(val & 4 == 0)
+            self._display.colourmap.set_colorburst(val & 4 == 0)
         elif addr == 0x3d9:
             # CGA colour control register, see http://www.seasip.info/VintagePC/cga.html
             # bit 5 - palette 0 = r/g/y 1 = c/m/y/k (320x200x4 only)
@@ -184,8 +184,8 @@ class MachinePorts(object):
             #    In text modes, this colour is used for the border (overscan).
             #    In 320x200 graphics modes, it is used for the background and border.
             #    In 640x200 mode, it is used for the foreground colour.
-            self._display.palette.set_cga4_palette(bool(val & 0x10))
-            self._display.palette.set_cga4_intensity(bool(val & 0x8))
+            self._display.colourmap.set_cga4_palette(bool(val & 0x10))
+            self._display.colourmap.set_cga4_intensity(bool(val & 0x8))
         elif addr in (0x378, 0x37A, 0x278, 0x27A):
             # parallel port output ports
             # http://www.aaroncake.net/electronics/qblpt.htm

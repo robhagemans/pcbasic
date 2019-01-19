@@ -17,7 +17,6 @@ from . import graphics
 from . import modes
 from . import font
 
-from .colours import Palette
 from .textscreen import TextScreen
 from .pixels import PixelBuffer
 from .colours import MONO_TINT
@@ -96,8 +95,9 @@ class Display(object):
             self.queues, input_methods, self._values, self._memory, aspect
         )
         # colour palette
-        self.colourmap = self.mode.colourmap(self._adapter, self._monitor)
-        self.palette = Palette(self.queues, self.colourmap)
+        self.colourmap = self.mode.colourmap(
+            self.queues, self._adapter, self._monitor, self.colorswitch
+        )
         # initialise a fresh textmode screen
         self._set_mode(self.mode, 1, 0, 0, erase=True)
 
@@ -111,7 +111,7 @@ class Display(object):
         ):
         """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
-        self.palette.reset()
+        self.colourmap.reset()
         # find the new mode we're trying to get into
         if new_mode_nr is None:
             # keep current mode if graphics but maybe change width if text
@@ -206,8 +206,9 @@ class Display(object):
         # set the colorswitch
         self.colorswitch = new_colorswitch
         # initialise the palette
-        self.colourmap = new_mode.colourmap(self._adapter, self._monitor)
-        self.palette.init_mode(self.colourmap, self.colorswitch)
+        self.colourmap = new_mode.colourmap(
+            self.queues, self._adapter, self._monitor, self.colorswitch
+        )
         # initialise pixel buffers
         if not self.mode.is_text_mode:
             self.pixels = PixelBuffer(
@@ -268,7 +269,7 @@ class Display(object):
         # set the visible and active pages
         self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
         # rebuild palette
-        self.palette.submit()
+        self.colourmap.submit()
         # set the border
         self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
         self.text_screen.rebuild()
@@ -295,7 +296,7 @@ class Display(object):
         """Colour info byte in low memory address 1126."""
         if self.mode.name == '320x200x4':
             return (
-                self.palette.get_entry(0)
+                self.colourmap.get_entry(0)
                 + 32 * self.colourmap.get_cga4_palette()
             )
         elif self.mode.is_text_mode:
@@ -451,7 +452,7 @@ class Display(object):
 
     def _color_mode_1(self, back, pal, override):
         """Helper function for COLOR in SCREEN 1."""
-        back = self.palette.get_entry(0) if back is None else back
+        back = self.colourmap.get_entry(0) if back is None else back
         if override is not None:
             # uses last entry as palette if given
             pal = override
@@ -461,15 +462,15 @@ class Display(object):
             self.colourmap.set_cga4_palette(pal % 2)
             palette = list(self.colourmap.default_palette)
             palette[0] = back & 0xf
-            self.palette.set_all(palette, force=True)
+            self.colourmap.set_all(palette, force=True)
         else:
-            self.palette.set_entry(0, back & 0xf, force=True)
+            self.colourmap.set_entry(0, back & 0xf, force=True)
 
     def _color_other_modes(self, fore, back, bord):
         """Helper function for COLOR in modes other than SCREEN 1."""
         if back is None:
             # graphics mode bg is always 0; sets palette instead
-            back = self.palette.get_entry(0)
+            back = self.colourmap.get_entry(0)
         # for screens other than 1, no distinction between 3rd parm zero and not supplied
         bord = bord or 0
         error.range_check(0, 255, bord)
@@ -483,18 +484,18 @@ class Display(object):
             error.range_check(0, max_colour, back)
             self.set_attr(fore)
             # in screen 7 and 8, only low intensity palette is used.
-            self.palette.set_entry(0, back % 8, force=True)
+            self.colourmap.set_entry(0, back % 8, force=True)
         elif self.mode.name in ('640x350x16', '640x350x4', '640x350x4c'):
             error.range_check(1, max_attr, fore)
             error.range_check(0, max_colour, back)
             self.set_attr(fore)
-            self.palette.set_entry(0, back, force=True)
+            self.colourmap.set_entry(0, back, force=True)
         elif self.mode.name == '640x400x2':
             # Olivetti screen 4 2-colour can change foreground with COLOR but bg is always black
             error.range_check(0, max_colour, fore)
             if back != 0:
                 raise error.BASICError(error.IFC)
-            self.palette.set_entry(1, fore, force=True)
+            self.colourmap.set_entry(1, fore, force=True)
 
     def palette_(self, args):
         """PALETTE: assign colour to attribute."""
@@ -506,7 +507,7 @@ class Display(object):
             colour = values.to_int(colour)
         list(args)
         if attrib is None and colour is None:
-            self.palette.set_all(self.colourmap.default_palette)
+            self.colourmap.set_all(self.colourmap.default_palette)
         else:
             # can't set blinking colours separately
             error.range_check(0, self.colourmap.num_palette-1, attrib)
@@ -514,7 +515,7 @@ class Display(object):
             colour = -1 + (colour + 1) % 256
             error.range_check(-1, self.colourmap.num_colours-1, colour)
             if colour != -1:
-                self.palette.set_entry(attrib, colour)
+                self.colourmap.set_entry(attrib, colour)
 
     def palette_using_(self, args):
         """PALETTE USING: set palette from array buffer."""
@@ -536,8 +537,8 @@ class Display(object):
             ## signed int, as -1 means don't set
             val, = struct.unpack('<h', lst[offset:offset+2])
             error.range_check(-1, self.colourmap.num_colours-1, val)
-            new_palette.append(val if val > -1 else self.palette.get_entry(i))
-        self.palette.set_all(new_palette)
+            new_palette.append(val if val > -1 else self.colourmap.get_entry(i))
+        self.colourmap.set_all(new_palette)
 
     def cls_(self, args):
         """CLS: clear the screen."""

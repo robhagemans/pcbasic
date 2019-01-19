@@ -1,6 +1,6 @@
 """
 PC-BASIC - display.colours
-Palettes and colour sets
+Palettes, colours and attributes
 
 (c) 2013--2019 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -149,75 +149,6 @@ def _adjust_tint(rgb, mono_tint, mono):
     return tuple(int(_tint * intensity) // 255 for _tint in mono_tint)
 
 
-#######################################################################################
-# palette
-
-class Palette(object):
-    """Wrapper for ColourMapper to submit to interface on palette changes."""
-
-    def __init__(self, queues, colourmap):
-        """Initialise palette."""
-        self._queues = queues
-        self._colourmap = colourmap
-        # map from fore/back attr to video adapter colour
-        # interpretation is video mode dependent
-        self._colourmap.reset_palette()
-        self.submit()
-
-    def init_mode(self, colourmap, colorswitch):
-        """Initialise for new mode and colorswitch parameter."""
-        self._colourmap = colourmap
-        self._colourmap.set_colorswitch(colorswitch)
-        self.reset()
-
-    def set_colorburst(self, on=True):
-        """Set the NTSC colorburst bit (machine port &h03d8)."""
-        self._colourmap.set_colorburst(on)
-        # reset the palette to reflect the new mono or mode-5 situation
-        # this sends the signal to the interface as well
-        self.reset()
-
-    def set_cga4_palette(self, num):
-        """Set the default 4-colour CGA palette."""
-        self._colourmap.set_cga4_palette(num)
-        self.submit()
-
-    def set_cga4_intensity(self, high):
-        """Set/unset the palette intensity."""
-        self._colourmap.set_cga4_intensity(high)
-        self.submit()
-
-    def reset(self):
-        """Initialise for new mode."""
-        self._colourmap.reset_palette()
-        self.submit()
-
-    def set_all(self, new_palette, force=False):
-        """Set the colours for all attributes."""
-        if force or self._colourmap.allows_palette_change():
-            self._colourmap.palette = list(new_palette)
-            self.submit()
-
-    def set_entry(self, index, colour, force=False):
-        """Set a new colour for a given attribute."""
-        if force or self._colourmap.allows_palette_change():
-            self._colourmap.palette[index] = colour
-            # in text mode, we'd be setting more than one attribute
-            # e.g. all true attributes with this number as foreground or background
-            # and attr_to_rgb decides which
-            self.submit()
-
-    def submit(self):
-        """Submit to interface."""
-        # all attributes split into foreground RGB, background RGB, blink and underline
-        rgb_table, compo_parms = self._colourmap.get_rgb_table()
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_PALETTE, (rgb_table, compo_parms)
-        ))
-
-    def get_entry(self, index):
-        """Retrieve the colour for a given attribute."""
-        return self._colourmap.palette[index]
 
 
 ###############################################################################
@@ -241,12 +172,14 @@ class _ColourMapper(object):
     _mono_tint = MONO_TINT['mono']
     _mono = False
 
-    def __init__(self, adapter, monitor):
+    def __init__(self, queues, adapter, monitor, colorswitch):
         """Initialise colour map."""
+        self._queues = queues
         if monitor in MONO_TINT:
             self._mono = monitor in MONO_TINT
             self._mono_tint = MONO_TINT[monitor]
-        self.palette = list(self.default_palette)
+        self.set_colorswitch(colorswitch)
+        self._palette = list(self.default_palette)
         # policy on PALETTE changes
         # effective palette change is an error in CGA
         if adapter in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
@@ -256,6 +189,7 @@ class _ColourMapper(object):
             self._palette_change_policy = 'deny'
         else:
             self._palette_change_policy = 'allow'
+        self.submit()
 
     def allows_palette_change(self):
         """Check if the video mode allows palette change."""
@@ -263,9 +197,10 @@ class _ColourMapper(object):
             raise error.BASICError(error.IFC)
         return self._palette_change_policy != 'deny'
 
-    def reset_palette(self):
+    def reset(self):
         """Reset to default palette."""
-        self.palette = list(self.default_palette)
+        self._palette = list(self.default_palette)
+        self.submit()
 
     @property
     def num_palette(self):
@@ -285,7 +220,7 @@ class _ColourMapper(object):
         """Join constituent parts into textmode attribute byte."""
         return fore & 0xf
 
-    def get_rgb_table(self):
+    def _get_rgb_table(self):
         """List of RGB/blink/underline for all attributes, given a palette."""
         return (
             [self.attr_to_rgb(_attr) for _attr in range(self.num_attr)],
@@ -294,7 +229,7 @@ class _ColourMapper(object):
 
     def attr_to_rgb(self, attr):
         """Convert attribute to RGB/blink/underline, given a palette."""
-        rgb = _adjust_tint(self._colours[self.palette[attr]], self._mono_tint, self._mono)
+        rgb = _adjust_tint(self._colours[self._palette[attr]], self._mono_tint, self._mono)
         return rgb, rgb, False, False
 
     def get_cga4_palette(self):
@@ -317,6 +252,35 @@ class _ColourMapper(object):
         """Set the NTSC colorburst bit."""
         # not colourburst capable
         return False
+
+    # palette methods
+
+    def set_all(self, new_palette, force=False):
+        """Set the colours for all attributes."""
+        if force or self.allows_palette_change():
+            self._palette = list(new_palette)
+            self.submit()
+
+    def set_entry(self, index, colour, force=False):
+        """Set a new colour for a given attribute."""
+        if force or self.allows_palette_change():
+            self._palette[index] = colour
+            # in text mode, we'd be setting more than one attribute
+            # e.g. all true attributes with this number as foreground or background
+            # and attr_to_rgb decides which
+            self.submit()
+
+    def get_entry(self, index):
+        """Retrieve the colour for a given attribute."""
+        return self._palette[index]
+
+    def submit(self):
+        """Submit to interface."""
+        # all attributes split into foreground RGB, background RGB, blink and underline
+        rgb_table, compo_parms = self._get_rgb_table()
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_PALETTE, (rgb_table, compo_parms)
+        ))
 
 
 class _TextColourMixin(object):
@@ -341,8 +305,8 @@ class _TextColourMixin(object):
     def attr_to_rgb(self, attr):
         """Convert attribute to RGB/blink/underline, given a palette."""
         fore, back, blink, underline = self.split_attr(attr)
-        fore_rgb = _adjust_tint(self._colours[self.palette[fore]], self._mono_tint, self._mono)
-        back_rgb = _adjust_tint(self._colours[self.palette[back]], self._mono_tint, self._mono)
+        fore_rgb = _adjust_tint(self._colours[self._palette[fore]], self._mono_tint, self._mono)
+        back_rgb = _adjust_tint(self._colours[self._palette[back]], self._mono_tint, self._mono)
         return fore_rgb, back_rgb, blink, underline
 
     def set_colorswitch(self, colorswitch):
@@ -366,14 +330,14 @@ class _CGAColourMapper(_ColourMapper):
 
     _colours = COLOURS16
 
-    def __init__(self, adapter, monitor):
+    def __init__(self, queues, adapter, monitor, colorswitch):
         """Initialise colour map."""
-        _ColourMapper.__init__(self, adapter, monitor)
         self._has_colorburst = adapter in ('cga', 'cga_old', 'pcjr', 'tandy')
         # monochrome
         self._force_mono = monitor in MONO_TINT
         # rgb monitor
         self._force_colour = not self._force_mono and monitor != 'composite'
+        _ColourMapper.__init__(self, queues, adapter, monitor, colorswitch)
 
     def set_colorburst(self, colour_on):
         """Set the NTSC colorburst bit."""
@@ -385,14 +349,16 @@ class _CGAColourMapper(_ColourMapper):
         # - ignored on other screens
         if self._has_colorburst:
             self._mono = self._force_mono or (not colour_on and not self._force_colour)
+        # reset the palette to reflect the new mono situation, submit to interface
+        self.reset()
 
 
 class _CompositeMixin(object):
     """Overrides to deal with NTSC composite artifacts."""
 
-    def __init__(self, adapter, monitor):
+    def __init__(self, monitor):
         """Initialise colour map."""
-        self._has_composite = monitor == 'composite' and self._has_colorburst and adapter
+        self._has_composite = monitor == 'composite' and self._has_colorburst
         self._composite = False
 
     def set_colorburst(self, colour_on):
@@ -400,14 +366,16 @@ class _CompositeMixin(object):
         # On a composite monitor with CGA adapter (not EGA, VGA):
         # - on SCREEN 2 this enables artifacting
         self._composite = colour_on and self._has_composite
+        # reset the palette for artifactig, submit to interface
+        self.reset()
 
-    def get_rgb_table(self):
+    def _get_rgb_table(self):
         """List of RGB/blink/underline for all attributes, given a palette."""
         if self._composite:
             compo_palette = tuple((_c, _c, False, False) for _c in COMPOSITE[self._composite])
             # 4bpp composite (16 shades), 1bpp original
             return (compo_palette, (4, 1))
-        return _CGAColourMapper.get_rgb_table(self)
+        return _CGAColourMapper._get_rgb_table(self)
 
 
 class CGA2ColourMapper(_CompositeMixin, _CGAColourMapper):
@@ -416,10 +384,10 @@ class CGA2ColourMapper(_CompositeMixin, _CGAColourMapper):
     default_palette = CGA2_PALETTE
     num_attr = 2
 
-    def __init__(self, adapter, monitor):
+    def __init__(self, queues, adapter, monitor, colorswitch):
         """Initialise colour map."""
-        _CompositeMixin.__init__(self, adapter, monitor)
-        _CGAColourMapper.__init__(self, adapter, monitor)
+        _CompositeMixin.__init__(self, monitor)
+        _CGAColourMapper.__init__(self, queues, adapter, monitor, colorswitch)
 
     def set_colorswitch(self, colorswitch):
         """Set the SCREEN colorswitch parameter."""
@@ -440,7 +408,7 @@ class CGA4ColourMapper(_CGAColourMapper):
 
     num_attr = 4
 
-    def __init__(self, adapter, monitor):
+    def __init__(self, queues, adapter, monitor, colorswitch):
         """Initialise colour map."""
         self._has_colorburst = adapter in ('cga', 'cga_old', 'pcjr', 'tandy')
         # pcjr/tandy does not have mode 5
@@ -450,7 +418,7 @@ class CGA4ColourMapper(_CGAColourMapper):
         # start with the cyan-magenta-white palette
         self._palette_number = 1
         self._mode_5 = False
-        _CGAColourMapper.__init__(self, adapter, monitor)
+        _CGAColourMapper.__init__(self, queues, adapter, monitor, colorswitch)
 
     def get_cga4_palette(self):
         """CGA palette setting (accessible from memory)."""
@@ -459,12 +427,12 @@ class CGA4ColourMapper(_CGAColourMapper):
     def set_cga4_palette(self, num):
         """Set the default 4-colour CGA palette."""
         self._palette_number = num % 2
-        self.reset_palette()
+        self.reset()
 
     def set_cga4_intensity(self, high):
         """Set/unset the palette intensity."""
         self._low_intensity = not high
-        self.reset_palette()
+        self.reset()
 
     @property
     def mode_5(self):
@@ -514,6 +482,8 @@ class CGA4ColourMapper(_CGAColourMapper):
             self.set_cga4_palette(1)
         else:
             self._mono = self._force_mono or not colour_on
+            # reset the palette for mono, submit to interface
+            self.reset()
 
 
 class Tandy4ColourMapper(_ColourMapper):
@@ -669,7 +639,7 @@ class EGAMonoColourMapper(_ColourMapper):
 
     def attr_to_rgb(self, attr):
         """Convert colour attribute to RGB/blink/underline, given a palette."""
-        fore, back = self._pseudocolours[self.palette[attr] % len(self._pseudocolours)]
+        fore, back = self._pseudocolours[self._palette[attr] % len(self._pseudocolours)]
         # intensity 0, 1, 2 to RGB; apply mono tint
         fore_rgb = _adjust_tint(self._colours[fore], self._mono_tint, self._mono)
         back_rgb = _adjust_tint(self._colours[back], self._mono_tint, self._mono)
