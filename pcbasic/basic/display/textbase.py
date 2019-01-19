@@ -16,10 +16,6 @@ from .. import values
 EGA_CURSOR_SHAPE_QUIRKS = (
     'ega', 'mda', 'ega_mono', 'ega_64k', 'vga', 'olivetti', 'hercules'
 )
-# cursor on second line
-EGA_CURSOR = (
-    'ega', 'ega_mono', 'ega_64k',
-)
 
 #######################################################################################
 # function key macro guide
@@ -62,8 +58,6 @@ class Cursor(object):
         # odd treatment of textmode cursor shape on EGA machines
         # do all text modes with >8 pixels have shape quirks?
         self._ega_quirks = capabilities in EGA_CURSOR_SHAPE_QUIRKS
-        # cursor on the second last line in EGA mode
-        self._ega_cursor = capabilities in EGA_CURSOR
         # are we in parse mode? invisible unless visible_run is True
         self._default_visible = True
         # cursor visible in parse mode? user override
@@ -194,18 +188,8 @@ class Cursor(object):
     def set_default_shape(self, overwrite_shape):
         """Set the cursor to one of two default shapes."""
         if overwrite_shape:
-            if not self._mode.is_text_mode:
-                # always a block cursor in graphics mode
-                self.set_shape(0, self._height-1)
-            elif self._ega_cursor:
-                # EGA cursor is on second last line
-                self.set_shape(self._height-2, self._height-2)
-            elif self._height == 9:
-                # Tandy 9-pixel fonts; cursor on 8th
-                self.set_shape(self._height-2, self._height-2)
-            else:
-                # other cards have cursor on last line
-                self.set_shape(self._height-1, self._height-1)
+            # most modes have cursor on last line
+            self.set_shape(*self._mode.cursor)
         else:
             # half-block cursor for insert
             self.set_shape(self._height//2, self._height-1)
