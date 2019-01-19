@@ -416,88 +416,24 @@ class Display(object):
         args = list(args)
         error.throw_if(len(args) > 3)
         args += [None] * (3 - len(args))
-        fore, back, bord = args
+        fore, arg1, arg2 = args
         if fore is None:
+            # FIXME - this works because only text mode has attributes > 15, but it's ugly here
             fore = (self.attr >> 7) * 0x10 + (self.attr & 0xf)
         else:
             fore = values.to_int(fore)
-        if back is not None:
-            back = back and values.to_int(back)
-        if bord is not None:
-            bord = bord and values.to_int(bord)
-        if self.mode.name in ('640x200x2', '720x348x2'):
-            # screen 2; hercules: illegal fn call
-            raise error.BASICError(error.IFC)
-        elif self.mode.is_text_mode:
-            self._color_mode_0(fore, back, bord)
-        elif self.mode.name == '320x200x4':
-            self._color_mode_1(fore, back, bord)
-        else:
-            self._color_other_modes(fore, back, bord)
-
-    def _color_mode_0(self, fore, back, bord):
-        """Helper function for COLOR in text mode (SCREEN 0)."""
-        if back is None:
-            _, back, _, _ = self.colourmap.split_attr(self.attr)
-        # for screens other than 1, no distinction between 3rd parm zero and not supplied
-        bord = bord or 0
-        error.range_check(0, 255, bord)
-        # allow twice the number of foreground attributes (16) - because of blink
-        num_fore_attr = self.colourmap.num_palette
-        error.range_check(0, num_fore_attr*2-1, fore)
-        # allow background attributes up to 15 though highest bit is ignored
-        error.range_check(0, num_fore_attr-1, back, bord)
-        # COLOR > 17 means blink, but the blink bit is the top bit of the true attribute
-        blink, fore = divmod(fore, num_fore_attr)
-        self.set_attr(self.colourmap.join_attr(fore, back, blink, False))
-        self.set_border(bord)
-
-    def _color_mode_1(self, back, pal, override):
-        """Helper function for COLOR in SCREEN 1."""
-        back = self.colourmap.get_entry(0) if back is None else back
-        if override is not None:
-            # uses last entry as palette if given
-            pal = override
-        error.range_check(0, 255, back)
-        if pal is not None:
-            error.range_check(0, 255, pal)
-            self.colourmap.set_cga4_palette(pal % 2)
-            palette = list(self.colourmap.default_palette)
-            palette[0] = back & 0xf
-            self.colourmap.set_all(palette, force=True)
-        else:
-            self.colourmap.set_entry(0, back & 0xf, force=True)
-
-    def _color_other_modes(self, fore, back, bord):
-        """Helper function for COLOR in modes other than SCREEN 1."""
-        if back is None:
-            # graphics mode bg is always 0; sets palette instead
-            back = self.colourmap.get_entry(0)
-        # for screens other than 1, no distinction between 3rd parm zero and not supplied
-        bord = bord or 0
-        error.range_check(0, 255, bord)
-        max_attr = self.colourmap.num_attr - 1
-        max_colour = self.colourmap.num_colours - 1
-        if self.mode.name in (
-                '160x200x16', '320x200x4pcjr', '320x200x16pcjr'
-                '640x200x4', '320x200x16', '640x200x16'
-            ):
-            error.range_check(1, max_attr, fore)
-            error.range_check(0, max_colour, back)
-            self.set_attr(fore)
-            # in screen 7 and 8, only low intensity palette is used.
-            self.colourmap.set_entry(0, back % 8, force=True)
-        elif self.mode.name in ('640x350x16', '640x350x4', '640x350x4c'):
-            error.range_check(1, max_attr, fore)
-            error.range_check(0, max_colour, back)
-            self.set_attr(fore)
-            self.colourmap.set_entry(0, back, force=True)
-        elif self.mode.name == '640x400x2':
-            # Olivetti screen 4 2-colour can change foreground with COLOR but bg is always black
-            error.range_check(0, max_colour, fore)
-            if back != 0:
-                raise error.BASICError(error.IFC)
-            self.colourmap.set_entry(1, fore, force=True)
+        if arg1 is not None:
+            arg1 = arg1 and values.to_int(arg1)
+        if arg2 is not None:
+            arg2 = arg2 and values.to_int(arg2)
+        # in text mode, arg1 is background attr
+        if arg1 is None and self.mode.is_text_mode:
+            _, arg1, _, _ = self.colourmap.split_attr(self.attr)
+        attr, border = self.colourmap.color(fore, arg1, arg2)
+        if attr is not None:
+            self.set_attr(attr)
+        if border is not None:
+            self.set_border(border)
 
     def palette_(self, args):
         """PALETTE: assign colour to attribute."""

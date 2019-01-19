@@ -10,7 +10,7 @@ from ..base import error
 from ..base import bytematrix
 from .colours import CGA2ColourMapper, CGA4ColourMapper, CGA16ColourMapper
 from .colours import EGA16ColourMapper, EGA64ColourMapper
-from .colours import EGA4ColourMapper, Tandy4ColourMapper
+from .colours import EGA4ColourMapper, Tandy4ColourMapper, Olivetti2ColourMapper
 from .colours import EGA16TextColourMapper, EGA64TextColourMapper
 from .colours import MonoTextColourMapper, EGAMonoColourMapper, HerculesColourMapper
 from .framebuffer import TextMemoryMapper, GraphicsMemoryMapper
@@ -470,7 +470,7 @@ _MODE_INFO = {
         # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
         width=640, height=200, rows=25, columns=80, attr=3, cursor_attr=3,
         bitsperpixel=2, interleave_times=4, bank_size=0x2000, max_pages=4,
-        layout=Tandy6Mode, colourmap=CGA4ColourMapper
+        layout=Tandy6Mode, colourmap=Tandy4ColourMapper
     ),
     '320x200x16': dict(
         # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
@@ -506,7 +506,7 @@ _MODE_INFO = {
         # 40h 640x400x2   1bpp  olivetti screen 3-255
         width=640, height=400, rows=25, columns=80, attr=1, cursor_attr=None,
         bitsperpixel=1, interleave_times=4, bank_size=0x2000, max_pages=1,
-        layout=CGAMode, colourmap=CGA2ColourMapper
+        layout=CGAMode, colourmap=Olivetti2ColourMapper
     ),
     '720x348x2': dict(
         # hercules screen 3

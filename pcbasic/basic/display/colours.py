@@ -282,6 +282,25 @@ class _ColourMapper(object):
             signals.VIDEO_SET_PALETTE, (rgb_table, compo_parms)
         ))
 
+    # COLOR statement helpers
+
+    def color(self, fore, back, bord):
+        """Mode-dependent helper function for COLOR statement."""
+        if back is None:
+            # graphics mode bg is always 0; sets palette instead
+            back = self.get_entry(0)
+        # for screens other than 1, no distinction between 3rd parm zero and not supplied
+        bord = bord or 0
+        error.range_check(0, 255, bord)
+        max_attr = self.num_attr - 1
+        max_colour = self.num_colours - 1
+        error.range_check(1, max_attr, fore)
+        error.range_check(0, max_colour, back)
+        # in screen 7 and 8, only low intensity palette is used for background
+        self.set_entry(0, back % 8, force=True)
+        # set attr, don't change border
+        return fore, None
+
 
 class _TextColourMixin(object):
     """Translate text attributes to palette attributes."""
@@ -313,6 +332,22 @@ class _TextColourMixin(object):
         """Set the SCREEN colorswitch parameter."""
         self.set_colorburst(colorswitch)
 
+    def color(self, fore, back, bord):
+        """Helper function for COLOR in text mode (SCREEN 0)."""
+        # for screens other than 1, no distinction between 3rd parm zero and not supplied
+        bord = bord or 0
+        error.range_check(0, 255, bord)
+        num_fore_attr = self.num_palette
+        # allow twice the number of foreground attributes (16) - because of blink
+        error.range_check(0, num_fore_attr*2-1, fore)
+        # allow background attributes up to 15 though highest bit is ignored
+        error.range_check(0, num_fore_attr-1, back, bord)
+        # COLOR > 17 means blink, but the blink bit is the top bit of the true attribute
+        blink, fore = divmod(fore, num_fore_attr)
+        # set attribute and border
+        attr = self.join_attr(fore, back, blink, False)
+        return attr, bord
+
 
 class HerculesColourMapper(_ColourMapper):
     """Hercules 16-greyscale palette."""
@@ -323,6 +358,10 @@ class HerculesColourMapper(_ColourMapper):
     num_attr = 2
     _colours = ((0, 0, 0), (255, 255, 255))
     _mono = True
+
+    def color(self, fore, back, bord):
+        """Mode-dependent helper function for COLOR statement."""
+        raise error.BASICError(error.IFC)
 
 
 class _CGAColourMapper(_ColourMapper):
@@ -394,6 +433,32 @@ class CGA2ColourMapper(_CompositeMixin, _CGAColourMapper):
         # in SCREEN 2 the colorswitch parameter has no effect
         # the color burst can only be changed through the CGA mode control register at port 03D8h
         self.set_colorburst(False)
+
+    def color(self, arg0, arg1, arg2):
+        """Helper function for COLOR statement in SCREEN 2."""
+        raise error.BASICError(error.IFC)
+
+
+class Olivetti2ColourMapper(_CGAColourMapper):
+    """Olivetti 2-colour palettes."""
+
+    default_palette = CGA2_PALETTE
+    num_attr = 2
+
+    def color(self, fore, arg1, arg2):
+        """Helper function for COLOR statement in SCREEN 100."""
+        # for screens other than 1, no distinction between 3rd parm zero and not supplied
+        arg2 = arg2 or 0
+        error.range_check(0, 255, arg2)
+        max_attr = self.num_attr - 1
+        max_colour = self.num_colours - 1
+        # Olivetti screen 4 2-colour can change foreground with COLOR but bg is always black
+        error.range_check(0, max_colour, fore)
+        if arg1:
+            # mut be zero or unspecified
+            raise error.BASICError(error.IFC)
+        self.set_entry(1, fore, force=True)
+        return None, None
 
 
 class CGA16ColourMapper(_CGAColourMapper):
@@ -485,6 +550,23 @@ class CGA4ColourMapper(_CGAColourMapper):
             # reset the palette for mono, submit to interface
             self.reset()
 
+    def color(self, back, pal, override):
+        """Helper function for COLOR in SCREEN 1."""
+        back = self.get_entry(0) if back is None else back
+        if override is not None:
+            # uses last entry as palette if given
+            pal = override
+        error.range_check(0, 255, back)
+        if pal is not None:
+            error.range_check(0, 255, pal)
+            self.set_cga4_palette(pal % 2)
+            palette = list(self.default_palette)
+            palette[0] = back & 0xf
+            self.set_all(palette, force=True)
+        else:
+            self.set_entry(0, back & 0xf, force=True)
+        return None, None
+
 
 class Tandy4ColourMapper(_ColourMapper):
     """Tandy 4@16-colour mapper (Tandy mode 4)."""
@@ -518,6 +600,24 @@ class EGA64ColourMapper(_ColourMapper):
     _colours = COLOURS64
     default_palette = EGA_PALETTE
     num_attr = 16
+
+    def color(self, fore, back, bord):
+        """Helper function for COLOR statement in SCREEN 9."""
+        if back is None:
+            # graphics mode bg is always 0; sets palette instead
+            back = self.get_entry(0)
+        # for screens other than 1, no distinction between 3rd parm zero and not supplied
+        bord = bord or 0
+        error.range_check(0, 255, bord)
+        max_attr = self.num_attr - 1
+        max_colour = self.num_colours - 1
+        error.range_check(1, max_attr, fore)
+        error.range_check(0, max_colour, back)
+        # all background colours are accessible
+        self.set_entry(0, back, force=True)
+        # set attr, don't change border
+        return fore, None
+
 
 
 class EGA16TextColourMapper(_TextColourMixin, EGA16ColourMapper):
