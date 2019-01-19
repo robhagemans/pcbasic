@@ -50,6 +50,7 @@ class Display(object):
         self.mode = modes.get_mode(
             0, initial_width, self._adapter, self._monitor, self._video_mem_size
         )
+        self.colourmap = self.mode.colourmap(self._adapter, self._monitor)
         # video mode settings
         self.colorswitch, self.apagenum, self.vpagenum = 1, 0, 0
         # current attribute
@@ -96,7 +97,7 @@ class Display(object):
             self.queues, input_methods, self._values, self._memory, aspect
         )
         # colour palette
-        self.palette = Palette(self.queues, self.mode)
+        self.palette = Palette(self.queues, self.colourmap)
         # initialise a fresh textmode screen
         self._set_mode(self.mode, 1, 0, 0, erase=True)
 
@@ -181,11 +182,13 @@ class Display(object):
                 new_mode.font_height
             )
             font = self._bios_font_8.init_mode(new_mode.font_width)
+        # initialise the colourmapper
+        self.colourmap = new_mode.colourmap(self._adapter, self._monitor)
         # submit the mode change to the interface
         self.queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
                 new_mode.num_pages, new_mode.pixel_height, new_mode.pixel_width,
-                new_mode.height, new_mode.width, new_mode.colourmap.num_attr, new_mode.is_text_mode
+                new_mode.height, new_mode.width, self.colourmap.num_attr, new_mode.is_text_mode
             )
         ))
         # switching to another text mode (width-only change)
@@ -205,7 +208,7 @@ class Display(object):
         # set the colorswitch
         self.colorswitch = new_colorswitch
         # initialise the palette
-        self.palette.init_mode(self.mode, self.colorswitch)
+        self.palette.init_mode(self.colourmap, self.colorswitch)
         # initialise pixel buffers
         if not self.mode.is_text_mode:
             self.pixels = PixelBuffer(
@@ -218,13 +221,15 @@ class Display(object):
         self.set_page(new_vpagenum, new_apagenum)
         # initialise text screen
         self.text_screen.init_mode(
-            self.mode, self.pixels, self.attr, new_vpagenum, new_apagenum, font
+            self.mode, self.pixels, self.attr, new_vpagenum, new_apagenum, font, self.colourmap
         )
         # restore emulated video memory in new mode
         if not erase:
             self.mode.memorymap.set_memory(self, saved_addr, saved_buffer)
         # center graphics cursor, reset window, etc.
-        self.drawing.init_mode(self.mode, self.text_screen.text, self.pixels)
+        self.drawing.init_mode(
+            self.mode, self.text_screen.text, self.pixels, self.colourmap.num_attr
+        )
         self.drawing.set_attr(self.attr)
 
     def set_width(self, to_width):
@@ -259,7 +264,7 @@ class Display(object):
             signals.VIDEO_SET_MODE, (
                 self.mode.num_pages, self.mode.pixel_height, self.mode.pixel_width,
                 self.mode.height, self.mode.width,
-                self.mode.colourmap.num_attr, self.mode.is_text_mode
+                self.colourmap.num_attr, self.mode.is_text_mode
             )
         ))
         # set the visible and active pages
@@ -293,7 +298,7 @@ class Display(object):
         if self.mode.name == '320x200x4':
             return (
                 self.palette.get_entry(0)
-                + 32 * self.mode.colourmap.get_cga4_palette()
+                + 32 * self.colourmap.get_cga4_palette()
             )
         elif self.mode.is_text_mode:
             return self.get_border_attr()
@@ -332,7 +337,7 @@ class Display(object):
 
     def set_border(self, attr):
         """Set the border attribute."""
-        fore, _, _, _ = self.mode.colourmap.split_attr(attr)
+        fore, _, _, _ = self.colourmap.split_attr(attr)
         self._border_attr = fore
         self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
 
@@ -432,18 +437,18 @@ class Display(object):
     def _color_mode_0(self, fore, back, bord):
         """Helper function for COLOR in text mode (SCREEN 0)."""
         if back is None:
-            _, back, _, _ = self.mode.colourmap.split_attr(self.attr)
+            _, back, _, _ = self.colourmap.split_attr(self.attr)
         # for screens other than 1, no distinction between 3rd parm zero and not supplied
         bord = bord or 0
         error.range_check(0, 255, bord)
         # allow twice the number of foreground attributes (16) - because of blink
-        num_fore_attr = self.mode.colourmap.num_palette
+        num_fore_attr = self.colourmap.num_palette
         error.range_check(0, num_fore_attr*2-1, fore)
         # allow background attributes up to 15 though highest bit is ignored
         error.range_check(0, num_fore_attr-1, back, bord)
         # COLOR > 17 means blink, but the blink bit is the top bit of the true attribute
         blink, fore = divmod(fore, num_fore_attr)
-        self.set_attr(self.mode.colourmap.join_attr(fore, back, blink, False))
+        self.set_attr(self.colourmap.join_attr(fore, back, blink, False))
         self.set_border(bord)
 
     def _color_mode_1(self, back, pal, override):
@@ -455,8 +460,8 @@ class Display(object):
         error.range_check(0, 255, back)
         if pal is not None:
             error.range_check(0, 255, pal)
-            self.mode.colourmap.set_cga4_palette(pal % 2)
-            palette = list(self.mode.colourmap.default_palette)
+            self.colourmap.set_cga4_palette(pal % 2)
+            palette = list(self.colourmap.default_palette)
             palette[0] = back & 0xf
             self.palette.set_all(palette, force=True)
         else:
@@ -470,8 +475,8 @@ class Display(object):
         # for screens other than 1, no distinction between 3rd parm zero and not supplied
         bord = bord or 0
         error.range_check(0, 255, bord)
-        max_attr = self.mode.colourmap.num_attr - 1
-        max_colour = self.mode.colourmap.num_colours - 1
+        max_attr = self.colourmap.num_attr - 1
+        max_colour = self.colourmap.num_colours - 1
         if self.mode.name in (
                 '160x200x16', '320x200x4pcjr', '320x200x16pcjr'
                 '640x200x4', '320x200x16', '640x200x16'
@@ -503,13 +508,13 @@ class Display(object):
             colour = values.to_int(colour)
         list(args)
         if attrib is None and colour is None:
-            self.palette.set_all(self.mode.colourmap.default_palette)
+            self.palette.set_all(self.colourmap.default_palette)
         else:
             # can't set blinking colours separately
-            error.range_check(0, self.mode.colourmap.num_palette-1, attrib)
+            error.range_check(0, self.colourmap.num_palette-1, attrib)
             # numbers 255 and up are in fact allowed, 255 -> -1, 256 -> 0, etc
             colour = -1 + (colour + 1) % 256
-            error.range_check(-1, self.mode.colourmap.num_colours-1, colour)
+            error.range_check(-1, self.colourmap.num_colours-1, colour)
             if colour != -1:
                 self.palette.set_entry(attrib, colour)
 
@@ -525,14 +530,14 @@ class Display(object):
         error.throw_if(array_name[-1:] != values.INT, error.TYPE_MISMATCH)
         lst = self._memory.arrays.view_full_buffer(array_name)
         start = self._memory.arrays.index(start_indices, dimensions)
-        num_palette_entries = self.mode.colourmap.num_palette
+        num_palette_entries = self.colourmap.num_palette
         error.throw_if(self._memory.arrays.array_len(dimensions) - start < num_palette_entries)
         new_palette = []
         for i in range(num_palette_entries):
             offset = (start+i) * 2
             ## signed int, as -1 means don't set
             val, = struct.unpack('<h', lst[offset:offset+2])
-            error.range_check(-1, self.mode.colourmap.num_colours-1, val)
+            error.range_check(-1, self.colourmap.num_colours-1, val)
             new_palette.append(val if val > -1 else self.palette.get_entry(i))
         self.palette.set_all(new_palette)
 

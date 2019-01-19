@@ -177,7 +177,7 @@ def get_mode_number(mode, colorswitch):
             return 7
         return (mode.width == 40) * 2 + colorswitch % 2
     elif mode.name == '320x200x4':
-        return 4 + mode.colourmap.mode_5
+        return 4 + colorswitch % 2 # mode_5 if colorswitch == 1
     else:
         try:
             return _MODE_NUMBER[mode.name]
@@ -200,8 +200,7 @@ def get_mode(number, width, adapter, monitor, video_mem_size):
         raise error.BASICError(error.IFC)
     mode_data = dict(**_MODE_INFO[name])
     cls = mode_data.pop('layout')
-    colourmap = mode_data.pop('colourmap')(adapter, monitor)
-    return cls(name=name, video_mem_size=video_mem_size, colourmap=colourmap, **mode_data)
+    return cls(name=name, video_mem_size=video_mem_size, **mode_data)
 
 
 ##############################################################################

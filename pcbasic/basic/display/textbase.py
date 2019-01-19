@@ -58,6 +58,7 @@ class Cursor(object):
         """Initialise the cursor."""
         self._queues = queues
         self._mode = mode
+        self._colourmap = None
         # odd treatment of textmode cursor shape on EGA machines
         # do all text modes with >8 pixels have shape quirks?
         self._ega_quirks = capabilities in EGA_CURSOR_SHAPE_QUIRKS
@@ -77,10 +78,11 @@ class Cursor(object):
         self._fore_attr = None
         self._row, self._col = 1, 1
 
-    def init_mode(self, mode, attr):
+    def init_mode(self, mode, attr, colourmap):
         """Change the cursor for a new screen mode."""
         self._mode = mode
         self._height = mode.font_height
+        self._colourmap = colourmap
         # set the cursor position and attribute
         self.move(1, 1, attr, new_width=1)
         # cursor width starts out as single char
@@ -105,7 +107,7 @@ class Cursor(object):
     def move(self, new_row, new_column, new_attr=None, new_width=None):
         """Move the cursor and submit."""
         if new_attr:
-            fore, _, _, _ = self._mode.colourmap.split_attr(new_attr)
+            fore, _, _, _ = self._colourmap.split_attr(new_attr)
         else:
             fore = self._fore_attr
         if not new_width:

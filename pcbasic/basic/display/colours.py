@@ -155,18 +155,18 @@ def _adjust_tint(rgb, mono_tint, mono):
 class Palette(object):
     """Wrapper for ColourMapper to submit to interface on palette changes."""
 
-    def __init__(self, queues, mode):
+    def __init__(self, queues, colourmap):
         """Initialise palette."""
         self._queues = queues
-        self._colourmap = mode.colourmap
+        self._colourmap = colourmap
         # map from fore/back attr to video adapter colour
         # interpretation is video mode dependent
         self._colourmap.reset_palette()
         self.submit()
 
-    def init_mode(self, mode, colorswitch):
+    def init_mode(self, colourmap, colorswitch):
         """Initialise for new mode and colorswitch parameter."""
-        self._colourmap = mode.colourmap
+        self._colourmap = colourmap
         self._colourmap.set_colorswitch(colorswitch)
         self.reset()
 
@@ -417,6 +417,7 @@ class _CompositeMixin(object):
     def num_attr(self):
         """Number of attributes."""
         if self._composite:
+            # FIXME - this is not the num_attr we need on the BASIC side
             return len(COMPOSITE[self._composite])
         else:
             return len(self.default_palette)

@@ -111,11 +111,12 @@ class Drawing(object):
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         self._screen_aspect = aspect
 
-    def init_mode(self, mode, text, pixels):
+    def init_mode(self, mode, text, pixels, num_attr):
         """Initialise for new graphics mode."""
         self._mode = mode
         self._text = text
         self._pixels = pixels
+        self._num_attr = num_attr
         # set graphics viewport
         self.graph_view = GraphicsViewPort(self._mode.pixel_width, self._mode.pixel_height)
         self.unset_window()
@@ -146,7 +147,7 @@ class Drawing(object):
             # foreground; graphics 'background' attrib is always 0
             c = self._attr & 0xf
         else:
-            c = min(self._mode.colourmap.num_attr-1, max(0, c))
+            c = min(self._num_attr-1, max(0, c))
         return c
 
     ### text/graphics interaction

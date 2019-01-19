@@ -44,13 +44,14 @@ class TextScreen(object):
         # function key macros
         self._bottom_bar = BottomBar()
 
-    def init_mode(self, mode, pixels, attr, vpagenum, apagenum, font):
+    def init_mode(self, mode, pixels, attr, vpagenum, apagenum, font, colourmap):
         """Reset the text screen for new video mode."""
         self.mode = mode
         self.attr = attr
         self.apagenum = apagenum
         self.vpagenum = vpagenum
         self._glyphs = font
+        self._colourmap = colourmap
         # build the screen buffer
         self.text = TextBuffer(
             self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
@@ -62,12 +63,12 @@ class TextScreen(object):
         self.redraw_bar()
         # initialise text viewport & move cursor home
         self.scroll_area.init_mode(self.mode)
-        self.set_pos(self.scroll_area.top, 1)
         # rebuild the cursor
         if not mode.is_text_mode and mode.cursor_attr:
-            self.cursor.init_mode(self.mode, mode.cursor_attr)
+            self.cursor.init_mode(self.mode, mode.cursor_attr, colourmap)
         else:
-            self.cursor.init_mode(self.mode, self.attr)
+            self.cursor.init_mode(self.mode, self.attr, colourmap)
+        self.set_pos(self.scroll_area.top, 1)
 
     def __repr__(self):
         """Return an ascii representation of the screen buffer (for debugging)."""
@@ -351,7 +352,7 @@ class TextScreen(object):
         if row < 1 or col < 1 or row > self.mode.height or col > self.mode.width:
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
             return
-        _, back, _, underline = self.mode.colourmap.split_attr(attr)
+        _, back, _, underline = self._colourmap.split_attr(attr)
         # mark full-width chars by a trailing empty string to preserve column counts
         sprite = self._glyphs.render_text(chars, attr, back, underline)
         if not self.mode.is_text_mode and not text_only:
@@ -373,7 +374,7 @@ class TextScreen(object):
             x0, y0, x1, y1 = self.mode.text_to_pixel_area(start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
             self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
-        _, back, _, _ = self.mode.colourmap.split_attr(self.attr)
+        _, back, _, _ = self._colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
     ###########################################################################
@@ -415,7 +416,7 @@ class TextScreen(object):
         """Scroll the scroll region up by one line, starting at from_line."""
         if from_line is None:
             from_line = self.scroll_area.top
-        _, back, _, _ = self.mode.colourmap.split_attr(self.attr)
+        _, back, _, _ = self._colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(
             signals.VIDEO_SCROLL, (-1, from_line, self.scroll_area.bottom, back)
         ))
@@ -434,7 +435,7 @@ class TextScreen(object):
 
     def scroll_down(self, from_line):
         """Scroll the scroll region down by one line, starting at from_line."""
-        _, back, _, _ = self.mode.colourmap.split_attr(self.attr)
+        _, back, _, _ = self._colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(
             signals.VIDEO_SCROLL, (1, from_line, self.scroll_area.bottom, back)
         ))
