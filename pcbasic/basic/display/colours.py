@@ -284,8 +284,10 @@ class _ColourMapper(object):
 
     # COLOR statement helpers
 
-    def color(self, fore, back, bord):
+    def color(self, current_attr, fore, back, bord):
         """Mode-dependent helper function for COLOR statement."""
+        if fore is None:
+            fore = current_attr
         if back is None:
             # graphics mode bg is always 0; sets palette instead
             back = self.get_entry(0)
@@ -332,8 +334,14 @@ class _TextColourMixin(object):
         """Set the SCREEN colorswitch parameter."""
         self.set_colorburst(colorswitch)
 
-    def color(self, fore, back, bord):
+    def color(self, current_attr, fore, back, bord):
         """Helper function for COLOR in text mode (SCREEN 0)."""
+        if fore is None:
+            # this is a very ugly way to ensure the value doesn't get changed below
+            fore = (current_attr >> 7) * 0x10 + (current_attr & 0xf)
+        # in text mode, arg1 is background attr
+        if back is None:
+            _, back, _, _ = self.split_attr(current_attr)
         # for screens other than 1, no distinction between 3rd parm zero and not supplied
         bord = bord or 0
         error.range_check(0, 255, bord)
@@ -445,8 +453,10 @@ class Olivetti2ColourMapper(_CGAColourMapper):
     default_palette = CGA2_PALETTE
     num_attr = 2
 
-    def color(self, fore, arg1, arg2):
+    def color(self, current_attr, fore, arg1, arg2):
         """Helper function for COLOR statement in SCREEN 100."""
+        if fore is None:
+            fore = current_attr
         # for screens other than 1, no distinction between 3rd parm zero and not supplied
         arg2 = arg2 or 0
         error.range_check(0, 255, arg2)
@@ -550,7 +560,7 @@ class CGA4ColourMapper(_CGAColourMapper):
             # reset the palette for mono, submit to interface
             self.reset()
 
-    def color(self, back, pal, override):
+    def color(self, current_attr, back, pal, override):
         """Helper function for COLOR in SCREEN 1."""
         back = self.get_entry(0) if back is None else back
         if override is not None:
@@ -601,8 +611,10 @@ class EGA64ColourMapper(_ColourMapper):
     default_palette = EGA_PALETTE
     num_attr = 16
 
-    def color(self, fore, back, bord):
+    def color(self, current_attr, fore, back, bord):
         """Helper function for COLOR statement in SCREEN 9."""
+        if fore is None:
+            fore = current_attr
         if back is None:
             # graphics mode bg is always 0; sets palette instead
             back = self.get_entry(0)
@@ -706,6 +718,8 @@ class MonoTextColourMapper(_TextColourMixin, _ColourMapper):
         fore_rgb = _adjust_tint(self._colours[fore], self._mono_tint, self._mono)
         back_rgb = _adjust_tint(self._colours[back], self._mono_tint, self._mono)
         return fore_rgb, back_rgb, blink, underline
+
+    # FIXME: color() sort of maybe works by accident because we haven't redefined join_attr()
 
 
 class EGAMonoColourMapper(_ColourMapper):

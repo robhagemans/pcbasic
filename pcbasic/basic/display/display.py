@@ -416,20 +416,11 @@ class Display(object):
         args = list(args)
         error.throw_if(len(args) > 3)
         args += [None] * (3 - len(args))
-        fore, arg1, arg2 = args
-        if fore is None:
-            # FIXME - this works because only text mode has attributes > 15, but it's ugly here
-            fore = (self.attr >> 7) * 0x10 + (self.attr & 0xf)
-        else:
-            fore = values.to_int(fore)
-        if arg1 is not None:
-            arg1 = arg1 and values.to_int(arg1)
-        if arg2 is not None:
-            arg2 = arg2 and values.to_int(arg2)
-        # in text mode, arg1 is background attr
-        if arg1 is None and self.mode.is_text_mode:
-            _, arg1, _, _ = self.colourmap.split_attr(self.attr)
-        attr, border = self.colourmap.color(fore, arg1, arg2)
+        arg0, arg1, arg2 = args
+        arg0 = arg0 and values.to_int(arg0)
+        arg1 = arg1 and values.to_int(arg1)
+        arg2 = arg2 and values.to_int(arg2)
+        attr, border = self.colourmap.color(self.attr, arg0, arg1, arg2)
         if attr is not None:
             self.set_attr(attr)
         if border is not None:
