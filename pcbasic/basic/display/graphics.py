@@ -940,10 +940,8 @@ class Drawing(object):
         y0, y1 = sorted((y0, y1))
         x0, x1 = sorted((x0, x1))
         # Tandy screen 6 simply GETs twice the width, it seems
-        print x0, x1
         width = x1 - x0 + 1
         x1 = x0 + self._mode.sprite_builder.width_factor * width - 1
-        print self._mode.sprite_builder.width_factor, x0, x1
         # illegal fn call if outside viewport boundary
         vx0, vy0, vx1, vy1 = self.graph_view.get()
         error.range_check(vx0, vx1, x0, x1)
