@@ -32,7 +32,7 @@ class Display(object):
             codepage, fonts
         ):
         """Initialise the display."""
-        self.queues = queues
+        self._queues = queues
         self._values = values
         self._memory = memory
         # low level settings
@@ -70,7 +70,7 @@ class Display(object):
         self._bios_font_8 = self._fonts[8].copy()
         # text screen
         self.text_screen = TextScreen(
-            self.queues, self._values, self.mode, self._adapter, codepage, io_streams, sound
+            self._queues, self._values, self.mode, self._adapter, codepage, io_streams, sound
         )
         # pixel buffer, set by _set_mode
         self.pixels = None
@@ -92,11 +92,11 @@ class Display(object):
         #     and I don't think it was really checked on Tandy -- dosbox won't run SCREEN 3
         # graphics operations
         self.drawing = graphics.Drawing(
-            self.queues, input_methods, self._values, self._memory, aspect
+            self._queues, input_methods, self._values, self._memory, aspect
         )
         # colour palette
         self.colourmap = self.mode.colourmap(
-            self.queues, self._adapter, self._monitor, self.colorswitch
+            self._queues, self._adapter, self._monitor, self.colorswitch
         )
         # initialise a fresh textmode screen
         self._set_mode(self.mode, 1, 0, 0, erase=True)
@@ -183,7 +183,7 @@ class Display(object):
             )
             font = self._bios_font_8.init_mode(new_mode.font_width)
         # submit the mode change to the interface
-        self.queues.video.put(signals.Event(
+        self._queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
                 new_mode.num_pages, new_mode.pixel_height, new_mode.pixel_width,
                 new_mode.height, new_mode.width, new_mode.is_text_mode
@@ -207,7 +207,7 @@ class Display(object):
         self.colorswitch = new_colorswitch
         # initialise the palette
         self.colourmap = new_mode.colourmap(
-            self.queues, self._adapter, self._monitor, self.colorswitch
+            self._queues, self._adapter, self._monitor, self.colorswitch
         )
         # initialise pixel buffers
         if not self.mode.is_text_mode:
@@ -260,18 +260,20 @@ class Display(object):
     def rebuild(self):
         """Completely resubmit the screen to the interface."""
         # set the screen mode
-        self.queues.video.put(signals.Event(
+        self._queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
                 self.mode.num_pages, self.mode.pixel_height, self.mode.pixel_width,
                 self.mode.height, self.mode.width, self.mode.is_text_mode
             )
         ))
         # set the visible and active pages
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)
+        ))
         # rebuild palette
         self.colourmap.submit()
         # set the border
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
+        self._queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
         self.text_screen.rebuild()
 
     ###########################################################################
@@ -324,7 +326,7 @@ class Display(object):
         self.apagenum = new_apagenum
         self.drawing.set_page(new_apagenum)
         self.text_screen.set_page(new_vpagenum, new_apagenum)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
+        self._queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
 
     def set_attr(self, attr):
         """Set the default attribute."""
@@ -338,7 +340,7 @@ class Display(object):
         """Set the border attribute."""
         fore, _, _, _ = self.colourmap.split_attr(attr)
         self._border_attr = fore
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
+        self._queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
 
     def get_border_attr(self):
         """Get the border attribute, in range 0 <= attr < 16."""
@@ -407,7 +409,7 @@ class Display(object):
         self.text_screen.text.copy_page(src, dst)
         if not self.mode.is_text_mode:
             self.pixels.pages[dst].copy_from(self.pixels.pages[src])
-        self.queues.video.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
+        self._queues.video.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
 
     def color_(self, args):
         """COLOR: set colour attributes."""
