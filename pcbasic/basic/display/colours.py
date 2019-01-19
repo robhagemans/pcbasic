@@ -231,6 +231,7 @@ class _ColourMapper(object):
     # palette - lookup table that maps the valid attributes to colour values
     # these are "palette attributes" - e.g. the 16 foreground attributes for text mode.
     default_palette = ()
+    num_attr = 0
 
     # colour set - maps the valid colour values to RGB
     # int values that can be used as the right hand side of a palette assignment
@@ -275,14 +276,6 @@ class _ColourMapper(object):
     def num_colours(self):
         """Number of values in colour set."""
         return len(self._colours)
-
-    @property
-    def num_attr(self):
-        """Number of attributes."""
-        # attributes
-        # there's 256 of these in text mode (fore/back/blink/underscore)
-        # and in graphics mode this is likely the same as num_palette
-        return len(self.default_palette)
 
     def split_attr(self, attr):
         """Split attribute byte into constituent parts."""
@@ -329,13 +322,7 @@ class _ColourMapper(object):
 class _TextColourMixin(object):
     """Translate text attributes to palette attributes."""
 
-    @property
-    def num_attr(self):
-        """Number of attributes."""
-        # attributes
-        # there's 256 of these in text mode (fore/back/blink/underscore)
-        # and in graphics mode this is likely the same as num_palette
-        return 256
+    num_attr = 256
 
     def split_attr(self, attr):
         """Split textmode attribute byte into constituent parts."""
@@ -369,6 +356,7 @@ class HerculesColourMapper(_ColourMapper):
     # Hercules graphics has no PALETTE
     # see MS KB 21839, https://jeffpar.github.io/kbarchive/kb/021/Q21839/
     default_palette = (0, 1)
+    num_attr = 2
     _colours = ((0, 0, 0), (255, 255, 255))
     _mono = True
 
@@ -413,15 +401,6 @@ class _CompositeMixin(object):
         # - on SCREEN 2 this enables artifacting
         self._composite = colour_on and self._has_composite
 
-    @property
-    def num_attr(self):
-        """Number of attributes."""
-        if self._composite:
-            # FIXME - this is not the num_attr we need on the BASIC side
-            return len(COMPOSITE[self._composite])
-        else:
-            return len(self.default_palette)
-
     def get_rgb_table(self):
         """List of RGB/blink/underline for all attributes, given a palette."""
         if self._composite:
@@ -435,6 +414,7 @@ class CGA2ColourMapper(_CompositeMixin, _CGAColourMapper):
     """CGA 2-colour palettes, with composite support."""
 
     default_palette = CGA2_PALETTE
+    num_attr = 2
 
     def __init__(self, adapter, monitor):
         """Initialise colour map."""
@@ -452,10 +432,13 @@ class CGA16ColourMapper(_CGAColourMapper):
     """CGA 16-colour palettes."""
 
     default_palette = CGA16_PALETTE
+    num_attr = 16
 
 
 class CGA4ColourMapper(_CGAColourMapper):
     """CGA 4-colour palettes, with colorburst setting, intensity setting and mode 5."""
+
+    num_attr = 4
 
     def __init__(self, adapter, monitor):
         """Initialise colour map."""
@@ -539,6 +522,7 @@ class Tandy4ColourMapper(_ColourMapper):
     _colours = COLOURS16
     # it's unclear to me what the default palette for this mode was
     default_palette = TANDY4_PALETTE_1
+    num_attr = 4
 
 
 class EGA4ColourMapper(_ColourMapper):
@@ -547,6 +531,7 @@ class EGA4ColourMapper(_ColourMapper):
     _colours = COLOURS16
     # it's unclear to me what the default palette for this mode was
     default_palette = EGA_64K_PALETTE
+    num_attr = 4
 
 
 class EGA16ColourMapper(_ColourMapper):
@@ -554,6 +539,7 @@ class EGA16ColourMapper(_ColourMapper):
 
     _colours = COLOURS16
     default_palette = CGA16_PALETTE
+    num_attr = 16
 
 
 class EGA64ColourMapper(_ColourMapper):
@@ -561,6 +547,7 @@ class EGA64ColourMapper(_ColourMapper):
 
     _colours = COLOURS64
     default_palette = EGA_PALETTE
+    num_attr = 16
 
 
 class EGA16TextColourMapper(_TextColourMixin, EGA16ColourMapper):
@@ -672,6 +659,7 @@ class EGAMonoColourMapper(_ColourMapper):
     )
 
     default_palette = EGA_MONO_PALETTE
+    num_attr = 4
     _colours = tuple((_i, _i, _i) for _i in INTENSITY_EGA_MONO)
 
     @property
