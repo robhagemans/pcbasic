@@ -479,6 +479,7 @@ class Display(object):
             self.set_attr(fore)
             self.palette.set_entry(0, back, force=True)
         elif self.mode.name == '640x400x2':
+            # Olivetti screen 4 2-colour can change foreground with COLOR but bg is always black
             error.range_check(0, max_colour, fore)
             if back != 0:
                 raise error.BASICError(error.IFC)
