@@ -29,7 +29,7 @@ class Display(object):
 
     def __init__(
             self, queues, values, input_methods, memory,
-            initial_width, video_mem_size, capabilities, monitor, sound, io_streams,
+            initial_width, video_mem_size, adapter, monitor, sound, io_streams,
             codepage, fonts
         ):
         """Initialise the display."""
@@ -37,9 +37,13 @@ class Display(object):
         self._values = values
         self._memory = memory
         # low level settings
-        if capabilities == 'ega' and monitor in MONO_TINT:
-            capabilities = 'ega_mono'
-        self._adapter = capabilities
+        if adapter == 'ega':
+            if monitor in MONO_TINT:
+                adapter = 'ega_mono'
+            elif video_mem_size < 131072:
+                # less than 128k means 64k, as EGA has memory in 64k blocks
+                adapter = 'ega_64k'
+        self._adapter = adapter
         self._monitor = monitor
         self._video_mem_size = video_mem_size
         # prepare video modes
@@ -465,11 +469,11 @@ class Display(object):
                 '640x200x4', '320x200x16', '640x200x16'
             ):
             error.range_check(1, max_attr, fore)
-            error.range_check(0, max_attr, back)
+            error.range_check(0, max_colour, back)
             self.set_attr(fore)
             # in screen 7 and 8, only low intensity palette is used.
             self.palette.set_entry(0, back % 8, force=True)
-        elif self.mode.name in ('640x350x16', '640x350x4'):
+        elif self.mode.name in ('640x350x16', '640x350x4', '640x350x4c'):
             error.range_check(1, max_attr, fore)
             error.range_check(0, max_colour, back)
             self.set_attr(fore)

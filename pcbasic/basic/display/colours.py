@@ -108,7 +108,17 @@ INTENSITY_EGA_MONO = (0x00, 0xaa, 0xff)
 # 1	On, normal intensity
 # 2	Blink
 # 3	On, high intensity
+# however, IBM EGA manual suggests these 4 are mapped to 16 *character* attributes differently:
+# black, normal, black, normal, blink, bright, blink, bright, black, normal, black, normal, blink, bright, blink, bright
+# it also doesn't mention being able to set the palette to the 9 pseudocolours of the GW manual
+# but since we only have 2bpp I think graphics COLOR will use values 0-3, not 0-15
 EGA_MONO_PALETTE = (0, 4, 1, 8)
+
+# 64k EGA - we have 4 colours simultaneously out of a palette of 16
+# from IBM's EGA manual they are black, blue, red, white
+# however they are mapped to 16 character attributes
+# black, blue, black, blue, red, white, red, white, black, blue, black, blue, red, white, red, white
+EGA_64K_PALETTE = (0, 1, 4, 15)
 
 
 #######################################################################################
@@ -522,32 +532,42 @@ class CGA4ColourMapper(_CGAColourMapper):
             self._mono = self._force_mono or not colour_on
 
 
-class EGA16ColourMapper(_ColourMapper):
-    """EGA 16-colour mapper."""
+class Tandy4ColourMapper(_ColourMapper):
+    """Tandy 4@16-colour mapper (Tandy mode 4)."""
 
-    #if num_attr == 4
-    #    # SCREEN 9 with less than 128k EGA memory
-    #    # attribute mapping is different
-    #    self._colours = COLOURS16
-    #    self._default_palette = EGA4_PALETTE
+    _colours = COLOURS16
+    # it's unclear to me what the default palette for this mode was
+    default_palette = TANDY4_PALETTE_1
+
+
+class EGA4ColourMapper(_ColourMapper):
+    """EGA 4@16-colour mapper (64k EGA)."""
+
+    _colours = COLOURS16
+    # it's unclear to me what the default palette for this mode was
+    default_palette = EGA_64K_PALETTE
+
+
+class EGA16ColourMapper(_ColourMapper):
+    """EGA 16@16-colour mapper."""
 
     _colours = COLOURS16
     default_palette = CGA16_PALETTE
 
 
 class EGA64ColourMapper(_ColourMapper):
-    """EGA 64-colour mapper."""
+    """EGA 16@64-colour mapper."""
 
     _colours = COLOURS64
     default_palette = EGA_PALETTE
 
 
 class EGA16TextColourMapper(_TextColourMixin, EGA16ColourMapper):
-    """EGA 16-colour mapper for text."""
+    """EGA 16@16-colour mapper for text."""
 
 
 class EGA64TextColourMapper(_TextColourMixin, EGA64ColourMapper):
-    """EGA 64-colour mapper for text."""
+    """EGA 16@64-colour mapper for text."""
 
     # technically, VGA text does have underline
     # but it's set to an invisible scanline

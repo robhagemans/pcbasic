@@ -12,10 +12,14 @@ from ..base import error
 from .. import values
 
 
-EGA_CURSOR_MODES = (
-    'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules'
+# quirky treatment of shape parameters
+EGA_CURSOR_SHAPE_QUIRKS = (
+    'ega', 'mda', 'ega_mono', 'ega_64k', 'vga', 'olivetti', 'hercules'
 )
-
+# cursor on second line
+EGA_CURSOR = (
+    'ega', 'ega_mono', 'ega_64k',
+)
 
 #######################################################################################
 # function key macro guide
@@ -54,11 +58,11 @@ class Cursor(object):
         """Initialise the cursor."""
         self._queues = queues
         self._mode = mode
-        # odd treatment of cursors on EGA machines
-        self._ega_quirks = capabilities in EGA_CURSOR_MODES
-        # do all text modes with >8 pixels have an ega-cursor?
+        # odd treatment of textmode cursor shape on EGA machines
+        # do all text modes with >8 pixels have shape quirks?
+        self._ega_quirks = capabilities in EGA_CURSOR_SHAPE_QUIRKS
         # cursor on the second last line in EGA mode
-        self._ega_cursor = capabilities == 'ega'
+        self._ega_cursor = capabilities in EGA_CURSOR
         # are we in parse mode? invisible unless visible_run is True
         self._default_visible = True
         # cursor visible in parse mode? user override

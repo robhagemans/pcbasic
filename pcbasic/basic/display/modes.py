@@ -10,6 +10,7 @@ from ..base import error
 from ..base import bytematrix
 from .colours import CGA2ColourMapper, CGA4ColourMapper, CGA16ColourMapper
 from .colours import EGA16ColourMapper, EGA64ColourMapper
+from .colours import EGA4ColourMapper, Tandy4ColourMapper
 from .colours import EGA16TextColourMapper, EGA64TextColourMapper
 from .colours import MonoTextColourMapper, EGAMonoColourMapper, HerculesColourMapper
 from .framebuffer import TextMemoryMapper, GraphicsMemoryMapper
@@ -36,6 +37,16 @@ _MODES = {
         7: '320x200x16',
         8: '640x200x16',
         9: '640x350x16',
+    },
+    'ega_64k': {
+        (0, 40): 'egatext40',
+        (0, 80): 'egatext80',
+        1: '320x200x4',
+        2: '640x200x2',
+        7: '320x200x16',
+        8: '640x200x16',
+        # 64k EGA adapter only has a 4-attr @ 16-colour palette in SCREEN 9
+        9: '640x350x4c',
     },
     'vga': {
         (0, 40): 'vgatext40',
@@ -143,6 +154,7 @@ for _adapter in TO_WIDTH:
         _MODES[_adapter][_nr]: _switches for _nr, _switches in TO_WIDTH[_adapter].items() if _nr
     })
 
+TO_WIDTH['ega_64k'] = TO_WIDTH['ega']
 TO_WIDTH['vga'] = TO_WIDTH['ega']
 TO_WIDTH['tandy'] = TO_WIDTH['pcjr']
 
@@ -153,7 +165,7 @@ TO_WIDTH['tandy'] = TO_WIDTH['pcjr']
 _MODE_NUMBER = {
     '640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
     '640x200x4': 10, '320x200x16': 13, '640x200x16': 14,
-    '640x350x4': 15, '640x350x16': 16, '640x400x2': 0x40,
+    '640x350x4': 15, '640x350x16': 16, '640x350x4c': 16, '640x400x2': 0x40,
     '320x200x4pcjr': 4, '320x200x4': 4
     # '720x348x2': ? # hercules - unknown
 }
@@ -447,7 +459,7 @@ _MODE_INFO = {
         #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
         width=320, height=200, rows=25, columns=40, attr=3, cursor_attr=3,
         bitsperpixel=2, interleave_times=2, bank_size=0x2000, max_pages=8,
-        layout=CGAMode, colourmap=CGA4ColourMapper
+        layout=CGAMode, colourmap=Tandy4ColourMapper
     ),
     '320x200x16pcjr': dict(
         # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
@@ -478,6 +490,12 @@ _MODE_INFO = {
         width=640, height=350, rows=25, columns=80, attr=15, cursor_attr=None,
         bitsperpixel=4, interleave_times=1, bank_size=0x8000, max_pages=None,
         layout=EGAMode, colourmap=EGA64ColourMapper
+    ),
+    '640x350x4c': dict(
+        # 10h 640x350x16    EGA screen 9 with 64K
+        width=640, height=350, rows=25, columns=80, attr=3, cursor_attr=None,
+        bitsperpixel=2, interleave_times=1, bank_size=0x8000, max_pages=None,
+        layout=EGAMode, colourmap=EGA4ColourMapper
     ),
     '640x350x4': dict(
         # 0Fh 640x350x4     EGA monochrome screen 10
