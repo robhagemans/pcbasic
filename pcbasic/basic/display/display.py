@@ -50,7 +50,6 @@ class Display(object):
         self.mode = modes.get_mode(
             0, initial_width, self._adapter, self._monitor, self._video_mem_size
         )
-        self.colourmap = self.mode.colourmap(self._adapter, self._monitor)
         # video mode settings
         self.colorswitch, self.apagenum, self.vpagenum = 1, 0, 0
         # current attribute
@@ -97,6 +96,7 @@ class Display(object):
             self.queues, input_methods, self._values, self._memory, aspect
         )
         # colour palette
+        self.colourmap = self.mode.colourmap(self._adapter, self._monitor)
         self.palette = Palette(self.queues, self.colourmap)
         # initialise a fresh textmode screen
         self._set_mode(self.mode, 1, 0, 0, erase=True)
@@ -182,8 +182,6 @@ class Display(object):
                 new_mode.font_height
             )
             font = self._bios_font_8.init_mode(new_mode.font_width)
-        # initialise the colourmapper
-        self.colourmap = new_mode.colourmap(self._adapter, self._monitor)
         # submit the mode change to the interface
         self.queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
@@ -208,6 +206,7 @@ class Display(object):
         # set the colorswitch
         self.colorswitch = new_colorswitch
         # initialise the palette
+        self.colourmap = new_mode.colourmap(self._adapter, self._monitor)
         self.palette.init_mode(self.colourmap, self.colorswitch)
         # initialise pixel buffers
         if not self.mode.is_text_mode:
