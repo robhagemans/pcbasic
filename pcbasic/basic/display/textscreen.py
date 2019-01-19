@@ -27,7 +27,7 @@ class TextScreen(object):
         self.queues = queues
         self._values = values
         self.codepage = codepage
-        self._adapter = capabilities
+        self._tandytext = capabilities in ('pcjr', 'tandy')
         # output redirection
         self._io_streams = io_streams
         # sound output needed for printing \a
@@ -86,7 +86,7 @@ class TextScreen(object):
         """Try to change the number of rows."""
         # number != 25 is ignored on tandy, error elsewhere
         # otherwise nothing happens
-        if self._adapter in ('pcjr', 'tandy'):
+        if self._tandytext:
             error.range_check(0, 25, to_height)
         else:
             error.range_check(25, 25, to_height)
@@ -398,8 +398,8 @@ class TextScreen(object):
 
     @contextmanager
     def _modify_attr_on_clear(self):
-        """On some adapters, modify current attributes when clearing the scroll area."""
-        if self._adapter in ('vga', 'ega', 'cga', 'cga_old'):
+        """On some adapters, modify character attributes when clearing the scroll area."""
+        if not self._tandytext:
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
@@ -705,7 +705,7 @@ class TextScreen(object):
             self._bottom_row_allowed = True
         self.set_pos(row, col, scroll_ok=False)
         if cursor is not None:
-            error.range_check(0, (255 if self._adapter in ('pcjr', 'tandy') else 1), cursor)
+            error.range_check(0, (255 if self._tandytext else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes
             self.cursor.set_visibility(cursor != 0)
         error.throw_if(start is None and stop is not None)
@@ -773,7 +773,7 @@ class TextScreen(object):
         if start is None and stop is None:
             self.scroll_area.unset()
         else:
-            if self._adapter in ('pcjr', 'tandy') and not self._bottom_bar.visible:
+            if self._tandytext and not self._bottom_bar.visible:
                 max_line = 25
             else:
                 max_line = 24
