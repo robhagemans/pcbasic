@@ -104,7 +104,7 @@ class Font(object):
 
     def __init__(self, height=8, fontdict=None):
         """Initialise the font."""
-        self._width = None
+        self._width = 8
         self._height = int(height)
         if not fontdict:
             if height == 8:
@@ -115,6 +115,12 @@ class Font(object):
                 )
         self._fontdict = fontdict
         self._glyphs = {}
+
+    def copy(self):
+        """Make a deep copy."""
+        copy = self.__class__(self._height, dict(**self._fontdict))
+        copy._width = self._width
+        return copy
 
     def init_mode(self, width):
         """Preload SBCS glyphs at mode switch."""
@@ -131,7 +137,7 @@ class Font(object):
     def set_byte(self, char, offset, byte_value):
         """Set byte value for character sequence."""
         old = self._fontdict[char]
-        self._fontdict[char] = old[:offset%8] + byte_value + old[offset%8+1:]
+        self._fontdict[char] = old[:offset%8] + int2byte(byte_value) + old[offset%8+1:]
         if char in self._glyphs:
             self._build_glyph(char)
 

@@ -63,10 +63,12 @@ class Display(object):
                 height: font.Font(height, font_dict)
                 for height, font_dict in iteritems(fonts) if font_dict
             }
-        # use the default rom font if no 8-pixel font provided
+        # we must have an 8-pixel font; use the default CP437 font if none provided
         if 8 not in self._fonts:
             self._fonts[8] = font.Font(8, None)
-        self._fonts[9] = self._fonts[8]
+        # copy as 8-pixel hardware BIOS font (for CGA textmodes)
+        # as opposed to the loadable 8-pixel memory font used in graphics modes
+        self._bios_font_8 = self._fonts[8].copy()
         # text screen
         self.text_screen = TextScreen(
             self.queues, self._values, self.mode, self._adapter, codepage, io_streams, sound
@@ -163,17 +165,23 @@ class Display(object):
         # preserve memory if erase==0; don't distingush erase==1 and erase==2
         if not erase:
             saved_addr, saved_buffer = self.mode.memorymap.get_all_memory(self)
-        # illegal fn call if we don't have a font for this mode
+        # get a font for the new mode
         try:
-            # get font and initialise for this mode's font width (8 or 9 pixels)
-            font = self._fonts[new_mode.font_height].init_mode(new_mode.font_width)
+            # in CGA (8- or 9-pixel) text modes, use the 8-pixel BIOS font, not the POKE-able one
+            # 9th pixel is added by rendering code if needed
+            if new_mode.is_text_mode and new_mode.font_height in (8, 9):
+                font = self._bios_font_8
+            else:
+                font = self._fonts[new_mode.font_height]
+            # initialise for this mode's font width (8 or 9 pixels)
+            font.init_mode(new_mode.font_width)
         except KeyError:
             logging.warning(
-                'No %d-pixel font available. Using 8-pixel default font instead.',
+                'No %d-pixel font available. Using 8-pixel font instead.',
                 new_mode.font_height
             )
-            font = self.rom_font.init_mode(new_mode.font_width)
-        # if we made it here we're ready to commit to the new mode
+            font = self._bios_font_8.init_mode(new_mode.font_width)
+        # submit the mode change to the interface
         self.queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
                 new_mode.num_pages, new_mode.pixel_height, new_mode.pixel_width,
@@ -293,8 +301,8 @@ class Display(object):
             # COLOR f,b with f in [0,15] and b > 7
 
     @property
-    def rom_font(self):
-        """8-bit ROM font."""
+    def memory_font(self):
+        """8-bit memory font (half in ROM, half in RAM and loadable)."""
         return self._fonts[8]
 
 
