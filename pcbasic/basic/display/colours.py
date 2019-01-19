@@ -216,10 +216,6 @@ class _ColourMapper(object):
         """Split attribute byte into constituent parts."""
         return attr & 0xf, 0, False, False
 
-    def join_attr(self, fore, back, blink, underline):
-        """Join constituent parts into textmode attribute byte."""
-        return fore & 0xf
-
     def _get_rgb_table(self):
         """List of RGB/blink/underline for all attributes, given a palette."""
         return (
@@ -319,10 +315,6 @@ class _TextColourMixin(object):
         underline = False
         return fore, back, blink, underline
 
-    def join_attr(self, fore, back, blink, underline):
-        """Join constituent parts into textmode attribute byte."""
-        return ((blink & 1) << 7) + ((back & 7) << 4) + (fore & 0xf)
-
     def attr_to_rgb(self, attr):
         """Convert attribute to RGB/blink/underline, given a palette."""
         fore, back, blink, underline = self.split_attr(attr)
@@ -336,24 +328,25 @@ class _TextColourMixin(object):
 
     def color(self, current_attr, fore, back, bord):
         """Helper function for COLOR in text mode (SCREEN 0)."""
-        if fore is None:
-            # this is a very ugly way to ensure the value doesn't get changed below
-            fore = (current_attr >> 7) * 0x10 + (current_attr & 0xf)
-        # in text mode, arg1 is background attr
-        if back is None:
-            _, back, _, _ = self.split_attr(current_attr)
-        # for screens other than 1, no distinction between 3rd parm zero and not supplied
-        bord = bord or 0
-        error.range_check(0, 255, bord)
-        num_fore_attr = self.num_palette
-        # allow twice the number of foreground attributes (16) - because of blink
-        error.range_check(0, num_fore_attr*2-1, fore)
-        # allow background attributes up to 15 though highest bit is ignored
-        error.range_check(0, num_fore_attr-1, back, bord)
-        # COLOR > 17 means blink, but the blink bit is the top bit of the true attribute
-        blink, fore = divmod(fore, num_fore_attr)
+        if fore is not None:
+            # allow twice the number of foreground attributes (16) - because of blink
+            error.range_check(0, self.num_palette*2-1, fore)
+            # COLOR > 17 means blink, but the blink bit is the top bit of the true attribute
+            bit, fore = divmod(fore, self.num_palette)
+        else:
+            # use explicit fore-back-bit split here, we don't care if it's actually blink/underline
+            # and split_attr/join_attr are being overridden
+            fore = current_attr & 0xf
+            bit = (current_attr >> 7) == 1
+        if back is not None:
+            # allow background attributes up to 15 though highest bit is ignored
+            error.range_check(0, self.num_palette-1, back)
+        else:
+            back = (current_attr >> 4) & 7
+        if bord is not None:
+            error.range_check(0, self.num_palette-1, bord)
         # set attribute and border
-        attr = self.join_attr(fore, back, blink, False)
+        attr = ((bit & 1) << 7) + ((back & 7) << 4) + (fore & 0xf)
         return attr, bord
 
 
@@ -367,7 +360,7 @@ class HerculesColourMapper(_ColourMapper):
     _colours = ((0, 0, 0), (255, 255, 255))
     _mono = True
 
-    def color(self, fore, back, bord):
+    def color(self, current_attr, fore, back, bord):
         """Mode-dependent helper function for COLOR statement."""
         raise error.BASICError(error.IFC)
 
@@ -442,7 +435,7 @@ class CGA2ColourMapper(_CompositeMixin, _CGAColourMapper):
         # the color burst can only be changed through the CGA mode control register at port 03D8h
         self.set_colorburst(False)
 
-    def color(self, arg0, arg1, arg2):
+    def color(self, current_attr, arg0, arg1, arg2):
         """Helper function for COLOR statement in SCREEN 2."""
         raise error.BASICError(error.IFC)
 
@@ -718,8 +711,6 @@ class MonoTextColourMapper(_TextColourMixin, _ColourMapper):
         fore_rgb = _adjust_tint(self._colours[fore], self._mono_tint, self._mono)
         back_rgb = _adjust_tint(self._colours[back], self._mono_tint, self._mono)
         return fore_rgb, back_rgb, blink, underline
-
-    # FIXME: color() sort of maybe works by accident because we haven't redefined join_attr()
 
 
 class EGAMonoColourMapper(_ColourMapper):
