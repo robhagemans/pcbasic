@@ -133,6 +133,7 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def set_palette(self, attributes, dummy_pack_pixels):
         """Set the colour palette."""
+        self._set_default_colours(len(attributes))
         rgb_table = [_fore for _fore, _, _, _ in attributes[:16]]
         if len(attributes) > 16:
             # *assume* the first 16 attributes are foreground-on-black
@@ -152,8 +153,7 @@ class VideoANSI(video_cli.VideoTextBase):
             console.set_palette_entry(index, *rgb)
 
     def set_mode(
-            self, num_pages, canvas_height, canvas_width, text_height, text_width,
-            num_attr, text_cursor
+            self, num_pages, canvas_height, canvas_width, text_height, text_width, text_cursor
         ):
         """Change screen mode."""
         self._height = text_height
@@ -162,7 +162,6 @@ class VideoANSI(video_cli.VideoTextBase):
             [[(u' ', (7, 0, False, False))] * self._width for _ in range(self._height)]
             for _ in range(num_pages)
         ]
-        self._set_default_colours(num_attr)
         console.resize(self._height + 2*self._border_y, self._width + 2*self._border_x)
         self._redraw()
         return True

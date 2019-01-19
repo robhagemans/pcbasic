@@ -188,7 +188,7 @@ class Display(object):
         self.queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
                 new_mode.num_pages, new_mode.pixel_height, new_mode.pixel_width,
-                new_mode.height, new_mode.width, self.colourmap.num_attr, new_mode.is_text_mode
+                new_mode.height, new_mode.width, new_mode.is_text_mode
             )
         ))
         # switching to another text mode (width-only change)
@@ -263,8 +263,7 @@ class Display(object):
         self.queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
                 self.mode.num_pages, self.mode.pixel_height, self.mode.pixel_width,
-                self.mode.height, self.mode.width,
-                self.colourmap.num_attr, self.mode.is_text_mode
+                self.mode.height, self.mode.width, self.mode.is_text_mode
             )
         ))
         # set the visible and active pages

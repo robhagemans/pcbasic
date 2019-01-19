@@ -311,13 +311,11 @@ class VideoCurses(VideoPlugin):
         return cursattr
 
     def set_mode(
-            self, num_pages, canvas_height, canvas_width, text_height, text_width,
-            num_attr, text_cursor
+            self, num_pages, canvas_height, canvas_width, text_height, text_width, text_cursor
         ):
         """Change screen mode."""
         self.height = text_height
         self.width = text_width
-        self._set_default_colours(num_attr)
         bgcolor = self._curses_colour(7, 0, False)
         self.text = [
             [[(u' ', bgcolor)]*self.width for _ in range(self.height)]
@@ -358,7 +356,8 @@ class VideoCurses(VideoPlugin):
                 pass
 
     def set_palette(self, attributes, dummy_pack_pixels):
-        """Build the game palette."""
+        """Build the palette."""
+        self._set_default_colours(len(attributes))
         rgb_table = [_fore for _fore, _, _, _ in attributes[:16]]
         if len(attributes) > 16:
             # *assume* the first 16 attributes are foreground-on-black
