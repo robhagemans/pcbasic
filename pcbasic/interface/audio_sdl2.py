@@ -26,7 +26,7 @@ from . import synthesiser
 # one wavelength at 37 Hz is 1192 samples at 44100 Hz
 CHUNK_LENGTH = 1192 * 4
 # length of chunks to be consumed by callback
-CALLBACK_CHUNK_LENGTH = 1024
+CALLBACK_CHUNK_LENGTH = 2048
 # number of samples below which to replenish the buffer
 MIN_SAMPLES_BUFFER = 2*CALLBACK_CHUNK_LENGTH
 
@@ -134,7 +134,7 @@ class AudioSDL2(AudioPlugin):
         ]
         # mix the samples by averaging
         mixed = bytearray(
-            sum(_b) // 4 for _b in zip(*samples)
+            sum(_b) for _b in zip(*samples)
         )
         ctypes.memmove(
             stream, (ctypes.c_char * length_bytes).from_buffer(mixed[:length_bytes]), length_bytes
