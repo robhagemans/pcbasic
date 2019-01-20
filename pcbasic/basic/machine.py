@@ -566,7 +566,7 @@ class Memory(object):
             return self.ram_font_segment // 256
         # 1040 monitor type
         elif addr == 1040:
-            if self.display.monitor == 'mono':
+            if self.display.is_monochrome():
                 # mono
                 return 48 + 6
             else:
