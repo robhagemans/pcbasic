@@ -39,12 +39,10 @@ PC-BASIC depends on the following open-source projects:
 
   * [Python](http://www.python.org)
   * [Setuptools](https://pypi.python.org/pypi/setuptools)
-  * [NumPy](http://www.numpy.org)
-  * [PySerial](https://github.com/pyserial/pyserial)
-  * [PyParallel](https://github.com/pyserial/pyparallel)
   * [Simple DirectMedia Layer (SDL)](http://www.libsdl.org)
   * [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/)
-  * [PyGame](http://www.pygame.org)
+  * [PySerial](https://github.com/pyserial/pyserial)
+  * [PyParallel](https://github.com/pyserial/pyparallel)
   * [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)
 
 
@@ -56,6 +54,8 @@ which it has depended on in the past:
   * **Tom Rothamel**'s [PyGame Subset for Android](https://web.archive.org/web/20150712040220/http://pygame.renpy.org/) (superseded by [RAPT](http://www.renpy.org/doc/html/android.html))
   * [Python for Windows Extensions (PyWin32)](https://sourceforge.net/projects/pywin32/)
   * [PExpect](http://pexpect.readthedocs.org/en/latest/)
+  * [PyGame](http://www.pygame.org)
+  * [NumPy](http://www.numpy.org)
 
 
 ### Technical Documentation
