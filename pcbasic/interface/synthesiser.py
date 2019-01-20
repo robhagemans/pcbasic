@@ -26,8 +26,8 @@ FEEDBACK_TONE = 0x2
 
 # The SN76489 attenuates the volume by 2dB for each step in the volume register.
 # see http://www.smspower.org/Development/SN76489
-# bits -3 (i.e. max div 8) so we can sum 4 voices
-MAX_AMPLITUDE = (1 << (SAMPLE_BITS-3))
+# bits -2 (i.e. max div 4) so we can sum 4 voices
+MAX_AMPLITUDE = (1 << (SAMPLE_BITS-2)) - 1
 # 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2
 STEP_FACTOR = 10 ** (-2./20.)
 # geometric list of amplitudes for volume values
