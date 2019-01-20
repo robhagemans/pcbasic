@@ -309,7 +309,7 @@ class Settings(object):
         u'video': {
             u'type': u'string', u'default': 'vga',
             u'choices': (
-                u'vga', u'ega', u'cga', u'cga_old', u'mda',
+                u'vga', u'ega', u'cga', u'mda',
                 u'pcjr', u'tandy', u'hercules', u'olivetti'), },
         u'text-encoding': {u'type': u'string', u'default': u'', u'check': _check_text_encoding},
         u'soft-linefeed': {u'type': u'bool', u'default': False,},
@@ -560,7 +560,6 @@ class Settings(object):
         nobox = len(codepage_params) > 1 and codepage_params[1] == u'nobox'
         # video parameters
         video_params = self.get('video').split(u':')
-        cga_low = len(video_params) > 1 and video_params[1] == u'low'
         # redirects
         params = self._get_redirects()
         params.update({
@@ -570,11 +569,9 @@ class Settings(object):
             'box_protect': not nobox,
             'monitor': self.get('monitor'),
             # screen settings
-            'aspect_ratio': (3072, 2000) if self.get('video') == 'tandy' else (4, 3),
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
-            'low_intensity': cga_low,
-            'font': data.read_fonts(codepage_dict, self.get('font'), warn=self.get('debug')),
+            'font': data.read_fonts(codepage_dict, self.get('font')),
             # inserted keystrokes
             # we first need to encode the unicode to bytes before we can decode it
             # this preserves unicode as \x (if latin-1) and \u escapes

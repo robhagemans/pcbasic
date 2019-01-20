@@ -36,8 +36,6 @@ VIDEO_COPY_PAGE = 28
 VIDEO_SHOW_CURSOR = 14
 # set cursor shape
 VIDEO_SET_CURSOR_SHAPE = 3
-# set cursor attribute
-VIDEO_SET_CURSOR_ATTR = 6
 # move cursor
 VIDEO_MOVE_CURSOR = 5
 # set border attribute
@@ -47,8 +45,7 @@ VIDEO_PUT_TEXT = 8
 # clear rows
 VIDEO_CLEAR_ROWS = 10
 # scroll
-VIDEO_SCROLL_UP = 11
-VIDEO_SCROLL_DOWN = 12
+VIDEO_SCROLL = 12
 # set palette
 VIDEO_SET_PALETTE = 15
 # put rect

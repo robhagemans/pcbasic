@@ -418,8 +418,7 @@ class Files(object):
         error.range_check(0, 255, w)
         list(args)
         if num_rows_dummy is not None:
-            min_num_rows = 0 if self.scrn_file.screen.capabilities in ('pcjr', 'tandy') else 25
-            error.range_check(min_num_rows, 25, num_rows_dummy)
+            self.scrn_file.screen.set_height(num_rows_dummy)
         dev.set_width(w)
 
     def print_(self, args):

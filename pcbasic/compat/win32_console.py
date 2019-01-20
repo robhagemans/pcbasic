@@ -461,9 +461,13 @@ class Win32Console(object):
         if row >= 0 and col >= 0:
             _SetConsoleCursorPosition(HSTDOUT, wintypes._COORD(col, row))
 
-    def _scroll(self, start, stop, rows):
+    def scroll(self, top, bottom, rows):
+        """Scroll the region between top and bottom one row up (-) or down (+)."""
         if not rows:
             return
+        # use zero-based indexing
+        start, stop = top-1, bottom-1
+        # we're using opposuite sign conventions
         csbi = GetConsoleScreenBufferInfo(HSTDOUT)
         # absolute position of window in screen buffer
         # interpret other coordinates as relative to the window
@@ -472,13 +476,13 @@ class Win32Console(object):
         clip_rect = wintypes.SMALL_RECT(
             window.Left, window.Top + start, window.Right, window.Top + stop
         )
-        if rows > 0:
-            region = wintypes.SMALL_RECT(window.Left, window.Top + rows, window.Right, window.Bottom)
+        if rows < 0:
+            # minus signs since rows is a negative number
+            region = wintypes.SMALL_RECT(window.Left, window.Top - rows, window.Right, window.Bottom)
             new_pos = wintypes._COORD(window.Left, window.Top)
         else:
-            # minus signs since rows is a negative number
-            region = wintypes.SMALL_RECT(window.Left, window.Top, window.Right, window.Bottom - rows)
-            new_pos = wintypes._COORD(window.Left, window.Top - rows)
+            region = wintypes.SMALL_RECT(window.Left, window.Top, window.Right, window.Bottom + rows)
+            new_pos = wintypes._COORD(window.Left, window.Top + rows)
         # workaround: in this particular case, Windows doesn't seem to respect the clip area.
         if (
                 clip_rect.Bottom == window.Bottom-1 and
@@ -495,14 +499,6 @@ class Win32Console(object):
             ScrollConsoleScreenBuffer(HSTDOUT, region, clip_rect, new_pos, u' ', self._attrs)
         else:
             ScrollConsoleScreenBuffer(HSTDOUT, region, clip_rect, new_pos, u' ', self._attrs)
-
-    def scroll_up(self, top, bottom):
-        """Scroll the region between top and bottom one row up."""
-        self._scroll(top-1, bottom-1, 1)
-
-    def scroll_down(self, top, bottom):
-        """Scroll the region between top and bottom one row down."""
-        self._scroll(top-1, bottom-1, -1)
 
     def reset(self):
         """Reset to default attributes."""

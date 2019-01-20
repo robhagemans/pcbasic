@@ -343,7 +343,8 @@ class VideoSDL2(VideoPlugin):
         self._cycle = 0
         self._last_tick = 0
         # blink is enabled, should be True in text modes with blink and ega mono
-        # cursor blinks if _is_text_mode and _blink_enabled
+        # set to true if blinking attributes occur in palette
+        # cursor blinks if _text_cursor and _blink_enabled
         self._blink_enabled = True
         # load the icon
         self._icon = bytematrix.ByteMatrix(len(ICON), len(ICON[0]), ICON).hrepeat(2).vrepeat(2)
@@ -393,7 +394,7 @@ class VideoSDL2(VideoPlugin):
         # event handlers
         self._event_handlers = self._register_handlers()
         # video mode settings
-        self._is_text_mode = True
+        self._text_cursor = True
         self._font_height = None
         self._font_width = None
         self._num_pages = None
@@ -404,17 +405,17 @@ class VideoSDL2(VideoPlugin):
         self._cursor_row, self._cursor_col = 1, 1
         # cursor shape
         self._cursor_from = None
-        self._cursor_to = None
+        self._cursor_height = None
         self._cursor_width = None
         self._cursor_attr = None
         self._cursor_cache = [None, None]
         # display pages
         self._vpagenum, self._apagenum = 0, 0
         # palette
+        # { attr: (fore, back, blink, underline) }
+        self._attributes = {}
         # display palettes for blink states 0, 1
         self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
-        self._num_fore_attrs = 16
-        self._num_back_attrs = 8
         # pixel packing is active (composite artifacts)
         self._pixel_packing = False
         # last keypress
@@ -613,7 +614,7 @@ class VideoSDL2(VideoPlugin):
                 )
             elif event.button.button == sdl2.SDL_BUTTON_MIDDLE:
                 # MIDDLE button: paste
-                text = self._clipboard_handler.paste(mouse=True)
+                text = self._clipboard_handler.paste()
                 self._clipboard_interface.paste(text)
             self.busy = True
         if event.button.button == sdl2.SDL_BUTTON_LEFT:
@@ -624,7 +625,7 @@ class VideoSDL2(VideoPlugin):
         """Handle mouse-up event."""
         self._input_queue.put(signals.Event(signals.PEN_UP))
         if self._mouse_clip and event.button.button == sdl2.SDL_BUTTON_LEFT:
-            self._clipboard_interface.copy(mouse=True)
+            self._clipboard_interface.copy()
             self._clipboard_interface.stop()
             self.busy = True
 
@@ -799,7 +800,7 @@ class VideoSDL2(VideoPlugin):
         # blink         on     on     off    off
         #
         # blink state remains constant if blink not enabled
-        # cursor blinks only if _is_text_mode and _blink_enabled
+        # cursor blinks only if _text_cursor and _blink_enabled
         # cursor visible every cycle between 5 and 10, 15 and 20
         tick = sdl2.SDL_GetTicks()
         if tick - self._last_tick >= CYCLE_TIME:
@@ -843,7 +844,7 @@ class VideoSDL2(VideoPlugin):
             work_surface = self._window_surface[self._vpagenum]
         pixelformat = self._display_surface.contents.format
         # apply cursor to work surface
-        with self._show_cursor(blink_state % 2):
+        with self._show_cursor((blink_state % 2) or not self._text_cursor):
             # convert 8-bit work surface to (usually) 32-bit display surface format
             sdl2.SDL_SetSurfacePalette(work_surface, self._palette[blink_state // 2])
             conv = sdl2.SDL_ConvertSurface(work_surface, pixelformat, 0)
@@ -896,7 +897,7 @@ class VideoSDL2(VideoPlugin):
             cursor_area = self._canvas_pixels[self._apagenum][cursor_slice]
             # copy area under cursor
             under_cursor = cursor_area.copy()
-            if self._is_text_mode:
+            if self._text_cursor:
                 cursor_area[:, :] = self._cursor_attr
             else:
                 cursor_area[:, :] ^= self._cursor_attr
@@ -946,17 +947,16 @@ class VideoSDL2(VideoPlugin):
     ###########################################################################
     # signal handlers
 
-    def set_mode(self, mode_info):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Initialise a given text or graphics mode."""
         # unpack mode info struct
-        self._is_text_mode = mode_info.is_text_mode
-        self._font_height = mode_info.font_height
-        self._font_width = mode_info.font_width
-        self._num_pages = mode_info.num_pages
-        self._blink_enabled = mode_info.has_blink
+        self._font_height = -(-canvas_height // text_height)
+        self._font_width = canvas_width // text_width
+        self._num_pages = num_pages
+        self._text_cursor = False
+        self._blink_enabled = False
         # prebuilt glyphs
         # logical size
-        canvas_width, canvas_height = mode_info.pixel_width, mode_info.pixel_height
         size_changed = self._window_sizer.set_canvas_size(
             canvas_width, canvas_height, fullscreen=self._fullscreen, resize_window=False
         )
@@ -974,7 +974,8 @@ class VideoSDL2(VideoPlugin):
                 # need to update surface pointer after a change in window size
                 self._reset_display_caches()
         # set standard cursor
-        self.set_cursor_shape(self._font_width, 0, self._font_height)
+        self._cursor_width = self._font_width
+        self._cursor_from, self._cursor_height = 0, self._font_height
         # screen pages
         for surface in self._window_surface:
             sdl2.SDL_FreeSurface(surface)
@@ -993,7 +994,7 @@ class VideoSDL2(VideoPlugin):
         # initialise clipboard
         self._clipboard_interface = clipboard.ClipboardInterface(
             self._clipboard_handler, self._input_queue,
-            mode_info.width, mode_info.height, self._font_width, self._font_height,
+            text_width, text_height, self._font_width, self._font_height,
             (canvas_width, canvas_height)
         )
         self.busy = True
@@ -1008,28 +1009,21 @@ class VideoSDL2(VideoPlugin):
         """Put text on the clipboard."""
         self._clipboard_handler.copy(text, mouse)
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
+    def set_palette(self, attributes, pack_pixels):
         """Build the palette."""
-        self._num_fore_attrs = min(16, len(rgb_palette_0))
-        self._num_back_attrs = min(8, self._num_fore_attrs)
-        rgb_palette_1 = rgb_palette_1 or rgb_palette_0
-        # fill up the 8-bit palette with all combinations we need
+        self._attributes = attributes
+        palette_blink_up = [_fore for _fore, _, _, _ in attributes]
+        palette_blink_down = [_back if _blink else _fore for _fore, _back, _blink, _ in attributes]
+        if palette_blink_up != palette_blink_down:
+            self._blink_enabled = True
         # blink states: 0 light up, 1 light down
-        # bottom 128 are non-blink, top 128 blink to background
-        show_palette_0 = rgb_palette_0[:self._num_fore_attrs] * (256//self._num_fore_attrs)
-        show_palette_1 = rgb_palette_1[:self._num_fore_attrs] * (128//self._num_fore_attrs)
-        for attr in (
-                rgb_palette_1[:self._num_back_attrs] *
-                (128 // self._num_fore_attrs // self._num_back_attrs)
-            ):
-            show_palette_1 += [attr]*self._num_fore_attrs
         colors_0 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)
-            for (_r, _g, _b) in show_palette_0
+            for (_r, _g, _b) in palette_blink_up
         ))
         colors_1 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)
-            for (_r, _g, _b) in show_palette_1
+            for (_r, _g, _b) in palette_blink_down
         ))
         sdl2.SDL_SetPaletteColors(self._palette[0], colors_0, 0, 256)
         sdl2.SDL_SetPaletteColors(self._palette[1], colors_1, 0, 256)
@@ -1069,76 +1063,65 @@ class VideoSDL2(VideoPlugin):
         self._canvas_pixels[dst][:] = self._canvas_pixels[src]
         self.busy = True
 
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
+        self._text_cursor = cursor_blinks
+        if cursor_blinks:
+            self._blink_enabled = True
         self._cursor_visible = cursor_on
         self.busy = True
 
-    def move_cursor(self, new_row, new_col):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
-        if self._cursor_visible and (self._cursor_row, self._cursor_col) != (new_row, new_col):
+        if self._cursor_visible and (
+                self._cursor_row, self._cursor_col, self._cursor_attr, self._cursor_width
+            ) != (row, col, attr, width):
             self.busy = True
-        self._cursor_row, self._cursor_col = new_row, new_col
-
-    def set_cursor_attr(self, attr):
-        """Change attribute of cursor."""
-        new_attr = attr % self._num_fore_attrs
-        if self._cursor_visible and self._cursor_attr != new_attr:
-            self.busy = True
-        self._cursor_attr = new_attr
-
-    def set_cursor_shape(self, width, from_line, to_line):
-        """Build a sprite for the cursor."""
+        self._cursor_row, self._cursor_col = row, col
+        self._cursor_attr = attr
         self._cursor_width = width
+
+    def set_cursor_shape(self, from_line, to_line):
+        """Build a sprite for the cursor."""
         self._cursor_from = from_line
         self._cursor_height = to_line + 1 - from_line
         if self._cursor_visible:
             self.busy = True
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
-        """Scroll the screen up between from_line and scroll_height."""
+    def scroll(self, direction, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height."""
         pixels = self._canvas_pixels[self._apagenum]
-        # these are exclusive ranges [x0, x1) etc
-        width = self._window_sizer.width
-        new_y0, new_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
-        old_y0, old_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[new_y0:new_y1, 0:width] = pixels[old_y0:old_y1, 0:width]
-        pixels[new_y1:old_y1, 0:width] = back_attr
+        # scroll window, top of rows
+        hi_y0, hi_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
+        # scroll window, bottom of rows
+        lo_y0, lo_y1 = from_line*self._font_height, scroll_height*self._font_height
+        if direction == -1:
+            # scroll up
+            pixels[hi_y0:hi_y1, :] = pixels[lo_y0:lo_y1, :]
+            # clear the new empty line
+            pixels[hi_y1:lo_y1, :] = back_attr
+        else:
+            # scroll down
+            # copy is needed here as bytearray-view self-slice assignment will self-overwrite
+            pixels[lo_y0:lo_y1, :] = pixels[hi_y0:hi_y1, :].copy()
+            # clear the new empty line
+            pixels[hi_y0:lo_y0, :] = back_attr
         self.busy = True
 
-    def scroll_down(self, from_line, scroll_height, back_attr):
-        """Scroll the screen down between from_line and scroll_height."""
-        pixels = self._canvas_pixels[self._apagenum]
-        # these are exclusive ranges [x0, x1) etc
-        width = self._window_sizer.width
-        old_y0, old_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
-        new_y0, new_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[new_y0:new_y1, 0:width] = pixels[old_y0:old_y1, 0:width]
-        pixels[old_y0:new_y0, 0:width] = back_attr
-        self.busy = True
-
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
-        if not self._is_text_mode:
-            # in graphics mode, a put_rect call does the actual drawing
+        if not glyphs:
             return
-        left, top = (col-1)*self._font_width, (row-1)*self._font_height
-        # render text with attributes
-        attr = fore + self._num_fore_attrs*back + 128*blink
-        self._canvas_pixels[pagenum][
-            top : top + glyphs.height,
-            left : left + glyphs.width
-        ] = glyphs.render(back, attr)
-        if underline:
-            self._canvas_pixels[pagenum][
-                top + glyphs.height - 1 : top + glyphs.height,
-                left : left + glyphs.width
-            ] = attr
-        self.busy = True
+        top = (row-1) * self._font_height
+        left = (col-1) * self._font_width
+        self.put_rect(pagenum, left, top, glyphs)
 
     def put_rect(self, pagenum, x0, y0, array):
         """Apply bytematrix [y, x] of attributes to an area."""
         # reference the destination area
-        height, width = array.height, array.width
-        self._canvas_pixels[pagenum][y0:y0+height, x0:x0+width] = array
+        pixels = self._canvas_pixels[self._apagenum]
+        # clip to size if needed
+        if y0 + array.height > pixels.height or x0 + array.width > pixels.width:
+            array = array[:pixels.height-y0, :pixels.width-x0]
+        self._canvas_pixels[pagenum][y0:y0+array.height, x0:x0+array.width] = array
         self.busy = True

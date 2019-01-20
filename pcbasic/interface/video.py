@@ -25,11 +25,9 @@ class VideoPlugin(object):
             signals.VIDEO_SET_MODE: self.set_mode,
             signals.VIDEO_PUT_TEXT: self.put_text,
             signals.VIDEO_CLEAR_ROWS: self.clear_rows,
-            signals.VIDEO_SCROLL_UP: self.scroll_up,
-            signals.VIDEO_SCROLL_DOWN: self.scroll_down,
+            signals.VIDEO_SCROLL: self.scroll,
             signals.VIDEO_SET_PALETTE: self.set_palette,
             signals.VIDEO_SET_CURSOR_SHAPE: self.set_cursor_shape,
-            signals.VIDEO_SET_CURSOR_ATTR: self.set_cursor_attr,
             signals.VIDEO_SHOW_CURSOR: self.show_cursor,
             signals.VIDEO_MOVE_CURSOR: self.move_cursor,
             signals.VIDEO_SET_PAGE: self.set_page,
@@ -91,16 +89,16 @@ class VideoPlugin(object):
 
     # signal handlers
 
-    def set_mode(self, mode_info):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Initialise a given text or graphics mode."""
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
 
-    def set_clipboard_text(self, text, mouse):
+    def set_clipboard_text(self, text):
         """Put text on the clipboard."""
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
+    def set_palette(self, attributes, pack_pixels):
         """Build the palette."""
 
     def set_border_attr(self, attr):
@@ -115,25 +113,19 @@ class VideoPlugin(object):
     def copy_page(self, src, dst):
         """Copy source to destination page."""
 
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
 
-    def move_cursor(self, crow, ccol):
-        """Move the cursor to a new position."""
+    def move_cursor(self, row, col, attr, width):
+        """Move the cursor to a new position and set attribute and width."""
 
-    def set_cursor_attr(self, attr):
-        """Change attribute of cursor."""
+    def scroll(self, direction, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height. direction 1 is down, -1 up."""
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
-        """Scroll the screen up between from_line and scroll_height."""
-
-    def scroll_down(self, from_line, scroll_height, back_attr):
-        """Scroll the screen down between from_line and scroll_height."""
-
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
 
-    def set_cursor_shape(self, width, from_line, to_line):
+    def set_cursor_shape(self, from_line, to_line):
         """Build a sprite for the cursor."""
 
     def put_rect(self, pagenum, x0, y0, array):

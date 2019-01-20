@@ -130,7 +130,7 @@ class Interpreter(object):
     def set_parse_mode(self, on):
         """Enter or exit parse mode."""
         self._parse_mode = on
-        self._screen.cursor.default_visible = not on
+        self._screen.cursor.set_default_visible(not on)
 
     def _handle_break(self, e):
         """Handle a Break event."""

@@ -40,6 +40,7 @@ class VideoANSI(video_cli.VideoTextBase):
         self._cursor_row, self._cursor_col = 1, 1
         # last used colour attributes
         self._last_attributes = None
+        self._cursor_attr = None
         # text and colour buffer
         self._vpagenum, self._apagenum = 0, 0
         self._height, self._width = 25, 80
@@ -48,6 +49,7 @@ class VideoANSI(video_cli.VideoTextBase):
         self._border_attr = 0
         self._set_default_colours(16)
         self._text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
+        self._attributes = []
 
     def __enter__(self):
         """Open ANSI interface."""
@@ -129,20 +131,35 @@ class VideoANSI(video_cli.VideoTextBase):
             self._border_attr = attr
             self._redraw_border()
 
-    def set_palette(self, new_palette, dummy_new_palette1, dummy_pack_pixels):
+    def set_palette(self, attributes, dummy_pack_pixels):
         """Set the colour palette."""
-        for attr, rgb in enumerate(new_palette):
-            console.set_palette_entry(attr, *rgb)
+        self._set_default_colours(len(attributes))
+        rgb_table = [_fore for _fore, _, _, _ in attributes[:16]]
+        if len(attributes) > 16:
+            # *assume* the first 16 attributes are foreground-on-black
+            # this is the usual textmode byte attribute arrangement
+            fore = range(16) * 16
+            back = tuple(_b for _b in range(8) for _ in range(16)) * 2
+        else:
+            fore = range(len(attributes))
+            # assume black background
+            # blink dim-to-bright etc won't work on terminals anyway
+            back = (0,) * len(attributes)
+        blink = tuple(_blink for _, _, _blink, _ in attributes)
+        under = tuple(_under for _, _, _, _under in attributes)
+        int_attributes = zip(fore, back, blink, under)
+        self._attributes = int_attributes
+        for index, rgb in enumerate(rgb_table):
+            console.set_palette_entry(index, *rgb)
 
-    def set_mode(self, mode_info):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Change screen mode."""
-        self._height = mode_info.height
-        self._width = mode_info.width
+        self._height = text_height
+        self._width = text_width
         self._text = [
             [[(u' ', (7, 0, False, False))] * self._width for _ in range(self._height)]
-            for _ in range(mode_info.num_pages)
+            for _ in range(num_pages)
         ]
-        self._set_default_colours(len(mode_info.palette))
         console.resize(self._height + 2*self._border_y, self._width + 2*self._border_x)
         self._redraw()
         return True
@@ -188,19 +205,20 @@ class VideoANSI(video_cli.VideoTextBase):
                 self._cursor_row + self._border_y, self._cursor_col + self._border_x
             )
 
-    def move_cursor(self, row, col):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
         if (row, col) != (self._cursor_row, self._cursor_col):
             self._cursor_row, self._cursor_col = row, col
             console.move_cursor_to(
                 self._cursor_row + self._border_y, self._cursor_col + self._border_x
             )
+        # change attribute of cursor
+        # cursor width is controlled by terminal
+        if attr != self._cursor_attr:
+            self._cursor_attr = attr
+            console.set_cursor_colour(self.default_colours[attr%16])
 
-    def set_cursor_attr(self, attr):
-        """Change attribute of cursor."""
-        console.set_cursor_colour(self.default_colours[attr%16])
-
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
         self._cursor_visible = cursor_on
         if self._vpagenum != self._apagenum:
@@ -211,14 +229,15 @@ class VideoANSI(video_cli.VideoTextBase):
             # force move when made visible again
             console.hide_cursor()
 
-    def set_cursor_shape(self, width, from_line, to_line):
+    def set_cursor_shape(self, from_line, to_line):
         """Set the cursor shape."""
         self._block_cursor = (to_line-from_line) >= 4
         if self._cursor_visible:
             console.show_cursor(block=self._block_cursor)
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
+        fore, back, blink, underline = self._attributes[attr]
         unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
         self._text[pagenum][row-1][col-1:col-1+len(unicode_list)] = [
             (_c, (fore, back, blink, underline)) for _c in unicode_list
@@ -231,7 +250,14 @@ class VideoANSI(video_cli.VideoTextBase):
         console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
         self._cursor_row, self._cursor_col = row, col+len(unicode_list)
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
+    def scroll(self, direction, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height."""
+        if direction == -1:
+            self._scroll_up(from_line, scroll_height, back_attr)
+        else:
+            self._scroll_down(from_line, scroll_height, back_attr)
+
+    def _scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
         self._text[self._apagenum][from_line-1:scroll_height] = (
             self._text[self._apagenum][from_line:scroll_height] +
@@ -239,10 +265,10 @@ class VideoANSI(video_cli.VideoTextBase):
         )
         if self._apagenum != self._vpagenum:
             return
-        console.scroll_up(from_line + self._border_y, scroll_height + self._border_y)
+        console.scroll(from_line + self._border_y, scroll_height + self._border_y, rows=-1)
         self.clear_rows(back_attr, scroll_height, scroll_height)
 
-    def scroll_down(self, from_line, scroll_height, back_attr):
+    def _scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
         self._text[self._apagenum][from_line-1:scroll_height] = (
             [[(u' ', 0)] * len(self._text[self._apagenum][0])] +
@@ -250,7 +276,7 @@ class VideoANSI(video_cli.VideoTextBase):
         )
         if self._apagenum != self._vpagenum:
             return
-        console.scroll_down(from_line + self._border_y, scroll_height + self._border_y)
+        console.scroll(from_line + self._border_y, scroll_height + self._border_y, rows=1)
         self.clear_rows(back_attr, from_line, from_line)
 
     def set_caption_message(self, msg):

@@ -215,7 +215,7 @@ class VideoCLI(VideoTextBase):
 
     ###############################################################################
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
         unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
         self._text[pagenum][row-1][col-1:col-1+len(unicode_list)] = unicode_list
@@ -230,7 +230,7 @@ class VideoCLI(VideoTextBase):
         # if that's not where we want to be
         # but often it is anyway
 
-    def move_cursor(self, row, col):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
         # update cursor row only if it's changed from last work-cycle
         # or if actual printing takes place on the new cursor row
@@ -247,7 +247,14 @@ class VideoCLI(VideoTextBase):
             self._update_position(self._cursor_row, 1)
             console.clear_row()
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
+    def scroll(self, direction, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height."""
+        if direction == -1:
+            self._scroll_up(from_line, scroll_height, back_attr)
+        else:
+            self._scroll_down(from_line, scroll_height, back_attr)
+
+    def _scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
         self._text[self._apagenum][from_line-1:scroll_height] = (
                 self._text[self._apagenum][from_line:scroll_height]
@@ -257,18 +264,18 @@ class VideoCLI(VideoTextBase):
             return
         console.write(u'\r\n')
 
-    def scroll_down(self, from_line, scroll_height, back_attr):
+    def _scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
         self._text[self._apagenum][from_line-1:scroll_height] = (
                 [[u' '] * len(self._text[self._apagenum][0])] +
                 self._text[self._apagenum][from_line-1:scroll_height-1]
             )
 
-    def set_mode(self, mode_info):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Initialise video mode """
         self._text = [
-                [[u' '] * mode_info.width for _ in range(mode_info.height)]
-                for _ in range(mode_info.num_pages)
+                [[u' '] * text_width for _ in range(text_height)]
+                for _ in range(num_pages)
             ]
 
     def set_page(self, new_vpagenum, new_apagenum):
