@@ -17,11 +17,6 @@ try:
 except ImportError:
     pygame = None
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 if pygame:
     import pygame.mixer as mixer
 else:
@@ -53,8 +48,6 @@ class AudioPygame(AudioPlugin):
         """Initialise sound system."""
         if not pygame:
             raise InitFailed('Module `pygame` not found')
-        if not numpy:
-            raise InitFailed('Mdoule `numpy` not found')
         if not mixer:
             raise InitFailed('Module `mixer` not found')
         # this must be called before pygame.init() in the video plugin
@@ -134,7 +127,7 @@ class AudioPygame(AudioPlugin):
                 self._next_tone[voice] = None
             if current_chunk is not None:
                 # enqueue chunk in mixer
-                snd = pygame.sndarray.make_sound(numpy.array(current_chunk, dtype=numpy.uint8))
+                snd = pygame.sndarray.make_sound(current_chunk)
                 mixer.Channel(voice).queue(snd)
 
     def _check_quit(self):
@@ -157,7 +150,7 @@ class AudioPygame(AudioPlugin):
             mixer.Channel(channel).stop()
             # play short silence to avoid blocking the channel
             # otherwise it won't play on queue()
-            silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.uint8))
+            silence = pygame.sndarray.make_sound(bytearray(1))
             mixer.Channel(channel).play(silence)
 
     def _check_init_mixer(self):
