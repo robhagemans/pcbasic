@@ -43,10 +43,10 @@ class AudioSDL2(AudioPlugin):
         # synthesisers
         self._signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
-        self._generators = [deque() for _ in self._signal_sources]
+        self._generators = [deque() for _ in synthesiser.VOICES]
         # buffer of samples; drained by callback, replenished by _play_sound
-        self._samples = [bytearray() for _ in self._signal_sources]
-        self._next_tone = [None for _ in self._signal_sources]
+        self._samples = [bytearray() for _ in synthesiser.VOICES]
+        self._next_tone = [None for _ in synthesiser.VOICES]
         self._device = None
         self._audiospec = None
         AudioPlugin.__init__(self, audio_queue)
@@ -80,23 +80,23 @@ class AudioSDL2(AudioPlugin):
     def noise(self, source, frequency, duration, loop, volume):
         """Enqueue a noise."""
         feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
-        self._generators[3].append(synthesiser.SoundGenerator(
-            self._signal_sources[3], feedback,
+        self._generators[synthesiser.NOISE_VOICE].append(synthesiser.SoundGenerator(
+            self._signal_sources[synthesiser.NOISE_VOICE], feedback,
             frequency, duration, loop, volume
         ))
 
     def hush(self):
         """Stop sound."""
-        self._next_tone = [None for _ in self._signal_sources]
+        self._next_tone = [None for _ in synthesiser.VOICES]
         for gen in self._generators:
             gen.clear()
         sdl2.SDL_LockAudioDevice(self._device)
-        self._samples = [bytearray() for _ in range(4)]
+        self._samples = [bytearray() for _ in synthesiser.VOICES]
         sdl2.SDL_UnlockAudioDevice(self._device)
 
     def _work(self):
         """Replenish sample buffer."""
-        for voice in range(len(self._samples)):
+        for voice in synthesiser.VOICES:
             if len(self._samples[voice]) > _MIN_SAMPLES_BUFFER:
                 # nothing to do
                 continue

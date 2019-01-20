@@ -13,12 +13,18 @@ from ..compat import xrange
 
 # initial condition - see dosbox source
 INIT_NOISE = 0x0f35
+INIT_TONE = 0x01
 # white noise feedback
 FEEDBACK_NOISE = 0x4400
 # 'periodic' feedback mask (15-bit rotation)
 FEEDBACK_PERIODIC = 0x4000
 # square wave feedback mask
 FEEDBACK_TONE = 0x2
+
+# number of voices
+VOICES = range(4)
+# voice with noise source
+NOISE_VOICE = VOICES[-1]
 
 # bit depth
 SAMPLE_BITS = 8
@@ -42,7 +48,7 @@ _RESOLUTION = 20
 class SignalSource(object):
     """Linear Feedback Shift Register to generate noise or tone."""
 
-    def __init__(self, feedback, init=0x01):
+    def __init__(self, feedback, init):
         """Initialise the signal source."""
         self.lfsr = init
         self.feedback = feedback
@@ -142,8 +148,7 @@ class SoundGenerator(object):
 def get_signal_sources():
     """Return three tone voices plus a noise source."""
     return [
-        SignalSource(FEEDBACK_TONE),
-        SignalSource(FEEDBACK_TONE),
-        SignalSource(FEEDBACK_TONE),
-        SignalSource(FEEDBACK_NOISE, INIT_NOISE)
+        SignalSource(FEEDBACK_NOISE, INIT_NOISE) if _voice == NOISE_VOICE
+        else SignalSource(FEEDBACK_TONE, INIT_TONE)
+        for _voice in VOICES
     ]
