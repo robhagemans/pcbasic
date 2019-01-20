@@ -11,10 +11,6 @@ from math import ceil
 from ..compat import xrange
 
 
-# sample rate and bit depth
-SAMPLE_BITS = 8
-SAMPLE_RATE = 44100
-
 # initial condition - see dosbox source
 INIT_NOISE = 0x0f35
 # white noise feedback
@@ -24,16 +20,23 @@ FEEDBACK_PERIODIC = 0x4000
 # square wave feedback mask
 FEEDBACK_TONE = 0x2
 
+# bit depth
+SAMPLE_BITS = 8
+# sample rate
+SAMPLE_RATE = 44100
+
 # The SN76489 attenuates the volume by 2dB for each step in the volume register.
 # see http://www.smspower.org/Development/SN76489
 # bits -2 (i.e. max div 4) so we can sum 4 voices
-MAX_AMPLITUDE = (1 << (SAMPLE_BITS-2)) - 1
-# 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2
-STEP_FACTOR = 10 ** (-2./20.)
+_MAX_AMPLITUDE = (1 << (SAMPLE_BITS-2)) - 1
 # geometric list of amplitudes for volume values
-AMPLITUDE = [int(MAX_AMPLITUDE * STEP_FACTOR**_power) for _power in range(15, -1, -1)]
+# 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2
+_STEP_FACTOR = 10 ** (-2./20.)
 # zero volume means silent
-AMPLITUDE[0] = 0
+_AMPLITUDE = [0] + [int(_MAX_AMPLITUDE * _STEP_FACTOR**_power) for _power in range(14, -1, -1)]
+
+# resolution for averaging
+_RESOLUTION = 20
 
 
 class SignalSource(object):
@@ -67,7 +70,7 @@ class SoundGenerator(object):
         self.feedback = feedback
         # actual duration and gap length
         self.duration = duration
-        self.amplitude = AMPLITUDE[volume]
+        self.amplitude = _AMPLITUDE[volume]
         self.frequency = frequency
         self.loop = loop
         self.count_samples = 0
@@ -89,37 +92,33 @@ class SoundGenerator(object):
             chunk = bytearray(length)
         else:
             half_wavelength = SAMPLE_RATE / (2.*self.frequency)
-            # resolution for averaging
-            resolution = 20
             # generate first half-wave so as to complete the last one played
             if self.signal_source.phase:
-                bit = self.amplitude if self.signal_source.bit else 0
                 first_length = int(half_wavelength * self.signal_source.phase)
-                matrix = bytearray([bit]) * first_length * resolution
+                first_half_wave = bytearray([self.signal_source.bit]) * first_length * _RESOLUTION
                 length -= first_length
                 self.signal_source.phase = 0.
             else:
-                matrix = bytearray()
+                first_half_wave = bytearray()
             num_half_waves = int(ceil(length / half_wavelength))
             # generate bits
-            bits = [
-                self.amplitude if self.signal_source.next() else 0
+            bits = (
+                self.signal_source.next()
                 for _ in range(num_half_waves)
-            ]
+            )
             # do sampling by averaging the signal over bins of given resolution
             # this allows to use vectors all the way
             # which is *much* faster than looping over an array
-            # stretch array by half_wavelength * resolution
-            stretch = int(half_wavelength * resolution)
+            # stretch array by half_wavelength * _RESOLUTION
+            stretch = int(half_wavelength * _RESOLUTION)
             waves = bytearray().join(bytearray([_b]) * stretch for _b in bits)
-            matrix = bytearray().join((matrix, waves))
+            matrix = bytearray().join((first_half_wave, waves))
             # cut off on round number of resolution blocks
-            if matrix:
-                matrix = matrix[:len(matrix)-(len(matrix) % resolution)]
+            use_length = len(matrix) - (len(matrix) % _RESOLUTION)
             # average over blocks
             chunk = bytearray(
-                sum(matrix[_i:_i+resolution]) // resolution
-                for _i in xrange(0, len(matrix), resolution)
+                self.amplitude * sum(matrix[_i:_i+_RESOLUTION]) // _RESOLUTION
+                for _i in xrange(0, use_length, _RESOLUTION)
             )
         if not self.loop:
             # last chunk is shorter
