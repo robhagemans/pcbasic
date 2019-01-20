@@ -16,12 +16,7 @@ try:
 except ImportError:
     pyaudio = None
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
-from ..compat import muffle
+from ..compat import muffle, zip
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser
@@ -42,14 +37,12 @@ class AudioPortAudio(AudioPlugin):
         """Initialise sound system."""
         if not pyaudio:
             raise InitFailed('Module `pyaudio` not found')
-        if not numpy:
-            raise InitFailed('Module `numpy` not found')
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
         self.generators = [deque(), deque(), deque(), deque()]
         # buffer of samples; drained by callback, replenished by _play_sound
-        self._samples = [numpy.array([], numpy.int16) for _ in range(4)]
+        self._samples = [bytearray() for _ in range(4)]
         self._dev = None
         AudioPlugin.__init__(self, audio_queue)
 
@@ -57,12 +50,12 @@ class AudioPortAudio(AudioPlugin):
         """Perform any necessary initialisations."""
         with muffle(sys.stderr):
             self._dev = pyaudio.PyAudio()
-            sample_format = self._dev.get_format_from_width(2)
+            sample_format = self._dev.get_format_from_width(1)
             self._min_samples_buffer = 2 * BUFSIZE
-            #self._samples = [numpy.zeros(bufsize*2, numpy.int16) for _ in range(4)]
             self._stream = self._dev.open(
-                    format=sample_format, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
-                    frames_per_buffer=BUFSIZE, stream_callback=self._get_next_chunk)
+                format=sample_format, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
+                frames_per_buffer=BUFSIZE, stream_callback=self._get_next_chunk
+            )
             self._stream.start_stream()
             AudioPlugin.__enter__(self)
 
@@ -92,7 +85,7 @@ class AudioPortAudio(AudioPlugin):
             self._next_tone[voice] = None
             while self.generators[voice]:
                 self.generators[voice].popleft()
-        self._samples = [numpy.array([], numpy.int16) for _ in range(4)]
+        self._samples = [bytearray() for _ in range(4)]
 
     def _work(self):
         """Replenish sample buffer."""
@@ -117,20 +110,17 @@ class AudioPortAudio(AudioPlugin):
             if current_chunk is not None:
                 # append chunk to samples list
                 # should lock to ensure callback doesn't try to access the list too?
-                self._samples[voice] = numpy.concatenate(
-                        (self._samples[voice], current_chunk))
+                self._samples[voice] = bytearray().join((self._samples[voice], current_chunk))
 
     def _get_next_chunk(self, in_data, length, time_info, status):
         """Callback function to generate the next chunk to be played."""
-        # this is for 16-bit samples
-        samples = [self._samples[voice][:length] for voice in range(4)]
-        self._samples = [self._samples[voice][length:] for voice in range(4)]
+        # this assumes 8-bit samples
         # if samples have run out, add silence
-        for voice in range(4):
-            if len(samples[voice]) < length:
-                silence = numpy.zeros(length-len(samples[voice]), numpy.int16)
-                samples[voice] = numpy.concatenate((samples[voice], silence))
-        # mix the samples by averaging
-        # we need the int32 intermediate step, for int16 numpy will average [32767, 32767] to -1
-        mixed = numpy.array(numpy.mean(samples, axis=0, dtype=numpy.int32), dtype=numpy.int16)
-        return mixed.data, pyaudio.paContinue
+        samples = (
+            _samp.rjust(length, b'\0') if len(_samp) < length else _samp[:length]
+            for _samp in self._samples
+        )
+        # mix the samples
+        mixed = bytearray(sum(_b) for _b in zip(*samples))
+        self._samples = [_samp[length:] for _samp in self._samples]
+        return bytes(mixed), pyaudio.paContinue
