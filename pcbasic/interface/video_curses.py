@@ -310,9 +310,7 @@ class VideoCurses(VideoPlugin):
             cursattr |= curses.A_BLINK
         return cursattr
 
-    def set_mode(
-            self, num_pages, canvas_height, canvas_width, text_height, text_width, text_cursor
-        ):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Change screen mode."""
         self.height = text_height
         self.width = text_width
@@ -392,7 +390,7 @@ class VideoCurses(VideoPlugin):
         self.cursor_row, self.cursor_col = row, col
         # cursor attr and width not supported
 
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on
         if cursor_on:

@@ -947,16 +947,14 @@ class VideoSDL2(VideoPlugin):
     ###########################################################################
     # signal handlers
 
-    def set_mode(
-            self, num_pages, canvas_height, canvas_width, text_height, text_width, text_cursor
-        ):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Initialise a given text or graphics mode."""
         # unpack mode info struct
         self._font_height = -(-canvas_height // text_height)
         self._font_width = canvas_width // text_width
         self._num_pages = num_pages
-        self._text_cursor = text_cursor
-        self._blink_enabled = text_cursor
+        self._text_cursor = False
+        self._blink_enabled = False
         # prebuilt glyphs
         # logical size
         size_changed = self._window_sizer.set_canvas_size(
@@ -1016,7 +1014,8 @@ class VideoSDL2(VideoPlugin):
         self._attributes = attributes
         palette_blink_up = [_fore for _fore, _, _, _ in attributes]
         palette_blink_down = [_back if _blink else _fore for _fore, _back, _blink, _ in attributes]
-        self._blink_enabled = palette_blink_up != palette_blink_down or self._text_cursor
+        if palette_blink_up != palette_blink_down:
+            self._blink_enabled = True
         # blink states: 0 light up, 1 light down
         colors_0 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)
@@ -1064,8 +1063,11 @@ class VideoSDL2(VideoPlugin):
         self._canvas_pixels[dst][:] = self._canvas_pixels[src]
         self.busy = True
 
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
+        self._text_cursor = cursor_blinks
+        if cursor_blinks:
+            self._blink_enabled = True
         self._cursor_visible = cursor_on
         self.busy = True
 

@@ -69,6 +69,7 @@ class Cursor(object):
         self._mode = mode
         self._height = mode.font_height
         self._colourmap = colourmap
+        self._visible = False
         # set the cursor position and attribute
         self.move(1, 1, attr, new_width=1)
         # cursor width starts out as single char
@@ -88,7 +89,9 @@ class Cursor(object):
                 signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
             ))
         # show or hide the cursor
-        self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (do_show,)))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SHOW_CURSOR, (do_show, self._mode.is_text_mode)
+        ))
 
     def move(self, new_row, new_column, new_attr=None, new_width=None):
         """Move the cursor and submit."""
@@ -193,7 +196,7 @@ class Cursor(object):
                 signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
             ))
         self._queues.video.put(signals.Event(
-            signals.VIDEO_SHOW_CURSOR, (self._visible,)
+            signals.VIDEO_SHOW_CURSOR, (self._visible, self._mode.is_text_mode)
         ))
 
 

@@ -89,9 +89,7 @@ class VideoPlugin(object):
 
     # signal handlers
 
-    def set_mode(
-            self, num_pages, canvas_height, canvas_width, text_height, text_width, text_cursor
-        ):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Initialise a given text or graphics mode."""
 
     def set_caption_message(self, msg):
@@ -115,7 +113,7 @@ class VideoPlugin(object):
     def copy_page(self, src, dst):
         """Copy source to destination page."""
 
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
 
     def move_cursor(self, row, col, attr, width):

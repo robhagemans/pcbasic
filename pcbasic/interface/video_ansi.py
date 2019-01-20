@@ -152,9 +152,7 @@ class VideoANSI(video_cli.VideoTextBase):
         for index, rgb in enumerate(rgb_table):
             console.set_palette_entry(index, *rgb)
 
-    def set_mode(
-            self, num_pages, canvas_height, canvas_width, text_height, text_width, text_cursor
-        ):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Change screen mode."""
         self._height = text_height
         self._width = text_width
@@ -220,7 +218,7 @@ class VideoANSI(video_cli.VideoTextBase):
             self._cursor_attr = attr
             console.set_cursor_colour(self.default_colours[attr%16])
 
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
         self._cursor_visible = cursor_on
         if self._vpagenum != self._apagenum:

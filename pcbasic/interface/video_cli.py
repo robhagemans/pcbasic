@@ -271,9 +271,7 @@ class VideoCLI(VideoTextBase):
                 self._text[self._apagenum][from_line-1:scroll_height-1]
             )
 
-    def set_mode(
-            self, num_pages, canvas_height, canvas_width, text_height, text_width, text_cursor
-        ):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Initialise video mode """
         self._text = [
                 [[u' '] * text_width for _ in range(text_height)]

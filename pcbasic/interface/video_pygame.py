@@ -471,16 +471,14 @@ class VideoPygame(VideoPlugin):
     # signal handlers
 
     def set_mode(
-            self, num_pages, canvas_height, canvas_width, text_height, text_width, text_cursor
+            self, num_pages, canvas_height, canvas_width, text_height, text_width
         ):
         """Initialise a given text or graphics mode."""
-        self.text_cursor = text_cursor
+        self.mode_has_blink = False
         # unpack mode info struct
         self.font_height = -(-canvas_height // text_height)
         self.font_width = canvas_width // text_width
         self.num_pages = num_pages
-        # this assumes only text modes have blink
-        self.mode_has_blink = text_cursor
         # logical size
         self.size = canvas_width, canvas_height
         self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
@@ -550,9 +548,12 @@ class VideoPygame(VideoPlugin):
         self.canvas[dst].blit(self.canvas[src], (0, 0))
         self.busy = True
 
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on
+        self.text_cursor = cursor_blinks
+        if cursor_blinks:
+            self.mode_has_blink = True
         self.busy = True
 
     def move_cursor(self, row, col, attr, width):
