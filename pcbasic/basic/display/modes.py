@@ -269,6 +269,7 @@ class VideoMode(object):
             return self.name == rhs
 
 
+
 ##############################################################################
 # text modes
 

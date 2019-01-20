@@ -12,11 +12,6 @@ from ..base import error
 from .. import values
 
 
-# quirky treatment of shape parameters
-EGA_CURSOR_SHAPE_QUIRKS = (
-    'ega', 'mda', 'ega_mono', 'ega_64k', 'vga', 'olivetti', 'hercules'
-)
-
 #######################################################################################
 # function key macro guide
 
@@ -50,14 +45,11 @@ class BottomBar(object):
 class Cursor(object):
     """Manage the cursor."""
 
-    def __init__(self, queues, mode, capabilities):
+    def __init__(self, queues, mode):
         """Initialise the cursor."""
         self._queues = queues
         self._mode = mode
         self._colourmap = None
-        # odd treatment of textmode cursor shape on EGA machines
-        # do all text modes with >8 pixels have shape quirks?
-        self._ega_quirks = capabilities in EGA_CURSOR_SHAPE_QUIRKS
         # are we in parse mode? invisible unless visible_run is True
         self._default_visible = True
         # cursor visible in parse mode? user override
@@ -150,15 +142,12 @@ class Cursor(object):
 
     def set_shape(self, from_line, to_line):
         """Set the cursor shape."""
-        # A block from from_line to to_line in 8-line modes.
-        # Use compatibility algo in higher resolutions
-        fx, fy = self._width, self._height
-        # odd treatment of cursors on EGA machines,
+        # odd treatment of cursors on EGA/VGA machines (14-pixel and up),
         # presumably for backward compatibility
         # the following algorithm is based on DOSBox source int10_char.cpp
         #     INT10_SetCursorShape(Bit8u first,Bit8u last)
-        if self._ega_quirks:
-            max_line = fy - 1
+        if self._height > 9:
+            max_line = self._height - 1
             if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
                 if (to_line < from_line):
                     # invisible only if to_line is zero and to_line < from_line
@@ -179,8 +168,8 @@ class Cursor(object):
                             if max_line > 0xc:
                                 from_line -= 1
                                 to_line -= 1
-        self._from_line = max(0, min(from_line, fy-1))
-        self._to_line = max(0, min(to_line, fy-1))
+        self._from_line = max(0, min(from_line, self._height-1))
+        self._to_line = max(0, min(to_line, self._height-1))
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line))
         )

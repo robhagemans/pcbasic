@@ -33,7 +33,7 @@ class TextScreen(object):
         # sound output needed for printing \a
         self.sound = sound
         # cursor
-        self.cursor = Cursor(queues, mode, capabilities)
+        self.cursor = Cursor(queues, mode)
         # current row and column
         # overflow: true if we're on 80 but should be on 81
         self.current_row, self.current_col, self.overflow = 1, 1, False
