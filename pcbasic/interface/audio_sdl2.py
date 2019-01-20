@@ -17,11 +17,6 @@ try:
 except ImportError:
     sdl2 = None
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser
@@ -31,7 +26,7 @@ from . import synthesiser
 # one wavelength at 37 Hz is 1192 samples at 44100 Hz
 CHUNK_LENGTH = 1192 * 4
 # length of chunks to be consumed by callback
-CALLBACK_CHUNK_LENGTH = 2048
+CALLBACK_CHUNK_LENGTH = 1024
 # number of samples below which to replenish the buffer
 MIN_SAMPLES_BUFFER = 2*CALLBACK_CHUNK_LENGTH
 
@@ -47,19 +42,17 @@ class AudioSDL2(AudioPlugin):
         """Initialise sound system."""
         if not sdl2:
             raise InitFailed('Module `sdl2` not found')
-        if not numpy:
-            raise InitFailed('Module `numpy` module not found')
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
         self.generators = [deque(), deque(), deque(), deque()]
         # buffer of samples; drained by callback, replenished by _play_sound
-        self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
+        self.samples = [bytearray() for _ in range(4)]
         # SDL AudioDevice and specifications
         self.audiospec = sdl2.SDL_AudioSpec(0, 0, 0, 0)
         self.audiospec.freq = synthesiser.SAMPLE_RATE
         # samples are 16-bit signed ints
-        self.audiospec.format = sdl2.AUDIO_S16SYS
+        self.audiospec.format = sdl2.AUDIO_U8
         self.audiospec.channels = 1
         self.audiospec.samples = CALLBACK_CHUNK_LENGTH
         self.audiospec.callback = sdl2.SDL_AudioCallback(self._get_next_chunk)
@@ -99,7 +92,7 @@ class AudioSDL2(AudioPlugin):
             while self.generators[voice]:
                 self.generators[voice].popleft()
         sdl2.SDL_LockAudioDevice(self.dev)
-        self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
+        self.samples = [bytearray() for _ in range(4)]
         sdl2.SDL_UnlockAudioDevice(self.dev)
 
     def _work(self):
@@ -126,24 +119,22 @@ class AudioSDL2(AudioPlugin):
                 # append chunk to samples list
                 # lock to ensure callback doesn't try to access the list too
                 sdl2.SDL_LockAudioDevice(self.dev)
-                self.samples[voice] = numpy.concatenate((self.samples[voice], current_chunk))
+                self.samples[voice] = bytearray().join((self.samples[voice], current_chunk))
                 sdl2.SDL_UnlockAudioDevice(self.dev)
 
     def _get_next_chunk(self, notused, stream, length_bytes):
         """Callback function to generate the next chunk to be played."""
-        # this is for 16-bit samples
-        length = length_bytes // 2
+        length = length_bytes
         samples = [self.samples[voice][:length] for voice in range(4)]
         self.samples = [self.samples[voice][length:] for voice in range(4)]
         # if samples have run out, add silence
-        for voice in range(4):
-            if len(samples[voice]) < length:
-                silence = numpy.zeros(length-len(samples[voice]), numpy.int16)
-                samples[voice] = numpy.concatenate((samples[voice], silence))
+        samples = [
+            _samp.rjust(length, b'\0') if len(_samp) < length else _samp
+            for _samp in samples
+        ]
         # mix the samples by averaging
-        # we need the int32 intermediate step, for int16 numpy will average [32767, 32767] to -1
         mixed = bytearray(
-            numpy.array(numpy.mean(samples, axis=0, dtype=numpy.int32), dtype=numpy.int16).data
+            sum(_b) // 4 for _b in zip(*samples)
         )
         ctypes.memmove(
             stream, (ctypes.c_char * length_bytes).from_buffer(mixed[:length_bytes]), length_bytes

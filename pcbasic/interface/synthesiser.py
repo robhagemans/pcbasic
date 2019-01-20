@@ -8,14 +8,11 @@ This file is released under the GNU GPL version 3 or later.
 
 from math import ceil
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
+from ..compat import xrange
 
 
 # sample rate and bit depth
-SAMPLE_BITS = 16
+SAMPLE_BITS = 8
 SAMPLE_RATE = 44100
 
 # initial condition - see dosbox source
@@ -33,10 +30,7 @@ MAX_AMPLITUDE = (1 << (SAMPLE_BITS-1)) - 1
 # 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2
 STEP_FACTOR = 10 ** (-2./20.)
 # geometric list of amplitudes for volume values
-if numpy:
-    AMPLITUDE = numpy.int16(MAX_AMPLITUDE * (STEP_FACTOR**numpy.arange(15, -1, -1)))
-else:
-    AMPLITUDE = [0]*16
+AMPLITUDE = [int(MAX_AMPLITUDE * STEP_FACTOR**_power) for _power in range(15, -1, -1)]
 # zero volume means silent
 AMPLITUDE[0] = 0
 
@@ -91,7 +85,7 @@ class SoundGenerator(object):
             self.frequency = 0
         # work on last element of sound queue
         if self.frequency == 0:
-            chunk = numpy.zeros(length, numpy.int16)
+            chunk = bytearray(length)
         else:
             half_wavelength = SAMPLE_RATE / (2.*self.frequency)
             # resolution for averaging
@@ -100,30 +94,32 @@ class SoundGenerator(object):
             if self.signal_source.phase:
                 bit = -self.amplitude if self.signal_source.bit else self.amplitude
                 first_length = int(half_wavelength * self.signal_source.phase)
-                matrix = numpy.repeat(numpy.array([bit], numpy.int16), first_length * resolution)
+                matrix = bytearray([bit]) * first_length * resolution
                 length -= first_length
                 self.signal_source.phase = 0.
             else:
-                matrix = numpy.array([], numpy.int16)
+                matrix = bytearray()
             num_half_waves = int(ceil(length / half_wavelength))
             # generate bits
             bits = [
-                -self.amplitude if self.signal_source.next() else self.amplitude
+                self.amplitude if self.signal_source.next() else 0
                 for _ in range(num_half_waves)
             ]
             # do sampling by averaging the signal over bins of given resolution
-            # this allows to use numpy all the way
+            # this allows to use vectors all the way
             # which is *much* faster than looping over an array
             # stretch array by half_wavelength * resolution
-            matrix = numpy.append(
-                matrix,
-                numpy.repeat(numpy.array(bits, numpy.int16), int(half_wavelength * resolution))
-            )
+            stretch = int(half_wavelength * resolution)
+            waves = bytearray().join(bytearray([_b]) * stretch for _b in bits)
+            matrix = bytearray().join((matrix, waves))
             # cut off on round number of resolution blocks
-            matrix = matrix[:len(matrix)-(len(matrix)%resolution)]
+            if matrix:
+                matrix = matrix[:len(matrix)-(len(matrix) % resolution)]
             # average over blocks
-            matrix = matrix.reshape((len(matrix)//resolution, resolution))
-            chunk = numpy.int16(numpy.mean(matrix, axis=1))
+            chunk = bytearray(
+                sum(matrix[_i:_i+resolution]) // resolution
+                for _i in xrange(0, len(matrix), resolution)
+            )
         if not self.loop:
             # last chunk is shorter
             if self.count_samples + len(chunk) < self.num_samples:
