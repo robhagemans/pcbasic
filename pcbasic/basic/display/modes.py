@@ -210,6 +210,7 @@ class VideoMode(object):
     """Base class for video modes."""
 
     is_text_mode = None
+    is_cga_hires = False
 
     def __init__(
             self, name, height, width, font_height, font_width, attr, cursor, colourmap
@@ -308,7 +309,7 @@ class GraphicsMode(VideoMode):
     def __init__(
             self, name, width, height, rows, columns,
             attr, bitsperpixel, interleave_times, bank_size, video_mem_size, max_pages,
-            cursor_attr, colourmap,
+            cursor_attr, colourmap, is_cga_hires=False
         ):
         """Initialise video mode settings."""
         font_width = width // columns
@@ -319,6 +320,7 @@ class GraphicsMode(VideoMode):
         VideoMode.__init__(
             self, name, rows, columns, font_height, font_width, attr, cursor, colourmap
         )
+        self.is_cga_hires = is_cga_hires
         # override pixel dimensions
         self.pixel_height = height
         self.pixel_width = width
@@ -450,7 +452,7 @@ _MODE_INFO = {
         # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
         width=640, height=200, rows=25, columns=80, attr=1, cursor_attr=None,
         bitsperpixel=1, interleave_times=2, bank_size=0x2000, max_pages=1,
-        layout=CGAMode, colourmap=CGA2ColourMapper
+        layout=CGAMode, colourmap=CGA2ColourMapper, is_cga_hires=True
     ),
     '160x200x16': dict(
         # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3

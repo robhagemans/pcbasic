@@ -290,7 +290,7 @@ class Display(object):
             (self.mode.is_text_mode and self.mode.width == 80) * 1 +
             (not self.mode.is_text_mode) * 2 +
             self.colorswitch * 4 + 8 +
-            (self.mode.name == '640x200x2') * 16 +
+            (self.mode.is_cga_hires) * 16 +
             blink_enabled * 32
         )
 
