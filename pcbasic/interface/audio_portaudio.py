@@ -118,7 +118,7 @@ class AudioPortAudio(AudioPlugin):
         # this assumes 8-bit samples
         # if samples have run out, add silence
         samples = (
-            _samp.rjust(length, b'\0') if len(_samp) < length else _samp[:length]
+            _samp.ljust(length, b'\0') if len(_samp) < length else _samp[:length]
             for _samp in self._samples
         )
         # mix the samples

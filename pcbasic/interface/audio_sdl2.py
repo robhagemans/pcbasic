@@ -126,7 +126,7 @@ class AudioSDL2(AudioPlugin):
         # this assumes 8-bit samples
         # if samples have run out, add silence
         samples = (
-            _samp.rjust(length_bytes, b'\0') if len(_samp) < length_bytes else _samp[:length_bytes]
+            _samp.ljust(length_bytes, b'\0') if len(_samp) < length_bytes else _samp[:length_bytes]
             for _samp in self._samples
         )
         # mix the samples
