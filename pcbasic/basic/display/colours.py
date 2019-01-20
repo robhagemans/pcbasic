@@ -299,6 +299,12 @@ class _ColourMapper(object):
         # set attr, don't change border
         return fore, None
 
+    # memory access
+
+    def get_colour_info_byte(self):
+        """Helper for PEEK(1126)."""
+        return -1
+
 
 class _TextColourMixin(object):
     """Translate text attributes to palette attributes."""
@@ -569,6 +575,10 @@ class CGA4ColourMapper(_CGAColourMapper):
         else:
             self.set_entry(0, back & 0xf, force=True)
         return None, None
+
+    def get_colour_info_byte(self):
+        """Helper for PEEK(1126)."""
+        return self.get_entry(0) + 32 * self.get_cga4_palette()
 
 
 class Tandy4ColourMapper(_ColourMapper):

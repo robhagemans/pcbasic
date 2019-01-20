@@ -296,15 +296,12 @@ class Display(object):
 
     def get_colour_info_byte(self):
         """Colour info byte in low memory address 1126."""
-        if self.mode.name == '320x200x4':
-            return (
-                self.colourmap.get_entry(0)
-                + 32 * self.colourmap.get_cga4_palette()
-            )
-        elif self.mode.is_text_mode:
+        if self.mode.is_text_mode:
             return self.get_border_attr()
             # not implemented: + 16 "if current color specified through
             # COLOR f,b with f in [0,15] and b > 7
+        else:
+            self.colourmap.get_colour_info_byte()
 
     @property
     def memory_font(self):
