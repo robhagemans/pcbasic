@@ -30,6 +30,8 @@ _CHUNK_LENGTH = 1192 * 4
 _CALLBACK_CHUNK_LENGTH = 2048
 # number of samples below which to replenish the buffer
 _MIN_SAMPLES_BUFFER = 2 * _CALLBACK_CHUNK_LENGTH
+# pause audio device after given number of ticks without sound
+_QUIET_QUIT = 1000
 
 
 @audio_plugins.register('sdl2')
@@ -49,6 +51,7 @@ class AudioSDL2(AudioPlugin):
         self._next_tone = [None for _ in synthesiser.VOICES]
         self._device = None
         self._audiospec = None
+        self._quiet_ticks = 0
         AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
@@ -63,9 +66,6 @@ class AudioSDL2(AudioPlugin):
         self._device = sdl2.SDL_OpenAudioDevice(None, False, audiospec, None, 0)
         if self._device == 0:
             logging.warning('Could not open audio device: %s', sdl2.SDL_GetError())
-        else:
-            # unpause the audio device
-            sdl2.SDL_PauseAudioDevice(self._device, 0)
         # prevent audiospec from being garbage collected as it goes out of scope
         self._audiospec = audiospec
         return AudioPlugin.__enter__(self)
@@ -96,6 +96,14 @@ class AudioSDL2(AudioPlugin):
 
     def _work(self):
         """Replenish sample buffer."""
+        if not any(self._generators) and not any(self._next_tone):
+            self._quiet_ticks += 1
+            if self._quiet_ticks >= _QUIET_QUIT:
+                sdl2.SDL_PauseAudioDevice(self._device, 1)
+            return
+        else:
+            self._quiet_ticks = 0
+            sdl2.SDL_PauseAudioDevice(self._device, 0)
         for voice in synthesiser.VOICES:
             if len(self._samples[voice]) > _MIN_SAMPLES_BUFFER:
                 # nothing to do
@@ -130,7 +138,7 @@ class AudioSDL2(AudioPlugin):
             for _samp in self._samples
         )
         # mix the samples
-        mixed = bytearray((sum(_b) & 0xff) for _b in zip(*samples))
+        mixed = bytearray(sum(_b) & 0xff for _b in zip(*samples))
         self._samples = [_samp[length_bytes:] for _samp in self._samples]
         ctypes.memmove(
             stream, (ctypes.c_char * length_bytes).from_buffer(mixed), length_bytes
