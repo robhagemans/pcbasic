@@ -12,11 +12,6 @@ from ..base import error
 from .. import values
 
 
-EGA_CURSOR_MODES = (
-    'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules'
-)
-
-
 #######################################################################################
 # function key macro guide
 
@@ -50,15 +45,11 @@ class BottomBar(object):
 class Cursor(object):
     """Manage the cursor."""
 
-    def __init__(self, queues, mode, capabilities):
+    def __init__(self, queues, mode):
         """Initialise the cursor."""
         self._queues = queues
         self._mode = mode
-        # odd treatment of cursors on EGA machines
-        self._ega_quirks = capabilities in EGA_CURSOR_MODES
-        # do all text modes with >8 pixels have an ega-cursor?
-        # cursor on the second last line in EGA mode
-        self._ega_cursor = capabilities == 'ega'
+        self._colourmap = None
         # are we in parse mode? invisible unless visible_run is True
         self._default_visible = True
         # cursor visible in parse mode? user override
@@ -71,12 +62,14 @@ class Cursor(object):
         self._width = self._mode.font_width
         self._height = self._mode.font_height
         self._fore_attr = None
-        self._position = 1, 1
+        self._row, self._col = 1, 1
 
-    def init_mode(self, mode, attr):
+    def init_mode(self, mode, attr, colourmap):
         """Change the cursor for a new screen mode."""
         self._mode = mode
         self._height = mode.font_height
+        self._colourmap = colourmap
+        self._visible = False
         # set the cursor position and attribute
         self.move(1, 1, attr, new_width=1)
         # cursor width starts out as single char
@@ -85,25 +78,25 @@ class Cursor(object):
 
     def set_attr(self, new_attr):
         """Set the text cursor attribute and submit."""
-        row, column = self._position
-        self.move(row, column, new_attr, None)
+        self.move(self._row, self._col, new_attr, None)
 
     def show(self, do_show):
         """Force cursor to be visible/invisible."""
         self._visible = do_show
         if do_show:
             # update position and looks
-            row, column = self._position
             self._queues.video.put(signals.Event(
-                signals.VIDEO_MOVE_CURSOR, (row, column, self._fore_attr, self._width)
+                signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
             ))
         # show or hide the cursor
-        self._queues.video.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (do_show,)))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SHOW_CURSOR, (do_show, self._mode.is_text_mode)
+        ))
 
     def move(self, new_row, new_column, new_attr=None, new_width=None):
         """Move the cursor and submit."""
         if new_attr:
-            fore, _, _, _ = self._mode.split_attr(new_attr)
+            fore, _, _, _ = self._colourmap.split_attr(new_attr)
         else:
             fore = self._fore_attr
         if not new_width:
@@ -111,17 +104,19 @@ class Cursor(object):
         else:
             new_width = new_width * self._mode.font_width
         if (
-                (new_row, new_column) == self._position
+                (new_row, new_column) == (self._row, self._col)
                 and fore == self._fore_attr and new_width == self._width
             ):
             return
-        self._position = new_row, new_column
-        self._fore_attr = fore
-        self._width = new_width
-        if self._visible:
+        # only submit move signal if visible (so that we see it in the right place)
+        # or if the row changes (so that row-based cli interface can keep up with current row
+        if self._visible or new_row != self._row:
             self._queues.video.put(signals.Event(
                 signals.VIDEO_MOVE_CURSOR, (new_row, new_column, fore, new_width)
             ))
+        self._row, self._col = new_row, new_column
+        self._fore_attr = fore
+        self._width = new_width
 
     def set_visibility(self, visible_run):
         """Set cursor visibility when a program is being run."""
@@ -150,15 +145,12 @@ class Cursor(object):
 
     def set_shape(self, from_line, to_line):
         """Set the cursor shape."""
-        # A block from from_line to to_line in 8-line modes.
-        # Use compatibility algo in higher resolutions
-        fx, fy = self._width, self._height
-        # odd treatment of cursors on EGA machines,
+        # odd treatment of cursors on EGA/VGA machines (14-pixel and up),
         # presumably for backward compatibility
         # the following algorithm is based on DOSBox source int10_char.cpp
         #     INT10_SetCursorShape(Bit8u first,Bit8u last)
-        if self._ega_quirks:
-            max_line = fy - 1
+        if self._height > 9:
+            max_line = self._height - 1
             if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
                 if (to_line < from_line):
                     # invisible only if to_line is zero and to_line < from_line
@@ -179,8 +171,8 @@ class Cursor(object):
                             if max_line > 0xc:
                                 from_line -= 1
                                 to_line -= 1
-        self._from_line = max(0, min(from_line, fy-1))
-        self._to_line = max(0, min(to_line, fy-1))
+        self._from_line = max(0, min(from_line, self._height-1))
+        self._to_line = max(0, min(to_line, self._height-1))
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line))
         )
@@ -188,18 +180,8 @@ class Cursor(object):
     def set_default_shape(self, overwrite_shape):
         """Set the cursor to one of two default shapes."""
         if overwrite_shape:
-            if not self._mode.is_text_mode:
-                # always a block cursor in graphics mode
-                self.set_shape(0, self._height-1)
-            elif self._ega_cursor:
-                # EGA cursor is on second last line
-                self.set_shape(self._height-2, self._height-2)
-            elif self._height == 9:
-                # Tandy 9-pixel fonts; cursor on 8th
-                self.set_shape(self._height-2, self._height-2)
-            else:
-                # other cards have cursor on last line
-                self.set_shape(self._height-1, self._height-1)
+            # most modes have cursor on last line
+            self.set_shape(*self._mode.cursor)
         else:
             # half-block cursor for insert
             self.set_shape(self._height//2, self._height-1)
@@ -210,12 +192,11 @@ class Cursor(object):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line)
             ))
-            row, column = self._position
             self._queues.video.put(signals.Event(
-                signals.VIDEO_MOVE_CURSOR, (row, column, self._fore_attr, self._width)
+                signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
             ))
         self._queues.video.put(signals.Event(
-            signals.VIDEO_SHOW_CURSOR, (self._visible,)
+            signals.VIDEO_SHOW_CURSOR, (self._visible, self._mode.is_text_mode)
         ))
 
 

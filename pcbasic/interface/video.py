@@ -89,7 +89,7 @@ class VideoPlugin(object):
 
     # signal handlers
 
-    def set_mode(self, mode_info):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Initialise a given text or graphics mode."""
 
     def set_caption_message(self, msg):
@@ -98,7 +98,7 @@ class VideoPlugin(object):
     def set_clipboard_text(self, text):
         """Put text on the clipboard."""
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
+    def set_palette(self, attributes, pack_pixels):
         """Build the palette."""
 
     def set_border_attr(self, attr):
@@ -113,7 +113,7 @@ class VideoPlugin(object):
     def copy_page(self, src, dst):
         """Copy source to destination page."""
 
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
 
     def move_cursor(self, row, col, attr, width):
@@ -122,7 +122,7 @@ class VideoPlugin(object):
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height. direction 1 is down, -1 up."""
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
 
     def set_cursor_shape(self, from_line, to_line):

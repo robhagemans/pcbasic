@@ -645,7 +645,7 @@
             </dl>
             On
             <code><a href="#SCREEN-statement">SCREEN</a> 2</code> with
-            <code><b><a href="#--video">--video</a>=</b>{<b>pcjr</b>|<b>tandy</b>|<b>cga</b>|<b>cga_old</b>}</code>,
+            <code><b><a href="#--video">--video</a>=</b>{<b>pcjr</b>|<b>tandy</b>|<b>cga</b>}</code>,
             <code><b>--monitor=composite</b></code> enables (crude) colour artifacts.
         </dd>
 
@@ -926,7 +926,7 @@
         </dd>
 
         <dt id="--video">
-            <code><b>--video=</b><var>adapter</var>[<b>:low</b>]</code>
+            <code><b>--video=</b><var>adapter</var></code>
         </dt>
         <dd>
             Set the video adapter to emulate. Available adapters:
@@ -939,9 +939,6 @@
 
                 <dt><code><b>cga</b></code></dt>
                 <dd>Color/Graphics Adapter</dd>
-
-                <dt><code><b>cga_old</b></code></dt>
-                <dd>Color/Graphics Adapter (old version; affects composite)</dd>
 
                 <dt><code><b>mda</b></code></dt>
                 <dd>Monochrome Display Adapter</dd>
@@ -960,8 +957,6 @@
             </dl>
             Default is <code><b>vga</b></code>.
             <br />
-            If the specifier <code><b>low</b></code> is given, use low-intensity palettes in CGA modes.
-            This only has an effect with adapters <code>{<b>cga</b>|<b>cga_old</b>|<b>ega</b>|<b>vga</b>}</code>.
         </dd>
 
         <dt id="--video-memory">

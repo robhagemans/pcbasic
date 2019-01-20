@@ -57,7 +57,6 @@ class VideoPygame(VideoPlugin):
         """Initialise pygame interface."""
         logging.warning('The PyGame interface is deprecated, use the SDL2 interface instead.')
         VideoPlugin.__init__(self, input_queue, video_queue)
-
         # request smooth scaling
         self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
@@ -115,6 +114,7 @@ class VideoPygame(VideoPlugin):
         self.last_col = 1
         # cursor is visible
         self.cursor_visible = True
+        self.cursor_attr = 7
         # buffer for text under cursor
         self.under_top_left = None
         # fonts
@@ -147,7 +147,7 @@ class VideoPygame(VideoPlugin):
             pygame.display.set_caption(self.caption)
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
-        self.set_palette([(0,0,0)]*16, None, None)
+        self.set_palette([((0,0,0), (0,0,0), False, False)]*16, None)
         pygame.joystick.init()
         self.joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
         for j in self.joysticks:
@@ -431,7 +431,7 @@ class VideoPygame(VideoPlugin):
             (self.cursor_col-1) * self.font_width, (self.cursor_row-1) * self.font_height,
             self.cursor_width, self.font_height
         )
-        if self.text_mode:
+        if self.text_cursor:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
             if self._cycle // BLINK_CYCLES in (1, 3):
                 screen.blit(
@@ -470,16 +470,17 @@ class VideoPygame(VideoPlugin):
     ###########################################################################
     # signal handlers
 
-    def set_mode(self, mode_info):
+    def set_mode(
+            self, num_pages, canvas_height, canvas_width, text_height, text_width
+        ):
         """Initialise a given text or graphics mode."""
-        self.text_mode = mode_info.is_text_mode
+        self.mode_has_blink = False
         # unpack mode info struct
-        self.font_height = mode_info.font_height
-        self.font_width = mode_info.font_width
-        self.num_pages = mode_info.num_pages
-        self.mode_has_blink = mode_info.has_blink
+        self.font_height = -(-canvas_height // text_height)
+        self.font_width = canvas_width // text_width
+        self.num_pages = num_pages
         # logical size
-        self.size = (mode_info.pixel_width, mode_info.pixel_height)
+        self.size = canvas_width, canvas_height
         self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
         self._resize_display()
         # set standard cursor
@@ -495,7 +496,7 @@ class VideoPygame(VideoPlugin):
         # initialise clipboard
         self.clipboard = clipboard.ClipboardInterface(
             self.clipboard_handler, self._input_queue,
-            mode_info.width, mode_info.height, self.font_width, self.font_height, self.size
+            text_width, text_height, self.font_width, self.font_height, self.size
         )
         self.busy = True
         self._has_window = True
@@ -509,21 +510,17 @@ class VideoPygame(VideoPlugin):
         """Put text on the clipboard."""
         self.clipboard_handler.copy(text)
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
+    def set_palette(self, attributes, pack_pixels):
         """Build the palette."""
-        self.num_fore_attrs = min(16, len(rgb_palette_0))
-        self.num_back_attrs = min(8, self.num_fore_attrs)
-        rgb_palette_1 = rgb_palette_1 or rgb_palette_0
+        self.num_fore_attrs = 16
+        self.num_back_attrs = 8
         # fill up the 8-bit palette with all combinations we need
         # blink states: 0 light up, 1 light down
         # bottom 128 are non-blink, top 128 blink to background
-        self._palette[0] = rgb_palette_0[:self.num_fore_attrs] * (256//self.num_fore_attrs)
-        self._palette[1] = rgb_palette_1[:self.num_fore_attrs] * (128//self.num_fore_attrs)
-        for b in (
-                rgb_palette_1[:self.num_back_attrs] *
-                (128 // self.num_fore_attrs // self.num_back_attrs)
-            ):
-            self._palette[1] += [b]*self.num_fore_attrs
+        self._palette[0] = [_fore for _fore, _, _, _ in attributes]
+        self._palette[1] = [_back if _blink else _fore for _fore, _back, _blink, _ in attributes]
+        if self._palette[0] != self._palette[1]:
+            self.mode_has_blink = True
         self._pixel_packing = pack_pixels
         self.busy = True
 
@@ -551,9 +548,12 @@ class VideoPygame(VideoPlugin):
         self.canvas[dst].blit(self.canvas[src], (0, 0))
         self.busy = True
 
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on
+        self.text_cursor = cursor_blinks
+        if cursor_blinks:
+            self.mode_has_blink = True
         self.busy = True
 
     def move_cursor(self, row, col, attr, width):
@@ -561,11 +561,12 @@ class VideoPygame(VideoPlugin):
         self.cursor_row, self.cursor_col = row, col
         # set attribute
         self.cursor_attr = attr % self.num_fore_attrs
-        self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
         # set width
         if width != self.cursor_width:
             self.cursor_width = width
             self._rebuild_cursor()
+        else:
+            self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
@@ -584,24 +585,6 @@ class VideoPygame(VideoPlugin):
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
-        """Put text at a given position."""
-        if not self.text_mode:
-            # in graphics mode, a put_rect call does the actual drawing
-            return
-        color = (0, 0, fore + self.num_fore_attrs*back + 128*blink)
-        bg = (0, 0, back)
-        x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
-        glyphs = glyph_to_surface(glyphs._rows)
-        if glyphs.get_palette_at(0) != bg:
-            glyphs.set_palette_at(0, bg)
-        if glyphs.get_palette_at(1) != color:
-            glyphs.set_palette_at(1, color)
-        self.canvas[pagenum].blit(glyphs, (x0, y0))
-        if underline:
-            self.canvas[pagenum].fill(color, (x0, y0 + self.font_height - 1, self.font_width, 1))
-        self.busy = True
-
     def set_cursor_shape(self, from_line, to_line):
         """Build a sprite for the cursor."""
         self.cursor_from, self.cursor_to = from_line, to_line
@@ -617,11 +600,22 @@ class VideoPygame(VideoPlugin):
         self.cursor.set_colorkey(bg)
         self.cursor.fill(bg)
         self.cursor.fill(color, (0, from_line, width, min(to_line-from_line+1, height-from_line)))
+        self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
         self.busy = True
+
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
+        """Put text at a given position."""
+        if not glyphs:
+            return
+        x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
+        self.put_rect(pagenum, x0, y0, glyphs)
 
     def put_rect(self, pagenum, x0, y0, array):
         """Apply numpy array [y][x] of attribytes to an area."""
         array = numpy.array(array._rows)
+        height, width = array.shape
+        if y0 + height > self.size[1] or x0 + width > self.size[0]:
+            array = array[:self.size[1]-y0, :self.size[0]-x0]
         height, width = array.shape
         # reference the destination area
         pygame.surfarray.pixels2d(

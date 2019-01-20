@@ -9,13 +9,12 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 from contextlib import contextmanager
 
-from ...compat import iterchar, iteritems, int2byte
+from ...compat import iterchar, int2byte
 
 from ..base import signals
 from ..base import error
 from ..base import tokens as tk
 from .. import values
-from . import font
 from .text import TextBuffer, TextRow
 from .textbase import BottomBar, Cursor, ScrollArea
 
@@ -23,18 +22,18 @@ from .textbase import BottomBar, Cursor, ScrollArea
 class TextScreen(object):
     """Text screen."""
 
-    def __init__(self, queues, values, mode, capabilities, fonts, codepage, io_streams, sound):
+    def __init__(self, queues, values, mode, capabilities, codepage, io_streams, sound):
         """Initialise text-related members."""
         self.queues = queues
         self._values = values
         self.codepage = codepage
-        self.capabilities = capabilities
+        self._tandytext = capabilities in ('pcjr', 'tandy')
         # output redirection
         self._io_streams = io_streams
         # sound output needed for printing \a
         self.sound = sound
         # cursor
-        self.cursor = Cursor(queues, mode, capabilities)
+        self.cursor = Cursor(queues, mode)
         # current row and column
         # overflow: true if we're on 80 but should be on 81
         self.current_row, self.current_col, self.overflow = 1, 1, False
@@ -42,24 +41,17 @@ class TextScreen(object):
         self.scroll_area = ScrollArea(mode)
         # writing on bottom row is allowed
         self._bottom_row_allowed = False
-        # prepare fonts
-        if not fonts:
-            fonts = {8: {}}
-        self.fonts = {
-            height: font.Font(height, font_dict)
-            for height, font_dict in iteritems(fonts)
-        }
         # function key macros
         self._bottom_bar = BottomBar()
 
-    def init_mode(self, mode, pixels, attr, vpagenum, apagenum):
+    def init_mode(self, mode, pixels, attr, vpagenum, apagenum, font, colourmap):
         """Reset the text screen for new video mode."""
         self.mode = mode
         self.attr = attr
         self.apagenum = apagenum
         self.vpagenum = vpagenum
-        # get glyph cache and initialise for this mode's font width (8 or 9 pixels)
-        self._glyphs = self.fonts[self.mode.font_height].init_mode(self.mode.font_width)
+        self._glyphs = font
+        self._colourmap = colourmap
         # build the screen buffer
         self.text = TextBuffer(
             self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
@@ -71,12 +63,16 @@ class TextScreen(object):
         self.redraw_bar()
         # initialise text viewport & move cursor home
         self.scroll_area.init_mode(self.mode)
-        self.set_pos(self.scroll_area.top, 1)
         # rebuild the cursor
-        if not mode.is_text_mode and mode.cursor_index:
-            self.cursor.init_mode(self.mode, mode.cursor_index)
+        if not mode.is_text_mode and mode.cursor_attr:
+            self.cursor.init_mode(self.mode, mode.cursor_attr, colourmap)
         else:
-            self.cursor.init_mode(self.mode, self.attr)
+            self.cursor.init_mode(self.mode, self.attr, colourmap)
+        self.set_pos(self.scroll_area.top, 1)
+
+    def __repr__(self):
+        """Return an ascii representation of the screen buffer (for debugging)."""
+        return repr(self.text)
 
     def set_page(self, vpagenum, apagenum):
         """Set visible and active page."""
@@ -87,18 +83,14 @@ class TextScreen(object):
         """Set attribute."""
         self.attr = attr
 
-    def check_font_available(self, mode):
-        """Raise IFC if no suitable font available for this mode."""
-        if mode.font_height not in self.fonts:
-            logging.warning(
-                'No %d-pixel font available. Could not enter video mode %s.',
-                mode.font_height, mode.name
-            )
-            raise error.BASICError(error.IFC)
-
-    def __repr__(self):
-        """Return an ascii representation of the screen buffer (for debugging)."""
-        return repr(self.text)
+    def set_height(self, to_height):
+        """Try to change the number of rows."""
+        # number != 25 is ignored on tandy, error elsewhere
+        # otherwise nothing happens
+        if self._tandytext:
+            error.range_check(0, 25, to_height)
+        else:
+            error.range_check(25, 25, to_height)
 
     ##########################################################################
 
@@ -360,27 +352,21 @@ class TextScreen(object):
         if row < 1 or col < 1 or row > self.mode.height or col > self.mode.width:
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
             return
-        fore, back, blink, underline = self.mode.split_attr(attr)
+        _, back, _, underline = self._colourmap.split_attr(attr)
         # mark full-width chars by a trailing empty string to preserve column counts
-        text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
-        text = [self.codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
-        glyphs = self._glyphs.get_glyphs(chars)
-        self.queues.video.put(signals.Event(
-            signals.VIDEO_PUT_TEXT, (
-                pagenum, row, col, text,
-                fore, back, blink, underline,
-                glyphs
-            )
-        ))
+        sprite = self._glyphs.render_text(chars, attr, back, underline)
         if not self.mode.is_text_mode and not text_only:
             left, top = self.mode.text_to_pixel_pos(row, col)
-            sprite = self._glyphs.render_text(chars, fore, back)
             width, height = sprite.width, sprite.height
-            right, bottom = left+width-1, top+height-1
+            right, bottom = left + width - 1, top + height - 1
             self.pixels.pages[self.apagenum].put_rect(left, top, right, bottom, sprite, tk.PSET)
-            self.queues.video.put(signals.Event(
-                signals.VIDEO_PUT_RECT, (self.apagenum, left, top, sprite)
-            ))
+        if text_only:
+            sprite = None
+        text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
+        text = [self.codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_PUT_TEXT, (pagenum, row, col, text, attr, sprite)
+        ))
 
     def _clear_rows_refresh(self, start, stop):
         """Clear row range to pixels and interface."""
@@ -388,7 +374,7 @@ class TextScreen(object):
             x0, y0, x1, y1 = self.mode.text_to_pixel_area(start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
             self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
-        _, back, _, _ = self.mode.split_attr(self.attr)
+        _, back, _, _ = self._colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
     ###########################################################################
@@ -413,8 +399,8 @@ class TextScreen(object):
 
     @contextmanager
     def _modify_attr_on_clear(self):
-        """On some adapters, modify current attributes when clearing the scroll area."""
-        if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
+        """On some adapters, modify character attributes when clearing the scroll area."""
+        if not self._tandytext:
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
@@ -430,7 +416,7 @@ class TextScreen(object):
         """Scroll the scroll region up by one line, starting at from_line."""
         if from_line is None:
             from_line = self.scroll_area.top
-        _, back, _, _ = self.mode.split_attr(self.attr)
+        _, back, _, _ = self._colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(
             signals.VIDEO_SCROLL, (-1, from_line, self.scroll_area.bottom, back)
         ))
@@ -449,7 +435,7 @@ class TextScreen(object):
 
     def scroll_down(self, from_line):
         """Scroll the scroll region down by one line, starting at from_line."""
-        _, back, _, _ = self.mode.split_attr(self.attr)
+        _, back, _, _ = self._colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(
             signals.VIDEO_SCROLL, (1, from_line, self.scroll_area.bottom, back)
         ))
@@ -720,7 +706,7 @@ class TextScreen(object):
             self._bottom_row_allowed = True
         self.set_pos(row, col, scroll_ok=False)
         if cursor is not None:
-            error.range_check(0, (255 if self.capabilities in ('pcjr', 'tandy') else 1), cursor)
+            error.range_check(0, (255 if self._tandytext else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes
             self.cursor.set_visibility(cursor != 0)
         error.throw_if(start is None and stop is not None)
@@ -788,7 +774,7 @@ class TextScreen(object):
         if start is None and stop is None:
             self.scroll_area.unset()
         else:
-            if self.capabilities in ('pcjr', 'tandy') and not self._bottom_bar.visible:
+            if self._tandytext and not self._bottom_bar.visible:
                 max_line = 25
             else:
                 max_line = 24

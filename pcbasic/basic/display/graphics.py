@@ -90,7 +90,7 @@ class GraphicsViewPort(object):
 class Drawing(object):
     """Graphical drawing operations."""
 
-    def __init__(self, queues, input_methods, values, memory):
+    def __init__(self, queues, input_methods, values, memory, aspect):
         """Initialise graphics object."""
         # for apagenum and attr
         self._queues = queues
@@ -108,12 +108,15 @@ class Drawing(object):
         self._last_attr = None
         self._draw_scale = None
         self._draw_angle = None
+        # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
+        self._screen_aspect = aspect
 
-    def init_mode(self, mode, text, pixels):
+    def init_mode(self, mode, text, pixels, num_attr):
         """Initialise for new graphics mode."""
         self._mode = mode
         self._text = text
         self._pixels = pixels
+        self._num_attr = num_attr
         # set graphics viewport
         self.graph_view = GraphicsViewPort(self._mode.pixel_width, self._mode.pixel_height)
         self.unset_window()
@@ -144,7 +147,7 @@ class Drawing(object):
             # foreground; graphics 'background' attrib is always 0
             c = self._attr & 0xf
         else:
-            c = min(self._mode.num_attr-1, max(0, c))
+            c = min(self._num_attr-1, max(0, c))
         return c
 
     ### text/graphics interaction
@@ -157,14 +160,17 @@ class Drawing(object):
             self._text.put_char_attr(self._apagenum, row0, col0, b' ', self._attr)
         else:
             self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
-        fore, back, blink, underline = self._mode.split_attr(self._attr)
         for row in range(row0, row1+1):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_PUT_TEXT,
-                (self._apagenum, row, col0, [u' ']*(col1-col0+1), fore, back, blink, underline, None)
+                (self._apagenum, row, col0, [u' ']*(col1-col0+1), self._attr, None)
             ))
 
     ### graphics primitives
+
+    def _cutoff_coord(self, x, y):
+        """Ensure coordinates are within screen + 1 pixel."""
+        return min(self._mode.pixel_width, max(-1, x)), min(self._mode.pixel_height, max(-1, y))
 
     def put_pixel(self, x, y, index, pagenum=None):
         """Put a pixel on the screen; empty character buffer."""
@@ -420,8 +426,8 @@ class Drawing(object):
     def draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
         """Draw a line between the given physical points."""
         # cut off any out-of-bound coordinates
-        x0, y0 = self._mode.cutoff_coord(x0, y0)
-        x1, y1 = self._mode.cutoff_coord(x1, y1)
+        x0, y0 = self._cutoff_coord(x0, y0)
+        x1, y1 = self._cutoff_coord(x1, y1)
         if y1 <= y0:
             # work from top to bottom, or from x1,y1 if at the same height. this matters for mask.
             x1, y1, x0, y0 = x0, y0, x1, y1
@@ -452,8 +458,8 @@ class Drawing(object):
 
     def draw_box_filled(self, x0, y0, x1, y1, c):
         """Draw a filled box between the given corner points."""
-        x0, y0 = self._mode.cutoff_coord(x0, y0)
-        x1, y1 = self._mode.cutoff_coord(x1, y1)
+        x0, y0 = self._cutoff_coord(x0, y0)
+        x1, y1 = self._cutoff_coord(x1, y1)
         if y1 < y0:
             y0, y1 = y1, y0
         if x1 < x0:
@@ -462,8 +468,8 @@ class Drawing(object):
 
     def draw_box(self, x0, y0, x1, y1, c, pattern=0xffff):
         """Draw an empty box between the given corner points."""
-        x0, y0 = self._mode.cutoff_coord(x0, y0)
-        x1, y1 = self._mode.cutoff_coord(x1, y1)
+        x0, y0 = self._cutoff_coord(x0, y0)
+        x1, y1 = self._cutoff_coord(x1, y1)
         mask = 0x8000
         mask = self.draw_straight(x1, y1, x0, y1, c, pattern, mask)
         mask = self.draw_straight(x1, y0, x0, y0, c, pattern, mask)
@@ -534,6 +540,11 @@ class Drawing(object):
         """CIRCLE: Draw a circle, ellipse, arc or sector."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
+        # determine pixel aspect ratio
+        pixel_aspect = (
+            self._mode.pixel_height * self._screen_aspect[0],
+            self._mode.pixel_width * self._screen_aspect[1]
+        )
         step = next(args)
         x, y = (values.to_single(next(args)).to_value() for _ in range(2))
         r = values.to_single(next(args)).to_value()
@@ -558,7 +569,7 @@ class Drawing(object):
             error.range_check(0, 255, c)
         c = self._get_attr_index(c)
         if aspect is None:
-            aspect = self._mode.pixel_aspect[0] / float(self._mode.pixel_aspect[1])
+            aspect = pixel_aspect[0] / float(pixel_aspect[1])
         if aspect == 1.:
             rx, _ = self._get_window_scale(r, 0.)
             ry = rx
@@ -750,9 +761,11 @@ class Drawing(object):
         # if paint *attribute* specified, border default = current foreground
         if border is None:
             border = c
-        # only in screen 7,8,9 is this an error (use ega memory as a check)
-        if (pattern and background and background[:len(pattern)] == pattern and
-                self._mode.video_segment == 0xa000):
+        if (
+                not self._mode.build_tile.background_match_allowed
+                and pattern and background
+                and background[:len(pattern)] == pattern
+            ):
             raise error.BASICError(error.IFC)
         self.flood_fill(coord, c, pattern, border, background)
 
@@ -897,12 +910,8 @@ class Drawing(object):
             # store it now that we have it!
             self._memory.arrays.set_cache(array_name, sprite)
         # sprite must be fully inside *viewport* boundary
-        dx, dy = sprite.width, sprite.height
-        x1, y1 = x0+dx-1, y0+dy-1
-        # Tandy screen 6 sprites are twice as wide as claimed
-        if self._mode.name == '640x200x4':
-            x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
+        x1, y1 = x0 + sprite.width - 1, y0 + sprite.height - 1
         vx0, vy0, vx1, vy1 = self.graph_view.get()
         error.range_check(vx0, vx1, x0, x1)
         error.range_check(vy0, vy1, y0, y1)
@@ -932,9 +941,8 @@ class Drawing(object):
         y0, y1 = sorted((y0, y1))
         x0, x1 = sorted((x0, x1))
         # Tandy screen 6 simply GETs twice the width, it seems
-        if self._mode.name == '640x200x4':
-            dx = x1 - x0 + 1
-            x1 = x0 + 2*dx - 1
+        width = x1 - x0 + 1
+        x1 = x0 + self._mode.sprite_builder.width_factor * width - 1
         # illegal fn call if outside viewport boundary
         vx0, vy0, vx1, vy1 = self.graph_view.get()
         error.range_check(vx0, vx1, x0, x1)
@@ -1074,7 +1082,11 @@ class Drawing(object):
         """Make a DRAW step, drawing a line and returning if requested."""
         scale = self._draw_scale
         rotate = self._draw_angle
-        aspect = self._mode.pixel_aspect
+        # pixel aspect ratio
+        aspect = (
+            self._mode.pixel_height * self._screen_aspect[0],
+            self._mode.pixel_width * self._screen_aspect[1]
+        )
         yfac = aspect[1] / (1.*aspect[0])
         x1 = (scale*sx) // 4
         y1 = (scale*sy) // 4

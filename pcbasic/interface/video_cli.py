@@ -215,7 +215,7 @@ class VideoCLI(VideoTextBase):
 
     ###############################################################################
 
-    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
         unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
         self._text[pagenum][row-1][col-1:col-1+len(unicode_list)] = unicode_list
@@ -271,11 +271,11 @@ class VideoCLI(VideoTextBase):
                 self._text[self._apagenum][from_line-1:scroll_height-1]
             )
 
-    def set_mode(self, mode_info):
+    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
         """Initialise video mode """
         self._text = [
-                [[u' '] * mode_info.width for _ in range(mode_info.height)]
-                for _ in range(mode_info.num_pages)
+                [[u' '] * text_width for _ in range(text_height)]
+                for _ in range(num_pages)
             ]
 
     def set_page(self, new_vpagenum, new_apagenum):
