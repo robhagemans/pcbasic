@@ -118,7 +118,7 @@ class Font(object):
 
     def copy(self):
         """Make a deep copy."""
-        copy = self.__class__(self._height, dict(**self._fontdict))
+        copy = self.__class__(self._height, self._fontdict.copy())
         copy._width = self._width
         return copy
 
