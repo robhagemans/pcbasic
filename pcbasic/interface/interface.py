@@ -104,7 +104,7 @@ class Interface(object):
     def pause(self, message):
         """Pause and wait for a key."""
         self._video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (message,)))
-        self._video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (False,)))
+        self._video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (False, False)))
         while True:
             signal = self._input_queue.get()
             if signal.event_type in (signals.KEYB_DOWN, signals.KEYB_QUIT):
