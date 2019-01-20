@@ -53,7 +53,7 @@ class AudioPortAudio(AudioPlugin):
         with muffle(sys.stderr):
             self._device = pyaudio.PyAudio()
             self._stream = self._device.open(
-                format=pyaudio.paUInt8, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
+                format=pyaudio.paInt8, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
                 frames_per_buffer=_BUFSIZE, stream_callback=self._get_next_chunk
             )
             self._stream.start_stream()
@@ -122,6 +122,6 @@ class AudioPortAudio(AudioPlugin):
             for _samp in self._samples
         )
         # mix the samples
-        mixed = bytearray(sum(_b) for _b in zip(*samples))
+        mixed = bytearray(sum(_b) & 0xff for _b in zip(*samples))
         self._samples = [_samp[length:] for _samp in self._samples]
         return bytes(mixed), pyaudio.paContinue

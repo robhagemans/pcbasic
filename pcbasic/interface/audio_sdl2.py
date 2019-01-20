@@ -57,7 +57,7 @@ class AudioSDL2(AudioPlugin):
         sdl2.SDL_Init(sdl2.SDL_INIT_AUDIO)
         # SDL AudioDevice and specifications
         audiospec = sdl2.SDL_AudioSpec(
-            freq=synthesiser.SAMPLE_RATE, aformat=sdl2.AUDIO_U8, channels=1,
+            freq=synthesiser.SAMPLE_RATE, aformat=sdl2.AUDIO_S8, channels=1,
             samples=_CALLBACK_CHUNK_LENGTH, callback=sdl2.SDL_AudioCallback(self._get_next_chunk)
         )
         self._device = sdl2.SDL_OpenAudioDevice(None, False, audiospec, None, 0)
@@ -130,7 +130,7 @@ class AudioSDL2(AudioPlugin):
             for _samp in self._samples
         )
         # mix the samples
-        mixed = bytearray(sum(_b) for _b in zip(*samples))
+        mixed = bytearray((sum(_b) & 0xff) for _b in zip(*samples))
         self._samples = [_samp[length_bytes:] for _samp in self._samples]
         ctypes.memmove(
             stream, (ctypes.c_char * length_bytes).from_buffer(mixed), length_bytes

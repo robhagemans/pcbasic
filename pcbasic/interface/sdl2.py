@@ -442,6 +442,7 @@ SDL_BlitScaled = SDL_UpperBlitScaled
 SDL_AudioFormat = Uint16
 
 AUDIO_U8 = 0x0008
+AUDIO_S8 = 0x8008
 
 AUDIO_U16LSB = 0x0010
 AUDIO_S16LSB = 0x8010

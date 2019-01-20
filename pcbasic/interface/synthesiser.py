@@ -33,15 +33,15 @@ SAMPLE_RATE = 44100
 
 # The SN76489 attenuates the volume by 2dB for each step in the volume register.
 # see http://www.smspower.org/Development/SN76489
-# bits -2 (i.e. max div 4) so we can sum 4 voices
-_MAX_AMPLITUDE = (1 << (SAMPLE_BITS-2)) - 1
+# bits -2 (i.e. max div 3) so we can sum 4 voices
+_MAX_AMPLITUDE = (1 << (SAMPLE_BITS-3)) - 1
 # geometric list of amplitudes for volume values
 # 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2
 _STEP_FACTOR = 10 ** (-2./20.)
 # zero volume means silent
 _AMPLITUDE = [0] + [int(_MAX_AMPLITUDE * _STEP_FACTOR**_power) for _power in range(14, -1, -1)]
 
-# resolution for averaging
+# resolution for averaging, should be even
 _RESOLUTION = 20
 
 
@@ -122,10 +122,16 @@ class SoundGenerator(object):
             # cut off on round number of resolution blocks
             use_length = len(matrix) - (len(matrix) % _RESOLUTION)
             # average over blocks
-            chunk = bytearray(
-                self._amplitude * sum(matrix[_i:_i+_RESOLUTION]) // _RESOLUTION
+            # sums are between 0 and RESOLUTION, inclusive
+            sums = (
+                sum(matrix[_i:_i+_RESOLUTION])
                 for _i in xrange(0, use_length, _RESOLUTION)
             )
+            # scale to signed amplitude
+            half_res = _RESOLUTION // 2
+            averages = ((_s - half_res) * self._amplitude // _RESOLUTION for _s in sums)
+            # pack signed bytes into bytearray
+            chunk = bytearray(_sb if _sb >= 0 else 0xff + _sb for _sb in averages)
         if not self.loop:
             # last chunk is shorter
             if self._count_samples + len(chunk) < self._num_samples:

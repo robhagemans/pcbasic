@@ -53,7 +53,7 @@ class AudioPygame(AudioPlugin):
         # this must be called before pygame.init() in the video plugin
         # if sample_bits != 16 or -16 I get no sound. seems to ave no effect though
         mixer.pre_init(
-            synthesiser.SAMPLE_RATE, 16, channels=1, buffer=BUFSIZE
+            synthesiser.SAMPLE_RATE, -16, channels=1, buffer=BUFSIZE
         )
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
