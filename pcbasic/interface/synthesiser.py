@@ -50,18 +50,18 @@ class SignalSource(object):
 
     def __init__(self, feedback, init):
         """Initialise the signal source."""
-        self.lfsr = init
-        self.feedback = feedback
+        self._lfsr = init
+        self._feedback = feedback
         # "remaining phase"/pi, i.e. runs 0 to 1 or 0 to -1 on half wavelength
         self.phase = 0.
         self.bit = 0
 
     def next(self):
         """Get a sample bit."""
-        bit = self.lfsr & 1
-        self.lfsr >>= 1
+        bit = self._lfsr & 1
+        self._lfsr >>= 1
         if bit:
-            self.lfsr ^= self.feedback
+            self._lfsr ^= self._feedback
         self.bit = bit
         return bit
 
@@ -72,44 +72,44 @@ class SoundGenerator(object):
     def __init__(self, signal_source, feedback, frequency, duration, loop, volume):
         """Initialise the generator."""
         # noise generator
-        self.signal_source = signal_source
-        self.feedback = feedback
+        self._signal_source = signal_source
+        self._feedback = feedback
         # actual duration and gap length
-        self.duration = duration
-        self.amplitude = _AMPLITUDE[volume]
-        self.frequency = frequency
+        self._duration = duration
+        self._amplitude = _AMPLITUDE[volume]
+        self._frequency = frequency
         self.loop = loop
-        self.count_samples = 0
-        self.num_samples = int(self.duration * SAMPLE_RATE)
+        self._count_samples = 0
+        self._num_samples = int(self._duration * SAMPLE_RATE)
 
     def build_chunk(self, length):
         """Build a sound chunk."""
-        self.signal_source.feedback = self.feedback
-        if self.count_samples >= self.num_samples:
+        self._signal_source.feedback = self._feedback
+        if self._count_samples >= self._num_samples:
             # done already
             return None
         # don't generate too many samples
-        if length + self.count_samples > self.num_samples and not self.loop:
-            length = (self.num_samples - self.count_samples)
-        if self.frequency == 32767:
-            self.frequency = 0
+        if length + self._count_samples > self._num_samples and not self.loop:
+            length = (self._num_samples - self._count_samples)
+        if self._frequency == 32767:
+            self._frequency = 0
         # work on last element of sound queue
-        if self.frequency == 0:
+        if self._frequency == 0:
             chunk = bytearray(length)
         else:
-            half_wavelength = SAMPLE_RATE / (2.*self.frequency)
+            half_wavelength = SAMPLE_RATE / (2.*self._frequency)
             # generate first half-wave so as to complete the last one played
-            if self.signal_source.phase:
-                first_length = int(half_wavelength * self.signal_source.phase)
-                first_half_wave = bytearray([self.signal_source.bit]) * first_length * _RESOLUTION
+            if self._signal_source.phase:
+                first_length = int(half_wavelength * self._signal_source.phase)
+                first_half_wave = bytearray([self._signal_source.bit]) * first_length * _RESOLUTION
                 length -= first_length
-                self.signal_source.phase = 0.
+                self._signal_source.phase = 0.
             else:
                 first_half_wave = bytearray()
             num_half_waves = int(ceil(length / half_wavelength))
             # generate bits
             bits = (
-                self.signal_source.next()
+                self._signal_source.next()
                 for _ in range(num_half_waves)
             )
             # do sampling by averaging the signal over bins of given resolution
@@ -123,24 +123,24 @@ class SoundGenerator(object):
             use_length = len(matrix) - (len(matrix) % _RESOLUTION)
             # average over blocks
             chunk = bytearray(
-                self.amplitude * sum(matrix[_i:_i+_RESOLUTION]) // _RESOLUTION
+                self._amplitude * sum(matrix[_i:_i+_RESOLUTION]) // _RESOLUTION
                 for _i in xrange(0, use_length, _RESOLUTION)
             )
         if not self.loop:
             # last chunk is shorter
-            if self.count_samples + len(chunk) < self.num_samples:
-                self.count_samples += len(chunk)
+            if self._count_samples + len(chunk) < self._num_samples:
+                self._count_samples += len(chunk)
             else:
                 # append final chunk
-                rest_length = self.num_samples - self.count_samples
+                rest_length = self._num_samples - self._count_samples
                 # keep track of remaining phase to avoid ticks
-                if self.frequency:
-                    self.signal_source.phase = float(len(chunk) - rest_length) / half_wavelength
+                if self._frequency:
+                    self._signal_source.phase = float(len(chunk) - rest_length) / half_wavelength
                 else:
-                    self.signal_source.phase = 0.
+                    self._signal_source.phase = 0.
                 chunk = chunk[:rest_length]
                 # done
-                self.count_samples = self.num_samples
+                self._count_samples = self._num_samples
         # if loop, attach one chunk to loop, do not increment count
         return chunk
 
