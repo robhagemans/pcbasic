@@ -159,6 +159,18 @@ TO_WIDTH['vga'] = TO_WIDTH['ega']
 TO_WIDTH['tandy'] = TO_WIDTH['pcjr']
 
 
+def to_width(adapter, mode, to_width):
+    """Get target mode number for WIDTH change."""
+    if mode.is_text_mode and to_width in (40, 80):
+        return 0
+    else:
+        try:
+            return TO_WIDTH[adapter][mode.name][to_width]
+        except KeyError:
+            # raise an error if the width value doesn't make sense
+            raise error.BASICError(error.IFC)
+
+
 ##############################################################################
 # video mode number
 

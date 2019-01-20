@@ -20,7 +20,6 @@ from . import font
 from .textscreen import TextScreen
 from .pixels import PixelBuffer
 from .colours import MONO_TINT
-from .modes import TO_WIDTH
 
 
 class Display(object):
@@ -237,14 +236,7 @@ class Display(object):
         # if we're currently at that width, do nothing
         if to_width == self.mode.width:
             return
-        if self.mode.is_text_mode and to_width in (40, 80):
-            new_mode = 0
-        else:
-            try:
-                new_mode = TO_WIDTH[self._adapter][self.mode.name][to_width]
-            except KeyError:
-                # raise an error if the width value doesn't make sense
-                raise error.BASICError(error.IFC)
+        new_mode = modes.to_width(self._adapter, self.mode, to_width)
         self.screen(new_mode, None, 0, 0, new_width=to_width)
 
     def set_video_memory_size(self, new_size):
