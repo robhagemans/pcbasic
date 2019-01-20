@@ -19,7 +19,7 @@ The following packages are needed or recommended when installing PC-BASIC:
 | [PySerial 3.4](https://github.com/pyserial/pyserial)                          | all                | optional     | physical or emulated serial port access
 | [PyParallel](https://github.com/pyserial/pyparallel)                          | Windows, Linux     | optional     | physical parallel port access
 | [PyGame 1.9.3](http://www.pygame.org)                                         | all                | deprecated   | sound and graphics (requires NumPy)
-| [NumPy](http://www.numpy.org/)                                                | all                | deprecate    | required only by PyGame interface
+| [NumPy](http://www.numpy.org/)                                                | all                | deprecated   | required only by PyGame interface
 
 
 `setuptools` and `pip` are included with Python.
