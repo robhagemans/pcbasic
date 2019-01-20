@@ -58,8 +58,9 @@ class AudioPygame(AudioPlugin):
         if not mixer:
             raise InitFailed('Module `mixer` not found')
         # this must be called before pygame.init() in the video plugin
+        # if sample_bits != 16 or -16 I get no sound. seems to ave no effect though
         mixer.pre_init(
-            synthesiser.SAMPLE_RATE, -synthesiser.SAMPLE_BITS, channels=1, buffer=BUFSIZE
+            synthesiser.SAMPLE_RATE, 16, channels=1, buffer=BUFSIZE
         )
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
@@ -133,7 +134,7 @@ class AudioPygame(AudioPlugin):
                 self._next_tone[voice] = None
             if current_chunk is not None:
                 # enqueue chunk in mixer
-                snd = pygame.sndarray.make_sound(current_chunk)
+                snd = pygame.sndarray.make_sound(numpy.array(current_chunk, dtype=numpy.uint8))
                 mixer.Channel(voice).queue(snd)
 
     def _check_quit(self):
@@ -156,7 +157,7 @@ class AudioPygame(AudioPlugin):
             mixer.Channel(channel).stop()
             # play short silence to avoid blocking the channel
             # otherwise it won't play on queue()
-            silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
+            silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.uint8))
             mixer.Channel(channel).play(silence)
 
     def _check_init_mixer(self):
