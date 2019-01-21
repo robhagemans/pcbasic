@@ -410,7 +410,7 @@ class CGAMemoryMapper(GraphicsMemoryMapper):
         byte_array = bytearray(num_bytes)
         for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
             #interval_to_bytes
-            pixarray = display.pixels.pages[page].get_interval(x, y, length*self._ppb)
+            pixarray = display.pixel_pages[page][y, x:x+length*self._ppb]
             byte_array[ofs:ofs+length] = pixarray.packed(self._ppb)
         return byte_array
 
@@ -469,7 +469,7 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
         if plane not in self._planes_used:
             return byte_array
         for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
-            pixarray = display.pixels.pages[page].get_interval(x, y, length*8)
+            pixarray = display.pixel_pages[page][y, x:x+length*8]
             #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
             byte_array[ofs:ofs+length] = (pixarray >> plane).packed(8)
         return byte_array
@@ -531,7 +531,7 @@ class Tandy6MemoryMapper(GraphicsMemoryMapper):
         for parity, byte_array in enumerate(hbytes):
             plane = parity ^ (addr % 2)
             for page, x, y, ofs, length in self._walk_memory(addr, num_bytes, 2):
-                pixarray = display.pixels.pages[page].get_interval(x, y, length * self._ppb * 2)
+                pixarray = display.pixel_pages[page][y, x : x + length*self._ppb*2]
                 #hbytes[parity][ofs:ofs+length] = interval_to_bytes(pixarray, self._ppb*2, plane)
                 byte_array[ofs:ofs+length] = (pixarray >> plane).packed(self._ppb * 2)
         # resulting array may be too long by one byte, so cut to size

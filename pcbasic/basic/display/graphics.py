@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import math
+import operator
 
 from ..base import error
 from ..base import tokens as tk
@@ -111,11 +112,11 @@ class Drawing(object):
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         self._screen_aspect = aspect
 
-    def init_mode(self, mode, text, pixels, num_attr):
+    def init_mode(self, mode, text, pixel_pages, num_attr):
         """Initialise for new graphics mode."""
         self._mode = mode
         self._text = text
-        self._pixels = pixels
+        self._pixel_pages = pixel_pages
         self._num_attr = num_attr
         # set graphics viewport
         self.graph_view = GraphicsViewPort(self._mode.pixel_width, self._mode.pixel_height)
@@ -177,7 +178,8 @@ class Drawing(object):
         if pagenum is None:
             pagenum = self._apagenum
         if self.graph_view.contains(x, y):
-            rect = self._pixels.pages[pagenum].put_pixel(x, y, index)
+            self._pixel_pages[pagenum][y, x] = index
+            rect = self._pixel_pages[pagenum][y, x:x+1]
             self._queues.video.put(signals.Event(
                 signals.VIDEO_PUT_RECT, (pagenum, x, y, rect))
             )
@@ -186,7 +188,9 @@ class Drawing(object):
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
         x, y, _, _, colours = self.graph_view.clip_area(x, y, x + colours.width, y, colours)
-        new_rect = self._pixels.pages[pagenum].put_interval(x, y, colours, mask)
+        width = colours.width
+        new_rect = (colours & mask) | (self._pixel_pages[pagenum][y, x:x+width] & ~mask)
+        self._pixel_pages[pagenum][y, x:x+width] = new_rect
         self._queues.video.put(signals.Event(
             signals.VIDEO_PUT_RECT, (pagenum, x, y, new_rect)
         ))
@@ -195,7 +199,8 @@ class Drawing(object):
     def fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
         x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
-        rect = self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
+        self._pixel_pages[self._apagenum][y, x0:x1+1] = index
+        rect = self._pixel_pages[self._apagenum][y, x0:x1+1]
         self._queues.video.put(
             signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y, rect))
         )
@@ -203,10 +208,17 @@ class Drawing(object):
 
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """Apply an [y][x] array of attributes onto a screen rect."""
+        mask = 2**self._mode.bitsperpixel - 1
+        operation = {
+            tk.PSET: lambda _x, _y: _y,
+            tk.PRESET: lambda _x, _y: _y ^ mask,
+            tk.AND: operator.iand,
+            tk.OR: operator.ior,
+            tk.XOR: operator.ixor,
+        }[operation_token]
         x0, y0, x1, y1, sprite = self.graph_view.clip_area(x0, y0, x1, y1, sprite)
-        rect = self._pixels.pages[self._apagenum].put_rect(
-            x0, y0, x1, y1, sprite, operation_token
-        )
+        rect = operation(self._pixel_pages[self._apagenum][y0:y1+1, x0:x1+1], sprite)
+        self._pixel_pages[self._apagenum][y0:y1+1, x0:x1+1] = rect
         self._queues.video.put(
             signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, rect))
         )
@@ -215,7 +227,8 @@ class Drawing(object):
     def fill_rect(self, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
-        rect = self._pixels.pages[self._apagenum].fill_rect(x0, y0, x1, y1, index)
+        self._pixel_pages[self._apagenum][y0:y1+1, x0:x1+1] = index
+        rect = self._pixel_pages[self._apagenum][y0:y1+1, x0:x1+1]
         self._queues.video.put(
             signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, rect))
         )
@@ -791,17 +804,17 @@ class Drawing(object):
             return
         self._last_point = x, y
         # paint nothing if we start on border attrib
-        if self._pixels.pages[self._apagenum].get_pixel(x, y) == border:
+        if self._pixel_pages[self._apagenum][y, x] == border:
             return
         while len(line_seed) > 0:
             # consider next interval
             x_start, x_stop, y, ydir = line_seed.pop()
             # extend interval as far as it goes to left and right
             x_left = x_start - (
-                self._pixels.pages[self._apagenum].get_until(x_start-1, bound_x0-1, y, border)
+                self._pixel_pages[self._apagenum].row_until(border, y, x_start-1, bound_x0-1)
             ).width
             x_right = x_stop + (
-                self._pixels.pages[self._apagenum].get_until(x_stop+1, bound_x1+1, y, border)
+                self._pixel_pages[self._apagenum].row_until(border, y, x_stop+1, bound_x1+1)
             ).width
             # check next scanlines and add intervals to the list
             if ydir == 0:
@@ -861,7 +874,7 @@ class Drawing(object):
         x = x_start
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
-            pattern = self._pixels.pages[self._apagenum].get_until(x, x_stop+1, y, border)
+            pattern = self._pixel_pages[self._apagenum].row_until(border, y, x, x_stop+1)
             if pattern.width > 0:
                 # check if scanline pattern matches fill pattern
                 tile_x = x % rtile.width
@@ -935,7 +948,7 @@ class Drawing(object):
         error.range_check(vy0, vy1, y0, y1)
         # set size record
         # read from screen and convert to byte array
-        sprite = self._pixels.pages[self._apagenum].get_rect(x0, y0, x1, y1)
+        sprite = self._pixel_pages[self._apagenum][y0:y1+1, x0:x1+1]
         packed_sprite = self._mode.sprite_builder.pack(sprite)
         try:
             byte_array[:len(packed_sprite)] = packed_sprite
@@ -1130,7 +1143,7 @@ class Drawing(object):
             if x < 0 or x >= self._mode.pixel_width or y < 0 or y >= self._mode.pixel_height:
                 point = -1
             else:
-                point = self._pixels.pages[self._apagenum].get_pixel(x, y)
+                point = self._pixel_pages[self._apagenum][y, x]
             return self._values.new_integer().from_int(point)
 
     def pmap_(self, args):

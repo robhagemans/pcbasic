@@ -44,7 +44,7 @@ class TextScreen(object):
         # function key macros
         self._bottom_bar = BottomBar()
 
-    def init_mode(self, mode, pixels, attr, vpagenum, apagenum, font, colourmap):
+    def init_mode(self, mode, pixel_pages, attr, vpagenum, apagenum, font, colourmap):
         """Reset the text screen for new video mode."""
         self.mode = mode
         self.attr = attr
@@ -58,7 +58,7 @@ class TextScreen(object):
             self.codepage, do_fullwidth=(self.mode.font_height >= 14)
         )
         # pixel buffer
-        self.pixels = pixels
+        self.pixel_pages = pixel_pages
         # redraw key line
         self.redraw_bar()
         # initialise text viewport & move cursor home
@@ -319,9 +319,7 @@ class TextScreen(object):
                 self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
             # redraw graphics
             if not self.mode.is_text_mode:
-                rect = self.pixels.pages[pagenum].get_rect(
-                    0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
-                )
+                rect = self.pixel_pages[pagenum][0:self.mode.pixel_height, 0:self.mode.pixel_width]
                 self.queues.video.put(signals.Event(
                     signals.VIDEO_PUT_RECT, (pagenum, 0, 0, rect)
                 ))
@@ -357,9 +355,7 @@ class TextScreen(object):
         sprite = self._glyphs.render_text(chars, attr, back, underline)
         if not self.mode.is_text_mode and not text_only:
             left, top = self.mode.text_to_pixel_pos(row, col)
-            width, height = sprite.width, sprite.height
-            right, bottom = left + width - 1, top + height - 1
-            self.pixels.pages[self.apagenum].put_rect(left, top, right, bottom, sprite, tk.PSET)
+            self.pixel_pages[self.apagenum][top:top+sprite.height, left:left+sprite.width] = sprite
         if text_only:
             sprite = None
         text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
@@ -373,7 +369,7 @@ class TextScreen(object):
         if not self.mode.is_text_mode:
             x0, y0, x1, y1 = self.mode.text_to_pixel_area(start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
-            self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
+            self.pixel_pages[self.apagenum][y0:y1+1, x0:x1+1] = 0
         _, back, _, _ = self._colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
@@ -412,6 +408,13 @@ class TextScreen(object):
     ###########################################################################
     # scrolling
 
+    def _move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
+        """Move pixels from an area to another, replacing with attribute 0."""
+        clip = self.pixel_pages[self.apagenum][sy0:sy1+1, sx0:sx1+1]
+        height, width = sy1 - sy0 + 1, sx1 - sx0 + 1
+        self.pixel_pages[self.apagenum][sy0:sy1+1, sx0:sx1+1] = 0
+        self.pixel_pages[self.apagenum][ty0 : ty0+height, tx0 : tx0+width] = clip
+
     def scroll(self, from_line=None):
         """Scroll the scroll region up by one line, starting at from_line."""
         if from_line is None:
@@ -431,7 +434,7 @@ class TextScreen(object):
             tx0, ty0, _, _ = self.mode.text_to_pixel_area(
                 from_line, 1, self.scroll_area.bottom-1, self.mode.width
             )
-            self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
+            self._move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
     def scroll_down(self, from_line):
         """Scroll the scroll region down by one line, starting at from_line."""
@@ -450,7 +453,7 @@ class TextScreen(object):
             tx0, ty0, _, _ = self.mode.text_to_pixel_area(
                 from_line+1, 1, self.scroll_area.bottom, self.mode.width
             )
-            self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
+            self._move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
     ###########################################################################
     # console operations

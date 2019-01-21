@@ -17,8 +17,8 @@ from . import graphics
 from . import modes
 from . import font
 
+from ..base.bytematrix import ByteMatrix
 from .textscreen import TextScreen
-from .pixels import PixelBuffer
 from .colours import MONO_TINT
 
 
@@ -72,7 +72,7 @@ class Display(object):
             self._queues, self._values, self.mode, self._adapter, codepage, io_streams, sound
         )
         # pixel buffer, set by _set_mode
-        self.pixels = None
+        self.pixel_pages = None
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         # all adapters including PCjr target 4x3, except Tandy
         if self._adapter == 'tandy':
@@ -210,24 +210,24 @@ class Display(object):
         )
         # initialise pixel buffers
         if not self.mode.is_text_mode:
-            self.pixels = PixelBuffer(
-                self.mode.pixel_width, self.mode.pixel_height,
-                self.mode.num_pages, self.mode.bitsperpixel
-            )
+            self.pixel_pages = [
+                ByteMatrix(self.mode.pixel_height, self.mode.pixel_width)
+                for _ in range(self.mode.num_pages)
+            ]
         else:
-            self.pixels = None
+            self.pixel_pages = None
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # initialise text screen
         self.text_screen.init_mode(
-            self.mode, self.pixels, self.attr, new_vpagenum, new_apagenum, font, self.colourmap
+            self.mode, self.pixel_pages, self.attr, new_vpagenum, new_apagenum, font, self.colourmap
         )
         # restore emulated video memory in new mode
         if not erase:
             self.mode.memorymap.set_memory(self, saved_addr, saved_buffer)
         # center graphics cursor, reset window, etc.
         self.drawing.init_mode(
-            self.mode, self.text_screen.text, self.pixels, self.colourmap.num_attr
+            self.mode, self.text_screen.text, self.pixel_pages, self.colourmap.num_attr
         )
         self.drawing.set_attr(self.attr)
 
@@ -401,7 +401,7 @@ class Display(object):
         error.range_check(0, self.mode.num_pages-1, dst)
         self.text_screen.text.copy_page(src, dst)
         if not self.mode.is_text_mode:
-            self.pixels.pages[dst].copy_from(self.pixels.pages[src])
+            self.pixel_pages[dst][:, :] = self.pixel_pages[src]
         self._queues.video.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
 
     def color_(self, args):
