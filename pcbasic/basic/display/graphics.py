@@ -898,19 +898,8 @@ class Drawing(object):
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
         self._last_point = x0, y0
-        try:
-            byte_array = self._memory.arrays.view_full_buffer(array_name)
-            sprite = self._memory.arrays.get_cache(array_name)
-        except KeyError:
-            byte_array = bytearray()
-            sprite = None
-        if sprite is None:
-            # we don't have it stored or it has been modified
-            sprite = self._mode.sprite_builder.unpack(byte_array)
-            # store it now that we have it!
-            self._memory.arrays.set_cache(array_name, sprite)
-        # sprite must be fully inside *viewport* boundary
-        # illegal fn call if outside viewport boundary
+        byte_array = self._memory.arrays.view_full_buffer(array_name)
+        sprite = self._mode.sprite_builder.unpack(byte_array)
         x1, y1 = x0 + sprite.width - 1, y0 + sprite.height - 1
         vx0, vy0, vx1, vy1 = self.graph_view.get()
         error.range_check(vx0, vx1, x0, x1)
@@ -956,8 +945,6 @@ class Drawing(object):
         except ValueError:
             # cannot modify size of memoryview object - sprite larger than array
             raise error.BASICError(error.IFC)
-        # store a copy in the sprite store
-        self._memory.arrays.set_cache(array_name, sprite)
 
     ### DRAW statement
 
