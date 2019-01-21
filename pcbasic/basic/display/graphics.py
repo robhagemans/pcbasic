@@ -898,8 +898,8 @@ class Drawing(object):
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
         self._last_point = x0, y0
-        byte_array = self._memory.arrays.view_full_buffer(array_name)
-        sprite = self._mode.sprite_builder.unpack(byte_array)
+        packed_sprite = self._memory.arrays.view_full_buffer(array_name)
+        sprite = self._mode.sprite_builder.unpack(packed_sprite)
         x1, y1 = x0 + sprite.width - 1, y0 + sprite.height - 1
         vx0, vy0, vx1, vy1 = self.graph_view.get()
         error.range_check(vx0, vx1, x0, x1)
@@ -923,10 +923,7 @@ class Drawing(object):
         x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
         x1, y1 = self.graph_view.coords(*self.get_window_physical(x, y, step))
         self._last_point = x1, y1
-        try:
-            byte_array = self._memory.arrays.view_full_buffer(array_name)
-        except KeyError:
-            raise error.BASICError(error.IFC)
+        byte_array = self._memory.arrays.view_full_buffer(array_name)
         y0, y1 = sorted((y0, y1))
         x0, x1 = sorted((x0, x1))
         # Tandy screen 6 simply GETs twice the width, it seems

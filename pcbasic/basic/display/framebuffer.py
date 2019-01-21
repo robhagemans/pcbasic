@@ -105,6 +105,8 @@ class PackedSpriteBuilder(object):
         sprite = bytematrix.ByteMatrix.frompacked(
             packed, height, items_per_byte=8 // self._bitsperpixel
         )
+        # clip to requested width
+        sprite = sprite[:, :width]
         return sprite
 
 
@@ -162,6 +164,8 @@ class PlanedSpriteBuilder(object):
         allplanes = bytematrix.ByteMatrix.frompacked(
             packed, height=height*self._number_planes, items_per_byte=8
         )
+        # clip to requested width
+        allplanes = allplanes[:, :width]
         # de-interlace planes
         sprite_planes = (
             allplanes[_plane::height, :] << _plane
