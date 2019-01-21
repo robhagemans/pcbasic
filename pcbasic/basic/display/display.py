@@ -216,8 +216,6 @@ class Display(object):
             ]
         else:
             self.pixel_pages = None
-        # set active page & visible page, counting from 0.
-        self.set_page(new_vpagenum, new_apagenum)
         # initialise text screen
         self.text_screen.init_mode(
             self.mode, self.pixel_pages, self.attr, new_vpagenum, new_apagenum, font, self.colourmap
@@ -229,6 +227,9 @@ class Display(object):
         self.drawing.init_mode(
             self.mode, self.text_screen.text, self.pixel_pages, self.colourmap.num_attr
         )
+        # set active page & visible page, counting from 0.
+        self.set_page(new_vpagenum, new_apagenum)
+        # set graphics attribute
         self.drawing.set_attr(self.attr)
 
     def set_width(self, to_width):
