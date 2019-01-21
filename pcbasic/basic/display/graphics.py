@@ -141,11 +141,7 @@ class Drawing(object):
     def set_page(self, apagenum):
         """Set the active page."""
         self._apagenum = apagenum
-        if self._pixel_pages:
-            self._apage = self._pixel_pages[apagenum]
-        else:
-            # text mode
-            self._apage = None
+        self._apage = self._pixel_pages[apagenum]
 
     ### attributes
 

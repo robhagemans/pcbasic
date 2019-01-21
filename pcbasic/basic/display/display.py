@@ -209,13 +209,10 @@ class Display(object):
             self._queues, self._adapter, self._monitor, self.colorswitch
         )
         # initialise pixel buffers
-        if not self.mode.is_text_mode:
-            self.pixel_pages = [
-                ByteMatrix(self.mode.pixel_height, self.mode.pixel_width)
-                for _ in range(self.mode.num_pages)
-            ]
-        else:
-            self.pixel_pages = None
+        self.pixel_pages = [
+            ByteMatrix(self.mode.pixel_height, self.mode.pixel_width)
+            for _ in range(self.mode.num_pages)
+        ]
         # initialise text screen
         self.text_screen.init_mode(
             self.mode, self.pixel_pages, self.attr, new_vpagenum, new_apagenum, font, self.colourmap
