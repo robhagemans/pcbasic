@@ -12,16 +12,6 @@ from ..base import tokens as tk
 from ..base import bytematrix
 
 
-# pixel operations
-OPERATIONS = {
-    tk.PSET: lambda _x, _y: _y,
-    tk.PRESET: lambda _x, _y: _y ^ 0xff,
-    tk.AND: operator.iand,
-    tk.OR: operator.ior,
-    tk.XOR: operator.ixor,
-}
-
-
 class PixelBuffer(object):
     """Buffer for graphics on all screen pages."""
 
@@ -40,6 +30,7 @@ class PixelPage(object):
         self._buffer = bytematrix.ByteMatrix(height, width)
         self.width = width
         self.height = height
+        self._mask = (2 ** bitsperpixel) - 1
 
     def copy_from(self, src):
         """Copy from another page."""
@@ -75,14 +66,19 @@ class PixelPage(object):
         self._buffer[y0:y1+1, x0:x1+1] = attr
         return self._buffer[y0:y1+1, x0:x1+1]
 
-    def put_rect(self, x0, y0, x1, y1, array, operation_token):
+    def put_rect(self, x0, y0, x1, y1, array, token):
         """Apply 2d list [y][x] of attributes to an area."""
+        operation = {
+            tk.PSET: lambda _x, _y: _y,
+            tk.PRESET: lambda _x, _y: _y ^ self._mask,
+            tk.AND: operator.iand,
+            tk.OR: operator.ior,
+            tk.XOR: operator.ixor,
+        }[token]
         # can use in-place operaton method to avoid second slicing operation?
         # no, we still need a slice assignment after the in-place operation
         # or the result will be discarded along with the slice
-        result = OPERATIONS[operation_token](
-            self._buffer[y0:y1+1, x0:x1+1], array
-        )
+        result = operation(self._buffer[y0:y1+1, x0:x1+1], array)
         self._buffer[y0:y1+1, x0:x1+1] = result
         return result
 
