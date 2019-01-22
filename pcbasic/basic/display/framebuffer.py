@@ -262,9 +262,9 @@ class TextMemoryMapper(_MemoryMapper):
             col = row_offset // 2
             try:
                 if (addr+i) % 2:
-                    mem_bytes[i] = display.text_screen.text.get_attr(page, 1 + row, 1 + col)
+                    mem_bytes[i] = display.text.get_attr(page, 1 + row, 1 + col)
                 else:
-                    mem_bytes[i] = display.text_screen.text.get_char(page, 1 + row, 1 + col)
+                    mem_bytes[i] = display.text.get_char(page, 1 + row, 1 + col)
             except IndexError:
                 pass
         return mem_bytes
@@ -279,12 +279,12 @@ class TextMemoryMapper(_MemoryMapper):
             col = row_offset // 2
             try:
                 if (addr+i) % 2:
-                    c = display.text_screen.text.get_char(page, 1+row, 1+col)
+                    c = display.text.get_char(page, 1+row, 1+col)
                     a = mem_bytes[i]
                 else:
                     c = mem_bytes[i]
-                    a = display.text_screen.text.get_attr(page, 1+row, 1+col)
-                display.text_screen.text.put_char_attr(page, 1+row, 1+col, int2byte(c), a)
+                    a = display.text.get_attr(page, 1+row, 1+col)
+                display.text.put_char_attr(page, 1+row, 1+col, int2byte(c), a)
                 if last_row > 0 and last_row != 1 + row:
                     display.text_screen.refresh_range(page, last_row, 1, self._text_width)
             except IndexError:

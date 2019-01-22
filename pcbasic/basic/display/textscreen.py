@@ -15,7 +15,6 @@ from ..base import signals
 from ..base import error
 from ..base import tokens as tk
 from .. import values
-from .text import TextBuffer, TextRow
 from .textbase import BottomBar, Cursor, ScrollArea
 
 
@@ -44,7 +43,7 @@ class TextScreen(object):
         # function key macros
         self._bottom_bar = BottomBar()
 
-    def init_mode(self, mode, pixel_pages, attr, vpagenum, apagenum, font, colourmap):
+    def init_mode(self, mode, pixel_pages, text, attr, vpagenum, apagenum, font, colourmap):
         """Reset the text screen for new video mode."""
         self.mode = mode
         self.attr = attr
@@ -52,11 +51,8 @@ class TextScreen(object):
         self.vpagenum = vpagenum
         self._glyphs = font
         self._colourmap = colourmap
-        # build the screen buffer
-        self.text = TextBuffer(
-            self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
-            self.codepage, do_fullwidth=(self.mode.font_height >= 14)
-        )
+        # character buffer
+        self.text = text
         # pixel buffer
         self.pixel_pages = pixel_pages
         # redraw key line
