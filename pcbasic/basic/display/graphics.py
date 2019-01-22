@@ -156,22 +156,20 @@ class Drawing(object):
 
     ### text/graphics interaction
 
-    def _clear_text(self, x0, y0, x1, y1):
-        """Remove all characters from the text buffer on a rectangle of the graphics screen."""
-        row0, col0, row1, col1 = self._mode.pixel_to_text_area(x0, y0, x1, y1)
-        # single cell
-        if (
-                row0 == row1 and col0 == col1
-                and 1 <= row0 <= self._mode.height and 1 <= col0 <= self._mode.width
-            ):
-            self._text.put_char_attr(self._apagenum, row0, col0, b' ', self._attr)
-        else:
-            self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
+    def _submit_rect(self, x, y, rect):
+        """Clear the text under the rect and submit to interface."""
+        row0, col0, row1, col1 = self._mode.pixel_to_text_area(
+            x, y, x+rect.width, y+rect.height
+        )
+        self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
         for row in range(row0, row1+1):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_PUT_TEXT,
                 (self._apagenum, row, col0, [u' ']*(col1-col0+1), self._attr, None)
             ))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_PUT_RECT, (self._apagenum, x, y, rect)
+        ))
 
     ### graphics primitives
 
@@ -184,31 +182,22 @@ class Drawing(object):
         if self.graph_view.contains(x, y):
             self._apage[y, x] = index
             rect = self._apage[y, x:x+1]
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_RECT, (self._apagenum, x, y, rect))
-            )
-            self._clear_text(x, y, x, y)
+            self._submit_rect(x, y, rect)
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
         x, y, _, _, colours = self.graph_view.clip_area(x, y, x + colours.width, y, colours)
         width = colours.width
-        new_rect = (colours & mask) | (self._pixel_pages[pagenum][y, x:x+width] & ~mask)
-        self._pixel_pages[pagenum][y, x:x+width] = new_rect
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_PUT_RECT, (pagenum, x, y, new_rect)
-        ))
-        self._clear_text(x, y, x+colours.width, y)
+        rect = (colours & mask) | (self._pixel_pages[pagenum][y, x:x+width] & ~mask)
+        self._pixel_pages[pagenum][y, x:x+width] = rect
+        self._submit_rect(x, y, rect)
 
     def _fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
         x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
         self._apage[y, x0:x1+1] = index
         rect = self._apage[y, x0:x1+1]
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y, rect))
-        )
-        self._clear_text(x0, y, x1, y)
+        self._submit_rect(x0, y, rect)
 
     def _put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """Apply an [y][x] array of attributes onto a screen rect."""
@@ -225,20 +214,14 @@ class Drawing(object):
         elif operation_token == tk.XOR:
             rect = operator.ixor(self._apage[y0:y1+1, x0:x1+1], sprite)
         self._apage[y0:y1+1, x0:x1+1] = rect
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, rect))
-        )
-        self._clear_text(x0, y0, x1, y1)
+        self._submit_rect(x0, y0, rect)
 
     def fill_rect(self, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
         self._apage[y0:y1+1, x0:x1+1] = index
         rect = self._apage[y0:y1+1, x0:x1+1]
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, rect))
-        )
-        self._clear_text(x0, y0, x1, y1)
+        self._submit_rect(x0, y0, rect)
 
     ## VIEW graphics viewport
 

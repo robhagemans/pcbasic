@@ -315,13 +315,9 @@ class TextScreen(object):
         # redraw the text screen and rebuild text buffers in video plugin
         for pagenum in range(self.mode.num_pages):
             # resubmit the text buffer without changing the pixel buffer
+            # redraw graphics
             for row in range(self.mode.height):
                 self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
-            # redraw graphics
-            rect = self.pixel_pages[pagenum][0:self.mode.pixel_height, 0:self.mode.pixel_width]
-            self.queues.video.put(signals.Event(
-                signals.VIDEO_PUT_RECT, (pagenum, 0, 0, rect)
-            ))
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Draw a section of a screen row to pixels and interface."""
@@ -351,12 +347,12 @@ class TextScreen(object):
             return
         _, back, _, underline = self._colourmap.split_attr(attr)
         # update pixel buffer
+        left, top = self.mode.text_to_pixel_pos(row, col)
+        sprite = self._glyphs.render_text(chars, attr, back, underline)
         if not text_only:
-            sprite = self._glyphs.render_text(chars, attr, back, underline)
-            left, top = self.mode.text_to_pixel_pos(row, col)
             self.pixel_pages[self.apagenum][top:top+sprite.height, left:left+sprite.width] = sprite
         else:
-            sprite = None
+            sprite = self.pixel_pages[self.apagenum][top:top+sprite.height, left:left+sprite.width]
         # mark full-width chars by a trailing empty string to preserve column counts
         text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
         text = [self.codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
