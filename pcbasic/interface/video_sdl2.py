@@ -277,11 +277,11 @@ class SDL2Clipboard(clipboard.Clipboard):
         clipboard.Clipboard.__init__(self)
         self.ok = (sdl2 is not None)
 
-    def copy(self, text, mouse=False):
+    def copy(self, text):
         """Put unicode text on clipboard."""
         sdl2.SDL_SetClipboardText(text.encode('utf-8', errors='replace'))
 
-    def paste(self, mouse=False):
+    def paste(self):
         """Return unicode text from clipboard."""
         text = sdl2.SDL_GetClipboardText()
         if text is None:
@@ -1005,9 +1005,9 @@ class VideoSDL2(VideoPlugin):
         title = self._caption + (u' - ' + msg if msg else u'')
         sdl2.SDL_SetWindowTitle(self._display, title.encode('utf-8', errors='replace'))
 
-    def set_clipboard_text(self, text, mouse):
+    def set_clipboard_text(self, text):
         """Put text on the clipboard."""
-        self._clipboard_handler.copy(text, mouse)
+        self._clipboard_handler.copy(text)
 
     def set_palette(self, attributes, pack_pixels):
         """Build the palette."""

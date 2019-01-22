@@ -76,8 +76,8 @@ class AudioPortAudio(AudioPlugin):
     def noise(self, source, frequency, duration, loop, volume):
         """Enqueue a noise."""
         feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
-        self._generators[synthesissr.NOISE_VOICE].append(synthesiser.SoundGenerator(
-            self._signal_sources[synthesissr.NOISE_VOICE], feedback,
+        self._generators[synthesiser.NOISE_VOICE].append(synthesiser.SoundGenerator(
+            self._signal_sources[synthesiser.NOISE_VOICE], feedback,
             frequency, duration, loop, volume
         ))
 
