@@ -77,6 +77,16 @@ def split_quoted(line, split_by=u'\s', quote=u'"', strip_quotes=False):
         chunks = [c.strip(quote) for c in chunks]
     return chunks
 
+def split_pair(s, sep):
+    """Split an argument by separator, always return two elements."""
+    slist = s.split(sep, 1)
+    s0 = slist[0]
+    if len(slist) > 1:
+        s1 = slist[1]
+    else:
+        s1 = u''
+    return s0, s1
+
 @contextlib.contextmanager
 def muffle(std_stream):
     """Suppress stdout or stderr messages."""

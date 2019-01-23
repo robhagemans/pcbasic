@@ -19,9 +19,9 @@ from collections import deque
 
 from .compat import iteritems, text_type, iterchar
 from .compat import configparser
-from .compat import WIN32, get_short_pathname, argv
+from .compat import WIN32, get_short_pathname, argv, getcwdu
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
-from .compat import split_quoted, getcwdu
+from .compat import split_quoted, split_pair
 from .compat import console, stdout, stdin, stderr, IS_CONSOLE_APP
 from .compat import TemporaryDirectory
 
@@ -760,7 +760,6 @@ class Settings(object):
             'log_dir': STATE_PATH,
             }
 
-
     @property
     def conv_params(self):
         """Get parameters for file conversion."""
@@ -801,14 +800,14 @@ class Settings(object):
         """Append short arguments and value to dict."""
         for i, short_arg in enumerate(key[1:]):
             try:
-                skey, svalue = safe_split(SHORT_ARGS[short_arg], u'=')
+                skey, svalue = split_pair(SHORT_ARGS[short_arg], u'=')
                 if not svalue and not skey:
                     continue
                 if (not svalue) and i == len(key)-2:
                     # assign value to last argument specified
-                    append_arg(args, skey, value)
+                    _append_arg(args, skey, value)
                 else:
-                    append_arg(args, skey, svalue)
+                    _append_arg(args, skey, svalue)
             except KeyError:
                 logging.warning(u'Ignored unrecognised option `-%s`', short_arg)
 
@@ -823,14 +822,14 @@ class Settings(object):
             args[pos] = arg_deque.popleft()
         while arg_deque:
             arg = arg_deque.popleft()
-            key, value = safe_split(arg, u'=')
+            key, value = split_pair(arg, u'=')
             if not value:
                 if arg_deque and not arg_deque[0].startswith(u'-') and u'=' not in arg_deque[0]:
                     value = arg_deque.popleft()
             if key:
                 if key[0:2] == u'--':
                     if key[2:]:
-                        append_arg(args, key[2:], value)
+                        _append_arg(args, key[2:], value)
                 elif key[0] == u'-':
                     self._append_short_args(args, key, value)
                 else:
@@ -1152,23 +1151,13 @@ class Settings(object):
 ##############################################################################
 # utilities
 
-def append_arg(args, key, value):
+def _append_arg(args, key, value):
     """Update a single list-type argument by appending a value."""
     if key in args and args[key]:
         if value:
             args[key] += u',' + value
     else:
         args[key] = value
-
-def safe_split(s, sep):
-    """Split an argument by separator, always return two elements."""
-    slist = s.split(sep, 1)
-    s0 = slist[0]
-    if len(slist) > 1:
-        s1 = slist[1]
-    else:
-        s1 = u''
-    return s0, s1
 
 
 class WhitespaceStripper(object):
