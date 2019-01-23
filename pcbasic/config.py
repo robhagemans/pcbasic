@@ -340,6 +340,62 @@ class Lumberjack(object):
         root_logger.addHandler(handler)
 
 
+##########################################################################
+# write default config file
+
+CONFIG_HEADER = (
+    u"# PC-BASIC configuration file.\n"
+    u"# Edit this file to change your default settings or add presets.\n"
+    u"# Changes to this file will not affect any other users of your computer.\n"
+    u"# All lines starting with # are comments and have no effect.\n"
+    u"# Thus, to use one of the example options below, "
+    u"you need to remove the # at the start of the line.\n"
+    u"\n"
+    u"[pcbasic]\n"
+    u"# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
+    u"# See the documentation or run pcbasic -h for a list of available options.\n"
+    u"# for example (for version '%s'):\n" % VERSION
+)
+
+CONFIG_FOOTER = (
+    u"\n\n# To add presets, create a section header between brackets and put the \n"
+    u"# options you need below it, like this:\n"
+    u"# [your_preset]\n"
+    u"# border=0\n"
+    u"# \n"
+    u"# You will then be able to load these options with --preset=your_preset.\n"
+    u"# If you choose the same name as a system preset, PC-BASIC will use your\n"
+    u"# options for that preset and not the system ones. This is not recommended.\n"
+)
+
+
+def _build_default_config_file(file_name):
+    """Write a default config file."""
+    argnames = sorted(ARGUMENTS.keys())
+    try:
+        with io.open(file_name, 'w', encoding='utf_8_sig', errors='replace') as f:
+            f.write(CONFIG_HEADER)
+            for a in argnames:
+                try:
+                    f.write(
+                        u'## choices: %s\n' %
+                        u', '.join(u'%s' % (_s,) for _s in ARGUMENTS[a][u'choices'])
+                    )
+                except(KeyError, TypeError):
+                    pass
+                try:
+                    # check if it's a list
+                    ARGUMENTS[a][u'list']
+                    formatted = u','.join(u'%s' % (_s,) for _s in ARGUMENTS[a][u'default'])
+                except(KeyError, TypeError):
+                    formatted = u'%s' % (ARGUMENTS[a][u'default'],)
+                f.write(u'#%s=%s\n' % (a, formatted))
+            f.write(CONFIG_FOOTER)
+    except (OSError, IOError):
+        # can't create file, ignore. we'll get a message later.
+        pass
+
+
 ##############################################################################
 # settings parser
 
@@ -373,7 +429,7 @@ class Settings(object):
                     os.makedirs(USER_CONFIG_DIR)
                 except OSError:
                     pass
-                self.build_default_config_file(USER_CONFIG_PATH)
+                _build_default_config_file(USER_CONFIG_PATH)
             # create @: drive if not present
             if not os.path.exists(PROGRAM_PATH):
                 os.makedirs(PROGRAM_PATH)
@@ -1095,60 +1151,6 @@ class Settings(object):
             except ValueError:
                 logging.warning(u'Option "%s=%s" ignored; should be an integer', argname, strval)
         return None
-
-
-    ##########################################################################
-    # write config file
-
-    def build_default_config_file(self, file_name):
-        """Write a default config file."""
-        header = (
-            u"# PC-BASIC configuration file.\n"
-            u"# Edit this file to change your default settings or add presets.\n"
-            u"# Changes to this file will not affect any other users of your computer.\n"
-            u"# All lines starting with # are comments and have no effect.\n"
-            u"# Thus, to use one of the example options below, "
-            u"you need to remove the # at the start of the line.\n"
-            u"\n"
-            u"[pcbasic]\n"
-            u"# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
-            u"# See the documentation or run pcbasic -h for a list of available options.\n"
-            u"# for example (for version '%s'):\n" % VERSION
-        )
-        footer = (
-            u"\n\n# To add presets, create a section header between brackets and put the \n"
-            u"# options you need below it, like this:\n"
-            u"# [your_preset]\n"
-            u"# border=0\n"
-            u"# \n"
-            u"# You will then be able to load these options with --preset=your_preset.\n"
-            u"# If you choose the same name as a system preset, PC-BASIC will use your\n"
-            u"# options for that preset and not the system ones. This is not recommended.\n"
-        )
-        argnames = sorted(ARGUMENTS.keys())
-        try:
-            with io.open(file_name, 'w', encoding='utf_8_sig', errors='replace') as f:
-                f.write(header)
-                for a in argnames:
-                    try:
-                        f.write(
-                            u'## choices: %s\n' %
-                            u', '.join(u'%s' % (_s,) for _s in ARGUMENTS[a][u'choices'])
-                        )
-                    except(KeyError, TypeError):
-                        pass
-                    try:
-                        # check if it's a list
-                        ARGUMENTS[a][u'list']
-                        formatted = u','.join(u'%s' % (_s,) for _s in ARGUMENTS[a][u'default'])
-                    except(KeyError, TypeError):
-                        formatted = u'%s' % (ARGUMENTS[a][u'default'],)
-                    f.write(u'#%s=%s\n' % (a, formatted))
-                f.write(footer)
-        except (OSError, IOError):
-            # can't create file, ignore. we'll get a message later.
-            pass
-
 
 
 ##############################################################################
