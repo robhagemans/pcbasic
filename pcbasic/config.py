@@ -189,7 +189,35 @@ SHORT_ARGS = {
 
 
 ##############################################################################
-# all long-form arguments
+# GWBASIC-style options
+# GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,m]] [/d]
+#   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN.
+#   /f:n    Set maximum number of open files to n. Default is 3.
+#           Each additional file reduces free memory by 322 bytes.
+#   /s:n    Set the maximum record length for RANDOM files.
+#           Default is 128, maximum is 32768.
+#   /c:n    Set the COM receive buffer to n bytes.
+#           If n==0, disable the COM ports.
+#   /i      Statically allocate file control blocks and data buffer.
+#           NOTE: this appears to be always the case in GW-BASIC, as here.
+#   /m:n,m  Set the highest memory location to n (default 65534) and maximum
+#           BASIC memory to m*16 bytes (default is all available).
+
+GW_OPTIONS = {
+    u'<': 'input',
+    u'>': 'output',
+    u'>>': 'output:append',
+    u'/d': 'double',
+    u'/i': '',
+    u'/f': 'max-files',
+    u'/s': 'max-reclen',
+    u'/c': 'serial-buffer-size',
+    u'/m': 'max-memory',
+}
+
+
+##############################################################################
+# long-form arguments
 
 def _check_text_encoding(arg):
     """Check if text-encoding argument is acceptable."""
@@ -1017,50 +1045,22 @@ class ArgumentParser(object):
 
     def _parse_gw_options(self, args):
         """Parse GW-BASIC-style options."""
-        # GWBASIC invocation, for reference:
-        # GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,m]] [/d]
-        #   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN.
-        #   /f:n    Set maximum number of open files to n. Default is 3.
-        #           Each additional file reduces free memory by 322 bytes.
-        #   /s:n    Set the maximum record length for RANDOM files.
-        #           Default is 128, maximum is 32768.
-        #   /c:n    Set the COM receive buffer to n bytes.
-        #           If n==0, disable the COM ports.
-        #   /i      Statically allocate file control blocks and data buffer.
-        #           NOTE: this appears to be always the case in GW-BASIC, as here.
-        #   /m:n,m  Set the highest memory location to n (default 65534) and maximum
-        #           BASIC memory to m*16 bytes (default is all available).
         options = args.pop('options', '')
         for option in options.split(u' '):
             if not option:
                 continue
-            if option.startswith(u'<'):
-                args['input'] = option[1:]
-            elif option.startswith(u'>'):
-                if option[1] == u'>':
-                    args['output'] = option[2:] + u':append'
-                else:
-                    args['output'] = option[1:]
-            elif option.startswith(u'/'):
-                option = option.lower()
-                split = option[1:].split(u':')
-                if len(split) == 1:
-                    if option[1] == u'd':
-                        args['double'] = True
-                    elif option[1] == u'i':
-                        pass
-                elif len(split) == 2:
-                    if option[1] == u'f':
-                        args['max-files'] = split[1]
-                    elif option[1] == u's':
-                        args['max-reclen'] = split[1]
-                    elif option[1] == u'c':
-                        args['serial-buffer-size'] = split[1]
-                    elif option[1] == u'm':
-                        args['max-memory'] = split[1]
-            else:
-                # positional argument
-                args[0] = option
+            try:
+                arg, val = GW_OPTIONS[option[:2].lower()], option[2:]
+            except KeyError:
+                try:
+                    arg, val = GW_OPTIONS[option[:1]], option[1:]
+                except KeyError:
+                    # positional argument
+                    arg, val = 0, option
+            if val[:1] == u':':
+                val = val[1:]
+            arg, suffix = split_pair(arg, ':')
+            args[arg] = val + (u':' + suffix if suffix else u'')
         return args
 
 
