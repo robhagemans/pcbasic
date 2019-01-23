@@ -296,6 +296,50 @@ ARGUMENTS = {
 }
 
 
+##########################################################################
+# logging
+
+class Lumberjack(object):
+    """Logging manager."""
+
+    def __init__(self):
+        """Set up the global logger temporarily until we know the log stream."""
+        # we use the awkward logging interface as we can only use basicConfig once
+        # get the root logger
+        root_logger = logging.getLogger()
+        root_logger.setLevel(logging.INFO)
+        # send to a buffer until we know where to log to
+        self._logstream = io.StringIO()
+        handler = logging.StreamHandler(self._logstream)
+        handler.setFormatter(LOGGING_FORMATTER)
+        root_logger.addHandler(handler)
+
+    def reset(self):
+        """Reset root logger."""
+        # o dear o dear what a horrible API
+        root_logger = logging.getLogger()
+        # remove all old handlers: temporary ones we set as well as any default ones
+        for handler in root_logger.handlers:
+            root_logger.removeHandler(handler)
+        return root_logger
+
+    def prepare(self, logfile, debug):
+        """Set up the global logger."""
+        # get log stream and level from options
+        loglevel = logging.DEBUG if debug else logging.INFO
+        root_logger = self.reset()
+        root_logger.setLevel(loglevel)
+        if logfile:
+            logstream = io.open(logfile, 'w', encoding='utf_8', errors='replace')
+        else:
+            logstream = stderr
+        # write out cached logs
+        logstream.write(self._logstream.getvalue())
+        handler = logging.StreamHandler(logstream)
+        handler.setFormatter(LOGGING_FORMATTER)
+        root_logger.addHandler(handler)
+
+
 ##############################################################################
 # settings parser
 
@@ -317,7 +361,7 @@ class Settings(object):
             self._uargv = argv[1:]
         else:
             self._uargv = list(arguments)
-        self._pre_init_logging()
+        lumberjack = Lumberjack()
         try:
             self._temp_dir = temp_dir
             # create state path if needed
@@ -339,10 +383,10 @@ class Settings(object):
             self._options = self._retrieve_options(self._uargv)
         except:
             # avoid losing exception messages occuring while logging was disabled
-            self._reset_logging()
+            lumberjack.reset()
             raise
         # prepare global logger for use by main program
-        self._prepare_logging()
+        lumberjack.prepare(self.get('logfile'), self.get('debug'))
 
     def _retrieve_options(self, uargv):
         """Retrieve command line and option file options."""
@@ -398,47 +442,6 @@ class Settings(object):
             else:
                 value = None
         return value
-
-    ##########################################################################
-    # logging setup
-
-    def _pre_init_logging(self):
-        """Set up the global logger temporarily until we know the log stream."""
-        # we use the awkward logging interface as we can only use basicConfig once
-        # get the root logger
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.INFO)
-        # send to a buffer until we know where to log to
-        self._logstream = io.StringIO()
-        handler = logging.StreamHandler(self._logstream)
-        handler.setFormatter(LOGGING_FORMATTER)
-        root_logger.addHandler(handler)
-
-    def _reset_logging(self):
-        """Reset root logger."""
-        # o dear o dear what a horrible API
-        root_logger = logging.getLogger()
-        # remove all old handlers: temporary ones we set as well as any default ones
-        for handler in root_logger.handlers:
-            root_logger.removeHandler(handler)
-        return root_logger
-
-    def _prepare_logging(self):
-        """Set up the global logger."""
-        # get log stream and level from options
-        logfile = self.get('logfile')
-        loglevel = logging.DEBUG if self.get('debug') else logging.INFO
-        root_logger = self._reset_logging()
-        root_logger.setLevel(loglevel)
-        if logfile:
-            logstream = io.open(logfile, 'w', encoding='utf_8', errors='replace')
-        else:
-            logstream = stderr
-        # write out cached logs
-        logstream.write(self._logstream.getvalue())
-        handler = logging.StreamHandler(logstream)
-        handler.setFormatter(LOGGING_FORMATTER)
-        root_logger.addHandler(handler)
 
     ##########################################################################
     # session parameters
