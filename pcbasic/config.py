@@ -47,7 +47,6 @@ USER_CONFIG_PATH = os.path.join(USER_CONFIG_DIR, CONFIG_NAME)
 # save-state file name
 STATE_NAME = 'pcbasic.session'
 
-
 # @: target drive for bundled programs
 PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
 
@@ -90,6 +89,7 @@ def _validate_version():
 _validate_version()
 
 
+##############################################################################
 
 def _check_text_encoding(arg):
     """Check if text-encoding argument is acceptable."""
@@ -100,13 +100,14 @@ def _check_text_encoding(arg):
     return True
 
 
-def store_bundled_programs(PROGRAM_PATH):
+def _store_bundled_programs(PROGRAM_PATH):
     """Retrieve contents of BASIC programs."""
     for name in PROGRAMS:
         with io.open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
             f.write(data.read_program_file(name))
 
 
+##############################################################################
 
 class Settings(object):
     """Read and retrieve command-line settings and options."""
@@ -317,7 +318,7 @@ class Settings(object):
             if not os.path.exists(PROGRAM_PATH):
                 os.makedirs(PROGRAM_PATH)
                 # unpack bundled programs
-                store_bundled_programs(PROGRAM_PATH)
+                _store_bundled_programs(PROGRAM_PATH)
             # store options in options dictionary
             self._options = self._retrieve_options(self._uargv)
         except:
