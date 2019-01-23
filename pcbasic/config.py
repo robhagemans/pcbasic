@@ -397,14 +397,13 @@ def _build_default_config_file(file_name):
 
 
 ##############################################################################
-# settings parser
+# settings container
 
 def _store_bundled_programs(PROGRAM_PATH):
     """Retrieve contents of BASIC programs."""
     for name in PROGRAMS:
         with io.open(os.path.join(PROGRAM_PATH, name), 'wb') as f:
             f.write(data.read_program_file(name))
-
 
 
 class Settings(object):
@@ -419,7 +418,6 @@ class Settings(object):
             self._uargv = list(arguments)
         lumberjack = Lumberjack()
         try:
-            self._temp_dir = temp_dir
             # create state path if needed
             if not os.path.exists(STATE_PATH):
                 os.makedirs(STATE_PATH)
@@ -436,51 +434,13 @@ class Settings(object):
                 # unpack bundled programs
                 _store_bundled_programs(PROGRAM_PATH)
             # store options in options dictionary
-            self._options = self._retrieve_options(self._uargv)
+            self._options = ArgumentParser().retrieve_options(self._uargv, temp_dir)
         except:
             # avoid losing exception messages occuring while logging was disabled
             lumberjack.reset()
             raise
         # prepare global logger for use by main program
         lumberjack.prepare(self.get('logfile'), self.get('debug'))
-
-    def _retrieve_options(self, uargv):
-        """Retrieve command line and option file options."""
-        # convert command line arguments to string dictionary form
-        remaining = self._get_arguments(uargv)
-        # unpack any packages
-        package = self._parse_package(remaining)
-        # get preset groups from specified config file
-        preset_dict = self._parse_config(remaining)
-        # parse default presets nested in config presets
-        preset_dict = {
-            _key: self._merge_arguments(
-                self._parse_presets(_dict, self.default_config),
-                _dict
-            )
-            for _key, _dict in iteritems(preset_dict)
-        }
-        # set defaults based on presets
-        args = self._parse_presets(remaining, preset_dict)
-        # local config file settings override preset settings
-        self._merge_arguments(args, preset_dict[u'pcbasic'])
-        # find unrecognised arguments
-        unrecognised = ((_k, _v) for _k, _v in iteritems(args) if _k not in ARGUMENTS)
-        for key, value in unrecognised:
-            logging.warning(
-                'Ignored unrecognised option `%s=%s` in configuration file', key, value
-            )
-        args = {_k: _v for _k, _v in iteritems(args) if _k in ARGUMENTS}
-        # parse rest of command line
-        self._merge_arguments(args, self._parse_args(remaining))
-        # parse GW-BASIC style options
-        self._parse_gw_options(args)
-        # clean up arguments
-        self._convert_types(args)
-        if package:
-            # do not resume from a package
-            args['resume'] = False
-        return args
 
     def get(self, name, get_default=True):
         """Get value of option; choose whether to get default or None if unspecified."""
@@ -852,8 +812,49 @@ class Settings(object):
         return self.get('debug')
 
 
-    ##########################################################################
-    # general argument parsing
+##############################################################################
+# argument parsing
+
+class ArgumentParser(object):
+    """Parse PC-BASIC config file and command-line arguments."""
+
+    def retrieve_options(self, uargv, temp_dir):
+        """Retrieve command line and option file options."""
+        # convert command line arguments to string dictionary form
+        remaining = self._get_arguments(uargv)
+        # unpack any packages
+        package = self._parse_package(remaining, temp_dir)
+        # get preset groups from specified config file
+        preset_dict = self._parse_config(remaining)
+        # parse default presets nested in config presets
+        preset_dict = {
+            _key: self._merge_arguments(
+                self._parse_presets(_dict, PRESETS),
+                _dict
+            )
+            for _key, _dict in iteritems(preset_dict)
+        }
+        # set defaults based on presets
+        args = self._parse_presets(remaining, preset_dict)
+        # local config file settings override preset settings
+        self._merge_arguments(args, preset_dict[u'pcbasic'])
+        # find unrecognised arguments
+        unrecognised = ((_k, _v) for _k, _v in iteritems(args) if _k not in ARGUMENTS)
+        for key, value in unrecognised:
+            logging.warning(
+                'Ignored unrecognised option `%s=%s` in configuration file', key, value
+            )
+        args = {_k: _v for _k, _v in iteritems(args) if _k in ARGUMENTS}
+        # parse rest of command line
+        self._merge_arguments(args, self._parse_args(remaining))
+        # parse GW-BASIC style options
+        self._parse_gw_options(args)
+        # clean up arguments
+        self._convert_types(args)
+        if package:
+            # do not resume from a package
+            args['resume'] = False
+        return args
 
     def _append_short_args(self, args, key, value):
         """Append short arguments and value to dict."""
@@ -864,11 +865,19 @@ class Settings(object):
                     continue
                 if (not svalue) and i == len(key)-2:
                     # assign value to last argument specified
-                    _append_arg(args, skey, value)
+                    self._append_arg(args, skey, value)
                 else:
-                    _append_arg(args, skey, svalue)
+                    self._append_arg(args, skey, svalue)
             except KeyError:
                 logging.warning(u'Ignored unrecognised option `-%s`', short_arg)
+
+    def _append_arg(self, args, key, value):
+        """Update a single list-type argument by appending a value."""
+        if key in args and args[key]:
+            if value:
+                args[key] += u',' + value
+        else:
+            args[key] = value
 
     def _get_arguments(self, argv):
         """Convert arguments to dictionary."""
@@ -888,7 +897,7 @@ class Settings(object):
             if key:
                 if key[0:2] == u'--':
                     if key[2:]:
-                        _append_arg(args, key[2:], value)
+                        self._append_arg(args, key[2:], value)
                 elif key[0] == u'-':
                     self._append_short_args(args, key, value)
                 else:
@@ -920,7 +929,7 @@ class Settings(object):
                 break
         return argdict
 
-    def _parse_package(self, remaining):
+    def _parse_package(self, remaining, temp_dir):
         """Unpack BAZ package, if specified, and make its temp dir current."""
         # first positional arg: program or package name
         package = None
@@ -937,8 +946,8 @@ class Settings(object):
                 remaining.pop(0)
                 # extract the package to a temp directory
                 # and make that the current dir for our run
-                zipfile.ZipFile(arg_package).extractall(path=self._temp_dir)
-                os.chdir(self._temp_dir)
+                zipfile.ZipFile(arg_package).extractall(path=temp_dir)
+                os.chdir(temp_dir)
                 # if the zip-file contains only a directory at the top level,
                 # then move into that directory. E.g. all files in package.zip
                 # could be under the directory package/
@@ -1055,7 +1064,7 @@ class Settings(object):
         return args
 
 
-    ################################################
+    ##########################################################################
 
     def _merge_arguments(self, target_dict, new_dict):
         """Update target_dict with new_dict. Lists of indefinite length are appended."""
@@ -1155,15 +1164,6 @@ class Settings(object):
 
 ##############################################################################
 # utilities
-
-def _append_arg(args, key, value):
-    """Update a single list-type argument by appending a value."""
-    if key in args and args[key]:
-        if value:
-            args[key] += u',' + value
-    else:
-        args[key] = value
-
 
 class WhitespaceStripper(object):
     """File wrapper for ConfigParser that strips leading whitespace."""

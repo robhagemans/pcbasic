@@ -191,4 +191,4 @@ class TemporaryDirectory():
             try:
                 shutil.rmtree(self._temp_dir)
             except EnvironmentError as e:
-                logging.error('Could not clean up temporary directory: %s', e)
+                pass
