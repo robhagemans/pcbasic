@@ -90,6 +90,106 @@ _validate_version()
 
 
 ##############################################################################
+# Default preset definitions
+# For example, --preset=tandy will load all options in the [tandy] section.
+# Preset options override default options.
+# Presets can also be added by adding a section in brackets in the user configuration file
+# e.g., a section headed [myconfig] will be loaded with --preset=myconfig
+
+PRESETS = {
+    u'strict': {
+        u'hide-listing': u'65530',
+        u'text-encoding': u'',
+        u'soft-linefeed': u'False',
+        u'hide-protected': u'True',
+        u'allow-code-poke': u'True',
+        u'prevent-close': u'True',
+        u'ctrl-c-break': u'False',
+    },
+    u'basica': {
+        u'reserved-memory': u'789',
+    },
+    u'pcjr': {
+        u'syntax': u'pcjr',
+        u'term': os.path.join(PROGRAM_PATH, 'PCTERM.BAS'),
+        u'video': u'pcjr',
+        u'font': u'vga',
+        u'codepage': u'437',
+        u'reserved-memory': u'4035',
+        u'text-width': u'40',
+        u'video-memory': u'16384',
+    },
+    u'tandy': {
+        u'syntax': u'tandy',
+        u'video': u'tandy',
+        u'font': u'tandy2',
+        u'codepage': u'437',
+        u'aspect': u'3072,2000',
+        u'max-reclen': u'255',
+        u'reserved-memory': u'3240',
+        u'video-memory': u'16384',
+    },
+    u'cga': {
+        u'video': u'cga',
+        u'font': u'cga',
+        u'codepage': u'437',
+        u'text-width': u'40',
+    },
+    u'ega': {
+        u'video': u'ega',
+        u'font': u'vga',
+    },
+    u'mda': {
+        u'video': u'mda',
+        u'font': u'cga,mda',
+        u'codepage': u'437',
+        u'monitor': u'mono',
+    },
+    u'hercules': {
+        u'video': u'hercules',
+        u'font': u'cga,mda',
+        u'codepage': u'437',
+        u'monitor': u'mono',
+    },
+    u'olivetti': {
+        u'video': u'olivetti',
+        u'font': u'cga,olivetti',
+        u'codepage': u'437',
+    },
+    u'vga': {
+        u'video': u'vga',
+        u'font': u'vga',
+        u'codepage': u'437',
+    },
+}
+
+# by default, load what's in section [pcbasic] and override with anything
+DEFAULT_SECTION = [u'pcbasic']
+
+
+##############################################################################
+# short-form arguments
+
+SHORT_ARGS = {
+    u'd': u'double',
+    u'f': u'max-files',
+    u's': u'max-reclen',
+    u'b': u'interface=cli',
+    u't': u'interface=text',
+    u'n': u'interface=none',
+    u'l': u'load',
+    u'h': u'help',
+    u'r': u'run',
+    u'q': u'quit',
+    u'e': u'exec',
+    u'k': u'keys',
+    u'v': u'version',
+    u'w': u'wait',
+    }
+
+
+##############################################################################
+# all long-form arguments
 
 def _check_text_encoding(arg):
     """Check if text-encoding argument is acceptable."""
@@ -100,6 +200,105 @@ def _check_text_encoding(arg):
     return True
 
 
+# number of positional arguments
+NUM_POSITIONAL = 2
+
+ARGUMENTS = {
+    u'input': {u'type': u'string', u'default': u'', },
+    u'output': {u'type': u'string', u'default': u'', },
+    u'interface': {
+        u'type': u'string', u'default': u'',
+        u'choices': (
+            u'', u'none', u'cli', u'text', u'graphical',
+            u'ansi', u'curses', u'pygame', u'sdl2'
+        ),
+    },
+    u'sound': {
+        u'type': u'string', u'default': u'',
+        u'choices': (u'', u'none', u'beep', u'portaudio', u'interface'),
+    },
+    u'load': {u'type': u'string', u'default': u'', },
+    u'run': {u'type': u'string', u'default': u'',  },
+    u'convert': {u'type': u'string', u'default': u'', },
+    u'help': {u'type': u'bool', u'default': False, },
+    u'keys': {u'type': u'string', u'default': u'', },
+    u'exec': {u'type': u'string', u'default': u'', },
+    u'quit': {u'type': u'bool', u'default': False,},
+    u'double': {u'type': u'bool', u'default': False,},
+    u'max-files': {u'type': u'int', u'default': 3,},
+    u'max-reclen': {u'type': u'int', u'default': 128,},
+    u'serial-buffer-size': {u'type': u'int', u'default': 256,},
+    u'peek': {u'type': u'string', u'list': u'*', u'default': [],},
+    u'lpt1': {u'type': u'string', u'default': u'PRINTER:',},
+    u'lpt2': {u'type': u'string', u'default': u'',},
+    u'lpt3': {u'type': u'string', u'default': u'',},
+    u'cas1': {u'type': u'string', u'default': u'',},
+    u'com1': {u'type': u'string', u'default': u'',},
+    u'com2': {u'type': u'string', u'default': u'',},
+    u'codepage': {u'type': u'string', u'choices': CODEPAGES, u'default': u'437',},
+    u'font': {
+        u'type': u'string', u'list': u'*', u'choices': FONTS,
+        u'default': [u'unifont', u'univga', u'freedos'],
+    },
+    u'dimensions': {u'type': u'int', u'list': 2, u'default': [],},
+    u'fullscreen': {u'type': u'bool', u'default': False,},
+    u'prevent-close': {u'type': u'bool', u'default': False,},
+    u'debug': {u'type': u'bool', u'default': False,},
+    u'hide-listing': {u'type': u'int', u'default': 65535,},
+    u'hide-protected': {u'type': u'bool', u'default': False,},
+    u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
+    u'resume': {u'type': u'bool', u'default': False,},
+    u'syntax': {
+        u'type': u'string', u'choices': (u'advanced', u'pcjr', u'tandy'),
+        u'default': u'advanced',
+    },
+    u'term': {u'type': u'string', u'default': u'',},
+    u'video': {
+        u'type': u'string', u'default': 'vga',
+        u'choices': (
+            u'vga', u'ega', u'cga', u'mda',
+            u'pcjr', u'tandy', u'hercules', u'olivetti'
+        ),
+    },
+    u'text-encoding': {u'type': u'string', u'default': u'', u'check': _check_text_encoding},
+    u'soft-linefeed': {u'type': u'bool', u'default': False,},
+    u'border': {u'type': u'int', u'default': 5,},
+    u'mouse-clipboard': {u'type': u'bool', u'default': True,},
+    u'state': {u'type': u'string', u'default': u'',},
+    u'monitor': {
+        u'type': u'string',
+        u'choices': (u'rgb', u'composite', u'green', u'amber', u'grey', u'mono'),
+        u'default': u'rgb',
+    },
+    u'aspect': {u'type': u'int', u'list': 2, u'default': [4, 3],},
+    u'scaling': {
+        u'type': u'string', u'choices':(u'smooth', u'native', u'crisp'),
+        u'default': u'smooth',
+    },
+    u'version': {u'type': u'bool', u'default': False,},
+    u'config': {u'type': u'string', u'default': u'',},
+    u'logfile': {u'type': u'string', u'default': u'',},
+    # negative list length means 'optionally up to'
+    u'max-memory': {u'type': u'int', u'list': -2, u'default': [65534, 4096]},
+    u'allow-code-poke': {u'type': u'bool', u'default': False,},
+    u'reserved-memory': {u'type': u'int', u'default': 3429,},
+    u'caption': {u'type': u'string', u'default': NAME,},
+    u'text-width': {u'type': u'int', u'choices':(u'40', u'80'), u'default': 80,},
+    u'video-memory': {u'type': u'int', u'default': 262144,},
+    u'shell': {u'type': u'string', u'default': u'',},
+    u'ctrl-c-break': {u'type': u'bool', u'default': True,},
+    u'wait': {u'type': u'bool', u'default': False,},
+    u'current-device': {u'type': u'string', u'default': ''},
+    u'extension': {u'type': u'string', u'list': u'*', u'default': []},
+    u'options': {u'type': u'string', u'default': ''},
+    # depecated argument, use text-encoding instead
+    u'utf8': {u'type': u'bool', u'default': False,},
+}
+
+
+##############################################################################
+# settings parser
+
 def _store_bundled_programs(PROGRAM_PATH):
     """Retrieve contents of BASIC programs."""
     for name in PROGRAMS:
@@ -107,192 +306,9 @@ def _store_bundled_programs(PROGRAM_PATH):
             f.write(data.read_program_file(name))
 
 
-##############################################################################
 
 class Settings(object):
     """Read and retrieve command-line settings and options."""
-
-    # Default preset definitions
-    # For example, --preset=tandy will load all options in the [tandy] section.
-    # Preset options override default options.
-    # Presets can also be added by adding a section in brackets in the user configuration file
-    # e.g., a section headed [myconfig] will be loaded with --preset=myconfig
-
-    default_config = {
-        u'strict': {
-            u'hide-listing': u'65530',
-            u'text-encoding': u'',
-            u'soft-linefeed': u'False',
-            u'hide-protected': u'True',
-            u'allow-code-poke': u'True',
-            u'prevent-close': u'True',
-            u'ctrl-c-break': u'False',
-            },
-        u'basica': {
-            u'reserved-memory': u'789',
-            },
-        u'pcjr': {
-            u'syntax': u'pcjr',
-            u'term': os.path.join(PROGRAM_PATH, 'PCTERM.BAS'),
-            u'video': u'pcjr',
-            u'font': u'vga',
-            u'codepage': u'437',
-            u'reserved-memory': u'4035',
-            u'text-width': u'40',
-            u'video-memory': u'16384',
-            },
-        u'tandy': {
-            u'syntax': u'tandy',
-            u'video': u'tandy',
-            u'font': u'tandy2',
-            u'codepage': u'437',
-            u'aspect': u'3072,2000',
-            u'max-reclen': u'255',
-            u'reserved-memory': u'3240',
-            u'video-memory': u'16384',
-            },
-        u'cga': {
-            u'video': u'cga',
-            u'font': u'cga',
-            u'codepage': u'437',
-            u'text-width': u'40',
-            },
-        u'ega': {
-            u'video': u'ega',
-            u'font': u'vga',
-            },
-        u'mda': {
-            u'video': u'mda',
-            u'font': u'cga,mda',
-            u'codepage': u'437',
-            u'monitor': u'mono',
-            },
-        u'hercules': {
-            u'video': u'hercules',
-            u'font': u'cga,mda',
-            u'codepage': u'437',
-            u'monitor': u'mono',
-            },
-        u'olivetti': {
-            u'video': u'olivetti',
-            u'font': u'cga,olivetti',
-            u'codepage': u'437',
-            },
-        u'vga': {
-            u'video': u'vga',
-            u'font': u'vga',
-            u'codepage': u'437',
-            },
-        }
-
-
-    # by default, load what's in section [pcbasic] and override with anything
-    # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
-    default_presets = [u'pcbasic']
-
-    # number of positional arguments
-    positional = 2
-
-    # short-form arguments
-    short_args = {
-        u'd': u'double',
-        u'f': u'max-files',
-        u's': u'max-reclen',
-        u'b': u'interface=cli',
-        u't': u'interface=text',
-        u'n': u'interface=none',
-        u'l': u'load',
-        u'h': u'help',
-        u'r': u'run',
-        u'e': u'exec',
-        u'q': u'quit',
-        u'k': u'keys',
-        u'v': u'version',
-        u'w': u'wait',
-        }
-
-    # all long-form arguments
-    arguments = {
-        u'input': {u'type': u'string', u'default': u'', },
-        u'output': {u'type': u'string', u'default': u'', },
-        u'interface': {
-            u'type': u'string', u'default': u'',
-            u'choices': (u'', u'none', u'cli', u'text', u'graphical',
-                        u'ansi', u'curses', u'pygame', u'sdl2'), },
-        u'sound': {
-            u'type': u'string', u'default': u'',
-            u'choices': (u'', u'none', u'beep', u'portaudio', u'interface'), },
-        u'load': {u'type': u'string', u'default': u'', },
-        u'run': {u'type': u'string', u'default': u'',  },
-        u'convert': {u'type': u'string', u'default': u'', },
-        u'help': {u'type': u'bool', u'default': False, },
-        u'keys': {u'type': u'string', u'default': u'', },
-        u'exec': {u'type': u'string', u'default': u'', },
-        u'quit': {u'type': u'bool', u'default': False,},
-        u'double': {u'type': u'bool', u'default': False,},
-        u'max-files': {u'type': u'int', u'default': 3,},
-        u'max-reclen': {u'type': u'int', u'default': 128,},
-        u'serial-buffer-size': {u'type': u'int', u'default': 256,},
-        u'peek': {u'type': u'string', u'list': u'*', u'default': [],},
-        u'lpt1': {u'type': u'string', u'default': u'PRINTER:',},
-        u'lpt2': {u'type': u'string', u'default': u'',},
-        u'lpt3': {u'type': u'string', u'default': u'',},
-        u'cas1': {u'type': u'string', u'default': u'',},
-        u'com1': {u'type': u'string', u'default': u'',},
-        u'com2': {u'type': u'string', u'default': u'',},
-        u'codepage': {u'type': u'string', u'choices': CODEPAGES, u'default': u'437',},
-        u'font': {
-            u'type': u'string', u'list': u'*', u'choices': FONTS,
-            u'default': [u'unifont', u'univga', u'freedos'],},
-        u'dimensions': {u'type': u'int', u'list': 2, u'default': [],},
-        u'fullscreen': {u'type': u'bool', u'default': False,},
-        u'prevent-close': {u'type': u'bool', u'default': False,},
-        u'debug': {u'type': u'bool', u'default': False,},
-        u'hide-listing': {u'type': u'int', u'default': 65535,},
-        u'hide-protected': {u'type': u'bool', u'default': False,},
-        u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
-        u'resume': {u'type': u'bool', u'default': False,},
-        u'syntax': {
-            u'type': u'string', u'choices': (u'advanced', u'pcjr', u'tandy'),
-            u'default': u'advanced',},
-        u'term': {u'type': u'string', u'default': u'',},
-        u'video': {
-            u'type': u'string', u'default': 'vga',
-            u'choices': (
-                u'vga', u'ega', u'cga', u'mda',
-                u'pcjr', u'tandy', u'hercules', u'olivetti'), },
-        u'text-encoding': {u'type': u'string', u'default': u'', u'check': _check_text_encoding},
-        u'soft-linefeed': {u'type': u'bool', u'default': False,},
-        u'border': {u'type': u'int', u'default': 5,},
-        u'mouse-clipboard': {u'type': u'bool', u'default': True,},
-        u'state': {u'type': u'string', u'default': u'',},
-        u'monitor': {
-            u'type': u'string',
-            u'choices': (u'rgb', u'composite', u'green', u'amber', u'grey', u'mono'),
-            u'default': u'rgb',},
-        u'aspect': {u'type': u'int', u'list': 2, u'default': [4, 3],},
-        u'scaling': {
-            u'type': u'string', u'choices':(u'smooth', u'native', u'crisp'),
-            u'default': u'smooth',},
-        u'version': {u'type': u'bool', u'default': False,},
-        u'config': {u'type': u'string', u'default': u'',},
-        u'logfile': {u'type': u'string', u'default': u'',},
-        # negative list length means 'optionally up to'
-        u'max-memory': {u'type': u'int', u'list': -2, u'default': [65534, 4096]},
-        u'allow-code-poke': {u'type': u'bool', u'default': False,},
-        u'reserved-memory': {u'type': u'int', u'default': 3429,},
-        u'caption': {u'type': u'string', u'default': NAME,},
-        u'text-width': {u'type': u'int', u'choices':(u'40', u'80'), u'default': 80,},
-        u'video-memory': {u'type': u'int', u'default': 262144,},
-        u'shell': {u'type': u'string', u'default': u'',},
-        u'ctrl-c-break': {u'type': u'bool', u'default': True,},
-        u'wait': {u'type': u'bool', u'default': False,},
-        u'current-device': {u'type': u'string', u'default': ''},
-        u'extension': {u'type': u'string', u'list': u'*', u'default': []},
-        u'options': {u'type': u'string', u'default': ''},
-        # depecated argument, use text-encoding instead
-        u'utf8': {u'type': u'bool', u'default': False,},
-    }
 
     def __init__(self, temp_dir, arguments):
         """Initialise settings."""
@@ -349,12 +365,12 @@ class Settings(object):
         # local config file settings override preset settings
         self._merge_arguments(args, preset_dict[u'pcbasic'])
         # find unrecognised arguments
-        unrecognised = ((_k, _v) for _k, _v in iteritems(args) if _k not in self.arguments)
+        unrecognised = ((_k, _v) for _k, _v in iteritems(args) if _k not in ARGUMENTS)
         for key, value in unrecognised:
             logging.warning(
                 'Ignored unrecognised option `%s=%s` in configuration file', key, value
             )
-        args = {_k: _v for _k, _v in iteritems(args) if _k in self.arguments}
+        args = {_k: _v for _k, _v in iteritems(args) if _k in ARGUMENTS}
         # parse rest of command line
         self._merge_arguments(args, self._parse_args(remaining))
         # parse GW-BASIC style options
@@ -375,9 +391,9 @@ class Settings(object):
         except KeyError:
             if get_default:
                 try:
-                    value = self.arguments[name][u'default']
+                    value = ARGUMENTS[name][u'default']
                 except KeyError:
-                    if name in range(self.positional):
+                    if name in range(NUM_POSITIONAL):
                         return u''
             else:
                 value = None
@@ -443,8 +459,9 @@ class Settings(object):
             pass
         # devices and mounts
         device_params = {
-                key.upper()+':' : self.get(key)
-                for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')}
+            key.upper()+':' : self.get(key)
+            for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')
+        }
         current_device, mount_dict = self._get_drives()
         # memory setting
         max_list = self.get('max-memory')
@@ -784,7 +801,7 @@ class Settings(object):
         """Append short arguments and value to dict."""
         for i, short_arg in enumerate(key[1:]):
             try:
-                skey, svalue = safe_split(self.short_args[short_arg], u'=')
+                skey, svalue = safe_split(SHORT_ARGS[short_arg], u'=')
                 if not svalue and not skey:
                     continue
                 if (not svalue) and i == len(key)-2:
@@ -800,7 +817,7 @@ class Settings(object):
         args = {}
         arg_deque = deque(argv)
         # positional arguments must come before any options
-        for pos in range(self.positional):
+        for pos in range(NUM_POSITIONAL):
             if not arg_deque or arg_deque[0].startswith(u'-'):
                 break
             args[pos] = arg_deque.popleft()
@@ -824,7 +841,7 @@ class Settings(object):
 
     def _parse_presets(self, remaining, conf_dict):
         """Parse presets"""
-        presets = self.default_presets
+        presets = DEFAULT_SECTION
         try:
             argdict = {u'preset': remaining.pop(u'preset')}
         except KeyError:
@@ -836,7 +853,7 @@ class Settings(object):
                 try:
                     self._merge_arguments(argdict, conf_dict[p])
                 except KeyError:
-                    if p not in self.default_presets:
+                    if p not in DEFAULT_SECTION:
                         logging.warning(u'Ignored undefined preset "%s"', p)
             # look for more presets in expended arglist
             try:
@@ -887,7 +904,7 @@ class Settings(object):
         """Find the correct config file and read it."""
         # always read default config files; private config overrides system config
         # we update a whole preset at once, there's no joining of settings.
-        conf_dict = dict(self.default_config)
+        conf_dict = PRESETS.copy()
         conf_dict.update(self._read_config_file(USER_CONFIG_PATH))
         # find any local overriding config file & read it
         config_file = None
@@ -919,7 +936,7 @@ class Settings(object):
     def _parse_args(self, remaining):
         """Retrieve command line options."""
         # set arguments
-        known = list(self.arguments.keys()) + list(range(self.positional))
+        known = list(ARGUMENTS.keys()) + list(range(NUM_POSITIONAL))
         args = {d: remaining[d] for d in remaining if d in known}
         not_recognised = {d: remaining[d] for d in remaining if d not in known}
         for d in not_recognised:
@@ -986,7 +1003,7 @@ class Settings(object):
         """Update target_dict with new_dict. Lists of indefinite length are appended."""
         for a in new_dict:
             try:
-                if (a in target_dict and self.arguments[a][u'list'] == u'*' and target_dict[a]):
+                if (a in target_dict and ARGUMENTS[a][u'list'] == u'*' and target_dict[a]):
                     target_dict[a] += u',' + new_dict[a]
                     continue
             except KeyError:
@@ -999,7 +1016,7 @@ class Settings(object):
         """Convert arguments to required type and list length."""
         for name in args:
             try:
-                args[name] = self._to_list(name, args[name], self.arguments[name][u'list'])
+                args[name] = self._to_list(name, args[name], ARGUMENTS[name][u'list'])
             except KeyError:
                 # not a list
                 args[name] = self._parse_type(name, args[name])
@@ -1009,25 +1026,25 @@ class Settings(object):
 
     def _parse_type(self, d, arg):
         """Convert argument to required type."""
-        if d not in self.arguments:
+        if d not in ARGUMENTS:
             return arg
-        if u'choices' in self.arguments[d]:
+        if u'choices' in ARGUMENTS[d]:
             arg = arg.lower()
         first_arg = arg.split(u':')[0]
-        if u'type' in self.arguments[d]:
-            if (self.arguments[d][u'type'] == u'int'):
+        if u'type' in ARGUMENTS[d]:
+            if (ARGUMENTS[d][u'type'] == u'int'):
                 arg = self._to_int(d, arg)
-            elif (self.arguments[d][u'type'] == u'bool'):
+            elif (ARGUMENTS[d][u'type'] == u'bool'):
                 arg = self._to_bool(d, arg)
-        if u'choices' in self.arguments[d]:
-            if first_arg and first_arg not in self.arguments[d][u'choices']:
+        if u'choices' in ARGUMENTS[d]:
+            if first_arg and first_arg not in ARGUMENTS[d][u'choices']:
                 logging.warning(
                     u'Value "%s=%s" ignored; should be one of (%s)',
-                    d, arg, u', '.join(text_type(x) for x in self.arguments[d][u'choices'])
+                    d, arg, u', '.join(text_type(x) for x in ARGUMENTS[d][u'choices'])
                 )
                 arg = u''
-        if u'check' in self.arguments[d]:
-            if arg and not self.arguments[d][u'check'](first_arg):
+        if u'check' in ARGUMENTS[d]:
+            if arg and not ARGUMENTS[d][u'check'](first_arg):
                 logging.warning(u'Value "%s=%s" ignored; not recognised', d, arg)
                 arg = u''
         return arg
@@ -1106,7 +1123,7 @@ class Settings(object):
             u"# If you choose the same name as a system preset, PC-BASIC will use your\n"
             u"# options for that preset and not the system ones. This is not recommended.\n"
         )
-        argnames = sorted(self.arguments.keys())
+        argnames = sorted(ARGUMENTS.keys())
         try:
             with io.open(file_name, 'w', encoding='utf_8_sig', errors='replace') as f:
                 f.write(header)
@@ -1114,16 +1131,16 @@ class Settings(object):
                     try:
                         f.write(
                             u'## choices: %s\n' %
-                            u', '.join(u'%s' % (_s,) for _s in self.arguments[a][u'choices'])
+                            u', '.join(u'%s' % (_s,) for _s in ARGUMENTS[a][u'choices'])
                         )
                     except(KeyError, TypeError):
                         pass
                     try:
                         # check if it's a list
-                        self.arguments[a][u'list']
-                        formatted = u','.join(u'%s' % (_s,) for _s in self.arguments[a][u'default'])
+                        ARGUMENTS[a][u'list']
+                        formatted = u','.join(u'%s' % (_s,) for _s in ARGUMENTS[a][u'default'])
                     except(KeyError, TypeError):
-                        formatted = u'%s' % (self.arguments[a][u'default'],)
+                        formatted = u'%s' % (ARGUMENTS[a][u'default'],)
                     f.write(u'#%s=%s\n' % (a, formatted))
                 f.write(footer)
         except (OSError, IOError):
