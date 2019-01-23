@@ -12,7 +12,6 @@ import sys
 import logging
 import zipfile
 import locale
-import tempfile
 import shutil
 import codecs
 import pkg_resources
@@ -24,6 +23,7 @@ from .compat import WIN32, get_short_pathname, argv
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME
 from .compat import split_quoted, getcwdu
 from .compat import console, stdout, stdin, stderr, IS_CONSOLE_APP
+from .compat import TemporaryDirectory
 
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
 from .metadata import VERSION, NAME
@@ -1169,28 +1169,6 @@ def safe_split(s, sep):
     else:
         s1 = u''
     return s0, s1
-
-
-class TemporaryDirectory():
-    """Temporary directory context guard like in Python 3 tempfile."""
-
-    def __init__(self, prefix=u''):
-        """Initialise context guard."""
-        self._prefix = prefix
-        self._temp_dir = None
-
-    def __enter__(self):
-        """Create temp directory."""
-        self._temp_dir = tempfile.mkdtemp(prefix=self._prefix)
-        return self._temp_dir
-
-    def __exit__(self, dummy_1, dummy_2, dummy_3):
-        """Clean up temp directory."""
-        if self._temp_dir:
-            try:
-                shutil.rmtree(self._temp_dir)
-            except EnvironmentError as e:
-                logging.error('Could not clean up temporary directory: %s', e)
 
 
 class WhitespaceStripper(object):
