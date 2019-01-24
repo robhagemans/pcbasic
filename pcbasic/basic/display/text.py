@@ -312,19 +312,21 @@ class TextBuffer(object):
 
     def get_fullchar_attr(self, pagenum, row, col):
         """Retrieve SBCS or DBCS character."""
-        therow = self.pages[pagenum].row[row-1]
-        if therow.double[col-1] == 1:
+        charwidth = self.get_charwidth(pagenum, row, col)
+        if charwidth == 2:
             lead = int2byte(self.get_char(pagenum, row, col))
             trail = int2byte(self.get_char(pagenum, row, col + 1))
-            char = lead + trail
-            attr = self.get_attr(pagenum, row, col + 1)
-        elif therow.double[col-1] == 0:
+            return lead + trail, self.get_attr(pagenum, row, col + 1)
+        elif charwidth == 1:
             char = int2byte(self.get_char(pagenum, row, col))
             attr = self.get_attr(pagenum, row, col)
+            return char, attr
         else:
-            char, attr = b'\0', 0
-            logging.debug('DBCS buffer corrupted at %d, %d (%d)', row, col, therow.double[col-1])
-        return char, attr
+            logging.debug(
+                'DBCS trail byte access at %d, %d (%d)',
+                row, col, self.get_charwidth(pagenum, row, col)
+            )
+            return b'\0', 0
 
     def get_text_raw(self, pagenum):
         """Retrieve all raw text on a page."""
