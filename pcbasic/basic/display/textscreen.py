@@ -500,7 +500,7 @@ class TextScreen(object):
             # if the row is depleted, drop it and scroll up from below
             if remove_depleted and self.row_length(row) == 0:
                 self.scroll(row)
-        elif self.row_length(row) == therow.width:
+        elif self.row_length(row) == self.mode.width:
             # case 1
             wrap_char_attr = nextrow.buf[0]
             if self.row_length(row + 1) == 0:
@@ -521,7 +521,7 @@ class TextScreen(object):
             return
         else:
             # case 2b (i) perform multi_character delete by looping single chars
-            for newcol in range(col, therow.width+1):
+            for newcol in range(col, self.mode.width+1):
                 if self.row_length(row + 1) == 0:
                     break
                 wrap_char, _ = nextrow.buf[0]
@@ -705,14 +705,13 @@ class TextScreen(object):
         row, col, cursor, start, stop = args
         row = self.current_row if row is None else row
         col = self.current_col if col is None else col
-        cmode = self.mode
-        error.throw_if(row == cmode.height and self._bottom_bar.visible)
+        error.throw_if(row == self.mode.height and self._bottom_bar.visible)
         if self.scroll_area.active:
             error.range_check(self.scroll_area.top, self.scroll_area.bottom, row)
         else:
-            error.range_check(1, cmode.height, row)
-        error.range_check(1, cmode.width, col)
-        if row == cmode.height:
+            error.range_check(1, self.mode.height, row)
+        error.range_check(1, self.mode.width, col)
+        if row == self.mode.height:
             # temporarily allow writing on last row
             self._bottom_row_allowed = True
         self.set_pos(row, col, scroll_ok=False)
@@ -726,7 +725,7 @@ class TextScreen(object):
         if start is not None:
             error.range_check(0, 31, start, stop)
             # cursor shape only has an effect in text mode
-            if cmode.is_text_mode:
+            if self.mode.is_text_mode:
                 self.cursor.set_shape(start, stop)
 
     def csrlin_(self, args):
