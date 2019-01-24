@@ -97,7 +97,7 @@ class TextScreen(object):
             self._io_streams.write(b''.join([(b'\r\n' if c == b'\r' else c) for c in iterchar(s)]))
         last = b''
         # if our line wrapped at the end before, it doesn't anymore
-        self.text.pages[self.apagenum].row[self.current_row-1].wrap = False
+        self.set_wrap(self.current_row, False)
         for c in iterchar(s):
             row, col = self.current_row, self.current_col
             if c == b'\t':
@@ -110,11 +110,11 @@ class TextScreen(object):
                 # exclude CR/LF
                 if last != b'\r':
                     # LF connects lines like word wrap
-                    self.text.pages[self.apagenum].row[row-1].wrap = True
+                    self.set_wrap(row, True)
                     self.set_pos(row + 1, 1, scroll_ok)
             elif c == b'\r':
                 # CR
-                self.text.pages[self.apagenum].row[row-1].wrap = False
+                self.set_wrap(row, False)
                 self.set_pos(row + 1, 1, scroll_ok)
             elif c == b'\a':
                 # BEL
@@ -162,10 +162,11 @@ class TextScreen(object):
             self.write_line()
         # remove wrap after 80-column program line
         if len(line) == self.mode.width and self.current_row > 2:
-            self.text.pages[self.apagenum].row[self.current_row-3].wrap = False
+            self.set_wrap(self.current_row-2, False)
 
 
     ###########################################################################
+    # text buffer operations
 
     def write_char(self, c, do_scroll_down=False):
         """Put one character at the current position."""
@@ -200,7 +201,7 @@ class TextScreen(object):
                     if self.current_row < self.scroll_area.bottom:
                         self.scroll_down(self.current_row+1)
                 # wrap line
-                self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
+                self.set_wrap(self.current_row, True)
                 # move cursor and reset cursor attribute
                 self._move_cursor(self.current_row + 1, 1)
             else:
@@ -213,7 +214,11 @@ class TextScreen(object):
             self._check_pos(scroll_ok=True)
             self.set_pos(self.current_row + 1, 1)
         # ensure line above doesn't wrap
-        self.text.pages[self.apagenum].row[self.current_row-2].wrap = False
+        self.set_wrap(self.current_row-1, False)
+
+    def set_wrap(self, row, wrap):
+        """Connect/disconnect rows on active page by line wrap."""
+        self.text.pages[self.apagenum].row[row-1].wrap = wrap
 
     ###########################################################################
     # cursor position
@@ -612,7 +617,7 @@ class TextScreen(object):
             if self.current_row < self.mode.height:
                 self.scroll_down(self.current_row+1)
             # ensure the current row now wraps
-            self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
+            self.set_wrap(self.current_row, True)
             # cursor moves to start of next line
             self.set_pos(self.current_row+1, 1)
 

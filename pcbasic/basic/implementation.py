@@ -739,9 +739,7 @@ class Implementation(object):
                 self.screen.write(prompt)
                 # disconnect the wrap between line with the prompt and previous line
                 if self.screen.current_row > 1:
-                    (
-                        self.screen.text.pages[self.screen.apagenum].row[self.screen.current_row-2]
-                    ).wrap = False
+                    self.screen.set_wrap(self.screen.current_row-1, False)
                 line = self.editor.wait_screenline(write_endl=newline)
                 inputstream = InputTextFile(line)
                 # read the values and group them and the separators
