@@ -484,7 +484,7 @@ class TextScreen(object):
         # note that the last line recurses into a multi-character delete!
         therow = self.text.pages[self.apagenum].row[row-1]
         nextrow = self.text.pages[self.apagenum].row[row]
-        if not wraps(row):
+        if not self.wraps(row):
             # case 0b
             if col > therow.end:
                 return
