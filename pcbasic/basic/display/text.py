@@ -224,6 +224,14 @@ class TextBuffer(object):
             row_strs.append(horiz_bar)
         return '\n'.join(row_strs)
 
+    def set_wrap(self, pagenum, row, wrap):
+        """Connect/disconnect rows on active page by line wrap."""
+        self.pages[pagenum].row[row-1].wrap = wrap
+
+    def wraps(self, pagenum, row):
+        """The given row is connected by line wrap."""
+        return self.pages[pagenum].row[row-1].wrap
+
     def copy_page(self, src, dst):
         """Copy source to destination page."""
         for dst_row, src_row in zip(self.pages[dst].row, self.pages[src].row):
@@ -248,19 +256,22 @@ class TextBuffer(object):
         new_row = TextRow(attr, self.width, self._conv, self._dbcs_enabled)
         self.pages[pagenum].row.insert(bottom, new_row)
         # remove any wrap above/into deleted row, unless the deleted row wrapped into the next
-        if self.pages[pagenum].row[from_line-2].wrap:
-            self.pages[pagenum].row[from_line-2].wrap = self.pages[pagenum].row[from_line-1].wrap
+        if self.wraps(pagenum, from_line-1):
+            self.set_wrap(pagenum, from_line-1, self.wraps(pagenum, from_line))
+        # delete row # from_line
         del self.pages[pagenum].row[from_line-1]
 
     def scroll_down(self, pagenum, from_line, bottom, attr):
         """Scroll down."""
         new_row = TextRow(attr, self.width, self._conv, self._dbcs_enabled)
-        # if inserting below a wrapping row, make sure the new empty row wraps
-        # so as not to break line continuation
-        if self.pages[pagenum].row[from_line-2].wrap:
-            new_row.wrap = True
+        # insert at row # from_line
         self.pages[pagenum].row.insert(from_line - 1, new_row)
+        # delete row # bottom
         del self.pages[pagenum].row[bottom-1]
+        # if we inserted below a wrapping row, make sure the new empty row wraps
+        # so as not to break line continuation
+        if self.wraps(pagenum, from_line-1):
+            self.set_wrap(pagenum, from_line, True)
 
     def get_char(self, pagenum, row, col):
         """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
@@ -339,14 +350,14 @@ class TextBuffer(object):
     def find_start_of_line(self, pagenum, srow):
         """Find the start of the logical line that includes our current position."""
         # move up as long as previous line wraps
-        while srow > 1 and self.pages[pagenum].row[srow-2].wrap:
+        while srow > 1 and self.wraps(pagenum, srow-1):
             srow -= 1
         return srow
 
     def find_end_of_line(self, pagenum, srow):
         """Find the end of the logical line that includes our current position."""
         # move down as long as this line wraps
-        while srow <= self.height and self.pages[pagenum].row[srow-1].wrap:
+        while srow <= self.height and self.wraps(pagenum, srow):
             srow += 1
         return srow
 
@@ -381,6 +392,6 @@ class TextBuffer(object):
                 text.append(therow.get_text_logical(from_col=left, to_col=right))
             else:
                 text.append(therow.get_text_logical())
-            if not therow.wrap:
+            if not self.wraps(pagenum, row):
                 break
         return b''.join(text)
