@@ -608,14 +608,14 @@ class TextScreen(object):
 
     def line_feed(self):
         """Move the remainder of the line to the next row and wrap (LF)."""
-        this_row = self.text.pages[self.apagenum].row[self.current_row-1]
         if self.current_col < self.row_length(self.current_row):
             # insert characters, preserving cursor position
             cursor = self.current_row, self.current_col
             self.insert_fullchars(b' ' * (self.mode.width-self.current_col+1))
             self.set_pos(*cursor, scroll_ok=False)
             # adjust end of line and wrapping flag - LF connects lines like word wrap
-            this_row.put_line_feed(self.current_col)
+            self.set_row_length(self.current_row, self.current_col - 1)
+            self.set_wrap(self.current_row, True)
             # cursor stays in place after line feed!
         else:
             # find last row in logical line

@@ -155,12 +155,6 @@ class TextRow(object):
             stop += 1
         return b''.join(_c for _c, _ in self.buf[start:stop])
 
-    def put_line_feed(self, col):
-        """Put a line feed in the row."""
-        # adjust end of line and wrapping flag - LF connects lines like word wrap
-        self.end = col - 1
-        self.wrap = True
-
 
 class TextPage(object):
     """Buffer for a screen page."""
@@ -219,6 +213,10 @@ class TextBuffer(object):
     def wraps(self, pagenum, row):
         """The given row is connected by line wrap."""
         return self.pages[pagenum].row[row-1].wrap
+
+    def row_length(self, pagenum, row):
+        """Return logical length of row."""
+        return self.pages[pagenum].row[row-1].end
 
     def copy_page(self, src, dst):
         """Copy source to destination page."""
@@ -344,9 +342,9 @@ class TextBuffer(object):
         therow = self.pages[pagenum].row[row-1]
         if to_col is None:
             to_col = self._width
-        text = therow.get_text_raw(from_col, min(to_col, self.get_row_length(pagenum, row)))
+        text = therow.get_text_raw(from_col, min(to_col, self.row_length(pagenum, row)))
         # wrap on line that is not full means LF
-        if self.get_row_length(pagenum, row) < self._width or not self.wraps(pagenum, row):
+        if self.row_length(pagenum, row) < self._width or not self.wraps(pagenum, row):
             text += b'\n'
         return text
 
