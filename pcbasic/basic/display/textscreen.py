@@ -612,7 +612,7 @@ class TextScreen(object):
         if self.current_col < self.row_length(self.current_row):
             # insert characters, preserving cursor position
             cursor = self.current_row, self.current_col
-            self.insert_fullchars(b' ' * (this_row.width-self.current_col+1))
+            self.insert_fullchars(b' ' * (self.mode.width-self.current_col+1))
             self.set_pos(*cursor, scroll_ok=False)
             # adjust end of line and wrapping flag - LF connects lines like word wrap
             this_row.put_line_feed(self.current_col)

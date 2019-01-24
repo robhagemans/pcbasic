@@ -16,7 +16,7 @@ class TextRow(object):
 
     def __init__(self, attr, width, conv, dbcs_enabled):
         """Set up screen row empty and unwrapped."""
-        self.width = width
+        self._width = width
         # screen buffer, initialised to spaces
         self.buf = [(b' ', attr)] * width
         # character is part of double width char; 0 = no; 1 = lead, 2 = trail
@@ -30,7 +30,7 @@ class TextRow(object):
 
     def copy_from(self, src_row):
         """Copy contents from another row."""
-        assert self.width == src_row.width
+        assert self._width == src_row._width
         self.buf[:] = src_row.buf[:]
         self.double[:] = src_row.double[:]
         self.end = src_row.end
@@ -39,7 +39,7 @@ class TextRow(object):
     def clear(self, attr, from_col=1, to_col=None, adjust_end=True, clear_wrap=False):
         """Clear the screen row between given columns (inclusive; base-1 index)."""
         if to_col is None:
-            to_col = self.width
+            to_col = self._width
         width = to_col - from_col + 1
         start, stop = from_col - 1, to_col
         self.buf[start:stop] = [(b' ', attr)] * width
@@ -93,7 +93,7 @@ class TextRow(object):
         self.double.insert(col-1, 0)
         self.double.pop()
         if self.end >= col:
-            self.end = min(self.end + 1, self.width)
+            self.end = min(self.end + 1, self._width)
         else:
             self.end = col
         # reset the attribute of all moved chars
@@ -144,7 +144,7 @@ class TextRow(object):
     def get_text_raw(self, from_col=1, to_col=None):
         """Get the raw text between given columns (inclusive)."""
         if to_col is None:
-            to_col = self.width
+            to_col = self._width
         # slice bounds
         start, stop = from_col - 1, to_col
         # include lead byte if start on trail
@@ -158,10 +158,10 @@ class TextRow(object):
     def get_text_logical(self, from_col=1, to_col=None):
         """Get the text between given columns (inclusive), don't go beyond end."""
         if to_col is None:
-            to_col = self.width
+            to_col = self._width
         text = self.get_text_raw(from_col, min(to_col, self.end))
         # wrap on line that is not full means LF
-        if self.end < self.width or not self.wrap:
+        if self.end < self._width or not self.wrap:
             text += b'\n'
         return text
 
@@ -178,8 +178,6 @@ class TextPage(object):
     def __init__(self, attr, width, height, conv, dbcs_enabled):
         """Initialise the screen buffer to given dimensions."""
         self.row = [TextRow(attr, width, conv, dbcs_enabled) for _ in range(height)]
-        self.width = width
-        self.height = height
 
 
 class TextBuffer(object):
@@ -193,12 +191,12 @@ class TextBuffer(object):
             TextPage(attr, width, height, self._conv, self._dbcs_enabled)
             for _ in range(num_pages)
         ]
-        self.width = width
-        self.height = height
+        self._width = width
+        self._height = height
 
     def __repr__(self):
         """Return an ascii representation of the screen buffer (for debugging)."""
-        horiz_bar = ('   +' + '-' * self.width + '+')
+        horiz_bar = ('   +' + '-' * self._width + '+')
         row_strs = []
         for num, page in enumerate(self.pages):
             lastwrap = False
@@ -253,7 +251,7 @@ class TextBuffer(object):
 
     def scroll_up(self, pagenum, from_line, bottom, attr):
         """Scroll up."""
-        new_row = TextRow(attr, self.width, self._conv, self._dbcs_enabled)
+        new_row = TextRow(attr, self._width, self._conv, self._dbcs_enabled)
         self.pages[pagenum].row.insert(bottom, new_row)
         # remove any wrap above/into deleted row, unless the deleted row wrapped into the next
         if self.wraps(pagenum, from_line-1):
@@ -263,7 +261,7 @@ class TextBuffer(object):
 
     def scroll_down(self, pagenum, from_line, bottom, attr):
         """Scroll down."""
-        new_row = TextRow(attr, self.width, self._conv, self._dbcs_enabled)
+        new_row = TextRow(attr, self._width, self._conv, self._dbcs_enabled)
         # insert at row # from_line
         self.pages[pagenum].row.insert(from_line - 1, new_row)
         # delete row # bottom
@@ -358,7 +356,7 @@ class TextBuffer(object):
     def find_end_of_line(self, pagenum, srow):
         """Find the end of the logical line that includes our current position."""
         # move down as long as this line wraps
-        while srow <= self.height and self.wraps(pagenum, srow):
+        while srow <= self._height and self.wraps(pagenum, srow):
             srow += 1
         return srow
 
@@ -386,7 +384,7 @@ class TextBuffer(object):
             return b''
         text = []
         # add all rows of the logical line
-        for row in range(srow, self.height+1):
+        for row in range(srow, self._height+1):
             therow = self.pages[pagenum].row[row-1]
             # exclude prompt, if any; only go from furthest_left to furthest_right
             if row == prompt_row:
