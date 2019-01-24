@@ -502,7 +502,10 @@ class TextScreen(object):
                 self.scroll(row)
         elif self.row_length(row) == self.mode.width:
             # case 1
-            wrap_char_attr = nextrow.buf[0]
+            wrap_char_attr = (
+                int2byte(self.text.get_char(self.apagenum, row+1, 0)),
+                self.text.get_attr(self.apagenum, row+1, 0)
+            )
             if self.row_length(row + 1) == 0:
                 wrap_char_attr = None
             start_col, stop_col = therow.delete_char_attr(col, self.attr, wrap_char_attr)
@@ -524,7 +527,7 @@ class TextScreen(object):
             for newcol in range(col, self.mode.width+1):
                 if self.row_length(row + 1) == 0:
                     break
-                wrap_char, _ = nextrow.buf[0]
+                wrap_char = int2byte(self.text.get_char(self.apagenum, row+1, 0))
                 therow.put_char_attr(newcol, wrap_char, self.attr, adjust_end=True)
                 self._delete_at(row+1, 1, remove_depleted=True)
             start_col, stop_col = col, newcol

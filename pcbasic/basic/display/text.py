@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
-from ...compat import zip
+from ...compat import zip, int2byte
 
 
 class TextRow(object):
@@ -316,12 +316,13 @@ class TextBuffer(object):
         """Retrieve SBCS or DBCS character."""
         therow = self.pages[pagenum].row[row-1]
         if therow.double[col-1] == 1:
-            ca = therow.buf[col-1]
-            da = therow.buf[col]
-            char, attr = ca[0] + da[0], da[1]
+            lead = int2byte(self.get_char(pagenum, row, col))
+            trail = int2byte(self.get_char(pagenum, row, col + 1))
+            char = lead + trail
+            attr = self.get_attr(pagenum, row, col + 1)
         elif therow.double[col-1] == 0:
-            ca = therow.buf[col-1]
-            char, attr = ca[0], ca[1]
+            char = int2byte(self.get_char(pagenum, row, col))
+            attr = self.get_attr(pagenum, row, col)
         else:
             char, attr = b'\0', 0
             logging.debug('DBCS buffer corrupted at %d, %d (%d)', row, col, therow.double[col-1])
