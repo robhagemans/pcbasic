@@ -220,6 +220,11 @@ class TextScreen(object):
         """Connect/disconnect rows on active page by line wrap."""
         self.text.pages[self.apagenum].row[row-1].wrap = wrap
 
+    def wraps(self, row):
+        """The given row is connected by line wrap."""
+        return self.text.pages[self.apagenum].row[row-1].wrap
+
+
     ###########################################################################
     # cursor position
 
@@ -479,7 +484,7 @@ class TextScreen(object):
         # note that the last line recurses into a multi-character delete!
         therow = self.text.pages[self.apagenum].row[row-1]
         nextrow = self.text.pages[self.apagenum].row[row]
-        if not therow.wrap:
+        if not wraps(row):
             # case 0b
             if col > therow.end:
                 return
@@ -542,7 +547,7 @@ class TextScreen(object):
             self.refresh_range(self.apagenum, row, start_col, stop_col)
             # the insert has now filled the row and we used to be a row ending in LF:
             # scroll and continue into the new row
-            if therow.wrap and therow.end == self.mode.width:
+            if self.wraps(row) and therow.end == self.mode.width:
                 # since we used to be an LF row, wrap == True already
                 # then, the newly added row should wrap - TextBuffer.scroll_down takes care of this
                 self.scroll_down(row+1)
@@ -551,9 +556,9 @@ class TextScreen(object):
         else:
             # we have therow.end == width, so we're pushing the end of the row past the screen edge
             # if we're not a wrapping line, make space by scrolling and wrap into the new line
-            if not therow.wrap and row < self.scroll_area.bottom:
+            if not self.wraps(row) and row < self.scroll_area.bottom:
                 self.scroll_down(row+1)
-                therow.wrap = True
+                self.set_wrap(row, True)
             if row >= self.scroll_area.bottom:
                 # once the end of the line hits the bottom, start scrolling the start of the line up
                 start = self.text.find_start_of_line(self.apagenum, self.current_row)
