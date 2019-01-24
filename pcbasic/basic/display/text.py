@@ -155,16 +155,6 @@ class TextRow(object):
             stop += 1
         return b''.join(_c for _c, _ in self.buf[start:stop])
 
-    def get_text_logical(self, from_col=1, to_col=None):
-        """Get the text between given columns (inclusive), don't go beyond end."""
-        if to_col is None:
-            to_col = self._width
-        text = self.get_text_raw(from_col, min(to_col, self.end))
-        # wrap on line that is not full means LF
-        if self.end < self._width or not self.wrap:
-            text += b'\n'
-        return text
-
     def put_line_feed(self, col):
         """Put a line feed in the row."""
         # adjust end of line and wrapping flag - LF connects lines like word wrap
@@ -337,16 +327,28 @@ class TextBuffer(object):
 
     def get_text_logical(self, pagenum, start_row, start_col, stop_row, stop_col):
         """Retrieve section of logical text for copying."""
-        rows = self.pages[pagenum].row
         if start_row == stop_row:
-            return rows[start_row-1].get_text_logical(start_col, stop_col)
-        text = [rows[start_row-1].get_text_logical(from_col=start_col)]
+            return self._get_row_logical(pagenum, start_row, start_col, stop_col)
+        text = [
+            self._get_row_logical(pagenum, start_row, from_col=start_col)
+        ]
         text.extend(
-            _row.get_text_logical()
-            for _row in rows[start_row:stop_row-1]
+            self._get_row_logical(pagenum, _row)
+            for _row in range(start_row, stop_row-1)
         )
-        text.append(rows[stop_row-1].get_text_logical(to_col=stop_col))
+        text.append(self._get_row_logical(pagenum, stop_row, to_col=stop_col))
         return b''.join(text)
+
+    def _get_row_logical(self, pagenum, row, from_col=1, to_col=None):
+        """Get the text between given columns (inclusive), don't go beyond end."""
+        therow = self.pages[pagenum].row[row-1]
+        if to_col is None:
+            to_col = self._width
+        text = therow.get_text_raw(from_col, min(to_col, self.get_row_length(pagenum, row)))
+        # wrap on line that is not full means LF
+        if self.get_row_length(pagenum, row) < self._width or not self.wraps(pagenum, row):
+            text += b'\n'
+        return text
 
     def find_start_of_line(self, pagenum, srow):
         """Find the start of the logical line that includes our current position."""
@@ -370,8 +372,7 @@ class TextBuffer(object):
         else:
             start_row, start_col = from_row, from_column
         stop_row = self.find_end_of_line(pagenum, from_row)
-        stop_col = None
-        return self.get_text_logical(pagenum, start_row, start_col, stop_row, stop_col)
+        return self.get_text_logical(pagenum, start_row, start_col, stop_row, stop_col=None)
 
     def get_logical_line_from(self, pagenum, srow, prompt_row, left, right):
         """Get bytearray of the contents of the logical line, adapted for INPUT."""
@@ -387,12 +388,11 @@ class TextBuffer(object):
         text = []
         # add all rows of the logical line
         for row in range(srow, self._height+1):
-            therow = self.pages[pagenum].row[row-1]
             # exclude prompt, if any; only go from furthest_left to furthest_right
             if row == prompt_row:
-                text.append(therow.get_text_logical(from_col=left, to_col=right))
+                text.append(self._get_row_logical(pagenum, row, from_col=left, to_col=right))
             else:
-                text.append(therow.get_text_logical())
+                text.append(self._get_row_logical(pagenum, row,))
             if not self.wraps(pagenum, row):
                 break
         return b''.join(text)
