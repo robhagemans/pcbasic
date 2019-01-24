@@ -589,9 +589,9 @@ class TextScreen(object):
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
         end_row = self.text.find_end_of_line(self.apagenum, srow)
-        # clear the first row of te logical line
-        self.text.pages[self.apagenum].row[srow-1].clear(
-            self.attr, from_col=scol, clear_wrap=True,
+        # clear the first row of the logical line
+        self.text.clear_area(
+            self.apagenum, srow, scol, srow, self.mode.width, self.attr, clear_wrap=True
         )
         if scol > 1:
             # redraw the last char before the clear too, as it may have been changed by dbcs logic
