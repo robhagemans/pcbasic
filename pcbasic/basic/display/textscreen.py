@@ -224,6 +224,13 @@ class TextScreen(object):
         """The given row is connected by line wrap."""
         return self.text.pages[self.apagenum].row[row-1].wrap
 
+    def set_row_length(self, row, length):
+        """Set logical length of row."""
+        self.text.pages[self.apagenum].row[row-1].end = length
+
+    def row_length(self, row):
+        """Return logical length of row."""
+        return self.text.pages[self.apagenum].row[row-1].end
 
     ###########################################################################
     # cursor position
@@ -242,11 +249,11 @@ class TextScreen(object):
     def move_to_end(self):
         """Jump to end of logical line; follow wraps (END)."""
         row = self.text.find_end_of_line(self.apagenum, self.current_row)
-        if self.text.pages[self.apagenum].row[row-1].end == self.mode.width:
-            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end)
+        if self.row_length(row) == self.mode.width:
+            self.set_pos(row, self.row_length(row))
             self.overflow = True
         else:
-            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end+1)
+            self.set_pos(row, self.row_length(row) + 1)
 
     def set_pos(self, to_row, to_col, scroll_ok=True):
         """Set the current position."""
@@ -486,36 +493,36 @@ class TextScreen(object):
         nextrow = self.text.pages[self.apagenum].row[row]
         if not self.wraps(row):
             # case 0b
-            if col > therow.end:
+            if col > self.row_length(row):
                 return
             # case 0a
             start_col, stop_col = therow.delete_char_attr(col, self.attr)
             # if the row is depleted, drop it and scroll up from below
-            if remove_depleted and therow.end == 0:
+            if remove_depleted and self.row_length(row) == 0:
                 self.scroll(row)
-        elif therow.end == therow.width:
+        elif self.row_length(row) == therow.width:
             # case 1
             wrap_char_attr = nextrow.buf[0]
-            if nextrow.end == 0:
+            if self.row_length(row + 1) == 0:
                 wrap_char_attr = None
             start_col, stop_col = therow.delete_char_attr(col, self.attr, wrap_char_attr)
             self._delete_at(row+1, 1, remove_depleted=True)
-        elif col < therow.end:
+        elif col < self.row_length(row):
             # case 2a
             start_col, stop_col = therow.delete_char_attr(col, self.attr)
-        elif remove_depleted and col == therow.end:
+        elif remove_depleted and col == self.row_length(row):
             # case 2b (ii) while on the first LF row deleting the last char immediately appends
             # the next row, any subsequent LF rows are only removed once they are fully empty and
             # DEL is pressed another time
             start_col, stop_col = therow.delete_char_attr(col, self.attr)
-        elif remove_depleted and therow.end == 0:
+        elif remove_depleted and self.row_length(row) == 0:
             # case 2b (iii) this is where the empty row mentioned at 2b (ii) gets removed
             self.scroll(row)
             return
         else:
             # case 2b (i) perform multi_character delete by looping single chars
             for newcol in range(col, therow.width+1):
-                if nextrow.end == 0:
+                if self.row_length(row + 1) == 0:
                     break
                 wrap_char, _ = nextrow.buf[0]
                 therow.put_char_attr(newcol, wrap_char, self.attr, adjust_end=True)
@@ -539,7 +546,7 @@ class TextScreen(object):
     def _insert_at(self, row, col, c, attr):
         """Insert one halfwidth character at the given position."""
         therow = self.text.pages[self.apagenum].row[row-1]
-        if therow.end < self.mode.width:
+        if self.row_length(row) < self.mode.width:
             # insert the new char and ignore what drops off at the end
             # this changes the attribute of everything that has been redrawn
             _, _, start_col, stop_col = therow.insert_char_attr(col, c, attr)
@@ -547,7 +554,7 @@ class TextScreen(object):
             self.refresh_range(self.apagenum, row, start_col, stop_col)
             # the insert has now filled the row and we used to be a row ending in LF:
             # scroll and continue into the new row
-            if self.wraps(row) and therow.end == self.mode.width:
+            if self.wraps(row) and self.row_length(row) == self.mode.width:
                 # since we used to be an LF row, wrap == True already
                 # then, the newly added row should wrap - TextBuffer.scroll_down takes care of this
                 self.scroll_down(row+1)
@@ -599,7 +606,7 @@ class TextScreen(object):
     def line_feed(self):
         """Move the remainder of the line to the next row and wrap (LF)."""
         this_row = self.text.pages[self.apagenum].row[self.current_row-1]
-        if self.current_col < this_row.end:
+        if self.current_col < self.row_length(self.current_row):
             # insert characters, preserving cursor position
             cursor = self.current_row, self.current_col
             self.insert_fullchars(b' ' * (this_row.width-self.current_col+1))
@@ -664,7 +671,7 @@ class TextScreen(object):
                 c, reverse = self._bottom_bar.get_char_reverse(i)
                 a = reverse_attr if reverse else self.attr
                 start, stop = self.text.put_char_attr(self.apagenum, key_row, i+1, c, a)
-            self.text.pages[self.apagenum].row[-1].end = self.mode.width
+            self.set_row_length(self.mode.height, self.mode.width)
             # update the screen
             self.refresh_range(self.apagenum, key_row, 1, self.mode.width)
 
