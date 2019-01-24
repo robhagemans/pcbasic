@@ -528,7 +528,9 @@ class TextScreen(object):
                 if self.row_length(row + 1) == 0:
                     break
                 wrap_char = int2byte(self.text.get_char(self.apagenum, row+1, 0))
-                therow.put_char_attr(newcol, wrap_char, self.attr, adjust_end=True)
+                self.text.put_char_attr(
+                    self.apagenum, row, newcol, wrap_char, self.attr, adjust_end=True
+                )
                 self._delete_at(row+1, 1, remove_depleted=True)
             start_col, stop_col = col, newcol
         # refresh all that has been changed
