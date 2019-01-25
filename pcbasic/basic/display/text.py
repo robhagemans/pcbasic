@@ -214,6 +214,10 @@ class TextBuffer(object):
         """The given row is connected by line wrap."""
         return self.pages[pagenum].row[row-1].wrap
 
+    def set_row_length(self, pagenum, row, length):
+        """Return logical length of row."""
+        self.pages[pagenum].row[row-1].end = length
+
     def row_length(self, pagenum, row):
         """Return logical length of row."""
         return self.pages[pagenum].row[row-1].end

@@ -218,19 +218,19 @@ class TextScreen(object):
 
     def set_wrap(self, row, wrap):
         """Connect/disconnect rows on active page by line wrap."""
-        self.text.pages[self.apagenum].row[row-1].wrap = wrap
+        self.text.set_wrap(self.apagenum, row, wrap)
 
     def wraps(self, row):
         """The given row is connected by line wrap."""
-        return self.text.pages[self.apagenum].row[row-1].wrap
+        return self.text.wraps(self.apagenum, row)
 
     def set_row_length(self, row, length):
         """Set logical length of row."""
-        self.text.pages[self.apagenum].row[row-1].end = length
+        self.text.set_row_length(self.apagenum, row, length)
 
     def row_length(self, row):
         """Return logical length of row."""
-        return self.text.pages[self.apagenum].row[row-1].end
+        return self.text.row_length(self.apagenum, row)
 
     ###########################################################################
     # cursor position
@@ -483,7 +483,6 @@ class TextScreen(object):
         #                   -> if next row now empty, scroll it up & stop; otherwise recurse
         # note that the last line recurses into a multi-character delete!
         therow = self.text.pages[self.apagenum].row[row-1]
-        nextrow = self.text.pages[self.apagenum].row[row]
         if not self.wraps(row):
             # case 0b
             if col > self.row_length(row):
