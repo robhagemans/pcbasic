@@ -227,15 +227,10 @@ class TextBuffer(object):
         for dst_row, src_row in zip(self.pages[dst].row, self.pages[src].row):
             dst_row.copy_from(src_row)
 
-    def clear_area(self, pagenum, from_row, from_col, to_row, to_col, attr, clear_wrap=False):
+    def clear_area(self, pagenum, from_row, from_col, to_row, to_col, attr, clear_wrap):
         """Clear a rectangular area of the screen (inclusive bounds; 1-based indexing)."""
         for row in self.pages[pagenum].row[from_row-1:to_row]:
             row.clear(attr, from_col=from_col, to_col=to_col, clear_wrap=clear_wrap)
-
-    def clear_rows(self, pagenum, from_row, to_row, attr):
-        """Clear (inclusive) text row range."""
-        for row in self.pages[pagenum].row[from_row-1:to_row]:
-            row.clear(attr, clear_wrap=True)
 
     def put_char_attr(self, pagenum, row, col, c, attr, adjust_end=False):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""

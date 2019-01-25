@@ -398,7 +398,9 @@ class TextScreen(object):
 
     def _clear_rows(self, start, stop):
         """Clear text and graphics on given (inclusive) text row range."""
-        self.text.clear_rows(self.apagenum, start, stop, self.attr)
+        self.text.clear_area(
+            self.apagenum, start, 1, stop, self.mode.width, self.attr, clear_wrap=True
+        )
         self._clear_rows_refresh(start, stop)
 
     @contextmanager
