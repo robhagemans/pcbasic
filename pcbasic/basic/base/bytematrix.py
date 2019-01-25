@@ -287,6 +287,20 @@ class ByteMatrix(object):
             except ValueError:
                 return self[y, x1+1:x0+1]
 
+
+    def move(self, sy0, sy1, sx0, sx1, ty0, tx0):
+        """Move a submatrix, replacing with attribute 0."""
+        # copy or this won't work on a view
+        clip = self[sy0:sy1, sx0:sx1].copy()
+        height, width = sy1 - sy0, sx1 - sx0
+        self[sy0:sy1, sx0:sx1] = 0
+        self[ty0 : ty0+height, tx0 : tx0+width] = clip
+
+    def to_bytes(self):
+        """Convert to a bytes object (contiguous rows)."""
+        # we need the bytearray cast - only in case we're a view
+        return b''.join(bytes(bytearray(_row)) for _row in self._rows)
+
     # views
 
     @property
