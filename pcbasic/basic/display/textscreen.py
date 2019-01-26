@@ -237,13 +237,23 @@ class TextScreen(object):
 
     def incr_pos(self):
         """Increase the current position by a char width."""
-        # on a trail byte: just go one to the right
-        step = self.text.step_right(self.apagenum, self.current_row, self.current_col)
+        step = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
+        # on a trail byte: go just one to the right
+        step = step or 1
         self.set_pos(self.current_row, self.current_col + step, scroll_ok=False)
 
     def decr_pos(self):
         """Decrease the current position by a char width."""
-        step = self.text.step_left(self.apagenum, self.current_row, self.current_col)
+        # check width of cell to the left
+        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col-1)
+        # previous is trail byte: go two to the left
+        # lead byte: go three to the left
+        if width == 0:
+            step = 2
+        elif width == 2:
+            step = 3
+        else:
+            step = 1
         self.set_pos(self.current_row, self.current_col - step, scroll_ok=False)
 
     def move_to_end(self):
