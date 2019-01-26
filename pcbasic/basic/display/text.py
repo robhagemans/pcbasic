@@ -39,14 +39,6 @@ class TextRow(object):
         if clear_wrap:
             self.wrap = False
 
-    def put_char_attr(self, col, char, attr, adjust_end):
-        """Put a byte to the screen."""
-        assert isinstance(char, bytes), type(char)
-        # update the screen buffer
-        self.buf[col-1] = (char, attr)
-        if adjust_end:
-            self.end = max(self.end, col)
-
 
 class TextPage(object):
     """Buffer for a screen page."""
@@ -110,9 +102,13 @@ class TextPage(object):
         for row in self._rows[from_row-1:to_row]:
             row.clear(attr, from_col, to_col, adjust_end, clear_wrap)
 
-    def put_char_attr(self, row, col, c, attr, adjust_end=False):
+    def put_char_attr(self, row, col, char, attr, adjust_end=False):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
-        self._rows[row-1].put_char_attr(col, c, attr, adjust_end=adjust_end)
+        assert isinstance(char, bytes), type(char)
+        # update the screen buffer
+        self._rows[row-1].buf[col-1] = (char, attr)
+        if adjust_end:
+            self._rows[row-1].end = max(self._rows[row-1].end, col)
 
     def insert_char_attr(self, row, col, c, attr):
         """
