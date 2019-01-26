@@ -102,7 +102,7 @@ class Drawing(object):
         self._input_methods = input_methods
         # memebers set on mode switch
         self._mode = None
-        self._text = None
+        self._text_pages = None
         self._pixel_pages = None
         self._apage = None
         self.graph_view = None
@@ -114,10 +114,10 @@ class Drawing(object):
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         self._screen_aspect = aspect
 
-    def init_mode(self, mode, text, pixel_pages, num_attr):
+    def init_mode(self, mode, text_pages, pixel_pages, num_attr):
         """Initialise for new graphics mode."""
         self._mode = mode
-        self._text = text
+        self._text_pages = text_pages
         self._pixel_pages = pixel_pages
         self._num_attr = num_attr
         # set graphics viewport
@@ -161,8 +161,8 @@ class Drawing(object):
         row0, col0, row1, col1 = self._mode.pixel_to_text_area(
             x, y, x+rect.width, y+rect.height
         )
-        self._text.clear_area(
-            self._apagenum, row0, col0, row1, col1, self._attr, adjust_end=False, clear_wrap=False
+        self._text_pages[self._apagenum].clear_area(
+            row0, col0, row1, col1, self._attr, adjust_end=False, clear_wrap=False
         )
         for row in range(row0, row1+1):
             self._queues.video.put(signals.Event(

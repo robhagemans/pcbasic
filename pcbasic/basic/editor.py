@@ -129,20 +129,19 @@ class Editor(object):
             raise
         # get contents of the logical line
         if from_start:
-            outstr = self._screen.text.get_logical_line(
-                self._screen.apagenum, self._screen.current_row
+            outstr = self._screen.text_pages[self._screen.apagenum].get_logical_line(
+                self._screen.current_row
             )
         else:
-            outstr = self._screen.text.get_logical_line_from(
-                self._screen.apagenum, self._screen.current_row,
-                prompt_row, left, right
+            outstr = self._screen.text_pages[self._screen.apagenum].get_logical_line_from(
+                self._screen.current_row, prompt_row, left, right
             )
         # redirects output exactly the contents of the logical line
         # including any trailing whitespace and chars past 255
         self._io_streams.write(outstr)
         # go to last row of logical line
-        self._screen.current_row = self._screen.text.find_end_of_line(
-            self._screen.apagenum, self._screen.current_row
+        self._screen.current_row = self._screen.text_pages[self._screen.apagenum].find_end_of_line(
+            self._screen.current_row
         )
         # echo the CR, if requested
         if write_endl:
@@ -258,13 +257,13 @@ class Editor(object):
     def clear_line(self, the_row, from_col=1):
         """Clear whole logical line (ESC), leaving prompt."""
         self._screen.clear_from(
-            self._screen.text.find_start_of_line(self._screen.apagenum, the_row), from_col
+            self._screen.text_pages[self._screen.apagenum].find_start_of_line(the_row), from_col
         )
 
     def backspace(self, prompt_row, furthest_left):
         """Delete the char to the left (BACKSPACE)."""
         row, col = self._screen.current_row, self._screen.current_col
-        start_row = self._screen.text.find_start_of_line(self._screen.apagenum, row)
+        start_row = self._screen.text_pages[self._screen.apagenum].find_start_of_line(row)
         # don't backspace through prompt or through start of logical line
         # on the prompt row, don't go any further back than we've been already
         if (
@@ -287,7 +286,7 @@ class Editor(object):
         crow, ccol = self._screen.current_row, self._screen.current_col
         # find non-alphanumeric chars
         while True:
-            c = int2byte(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
+            c = int2byte(self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol))
             if (c not in ALPHANUMERIC):
                 break
             ccol += 1
@@ -299,7 +298,7 @@ class Editor(object):
                 ccol = 1
         # find alphanumeric chars
         while True:
-            c = int2byte(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
+            c = int2byte(self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol))
             if (c in ALPHANUMERIC):
                 break
             ccol += 1
@@ -323,7 +322,7 @@ class Editor(object):
                     return
                 crow -= 1
                 ccol = self._screen.mode.width
-            c = int2byte(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
+            c = int2byte(self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol))
             if (c in ALPHANUMERIC):
                 break
         # find non-alphanumeric chars
@@ -335,7 +334,7 @@ class Editor(object):
                     break
                 crow -= 1
                 ccol = self._screen.mode.width
-            c = int2byte(self._screen.text.get_char(self._screen.apagenum, crow, ccol))
+            c = int2byte(self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol))
             if (c not in ALPHANUMERIC):
                 break
         self._screen.set_pos(last_row, last_col)

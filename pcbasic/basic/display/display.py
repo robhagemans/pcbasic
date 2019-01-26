@@ -18,7 +18,7 @@ from . import modes
 from . import font
 
 from ..base.bytematrix import ByteMatrix
-from .text import TextBuffer
+from .text import TextPage
 from .textscreen import TextScreen
 from .colours import MONO_TINT
 
@@ -216,14 +216,13 @@ class Display(object):
             for _ in range(self.mode.num_pages)
         ]
         # initialise character buffers
-        # self.char_pages - bytematrix list
-        # self.text_pages - textmatrix list
-        self.text = TextBuffer(
-            self.attr, self.mode.width, self.mode.height, self.mode.num_pages
-        )
+        self.text_pages = [
+            TextPage(self.attr, self.mode.width, self.mode.height)
+            for _ in range(self.mode.num_pages)
+        ]
         # initialise text screen
         self.text_screen.init_mode(
-            self.mode, self.pixel_pages, self.text,
+            self.mode, self.pixel_pages, self.text_pages,
             self.attr, new_vpagenum, new_apagenum, font, self.colourmap,
             do_fullwidth=(self.mode.font_height >= 14)
         )
@@ -232,7 +231,7 @@ class Display(object):
             self.mode.memorymap.set_memory(self, saved_addr, saved_buffer)
         # center graphics cursor, reset window, etc.
         self.drawing.init_mode(
-            self.mode, self.text, self.pixel_pages, self.colourmap.num_attr
+            self.mode, self.text_pages, self.pixel_pages, self.colourmap.num_attr
         )
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
@@ -407,7 +406,7 @@ class Display(object):
         dst = values.to_int(next(args))
         list(args)
         error.range_check(0, self.mode.num_pages-1, dst)
-        self.text.copy_page(src, dst)
+        self.text_pages[dst].copy_from(self.text_pages[dst])
         if not self.mode.is_text_mode:
             self.pixel_pages[dst][:, :] = self.pixel_pages[src]
         self._queues.video.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
