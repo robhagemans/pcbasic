@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 from contextlib import contextmanager
 
-from ...compat import iterchar, int2byte
+from ...compat import iterchar
 
 from ..base import signals
 from ..base import error
@@ -70,7 +70,7 @@ class TextScreen(object):
         self.text_pages = text_pages
         self._dbcs_enabled = self.codepage.dbcs and do_fullwidth
         self._dbcs_text = [
-            [tuple(b' ') * mode.width for _ in range(mode.height)]
+            [tuple(iterchar(b' ')) * mode.width for _ in range(mode.height)]
             for _ in range(mode.num_pages)
         ]
         # pixel buffer
@@ -375,7 +375,7 @@ class TextScreen(object):
             tuples = ((_seq,) if len(_seq) == 1 else (_seq, b'') for _seq in marks)
             sequences = [_seq for _tup in tuples for _seq in _tup]
         else:
-            sequences = tuple(raw)
+            sequences = tuple(iterchar(raw))
         updated = [old != new for old, new in zip(self._dbcs_text[pagenum][row-1], sequences)]
         self._dbcs_text[pagenum][row-1] = sequences
         try:
@@ -390,7 +390,7 @@ class TextScreen(object):
         # collect chars in chunks with the same attribute
         while col <= stop:
             char = self._dbcs_text[pagenum][row-1][col-1]
-            attr =  self.text_pages[pagenum].get_attr(row, col)
+            attr = self.text_pages[pagenum].get_attr(row, col)
             if attr != last_attr:
                 if last_attr is not None:
                     chunks.append((last_col, chars, last_attr))
@@ -484,7 +484,9 @@ class TextScreen(object):
         self._dbcs_text[self.apagenum][from_line-1:self.scroll_area.bottom-1] = (
             self._dbcs_text[self.apagenum][from_line:self.scroll_area.bottom]
         )
-        self._dbcs_text[self.apagenum][self.scroll_area.bottom-1] = tuple(b' ') * self.mode.width
+        self._dbcs_text[self.apagenum][self.scroll_area.bottom-1] = (
+            tuple(iterchar(b' ')) * self.mode.width
+        )
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
             from_line+1, 1, self.scroll_area.bottom, self.mode.width
@@ -508,7 +510,7 @@ class TextScreen(object):
         self._dbcs_text[self.apagenum][from_line:self.scroll_area.bottom] = (
             self._dbcs_text[self.apagenum][from_line-1:self.scroll_area.bottom-1]
         )
-        self._dbcs_text[self.apagenum][from_line-1] = tuple(b' ') * self.mode.width
+        self._dbcs_text[self.apagenum][from_line-1] = tuple(iterchar(b' ')) * self.mode.width
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
             from_line, 1, self.scroll_area.bottom-1, self.mode.width
