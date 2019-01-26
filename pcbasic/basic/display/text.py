@@ -47,26 +47,6 @@ class TextRow(object):
         if adjust_end:
             self.end = max(self.end, col)
 
-    def insert_char_attr(self, col, c, attr):
-        """
-        Insert a halfwidth character,
-        NOTE: This sets the attribute of *everything that has moved* to attr.
-        Return the character dropping off at the end.
-        """
-        self.buf.insert(col-1, (c, attr))
-        pop_char, pop_attr = self.buf.pop()
-        if self.end >= col:
-            self.end = min(self.end + 1, self._width)
-        else:
-            self.end = col
-        # reset the attribute of all moved chars
-        self.buf[col-1:max(self.end, col)] = [
-            (_c, attr) for _c, _ in self.buf[col-1:max(self.end, col)]
-        ]
-        # attrs change only up to logical end of row but dbcs can change up to row width
-        stop_col = max(self.end, col)
-        return pop_char, pop_attr, col, stop_col
-
 
 class TextPage(object):
     """Buffer for a screen page."""
@@ -140,7 +120,20 @@ class TextPage(object):
         NOTE: This sets the attribute of *everything that has moved* to attr.
         Return the character dropping off at the end.
         """
-        return self._rows[row-1].insert_char_attr(col, c, attr)
+        therow = self._rows[row-1]
+        therow.buf.insert(col-1, (c, attr))
+        pop_char, pop_attr = therow.buf.pop()
+        if therow.end >= col:
+            therow.end = min(therow.end + 1, self._width)
+        else:
+            therow.end = col
+        # reset the attribute of all moved chars
+        therow.buf[col-1:max(therow.end, col)] = [
+            (_c, attr) for _c, _ in therow.buf[col-1:max(therow.end, col)]
+        ]
+        # attrs change only up to logical end of row but dbcs can change up to row width
+        stop_col = max(therow.end, col)
+        return pop_char, pop_attr, col, stop_col
 
     def delete_char_attr(self, row, col, attr, fill_char_attr=None):
         """
