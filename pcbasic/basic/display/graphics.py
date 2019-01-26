@@ -161,7 +161,9 @@ class Drawing(object):
         row0, col0, row1, col1 = self._mode.pixel_to_text_area(
             x, y, x+rect.width, y+rect.height
         )
-        self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr, clear_wrap=False)
+        self._text.clear_area(
+            self._apagenum, row0, col0, row1, col1, self._attr, adjust_end=False, clear_wrap=False
+        )
         for row in range(row0, row1+1):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_PUT_TEXT,

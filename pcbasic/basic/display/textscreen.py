@@ -409,7 +409,8 @@ class TextScreen(object):
     def _clear_rows(self, start, stop):
         """Clear text and graphics on given (inclusive) text row range."""
         self.text.clear_area(
-            self.apagenum, start, 1, stop, self.mode.width, self.attr, clear_wrap=True
+            self.apagenum, start, 1, stop, self.mode.width, self.attr,
+            adjust_end=True, clear_wrap=True
         )
         self._clear_rows_refresh(start, stop)
 
@@ -596,7 +597,8 @@ class TextScreen(object):
         end_row = self.text.find_end_of_line(self.apagenum, srow)
         # clear the first row of the logical line
         self.text.clear_area(
-            self.apagenum, srow, scol, srow, self.mode.width, self.attr, clear_wrap=True
+            self.apagenum, srow, scol, srow, self.mode.width, self.attr,
+            adjust_end=True, clear_wrap=True
         )
         if scol > 1:
             # redraw the last char before the clear too, as it may have been changed by dbcs logic
