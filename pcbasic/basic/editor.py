@@ -124,7 +124,7 @@ class Editor(object):
     def wait_screenline(self, write_endl=True, from_start=False):
         """Enter interactive mode and read string from console."""
         # from_start means direct entry mode, otherwise input mode
-        prompt_width = 0 if from_start else self._screen.current_col-1
+        prompt_width = 0 if from_start else self._screen.current_col - 1
         try:
             # give control to user for interactive mode
             prompt_row, left, right = self._interact(prompt_width)
@@ -135,21 +135,12 @@ class Editor(object):
             self._screen.write_line()
             raise
         # get contents of the logical line
-        if from_start:
-            outstr = self._screen.text_pages[self._screen.apagenum].get_logical_line(
-                self._screen.current_row
-            )
-        else:
-            outstr = self._screen.text_pages[self._screen.apagenum].get_logical_line_from(
-                self._screen.current_row, prompt_row, left, right
-            )
+        outstr = self._screen.get_logical_line(from_start, prompt_row, left, right)
         # redirects output exactly the contents of the logical line
         # including any trailing whitespace and chars past 255
         self._io_streams.write(outstr)
         # go to last row of logical line
-        self._screen.current_row = self._screen.text_pages[self._screen.apagenum].find_end_of_line(
-            self._screen.current_row
-        )
+        self._screen.move_to_end()
         # echo the CR, if requested
         if write_endl:
             self._screen.write_line()

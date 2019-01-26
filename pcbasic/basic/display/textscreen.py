@@ -189,6 +189,15 @@ class TextScreen(object):
         if len(line) == self.mode.width and self.current_row > 2:
             self.set_wrap(self.current_row-2, False)
 
+    def start_line(self):
+        """Move the cursor to the start of the next line, this line if empty."""
+        if self.current_col != 1:
+            self._io_streams.write(b'\r\n')
+            self._check_pos(scroll_ok=True)
+            self.set_pos(self.current_row + 1, 1)
+        # ensure line above doesn't wrap
+        self.set_wrap(self.current_row-1, False)
+
 
     ###########################################################################
     # text buffer operations
@@ -231,15 +240,6 @@ class TextScreen(object):
                 self._move_cursor(self.current_row + 1, 1)
             else:
                 self.current_col = self.mode.width
-
-    def start_line(self):
-        """Move the cursor to the start of the next line, this line if empty."""
-        if self.current_col != 1:
-            self._io_streams.write(b'\r\n')
-            self._check_pos(scroll_ok=True)
-            self.set_pos(self.current_row + 1, 1)
-        # ensure line above doesn't wrap
-        self.set_wrap(self.current_row-1, False)
 
     def set_wrap(self, row, wrap):
         """Connect/disconnect rows on active page by line wrap."""
@@ -530,6 +530,15 @@ class TextScreen(object):
 
     ###########################################################################
     # console operations
+
+    def get_logical_line(self, from_start, prompt_row, left, right):
+        """Get contents of the logical line (INPUT and console interaction)."""
+        if from_start:
+            return self.text_pages[self.apagenum].get_logical_line(self.current_row)
+        else:
+            return self.text_pages[self.apagenum].get_logical_line_from(
+                self.current_row, prompt_row, left, right
+            )
 
     # delete
 
