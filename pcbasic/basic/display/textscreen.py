@@ -451,6 +451,9 @@ class TextScreen(object):
         self.text_pages[self.apagenum].clear_area(
             start, 1, stop, self.mode.width, self._attr, adjust_end=True, clear_wrap=True
         )
+        self._dbcs_text[self.apagenum][start-1:stop] = [
+            tuple(iterchar(b' ')) * self.mode.width for _ in range(stop-start+1)
+        ]
         self._clear_rows_refresh(start, stop)
 
     @contextmanager
@@ -491,9 +494,7 @@ class TextScreen(object):
         sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
             from_line+1, 1, self.scroll_area.bottom, self.mode.width
         )
-        tx0, ty0, _, _ = self.mode.text_to_pixel_area(
-            from_line, 1, self.scroll_area.bottom-1, self.mode.width
-        )
+        tx0, ty0 = self.mode.text_to_pixel_pos(from_line, 1)
         self._pixel_pages[self.apagenum].move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)
 
     def scroll_down(self, from_line):
@@ -515,9 +516,7 @@ class TextScreen(object):
         sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
             from_line, 1, self.scroll_area.bottom-1, self.mode.width
         )
-        tx0, ty0, _, _ = self.mode.text_to_pixel_area(
-            from_line+1, 1, self.scroll_area.bottom, self.mode.width
-        )
+        tx0, ty0 = self.mode.text_to_pixel_pos(from_line+1, 1)
         self._pixel_pages[self.apagenum].move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)
 
     ###########################################################################

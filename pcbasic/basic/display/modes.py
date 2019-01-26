@@ -271,7 +271,7 @@ class VideoMode(object):
         # area bounds are all inclusive
         return (
             (col0-1) * self.font_width, (row0-1) * self.font_height,
-            (col1-col0+1) * self.font_width-1, (row1-row0+1) * self.font_height-1
+            col1 * self.font_width - 1, row1 * self.font_height - 1
         )
 
     def __eq__(self, rhs):
