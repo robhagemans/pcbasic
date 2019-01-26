@@ -342,6 +342,22 @@ class TextScreen(object):
             for row in range(self.mode.height):
                 self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
 
+
+    def _get_fullchar_attr(self, pagenum, row, col):
+        """Retrieve SBCS or DBCS character."""
+        charwidth = self.text.get_charwidth(pagenum, row, col)
+        if charwidth == 2:
+            lead = int2byte(self.text.get_char(pagenum, row, col))
+            trail = int2byte(self.text.get_char(pagenum, row, col + 1))
+            return lead + trail, self.text.get_attr(pagenum, row, col + 1)
+        elif charwidth == 1:
+            char = int2byte(self.text.get_char(pagenum, row, col))
+            attr = self.text.get_attr(pagenum, row, col)
+            return char, attr
+        else:
+            logging.debug('DBCS trail byte access at %d, %d (%d)', row, col, charwidth)
+            return b'\0', 0
+
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Draw a section of a screen row to pixels and interface."""
         col, last_col = start, start
@@ -350,7 +366,7 @@ class TextScreen(object):
         chunks = []
         # collect chars in chunks with the same attribute
         while col <= stop:
-            char, attr = self.text.get_fullchar_attr(pagenum, row, col)
+            char, attr = self._get_fullchar_attr(pagenum, row, col)
             if attr != last_attr:
                 if last_attr is not None:
                     chunks.append((last_col, chars, last_attr))

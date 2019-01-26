@@ -300,21 +300,6 @@ class TextBuffer(object):
         # trail byte
         return 0
 
-    def get_fullchar_attr(self, pagenum, row, col):
-        """Retrieve SBCS or DBCS character."""
-        charwidth = self.get_charwidth(pagenum, row, col)
-        if charwidth == 2:
-            lead = int2byte(self.get_char(pagenum, row, col))
-            trail = int2byte(self.get_char(pagenum, row, col + 1))
-            return lead + trail, self.get_attr(pagenum, row, col + 1)
-        elif charwidth == 1:
-            char = int2byte(self.get_char(pagenum, row, col))
-            attr = self.get_attr(pagenum, row, col)
-            return char, attr
-        else:
-            logging.debug('DBCS trail byte access at %d, %d (%d)', row, col, charwidth)
-            return b'\0', 0
-
     ###########################################################################
     # logical lines
 
