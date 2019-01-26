@@ -164,6 +164,7 @@ class Drawing(object):
         self._text_pages[self._apagenum].clear_area(
             row0, col0, row1, col1, self._attr, adjust_end=False, clear_wrap=False
         )
+        #FIXME: dbcs buffer doesn't know screen reality has changed
         for row in range(row0, row1+1):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_PUT_TEXT,

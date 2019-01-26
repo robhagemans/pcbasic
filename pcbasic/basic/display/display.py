@@ -478,23 +478,27 @@ class Display(object):
             # tandy gives illegal function call on CLS number
             error.throw_if(self._adapter == 'tandy')
             error.range_check(0, 2, val)
-        else:
-            if self.drawing.graph_view.is_set():
-                val = 1
-            elif self.text_screen.scroll_area.active:
-                val = 2
-            else:
-                val = 0
         list(args)
-        # cls is only executed if no errors have occurred
-        if val == 0:
+        # CLS is only executed if no errors have occurred
+        if not self.mode.is_text_mode and (
+                val == 1 or (val is None and self.drawing.graph_view.is_set())
+            ):
+            # CLS 1: in graphics mode, clear the graphics viewport
+            self.drawing.fill_rect(*self.drawing.graph_view.get(), index=(self.attr >> 4) & 0x7)
+            self.drawing.reset()
+            if not self.drawing.graph_view.is_set():
+                self.text_screen.redraw_bar()
+                self.text_screen.set_pos(1, 1)
+        elif val == 0 or (val is None and not self.text_screen.scroll_area.active):
             self.text_screen.clear()
             self.text_screen.redraw_bar()
             self.drawing.reset()
-        elif val == 1:
-            # clear the graphics viewport
-            if not self.mode.is_text_mode:
-                self.drawing.fill_rect(*self.drawing.graph_view.get(), index=(self.attr >> 4) & 0x7)
-            self.drawing.reset()
         elif val == 2:
+            # CLS 2 does not reset the graphics pointer (checked with DOSBox)
+            # if vscroll area is not active, this does not clear the bottom bar
             self.text_screen.clear_view()
+        elif val is None:
+            # however, CLS only with active scroll area *does* reset the view
+            # clear_view will clear the whole screen if the view is not set
+            self.text_screen.clear_view()
+            self.drawing.reset()

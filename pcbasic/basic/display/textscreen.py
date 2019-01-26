@@ -46,10 +46,12 @@ class TextScreen(object):
         # initialised by init_mode
         self.mode = None
         self._attr = 0
+        # used by Editor only
         self.apagenum = 0
         self._vpagenum = 0
         self._glyphs = None
         self._colourmap = None
+        # used by Editor only
         self.text_pages = None
         self._dbcs_enabled = False
         self._dbcs_text = None
