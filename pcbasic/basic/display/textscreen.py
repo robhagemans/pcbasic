@@ -388,7 +388,7 @@ class TextScreen(object):
         chars = []
         chunks = []
         # collect chars in chunks with the same attribute
-        while col <= self.mode.width:
+        while col <= stop:
             if self._dbcs_enabled:
                 char = self._dbcs_text[pagenum][row-1][col-1]
             else:

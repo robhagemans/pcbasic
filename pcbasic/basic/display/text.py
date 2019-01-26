@@ -42,7 +42,6 @@ class TextRow(object):
             self.end = min(self.end, start)
         if clear_wrap:
             self.wrap = False
-        return from_col, to_col
 
     def put_char_attr(self, col, char, attr, adjust_end=False):
         """Put a byte to the screen."""
