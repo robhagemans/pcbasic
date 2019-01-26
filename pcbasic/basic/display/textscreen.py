@@ -369,7 +369,7 @@ class TextScreen(object):
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Draw a section of a screen row to pixels and interface."""
         # mark out replaced char and changed following dbcs characters to be redrawn
-        raw =  self.text_pages[pagenum].get_row_text_raw(row)
+        raw = self.text_pages[pagenum].get_row_text_raw(row)
         if self._dbcs_enabled:
             marks = self._conv.mark(raw, flush=True)
             tuples = ((_seq,) if len(_seq) == 1 else (_seq, b'') for _seq in marks)

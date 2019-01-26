@@ -91,10 +91,6 @@ class TextRow(object):
             self.end = max(self.end - 1, 0)
         return col, stop_col
 
-    def get_text_raw(self, from_col, to_col):
-        """Get the raw text between given columns (inclusive)."""
-        return b''.join(_c for _c, _ in self.buf[from_col-1:to_col])
-
 
 class TextPage(object):
     """Buffer for a screen page."""
@@ -209,11 +205,11 @@ class TextPage(object):
 
     def get_text_raw(self):
         """Retrieve all raw text on this page."""
-        return tuple(row.get_text_raw(1, self._width) for row in range(self._rows))
+        return tuple(self.get_row_text_raw() for row in range(self._rows))
 
     def get_row_text_raw(self, row):
         """Retrieve raw text on a row."""
-        return self._rows[row-1].get_text_raw(1, self._width)
+        return b''.join(_c for _c, _ in self._rows[row-1].buf)
 
     ###########################################################################
     # logical lines
@@ -235,8 +231,10 @@ class TextPage(object):
     def _get_row_logical(self, row, from_col=1, to_col=None):
         """Get the text between given columns (inclusive), don't go beyond end."""
         if to_col is None:
-            to_col = self._width
-        text = self._rows[row-1].get_text_raw(from_col, min(to_col, self.row_length(row)))
+            to_col = self.row_length(row)
+        else:
+            to_col = min(to_col, self.row_length(row))
+        text = b''.join(_c for _c, _ in self._rows[row-1].buf[from_col-1:to_col])
         # wrap on line that is not full means LF
         if self.row_length(row) < self._width or not self.wraps(row):
             text += b'\n'
