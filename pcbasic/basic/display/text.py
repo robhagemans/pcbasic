@@ -67,30 +67,6 @@ class TextRow(object):
         stop_col = max(self.end, col)
         return pop_char, pop_attr, col, stop_col
 
-    def delete_char_attr(self, col, attr, fill_char_attr):
-        """
-        Delete a halfwidth character, filling with space(s) at the logical end.
-        NOTE: This sets the attribute of *everything that has moved* to attr.
-        """
-        # do nothing beyond logical end of row
-        if self.end < col:
-            return 0, 0
-        index = col-1
-        adjust_end = fill_char_attr is None
-        if adjust_end:
-            fill_char_attr = (b' ', attr)
-        self.buf[:self.end] = self.buf[:index] + self.buf[index+1:self.end] + [fill_char_attr]
-        # reset the attribute of all moved chars
-        self.buf[col-1:max(self.end, col)] = [
-            (_c, attr) for _c, _ in self.buf[col-1:max(self.end, col)]
-        ]
-        # attrs change only up to old logical end of row but dbcs can change up to row width
-        stop_col = max(self.end, col)
-        # change the logical end
-        if adjust_end:
-            self.end = max(self.end - 1, 0)
-        return col, stop_col
-
 
 class TextPage(object):
     """Buffer for a screen page."""
@@ -171,7 +147,26 @@ class TextPage(object):
         Delete a halfwidth character, filling with space(s) at the logical end.
         NOTE: This sets the attribute of *everything that has moved* to attr.
         """
-        return self._rows[row-1].delete_char_attr(col, attr, fill_char_attr)
+        therow = self._rows[row-1]
+        # do nothing beyond logical end of row
+        if therow.end < col:
+            return 0, 0
+        adjust_end = fill_char_attr is None
+        if adjust_end:
+            fill_char_attr = (b' ', attr)
+        therow.buf[:therow.end] = (
+            therow.buf[:col-1] + therow.buf[col:therow.end] + [fill_char_attr]
+        )
+        # reset the attribute of all moved chars
+        therow.buf[col-1:max(therow.end, col)] = [
+            (_c, attr) for _c, _ in therow.buf[col-1:max(therow.end, col)]
+        ]
+        # attrs change only up to old logical end of row but dbcs can change up to row width
+        stop_col = max(therow.end, col)
+        # change the logical end
+        if adjust_end:
+            therow.end = max(therow.end - 1, 0)
+        return col, stop_col
 
     def scroll_up(self, from_line, bottom, attr):
         """Scroll up."""
