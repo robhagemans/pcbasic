@@ -42,6 +42,16 @@ class TextScreen(object):
         self._bottom_row_allowed = False
         # function key macros
         self._bottom_bar = BottomBar()
+        # initialised by init_mode
+        self.mode = None
+        self.attr = 0
+        self.apagenum = 0
+        self.vpagenum = 0
+        self._glyphs = None
+        self._colourmap = None
+        self.text = None
+        self._dbcs_text = None
+        self.pixel_pages = None
 
     def init_mode(self, mode, pixel_pages, text, attr, vpagenum, apagenum, font, colourmap):
         """Reset the text screen for new video mode."""
@@ -51,8 +61,13 @@ class TextScreen(object):
         self.vpagenum = vpagenum
         self._glyphs = font
         self._colourmap = colourmap
-        # character buffer
+        # character buffers
         self.text = text
+        self._dbcs_text = [
+            [tuple(b' ') * mode.width for _ in range(mode.height)]
+            for _ in range(mode.num_pages)
+        ]
+        assert len(self._dbcs_text[self.apagenum]) == self.mode.height
         # pixel buffer
         self.pixel_pages = pixel_pages
         # redraw key line
@@ -237,7 +252,7 @@ class TextScreen(object):
 
     def incr_pos(self):
         """Increase the current position by a char width."""
-        step = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
+        step = self._get_charwidth(self.current_row, self.current_col)
         # on a trail byte: go just one to the right
         step = step or 1
         self.set_pos(self.current_row, self.current_col + step, scroll_ok=False)
@@ -245,7 +260,7 @@ class TextScreen(object):
     def decr_pos(self):
         """Decrease the current position by a char width."""
         # check width of cell to the left
-        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col-1)
+        width = self._get_charwidth(self.current_row, self.current_col-1)
         # previous is trail byte: go two to the left
         # lead byte: go three to the left
         if width == 0:
@@ -321,7 +336,7 @@ class TextScreen(object):
         # in text mode, set the cursor width and attriute to that of the new location
         if self.mode.is_text_mode:
             # set halfwidth/fullwidth cursor
-            width = self.text.get_charwidth(self.apagenum, row, col)
+            width = self._get_charwidth(row, col)
             # set the cursor attribute
             attr = self.text.get_attr(self.apagenum, row, col)
             self.cursor.move(row, col, attr, width)
@@ -342,31 +357,37 @@ class TextScreen(object):
             for row in range(self.mode.height):
                 self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
 
-
-    def _get_fullchar_attr(self, pagenum, row, col):
-        """Retrieve SBCS or DBCS character."""
-        charwidth = self.text.get_charwidth(pagenum, row, col)
-        if charwidth == 2:
-            lead = int2byte(self.text.get_char(pagenum, row, col))
-            trail = int2byte(self.text.get_char(pagenum, row, col + 1))
-            return lead + trail, self.text.get_attr(pagenum, row, col + 1)
-        elif charwidth == 1:
-            char = int2byte(self.text.get_char(pagenum, row, col))
-            attr = self.text.get_attr(pagenum, row, col)
-            return char, attr
-        else:
-            logging.debug('DBCS trail byte access at %d, %d (%d)', row, col, charwidth)
-            return b'\0', 0
+    def _get_charwidth(self, row, col):
+        """Get DBCS width of cell on active page."""
+        return len(self._dbcs_text[self.apagenum][row-1][col-1])
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Draw a section of a screen row to pixels and interface."""
+        raw = self.text.get_row_text_raw(pagenum, row)
+        # mark out replaced char and changed following dbcs characters to be redrawn
+        if self.text._dbcs_enabled:
+            marks = self.text._conv.mark(raw, flush=True)
+            tuples = ((_seq,) if len(_seq) == 1 else (_seq, b'') for _seq in marks)
+            sequences = [_seq for _tup in tuples for _seq in _tup]
+        else:
+            sequences = tuple(raw)
+        updated = [old != new for old, new in zip(self._dbcs_text[pagenum][row-1], sequences)]
+        try:
+            start, stop = updated.index(True) + 1, len(updated) - updated[::-1].index(True)
+        except ValueError:
+            # no change
+            return
+        assert len(self._dbcs_text[pagenum]) == self.mode.height
+        assert len(sequences) == self.mode.width, repr((sequences, len(sequences)))
+        self._dbcs_text[pagenum][row-1] = sequences
         col, last_col = start, start
         last_attr = None
         chars = []
         chunks = []
         # collect chars in chunks with the same attribute
-        while col <= stop:
-            char, attr = self._get_fullchar_attr(pagenum, row, col)
+        while col <= self.mode.width:
+            char = self._dbcs_text[pagenum][row-1][col-1]
+            attr = self.text.get_attr(pagenum, row, col)
             if attr != last_attr:
                 if last_attr is not None:
                     chunks.append((last_col, chars, last_attr))
@@ -457,6 +478,12 @@ class TextScreen(object):
             self._move_cursor(self.current_row - 1, self.current_col)
         # update text buffer
         self.text.scroll_up(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
+        # update dbcs buffer
+        self._dbcs_text[self.apagenum][from_line-1:self.scroll_area.bottom-1] = (
+            self._dbcs_text[self.apagenum][from_line:self.scroll_area.bottom]
+        )
+        self._dbcs_text[self.apagenum][self.scroll_area.bottom-1] = tuple(b' ') * self.mode.width
+        assert len(self._dbcs_text[self.apagenum]) == self.mode.height
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
             from_line+1, 1, self.scroll_area.bottom, self.mode.width
@@ -476,6 +503,12 @@ class TextScreen(object):
             self._move_cursor(self.current_row + 1, self.current_col)
         # update text buffer
         self.text.scroll_down(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
+        # update dbcs buffer
+        self._dbcs_text[self.apagenum][from_line:self.scroll_area.bottom] = (
+            self._dbcs_text[self.apagenum][from_line-1:self.scroll_area.bottom-1]
+        )
+        self._dbcs_text[self.apagenum][from_line-1] = tuple(b' ') * self.mode.width
+        assert len(self._dbcs_text[self.apagenum]) == self.mode.height
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
             from_line, 1, self.scroll_area.bottom-1, self.mode.width
@@ -492,7 +525,7 @@ class TextScreen(object):
 
     def delete_fullchar(self):
         """Delete the character (half/fullwidth) at the current position."""
-        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
+        width = self._get_charwidth(self.current_row, self.current_col)
         # on a halfwidth char, delete once; lead byte, delete twice; trail byte, do nothing
         if width > 0:
             self._delete_at(self.current_row, self.current_col)

@@ -285,6 +285,10 @@ class TextBuffer(object):
         """Retrieve all raw text on a page."""
         return tuple(row.get_text_raw() for row in range(self._pages[pagenum].row))
 
+    def get_row_text_raw(self, pagenum, row):
+        """Retrieve raw text on a row."""
+        return self._pages[pagenum].row[row-1].get_text_raw()
+
     ##########################################################################
     # fullchar access
 
