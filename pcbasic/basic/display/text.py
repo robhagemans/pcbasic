@@ -16,10 +16,12 @@ class _TextRow(object):
 
     def __init__(self, attr, width):
         """Set up screen row empty and unwrapped."""
-        # screen buffer, initialised to spaces
-        self.buf = [(b' ', attr)] * width
+        # halfwidth character buffer, initialised to spaces
+        self.chars = [b' '] * width
+        # attribute buffer
+        self.attrs = [attr] * width
         # last non-whitespace column [0--width], zero means all whitespace
-        self.end = 0
+        self.length = 0
         # line continues on next row (either LF or word wrap happened)
         self.wrap = False
 
@@ -40,21 +42,18 @@ class TextPage(object):
         lastwrap = False
         row_strs.append(horiz_bar)
         for i, row in enumerate(self._rows):
-            # convert non-ascii bytes to \x81 etc
-            # dbcs is encoded as double char in left column, '' in right
-            rowbytes = (_pair[0] for _pair in row.buf)
             # replace non-ascii with ? - this is not ideal but
             # for python2 we need to stick to ascii-128 so implicit conversion to bytes works
             # and for python3 we must use unicode
             # and backslashreplace messes up the output width...
             rowstr = ''.join(
                 _char.decode('ascii', 'replace').replace(u'\ufffd', u'?')
-                for _char in rowbytes
+                for _char in row.chars
             )
             left = '\\' if lastwrap else '|'
             right = '\\' if row.wrap else '|'
             row_strs.append('{0:2} {1}{2}{3} {4:2}'.format(
-                i, left, rowstr, right, row.end,
+                i, left, rowstr, right, row.length,
             ))
             lastwrap = row.wrap
         row_strs.append(horiz_bar)
@@ -70,26 +69,29 @@ class TextPage(object):
 
     def set_row_length(self, row, length):
         """Return logical length of row."""
-        self._rows[row-1].end = length
+        self._rows[row-1].length = length
 
     def row_length(self, row):
         """Return logical length of row."""
-        return self._rows[row-1].end
+        return self._rows[row-1].length
 
     def copy_from(self, src):
         """Copy source into this page."""
         for dst_row, src_row in zip(self._rows, src._rows):
-            assert len(dst_row.buf) == len(src_row.buf)
-            dst_row.buf[:] = src_row.buf[:]
-            dst_row.end = src_row.end
+            assert len(dst_row.chars) == len(src_row.chars)
+            assert len(dst_row.attrs) == len(src_row.attrs)
+            dst_row.chars[:] = src_row.chars[:]
+            dst_row.attrs[:] = src_row.attrs[:]
+            dst_row.length = src_row.length
             dst_row.wrap = src_row.wrap
 
     def clear_area(self, from_row, from_col, to_row, to_col, attr, clear_wrap, adjust_end):
         """Clear a rectangular area of the screen (inclusive bounds; 1-based indexing)."""
         for row in self._rows[from_row-1:to_row]:
-            row.buf[from_col-1:to_col] = [(b' ', attr)] * (to_col - from_col + 1)
-            if adjust_end and row.end <= to_col:
-                row.end = min(row.end, from_col-1)
+            row.chars[from_col-1:to_col] = [b' '] * (to_col - from_col + 1)
+            row.attrs[from_col-1:to_col] = [attr] * (to_col - from_col + 1)
+            if adjust_end and row.length <= to_col:
+                row.length = min(row.length, from_col-1)
             if clear_wrap:
                 row.wrap = False
 
@@ -97,29 +99,30 @@ class TextPage(object):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
         assert isinstance(char, bytes), type(char)
         # update the screen buffer
-        self._rows[row-1].buf[col-1] = (char, attr)
+        self._rows[row-1].chars[col-1] = char
+        self._rows[row-1].attrs[col-1] = attr
         if adjust_end:
-            self._rows[row-1].end = max(self._rows[row-1].end, col)
+            self._rows[row-1].length = max(self._rows[row-1].length, col)
 
-    def insert_char_attr(self, row, col, c, attr):
+    def insert_char_attr(self, row, col, char, attr):
         """
         Insert a halfwidth character,
         NOTE: This sets the attribute of *everything that has moved* to attr.
         Return the character dropping off at the end.
         """
         therow = self._rows[row-1]
-        therow.buf.insert(col-1, (c, attr))
-        pop_char, pop_attr = therow.buf.pop()
-        if therow.end >= col:
-            therow.end = min(therow.end + 1, self._width)
+        therow.chars.insert(col-1, char)
+        therow.attrs.insert(col-1, attr)
+        pop_char = therow.chars.pop()
+        pop_attr = therow.attrs.pop()
+        if therow.length >= col:
+            therow.length = min(therow.length + 1, self._width)
         else:
-            therow.end = col
+            therow.length = col
         # reset the attribute of all moved chars
-        therow.buf[col-1:max(therow.end, col)] = [
-            (_c, attr) for _c, _ in therow.buf[col-1:max(therow.end, col)]
-        ]
+        stop_col = max(therow.length, col)
+        therow.attrs[col-1:stop_col] = [attr] * (stop_col - col + 1)
         # attrs change only up to logical end of row but dbcs can change up to row width
-        stop_col = max(therow.end, col)
         return pop_char, pop_attr, col, stop_col
 
     def delete_char_attr(self, row, col, attr, fill_char_attr=None):
@@ -129,23 +132,26 @@ class TextPage(object):
         """
         therow = self._rows[row-1]
         # do nothing beyond logical end of row
-        if therow.end < col:
+        if therow.length < col:
             return 0, 0
+        if fill_char_attr is None:
+            fill_char, fill_attr = b' ', attr
+            adjust_end = True
+        else:
+            fill_char, fill_attr = fill_char_attr
         adjust_end = fill_char_attr is None
-        if adjust_end:
-            fill_char_attr = (b' ', attr)
-        therow.buf[:therow.end] = (
-            therow.buf[:col-1] + therow.buf[col:therow.end] + [fill_char_attr]
+        therow.chars[:therow.length] = (
+            therow.chars[:col-1] + therow.chars[col:therow.length] + [fill_char]
+        )
+        therow.attrs[:therow.length] = (
+            therow.attrs[:col-1] + therow.attrs[col:therow.length] + [fill_attr]
         )
         # reset the attribute of all moved chars
-        therow.buf[col-1:max(therow.end, col)] = [
-            (_c, attr) for _c, _ in therow.buf[col-1:max(therow.end, col)]
-        ]
-        # attrs change only up to old logical end of row but dbcs can change up to row width
-        stop_col = max(therow.end, col)
+        stop_col = max(therow.length, col)
+        therow.attrs[col-1:stop_col] = [attr] * (stop_col - col + 1)
         # change the logical end
         if adjust_end:
-            therow.end = max(therow.end - 1, 0)
+            therow.length = max(therow.length - 1, 0)
         return col, stop_col
 
     def scroll_up(self, from_line, bottom, attr):
@@ -172,11 +178,11 @@ class TextPage(object):
 
     def get_char(self, row, col):
         """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
-        return ord(self._rows[row-1].buf[col-1][0])
+        return ord(self._rows[row-1].chars[col-1])
 
     def get_attr(self, row, col):
         """Retrieve attribute from the screen."""
-        return self._rows[row-1].buf[col-1][1]
+        return self._rows[row-1].attrs[col-1]
 
     def get_text_raw(self):
         """Retrieve all raw text on this page."""
@@ -184,7 +190,7 @@ class TextPage(object):
 
     def get_row_text_raw(self, row):
         """Retrieve raw text on a row."""
-        return b''.join(_c for _c, _ in self._rows[row-1].buf)
+        return b''.join(self._rows[row-1].chars)
 
     ###########################################################################
     # logical lines
@@ -209,7 +215,7 @@ class TextPage(object):
             to_col = self.row_length(row)
         else:
             to_col = min(to_col, self.row_length(row))
-        text = b''.join(_c for _c, _ in self._rows[row-1].buf[from_col-1:to_col])
+        text = b''.join(self._rows[row-1].chars[from_col-1:to_col])
         # wrap on line that is not full means LF
         if self.row_length(row) < self._width or not self.wraps(row):
             text += b'\n'
