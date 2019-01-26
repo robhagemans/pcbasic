@@ -14,6 +14,7 @@ from ...compat import iterchar
 from ..base import signals
 from ..base import error
 from ..base import tokens as tk
+from ..base.tokens import ALPHANUMERIC
 from .. import values
 from .textbase import BottomBar, Cursor, ScrollArea
 
@@ -32,6 +33,8 @@ class TextScreen(object):
         self._io_streams = io_streams
         # sound output needed for printing \a
         self._sound = sound
+        # overwrite mode (instead of insert)
+        self._overwrite_mode = True
         # cursor
         self.cursor = Cursor(queues, mode)
         # current row and column
@@ -280,7 +283,7 @@ class TextScreen(object):
 
     def move_to_end(self):
         """Jump to end of logical line; follow wraps (END)."""
-        row =  self.text_pages[self.apagenum].find_end_of_line(self.current_row)
+        row = self.text_pages[self.apagenum].find_end_of_line(self.current_row)
         if self.row_length(row) == self.mode.width:
             self.set_pos(row, self.row_length(row))
             self.overflow = True
@@ -345,7 +348,7 @@ class TextScreen(object):
             # set halfwidth/fullwidth cursor
             width = self._get_charwidth(row, col)
             # set the cursor attribute
-            attr =  self.text_pages[self.apagenum].get_attr(row, col)
+            attr = self.text_pages[self.apagenum].get_attr(row, col)
             self.cursor.move(row, col, attr, width)
         else:
             # move the cursor
@@ -707,6 +710,104 @@ class TextScreen(object):
             self.set_wrap(self.current_row, True)
             # cursor moves to start of next line
             self.set_pos(self.current_row+1, 1)
+
+    # editor calls
+
+    @property
+    def overwrite_mode(self):
+        """Overwrite (True) or Insert (False) mode."""
+        return self._overwrite_mode
+
+    def set_overwrite_mode(self, new_overwrite=True):
+        """Set or unset the overwrite mode (INS)."""
+        if new_overwrite != self._overwrite_mode:
+            self._overwrite_mode = new_overwrite
+            self.cursor.set_default_shape(new_overwrite)
+
+    def clear_line(self, the_row, from_col=1):
+        """Clear whole logical line (ESC), leaving prompt."""
+        self.clear_from(
+            self.text_pages[self.apagenum].find_start_of_line(the_row), from_col
+        )
+
+    def backspace(self, prompt_row, furthest_left):
+        """Delete the char to the left (BACKSPACE)."""
+        row, col = self.current_row, self.current_col
+        start_row = self.text_pages[self.apagenum].find_start_of_line(row)
+        # don't backspace through prompt or through start of logical line
+        # on the prompt row, don't go any further back than we've been already
+        if (
+                ((col != furthest_left or row != prompt_row)
+                and (col > 1 or row > start_row))
+            ):
+            self.decr_pos()
+        self.delete_fullchar()
+
+    def tab(self):
+        """Jump to next 8-position tab stop (TAB)."""
+        newcol = 9 + 8 * int((self.current_col-1) // 8)
+        if self._overwrite_mode:
+            self.set_pos(self.current_row, newcol, scroll_ok=False)
+        else:
+            self.insert_fullchars(b' ' * (newcol-self.current_col))
+
+    def skip_word_right(self):
+        """Skip one word to the right (CTRL+RIGHT)."""
+        crow, ccol = self.current_row, self.current_col
+        # find non-alphanumeric chars
+        while True:
+            c = self.text_pages[self.apagenum].get_char(crow, ccol)
+            if (c not in ALPHANUMERIC):
+                break
+            ccol += 1
+            if ccol > self.mode.width:
+                if crow >= self.scroll_area.bottom:
+                    # nothing found
+                    return
+                crow += 1
+                ccol = 1
+        # find alphanumeric chars
+        while True:
+            c = self.text_pages[self.apagenum].get_char(crow, ccol)
+            if (c in ALPHANUMERIC):
+                break
+            ccol += 1
+            if ccol > self.mode.width:
+                if crow >= self.scroll_area.bottom:
+                    # nothing found
+                    return
+                crow += 1
+                ccol = 1
+        self.set_pos(crow, ccol)
+
+    def skip_word_left(self):
+        """Skip one word to the left (CTRL+LEFT)."""
+        crow, ccol = self.current_row, self.current_col
+        # find alphanumeric chars
+        while True:
+            ccol -= 1
+            if ccol < 1:
+                if crow <= self.scroll_area.top:
+                    # not found
+                    return
+                crow -= 1
+                ccol = self.mode.width
+            c = self.text_pages[self.apagenum].get_char(crow, ccol)
+            if (c in ALPHANUMERIC):
+                break
+        # find non-alphanumeric chars
+        while True:
+            last_row, last_col = crow, ccol
+            ccol -= 1
+            if ccol < 1:
+                if crow <= self.scroll_area.top:
+                    break
+                crow -= 1
+                ccol = self.mode.width
+            c = self.text_pages[self.apagenum].get_char(crow, ccol)
+            if (c not in ALPHANUMERIC):
+                break
+        self.set_pos(last_row, last_col)
 
     ###########################################################################
     # bottom bar

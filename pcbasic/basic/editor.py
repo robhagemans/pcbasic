@@ -12,7 +12,6 @@ from ..compat import iterchar, int2byte
 
 from .base import error
 from .base import tokens as tk
-from .base.tokens import ALPHANUMERIC
 from .base.eascii import as_bytes as ea
 
 
@@ -111,8 +110,6 @@ class Editor(object):
 
     def __init__(self, screen, keyboard, sound, io_streams):
         """Initialise environment."""
-        # overwrite mode (instead of insert)
-        self._overwrite_mode = True
         self._screen = screen
         self._sound = sound
         self._keyboard = keyboard
@@ -188,7 +185,7 @@ class Editor(object):
                         ea.LEFT, ea.CTRL_RIGHTBRACKET, ea.HOME, ea.CTRL_k, ea.END, ea.CTRL_n
                     ):
                     # arrow keys drop us out of insert mode
-                    self.set_overwrite_mode(True)
+                    self._screen.set_overwrite_mode(True)
                 if d == ea.CTRL_c:
                     # CTRL-C -- only caught here, not in wait_char like <CTRL+BREAK>
                     raise error.Break()
@@ -200,16 +197,16 @@ class Editor(object):
                     self._sound.beep()
                 elif d == b'\b':
                     # BACKSPACE, CTRL+H
-                    self.backspace(start_row, furthest_left)
+                    self._screen.backspace(start_row, furthest_left)
                 elif d == b'\t':
                     # TAB, CTRL+I
-                    self.tab()
+                    self._screen.tab()
                 elif d == b'\n':
                     # CTRL+ENTER, CTRL+J
                     self._screen.line_feed()
                 elif d == ea.ESCAPE:
                     # ESC, CTRL+[
-                    self.clear_line(row, furthest_left)
+                    self._screen.clear_line(row, furthest_left)
                 elif d in (ea.CTRL_END, ea.CTRL_e):
                     self._screen.clear_from(row, col)
                 elif d in (ea.UP, ea.CTRL_6):
@@ -221,11 +218,11 @@ class Editor(object):
                 elif d in (ea.LEFT, ea.CTRL_RIGHTBRACKET):
                     self._screen.decr_pos()
                 elif d in (ea.CTRL_RIGHT, ea.CTRL_f):
-                    self.skip_word_right()
+                    self._screen.skip_word_right()
                 elif d in (ea.CTRL_LEFT, ea.CTRL_b):
-                    self.skip_word_left()
+                    self._screen.skip_word_left()
                 elif d in (ea.INSERT, ea.CTRL_r):
-                    self.set_overwrite_mode(not self._overwrite_mode)
+                    self._screen.set_overwrite_mode(not self._screen.overwrite_mode)
                 elif d in (ea.DELETE, ea.CTRL_BACKSPACE):
                     self._screen.delete_fullchar()
                 elif d in (ea.HOME, ea.CTRL_k):
@@ -246,105 +243,14 @@ class Editor(object):
                     for d in letters:
                         # ignore eascii by this point, but not dbcs
                         if d[:1] not in (b'\0', b'\r'):
-                            if not self._overwrite_mode:
+                            if not self._screen.overwrite_mode:
                                 self._screen.insert_fullchars(d)
                             else:
                                 # put all dbcs in before messing with cursor position
-                                for c in iterchar(d):
-                                    self._screen.write_char(c, do_scroll_down=True)
+                                for char in iterchar(d):
+                                    self._screen.write_char(char, do_scroll_down=True)
         finally:
-            self.set_overwrite_mode(True)
+            self._screen.set_overwrite_mode(True)
             # reset cursor visibility
             self._screen.cursor.reset_visibility()
         return start_row, furthest_left, furthest_right
-
-    def set_overwrite_mode(self, new_overwrite=True):
-        """Set or unset the overwrite mode (INS)."""
-        if new_overwrite != self._overwrite_mode:
-            self._overwrite_mode = new_overwrite
-            self._screen.cursor.set_default_shape(new_overwrite)
-
-    def clear_line(self, the_row, from_col=1):
-        """Clear whole logical line (ESC), leaving prompt."""
-        self._screen.clear_from(
-            self._screen.text_pages[self._screen.apagenum].find_start_of_line(the_row), from_col
-        )
-
-    def backspace(self, prompt_row, furthest_left):
-        """Delete the char to the left (BACKSPACE)."""
-        row, col = self._screen.current_row, self._screen.current_col
-        start_row = self._screen.text_pages[self._screen.apagenum].find_start_of_line(row)
-        # don't backspace through prompt or through start of logical line
-        # on the prompt row, don't go any further back than we've been already
-        if (
-                ((col != furthest_left or row != prompt_row)
-                and (col > 1 or row > start_row))
-            ):
-            self._screen.decr_pos()
-        self._screen.delete_fullchar()
-
-    def tab(self):
-        """Jump to next 8-position tab stop (TAB)."""
-        newcol = 9 + 8 * int((self._screen.current_col-1) // 8)
-        if self._overwrite_mode:
-            self._screen.set_pos(self._screen.current_row, newcol, scroll_ok=False)
-        else:
-            self._screen.insert_fullchars(b' '*(newcol-self._screen.current_col))
-
-    def skip_word_right(self):
-        """Skip one word to the right (CTRL+RIGHT)."""
-        crow, ccol = self._screen.current_row, self._screen.current_col
-        # find non-alphanumeric chars
-        while True:
-            c = self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol)
-            if (c not in ALPHANUMERIC):
-                break
-            ccol += 1
-            if ccol > self._screen.mode.width:
-                if crow >= self._screen.scroll_area.bottom:
-                    # nothing found
-                    return
-                crow += 1
-                ccol = 1
-        # find alphanumeric chars
-        while True:
-            c = self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol)
-            if (c in ALPHANUMERIC):
-                break
-            ccol += 1
-            if ccol > self._screen.mode.width:
-                if crow >= self._screen.scroll_area.bottom:
-                    # nothing found
-                    return
-                crow += 1
-                ccol = 1
-        self._screen.set_pos(crow, ccol)
-
-    def skip_word_left(self):
-        """Skip one word to the left (CTRL+LEFT)."""
-        crow, ccol = self._screen.current_row, self._screen.current_col
-        # find alphanumeric chars
-        while True:
-            ccol -= 1
-            if ccol < 1:
-                if crow <= self._screen.scroll_area.top:
-                    # not found
-                    return
-                crow -= 1
-                ccol = self._screen.mode.width
-            c = self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol)
-            if (c in ALPHANUMERIC):
-                break
-        # find non-alphanumeric chars
-        while True:
-            last_row, last_col = crow, ccol
-            ccol -= 1
-            if ccol < 1:
-                if crow <= self._screen.scroll_area.top:
-                    break
-                crow -= 1
-                ccol = self._screen.mode.width
-            c = self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol)
-            if (c not in ALPHANUMERIC):
-                break
-        self._screen.set_pos(last_row, last_col)
