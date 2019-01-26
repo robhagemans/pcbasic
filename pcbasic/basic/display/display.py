@@ -219,13 +219,13 @@ class Display(object):
         # self.char_pages - bytematrix list
         # self.text_pages - textmatrix list
         self.text = TextBuffer(
-            self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
-            self.codepage, do_fullwidth=(self.mode.font_height >= 14)
+            self.attr, self.mode.width, self.mode.height, self.mode.num_pages
         )
         # initialise text screen
         self.text_screen.init_mode(
             self.mode, self.pixel_pages, self.text,
-            self.attr, new_vpagenum, new_apagenum, font, self.colourmap
+            self.attr, new_vpagenum, new_apagenum, font, self.colourmap,
+            do_fullwidth=(self.mode.font_height >= 14)
         )
         # restore emulated video memory in new mode
         if not erase:

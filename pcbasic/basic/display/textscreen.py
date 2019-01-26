@@ -26,6 +26,7 @@ class TextScreen(object):
         self.queues = queues
         self._values = values
         self.codepage = codepage
+        self._conv = codepage.get_converter(preserve=b'')
         self._tandytext = capabilities in ('pcjr', 'tandy')
         # output redirection
         self._io_streams = io_streams
@@ -50,10 +51,13 @@ class TextScreen(object):
         self._glyphs = None
         self._colourmap = None
         self.text = None
+        self._dbcs_enabled = False
         self._dbcs_text = None
         self.pixel_pages = None
 
-    def init_mode(self, mode, pixel_pages, text, attr, vpagenum, apagenum, font, colourmap):
+    def init_mode(
+            self, mode, pixel_pages, text, attr, vpagenum, apagenum, font, colourmap, do_fullwidth
+        ):
         """Reset the text screen for new video mode."""
         self.mode = mode
         self.attr = attr
@@ -63,6 +67,7 @@ class TextScreen(object):
         self._colourmap = colourmap
         # character buffers
         self.text = text
+        self._dbcs_enabled = self.codepage.dbcs and do_fullwidth
         self._dbcs_text = [
             [tuple(b' ') * mode.width for _ in range(mode.height)]
             for _ in range(mode.num_pages)
@@ -365,8 +370,8 @@ class TextScreen(object):
         """Draw a section of a screen row to pixels and interface."""
         raw = self.text.get_row_text_raw(pagenum, row)
         # mark out replaced char and changed following dbcs characters to be redrawn
-        if self.text._dbcs_enabled:
-            marks = self.text._conv.mark(raw, flush=True)
+        if self._dbcs_enabled:
+            marks = self._conv.mark(raw, flush=True)
             tuples = ((_seq,) if len(_seq) == 1 else (_seq, b'') for _seq in marks)
             sequences = [_seq for _tup in tuples for _seq in _tup]
         else:

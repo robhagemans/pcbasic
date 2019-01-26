@@ -14,25 +14,20 @@ from ...compat import zip, int2byte
 class TextRow(object):
     """Buffer for a single row of the screen."""
 
-    def __init__(self, attr, width, conv, dbcs_enabled):
+    def __init__(self, attr, width):
         """Set up screen row empty and unwrapped."""
         self._width = width
         # screen buffer, initialised to spaces
         self.buf = [(b' ', attr)] * width
-        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
-        self.double = [0] * width
         # last non-whitespace column [0--width], zero means all whitespace
         self.end = 0
         # line continues on next row (either LF or word wrap happened)
         self.wrap = False
-        self._dbcs_enabled = dbcs_enabled
-        self._conv = conv
 
     def copy_from(self, src_row):
         """Copy contents from another row."""
         assert self._width == src_row._width
         self.buf[:] = src_row.buf[:]
-        self.double[:] = src_row.double[:]
         self.end = src_row.end
         self.wrap = src_row.wrap
 
@@ -43,44 +38,20 @@ class TextRow(object):
         width = to_col - from_col + 1
         start, stop = from_col - 1, to_col
         self.buf[start:stop] = [(b' ', attr)] * width
-        self.double[start:stop] = [0] * width
         if adjust_end and self.end <= to_col:
             self.end = min(self.end, start)
         if clear_wrap:
             self.wrap = False
-        return self._rebuild_char_widths_from(from_col)
+        return from_col, to_col
 
     def put_char_attr(self, col, char, attr, adjust_end=False):
         """Put a byte to the screen."""
         assert isinstance(char, bytes), type(char)
         # update the screen buffer
         self.buf[col-1] = (char, attr)
-        self.double[col-1] = 0
         if adjust_end:
             self.end = max(self.end, col)
-        return self._rebuild_char_widths_from(col)
-
-    def _rebuild_char_widths_from(self, col):
-        """Rebuild DBCS character width buffers."""
-        # nothing to do for sbcs codepages
-        if not self._dbcs_enabled:
-            return col, col
-        # mark out replaced char and changed following dbcs characters to be redrawn
-        text = self.get_text_raw()
-        sequences = self._conv.mark(text, flush=True)
-        flags = ((0,) if len(seq) == 1 else (1, 2) for seq in sequences)
-        old_double = self.double
-        self.double = [entry for flag in flags for entry in flag]
-        # find the first and last changed columns, to be able to redraw
-        diff = [old != new for old, new in zip(old_double, self.double)]
-        if True in diff:
-            start_col, stop_col = diff.index(True) + 1, len(diff) - diff[::-1].index(True)
-        else:
-            start_col, stop_col = col, col
-        # if the tail byte has changed, the lead byte needs to be redrawn as well
-        if self.double[start_col-1] == 2:
-            start_col -= 1
-        return min(col, start_col), max(col, stop_col)
+        return col, col
 
     def insert_char_attr(self, col, c, attr):
         """
@@ -90,8 +61,6 @@ class TextRow(object):
         """
         self.buf.insert(col-1, (c, attr))
         pop_char, pop_attr = self.buf.pop()
-        self.double.insert(col-1, 0)
-        self.double.pop()
         if self.end >= col:
             self.end = min(self.end + 1, self._width)
         else:
@@ -100,10 +69,9 @@ class TextRow(object):
         self.buf[col-1:max(self.end, col)] = [
             (_c, attr) for _c, _ in self.buf[col-1:max(self.end, col)]
         ]
-        start_col, stop_col = self._rebuild_char_widths_from(col)
         # attrs change only up to logical end of row but dbcs can change up to row width
-        stop_col = max(self.end, stop_col)
-        return pop_char, pop_attr, start_col, stop_col
+        stop_col = max(self.end, col)
+        return pop_char, pop_attr, col, stop_col
 
     def delete_char_attr(self, col, attr, fill_char_attr):
         """
@@ -117,29 +85,17 @@ class TextRow(object):
         adjust_end = fill_char_attr is None
         if adjust_end:
             fill_char_attr = (b' ', attr)
-        # before we delete it, what is the dbcs type of this char?
-        dbcs = self.double[index]
         self.buf[:self.end] = self.buf[:index] + self.buf[index+1:self.end] + [fill_char_attr]
-        self.double[:self.end] = self.double[:index] + self.double[index+1:self.end] + [0]
-        # clear trail byte if lead deleted and vice versa
-        if dbcs == 2:
-            logging.debug('Trail byte delete')
-            self.buf[index-1] = (b' ', attr)
-            self.double[index-1] = 0
-        elif dbcs == 1:
-            self.buf[index] = (b' ', attr)
-            self.double[index] = 0
         # reset the attribute of all moved chars
         self.buf[col-1:max(self.end, col)] = [
             (_c, attr) for _c, _ in self.buf[col-1:max(self.end, col)]
         ]
-        start_col, stop_col = self._rebuild_char_widths_from(col)
         # attrs change only up to old logical end of row but dbcs can change up to row width
-        stop_col = max(self.end, stop_col)
+        stop_col = max(self.end, col)
         # change the logical end
         if adjust_end:
             self.end = max(self.end - 1, 0)
-        return start_col, stop_col
+        return col, stop_col
 
     def get_text_raw(self, from_col=1, to_col=None):
         """Get the raw text between given columns (inclusive)."""
@@ -147,32 +103,24 @@ class TextRow(object):
             to_col = self._width
         # slice bounds
         start, stop = from_col - 1, to_col
-        # include lead byte if start on trail
-        if self.double[start] == 2:
-            start -= 1
-        # include trail byte if end on lead
-        if self.double[stop-1] == 1:
-            stop += 1
         return b''.join(_c for _c, _ in self.buf[start:stop])
 
 
 class TextPage(object):
     """Buffer for a screen page."""
 
-    def __init__(self, attr, width, height, conv, dbcs_enabled):
+    def __init__(self, attr, width, height):
         """Initialise the screen buffer to given dimensions."""
-        self.row = [TextRow(attr, width, conv, dbcs_enabled) for _ in range(height)]
+        self.row = [TextRow(attr, width) for _ in range(height)]
 
 
 class TextBuffer(object):
     """Buffer for text on all screen pages."""
 
-    def __init__(self, attr, width, height, num_pages, codepage, do_fullwidth):
+    def __init__(self, attr, width, height, num_pages):
         """Initialise the screen buffer to given pages and dimensions."""
-        self._dbcs_enabled = codepage.dbcs and do_fullwidth
-        self._conv = codepage.get_converter(preserve=b'')
         self._pages = [
-            TextPage(attr, width, height, self._conv, self._dbcs_enabled)
+            TextPage(attr, width, height)
             for _ in range(num_pages)
         ]
         self._width = width
@@ -253,7 +201,7 @@ class TextBuffer(object):
 
     def scroll_up(self, pagenum, from_line, bottom, attr):
         """Scroll up."""
-        new_row = TextRow(attr, self._width, self._conv, self._dbcs_enabled)
+        new_row = TextRow(attr, self._width)
         self._pages[pagenum].row.insert(bottom, new_row)
         # remove any wrap above/into deleted row, unless the deleted row wrapped into the next
         if self.wraps(pagenum, from_line-1):
@@ -263,7 +211,7 @@ class TextBuffer(object):
 
     def scroll_down(self, pagenum, from_line, bottom, attr):
         """Scroll down."""
-        new_row = TextRow(attr, self._width, self._conv, self._dbcs_enabled)
+        new_row = TextRow(attr, self._width)
         # insert at row # from_line
         self._pages[pagenum].row.insert(from_line - 1, new_row)
         # delete row # bottom
@@ -288,21 +236,6 @@ class TextBuffer(object):
     def get_row_text_raw(self, pagenum, row):
         """Retrieve raw text on a row."""
         return self._pages[pagenum].row[row-1].get_text_raw()
-
-    ##########################################################################
-    # fullchar access
-
-    def get_charwidth(self, pagenum, row, col):
-        """Retrieve DBCS character width in bytes."""
-        dbcs = self._pages[pagenum].row[row-1].double[col-1]
-        if dbcs == 0:
-            # halfwidth
-            return 1
-        elif dbcs == 1:
-            # fullwidth
-            return 2
-        # trail byte
-        return 0
 
     ###########################################################################
     # logical lines
