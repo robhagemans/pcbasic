@@ -11,12 +11,11 @@ import logging
 from ...compat import zip, int2byte
 
 
-class TextRow(object):
+class _TextRow(object):
     """Buffer for a single row of the screen."""
 
     def __init__(self, attr, width):
         """Set up screen row empty and unwrapped."""
-        self._width = width
         # screen buffer, initialised to spaces
         self.buf = [(b' ', attr)] * width
         # last non-whitespace column [0--width], zero means all whitespace
@@ -24,20 +23,13 @@ class TextRow(object):
         # line continues on next row (either LF or word wrap happened)
         self.wrap = False
 
-    def copy_from(self, src_row):
-        """Copy contents from another row."""
-        assert self._width == src_row._width
-        self.buf[:] = src_row.buf[:]
-        self.end = src_row.end
-        self.wrap = src_row.wrap
-
 
 class TextPage(object):
     """Buffer for a screen page."""
 
     def __init__(self, attr, width, height):
         """Initialise the screen buffer to given dimensions."""
-        self._rows = [TextRow(attr, width) for _ in range(height)]
+        self._rows = [_TextRow(attr, width) for _ in range(height)]
         self._width = width
         self._height = height
 
@@ -87,7 +79,10 @@ class TextPage(object):
     def copy_from(self, src):
         """Copy source into this page."""
         for dst_row, src_row in zip(self._rows, src._rows):
-            dst_row.copy_from(src_row)
+            assert len(dst_row.buf) == len(src_row.buf)
+            dst_row.buf[:] = src_row.buf[:]
+            dst_row.end = src_row.end
+            dst_row.wrap = src_row.wrap
 
     def clear_area(self, from_row, from_col, to_row, to_col, attr, clear_wrap, adjust_end):
         """Clear a rectangular area of the screen (inclusive bounds; 1-based indexing)."""
@@ -155,7 +150,7 @@ class TextPage(object):
 
     def scroll_up(self, from_line, bottom, attr):
         """Scroll up."""
-        new_row = TextRow(attr, self._width)
+        new_row = _TextRow(attr, self._width)
         self._rows.insert(bottom, new_row)
         # remove any wrap above/into deleted row, unless the deleted row wrapped into the next
         if self.wraps(from_line-1):
@@ -165,7 +160,7 @@ class TextPage(object):
 
     def scroll_down(self, from_line, bottom, attr):
         """Scroll down."""
-        new_row = TextRow(attr, self._width)
+        new_row = _TextRow(attr, self._width)
         # insert at row # from_line
         self._rows.insert(from_line - 1, new_row)
         # delete row # bottom
@@ -185,7 +180,7 @@ class TextPage(object):
 
     def get_text_raw(self):
         """Retrieve all raw text on this page."""
-        return tuple(self.get_row_text_raw() for row in range(self._rows))
+        return tuple(self.get_row_text_raw(row) for row in range(self._rows))
 
     def get_row_text_raw(self, row):
         """Retrieve raw text on a row."""
