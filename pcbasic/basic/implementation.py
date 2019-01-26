@@ -173,22 +173,22 @@ class Implementation(object):
         self.queues.add_handler(self.keyboard)
         self.queues.add_handler(self.pen)
         self.queues.add_handler(self.stick)
+        # 12 definable function keys for Tandy, 10 otherwise
+        num_fn_keys = 12 if syntax == 'tandy' else 10
         # set up BASIC event handlers
         self.basic_events = basicevents.BasicEvents(
             self.values, self.sound, self.clock, self.files,
-            self.screen, self.program, syntax
+            self.screen, self.program, num_fn_keys
         )
         ######################################################################
         # editor
         ######################################################################
         # key macro guide
-        self.fkey_macros = editor.FunctionKeyMacros(
-            self.keyboard, self.screen, self.basic_events.num_fn_keys
-        )
+        self.fkey_macros = editor.FunctionKeyMacros(self.keyboard, self.screen, num_fn_keys)
         # initialise the editor
-        self.editor = editor.Editor(
-            self.screen, self.keyboard, self.sound, self.io_streams, self.files.lpt1_file
-        )
+        self.editor = editor.Editor(self.screen, self.keyboard, self.sound, self.io_streams)
+        # enable print screen from editor
+        self.editor.set_lpt1_file(self.files.lpt1_file)
         ######################################################################
         # extensions
         ######################################################################
@@ -845,7 +845,7 @@ class Implementation(object):
         error.range_check(1, 255, keynum)
         text = values.next_string(args)
         list(args)
-        if keynum <= self.basic_events.num_fn_keys:
+        if keynum <= self.fkey_macros.num_fn_keys:
             self.fkey_macros.set(keynum, text)
             self.screen.redraw_bar()
         else:

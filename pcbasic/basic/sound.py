@@ -73,6 +73,11 @@ class Sound(object):
         # initialise PLAY state
         self.reset_play()
 
+    @property
+    def multivoice(self):
+        """We have multivoice capability."""
+        return bool(self._multivoice)
+
     def beep_(self, args):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
         command, = args

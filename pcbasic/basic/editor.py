@@ -61,6 +61,11 @@ class FunctionKeyMacros(object):
         self._num_fn_keys = num_fn_keys
         self._update_bar()
 
+    @property
+    def num_fn_keys(self):
+        """Number of programmable function keys."""
+        return self._num_fn_keys
+
     def list_keys(self):
         """Print a list of the function key macros."""
         for i in range(self._num_fn_keys):
@@ -104,7 +109,7 @@ class FunctionKeyMacros(object):
 class Editor(object):
     """Interactive environment."""
 
-    def __init__(self, screen, keyboard, sound, io_streams, lpt1_file):
+    def __init__(self, screen, keyboard, sound, io_streams):
         """Initialise environment."""
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
@@ -112,6 +117,11 @@ class Editor(object):
         self._sound = sound
         self._keyboard = keyboard
         self._io_streams = io_streams
+        # needs to be set later due to init order
+        self._lpt1_file = None
+
+    def set_lpt1_file(self, lpt1_file):
+        """Set the LPT1: file."""
         self._lpt1_file = lpt1_file
 
     def wait_screenline(self, write_endl=True, from_start=False):

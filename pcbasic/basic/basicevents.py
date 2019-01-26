@@ -21,7 +21,7 @@ from . import values
 class BasicEvents(object):
     """Manage BASIC events."""
 
-    def __init__(self, values, sound, clock, files, screen, program, syntax):
+    def __init__(self, values, sound, clock, files, screen, program, num_fn_keys):
         """Initialise event triggers."""
         self._values = values
         self._sound = sound
@@ -33,12 +33,7 @@ class BasicEvents(object):
         # events start unactivated
         self.active = False
         # 12 definable function keys for Tandy, 10 otherwise
-        if syntax == 'tandy':
-            self.num_fn_keys = 12
-        else:
-            self.num_fn_keys = 10
-        # tandy and pcjr have multi-voice sound
-        self.multivoice = syntax in ('pcjr', 'tandy')
+        self._num_fn_keys = num_fn_keys
         self.reset()
 
     def reset(self):
@@ -47,15 +42,15 @@ class BasicEvents(object):
         keys = [
             scancode.F1, scancode.F2, scancode.F3, scancode.F4, scancode.F5,
             scancode.F6, scancode.F7, scancode.F8, scancode.F9, scancode.F10]
-        if self.num_fn_keys == 12:
+        if self._num_fn_keys == 12:
             # Tandy only
             keys += [scancode.F11, scancode.F12]
         keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
-        keys += [None] * (20 - self.num_fn_keys - 4)
+        keys += [None] * (20 - self._num_fn_keys - 4)
         self.key = [KeyHandler(sc) for sc in keys]
         # other events
         self.timer = TimerHandler(self._clock)
-        self.play = PlayHandler(self._sound, self.multivoice)
+        self.play = PlayHandler(self._sound)
         self.com = [
             ComHandler(self._files.get_device(b'COM1:')),
             ComHandler(self._files.get_device(b'COM2:'))]
@@ -216,19 +211,18 @@ class EventHandler(object):
 class PlayHandler(EventHandler):
     """Manage PLAY (music queue) events."""
 
-    def __init__(self, sound, multivoice):
+    def __init__(self, sound):
         """Initialise PLAY trigger."""
         EventHandler.__init__(self)
         self.trig = 1
-        self.multivoice = multivoice
-        self.sound = sound
+        self._sound = sound
         # set to a number higher than the maximum buffer length?
         self.last = 0 #34 if multivoice else 0
 
     def check_input(self, signal):
         """Check and trigger PLAY (music queue) events."""
-        play_now = self.sound.tones_waiting()
-        if self.multivoice:
+        play_now = self._sound.tones_waiting()
+        if self._sound.multivoice:
             if (self.last > play_now and play_now < self.trig):
                 self.trigger()
         else:
