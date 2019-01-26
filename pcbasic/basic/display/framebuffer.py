@@ -264,7 +264,7 @@ class TextMemoryMapper(_MemoryMapper):
                 if (addr+i) % 2:
                     mem_bytes[i] = display.text_pages[page].get_attr(1 + row, 1 + col)
                 else:
-                    mem_bytes[i] = display.text_pages[page].get_char(1 + row, 1 + col)
+                    mem_bytes[i] = display.text_pages[page].get_byte(1 + row, 1 + col)
             except IndexError:
                 pass
         return mem_bytes
@@ -279,7 +279,7 @@ class TextMemoryMapper(_MemoryMapper):
             col = row_offset // 2
             try:
                 if (addr+i) % 2:
-                    c = display.text_pages[page].get_char(1+row, 1+col)
+                    c = display.text_pages[page].get_byte(1+row, 1+col)
                     a = mem_bytes[i]
                 else:
                     c = mem_bytes[i]

@@ -286,7 +286,7 @@ class Editor(object):
         crow, ccol = self._screen.current_row, self._screen.current_col
         # find non-alphanumeric chars
         while True:
-            c = int2byte(self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol))
+            c = self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol)
             if (c not in ALPHANUMERIC):
                 break
             ccol += 1
@@ -298,7 +298,7 @@ class Editor(object):
                 ccol = 1
         # find alphanumeric chars
         while True:
-            c = int2byte(self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol))
+            c = self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol)
             if (c in ALPHANUMERIC):
                 break
             ccol += 1
@@ -322,7 +322,7 @@ class Editor(object):
                     return
                 crow -= 1
                 ccol = self._screen.mode.width
-            c = int2byte(self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol))
+            c = self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol)
             if (c in ALPHANUMERIC):
                 break
         # find non-alphanumeric chars
@@ -334,7 +334,7 @@ class Editor(object):
                     break
                 crow -= 1
                 ccol = self._screen.mode.width
-            c = int2byte(self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol))
+            c = self._screen.text_pages[self._screen.apagenum].get_char(crow, ccol)
             if (c not in ALPHANUMERIC):
                 break
         self._screen.set_pos(last_row, last_col)

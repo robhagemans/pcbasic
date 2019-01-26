@@ -177,7 +177,11 @@ class TextPage(object):
             self.set_wrap(from_line, True)
 
     def get_char(self, row, col):
-        """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
+        """Retrieve a (halfwidth) character from the screen (as bytes)."""
+        return self._rows[row-1].chars[col-1]
+
+    def get_byte(self, row, col):
+        """Retrieve a byte from the character buffer (as int)."""
         return ord(self._rows[row-1].chars[col-1])
 
     def get_attr(self, row, col):

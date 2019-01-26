@@ -558,7 +558,7 @@ class TextScreen(object):
         elif self.row_length(row) == self.mode.width:
             # case 1
             wrap_char_attr = (
-                int2byte(self.text_pages[self.apagenum].get_char(row+1, 0)),
+                self.text_pages[self.apagenum].get_char(row+1, 0),
                 self.text_pages[self.apagenum].get_attr(row+1, 0)
             )
             if self.row_length(row + 1) == 0:
@@ -588,7 +588,7 @@ class TextScreen(object):
             for newcol in range(col, self.mode.width+1):
                 if self.row_length(row + 1) == 0:
                     break
-                wrap_char = int2byte(self.text_pages[self.apagenum].get_char(row+1, 0))
+                wrap_char = self.text_pages[self.apagenum].get_char(row+1, 0)
                 self.text_pages[self.apagenum].put_char_attr(
                     row, newcol, wrap_char, self._attr, adjust_end=True
                 )
@@ -843,7 +843,7 @@ class TextScreen(object):
             else:
                 result = self.text_pages[self.apagenum].get_attr(row, col)
         else:
-            result = self.text_pages[self.apagenum].get_char(row, col)
+            result = self.text_pages[self.apagenum].get_byte(row, col)
         return self._values.new_integer().from_int(result)
 
     def view_print_(self, args):
