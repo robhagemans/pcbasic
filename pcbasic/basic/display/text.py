@@ -105,7 +105,7 @@ class TextRow(object):
         stop_col = max(self.end, stop_col)
         return pop_char, pop_attr, start_col, stop_col
 
-    def delete_char_attr(self, col, attr, fill_char_attr=None):
+    def delete_char_attr(self, col, attr, fill_char_attr):
         """
         Delete a halfwidth character, filling with space(s) at the logical end.
         NOTE: This sets the attribute of *everything that has moved* to attr.
@@ -235,6 +235,21 @@ class TextBuffer(object):
     def put_char_attr(self, pagenum, row, col, c, attr, adjust_end=False):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
         return self.pages[pagenum].row[row-1].put_char_attr(col, c, attr, adjust_end=adjust_end)
+
+    def insert_char_attr(self, pagenum, row, col, c, attr):
+        """
+        Insert a halfwidth character,
+        NOTE: This sets the attribute of *everything that has moved* to attr.
+        Return the character dropping off at the end.
+        """
+        return self.pages[pagenum].row[row-1].insert_char_attr(col, c, attr)
+
+    def delete_char_attr(self, pagenum, row, col, attr, fill_char_attr=None):
+        """
+        Delete a halfwidth character, filling with space(s) at the logical end.
+        NOTE: This sets the attribute of *everything that has moved* to attr.
+        """
+        return self.pages[pagenum].row[row-1].delete_char_attr(col, attr, fill_char_attr)
 
     def scroll_up(self, pagenum, from_line, bottom, attr):
         """Scroll up."""
