@@ -45,7 +45,7 @@ class Files(object):
             self, values, memory, queues, keyboard, display,
             max_files, max_reclen, serial_buffer_size,
             device_params, current_device, mount_dict,
-            text_mode, soft_linefeed
+            codepage, text_mode, soft_linefeed
         ):
         """Initialise files."""
         # for wait() in files_
@@ -58,7 +58,7 @@ class Files(object):
         self._init_devices(
             values, queues, display, keyboard,
             device_params, current_device, mount_dict,
-            serial_buffer_size, text_mode, soft_linefeed
+            serial_buffer_size, codepage, text_mode, soft_linefeed
         )
 
     ###########################################################################
@@ -128,12 +128,11 @@ class Files(object):
     def _init_devices(
             self, values, queues, display, keyboard,
             device_params, current_device, mount_dict,
-            serial_in_size, text_mode, soft_linefeed
+            serial_in_size, codepage, text_mode, soft_linefeed
         ):
         """Initialise devices."""
         # screen device, for files_()
         self._screen = display.text_screen
-        codepage = self._screen.codepage
         device_params = device_params or {}
         self._devices = {
             b'SCRN:': devicebase.SCRNDevice(display),

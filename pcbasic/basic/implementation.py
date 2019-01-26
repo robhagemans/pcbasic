@@ -149,7 +149,8 @@ class Implementation(object):
         self.files = Files(
             self.values, self.memory, self.queues, self.keyboard, self.display,
             max_files, max_reclen, serial_buffer_size,
-            devices, current_device, mount, textfile_encoding, soft_linefeed
+            devices, current_device, mount,
+            self.codepage, textfile_encoding, soft_linefeed
         )
         # set up the SHELL command
         # Files needed for current disk device

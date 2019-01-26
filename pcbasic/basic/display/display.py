@@ -74,6 +74,7 @@ class Display(object):
             self._queues, self._values, self.mode, self._adapter, codepage, io_streams, sound
         )
         # pixel buffer, set by _set_mode
+        self.text_pages = None
         self.pixel_pages = None
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         # all adapters including PCjr target 4x3, except Tandy

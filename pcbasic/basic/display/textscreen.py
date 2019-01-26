@@ -25,7 +25,7 @@ class TextScreen(object):
         """Initialise text-related members."""
         self._queues = queues
         self._values = values
-        self.codepage = codepage
+        self._codepage = codepage
         self._conv = codepage.get_converter(preserve=b'')
         self._tandytext = capabilities in ('pcjr', 'tandy')
         # output redirection
@@ -68,7 +68,7 @@ class TextScreen(object):
         self._colourmap = colourmap
         # character buffers
         self.text_pages = text_pages
-        self._dbcs_enabled = self.codepage.dbcs and do_fullwidth
+        self._dbcs_enabled = self._codepage.dbcs and do_fullwidth
         self._dbcs_text = [
             [tuple(iterchar(b' ')) * mode.width for _ in range(mode.height)]
             for _ in range(mode.num_pages)
@@ -418,7 +418,7 @@ class TextScreen(object):
             sprite = self._pixel_pages[self.apagenum][top:top+sprite.height, left:left+sprite.width]
         # mark full-width chars by a trailing empty string to preserve column counts
         text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
-        text = [self.codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
+        text = [self._codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
         self._queues.video.put(signals.Event(
             signals.VIDEO_PUT_TEXT, (pagenum, row, col, text, attr, sprite)
         ))
@@ -760,7 +760,7 @@ class TextScreen(object):
         text = self.text_pages[self._vpagenum].get_text_logical(
             start_row, start_col, stop_row, stop_col
         )
-        text = u''.join(self.codepage.str_to_unicode(_chunk) for _chunk in text.split(b'\n'))
+        text = u''.join(self._codepage.str_to_unicode(_chunk) for _chunk in text.split(b'\n'))
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_CLIPBOARD_TEXT, (text,)
         ))
