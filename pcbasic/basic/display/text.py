@@ -312,10 +312,7 @@ class TextBuffer(object):
             attr = self.get_attr(pagenum, row, col)
             return char, attr
         else:
-            logging.debug(
-                'DBCS trail byte access at %d, %d (%d)',
-                row, col, self.get_charwidth(pagenum, row, col)
-            )
+            logging.debug('DBCS trail byte access at %d, %d (%d)', row, col, charwidth)
             return b'\0', 0
 
     ###########################################################################
