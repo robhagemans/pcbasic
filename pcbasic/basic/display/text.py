@@ -31,19 +31,15 @@ class TextRow(object):
         self.end = src_row.end
         self.wrap = src_row.wrap
 
-    def clear(self, attr, from_col=1, to_col=None, adjust_end=True, clear_wrap=False):
+    def clear(self, attr, from_col, to_col, adjust_end, clear_wrap):
         """Clear the screen row between given columns (inclusive; base-1 index)."""
-        if to_col is None:
-            to_col = self._width
-        width = to_col - from_col + 1
-        start, stop = from_col - 1, to_col
-        self.buf[start:stop] = [(b' ', attr)] * width
+        self.buf[from_col-1:to_col] = [(b' ', attr)] * (to_col - from_col + 1)
         if adjust_end and self.end <= to_col:
-            self.end = min(self.end, start)
+            self.end = min(self.end, from_col-1)
         if clear_wrap:
             self.wrap = False
 
-    def put_char_attr(self, col, char, attr, adjust_end=False):
+    def put_char_attr(self, col, char, attr, adjust_end):
         """Put a byte to the screen."""
         assert isinstance(char, bytes), type(char)
         # update the screen buffer
@@ -96,13 +92,9 @@ class TextRow(object):
             self.end = max(self.end - 1, 0)
         return col, stop_col
 
-    def get_text_raw(self, from_col=1, to_col=None):
+    def get_text_raw(self, from_col, to_col):
         """Get the raw text between given columns (inclusive)."""
-        if to_col is None:
-            to_col = self._width
-        # slice bounds
-        start, stop = from_col - 1, to_col
-        return b''.join(_c for _c, _ in self.buf[start:stop])
+        return b''.join(_c for _c, _ in self.buf[from_col-1:to_col])
 
 
 class TextPage(object):
@@ -218,11 +210,11 @@ class TextPage(object):
 
     def get_text_raw(self):
         """Retrieve all raw text on this page."""
-        return tuple(row.get_text_raw() for row in range(self._rows))
+        return tuple(row.get_text_raw(1, self._width) for row in range(self._rows))
 
     def get_row_text_raw(self, row):
         """Retrieve raw text on a row."""
-        return self._rows[row-1].get_text_raw()
+        return self._rows[row-1].get_text_raw(1, self._width)
 
     ###########################################################################
     # logical lines
