@@ -68,11 +68,10 @@ class TextScreen(object):
         # character buffers
         self.text = text
         self._dbcs_enabled = self.codepage.dbcs and do_fullwidth
-        if self._dbcs_enabled:
-            self._dbcs_text = [
-                [tuple(b' ') * mode.width for _ in range(mode.height)]
-                for _ in range(mode.num_pages)
-            ]
+        self._dbcs_text = [
+            [tuple(b' ') * mode.width for _ in range(mode.height)]
+            for _ in range(mode.num_pages)
+        ]
         # pixel buffer
         self.pixel_pages = pixel_pages
         # redraw key line
@@ -364,35 +363,32 @@ class TextScreen(object):
 
     def _get_charwidth(self, row, col):
         """Get DBCS width of cell on active page."""
-        if self._dbcs_enabled:
-            return len(self._dbcs_text[self.apagenum][row-1][col-1])
-        return 1
+        return len(self._dbcs_text[self.apagenum][row-1][col-1])
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Draw a section of a screen row to pixels and interface."""
         # mark out replaced char and changed following dbcs characters to be redrawn
+        raw = self.text.get_row_text_raw(pagenum, row)
         if self._dbcs_enabled:
-            raw = self.text.get_row_text_raw(pagenum, row)
             marks = self._conv.mark(raw, flush=True)
             tuples = ((_seq,) if len(_seq) == 1 else (_seq, b'') for _seq in marks)
             sequences = [_seq for _tup in tuples for _seq in _tup]
-            updated = [old != new for old, new in zip(self._dbcs_text[pagenum][row-1], sequences)]
-            self._dbcs_text[pagenum][row-1] = sequences
-            try:
-                start, stop = updated.index(True) + 1, len(updated) - updated[::-1].index(True)
-            except ValueError:
-                # no change
-                return
+        else:
+            sequences = tuple(raw)
+        updated = [old != new for old, new in zip(self._dbcs_text[pagenum][row-1], sequences)]
+        self._dbcs_text[pagenum][row-1] = sequences
+        try:
+            start, stop = updated.index(True) + 1, len(updated) - updated[::-1].index(True)
+        except ValueError:
+            # no change
+            return
         col, last_col = start, start
         last_attr = None
         chars = []
         chunks = []
         # collect chars in chunks with the same attribute
         while col <= stop:
-            if self._dbcs_enabled:
-                char = self._dbcs_text[pagenum][row-1][col-1]
-            else:
-                char = int2byte(self.text.get_char(pagenum, row, col))
+            char = self._dbcs_text[pagenum][row-1][col-1]
             attr = self.text.get_attr(pagenum, row, col)
             if attr != last_attr:
                 if last_attr is not None:
@@ -485,11 +481,10 @@ class TextScreen(object):
         # update text buffer
         self.text.scroll_up(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         # update dbcs buffer
-        if self._dbcs_enabled:
-            self._dbcs_text[self.apagenum][from_line-1:self.scroll_area.bottom-1] = (
-                self._dbcs_text[self.apagenum][from_line:self.scroll_area.bottom]
-            )
-            self._dbcs_text[self.apagenum][self.scroll_area.bottom-1] = tuple(b' ') * self.mode.width
+        self._dbcs_text[self.apagenum][from_line-1:self.scroll_area.bottom-1] = (
+            self._dbcs_text[self.apagenum][from_line:self.scroll_area.bottom]
+        )
+        self._dbcs_text[self.apagenum][self.scroll_area.bottom-1] = tuple(b' ') * self.mode.width
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
             from_line+1, 1, self.scroll_area.bottom, self.mode.width
@@ -510,11 +505,10 @@ class TextScreen(object):
         # update text buffer
         self.text.scroll_down(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         # update dbcs buffer
-        if self._dbcs_enabled:
-            self._dbcs_text[self.apagenum][from_line:self.scroll_area.bottom] = (
-                self._dbcs_text[self.apagenum][from_line-1:self.scroll_area.bottom-1]
-            )
-            self._dbcs_text[self.apagenum][from_line-1] = tuple(b' ') * self.mode.width
+        self._dbcs_text[self.apagenum][from_line:self.scroll_area.bottom] = (
+            self._dbcs_text[self.apagenum][from_line-1:self.scroll_area.bottom-1]
+        )
+        self._dbcs_text[self.apagenum][from_line-1] = tuple(b' ') * self.mode.width
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
             from_line, 1, self.scroll_area.bottom-1, self.mode.width
