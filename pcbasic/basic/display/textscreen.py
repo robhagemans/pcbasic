@@ -381,10 +381,14 @@ class TextScreen(object):
         updated = [old != new for old, new in zip(self._dbcs_text[pagenum][row-1], sequences)]
         self._dbcs_text[pagenum][row-1] = sequences
         try:
-            start, stop = updated.index(True) + 1, len(updated) - updated[::-1].index(True)
+            start = min(start, updated.index(True) + 1)
+            stop = max(stop, len(updated) - updated[::-1].index(True))
         except ValueError:
-            # no change
-            return
+            # no change to buffer
+            # however, in graphics mode we need to plot at least the updated range
+            # as the dbcs buffer is not updated when overdrawn
+            if self.mode.is_text_mode:
+                return
         col, last_col = start, start
         last_attr = None
         chars = []
