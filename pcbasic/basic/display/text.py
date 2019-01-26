@@ -31,14 +31,6 @@ class TextRow(object):
         self.end = src_row.end
         self.wrap = src_row.wrap
 
-    def clear(self, attr, from_col, to_col, adjust_end, clear_wrap):
-        """Clear the screen row between given columns (inclusive; base-1 index)."""
-        self.buf[from_col-1:to_col] = [(b' ', attr)] * (to_col - from_col + 1)
-        if adjust_end and self.end <= to_col:
-            self.end = min(self.end, from_col-1)
-        if clear_wrap:
-            self.wrap = False
-
 
 class TextPage(object):
     """Buffer for a screen page."""
@@ -100,7 +92,11 @@ class TextPage(object):
     def clear_area(self, from_row, from_col, to_row, to_col, attr, clear_wrap, adjust_end):
         """Clear a rectangular area of the screen (inclusive bounds; 1-based indexing)."""
         for row in self._rows[from_row-1:to_row]:
-            row.clear(attr, from_col, to_col, adjust_end, clear_wrap)
+            row.buf[from_col-1:to_col] = [(b' ', attr)] * (to_col - from_col + 1)
+            if adjust_end and row.end <= to_col:
+                row.end = min(row.end, from_col-1)
+            if clear_wrap:
+                row.wrap = False
 
     def put_char_attr(self, row, col, char, attr, adjust_end=False):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
