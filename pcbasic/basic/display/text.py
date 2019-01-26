@@ -171,7 +171,7 @@ class TextBuffer(object):
         """Initialise the screen buffer to given pages and dimensions."""
         self._dbcs_enabled = codepage.dbcs and do_fullwidth
         self._conv = codepage.get_converter(preserve=b'')
-        self.pages = [
+        self._pages = [
             TextPage(attr, width, height, self._conv, self._dbcs_enabled)
             for _ in range(num_pages)
         ]
@@ -182,7 +182,7 @@ class TextBuffer(object):
         """Return an ascii representation of the screen buffer (for debugging)."""
         horiz_bar = ('   +' + '-' * self._width + '+')
         row_strs = []
-        for num, page in enumerate(self.pages):
+        for num, page in enumerate(self._pages):
             lastwrap = False
             row_strs.append(horiz_bar)
             for i, row in enumerate(page.row):
@@ -208,33 +208,33 @@ class TextBuffer(object):
 
     def set_wrap(self, pagenum, row, wrap):
         """Connect/disconnect rows on active page by line wrap."""
-        self.pages[pagenum].row[row-1].wrap = wrap
+        self._pages[pagenum].row[row-1].wrap = wrap
 
     def wraps(self, pagenum, row):
         """The given row is connected by line wrap."""
-        return self.pages[pagenum].row[row-1].wrap
+        return self._pages[pagenum].row[row-1].wrap
 
     def set_row_length(self, pagenum, row, length):
         """Return logical length of row."""
-        self.pages[pagenum].row[row-1].end = length
+        self._pages[pagenum].row[row-1].end = length
 
     def row_length(self, pagenum, row):
         """Return logical length of row."""
-        return self.pages[pagenum].row[row-1].end
+        return self._pages[pagenum].row[row-1].end
 
     def copy_page(self, src, dst):
         """Copy source to destination page."""
-        for dst_row, src_row in zip(self.pages[dst].row, self.pages[src].row):
+        for dst_row, src_row in zip(self._pages[dst].row, self._pages[src].row):
             dst_row.copy_from(src_row)
 
     def clear_area(self, pagenum, from_row, from_col, to_row, to_col, attr, clear_wrap, adjust_end):
         """Clear a rectangular area of the screen (inclusive bounds; 1-based indexing)."""
-        for row in self.pages[pagenum].row[from_row-1:to_row]:
+        for row in self._pages[pagenum].row[from_row-1:to_row]:
             row.clear(attr, from_col, to_col, adjust_end, clear_wrap)
 
     def put_char_attr(self, pagenum, row, col, c, attr, adjust_end=False):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
-        return self.pages[pagenum].row[row-1].put_char_attr(col, c, attr, adjust_end=adjust_end)
+        return self._pages[pagenum].row[row-1].put_char_attr(col, c, attr, adjust_end=adjust_end)
 
     def insert_char_attr(self, pagenum, row, col, c, attr):
         """
@@ -242,32 +242,32 @@ class TextBuffer(object):
         NOTE: This sets the attribute of *everything that has moved* to attr.
         Return the character dropping off at the end.
         """
-        return self.pages[pagenum].row[row-1].insert_char_attr(col, c, attr)
+        return self._pages[pagenum].row[row-1].insert_char_attr(col, c, attr)
 
     def delete_char_attr(self, pagenum, row, col, attr, fill_char_attr=None):
         """
         Delete a halfwidth character, filling with space(s) at the logical end.
         NOTE: This sets the attribute of *everything that has moved* to attr.
         """
-        return self.pages[pagenum].row[row-1].delete_char_attr(col, attr, fill_char_attr)
+        return self._pages[pagenum].row[row-1].delete_char_attr(col, attr, fill_char_attr)
 
     def scroll_up(self, pagenum, from_line, bottom, attr):
         """Scroll up."""
         new_row = TextRow(attr, self._width, self._conv, self._dbcs_enabled)
-        self.pages[pagenum].row.insert(bottom, new_row)
+        self._pages[pagenum].row.insert(bottom, new_row)
         # remove any wrap above/into deleted row, unless the deleted row wrapped into the next
         if self.wraps(pagenum, from_line-1):
             self.set_wrap(pagenum, from_line-1, self.wraps(pagenum, from_line))
         # delete row # from_line
-        del self.pages[pagenum].row[from_line-1]
+        del self._pages[pagenum].row[from_line-1]
 
     def scroll_down(self, pagenum, from_line, bottom, attr):
         """Scroll down."""
         new_row = TextRow(attr, self._width, self._conv, self._dbcs_enabled)
         # insert at row # from_line
-        self.pages[pagenum].row.insert(from_line - 1, new_row)
+        self._pages[pagenum].row.insert(from_line - 1, new_row)
         # delete row # bottom
-        del self.pages[pagenum].row[bottom-1]
+        del self._pages[pagenum].row[bottom-1]
         # if we inserted below a wrapping row, make sure the new empty row wraps
         # so as not to break line continuation
         if self.wraps(pagenum, from_line-1):
@@ -275,22 +275,22 @@ class TextBuffer(object):
 
     def get_char(self, pagenum, row, col):
         """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
-        return ord(self.pages[pagenum].row[row-1].buf[col-1][0])
+        return ord(self._pages[pagenum].row[row-1].buf[col-1][0])
 
     def get_attr(self, pagenum, row, col):
         """Retrieve attribute from the screen."""
-        return self.pages[pagenum].row[row-1].buf[col-1][1]
+        return self._pages[pagenum].row[row-1].buf[col-1][1]
 
     def get_text_raw(self, pagenum):
         """Retrieve all raw text on a page."""
-        return tuple(row.get_text_raw() for row in range(self.pages[pagenum].row))
+        return tuple(row.get_text_raw() for row in range(self._pages[pagenum].row))
 
     ##########################################################################
     # fullchar access
 
     def get_charwidth(self, pagenum, row, col):
         """Retrieve DBCS character width in bytes."""
-        dbcs = self.pages[pagenum].row[row-1].double[col-1]
+        dbcs = self._pages[pagenum].row[row-1].double[col-1]
         if dbcs == 0:
             # halfwidth
             return 1
@@ -337,7 +337,7 @@ class TextBuffer(object):
 
     def _get_row_logical(self, pagenum, row, from_col=1, to_col=None):
         """Get the text between given columns (inclusive), don't go beyond end."""
-        therow = self.pages[pagenum].row[row-1]
+        therow = self._pages[pagenum].row[row-1]
         if to_col is None:
             to_col = self._width
         text = therow.get_text_raw(from_col, min(to_col, self.row_length(pagenum, row)))
