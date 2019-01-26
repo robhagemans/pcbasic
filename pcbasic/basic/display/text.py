@@ -46,7 +46,6 @@ class TextRow(object):
         self.buf[col-1] = (char, attr)
         if adjust_end:
             self.end = max(self.end, col)
-        return col, col
 
     def insert_char_attr(self, col, c, attr):
         """
@@ -161,7 +160,7 @@ class TextPage(object):
 
     def put_char_attr(self, row, col, c, attr, adjust_end=False):
         """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
-        return self._rows[row-1].put_char_attr(col, c, attr, adjust_end=adjust_end)
+        self._rows[row-1].put_char_attr(col, c, attr, adjust_end=adjust_end)
 
     def insert_char_attr(self, row, col, c, attr):
         """

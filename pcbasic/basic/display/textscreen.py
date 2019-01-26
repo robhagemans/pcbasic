@@ -188,7 +188,7 @@ class TextScreen(object):
     ###########################################################################
     # text buffer operations
 
-    def write_char(self, c, do_scroll_down=False):
+    def write_char(self, char, do_scroll_down=False):
         """Put one character at the current position."""
         # check if scroll & repositioning needed
         if self.overflow:
@@ -199,10 +199,10 @@ class TextScreen(object):
         # move cursor and see if we need to scroll up
         self._check_pos(scroll_ok=True)
         # put the character
-        start, stop = self.text_pages[self.apagenum].put_char_attr(
-            self.current_row, self.current_col, c, self._attr, adjust_end=True
+        self.text_pages[self.apagenum].put_char_attr(
+            self.current_row, self.current_col, char, self._attr, adjust_end=True
         )
-        self.refresh_range(self.apagenum, self.current_row, start, stop)
+        self.refresh_range(self.apagenum, self.current_row, self.current_col, self.current_col)
         # move cursor. if on col 80, only move cursor to the next row
         # when the char is printed
         if self.current_col < self.mode.width:
@@ -735,10 +735,10 @@ class TextScreen(object):
         if self._bottom_bar.visible:
             # always show only complete 8-character cells
             # this matters on pcjr/tandy width=20 mode
-            for i in range((self.mode.width//8) * 8):
-                c, reverse = self._bottom_bar.get_char_reverse(i)
-                a = reverse_attr if reverse else self._attr
-                start, stop = self.text_pages[self.apagenum].put_char_attr(key_row, i+1, c, a)
+            for col in range((self.mode.width//8) * 8):
+                char, reverse = self._bottom_bar.get_char_reverse(col)
+                attr = reverse_attr if reverse else self._attr
+                self.text_pages[self.apagenum].put_char_attr(key_row, col+1, char, attr)
             self.set_row_length(self.mode.height, self.mode.width)
             # update the screen
             self.refresh_range(self.apagenum, key_row, 1, self.mode.width)
