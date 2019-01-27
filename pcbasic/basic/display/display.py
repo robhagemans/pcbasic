@@ -1,5 +1,5 @@
 """
-PC-BASIC - display.py
+PC-BASIC - display.display
 Display and video mode operations
 
 (c) 2013--2020 Rob Hagemans
@@ -18,7 +18,7 @@ from . import modes
 from . import font
 
 from ..base.bytematrix import ByteMatrix
-from .text import TextPage
+from .textbuffer import TextPage
 from .textscreen import TextScreen
 from .colours import MONO_TINT
 

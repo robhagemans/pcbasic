@@ -1,5 +1,5 @@
 """
-PC-BASIC - text.py
+PC-BASIC - display.textbuffer
 Text-buffer operations
 
 (c) 2013--2020 Rob Hagemans
