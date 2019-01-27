@@ -64,6 +64,8 @@ class Console(object):
         self._keyboard = keyboard
         self._io_streams = io_streams
         self._num_fn_keys = num_fn_keys
+        # overwrite mode (instead of insert)
+        self._overwrite_mode = True
         # needs to be set later due to init order
         self._lpt1_file = None
         self._update_bar()
@@ -71,7 +73,6 @@ class Console(object):
     def set_lpt1_file(self, lpt1_file):
         """Set the LPT1: file."""
         self._lpt1_file = lpt1_file
-
 
     ##########################################################################
     # properties
@@ -98,7 +99,6 @@ class Console(object):
 
     def set_pos(self, row, col):
         self._text_screen.set_pos(row, col)
-
 
     ##########################################################################
     # interaction
@@ -158,7 +158,7 @@ class Console(object):
                         ea.LEFT, ea.CTRL_RIGHTBRACKET, ea.HOME, ea.CTRL_k, ea.END, ea.CTRL_n
                     ):
                     # arrow keys drop us out of insert mode
-                    self._text_screen.set_overwrite_mode(True)
+                    self._set_overwrite_mode(True)
                 if d == ea.CTRL_c:
                     # CTRL-C -- only caught here, not in wait_char like <CTRL+BREAK>
                     raise error.Break()
@@ -195,7 +195,7 @@ class Console(object):
                 elif d in (ea.CTRL_LEFT, ea.CTRL_b):
                     self._text_screen.skip_word_left()
                 elif d in (ea.INSERT, ea.CTRL_r):
-                    self._text_screen.set_overwrite_mode(not self._text_screen.overwrite_mode)
+                    self._set_overwrite_mode(not self._overwrite_mode)
                 elif d in (ea.DELETE, ea.CTRL_BACKSPACE):
                     self._text_screen.delete_fullchar()
                 elif d in (ea.HOME, ea.CTRL_k):
@@ -216,18 +216,23 @@ class Console(object):
                     for d in letters:
                         # ignore eascii by this point, but not dbcs
                         if d[:1] not in (b'\0', b'\r'):
-                            if not self._text_screen.overwrite_mode:
+                            if not self._overwrite_mode:
                                 self._text_screen.insert_fullchars(d)
                             else:
                                 # put all dbcs in before messing with cursor position
                                 for char in iterchar(d):
                                     self._text_screen.write_char(char, do_scroll_down=True)
         finally:
-            self._text_screen.set_overwrite_mode(True)
+            self._set_overwrite_mode(True)
             # reset cursor visibility
             self._cursor.reset_visibility()
         return start_row, furthest_left, furthest_right
 
+    def _set_overwrite_mode(self, new_overwrite):
+        """Set or unset the overwrite mode (INS)."""
+        if new_overwrite != self._overwrite_mode:
+            self._overwrite_mode = new_overwrite
+            self._cursor.set_default_shape(new_overwrite)
 
     ##########################################################################
     # output
@@ -357,6 +362,10 @@ class Console(object):
             for _macro in macros
         ]
         self._text_screen.update_bar(descriptions)
+
+
+    ##########################################################################
+    # clipboard copy & print screen events
 
     def get_copy_handler(self):
         """Event handler for clipboard copy and print screen."""

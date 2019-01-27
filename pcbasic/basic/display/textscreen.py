@@ -104,10 +104,8 @@ class TextScreen(object):
         self._codepage = codepage
         self._conv = codepage.get_converter(preserve=b'')
         self._tandytext = capabilities in ('pcjr', 'tandy')
-        # overwrite mode (instead of insert)
-        self._overwrite_mode = True
         # cursor
-        self.cursor = cursor
+        self._cursor = cursor
         # current row and column
         # overflow: true if we're on 80 but should be on 81
         self.current_row, self.current_col, self.overflow = 1, 1, False
@@ -321,17 +319,17 @@ class TextScreen(object):
             width = self._get_charwidth(row, col)
             # set the cursor attribute
             attr = self._apage.get_attr(row, col)
-            self.cursor.move(row, col, attr, width)
+            self._cursor.move(row, col, attr, width)
         else:
             # move the cursor
-            self.cursor.move(row, col)
+            self._cursor.move(row, col)
 
     ###########################################################################
     # update pixel buffer and interface
 
     def rebuild(self):
         """Completely resubmit the text and graphics screen to the interface."""
-        self.cursor.rebuild()
+        self._cursor.rebuild()
         # redraw the text screen and rebuild text buffers in video plugin
         for pagenum in range(self.mode.num_pages):
             # resubmit the text buffer without changing the pixel buffer
@@ -698,17 +696,6 @@ class TextScreen(object):
 
     # console calls
 
-    @property
-    def overwrite_mode(self):
-        """Overwrite (True) or Insert (False) mode."""
-        return self._overwrite_mode
-
-    def set_overwrite_mode(self, new_overwrite=True):
-        """Set or unset the overwrite mode (INS)."""
-        if new_overwrite != self._overwrite_mode:
-            self._overwrite_mode = new_overwrite
-            self.cursor.set_default_shape(new_overwrite)
-
     def clear_line(self, the_row, from_col=1):
         """Clear whole logical line (ESC), leaving prompt."""
         self.clear_from(
@@ -728,10 +715,10 @@ class TextScreen(object):
             self.decr_pos()
         self.delete_fullchar()
 
-    def tab(self):
+    def tab(self, overwrite):
         """Jump to next 8-position tab stop (TAB)."""
         newcol = 9 + 8 * int((self.current_col-1) // 8)
-        if self._overwrite_mode:
+        if overwrite:
             self.set_pos(self.current_row, newcol, scroll_ok=False)
         else:
             self.insert_fullchars(b' ' * (newcol-self.current_col))
@@ -879,7 +866,7 @@ class TextScreen(object):
         if cursor is not None:
             error.range_check(0, (255 if self._tandytext else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes
-            self.cursor.set_visibility(cursor != 0)
+            self._cursor.set_visibility(cursor != 0)
         error.throw_if(start is None and stop is not None)
         if stop is None:
             stop = start
@@ -887,7 +874,7 @@ class TextScreen(object):
             error.range_check(0, 31, start, stop)
             # cursor shape only has an effect in text mode
             if self.mode.is_text_mode:
-                self.cursor.set_shape(start, stop)
+                self._cursor.set_shape(start, stop)
 
     def csrlin_(self, args):
         """CSRLIN: get the current screen row."""
