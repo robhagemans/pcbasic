@@ -46,6 +46,7 @@ class TextScreen(object):
         self.mode = None
         self._attr = 0
         self._apagenum = 0
+        self._apage = None
         self._vpagenum = 0
         self._glyphs = None
         self._colourmap = None
@@ -67,6 +68,7 @@ class TextScreen(object):
         self._colourmap = colourmap
         # character buffers
         self._text_pages = text_pages
+        self._apage = self._text_pages[self._apagenum]
         self._dbcs_enabled = self._codepage.dbcs and do_fullwidth
         self._dbcs_text = [
             [tuple(iterchar(b' ')) * mode.width for _ in range(mode.height)]
@@ -93,6 +95,7 @@ class TextScreen(object):
         """Set visible and active page."""
         self._vpagenum = vpagenum
         self._apagenum = apagenum
+        self._apage = self._text_pages[self._apagenum]
 
     def set_attr(self, attr):
         """Set attribute."""
@@ -112,7 +115,7 @@ class TextScreen(object):
         # move cursor and see if we need to scroll up
         self.check_pos(scroll_ok=True)
         # put the character
-        self._text_pages[self._apagenum].put_char_attr(
+        self._apage.put_char_attr(
             self.current_row, self.current_col, char, self._attr, adjust_end=True
         )
         self.refresh_range(self._apagenum, self.current_row, self.current_col, self.current_col)
@@ -142,19 +145,19 @@ class TextScreen(object):
 
     def set_wrap(self, row, wrap):
         """Connect/disconnect rows on active page by line wrap."""
-        self._text_pages[self._apagenum].set_wrap(row, wrap)
+        self._apage.set_wrap(row, wrap)
 
     def wraps(self, row):
         """The given row is connected by line wrap."""
-        return self._text_pages[self._apagenum].wraps(row)
+        return self._apage.wraps(row)
 
     def set_row_length(self, row, length):
         """Set logical length of row."""
-        self._text_pages[self._apagenum].set_row_length(row, length)
+        self._apage.set_row_length(row, length)
 
     def row_length(self, row):
         """Return logical length of row."""
-        return self._text_pages[self._apagenum].row_length(row)
+        return self._apage.row_length(row)
 
     ###########################################################################
     # cursor position
@@ -182,7 +185,7 @@ class TextScreen(object):
 
     def move_to_end(self):
         """Jump to end of logical line; follow wraps (END)."""
-        row = self._text_pages[self._apagenum].find_end_of_line(self.current_row)
+        row = self._apage.find_end_of_line(self.current_row)
         if self.row_length(row) == self.mode.width:
             self.set_pos(row, self.row_length(row))
             self.overflow = True
@@ -247,7 +250,7 @@ class TextScreen(object):
             # set halfwidth/fullwidth cursor
             width = self._get_charwidth(row, col)
             # set the cursor attribute
-            attr = self._text_pages[self._apagenum].get_attr(row, col)
+            attr = self._apage.get_attr(row, col)
             self.cursor.move(row, col, attr, width)
         else:
             # move the cursor
@@ -321,9 +324,13 @@ class TextScreen(object):
         left, top = self.mode.text_to_pixel_pos(row, col)
         sprite = self._glyphs.render_text(chars, attr, back, underline)
         if not text_only:
-            self._pixel_pages[self._apagenum][top:top+sprite.height, left:left+sprite.width] = sprite
+            self._pixel_pages[self._apagenum][
+                top:top+sprite.height, left:left+sprite.width
+            ] = sprite
         else:
-            sprite = self._pixel_pages[self._apagenum][top:top+sprite.height, left:left+sprite.width]
+            sprite = self._pixel_pages[self._apagenum][
+                top:top+sprite.height, left:left+sprite.width
+            ]
         # mark full-width chars by a trailing empty string to preserve column counts
         text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
         text = [self._codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
@@ -356,7 +363,7 @@ class TextScreen(object):
 
     def _clear_rows(self, start, stop):
         """Clear text and graphics on given (inclusive) text row range."""
-        self._text_pages[self._apagenum].clear_area(
+        self._apage.clear_area(
             start, 1, stop, self.mode.width, self._attr, adjust_end=True, clear_wrap=True
         )
         self._dbcs_text[self._apagenum][start-1:stop] = [
@@ -390,7 +397,7 @@ class TextScreen(object):
         if self.current_row > from_line:
             self._move_cursor(self.current_row - 1, self.current_col)
         # update text buffer
-        self._text_pages[self._apagenum].scroll_up(from_line, self.scroll_area.bottom, self._attr)
+        self._apage.scroll_up(from_line, self.scroll_area.bottom, self._attr)
         # update dbcs buffer
         self._dbcs_text[self._apagenum][from_line-1:self.scroll_area.bottom-1] = (
             self._dbcs_text[self._apagenum][from_line:self.scroll_area.bottom]
@@ -414,7 +421,7 @@ class TextScreen(object):
         if self.current_row >= from_line:
             self._move_cursor(self.current_row + 1, self.current_col)
         # update text buffer
-        self._text_pages[self._apagenum].scroll_down(from_line, self.scroll_area.bottom, self._attr)
+        self._apage.scroll_down(from_line, self.scroll_area.bottom, self._attr)
         # update dbcs buffer
         self._dbcs_text[self._apagenum][from_line:self.scroll_area.bottom] = (
             self._dbcs_text[self._apagenum][from_line-1:self.scroll_area.bottom-1]
@@ -433,9 +440,9 @@ class TextScreen(object):
     def get_logical_line(self, from_start, prompt_row, left, right):
         """Get contents of the logical line (INPUT and console interaction)."""
         if from_start:
-            return self._text_pages[self._apagenum].get_logical_line(self.current_row)
+            return self._apage.get_logical_line(self.current_row)
         else:
-            return self._text_pages[self._apagenum].get_logical_line_from(
+            return self._apage.get_logical_line_from(
                 self.current_row, prompt_row, left, right
             )
 
@@ -467,7 +474,7 @@ class TextScreen(object):
             if col > self.row_length(row):
                 return
             # case 0a
-            start_col, stop_col = self._text_pages[self._apagenum].delete_char_attr(
+            start_col, stop_col = self._apage.delete_char_attr(
                 row, col, self._attr
             )
             # if the row is depleted, drop it and scroll up from below
@@ -476,25 +483,25 @@ class TextScreen(object):
         elif self.row_length(row) == self.mode.width:
             # case 1
             wrap_char_attr = (
-                self._text_pages[self._apagenum].get_char(row+1, 0),
-                self._text_pages[self._apagenum].get_attr(row+1, 0)
+                self._apage.get_char(row+1, 0),
+                self._apage.get_attr(row+1, 0)
             )
             if self.row_length(row + 1) == 0:
                 wrap_char_attr = None
-            start_col, stop_col = self._text_pages[self._apagenum].delete_char_attr(
+            start_col, stop_col = self._apage.delete_char_attr(
                 row, col, self._attr, wrap_char_attr
             )
             self._delete_at(row+1, 1, remove_depleted=True)
         elif col < self.row_length(row):
             # case 2a
-            start_col, stop_col = self._text_pages[self._apagenum].delete_char_attr(
+            start_col, stop_col = self._apage.delete_char_attr(
                 row, col, self._attr
             )
         elif remove_depleted and col == self.row_length(row):
             # case 2b (ii) while on the first LF row deleting the last char immediately appends
             # the next row, any subsequent LF rows are only removed once they are fully empty and
             # DEL is pressed another time
-            start_col, stop_col = self._text_pages[self._apagenum].delete_char_attr(
+            start_col, stop_col = self._apage.delete_char_attr(
                 self._apagenum, row, col, self._attr
             )
         elif remove_depleted and self.row_length(row) == 0:
@@ -506,8 +513,8 @@ class TextScreen(object):
             for newcol in range(col, self.mode.width+1):
                 if self.row_length(row + 1) == 0:
                     break
-                wrap_char = self._text_pages[self._apagenum].get_char(row+1, 0)
-                self._text_pages[self._apagenum].put_char_attr(
+                wrap_char = self._apage.get_char(row+1, 0)
+                self._apage.put_char_attr(
                     row, newcol, wrap_char, self._attr, adjust_end=True
                 )
                 self._delete_at(row+1, 1, remove_depleted=True)
@@ -532,7 +539,7 @@ class TextScreen(object):
         if self.row_length(row) < self.mode.width:
             # insert the new char and ignore what drops off at the end
             # this changes the attribute of everything that has been redrawn
-            _, _, start_col, stop_col = self._text_pages[self._apagenum].insert_char_attr(
+            _, _, start_col, stop_col = self._apage.insert_char_attr(
                 row, col, c, attr
             )
             # redraw everything that has changed
@@ -553,7 +560,7 @@ class TextScreen(object):
                 self.set_wrap(row, True)
             if row >= self.scroll_area.bottom:
                 # once the end of the line hits the bottom, start scrolling the start of the line up
-                start = self._text_pages[self._apagenum].find_start_of_line(self.current_row)
+                start = self._apage.find_start_of_line(self.current_row)
                 # if we hist the top of the screen, stop inserting & drop chars
                 if start <= self.scroll_area.top:
                     return False
@@ -561,7 +568,7 @@ class TextScreen(object):
                 self.scroll()
                 # adjust working row number
                 row -= 1
-            c, _, start_col, stop_col = self._text_pages[self._apagenum].insert_char_attr(
+            c, _, start_col, stop_col = self._apage.insert_char_attr(
                 row, col, c, attr
             )
             # redraw everything that has changed on this row
@@ -571,9 +578,9 @@ class TextScreen(object):
 
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
-        end_row = self._text_pages[self._apagenum].find_end_of_line(srow)
+        end_row = self._apage.find_end_of_line(srow)
         # clear the first row of the logical line
-        self._text_pages[self._apagenum].clear_area(
+        self._apage.clear_area(
             srow, scol, srow, self.mode.width, self._attr, adjust_end=True, clear_wrap=True
         )
         if scol > 1:
@@ -602,11 +609,11 @@ class TextScreen(object):
             # cursor stays in place after line feed!
         else:
             # find last row in logical line
-            end = self._text_pages[self._apagenum].find_end_of_line(self.current_row)
+            end = self._apage.find_end_of_line(self.current_row)
             # if the logical line hits the bottom, start scrolling up to make space...
             if end >= self.scroll_area.bottom:
                 # ... until the it also hits the top; then do nothing
-                start = self._text_pages[self._apagenum].find_start_of_line(self.current_row)
+                start = self._apage.find_start_of_line(self.current_row)
                 if start > self.scroll_area.top:
                     self.scroll()
                 else:
@@ -635,13 +642,13 @@ class TextScreen(object):
     def clear_line(self, the_row, from_col=1):
         """Clear whole logical line (ESC), leaving prompt."""
         self.clear_from(
-            self._text_pages[self._apagenum].find_start_of_line(the_row), from_col
+            self._apage.find_start_of_line(the_row), from_col
         )
 
     def backspace(self, prompt_row, furthest_left):
         """Delete the char to the left (BACKSPACE)."""
         row, col = self.current_row, self.current_col
-        start_row = self._text_pages[self._apagenum].find_start_of_line(row)
+        start_row = self._apage.find_start_of_line(row)
         # don't backspace through prompt or through start of logical line
         # on the prompt row, don't go any further back than we've been already
         if (
@@ -664,7 +671,7 @@ class TextScreen(object):
         crow, ccol = self.current_row, self.current_col
         # find non-alphanumeric chars
         while True:
-            c = self._text_pages[self._apagenum].get_char(crow, ccol)
+            c = self._apage.get_char(crow, ccol)
             if (c not in ALPHANUMERIC):
                 break
             ccol += 1
@@ -676,7 +683,7 @@ class TextScreen(object):
                 ccol = 1
         # find alphanumeric chars
         while True:
-            c = self._text_pages[self._apagenum].get_char(crow, ccol)
+            c = self._apage.get_char(crow, ccol)
             if (c in ALPHANUMERIC):
                 break
             ccol += 1
@@ -700,7 +707,7 @@ class TextScreen(object):
                     return
                 crow -= 1
                 ccol = self.mode.width
-            c = self._text_pages[self._apagenum].get_char(crow, ccol)
+            c = self._apage.get_char(crow, ccol)
             if (c in ALPHANUMERIC):
                 break
         # find non-alphanumeric chars
@@ -712,7 +719,7 @@ class TextScreen(object):
                     break
                 crow -= 1
                 ccol = self.mode.width
-            c = self._text_pages[self._apagenum].get_char(crow, ccol)
+            c = self._apage.get_char(crow, ccol)
             if (c not in ALPHANUMERIC):
                 break
         self.set_pos(last_row, last_col)
@@ -754,7 +761,7 @@ class TextScreen(object):
             for col in range((self.mode.width//8) * 8):
                 char, reverse = self._bottom_bar.get_char_reverse(col)
                 attr = reverse_attr if reverse else self._attr
-                self._text_pages[self._apagenum].put_char_attr(key_row, col+1, char, attr)
+                self._apage.put_char_attr(key_row, col+1, char, attr)
             self.set_row_length(self.mode.height, self.mode.width)
             # update the screen
             self.refresh_range(self._apagenum, key_row, 1, self.mode.width)
@@ -857,9 +864,9 @@ class TextScreen(object):
             if not self.mode.is_text_mode:
                 result = 0
             else:
-                result = self._text_pages[self._apagenum].get_attr(row, col)
+                result = self._apage.get_attr(row, col)
         else:
-            result = self._text_pages[self._apagenum].get_byte(row, col)
+            result = self._apage.get_byte(row, col)
         return self._values.new_integer().from_int(result)
 
     def view_print_(self, args):
