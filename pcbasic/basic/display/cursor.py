@@ -148,7 +148,7 @@ class Cursor(object):
         """Set the cursor to one of two default shapes."""
         if overwrite_shape:
             # most modes have cursor on last line
-            self.set_shape(*self._mode.cursor)
+            self.set_shape(*self._mode.cursor_shape)
         else:
             # half-block cursor for insert
             self.set_shape(self._height//2, self._height-1)

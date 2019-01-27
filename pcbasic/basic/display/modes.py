@@ -225,7 +225,7 @@ class VideoMode(object):
     is_cga_hires = False
 
     def __init__(
-            self, name, height, width, font_height, font_width, attr, cursor, colourmap
+            self, name, height, width, font_height, font_width, attr, cursor_shape, colourmap
         ):
         """Initialise video mode settings."""
         self.name = name
@@ -239,7 +239,7 @@ class VideoMode(object):
         self.attr = attr
         # override these
         self.memorymap = None
-        self.cursor = cursor
+        self.cursor_shape = cursor_shape
         self.colourmap = colourmap
 
     @property
@@ -293,12 +293,12 @@ class TextMode(VideoMode):
     is_text_mode = True
 
     def __init__(
-            self, name, rows, columns, font_height, font_width, attr, cursor,
+            self, name, rows, columns, font_height, font_width, attr, cursor_shape,
             video_mem_size, max_pages, mono, colourmap
         ):
         """Initialise video mode settings."""
         VideoMode.__init__(
-            self, name, rows, columns, font_height, font_width, attr, cursor, colourmap
+            self, name, rows, columns, font_height, font_width, attr, cursor_shape, colourmap
         )
         self.memorymap = self._textmemorymapper(rows, columns, video_mem_size, max_pages, mono)
 
@@ -328,9 +328,9 @@ class GraphicsMode(VideoMode):
         # ceildiv for hercules (14-px font on 348 lines)
         font_height = -(-height // rows)
         # block cursor in graphics mode
-        cursor = (0, font_height-1)
+        cursor_shape = (0, font_height-1)
         VideoMode.__init__(
-            self, name, rows, columns, font_height, font_width, attr, cursor, colourmap
+            self, name, rows, columns, font_height, font_width, attr, cursor_shape, colourmap
         )
         self.is_cga_hires = is_cga_hires
         # override pixel dimensions
@@ -396,59 +396,59 @@ _MODE_INFO = {
 
     'vgatext40': dict(
         rows=25, columns=40, font_height=16, font_width=9, attr=7, max_pages=8, mono=False,
-        cursor=(15, 15), layout=TextMode, colourmap=EGA64TextColourMapper
+        cursor_shape=(15, 15), layout=TextMode, colourmap=EGA64TextColourMapper
     ),
     'vgatext80': dict(
         rows=25, columns=80, font_height=16, font_width=9, attr=7, max_pages=4, mono=False,
-        cursor=(15, 15), layout=TextMode, colourmap=EGA64TextColourMapper
+        cursor_shape=(15, 15), layout=TextMode, colourmap=EGA64TextColourMapper
     ),
     'egatext40': dict(
         rows=25, columns=40, font_height=14, font_width=8, attr=7, max_pages=8, mono=False,
-        cursor=(12, 12), layout=TextMode, colourmap=EGA64TextColourMapper
+        cursor_shape=(12, 12), layout=TextMode, colourmap=EGA64TextColourMapper
     ),
     'egatext80': dict(
         rows=25, columns=80, font_height=14, font_width=8, attr=7, max_pages=4, mono=False,
-        cursor=(12, 12), layout=TextMode, colourmap=EGA64TextColourMapper
+        cursor_shape=(12, 12), layout=TextMode, colourmap=EGA64TextColourMapper
     ),
     'ega_monotext40': dict(
         rows=25, columns=40, font_height=14, font_width=8, attr=7, max_pages=8, mono=True,
-        cursor=(12, 12), layout=TextMode, colourmap=MonoTextColourMapper
+        cursor_shape=(12, 12), layout=TextMode, colourmap=MonoTextColourMapper
     ),
     'ega_monotext80': dict(
         rows=25, columns=80, font_height=14, font_width=8, attr=7, max_pages=4, mono=True,
-        cursor=(12, 12), layout=TextMode, colourmap=MonoTextColourMapper
+        cursor_shape=(12, 12), layout=TextMode, colourmap=MonoTextColourMapper
     ),
     'mdatext40': dict(
         rows=25, columns=40, font_height=14, font_width=9, attr=7, max_pages=1, mono=True,
-        cursor=(13, 13), layout=TextMode, colourmap=MonoTextColourMapper
+        cursor_shape=(13, 13), layout=TextMode, colourmap=MonoTextColourMapper
     ),
     'mdatext80': dict(
         rows=25, columns=80, font_height=14, font_width=9, attr=7, max_pages=1, mono=True,
-        cursor=(13, 13), layout=TextMode, colourmap=MonoTextColourMapper
+        cursor_shape=(13, 13), layout=TextMode, colourmap=MonoTextColourMapper
     ),
     'tandytext40': dict(
         rows=25, columns=40, font_height=9, font_width=8, attr=7, max_pages=8, mono=False,
-        cursor=(7, 7), layout=TextMode, colourmap=EGA16TextColourMapper
+        cursor_shape=(7, 7), layout=TextMode, colourmap=EGA16TextColourMapper
     ),
     'tandytext80': dict(
         rows=25, columns=80, font_height=9, font_width=8, attr=7, max_pages=4, mono=False,
-        cursor=(7, 7), layout=TextMode, colourmap=EGA16TextColourMapper
+        cursor_shape=(7, 7), layout=TextMode, colourmap=EGA16TextColourMapper
     ),
     'cgatext40': dict(
         rows=25, columns=40, font_height=8, font_width=8, attr=7, max_pages=8, mono=False,
-        cursor=(7, 7), layout=TextMode, colourmap=EGA16TextColourMapper
+        cursor_shape=(7, 7), layout=TextMode, colourmap=EGA16TextColourMapper
     ),
     'cgatext80': dict(
         rows=25, columns=80, font_height=8, font_width=8, attr=7, max_pages=4, mono=False,
-        cursor=(7, 7), layout=TextMode, colourmap=EGA16TextColourMapper
+        cursor_shape=(7, 7), layout=TextMode, colourmap=EGA16TextColourMapper
     ),
     'olivettitext40': dict(
         rows=25, columns=40, font_height=16, font_width=8, attr=7, max_pages=8, mono=False,
-        cursor=(15, 15), layout=TextMode, colourmap=EGA16ColourMapper
+        cursor_shape=(15, 15), layout=TextMode, colourmap=EGA16ColourMapper
     ),
     'olivettitext80': dict(
         rows=25, columns=80, font_height=16, font_width=8, attr=7, max_pages=4, mono=False,
-        cursor=(15, 15), layout=TextMode, colourmap=EGA16ColourMapper
+        cursor_shape=(15, 15), layout=TextMode, colourmap=EGA16ColourMapper
     ),
 
     # graphics modes
