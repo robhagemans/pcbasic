@@ -289,11 +289,11 @@ class TextScreen(object):
             start = min(start, updated.index(True) + 1)
             stop = max(stop, len(updated) - updated[::-1].index(True))
         except ValueError:
-            # no change to buffer
+            # no change to text in buffer
             # however, in graphics mode we need to plot at least the updated range
             # as the dbcs buffer is not updated when overdrawn
-            if self.mode.is_text_mode:
-                return
+            # and in text mode the attribute may have changed
+            pass
         col, last_col = start, start
         last_attr = None
         chars = []
