@@ -375,9 +375,9 @@ class Parser(object):
             tk.DEF: session.all_memory.def_seg_,
             tk.LINE + tk.INPUT: session.line_input_,
             tk.LINE: session.drawing.line_,
-            tk.KEY + tk.ON: session.editor.key_,
-            tk.KEY + tk.OFF: session.editor.key_,
-            tk.KEY + tk.LIST: session.editor.key_,
+            tk.KEY + tk.ON: session.console.key_,
+            tk.KEY + tk.OFF: session.console.key_,
+            tk.KEY + tk.LIST: session.console.key_,
             tk.KEY + b'(': session.basic_events.key_,
             tk.KEY: session.key_,
             tk.PUT + b'(': session.drawing.put_,
@@ -1277,7 +1277,7 @@ class Parser(object):
         yield self._parse_variable(ins)
 
     ###########################################################################
-    # console and editor statements
+    # console / text screen statements
 
     def _parse_key_macro(self, ins):
         """Parse KEY ON/OFF/LIST syntax."""

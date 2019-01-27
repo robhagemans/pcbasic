@@ -626,7 +626,7 @@ class TextScreen(object):
             # cursor moves to start of next line
             self.set_pos(self.current_row+1, 1)
 
-    # editor calls
+    # console calls
 
     @property
     def overwrite_mode(self):

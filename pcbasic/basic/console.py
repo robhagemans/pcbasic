@@ -1,6 +1,6 @@
 """
-PC-BASIC - editor.py
-Direct mode environment
+PC-BASIC - console.py
+Console and interactive environment
 
 (c) 2013--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -53,7 +53,7 @@ FKEY_MACRO_REPLACE_CHARS = {
 }
 
 
-class Editor(object):
+class Console(object):
     """Console / interactive environment."""
 
     def __init__(self, text_screen, keyboard, sound, io_streams, num_fn_keys):
