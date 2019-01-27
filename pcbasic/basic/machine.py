@@ -298,8 +298,7 @@ class Memory(object):
         # files access for BLOAD and BSAVE
         self._files = files
         # screen access needed for video memory
-        self.display = display
-        self._text_screen = display.text_screen
+        self._display = display
         # keyboard buffer access
         self.keyboard = keyboard
         # interpreter, for runmode check
@@ -478,19 +477,19 @@ class Memory(object):
 
     def _get_video_memory(self, addr):
         """Retrieve a byte from video memory."""
-        return self.display.mode.memorymap.get_memory(self.display, addr, 1)[0]
+        return self._display.mode.memorymap.get_memory(self._display, addr, 1)[0]
 
     def _set_video_memory(self, addr, val):
         """Set a byte in video memory."""
-        return self.display.mode.memorymap.set_memory(self.display, addr, [val])
+        return self._display.mode.memorymap.set_memory(self._display, addr, [val])
 
     def _get_video_memory_block(self, addr, length):
         """Retrieve a contiguous block of bytes from video memory."""
-        return bytearray(self.display.mode.memorymap.get_memory(self.display, addr, length))
+        return bytearray(self._display.mode.memorymap.get_memory(self._display, addr, length))
 
     def _set_video_memory_block(self, addr, some_bytes):
         """Set a contiguous block of bytes in video memory."""
-        self.display.mode.memorymap.set_memory(self.display, addr, some_bytes)
+        self._display.mode.memorymap.set_memory(self._display, addr, some_bytes)
 
     ###############################################################################
 
@@ -566,7 +565,7 @@ class Memory(object):
             return self.ram_font_segment // 256
         # 1040 monitor type
         elif addr == 1040:
-            if self.display.is_monochrome:
+            if self._display.is_monochrome:
                 # mono
                 return 48 + 6
             else:
@@ -633,41 +632,41 @@ class Memory(object):
         # 1097 screen mode number
         elif addr == 1097:
             # these are the low-level mode numbers used by mode switching interrupt
-            return modes.get_mode_number(self.display.mode, self.display.colorswitch)
+            return modes.get_mode_number(self._display.mode, self._display.colorswitch)
         # 1098, 1099 screen width
         elif addr == 1098:
-            return self.display.mode.width % 256
+            return self._display.mode.width % 256
         elif addr == 1099:
-            return self.display.mode.width // 256
+            return self._display.mode.width // 256
         # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
         # 1102, 1103 zero (PCmag says graphics page buffer offset)
         elif addr == 1100:
-            return self.display.mode.memorymap.page_size % 256
+            return self._display.mode.memorymap.page_size % 256
         elif addr == 1101:
-            return self.display.mode.memorymap.page_size // 256
+            return self._display.mode.memorymap.page_size // 256
         # 1104 + 2*n (cursor column of page n) - 1
         # 1105 + 2*n (cursor row of page n) - 1
         # we only keep track of one row,col position
         elif addr in range(1104, 1120, 2):
-            return self._text_screen.current_col - 1
+            return self._display.text_screen.current_col - 1
         elif addr in range(1105, 1120, 2):
-            return self._text_screen.current_row - 1
+            return self._display.text_screen.current_row - 1
         # 1120, 1121 cursor shape
         elif addr == 1120:
             # to_line
-            return self._text_screen.cursor.shape[1]
+            return self._display.cursor.shape[1]
         elif addr == 1121:
             # from_line
-            return self._text_screen.cursor.shape[0]
+            return self._display.cursor.shape[0]
         # 1122 visual page number
         elif addr == 1122:
-            return self.display.vpagenum
+            return self._display.vpagenum
         # 1125 screen mode info
         elif addr == 1125:
-            return self.display.get_mode_info_byte()
+            return self._display.get_mode_info_byte()
         # 1126 color
         elif addr == 1126:
-            return self.display.get_colour_info_byte()
+            return self._display.get_colour_info_byte()
         # 1296, 1297: zero (PCmag says data segment address)
         return -1
 

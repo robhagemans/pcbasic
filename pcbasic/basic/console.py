@@ -56,9 +56,10 @@ FKEY_MACRO_REPLACE_CHARS = {
 class Console(object):
     """Console / interactive environment."""
 
-    def __init__(self, text_screen, keyboard, sound, io_streams, num_fn_keys):
+    def __init__(self, text_screen, cursor, keyboard, sound, io_streams, num_fn_keys):
         """Initialise environment."""
         self._text_screen = text_screen
+        self._cursor = cursor
         self._sound = sound
         self._keyboard = keyboard
         self._io_streams = io_streams
@@ -74,10 +75,6 @@ class Console(object):
 
     ##########################################################################
     # properties
-
-    @property
-    def cursor(self):
-        return self._text_screen.cursor
 
     @property
     def width(self):
@@ -136,7 +133,7 @@ class Console(object):
     def _interact(self, prompt_width):
         """Manage the interactive mode."""
         # force cursor visibility in all cases
-        self._text_screen.cursor.show(True)
+        self._cursor.show(True)
         self._io_streams.flush()
         try:
             # this is where we started
@@ -228,7 +225,7 @@ class Console(object):
         finally:
             self._text_screen.set_overwrite_mode(True)
             # reset cursor visibility
-            self._text_screen.cursor.reset_visibility()
+            self._cursor.reset_visibility()
         return start_row, furthest_left, furthest_right
 
 

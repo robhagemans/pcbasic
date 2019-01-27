@@ -21,6 +21,7 @@ from ..base.bytematrix import ByteMatrix
 from .textbuffer import TextPage
 from .textscreen import TextScreen
 from .colours import MONO_TINT
+from .cursor import Cursor
 
 
 class Display(object):
@@ -70,8 +71,9 @@ class Display(object):
         self._bios_font_8 = self._fonts[8].copy()
         # text screen
         self.codepage = codepage
+        self.cursor = Cursor(queues, self.mode)
         self.text_screen = TextScreen(
-            self._queues, self._values, self.mode, self._adapter, codepage
+            self._queues, self._values, self.mode, self.cursor, self._adapter, codepage
         )
         # pixel buffer, set by _set_mode
         self.text_pages = None
@@ -221,6 +223,11 @@ class Display(object):
             TextPage(self.attr, self.mode.width, self.mode.height)
             for _ in range(self.mode.num_pages)
         ]
+        # rebuild the cursor
+        if not self.mode.is_text_mode and self.mode.cursor_attr:
+            self.cursor.init_mode(self.mode, self.mode.cursor_attr, self.colourmap)
+        else:
+            self.cursor.init_mode(self.mode, self.attr, self.colourmap)
         # initialise text screen
         self.text_screen.init_mode(
             self.mode, self.pixel_pages, self.text_pages,
@@ -344,7 +351,7 @@ class Display(object):
         self.graphics.set_attr(attr)
         self.text_screen.set_attr(attr)
         if not self.mode.is_text_mode and self.mode.cursor_attr is None:
-            self.text_screen.cursor.set_attr(attr)
+            self.cursor.set_attr(attr)
 
     def set_border(self, attr):
         """Set the border attribute."""

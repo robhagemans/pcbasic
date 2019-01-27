@@ -16,7 +16,6 @@ from ..base import error
 from ..base import tokens as tk
 from ..base.tokens import ALPHANUMERIC
 from .. import values
-from .cursor import Cursor
 
 
 class ScrollArea(object):
@@ -98,7 +97,7 @@ class BottomBar(object):
 class TextScreen(object):
     """Text screen."""
 
-    def __init__(self, queues, values, mode, capabilities, codepage):
+    def __init__(self, queues, values, mode, cursor, capabilities, codepage):
         """Initialise text-related members."""
         self._queues = queues
         self._values = values
@@ -108,7 +107,7 @@ class TextScreen(object):
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
         # cursor
-        self.cursor = Cursor(queues, mode)
+        self.cursor = cursor
         # current row and column
         # overflow: true if we're on 80 but should be on 81
         self.current_row, self.current_col, self.overflow = 1, 1, False
@@ -156,11 +155,6 @@ class TextScreen(object):
         self.redraw_bar()
         # initialise text viewport & move cursor home
         self.scroll_area.init_mode(self.mode)
-        # rebuild the cursor
-        if not mode.is_text_mode and mode.cursor_attr:
-            self.cursor.init_mode(self.mode, mode.cursor_attr, colourmap)
-        else:
-            self.cursor.init_mode(self.mode, self._attr, colourmap)
         self.set_pos(self.scroll_area.top, 1)
 
     def __repr__(self):

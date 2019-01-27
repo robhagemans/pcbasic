@@ -141,7 +141,8 @@ class Implementation(object):
         # initialise the console
         # Sound is needed for the beeps on \a
         self.console = console.Console(
-            self.text_screen, self.keyboard, self.sound, self.io_streams, num_fn_keys
+            self.text_screen, self.display.cursor,
+            self.keyboard, self.sound, self.io_streams, num_fn_keys
         )
         # initilise floating-point error message stream
         self.values.set_handler(values.FloatErrorHandler(self.console))
@@ -197,7 +198,7 @@ class Implementation(object):
         self.parser = parser.Parser(self.values, self.memory, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
-            self.queues, self.console, self.files, self.sound,
+            self.queues, self.console, self.display.cursor, self.files, self.sound,
             self.values, self.memory, self.program, self.parser, self.basic_events
         )
         ######################################################################
@@ -497,13 +498,13 @@ class Implementation(object):
         cmd = values.next_string(args)
         list(args)
         # force cursor visible in all cases
-        self.text_screen.cursor.show(True)
+        self.display.cursor.show(True)
         # sound stops playing and is forgotten
         self.sound.stop_all_sound()
         # run the os-specific shell
         self.shell.launch(cmd)
         # reset cursor visibility to its previous state
-        self.text_screen.cursor.reset_visibility()
+        self.display.cursor.reset_visibility()
 
     def term_(self, args):
         """TERM: terminal emulator."""
@@ -564,7 +565,7 @@ class Implementation(object):
         # throws back to direct mode
         # jump to end of direct line so execution stops
         self.interpreter.set_pointer(False)
-        self.text_screen.cursor.reset_visibility()
+        self.display.cursor.reset_visibility()
         # request edit prompt
         self._edit_prompt = (from_line, None)
 
