@@ -855,5 +855,5 @@ class Implementation(object):
     def pen_fn_(self, args):
         """PEN: poll the light pen."""
         fn, = args
-        result = self.pen.poll(fn, self.basic_events.pen.enabled, self.text_screen)
+        result = self.pen.poll(fn, self.basic_events.pen.enabled, self.display.mode)
         return self.values.new_integer().from_int(result)
