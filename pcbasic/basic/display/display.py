@@ -93,7 +93,7 @@ class Display(object):
         # --> old value SCREEN 3 pixel aspect 1968/1000 not quite (but almost) consistent with this
         #     and I don't think it was really checked on Tandy -- dosbox won't run SCREEN 3
         # graphics operations
-        self.drawing = graphics.Drawing(
+        self.graphics = graphics.Graphics(
             self._queues, input_methods, self._values, self._memory, aspect
         )
         # colour palette
@@ -231,13 +231,13 @@ class Display(object):
         if not erase:
             self.mode.memorymap.set_memory(self, saved_addr, saved_buffer)
         # center graphics cursor, reset window, etc.
-        self.drawing.init_mode(
+        self.graphics.init_mode(
             self.mode, self.text_pages, self.pixel_pages, self.colourmap.num_attr
         )
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics attribute
-        self.drawing.set_attr(self.attr)
+        self.graphics.set_attr(self.attr)
 
     def set_width(self, to_width):
         """Set the number of columns of the screen, reset pages and change modes."""
@@ -334,14 +334,14 @@ class Display(object):
             raise error.BASICError(error.IFC)
         self.vpagenum = new_vpagenum
         self.apagenum = new_apagenum
-        self.drawing.set_page(new_apagenum)
+        self.graphics.set_page(new_apagenum)
         self.text_screen.set_page(new_vpagenum, new_apagenum)
         self._queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
 
     def set_attr(self, attr):
         """Set the default attribute."""
         self.attr = attr
-        self.drawing.set_attr(attr)
+        self.graphics.set_attr(attr)
         self.text_screen.set_attr(attr)
         if not self.mode.is_text_mode and self.mode.cursor_attr is None:
             self.text_screen.cursor.set_attr(attr)
@@ -490,18 +490,18 @@ class Display(object):
         list(args)
         # CLS is only executed if no errors have occurred
         if not self.mode.is_text_mode and (
-                val == 1 or (val is None and self.drawing.graph_view.is_set())
+                val == 1 or (val is None and self.graphics.graph_view.is_set())
             ):
             # CLS 1: in graphics mode, clear the graphics viewport
-            self.drawing.fill_rect(*self.drawing.graph_view.get(), index=(self.attr >> 4) & 0x7)
-            self.drawing.reset()
-            if not self.drawing.graph_view.is_set():
+            self.graphics.fill_rect(*self.graphics.graph_view.get(), index=(self.attr >> 4) & 0x7)
+            self.graphics.reset()
+            if not self.graphics.graph_view.is_set():
                 self.text_screen.redraw_bar()
                 self.text_screen.set_pos(1, 1)
         elif val == 0 or (val is None and not self.text_screen.scroll_area.active):
             self.text_screen.clear()
             self.text_screen.redraw_bar()
-            self.drawing.reset()
+            self.graphics.reset()
         elif val == 2:
             # CLS 2 does not reset the graphics pointer (checked with DOSBox)
             # if vscroll area is not active, this does not clear the bottom bar
@@ -510,4 +510,4 @@ class Display(object):
             # however, CLS only with active scroll area *does* reset the view
             # clear_view will clear the whole screen if the view is not set
             self.text_screen.clear_view()
-            self.drawing.reset()
+            self.graphics.reset()

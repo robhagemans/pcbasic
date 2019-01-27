@@ -121,14 +121,14 @@ class Implementation(object):
         )
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.memory, syntax)
-        # Sound is needed for the beeps on \a
+        # initialise video
         self.display = display.Display(
             self.queues, self.values, self.queues,
             self.memory, text_width, video_memory, video, monitor,
             self.codepage, font
         )
         self.text_screen = self.display.text_screen
-        self.drawing = self.display.drawing
+        self.graphics = self.display.graphics
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
         # EventHandler needed for wait() only
         self.keyboard = inputs.Keyboard(
@@ -139,6 +139,7 @@ class Implementation(object):
         # 12 definable function keys for Tandy, 10 otherwise
         num_fn_keys = 12 if syntax == 'tandy' else 10
         # initialise the console
+        # Sound is needed for the beeps on \a
         self.console = console.Console(
             self.text_screen, self.keyboard, self.sound, self.io_streams, num_fn_keys
         )
@@ -485,7 +486,7 @@ class Implementation(object):
         # reset PLAY state
         self.sound.reset_play()
         # reset DRAW state (angle, scale) and current graphics position
-        self.drawing.reset()
+        self.graphics.reset()
         # reset random number generator
         self.randomiser.clear()
         # reset stacks & pointers

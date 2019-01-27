@@ -403,7 +403,7 @@ class CGAMemoryMapper(GraphicsMemoryMapper):
             pixarray = bytematrix.ByteMatrix.frompacked(
                 byte_array[ofs:ofs+length], height=1, items_per_byte=self._ppb
             )
-            display.drawing.put_interval(page, x, y, pixarray)
+            display.graphics.put_interval(page, x, y, pixarray)
 
     def get_memory(self, display, addr, num_bytes):
         """Retrieve bytes from CGA memory."""
@@ -491,7 +491,7 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
                     byte_array[ofs:ofs+length], height=1, items_per_byte=8
                 ).render(0, mask)
             )
-            display.drawing.put_interval(page, x, y, pixarray, mask)
+            display.graphics.put_interval(page, x, y, pixarray, mask)
 
 
 class Tandy6MemoryMapper(GraphicsMemoryMapper):
@@ -553,4 +553,4 @@ class Tandy6MemoryMapper(GraphicsMemoryMapper):
                         half[ofs:ofs+length], height=1, items_per_byte=2*self._ppb
                     ) << plane
                 )
-                display.drawing.put_interval(page, x, y, pixarray, mask)
+                display.graphics.put_interval(page, x, y, pixarray, mask)

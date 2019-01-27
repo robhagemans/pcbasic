@@ -1,5 +1,5 @@
 """
-PC-BASIC - graphics.py
+PC-BASIC - display.graphics
 Graphics operations
 
 (c) 2013--2020 Rob Hagemans
@@ -89,8 +89,8 @@ class GraphicsViewPort(object):
             return x + self._rect[0], y + self._rect[1]
 
 
-class Drawing(object):
-    """Graphical drawing operations."""
+class Graphics(object):
+    """Graphics operations."""
 
     def __init__(self, queues, input_methods, values, memory, aspect):
         """Initialise graphics object."""
