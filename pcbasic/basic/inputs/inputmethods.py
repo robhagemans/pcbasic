@@ -16,37 +16,6 @@ from .. import values
 
 
 ###############################################################################
-# clipboard copy & print screen handler
-
-# clipboard copy & print screen are special cases:
-# they to handle an input signal, read the screen
-# and write the text to an output queue or file
-# independently of what BASIC is doing
-
-class ScreenCopyHandler(object):
-    """Event handler for clipboard copy and print screen."""
-
-    def __init__(self, text_screen, lpt1_file):
-        """Initialise copy handler."""
-        self._text_screen = text_screen
-        self._lpt1_file = lpt1_file
-
-    def check_input(self, signal):
-        """Handle input signals."""
-        if signal.event_type == signals.CLIP_COPY:
-            self._text_screen.copy_clipboard(*signal.params)
-            return True
-        elif signal.event_type == signals.KEYB_DOWN:
-            c, scan, mod = signal.params
-            if scan == scancode.PRINT and (
-                    scancode.LSHIFT in mod or scancode.RSHIFT in mod):
-                # shift+printscreen triggers a print screen
-                self._text_screen.print_screen(self._lpt1_file)
-                return True
-        return False
-
-
-###############################################################################
 # light pen
 
 class Pen(object):

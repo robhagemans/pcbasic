@@ -199,6 +199,20 @@ class TextPage(object):
     ###########################################################################
     # logical lines
 
+    def find_start_of_line(self, srow):
+        """Find the start of the logical line that includes our current position."""
+        # move up as long as previous line wraps
+        while srow > 1 and self.wraps(srow-1):
+            srow -= 1
+        return srow
+
+    def find_end_of_line(self, srow):
+        """Find the end of the logical line that includes our current position."""
+        # move down as long as this line wraps
+        while srow <= self._height and self.wraps(srow):
+            srow += 1
+        return srow
+
     def get_text_logical(self, start_row, start_col, stop_row, stop_col):
         """Retrieve section of logical text for copying."""
         if start_row == stop_row:
@@ -224,20 +238,6 @@ class TextPage(object):
         if self.row_length(row) < self._width or not self.wraps(row):
             text += b'\n'
         return text
-
-    def find_start_of_line(self, srow):
-        """Find the start of the logical line that includes our current position."""
-        # move up as long as previous line wraps
-        while srow > 1 and self.wraps(srow-1):
-            srow -= 1
-        return srow
-
-    def find_end_of_line(self, srow):
-        """Find the end of the logical line that includes our current position."""
-        # move down as long as this line wraps
-        while srow <= self._height and self.wraps(srow):
-            srow += 1
-        return srow
 
     def get_logical_line(self, from_row, from_column=None):
         """Get the contents of the logical line."""

@@ -122,7 +122,6 @@ class Implementation(object):
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.memory, syntax)
         # Sound is needed for the beeps on \a
-        # InputMethods is needed for wait() in graphics
         self.display = display.Display(
             self.queues, self.values, self.queues,
             self.memory, text_width, video_memory, video, monitor,
@@ -180,8 +179,7 @@ class Implementation(object):
         # register input event handlers
         ######################################################################
         # clipboard and print screen handler
-        clip_handler = inputs.ScreenCopyHandler(self.text_screen, self.files.lpt1_file)
-        self.queues.add_handler(clip_handler)
+        self.queues.add_handler(self.editor.get_copy_handler())
         # keyboard, pen and stick
         self.queues.add_handler(self.keyboard)
         self.queues.add_handler(self.pen)

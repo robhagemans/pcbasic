@@ -7,4 +7,4 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from .keyboard import Keyboard
-from .inputmethods import Pen, Stick, ScreenCopyHandler
+from .inputmethods import Pen, Stick
