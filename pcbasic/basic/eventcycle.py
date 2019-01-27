@@ -55,23 +55,6 @@ HOME_KEY_REPLACEMENTS_EASCII = {
 ###############################################################################
 # queues
 
-def save_queue(q):
-    """Get list of queue tasks."""
-    qlist = []
-    while True:
-        try:
-            qlist.append(q.get(False))
-            q.task_done()
-        except queue.Empty:
-            break
-    return qlist
-
-def load_queue(q, qlist):
-    """Initialise queue from list of tasks."""
-    for item in qlist:
-        q.put(item)
-
-
 class NullQueue(object):
     """Dummy implementation of Queue interface."""
     def __init__(self, maxsize=0):
