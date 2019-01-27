@@ -723,7 +723,7 @@ class TextScreen(object):
     # bottom bar
 
     def update_bar(self, descriptions):
-        """Update thekey descriptions in the bottom bar."""
+        """Update the key descriptions in the bottom bar."""
         self._bottom_bar.clear()
         for i, text in enumerate(descriptions):
             kcol = 1 + 8*i

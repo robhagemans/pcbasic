@@ -142,10 +142,10 @@ class Implementation(object):
         ######################################################################
         # 12 definable function keys for Tandy, 10 otherwise
         num_fn_keys = 12 if syntax == 'tandy' else 10
-        # key macro guide
-        self.fkey_macros = editor.FunctionKeyMacros(self.keyboard, self.text_screen, num_fn_keys)
         # initialise the editor
-        self.editor = editor.Editor(self.text_screen, self.keyboard, self.sound, self.io_streams)
+        self.editor = editor.Editor(
+            self.text_screen, self.keyboard, self.sound, self.io_streams, num_fn_keys
+        )
         # initilise floating-point error message stream
         self.values.set_handler(values.FloatErrorHandler(self.editor))
         ######################################################################
@@ -841,19 +841,15 @@ class Implementation(object):
         self.randomiser.reseed(val)
 
     def key_(self, args):
-        """KEY: macro or event handler definition."""
+        """KEY: macro or event trigger definition."""
         keynum = values.to_int(next(args))
         error.range_check(1, 255, keynum)
         text = values.next_string(args)
         list(args)
-        if keynum <= self.fkey_macros.num_fn_keys:
-            self.fkey_macros.set(keynum, text)
-            self.text_screen.redraw_bar()
-        else:
-            # only length-2 expressions can be assigned to KEYs over 10
-            # in which case it's a key scancode definition
-            if len(text) != 2:
-                raise error.BASICError(error.IFC)
+        try:
+            self.editor.set_macro(keynum, text)
+        except ValueError:
+            # if out of range of number of macros (12 on Tandy, else 10), it's a trigger definition
             self.basic_events.key[keynum-1].set_trigger(text)
 
     def pen_fn_(self, args):

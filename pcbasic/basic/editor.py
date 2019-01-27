@@ -16,7 +16,7 @@ from .base.eascii import as_bytes as ea
 
 
 # alt+key macros for interactive mode
-# these happen at a higher level than F-key macros
+# these happen at a higher level (in the console) than F-key macros (in the keyboard buffer)
 ALT_KEY_REPLACE = {
     ea.ALT_a: tk.KW_AUTO,
     ea.ALT_b: tk.KW_BSAVE,
@@ -43,84 +43,66 @@ ALT_KEY_REPLACE = {
 }
 
 
-class FunctionKeyMacros(object):
-    """Handles display of function-key macro strings."""
-
-    # characters to replace
-    _replace_chars = {
-        b'\x07': b'\x0e', b'\x08': b'\xfe', b'\x09': b'\x1a', b'\x0A': b'\x1b',
-        b'\x0B': b'\x7f', b'\x0C': b'\x16', b'\x0D': b'\x1b', b'\x1C': b'\x10',
-        b'\x1D': b'\x11', b'\x1E': b'\x18', b'\x1F': b'\x19'
-    }
-
-    def __init__(self, keyboard, text_screen, num_fn_keys):
-        """Initialise user-definable key list."""
-        self._keyboard = keyboard
-        self._text_screen = text_screen
-        self._num_fn_keys = num_fn_keys
-        self._update_bar()
-
-    @property
-    def num_fn_keys(self):
-        """Number of programmable function keys."""
-        return self._num_fn_keys
-
-    def list_keys(self):
-        """Print a list of the function key macros."""
-        for i in range(self._num_fn_keys):
-            text = self._keyboard.get_macro(i)
-            text = b''.join(self._replace_chars.get(s, s) for s in iterchar(text))
-            #FIXME
-            self._console.write_line(b'F%d %s' % (i+1, text))
-
-    def set(self, num, macro):
-        """Set macro for given function key."""
-        # NUL terminates macro string, rest is ignored
-        # macro starting with NUL is empty macro
-        self._keyboard.set_macro(num, macro)
-        self._update_bar()
-
-    def key_(self, args):
-        """KEY: show/hide/list macros."""
-        command, = args
-        if command == tk.ON:
-            self._text_screen.show_bar(True)
-        elif command == tk.OFF:
-            self._text_screen.show_bar(False)
-        elif command == tk.LIST:
-            self.list_keys()
-
-    def _update_bar(self):
-        """Show/hide the function keys line on the active page."""
-        macros = (
-            self._keyboard.get_macro(_i)
-            for _i in range(10)
-        )
-        descriptions = [
-            b''.join(
-                self._replace_chars.get(_s, _s)
-                for _s in iterchar(_macro[:6])
-            )
-            for _macro in macros
-        ]
-        self._text_screen.update_bar(descriptions)
+# characters to replace in bottom bar
+FKEY_MACRO_REPLACE_CHARS = {
+    b'\x07': b'\x0e', b'\x08': b'\xfe', b'\x09': b'\x1a', b'\x0A': b'\x1b',
+    b'\x0B': b'\x7f', b'\x0C': b'\x16', b'\x0D': b'\x1b', b'\x1C': b'\x10',
+    b'\x1D': b'\x11', b'\x1E': b'\x18', b'\x1F': b'\x19'
+}
 
 
 class Editor(object):
     """Console / interactive environment."""
 
-    def __init__(self, text_screen, keyboard, sound, io_streams):
+    def __init__(self, text_screen, keyboard, sound, io_streams, num_fn_keys):
         """Initialise environment."""
         self._text_screen = text_screen
         self._sound = sound
         self._keyboard = keyboard
         self._io_streams = io_streams
+        self._num_fn_keys = num_fn_keys
         # needs to be set later due to init order
         self._lpt1_file = None
+        self._update_bar()
 
     def set_lpt1_file(self, lpt1_file):
         """Set the LPT1: file."""
         self._lpt1_file = lpt1_file
+
+
+    ##########################################################################
+    # properties
+
+    @property
+    def cursor(self):
+        return self._text_screen.cursor
+
+    @property
+    def width(self):
+        return self._text_screen.mode.width
+
+    @property
+    def height(self):
+        return self._text_screen.mode.height
+
+    @property
+    def current_row(self):
+        return self._text_screen.current_row
+
+    @property
+    def current_col(self):
+        return self._text_screen.current_col
+
+    @property
+    def overflow(self):
+        return self._text_screen.overflow
+
+    def set_pos(self, row, col):
+        self._text_screen.set_pos(row, col)
+
+
+    ##########################################################################
+    # interaction
 
     def wait_screenline(self, write_endl=True, from_start=False):
         """Enter interactive mode and read string from console."""
@@ -247,36 +229,9 @@ class Editor(object):
             self._text_screen.cursor.reset_visibility()
         return start_row, furthest_left, furthest_right
 
-    ##########################################################################
-
-    @property
-    def cursor(self):
-        return self._text_screen.cursor
-
-    @property
-    def width(self):
-        return self._text_screen.mode.width
-
-    @property
-    def height(self):
-        return self._text_screen.mode.height
-
-    @property
-    def current_row(self):
-        return self._text_screen.current_row
-
-    @property
-    def current_col(self):
-        return self._text_screen.current_col
-
-    @property
-    def overflow(self):
-        return self._text_screen.overflow
-
-    def set_pos(self, row, col):
-        self._text_screen.set_pos(row, col)
 
     ##########################################################################
+    # output
 
     def write(self, s, scroll_ok=True, do_echo=True):
         """Write a string to the screen at the current position."""
@@ -360,3 +315,46 @@ class Editor(object):
             self._text_screen.set_pos(self._text_screen.current_row + 1, 1)
         # ensure line above doesn't wrap
         self._text_screen.set_wrap(self._text_screen.current_row-1, False)
+
+
+    ##########################################################################
+    # function key macros
+
+    def key_(self, args):
+        """KEY: show/hide/list macros."""
+        command, = args
+        if command == tk.ON:
+            self._text_screen.show_bar(True)
+        elif command == tk.OFF:
+            self._text_screen.show_bar(False)
+        elif command == tk.LIST:
+            self._list_macros()
+
+    def set_macro(self, num, macro):
+        """Set macro for given function key."""
+        if num > self._num_fn_keys:
+            raise ValueError('Function key number out of range')
+        # NUL terminates macro string, rest is ignored
+        # macro starting with NUL is empty macro
+        self._keyboard.set_macro(num, macro)
+        self._update_bar()
+        self._text_screen.redraw_bar()
+
+    def _list_macros(self):
+        """Print a list of the function key macros."""
+        for i in range(self._num_fn_keys):
+            text = self._keyboard.get_macro(i)
+            text = b''.join(FKEY_MACRO_REPLACE_CHARS.get(s, s) for s in iterchar(text))
+            self.write_line(b'F%d %s' % (i+1, text))
+
+    def _update_bar(self):
+        """Show/hide the function keys line on the active page."""
+        macros = (
+            self._keyboard.get_macro(_i)
+            for _i in range(10)
+        )
+        descriptions = [
+            b''.join(FKEY_MACRO_REPLACE_CHARS.get(_s, _s) for _s in iterchar(_macro[:6]))
+            for _macro in macros
+        ]
+        self._text_screen.update_bar(descriptions)
