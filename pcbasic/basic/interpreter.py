@@ -18,15 +18,17 @@ from . import values
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, queues, screen, files, sound,
-                values, memory, program, parser, basic_events):
+    def __init__(
+            self, queues, console, files, sound,
+            values, memory, program, parser, basic_events
+        ):
         """Initialise interpreter."""
         self._queues = queues
         self._basic_events = basic_events
         self._values = values
         self._memory = memory
         self._scalars = memory.scalars
-        self._screen = screen
+        self._console = console
         self._files = files
         self._sound = sound
         # program buffer
@@ -49,7 +51,7 @@ class Interpreter(object):
         self.set_pointer(False, 0)
         # interpreter is waiting for INPUT or LINE INPUT
         self.input_mode = False
-        # interpreter is executing a command (needs Screen)
+        # interpreter is executing a command (needs console)
         self.set_parse_mode(False)
         # additional operations on program step (debugging)
         self.step = lambda token: None
@@ -101,7 +103,7 @@ class Interpreter(object):
                         return
                     if self.tron:
                         linenum = struct.unpack_from('<H', token, 2)
-                        self._screen.write(b'[%i]' % linenum)
+                        self._console.write(b'[%i]' % linenum)
                     self.step(token)
                 elif c not in (b':', tk.THEN, tk.ELSE, tk.GOTO):
                     # new statement or branch of an IF statement allowed, nothing else
@@ -114,7 +116,7 @@ class Interpreter(object):
         """Run commands until control returns to user."""
         if not self._parse_mode:
             return
-        self._screen.cursor.reset_visibility()
+        self._console.cursor.reset_visibility()
         try:
             # parse until break or end
             self.parse()
@@ -130,13 +132,13 @@ class Interpreter(object):
     def set_parse_mode(self, on):
         """Enter or exit parse mode."""
         self._parse_mode = on
-        self._screen.cursor.set_default_visible(not on)
+        self._console.cursor.set_default_visible(not on)
 
     def _handle_break(self, e):
         """Handle a Break event."""
         # print ^C at current position
         if not self.input_mode and not e.stop:
-            self._screen.write(b'^C')
+            self._console.write(b'^C')
         # if we're in a program, save pointer
         pos = -1
         if self.run_mode:
@@ -146,8 +148,8 @@ class Interpreter(object):
             else:
                 self._program.bytecode.skip_to(tk.END_STATEMENT)
                 self.stop = self._program.bytecode.tell()
-        self._screen.start_line()
-        self._screen.write(e.get_message(self._program.get_line_number(pos)))
+        self._console.start_line()
+        self._console.write(e.get_message(self._program.get_line_number(pos)))
         self.set_parse_mode(False)
         self.input_mode = False
         self.parser.redo_on_break = False
@@ -720,7 +722,7 @@ class Interpreter(object):
         new, old = self._program.explicit_lines(new, old)
         if step is not None and step < 1:
             raise error.BASICError(error.IFC)
-        old_to_new = self._program.renum(self._screen, new, old, step)
+        old_to_new = self._program.renum(self._console, new, old, step)
         # stop running if we were
         self.set_pointer(False)
         # reset loop stacks

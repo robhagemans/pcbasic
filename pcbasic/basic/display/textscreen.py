@@ -22,17 +22,13 @@ from .textbase import BottomBar, Cursor, ScrollArea
 class TextScreen(object):
     """Text screen."""
 
-    def __init__(self, queues, values, mode, capabilities, codepage, io_streams, sound):
+    def __init__(self, queues, values, mode, capabilities, codepage):
         """Initialise text-related members."""
         self._queues = queues
         self._values = values
         self._codepage = codepage
         self._conv = codepage.get_converter(preserve=b'')
         self._tandytext = capabilities in ('pcjr', 'tandy')
-        # output redirection
-        self._io_streams = io_streams
-        # sound output needed for printing \a
-        self._sound = sound
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
         # cursor
@@ -104,101 +100,6 @@ class TextScreen(object):
         """Set attribute."""
         self._attr = attr
 
-    def set_height(self, to_height):
-        """Try to change the number of rows."""
-        # number != 25 is ignored on tandy, error elsewhere
-        # otherwise nothing happens
-        if self._tandytext:
-            error.range_check(0, 25, to_height)
-        else:
-            error.range_check(25, 25, to_height)
-
-    ##########################################################################
-
-    def write(self, s, scroll_ok=True, do_echo=True):
-        """Write a string to the screen at the current position."""
-        if do_echo:
-            # CR -> CRLF, CRLF -> CRLF LF
-            self._io_streams.write(b''.join([(b'\r\n' if c == b'\r' else c) for c in iterchar(s)]))
-        last = b''
-        # if our line wrapped at the end before, it doesn't anymore
-        self.set_wrap(self.current_row, False)
-        for c in iterchar(s):
-            row, col = self.current_row, self.current_col
-            if c == b'\t':
-                # TAB
-                num = (8 - (col - 1 - 8 * int((col-1) // 8)))
-                for _ in range(num):
-                    self.write_char(b' ')
-            elif c == b'\n':
-                # LF
-                # exclude CR/LF
-                if last != b'\r':
-                    # LF connects lines like word wrap
-                    self.set_wrap(row, True)
-                    self.set_pos(row + 1, 1, scroll_ok)
-            elif c == b'\r':
-                # CR
-                self.set_wrap(row, False)
-                self.set_pos(row + 1, 1, scroll_ok)
-            elif c == b'\a':
-                # BEL
-                self._sound.beep()
-            elif c == b'\x0B':
-                # HOME
-                self.set_pos(1, 1, scroll_ok)
-            elif c == b'\x0C':
-                # CLS
-                self.clear_view()
-            elif c == b'\x1C':
-                # RIGHT
-                self.set_pos(row, col + 1, scroll_ok)
-            elif c == b'\x1D':
-                # LEFT
-                self.set_pos(row, col - 1, scroll_ok)
-            elif c == b'\x1E':
-                # UP
-                self.set_pos(row - 1, col, scroll_ok)
-            elif c == b'\x1F':
-                # DOWN
-                self.set_pos(row + 1, col, scroll_ok)
-            else:
-                # includes \b, \0, and non-control chars
-                self.write_char(c)
-            last = c
-
-    def write_line(self, s=b'', scroll_ok=True, do_echo=True):
-        """Write a string to the screen and end with a newline."""
-        self.write(b'%s\r' % (s,), scroll_ok, do_echo)
-
-    def list_line(self, line, newline=True):
-        """Print a line from a program listing or EDIT prompt."""
-        # no wrap if 80-column line, clear row before printing.
-        # replace LF CR with LF
-        line = line.replace(b'\n\r', b'\n')
-        cuts = line.split(b'\n')
-        for i, l in enumerate(cuts):
-            # clear_line looks back along wraps, use screen.clear_from instead
-            self.clear_from(self.current_row, 1)
-            self.write(l)
-            if i != len(cuts) - 1:
-                self.write(b'\n')
-        if newline:
-            self.write_line()
-        # remove wrap after 80-column program line
-        if len(line) == self.mode.width and self.current_row > 2:
-            self.set_wrap(self.current_row-2, False)
-
-    def start_line(self):
-        """Move the cursor to the start of the next line, this line if empty."""
-        if self.current_col != 1:
-            self._io_streams.write(b'\r\n')
-            self._check_pos(scroll_ok=True)
-            self.set_pos(self.current_row + 1, 1)
-        # ensure line above doesn't wrap
-        self.set_wrap(self.current_row-1, False)
-
-
     ###########################################################################
     # text buffer operations
 
@@ -211,7 +112,7 @@ class TextScreen(object):
         # see if we need to wrap and scroll down
         self._check_wrap(do_scroll_down)
         # move cursor and see if we need to scroll up
-        self._check_pos(scroll_ok=True)
+        self.check_pos(scroll_ok=True)
         # put the character
         self.text_pages[self.apagenum].put_char_attr(
             self.current_row, self.current_col, char, self._attr, adjust_end=True
@@ -224,7 +125,7 @@ class TextScreen(object):
         else:
             self.overflow = True
         # move cursor and see if we need to scroll up
-        self._check_pos(scroll_ok=True)
+        self.check_pos(scroll_ok=True)
 
     def _check_wrap(self, do_scroll_down):
         """Wrap if we need to."""
@@ -296,9 +197,9 @@ class TextScreen(object):
         self.current_row, self.current_col = to_row, to_col
         # move cursor and reset cursor attribute
         # this may alter self.current_row, self.current_col
-        self._check_pos(scroll_ok)
+        self.check_pos(scroll_ok)
 
-    def _check_pos(self, scroll_ok=True):
+    def check_pos(self, scroll_ok=True):
         """Check if we have crossed the screen boundaries and move as needed."""
         oldrow, oldcol = self.current_row, self.current_col
         if self._bottom_row_allowed:

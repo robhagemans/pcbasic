@@ -42,7 +42,7 @@ class Files(object):
     """File manager."""
 
     def __init__(
-            self, values, memory, queues, keyboard, display,
+            self, values, memory, queues, keyboard, display, console,
             max_files, max_reclen, serial_buffer_size,
             device_params, current_device, mount_dict,
             codepage, text_mode, soft_linefeed
@@ -56,7 +56,7 @@ class Files(object):
         self.max_files = max_files
         self.max_reclen = max_reclen
         self._init_devices(
-            values, queues, display, keyboard,
+            values, queues, display, console, keyboard,
             device_params, current_device, mount_dict,
             serial_buffer_size, codepage, text_mode, soft_linefeed
         )
@@ -126,20 +126,20 @@ class Files(object):
     # device management
 
     def _init_devices(
-            self, values, queues, display, keyboard,
+            self, values, queues, display, console, keyboard,
             device_params, current_device, mount_dict,
             serial_in_size, codepage, text_mode, soft_linefeed
         ):
         """Initialise devices."""
         # screen device, for files_()
-        self._screen = display.text_screen
+        self._console = console
         device_params = device_params or {}
         self._devices = {
-            b'SCRN:': devicebase.SCRNDevice(display),
+            b'SCRN:': devicebase.SCRNDevice(display, console),
             # KYBD: device needs display as it can set the screen width
             b'KYBD:': devicebase.KYBDDevice(keyboard, display),
             # cassette: needs text screen to display Found and Skipped messages
-            b'CAS1:': cassette.CASDevice(device_params.get(b'CAS1:', None), self._screen),
+            b'CAS1:': cassette.CASDevice(device_params.get(b'CAS1:', None), self._console),
             # serial devices
             b'COM1:': ports.COMDevice(device_params.get(b'COM1:', None), queues, serial_in_size),
             b'COM2:': ports.COMDevice(device_params.get(b'COM2:', None), queues, serial_in_size),
@@ -417,7 +417,7 @@ class Files(object):
         error.range_check(0, 255, w)
         list(args)
         if num_rows_dummy is not None:
-            self.scrn_file.screen.set_height(num_rows_dummy)
+            self.scrn_file._display.set_height(num_rows_dummy)
         dev.set_width(w)
 
     def print_(self, args):
@@ -428,12 +428,12 @@ class Files(object):
             file_number = values.to_int(file_number)
             error.range_check(0, 255, file_number)
             output = self.get(file_number, b'OAR')
-            screen = None
+            console = None
         else:
             # neither LPRINT not a file number: print to screen
             output = self.scrn_file
-            screen = output.screen
-        formatter.Formatter(output, screen).format(args)
+            console = self.scrn_file.console
+        formatter.Formatter(output, console).format(args)
 
     def lprint_(self, args):
         """LPRINT: Write expressions to printer LPT1."""
@@ -678,17 +678,17 @@ class Files(object):
         dev, path = self._get_diskdevice_and_path(pathmask)
         # retrieve files first (to ensure correct path/file not found errors)
         output = dev.listdir(path)
-        num_cols = self._screen.mode.width // 20
+        num_cols = self._console.width // 20
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
-        self._screen.write_line(dev.get_cwd())
+        self._console.write_line(dev.get_cwd())
         if not output:
             raise error.BASICError(error.FILE_NOT_FOUND)
         # output files
         for i, cols in enumerate(output[j:j+num_cols] for j in xrange(0, len(output), num_cols)):
-            self._screen.write_line(b' '.join(cols))
+            self._console.write_line(b' '.join(cols))
             if not (i % 4):
                 # allow to break during dir listing & show names flowing on screen
                 self._queues.wait()
             i += 1
-        self._screen.write_line(b' %d Bytes free\n' % dev.get_free())
+        self._console.write_line(b' %d Bytes free\n' % dev.get_free())

@@ -28,7 +28,7 @@ class Display(object):
 
     def __init__(
             self, queues, values, input_methods, memory,
-            initial_width, video_mem_size, adapter, monitor, sound, io_streams,
+            initial_width, video_mem_size, adapter, monitor,
             codepage, fonts
         ):
         """Initialise the display."""
@@ -71,7 +71,7 @@ class Display(object):
         # text screen
         self.codepage = codepage
         self.text_screen = TextScreen(
-            self._queues, self._values, self.mode, self._adapter, codepage, io_streams, sound
+            self._queues, self._values, self.mode, self._adapter, codepage
         )
         # pixel buffer, set by _set_mode
         self.text_pages = None
@@ -246,6 +246,15 @@ class Display(object):
             return
         new_mode = modes.to_width(self._adapter, self.mode, to_width)
         self.screen(new_mode, None, 0, 0, new_width=to_width)
+
+    def set_height(self, to_height):
+        """Try to change the number of rows."""
+        # number != 25 is ignored on tandy, error elsewhere
+        # otherwise nothing happens
+        if self._adapter in ('pcjr', 'tandy'):
+            error.range_check(0, 25, to_height)
+        else:
+            error.range_check(25, 25, to_height)
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""

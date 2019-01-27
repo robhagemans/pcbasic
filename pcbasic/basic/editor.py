@@ -53,10 +53,10 @@ class FunctionKeyMacros(object):
         b'\x1D': b'\x11', b'\x1E': b'\x18', b'\x1F': b'\x19'
     }
 
-    def __init__(self, keyboard, screen, num_fn_keys):
+    def __init__(self, keyboard, text_screen, num_fn_keys):
         """Initialise user-definable key list."""
         self._keyboard = keyboard
-        self._screen = screen
+        self._text_screen = text_screen
         self._num_fn_keys = num_fn_keys
         self._update_bar()
 
@@ -70,7 +70,8 @@ class FunctionKeyMacros(object):
         for i in range(self._num_fn_keys):
             text = self._keyboard.get_macro(i)
             text = b''.join(self._replace_chars.get(s, s) for s in iterchar(text))
-            self._screen.write_line(b'F%d %s' % (i+1, text))
+            #FIXME
+            self._console.write_line(b'F%d %s' % (i+1, text))
 
     def set(self, num, macro):
         """Set macro for given function key."""
@@ -83,9 +84,9 @@ class FunctionKeyMacros(object):
         """KEY: show/hide/list macros."""
         command, = args
         if command == tk.ON:
-            self._screen.show_bar(True)
+            self._text_screen.show_bar(True)
         elif command == tk.OFF:
-            self._screen.show_bar(False)
+            self._text_screen.show_bar(False)
         elif command == tk.LIST:
             self.list_keys()
 
@@ -102,15 +103,15 @@ class FunctionKeyMacros(object):
             )
             for _macro in macros
         ]
-        self._screen.update_bar(descriptions)
+        self._text_screen.update_bar(descriptions)
 
 
 class Editor(object):
-    """Interactive environment."""
+    """Console / interactive environment."""
 
-    def __init__(self, screen, keyboard, sound, io_streams):
+    def __init__(self, text_screen, keyboard, sound, io_streams):
         """Initialise environment."""
-        self._screen = screen
+        self._text_screen = text_screen
         self._sound = sound
         self._keyboard = keyboard
         self._io_streams = io_streams
@@ -124,7 +125,7 @@ class Editor(object):
     def wait_screenline(self, write_endl=True, from_start=False):
         """Enter interactive mode and read string from console."""
         # from_start means direct entry mode, otherwise input mode
-        prompt_width = 0 if from_start else self._screen.current_col - 1
+        prompt_width = 0 if from_start else self._text_screen.current_col - 1
         try:
             # give control to user for interactive mode
             prompt_row, left, right = self._interact(prompt_width)
@@ -132,18 +133,18 @@ class Editor(object):
             # x0E CR LF is printed to redirects at break
             self._io_streams.write(b'\x0e')
             # while only a line break appears on the console
-            self._screen.write_line()
+            self.write_line()
             raise
         # get contents of the logical line
-        outstr = self._screen.get_logical_line(from_start, prompt_row, left, right)
+        outstr = self._text_screen.get_logical_line(from_start, prompt_row, left, right)
         # redirects output exactly the contents of the logical line
         # including any trailing whitespace and chars past 255
         self._io_streams.write(outstr)
         # go to last row of logical line
-        self._screen.move_to_end()
+        self._text_screen.move_to_end()
         # echo the CR, if requested
         if write_endl:
-            self._screen.write_line()
+            self.write_line()
         # to the parser/INPUT, only the first 255 chars are returned
         # with trailing whitespace removed
         return outstr[:255].rstrip(b' \t\n')
@@ -151,20 +152,20 @@ class Editor(object):
     def _interact(self, prompt_width):
         """Manage the interactive mode."""
         # force cursor visibility in all cases
-        self._screen.cursor.show(True)
+        self._text_screen.cursor.show(True)
         self._io_streams.flush()
         try:
             # this is where we started
-            start_row = self._screen.current_row
+            start_row = self._text_screen.current_row
             furthest_left = 1 + prompt_width
             # this is where we arrow-keyed on the start line
-            furthest_right = self._screen.current_col
+            furthest_right = self._text_screen.current_col
             while True:
-                row, col = self._screen.current_row, self._screen.current_col
+                row, col = self._text_screen.current_row, self._text_screen.current_col
                 if row == start_row:
                     furthest_left = min(col, furthest_left)
                     furthest_right = max(col, furthest_right)
-                    if col == self._screen.mode.width and self._screen.overflow:
+                    if col == self._text_screen.mode.width and self._text_screen.overflow:
                         furthest_right += 1
                 # get one e-ASCII or dbcs code
                 d = self._keyboard.get_fullchar_block()
@@ -176,7 +177,7 @@ class Editor(object):
                         ea.LEFT, ea.CTRL_RIGHTBRACKET, ea.HOME, ea.CTRL_k, ea.END, ea.CTRL_n
                     ):
                     # arrow keys drop us out of insert mode
-                    self._screen.set_overwrite_mode(True)
+                    self._text_screen.set_overwrite_mode(True)
                 if d == ea.CTRL_c:
                     # CTRL-C -- only caught here, not in wait_char like <CTRL+BREAK>
                     raise error.Break()
@@ -188,40 +189,40 @@ class Editor(object):
                     self._sound.beep()
                 elif d == b'\b':
                     # BACKSPACE, CTRL+H
-                    self._screen.backspace(start_row, furthest_left)
+                    self._text_screen.backspace(start_row, furthest_left)
                 elif d == b'\t':
                     # TAB, CTRL+I
-                    self._screen.tab()
+                    self._text_screen.tab()
                 elif d == b'\n':
                     # CTRL+ENTER, CTRL+J
-                    self._screen.line_feed()
+                    self._text_screen.line_feed()
                 elif d == ea.ESCAPE:
                     # ESC, CTRL+[
-                    self._screen.clear_line(row, furthest_left)
+                    self._text_screen.clear_line(row, furthest_left)
                 elif d in (ea.CTRL_END, ea.CTRL_e):
-                    self._screen.clear_from(row, col)
+                    self._text_screen.clear_from(row, col)
                 elif d in (ea.UP, ea.CTRL_6):
-                    self._screen.set_pos(row - 1, col, scroll_ok=False)
+                    self._text_screen.set_pos(row - 1, col, scroll_ok=False)
                 elif d in (ea.DOWN, ea.CTRL_MINUS):
-                    self._screen.set_pos(row + 1, col, scroll_ok=False)
+                    self._text_screen.set_pos(row + 1, col, scroll_ok=False)
                 elif d in (ea.RIGHT, ea.CTRL_BACKSLASH):
-                    self._screen.incr_pos()
+                    self._text_screen.incr_pos()
                 elif d in (ea.LEFT, ea.CTRL_RIGHTBRACKET):
-                    self._screen.decr_pos()
+                    self._text_screen.decr_pos()
                 elif d in (ea.CTRL_RIGHT, ea.CTRL_f):
-                    self._screen.skip_word_right()
+                    self._text_screen.skip_word_right()
                 elif d in (ea.CTRL_LEFT, ea.CTRL_b):
-                    self._screen.skip_word_left()
+                    self._text_screen.skip_word_left()
                 elif d in (ea.INSERT, ea.CTRL_r):
-                    self._screen.set_overwrite_mode(not self._screen.overwrite_mode)
+                    self._text_screen.set_overwrite_mode(not self._text_screen.overwrite_mode)
                 elif d in (ea.DELETE, ea.CTRL_BACKSPACE):
-                    self._screen.delete_fullchar()
+                    self._text_screen.delete_fullchar()
                 elif d in (ea.HOME, ea.CTRL_k):
-                    self._screen.set_pos(1, 1)
+                    self._text_screen.set_pos(1, 1)
                 elif d in (ea.END, ea.CTRL_n):
-                    self._screen.move_to_end()
+                    self._text_screen.move_to_end()
                 elif d in (ea.CTRL_HOME, ea.CTRL_l):
-                    self._screen.clear_view()
+                    self._text_screen.clear_view()
                 elif d == ea.CTRL_PRINT:
                     # ctrl+printscreen toggles printer copy
                     self._io_streams.toggle_echo(self._lpt1_file)
@@ -234,14 +235,128 @@ class Editor(object):
                     for d in letters:
                         # ignore eascii by this point, but not dbcs
                         if d[:1] not in (b'\0', b'\r'):
-                            if not self._screen.overwrite_mode:
-                                self._screen.insert_fullchars(d)
+                            if not self._text_screen.overwrite_mode:
+                                self._text_screen.insert_fullchars(d)
                             else:
                                 # put all dbcs in before messing with cursor position
                                 for char in iterchar(d):
-                                    self._screen.write_char(char, do_scroll_down=True)
+                                    self._text_screen.write_char(char, do_scroll_down=True)
         finally:
-            self._screen.set_overwrite_mode(True)
+            self._text_screen.set_overwrite_mode(True)
             # reset cursor visibility
-            self._screen.cursor.reset_visibility()
+            self._text_screen.cursor.reset_visibility()
         return start_row, furthest_left, furthest_right
+
+    ##########################################################################
+
+    @property
+    def cursor(self):
+        return self._text_screen.cursor
+
+    @property
+    def width(self):
+        return self._text_screen.mode.width
+
+    @property
+    def height(self):
+        return self._text_screen.mode.height
+
+    @property
+    def current_row(self):
+        return self._text_screen.current_row
+
+    @property
+    def current_col(self):
+        return self._text_screen.current_col
+
+    @property
+    def overflow(self):
+        return self._text_screen.overflow
+
+    def set_pos(self, row, col):
+        self._text_screen.set_pos(row, col)
+
+    ##########################################################################
+
+    def write(self, s, scroll_ok=True, do_echo=True):
+        """Write a string to the screen at the current position."""
+        if do_echo:
+            # CR -> CRLF, CRLF -> CRLF LF
+            self._io_streams.write(b''.join([(b'\r\n' if c == b'\r' else c) for c in iterchar(s)]))
+        last = b''
+        # if our line wrapped at the end before, it doesn't anymore
+        self._text_screen.set_wrap(self.current_row, False)
+        for c in iterchar(s):
+            row, col = self.current_row, self.current_col
+            if c == b'\t':
+                # TAB
+                num = (8 - (col - 1 - 8 * int((col-1) // 8)))
+                for _ in range(num):
+                    self._text_screen.write_char(b' ')
+            elif c == b'\n':
+                # LF
+                # exclude CR/LF
+                if last != b'\r':
+                    # LF connects lines like word wrap
+                    self._text_screen.set_wrap(row, True)
+                    self._text_screen.set_pos(row + 1, 1, scroll_ok)
+            elif c == b'\r':
+                # CR
+                self._text_screen.set_wrap(row, False)
+                self._text_screen.set_pos(row + 1, 1, scroll_ok)
+            elif c == b'\a':
+                # BEL
+                self._sound.beep()
+            elif c == b'\x0B':
+                # HOME
+                self._text_screen.set_pos(1, 1, scroll_ok)
+            elif c == b'\x0C':
+                # CLS
+                self._text_screen.clear_view()
+            elif c == b'\x1C':
+                # RIGHT
+                self._text_screen.set_pos(row, col + 1, scroll_ok)
+            elif c == b'\x1D':
+                # LEFT
+                self._text_screen.set_pos(row, col - 1, scroll_ok)
+            elif c == b'\x1E':
+                # UP
+                self._text_screen.set_pos(row - 1, col, scroll_ok)
+            elif c == b'\x1F':
+                # DOWN
+                self._text_screen.set_pos(row + 1, col, scroll_ok)
+            else:
+                # includes \b, \0, and non-control chars
+                self._text_screen.write_char(c)
+            last = c
+
+    def write_line(self, s=b'', scroll_ok=True, do_echo=True):
+        """Write a string to the screen and end with a newline."""
+        self.write(b'%s\r' % (s,), scroll_ok, do_echo)
+
+    def list_line(self, line, newline=True):
+        """Print a line from a program listing or EDIT prompt."""
+        # no wrap if 80-column line, clear row before printing.
+        # replace LF CR with LF
+        line = line.replace(b'\n\r', b'\n')
+        cuts = line.split(b'\n')
+        for i, l in enumerate(cuts):
+            # clear_line looks back along wraps, use screen.clear_from instead
+            self._text_screen.clear_from(self._text_screen.current_row, 1)
+            self.write(l)
+            if i != len(cuts) - 1:
+                self.write(b'\n')
+        if newline:
+            self.write_line()
+        # remove wrap after 80-column program line
+        if len(line) == self.width and self._text_screen.current_row > 2:
+            self._text_screen.set_wrap(self._text_screen.current_row-2, False)
+
+    def start_line(self):
+        """Move the cursor to the start of the next line, this line if empty."""
+        if self.current_col != 1:
+            self._io_streams.write(b'\r\n')
+            self._text_screen.check_pos(scroll_ok=True)
+            self._text_screen.set_pos(self._text_screen.current_row + 1, 1)
+        # ensure line above doesn't wrap
+        self._text_screen.set_wrap(self._text_screen.current_row-1, False)

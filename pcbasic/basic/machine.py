@@ -299,7 +299,7 @@ class Memory(object):
         self._files = files
         # screen access needed for video memory
         self.display = display
-        self.screen = display.text_screen
+        self._text_screen = display.text_screen
         # keyboard buffer access
         self.keyboard = keyboard
         # interpreter, for runmode check
@@ -649,16 +649,16 @@ class Memory(object):
         # 1105 + 2*n (cursor row of page n) - 1
         # we only keep track of one row,col position
         elif addr in range(1104, 1120, 2):
-            return self.screen.current_col - 1
+            return self._text_screen.current_col - 1
         elif addr in range(1105, 1120, 2):
-            return self.screen.current_row - 1
+            return self._text_screen.current_row - 1
         # 1120, 1121 cursor shape
         elif addr == 1120:
             # to_line
-            return self.screen.cursor.shape[1]
+            return self._text_screen.cursor.shape[1]
         elif addr == 1121:
             # from_line
-            return self.screen.cursor.shape[0]
+            return self._text_screen.cursor.shape[0]
         # 1122 visual page number
         elif addr == 1122:
             return self.display.vpagenum

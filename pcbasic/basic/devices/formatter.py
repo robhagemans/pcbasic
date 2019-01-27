@@ -15,13 +15,13 @@ from .. import values
 class Formatter(object):
     """Output string formatter."""
 
-    def __init__(self, output, screen=None):
+    def __init__(self, output, console=None):
         """Initialise."""
-        self._screen = screen
+        self._console = console
         self._output = output
 
     def format(self, args):
-        """PRINT: Write expressions to screen or file."""
+        """PRINT: Write expressions to console or file."""
         newline = True
         for sep, value in args:
             if sep == tk.USING:
@@ -39,7 +39,7 @@ class Formatter(object):
                 self._print_value(next(args))
             newline = sep not in (tk.TAB, tk.SPC, b',', b';')
         if newline:
-            if self._screen and self._screen.overflow:
+            if self._console and self._console.overflow:
                 self._output.write_line()
             self._output.write_line()
 
@@ -78,7 +78,7 @@ class Formatter(object):
             self._output.write(b' ' * (pos-self._output.col), can_break=False)
 
     def _print_using(self, args):
-        """PRINT USING clause: Write expressions to screen or file using a formatting string."""
+        """PRINT USING clause: Write expressions to console or file using a formatting string."""
         format_expr = values.next_string(args)
         if format_expr == b'':
             raise error.BASICError(error.IFC)
