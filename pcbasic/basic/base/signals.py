@@ -45,8 +45,6 @@ VIDEO_CLEAR_ROWS = 10
 # scroll
 VIDEO_SCROLL_UP = 11
 VIDEO_SCROLL_DOWN = 12
-# enable/disable composite artifacts
-VIDEO_SET_COMPOSITE = 13
 # show/hide cursor
 VIDEO_SHOW_CURSOR = 14
 # set palette

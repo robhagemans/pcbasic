@@ -35,7 +35,6 @@ class VideoPlugin(object):
             signals.VIDEO_SET_PAGE: self.set_page,
             signals.VIDEO_COPY_PAGE: self.copy_page,
             signals.VIDEO_SET_BORDER_ATTR: self.set_border_attr,
-            signals.VIDEO_SET_COMPOSITE: self.set_composite,
             signals.VIDEO_BUILD_GLYPHS: self.build_glyphs,
             signals.VIDEO_PUT_PIXEL: self.put_pixel,
             signals.VIDEO_PUT_INTERVAL: self.put_interval,
@@ -106,14 +105,11 @@ class VideoPlugin(object):
     def set_clipboard_text(self, text, mouse):
         """Put text on the clipboard."""
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1):
+    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
         """Build the palette."""
 
     def set_border_attr(self, attr):
         """Change the border attribute."""
-
-    def set_composite(self, on, composite_colors):
-        """Enable/disable composite artifacts."""
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""

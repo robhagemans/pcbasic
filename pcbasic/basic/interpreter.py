@@ -365,14 +365,14 @@ class Interpreter(object):
         # read variable
         varname = self._memory.complete_name(next(args))
         vartype = varname[-1:]
-        start = values.to_type(vartype, next(args))
+        start = values.to_type(vartype, next(args)).clone()
         # only raised after the TO has been parsed
         if vartype in (values.STR, values.DBL):
             raise error.BASICError(error.TYPE_MISMATCH)
-        stop = values.to_type(vartype, next(args))
+        stop = values.to_type(vartype, next(args)).clone()
         step = next(args)
         if step is not None:
-            step = values.to_type(vartype, step)
+            step = values.to_type(vartype, step).clone()
         list(args)
         if step is None:
             # convert 1 to vartype
@@ -385,7 +385,7 @@ class Interpreter(object):
         # obtain a view of the loop variable
         self.for_stack.append((varname, stop, step, step.sign(), forpos, nextpos,))
         # empty loop: jump to NEXT without executing block
-        if (start.gt(stop) if step.sign() > 0 else stop.gt(start)):
+        if (start.gt(stop) if step.sign() >= 0 else stop.gt(start)):
             ins.seek(nextpos)
             self.iterate_loop()
 

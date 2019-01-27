@@ -47,8 +47,9 @@ class Palette(object):
         self.rgb_palette[index] = mode.colours[colour]
         if mode.colours1:
             self.rgb_palette1[index] = mode.colours1[colour]
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1, None)
+        ))
 
     def get_entry(self, index):
         """Retrieve the colour for a given attribute."""
@@ -64,8 +65,9 @@ class Palette(object):
             self.rgb_palette1 = [self.mode.colours1[i] for i in self.palette]
         else:
             self.rgb_palette1 = None
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1, None)
+        ))
 
     def mode_allows_palette(self, mode):
         """Check if the video mode allows palette change."""
@@ -325,11 +327,19 @@ class Display(object):
                 colorburst and self.video.monitor == 'composite' and
                 (not self.mode.is_text_mode) and self.mode.supports_artifacts
             )
-            # this is only needed because composite artifacts are implemented in the interface
-            self.queues.video.put(signals.Event(
-                signals.VIDEO_SET_COMPOSITE,
-                (composite_artifacts, modes.COMPOSITE[self.capabilities])
-            ))
+            if composite_artifacts:
+                # set a composite palette
+                self.queues.video.put(signals.Event(
+                    signals.VIDEO_SET_PALETTE,
+                    (modes.COMPOSITE[self.capabilities], None, (4, self.mode.bitsperpixel))
+                ))
+            else:
+                # set normal palette
+                self.queues.video.put(signals.Event(
+                    signals.VIDEO_SET_PALETTE,
+                    (self.palette.rgb_palette, self.palette.rgb_palette1, None)
+                ))
+
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""

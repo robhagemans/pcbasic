@@ -353,7 +353,7 @@ class VideoCurses(VideoPlugin):
             except curses.error:
                 pass
 
-    def set_palette(self, new_palette, new_palette1):
+    def set_palette(self, new_palette, dummy_new_palette1, dummy_pack_pixels):
         """Build the game palette."""
         if self.can_change_palette:
             for i in range(len(new_palette)):

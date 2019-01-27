@@ -9,9 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 import ctypes
 import os
-import sys
-from collections import Counter
-from ctypes import POINTER, c_int, c_double
+from contextlib import contextmanager
 
 try:
     import numpy
@@ -20,12 +18,51 @@ except ImportError:
 
 from ..compat import iteritems, unichr
 from ..compat import WIN32, BASE_DIR, PLATFORM
+from ..compat import set_dpi_aware
 
 from .base import EnvironmentCache
+from .base import video_plugins, InitFailed, NOKILL_MESSAGE
+from ..basic.base import signals
+from ..basic.base import scancode
+from ..basic.base.eascii import as_unicode as uea
+from ..data.resources import ICON
+from .video import VideoPlugin
+from . import window
+from . import clipboard
 
+
+###############################################################################
+# locate and load SDL libraries
 
 # platform-specific dll location
 LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
+# possible names of sdl_gfx library
+GFX_NAMES = ('SDL2_gfx', 'SDL2_gfx-1.0')
+
+
+def _bind_gfx_zoomsurface():
+    """Bind smooth-zoom function."""
+    # look for SDL2_gfx.dll:
+    # first in SDL2.dll location
+    # if not found, in LIB_DIR; then in standard search path
+    try:
+        sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, os.path.dirname(sdl2.dll.libfile))
+    except Exception:
+        try:
+            sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, LIB_DIR)
+        except Exception:
+            try:
+                sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES)
+            except Exception:
+                sdlgfx = None
+    if sdlgfx:
+        return sdlgfx.bind_function(
+            'zoomSurface',
+            [ctypes.POINTER(sdl2.SDL_Surface), ctypes.c_double, ctypes.c_double, ctypes.c_int],
+            ctypes.POINTER(sdl2.SDL_Surface)
+        )
+    return None
+
 
 with EnvironmentCache() as _sdl_env:
     # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
@@ -40,37 +77,7 @@ with EnvironmentCache() as _sdl_env:
             from . import sdl2
         except ImportError:
             sdl2 = None
-
-    # look for SDL2_gfx.dll:
-    # first in SDL2.dll location
-    # if not found, in LIB_DIR; then in standard search path
-    GFX_NAMES = ['SDL2_gfx', 'SDL2_gfx-1.0']
-    try:
-        sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, os.path.dirname(sdl2.dll.libfile))
-    except Exception:
-        try:
-            sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, LIB_DIR)
-        except Exception:
-            try:
-                sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES)
-            except Exception:
-                sdlgfx = None
-
-if sdlgfx:
-    SMOOTHING_ON = 1
-    zoomSurface = sdlgfx.bind_function(
-            'zoomSurface',
-            [POINTER(sdl2.SDL_Surface), c_double, c_double, c_int], POINTER(sdl2.SDL_Surface)
-        )
-
-from .base import video_plugins, InitFailed, NOKILL_MESSAGE
-from ..basic.base import signals
-from ..basic.base import scancode
-from ..basic.base.eascii import as_unicode as uea
-from ..data.resources import ICON
-from .video import VideoPlugin
-from . import window
-from . import clipboard
+    _smooth_zoom = _bind_gfx_zoomsurface()
 
 
 ###############################################################################
@@ -79,6 +86,8 @@ from . import clipboard
 # refresh cycle parameters
 # number of cycles to change blink state
 BLINK_CYCLES = 5
+# number of distinct blink states
+N_BLINK_STATES = 4
 # ms duration of a blink
 BLINK_TIME = 120
 CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
@@ -97,32 +106,32 @@ if sdl2:
         sdl2.SDL_SCANCODE_6: scancode.N6, sdl2.SDL_SCANCODE_7: scancode.N7,
         sdl2.SDL_SCANCODE_8: scancode.N8, sdl2.SDL_SCANCODE_9: scancode.N9,
         sdl2.SDL_SCANCODE_0: scancode.N0, sdl2.SDL_SCANCODE_MINUS: scancode.MINUS,
-        sdl2.SDL_SCANCODE_EQUALS: scancode.EQUALS,
-        sdl2.SDL_SCANCODE_BACKSPACE: scancode.BACKSPACE,
+        sdl2.SDL_SCANCODE_EQUALS: scancode.EQUALS, sdl2.SDL_SCANCODE_BACKSPACE: scancode.BACKSPACE,
         # row 1
         sdl2.SDL_SCANCODE_TAB: scancode.TAB, sdl2.SDL_SCANCODE_Q: scancode.q,
-        sdl2.SDL_SCANCODE_W: scancode.w, sdl2.SDL_SCANCODE_E: scancode.e, sdl2.SDL_SCANCODE_R: scancode.r,
-        sdl2.SDL_SCANCODE_T: scancode.t, sdl2.SDL_SCANCODE_Y: scancode.y, sdl2.SDL_SCANCODE_U: scancode.u,
-        sdl2.SDL_SCANCODE_I: scancode.i, sdl2.SDL_SCANCODE_O: scancode.o, sdl2.SDL_SCANCODE_P: scancode.p,
-        sdl2.SDL_SCANCODE_LEFTBRACKET: scancode.LEFTBRACKET,
+        sdl2.SDL_SCANCODE_W: scancode.w, sdl2.SDL_SCANCODE_E: scancode.e,
+        sdl2.SDL_SCANCODE_R: scancode.r, sdl2.SDL_SCANCODE_T: scancode.t,
+        sdl2.SDL_SCANCODE_Y: scancode.y, sdl2.SDL_SCANCODE_U: scancode.u,
+        sdl2.SDL_SCANCODE_I: scancode.i, sdl2.SDL_SCANCODE_O: scancode.o,
+        sdl2.SDL_SCANCODE_P: scancode.p, sdl2.SDL_SCANCODE_LEFTBRACKET: scancode.LEFTBRACKET,
         sdl2.SDL_SCANCODE_RIGHTBRACKET: scancode.RIGHTBRACKET,
         sdl2.SDL_SCANCODE_RETURN: scancode.RETURN, sdl2.SDL_SCANCODE_KP_ENTER: scancode.RETURN,
         # row 2
         sdl2.SDL_SCANCODE_RCTRL: scancode.CTRL, sdl2.SDL_SCANCODE_LCTRL: scancode.CTRL,
-        sdl2.SDL_SCANCODE_A: scancode.a, sdl2.SDL_SCANCODE_S: scancode.s, sdl2.SDL_SCANCODE_D: scancode.d,
-        sdl2.SDL_SCANCODE_F: scancode.f, sdl2.SDL_SCANCODE_G: scancode.g, sdl2.SDL_SCANCODE_H: scancode.h,
-        sdl2.SDL_SCANCODE_J: scancode.j, sdl2.SDL_SCANCODE_K: scancode.k, sdl2.SDL_SCANCODE_L: scancode.l,
-        sdl2.SDL_SCANCODE_SEMICOLON: scancode.SEMICOLON, sdl2.SDL_SCANCODE_APOSTROPHE: scancode.QUOTE,
-        sdl2.SDL_SCANCODE_GRAVE: scancode.BACKQUOTE,
+        sdl2.SDL_SCANCODE_A: scancode.a, sdl2.SDL_SCANCODE_S: scancode.s,
+        sdl2.SDL_SCANCODE_D: scancode.d, sdl2.SDL_SCANCODE_F: scancode.f,
+        sdl2.SDL_SCANCODE_G: scancode.g, sdl2.SDL_SCANCODE_H: scancode.h,
+        sdl2.SDL_SCANCODE_J: scancode.j, sdl2.SDL_SCANCODE_K: scancode.k,
+        sdl2.SDL_SCANCODE_L: scancode.l, sdl2.SDL_SCANCODE_SEMICOLON: scancode.SEMICOLON,
+        sdl2.SDL_SCANCODE_APOSTROPHE: scancode.QUOTE, sdl2.SDL_SCANCODE_GRAVE: scancode.BACKQUOTE,
         # row 3
-        sdl2.SDL_SCANCODE_LSHIFT: scancode.LSHIFT,
-        sdl2.SDL_SCANCODE_BACKSLASH: scancode.BACKSLASH,
-        sdl2.SDL_SCANCODE_Z: scancode.z, sdl2.SDL_SCANCODE_X: scancode.x, sdl2.SDL_SCANCODE_C: scancode.c,
-        sdl2.SDL_SCANCODE_V: scancode.v, sdl2.SDL_SCANCODE_B: scancode.b, sdl2.SDL_SCANCODE_N: scancode.n,
+        sdl2.SDL_SCANCODE_LSHIFT: scancode.LSHIFT, sdl2.SDL_SCANCODE_BACKSLASH: scancode.BACKSLASH,
+        sdl2.SDL_SCANCODE_Z: scancode.z, sdl2.SDL_SCANCODE_X: scancode.x,
+        sdl2.SDL_SCANCODE_C: scancode.c, sdl2.SDL_SCANCODE_V: scancode.v,
+        sdl2.SDL_SCANCODE_B: scancode.b, sdl2.SDL_SCANCODE_N: scancode.n,
         sdl2.SDL_SCANCODE_M: scancode.m, sdl2.SDL_SCANCODE_COMMA: scancode.COMMA,
         sdl2.SDL_SCANCODE_PERIOD: scancode.PERIOD, sdl2.SDL_SCANCODE_SLASH: scancode.SLASH,
-        sdl2.SDL_SCANCODE_RSHIFT: scancode.RSHIFT,
-        sdl2.SDL_SCANCODE_SYSREQ: scancode.SYSREQ,
+        sdl2.SDL_SCANCODE_RSHIFT: scancode.RSHIFT, sdl2.SDL_SCANCODE_SYSREQ: scancode.SYSREQ,
         sdl2.SDL_SCANCODE_LALT: scancode.ALT,
         # don't catch right-Alt as it may inhibit AltGr on Windows
         # sdl2.SDL_SCANCODE_RALT: scancode.ALT,
@@ -136,39 +145,26 @@ if sdl2:
         sdl2.SDL_SCANCODE_F11: scancode.F11, sdl2.SDL_SCANCODE_F12: scancode.F12,
         # top of keypad
         sdl2.SDL_SCANCODE_NUMLOCKCLEAR: scancode.NUMLOCK,
-        sdl2.SDL_SCANCODE_SCROLLLOCK: scancode.SCROLLOCK,
-        sdl2.SDL_SCANCODE_PAUSE: scancode.BREAK,
+        sdl2.SDL_SCANCODE_SCROLLLOCK: scancode.SCROLLOCK, sdl2.SDL_SCANCODE_PAUSE: scancode.BREAK,
         # keypad
         sdl2.SDL_SCANCODE_KP_MULTIPLY: scancode.KPTIMES,
         sdl2.SDL_SCANCODE_PRINTSCREEN: scancode.PRINT,
-        sdl2.SDL_SCANCODE_KP_7: scancode.KP7,
-        sdl2.SDL_SCANCODE_HOME: scancode.HOME,
-        sdl2.SDL_SCANCODE_KP_8: scancode.KP8,
-        sdl2.SDL_SCANCODE_UP: scancode.UP,
-        sdl2.SDL_SCANCODE_KP_9: scancode.KP9,
-        sdl2.SDL_SCANCODE_PAGEUP: scancode.PAGEUP,
-        sdl2.SDL_SCANCODE_KP_MINUS: scancode.KPMINUS,
-        sdl2.SDL_SCANCODE_KP_4: scancode.KP4,
-        sdl2.SDL_SCANCODE_LEFT: scancode.LEFT,
-        sdl2.SDL_SCANCODE_KP_5: scancode.KP5,
-        sdl2.SDL_SCANCODE_KP_6: scancode.KP6,
-        sdl2.SDL_SCANCODE_RIGHT: scancode.RIGHT,
-        sdl2.SDL_SCANCODE_KP_PLUS: scancode.KPPLUS,
-        sdl2.SDL_SCANCODE_KP_1: scancode.KP1,
-        sdl2.SDL_SCANCODE_END: scancode.END,
-        sdl2.SDL_SCANCODE_KP_2: scancode.KP2,
-        sdl2.SDL_SCANCODE_DOWN: scancode.DOWN,
-        sdl2.SDL_SCANCODE_KP_3: scancode.KP3,
+        sdl2.SDL_SCANCODE_KP_7: scancode.KP7, sdl2.SDL_SCANCODE_HOME: scancode.HOME,
+        sdl2.SDL_SCANCODE_KP_8: scancode.KP8, sdl2.SDL_SCANCODE_UP: scancode.UP,
+        sdl2.SDL_SCANCODE_KP_9: scancode.KP9, sdl2.SDL_SCANCODE_PAGEUP: scancode.PAGEUP,
+        sdl2.SDL_SCANCODE_KP_MINUS: scancode.KPMINUS, sdl2.SDL_SCANCODE_KP_4: scancode.KP4,
+        sdl2.SDL_SCANCODE_LEFT: scancode.LEFT, sdl2.SDL_SCANCODE_KP_5: scancode.KP5,
+        sdl2.SDL_SCANCODE_KP_6: scancode.KP6, sdl2.SDL_SCANCODE_RIGHT: scancode.RIGHT,
+        sdl2.SDL_SCANCODE_KP_PLUS: scancode.KPPLUS, sdl2.SDL_SCANCODE_KP_1: scancode.KP1,
+        sdl2.SDL_SCANCODE_END: scancode.END, sdl2.SDL_SCANCODE_KP_2: scancode.KP2,
+        sdl2.SDL_SCANCODE_DOWN: scancode.DOWN, sdl2.SDL_SCANCODE_KP_3: scancode.KP3,
         sdl2.SDL_SCANCODE_PAGEDOWN: scancode.PAGEDOWN,
-        sdl2.SDL_SCANCODE_KP_0: scancode.KP0,
-        sdl2.SDL_SCANCODE_INSERT: scancode.INSERT,
-        sdl2.SDL_SCANCODE_KP_PERIOD: scancode.KPPOINT,
-        sdl2.SDL_SCANCODE_DELETE: scancode.DELETE,
+        sdl2.SDL_SCANCODE_KP_0: scancode.KP0, sdl2.SDL_SCANCODE_INSERT: scancode.INSERT,
+        sdl2.SDL_SCANCODE_KP_PERIOD: scancode.KPPOINT, sdl2.SDL_SCANCODE_DELETE: scancode.DELETE,
         # extensions
         sdl2.SDL_SCANCODE_NONUSBACKSLASH: scancode.INT1,
         # windows keys
-        sdl2.SDL_SCANCODE_LGUI: scancode.LSUPER,
-        sdl2.SDL_SCANCODE_RGUI: scancode.RSUPER,
+        sdl2.SDL_SCANCODE_LGUI: scancode.LSUPER, sdl2.SDL_SCANCODE_RGUI: scancode.RSUPER,
         sdl2.SDL_SCANCODE_MENU: scancode.MENU,
         # Japanese keyboards
         # mapping to SDL scancodes unknown
@@ -187,164 +183,82 @@ if sdl2:
     }
 
     KEY_TO_EASCII = {
-        sdl2.SDLK_F1: uea.F1,
-        sdl2.SDLK_F2: uea.F2,
-        sdl2.SDLK_F3: uea.F3,
-        sdl2.SDLK_F4: uea.F4,
-        sdl2.SDLK_F5: uea.F5,
-        sdl2.SDLK_F6: uea.F6,
-        sdl2.SDLK_F7: uea.F7,
-        sdl2.SDLK_F8: uea.F8,
-        sdl2.SDLK_F9: uea.F9,
-        sdl2.SDLK_F10: uea.F10,
-        sdl2.SDLK_F11: uea.F11,
-        sdl2.SDLK_F12: uea.F12,
-        sdl2.SDLK_HOME: uea.HOME,
-        sdl2.SDLK_UP: uea.UP,
-        sdl2.SDLK_PAGEUP: uea.PAGEUP,
-        sdl2.SDLK_LEFT: uea.LEFT,
-        sdl2.SDLK_RIGHT: uea.RIGHT,
-        sdl2.SDLK_END: uea.END,
-        sdl2.SDLK_DOWN: uea.DOWN,
-        sdl2.SDLK_PAGEDOWN: uea.PAGEDOWN,
-        sdl2.SDLK_ESCAPE: uea.ESCAPE,
-        sdl2.SDLK_BACKSPACE: uea.BACKSPACE,
-        sdl2.SDLK_TAB: uea.TAB,
-        sdl2.SDLK_RETURN: uea.RETURN,
-        sdl2.SDLK_KP_ENTER: uea.RETURN,
-        sdl2.SDLK_SPACE: uea.SPACE,
-        sdl2.SDLK_INSERT: uea.INSERT,
-        sdl2.SDLK_DELETE: uea.DELETE,
+        sdl2.SDLK_F1: uea.F1, sdl2.SDLK_F2: uea.F2, sdl2.SDLK_F3: uea.F3, sdl2.SDLK_F4: uea.F4,
+        sdl2.SDLK_F5: uea.F5, sdl2.SDLK_F6: uea.F6, sdl2.SDLK_F7: uea.F7, sdl2.SDLK_F8: uea.F8,
+        sdl2.SDLK_F9: uea.F9, sdl2.SDLK_F10: uea.F10, sdl2.SDLK_F11: uea.F11,
+        sdl2.SDLK_F12: uea.F12, sdl2.SDLK_HOME: uea.HOME, sdl2.SDLK_UP: uea.UP,
+        sdl2.SDLK_PAGEUP: uea.PAGEUP, sdl2.SDLK_LEFT: uea.LEFT, sdl2.SDLK_RIGHT: uea.RIGHT,
+        sdl2.SDLK_END: uea.END, sdl2.SDLK_DOWN: uea.DOWN, sdl2.SDLK_PAGEDOWN: uea.PAGEDOWN,
+        sdl2.SDLK_ESCAPE: uea.ESCAPE, sdl2.SDLK_BACKSPACE: uea.BACKSPACE, sdl2.SDLK_TAB: uea.TAB,
+        sdl2.SDLK_RETURN: uea.RETURN, sdl2.SDLK_KP_ENTER: uea.RETURN, sdl2.SDLK_SPACE: uea.SPACE,
+        sdl2.SDLK_INSERT: uea.INSERT, sdl2.SDLK_DELETE: uea.DELETE,
     }
 
     SHIFT_KEY_TO_EASCII = {
-        sdl2.SDLK_F1: uea.SHIFT_F1,
-        sdl2.SDLK_F2: uea.SHIFT_F2,
-        sdl2.SDLK_F3: uea.SHIFT_F3,
-        sdl2.SDLK_F4: uea.SHIFT_F4,
-        sdl2.SDLK_F5: uea.SHIFT_F5,
-        sdl2.SDLK_F6: uea.SHIFT_F6,
-        sdl2.SDLK_F7: uea.SHIFT_F7,
-        sdl2.SDLK_F8: uea.SHIFT_F8,
-        sdl2.SDLK_F9: uea.SHIFT_F9,
-        sdl2.SDLK_F10: uea.SHIFT_F10,
-        sdl2.SDLK_F11: uea.SHIFT_F11,
-        sdl2.SDLK_F12: uea.SHIFT_F12,
-        sdl2.SDLK_HOME: uea.SHIFT_HOME,
-        sdl2.SDLK_UP: uea.SHIFT_UP,
-        sdl2.SDLK_PAGEUP: uea.SHIFT_PAGEUP,
-        sdl2.SDLK_LEFT: uea.SHIFT_LEFT,
-        sdl2.SDLK_RIGHT: uea.SHIFT_RIGHT,
-        sdl2.SDLK_END: uea.SHIFT_END,
-        sdl2.SDLK_DOWN: uea.SHIFT_DOWN,
-        sdl2.SDLK_PAGEDOWN: uea.SHIFT_PAGEDOWN,
-        sdl2.SDLK_ESCAPE: uea.SHIFT_ESCAPE,
-        sdl2.SDLK_BACKSPACE: uea.SHIFT_BACKSPACE,
-        sdl2.SDLK_TAB: uea.SHIFT_TAB,
-        sdl2.SDLK_RETURN: uea.SHIFT_RETURN,
-        sdl2.SDLK_KP_ENTER: uea.SHIFT_RETURN,
-        sdl2.SDLK_SPACE: uea.SHIFT_SPACE,
-        sdl2.SDLK_INSERT: uea.SHIFT_INSERT,
-        sdl2.SDLK_DELETE: uea.SHIFT_DELETE,
+        sdl2.SDLK_F1: uea.SHIFT_F1, sdl2.SDLK_F2: uea.SHIFT_F2, sdl2.SDLK_F3: uea.SHIFT_F3,
+        sdl2.SDLK_F4: uea.SHIFT_F4, sdl2.SDLK_F5: uea.SHIFT_F5, sdl2.SDLK_F6: uea.SHIFT_F6,
+        sdl2.SDLK_F7: uea.SHIFT_F7, sdl2.SDLK_F8: uea.SHIFT_F8, sdl2.SDLK_F9: uea.SHIFT_F9,
+        sdl2.SDLK_F10: uea.SHIFT_F10, sdl2.SDLK_F11: uea.SHIFT_F11, sdl2.SDLK_F12: uea.SHIFT_F12,
+        sdl2.SDLK_HOME: uea.SHIFT_HOME, sdl2.SDLK_UP: uea.SHIFT_UP,
+        sdl2.SDLK_PAGEUP: uea.SHIFT_PAGEUP, sdl2.SDLK_LEFT: uea.SHIFT_LEFT,
+        sdl2.SDLK_RIGHT: uea.SHIFT_RIGHT, sdl2.SDLK_END: uea.SHIFT_END,
+        sdl2.SDLK_DOWN: uea.SHIFT_DOWN, sdl2.SDLK_PAGEDOWN: uea.SHIFT_PAGEDOWN,
+        sdl2.SDLK_ESCAPE: uea.SHIFT_ESCAPE, sdl2.SDLK_BACKSPACE: uea.SHIFT_BACKSPACE,
+        sdl2.SDLK_TAB: uea.SHIFT_TAB, sdl2.SDLK_RETURN: uea.SHIFT_RETURN,
+        sdl2.SDLK_KP_ENTER: uea.SHIFT_RETURN, sdl2.SDLK_SPACE: uea.SHIFT_SPACE,
+        sdl2.SDLK_INSERT: uea.SHIFT_INSERT, sdl2.SDLK_DELETE: uea.SHIFT_DELETE,
         sdl2.SDLK_KP_5: uea.SHIFT_KP5,
     }
 
     CTRL_KEY_TO_EASCII = {
-        sdl2.SDLK_F1: uea.CTRL_F1,
-        sdl2.SDLK_F2: uea.CTRL_F2,
-        sdl2.SDLK_F3: uea.CTRL_F3,
-        sdl2.SDLK_F4: uea.CTRL_F4,
-        sdl2.SDLK_F5: uea.CTRL_F5,
-        sdl2.SDLK_F6: uea.CTRL_F6,
-        sdl2.SDLK_F7: uea.CTRL_F7,
-        sdl2.SDLK_F8: uea.CTRL_F8,
-        sdl2.SDLK_F9: uea.CTRL_F9,
-        sdl2.SDLK_F10: uea.CTRL_F10,
-        sdl2.SDLK_F11: uea.CTRL_F11,
-        sdl2.SDLK_F12: uea.CTRL_F12,
-        sdl2.SDLK_HOME: uea.CTRL_HOME,
-        sdl2.SDLK_PAGEUP: uea.CTRL_PAGEUP,
-        sdl2.SDLK_LEFT: uea.CTRL_LEFT,
-        sdl2.SDLK_RIGHT: uea.CTRL_RIGHT,
-        sdl2.SDLK_END: uea.CTRL_END,
-        sdl2.SDLK_PAGEDOWN: uea.CTRL_PAGEDOWN,
-        sdl2.SDLK_ESCAPE: uea.CTRL_ESCAPE,
-        sdl2.SDLK_BACKSPACE: uea.CTRL_BACKSPACE,
-        sdl2.SDLK_TAB: uea.CTRL_TAB,
-        sdl2.SDLK_RETURN: uea.CTRL_RETURN,
-        sdl2.SDLK_KP_ENTER: uea.CTRL_RETURN,
-        sdl2.SDLK_SPACE: uea.CTRL_SPACE,
-        sdl2.SDLK_PRINTSCREEN: uea.CTRL_PRINT,
-        sdl2.SDLK_2: uea.CTRL_2,
-        sdl2.SDLK_6: uea.CTRL_6,
-        sdl2.SDLK_MINUS: uea.CTRL_MINUS,
+        sdl2.SDLK_F1: uea.CTRL_F1, sdl2.SDLK_F2: uea.CTRL_F2, sdl2.SDLK_F3: uea.CTRL_F3,
+        sdl2.SDLK_F4: uea.CTRL_F4, sdl2.SDLK_F5: uea.CTRL_F5, sdl2.SDLK_F6: uea.CTRL_F6,
+        sdl2.SDLK_F7: uea.CTRL_F7, sdl2.SDLK_F8: uea.CTRL_F8, sdl2.SDLK_F9: uea.CTRL_F9,
+        sdl2.SDLK_F10: uea.CTRL_F10, sdl2.SDLK_F11: uea.CTRL_F11, sdl2.SDLK_F12: uea.CTRL_F12,
+        sdl2.SDLK_HOME: uea.CTRL_HOME, sdl2.SDLK_PAGEUP: uea.CTRL_PAGEUP,
+        sdl2.SDLK_LEFT: uea.CTRL_LEFT, sdl2.SDLK_RIGHT: uea.CTRL_RIGHT, sdl2.SDLK_END: uea.CTRL_END,
+        sdl2.SDLK_PAGEDOWN: uea.CTRL_PAGEDOWN, sdl2.SDLK_ESCAPE: uea.CTRL_ESCAPE,
+        sdl2.SDLK_BACKSPACE: uea.CTRL_BACKSPACE, sdl2.SDLK_TAB: uea.CTRL_TAB,
+        sdl2.SDLK_RETURN: uea.CTRL_RETURN, sdl2.SDLK_KP_ENTER: uea.CTRL_RETURN,
+        sdl2.SDLK_SPACE: uea.CTRL_SPACE, sdl2.SDLK_PRINTSCREEN: uea.CTRL_PRINT,
+        sdl2.SDLK_2: uea.CTRL_2, sdl2.SDLK_6: uea.CTRL_6, sdl2.SDLK_MINUS: uea.CTRL_MINUS,
     }
 
     ALT_SCAN_TO_EASCII = {
-        sdl2.SDL_SCANCODE_1: uea.ALT_1,
-        sdl2.SDL_SCANCODE_2: uea.ALT_2,
-        sdl2.SDL_SCANCODE_3: uea.ALT_3,
-        sdl2.SDL_SCANCODE_4: uea.ALT_4,
-        sdl2.SDL_SCANCODE_5: uea.ALT_5,
-        sdl2.SDL_SCANCODE_6: uea.ALT_6,
-        sdl2.SDL_SCANCODE_7: uea.ALT_7,
-        sdl2.SDL_SCANCODE_8: uea.ALT_8,
-        sdl2.SDL_SCANCODE_9: uea.ALT_9,
-        sdl2.SDL_SCANCODE_0: uea.ALT_0,
-        sdl2.SDL_SCANCODE_MINUS: uea.ALT_MINUS,
-        sdl2.SDL_SCANCODE_EQUALS: uea.ALT_EQUALS,
-        sdl2.SDL_SCANCODE_Q: uea.ALT_q,
-        sdl2.SDL_SCANCODE_W: uea.ALT_w,
-        sdl2.SDL_SCANCODE_E: uea.ALT_e,
-        sdl2.SDL_SCANCODE_R: uea.ALT_r,
-        sdl2.SDL_SCANCODE_T: uea.ALT_t,
-        sdl2.SDL_SCANCODE_Y: uea.ALT_y,
-        sdl2.SDL_SCANCODE_U: uea.ALT_u,
-        sdl2.SDL_SCANCODE_I: uea.ALT_i,
-        sdl2.SDL_SCANCODE_O: uea.ALT_o,
-        sdl2.SDL_SCANCODE_P: uea.ALT_p,
-        sdl2.SDL_SCANCODE_A: uea.ALT_a,
-        sdl2.SDL_SCANCODE_S: uea.ALT_s,
-        sdl2.SDL_SCANCODE_D: uea.ALT_d,
-        sdl2.SDL_SCANCODE_F: uea.ALT_f,
-        sdl2.SDL_SCANCODE_G: uea.ALT_g,
-        sdl2.SDL_SCANCODE_H: uea.ALT_h,
-        sdl2.SDL_SCANCODE_J: uea.ALT_j,
-        sdl2.SDL_SCANCODE_K: uea.ALT_k,
-        sdl2.SDL_SCANCODE_L: uea.ALT_l,
-        sdl2.SDL_SCANCODE_Z: uea.ALT_z,
-        sdl2.SDL_SCANCODE_X: uea.ALT_x,
-        sdl2.SDL_SCANCODE_C: uea.ALT_c,
-        sdl2.SDL_SCANCODE_V: uea.ALT_v,
-        sdl2.SDL_SCANCODE_B: uea.ALT_b,
-        sdl2.SDL_SCANCODE_N: uea.ALT_n,
-        sdl2.SDL_SCANCODE_M: uea.ALT_m,
-        sdl2.SDL_SCANCODE_F1: uea.ALT_F1,
-        sdl2.SDL_SCANCODE_F2: uea.ALT_F2,
-        sdl2.SDL_SCANCODE_F3: uea.ALT_F3,
-        sdl2.SDL_SCANCODE_F4: uea.ALT_F4,
-        sdl2.SDL_SCANCODE_F5: uea.ALT_F5,
-        sdl2.SDL_SCANCODE_F6: uea.ALT_F6,
-        sdl2.SDL_SCANCODE_F7: uea.ALT_F7,
-        sdl2.SDL_SCANCODE_F8: uea.ALT_F8,
-        sdl2.SDL_SCANCODE_F9: uea.ALT_F9,
-        sdl2.SDL_SCANCODE_F10: uea.ALT_F10,
-        sdl2.SDL_SCANCODE_F11: uea.ALT_F11,
-        sdl2.SDL_SCANCODE_F12: uea.ALT_F12,
-        sdl2.SDL_SCANCODE_BACKSPACE: uea.ALT_BACKSPACE,
-        sdl2.SDL_SCANCODE_TAB: uea.ALT_TAB,
-        sdl2.SDL_SCANCODE_RETURN: uea.ALT_RETURN,
-        sdl2.SDL_SCANCODE_KP_ENTER: uea.ALT_RETURN,
-        sdl2.SDL_SCANCODE_SPACE: uea.ALT_SPACE,
-        sdl2.SDL_SCANCODE_PRINTSCREEN: uea.ALT_PRINT,
+        sdl2.SDL_SCANCODE_1: uea.ALT_1, sdl2.SDL_SCANCODE_2: uea.ALT_2,
+        sdl2.SDL_SCANCODE_3: uea.ALT_3, sdl2.SDL_SCANCODE_4: uea.ALT_4,
+        sdl2.SDL_SCANCODE_5: uea.ALT_5, sdl2.SDL_SCANCODE_6: uea.ALT_6,
+        sdl2.SDL_SCANCODE_7: uea.ALT_7, sdl2.SDL_SCANCODE_8: uea.ALT_8,
+        sdl2.SDL_SCANCODE_9: uea.ALT_9, sdl2.SDL_SCANCODE_0: uea.ALT_0,
+        sdl2.SDL_SCANCODE_MINUS: uea.ALT_MINUS, sdl2.SDL_SCANCODE_EQUALS: uea.ALT_EQUALS,
+        sdl2.SDL_SCANCODE_Q: uea.ALT_q, sdl2.SDL_SCANCODE_W: uea.ALT_w,
+        sdl2.SDL_SCANCODE_E: uea.ALT_e, sdl2.SDL_SCANCODE_R: uea.ALT_r,
+        sdl2.SDL_SCANCODE_T: uea.ALT_t, sdl2.SDL_SCANCODE_Y: uea.ALT_y,
+        sdl2.SDL_SCANCODE_U: uea.ALT_u, sdl2.SDL_SCANCODE_I: uea.ALT_i,
+        sdl2.SDL_SCANCODE_O: uea.ALT_o, sdl2.SDL_SCANCODE_P: uea.ALT_p,
+        sdl2.SDL_SCANCODE_A: uea.ALT_a, sdl2.SDL_SCANCODE_S: uea.ALT_s,
+        sdl2.SDL_SCANCODE_D: uea.ALT_d, sdl2.SDL_SCANCODE_F: uea.ALT_f,
+        sdl2.SDL_SCANCODE_G: uea.ALT_g, sdl2.SDL_SCANCODE_H: uea.ALT_h,
+        sdl2.SDL_SCANCODE_J: uea.ALT_j, sdl2.SDL_SCANCODE_K: uea.ALT_k,
+        sdl2.SDL_SCANCODE_L: uea.ALT_l, sdl2.SDL_SCANCODE_Z: uea.ALT_z,
+        sdl2.SDL_SCANCODE_X: uea.ALT_x, sdl2.SDL_SCANCODE_C: uea.ALT_c,
+        sdl2.SDL_SCANCODE_V: uea.ALT_v, sdl2.SDL_SCANCODE_B: uea.ALT_b,
+        sdl2.SDL_SCANCODE_N: uea.ALT_n, sdl2.SDL_SCANCODE_M: uea.ALT_m,
+        sdl2.SDL_SCANCODE_F1: uea.ALT_F1, sdl2.SDL_SCANCODE_F2: uea.ALT_F2,
+        sdl2.SDL_SCANCODE_F3: uea.ALT_F3, sdl2.SDL_SCANCODE_F4: uea.ALT_F4,
+        sdl2.SDL_SCANCODE_F5: uea.ALT_F5, sdl2.SDL_SCANCODE_F6: uea.ALT_F6,
+        sdl2.SDL_SCANCODE_F7: uea.ALT_F7, sdl2.SDL_SCANCODE_F8: uea.ALT_F8,
+        sdl2.SDL_SCANCODE_F9: uea.ALT_F9, sdl2.SDL_SCANCODE_F10: uea.ALT_F10,
+        sdl2.SDL_SCANCODE_F11: uea.ALT_F11, sdl2.SDL_SCANCODE_F12: uea.ALT_F12,
+        sdl2.SDL_SCANCODE_BACKSPACE: uea.ALT_BACKSPACE, sdl2.SDL_SCANCODE_TAB: uea.ALT_TAB,
+        sdl2.SDL_SCANCODE_RETURN: uea.ALT_RETURN, sdl2.SDL_SCANCODE_KP_ENTER: uea.ALT_RETURN,
+        sdl2.SDL_SCANCODE_SPACE: uea.ALT_SPACE, sdl2.SDL_SCANCODE_PRINTSCREEN: uea.ALT_PRINT,
         sdl2.SDL_SCANCODE_KP_5: uea.ALT_KP5,
     }
 
     MOD_TO_SCAN = {
-        sdl2.KMOD_LSHIFT: scancode.LSHIFT,
-        sdl2.KMOD_RSHIFT: scancode.RSHIFT,
-        sdl2.KMOD_LCTRL: scancode.CTRL,
-        sdl2.KMOD_RCTRL: scancode.CTRL,
+        sdl2.KMOD_LSHIFT: scancode.LSHIFT, sdl2.KMOD_RSHIFT: scancode.RSHIFT,
+        sdl2.KMOD_LCTRL: scancode.CTRL, sdl2.KMOD_RCTRL: scancode.CTRL,
         sdl2.KMOD_LALT: scancode.ALT,
         # don't catch right-Alt as it may inhibit AltGr on Windows
         #sdl2.KMOD_RALT: scancode.ALT,
@@ -360,6 +274,7 @@ class SDL2Clipboard(clipboard.Clipboard):
 
     def __init__(self):
         """Initialise the clipboard handler."""
+        clipboard.Clipboard.__init__(self)
         self.ok = (sdl2 is not None)
 
     def copy(self, text, mouse=False):
@@ -409,6 +324,8 @@ class VideoSDL2(VideoPlugin):
         if not numpy:
             raise InitFailed('Module `numpy` not found')
         VideoPlugin.__init__(self, input_queue, video_queue)
+        # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
+        set_dpi_aware()
         # request smooth scaling
         self._smooth = scaling == 'smooth'
         # ignore ALT+F4 and window X button
@@ -417,20 +334,17 @@ class VideoSDL2(VideoPlugin):
         self._caption = caption
         # start in fullscreen mode if True
         self._fullscreen = fullscreen
+        # don't resize native windows
+        self._resizable = scaling != 'native'
         # display & border
         # border attribute
         self._border_attr = 0
-        # palette and colours
-        # composite colour artifacts are active
-        self._composite = False
         # update cycle
         self._cycle = 0
         self._last_tick = 0
-        # cursor
-        # current cursor location
-        self._last_row, self._last_col = 1, 1
-        # cursor is visible
-        self._cursor_visible = True
+        # blink is enabled, should be True in text modes with blink and ega mono
+        # cursor blinks if _is_text_mode and _blink_enabled
+        self._blink_enabled = True
         # load the icon
         self._icon = icon
         # mouse setups
@@ -451,78 +365,112 @@ class VideoSDL2(VideoPlugin):
             # to not throw PyGame off if we try that later
             self._env.close()
             raise InitFailed('Could not initialise SDL2: %s' % sdl2.SDL_GetError())
+        # get physical screen dimensions (needs to be called before set_mode)
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
         self._window_sizer = window.WindowSizer(
             display_mode.w, display_mode.h,
-            scaling, dimensions, aspect_ratio, border_width, fullscreen
+            scaling, dimensions, aspect_ratio, border_width,
         )
-        # create the window initially as 640*400 black
+        # create the window initially as 720*400 black
+        self._window_sizer.set_canvas_size(720, 400, fullscreen=self._fullscreen)
+        # canvas surfaces
+        self._window_surface = []
+        # pixel views of canvases
+        self._canvas_pixels = []
+        # main window object
+        self._display = None
+        self._display_surface = None
+        # one cache per blink state
+        self._display_cache = [None] * N_BLINK_STATES
+        self._has_display_cache = [False] * N_BLINK_STATES
+        # pointer to the zoomed surface
+        self._zoomed_surface = None
+        # clipboard handler
+        self._clipboard_handler = None
+        # clipboard visual feedback
+        self._clipboard_interface = None
+        # event handlers
+        self._event_handlers = self._register_handlers()
+        # glyph cache
+        self._glyph_dict = {}
+        # video mode settings
+        self._is_text_mode = True
+        self._font_height = None
+        self._font_width = None
+        self._num_pages = None
+        # cursor
+        # cursor is visible
+        self._cursor_visible = True
+        # cursor position
+        self._cursor_row, self._cursor_col = 1, 1
+        # cursor shape
+        self._cursor_from = None
+        self._cursor_to = None
+        self._cursor_width = None
+        self._cursor_attr = None
+        self._cursor_cache = [None, None]
+        # display pages
+        self._vpagenum, self._apagenum = 0, 0
+        # palette
+        # display palettes for blink states 0, 1
+        self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
+        self._num_fore_attrs = 16
+        self._num_back_attrs = 8
+        # pixel packing is active (composite artifacts)
+        self._pixel_packing = False
+        # last keypress
+        self._last_keypress = None
+        # set clipboard handler to SDL2
+        self._clipboard_handler = SDL2Clipboard()
+        # available joysticks
+        num_joysticks = sdl2.SDL_NumJoysticks()
+        for stick in range(num_joysticks):
+            sdl2.SDL_JoystickOpen(stick)
+            # if a joystick is present, its axes report 128 for mid, not 0
+            for axis in (0, 1):
+                self._input_queue.put(signals.Event(signals.STICK_MOVED, (stick, axis, 128)))
+
+    def __enter__(self):
+        """Complete SDL2 interface initialisation."""
         # "NOTE: You should not expect to be able to create a window, render,
         #        or receive events on any thread other than the main one"
         # https://wiki.libsdl.org/CategoryThread
         # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
-        self._display = None
-        self._work_surface = None
-        self._do_create_window(*self._window_sizer.find_display_size(720, 400))
+        self._do_create_window()
         # pop up as black rather than background, looks nicer
         sdl2.SDL_UpdateWindowSurface(self._display)
-        # workaround for duplicated keypresses after Alt (at least on Ubuntu Unity)
-        self._alt_counter = Counter()
-        self._clipboard_handler = None
-
-    def __enter__(self):
-        """Complete SDL2 interface initialisation."""
-        # set clipboard handler to SDL2
-        self._clipboard_handler = SDL2Clipboard()
-        # display palettes for blink states 0, 1
-        self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
-        self._saved_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
-        # get physical screen dimensions (needs to be called before set_mode)
-        # load an all-black 16-colour game palette to get started
-        self.set_palette([(0, 0, 0)] * 16, None)
-        self.move_cursor(1, 1)
-        self.set_page(0, 0)
-        # set_mode should be first event on queue
         # check if we can honour scaling=smooth
         if self._smooth:
-            # pointer to the zoomed surface
-            self.zoomed = None
-            pixelformat = self._display_surface.contents.format
-            if pixelformat.contents.BitsPerPixel != 32:
+            bpp = self._display_surface.contents.format.contents.BitsPerPixel
+            if bpp != 32:
                 logging.warning(
-                    'Smooth scaling not available: need 32-bit colour, have %d-bit.',
-                    self._display_surface.format.contents.BitsPerPixel
+                    'Smooth scaling not available: need 32-bit colour, have %d-bit.', bpp
                 )
                 self._smooth = False
-            if not sdlgfx:
+            if not _smooth_zoom:
                 logging.warning('Smooth scaling not available: `sdlgfx` extension not found.')
                 self._smooth = False
-        # available joysticks
-        num_joysticks = sdl2.SDL_NumJoysticks()
-        for j in range(num_joysticks):
-            sdl2.SDL_JoystickOpen(j)
-            # if a joystick is present, its axes report 128 for mid, not 0
-            for axis in (0, 1):
-                self._input_queue.put(signals.Event(signals.STICK_MOVED, (j, axis, 128)))
         # enable IME
         sdl2.SDL_StartTextInput()
         return VideoPlugin.__enter__(self)
+        # set_mode should be first event on queue
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, value, traceback):
         """Close the SDL2 interface."""
-        VideoPlugin.__exit__(self, type, value, traceback)
+        VideoPlugin.__exit__(self, exc_type, value, traceback)
         if sdl2 and numpy and self._has_window:
             # free windows
             sdl2.SDL_DestroyWindow(self._display)
+            # free caches
+            for surface in self._display_cache:
+                sdl2.SDL_FreeSurface(surface)
             # free surfaces
-            for s in self.canvas:
-                sdl2.SDL_FreeSurface(s)
-            sdl2.SDL_FreeSurface(self._work_surface)
-            sdl2.SDL_FreeSurface(self.overlay)
+            for surface in self._window_surface:
+                sdl2.SDL_FreeSurface(surface)
             # free palettes
-            for p in self._palette + self._saved_palette:
-                sdl2.SDL_FreePalette(p)
+            for palette in self._palette:
+                sdl2.SDL_FreePalette(palette)
             # close IME
             sdl2.SDL_StopTextInput()
             # close SDL2
@@ -535,28 +483,48 @@ class VideoSDL2(VideoPlugin):
         _pixels2d(icon.contents)[:] = mask
         # icon palette (black & white)
         icon_palette = sdl2.SDL_AllocPalette(256)
-        icon_colors = [ sdl2.SDL_Color(x, x, x, 255) for x in [0, 255] + [255]*254 ]
+        icon_colors = [sdl2.SDL_Color(_c, _c, _c, 255) for _c in [0, 255] + [255]*254]
         sdl2.SDL_SetPaletteColors(icon_palette, (sdl2.SDL_Color * 256)(*icon_colors), 0, 2)
         sdl2.SDL_SetSurfacePalette(icon, icon_palette)
         sdl2.SDL_SetWindowIcon(self._display, icon)
         sdl2.SDL_FreeSurface(icon)
         sdl2.SDL_FreePalette(icon_palette)
 
-    def _do_create_window(self, width, height):
+    def _do_create_window(self):
         """Create a new SDL window """
-        flags = sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN
+        flags = sdl2.SDL_WINDOW_SHOWN
+        if self._resizable:
+            flags |= sdl2.SDL_WINDOW_RESIZABLE
         if self._fullscreen:
             flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
+        width, height = self._window_sizer.display_size
         sdl2.SDL_DestroyWindow(self._display)
         self._display = sdl2.SDL_CreateWindow(
             self._caption.encode('utf-8', errors='replace'),
             sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED,
             width, height, flags
         )
+        # on fullscreen, grab keyboard exclusively
+        # this allows BASIC to capture Alt-F4, Alt-TAB etc.
+        if self._fullscreen:
+            sdl2.SDL_SetHint(sdl2.SDL_HINT_GRAB_KEYBOARD, b'1')
+            sdl2.SDL_SetWindowGrab(self._display, sdl2.SDL_TRUE)
         self._set_icon()
-        self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
-        self._window_sizer.window_size = width, height
+        self._reset_display_caches()
         self.busy = True
+
+    def _reset_display_caches(self):
+        """Reset caches and references to display object."""
+        self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
+        # reset cache sizes
+        for surface in self._display_cache:
+            sdl2.SDL_FreeSurface(surface)
+        # clone the surface four times for blink caches
+        self._display_cache = [
+            sdl2.SDL_ConvertSurface(self._display_surface, self._display_surface.contents.format, 0)
+            for _ in range(N_BLINK_STATES)
+        ]
+        self._has_display_cache = [False] * N_BLINK_STATES
 
 
     ###########################################################################
@@ -568,154 +536,196 @@ class VideoSDL2(VideoPlugin):
         if not self._has_window:
             return
         # check and handle input events
-        self._last_down = None
+        self._last_keypress = None
         event = sdl2.SDL_Event()
-        while sdl2.SDL_PollEvent(ctypes.byref(event)) != 0:
-            if event.type == sdl2.SDL_KEYDOWN:
-                self._handle_key_down(event)
-            elif event.type == sdl2.SDL_KEYUP:
-                self._handle_key_up(event)
-            elif event.type == sdl2.SDL_TEXTINPUT:
-                self._handle_text_input(event)
-            elif event.type == sdl2.SDL_TEXTEDITING:
-                self.set_caption_message(event.text.text.decode('utf-8'))
-            elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
-                pos = self._window_sizer.normalise_pos(event.button.x, event.button.y)
-                if self._mouse_clip:
-                    if event.button.button == sdl2.SDL_BUTTON_LEFT:
-                        # LEFT button: copy
-                        self._clipboard_interface.start(
-                            1 + pos[1] // self.font_height,
-                            1 + (pos[0]+self.font_width//2) // self.font_width
-                        )
-                    elif event.button.button == sdl2.SDL_BUTTON_MIDDLE:
-                        # MIDDLE button: paste
-                        text = self._clipboard_handler.paste(mouse=True)
-                        self._clipboard_interface.paste(text)
-                if event.button.button == sdl2.SDL_BUTTON_LEFT:
-                    # right mouse button is a pen press
-                    self._input_queue.put(signals.Event(signals.PEN_DOWN, pos))
-            elif event.type == sdl2.SDL_MOUSEBUTTONUP:
-                self._input_queue.put(signals.Event(signals.PEN_UP))
-                if self._mouse_clip and event.button.button == sdl2.SDL_BUTTON_LEFT:
-                    self._clipboard_interface.copy(mouse=True)
-                    self._clipboard_interface.stop()
-            elif event.type == sdl2.SDL_MOUSEMOTION:
-                pos = self._window_sizer.normalise_pos(event.motion.x, event.motion.y)
-                self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
-                if self._clipboard_interface.active():
-                    self._clipboard_interface.move(
-                        1 + pos[1] // self.font_height,
-                        1 + (pos[0]+self.font_width//2) // self.font_width
-                    )
-                    self.busy = True
-            elif event.type == sdl2.SDL_JOYBUTTONDOWN:
-                self._input_queue.put(signals.Event(
-                    signals.STICK_DOWN,
-                    (event.jbutton.which, event.jbutton.button)
-                ))
-            elif event.type == sdl2.SDL_JOYBUTTONUP:
-                self._input_queue.put(signals.Event(
-                    signals.STICK_UP,
-                    (event.jbutton.which, event.jbutton.button)
-                ))
-            elif event.type == sdl2.SDL_JOYAXISMOTION:
-                self._input_queue.put(signals.Event(
-                    signals.STICK_MOVED,
-                    (event.jaxis.which, event.jaxis.axis, int((event.jaxis.value/32768.)*127 + 128))
-                ))
-            elif event.type == sdl2.SDL_WINDOWEVENT:
-                if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
-                    self._resize_display(event.window.data1, event.window.data2)
-                # unset Alt modifiers on entering/leaving the window
-                # workaround for what seems to be an SDL2 bug
-                # where the ALT modifier sticks on the first Alt-Tab out
-                # of the window
-                elif event.window.event in (
-                        sdl2.SDL_WINDOWEVENT_LEAVE,
-                        sdl2.SDL_WINDOWEVENT_ENTER,
-                        sdl2.SDL_WINDOWEVENT_FOCUS_LOST,
-                        sdl2.SDL_WINDOWEVENT_FOCUS_GAINED
-                    ):
-                    sdl2.SDL_SetModState(sdl2.SDL_GetModState() & ~sdl2.KMOD_ALT)
-            elif event.type == sdl2.SDL_QUIT:
-                if self._nokill:
-                    self.set_caption_message(NOKILL_MESSAGE)
-                else:
-                    self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+        while sdl2.SDL_PollEvent(ctypes.byref(event)):
+            try:
+                self._event_handlers[event.type](event)
+            except KeyError:
+                pass
         self._flush_keypress()
 
-    def _handle_key_down(self, e):
+    def _register_handlers(self):
+        """Create table of event handlers."""
+        return {
+            sdl2.SDL_KEYDOWN: self._handle_key_down,
+            sdl2.SDL_KEYUP: self._handle_key_up,
+            sdl2.SDL_TEXTINPUT: self._handle_text_input,
+            sdl2.SDL_TEXTEDITING: self._handle_text_editing,
+            sdl2.SDL_MOUSEBUTTONDOWN: self._handle_mouse_down,
+            sdl2.SDL_MOUSEBUTTONUP: self._handle_mouse_up,
+            sdl2.SDL_MOUSEMOTION: self._handle_mouse_motion,
+            sdl2.SDL_JOYBUTTONDOWN: self._handle_stick_down,
+            sdl2.SDL_JOYBUTTONUP: self._handle_stick_up,
+            sdl2.SDL_JOYAXISMOTION: self._handle_stick_motion,
+            sdl2.SDL_WINDOWEVENT: self._handle_window_event,
+            sdl2.SDL_QUIT: self._handle_quit,
+        }
+
+    # quit events
+
+    def _handle_quit(self, event):
+        """Handle quit event."""
+        if self._nokill:
+            self.set_caption_message(NOKILL_MESSAGE)
+        else:
+            self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+
+    # window events
+
+    def _handle_window_event(self, event):
+        """Handle window event."""
+        if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
+            self._handle_resize_event(event)
+        # unset Alt modifiers on entering/leaving the window
+        # workaround for what seems to be an SDL2 bug
+        # where the ALT modifier sticks on the first Alt-Tab out
+        # of the window
+        elif event.window.event in (
+                sdl2.SDL_WINDOWEVENT_LEAVE,
+                sdl2.SDL_WINDOWEVENT_ENTER,
+                sdl2.SDL_WINDOWEVENT_FOCUS_LOST,
+                sdl2.SDL_WINDOWEVENT_FOCUS_GAINED
+            ):
+            sdl2.SDL_SetModState(sdl2.SDL_GetModState() & ~sdl2.KMOD_ALT)
+
+    def _handle_resize_event(self, event):
+        """Respond to change of display size."""
+        if not self._fullscreen:
+            # width, height = event.window.data1, event.window.data2
+            # get actual window size
+            width, height = ctypes.c_int(), ctypes.c_int()
+            sdl2.SDL_GetWindowSize(self._display, ctypes.byref(width), ctypes.byref(height))
+            # update the size calculator
+            self._window_sizer.set_display_size(width.value, height.value)
+        # we need to update the surface pointer
+        self._reset_display_caches()
+        self.busy = True
+
+    # mouse events
+
+    def _handle_mouse_down(self, event):
+        """Handle mouse-down event."""
+        pos = self._window_sizer.normalise_pos(event.button.x, event.button.y)
+        if self._mouse_clip:
+            if event.button.button == sdl2.SDL_BUTTON_LEFT:
+                # LEFT button: copy
+                self._clipboard_interface.start(
+                    1 + pos[1] // self._font_height,
+                    1 + (pos[0]+self._font_width//2) // self._font_width
+                )
+            elif event.button.button == sdl2.SDL_BUTTON_MIDDLE:
+                # MIDDLE button: paste
+                text = self._clipboard_handler.paste(mouse=True)
+                self._clipboard_interface.paste(text)
+            self.busy = True
+        if event.button.button == sdl2.SDL_BUTTON_LEFT:
+            # pen press
+            self._input_queue.put(signals.Event(signals.PEN_DOWN, pos))
+
+    def _handle_mouse_up(self, event):
+        """Handle mouse-up event."""
+        self._input_queue.put(signals.Event(signals.PEN_UP))
+        if self._mouse_clip and event.button.button == sdl2.SDL_BUTTON_LEFT:
+            self._clipboard_interface.copy(mouse=True)
+            self._clipboard_interface.stop()
+            self.busy = True
+
+    def _handle_mouse_motion(self, event):
+        """Handle mouse-motion event."""
+        pos = self._window_sizer.normalise_pos(event.motion.x, event.motion.y)
+        self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
+        if self._clipboard_interface.active():
+            self._clipboard_interface.move(
+                1 + pos[1] // self._font_height,
+                1 + (pos[0]+self._font_width//2) // self._font_width
+            )
+            self.busy = True
+
+    # joystick events
+
+    def _handle_stick_down(self, event):
+        """Handle joystick button-down event."""
+        self._input_queue.put(signals.Event(
+            signals.STICK_DOWN,
+            (event.jbutton.which, event.jbutton.button)
+        ))
+
+    def _handle_stick_up(self, event):
+        """Handle joystick button-up event."""
+        self._input_queue.put(signals.Event(
+            signals.STICK_UP,
+            (event.jbutton.which, event.jbutton.button)
+        ))
+
+    def _handle_stick_motion(self, event):
+        """Handle joystick axis-motion event."""
+        self._input_queue.put(signals.Event(
+            signals.STICK_MOVED,
+            (event.jaxis.which, event.jaxis.axis, int((event.jaxis.value/32768.)*127 + 128))
+        ))
+
+    # keyboard events
+
+    def _handle_key_down(self, event):
         """Handle key-down event."""
         # get scancode
-        scan = SCAN_TO_SCAN.get(e.key.keysym.scancode, None)
-        # workaround: on some Ubuntu systems with Unity, the Alt key activates the HUD
-        # after that, every alt keypress is reported twice (down-ALT down-ALT ... up-ALT)
-        # and every alt+X keypress becomes down-ALT down-X down-X ... up-X ... up-ALT
-        if self._alt_counter[scancode.ALT] or scan == scancode.ALT:
-            self._alt_counter[scan] += 1
-            # after double-ALT, ignore every second keypress
-            if self._alt_counter[scan] > 1 and (
-                    not(self._alt_counter[scan] % 2) or scan == scancode.ALT
-                ):
-                return
+        scan = SCAN_TO_SCAN.get(event.key.keysym.scancode, None)
         # get modifiers
-        mod = [s for m, s in iteritems(MOD_TO_SCAN) if e.key.keysym.mod & m]
+        mod = [_s for _m, _s in iteritems(MOD_TO_SCAN) if event.key.keysym.mod & _m]
         # get eascii
         try:
             if scancode.ALT in mod:
-                c = ALT_SCAN_TO_EASCII[e.key.keysym.scancode]
+                char = ALT_SCAN_TO_EASCII[event.key.keysym.scancode]
             elif scancode.CTRL in mod:
-                c = CTRL_KEY_TO_EASCII[e.key.keysym.sym]
+                char = CTRL_KEY_TO_EASCII[event.key.keysym.sym]
             elif scancode.LSHIFT in mod or scancode.RSHIFT in mod:
-                c = SHIFT_KEY_TO_EASCII[e.key.keysym.sym]
+                char = SHIFT_KEY_TO_EASCII[event.key.keysym.sym]
             else:
-                c = KEY_TO_EASCII[e.key.keysym.sym]
+                char = KEY_TO_EASCII[event.key.keysym.sym]
         except KeyError:
             # try control+letter -> control codes
-            key = e.key.keysym.sym
+            key = event.key.keysym.sym
             if scancode.CTRL in mod and key >= ord(u'a') and key <= ord(u'z'):
-                c = unichr(key - ord(u'a') + 1)
+                char = unichr(key - ord(u'a') + 1)
             elif scancode.CTRL in mod and key >= ord(u'[') and key <= ord(u'_'):
-                c = unichr(key - ord(u'A') + 1)
+                char = unichr(key - ord(u'A') + 1)
             else:
-                c = u''
-        if c == u'\0':
-            c = uea.NUL
+                char = u''
+        if char == u'\0':
+            char = uea.NUL
         # handle F11 home-key combinations
-        if e.key.keysym.sym == sdl2.SDLK_F11:
+        if event.key.keysym.sym == sdl2.SDLK_F11:
             self._f11_active = True
-            self._clipboard_interface.start(self.cursor_row, self.cursor_col)
+            self._clipboard_interface.start(self._cursor_row, self._cursor_col)
         elif self._f11_active:
-            self._clipboard_interface.handle_key(scan, c)
+            self._clipboard_interface.handle_key(scan, char)
             self.busy = True
         else:
-            # keep scancode in buffer
-            # to combine with text event
+            # keep scancode in last-down buffer to combine with text event
             # flush buffer on next key down, text event or end of loop
-            if scan is not None:
+            # if the same key is reported twice with the same timestamp, ignore
+            # (this deals with the Unity double-ALT-bug and maybe others)
+            if scan is not None and (char, scan, mod, event.key.timestamp) != self._last_keypress:
                 self._flush_keypress()
-                self._last_down = c, scan, mod, e.key.timestamp
+                self._last_keypress = char, scan, mod, event.key.timestamp
 
     def _flush_keypress(self):
         """Flush last keypress from buffer."""
-        if self._last_down is not None:
+        if self._last_keypress is not None:
             # insert into keyboard queue; no text event
-            c, scan, mod, _ = self._last_down
-            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, mod)))
-            self._last_down = None
+            char, scan, mod, _ = self._last_keypress
+            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, scan, mod)))
+            self._last_keypress = None
 
-    def _handle_key_up(self, e):
+    def _handle_key_up(self, event):
         """Handle key-up event."""
         try:
-            scan = SCAN_TO_SCAN[e.key.keysym.scancode]
+            scan = SCAN_TO_SCAN[event.key.keysym.scancode]
         except KeyError:
             return
-        # reset ALT workaround counter
-        if scan == scancode.ALT:
-            self._alt_counter = Counter()
         # check for emulator key
-        if e.key.keysym.sym == sdl2.SDLK_F11:
+        if event.key.keysym.sym == sdl2.SDLK_F11:
             self._clipboard_interface.stop()
             self.busy = True
             self._f11_active = False
@@ -725,41 +735,53 @@ class VideoSDL2(VideoPlugin):
         except KeyError:
             pass
 
+    # text input method events
+
+    def _handle_text_editing(self, event):
+        """Handle text-editing event."""
+        self.set_caption_message(event.text.text.decode('utf-8'))
+
     def _handle_text_input(self, event):
         """Handle text-input event."""
-        c = event.text.text.decode('utf-8', errors='replace')
+        char = event.text.text.decode('utf-8', errors='replace')
         if self._f11_active:
             # F11+f to toggle fullscreen mode
-            if c.upper() == u'F':
-                self._fullscreen = not self._fullscreen
-                self._do_create_window(*self._window_sizer.find_display_size(*self.size))
-            self._clipboard_interface.handle_key(None, c)
+            if char.upper() == u'F':
+                self._toggle_fullscreen()
+            self._clipboard_interface.handle_key(None, char)
         # the text input event follows the key down event immediately
-        elif self._last_down is None:
+        elif self._last_keypress is None:
             # no key down event waiting: other input method
-            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
+            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
         else:
-            eascii, scan, mod, ts = self._last_down
+            eascii, scan, mod, timestamp = self._last_keypress
             # timestamps for kepdown and textinput may differ by one on mac
-            if ts + 1 >= event.text.timestamp:
+            if timestamp + 1 >= event.text.timestamp:
                 # combine if same time stamp
-                if eascii and c != eascii:
+                if eascii and char != eascii:
                     # filter out chars being sent with alt+key on Linux
                     if scancode.ALT not in mod:
                         # with IME, the text is sent together with the final Enter keypress.
-                        self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
+                        self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
                     else:
                         # final keypress such as space, CR have IME meaning, we should ignore them
                         self._input_queue.put(signals.Event(signals.KEYB_DOWN, (eascii, scan, mod)))
                 else:
-                    self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, mod)))
+                    self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, scan, mod)))
             else:
                 # two separate events
                 # previous keypress has no corresponding textinput
                 self._flush_keypress()
                 # current textinput has no corresponding keypress
-                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, None, None)))
-            self._last_down = None
+                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
+            self._last_keypress = None
+
+    def _toggle_fullscreen(self):
+        """Togggle fullscreen mode."""
+        self._fullscreen = not self._fullscreen
+        self._window_sizer.set_canvas_size(fullscreen=self._fullscreen)
+        self._do_create_window()
+        self.busy = True
 
 
     ###########################################################################
@@ -773,126 +795,156 @@ class VideoSDL2(VideoPlugin):
         """Check screen and blink events; update screen if necessary."""
         if not self._has_window:
             return
-        self.blink_state = 0
-        if self.mode_has_blink:
-            self.blink_state = 0 if self._cycle < BLINK_CYCLES * 2 else 1
-            if self._cycle % BLINK_CYCLES == 0:
-                self.busy = True
-        if self._cursor_visible and (
-                (self.cursor_row != self._last_row) or (self.cursor_col != self._last_col)):
-            self.busy = True
-        tock = sdl2.SDL_GetTicks()
-        if tock - self._last_tick >= CYCLE_TIME:
-            self._last_tick = tock
+        #               0      0      1      1
+        # cycle         0 1234 5 6789 0 1234 5 6789 (0)
+        # blink state   0 ---- 1 ---- 2 ---- 3 ---- (0)
+        # cursor        off    on     off    on
+        # blink         on     on     off    off
+        #
+        # blink state remains constant if blink not enabled
+        # cursor blinks only if _is_text_mode and _blink_enabled
+        # cursor visible every cycle between 5 and 10, 15 and 20
+        tick = sdl2.SDL_GetTicks()
+        if tick - self._last_tick >= CYCLE_TIME:
+            self._last_tick = tick
             self._cycle += 1
-            if self._cycle == BLINK_CYCLES * 4:
+            if self._cycle == BLINK_CYCLES * N_BLINK_STATES:
                 self._cycle = 0
+            # blink state
+            blink_state, blink_tock = divmod(self._cycle, BLINK_CYCLES)
+            if not self._blink_enabled:
+                blink_state = 1
+            # flip display fully if changed, use cache if just blinking
             if self.busy:
-                self._do_flip()
+                self._clear_display_cache()
+                self._flip_busy(blink_state)
                 self.busy = False
+            elif self._blink_enabled and blink_tock == 0:
+                self._flip_lazy(blink_state)
 
-    def _do_flip(self):
-        """Draw the canvas to the screen."""
-        sdl2.SDL_FillRect(self._work_surface, None, self._border_attr)
-        if self._composite:
-            self._work_pixels[:] = window.apply_composite_artifacts(
-                self.pixels[self.vpagenum], 4//self.bitsperpixel
+    def _clear_display_cache(self):
+        """Clear cursor cache on busy flip."""
+        # one cache per blink state
+        self._has_display_cache = [False] * N_BLINK_STATES
+
+    def _flip_lazy(self, blink_state):
+        """Blink the cursor only, to avoid doing all the scaling and converting work."""
+        if self._has_display_cache[blink_state]:
+            sdl2.SDL_BlitSurface(
+                self._display_cache[blink_state], None, self._display_surface, None
             )
+            sdl2.SDL_UpdateWindowSurface(self._display)
         else:
-            self._work_pixels[:] = self.pixels[self.vpagenum]
-        sdl2.SDL_SetSurfacePalette(self._work_surface, self._palette[self.blink_state])
-        # apply cursor to work surface
-        self._show_cursor(True)
-        # convert 8-bit work surface to (usually) 32-bit display surface format
+            # if we don't have a cache for this state, build it
+            self._flip_busy(blink_state)
+
+    def _flip_busy(self, blink_state):
+        """Draw the canvas to the screen."""
+        if self._pixel_packing:
+            work_surface = self._create_composite_surface()
+        else:
+            work_surface = self._window_surface[self._vpagenum]
         pixelformat = self._display_surface.contents.format
-        conv = sdl2.SDL_ConvertSurface(self._work_surface, pixelformat, 0)
-        # scale converted surface and blit onto display
-        if not self._smooth:
-            sdl2.SDL_BlitScaled(conv, None, self._display_surface, None)
-        else:
-            # smooth-scale converted surface
-            scalex, scaley = self._window_sizer.scale()
-            zoomx, zoomy = ctypes.c_double(scalex), ctypes.c_double(scaley)
-            # only free the surface just before zoomSurface needs to re-allocate
-            # so that the memory block is highly likely to be easily available
-            # this seems to avoid unpredictable delays
-            sdl2.SDL_FreeSurface(self.zoomed)
-            self.zoomed = zoomSurface(conv, zoomx, zoomy, SMOOTHING_ON)
-            # blit onto display
-            sdl2.SDL_BlitSurface(self.zoomed, None, self._display_surface, None)
+        # apply cursor to work surface
+        with self._show_cursor(blink_state % 2):
+            # convert 8-bit work surface to (usually) 32-bit display surface format
+            sdl2.SDL_SetSurfacePalette(work_surface, self._palette[blink_state // 2])
+            conv = sdl2.SDL_ConvertSurface(work_surface, pixelformat, 0)
+        if self._pixel_packing:
+            sdl2.SDL_FreeSurface(work_surface)
         # create clipboard feedback
         if self._clipboard_interface.active():
-            rects = (
-                sdl2.SDL_Rect(r[0]+self.border_x, r[1]+self.border_y, r[2], r[3])
-                for r in self._clipboard_interface.selection_rect
-            )
-            sdl_rects = (sdl2.SDL_Rect*len(self._clipboard_interface.selection_rect))(*rects)
-            sdl2.SDL_FillRect(self.overlay, None,
-                sdl2.SDL_MapRGBA(self.overlay.contents.format, 0, 0, 0, 0))
-            sdl2.SDL_FillRects(self.overlay, sdl_rects, len(sdl_rects),
-                sdl2.SDL_MapRGBA(self.overlay.contents.format, 128, 0, 128, 0))
-            sdl2.SDL_BlitScaled(self.overlay, None, self._display_surface, None)
-        # flip the display
-        sdl2.SDL_UpdateWindowSurface(self._display)
+            self._show_clipboard(conv)
+        # scale surface to final dimensions and flip
+        self._scale_and_flip(conv, blink_state)
         # destroy the temporary surface
         sdl2.SDL_FreeSurface(conv)
 
-    def _show_cursor(self, do_show):
-        """Draw or remove the cursor on the visible page."""
-        if not self._cursor_visible or self.vpagenum != self.apagenum:
-            return
-        screen = self._work_surface
-        pixels = self._work_pixels
-        top = (self.cursor_row-1) * self.font_height
-        left = (self.cursor_col-1) * self.font_width
-        if not do_show:
-            pixels[left:left+self.font_width, top:top+self.font_height] = self.under_cursor
-            return
-        # copy area under cursor
-        self.under_cursor = numpy.copy(
-            pixels[left : left+self.font_width, top : top+self.font_height]
-        )
-        if self.text_mode:
-            # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
-            if self._cycle // BLINK_CYCLES in (1, 3):
-                curs_height = min(
-                    self.cursor_to - self.cursor_from+1, self.font_height - self.cursor_from
-                )
-                curs_rect = sdl2.SDL_Rect(
-                    self.border_x + left, self.border_y + top + self.cursor_from,
-                    self.cursor_width, curs_height
-                )
-                sdl2.SDL_FillRect(screen, curs_rect, self.cursor_attr)
+    def _scale_and_flip(self, conv, blink_state):
+        """Scale converted surface and flip onto display."""
+        # determine letterbox dimensions
+        xshift, yshift = self._window_sizer.letterbox_shift
+        window_w, window_h = self._window_sizer.window_size
+        target_rect = sdl2.SDL_Rect(xshift, yshift, window_w, window_h)
+        if not self._smooth:
+            sdl2.SDL_BlitScaled(conv, None, self._display_surface, target_rect)
         else:
-            pixels[left:left+self.cursor_width, top+self.cursor_from:top+self.cursor_to+1] ^= (
-                self.cursor_attr
-            )
-        self._last_row = self.cursor_row
-        self._last_col = self.cursor_col
+            # smooth-scale converted surface
+            scalex, scaley = self._window_sizer.scale
+            # only free the surface just before zoomSurface needs to re-allocate
+            # so that the memory block is highly likely to be easily available
+            # this seems to avoid unpredictable delays
+            sdl2.SDL_FreeSurface(self._zoomed_surface)
+            # SMOOTHING_ON = 1
+            self._zoomed_surface = _smooth_zoom(conv, scalex, scaley, 1)
+            # blit onto display
+            sdl2.SDL_BlitSurface(self._zoomed_surface, None, self._display_surface, target_rect)
+        # save in display cache for this blink state
+        sdl2.SDL_BlitSurface(self._display_surface, None, self._display_cache[blink_state], None)
+        self._has_display_cache[blink_state] = True
+        # flip the display
+        sdl2.SDL_UpdateWindowSurface(self._display)
 
-    def _resize_display(self, width, height):
-        """Change the display size."""
-        maximised = sdl2.SDL_GetWindowFlags(self._display) & sdl2.SDL_WINDOW_MAXIMIZED
-        # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
-        # detect if window is very large compared to screen; force maximise if so.
-        to_maximised = self._window_sizer.is_maximal(width, height)
-        if not maximised:
-            if to_maximised:
-                # force maximise for large windows
-                sdl2.SDL_MaximizeWindow(self._display)
-            else:
-                # regular resize on non-maximised windows
-                sdl2.SDL_SetWindowSize(self._display, width, height)
+    @contextmanager
+    def _show_cursor(self, cursor_state):
+        """Draw or remove the cursor on the visible page."""
+        if not self._cursor_visible or self._vpagenum != self._apagenum or not cursor_state:
+            yield
         else:
-            # resizing throws us out of maximised mode
-            if not to_maximised:
-                sdl2.SDL_RestoreWindow(self._display)
-        # get window size
-        w, h = ctypes.c_int(), ctypes.c_int()
-        sdl2.SDL_GetWindowSize(self._display, ctypes.byref(w), ctypes.byref(h))
-        self._window_sizer.window_size = w.value, h.value
-        self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
-        self.busy = True
+            pixels = self._canvas_pixels[self._apagenum]
+            height = self._cursor_to + 1 - self._cursor_from
+            top = (self._cursor_row-1) * self._font_height + self._cursor_from
+            left = (self._cursor_col-1) * self._font_width
+            cursor_area = pixels[left:left+self._cursor_width, top:top+height]
+            # copy area under cursor
+            under_cursor = numpy.copy(cursor_area)
+            if self._is_text_mode:
+                cursor_area[:] = self._cursor_attr
+            else:
+                cursor_area[:] ^= self._cursor_attr
+            yield
+            cursor_area[:] = under_cursor
+
+    def _show_clipboard(self, conv):
+        """Show clipboard feedback overlay."""
+        n_rects = len(self._clipboard_interface.selection_rect)
+        if not n_rects:
+            return
+        border_x, border_y = self._window_sizer.border_shift
+        lcanvas_w, lcanvas_h = self._window_sizer.canvas_size_logical
+        # create overlay for clipboard selection feedback
+        overlay = sdl2.SDL_CreateRGBSurface(0, lcanvas_w, lcanvas_h, 32, 0, 0, 0, 0)
+        sdl2.SDL_SetSurfaceBlendMode(overlay, sdl2.SDL_BLENDMODE_ADD)
+        overlay_target = sdl2.SDL_Rect(border_x, border_y, lcanvas_w, lcanvas_h)
+        rects = (sdl2.SDL_Rect * n_rects)(*(
+            sdl2.SDL_Rect(*r) for r in self._clipboard_interface.selection_rect
+        ))
+        sdl2.SDL_FillRects(
+            overlay, rects, n_rects,
+            sdl2.SDL_MapRGBA(overlay.contents.format, 128, 0, 128, 0)
+        )
+        sdl2.SDL_BlitSurface(overlay, None, conv, overlay_target)
+        sdl2.SDL_FreeSurface(overlay)
+
+    def _create_composite_surface(self):
+        """Pack multiple pixels into one for composite artifacts."""
+        lwindow_w, lwindow_h = self._window_sizer.window_size_logical
+        border_x, border_y = self._window_sizer.border_shift
+        work_surface = sdl2.SDL_CreateRGBSurface(0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0)
+        # pack pixels into higher bpp
+        bpp_out, bpp_in = self._pixel_packing
+        src_array = self._canvas_pixels[self._vpagenum]
+        width, _ = src_array.shape
+        mask = 1<<bpp_in - 1
+        step = bpp_out // bpp_in
+        s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
+        packed = numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
+        # apply packed array onto work surface
+        _pixels2d(work_surface.contents)[
+            border_x : (lwindow_w - border_x),
+            border_y : lwindow_h - border_y
+        ] = packed
+        return work_surface
 
 
     ###########################################################################
@@ -900,48 +952,55 @@ class VideoSDL2(VideoPlugin):
 
     def set_mode(self, mode_info):
         """Initialise a given text or graphics mode."""
-        self.text_mode = mode_info.is_text_mode
         # unpack mode info struct
-        self.font_height = mode_info.font_height
-        self.font_width = mode_info.font_width
+        self._is_text_mode = mode_info.is_text_mode
+        self._font_height = mode_info.font_height
+        self._font_width = mode_info.font_width
+        self._num_pages = mode_info.num_pages
+        self._blink_enabled = mode_info.has_blink
         # prebuilt glyphs
         # NOTE: [x][y] format - change this if we change _pixels2d
-        self.glyph_dict = {u'\0': numpy.zeros((self.font_width, self.font_height))}
-        self.num_pages = mode_info.num_pages
-        self.mode_has_blink = mode_info.has_blink
-        if not self.text_mode:
-            self.bitsperpixel = mode_info.bitsperpixel
+        self._glyph_dict = {u'\0': numpy.zeros((self._font_width, self._font_height))}
         # logical size
-        self.size = (mode_info.pixel_width, mode_info.pixel_height)
-        self._window_sizer.size = self.size
-        self._resize_display(*self._window_sizer.find_display_size(*self.size))
+        canvas_width, canvas_height = mode_info.pixel_width, mode_info.pixel_height
+        size_changed = self._window_sizer.set_canvas_size(
+            canvas_width, canvas_height, fullscreen=self._fullscreen, resize_window=False
+        )
+        # only ever adjust window size if we're in native pixel mode
+        if size_changed:
+            if self._fullscreen:
+                # clear any areas now outside the window
+                sdl2.SDL_FillRect(self._display_surface, None, 0)
+            else:
+                # resize and recentre
+                sdl2.SDL_SetWindowSize(self._display, *self._window_sizer.display_size)
+                sdl2.SDL_SetWindowPosition(
+                    self._display, sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED
+                )
+                # need to update surface pointer after a change in window size
+                self._reset_display_caches()
         # set standard cursor
-        self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
+        self.set_cursor_shape(self._font_width, self._font_height, 0, self._font_height)
         # screen pages
-        canvas_width, canvas_height = self.size
-        self.canvas = [
-            sdl2.SDL_CreateRGBSurface(0, canvas_width, canvas_height, 8, 0, 0, 0, 0)
-            for _ in range(self.num_pages)
+        for surface in self._window_surface:
+            sdl2.SDL_FreeSurface(surface)
+        work_width, work_height = self._window_sizer.window_size_logical
+        self._window_surface = [
+            sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
+            for _ in range(self._num_pages)
         ]
-        self.pixels = [_pixels2d(canvas.contents) for canvas in self.canvas]
-        # create work surface for border and composite
-        self.border_x, self.border_y = self._window_sizer.border_start()
-        work_width = canvas_width + 2 * self.border_x
-        work_height = canvas_height + 2 * self.border_y
-        sdl2.SDL_FreeSurface(self._work_surface)
-        self._work_surface = sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
-        self._work_pixels = _pixels2d(self._work_surface.contents)[
-            self.border_x:work_width-self.border_x, self.border_y:work_height-self.border_y
+        border_x, border_y = self._window_sizer.border_shift
+        self._canvas_pixels = [
+            _pixels2d(canvas.contents)[
+                border_x : work_width - border_x,
+                border_y : work_height - border_y
+            ] for canvas in self._window_surface
         ]
-        # create overlay for clipboard selection feedback
-        # use convertsurface to create a copy of the display surface format
-        pixelformat = self._display_surface.contents.format
-        self.overlay = sdl2.SDL_ConvertSurface(self._work_surface, pixelformat, 0)
-        sdl2.SDL_SetSurfaceBlendMode(self.overlay, sdl2.SDL_BLENDMODE_ADD)
         # initialise clipboard
         self._clipboard_interface = clipboard.ClipboardInterface(
             self._clipboard_handler, self._input_queue,
-            mode_info.width, mode_info.height, self.font_width, self.font_height, self.size
+            mode_info.width, mode_info.height, self._font_width, self._font_height,
+            (canvas_width, canvas_height)
         )
         self.busy = True
         self._has_window = True
@@ -955,70 +1014,65 @@ class VideoSDL2(VideoPlugin):
         """Put text on the clipboard."""
         self._clipboard_handler.copy(text, mouse)
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1):
+    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
         """Build the palette."""
-        self.num_fore_attrs = min(16, len(rgb_palette_0))
-        self.num_back_attrs = min(8, self.num_fore_attrs)
+        self._num_fore_attrs = min(16, len(rgb_palette_0))
+        self._num_back_attrs = min(8, self._num_fore_attrs)
         rgb_palette_1 = rgb_palette_1 or rgb_palette_0
         # fill up the 8-bit palette with all combinations we need
         # blink states: 0 light up, 1 light down
         # bottom 128 are non-blink, top 128 blink to background
-        show_palette_0 = rgb_palette_0[:self.num_fore_attrs] * (256//self.num_fore_attrs)
-        show_palette_1 = rgb_palette_1[:self.num_fore_attrs] * (128//self.num_fore_attrs)
-        for b in (
-                rgb_palette_1[:self.num_back_attrs] *
-                (128 // self.num_fore_attrs // self.num_back_attrs)
+        show_palette_0 = rgb_palette_0[:self._num_fore_attrs] * (256//self._num_fore_attrs)
+        show_palette_1 = rgb_palette_1[:self._num_fore_attrs] * (128//self._num_fore_attrs)
+        for attr in (
+                rgb_palette_1[:self._num_back_attrs] *
+                (128 // self._num_fore_attrs // self._num_back_attrs)
             ):
-            show_palette_1 += [b]*self.num_fore_attrs
+            show_palette_1 += [attr]*self._num_fore_attrs
         colors_0 = (sdl2.SDL_Color * 256)(*(
-            sdl2.SDL_Color(r, g, b, 255)
-            for (r, g, b) in show_palette_0)
-        )
+            sdl2.SDL_Color(_r, _g, _b, 255)
+            for (_r, _g, _b) in show_palette_0
+        ))
         colors_1 = (sdl2.SDL_Color * 256)(*(
-            sdl2.SDL_Color(r, g, b, 255)
-            for (r, g, b) in show_palette_1)
-        )
+            sdl2.SDL_Color(_r, _g, _b, 255)
+            for (_r, _g, _b) in show_palette_1
+        ))
         sdl2.SDL_SetPaletteColors(self._palette[0], colors_0, 0, 256)
         sdl2.SDL_SetPaletteColors(self._palette[1], colors_1, 0, 256)
+        self._pixel_packing = pack_pixels
         self.busy = True
 
     def set_border_attr(self, attr):
         """Change the border attribute."""
+        window_w, window_h = self._window_sizer.window_size_logical
+        border_x, border_y = self._window_sizer.border_shift
+        border_rects = (sdl2.SDL_Rect*4)(
+            sdl2.SDL_Rect(0, 0, window_w, border_y),
+            sdl2.SDL_Rect(0, 0, border_x, window_h),
+            sdl2.SDL_Rect(window_w-border_x, 0, border_x, window_h),
+            sdl2.SDL_Rect(0, window_h-border_y, window_w, border_y),
+        )
+        for canvas in self._window_surface:
+            sdl2.SDL_FillRects(canvas, border_rects, 4, attr)
         self._border_attr = attr
-        self.busy = True
-
-    def set_composite(self, on, composite_colors):
-        """Enable/disable composite artifacts."""
-        if on != self._composite:
-            self._palette, self._saved_palette = self._saved_palette, self._palette
-        if on:
-            colors = (sdl2.SDL_Color * 256)(*(
-                sdl2.SDL_Color(r, g, b, 255)
-                for (r, g, b) in composite_colors
-            ))
-            sdl2.SDL_SetPaletteColors(self._palette[0], colors, 0, 256)
-            sdl2.SDL_SetPaletteColors(self._palette[1], colors, 0, 256)
-        self._composite = on
         self.busy = True
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
-        scroll_area = sdl2.SDL_Rect(
-            0, (start-1)*self.font_height, self.size[0], (stop-start+1)*self.font_height
-        )
-        sdl2.SDL_FillRect(self.canvas[self.apagenum], scroll_area, back_attr)
+        self._canvas_pixels[self._apagenum][
+            0 : self._window_sizer.width,
+            (start-1)*self._font_height : stop*self._font_height
+        ] = back_attr
         self.busy = True
 
     def set_page(self, vpage, apage):
         """Set the visible and active page."""
-        self.vpagenum, self.apagenum = vpage, apage
+        self._vpagenum, self._apagenum = vpage, apage
         self.busy = True
 
     def copy_page(self, src, dst):
         """Copy source to destination page."""
-        self.pixels[dst][:] = self.pixels[src][:]
-        # alternative:
-        # sdl2.SDL_BlitSurface(self.canvas[src], None, self.canvas[dst], None)
+        self._canvas_pixels[dst][:] = self._canvas_pixels[src][:]
         self.busy = True
 
     def show_cursor(self, cursor_on):
@@ -1026,67 +1080,71 @@ class VideoSDL2(VideoPlugin):
         self._cursor_visible = cursor_on
         self.busy = True
 
-    def move_cursor(self, crow, ccol):
+    def move_cursor(self, new_row, new_col):
         """Move the cursor to a new position."""
-        self.cursor_row, self.cursor_col = crow, ccol
+        if self._cursor_visible and (self._cursor_row, self._cursor_col) != (new_row, new_col):
+            self.busy = True
+        self._cursor_row, self._cursor_col = new_row, new_col
 
     def set_cursor_attr(self, attr):
         """Change attribute of cursor."""
-        self.cursor_attr = attr % self.num_fore_attrs
+        new_attr = attr % self._num_fore_attrs
+        if self._cursor_visible and self._cursor_attr != new_attr:
+            self.busy = True
+        self._cursor_attr = new_attr
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
-        pixels = self.pixels[self.apagenum]
+        pixels = self._canvas_pixels[self._apagenum]
         # these are exclusive ranges [x0, x1) etc
-        x0, x1 = 0, self.size[0]
-        new_y0, new_y1 = (from_line-1)*self.font_height, (scroll_height-1)*self.font_height
-        old_y0, old_y1 = from_line*self.font_height, scroll_height*self.font_height
-        pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
-        pixels[x0:x1, new_y1:old_y1] = numpy.full((x1-x0, old_y1-new_y1), back_attr, dtype=int)
+        width = self._window_sizer.width
+        new_y0, new_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
+        old_y0, old_y1 = from_line*self._font_height, scroll_height*self._font_height
+        pixels[0:width, new_y0:new_y1] = pixels[0:width, old_y0:old_y1]
+        pixels[0:width, new_y1:old_y1] = numpy.full((width, old_y1-new_y1), back_attr, dtype=int)
         self.busy = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
-        pixels = self.pixels[self.apagenum]
+        pixels = self._canvas_pixels[self._apagenum]
         # these are exclusive ranges [x0, x1) etc
-        x0, x1 = 0, self.size[0]
-        old_y0, old_y1 = (from_line-1)*self.font_height, (scroll_height-1)*self.font_height
-        new_y0, new_y1 = from_line*self.font_height, scroll_height*self.font_height
-        pixels[x0:x1, new_y0:new_y1] = pixels[x0:x1, old_y0:old_y1]
-        pixels[x0:x1, old_y0:new_y0] = numpy.full((x1-x0, new_y0-old_y0), back_attr, dtype=int)
+        width = self._window_sizer.width
+        old_y0, old_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
+        new_y0, new_y1 = from_line*self._font_height, scroll_height*self._font_height
+        pixels[0:width, new_y0:new_y1] = pixels[0:width, old_y0:old_y1]
+        pixels[0:width, old_y0:new_y0] = numpy.full((width, new_y0-old_y0), back_attr, dtype=int)
         self.busy = True
 
-    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline):
+    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
         """Put a character at a given position."""
-        if not self.text_mode:
+        if not self._is_text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
-        attr = fore + self.num_fore_attrs*back + 128*blink
-        x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
         # NOTE: in pygame plugin we used a surface fill for the NUL character
         # which was an optimisation early on -- consider if we need speedup.
         try:
-            glyph = self.glyph_dict[cp]
+            glyph = self._glyph_dict[char]
         except KeyError:
-            logging.warning('No glyph received for code point %s', hex(ord(cp)))
+            logging.warning('No glyph received for code point %s', hex(ord(char)))
             try:
-                glyph = self.glyph_dict[u'\0']
+                glyph = self._glyph_dict[u'\0']
             except KeyError:
                 logging.error('No glyph received for code point 0')
                 return
         # _pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
         glyph_width = glyph.shape[0]
+        left, top = (col-1)*self._font_width, (row-1)*self._font_height
+        attr = fore + self._num_fore_attrs*back + 128*blink
         # changle glyph color by numpy scalar mult (is there a better way?)
-        self.pixels[pagenum][
-            x0:x0+glyph_width, y0:y0+self.font_height] = (
-                glyph*(attr-back) + back
-            )
+        self._canvas_pixels[pagenum][
+            left : left+glyph_width,
+            top : top+self._font_height
+        ] = glyph*(attr-back) + back
         if underline:
-            sdl2.SDL_FillRect(
-                self.canvas[self.apagenum],
-                sdl2.SDL_Rect(x0, y0 + self.font_height - 1, glyph_width, 1),
-                attr
-            )
+            self._canvas_pixels[pagenum][
+            left : left+glyph_width,
+            top + self._font_height - 1 : top + self._font_height
+        ] = attr
         self.busy = True
 
     def build_glyphs(self, new_dict):
@@ -1094,41 +1152,40 @@ class VideoSDL2(VideoPlugin):
         for char, glyph in iteritems(new_dict):
             # transpose because _pixels2d uses column-major mode and hence [x][y] indexing
             # (we can change this)
-            self.glyph_dict[char] = numpy.asarray(glyph).T
+            self._glyph_dict[char] = numpy.asarray(glyph).T
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """Build a sprite for the cursor."""
-        self.cursor_width = width
-        self.cursor_from, self.cursor_to = from_line, to_line
-        self.under_cursor = numpy.zeros((width, height))
+        self._cursor_width = width
+        self._cursor_from, self._cursor_to = from_line, to_line
+        if self._cursor_visible:
+            self.busy = True
 
     def put_pixel(self, pagenum, x, y, index):
-        """Put a pixel on the screen; callback to empty character buffer."""
-        self.pixels[pagenum][x, y] = index
+        """Put a pixel on the screen."""
+        self._canvas_pixels[pagenum][x, y] = index
         self.busy = True
 
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
-        rect = sdl2.SDL_Rect(x0, y0, x1-x0+1, y1-y0+1)
-        sdl2.SDL_FillRect(self.canvas[pagenum], rect, index)
+        self._canvas_pixels[pagenum][x0:x1+1, y0:y1+1] = index
         self.busy = True
 
     def fill_interval(self, pagenum, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
-        rect = sdl2.SDL_Rect(x0, y, x1-x0+1, 1)
-        sdl2.SDL_FillRect(self.canvas[pagenum], rect, index)
+        self._canvas_pixels[pagenum][x0:x1+1, y] = index
         self.busy = True
 
     def put_interval(self, pagenum, x, y, colours):
         """Write a list of attributes to a scanline interval."""
         # reference the interval on the canvas
-        self.pixels[pagenum][x:x+len(colours), y] = numpy.array(colours).astype(int)
+        self._canvas_pixels[pagenum][x:x+len(colours), y] = numpy.array(colours).astype(int)
         self.busy = True
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
-        """Apply numpy array [y][x] of attribytes to an area."""
+        """Apply numpy array [y][x] of attributes to an area."""
         if (x1 < x0) or (y1 < y0):
             return
         # reference the destination area
-        self.pixels[pagenum][x0:x1+1, y0:y1+1] = numpy.array(array).T
+        self._canvas_pixels[pagenum][x0:x1+1, y0:y1+1] = numpy.array(array).T
         self.busy = True
