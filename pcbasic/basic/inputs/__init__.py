@@ -1,10 +1,11 @@
 """
 PC-BASIC - inputs package
-Keyboard, screen copy, pen and joystick handling
+Keyboard, pen and joystick handling
 
 (c) 2013--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
 from .keyboard import Keyboard
-from .inputmethods import Pen, Stick
+from .pen import Pen
+from .stick import Stick
