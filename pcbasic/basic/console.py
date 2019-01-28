@@ -103,7 +103,7 @@ class Console(object):
     ##########################################################################
     # interaction
 
-    def wait_screenline(self, write_endl=True, from_start=False):
+    def read_line(self, write_endl=True, from_start=False):
         """Enter interactive mode and read string from console."""
         # from_start means direct entry mode, otherwise input mode
         prompt_width = 0 if from_start else self._text_screen.current_col - 1

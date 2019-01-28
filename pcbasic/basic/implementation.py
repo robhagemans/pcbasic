@@ -323,7 +323,7 @@ class Implementation(object):
                 else:
                     self._show_prompt()
                     # input loop, checks events
-                    line = self.console.wait_screenline(from_start=True)
+                    line = self.console.read_line(from_start=True)
                     self._prompt = not self._store_line(line)
 
     def close(self):
@@ -371,12 +371,12 @@ class Implementation(object):
             self.console.write(numstr)
             if self._auto_linenum in self.program.line_numbers:
                 self.console.write(b'*')
-                line = bytearray(self.console.wait_screenline(from_start=True))
+                line = bytearray(self.console.read_line(from_start=True))
                 if line[:len(numstr)+1] == numstr + b'*':
                     line[len(numstr)] = b' '
             else:
                 self.console.write(b' ')
-                line = bytearray(self.console.wait_screenline(from_start=True))
+                line = bytearray(self.console.read_line(from_start=True))
             # run or store it; don't clear lines or raise undefined line number
             self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
             c = self.interpreter.direct_line.peek()
@@ -739,7 +739,7 @@ class Implementation(object):
                 # disconnect the wrap between line with the prompt and previous line
                 if self.text_screen.current_row > 1:
                     self.text_screen.set_wrap(self.text_screen.current_row-1, False)
-                line = self.console.wait_screenline(write_endl=newline)
+                line = self.console.read_line(write_endl=newline)
                 inputstream = InputTextFile(line)
                 # read the values and group them and the separators
                 var, values, seps = [], [], []
@@ -810,7 +810,7 @@ class Implementation(object):
             self.interpreter.input_mode = True
             self.parser.redo_on_break = True
             self.console.write(prompt)
-            line = self.console.wait_screenline(write_endl=newline)
+            line = self.console.read_line(write_endl=newline)
             self.parser.redo_on_break = False
             self.interpreter.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
@@ -825,7 +825,7 @@ class Implementation(object):
             # prompt for random seed if not specified
             while val is None:
                 self.console.write(b'Random number seed (-32768 to 32767)? ')
-                seed = self.console.wait_screenline()
+                seed = self.console.read_line()
                 try:
                     val = self.values.from_repr(seed, allow_nonnum=False)
                 except error.BASICError as e:
