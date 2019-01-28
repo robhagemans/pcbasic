@@ -815,7 +815,7 @@ class Implementation(object):
             val = values.pass_number(val, err=error.IFC)
         else:
             # prompt for random seed if not specified
-            while val is None:
+            while True:
                 seed = self.console.read_line(b'Random number seed (-32768 to 32767)? ')
                 try:
                     val = self.values.from_repr(seed, allow_nonnum=False)
