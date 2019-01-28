@@ -827,10 +827,16 @@ class Implementation(object):
             val = values.pass_number(val, err=error.IFC)
         else:
             # prompt for random seed if not specified
-            while val is None:
+            while True:
                 self.screen.write(b'Random number seed (-32768 to 32767)? ')
                 seed = self.editor.wait_screenline()
-                val = self.values.from_repr(seed, allow_nonnum=False)
+                try:
+                    val = self.values.from_repr(seed, allow_nonnum=False)
+                except error.BASICError as e:
+                    if e.err != error.IFC:
+                        raise
+                else:
+                    break
             # seed entered on prompt is rounded to int
             val = values.to_integer(val)
         self.randomiser.reseed(val)
