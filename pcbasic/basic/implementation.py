@@ -368,15 +368,12 @@ class Implementation(object):
         """Generate an AUTO line number and wait for input."""
         try:
             numstr = b'%d' % (self._auto_linenum,)
-            self.console.write(numstr)
             if self._auto_linenum in self.program.line_numbers:
-                self.console.write(b'*')
-                line = bytearray(self.console.read_line(from_start=True))
-                if line[:len(numstr)+1] == numstr + b'*':
-                    line[len(numstr)] = b' '
+                prompt = numstr + b'*'
             else:
-                self.console.write(b' ')
-                line = bytearray(self.console.read_line(from_start=True))
+                prompt = numstr + b' '
+            line = self.console.read_line(prompt, from_start=True)
+            line = b'%s %s' % (numstr, line[len(numstr)+1:])
             # run or store it; don't clear lines or raise undefined line number
             self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
             c = self.interpreter.direct_line.peek()
@@ -735,11 +732,7 @@ class Implementation(object):
             # readvar is a list of (name, indices) tuples
             # we return a list of (name, indices, values) tuples
             while True:
-                self.console.write(prompt)
-                # disconnect the wrap between line with the prompt and previous line
-                if self.text_screen.current_row > 1:
-                    self.text_screen.set_wrap(self.text_screen.current_row-1, False)
-                line = self.console.read_line(write_endl=newline)
+                line = self.console.read_line(prompt, write_endl=newline)
                 inputstream = InputTextFile(line)
                 # read the values and group them and the separators
                 var, values, seps = [], [], []
@@ -809,8 +802,7 @@ class Implementation(object):
         else:
             self.interpreter.input_mode = True
             self.parser.redo_on_break = True
-            self.console.write(prompt)
-            line = self.console.read_line(write_endl=newline)
+            line = self.console.read_line(prompt, write_endl=newline)
             self.parser.redo_on_break = False
             self.interpreter.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
@@ -824,8 +816,7 @@ class Implementation(object):
         else:
             # prompt for random seed if not specified
             while val is None:
-                self.console.write(b'Random number seed (-32768 to 32767)? ')
-                seed = self.console.read_line()
+                seed = self.console.read_line(b'Random number seed (-32768 to 32767)? ')
                 try:
                     val = self.values.from_repr(seed, allow_nonnum=False)
                 except error.BASICError as e:

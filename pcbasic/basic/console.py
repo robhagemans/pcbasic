@@ -103,8 +103,12 @@ class Console(object):
     ##########################################################################
     # interaction
 
-    def read_line(self, write_endl=True, from_start=False):
+    def read_line(self, prompt=b'', write_endl=True, from_start=False):
         """Enter interactive mode and read string from console."""
+        self.write(prompt)
+        # disconnect the wrap between line with the prompt and previous line
+        if self._text_screen.current_row > 1:
+            self._text_screen.set_wrap(self._text_screen.current_row-1, False)
         # from_start means direct entry mode, otherwise input mode
         prompt_width = 0 if from_start else self._text_screen.current_col - 1
         try:
