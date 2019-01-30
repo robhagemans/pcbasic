@@ -40,7 +40,7 @@ class _PixelAccess(object):
         self._video_buffer = video_buffer
         self._pixels = video_buffer._pixels
 
-    def __getitem__(self, index, data):
+    def __getitem__(self, index):
         """Retrieve a copy of a pixel range."""
         return self._pixels[index]
 
@@ -54,27 +54,10 @@ class _PixelAccess(object):
         if not isinstance(xslice, slice):
             xslice = slice(xslice, xslice+1)
         # single-attribute fill; ensure we have a complete matrix to submit
-        if not instance(data, ByteMatrix):
+        if not isinstance(data, ByteMatrix):
             data = self._pixels[yslice, xslice]
-        self._submit_rect(xslice.start, yslice.start, data)
+        self._video_buffer._submit_rect(xslice.start, yslice.start, data)
 
-    def _submit_rect(self, x, y, rect):
-        """Clear the text under the rect and submit to interface."""
-        row0, col0, row1, col1 = self.pixel_to_text_area(x, y, x+rect.width, y+rect.height)
-        # clear text area
-        # we can't see or query the attribute in graphics mode - might as well set to zero
-        self._video_buffer._clear_text_area(
-            row0, col0, row1, col1, 0, adjust_end=False, clear_wrap=False
-        )
-        #FIXME: dbcs buffer doesn't know screen reality has changed
-        for row in range(row0, row1+1):
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_TEXT,
-                (self._pagenum, row, col0, [u' ']*(col1-col0+1), 0, None)
-            ))
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_PUT_RECT, (self._pagenum, x, y, rect)
-        ))
 
 #FIXME: unused
 class _CharAccess(object):
@@ -244,10 +227,10 @@ class VideoBuffer(object):
 
     def pixel_to_text_area(self, x0, y0, x1, y1):
         """Convert from pixel area to text area."""
-        col0 = min(self.width, max(1, 1 + x0 // self._font.width))
-        row0 = min(self.height, max(1, 1 + y0 // self._font.height))
-        col1 = min(self.width, max(1, 1 + x1 // self._font.width))
-        row1 = min(self.height, max(1, 1 + y1 // self._font.height))
+        col0 = min(self._width, max(1, 1 + x0 // self._font.width))
+        row0 = min(self._height, max(1, 1 + y0 // self._font.height))
+        col1 = min(self._width, max(1, 1 + x1 // self._font.width))
+        row1 = min(self._height, max(1, 1 + y1 // self._font.height))
         return row0, col0, row1, col1
 
     def text_to_pixel_pos(self, row, col):
@@ -427,6 +410,24 @@ class VideoBuffer(object):
             signals.VIDEO_PUT_TEXT, (self._pagenum, row, col, text, attr, sprite)
         ))
 
+    def _submit_rect(self, x, y, rect):
+        """Clear the text under the rect and submit to interface."""
+        row0, col0, row1, col1 = self.pixel_to_text_area(x, y, x+rect.width, y+rect.height)
+        # clear text area
+        # we can't see or query the attribute in graphics mode - might as well set to zero
+        self._clear_text_area(
+            row0, col0, row1, col1, 0, adjust_end=False, clear_wrap=False
+        )
+        #FIXME: dbcs buffer doesn't know screen reality has changed
+        for row in range(row0, row1+1):
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_PUT_TEXT,
+                (self._pagenum, row, col0, [u' ']*(col1-col0+1), 0, None)
+            ))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_PUT_RECT, (self._pagenum, x, y, rect)
+        ))
+
     ###########################################################################
     # clearing
 
@@ -471,70 +472,64 @@ class VideoBuffer(object):
     ###########################################################################
     # scrolling
 
-    def _text_scroll_up(self, from_line, bottom, attr):
+    def scroll_up(self, from_row, to_row, attr):
+        """Scroll the scroll region up by one line, starting at from_row."""
+        _, back, _, _ = self._colourmap.split_attr(attr)
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SCROLL, (-1, from_row, to_row, back)
+        ))
+        # update text buffer
+        self._text_scroll_up(from_row, to_row, attr)
+        # update dbcs buffer
+        self._dbcs_text[from_row-1:to_row-1] = (
+            self._dbcs_text[from_row:to_row]
+        )
+        self._dbcs_text[to_row-1] = (tuple(iterchar(b' ')) * self._width)
+        # update pixel buffer
+        sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
+            from_row+1, 1, to_row, self._width
+        )
+        tx0, ty0 = self.text_to_pixel_pos(from_row, 1)
+        self._pixels.move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)
+
+    def _text_scroll_up(self, from_row, to_row, attr):
         """Scroll up."""
         new_row = _TextRow(attr, self._width)
-        self._rows.insert(bottom, new_row)
+        self._rows.insert(to_row, new_row)
         # remove any wrap above/into deleted row, unless the deleted row wrapped into the next
-        if self.wraps(from_line-1):
-            self.set_wrap(from_line-1, self.wraps(from_line))
-        # delete row # from_line
-        del self._rows[from_line-1]
+        if self.wraps(from_row-1):
+            self.set_wrap(from_row-1, self.wraps(from_row))
+        # delete row # from_row
+        del self._rows[from_row-1]
 
-    def scroll_up(self, from_line=None):
-        """Scroll the scroll region up by one line, starting at from_line."""
-        if from_line is None:
-            from_line = self.scroll_area.top
-        _, back, _, _ = self._colourmap.split_attr(self._attr)
+    def scroll_down(self, from_row, to_row, attr):
+        """Scroll the scroll region down by one line, starting at from_row."""
+        _, back, _, _ = self._colourmap.split_attr(attr)
         self._queues.video.put(signals.Event(
-            signals.VIDEO_SCROLL, (-1, from_line, self.scroll_area.bottom, back)
+            signals.VIDEO_SCROLL, (1, from_row, to_row, back)
         ))
-        if self.current_row > from_line:
-            self._move_cursor(self.current_row - 1, self.current_col)
         # update text buffer
-        self._text_scroll_up(from_line, self.scroll_area.bottom, self._attr)
+        self._apage._text_scroll_down(from_row, to_row, attr)
         # update dbcs buffer
-        self._dbcs_text[from_line-1:self.scroll_area.bottom-1] = (
-            self._dbcs_text[from_line:self.scroll_area.bottom]
+        self._dbcs_text[from_row:to_row] = (
+            self._dbcs_text[from_row-1:to_row-1]
         )
-        self._dbcs_text[self.scroll_area.bottom-1] = (tuple(iterchar(b' ')) * self._width)
+        self._dbcs_text[from_row-1] = tuple(iterchar(b' ')) * self._width
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
-            from_line+1, 1, self.scroll_area.bottom, self._width
+            from_row, 1, to_row-1, self._width
         )
-        tx0, ty0 = self.text_to_pixel_pos(from_line, 1)
+        tx0, ty0 = self.text_to_pixel_pos(from_row+1, 1)
         self._pixels.move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)
 
-    def _text_scroll_down(self, from_line, bottom, attr):
+    def _text_scroll_down(self, from_row, to_row, attr):
         """Scroll down."""
         new_row = _TextRow(attr, self._width)
-        # insert at row # from_line
-        self._rows.insert(from_line - 1, new_row)
-        # delete row # bottom
-        del self._rows[bottom-1]
+        # insert at row # from_row
+        self._rows.insert(from_row - 1, new_row)
+        # delete row # to_row
+        del self._rows[to_row-1]
         # if we inserted below a wrapping row, make sure the new empty row wraps
         # so as not to break line continuation
-        if self.wraps(from_line-1):
-            self.set_wrap(from_line, True)
-
-    def scroll_down(self, from_line):
-        """Scroll the scroll region down by one line, starting at from_line."""
-        _, back, _, _ = self._colourmap.split_attr(self._attr)
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SCROLL, (1, from_line, self.scroll_area.bottom, back)
-        ))
-        if self.current_row >= from_line:
-            self._move_cursor(self.current_row + 1, self.current_col)
-        # update text buffer
-        self._apage._text_scroll_down(from_line, self.scroll_area.bottom, self._attr)
-        # update dbcs buffer
-        self._dbcs_text[from_line:self.scroll_area.bottom] = (
-            self._dbcs_text[from_line-1:self.scroll_area.bottom-1]
-        )
-        self._dbcs_text[from_line-1] = tuple(iterchar(b' ')) * self._width
-        # update pixel buffer
-        sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
-            from_line, 1, self.scroll_area.bottom-1, self._width
-        )
-        tx0, ty0 = self.text_to_pixel_pos(from_line+1, 1)
-        self._pixels.move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)
+        if self.wraps(from_row-1):
+            self.set_wrap(from_row, True)

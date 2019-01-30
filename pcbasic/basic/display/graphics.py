@@ -183,11 +183,11 @@ class Graphics(object):
             rect = sprite ^ (2**self._mode.bitsperpixel - 1)
         elif operation_token == tk.AND:
             # we use in-place operations as we'll assign back anyway
-            rect = operator.iand(self._apage[y0:y1+1, x0:x1+1], sprite)
+            rect = operator.iand(self._apage.pixels[y0:y1+1, x0:x1+1], sprite)
         elif operation_token == tk.OR:
-            rect = operator.ior(self._apage[y0:y1+1, x0:x1+1], sprite)
+            rect = operator.ior(self._apage.pixels[y0:y1+1, x0:x1+1], sprite)
         elif operation_token == tk.XOR:
-            rect = operator.ixor(self._apage[y0:y1+1, x0:x1+1], sprite)
+            rect = operator.ixor(self._apage.pixels[y0:y1+1, x0:x1+1], sprite)
         self._apage.pixels[y0:y1+1, x0:x1+1] = rect
 
     def fill_rect(self, x0, y0, x1, y1, index):

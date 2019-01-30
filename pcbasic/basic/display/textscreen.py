@@ -348,15 +348,20 @@ class TextScreen(object):
     ###########################################################################
     # scrolling
 
-    def scroll(self, from_line=None):
-        """Scroll the scroll region up by one line, starting at from_line."""
-        if from_line is None:
-            from_line = self.scroll_area.top
-        self._apage.scroll_up(from_line, self.scroll_area.bottom, self._attr)
+    def scroll(self, from_row=None):
+        """Scroll the scroll region up by one row, starting at from_row."""
+        if from_row is None:
+            from_row = self.scroll_area.top
+        self._apage.scroll_up(from_row, self.scroll_area.bottom, self._attr)
+        if self.current_row > from_row:
+            self._move_cursor(self.current_row - 1, self.current_col)
 
-    def scroll_down(self, from_line):
-        """Scroll the scroll region down by one line, starting at from_line."""
-        self._apage.scroll_down(from_line, self.scroll_area.bottom, self._attr)
+
+    def scroll_down(self, from_row):
+        """Scroll the scroll region down by one row, starting at from_row."""
+        self._apage.scroll_down(from_row, self.scroll_area.bottom, self._attr)
+        if self.current_row >= from_row:
+            self._move_cursor(self.current_row + 1, self.current_col)
 
 
     ###########################################################################
@@ -491,7 +496,7 @@ class TextScreen(object):
         """Clear from given position to end of logical line (CTRL+END)."""
         end_row = self._apage.find_end_of_line(srow)
         # clear the first row of the logical line
-        self._apage.clear_row_from(srow, scol)
+        self._apage.clear_row_from(srow, scol, self._attr)
         # remove the additional rows in the logical line by scrolling up
         for row in range(end_row, srow, -1):
             self.scroll(row)
