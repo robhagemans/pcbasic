@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import math
 import operator
 
+from ...compat import int2byte
 from ..base import error
 from ..base import tokens as tk
 from ..base import signals
@@ -766,8 +767,8 @@ class Graphics(object):
             # consider next interval
             x_start, x_stop, y, ydir = line_seed.pop()
             # extend interval as far as it goes to left and right
-            x_left = x_start - self._apage.pixelrow_until(border, y, x_start-1, bound_x0-1).width
-            x_right = x_stop + self._apage.pixelrow_until(border, y, x_stop+1, bound_x1+1).width
+            x_left = x_start - self._scanline_until(border, y, x_start-1, bound_x0-1).width
+            x_right = x_stop + self._scanline_until(border, y, x_stop+1, bound_x1+1).width
             # check next scanlines and add intervals to the list
             if ydir == 0:
                 if y + 1 <= bound_y1:
@@ -809,6 +810,26 @@ class Graphics(object):
                 self._input_methods.wait()
         self._last_attr = c
 
+    def _scanline_until(self, element, y, x0, x1):
+        """Get row until given element."""
+        if x0 == x1:
+            return bytematrix.ByteMatrix()
+        elif x1 > x0:
+            row = self._apage.pixels[y, x0:x1]
+            try:
+                # pyton2 won't do bytearray.index(int)
+                index = row.to_bytes().index(int2byte(element))
+                return row[:, :index]
+            except ValueError:
+                return row
+        else:
+            row = self._apage.pixels[y, x1+1:x0+1]
+            try:
+                index = 1 + row.to_bytes().rindex(int2byte(element))
+                return row[:, index:]
+            except ValueError:
+                return row
+
     def _check_scanline(
             self, line_seed, x_start, x_stop, y,
             c, tile, back, border, ydir
@@ -826,7 +847,7 @@ class Graphics(object):
         x = x_start
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
-            pattern = self._apage.pixelrow_until(border, y, x, x_stop+1)
+            pattern = self._scanline_until(border, y, x, x_stop+1)
             if pattern.width > 0:
                 # check if scanline pattern matches fill pattern
                 tile_x = x % rtile.width

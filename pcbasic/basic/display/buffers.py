@@ -158,11 +158,6 @@ class VideoBuffer(object):
             for _row in range(start_row, stop_row+1)
         )
 
-    #FIXME: sanitise the below
-
-    def pixelrow_until(self, *args, **kwargs):
-        return self._pixels.row_until(*args, **kwargs)
-
 
     ##########################################################################
     # logical lines
