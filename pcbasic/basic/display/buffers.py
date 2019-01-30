@@ -329,16 +329,15 @@ class VideoBuffer(object):
             start = updated.index(True) + 1
             stop = len(updated) - updated[::-1].index(True)
         except ValueError:
-            # no change to text in buffer
-            # however, in graphics mode we need to plot at least the updated range
-            # as the dbcs buffer is not updated when overdrawn
-            # and in text mode the attribute may have changed
+            # no change to text in dbcs buffer
             start, stop = len(updated), 0
         return start, stop
 
     def _refresh_range(self, row, start, stop, text_only=False):
         """Draw a section of a screen row to pixels and interface."""
         dbcs_start, dbcs_stop = self._update_dbcs(row)
+        # we need to plot at least the updated range
+        # as the attribute may have changed
         start, stop = min(start, dbcs_start), max(stop, dbcs_stop)
         col, last_col = start, start
         last_attr = None
@@ -385,14 +384,18 @@ class VideoBuffer(object):
         ))
 
     def _submit_rect(self, x, y, rect):
-        """Clear the text under the rect and submit to interface."""
+        """Clear the text under the rect and submit to interface (assumes graphics mode)."""
         row0, col0, row1, col1 = self.pixel_to_text_area(x, y, x+rect.width, y+rect.height)
         # clear text area
         # we can't see or query the attribute in graphics mode - might as well set to zero
         self._clear_text_area(
             row0, col0, row1, col1, 0, adjust_end=False, clear_wrap=False
         )
-        #FIXME: dbcs buffer doesn't know screen reality has changed
+        # NOTE: no dbcs in graphics mode, so these are all halfwidth
+        # so we don't need to worry about cutting fullwidth chars in half
+        self._dbcs_text[row0-1:row1] = [
+            tuple(iterchar(b' ')) * (col1-col0+1) for _ in range(row1-row0+1)
+        ]
         for row in range(row0, row1+1):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_PUT_TEXT,
@@ -441,7 +444,7 @@ class VideoBuffer(object):
                 row.length = min(row.length, from_col-1)
             if clear_wrap:
                 row.wrap = False
-        #FIXME: update DBCS buffer
+
 
     ###########################################################################
     # scrolling
