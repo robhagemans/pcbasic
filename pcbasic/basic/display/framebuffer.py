@@ -399,8 +399,7 @@ class CGAMemoryMapper(GraphicsMemoryMapper):
             pixarray = bytematrix.ByteMatrix.frompacked(
                 byte_array[ofs:ofs+length], height=1, items_per_byte=self._ppb
             )
-            #FIXME: direct memory access should ignore the clip area
-            display.graphics.put_interval(page, x, y, pixarray)
+            display.pages[page].pixels[y, x:x+pixarray.width] = pixarray
 
     def get_memory(self, display, addr, num_bytes):
         """Retrieve bytes from CGA memory."""
@@ -488,8 +487,9 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
                     byte_array[ofs:ofs+length], height=1, items_per_byte=8
                 ).render(0, mask)
             )
-            #FIXME: direct memory access should ignore the clip area
-            display.graphics.put_interval(page, x, y, pixarray, mask)
+            width = pixarray.width
+            substrate = display.pages[page].pixels[y, x:x+width] & ~mask
+            display.pages[page].pixels[y, x:x+width] = (pixarray & mask) | substrate
 
 
 class Tandy6MemoryMapper(GraphicsMemoryMapper):
@@ -551,5 +551,6 @@ class Tandy6MemoryMapper(GraphicsMemoryMapper):
                         half[ofs:ofs+length], height=1, items_per_byte=2*self._ppb
                     ) << plane
                 )
-                #FIXME: direct memory access should ignore the clip area
-                display.graphics.put_interval(page, x, y, pixarray, mask)
+                width = pixarray.width
+                substrate = display.pages[page].pixels[y, x:x+width] & ~mask
+                display.pages[page].pixels[y, x:x+width] = (pixarray & mask) | substrate

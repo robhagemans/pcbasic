@@ -163,12 +163,10 @@ class Graphics(object):
         if self.graph_view.contains(x, y):
             self._apage.pixels[y, x] = index
 
-    def put_interval(self, pagenum, x, y, colours, mask=0xff):
+    def _put_interval(self, x, y, colours):
         """Write a list of attributes to a scanline interval."""
         x, y, _, _, colours = self.graph_view.clip_area(x, y, x + colours.width, y, colours)
-        width = colours.width
-        rect = (colours & mask) | (self._pages[pagenum].pixels[y, x:x+width] & ~mask)
-        self._pages[pagenum].pixels[y, x:x+width] = rect
+        self._apage.pixels[y, x:x+colours.width] = colours
 
     def _fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
@@ -804,7 +802,7 @@ class Graphics(object):
                 tiles = bytematrix.hstack((tilerow,) * n_tiles)
                 interval = tiles[:, x_left % tile.width : x_right - x_left + 1]
                 # put to screen
-                self.put_interval(self._apagenum, x_left, y, interval)
+                self._put_interval(x_left, y, interval)
             # allow interrupting the paint
             if y % 4 == 0:
                 self._input_methods.wait()

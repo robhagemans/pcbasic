@@ -158,7 +158,6 @@ class VideoBuffer(object):
             for _row in range(start_row, stop_row+1)
         )
 
-
     ##########################################################################
     # logical lines
 
@@ -191,7 +190,6 @@ class VideoBuffer(object):
     def row_length(self, row):
         """Return logical length of row."""
         return self._rows[row-1].length
-
 
     ##########################################################################
     # convert between text and pixel positions
@@ -241,7 +239,6 @@ class VideoBuffer(object):
         self._queues.video.put(signals.Event(
             signals.VIDEO_COPY_PAGE, (src._pagenum, self._pagenum)
         ))
-
 
     ##########################################################################
     # modify text
@@ -307,7 +304,6 @@ class VideoBuffer(object):
             therow.length = max(therow.length - 1, 0)
         self._refresh_range(row, col, stop_col)
         return col, stop_col
-
 
     ###########################################################################
     # update pixel buffer and interface
@@ -385,6 +381,8 @@ class VideoBuffer(object):
 
     def _submit_rect(self, x, y, rect):
         """Clear the text under the rect and submit to interface (assumes graphics mode)."""
+        # we're assuming no dbcs below - should be disabled in graphics mode
+        assert not self._dbcs_enabled
         row0, col0, row1, col1 = self.pixel_to_text_area(x, y, x+rect.width, y+rect.height)
         # clear text area
         # we can't see or query the attribute in graphics mode - might as well set to zero
@@ -444,7 +442,6 @@ class VideoBuffer(object):
                 row.length = min(row.length, from_col-1)
             if clear_wrap:
                 row.wrap = False
-
 
     ###########################################################################
     # scrolling
