@@ -59,24 +59,6 @@ class _PixelAccess(object):
         self._video_buffer._submit_rect(xslice.start, yslice.start, data)
 
 
-#FIXME: unused
-class _CharAccess(object):
-    """
-    Wrapper class to enable character indexing.
-    Usage example: VideoBuffer.chars.set_attr(7)[0, :] = b' '
-    """
-
-    def __init__(self, video_buffer):
-        """Wrap the VideoBuffer."""
-        self._video_buffer = video_buffer
-        self._attr = 0
-
-    def set_attr(attr):
-        """Set attribute for next access."""
-        self._attr = attr
-        return self
-
-
 class VideoBuffer(object):
     """Buffer for a screen page."""
 
@@ -98,7 +80,6 @@ class VideoBuffer(object):
         self._pixels = ByteMatrix(pixel_height, pixel_width)
         # with set_attr that calls submit_rect
         self._pixel_access = _PixelAccess(self)
-        self._char_access = _CharAccess(self)
         # needed for signals only
         self._pagenum = pagenum
         self._queues = queues
@@ -107,11 +88,6 @@ class VideoBuffer(object):
     def pixels(self):
         """Pixel-buffer access."""
         return self._pixel_access
-
-    @property
-    def chars(self):
-        """Pixel-buffer access."""
-        return self._char_access
 
     def __repr__(self):
         """Return an ascii representation of the screen buffer (for debugging)."""
@@ -164,25 +140,29 @@ class VideoBuffer(object):
         """Get DBCS width of cell on active page."""
         return len(self._dbcs_text[row-1][col-1])
 
+    def get_chars(self):
+        """Retrieve all characters on this page, as tuple of bytes."""
+        return tuple(b''.join(_row.chars) for _row in self._rows)
+
+    def get_text_bytes(self, start_row, stop_row):
+        """Retrieve all logical text on this page, as tuple of bytes."""
+        return tuple(
+            b''.join(self._rows[_row-1].chars[:self._rows[_row-1].length])
+            for _row in range(start_row, stop_row+1)
+        )
+
+    def get_text_unicode(self, start_row, stop_row):
+        """Retrieve all logical text on this page, as tuple of list of unicode."""
+        return tuple(
+            self._dbcs_to_unicode(self._dbcs_text[_row-1][:self._rows[_row-1].length])
+            for _row in range(start_row, stop_row+1)
+        )
+
     #FIXME: sanitise the below
 
     def pixelrow_until(self, *args, **kwargs):
         return self._pixels.row_until(*args, **kwargs)
 
-    def get_row(self, row):
-        """Retrieve characters on a row, as bytes."""
-        return b''.join(self._rows[row-1].chars)
-
-    def get_chars(self):
-        """Retrieve all characters on this page, as tuple of bytes."""
-        return tuple(self.get_row(_row) for _row in range(self._height))
-
-    def get_text(self, start_row, stop_row):
-        """Retrieve all logical text on this page, as tuple of list of unicode."""
-        return tuple(
-            self._dbcs_to_unicode(self._dbcs_text[row-1][:self._length[row-1]])
-            for _row in range(start_row, stop_row+1)
-        )
 
     ##########################################################################
     # logical lines
@@ -263,7 +243,6 @@ class VideoBuffer(object):
         self._dbcs_text[:] = src._dbcs_text
         self._pixels[:, :] = src._pixels
         self._pixel_access = _PixelAccess(self)
-        self._char_access = _CharAccess(self)
         self._queues.video.put(signals.Event(
             signals.VIDEO_COPY_PAGE, (src._pagenum, self._pagenum)
         ))
@@ -340,7 +319,7 @@ class VideoBuffer(object):
 
     def _update_dbcs(self, row):
         """Update the DBCS buffer."""
-        raw = self.get_row(row)
+        raw = b''.join(self._rows[row-1].chars)
         if self._dbcs_enabled:
             # get a new converter each time so we don't share state between calls
             conv = self._codepage.get_converter(preserve=b'')
@@ -479,11 +458,15 @@ class VideoBuffer(object):
             signals.VIDEO_SCROLL, (-1, from_row, to_row, back)
         ))
         # update text buffer
-        self._text_scroll_up(from_row, to_row, attr)
+        new_row = _TextRow(attr, self._width)
+        self._rows.insert(to_row, new_row)
+        # remove any wrap above/into deleted row, unless the deleted row wrapped into the next
+        if self._rows[from_row-2].wrap:
+            self._rows[from_row-2].wrap = self._rows[from_row-1].wrap
+        # delete row # from_row
+        del self._rows[from_row-1]
         # update dbcs buffer
-        self._dbcs_text[from_row-1:to_row-1] = (
-            self._dbcs_text[from_row:to_row]
-        )
+        self._dbcs_text[from_row-1:to_row-1] = self._dbcs_text[from_row:to_row]
         self._dbcs_text[to_row-1] = (tuple(iterchar(b' ')) * self._width)
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
@@ -492,16 +475,6 @@ class VideoBuffer(object):
         tx0, ty0 = self.text_to_pixel_pos(from_row, 1)
         self._pixels.move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)
 
-    def _text_scroll_up(self, from_row, to_row, attr):
-        """Scroll up."""
-        new_row = _TextRow(attr, self._width)
-        self._rows.insert(to_row, new_row)
-        # remove any wrap above/into deleted row, unless the deleted row wrapped into the next
-        if self.wraps(from_row-1):
-            self.set_wrap(from_row-1, self.wraps(from_row))
-        # delete row # from_row
-        del self._rows[from_row-1]
-
     def scroll_down(self, from_row, to_row, attr):
         """Scroll the scroll region down by one line, starting at from_row."""
         _, back, _, _ = self._colourmap.split_attr(attr)
@@ -509,21 +482,6 @@ class VideoBuffer(object):
             signals.VIDEO_SCROLL, (1, from_row, to_row, back)
         ))
         # update text buffer
-        self._apage._text_scroll_down(from_row, to_row, attr)
-        # update dbcs buffer
-        self._dbcs_text[from_row:to_row] = (
-            self._dbcs_text[from_row-1:to_row-1]
-        )
-        self._dbcs_text[from_row-1] = tuple(iterchar(b' ')) * self._width
-        # update pixel buffer
-        sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
-            from_row, 1, to_row-1, self._width
-        )
-        tx0, ty0 = self.text_to_pixel_pos(from_row+1, 1)
-        self._pixels.move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)
-
-    def _text_scroll_down(self, from_row, to_row, attr):
-        """Scroll down."""
         new_row = _TextRow(attr, self._width)
         # insert at row # from_row
         self._rows.insert(from_row - 1, new_row)
@@ -531,5 +489,14 @@ class VideoBuffer(object):
         del self._rows[to_row-1]
         # if we inserted below a wrapping row, make sure the new empty row wraps
         # so as not to break line continuation
-        if self.wraps(from_row-1):
-            self.set_wrap(from_row, True)
+        if self._rows[from_row-2].wrap:
+            self._rows[from_row-1].wrap = True
+        # update dbcs buffer
+        self._dbcs_text[from_row:to_row] = self._dbcs_text[from_row-1:to_row-1]
+        self._dbcs_text[from_row-1] = tuple(iterchar(b' ')) * self._width
+        # update pixel buffer
+        sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
+            from_row, 1, to_row-1, self._width
+        )
+        tx0, ty0 = self.text_to_pixel_pos(from_row+1, 1)
+        self._pixels.move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)

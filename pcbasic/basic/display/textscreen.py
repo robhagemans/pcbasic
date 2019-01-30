@@ -376,10 +376,7 @@ class TextScreen(object):
         # find start and end of logical line
         start_row = self._apage.find_start_of_line(from_row)
         stop_row = self._apage.find_end_of_line(from_row)
-        return b''.join(
-            self._apage.get_row(_row)[:self._apage.row_length(_row)]
-            for _row in range(start_row, stop_row+1)
-        )
+        return b''.join(self._apage.get_text_bytes(start_row, stop_row+1))
 
     # delete
 
@@ -675,10 +672,9 @@ class TextScreen(object):
         """Copy selected screen area to clipboard."""
         vpage = self._pages[self._vpagenum]
         # get all marked unicode text and clip to selection size
-        text = vpage.get_text(start_row, stop_row)
+        text = vpage.get_text_unicode(start_row, stop_row)
         text[0] = text[0][start_col-1:]
         text[-1] = text[-1][:stop_col]
-        # FIXME - no codepage member, ask apage for unicode text
         clip_text = u'\n'.join(u''.join(_row) for _row in text)
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_CLIPBOARD_TEXT, (clip_text,)
