@@ -92,18 +92,16 @@ class GraphicsViewPort(object):
 class Graphics(object):
     """Graphics operations."""
 
-    def __init__(self, queues, input_methods, values, memory, aspect):
+    def __init__(self, input_methods, values, memory, aspect):
         """Initialise graphics object."""
         # for apagenum and attr
-        self._queues = queues
         self._values = values
         self._memory = memory
         # for wait() in paint_
         self._input_methods = input_methods
         # memebers set on mode switch
         self._mode = None
-        self._text_pages = None
-        self._pixel_pages = None
+        self._pages = None
         self._apage = None
         self.graph_view = None
         self._apagenum = None
@@ -114,11 +112,10 @@ class Graphics(object):
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         self._screen_aspect = aspect
 
-    def init_mode(self, mode, text_pages, pixel_pages, num_attr):
+    def init_mode(self, mode, pages, num_attr):
         """Initialise for new graphics mode."""
         self._mode = mode
-        self._text_pages = text_pages
-        self._pixel_pages = pixel_pages
+        self._pages = pages
         self._num_attr = num_attr
         # set graphics viewport
         self.graph_view = GraphicsViewPort(self._mode.pixel_width, self._mode.pixel_height)
@@ -141,7 +138,7 @@ class Graphics(object):
     def set_page(self, apagenum):
         """Set the active page."""
         self._apagenum = apagenum
-        self._apage = self._pixel_pages[apagenum]
+        self._apage = self._pages[apagenum]
 
     ### attributes
 
@@ -154,26 +151,6 @@ class Graphics(object):
             c = min(self._num_attr-1, max(0, c))
         return c
 
-    ### text/graphics interaction
-
-    def _submit_rect(self, x, y, rect):
-        """Clear the text under the rect and submit to interface."""
-        row0, col0, row1, col1 = self._mode.pixel_to_text_area(
-            x, y, x+rect.width, y+rect.height
-        )
-        self._text_pages[self._apagenum].clear_area(
-            row0, col0, row1, col1, self._attr, adjust_end=False, clear_wrap=False
-        )
-        #FIXME: dbcs buffer doesn't know screen reality has changed
-        for row in range(row0, row1+1):
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_TEXT,
-                (self._apagenum, row, col0, [u' ']*(col1-col0+1), self._attr, None)
-            ))
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_PUT_RECT, (self._apagenum, x, y, rect)
-        ))
-
     ### graphics primitives
 
     def _cutoff_coord(self, x, y):
@@ -183,24 +160,19 @@ class Graphics(object):
     def _put_pixel(self, x, y, index):
         """Put a pixel on the screen; empty character buffer."""
         if self.graph_view.contains(x, y):
-            self._apage[y, x] = index
-            rect = self._apage[y, x:x+1]
-            self._submit_rect(x, y, rect)
+            self._apage.pixels[y, x] = index
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
         x, y, _, _, colours = self.graph_view.clip_area(x, y, x + colours.width, y, colours)
         width = colours.width
-        rect = (colours & mask) | (self._pixel_pages[pagenum][y, x:x+width] & ~mask)
-        self._pixel_pages[pagenum][y, x:x+width] = rect
-        self._submit_rect(x, y, rect)
+        rect = (colours & mask) | (self._pages[pagenum].pixels[y, x:x+width] & ~mask)
+        self._pages[pagenum].pixels[y, x:x+width] = rect
 
     def _fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
         x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
-        self._apage[y, x0:x1+1] = index
-        rect = self._apage[y, x0:x1+1]
-        self._submit_rect(x0, y, rect)
+        self._apage.pixels[y, x0:x1+1] = index
 
     def _put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """Apply an [y][x] array of attributes onto a screen rect."""
@@ -216,15 +188,12 @@ class Graphics(object):
             rect = operator.ior(self._apage[y0:y1+1, x0:x1+1], sprite)
         elif operation_token == tk.XOR:
             rect = operator.ixor(self._apage[y0:y1+1, x0:x1+1], sprite)
-        self._apage[y0:y1+1, x0:x1+1] = rect
-        self._submit_rect(x0, y0, rect)
+        self._apage.pixels[y0:y1+1, x0:x1+1] = rect
 
     def fill_rect(self, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
-        self._apage[y0:y1+1, x0:x1+1] = index
-        rect = self._apage[y0:y1+1, x0:x1+1]
-        self._submit_rect(x0, y0, rect)
+        self._apage.pixels[y0:y1+1, x0:x1+1] = index
 
     ## VIEW graphics viewport
 
@@ -791,14 +760,14 @@ class Graphics(object):
             return
         self._last_point = x, y
         # paint nothing if we start on border attrib
-        if self._apage[y, x] == border:
+        if self._apage.pixels[y, x] == border:
             return
         while len(line_seed) > 0:
             # consider next interval
             x_start, x_stop, y, ydir = line_seed.pop()
             # extend interval as far as it goes to left and right
-            x_left = x_start - self._apage.row_until(border, y, x_start-1, bound_x0-1).width
-            x_right = x_stop + self._apage.row_until(border, y, x_stop+1, bound_x1+1).width
+            x_left = x_start - self._apage.pixelrow_until(border, y, x_start-1, bound_x0-1).width
+            x_right = x_stop + self._apage.pixelrow_until(border, y, x_stop+1, bound_x1+1).width
             # check next scanlines and add intervals to the list
             if ydir == 0:
                 if y + 1 <= bound_y1:
@@ -857,7 +826,7 @@ class Graphics(object):
         x = x_start
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
-            pattern = self._apage.row_until(border, y, x, x_stop+1)
+            pattern = self._apage.pixelrow_until(border, y, x, x_stop+1)
             if pattern.width > 0:
                 # check if scanline pattern matches fill pattern
                 tile_x = x % rtile.width
@@ -930,7 +899,7 @@ class Graphics(object):
         error.throw_if(not self.graph_view.contains(x1, y1))
         # set size record
         # read from screen and convert to byte array
-        sprite = self._apage[y0:y1+1, x0:x1+1]
+        sprite = self._apage.pixels[y0:y1+1, x0:x1+1]
         packed_sprite = self._mode.sprite_builder.pack(sprite)
         try:
             byte_array[:len(packed_sprite)] = packed_sprite
@@ -1125,7 +1094,7 @@ class Graphics(object):
             if x < 0 or x >= self._mode.pixel_width or y < 0 or y >= self._mode.pixel_height:
                 point = -1
             else:
-                point = self._apage[y, x]
+                point = self._apage.pixels[y, x]
             return self._values.new_integer().from_int(point)
 
     def pmap_(self, args):

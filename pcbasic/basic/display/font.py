@@ -116,6 +116,14 @@ class Font(object):
         self._fontdict = fontdict
         self._glyphs = {}
 
+    @property
+    def width(self):
+        return self._width
+
+    @property
+    def height(self):
+        return self._height
+
     def copy(self):
         """Make a deep copy."""
         copy = self.__class__(self._height, self._fontdict.copy())
