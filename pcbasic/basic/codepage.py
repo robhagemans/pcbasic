@@ -126,8 +126,10 @@ class Codepage(object):
         """Convert codepage point to unicode grapheme cluster """
         return self.cp_to_unicode.get(cp, replace)
 
-    def str_to_unicode(self, cps, preserve=(), box_protect=True):
+    def str_to_unicode(self, cps, preserve=(), box_protect=None):
         """Convert codepage string to unicode string."""
+        if box_protect is None:
+            box_protext = self.box_protect
         return Converter(self, preserve, box_protect).to_unicode(cps, flush=True)
 
     def get_converter(self, preserve=()):

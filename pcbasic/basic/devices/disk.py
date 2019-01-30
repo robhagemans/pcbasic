@@ -723,7 +723,7 @@ class BoundFile(object):
 
     def __unicode__(self):
         """Get BASIC file name."""
-        return self._codepage.str_to_unicode(bytes(self))
+        return self._codepage.str_to_unicode(bytes(self), box_protect=False)
 
 
 @add_str
@@ -750,7 +750,7 @@ class NameWrapper(object):
 
     def __unicode__(self):
         """Get BASIC file name."""
-        return self._codepage.str_to_unicode(bytes(self))
+        return self._codepage.str_to_unicode(bytes(self), box_protect=False)
 
 
 class InternalDiskDevice(DiskDevice):
