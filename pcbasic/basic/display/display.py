@@ -493,13 +493,13 @@ class Display(object):
         list(args)
         # CLS is only executed if no errors have occurred
         if not self.mode.is_text_mode and (
-                val == 1 or (val is None and self.graphics.graph_view.is_set())
+                val == 1 or (val is None and self.graphics.graph_view.active)
             ):
             # CLS 1: in graphics mode, clear the graphics viewport
             _, back, _, _ = self.colourmap.split_attr(self.attr)
-            self.graphics.fill_rect(*self.graphics.graph_view.get(), index=back)
+            self.graphics.graph_view[:, :] = back
             self.graphics.reset()
-            if not self.graphics.graph_view.is_set():
+            if not self.graphics.graph_view.active:
                 self.text_screen.redraw_bar()
                 self.text_screen.set_pos(1, 1)
         elif val == 0 or (val is None and not self.text_screen.scroll_area.active):

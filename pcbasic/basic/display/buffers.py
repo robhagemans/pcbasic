@@ -40,6 +40,16 @@ class _PixelAccess(object):
         self._video_buffer = video_buffer
         self._pixels = video_buffer._pixels
 
+    @property
+    def width(self):
+        """Width in pixels."""
+        return self._pixels.width
+
+    @property
+    def height(self):
+        """Height in pixels."""
+        return self._pixels.height
+
     def __getitem__(self, index):
         """Retrieve a copy of a pixel range."""
         return self._pixels[index]
@@ -57,6 +67,7 @@ class _PixelAccess(object):
         if not isinstance(data, ByteMatrix):
             data = self._pixels[yslice, xslice]
         self._video_buffer._submit_rect(xslice.start, yslice.start, data)
+
 
 
 class VideoBuffer(object):
