@@ -188,7 +188,7 @@ class Console(object):
                     self._text_screen.backspace(start_row, furthest_left)
                 elif d == b'\t':
                     # TAB, CTRL+I
-                    self._text_screen.tab()
+                    self._text_screen.tab(self._overwrite_mode)
                 elif d == b'\n':
                     # CTRL+ENTER, CTRL+J
                     self._text_screen.line_feed()

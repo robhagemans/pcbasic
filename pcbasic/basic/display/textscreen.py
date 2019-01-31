@@ -376,7 +376,7 @@ class TextScreen(object):
         # find start and end of logical line
         start_row = self._apage.find_start_of_line(from_row)
         stop_row = self._apage.find_end_of_line(from_row)
-        return b''.join(self._apage.get_text_bytes(start_row, stop_row+1))
+        return b''.join(self._apage.get_text_bytes(start_row, stop_row))
 
     # delete
 
