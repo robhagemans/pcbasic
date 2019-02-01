@@ -235,8 +235,7 @@ class Console(object):
                                 self._text_screen.insert_fullchars(d)
                             else:
                                 # put all dbcs in before messing with cursor position
-                                for char in iterchar(d):
-                                    self._text_screen.write_char(char, do_scroll_down=True)
+                                self._text_screen.write_chars(d, do_scroll_down=True)
         finally:
             self._set_overwrite_mode(True)
             # reset cursor visibility
@@ -260,49 +259,54 @@ class Console(object):
         last = b''
         # if our line wrapped at the end before, it doesn't anymore
         self._text_screen.set_wrap(self.current_row, False)
+        out_chars = []
         for c in iterchar(s):
             row, col = self.current_row, self.current_col
-            if c == b'\t':
-                # TAB
-                num = (8 - (col - 1 - 8 * int((col-1) // 8)))
-                for _ in range(num):
-                    self._text_screen.write_char(b' ')
-            elif c == b'\n':
-                # LF
-                # exclude CR/LF
-                if last != b'\r':
-                    # LF connects lines like word wrap
-                    self._text_screen.set_wrap(row, True)
+            if c in b'\n\r\a\x0B\x0C\x1C\x1D\x1E\x1F':
+                # non-printing or position-dependent chars, dump buffer first
+                self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=True)
+                out_chars = []
+                if c == b'\t':
+                    # TAB
+                    num = (8 - (col - 1 - 8 * int((col-1) // 8)))
+                    self._text_screen.write_chars(b' ' * num)
+                elif c == b'\n':
+                    # LF
+                    # exclude CR/LF
+                    if last != b'\r':
+                        # LF connects lines like word wrap
+                        self._text_screen.set_wrap(row, True)
+                        self._text_screen.set_pos(row + 1, 1, scroll_ok)
+                elif c == b'\r':
+                    # CR
+                    self._text_screen.set_wrap(row, False)
                     self._text_screen.set_pos(row + 1, 1, scroll_ok)
-            elif c == b'\r':
-                # CR
-                self._text_screen.set_wrap(row, False)
-                self._text_screen.set_pos(row + 1, 1, scroll_ok)
-            elif c == b'\a':
-                # BEL
-                self._sound.beep()
-            elif c == b'\x0B':
-                # HOME
-                self._text_screen.set_pos(1, 1, scroll_ok)
-            elif c == b'\x0C':
-                # CLS
-                self._text_screen.clear_view()
-            elif c == b'\x1C':
-                # RIGHT
-                self._text_screen.set_pos(row, col + 1, scroll_ok)
-            elif c == b'\x1D':
-                # LEFT
-                self._text_screen.set_pos(row, col - 1, scroll_ok)
-            elif c == b'\x1E':
-                # UP
-                self._text_screen.set_pos(row - 1, col, scroll_ok)
-            elif c == b'\x1F':
-                # DOWN
-                self._text_screen.set_pos(row + 1, col, scroll_ok)
+                elif c == b'\a':
+                    # BEL
+                    self._sound.beep()
+                elif c == b'\x0B':
+                    # HOME
+                    self._text_screen.set_pos(1, 1, scroll_ok)
+                elif c == b'\x0C':
+                    # CLS
+                    self._text_screen.clear_view()
+                elif c == b'\x1C':
+                    # RIGHT
+                    self._text_screen.set_pos(row, col + 1, scroll_ok)
+                elif c == b'\x1D':
+                    # LEFT
+                    self._text_screen.set_pos(row, col - 1, scroll_ok)
+                elif c == b'\x1E':
+                    # UP
+                    self._text_screen.set_pos(row - 1, col, scroll_ok)
+                elif c == b'\x1F':
+                    # DOWN
+                    self._text_screen.set_pos(row + 1, col, scroll_ok)
             else:
                 # includes \b, \0, and non-control chars
-                self._text_screen.write_char(c)
+                out_chars.append(c)
             last = c
+        self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=True)
 
     def write_line(self, s=b'', scroll_ok=True, do_echo=True):
         """Write a string to the screen and end with a newline."""

@@ -164,6 +164,12 @@ class TextScreen(object):
     ###########################################################################
     # basic text buffer operations
 
+    def write_chars(self, chars, do_scroll_down):
+        """Put one character at the current position."""
+        with self._apage.collect_updates():
+            for char in iterchar(chars):
+                self.write_char(char, do_scroll_down)
+
     def write_char(self, char, do_scroll_down=False):
         """Put one character at the current position."""
         # check if scroll & repositioning needed
@@ -384,10 +390,11 @@ class TextScreen(object):
         """Delete the character (half/fullwidth) at the current position."""
         width = self._apage.get_charwidth(self.current_row, self.current_col)
         # on a halfwidth char, delete once; lead byte, delete twice; trail byte, do nothing
-        if width > 0:
-            self._delete_at(self.current_row, self.current_col)
-        if width == 2:
-            self._delete_at(self.current_row, self.current_col)
+        with self._apage.collect_updates():
+            if width > 0:
+                self._delete_at(self.current_row, self.current_col)
+            if width == 2:
+                self._delete_at(self.current_row, self.current_col)
 
     def _delete_at(self, row, col, remove_depleted=False):
         """Delete the halfwidth character at the given position."""
@@ -449,11 +456,12 @@ class TextScreen(object):
         """Insert one or more half- or fullwidth characters and adjust cursor."""
         # insert one at a time at cursor location
         # to let cursor position logic deal with scrolling
-        for c in iterchar(sequence):
-            if self._insert_at(self.current_row, self.current_col, c, self._attr):
-                # move cursor by one character
-                # this will move to next row when necessary
-                self.incr_pos()
+        with self._apage.collect_updates():
+            for c in iterchar(sequence):
+                if self._insert_at(self.current_row, self.current_col, c, self._attr):
+                    # move cursor by one character
+                    # this will move to next row when necessary
+                    self.incr_pos()
 
     def _insert_at(self, row, col, c, attr):
         """Insert one halfwidth character at the given position."""
@@ -488,16 +496,6 @@ class TextScreen(object):
             popped_char = self._apage.insert_char_attr(row, col, c, attr)
             # insert the character in the next row
             return self._insert_at(row+1, 1, popped_char, attr)
-
-    def clear_from(self, srow, scol):
-        """Clear from given position to end of logical line (CTRL+END)."""
-        end_row = self._apage.find_end_of_line(srow)
-        # clear the first row of the logical line
-        self._apage.clear_row_from(srow, scol, self._attr)
-        # remove the additional rows in the logical line by scrolling up
-        for row in range(end_row, srow, -1):
-            self.scroll(row)
-        self.set_pos(srow, scol)
 
     # line feed
 
@@ -538,6 +536,16 @@ class TextScreen(object):
         self.clear_from(
             self._apage.find_start_of_line(the_row), from_col
         )
+
+    def clear_from(self, srow, scol):
+        """Clear from given position to end of logical line (CTRL+END)."""
+        end_row = self._apage.find_end_of_line(srow)
+        # clear the first row of the logical line
+        self._apage.clear_row_from(srow, scol, self._attr)
+        # remove the additional rows in the logical line by scrolling up
+        for row in range(end_row, srow, -1):
+            self.scroll(row)
+        self.set_pos(srow, scol)
 
     def backspace(self, prompt_row, furthest_left):
         """Delete the char to the left (BACKSPACE)."""
@@ -650,12 +658,13 @@ class TextScreen(object):
         else:
             reverse_attr = 0x07
         if self._bottom_bar.visible:
-            # always show only complete 8-character cells
-            # this matters on pcjr/tandy width=20 mode
-            for col in range((self.mode.width//8) * 8):
-                char, reverse = self._bottom_bar.get_char_reverse(col)
-                attr = reverse_attr if reverse else self._attr
-                self._apage.put_char_attr(key_row, col+1, char, attr)
+            with self._apage.collect_updates():
+                # always show only complete 8-character cells
+                # this matters on pcjr/tandy width=20 mode
+                for col in range((self.mode.width//8) * 8):
+                    char, reverse = self._bottom_bar.get_char_reverse(col)
+                    attr = reverse_attr if reverse else self._attr
+                    self._apage.put_char_attr(key_row, col+1, char, attr)
             self.set_row_length(self.mode.height, self.mode.width)
 
     ###########################################################################
