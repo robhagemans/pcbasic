@@ -12,7 +12,6 @@ import operator
 from ...compat import int2byte
 from ..base import error
 from ..base import tokens as tk
-from ..base import signals
 from ..base import bytematrix
 from .. import values
 from .. import mlparser
