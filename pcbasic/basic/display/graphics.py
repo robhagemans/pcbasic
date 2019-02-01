@@ -255,20 +255,24 @@ class Drawing(object):
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
         absolute = next(args)
-        try:
-            x0, y0, x1, y1 = (round(values.to_single(next(args)).to_value()) for _ in range(4))
-            error.range_check(0, self._mode.pixel_width-1, x0, x1)
-            error.range_check(0, self._mode.pixel_height-1, y0, y1)
-            fill = next(args)
-            if fill is not None:
-                fill = values.to_int(fill)
-            border = next(args)
-            if border is not None:
-                border = values.to_int(border)
-            list(args)
-            self.set_view(x0, y0, x1, y1, absolute, fill, border)
-        except StopIteration:
-            self.unset_view()
+        # note that list() will absorb stopiteration but [] will not (in python 2)
+        bounds = list(
+            int(round(values.to_single(next(args)).to_value()))
+            for _ in range(4)
+        )
+        if not bounds:
+            return self.unset_view()
+        x0, y0, x1, y1 = bounds
+        error.range_check(0, self._mode.pixel_width-1, x0, x1)
+        error.range_check(0, self._mode.pixel_height-1, y0, y1)
+        fill = next(args)
+        if fill is not None:
+            fill = values.to_int(fill)
+        border = next(args)
+        if border is not None:
+            border = values.to_int(border)
+        list(args)
+        self.set_view(x0, y0, x1, y1, absolute, fill, border)
 
     def set_view(self, x0, y0, x1, y1, absolute, fill, border):
         """Set the graphics viewport and optionally draw a box (VIEW)."""

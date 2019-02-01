@@ -1065,8 +1065,12 @@ class Parser(object):
                 yield c
             if ins.skip_blank_read_if((b',',)):
                 yield self.parse_expression(ins)
-                ins.require_read((b',',))
+            else:
+                yield None
+            if ins.skip_blank_read_if((b',',)):
                 yield self.parse_expression(ins)
+            else:
+                yield None
 
     def _parse_line(self, ins):
         """Parse LINE syntax."""
