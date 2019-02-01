@@ -315,7 +315,7 @@ class VideoBuffer(object):
     ###########################################################################
     # update DBCS/unicode buffer
 
-    def _update_dbcs(self, row):
+    def _update_dbcs(self, row, orig_start, orig_stop):
         """Update the DBCS buffer."""
         raw = b''.join(self._rows[row-1].chars)
         if self._dbcs_enabled:
@@ -334,6 +334,7 @@ class VideoBuffer(object):
         except ValueError:
             # no change to text in dbcs buffer
             start, stop = len(updated), 0
+        start, stop = min(start, orig_start), max(stop, orig_stop)
         return start, stop
 
     def _dbcs_to_unicode(self, chars):
@@ -364,6 +365,8 @@ class VideoBuffer(object):
             # update all dirty rectangles
             for row in self._dirty_left:
                 self._refresh_range(row, self._dirty_left[row], self._dirty_right[row])
+            self._dirty_left = {}
+            self._dirty_right = {}
 
     def _update(self, row, start, stop):
         """Mark section of screen row as dirty for update."""
@@ -371,20 +374,17 @@ class VideoBuffer(object):
             # merge with existing dirty rects for row
             if row in self._dirty_left:
                 self._dirty_left[row] = min(start, self._dirty_left[row])
-                self._dirty_right[row] = max(start, self._dirty_right[row])
+                self._dirty_right[row] = max(stop, self._dirty_right[row])
             else:
                 self._dirty_left[row] = start
-                self._dirty_right[row] = start
-            self._direty_left = {}
-            self._dirty_right = {}
+                self._dirty_right[row] = stop
             return
         else:
             self._refresh_range(row, start, stop)
 
     def _refresh_range(self, row, start, stop, update_pixels=True):
         """Update DBCS buffer, draw text and submit."""
-        dbcs_start, dbcs_stop = self._update_dbcs(row)
-        start, stop = min(start, dbcs_start), max(stop, dbcs_stop)
+        start, stop = self._update_dbcs(row, start, stop)
         self._draw_submit_text(row, start, stop, update_pixels)
 
     def _draw_submit_text(self, row, start, stop, update_pixels):
