@@ -7,10 +7,10 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
+from contextlib import contextmanager
 
 from ...compat import zip, int2byte, iterchar
 from ..base import signals
-
 from ..base.bytematrix import ByteMatrix
 
 
@@ -94,6 +94,10 @@ class VideoBuffer(object):
         # needed for signals only
         self._pagenum = pagenum
         self._queues = queues
+        # dirty rectangle collection
+        self._dirty_left = {}
+        self._dirty_right = {}
+        self._locked = False
 
     @property
     def pixels(self):
@@ -123,14 +127,6 @@ class VideoBuffer(object):
             lastwrap = row.wrap
         row_strs.append(horiz_bar)
         return '\n'.join(row_strs)
-
-    def rebuild(self):
-        """Completely resubmit the text and graphics screen to the interface."""
-        # resubmit the text buffer without changing the pixel buffer
-        # redraw graphics
-        for row in range(self._height):
-            self._refresh_range(row+1, 1, self._width, text_only=True)
-
 
     ##########################################################################
     # query buffers
@@ -262,7 +258,7 @@ class VideoBuffer(object):
         self._rows[row-1].attrs[col-1] = attr
         if adjust_end:
             self._rows[row-1].length = max(self._rows[row-1].length, col)
-        self._refresh_range(row, col, col)
+        self._update(row, col, col)
 
     def insert_char_attr(self, row, col, char, attr):
         """
@@ -283,7 +279,7 @@ class VideoBuffer(object):
         stop_col = max(therow.length, col)
         therow.attrs[col-1:stop_col] = [attr] * (stop_col - col + 1)
         # attrs change only up to logical end of row but dbcs can change up to row width
-        self._refresh_range(row, col, stop_col)
+        self._update(row, col, stop_col)
         return pop_char
 
     def delete_char_attr(self, row, col, attr, fill_char_attr=None):
@@ -313,11 +309,11 @@ class VideoBuffer(object):
         # change the logical end
         if adjust_end:
             therow.length = max(therow.length - 1, 0)
-        self._refresh_range(row, col, stop_col)
+        self._update(row, col, stop_col)
         return col, stop_col
 
     ###########################################################################
-    # update pixel buffer and interface
+    # update DBCS/unicode buffer
 
     def _update_dbcs(self, row):
         """Update the DBCS buffer."""
@@ -340,12 +336,61 @@ class VideoBuffer(object):
             start, stop = len(updated), 0
         return start, stop
 
-    def _refresh_range(self, row, start, stop, text_only=False):
-        """Draw a section of a screen row to pixels and interface."""
+    def _dbcs_to_unicode(self, chars):
+        """Convert list of dbcs chars to list of unicode; fullwidth trailed by empty u''."""
+        text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
+        return [self._codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
+
+    ###########################################################################
+    # update pixel buffer and interface
+
+    def rebuild(self):
+        """Completely resubmit the text and graphics screen to the interface."""
+        # resubmit the text buffer without changing the pixel buffer
+        # redraw graphics
+        for row in range(self._height):
+            self._refresh_range(row+1, 1, self._width, update_pixels=False)
+
+    @contextmanager
+    def collect_updates(self):
+        """Lock buffer to collect updates and submit them in one go."""
+        # nested call - only lock/unlock outermost
+        if self._locked:
+            yield
+        else:
+            self._locked = True
+            yield
+            self._locked = False
+            # update all dirty rectangles
+            for row in self._dirty_left:
+                self._refresh_range(row, self._dirty_left[row], self._dirty_right[row])
+
+    def _update(self, row, start, stop):
+        """Mark section of screen row as dirty for update."""
+        if self._locked:
+            # merge with existing dirty rects for row
+            if row in self._dirty_left:
+                self._dirty_left[row] = min(start, self._dirty_left[row])
+                self._dirty_right[row] = max(start, self._dirty_right[row])
+            else:
+                self._dirty_left[row] = start
+                self._dirty_right[row] = start
+            self._direty_left = {}
+            self._dirty_right = {}
+            return
+        else:
+            self._refresh_range(row, start, stop)
+
+    def _refresh_range(self, row, start, stop, update_pixels=True):
+        """Update DBCS buffer, draw text and submit."""
         dbcs_start, dbcs_stop = self._update_dbcs(row)
+        start, stop = min(start, dbcs_start), max(stop, dbcs_stop)
+        self._draw_submit_text(row, start, stop, update_pixels)
+
+    def _draw_submit_text(self, row, start, stop, update_pixels):
+        """Draw text in a screen row section to pixel buffer and submit."""
         # we need to plot at least the updated range
         # as the attribute may have changed
-        start, stop = min(start, dbcs_start), max(stop, dbcs_stop)
         col, last_col = start, start
         last_attr = None
         chars = []
@@ -364,14 +409,9 @@ class VideoBuffer(object):
         if chars:
             chunks.append((last_col, chars, attr))
         for col, chars, attr in chunks:
-            self._draw_text(row, col, chars, attr, text_only)
+            self._draw_text(row, col, chars, attr, update_pixels)
 
-    def _dbcs_to_unicode(self, chars):
-        """Convert list of dbcs chars to list of unicode; fullwidth trailed by empty u''."""
-        text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
-        return [self._codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
-
-    def _draw_text(self, row, col, chars, attr, text_only):
+    def _draw_text(self, row, col, chars, attr, update_pixels):
         """Draw a chunk of text in a single attribute to pixels and interface."""
         if row < 1 or col < 1 or row > self._height or col > self._width:
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
@@ -380,7 +420,7 @@ class VideoBuffer(object):
         # update pixel buffer
         left, top = self.text_to_pixel_pos(row, col)
         sprite = self._font.render_text(chars, attr, back, underline)
-        if not text_only:
+        if update_pixels:
             self._pixels[top:top+sprite.height, left:left+sprite.width] = sprite
         else:
             sprite = self._pixels[top:top+sprite.height, left:left+sprite.width]
@@ -442,7 +482,7 @@ class VideoBuffer(object):
                 srow, scol, srow, self._width, attr, adjust_end=True, clear_wrap=True
             )
             # redraw the last char before the clear too, as it may have been changed by dbcs logic
-            self._refresh_range(srow, scol-1, self._width)
+            self._update(srow, scol-1, self._width)
 
     def _clear_text_area(self, from_row, from_col, to_row, to_col, attr, clear_wrap, adjust_end):
         """Clear a rectangular area of the screen (inclusive bounds; 1-based indexing)."""
