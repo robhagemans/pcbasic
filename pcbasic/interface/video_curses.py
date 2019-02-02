@@ -110,7 +110,7 @@ class VideoCurses(VideoPlugin):
         self.cursor_col = 1
         # last colour used
         self.last_colour = None
-        self.vpagenum, self.apagenum = 0, 0
+        self._visible_is_active = True
         self.f12_active = False
         # initialised by __enter__
         self.screen = None
@@ -143,11 +143,10 @@ class VideoCurses(VideoPlugin):
             self.can_change_palette = (not MACOS) and (
                 curses.can_change_color() and curses.COLORS >= 16 and curses.COLOR_PAIRS > 128
             )
-            console.set_caption(self.caption)
             self._set_default_colours(16)
             bgcolor = self._curses_colour(7, 0, False)
             # text and colour buffer
-            self.text = [[[(u' ', bgcolor)]*self.width for _ in range(self.height)]]
+            self.text = [[(u' ', bgcolor)]*self.width for _ in range(self.height)]
             self.set_border_attr(0)
             self.screen.clear()
         except Exception:
@@ -238,7 +237,7 @@ class VideoCurses(VideoPlugin):
         self.window.clear()
         if self.last_colour != 0:
             self.window.bkgdset(32, self._curses_colour(7, 0, False))
-        for row, textrow in enumerate(self.text[self.vpagenum]):
+        for row, textrow in enumerate(self.text):
             for col, charattr in enumerate(textrow):
                 try:
                     self.window.addstr(
@@ -310,40 +309,30 @@ class VideoCurses(VideoPlugin):
             cursattr |= curses.A_BLINK
         return cursattr
 
-    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
+    def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Change screen mode."""
         self.height = text_height
         self.width = text_width
         bgcolor = self._curses_colour(7, 0, False)
-        self.text = [
-            [[(u' ', bgcolor)]*self.width for _ in range(self.height)]
-            for _ in range(num_pages)
-        ]
+        self.text = [[(u' ', bgcolor)]*self.width for _ in range(self.height)]
         self._resize(self.height, self.width)
         self._set_curses_palette()
         self.window.clear()
         self.window.refresh()
         self.window.move(0, 0)
 
-    def set_page(self, new_vpagenum, new_apagenum):
+    def set_page(self, visible_is_active):
         """Set visible and active page."""
-        self.vpagenum, self.apagenum = new_vpagenum, new_apagenum
-        self._redraw()
-
-    def copy_page(self, src, dst):
-        """Copy screen pages."""
-        self.text[dst] = [row[:] for row in self.text[src]]
-        if dst == self.vpagenum:
-            self._redraw()
+        self._visible_is_active = visible_is_active
 
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
         bgcolor = self._curses_colour(7, back_attr, False)
-        self.text[self.apagenum][start-1:stop] = [
-            [(u' ', bgcolor)]*len(self.text[self.apagenum][0])
+        self.text[start-1:stop] = [
+            [(u' ', bgcolor)]*len(self.text[0])
             for _ in range(start-1, stop)
         ]
-        if self.apagenum != self.vpagenum:
+        if not self._visible_is_active:
             return
         self.window.bkgdset(32, bgcolor)
         for r in range(start, stop+1):
@@ -406,22 +395,21 @@ class VideoCurses(VideoPlugin):
             console.show_cursor(block=self.cursor_shape == 2)
         #curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
-    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
+    def put_text(self, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
         fore, back, blink, underline = self._attributes[attr]
         unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
         colour = self._curses_colour(fore, back, blink)
-        self.text[pagenum][row-1][col-1:col-1+len(unicode_list)] = [
+        self.text[row-1][col-1:col-1+len(unicode_list)] = [
             (_c, colour) for _c in unicode_list
         ]
-        if pagenum == self.vpagenum:
-            if colour != self.last_colour:
-                self.last_colour = colour
-                self.window.bkgdset(32, colour)
-            try:
-                self.window.addstr(row-1, col-1, _to_str(u''.join(unicode_list)), colour)
-            except curses.error:
-                pass
+        if colour != self.last_colour:
+            self.last_colour = colour
+            self.window.bkgdset(32, colour)
+        try:
+            self.window.addstr(row-1, col-1, _to_str(u''.join(unicode_list)), colour)
+        except curses.error:
+            pass
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
@@ -433,12 +421,10 @@ class VideoCurses(VideoPlugin):
     def _scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
         bgcolor = self._curses_colour(7, back_attr, False)
-        self.text[self.apagenum][from_line-1:scroll_height] = (
-            self.text[self.apagenum][from_line:scroll_height]
-            + [[(u' ', bgcolor)] * len(self.text[self.apagenum][0])]
+        self.text[from_line-1:scroll_height] = (
+            self.text[from_line:scroll_height]
+            + [[(u' ', bgcolor)] * len(self.text[0])]
         )
-        if self.apagenum != self.vpagenum:
-            return
         self._curses_scroll(from_line, scroll_height, -1)
         self.clear_rows(back_attr, scroll_height, scroll_height)
         if self.cursor_row > 1:
@@ -447,12 +433,10 @@ class VideoCurses(VideoPlugin):
     def _scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
         bgcolor = self._curses_colour(7, back_attr, False)
-        self.text[self.apagenum][from_line-1:scroll_height] = (
-            [[(u' ', bgcolor)] * len(self.text[self.apagenum][0])]
-            + self.text[self.apagenum][from_line-1:scroll_height-1]
+        self.text[from_line-1:scroll_height] = (
+            [[(u' ', bgcolor)] * len(self.text[0])]
+            + self.text[from_line-1:scroll_height-1]
         )
-        if self.apagenum != self.vpagenum:
-            return
         self._curses_scroll(from_line, scroll_height, 1)
         self.clear_rows(back_attr, from_line, from_line)
         if self.cursor_row < self.height:
@@ -469,12 +453,3 @@ class VideoCurses(VideoPlugin):
                 pass
             self.window.scrollok(False)
             self.window.setscrreg(1, self.height-1)
-
-    def set_caption_message(self, msg):
-        """Add a message to the window caption."""
-        if msg:
-            console.set_caption(self.caption + ' - ' + msg)
-        else:
-            console.set_caption(self.caption)
-        # redraw in case terminal didn't recognise ansi sequence
-        self._redraw()
