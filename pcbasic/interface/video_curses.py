@@ -98,8 +98,9 @@ class VideoCurses(VideoPlugin):
         if 'ESCDELAY' not in os.environ:
             os.environ['ESCDELAY'] = '25'
         self.height, self.width = 25, 80
-        self.border_y = int(round((self.height * border_width)/200.))
-        self.border_x = int(round((self.width * border_width)/200.))
+        # curses borders are 1 character wide
+        self.border_y = 1
+        self.border_x = 1
         self.caption = caption
         # cursor is visible
         self.cursor_visible = True
@@ -115,10 +116,8 @@ class VideoCurses(VideoPlugin):
         # initialised by __enter__
         self.screen = None
         self.orig_size = None
-        self.underlay = None
         self.window = None
         self.can_change_palette = None
-        self.text = None
         self._attributes = []
 
     def __enter__(self):
@@ -131,10 +130,9 @@ class VideoCurses(VideoPlugin):
             curses.nonl()
             curses.raw()
             self.orig_size = self.screen.getmaxyx()
-            self.underlay = curses.newwin(
+            self.window = curses.newwin(
                 self.height + self.border_y*2, self.width + self.border_x*2, 0, 0
             )
-            self.window = curses.newwin(self.height, self.width, self.border_y, self.border_x)
             self.window.nodelay(True)
             self.window.keypad(True)
             self.window.scrollok(False)
@@ -145,8 +143,6 @@ class VideoCurses(VideoPlugin):
             )
             self._set_default_colours(16)
             bgcolor = self._curses_colour(7, 0, False)
-            # text and colour buffer
-            self.text = [[(u' ', bgcolor)]*self.width for _ in range(self.height)]
             self.set_border_attr(0)
             self.screen.clear()
         except Exception:
@@ -176,7 +172,7 @@ class VideoCurses(VideoPlugin):
     def _work(self):
         """Handle screen and interface events."""
         if self.cursor_visible:
-            self.window.move(self.cursor_row-1, self.cursor_col-1)
+            self.window.move(self.border_y+self.cursor_row-1, self.border_x+self.cursor_col-1)
         self.window.refresh()
 
     def _check_input(self):
@@ -228,26 +224,8 @@ class VideoCurses(VideoPlugin):
         # curses.resizeterm triggers KEY_RESIZE leading to a flickering loop
         # curses.resize_term doesn't resize the terminal
         console.resize(height + by*2, width + bx*2)
-        self.underlay.resize(height + by*2, width + bx*2)
-        self.window.resize(height, width)
+        self.window.resize(height + by*2, width + bx*2)
         self.set_border_attr(self.border_attr)
-
-    def _redraw(self):
-        """Redraw the screen."""
-        self.window.clear()
-        if self.last_colour != 0:
-            self.window.bkgdset(32, self._curses_colour(7, 0, False))
-        for row, textrow in enumerate(self.text):
-            for col, charattr in enumerate(textrow):
-                try:
-                    self.window.addstr(
-                        row, col, _to_str(charattr[0]), charattr[1]
-                    )
-                except curses.error:
-                    pass
-        if self.cursor_visible:
-            self.window.move(self.cursor_row-1, self.cursor_col-1)
-        self.window.refresh()
 
     def _set_default_colours(self, num_attrs):
         """Initialise the default colours for the palette."""
@@ -314,7 +292,6 @@ class VideoCurses(VideoPlugin):
         self.height = text_height
         self.width = text_width
         bgcolor = self._curses_colour(7, 0, False)
-        self.text = [[(u' ', bgcolor)]*self.width for _ in range(self.height)]
         self._resize(self.height, self.width)
         self._set_curses_palette()
         self.window.clear()
@@ -328,16 +305,12 @@ class VideoCurses(VideoPlugin):
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
         bgcolor = self._curses_colour(7, back_attr, False)
-        self.text[start-1:stop] = [
-            [(u' ', bgcolor)]*len(self.text[0])
-            for _ in range(start-1, stop)
-        ]
         if not self._visible_is_active:
             return
         self.window.bkgdset(32, bgcolor)
         for r in range(start, stop+1):
             try:
-                self.window.move(r-1, 0)
+                self.window.move(self.border_y + r - 1, self.border_x)
                 self.window.clrtoeol()
             except curses.error:
                 pass
@@ -370,9 +343,8 @@ class VideoCurses(VideoPlugin):
     def set_border_attr(self, attr):
         """Change border attribute."""
         self.border_attr = attr
-        self.underlay.bkgd(32, self._curses_colour(0, attr, False))
-        self.underlay.refresh()
-        self._redraw()
+        self.window.attrset(self._curses_colour(attr, attr, False))
+        self.window.border()
 
     def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
@@ -400,14 +372,13 @@ class VideoCurses(VideoPlugin):
         fore, back, blink, underline = self._attributes[attr]
         unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
         colour = self._curses_colour(fore, back, blink)
-        self.text[row-1][col-1:col-1+len(unicode_list)] = [
-            (_c, colour) for _c in unicode_list
-        ]
         if colour != self.last_colour:
             self.last_colour = colour
             self.window.bkgdset(32, colour)
         try:
-            self.window.addstr(row-1, col-1, _to_str(u''.join(unicode_list)), colour)
+            self.window.addstr(
+                self.border_y+row-1, self.border_x+col-1, _to_str(u''.join(unicode_list)), colour
+            )
         except curses.error:
             pass
 
@@ -421,35 +392,27 @@ class VideoCurses(VideoPlugin):
     def _scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
         bgcolor = self._curses_colour(7, back_attr, False)
-        self.text[from_line-1:scroll_height] = (
-            self.text[from_line:scroll_height]
-            + [[(u' ', bgcolor)] * len(self.text[0])]
-        )
         self._curses_scroll(from_line, scroll_height, -1)
         self.clear_rows(back_attr, scroll_height, scroll_height)
         if self.cursor_row > 1:
-            self.window.move(self.cursor_row-2, self.cursor_col-1)
+            self.window.move(self._border_y+self.cursor_row-2, self._border_x+self.cursor_col-1)
 
     def _scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
         bgcolor = self._curses_colour(7, back_attr, False)
-        self.text[from_line-1:scroll_height] = (
-            [[(u' ', bgcolor)] * len(self.text[0])]
-            + self.text[from_line-1:scroll_height-1]
-        )
         self._curses_scroll(from_line, scroll_height, 1)
         self.clear_rows(back_attr, from_line, from_line)
         if self.cursor_row < self.height:
-            self.window.move(self.cursor_row, self.cursor_col-1)
+            self.window.move(self._border_y+self.cursor_row, self._border_x+self.cursor_col-1)
 
     def _curses_scroll(self, from_line, scroll_height, direction):
         """Perform a scroll in curses."""
         if from_line != scroll_height:
             self.window.scrollok(True)
-            self.window.setscrreg(from_line-1, scroll_height-1)
+            self.window.setscrreg(self._border_y+from_line-1, self._border_y+scroll_height-1)
             try:
                 self.window.scroll(-direction)
             except curses.error:
                 pass
             self.window.scrollok(False)
-            self.window.setscrreg(1, self.height-1)
+            self.window.setscrreg(self._border_y+1, self._border_y+self.height-1)
