@@ -158,9 +158,6 @@ class VideoCurses(VideoPlugin):
 
     def _close(self):
         """Close the curses interface."""
-        # restore original terminal size
-        if self.orig_size and console:
-            self._resize(*self.orig_size)
         curses.noraw()
         curses.nl()
         curses.nocbreak()
@@ -168,6 +165,8 @@ class VideoCurses(VideoPlugin):
             self.screen.keypad(False)
         curses.echo()
         curses.endwin()
+        # restore original terminal size, colours and cursor
+        console.reset()
 
     def _work(self):
         """Handle screen and interface events."""
