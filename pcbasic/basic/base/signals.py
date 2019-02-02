@@ -32,10 +32,6 @@ AUDIO_PERSIST = 6
 VIDEO_QUIT = 0
 # change video mode
 VIDEO_SET_MODE = 1
-# switch page
-VIDEO_SET_PAGE = 2
-# copy page
-VIDEO_COPY_PAGE = 28
 # show/hide cursor
 VIDEO_SHOW_CURSOR = 14
 # set cursor shape
@@ -44,7 +40,7 @@ VIDEO_SET_CURSOR_SHAPE = 3
 VIDEO_MOVE_CURSOR = 5
 # set border attribute
 VIDEO_SET_BORDER_ATTR = 7
-# put character glyph
+# put characters
 VIDEO_PUT_TEXT = 8
 # clear rows
 VIDEO_CLEAR_ROWS = 10

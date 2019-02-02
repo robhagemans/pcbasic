@@ -148,6 +148,12 @@ class TextScreen(object):
         self._vpagenum = vpagenum
         self._apagenum = apagenum
         self._apage = self._pages[self._apagenum]
+        # cursor lives on active page
+        # this is technically only the case in graphics mode -
+        # in DOSBox it's visible in text mode if the active page is not visible
+        # but then the cursor location is static and does not equal the text insert location
+        # so this seems acceptable
+        self._cursor.set_active(self._vpagenum == self._apagenum)
         #FIXME - no need to rebuild dbcs, just resubmit
         self._apage.rebuild()
 

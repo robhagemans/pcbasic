@@ -280,10 +280,6 @@ class Display(object):
                 self.mode.height, self.mode.width
             )
         ))
-        # set the visible and active pages
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_PAGE, (self.vpagenum == self.apagenum,)
-        ))
         # rebuild palette
         self.colourmap.submit()
         # set the border
@@ -343,9 +339,6 @@ class Display(object):
         self.apagenum = new_apagenum
         self.graphics.set_page(new_apagenum)
         self.text_screen.set_page(new_vpagenum, new_apagenum)
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_PAGE, (new_vpagenum == new_apagenum,)
-        ))
 
     def set_attr(self, attr):
         """Set the default attribute."""

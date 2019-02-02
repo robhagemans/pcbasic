@@ -111,7 +111,6 @@ class VideoCurses(VideoPlugin):
         self.cursor_col = 1
         # last colour used
         self.last_colour = None
-        self._visible_is_active = True
         self.f12_active = False
         # initialised by __enter__
         self.screen = None
@@ -297,15 +296,9 @@ class VideoCurses(VideoPlugin):
         self.window.refresh()
         self.window.move(0, 0)
 
-    def set_page(self, visible_is_active):
-        """Set visible and active page."""
-        self._visible_is_active = visible_is_active
-
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
         bgcolor = self._curses_colour(7, back_attr, False)
-        if not self._visible_is_active:
-            return
         self.window.bkgdset(32, bgcolor)
         for r in range(start, stop+1):
             try:
@@ -352,9 +345,16 @@ class VideoCurses(VideoPlugin):
 
     def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
+        # blinking/non-blinking not supported
+        self._show_cursor(cursor_on)
+
+    def _show_cursor(self, cursor_on):
+        """Change visibility of cursor."""
         self.cursor_visible = cursor_on
         if cursor_on:
             console.show_cursor(block=self.cursor_shape == 2)
+        else:
+            console.hide_cursor()
 
     def set_cursor_shape(self, from_line, to_line):
         """Set the cursor shape."""
@@ -362,9 +362,7 @@ class VideoCurses(VideoPlugin):
             self.cursor_shape = 2
         else:
             self.cursor_shape = 1
-        if self.cursor_visible:
-            console.show_cursor(block=self.cursor_shape == 2)
-        #curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
+        self._show_cursor(self.cursor_visible)
 
     def put_text(self, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""

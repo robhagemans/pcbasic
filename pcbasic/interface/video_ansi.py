@@ -41,7 +41,6 @@ class VideoANSI(video_cli.VideoTextBase):
         self._last_attributes = None
         self._cursor_attr = None
         # text and colour buffer
-        self._visible_is_active = True
         self._height, self._width = 25, 80
         self._border_y = int(round((self._height * border_width)/200.))
         self._border_x = int(round((self._width * border_width)/200.))
@@ -147,33 +146,24 @@ class VideoANSI(video_cli.VideoTextBase):
         console.clear()
         return True
 
-    def set_page(self, visible_is_active):
-        """Set visible and active page."""
-        self._visible_is_active = visible_is_active
-        if not visible_is_active:
-            console.hide_cursor()
-        elif self._cursor_visible:
-            console.show_cursor()
-
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
-        if self._visible_is_active:
-            self._set_attributes(7, back_attr, False, False)
-            for row in range(start, stop+1):
-                console.move_cursor_to(row + self._border_y, 1 + self._border_x)
-                console.clear_row()
-            # draw border
-            self._set_attributes(
-                0, self.default_colours[self._border_attr%16], False, False
-            )
-            for row in range(start, stop+1):
-                console.move_cursor_to(row + self._border_y, 1)
-                console.write(u' ' * self._border_x)
-                console.move_cursor_to(row + self._border_y, 1 + self._width + self._border_x)
-                console.write(u' ' * self._border_x)
-            console.move_cursor_to(
-                self._cursor_row + self._border_y, self._cursor_col + self._border_x
-            )
+        self._set_attributes(7, back_attr, False, False)
+        for row in range(start, stop+1):
+            console.move_cursor_to(row + self._border_y, 1 + self._border_x)
+            console.clear_row()
+        # draw border
+        self._set_attributes(
+            0, self.default_colours[self._border_attr%16], False, False
+        )
+        for row in range(start, stop+1):
+            console.move_cursor_to(row + self._border_y, 1)
+            console.write(u' ' * self._border_x)
+            console.move_cursor_to(row + self._border_y, 1 + self._width + self._border_x)
+            console.write(u' ' * self._border_x)
+        console.move_cursor_to(
+            self._cursor_row + self._border_y, self._cursor_col + self._border_x
+        )
 
     def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
@@ -191,8 +181,6 @@ class VideoANSI(video_cli.VideoTextBase):
     def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
         self._cursor_visible = cursor_on
-        if not self._visible_is_active:
-            return
         if cursor_on:
             console.show_cursor(block=self._block_cursor)
         else:

@@ -159,7 +159,6 @@ class VideoPygame(VideoPlugin):
         # mouse setups
         self._mouse_clip = mouse_clipboard
         self.cursor_row, self.cursor_col = 1, 1
-        self._visible_is_active = True
         # set_mode should be first event on queue
         self.f11_active = False
         self.clipboard_handler = get_clipboard_handler()
@@ -420,7 +419,7 @@ class VideoPygame(VideoPlugin):
 
     def _draw_cursor(self, screen):
         """Draw the cursor on the surface provided."""
-        if not self.cursor_visible or not self._visible_is_active:
+        if not self.cursor_visible:
             return
         # copy screen under cursor
         self.under_top_left = (
@@ -531,11 +530,6 @@ class VideoPygame(VideoPlugin):
             0, (start-1)*self.font_height, self.size[0], (stop-start+1)*self.font_height
         )
         self.canvas.fill(bg, scroll_area)
-        self.busy = True
-
-    def set_page(self, visible_is_active):
-        """Set the visible and active page."""
-        self._visible_is_active = visible_is_active
         self.busy = True
 
     def show_cursor(self, cursor_on, cursor_blinks):

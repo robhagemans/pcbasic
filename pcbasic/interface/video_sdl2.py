@@ -408,8 +408,6 @@ class VideoSDL2(VideoPlugin):
         self._cursor_width = None
         self._cursor_attr = None
         self._cursor_cache = [None, None]
-        # display pages
-        self._visible_is_active = True
         # palette
         # { attr: (fore, back, blink, underline) }
         self._attributes = {}
@@ -885,7 +883,7 @@ class VideoSDL2(VideoPlugin):
     @contextmanager
     def _show_cursor(self, cursor_state):
         """Draw or remove the cursor on the visible page."""
-        if not self._cursor_visible or not self._visible_is_active or not cursor_state:
+        if not self._cursor_visible or not cursor_state:
             yield
         else:
             # cursor shape
@@ -1045,11 +1043,6 @@ class VideoSDL2(VideoPlugin):
             (start-1)*self._font_height : stop*self._font_height,
             0 : self._window_sizer.width
         ] = back_attr
-        self.busy = True
-
-    def set_page(self, visible_is_active):
-        """Set the visible and active page."""
-        self._visible_is_active = visible_is_active
         self.busy = True
 
     def show_cursor(self, cursor_on, cursor_blinks):

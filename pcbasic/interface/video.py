@@ -30,7 +30,6 @@ class VideoPlugin(object):
             signals.VIDEO_SET_CURSOR_SHAPE: self.set_cursor_shape,
             signals.VIDEO_SHOW_CURSOR: self.show_cursor,
             signals.VIDEO_MOVE_CURSOR: self.move_cursor,
-            signals.VIDEO_SET_PAGE: self.set_page,
             signals.VIDEO_SET_BORDER_ATTR: self.set_border_attr,
             signals.VIDEO_PUT_RECT: self.put_rect,
             signals.VIDEO_SET_CAPTION: self.set_caption_message,
@@ -105,9 +104,6 @@ class VideoPlugin(object):
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
-
-    def set_page(self, visible_is_active):
-        """Set the visible and active page."""
 
     def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""

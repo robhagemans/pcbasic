@@ -196,7 +196,6 @@ class VideoCLI(VideoTextBase):
         self._last_row = None
         # text buffer
         self._text = [[u' '] * 80 for _ in range(25)]
-        self._visible_is_active = True
 
     def __exit__(self, type, value, traceback):
         """Close command-line interface."""
@@ -210,9 +209,7 @@ class VideoCLI(VideoTextBase):
         """Display update cycle."""
         # update cursor row only if it's changed from last work-cycle
         # or if actual printing takes place on the new cursor row
-        if self._visible_is_active and (
-                self._cursor_row != self._last_row or self._cursor_col != self._col
-            ):
+        if self._cursor_row != self._last_row or self._cursor_col != self._col:
             self._update_position(self._cursor_row, self._cursor_col)
 
     ###############################################################################
@@ -241,7 +238,7 @@ class VideoCLI(VideoTextBase):
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
         self._text[start-1:stop] = [[u' '] * len(self._text[0]) for _ in range(start-1, stop)]
-        if (self._visible_is_active and start <= self._cursor_row and stop >= self._cursor_row):
+        if start <= self._cursor_row and stop >= self._cursor_row:
             self._update_position(self._cursor_row, 1)
             console.clear_row()
 
@@ -268,10 +265,6 @@ class VideoCLI(VideoTextBase):
     def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Initialise video mode """
         self._text = [[u' '] * text_width for _ in range(text_height)]
-
-    def set_page(self, visible_is_active):
-        """Set visible and active page."""
-        self._visible_is_active = visible_is_active
 
     def _redraw_row(self, row):
         """Draw the stored text in a row."""
