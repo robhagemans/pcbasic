@@ -144,6 +144,7 @@ class VideoCurses(VideoPlugin):
             self._set_default_colours(16)
             bgcolor = self._curses_colour(7, 0, False)
             self.set_border_attr(0)
+            self._resize(self.height, self.width)
             self.screen.clear()
         except Exception:
             # if setup fails, don't leve the terminal raw
@@ -188,8 +189,6 @@ class VideoCurses(VideoPlugin):
                     self._input_queue.put(signals.Event(
                         signals.KEYB_DOWN, (u'', scancode.BREAK, [scancode.CTRL])
                     ))
-                elif inp == curses.KEY_RESIZE:
-                    self._resize(self.height, self.width)
                 # scancode, insert here and now
                 # there shouldn't be a mix of special keys and utf8 in one
                 # uninterrupted string, since the only reason an uninterrupted
