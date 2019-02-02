@@ -248,12 +248,15 @@ class VideoMode(object):
         return self.memorymap.num_pages
 
     def __eq__(self, rhs):
-        """Check equality with another mode or mode name."""
+        """Equality with another mode or mode name."""
         if isinstance(rhs, VideoMode):
             return self.name == rhs.name
         else:
             return self.name == rhs
 
+    def __ne__(self, rhs):
+        """Inequality with another mode or mode name."""
+        return not self.__eq__(rhs)
 
 
 ##############################################################################
