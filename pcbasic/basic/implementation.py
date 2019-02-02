@@ -494,14 +494,14 @@ class Implementation(object):
         """SHELL: open OS shell and optionally execute command."""
         cmd = values.next_string(args)
         list(args)
-        # force cursor visible in all cases
-        self.display.cursor.show(True)
+        # force cursor visible
+        self.display.cursor.set_override(True)
         # sound stops playing and is forgotten
         self.sound.stop_all_sound()
         # run the os-specific shell
         self.shell.launch(cmd)
         # reset cursor visibility to its previous state
-        self.display.cursor.reset_visibility()
+        self.display.cursor.set_override(False)
 
     def term_(self, args):
         """TERM: terminal emulator."""
@@ -562,7 +562,6 @@ class Implementation(object):
         # throws back to direct mode
         # jump to end of direct line so execution stops
         self.interpreter.set_pointer(False)
-        self.display.cursor.reset_visibility()
         # request edit prompt
         self._edit_prompt = (from_line, None)
 

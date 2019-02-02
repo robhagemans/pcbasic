@@ -714,7 +714,7 @@ class TextScreen(object):
         if cursor is not None:
             error.range_check(0, (255 if self._tandytext else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes
-            self._cursor.set_visibility(cursor != 0)
+            self._cursor.set_textmode_override(cursor != 0)
         error.throw_if(start is None and stop is not None)
         if stop is None:
             stop = start

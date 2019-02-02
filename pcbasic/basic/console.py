@@ -147,8 +147,8 @@ class Console(object):
 
     def _interact(self, prompt_width):
         """Manage the interactive mode."""
-        # force cursor visibility in all cases
-        self._cursor.show(True)
+        # force cursor visibility in all case
+        self._cursor.set_override(True)
         self._io_streams.flush()
         try:
             # this is where we started
@@ -239,7 +239,7 @@ class Console(object):
         finally:
             self._set_overwrite_mode(True)
             # reset cursor visibility
-            self._cursor.reset_visibility()
+            self._cursor.set_override(False)
         return start_row, furthest_left, furthest_right
 
     def _set_overwrite_mode(self, new_overwrite):
