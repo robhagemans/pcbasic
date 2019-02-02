@@ -394,7 +394,7 @@ class VideoCurses(VideoPlugin):
         self._curses_scroll(from_line, scroll_height, -1)
         self.clear_rows(back_attr, scroll_height, scroll_height)
         if self.cursor_row > 1:
-            self.window.move(self._border_y+self.cursor_row-2, self._border_x+self.cursor_col-1)
+            self.window.move(self.border_y+self.cursor_row-2, self.border_x+self.cursor_col-1)
 
     def _scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
@@ -402,16 +402,16 @@ class VideoCurses(VideoPlugin):
         self._curses_scroll(from_line, scroll_height, 1)
         self.clear_rows(back_attr, from_line, from_line)
         if self.cursor_row < self.height:
-            self.window.move(self._border_y+self.cursor_row, self._border_x+self.cursor_col-1)
+            self.window.move(self.border_y+self.cursor_row, self.border_x+self.cursor_col-1)
 
     def _curses_scroll(self, from_line, scroll_height, direction):
         """Perform a scroll in curses."""
         if from_line != scroll_height:
             self.window.scrollok(True)
-            self.window.setscrreg(self._border_y+from_line-1, self._border_y+scroll_height-1)
+            self.window.setscrreg(self.border_y+from_line-1, self.border_y+scroll_height-1)
             try:
                 self.window.scroll(-direction)
             except curses.error:
                 pass
             self.window.scrollok(False)
-            self.window.setscrreg(self._border_y+1, self._border_y+self.height-1)
+            self.window.setscrreg(self.border_y+1, self.border_y+self.height-1)
