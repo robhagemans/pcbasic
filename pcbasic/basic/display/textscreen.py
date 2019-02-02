@@ -148,6 +148,8 @@ class TextScreen(object):
         self._vpagenum = vpagenum
         self._apagenum = apagenum
         self._apage = self._pages[self._apagenum]
+        #FIXME - no need to rebuild dbcs, just resubmit
+        self._apage.rebuild()
 
     def set_attr(self, attr):
         """Set attribute."""
@@ -156,7 +158,7 @@ class TextScreen(object):
     def rebuild(self):
         """Completely resubmit the text and graphics screen to the interface."""
         self._cursor.rebuild()
-        # redraw the text screen and rebuild text buffers in video plugin
+        # redraw the text screen and submit to video plugin
         for page in self._pages:
             page.rebuild()
 

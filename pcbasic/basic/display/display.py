@@ -192,7 +192,7 @@ class Display(object):
         # submit the mode change to the interface
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
-                new_mode.num_pages, new_mode.pixel_height, new_mode.pixel_width,
+                new_mode.pixel_height, new_mode.pixel_width,
                 new_mode.height, new_mode.width
             )
         ))
@@ -229,7 +229,6 @@ class Display(object):
                 self.mode.height, self.mode.width,
                 self.colourmap, self.attr, font, self._codepage,
                 do_fullwidth=(self.mode.is_text_mode and self.mode.font_height >= 14),
-                pagenum=_pagenum,
             )
             for _pagenum in range(self.mode.num_pages)
         ]
@@ -277,13 +276,13 @@ class Display(object):
         # set the screen mode
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_MODE, (
-                self.mode.num_pages, self.mode.pixel_height, self.mode.pixel_width,
+                self.mode.pixel_height, self.mode.pixel_width,
                 self.mode.height, self.mode.width
             )
         ))
         # set the visible and active pages
         self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)
+            signals.VIDEO_SET_PAGE, (self.vpagenum == self.apagenum,)
         ))
         # rebuild palette
         self.colourmap.submit()
@@ -338,11 +337,15 @@ class Display(object):
             new_apagenum = self.apagenum
         if (new_vpagenum >= self.mode.num_pages or new_apagenum >= self.mode.num_pages):
             raise error.BASICError(error.IFC)
+        self.pages[self.vpagenum].set_visible(False)
+        self.pages[new_vpagenum].set_visible(True)
         self.vpagenum = new_vpagenum
         self.apagenum = new_apagenum
         self.graphics.set_page(new_apagenum)
         self.text_screen.set_page(new_vpagenum, new_apagenum)
-        self._queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_PAGE, (new_vpagenum == new_apagenum,)
+        ))
 
     def set_attr(self, attr):
         """Set the default attribute."""
