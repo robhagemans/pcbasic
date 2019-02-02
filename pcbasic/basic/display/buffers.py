@@ -453,10 +453,10 @@ class VideoBuffer(object):
         if self._visible:
             for row in range(row0, row1+1):
                 self._queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_TEXT, (row, col0, [u' ']*(col1-col0+1), 0, rect)
+                    signals.VIDEO_PUT_TEXT, (row, col0, [u' ']*(col1-col0+1), 0, None)
                 ))
             self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_RECT, (x, y, x + rect.width, y + rect.height)
+                signals.VIDEO_PUT_RECT, (x, y, rect)
             ))
 
     ###########################################################################
