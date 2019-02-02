@@ -88,7 +88,7 @@ class VideoPygame(VideoPlugin):
             raise InitFailed('No suitable display driver: %s' % e)
         # display & border
         # display buffer
-        self.canvas = []
+        self.canvas = None
         # border attribute
         self.border_attr = 0
         # palette and colours
@@ -159,7 +159,7 @@ class VideoPygame(VideoPlugin):
         # mouse setups
         self._mouse_clip = mouse_clipboard
         self.cursor_row, self.cursor_col = 1, 1
-        self.set_page(0, 0)
+        self._visible_is_active = True
         # set_mode should be first event on queue
         self.f11_active = False
         self.clipboard_handler = get_clipboard_handler()
@@ -386,13 +386,13 @@ class VideoPygame(VideoPlugin):
         # pylint: disable=E1121,E1123
         screen = pygame.Surface(
             (self.size[0] + 2*border_x, self.size[1] + 2*border_y),
-            0, self.canvas[self.vpagenum]
+            0, self.canvas
         )
         screen.set_palette(self.work_palette)
         # border colour
         border_colour = pygame.Color(0, 0, self.border_attr % self.num_fore_attrs)
         screen.fill(border_colour)
-        screen.blit(self.canvas[self.vpagenum], (border_x, border_y))
+        screen.blit(self.canvas, (border_x, border_y))
         # subsurface referencing the canvas area
         workscreen = screen.subsurface((border_x, border_y, self.size[0], self.size[1]))
         self._draw_cursor(workscreen)
@@ -420,7 +420,7 @@ class VideoPygame(VideoPlugin):
 
     def _draw_cursor(self, screen):
         """Draw the cursor on the surface provided."""
-        if not self.cursor_visible or self.vpagenum != self.apagenum:
+        if not self.cursor_visible or not self._visible_is_active:
             return
         # copy screen under cursor
         self.under_top_left = (
@@ -471,14 +471,13 @@ class VideoPygame(VideoPlugin):
     # signal handlers
 
     def set_mode(
-            self, num_pages, canvas_height, canvas_width, text_height, text_width
+            self, canvas_height, canvas_width, text_height, text_width
         ):
         """Initialise a given text or graphics mode."""
         self.mode_has_blink = False
         # unpack mode info struct
         self.font_height = -(-canvas_height // text_height)
         self.font_width = canvas_width // text_width
-        self.num_pages = num_pages
         # logical size
         self.size = canvas_width, canvas_height
         self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
@@ -487,12 +486,8 @@ class VideoPygame(VideoPlugin):
         self.cursor_width = self.font_width
         self.set_cursor_shape(0, self.font_height)
         # whole screen (blink on & off)
-        self.canvas = [
-            pygame.Surface(self.size, depth=8) # pylint: disable=E1121,E1123
-            for _ in range(self.num_pages)
-        ]
-        for i in range(self.num_pages):
-            self.canvas[i].set_palette(self.work_palette)
+        self.canvas = pygame.Surface(self.size, depth=8) # pylint: disable=E1121,E1123
+        self.canvas.set_palette(self.work_palette)
         # initialise clipboard
         self.clipboard = clipboard.ClipboardInterface(
             self.clipboard_handler, self._input_queue,
@@ -535,17 +530,12 @@ class VideoPygame(VideoPlugin):
         scroll_area = pygame.Rect(
             0, (start-1)*self.font_height, self.size[0], (stop-start+1)*self.font_height
         )
-        self.canvas[self.apagenum].fill(bg, scroll_area)
+        self.canvas.fill(bg, scroll_area)
         self.busy = True
 
-    def set_page(self, vpage, apage):
+    def set_page(self, visible_is_active):
         """Set the visible and active page."""
-        self.vpagenum, self.apagenum = vpage, apage
-        self.busy = True
-
-    def copy_page(self, src, dst):
-        """Copy source to destination page."""
-        self.canvas[dst].blit(self.canvas[src], (0, 0))
+        self._visible_is_active = visible_is_active
         self.busy = True
 
     def show_cursor(self, cursor_on, cursor_blinks):
@@ -575,14 +565,14 @@ class VideoPygame(VideoPlugin):
             self.size[0], (scroll_height-from_line+1) * self.font_height
         )
         # scroll
-        self.canvas[self.apagenum].set_clip(temp_scroll_area)
-        self.canvas[self.apagenum].scroll(0, direction * self.font_height)
+        self.canvas.set_clip(temp_scroll_area)
+        self.canvas.scroll(0, direction * self.font_height)
         # empty new line
         bg = (0, 0, back_attr)
-        self.canvas[self.apagenum].fill(
+        self.canvas.fill(
             bg, (0, (scroll_height-1) * self.font_height, self.size[0], self.font_height)
         )
-        self.canvas[self.apagenum].set_clip(None)
+        self.canvas.set_clip(None)
         self.busy = True
 
     def set_cursor_shape(self, from_line, to_line):
@@ -603,14 +593,14 @@ class VideoPygame(VideoPlugin):
         self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
         self.busy = True
 
-    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
+    def put_text(self, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
         if not glyphs:
             return
         x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
-        self.put_rect(pagenum, x0, y0, glyphs)
+        self.put_rect(x0, y0, glyphs)
 
-    def put_rect(self, pagenum, x0, y0, array):
+    def put_rect(self, x0, y0, array):
         """Apply numpy array [y][x] of attribytes to an area."""
         array = numpy.array(array._rows)
         height, width = array.shape
@@ -619,9 +609,7 @@ class VideoPygame(VideoPlugin):
         height, width = array.shape
         # reference the destination area
         pygame.surfarray.pixels2d(
-            self.canvas[pagenum].subsurface(
-                pygame.Rect(x0, y0, width, height)
-            )
+            self.canvas.subsurface(pygame.Rect(x0, y0, width, height))
         )[:] = array.T
         self.busy = True
 
