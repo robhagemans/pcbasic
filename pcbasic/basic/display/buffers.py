@@ -475,7 +475,8 @@ class VideoBuffer(object):
         _, back, _, _ = self._colourmap.split_attr(attr)
         self._pixels[y0:y1+1, x0:x1+1] = back
         # this should only be called on the active page
-        self._queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
+        if self._visible:
+            self._queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
     def clear_row_from(self, srow, scol, attr):
         """Clear from given position to end of logical line (CTRL+END)."""

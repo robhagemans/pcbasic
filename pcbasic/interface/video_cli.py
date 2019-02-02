@@ -195,8 +195,8 @@ class VideoCLI(VideoTextBase):
         # cursor row on last cycle
         self._last_row = None
         # text buffer
-        self._vpagenum, self._apagenum = 0, 0
-        self._text = [[[u' '] * 80 for _ in range(25)]]
+        self._text = [[u' '] * 80 for _ in range(25)]
+        self._visible_is_active = True
 
     def __exit__(self, type, value, traceback):
         """Close command-line interface."""
@@ -210,17 +210,19 @@ class VideoCLI(VideoTextBase):
         """Display update cycle."""
         # update cursor row only if it's changed from last work-cycle
         # or if actual printing takes place on the new cursor row
-        if self._cursor_row != self._last_row or self._cursor_col != self._col:
+        if self._visible_is_active and (
+                self._cursor_row != self._last_row or self._cursor_col != self._col
+            ):
             self._update_position(self._cursor_row, self._cursor_col)
 
     ###############################################################################
 
-    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
+    def put_text(self, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
         unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
-        self._text[pagenum][row-1][col-1:col-1+len(unicode_list)] = unicode_list
+        self._text[row-1][col-1:col-1+len(unicode_list)] = unicode_list
         # show the character only if it's on the cursor row
-        if self._vpagenum == pagenum and row == self._cursor_row:
+        if row == self._cursor_row:
             # may have to update row!
             if row != self._last_row or col != self._col:
                 self._update_position(row, col)
@@ -238,12 +240,8 @@ class VideoCLI(VideoTextBase):
 
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
-        self._text[self._apagenum][start-1:stop] = [
-                [u' '] * len(self._text[self._apagenum][0])
-                for _ in range(start-1, stop)
-            ]
-        if (self._vpagenum == self._apagenum and
-                start <= self._cursor_row and stop >= self._cursor_row):
+        self._text[start-1:stop] = [[u' '] * len(self._text[0]) for _ in range(start-1, stop)]
+        if (self._visible_is_active and start <= self._cursor_row and stop >= self._cursor_row):
             self._update_position(self._cursor_row, 1)
             console.clear_row()
 
@@ -256,47 +254,33 @@ class VideoCLI(VideoTextBase):
 
     def _scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
-        self._text[self._apagenum][from_line-1:scroll_height] = (
-                self._text[self._apagenum][from_line:scroll_height]
-                + [[u' '] * len(self._text[self._apagenum][0])]
-            )
-        if self._vpagenum != self._apagenum:
-            return
+        self._text[from_line-1:scroll_height] = (
+            self._text[from_line:scroll_height] + [[u' '] * len(self._text[0])]
+        )
         console.write(u'\r\n')
 
     def _scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
-        self._text[self._apagenum][from_line-1:scroll_height] = (
-                [[u' '] * len(self._text[self._apagenum][0])] +
-                self._text[self._apagenum][from_line-1:scroll_height-1]
-            )
+        self._text[from_line-1:scroll_height] = (
+            [[u' '] * len(self._text[0])] + self._text[from_line-1:scroll_height-1]
+        )
 
-    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
+    def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Initialise video mode """
-        self._text = [
-                [[u' '] * text_width for _ in range(text_height)]
-                for _ in range(num_pages)
-            ]
+        self._text = [[u' '] * text_width for _ in range(text_height)]
 
-    def set_page(self, new_vpagenum, new_apagenum):
+    def set_page(self, visible_is_active):
         """Set visible and active page."""
-        self._vpagenum, self._apagenum = new_vpagenum, new_apagenum
-        self._redraw_row(self._cursor_row)
-
-    def copy_page(self, src, dst):
-        """Copy screen pages."""
-        self._text[dst] = [row[:] for row in self._text[src]]
-        if dst == self._vpagenum:
-            self._redraw_row(self._cursor_row)
+        self._visible_is_active = visible_is_active
 
     def _redraw_row(self, row):
         """Draw the stored text in a row."""
         if not row:
             return
         self._update_col(1)
-        rowtext = (u''.join(self._text[self._vpagenum][row-1]))
+        rowtext = (u''.join(self._text[row-1]))
         console.write(rowtext.replace(u'\0', u' '))
-        self._col = len(self._text[self._vpagenum][row-1])+1
+        self._col = len(self._text[row-1])+1
 
     def _update_position(self, row, col):
         """Move terminal print location."""
