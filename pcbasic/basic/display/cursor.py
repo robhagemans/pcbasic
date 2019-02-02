@@ -50,7 +50,8 @@ class Cursor(object):
         # cursor visible in parse mode? user override
         self._override_visible = False
         # actually visible at present
-        self._visible = False
+        # set to None to force a signal when first set to True or False
+        self._visible = None
         # visibility override flags
         self._active = True
         self._direct = False
@@ -69,7 +70,7 @@ class Cursor(object):
         self._mode = mode
         self._height = mode.font_height
         self._colourmap = colourmap
-        self._visible = False
+        self._visible = None
         # set the cursor position and attribute
         self.move(1, 1, attr, new_width=1)
         # cursor width starts out as single char
