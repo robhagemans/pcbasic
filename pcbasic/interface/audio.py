@@ -45,11 +45,11 @@ class AudioPlugin(object):
             except queue.Empty:
                 return
             self._audio_queue.task_done()
-            if signal.event_type == signals.AUDIO_STOP:
-                self.hush()
-            elif signal.event_type == signals.AUDIO_QUIT:
+            if signal.event_type == signals.QUIT:
                 # close thread
                 self.alive = False
+            elif signal.event_type == signals.AUDIO_STOP:
+                self.hush()
             elif signal.event_type == signals.AUDIO_PERSIST:
                 self.persist(*signal.params)
             elif signal.event_type == signals.AUDIO_TONE:

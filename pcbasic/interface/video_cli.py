@@ -317,7 +317,7 @@ class InputHandlerCLI(object):
                 break
             if uc == EOF and self.quit_on_eof:
                 # ctrl-D (unix) / ctrl-Z (windows)
-                self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+                self._input_queue.put(signals.Event(signals.QUIT))
             elif uc == u'\x7f':
                 # backspace
                 self._input_queue.put(

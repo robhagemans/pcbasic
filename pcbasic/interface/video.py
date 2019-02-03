@@ -61,7 +61,7 @@ class VideoPlugin(object):
                 return True
             # putting task_done before the execution avoids hanging on join() after an exception
             self._video_queue.task_done()
-            if signal.event_type == signals.VIDEO_QUIT:
+            if signal.event_type == signals.QUIT:
                 # close thread
                 self.alive = False
             else:

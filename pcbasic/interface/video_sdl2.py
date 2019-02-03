@@ -564,7 +564,7 @@ class VideoSDL2(VideoPlugin):
         if self._nokill:
             self.set_caption_message(NOKILL_MESSAGE)
         else:
-            self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+            self._input_queue.put(signals.Event(signals.QUIT))
 
     # window events
 

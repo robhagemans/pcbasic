@@ -130,7 +130,7 @@ class EventQueues(object):
         """Main event cycle."""
         # check input first to avoid hang if the interface plugin has crashed
         # and we have put a lot of work on the queue
-        # this works because Interface will send KEYB_QUIT on termination
+        # this works because Interface will send QUIT on termination
         self._check_input(event_check_input)
         # avoid screen lockups if video queue fills up
         if self.video.qsize() > self.max_video_qsize:
@@ -159,21 +159,21 @@ class EventQueues(object):
             self._replace_inputs(signal)
             # handle input events
             for handle_input in (
-                        [self._handle_non_trappable_interrupts] +
-                        [e.check_input for e in event_check_input] +
-                        [self._handle_trappable_interrupts] +
-                        [e.check_input for e in self._handlers]):
+                    [self._handle_non_trappable_interrupts] +
+                    [e.check_input for e in event_check_input] +
+                    [self._handle_trappable_interrupts] +
+                    [e.check_input for e in self._handlers]
+                ):
                 if handle_input(signal):
                     break
 
     def _handle_non_trappable_interrupts(self, signal):
         """Handle non-trappable interrupts (before BASIC events)."""
         # process input events
-        if signal.event_type == signals.KEYB_QUIT:
+        if signal.event_type == signals.QUIT:
             raise error.Exit()
         # exit pause mode on keyboard hit; swallow key
-        elif signal.event_type in (
-                    signals.KEYB_DOWN, signals.STREAM_CHAR, signals.CLIP_PASTE):
+        elif signal.event_type in (signals.KEYB_DOWN, signals.STREAM_CHAR, signals.CLIP_PASTE):
             if self._pause:
                 self._pause = False
                 return True
@@ -184,8 +184,7 @@ class EventQueues(object):
         # handle special key combinations
         if signal.event_type == signals.KEYB_DOWN:
             c, scan, mod = signal.params
-            if (scan == scancode.DELETE and
-                    scancode.CTRL in mod and scancode.ALT in mod):
+            if (scan == scancode.DELETE and scancode.CTRL in mod and scancode.ALT in mod):
                 # ctrl-alt-del: if not captured by the OS, reset the emulator
                 # meaning exit and delete state. This is useful on android.
                 raise error.Reset()
