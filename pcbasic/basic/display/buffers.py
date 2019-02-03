@@ -396,6 +396,7 @@ class VideoBuffer(object):
 
     def _draw_submit_text(self, top, left, bottom, right, update_pixels):
         """Draw text in a rectangular screen section to pixel buffer and submit."""
+        # draw text
         for row in range(top, bottom+1):
             gen_chunks = iter_chunks(
                 self._dbcs_text[row-1][left-1:right], self._rows[row-1].attrs[left-1:right]
@@ -403,16 +404,18 @@ class VideoBuffer(object):
             col = left
             for chars, attr in gen_chunks:
                 sprite = self._draw_text_chunk(row, col, chars, attr, update_pixels)
-                left, top = self.text_to_pixel_pos(row, col)
-                # convert to list of unicode chars
-                text = self._dbcs_to_unicode(chars)
-                # submit
-                if self._visible:
-                    self._queues.video.put(signals.Event(
-                        signals.VIDEO_UPDATE,
-                        (row, col, (text,), ((attr,)*len(text),), top, left, sprite)
-                    ))
                 col += len(chars)
+        # submit
+        if self._visible:
+            text = [
+                self._dbcs_to_unicode(_row[left-1:right]) for _row in self._dbcs_text[top-1:bottom]
+            ]
+            attrs = [_row.attrs[left-1:right] for _row in self._rows[top-1:bottom]]
+            x0, y0 = self.text_to_pixel_pos(top, left)
+            x1, y1 = self.text_to_pixel_pos(bottom+1, right+1)
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_UPDATE, (top, left, text, attrs, y0, x0, self._pixels[y0:y1, x0:x1])
+            ))
 
     def _draw_text_chunk(self, row, col, chars, attr, update_pixels):
         """Draw a chunk of text in a single attribute to pixels and interface."""
