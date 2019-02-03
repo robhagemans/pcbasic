@@ -197,11 +197,12 @@ class VideoANSI(video_cli.VideoTextBase):
         """Put text at a given position."""
         fore, back, blink, underline = self._attributes[attr]
         unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
+        prev_row, prev_col = self._cursor_row, self._cursor_col
         if (row, col) != (self._cursor_row, self._cursor_col):
             console.move_cursor_to(row + self._border_y, col + self._border_x)
         self._set_attributes(fore, back, blink, underline)
         console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
-        self._cursor_row, self._cursor_col = row, col+len(unicode_list)
+        console.move_cursor_to(prev_row + self._border_y, prev_col + self._border_x)
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
