@@ -355,7 +355,11 @@ class VideoBuffer(object):
 
     def resubmit(self):
         """Completely resubmit the text and graphics screen to the interface."""
-        self._draw_submit_text(1, 1, self._height, self._width, update_pixels=False)
+        text = [self._dbcs_to_unicode(_row) for _row in self._dbcs_text]
+        attrs = [_row.attrs for _row in self._rows]
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_UPDATE, (1, 1, text, attrs, 0, 0, self._pixels)
+        ))
 
     @contextmanager
     def collect_updates(self):
@@ -398,12 +402,14 @@ class VideoBuffer(object):
             col = left
             for chars, attr in chunks:
                 sprite = self._draw_text_chunk(row, col, chars, attr, update_pixels)
+                left, top = self.text_to_pixel_pos(row, col)
                 # convert to list of unicode chars
                 text = self._dbcs_to_unicode(chars)
                 # submit
                 if self._visible:
                     self._queues.video.put(signals.Event(
-                        signals.VIDEO_PUT_TEXT, (row, col, text, attr, sprite)
+                        signals.VIDEO_UPDATE,
+                        (row, col, (text,), ((attr,)*len(text),), top, left, sprite)
                     ))
                 col += len(chars)
 
@@ -433,13 +439,12 @@ class VideoBuffer(object):
             row0, col0, row1, col1, 0, adjust_end=False, clear_wrap=False
         )
         if self._visible:
+            width = col1 - col0 + 1
+            height = row1 - row0 + 1
             # no dbcs in graphics mode, so the only change is to the area that was drawn on
-            for row in range(row0, row1+1):
-                self._queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_TEXT, (row, col0, [u' ']*(col1-col0+1), 0, None)
-                ))
             self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_RECT, (x, y, rect)
+                signals.VIDEO_UPDATE,
+                (row0, col0, ((u' ',)*width,)*height, ((0,)*width,)*height, y, x, rect)
             ))
 
     ###########################################################################

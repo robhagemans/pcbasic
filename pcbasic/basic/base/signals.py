@@ -49,16 +49,14 @@ VIDEO_SET_CURSOR_SHAPE = 'set_cursor_shape'
 VIDEO_MOVE_CURSOR = 'move_cursor'
 # set border attribute
 VIDEO_SET_BORDER_ATTR = 'set_border_attr'
-# put characters
-VIDEO_PUT_TEXT = 'put_text'
 # clear rows
 VIDEO_CLEAR_ROWS = 'clear_rows'
 # scroll
 VIDEO_SCROLL = 'scroll'
 # set palette
 VIDEO_SET_PALETTE = 'set_palette'
-# put rect
-VIDEO_PUT_RECT = 'put_rect'
+# update screen section
+VIDEO_UPDATE = 'update'
 # set caption message
 VIDEO_SET_CAPTION = 'set_caption'
 # clipboard copy reply

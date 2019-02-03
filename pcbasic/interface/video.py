@@ -23,7 +23,7 @@ class VideoPlugin(object):
         self._video_queue = video_queue
         self._handlers = {
             signals.VIDEO_SET_MODE: self.set_mode,
-            signals.VIDEO_PUT_TEXT: self.put_text,
+            signals.VIDEO_UPDATE: self.update,
             signals.VIDEO_CLEAR_ROWS: self.clear_rows,
             signals.VIDEO_SCROLL: self.scroll,
             signals.VIDEO_SET_PALETTE: self.set_palette,
@@ -31,7 +31,6 @@ class VideoPlugin(object):
             signals.VIDEO_SHOW_CURSOR: self.show_cursor,
             signals.VIDEO_MOVE_CURSOR: self.move_cursor,
             signals.VIDEO_SET_BORDER_ATTR: self.set_border_attr,
-            signals.VIDEO_PUT_RECT: self.put_rect,
             signals.VIDEO_SET_CAPTION: self.set_caption_message,
             signals.VIDEO_SET_CLIPBOARD_TEXT: self.set_clipboard_text,
         }
@@ -114,11 +113,8 @@ class VideoPlugin(object):
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height. direction 1 is down, -1 up."""
 
-    def put_text(self, row, col, unicode_list, attr, glyphs):
-        """Put text at a given position."""
-
     def set_cursor_shape(self, from_line, to_line):
         """Build a sprite for the cursor."""
 
-    def put_rect(self, x0, y0, array):
-        """Apply array [y][x] of attribytes to an area."""
+    def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
+        """Put text or pixels at a given position."""
