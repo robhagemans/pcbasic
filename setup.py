@@ -204,7 +204,7 @@ SETUP_OPTIONS = {
     # requirements
     # need Python 2.7.12+ or Python 3.5+
     'python_requires': '>=2.7.12,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*',
-    'install_requires': ['numpy', 'pyserial', 'pyparallel'],
+    'install_requires': ['pyserial', 'pyparallel'],
     # use e.g. pip install -e .[dev,full]
     'extras_require': {
         'dev': ['lxml', 'markdown', 'pylint', 'coverage', 'cx_Freeze'],

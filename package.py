@@ -82,11 +82,12 @@ if CX_FREEZE and sys.platform == 'win32':
                     if (
                             # remove superfluous copies of python27.dll in lib/
                             # as there is a copy in the package root already
-                            f.lower() == 'python27.dll' or f.lower() == 'msvcr90.dll' or
-                            # remove tests and examples, but not for numpy (it breaks)
-                            (testing and 'numpy' not in root) or
+                            f.lower() == 'python27.dll' or f.lower() == 'msvcr90.dll'
+                            # remove tests and examples
+                            or testing
                             # we're only producing packages for win32_x86
-                            'win32_x64' in name or name.endswith('.dylib')):
+                            or 'win32_x64' in name or name.endswith('.dylib')
+                        ):
                         print('REMOVING %s' % (name,))
                         os.remove(name)
             # remove lib dir altogether to avoid it getting copied into the msi
@@ -95,10 +96,8 @@ if CX_FREEZE and sys.platform == 'win32':
             # remove c++ runtime etc
             os.remove('build/exe.win32-2.7/msvcm90.dll')
             os.remove('build/exe.win32-2.7/msvcp90.dll')
-            # remove numpy tests that can be left out (some seem needed)
-            for module in [
-                    'distutils', 'setuptools', 'pydoc_data', 'numpy/core/tests', 'numpy/lib/tests',
-                    'numpy/f2py/tests', 'numpy/distutils', 'numpy/doc',]:
+            # remove modules that can be left out
+            for module in ('distutils', 'setuptools', 'pydoc_data'):
                 try:
                     shutil.rmtree('build/exe.win32-2.7/lib/%s' % module)
                 except EnvironmentError:
@@ -188,7 +187,7 @@ if CX_FREEZE and sys.platform == 'win32':
     # cx_Freeze options
     SETUP_OPTIONS['options'] = {
         'build_exe': {
-            'packages': ['numpy', 'pkg_resources._vendor'],
+            'packages': ['pkg_resources._vendor'],
             'excludes': [
                 'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 'pygame',
                 'pywin', 'win32com', 'test',
@@ -234,16 +233,14 @@ elif CX_FREEZE and sys.platform == 'darwin':
                 for f in files:
                     name = os.path.join(root, f)
                     if (
-                            # remove tests and examples, but not for numpy (it breaks)
-                            (testing and 'numpy' not in root) or
+                            # remove tests and examples
+                            testing
                             # remove windows DLLs and PYDs
-                            'win32_' in name or name.endswith('.dll')):
+                            or 'win32_' in name or name.endswith('.dll')):
                         print('REMOVING %s' % (name,))
                         os.remove(name)
-            # remove modules that can be left out (some numpy tests seem needed)
-            for module in [
-                    'distutils', 'setuptools', 'pydoc_data', 'numpy/core/tests', 'numpy/lib/tests',
-                    'numpy/f2py/tests', 'numpy/distutils', 'numpy/doc',]:
+            # remove modules that can be left out
+            for module in ('distutils', 'setuptools', 'pydoc_data'):
                 try:
                     shutil.rmtree('build/exe.macosx-10.9-x86_64-2.7/lib/%s' % module)
                 except EnvironmentError:
@@ -334,7 +331,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
     # cx_Freeze options
     SETUP_OPTIONS['options'] = {
         'build_exe': {
-            'packages': ['numpy', 'pkg_resources._vendor'],
+            'packages': ['pkg_resources._vendor'],
             'excludes': [
                 'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 'pygame', 'test',
             ],
@@ -396,7 +393,7 @@ def bdist_rpm():
     _gather_resources()
     subprocess.call((
         'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
-        '--depends=numpy,pyserial,SDL2,SDL2_gfx',
+        '--depends=pyserial,SDL2,SDL2_gfx',
         '--python-setup-py-arguments=--called-by-fpm',
         '../setup.py'
     ), cwd='dist')
@@ -415,7 +412,7 @@ def bdist_deb():
     _gather_resources()
     subprocess.call((
         'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
-        '--depends=python-numpy,python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
+        '--depends=python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
         '--python-setup-py-arguments=--called-by-fpm',
         '../setup.py'
     ), cwd='dist')
