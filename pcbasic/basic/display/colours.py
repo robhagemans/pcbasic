@@ -402,9 +402,12 @@ class _CGAColourMapper(_ColourMapper):
 class _CompositeMixin(object):
     """Overrides to deal with NTSC composite artifacts."""
 
-    def __init__(self, monitor):
+    def __init__(self, adapter, monitor):
         """Initialise colour map."""
-        self._has_composite = monitor == 'composite' and self._has_colorburst
+        self._adapter = adapter
+        self._has_composite = (
+            monitor == 'composite' and adapter in COMPOSITE
+        )
         self._composite = False
 
     def set_colorburst(self, colour_on):
@@ -418,7 +421,7 @@ class _CompositeMixin(object):
     def _get_rgb_table(self):
         """List of RGB/blink/underline for all attributes, given a palette."""
         if self._composite:
-            compo_palette = tuple((_c, _c, False, False) for _c in COMPOSITE[self._composite])
+            compo_palette = tuple((_c, _c, False, False) for _c in COMPOSITE[self._adapter])
             # 4bpp composite (16 shades), 1bpp original
             return (compo_palette, (4, 1))
         return _CGAColourMapper._get_rgb_table(self)
@@ -432,7 +435,8 @@ class CGA2ColourMapper(_CompositeMixin, _CGAColourMapper):
 
     def __init__(self, queues, adapter, monitor, colorswitch):
         """Initialise colour map."""
-        _CompositeMixin.__init__(self, monitor)
+        self._has_colorburst = adapter in ('cga', 'cga_old', 'pcjr', 'tandy')
+        _CompositeMixin.__init__(self, adapter, monitor)
         _CGAColourMapper.__init__(self, queues, adapter, monitor, colorswitch)
 
     def set_colorswitch(self, colorswitch):
