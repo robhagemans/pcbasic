@@ -375,7 +375,8 @@ class VideoBuffer(object):
             # update all dirty rectangles
             for row in self._dirty_left:
                 start, stop = self._refresh_dbcs(row, self._dirty_left[row], self._dirty_right[row])
-                self._draw_submit_text(row, start, row, stop, update_pixels=True)
+                self._draw_text(row, start, row, stop)
+                self._submit_text(row, start, row, stop)
             self._dirty_left = {}
             self._dirty_right = {}
 
@@ -392,20 +393,34 @@ class VideoBuffer(object):
             return
         else:
             start, stop = self._refresh_dbcs(row, start, stop)
-            self._draw_submit_text(row, start, row, stop, update_pixels=True)
+            self._draw_text(row, start, row, stop)
+            self._submit_text(row, start, row, stop)
 
-    def _draw_submit_text(self, top, left, bottom, right, update_pixels):
-        """Draw text in a rectangular screen section to pixel buffer and submit."""
-        # draw text
+    def _draw_text(self, top, left, bottom, right):
+        """Draw text in a rectangular screen section to pixel buffer."""
         for row in range(top, bottom+1):
             gen_chunks = iter_chunks(
                 self._dbcs_text[row-1][left-1:right], self._rows[row-1].attrs[left-1:right]
             )
             col = left
             for chars, attr in gen_chunks:
-                sprite = self._draw_text_chunk(row, col, chars, attr, update_pixels)
+                sprite = self._draw_text_chunk(row, col, chars, attr)
                 col += len(chars)
-        # submit
+
+    def _draw_text_chunk(self, row, col, chars, attr):
+        """Draw a chunk of text in a single attribute to pixels and interface."""
+        if row < 1 or col < 1 or row > self._height or col > self._width:
+            logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
+            return
+        _, back, _, underline = self._colourmap.split_attr(attr)
+        # update pixel buffer
+        left, top = self.text_to_pixel_pos(row, col)
+        sprite = self._font.render_text(chars, attr, back, underline)
+        self._pixels[top:top+sprite.height, left:left+sprite.width] = sprite
+        return sprite
+
+    def _submit_text(self, top, left, bottom, right):
+        """Submit text in a rectangular screen section to interface."""
         if self._visible:
             text = [
                 self._dbcs_to_unicode(_row[left-1:right]) for _row in self._dbcs_text[top-1:bottom]
@@ -416,21 +431,6 @@ class VideoBuffer(object):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_UPDATE, (top, left, text, attrs, y0, x0, self._pixels[y0:y1, x0:x1])
             ))
-
-    def _draw_text_chunk(self, row, col, chars, attr, update_pixels):
-        """Draw a chunk of text in a single attribute to pixels and interface."""
-        if row < 1 or col < 1 or row > self._height or col > self._width:
-            logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
-            return
-        _, back, _, underline = self._colourmap.split_attr(attr)
-        # update pixel buffer
-        left, top = self.text_to_pixel_pos(row, col)
-        sprite = self._font.render_text(chars, attr, back, underline)
-        if update_pixels:
-            self._pixels[top:top+sprite.height, left:left+sprite.width] = sprite
-        else:
-            sprite = self._pixels[top:top+sprite.height, left:left+sprite.width]
-        return sprite
 
     def _submit_pixels(self, x, y, rect):
         """Clear the text under the rect and submit to interface (assumes graphics mode)."""
