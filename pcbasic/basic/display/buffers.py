@@ -66,7 +66,7 @@ class _PixelAccess(object):
         # single-attribute fill; ensure we have a complete matrix to submit
         if not isinstance(data, ByteMatrix):
             data = self._pixels[yslice, xslice]
-        self._video_buffer._submit_rect(xslice.start, yslice.start, data)
+        self._video_buffer._submit_pixels(xslice.start, yslice.start, data)
 
 
 
@@ -89,7 +89,7 @@ class VideoBuffer(object):
         self._dbcs_text = [tuple(iterchar(b' ')) * width for _ in range(height)]
         # initialise pixel buffers
         self._pixels = ByteMatrix(pixel_height, pixel_width)
-        # with set_attr that calls submit_rect
+        # with set_attr that calls submit_pixels
         self._pixel_access = _PixelAccess(self)
         # needed for signals only
         self._queues = queues
@@ -101,7 +101,10 @@ class VideoBuffer(object):
 
     def set_visible(self, visible):
         """Set the vpage flag."""
-        self._visible = visible
+        if self._visible != visible:
+            self._visible = visible
+            if visible:
+                self.resubmit()
 
     @property
     def pixels(self):
@@ -247,9 +250,8 @@ class VideoBuffer(object):
         self._dbcs_text[:] = src._dbcs_text
         self._pixels[:, :] = src._pixels
         self._pixel_access = _PixelAccess(self)
-        # resubmit to interface if needed
-        # FIXME - no need to rebuild dbcs buffers here
-        self.rebuild()
+        # resubmit to interface
+        self.resubmit()
 
     ##########################################################################
     # modify text
@@ -349,12 +351,10 @@ class VideoBuffer(object):
     ###########################################################################
     # update pixel buffer and interface
 
-    def rebuild(self):
+    def resubmit(self):
         """Completely resubmit the text and graphics screen to the interface."""
-        # resubmit the text buffer without changing the pixel buffer
-        # redraw graphics
         for row in range(self._height):
-            self._refresh_range(row+1, 1, self._width, update_pixels=False)
+            self._draw_submit_text(row+1, 1, self._width, update_pixels=False)
 
     @contextmanager
     def collect_updates(self):
@@ -368,7 +368,8 @@ class VideoBuffer(object):
             self._locked = False
             # update all dirty rectangles
             for row in self._dirty_left:
-                self._refresh_range(row, self._dirty_left[row], self._dirty_right[row])
+                start, stop = self._update_dbcs(row, self._dirty_left[row], self._dirty_right[row])
+                self._draw_submit_text(row, start, stop, update_pixels=True)
             self._dirty_left = {}
             self._dirty_right = {}
 
@@ -384,15 +385,17 @@ class VideoBuffer(object):
                 self._dirty_right[row] = stop
             return
         else:
-            self._refresh_range(row, start, stop)
-
-    def _refresh_range(self, row, start, stop, update_pixels=True):
-        """Update DBCS buffer, draw text and submit."""
-        start, stop = self._update_dbcs(row, start, stop)
-        self._draw_submit_text(row, start, stop, update_pixels)
+            start, stop = self._update_dbcs(row, start, stop)
+            self._draw_submit_text(row, start, stop, update_pixels=True)
 
     def _draw_submit_text(self, row, start, stop, update_pixels):
         """Draw text in a screen row section to pixel buffer and submit."""
+        chunks = self._split_text_in_chunks(row, start, stop)
+        for col, chars, attr in chunks:
+            self._draw_submit_text_chunk(row, col, chars, attr, update_pixels)
+
+    def _split_text_in_chunks(self, row, start, stop):
+        """Split text region into chunks of characters with the same attribute."""
         # we need to plot at least the updated range
         # as the attribute may have changed
         col, last_col = start, start
@@ -412,10 +415,9 @@ class VideoBuffer(object):
             col += len(char)
         if chars:
             chunks.append((last_col, chars, attr))
-        for col, chars, attr in chunks:
-            self._draw_text(row, col, chars, attr, update_pixels)
+        return chunks
 
-    def _draw_text(self, row, col, chars, attr, update_pixels):
+    def _draw_submit_text_chunk(self, row, col, chars, attr, update_pixels):
         """Draw a chunk of text in a single attribute to pixels and interface."""
         if row < 1 or col < 1 or row > self._height or col > self._width:
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
@@ -435,9 +437,9 @@ class VideoBuffer(object):
                 signals.VIDEO_PUT_TEXT, (row, col, text, attr, sprite)
             ))
 
-    def _submit_rect(self, x, y, rect):
+    def _submit_pixels(self, x, y, rect):
         """Clear the text under the rect and submit to interface (assumes graphics mode)."""
-        # we're assuming no dbcs below - should be disabled in graphics mode
+        # we're assuming no dbcs below: DBCS should be disabled in graphics mode
         assert not self._dbcs_enabled
         row0, col0, row1, col1 = self.pixel_to_text_area(x, y, x+rect.width, y+rect.height)
         # clear text area

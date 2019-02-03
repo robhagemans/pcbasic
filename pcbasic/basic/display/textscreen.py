@@ -154,19 +154,10 @@ class TextScreen(object):
         # but then the cursor location is static and does not equal the text insert location
         # so this seems acceptable
         self._cursor.set_active(self._vpagenum == self._apagenum)
-        #FIXME - no need to rebuild dbcs, just resubmit
-        self._apage.rebuild()
 
     def set_attr(self, attr):
         """Set attribute."""
         self._attr = attr
-
-    def rebuild(self):
-        """Completely resubmit the text and graphics screen to the interface."""
-        self._cursor.rebuild()
-        # redraw the text screen and submit to video plugin
-        for page in self._pages:
-            page.rebuild()
 
 
     ###########################################################################
