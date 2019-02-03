@@ -392,32 +392,13 @@ class VideoBuffer(object):
 
     def _draw_submit_text(self, row, start, stop, update_pixels):
         """Draw text in a screen row section to pixel buffer and submit."""
-        chunks = self._split_text_in_chunks(row, start, stop)
-        for col, chars, attr in chunks:
+        chunks = _split_text_in_chunks(
+            self._dbcs_text[row-1][start-1:stop], self._rows[row-1].attrs[start-1:stop]
+        )
+        col = start
+        for chars, attr in chunks:
             self._draw_submit_text_chunk(row, col, chars, attr, update_pixels)
-
-    def _split_text_in_chunks(self, row, start, stop):
-        """Split text region into chunks of characters with the same attribute."""
-        # we need to plot at least the updated range
-        # as the attribute may have changed
-        col, last_col = start, start
-        last_attr = None
-        chars = []
-        chunks = []
-        # collect chars in chunks with the same attribute
-        while col <= stop:
-            char = self._dbcs_text[row-1][col-1]
-            attr = self.get_attr(row, col)
-            if attr != last_attr:
-                if last_attr is not None:
-                    chunks.append((last_col, chars, last_attr))
-                last_col, last_attr = col, attr
-                chars = []
-            chars.append(char)
-            col += len(char)
-        if chars:
-            chunks.append((last_col, chars, attr))
-        return chunks
+            col += len(chars)
 
     def _draw_submit_text_chunk(self, row, col, chars, attr, update_pixels):
         """Draw a chunk of text in a single attribute to pixels and interface."""
@@ -565,3 +546,19 @@ class VideoBuffer(object):
         )
         tx0, ty0 = self.text_to_pixel_pos(from_row+1, 1)
         self._pixels.move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)
+
+
+def _split_text_in_chunks(char_list, attrs):
+    """Split text region into chunks of characters with the same attribute."""
+    last_attr = None
+    chars = []
+    # collect chars in chunks with the same attribute
+    for char, attr in zip(char_list, attrs):
+        if attr != last_attr:
+            if last_attr is not None:
+                yield chars, last_attr
+            last_attr = attr
+            chars = []
+        chars.append(char)
+    if chars:
+        yield chars, attr
