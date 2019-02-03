@@ -18,6 +18,7 @@ from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
 from ..basic.base import signals
 from ..compat import MACOS, PY2, console
+from ..compat import iter_chunks
 
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed
@@ -363,20 +364,27 @@ class VideoCurses(VideoPlugin):
             self.cursor_shape = 1
         self._show_cursor(self.cursor_visible)
 
-    def put_text(self, row, col, unicode_list, attr, glyphs):
-        """Put text at a given position."""
-        fore, back, blink, underline = self._attributes[attr]
-        unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
-        colour = self._curses_colour(fore, back, blink)
-        if colour != self.last_colour:
-            self.last_colour = colour
-            self.window.bkgdset(32, colour)
-        try:
-            self.window.addstr(
-                self.border_y+row-1, self.border_x+col-1, _to_str(u''.join(unicode_list)), colour
-            )
-        except curses.error:
-            pass
+    def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
+        """Put text or pixels at a given position."""
+        start_col = col
+        for text, attrs in zip(unicode_matrix, attr_matrix):
+            for unicode_list, attr in iter_chunks(text, attrs):
+                fore, back, blink, underline = self._attributes[attr]
+                unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
+                colour = self._curses_colour(fore, back, blink)
+                #if colour != self.last_colour:
+                self.last_colour = colour
+                self.window.bkgdset(32, colour)
+                try:
+                    self.window.addstr(
+                        self.border_y+row-1, self.border_x+col-1,
+                        _to_str(u''.join(unicode_list)), colour
+                    )
+                except curses.error:
+                    pass
+                col += len(unicode_list)
+            row += 1
+            col = start_col
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
