@@ -355,8 +355,7 @@ class VideoBuffer(object):
 
     def resubmit(self):
         """Completely resubmit the text and graphics screen to the interface."""
-        for row in range(self._height):
-            self._draw_submit_text(row+1, 1, self._width, update_pixels=False)
+        self._draw_submit_text(1, 1, self._height, self._width, update_pixels=False)
 
     @contextmanager
     def collect_updates(self):
@@ -371,7 +370,7 @@ class VideoBuffer(object):
             # update all dirty rectangles
             for row in self._dirty_left:
                 start, stop = self._refresh_dbcs(row, self._dirty_left[row], self._dirty_right[row])
-                self._draw_submit_text(row, start, stop, update_pixels=True)
+                self._draw_submit_text(row, start, row, stop, update_pixels=True)
             self._dirty_left = {}
             self._dirty_right = {}
 
@@ -388,19 +387,27 @@ class VideoBuffer(object):
             return
         else:
             start, stop = self._refresh_dbcs(row, start, stop)
-            self._draw_submit_text(row, start, stop, update_pixels=True)
+            self._draw_submit_text(row, start, row, stop, update_pixels=True)
 
-    def _draw_submit_text(self, row, start, stop, update_pixels):
-        """Draw text in a screen row section to pixel buffer and submit."""
-        chunks = _split_text_in_chunks(
-            self._dbcs_text[row-1][start-1:stop], self._rows[row-1].attrs[start-1:stop]
-        )
-        col = start
-        for chars, attr in chunks:
-            self._draw_submit_text_chunk(row, col, chars, attr, update_pixels)
-            col += len(chars)
+    def _draw_submit_text(self, top, left, bottom, right, update_pixels):
+        """Draw text in a rectangular screen section to pixel buffer and submit."""
+        for row in range(top, bottom+1):
+            chunks = _split_text_in_chunks(
+                self._dbcs_text[row-1][left-1:right], self._rows[row-1].attrs[left-1:right]
+            )
+            col = left
+            for chars, attr in chunks:
+                sprite = self._draw_text_chunk(row, col, chars, attr, update_pixels)
+                # convert to list of unicode chars
+                text = self._dbcs_to_unicode(chars)
+                # submit
+                if self._visible:
+                    self._queues.video.put(signals.Event(
+                        signals.VIDEO_PUT_TEXT, (row, col, text, attr, sprite)
+                    ))
+                col += len(chars)
 
-    def _draw_submit_text_chunk(self, row, col, chars, attr, update_pixels):
+    def _draw_text_chunk(self, row, col, chars, attr, update_pixels):
         """Draw a chunk of text in a single attribute to pixels and interface."""
         if row < 1 or col < 1 or row > self._height or col > self._width:
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
@@ -413,12 +420,7 @@ class VideoBuffer(object):
             self._pixels[top:top+sprite.height, left:left+sprite.width] = sprite
         else:
             sprite = self._pixels[top:top+sprite.height, left:left+sprite.width]
-        # mark full-width chars by a trailing empty string to preserve column counts
-        text = self._dbcs_to_unicode(chars)
-        if self._visible:
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_TEXT, (row, col, text, attr, sprite)
-            ))
+        return sprite
 
     def _submit_pixels(self, x, y, rect):
         """Clear the text under the rect and submit to interface (assumes graphics mode)."""
