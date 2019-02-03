@@ -121,4 +121,4 @@ class VideoPlugin(object):
         """Build a sprite for the cursor."""
 
     def put_rect(self, x0, y0, array):
-        """Apply numpy array [y][x] of attribytes to an area."""
+        """Apply array [y][x] of attribytes to an area."""
