@@ -86,7 +86,7 @@ class VideoBuffer(object):
         # DBCS support
         self._codepage = codepage
         self._dbcs_enabled = codepage.dbcs and do_fullwidth
-        self._dbcs_text = [tuple(iterchar(b' ')) * width for _ in range(height)]
+        self._dbcs_text = [[b' '] * width for _ in range(height)]
         # initialise pixel buffers
         self._pixels = ByteMatrix(pixel_height, pixel_width)
         # with set_attr that calls submit_pixels
@@ -331,7 +331,7 @@ class VideoBuffer(object):
             tuples = ((_seq,) if len(_seq) == 1 else (_seq, b'') for _seq in marks)
             sequences = [_seq for _tup in tuples for _seq in _tup]
         else:
-            sequences = tuple(iterchar(raw))
+            sequences = list(iterchar(raw))
         updated = [old != new for old, new in zip(self._dbcs_text[row-1], sequences)]
         self._dbcs_text[row-1] = sequences
         try:
@@ -495,9 +495,8 @@ class VideoBuffer(object):
                 # characters earlier on the row may be affected, e.g. box-protected chars
                 self._refresh_dbcs(row, 1, self._width)
         else:
-            self._dbcs_text[from_row-1:to_row][from_col-1:to_col] = [
-                tuple(iterchar(b' ')) * (to_col-from_col+1) for _ in range(to_row-from_row+1)
-            ]
+            for row in range(from_row, to_row+1):
+                self._dbcs_text[row-1][from_col-1:to_col] = [b' '] * (to_col-from_col+1)
 
     ###########################################################################
     # scrolling
@@ -519,7 +518,7 @@ class VideoBuffer(object):
         del self._rows[from_row-1]
         # update dbcs buffer
         self._dbcs_text[from_row-1:to_row-1] = self._dbcs_text[from_row:to_row]
-        self._dbcs_text[to_row-1] = (tuple(iterchar(b' ')) * self._width)
+        self._dbcs_text[to_row-1] = [b' '] * self._width
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
             from_row+1, 1, to_row, self._width
@@ -546,7 +545,7 @@ class VideoBuffer(object):
             self._rows[from_row-1].wrap = True
         # update dbcs buffer
         self._dbcs_text[from_row:to_row] = self._dbcs_text[from_row-1:to_row-1]
-        self._dbcs_text[from_row-1] = tuple(iterchar(b' ')) * self._width
+        self._dbcs_text[from_row-1] = [b' '] * self._width
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
             from_row, 1, to_row-1, self._width
