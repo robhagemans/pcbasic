@@ -196,6 +196,7 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
         """Put text or pixels at a given position."""
+        start_col = col
         curs_row, curs_col = self._cursor_row, self._cursor_col
         for text, attrs in zip(unicode_matrix, attr_matrix):
             console.move_cursor_to(row + self._border_y, col + self._border_x)
@@ -206,7 +207,7 @@ class VideoANSI(video_cli.VideoTextBase):
                 console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
                 col += len(unicode_list)
             row += 1
-            col = 1
+            col = start_col
         console.move_cursor_to(self._cursor_row + self._border_y, self._cursor_col + self._border_x)
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
