@@ -343,10 +343,12 @@ class VideoBuffer(object):
         start, stop = min(start, orig_start), max(stop, orig_stop)
         return start, stop
 
-    def _dbcs_to_unicode(self, chars):
-        """Convert list of dbcs chars to list of unicode; fullwidth trailed by empty u''."""
-        text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
-        return [self._codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
+    def _dbcs_to_unicode(self, char_list):
+        """Convert list of dbcs chars to list of unicode; fullwidth must be trailed by empty u''."""
+        return [
+            (self._codepage.to_unicode(_c, u'\0') if _c else u'')
+            for _c in char_list
+        ]
 
     ###########################################################################
     # update pixel buffer and interface

@@ -123,7 +123,7 @@ class Codepage(object):
         return b''.join(self.from_unicode(uc, errors=errors) for uc in split_graphemes(ucs))
 
     def to_unicode(self, cp, replace=u''):
-        """Convert codepage point to unicode grapheme cluster """
+        """Convert codepage point to unicode grapheme cluster."""
         return self.cp_to_unicode.get(cp, replace)
 
     def str_to_unicode(self, cps, preserve=(), box_protect=None):
