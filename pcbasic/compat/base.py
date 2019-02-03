@@ -87,6 +87,21 @@ def split_pair(s, sep):
         s1 = u''
     return s0, s1
 
+def iter_chunks(char_list, attrs):
+    """Iterate over list yielding chunks of elements with the same attribute."""
+    last_attr = None
+    chars = []
+    # collect chars in chunks with the same attribute
+    for char, attr in zip(char_list, attrs):
+        if attr != last_attr:
+            if last_attr is not None:
+                yield chars, last_attr
+            last_attr = attr
+            chars = []
+        chars.append(char)
+    if chars:
+        yield chars, attr
+
 @contextlib.contextmanager
 def muffle(std_stream):
     """Suppress stdout or stderr messages."""

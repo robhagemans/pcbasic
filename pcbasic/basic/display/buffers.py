@@ -10,6 +10,7 @@ import logging
 from contextlib import contextmanager
 
 from ...compat import zip, int2byte, iterchar
+from ...compat import iter_chunks
 from ..base import signals
 from ..base.bytematrix import ByteMatrix
 
@@ -396,11 +397,11 @@ class VideoBuffer(object):
     def _draw_submit_text(self, top, left, bottom, right, update_pixels):
         """Draw text in a rectangular screen section to pixel buffer and submit."""
         for row in range(top, bottom+1):
-            chunks = _split_text_in_chunks(
+            gen_chunks = iter_chunks(
                 self._dbcs_text[row-1][left-1:right], self._rows[row-1].attrs[left-1:right]
             )
             col = left
-            for chars, attr in chunks:
+            for chars, attr in gen_chunks:
                 sprite = self._draw_text_chunk(row, col, chars, attr, update_pixels)
                 left, top = self.text_to_pixel_pos(row, col)
                 # convert to list of unicode chars
@@ -552,19 +553,3 @@ class VideoBuffer(object):
         )
         tx0, ty0 = self.text_to_pixel_pos(from_row+1, 1)
         self._pixels.move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)
-
-
-def _split_text_in_chunks(char_list, attrs):
-    """Split text region into chunks of characters with the same attribute."""
-    last_attr = None
-    chars = []
-    # collect chars in chunks with the same attribute
-    for char, attr in zip(char_list, attrs):
-        if attr != last_attr:
-            if last_attr is not None:
-                yield chars, last_attr
-            last_attr = attr
-            chars = []
-        chars.append(char)
-    if chars:
-        yield chars, attr

@@ -11,7 +11,8 @@ import sys
 from .video import VideoPlugin
 from .base import video_plugins
 from . import video_cli
-from ..compat import console, muffle
+from ..compat import console, zip
+from ..compat import muffle, iter_chunks
 
 
 # CGA colours: black, cyan, magenta, white
@@ -133,7 +134,7 @@ class VideoANSI(video_cli.VideoTextBase):
             back = (0,) * len(attributes)
         blink = tuple(_blink for _, _, _blink, _ in attributes)
         under = tuple(_under for _, _, _, _under in attributes)
-        int_attributes = zip(fore, back, blink, under)
+        int_attributes = list(zip(fore, back, blink, under))
         self._attributes = int_attributes
         for index, rgb in enumerate(rgb_table):
             console.set_palette_entry(index, *rgb)
@@ -193,16 +194,20 @@ class VideoANSI(video_cli.VideoTextBase):
         if self._cursor_visible:
             console.show_cursor(block=self._block_cursor)
 
-    def put_text(self, row, col, unicode_list, attr, glyphs):
-        """Put text at a given position."""
-        fore, back, blink, underline = self._attributes[attr]
-        unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
-        prev_row, prev_col = self._cursor_row, self._cursor_col
-        if (row, col) != (self._cursor_row, self._cursor_col):
+    def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
+        """Put text or pixels at a given position."""
+        curs_row, curs_col = self._cursor_row, self._cursor_col
+        for text, attrs in zip(unicode_matrix, attr_matrix):
             console.move_cursor_to(row + self._border_y, col + self._border_x)
-        self._set_attributes(fore, back, blink, underline)
-        console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
-        console.move_cursor_to(prev_row + self._border_y, prev_col + self._border_x)
+            for unicode_list, attr in iter_chunks(text, attrs):
+                fore, back, blink, underline = self._attributes[attr]
+                unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
+                self._set_attributes(fore, back, blink, underline)
+                console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
+                col += len(unicode_list)
+            row += 1
+            col = 1
+        console.move_cursor_to(self._cursor_row + self._border_y, self._cursor_col + self._border_x)
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
