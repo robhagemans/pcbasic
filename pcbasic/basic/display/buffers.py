@@ -250,7 +250,6 @@ class VideoBuffer(object):
         # resubmit to interface
         self.resubmit()
 
-
     ##########################################################################
     # modify pixels
 
@@ -264,7 +263,6 @@ class VideoBuffer(object):
         )
         rect = self._pixels[top:bottom+1, left:right+1]
         self._submit(row0, col0, row1, col1)
-
 
     ##########################################################################
     # modify text
@@ -364,11 +362,27 @@ class VideoBuffer(object):
         ]
 
     ###########################################################################
-    # update pixel buffer and interface
+    # submit to interface
 
     def resubmit(self):
         """Completely resubmit the text and graphics screen to the interface."""
         self._submit(1, 1, self._height, self._width)
+
+    def _submit(self, top, left, bottom, right):
+        """Submit a rectangular screen section to interface (text coordinates)."""
+        if self._visible:
+            text = [
+                self._dbcs_to_unicode(_row[left-1:right]) for _row in self._dbcs_text[top-1:bottom]
+            ]
+            attrs = [_row.attrs[left-1:right] for _row in self._rows[top-1:bottom]]
+            x0, y0 = self.text_to_pixel_pos(top, left)
+            x1, y1 = self.text_to_pixel_pos(bottom+1, right+1)
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_UPDATE, (top, left, text, attrs, y0, x0, self._pixels[y0:y1, x0:x1])
+            ))
+
+    ###########################################################################
+    # text rendering
 
     @contextmanager
     def collect_updates(self):
@@ -426,19 +440,6 @@ class VideoBuffer(object):
         sprite = self._font.render_text(chars, attr, back, underline)
         self._pixels[top:top+sprite.height, left:left+sprite.width] = sprite
         return sprite
-
-    def _submit(self, top, left, bottom, right):
-        """Submit a rectangular screen section to interface (text coordinates)."""
-        if self._visible:
-            text = [
-                self._dbcs_to_unicode(_row[left-1:right]) for _row in self._dbcs_text[top-1:bottom]
-            ]
-            attrs = [_row.attrs[left-1:right] for _row in self._rows[top-1:bottom]]
-            x0, y0 = self.text_to_pixel_pos(top, left)
-            x1, y1 = self.text_to_pixel_pos(bottom+1, right+1)
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_UPDATE, (top, left, text, attrs, y0, x0, self._pixels[y0:y1, x0:x1])
-            ))
 
     ###########################################################################
     # clearing
