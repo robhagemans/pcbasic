@@ -64,11 +64,7 @@ class _PixelAccess(object):
             yslice = slice(yslice, yslice+1)
         if not isinstance(xslice, slice):
             xslice = slice(xslice, xslice+1)
-        # single-attribute fill; ensure we have a complete matrix to submit
-        if not isinstance(data, ByteMatrix):
-            data = self._pixels[yslice, xslice]
-        self._video_buffer._submit_pixels(xslice.start, yslice.start, data)
-
+        self._video_buffer._update_pixels(yslice.start, xslice.start, yslice.stop-1, xslice.stop-1)
 
 
 class VideoBuffer(object):
@@ -254,6 +250,22 @@ class VideoBuffer(object):
         # resubmit to interface
         self.resubmit()
 
+
+    ##########################################################################
+    # modify pixels
+
+    def _update_pixels(self, top, left, bottom, right):
+        """Clear the text under the rect and submit to interface."""
+        row0, col0, row1, col1 = self.pixel_to_text_area(left, top, right, bottom)
+        # clear text area
+        # we can't see or query the attribute in graphics mode - might as well set to zero
+        self._clear_text_area(
+            row0, col0, row1, col1, 0, adjust_end=False, clear_wrap=False
+        )
+        rect = self._pixels[top:bottom+1, left:right+1]
+        self._submit(row0, col0, row1, col1)
+
+
     ##########################################################################
     # modify text
 
@@ -356,11 +368,7 @@ class VideoBuffer(object):
 
     def resubmit(self):
         """Completely resubmit the text and graphics screen to the interface."""
-        text = [self._dbcs_to_unicode(_row) for _row in self._dbcs_text]
-        attrs = [_row.attrs for _row in self._rows]
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_UPDATE, (1, 1, text, attrs, 0, 0, self._pixels)
-        ))
+        self._submit(1, 1, self._height, self._width)
 
     @contextmanager
     def collect_updates(self):
@@ -376,7 +384,7 @@ class VideoBuffer(object):
             for row in self._dirty_left:
                 start, stop = self._refresh_dbcs(row, self._dirty_left[row], self._dirty_right[row])
                 self._draw_text(row, start, row, stop)
-                self._submit_text(row, start, row, stop)
+                self._submit(row, start, row, stop)
             self._dirty_left = {}
             self._dirty_right = {}
 
@@ -394,7 +402,7 @@ class VideoBuffer(object):
         else:
             start, stop = self._refresh_dbcs(row, start, stop)
             self._draw_text(row, start, row, stop)
-            self._submit_text(row, start, row, stop)
+            self._submit(row, start, row, stop)
 
     def _draw_text(self, top, left, bottom, right):
         """Draw text in a rectangular screen section to pixel buffer."""
@@ -419,8 +427,8 @@ class VideoBuffer(object):
         self._pixels[top:top+sprite.height, left:left+sprite.width] = sprite
         return sprite
 
-    def _submit_text(self, top, left, bottom, right):
-        """Submit text in a rectangular screen section to interface."""
+    def _submit(self, top, left, bottom, right):
+        """Submit a rectangular screen section to interface (text coordinates)."""
         if self._visible:
             text = [
                 self._dbcs_to_unicode(_row[left-1:right]) for _row in self._dbcs_text[top-1:bottom]
@@ -430,25 +438,6 @@ class VideoBuffer(object):
             x1, y1 = self.text_to_pixel_pos(bottom+1, right+1)
             self._queues.video.put(signals.Event(
                 signals.VIDEO_UPDATE, (top, left, text, attrs, y0, x0, self._pixels[y0:y1, x0:x1])
-            ))
-
-    def _submit_pixels(self, x, y, rect):
-        """Clear the text under the rect and submit to interface (assumes graphics mode)."""
-        # we're assuming no dbcs below: DBCS should be disabled in graphics mode
-        assert not self._dbcs_enabled
-        row0, col0, row1, col1 = self.pixel_to_text_area(x, y, x+rect.width, y+rect.height)
-        # clear text area
-        # we can't see or query the attribute in graphics mode - might as well set to zero
-        self._clear_text_area(
-            row0, col0, row1, col1, 0, adjust_end=False, clear_wrap=False
-        )
-        if self._visible:
-            width = col1 - col0 + 1
-            height = row1 - row0 + 1
-            # no dbcs in graphics mode, so the only change is to the area that was drawn on
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_UPDATE,
-                (row0, col0, ((u' ',)*width,)*height, ((0,)*width,)*height, y, x, rect)
             ))
 
     ###########################################################################
