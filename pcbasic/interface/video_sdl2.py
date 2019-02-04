@@ -345,15 +345,13 @@ class VideoSDL2(VideoPlugin):
         # blink is enabled, should be True in text modes with blink and ega mono
         # set to true if blinking attributes occur in palette
         # cursor blinks if _text_cursor and _blink_enabled
-        self._blink_enabled = True
+        self._blink_enabled = False
         # load the icon
         self._icon = bytematrix.ByteMatrix(len(ICON), len(ICON[0]), ICON).hrepeat(2).vrepeat(2)
         # mouse setups
         self._mouse_clip = mouse_clipboard
         # keyboard setup
         self._f11_active = False
-        # we need a set_mode call to be really up and running
-        self._has_window = False
         # ensure the correct SDL2 video driver is chosen for Windows
         # since this gets messed up if we also import pygame
         self._env = EnvironmentCache()
@@ -455,22 +453,24 @@ class VideoSDL2(VideoPlugin):
     def __exit__(self, exc_type, value, traceback):
         """Close the SDL2 interface."""
         VideoPlugin.__exit__(self, exc_type, value, traceback)
-        if sdl2 and self._has_window:
+        if not sdl2:
+            return
+        if self._display:
             # free windows
             sdl2.SDL_DestroyWindow(self._display)
-            # free caches
-            for surface in self._display_cache:
-                sdl2.SDL_FreeSurface(surface)
-            # free surfaces
-            if self._window_surface:
-                sdl2.SDL_FreeSurface(self._window_surface)
-            # free palettes
-            for palette in self._palette:
-                sdl2.SDL_FreePalette(palette)
-            # close IME
-            sdl2.SDL_StopTextInput()
-            # close SDL2
-            sdl2.SDL_Quit()
+        # free caches
+        for surface in self._display_cache:
+            sdl2.SDL_FreeSurface(surface)
+        # free surfaces
+        if self._window_surface:
+            sdl2.SDL_FreeSurface(self._window_surface)
+        # free palettes
+        for palette in self._palette:
+            sdl2.SDL_FreePalette(palette)
+        # close IME
+        sdl2.SDL_StopTextInput()
+        # close SDL2
+        sdl2.SDL_Quit()
 
     def _set_icon(self):
         """Set the icon on the SDL window."""
@@ -527,8 +527,8 @@ class VideoSDL2(VideoPlugin):
 
     def _check_input(self):
         """Handle screen and interface events."""
-        # don't try to handle events before set_mode
-        if not self._has_window:
+        # don't try to handle events before display is set up
+        if not self._display:
             return
         # check and handle input events
         self._last_keypress = None
@@ -788,7 +788,7 @@ class VideoSDL2(VideoPlugin):
 
     def _work(self):
         """Check screen and blink events; update screen if necessary."""
-        if not self._has_window:
+        if not self._window_surface:
             return
         #               0      0      1      1
         # cycle         0 1234 5 6789 0 1234 5 6789 (0)
@@ -946,12 +946,16 @@ class VideoSDL2(VideoPlugin):
 
     def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Initialise a given text or graphics mode."""
-        # unpack mode info struct
+        # set geometry
         self._font_height = -(-canvas_height // text_height)
         self._font_width = canvas_width // text_width
+        # set standard cursor
+        self._cursor_width = self._font_width
+        self._cursor_from, self._cursor_height = 0, self._font_height
+        # initially false, can be overridden by set_cursor
         self._text_cursor = False
+        # initially false, can be overridden by set_cursor or set_palette
         self._blink_enabled = False
-        # prebuilt glyphs
         # logical size
         size_changed = self._window_sizer.set_canvas_size(
             canvas_width, canvas_height, fullscreen=self._fullscreen, resize_window=False
@@ -969,20 +973,15 @@ class VideoSDL2(VideoPlugin):
                 )
                 # need to update surface pointer after a change in window size
                 self._reset_display_caches()
-        # set standard cursor
-        self._cursor_width = self._font_width
-        self._cursor_from, self._cursor_height = 0, self._font_height
         # screen pages
         if self._window_surface:
             sdl2.SDL_FreeSurface(self._window_surface)
         work_width, work_height = self._window_sizer.window_size_logical
         self._window_surface = sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
         border_x, border_y = self._window_sizer.border_shift
-        if self._window_surface:
-            self._canvas_pixels = _pixels2d(self._window_surface)[
-                border_y : work_height - border_y,
-                border_x : work_width - border_x
-            ]
+        self._canvas_pixels = _pixels2d(self._window_surface)[
+            border_y : work_height - border_y, border_x : work_width - border_x
+        ]
         # initialise clipboard
         self._clipboard_interface = clipboard.ClipboardInterface(
             self._clipboard_handler, self._input_queue,
@@ -990,7 +989,6 @@ class VideoSDL2(VideoPlugin):
             (canvas_width, canvas_height)
         )
         self.busy = True
-        self._has_window = True
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
