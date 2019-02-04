@@ -306,8 +306,25 @@ class Converter(object):
         self._bset = -1
         self._last = b''
 
-    def mark(self, s, flush=False):
-        """Process codepage string, returning list of grouped code sequences when ready."""
+    def to_unicode(self, s, flush=False):
+        """Process codepage string, returning unicode string when ready."""
+        return u''.join(self.to_unicode_list(s, flush))
+
+    def to_unicode_list(self, s, flush=False):
+        """Convert codepage to list of unicode with fullwidth marked by trailing u''."""
+        tuples = ((_seq,) if len(_seq) == 1 else (_seq, b'') for _seq in self._mark(s, flush))
+        sequences = (_seq for _tup in tuples for _seq in _tup)
+        return [
+            (
+                _seq.decode('ascii', errors='ignore')
+                if (_seq in self._preserve)
+                else self._cp.to_unicode(_seq)
+            )
+            for _seq in sequences
+        ]
+
+    def _mark(self, s, flush=False):
+        """Convert bytes to list of codepage bytes."""
         if not self._dbcs:
             # stateless if not dbcs
             return list(iterchar(s))
@@ -316,17 +333,6 @@ class Converter(object):
             if flush:
                 sequences += self._flush()
             return sequences
-
-    def to_unicode(self, s, flush=False):
-        """Process codepage string, returning unicode string when ready."""
-        return u''.join(
-            (
-                seq.decode('ascii', errors='ignore')
-                if (seq in self._preserve)
-                else self._cp.to_unicode(seq)
-            )
-            for seq in self.mark(s, flush)
-        )
 
     def _flush(self, num=None):
         """Empty buffer and return contents."""
