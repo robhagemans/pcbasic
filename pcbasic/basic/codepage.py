@@ -78,16 +78,16 @@ class Codepage(object):
                 self.cp_to_unicode[cp_point] = grapheme_cluster
             # track lead and trail bytes
             if len(cp_point) == 2:
-                self.lead.add(cp_point[0])
-                self.trail.add(cp_point[1])
+                self.lead.add(cp_point[0:1])
+                self.trail.add(cp_point[1:2])
                 self.dbcs_num_chars += 1
             # track box drawing chars
             else:
                 for i in (0, 1):
                     if grapheme_cluster in box_left_unicode[i]:
-                        self.box_left[i].add(cp_point[0])
+                        self.box_left[i].add(cp_point[0:1])
                     if grapheme_cluster in box_right_unicode[i]:
-                        self.box_right[i].add(cp_point[0])
+                        self.box_right[i].add(cp_point[0:1])
         # fill up any undefined 1-byte codepoints
         for c in range(256):
             if int2byte(c) not in self.cp_to_unicode:
