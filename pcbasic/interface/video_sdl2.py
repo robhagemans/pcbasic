@@ -344,8 +344,7 @@ class VideoSDL2(VideoPlugin):
         self._last_tick = 0
         # blink is enabled, should be True in text modes with blink and ega mono
         # set to true if blinking attributes occur in palette
-        # cursor blinks if _text_cursor and _blink_enabled
-        self._blink_enabled = False
+        self._palette_blinks = False
         # load the icon
         self._icon = bytematrix.ByteMatrix(len(ICON), len(ICON[0]), ICON).hrepeat(2).vrepeat(2)
         # mouse setups
@@ -797,7 +796,7 @@ class VideoSDL2(VideoPlugin):
         # blink         on     on     off    off
         #
         # blink state remains constant if blink not enabled
-        # cursor blinks only if _text_cursor and _blink_enabled
+        # cursor blinks only if _text_cursor
         # cursor visible every cycle between 5 and 10, 15 and 20
         tick = sdl2.SDL_GetTicks()
         if tick - self._last_tick >= CYCLE_TIME:
@@ -807,14 +806,14 @@ class VideoSDL2(VideoPlugin):
                 self._cycle = 0
             # blink state
             blink_state, blink_tock = divmod(self._cycle, BLINK_CYCLES)
-            if not self._blink_enabled:
+            if not self._palette_blinks and not self.text_cursor:
                 blink_state = 1
             # flip display fully if changed, use cache if just blinking
             if self.busy:
                 self._clear_display_cache()
                 self._flip_busy(blink_state)
                 self.busy = False
-            elif self._blink_enabled and blink_tock == 0:
+            elif (self._palette_blinks or self._text_cursor) and blink_tock == 0:
                 self._flip_lazy(blink_state)
 
     def _clear_display_cache(self):
@@ -952,10 +951,6 @@ class VideoSDL2(VideoPlugin):
         # set standard cursor
         self._cursor_width = self._font_width
         self._cursor_from, self._cursor_height = 0, self._font_height
-        # initially false, can be overridden by set_cursor
-        self._text_cursor = False
-        # initially false, can be overridden by set_cursor or set_palette
-        self._blink_enabled = False
         # logical size
         size_changed = self._window_sizer.set_canvas_size(
             canvas_width, canvas_height, fullscreen=self._fullscreen, resize_window=False
@@ -1005,7 +1000,7 @@ class VideoSDL2(VideoPlugin):
         palette_blink_up = [_fore for _fore, _, _, _ in attributes]
         palette_blink_down = [_back if _blink else _fore for _fore, _back, _blink, _ in attributes]
         if palette_blink_up != palette_blink_down:
-            self._blink_enabled = True
+            self._palette_blinks = True
         # blink states: 0 light up, 1 light down
         colors_0 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)
@@ -1046,8 +1041,6 @@ class VideoSDL2(VideoPlugin):
     def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
         self._text_cursor = cursor_blinks
-        if cursor_blinks:
-            self._blink_enabled = True
         self._cursor_visible = cursor_on
         self.busy = True
 
