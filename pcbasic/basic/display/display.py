@@ -59,12 +59,13 @@ class Display(object):
         self._fonts = {}
         if fonts:
             self._fonts = {
-                height: font.Font(height, font_dict)
+                height: font.Font(height, font_dict, codepage)
                 for height, font_dict in iteritems(fonts) if font_dict
             }
         # we must have an 8-pixel font; use the default CP437 font if none provided
+        # but note that we interpret the characters through the codepage provided
         if 8 not in self._fonts:
-            self._fonts[8] = font.Font(8, None)
+            self._fonts[8] = font.Font(8, None, codepage)
         # copy as 8-pixel hardware BIOS font (for CGA textmodes)
         # as opposed to the loadable 8-pixel memory font used in graphics modes
         self._bios_font_8 = self._fonts[8].copy()

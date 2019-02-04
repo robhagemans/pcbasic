@@ -426,7 +426,8 @@ class VideoBuffer(object):
             )
             col = left
             for chars, attr in gen_chunks:
-                sprite = self._draw_text_chunk(row, col, chars, attr)
+                text = self._dbcs_to_unicode(chars)
+                sprite = self._draw_text_chunk(row, col, text, attr)
                 col += len(chars)
 
     def _draw_text_chunk(self, row, col, chars, attr):
