@@ -304,6 +304,7 @@ class PosixConsole(object):
             u''.join(ANSI.RESET_PALETTE_ENTRY % (attr,) for attr in range(16)) +
             ANSI.SET_COLOUR % (0,) +
             ANSI.SHOW_CURSOR +
+            ANSI.SET_CURSOR_COLOUR % (0xff, 0xff, 0xff) +
             ANSI.SET_CURSOR_SHAPE % (1,)
         )
 
