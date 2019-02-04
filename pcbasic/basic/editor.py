@@ -256,12 +256,16 @@ class Editor(object):
             self._screen.text.find_start_of_line(self._screen.apagenum, the_row), from_col
         )
 
-    def backspace(self, start_row, start_col):
+    def backspace(self, prompt_row, furthest_left):
         """Delete the char to the left (BACKSPACE)."""
         row, col = self._screen.current_row, self._screen.current_col
         start_row = self._screen.text.find_start_of_line(self._screen.apagenum, row)
         # don't backspace through prompt or through start of logical line
-        if ((col == 1 and row > start_row) or (col != start_col or row != start_row)):
+        # on the prompt row, don't go any further back than we've been already
+        if (
+                ((col != furthest_left or row != prompt_row)
+                and (col > 1 or row > start_row))
+            ):
             self._screen.decr_pos()
         self._screen.delete_fullchar()
 
