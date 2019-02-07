@@ -181,10 +181,10 @@ class ExceptionGuard(object):
         # show message on screen
         for attr, text in message:
             impl.display.set_attr(attr)
-            impl.display.text_screen.write(text.encode('cp437', 'replace').replace('\n', '\r'))
+            impl.display.text_screen.write(text.replace('\n', '\r').encode('cp437', 'replace'))
         impl.display.text_screen.set_pos(25, 1)
         impl.display.set_attr(bottom[0])
-        impl.display.text_screen.write(bottom[1].encode('cp437', 'replace').replace('\n', '\r'))
+        impl.display.text_screen.write(bottom[1].replace('\n', '\r').encode('cp437', 'replace'))
         # write crash log
         crashlog = u'\n'.join(
             line.decode('cp437', 'replace') if isinstance(line, bytes) else line
