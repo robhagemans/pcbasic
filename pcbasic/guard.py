@@ -2,7 +2,7 @@
 PC-BASIC - guard
 Crash guard
 
-(c) 2013--2018 Rob Hagemans
+(c) 2013--2019 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -12,11 +12,14 @@ import logging
 import platform
 import tempfile
 import traceback
+import json
 from datetime import datetime
 from contextlib import contextmanager
+from subprocess import check_output, CalledProcessError
 
 from .metadata import VERSION
 from .basic.base import error, signals
+from .data import get_data, ResourceFailed
 
 
 LOG_PATTERN = u'crash-%Y%m%d-'
@@ -31,6 +34,21 @@ class NoGuard(object):
         yield
 
 NOGUARD = NoGuard()
+
+try:
+    RELEASE_ID = json.loads(get_data('release.json'))
+    TAG = RELEASE_ID[u'tag']
+    COMMIT = RELEASE_ID[u'commit']
+    TIMESTAMP = RELEASE_ID[u'timestamp']
+except ResourceFailed:
+    TAG = u''
+    TIMESTAMP = u''
+    try:
+        COMMIT = check_output(
+            ['git', 'describe', '--always'], cwd=os.path.dirname(__file__)
+        ).strip().decode('ascii', 'ignore')
+    except CalledProcessError:
+        COMMIT = u'unknown'
 
 
 class ExceptionGuard(object):
@@ -94,7 +112,7 @@ class ExceptionGuard(object):
         message = [
             (0x70, u'FATAL ERROR\n'),
             (0x17, u'version   '),
-            (0x1f, VERSION),
+            (0x1f, u'%s [%s] %s %s' % (VERSION, COMMIT, TAG, TIMESTAMP)),
             (0x17, u'\npython    '),
             (0x1f, u'%s [%s] %s' % (
                 platform.python_version(), u' '.join(platform.architecture()), frozen

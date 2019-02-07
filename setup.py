@@ -14,8 +14,11 @@ import platform
 import shutil
 import glob
 import subprocess
+import datetime
+import json
 from io import open
 from setuptools.command import sdist, build_py
+from subprocess import check_output, CalledProcessError
 
 import distutils.cmd
 from setuptools import find_packages, Extension
@@ -41,7 +44,9 @@ include *.md
 include GPL3.txt
 include doc/*
 include pcbasic/data/USAGE.txt
+include pcbasic/data/release.json
 include pcbasic/data/*/*
+exclude ISSUE_TEMPLATE.md
 """
 
 
@@ -51,6 +56,25 @@ include pcbasic/data/*/*
 # obtain metadata without importing the package (to avoid breaking setup)
 with open(os.path.join(HERE, 'pcbasic', 'metadata.py'), encoding='utf-8') as f:
     exec(f.read())
+
+
+# git commit hash
+try:
+    TAG = check_output(['git', 'describe', '--tags'], cwd=HERE).strip().decode('ascii', 'ignore')
+    COMMIT = check_output(
+        ['git', 'describe', '--always'], cwd=HERE
+    ).strip().decode('ascii', 'ignore')
+except (EnvironmentError, CalledProcessError):
+    TAG = u''
+    COMMIT = u''
+
+# release info
+RELEASE_ID = {
+    u'version': VERSION,
+    u'tag': TAG,
+    u'commit': COMMIT,
+    u'timestamp': str(datetime.datetime.now())
+}
 
 
 ###############################################################################
@@ -127,9 +151,12 @@ class SDistCommand(sdist.sdist):
                 u'include pcbasic/lib/README.md\n'
                 u'prune test\n'
             )
+        with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
+            f.write(json.dumps(RELEASE_ID).decode('ascii', 'ignore'))
         self.run_command('build_docs')
         sdist.sdist.run(self)
         os.remove(os.path.join(HERE, 'MANIFEST.in'))
+        os.remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
 
 
 class BuildPyCommand(build_py.build_py):
@@ -146,8 +173,11 @@ class BuildPyCommand(build_py.build_py):
                     f.write(u'include pcbasic/lib/win32_x64/*.dll\n')
                 else:
                     f.write(u'include pcbasic/lib/win32_x86/*.dll\n')
+        with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
+            f.write(json.dumps(RELEASE_ID).decode('ascii', 'ignore'))
         build_py.build_py.run(self)
         os.remove(os.path.join(HERE, 'MANIFEST.in'))
+        os.remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
 
 
 ###############################################################################
