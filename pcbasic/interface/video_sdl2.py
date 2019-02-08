@@ -806,7 +806,7 @@ class VideoSDL2(VideoPlugin):
                 self._cycle = 0
             # blink state
             blink_state, blink_tock = divmod(self._cycle, BLINK_CYCLES)
-            if not self._palette_blinks and not self.text_cursor:
+            if not self._palette_blinks and not self._text_cursor:
                 blink_state = 1
             # flip display fully if changed, use cache if just blinking
             if self.busy:
@@ -999,8 +999,7 @@ class VideoSDL2(VideoPlugin):
         self._attributes = attributes
         palette_blink_up = [_fore for _fore, _, _, _ in attributes]
         palette_blink_down = [_back if _blink else _fore for _fore, _back, _blink, _ in attributes]
-        if palette_blink_up != palette_blink_down:
-            self._palette_blinks = True
+        self._palette_blinks = palette_blink_up != palette_blink_down
         # blink states: 0 light up, 1 light down
         colors_0 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)
