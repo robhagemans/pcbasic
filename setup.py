@@ -220,17 +220,37 @@ SETUP_OPTIONS = {
     },
 }
 
-
 # platform-specific settings
 if sys.platform == 'win32':
     SETUP_OPTIONS['entry_points']['gui_scripts'] = ['pcbasicw=pcbasic:main']
+
+
 elif sys.platform == 'linux2':
-    target = '/usr/local/'
+    # these need to be included in the sdist for the packaging script to pick them up
+    # and I think fpm calls setup.py sdist directly
+
+    XDG_DESKTOP_ENTRY = u"""
+[Desktop Entry]
+Name=PC-BASIC
+GenericName=GW-BASIC compatible interpreter
+Exec=/usr/local/bin/pcbasic
+Terminal=false
+Type=Application
+Icon=pcbasic
+Categories=Development;IDE;
+"""
+
+    with open('pcbasic.desktop', 'w') as xdg_file:
+        xdg_file.write(XDG_DESKTOP_ENTRY)
+
+    _TARGET = '/usr/local/'
+
     SETUP_OPTIONS['data_files'] = [
-        ('%s/share/man/man1/' % (target,), ['doc/pcbasic.1.gz']),
-        ('%s/share/applications/' % (target,), ['icons/pcbasic.desktop']),
-        ('%s/share/icons' % (target,), ['icons/pcbasic.png']),
+        ('%s/share/man/man1/' % (_TARGET,), ['doc/pcbasic.1.gz']),
+        ('%s/share/applications/' % (_TARGET,), ['pcbasic.desktop']),
+        ('%s/share/icons' % (_TARGET,), ['icons/pcbasic.png']),
     ]
+
 
 
 ###############################################################################
