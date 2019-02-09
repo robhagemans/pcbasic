@@ -104,26 +104,37 @@ class WashCommand(Command):
 
     def run(self):
         """Clean the workspace."""
-        # remove traces of egg
-        for path in glob.glob(os.path.join(HERE, '*.egg-info')):
-            _prune(path)
-        # remove intermediate builds
-        _prune(os.path.join(HERE, 'build'))
-        # remove bytecode files
-        for root, dirs, files in os.walk(HERE):
-            for f in files:
-                if f.endswith('.pyc') and 'test' not in root:
-                    _remove(os.path.join(root, f))
+        wash()
+
+
+def wash():
+    """Clean the workspace."""
+    # remove traces of egg
+    for path in glob.glob(os.path.join(HERE, '*.egg-info')):
+        _prune(path)
+    # remove intermediate builds
+    _prune(os.path.join(HERE, 'build'))
+    # remove bytecode files
+    for root, _, files in os.walk(HERE):
+        for name in files:
+            if name.endswith('.pyc') and 'test' not in root:
+                _remove(os.path.join(root, name))
 
 def _prune(path):
     """Recursively remove a directory."""
     print('pruning %s' % (path, ))
-    shutil.rmtree(path)
+    try:
+        shutil.rmtree(path)
+    except EnvironmentError as e:
+        print(e)
 
 def _remove(path):
     """Remove a file."""
     print('removing %s' % (path, ))
-    os.remove(path)
+    try:
+        os.remove(path)
+    except EnvironmentError as e:
+        print(e)
 
 
 ###############################################################################
@@ -134,6 +145,7 @@ class SDistCommand(sdist.sdist):
 
     def run(self):
         """Run sdist command."""
+        wash()
         with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
             f.write(DUNMANIFESTIN)
             f.write(
@@ -146,6 +158,7 @@ class SDistCommand(sdist.sdist):
         sdist.sdist.run(self)
         os.remove(os.path.join(HERE, 'MANIFEST.in'))
         os.remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
+        wash()
 
 
 class BuildPyCommand(build_py.build_py):
