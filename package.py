@@ -70,6 +70,7 @@ if CX_FREEZE and sys.platform == 'win32':
 
         def run(self):
             """Run build_exe command."""
+            _build_icon()
             cx_Freeze.build_exe.run(self)
             # build_exe just includes everything inside the directory
             # so remove some stuff we don't need
@@ -179,7 +180,7 @@ if CX_FREEZE and sys.platform == 'win32':
     msi_data = {
         'Directory': directory_table,
         'Shortcut': shortcut_table,
-        'Icon': [('PC-BASIC-Icon', msilib.Binary('icons/pcbasic.ico')),],
+        'Icon': [('PC-BASIC-Icon', msilib.Binary('resources/pcbasic.ico')),],
         'Property': [('ARPPRODUCTICON', 'PC-BASIC-Icon'),],
     }
 
@@ -208,10 +209,10 @@ if CX_FREEZE and sys.platform == 'win32':
 
     SETUP_OPTIONS['executables'] = [
         Executable(
-            'pc-basic', base='Console', targetName='pcbasic.exe', icon='icons/pcbasic.ico',
+            'pc-basic', base='Console', targetName='pcbasic.exe', icon='resources/pcbasic.ico',
             copyright=COPYRIGHT),
         Executable(
-            'pc-basic', base='Win32GUI', targetName='pcbasicw.exe', icon='icons/pcbasic.ico',
+            'pc-basic', base='Win32GUI', targetName='pcbasicw.exe', icon='resources/pcbasic.ico',
             #shortcutName='PC-BASIC %s' % VERSION, shortcutDir='MyProgramMenu',
             copyright=COPYRIGHT),
     ]
@@ -283,6 +284,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
 
         def run(self):
             """Run bdist_dmg command."""
+            _build_icon()
             cx_Freeze.bdist_dmg.run(self)
             # move the disk image to dist/
             try:
@@ -292,6 +294,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
             if os.path.exists('dist/' + os.path.basename(self.dmgName)):
                 os.unlink('dist/' + os.path.basename(self.dmgName))
             shutil.move(self.dmgName, 'dist/')
+            shutil.rmtree('resources')
 
         def buildDMG(self):
             # Remove DMG if it already exists
@@ -337,7 +340,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
             #'optimize': 2,
         },
         'bdist_mac': {
-            'iconfile': 'icons/pcbasic.icns', 'bundle_name': '%s-%s' % (NAME, SHORT_VERSION),
+            'iconfile': 'resources/pcbasic.icns', 'bundle_name': '%s-%s' % (NAME, SHORT_VERSION),
         },
         'bdist_dmg': {
             # creating applications shortcut in the DMG fails somehow
@@ -347,7 +350,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
     }
     SETUP_OPTIONS['executables'] = [
         Executable(
-            'pc-basic', base='Console', targetName='pcbasic', icon='icons/pcbasic.icns',
+            'pc-basic', base='Console', targetName='pcbasic', icon='resources/pcbasic.icns',
             copyright=COPYRIGHT),
     ]
 
