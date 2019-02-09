@@ -110,7 +110,7 @@ def wash():
     # remove bytecode files
     for root, _, files in os.walk(HERE):
         for name in files:
-            if name.endswith('.pyc') and 'test' not in root:
+            if (name.endswith('.pyc') or name.endswith('.pyo')) and 'test' not in root:
                 _remove(os.path.join(root, name))
 
 def _prune(path):
