@@ -424,6 +424,14 @@ class Settings(object):
         package = self._parse_package(remaining)
         # get preset groups from specified config file
         preset_dict = self._parse_config(remaining)
+        # parse default presets nested in config presets
+        preset_dict = {
+            _key: self._merge_arguments(
+                self._parse_presets(_dict, self.default_config),
+                _dict
+            )
+            for _key, _dict in iteritems(preset_dict)
+        }
         # set defaults based on presets
         args = self._parse_presets(remaining, preset_dict)
         # local config file settings override preset settings
@@ -1014,6 +1022,7 @@ class Settings(object):
                 pass
             # override
             args0[a] = args1[a]
+        return args0
 
     def _clean_arguments(self, args):
         """Convert arguments to required type and list length."""
