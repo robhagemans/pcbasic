@@ -16,7 +16,7 @@ PC-BASIC runs plain-text, tokenised and protected .BAS files.
 It implements floating-point arithmetic in the Microsoft Binary Format (MBF) and can therefore
 read and write binary data files created by GW-BASIC.'''
 CLASSIFIERS = [
-    u'Development Status :: 3 - Alpha',
+    u'Development Status :: 4 - Beta',
     u'Intended Audience :: End Users/Desktop',
     u'Intended Audience :: Developers',
     u'Topic :: System :: Emulators',
