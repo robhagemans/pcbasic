@@ -46,7 +46,6 @@ include doc/*
 include pcbasic/data/USAGE.txt
 include pcbasic/data/release.json
 include pcbasic/data/*/*
-exclude ISSUE_TEMPLATE.md
 """
 
 
