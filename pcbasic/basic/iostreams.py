@@ -55,6 +55,11 @@ class IOStreams(object):
             thread.daemon = True
             thread.start()
 
+    def flush(self):
+        """Flush output streams."""
+        for f in self._output_echos:
+            f.flush()
+
     def write(self, s):
         """Write a string/bytearray to all stream outputs."""
         for f in self._output_echos:

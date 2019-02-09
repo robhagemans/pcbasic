@@ -151,6 +151,7 @@ class Editor(object):
         """Manage the interactive mode."""
         # force cursor visibility in all cases
         self._screen.cursor.show(True)
+        self._io_streams.flush()
         try:
             # this is where we started
             start_row = self._screen.current_row
