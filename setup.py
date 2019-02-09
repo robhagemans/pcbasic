@@ -67,7 +67,7 @@ RELEASE_ID = {
 
 
 ###############################################################################
-# setup.py new commands
+# setup.py new/extended commands
 # see http://seasonofcode.com/posts/how-to-add-custom-build-steps-and-commands-to-setup-py.html
 
 def new_command(function):
@@ -85,8 +85,17 @@ def new_command(function):
 
     return _NewCommand
 
+def extend_command(parent, function):
+    """Extend an exitsing command."""
 
-def build_docs(self):
+    class _ExtCommand(parent):
+        def run(self):
+            function(self)
+
+    return _ExtCommand
+
+
+def build_docs():
     """build documentation files"""
     import docsrc
     docsrc.build_docs()
@@ -120,50 +129,39 @@ def _remove(path):
     except EnvironmentError as e:
         print(e)
 
+def sdist_ext(obj):
+    """Run custom sdist command."""
+    wash()
+    with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
+        f.write(DUNMANIFESTIN)
+        f.write(
+            u'include pcbasic/lib/README.md\n'
+            u'prune test\n'
+        )
+    with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
+        f.write(json.dumps(RELEASE_ID).decode('ascii', 'ignore'))
+    build_docs()
+    sdist.sdist.run(obj)
+    os.remove(os.path.join(HERE, 'MANIFEST.in'))
+    os.remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
+    wash()
 
-###############################################################################
-# setup.py extended commands
-
-class SDistCommand(sdist.sdist):
-    """Custom sdist command."""
-
-    def run(self):
-        """Run sdist command."""
-        wash()
-        with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
-            f.write(DUNMANIFESTIN)
-            f.write(
-                u'include pcbasic/lib/README.md\n'
-                u'prune test\n'
-            )
-        with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
-            f.write(json.dumps(RELEASE_ID).decode('ascii', 'ignore'))
-        self.run_command('build_docs')
-        sdist.sdist.run(self)
-        os.remove(os.path.join(HERE, 'MANIFEST.in'))
-        os.remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
-        wash()
-
-
-class BuildPyCommand(build_py.build_py):
-    """Custom build_py command."""
-
-    def run(self):
-        """Run build_py command."""
-        with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
-            f.write(DUNMANIFESTIN)
-            f.write(u'prune test\n')
-            # include DLLs on Windows
-            if sys.platform == 'win32':
-                if platform.architecture()[0] == '64bit':
-                    f.write(u'include pcbasic/lib/win32_x64/*.dll\n')
-                else:
-                    f.write(u'include pcbasic/lib/win32_x86/*.dll\n')
-        with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
-            f.write(json.dumps(RELEASE_ID).decode('ascii', 'ignore'))
-        build_py.build_py.run(self)
-        os.remove(os.path.join(HERE, 'MANIFEST.in'))
-        os.remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
+def build_py_ext(obj):
+    """Run custom build_py command."""
+    with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
+        f.write(DUNMANIFESTIN)
+        f.write(u'prune test\n')
+        # include DLLs on Windows
+        if sys.platform == 'win32':
+            if platform.architecture()[0] == '64bit':
+                f.write(u'include pcbasic/lib/win32_x64/*.dll\n')
+            else:
+                f.write(u'include pcbasic/lib/win32_x86/*.dll\n')
+    with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
+        f.write(json.dumps(RELEASE_ID).decode('ascii', 'ignore'))
+    build_py.build_py.run(obj)
+    os.remove(os.path.join(HERE, 'MANIFEST.in'))
+    os.remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
 
 
 ###############################################################################
@@ -216,8 +214,8 @@ SETUP_OPTIONS = {
     # setup commands
     'cmdclass': {
         'build_docs': new_command(build_docs),
-        'sdist': SDistCommand,
-        'build_py': BuildPyCommand,
+        'sdist': extend_command(sdist.sdist, sdist_ext),
+        'build_py': extend_command(build_py.build_py, build_py_ext),
         'wash': new_command(wash),
     },
 }
