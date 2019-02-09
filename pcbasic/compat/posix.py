@@ -2,7 +2,7 @@
 PC-BASIC - compat.posix
 Interface for Unix-like system calls
 
-(c) 2018 Rob Hagemans
+(c) 2018--2019 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
