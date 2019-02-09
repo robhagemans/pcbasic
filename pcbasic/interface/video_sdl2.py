@@ -42,6 +42,7 @@ GFX_NAMES = ('SDL2_gfx', 'SDL2_gfx-1.0')
 
 def _bind_gfx_zoomsurface():
     """Bind smooth-zoom function."""
+    global sdlgfx
     # look for SDL2_gfx.dll:
     # first in SDL2.dll location
     # if not found, in LIB_DIR; then in standard search path
@@ -77,6 +78,7 @@ with EnvironmentCache() as _sdl_env:
             from . import sdl2
         except ImportError:
             sdl2 = None
+    sdlgfx = None
     _smooth_zoom = _bind_gfx_zoomsurface()
 
 

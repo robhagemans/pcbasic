@@ -45,25 +45,25 @@ def get_platform_info():
                 try:
                     name = module.split('.')[-1]
                     version = getattr(m, version_attr)
+                    if isinstance(version, bytes):
+                        version = version.decode('ascii', 'ignore')
                     info.append(u'%s: %s' % (name, version))
                     break
                 except AttributeError:
                     pass
             else:
                 info.append(u'%s: available' % module)
-    if WIN32:
-        info.append(u'\nLIBRARIES')
-        dlls = ('sdl2.dll', 'sdl2_gfx.dll')
-        if X64:
-            LIB_DIR = os.path.join(BASE_DIR, u'lib', u'win32_x64')
+    info.append(u'\nLIBRARIES')
+    try:
+        from ..interface import video_sdl2
+        info.append(u'sdl2: %s' % (video_sdl2.sdl2.get_dll_file()))
+        if video_sdl2.sdlgfx:
+            info.append(u'sdl2_gfx: %s' % (video_sdl2.sdlgfx.libfile))
         else:
-            LIB_DIR = os.path.join(BASE_DIR, u'lib', u'win32_x86')
-        for dll in dlls:
-            path = os.path.join(LIB_DIR, dll)
-            if os.path.isfile(path):
-                info.append(u'%s: %s' % (dll, path))
-            else:
-                info.append(u'%s: --' % dll)
+            info.append(u'sdl2_gfx: --')
+    except ImportError:
+        info.append(u'sdl2: --')
+        sdl2 = None
     info.append(u'\nEXTERNAL TOOLS')
     tools = (u'notepad', u'lpr', u'paps', u'beep', u'pbcopy', u'pbpaste')
     for tool in tools:
