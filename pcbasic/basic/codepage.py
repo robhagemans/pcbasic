@@ -224,10 +224,21 @@ class InputStreamWrapper(StreamWrapperBase):
 class NewlineWrapper(StreamWrapperBase):
     """Replace newlines on input stream. Wraps a bytes stream."""
 
+    def __init__(self, stream):
+        """Set up codec."""
+        StreamWrapperBase.__init__(self, stream)
+        self._last = b''
+
     def read(self, n=-1):
         """Read n bytes from stream with codepage conversion."""
-        return self._stream.read(n).replace(b'\r\n', b'\r').replace(b'\n', b'\r')
-
+        new_bytes = self._stream.read(n)
+        if new_bytes:
+            new_last = new_bytes[-1:]
+            if self._last == b'\r' and new_bytes.startswith(b'\n'):
+                new_bytes = new_bytes[1:]
+            self._last = new_last
+            new_bytes = new_bytes.replace(b'\r\n', b'\r').replace(b'\n', b'\r')
+        return new_bytes
 
 ########################################
 # box drawing protection
