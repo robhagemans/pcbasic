@@ -35,6 +35,27 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 
 
 ###############################################################################
+# icon
+
+def _build_icon():
+    try:
+        os.mkdir('resources')
+    except EnvironmentError:
+        pass
+    # build icon
+    from PIL import Image
+    from pcbasic.data import ICON
+    flat = (_b for _row in ICON for _b in _row)
+    rgb = ((_b*255,)*3 for _b in flat)
+    rgbflat = (_b for _tuple in rgb for _b in _tuple)
+    imgstr = b''.join(chr(_b) for _b in rgbflat)
+    width, height = len(ICON[0]), len(ICON)
+    img = Image.frombytes('RGB', (width, height), imgstr)
+    format = {'win32': 'ico', 'darwin': 'icns'}.get(sys.platform, 'png')
+    img.resize((width*2, height*2)).save('resources/pcbasic.%s' % (format,))
+
+
+###############################################################################
 # freezing options
 
 SHORT_VERSION = u'.'.join(VERSION.split('.')[:2])
@@ -347,8 +368,17 @@ Icon=pcbasic
 Categories=Development;IDE;
 """
 
-    with open('pcbasic.desktop', 'w') as xdg_file:
-        xdg_file.write(XDG_DESKTOP_ENTRY)
+    def _gather_resources():
+        """Bring required resources together."""
+        try:
+            os.mkdir('resources')
+        except EnvironmentError:
+            pass
+        with open('resources/pcbasic.desktop', 'w') as xdg_file:
+            xdg_file.write(XDG_DESKTOP_ENTRY)
+        _build_icon()
+        shutil.copy('doc/pcbasic.1.gz', 'resources/pcbasic.1.gz')
+
 
 def bdist_rpm():
     """create .rpm package (requires fpm)"""
@@ -359,12 +389,13 @@ def bdist_rpm():
         pass
     if os.path.exists('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,)):
         os.unlink('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,))
-    os.chdir('dist')
+    _gather_resources()
     subprocess.call((
         'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
         '--prefix=/usr/local/lib/python2.7/site-packages/',
         '--depends=numpy,pyserial,SDL2,SDL2_gfx', '..'
-    ))
+    ), cwd='dist')
+    shutil.rmtree('resources')
     wash()
 
 def bdist_deb():
@@ -376,13 +407,14 @@ def bdist_deb():
         pass
     if os.path.exists('dist/python-pcbasic_%s_all.deb' % (VERSION,)):
         os.unlink('dist/python-pcbasic_%s_all.deb' % (VERSION,))
-    os.chdir('dist')
+    _gather_resources()
     subprocess.call((
         'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
         '--prefix=/usr/local/lib/python2.7/site-packages/',
         '--depends=python-numpy,python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
         '..'
-    ))
+    ), cwd='dist')
+    shutil.rmtree('resources')
     wash()
 
 

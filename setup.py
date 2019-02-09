@@ -231,9 +231,9 @@ elif sys.platform == 'linux2':
     _TARGET = '/usr/local/'
 
     SETUP_OPTIONS['data_files'] = [
-        ('%s/share/man/man1/' % (_TARGET,), ['doc/pcbasic.1.gz']),
-        ('%s/share/applications/' % (_TARGET,), ['pcbasic.desktop']),
-        ('%s/share/icons' % (_TARGET,), ['icons/pcbasic.png']),
+        ('%s/share/man/man1/' % (_TARGET,), ['resources/pcbasic.1.gz']),
+        ('%s/share/applications/' % (_TARGET,), ['resources/pcbasic.desktop']),
+        ('%s/share/icons' % (_TARGET,), ['resources/pcbasic.png']),
     ]
 
 
