@@ -82,11 +82,11 @@ if CX_FREEZE and sys.platform == 'win32':
                     if (
                             # remove superfluous copies of python27.dll in lib/
                             # as there is a copy in the package root already
-                            f .lower() == 'python27.dll' or f.lower() == 'msvcr90.dll' or
+                            f.lower() == 'python27.dll' or f.lower() == 'msvcr90.dll' or
                             # remove tests and examples, but not for numpy (it breaks)
                             (testing and 'numpy' not in root) or
                             # we're only producing packages for win32_x86
-                            'win32_x64' in name):
+                            'win32_x64' in name or name.endswith('.dylib')):
                         print('REMOVING %s' % (name,))
                         os.remove(name)
             # remove lib dir altogether to avoid it getting copied into the msi
@@ -237,7 +237,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
                             # remove tests and examples, but not for numpy (it breaks)
                             (testing and 'numpy' not in root) or
                             # remove windows DLLs and PYDs
-                            'win32_' in name):
+                            'win32_' in name or name.endswith('.dll')):
                         print('REMOVING %s' % (name,))
                         os.remove(name)
             # remove modules that can be left out (some numpy tests seem needed)
