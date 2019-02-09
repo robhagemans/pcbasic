@@ -1882,6 +1882,10 @@
                 In <code>INPUT</code> mode, before any reads  <code>LOC</code> returns 1. After the <strong>129th</strong> character
                 is read, <code>LOC</code> returns 2.
             </li>
+            <li>
+                If <code><a href="#--text-encoding">text-encoding</a></code> is set, characters may be encoded by sequences of more than one byte.
+                <code>LOC</code> will return the number of bytes rather than the number of encoded characters.
+            </li>
         </ul>
         <h5>Errors</h5>
         <ul>
@@ -1941,6 +1945,13 @@
             </li>
             <li>
                 <code><var>file_num</var></code> is open to a <code>LPT</code> device: <samp>Bad file mode</samp>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                If <code><a href="#--text-encoding">text-encoding</a></code> is set, characters may be encoded by sequences of more than one byte.
+                <code>LOF</code> will return the number of bytes rather than the number of encoded characters.
             </li>
         </ul>
     </section>
