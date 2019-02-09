@@ -334,6 +334,22 @@ elif CX_FREEZE and sys.platform == 'darwin':
 ###############################################################################
 # linux packaging
 
+elif sys.platform == 'linux2':
+
+    XDG_DESKTOP_ENTRY = u"""
+[Desktop Entry]
+Name=PC-BASIC
+GenericName=GW-BASIC compatible interpreter
+Exec=/usr/local/bin/pcbasic
+Terminal=false
+Type=Application
+Icon=pcbasic
+Categories=Development;IDE;
+"""
+
+    with open('pcbasic.desktop', 'w') as xdg_file:
+        xdg_file.write(XDG_DESKTOP_ENTRY)
+
 def bdist_rpm():
     """create .rpm package (requires fpm)"""
     wash()

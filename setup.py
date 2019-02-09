@@ -31,7 +31,7 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 DUNMANIFESTIN = u"""
 include *.md
 include GPL3.txt
-include doc/*
+include doc/*.html
 include pcbasic/data/USAGE.txt
 include pcbasic/data/release.json
 include pcbasic/data/*/*
@@ -226,22 +226,7 @@ if sys.platform == 'win32':
 
 
 elif sys.platform == 'linux2':
-    # these need to be included in the sdist for the packaging script to pick them up
-    # and I think fpm calls setup.py sdist directly
-
-    XDG_DESKTOP_ENTRY = u"""
-[Desktop Entry]
-Name=PC-BASIC
-GenericName=GW-BASIC compatible interpreter
-Exec=/usr/local/bin/pcbasic
-Terminal=false
-Type=Application
-Icon=pcbasic
-Categories=Development;IDE;
-"""
-
-    with open('pcbasic.desktop', 'w') as xdg_file:
-        xdg_file.write(XDG_DESKTOP_ENTRY)
+    # these need to be included in the sdist metadata for the packaging script to pick them up
 
     _TARGET = '/usr/local/'
 
