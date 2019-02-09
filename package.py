@@ -17,7 +17,7 @@ import subprocess
 from io import open
 
 # get setup.py parameters
-from setup import SETUP_OPTIONS, VERSION, new_command, wash
+from setup import SETUP_OPTIONS, VERSION, new_command, wash, NAME, AUTHOR, VERSION, COPYRIGHT
 
 
 # operating in cx_Freeze mode

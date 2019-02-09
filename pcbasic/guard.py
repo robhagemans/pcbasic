@@ -47,7 +47,7 @@ except ResourceFailed:
         COMMIT = check_output(
             ['git', 'describe', '--always'], cwd=os.path.dirname(__file__)
         ).strip().decode('ascii', 'ignore')
-    except CalledProcessError:
+    except (CalledProcessError, EnvironmentError):
         COMMIT = u'unknown'
 
 

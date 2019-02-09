@@ -80,9 +80,14 @@ def split_quoted(line, split_by=u'\s', quote=u'"', strip_quotes=False):
 @contextlib.contextmanager
 def muffle(std_stream):
     """Suppress stdout or stderr messages."""
+    save = None
     try:
-        # save the file descriptor for the target stream
-        save = os.dup(std_stream.fileno())
+        try:
+            # save the file descriptor for the target stream
+            save = os.dup(std_stream.fileno())
+        except EnvironmentError:
+            yield
+            return
         # http://stackoverflow.com/questions/977840/
         # redirecting-fortran-called-via-f2py-output-in-python/978264#978264
         with open(os.devnull, 'w') as null:
@@ -96,4 +101,5 @@ def muffle(std_stream):
                 # restore file descriptors
                 os.dup2(save, std_stream.fileno())
     finally:
-        os.close(save)
+        if save is not None:
+            os.close(save)
