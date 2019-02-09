@@ -6,6 +6,8 @@ Cross-platform compatibility utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
+# pylint: disable=no-name-in-module, import-error, undefined-variable, used-before-assignment
+
 import sys
 import os
 

@@ -14,6 +14,10 @@ CONFIG = [
     '--errors-only',
 ]
 
+if sys.version_info.major == 3:
+    # this message just seems broken in py3 :/
+    CONFIG += ['--disable=logging-too-many-args',]
+
 
 def lint_files(path, filenames, exclude=()):
     for namext in filenames:

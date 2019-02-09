@@ -6,6 +6,8 @@ Interface for Unix-like system calls
 This file is released under the GNU GPL version 3 or later.
 """
 
+# pylint: disable=no-name-in-module
+
 import os
 import sys
 import locale

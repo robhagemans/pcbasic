@@ -74,6 +74,8 @@ IFC = ILLEGAL_FUNCTION_CALL
 class Interrupt(Exception):
     """Base type for exceptions."""
 
+    message = b''
+
     def __repr__(self):
         """String representation of exception."""
         return self.message.decode('ascii', 'replace')
@@ -99,11 +101,12 @@ class Reset(Exit):
 class Break(Interrupt):
     """Program interrupt."""
 
+    message = b'Break'
+
     def __init__(self, stop=False):
         """Initialise break."""
         Interrupt.__init__(self)
         self.stop = stop
-        self.message = b'Break'
 
 
 class BASICError(Interrupt):

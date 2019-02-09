@@ -15,10 +15,10 @@ import sys
 from ..compat import WIN32, which
 
 if WIN32:
-    import winsound
+    import winsound  # pylint: disable=import-error
     fcntl = None
 else:
-    import fcntl
+    import fcntl  # pylint: disable=import-error
     winsound = None
 
 from .audio import AudioPlugin

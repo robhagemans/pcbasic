@@ -54,7 +54,7 @@ class VideoANSI(video_cli.VideoTextBase):
         video_cli.VideoTextBase.__enter__(self)
         # prevent stderr from defacing the screen
         self._muffle = muffle(sys.stderr)
-        self._muffle.__enter__()
+        self._muffle.__enter__()  # pylint: disable=no-member
 
     def __exit__(self, type, value, traceback):
         """Close ANSI interface."""
@@ -62,7 +62,7 @@ class VideoANSI(video_cli.VideoTextBase):
             console.reset()
             console.clear()
             # re-enable logger
-            self._muffle.__exit__(type, value, traceback)
+            self._muffle.__exit__(type, value, traceback)  # pylint: disable=no-member
         finally:
             video_cli.VideoTextBase.__exit__(self, type, value, traceback)
 

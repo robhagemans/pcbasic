@@ -52,7 +52,7 @@ class MLParser(codestream.CodeStream):
         else:
             raise error.BASICError(error.IFC)
         if sgn == -1:
-            step = -step
+            step = -step  # pylint: disable=invalid-unary-operand-type
         return step
 
     def parse_string(self):

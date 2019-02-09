@@ -6,7 +6,7 @@ https://gist.github.com/vaab/2ad7051fc193167f15f85ef573e54eb9
 https://bugs.python.org/issue19264
 """
 
-# pylint: disable=E1101
+# pylint: disable=no-name-in-module, import-error, no-member
 
 import os
 import ctypes

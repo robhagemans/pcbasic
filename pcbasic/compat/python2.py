@@ -11,6 +11,8 @@ Copyright (c) 2010-2018 Benjamin Peterson
 and released under an MIT licence https://opensource.org/licenses/MIT
 """
 
+# pylint: disable=import-error, no-member, undefined-variable
+
 import shutil
 import codecs
 import contextlib

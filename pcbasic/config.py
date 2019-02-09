@@ -145,6 +145,9 @@ class WhitespaceStripper(object):
             raise StopIteration()
         return line
 
+    # we don't need this as iterator in Python2 but this silences pylint
+    next = __next__
+
     def __iter__(self):
         """We are iterable."""
         return self
@@ -1053,13 +1056,13 @@ class Settings(object):
             if length == '*':
                 return []
             elif length < 0:
-                return [None]*(-length)
+                return [None] * (-length)  # pylint: disable=invalid-unary-operand-type
             else:
                 return None
         lst = [self._parse_type(d, arg) for arg in lst]
         # negative length: optional up-to
         if length != u'*' and length < 0:
-            lst += [None]*(-length-len(lst))
+            lst += [None] * (-length-len(lst))  # pylint: disable=invalid-unary-operand-type
         if length != u'*' and (len(lst) > abs(length) or len(lst) < length):
             logging.warning(u'Option "%s=%s" ignored, should have %d elements', d, s, abs(length))
             lst = []

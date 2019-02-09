@@ -454,7 +454,7 @@ class Float(Number):
     def to_value(self):
         """Return value as Python float."""
         exp = bytearray(self._buffer)[-1] - self._bias
-        if exp == -self._bias:
+        if exp == -self._bias:  # pylint: disable=invalid-unary-operand-type
             return 0.
         # unpack as unsigned long int
         man = struct.unpack(self._intformat, bytearray(self._buffer)[:-1] + b'\0')[0]

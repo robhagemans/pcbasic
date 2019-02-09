@@ -11,6 +11,8 @@ This file is released under the GNU GPL version 3 or later.
 Borrows code from colorama, which is Copyright Jonathan Hartley 2013. BSD 3-Clause license
 """
 
+# pylint: disable=no-name-in-module, no-member
+
 import os
 import sys
 import time
