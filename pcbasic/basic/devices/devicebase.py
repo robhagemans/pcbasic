@@ -655,16 +655,21 @@ class SCRNFile(RawFile):
             self.console.write_line(do_echo=do_echo)
             self._col = 1
         cwidth = self.console.width
+        output = []
         for c in iterchar(s):
             if self.width <= cwidth and self.col > self.width:
-                self.console.write_line(do_echo=do_echo)
+                self.console.write_line(b''.join(output), do_echo=do_echo)
+                output = []
                 self._col = 1
             if self.col <= cwidth or self.width <= cwidth:
-                self.console.write(c, do_echo=do_echo)
+                output.append(c)
             if c in (b'\n', b'\r'):
+                self.console.write(b''.join(output), do_echo=do_echo)
+                output = []
                 self._col = 1
             else:
                 self._col += 1
+        self.console.write(b''.join(output), do_echo=do_echo)
 
     def write_line(self, inp=b''):
         """Write a string to the screen and follow by CR."""
