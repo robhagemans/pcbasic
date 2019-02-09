@@ -70,45 +70,29 @@ RELEASE_ID = {
 # setup.py new commands
 # see http://seasonofcode.com/posts/how-to-add-custom-build-steps-and-commands-to-setup-py.html
 
+def new_command(function):
+    """Add a custom command without having to faff around with an overbearing API."""
 
-class Command(cmd.Command):
-    """User command."""
+    class _NewCommand(cmd.Command):
+        description = function.__doc__
+        user_options = []
+        def run(self):
+            function()
+        def initialize_options(self):
+            pass
+        def finalize_options(self):
+            pass
 
-    description = ''
-    user_options = []
-
-    def initialize_options(self):
-        """Set default values for options."""
-        pass
-
-    def finalize_options(self):
-        """Post-process options."""
-        pass
-
-
-class BuildDocCommand(Command):
-    """Command to build the documentation."""
-
-    description = 'build documentation files'
-
-    def run(self):
-        """Build documentation."""
-        from docsrc import build_docs
-        build_docs()
+    return _NewCommand
 
 
-class WashCommand(Command):
-    """Clean the workspace."""
-
-    description = 'clean the workspace of build files; leave in-place compiled files'
-
-    def run(self):
-        """Clean the workspace."""
-        wash()
-
+def build_docs(self):
+    """build documentation files"""
+    import docsrc
+    docsrc.build_docs()
 
 def wash():
-    """Clean the workspace."""
+    """clean the workspace of build files; leave in-place compiled files"""
     # remove traces of egg
     for path in glob.glob(os.path.join(HERE, '*.egg-info')):
         _prune(path)
@@ -231,10 +215,10 @@ SETUP_OPTIONS = {
 
     # setup commands
     'cmdclass': {
-        'build_docs': BuildDocCommand,
+        'build_docs': new_command(build_docs),
         'sdist': SDistCommand,
         'build_py': BuildPyCommand,
-        'wash': WashCommand,
+        'wash': new_command(wash),
     },
 }
 
