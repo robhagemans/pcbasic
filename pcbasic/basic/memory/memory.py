@@ -220,24 +220,28 @@ class DataSegment(object):
                 name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
                 for name in preserve_ar if name in self.arrays
             }
-            # FIXME: might have multiple names with the same pointer
             scalar_strings = {
-                value.to_pointer(): name
+                name: value.to_pointer()
                 for name, value in iteritems(common_scalars)
                 if name[-1:] == values.STR
             }
             array_strings = {
-                struct.unpack('<BH', value[1][_i:_i+3]): (name, _i)
+                (name, _i): struct.unpack('<BH', value[1][_i:_i+3])
                 for name, value in iteritems(common_arrays)
                 for _i in range(0, len(value[1]), 3)
                 if name[-1:] == values.STR
             }
-            for pointer in sorted(scalar_strings, key=lambda _pair: _pair[1], reverse=True):
-                name = scalar_strings[pointer]
+            # sort by pointer address - items will be (name, (length, address))
+            for name, pointer in sorted(
+                    iteritems(scalar_strings), key=lambda _pair: _pair[1][1], reverse=True
+                ):
                 length, address = self.strings.copy_to(string_store, *pointer)
                 common_scalars[name] = self.values.new_string().from_pointer(length, address)
-            for pointer in sorted(array_strings, key=lambda _pair: _pair[1], reverse=True):
-                name, offset = array_strings[pointer]
+            for item in sorted(
+                    iteritems(array_strings), key=lambda _pair: _pair[1][1], reverse=True
+                ):
+                name, offset = item[0]
+                pointer = item[1]
                 # if the string array is not full, pointers are zero
                 # but address is ignored for zero length
                 length, address = self.strings.copy_to(string_store, *pointer)
