@@ -45,10 +45,11 @@ def _build_icon():
     # build icon
     from PIL import Image
     from pcbasic.data import ICON
+    from pcbasic.compat import int2byte
     flat = (_b for _row in ICON for _b in _row)
     rgb = ((_b*255,)*3 for _b in flat)
     rgbflat = (_b for _tuple in rgb for _b in _tuple)
-    imgstr = b''.join(chr(_b) for _b in rgbflat)
+    imgstr = b''.join(int2byte(_b) for _b in rgbflat)
     width, height = len(ICON[0]), len(ICON)
     img = Image.frombytes('RGB', (width, height), imgstr)
     format = {'win32': 'ico', 'darwin': 'icns'}.get(sys.platform, 'png')
@@ -358,7 +359,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
 ###############################################################################
 # linux packaging
 
-elif sys.platform == 'linux2':
+else:
 
     XDG_DESKTOP_ENTRY = u"""
 [Desktop Entry]

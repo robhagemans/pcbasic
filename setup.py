@@ -139,7 +139,10 @@ def sdist_ext(obj):
             u'prune test\n'
         )
     with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
-        f.write(json.dumps(RELEASE_ID).decode('ascii', 'ignore'))
+        json_str = json.dumps(RELEASE_ID)
+        if isinstance(json_str, bytes):
+            json_str = json_str.decode('ascii', 'ignore')
+        f.write(json_str)
     build_docs()
     sdist.sdist.run(obj)
     os.remove(os.path.join(HERE, 'MANIFEST.in'))
@@ -225,7 +228,7 @@ if sys.platform == 'win32':
     SETUP_OPTIONS['entry_points']['gui_scripts'] = ['pcbasicw=pcbasic:main']
 
 
-elif sys.platform == 'linux2':
+elif sys.platform.startswith('linux'):
     # these need to be included in the sdist metadata for the packaging script to pick them up
 
     _TARGET = '/usr/local/'
