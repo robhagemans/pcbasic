@@ -14,7 +14,6 @@ The following packages are needed or recommended when installing PC-BASIC:
 | Package                                                                       | OS                 | Status       | Used for
 |-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
 | [Python 2.7.12](https://www.python.org/downloads/release/python-2712/)        | all                | required     |
-| [Setuptools](https://pypi.python.org/pypi/setuptools)                         | all                | required     |
 | [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | sound and graphics
 | [NumPy](https://sourceforge.net/projects/numpy/files/)                        | all                | recommended  | sound and graphics
 | [PySerial 3.4](https://pypi.python.org/pypi/pyserial)                         | all                | optional     | physical or emulated serial port access
@@ -61,7 +60,6 @@ The following additional packages are used for development, testing and packagin
 | Package                                                                                                        | OS                | Used for
 |----------------------------------------------------------------------------------------------------------------|-------------------|-----------------
 | [Git](https://git-scm.com/)                                                                                    | all               | development
-| [Microsoft Visual C++ Compiler for Python 2.7](https://www.microsoft.com/en-us/download/details.aspx?id=44266) | Windows           | development
 | [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3)                                                              | all               | documentation
 | [`markdown`](https://pypi.python.org/pypi/Markdown)                                                            | all               | documentation
 | [Prince](https://www.princexml.com/download/)                                                                  | all               | documentation
@@ -69,7 +67,7 @@ The following additional packages are used for development, testing and packagin
 | [`coverage`](https://pypi.python.org/pypi/coverage)                                                            | all               | testing
 | [`wheel`](https://pypi.python.org/pypi/wheel)                                                                  | all               | packaging
 | [`twine`](https://pypi.python.org/pypi/twine)                                                                  | all               | packaging
-| [`Pillow`](https://python-pillow.org/)                                                                          | all               | packaging
+| [`Pillow`](https://python-pillow.org/)                                                                         | all               | packaging
 | [`cx_Freeze`](https://pypi.org/project/cx_Freeze/)                                                             | Windows, MacOS    | packaging
 | [`fpm`](https://github.com/jordansissel/fpm)                                                                   | Linux             | packaging
 
@@ -84,13 +82,9 @@ These are the steps to set up the local repository ready to run PC-BASIC:
 
         python setup.py build_docs
 
-3. Windows only: compile the `win32_console` extension
+3. Run pcbasic directly from the source directory
 
-        python setup.py build_ext --inplace
-
-4. Run pcbasic directly from the source directory
-
-        python -m pcbasic
+        pc-basic
 
 
 #### Windows console notes ####
@@ -106,8 +100,8 @@ When using PC-BASIC with a text-based interface on Windows, please note:
 
 #### Building `SDL2_gfx.dll` on Windows ###
 The [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) plugin is needed if
-you want to use the SDL2 interface with smooth scaling. Most Linux distributions will include this with their pysdl2 package.
-On Windows, you will need to compile from source. To compile from the command line with Microsoft Visual C++ for Python 2.7:
+you want to use the SDL2 interface with smooth scaling. Most Linux distributions will include this with their sdl2 package.
+On Windows, you will need to compile from source. To compile from the command line with Microsoft Visual C++:
 
 1. Download and unpack the SDL2 development package for Visual C++ `SDL2-devel-2.x.x-VC.zip` and the SDL2_gfx source code archive.
 
