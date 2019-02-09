@@ -69,7 +69,7 @@ The following additional packages are used for development, testing and packagin
 | [`coverage`](https://pypi.python.org/pypi/coverage)                                                            | all               | testing
 | [`wheel`](https://pypi.python.org/pypi/wheel)                                                                  | all               | packaging
 | [`twine`](https://pypi.python.org/pypi/twine)                                                                  | all               | packaging
-| [`Pillow`(https://python-pillow.org/)                                                                          | all               | packaging
+| [`Pillow`](https://python-pillow.org/)                                                                          | all               | packaging
 | [`cx_Freeze`](https://pypi.org/project/cx_Freeze/)                                                             | Windows, MacOS    | packaging
 | [`fpm`](https://github.com/jordansissel/fpm)                                                                   | Linux             | packaging
 
