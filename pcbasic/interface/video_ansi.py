@@ -202,9 +202,8 @@ class VideoANSI(video_cli.VideoTextBase):
             console.move_cursor_to(row + self._border_y, col + self._border_x)
             for unicode_list, attr in iter_chunks(text, attrs):
                 fore, back, blink, underline = self._attributes[attr]
-                unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
                 self._set_attributes(fore, back, blink, underline)
-                console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
+                console.write(u''.join(unicode_list).replace(u'\0', u' '))
                 col += len(unicode_list)
             row += 1
             col = start_col
