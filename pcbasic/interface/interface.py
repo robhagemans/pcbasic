@@ -97,9 +97,6 @@ class Interface(object):
                     if not self._audio.busy and not self._video.busy:
                         # nothing to do, come back later
                         self._video.sleep(DELAY)
-                    else:
-                        # tiny delay; significantly reduces cpu load when playing audio or blinking
-                        self._video.sleep(1)
 
     def pause(self, message):
         """Pause and wait for a key."""
