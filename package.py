@@ -358,16 +358,15 @@ elif CX_FREEZE and sys.platform == 'darwin':
 
 else:
 
-    XDG_DESKTOP_ENTRY = u"""
-[Desktop Entry]
-Name=PC-BASIC
-GenericName=GW-BASIC compatible interpreter
-Exec=/usr/local/bin/pcbasic
-Terminal=false
-Type=Application
-Icon=pcbasic
-Categories=Development;IDE;
-"""
+    XDG_DESKTOP_ENTRY = {
+        u'Name': u'PC-BASIC',
+        u'GenericName': u'GW-BASIC compatible interpreter',
+        u'Exec': u'/usr/local/bin/pcbasic',
+        u'Terminal': u'false',
+        u'Type': u'Application',
+        u'Icon': u'pcbasic',
+        u'Categories': u'Development;IDE;',
+    }
 
     def _gather_resources():
         """Bring required resources together."""
@@ -376,54 +375,59 @@ Categories=Development;IDE;
         except EnvironmentError:
             pass
         with open('resources/pcbasic.desktop', 'w') as xdg_file:
-            xdg_file.write(XDG_DESKTOP_ENTRY)
+            xdg_file.write(u'[Desktop Entry]\n')
+            xdg_file.write(u'\n'.join(
+                u'{}={}'.format(_key, _value)
+                for _key, _value in XDG_DESKTOP_ENTRY.items()
+            ))
+            xdg_file.write(u'\n')
         _build_icon()
         shutil.copy('doc/pcbasic.1.gz', 'resources/pcbasic.1.gz')
 
 
-def bdist_rpm():
-    """create .rpm package (requires fpm)"""
-    wash()
-    try:
-        os.mkdir('dist/')
-    except EnvironmentError:
-        pass
-    if os.path.exists('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,)):
-        os.unlink('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,))
-    _gather_resources()
-    subprocess.call((
-        'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
-        '--depends=pyserial,SDL2,SDL2_gfx',
-        '--python-setup-py-arguments=--called-by-fpm',
-        '../setup.py'
-    ), cwd='dist')
-    shutil.rmtree('resources')
-    wash()
+    def bdist_rpm():
+        """create .rpm package (requires fpm)"""
+        wash()
+        try:
+            os.mkdir('dist/')
+        except EnvironmentError:
+            pass
+        if os.path.exists('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,)):
+            os.unlink('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,))
+        _gather_resources()
+        subprocess.call((
+            'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
+            '--depends=pyserial,SDL2,SDL2_gfx',
+            '--python-setup-py-arguments=--called-by-fpm',
+            '../setup.py'
+        ), cwd='dist')
+        shutil.rmtree('resources')
+        wash()
 
-def bdist_deb():
-    """create .deb package (requires fpm)"""
-    wash()
-    try:
-        os.mkdir('dist/')
-    except EnvironmentError:
-        pass
-    if os.path.exists('dist/python-pcbasic_%s_all.deb' % (VERSION,)):
-        os.unlink('dist/python-pcbasic_%s_all.deb' % (VERSION,))
-    _gather_resources()
-    subprocess.call((
-        'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
-        '--depends=python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
-        '--python-setup-py-arguments=--called-by-fpm',
-        '../setup.py'
-    ), cwd='dist')
-    shutil.rmtree('resources')
-    wash()
+    def bdist_deb():
+        """create .deb package (requires fpm)"""
+        wash()
+        try:
+            os.mkdir('dist/')
+        except EnvironmentError:
+            pass
+        if os.path.exists('dist/python-pcbasic_%s_all.deb' % (VERSION,)):
+            os.unlink('dist/python-pcbasic_%s_all.deb' % (VERSION,))
+        _gather_resources()
+        subprocess.call((
+            'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
+            '--depends=python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
+            '--python-setup-py-arguments=--called-by-fpm',
+            '../setup.py'
+        ), cwd='dist')
+        shutil.rmtree('resources')
+        wash()
 
 
-SETUP_OPTIONS['cmdclass'].update({
-    'bdist_rpm': new_command(bdist_rpm),
-    'bdist_deb': new_command(bdist_deb),
-})
+    SETUP_OPTIONS['cmdclass'].update({
+        'bdist_rpm': new_command(bdist_rpm),
+        'bdist_deb': new_command(bdist_deb),
+    })
 
 
 ###############################################################################
