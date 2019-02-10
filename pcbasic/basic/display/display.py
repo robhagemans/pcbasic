@@ -149,14 +149,14 @@ class Display(object):
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
         # in other adapters, that's going to raise an IFC later on.
-        if new_vpagenum is None:
-            new_vpagenum = self.vpagenum
-            if (self._adapter == 'pcjr' and new_vpagenum >= new_mode.num_pages):
-                new_vpagenum = 0
         if new_apagenum is None:
             new_apagenum = self.apagenum
             if (self._adapter == 'pcjr' and new_apagenum >= new_mode.num_pages):
                 new_apagenum = 0
+        if new_vpagenum is None:
+            new_vpagenum = new_apagenum
+            if (self._adapter == 'pcjr' and new_vpagenum >= new_mode.num_pages):
+                new_vpagenum = 0
         # if the new mode has fewer pages than current vpage/apage
         # illegal fn call before anything happens.
         # signal the signals to change the screen resolution
@@ -339,7 +339,11 @@ class Display(object):
             new_apagenum = self.apagenum
         if (new_vpagenum >= self.mode.num_pages or new_apagenum >= self.mode.num_pages):
             raise error.BASICError(error.IFC)
-        self.pages[self.vpagenum].set_visible(False)
+        try:
+            self.pages[self.vpagenum].set_visible(False)
+        except IndexError:
+            # the page has been discarded, no need to set it invisible
+            pass
         self.pages[new_vpagenum].set_visible(True)
         self.vpagenum = new_vpagenum
         self.apagenum = new_apagenum
