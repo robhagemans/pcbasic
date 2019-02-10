@@ -229,7 +229,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
             cx_Freeze.build_exe.run(self)
             # build_exe just includes everything inside the directory
             # so remove some stuff we don't need
-            for root, dirs, files in os.walk('build/exe.macosx-10.13-x86_64-2.7/lib'):
+            for root, dirs, files in os.walk('build/exe.macosx-10.9-x86_64-2.7/lib'):
                 testing = set(root.split(os.sep)) & set(('test', 'tests', 'testing', 'examples'))
                 for f in files:
                     name = os.path.join(root, f)
@@ -245,7 +245,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
                     'distutils', 'setuptools', 'pydoc_data', 'numpy/core/tests', 'numpy/lib/tests',
                     'numpy/f2py/tests', 'numpy/distutils', 'numpy/doc',]:
                 try:
-                    shutil.rmtree('build/exe.macosx-10.13-x86_64-2.7/lib/%s' % module)
+                    shutil.rmtree('build/exe.macosx-10.9-x86_64-2.7/lib/%s' % module)
                 except EnvironmentError:
                     pass
 

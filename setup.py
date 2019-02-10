@@ -38,6 +38,7 @@ include pcbasic/data/*/*
 prune pcbasic/data/__pycache__
 """
 
+_FPM = False
 
 ###############################################################################
 # get descriptions and version number
@@ -154,8 +155,9 @@ def build_py_ext(obj):
     with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
         f.write(DUNMANIFESTIN)
         f.write(u'prune test\n')
-        # include binary libraries for Windows & Mac in wheel
-        f.write(u'include pcbasic/lib/*/*\n')
+        if not _FPM:
+            # include binary libraries for Windows & Mac in wheel
+            f.write(u'include pcbasic/lib/*/*\n')
     with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
         json_str = json.dumps(RELEASE_ID)
         if isinstance(json_str, bytes):
@@ -233,6 +235,7 @@ elif '--called-by-fpm' in sys.argv:
 
     sys.argv.remove('--called-by-fpm')
 
+    _FPM = True
     _TARGET = '/usr/local/'
 
     SETUP_OPTIONS['data_files'] = [
@@ -240,7 +243,6 @@ elif '--called-by-fpm' in sys.argv:
         ('%s/share/applications/' % (_TARGET,), ['resources/pcbasic.desktop']),
         ('%s/share/icons' % (_TARGET,), ['resources/pcbasic.png']),
     ]
-
 
 
 ###############################################################################
