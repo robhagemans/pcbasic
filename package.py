@@ -15,6 +15,7 @@ import shutil
 import glob
 import subprocess
 from io import open
+from distutils.util import get_platform
 
 # get setup.py parameters
 from setup import SETUP_OPTIONS, VERSION, new_command, wash, NAME, AUTHOR, VERSION, COPYRIGHT
@@ -32,6 +33,11 @@ else:
 
 # file location
 HERE = os.path.abspath(os.path.dirname(__file__))
+
+# platform tag (build directories etc.)
+PLATFORM_TAG = '{}-{}.{}'.format(
+    get_platform(), sys.version_info.major, sys.version_info.minor
+)
 
 
 ###############################################################################
@@ -73,9 +79,10 @@ if CX_FREEZE and sys.platform == 'win32':
             """Run build_exe command."""
             _build_icon()
             cx_Freeze.build_exe.run(self)
+            build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
             # so remove some stuff we don't need
-            for root, dirs, files in os.walk('build/exe.win32-2.7/lib'):
+            for root, dirs, files in os.walk(build_dir + 'lib'):
                 testing = set(root.split(os.sep)) & set(('test', 'tests', 'testing', 'examples'))
                 for f in files:
                     name = os.path.join(root, f)
@@ -94,12 +101,12 @@ if CX_FREEZE and sys.platform == 'win32':
             # as everything in there is copied once already
             shutil.rmtree('build/lib')
             # remove c++ runtime etc
-            os.remove('build/exe.win32-2.7/msvcm90.dll')
-            os.remove('build/exe.win32-2.7/msvcp90.dll')
+            os.remove(build_dir + 'msvcm90.dll')
+            os.remove(build_dir + 'msvcp90.dll')
             # remove modules that can be left out
             for module in ('distutils', 'setuptools', 'pydoc_data'):
                 try:
-                    shutil.rmtree('build/exe.win32-2.7/lib/%s' % module)
+                    shutil.rmtree(build_dir + 'lib/%s' % module)
                 except EnvironmentError:
                     pass
 
@@ -226,9 +233,10 @@ elif CX_FREEZE and sys.platform == 'darwin':
         def run(self):
             """Run build_exe command."""
             cx_Freeze.build_exe.run(self)
+            build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
             # so remove some stuff we don't need
-            for root, dirs, files in os.walk('build/exe.macosx-10.9-x86_64-2.7/lib'):
+            for root, dirs, files in os.walk(build_dir + 'lib'):
                 testing = set(root.split(os.sep)) & set(('test', 'tests', 'testing', 'examples'))
                 for f in files:
                     name = os.path.join(root, f)
@@ -242,7 +250,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
             # remove modules that can be left out
             for module in ('distutils', 'setuptools', 'pydoc_data'):
                 try:
-                    shutil.rmtree('build/exe.macosx-10.9-x86_64-2.7/lib/%s' % module)
+                    shutil.rmtree(build_dir + 'lib/%s' % module)
                 except EnvironmentError:
                     pass
 
