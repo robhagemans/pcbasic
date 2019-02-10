@@ -397,7 +397,9 @@ def bdist_rpm():
     subprocess.call((
         'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
         '--prefix=/usr/local/lib/python2.7/site-packages/',
-        '--depends=numpy,pyserial,SDL2,SDL2_gfx', '..'
+        '--depends=numpy,pyserial,SDL2,SDL2_gfx',
+        '--python-setup-py-arguments=--called-by-fpm',
+        '../setup.py'
     ), cwd='dist')
     shutil.rmtree('resources')
     wash()
@@ -416,7 +418,8 @@ def bdist_deb():
         'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
         '--prefix=/usr/local/lib/python2.7/site-packages/',
         '--depends=python-numpy,python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
-        '..'
+        '--python-setup-py-arguments=--called-by-fpm',
+        '../setup.py'
     ), cwd='dist')
     shutil.rmtree('resources')
     wash()

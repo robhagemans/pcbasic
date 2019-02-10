@@ -227,8 +227,11 @@ if sys.platform == 'win32':
     SETUP_OPTIONS['entry_points']['gui_scripts'] = ['pcbasicw=pcbasic:main']
 
 
-elif sys.platform.startswith('linux'):
+elif '--called-by-fpm' in sys.argv:
     # these need to be included in the sdist metadata for the packaging script to pick them up
+    # we ask fpm to include a special argument to avoid breaking other calls
+
+    sys.argv.remove('--called-by-fpm')
 
     _TARGET = '/usr/local/'
 
