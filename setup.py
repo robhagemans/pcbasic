@@ -38,8 +38,6 @@ include pcbasic/data/*/*
 prune pcbasic/data/__pycache__
 """
 
-# indicates that setup.py is being called by fpm
-_FPM = False
 
 ###############################################################################
 # get descriptions and version number
@@ -156,9 +154,8 @@ def build_py_ext(obj):
     with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
         f.write(DUNMANIFESTIN)
         f.write(u'prune test\n')
-        if not _FPM:
-            # include binary libraries for Windows & Mac in wheel
-            f.write(u'include pcbasic/lib/*/*\n')
+        # include binary libraries for Windows & Mac in wheel
+        f.write(u'include pcbasic/lib/*/*\n')
     with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
         json_str = json.dumps(RELEASE_ID)
         if isinstance(json_str, bytes):
@@ -214,8 +211,7 @@ SETUP_OPTIONS = {
     # launchers
     'entry_points': {
         'console_scripts':  ['pcbasic=pcbasic:main'],
-        # this is needed for Windows only, but we create only one wheel
-        'gui_scripts': ['pcbasicw=pcbasic:main'],
+        'gui_scripts': [],
     },
 
     # setup commands
@@ -225,25 +221,14 @@ SETUP_OPTIONS = {
         'build_py': extend_command(build_py.build_py, build_py_ext),
         'wash': new_command(wash),
     },
-}
 
-
-if '--called-by-fpm' in sys.argv:
-    # these need to be included in the sdist metadata for the packaging script to pick them up
-    # we ask fpm to include a special argument to avoid breaking other calls
-
-    sys.argv.remove('--called-by-fpm')
-
-    _FPM = True
-    _TARGET = '/usr/local/'
-
-    SETUP_OPTIONS['data_files'] = [
-        ('%s/share/man/man1/' % (_TARGET,), ['resources/pcbasic.1.gz']),
-        ('%s/share/applications/' % (_TARGET,), ['resources/pcbasic.desktop']),
-        ('%s/share/icons' % (_TARGET,), ['resources/pcbasic.png']),
+    # these are for linux packaging only, but these files are simply not present otherwise
+    'data_files': [
+        ('/usr/local/share/man/man1/', ['resources/pcbasic.1.gz']),
+        ('/usr/local/share/applications/', ['resources/pcbasic.desktop']),
+        ('/usr/local/share/icons', ['resources/pcbasic.png']),
     ]
-    # separate gui scripts are not needed on linux
-    SETUP_OPTIONS['entry_points']['gui_scripts'] = []
+}
 
 
 ###############################################################################

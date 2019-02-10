@@ -129,6 +129,12 @@ if CX_FREEZE and sys.platform == 'win32':
     # compile separately, as they end up in the wrong place anyway
     SETUP_OPTIONS['ext_modules'] = []
 
+    # gui launcher
+    SETUP_OPTIONS['entry_points']['gui_scripts'] = ['pcbasicw=pcbasic:main']
+
+    # remove linux-specific files
+    SETUP_OPTIONS['data_files'] = []
+
     directory_table = [
         (
             'StartMenuFolder',
@@ -340,6 +346,9 @@ elif CX_FREEZE and sys.platform == 'darwin':
     SETUP_OPTIONS['cmdclass']['bdist_mac'] = BdistMacCommand
     SETUP_OPTIONS['cmdclass']['bdist_dmg'] = BdistDmgCommand
 
+    # remove linux-specific files
+    SETUP_OPTIONS['data_files'] = []
+
     # cx_Freeze options
     SETUP_OPTIONS['options'] = {
         'build_exe': {
@@ -409,7 +418,6 @@ else:
         subprocess.call((
             'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
             '--depends=pyserial,SDL2,SDL2_gfx',
-            '--python-setup-py-arguments=--called-by-fpm',
             '../setup.py'
         ), cwd='dist')
         shutil.rmtree('resources')
@@ -428,7 +436,6 @@ else:
         subprocess.call((
             'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
             '--depends=python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
-            '--python-setup-py-arguments=--called-by-fpm',
             '../setup.py'
         ), cwd='dist')
         shutil.rmtree('resources')
