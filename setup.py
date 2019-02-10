@@ -38,6 +38,7 @@ include pcbasic/data/*/*
 prune pcbasic/data/__pycache__
 """
 
+# indicates that setup.py is being called by fpm
 _FPM = False
 
 ###############################################################################
@@ -191,8 +192,9 @@ SETUP_OPTIONS = {
     # but manifest specifies what gets *included* in the archive in the first place
     'package_data': {
         PACKAGE: [
-            '*.txt', '*.md', 'pcbasic/*.txt', 'pcbasic/data/codepages/*',
-            'pcbasic/data/fonts/*', 'pcbasic/data/programs/*',
+            '*.txt', '*.md', 'pcbasic/*.txt',
+            'pcbasic/data/*', 'pcbasic/data/*/*',
+            # libs should be installed if included (in wheels)
             'pcbasic/lib/*',
         ],
     },
@@ -212,7 +214,8 @@ SETUP_OPTIONS = {
     # launchers
     'entry_points': {
         'console_scripts':  ['pcbasic=pcbasic:main'],
-        'gui_scripts': [],
+        # this is needed for Windows only, but we create only one wheel
+        'gui_scripts': ['pcbasicw=pcbasic:main'],
     },
 
     # setup commands
@@ -224,12 +227,8 @@ SETUP_OPTIONS = {
     },
 }
 
-# platform-specific settings
-if sys.platform == 'win32':
-    SETUP_OPTIONS['entry_points']['gui_scripts'] = ['pcbasicw=pcbasic:main']
 
-
-elif '--called-by-fpm' in sys.argv:
+if '--called-by-fpm' in sys.argv:
     # these need to be included in the sdist metadata for the packaging script to pick them up
     # we ask fpm to include a special argument to avoid breaking other calls
 
