@@ -154,12 +154,8 @@ def build_py_ext(obj):
     with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as f:
         f.write(DUNMANIFESTIN)
         f.write(u'prune test\n')
-        # include DLLs on Windows
-        if sys.platform == 'win32':
-            if platform.architecture()[0] == '64bit':
-                f.write(u'include pcbasic/lib/win32_x64/*.dll\n')
-            else:
-                f.write(u'include pcbasic/lib/win32_x86/*.dll\n')
+        # include binary libraries for Windows & Mac in wheel
+        f.write(u'include pcbasic/lib/*/*\n')
     with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
         json_str = json.dumps(RELEASE_ID)
         if isinstance(json_str, bytes):
