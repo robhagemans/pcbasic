@@ -76,7 +76,8 @@ class GraphicsViewPort(object):
         yslice, xslice = index
         if not isinstance(yslice, slice) and not isinstance(xslice, slice):
             # single pixel read can go outside of viewport
-            return self._pixels[self._convert_coords(xslice, yslice)]
+            x, y = self._convert_coords(xslice, yslice)
+            return self._pixels[y, x]
         return self._pixels[self._convert_slice(index)]
 
     def get_bounds(self):
@@ -832,7 +833,7 @@ class Graphics(object):
                 tilerow = tile[y % tile.height, :]
                 n_tiles = 1 + (x_right+1) // tile.width - (x_left // tile.width)
                 tiles = bytematrix.hstack((tilerow,) * n_tiles)
-                interval = tiles[:, x_left % tile.width : x_right - x_left + 1]
+                interval = tiles[:, (x_left%tile.width) : (x_left%tile.width) + x_right - x_left + 1]
                 # put to screen
                 self.graph_view[y, x_left:x_right+1] = interval
             # allow interrupting the paint
