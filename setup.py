@@ -242,6 +242,8 @@ if '--called-by-fpm' in sys.argv:
         ('%s/share/applications/' % (_TARGET,), ['resources/pcbasic.desktop']),
         ('%s/share/icons' % (_TARGET,), ['resources/pcbasic.png']),
     ]
+    # separate gui scripts are not needed on linux
+    SETUP_OPTIONS['entry_points']['gui_scripts'] = []
 
 
 ###############################################################################
