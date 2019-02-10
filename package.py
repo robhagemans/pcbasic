@@ -18,7 +18,14 @@ from io import open
 from distutils.util import get_platform
 
 # get setup.py parameters
-from setup import SETUP_OPTIONS, VERSION, new_command, wash, NAME, AUTHOR, VERSION, COPYRIGHT
+from setup import SETUP_OPTIONS, new_command, wash
+
+# we're not setup.py and not being called by the sdist installer
+# so we can import form the package if we want
+from PIL import Image
+from pcbasic.metadata import NAME, AUTHOR, VERSION, COPYRIGHT
+from pcbasic.data import ICON
+from pcbasic.compat import int2byte
 
 
 # operating in cx_Freeze mode
@@ -49,9 +56,6 @@ def _build_icon():
     except EnvironmentError:
         pass
     # build icon
-    from PIL import Image
-    from pcbasic.data import ICON
-    from pcbasic.compat import int2byte
     flat = (_b for _row in ICON for _b in _row)
     rgb = ((_b*255,)*3 for _b in flat)
     rgbflat = (_b for _tuple in rgb for _b in _tuple)
@@ -391,7 +395,6 @@ else:
             xdg_file.write(u'\n')
         _build_icon()
         shutil.copy('doc/pcbasic.1.gz', 'resources/pcbasic.1.gz')
-
 
     def bdist_rpm():
         """create .rpm package (requires fpm)"""

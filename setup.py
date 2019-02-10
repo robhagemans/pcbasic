@@ -20,7 +20,7 @@ from subprocess import check_output, CalledProcessError
 
 from distutils import cmd
 from setuptools.command import sdist, build_py
-from setuptools import find_packages, Extension, setup
+from setuptools import find_packages, setup
 
 
 # file location
