@@ -161,7 +161,10 @@ def build_py_ext(obj):
             else:
                 f.write(u'include pcbasic/lib/win32_x86/*.dll\n')
     with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
-        f.write(json.dumps(RELEASE_ID).decode('ascii', 'ignore'))
+        json_str = json.dumps(RELEASE_ID)
+        if isinstance(json_str, bytes):
+            json_str = json_str.decode('ascii', 'ignore')
+        f.write(json_str)
     build_py.build_py.run(obj)
     os.remove(os.path.join(HERE, 'MANIFEST.in'))
     os.remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
