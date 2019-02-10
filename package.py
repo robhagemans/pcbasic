@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 PC-BASIC packaging script
-Windows, MacOS and Linux packaging
+Python, Windows, MacOS and Linux packaging
 
 (c) 2015--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -13,16 +13,22 @@ import sys
 import os
 import shutil
 import glob
+import json
 import subprocess
+import datetime
+from subprocess import check_output, CalledProcessError
 from io import open
 from distutils.util import get_platform
+from distutils import cmd
+
+from setuptools.command import sdist, build_py
+from PIL import Image
 
 # get setup.py parameters
-from setup import SETUP_OPTIONS, new_command, wash
+from setup import SETUP_OPTIONS
 
 # we're not setup.py and not being called by the sdist installer
 # so we can import form the package if we want
-from PIL import Image
 from pcbasic.metadata import NAME, AUTHOR, VERSION, COPYRIGHT
 from pcbasic.data import ICON
 from pcbasic.compat import int2byte
@@ -46,6 +52,26 @@ PLATFORM_TAG = '{}-{}.{}'.format(
     get_platform(), sys.version_info.major, sys.version_info.minor
 )
 
+SHORT_VERSION = u'.'.join(VERSION.split('.')[:2])
+
+# git commit hash
+try:
+    TAG = check_output(['git', 'describe', '--tags'], cwd=HERE).strip().decode('ascii', 'ignore')
+    COMMIT = check_output(
+        ['git', 'describe', '--always'], cwd=HERE
+    ).strip().decode('ascii', 'ignore')
+except (EnvironmentError, CalledProcessError):
+    TAG = u''
+    COMMIT = u''
+
+# release info
+RELEASE_ID = {
+    u'version': VERSION,
+    u'tag': TAG,
+    u'commit': COMMIT,
+    u'timestamp': str(datetime.datetime.now())
+}
+
 
 ###############################################################################
 # icon
@@ -67,9 +93,108 @@ def _build_icon():
 
 
 ###############################################################################
+# setup.py new/extended commands
+# see http://seasonofcode.com/posts/how-to-add-custom-build-steps-and-commands-to-setup-py.html
+
+def new_command(function):
+    """Add a custom command without having to faff around with an overbearing API."""
+
+    class _NewCommand(cmd.Command):
+        description = function.__doc__
+        user_options = []
+        def run(self):
+            function()
+        def initialize_options(self):
+            pass
+        def finalize_options(self):
+            pass
+
+    return _NewCommand
+
+def extend_command(parent, function):
+    """Extend an exitsing command."""
+
+    class _ExtCommand(parent):
+        def run(self):
+            function(self)
+
+    return _ExtCommand
+
+
+def build_docs():
+    """build documentation files"""
+    import docsrc
+    docsrc.build_docs()
+
+def wash():
+    """clean the workspace of build files; leave in-place compiled files"""
+    # remove traces of egg
+    for path in glob.glob(os.path.join(HERE, '*.egg-info')):
+        _prune(path)
+    # remove intermediate builds
+    _prune(os.path.join(HERE, 'build'))
+    # remove bytecode files
+    for root, _, files in os.walk(HERE):
+        for name in files:
+            if (name.endswith('.pyc') or name.endswith('.pyo')) and 'test' not in root:
+                _remove(os.path.join(root, name))
+    # remove distribution resources
+    _prune(os.path.join(HERE, 'resources'))
+    # remove release stamp
+    _remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
+
+def _prune(path):
+    """Recursively remove a directory."""
+    print('pruning %s' % (path, ))
+    try:
+        shutil.rmtree(path)
+    except EnvironmentError as e:
+        print(e)
+
+def _remove(path):
+    """Remove a file."""
+    print('removing %s' % (path, ))
+    try:
+        os.remove(path)
+    except EnvironmentError as e:
+        print(e)
+
+def _stamp_release():
+    """Place the relase ID file."""
+    with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
+        json_str = json.dumps(RELEASE_ID)
+        if isinstance(json_str, bytes):
+            json_str = json_str.decode('ascii', 'ignore')
+        f.write(json_str)
+
+def sdist_ext(obj):
+    """Run custom sdist command."""
+    wash()
+    _stamp_release()
+    build_docs()
+    sdist.sdist.run(obj)
+    wash()
+
+def build_py_ext(obj):
+    """Run custom build_py command."""
+    _stamp_release()
+    build_py.build_py.run(obj)
+
+
+
+# setup commands
+SETUP_OPTIONS['cmdclass'] = {
+    'build_docs': new_command(build_docs),
+    'sdist': extend_command(sdist.sdist, sdist_ext),
+    'build_py': extend_command(build_py.build_py, build_py_ext),
+    'wash': new_command(wash),
+}
+
+
+
+###############################################################################
 # freezing options
 
-SHORT_VERSION = u'.'.join(VERSION.split('.')[:2])
 
 
 if CX_FREEZE and sys.platform == 'win32':
@@ -131,9 +256,6 @@ if CX_FREEZE and sys.platform == 'win32':
 
     # gui launcher
     SETUP_OPTIONS['entry_points']['gui_scripts'] = ['pcbasicw=pcbasic:main']
-
-    # remove linux-specific files
-    SETUP_OPTIONS['data_files'] = []
 
     directory_table = [
         (
@@ -346,9 +468,6 @@ elif CX_FREEZE and sys.platform == 'darwin':
     SETUP_OPTIONS['cmdclass']['bdist_mac'] = BdistMacCommand
     SETUP_OPTIONS['cmdclass']['bdist_dmg'] = BdistDmgCommand
 
-    # remove linux-specific files
-    SETUP_OPTIONS['data_files'] = []
-
     # cx_Freeze options
     SETUP_OPTIONS['options'] = {
         'build_exe': {
@@ -414,13 +533,13 @@ else:
             pass
         if os.path.exists('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,)):
             os.unlink('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,))
+        _stamp_release()
         _gather_resources()
         subprocess.call((
             'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
             '--depends=pyserial,SDL2,SDL2_gfx',
-            '../setup.py'
+            '..'
         ), cwd='dist')
-        shutil.rmtree('resources')
         wash()
 
     def bdist_deb():
@@ -432,15 +551,14 @@ else:
             pass
         if os.path.exists('dist/python-pcbasic_%s_all.deb' % (VERSION,)):
             os.unlink('dist/python-pcbasic_%s_all.deb' % (VERSION,))
+        _stamp_release()
         _gather_resources()
         subprocess.call((
             'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
             '--depends=python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
-            '../setup.py'
+            '..'
         ), cwd='dist')
-        shutil.rmtree('resources')
         wash()
-
 
     SETUP_OPTIONS['cmdclass'].update({
         'bdist_rpm': new_command(bdist_rpm),

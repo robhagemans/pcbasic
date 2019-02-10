@@ -40,15 +40,10 @@ try:
     TAG = RELEASE_ID[u'tag']
     COMMIT = RELEASE_ID[u'commit']
     TIMESTAMP = RELEASE_ID[u'timestamp']
-except ResourceFailed:
+except (ResourceFailed, ValueError):
     TAG = u''
     TIMESTAMP = u''
-    try:
-        COMMIT = check_output(
-            ['git', 'describe', '--always'], cwd=os.path.dirname(__file__)
-        ).strip().decode('ascii', 'ignore')
-    except (CalledProcessError, EnvironmentError):
-        COMMIT = u'unknown'
+    COMMIT = u'unreleased'
 
 
 class ExceptionGuard(object):
