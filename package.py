@@ -72,6 +72,20 @@ RELEASE_ID = {
     u'timestamp': str(datetime.datetime.now())
 }
 
+# non-python files to include
+INCLUDE_FILES = (
+    '*.md',
+    'GPL3.txt',
+    'doc/*.html',
+    'pcbasic/data/USAGE.txt',
+    'pcbasic/data/release.json',
+    'pcbasic/data/*/*',
+)
+
+# python files to exclude from distributions
+EXCLUDE_FILES = (
+    'package.py', 'test/',
+)
 
 ###############################################################################
 # icon
@@ -120,29 +134,6 @@ def extend_command(parent, function):
 
     return _ExtCommand
 
-
-def build_docs():
-    """build documentation files"""
-    import docsrc
-    docsrc.build_docs()
-
-def wash():
-    """clean the workspace of build files; leave in-place compiled files"""
-    # remove traces of egg
-    for path in glob.glob(os.path.join(HERE, '*.egg-info')):
-        _prune(path)
-    # remove intermediate builds
-    _prune(os.path.join(HERE, 'build'))
-    # remove bytecode files
-    for root, _, files in os.walk(HERE):
-        for name in files:
-            if (name.endswith('.pyc') or name.endswith('.pyo')) and 'test' not in root:
-                _remove(os.path.join(root, name))
-    # remove distribution resources
-    _prune(os.path.join(HERE, 'resources'))
-    # remove release stamp
-    _remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
-
 def _prune(path):
     """Recursively remove a directory."""
     print('pruning %s' % (path, ))
@@ -167,10 +158,48 @@ def _stamp_release():
             json_str = json_str.decode('ascii', 'ignore')
         f.write(json_str)
 
+def _build_manifest(includes, excludes):
+    """Build the MANIFEST.in."""
+    manifest = u''.join(
+        u'include {}\n'.format(_inc) for _inc in includes
+    ) + u''.join(
+        u'exclude {}\n'.format(_exc) for _exc in excludes if not _exc.endswith('/')
+    ) + u''.join(
+        u'prune {}\n'.format(_exc) for _exc in excludes if _exc.endswith('/')
+    )
+    with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as manifest_file:
+        manifest_file.write(manifest)
+
+
+def build_docs():
+    """build documentation files"""
+    import docsrc
+    docsrc.build_docs()
+
+def wash():
+    """clean the workspace of build files; leave in-place compiled files"""
+    # remove traces of egg
+    for path in glob.glob(os.path.join(HERE, '*.egg-info')):
+        _prune(path)
+    # remove intermediate builds
+    _prune(os.path.join(HERE, 'build'))
+    # remove bytecode files
+    for root, _, files in os.walk(HERE):
+        for name in files:
+            if (name.endswith('.pyc') or name.endswith('.pyo')) and 'test' not in root:
+                _remove(os.path.join(root, name))
+    # remove distribution resources
+    _prune(os.path.join(HERE, 'resources'))
+    # remove release stamp
+    _remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
+    # remove manifest
+    _remove(os.path.join(HERE, 'MANIFEST.in'))
+
 def sdist_ext(obj):
     """Run custom sdist command."""
     wash()
     _stamp_release()
+    _build_manifest(INCLUDE_FILES + ('pcbasic/lib/README.md',), EXCLUDE_FILES)
     build_docs()
     sdist.sdist.run(obj)
     wash()
@@ -178,8 +207,9 @@ def sdist_ext(obj):
 def build_py_ext(obj):
     """Run custom build_py command."""
     _stamp_release()
+    _build_manifest(INCLUDE_FILES + ('pcbasic/lib/*/*',), EXCLUDE_FILES)
+    #build_docs()
     build_py.build_py.run(obj)
-
 
 
 # setup commands
@@ -193,9 +223,7 @@ SETUP_OPTIONS['cmdclass'] = {
 
 
 ###############################################################################
-# freezing options
-
-
+# Windows
 
 if CX_FREEZE and sys.platform == 'win32':
 
@@ -207,6 +235,8 @@ if CX_FREEZE and sys.platform == 'win32':
         def run(self):
             """Run build_exe command."""
             _build_icon()
+            # only include 32-bit DLLs
+            _build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
             build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
@@ -357,6 +387,9 @@ if CX_FREEZE and sys.platform == 'win32':
     ]
 
 
+###############################################################################
+# Mac
+
 elif CX_FREEZE and sys.platform == 'darwin':
 
     class BuildExeCommand(cx_Freeze.build_exe):
@@ -364,6 +397,8 @@ elif CX_FREEZE and sys.platform == 'darwin':
 
         def run(self):
             """Run build_exe command."""
+            # include dylibs
+            _build_manifest(INCLUDE_FILES + ('pcbasic/lib/darwin/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
             build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
@@ -494,7 +529,7 @@ elif CX_FREEZE and sys.platform == 'darwin':
 
 
 ###############################################################################
-# linux packaging
+# Linux
 
 else:
 
@@ -535,6 +570,7 @@ else:
             os.unlink('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,))
         _stamp_release()
         _gather_resources()
+        _build_manifest(INCLUDE_FILES, EXCLUDE_FILES)
         subprocess.call((
             'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
             '--depends=pyserial,SDL2,SDL2_gfx',
@@ -553,6 +589,7 @@ else:
             os.unlink('dist/python-pcbasic_%s_all.deb' % (VERSION,))
         _stamp_release()
         _gather_resources()
+        _build_manifest(INCLUDE_FILES, EXCLUDE_FILES)
         subprocess.call((
             'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
             '--depends=python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
