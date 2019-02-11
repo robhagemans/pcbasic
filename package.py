@@ -16,7 +16,9 @@ import glob
 import json
 import subprocess
 import datetime
+import time
 from subprocess import check_output, CalledProcessError
+from contextlib import contextmanager
 from io import open
 from distutils.util import get_platform
 from distutils import cmd
@@ -135,21 +137,32 @@ def extend_command(parent, function):
 
     return _ExtCommand
 
-def _prune(path):
-    """Recursively remove a directory."""
-    print('pruning %s' % (path, ))
+@contextmanager
+def os_safe(message, name):
+    """Catch and report environment errors."""
+    print('... {} {} ... '.format(message, name), end='')
     try:
-        shutil.rmtree(path)
+        yield
     except EnvironmentError as e:
         print(e)
+    else:
+        print('ok')
+
+
+def _prune(path):
+    """Recursively remove a directory."""
+    with os_safe('pruning', path):
+        shutil.rmtree(path)
 
 def _remove(path):
     """Remove a file."""
-    print('removing %s' % (path, ))
-    try:
+    with os_safe('removing', path):
         os.remove(path)
-    except EnvironmentError as e:
-        print(e)
+
+def _mkdir(name):
+    """Create a directory."""
+    with os_safe('creating', name):
+        os.mkdir(name)
 
 def _stamp_release():
     """Place the relase ID file."""
@@ -255,20 +268,30 @@ if CX_FREEZE and sys.platform == 'win32':
                             # we're only producing packages for win32_x86
                             or 'win32_x64' in name or name.endswith('.dylib')
                         ):
-                        print('REMOVING %s' % (name,))
-                        os.remove(name)
+                        _remove(name)
             # remove lib dir altogether to avoid it getting copied into the msi
             # as everything in there is copied once already
-            shutil.rmtree('build/lib')
+            _prune('build/lib')
             # remove c++ runtime etc
-            os.remove(build_dir + 'msvcm90.dll')
-            os.remove(build_dir + 'msvcp90.dll')
+            _remove(build_dir + 'msvcm90.dll')
+            _remove(build_dir + 'msvcp90.dll')
             # remove modules that can be left out
             for module in ('distutils', 'setuptools', 'pydoc_data'):
-                try:
-                    shutil.rmtree(build_dir + 'lib/%s' % module)
-                except EnvironmentError:
-                    pass
+                _prune(build_dir + 'lib/%s' % module)
+
+
+    class BdistMsiCommand(cx_Freeze.bdist_msi):
+        """Custom bdist_msi command."""
+
+        def run(self):
+            """Run build_msi command."""
+            name = '{}-{}'.format(NAME, VERSION)
+            _remove('dist/{}.msi'.format(name))
+            cx_Freeze.bdist_msi.run(self)
+            # close the database file so we can rename the file
+            del self.db
+            os.rename('dist/{}-win32.msi'.format(name), 'dist/{}.msi'.format(name))
+            wash()
 
         # mostly copy-paste from cxfreeze
         def add_config(self, fullname):
@@ -369,6 +392,7 @@ if CX_FREEZE and sys.platform == 'win32':
 
 
     SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
+    SETUP_OPTIONS['cmdclass']['bdist_msi'] = BdistMsiCommand
 
     numversion = '.'.join(v for v in VERSION.encode('ascii').split('.') if v.isdigit())
     UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
@@ -505,19 +529,13 @@ elif CX_FREEZE and sys.platform == 'darwin':
                 testing = set(root.split(os.sep)) & set(('test', 'tests', 'testing', 'examples'))
                 for f in files:
                     name = os.path.join(root, f)
-                    if (
-                            # remove tests and examples
-                            testing
-                            # remove windows DLLs and PYDs
-                            or 'win32_' in name or name.endswith('.dll')):
-                        print('REMOVING %s' % (name,))
-                        os.remove(name)
+                    # remove tests and examples
+                    # remove windows DLLs and PYDs
+                    if (testing or 'win32_' in name or name.endswith('.dll')):
+                        _remove(name)
             # remove modules that can be left out
             for module in ('distutils', 'setuptools', 'pydoc_data'):
-                try:
-                    shutil.rmtree(build_dir + 'lib/%s' % module)
-                except EnvironmentError:
-                    pass
+                _prune(build_dir + 'lib/%s' % module)
 
 
     class BdistMacCommand(cx_Freeze.bdist_mac):
@@ -534,10 +552,9 @@ elif CX_FREEZE and sys.platform == 'darwin':
                 '@loader_path/libSDL2.dylib', file_path
             ))
             # remove some files we don't need
-            os.remove('build/PC-BASIC-2.0.app/Contents/MacOS/libSDL2.dylib')
+            _remove('build/PC-BASIC-2.0.app/Contents/MacOS/libSDL2.dylib')
             for path in glob.glob('build/PC-BASIC-2.0.app/Contents/MacOS/libnpymath*'):
-                os.remove(path)
-
+                _remove(path)
 
         def copy_file(self, src, dst):
             # catch copy errors, these happen with relative references with funny bracketed names
@@ -558,41 +575,31 @@ elif CX_FREEZE and sys.platform == 'darwin':
             _build_icon()
             cx_Freeze.bdist_dmg.run(self)
             # move the disk image to dist/
-            try:
-                os.mkdir('dist/')
-            except EnvironmentError:
-                pass
+            _mkdir('dist/')
             if os.path.exists('dist/' + os.path.basename(self.dmgName)):
                 os.unlink('dist/' + os.path.basename(self.dmgName))
-            shutil.move(self.dmgName, 'dist/')
-            shutil.rmtree('resources')
+            dmg_name = '{}-{}.dmg'.format(NAME, VERSION)
+            os.rename(self.dmgName, dmg_name)
+            shutil.move(dmg_name, 'dist/')
+            wash()
 
         def buildDMG(self):
             # Remove DMG if it already exists
             if os.path.exists(self.dmgName):
                 os.unlink(self.dmgName)
-
             # hdiutil with multiple -srcfolder hangs, so create a temp dir
-            try:
-                shutil.rmtree('build/dmg')
-            except EnvironmentError as e:
-                print(e)
-            try:
-                os.mkdir('build/dmg')
-            except EnvironmentError as e:
-                print(e)
+            _prune('build/dmg')
+            _mkdir('build/dmg')
             shutil.copytree(self.bundleDir, 'build/dmg/' + os.path.basename(self.bundleDir))
             # include the docs at them top level in the dmg
             shutil.copy('doc/PC-BASIC_documentation.html', 'build/dmg/Documentation.html')
-
+            # removed application shortcuts logic as I'm not using it anyway
+            # Create the dmg
             createargs = [
                 'hdiutil', 'create', '-fs', 'HFSX', '-format', 'UDZO',
                 self.dmgName, '-imagekey', 'zlib-level=9', '-srcfolder',
                 'build/dmg', '-volname', self.volume_label,
             ]
-            # removed application shortcuts logic as I'm not using it anyway
-
-            # Create the dmg
             if os.spawnvp(os.P_WAIT, 'hdiutil', createargs) != 0:
                 raise OSError('creation of the dmg failed')
 
@@ -621,8 +628,9 @@ elif CX_FREEZE and sys.platform == 'darwin':
     }
     SETUP_OPTIONS['executables'] = [
         Executable(
-            'pc-basic', base='Console', targetName='pcbasic', icon='resources/pcbasic.icns',
-            copyright=COPYRIGHT),
+            'pc-basic', base='Console', targetName='pcbasic',
+            icon='resources/pcbasic.icns', copyright=COPYRIGHT
+        ),
     ]
 
 
@@ -643,10 +651,7 @@ else:
 
     def _gather_resources():
         """Bring required resources together."""
-        try:
-            os.mkdir('resources')
-        except EnvironmentError:
-            pass
+        _mkdir('resources')
         with open('resources/pcbasic.desktop', 'w') as xdg_file:
             xdg_file.write(u'[Desktop Entry]\n')
             xdg_file.write(u'\n'.join(
@@ -660,10 +665,7 @@ else:
     def bdist_rpm():
         """create .rpm package (requires fpm)"""
         wash()
-        try:
-            os.mkdir('dist/')
-        except EnvironmentError:
-            pass
+        _mkdir('dist/')
         if os.path.exists('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,)):
             os.unlink('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,))
         _stamp_release()
@@ -679,10 +681,7 @@ else:
     def bdist_deb():
         """create .deb package (requires fpm)"""
         wash()
-        try:
-            os.mkdir('dist/')
-        except EnvironmentError:
-            pass
+        _mkdir('dist/')
         if os.path.exists('dist/python-pcbasic_%s_all.deb' % (VERSION,)):
             os.unlink('dist/python-pcbasic_%s_all.deb' % (VERSION,))
         _stamp_release()
