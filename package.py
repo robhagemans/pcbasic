@@ -295,7 +295,7 @@ if CX_FREEZE and sys.platform == 'win32':
 
         # mostly copy-paste from cxfreeze
         def add_config(self, fullname):
-            # PATH needs uac??
+            #FIXME: don't set this for per-user
             if self.add_to_path:
                 msilib.add_data(self.db, 'Environment',
                         [("E_PATH", "=-*Path", r"[~];[TARGETDIR]", "TARGETDIR")])
@@ -311,6 +311,7 @@ if CX_FREEZE and sys.platform == 'win32':
             msilib.add_data(self.db, 'InstallUISequence',
                 [("PrepareDlg", None, 140),
                 # this is new
+                # sould probably be conditional on "not already installed" or smth
                 ("WhichUsersDlg", None, 123),
                 ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
                 ("SelectDirectoryDlg", "not Installed", 1230),
@@ -340,7 +341,8 @@ if CX_FREEZE and sys.platform == 'win32':
                     ('Progress1', 'Install'),
                     ('Progress2', 'installs'),
                     ('MaintenanceForm_Action', 'Repair'),
-                    ('ALLUSERS', '2') #'2'
+                    ('ALLUSERS', '2'),
+                    ('MSIINSTALLPERUSER', '1'),
             ]
             email = metadata.author_email or metadata.maintainer_email
             if email:
