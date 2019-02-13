@@ -20,6 +20,7 @@ from subprocess import check_output, CalledProcessError
 from io import open
 from distutils.util import get_platform
 from distutils import cmd
+import distutils
 
 from setuptools.command import sdist, build_py
 from PIL import Image
@@ -268,6 +269,103 @@ if CX_FREEZE and sys.platform == 'win32':
                     shutil.rmtree(build_dir + 'lib/%s' % module)
                 except EnvironmentError:
                     pass
+
+        # mostly copy-paste from cxfreeze
+        def add_config(self, fullname):
+            # PATH needs uac??
+            if self.add_to_path:
+                msilib.add_data(self.db, 'Environment',
+                        [("E_PATH", "=-*Path", r"[~];[TARGETDIR]", "TARGETDIR")])
+            if self.directories:
+                msilib.add_data(self.db, "Directory", self.directories)
+            #if self.environment_variables:
+            #    msilib.add_data(self.db, "Environment", self.environment_variables)
+            msilib.add_data(self.db, 'CustomAction',
+                    [("A_SET_TARGET_DIR", 256 + 51, "TARGETDIR",
+                            self.initial_target_dir)])
+            msilib.add_data(self.db, 'InstallExecuteSequence',
+                    [("A_SET_TARGET_DIR", 'TARGETDIR=""', 401)])
+            msilib.add_data(self.db, 'InstallUISequence',
+                [("PrepareDlg", None, 140),
+                # this is new
+                ("WhichUsersDlg", None, 123),
+                ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
+                ("SelectDirectoryDlg", "not Installed", 1230),
+                ("MaintenanceTypeDlg",
+                "Installed and not Resume and not Preselected", 1250),
+                ("ProgressDlg", None, 1280)
+            ])
+            for index, executable in enumerate(self.distribution.executables):
+                if executable.shortcutName is not None \
+                        and executable.shortcutDir is not None:
+                    baseName = os.path.basename(executable.targetName)
+                    msilib.add_data(self.db, "Shortcut",
+                            [("S_APP_%s" % index, executable.shortcutDir,
+                                    executable.shortcutName, "TARGETDIR",
+                                    "[TARGETDIR]%s" % baseName, None, None, None,
+                                    None, None, None, None)])
+            for tableName, data in self.data.items():
+                msilib.add_data(self.db, tableName, data)
+
+        # mostly copy-paste from cxfreeze
+        def add_properties(self):
+            metadata = self.distribution.metadata
+            props = [
+                    ('DistVersion', metadata.get_version()),
+                    ('DefaultUIFont', 'DlgFont8'),
+                    ('ErrorDialog', 'ErrorDlg'),
+                    ('Progress1', 'Install'),
+                    ('Progress2', 'installs'),
+                    ('MaintenanceForm_Action', 'Repair'),
+                    ('ALLUSERS', '2') #'2'
+            ]
+            email = metadata.author_email or metadata.maintainer_email
+            if email:
+                props.append(("ARPCONTACT", email))
+            if metadata.url:
+                props.append(("ARPURLINFOABOUT", metadata.url))
+            if self.upgrade_code is not None:
+                props.append(("UpgradeCode", self.upgrade_code))
+            #if self.install_icon:
+            #    props.append(('ARPPRODUCTICON', 'InstallIcon'))
+            msilib.add_data(self.db, 'Property', props)
+            #if self.install_icon:
+            #    msilib.add_data(self.db, "Icon", [("InstallIcon", msilib.Binary(self.install_icon))])
+
+        def add_ui(self):
+            # dialog from cpython 2.7
+            # https://svn.python.org/projects/python/trunk/Tools/msi/msi.py
+            whichusers = distutils.command.bdist_msi.PyDialog(
+                self.db, "WhichUsersDlg", self.x, self.y, self.width, self.height,
+                self.modal, self.title, "AdminInstall", "Next", "Cancel"
+            )
+            whichusers.title(
+                "Select whether to install [ProductName] for all users of this computer."
+            )
+            # A radio group with two options: allusers, justme
+            g = whichusers.radiogroup(
+                "AdminInstall", 135, 60, 235, 80, 3, "WhichUsers", "", "Next"
+            )
+            g.condition("Disable", "VersionNT=600") # Not available on Vista and Windows 2008
+            g.add("ALL", 0, 5, 150, 20, "Install for all users")
+            g.add("JUSTME", 0, 25, 235, 20, "Install just for me")
+
+            whichusers.back("Back", None, active=0)
+
+            c = whichusers.next("Next >", "Cancel")
+            # SetProperty events
+            # https://docs.microsoft.com/en-us/windows/desktop/Msi/setproperty-controlevent
+            c.event("[MSIINSTALLPERUSER]", "{}", 'WhichUsers="ALL"', 1)
+            c.event("[MSIINSTALLPERUSER]", "1", 'WhichUsers="JUSTME"', 1)
+            #FIXME: set to the official location %LOCALAPPDATA%\Programs
+            c.event("[TARGETDIR]", "[%%USERPROFILE]\\%s %s" % (NAME, SHORT_VERSION), 'WhichUsers="JUSTME"', 1)
+            c.event("EndDialog", "Return", 3)
+
+            c = whichusers.cancel("Cancel", "AdminInstall")
+            c.event("SpawnDialog", "CancelDlg")
+
+            cx_Freeze.bdist_msi.add_ui(self)
+
 
 
     SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
