@@ -253,7 +253,7 @@ if CX_FREEZE and sys.platform == 'win32':
     else:
         raise 0
     env_sequence = sequence[index]
-    ###del sequence[index]
+    del sequence[index]
 
 
     class BuildExeCommand(cx_Freeze.build_exe):
@@ -320,12 +320,6 @@ if CX_FREEZE and sys.platform == 'win32':
                 self.db, 'Environment', [("E_PATH", "=-*Path", r"[~];[TARGETDIR]", "TARGETDIR")]
                 )
             msilib.add_data(
-                self.db, 'InstallExecuteSequence', [
-                    ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
-                    ###('WriteEnvironmentStrings', 'WhichUsers="ALL"', 5200),
-                ]
-            )
-            msilib.add_data(
                 self.db, 'InstallUISequence', [
                     ("PrepareDlg", None, 140),
                     # this is new
@@ -337,6 +331,12 @@ if CX_FREEZE and sys.platform == 'win32':
                     ("ProgressDlg", None, 1280),
 
             ])
+            msilib.add_data(
+                self.db, 'InstallExecuteSequence', [
+                    ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
+                    ('WriteEnvironmentStrings', 'MSIINSTALLPERUSER=""', 5200),
+                ]
+            )
             for index, executable in enumerate(self.distribution.executables):
                 if executable.shortcutName is not None and executable.shortcutDir is not None:
                     baseName = os.path.basename(executable.targetName)
