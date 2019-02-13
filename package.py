@@ -243,6 +243,19 @@ if CX_FREEZE and sys.platform == 'win32':
 
     import msilib
 
+    # remove the WriteEnvironmentStrings action from the default list
+    # since cx_Freeze picks up the default list and puts it into the MSI
+    # but we can't have environment changes for per-user installs (?)
+    sequence = msilib.sequence.InstallExecuteSequence
+    for index, info in enumerate(sequence):
+        if info[0] == u'WriteEnvironmentStrings':
+            break
+    else:
+        raise 0
+    env_sequence = sequence[index]
+    ###del sequence[index]
+
+
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""
 
@@ -295,39 +308,45 @@ if CX_FREEZE and sys.platform == 'win32':
 
         # mostly copy-paste from cxfreeze
         def add_config(self, fullname):
-            #FIXME: don't set this for per-user
-            if self.add_to_path:
-                msilib.add_data(self.db, 'Environment',
-                        [("E_PATH", "=-*Path", r"[~];[TARGETDIR]", "TARGETDIR")])
             if self.directories:
                 msilib.add_data(self.db, "Directory", self.directories)
-            #if self.environment_variables:
-            #    msilib.add_data(self.db, "Environment", self.environment_variables)
-            msilib.add_data(self.db, 'CustomAction',
-                    [("A_SET_TARGET_DIR", 256 + 51, "TARGETDIR",
-                            self.initial_target_dir)])
-            msilib.add_data(self.db, 'InstallExecuteSequence',
-                    [("A_SET_TARGET_DIR", 'TARGETDIR=""', 401)])
-            msilib.add_data(self.db, 'InstallUISequence',
-                [("PrepareDlg", None, 140),
-                # this is new
-                # sould probably be conditional on "not already installed" or smth
-                ("WhichUsersDlg", None, 123),
-                ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
-                ("SelectDirectoryDlg", "not Installed", 1230),
-                ("MaintenanceTypeDlg",
-                "Installed and not Resume and not Preselected", 1250),
-                ("ProgressDlg", None, 1280)
+            msilib.add_data(
+                self.db, 'CustomAction',
+                [("A_SET_TARGET_DIR", 256 + 51, "TARGETDIR", self.initial_target_dir)]
+            )
+            #FIXME: don't set this for per-user
+            if self.add_to_path:
+                msilib.add_data(
+                self.db, 'Environment', [("E_PATH", "=-*Path", r"[~];[TARGETDIR]", "TARGETDIR")]
+                )
+            msilib.add_data(
+                self.db, 'InstallExecuteSequence', [
+                    ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
+                    ###('WriteEnvironmentStrings', 'WhichUsers="ALL"', 5200),
+                ]
+            )
+            msilib.add_data(
+                self.db, 'InstallUISequence', [
+                    ("PrepareDlg", None, 140),
+                    # this is new
+                    # sould probably be conditional on "not already installed" or smth
+                    ("WhichUsersDlg", "not Installed", 400),
+                    ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
+                    ("SelectDirectoryDlg", "not Installed", 1230),
+                    ("MaintenanceTypeDlg", "Installed and not Resume and not Preselected", 1250),
+                    ("ProgressDlg", None, 1280),
+
             ])
             for index, executable in enumerate(self.distribution.executables):
-                if executable.shortcutName is not None \
-                        and executable.shortcutDir is not None:
+                if executable.shortcutName is not None and executable.shortcutDir is not None:
                     baseName = os.path.basename(executable.targetName)
-                    msilib.add_data(self.db, "Shortcut",
-                            [("S_APP_%s" % index, executable.shortcutDir,
-                                    executable.shortcutName, "TARGETDIR",
-                                    "[TARGETDIR]%s" % baseName, None, None, None,
-                                    None, None, None, None)])
+                    msilib.add_data(
+                        self.db, "Shortcut", [(
+                            "S_APP_%s" % index, executable.shortcutDir, executable.shortcutName,
+                            "TARGETDIR", "[TARGETDIR]%s" % baseName,
+                            None, None, None, None, None, None, None
+                        )]
+                    )
             for tableName, data in self.data.items():
                 msilib.add_data(self.db, tableName, data)
 
@@ -335,14 +354,14 @@ if CX_FREEZE and sys.platform == 'win32':
         def add_properties(self):
             metadata = self.distribution.metadata
             props = [
-                    ('DistVersion', metadata.get_version()),
-                    ('DefaultUIFont', 'DlgFont8'),
-                    ('ErrorDialog', 'ErrorDlg'),
-                    ('Progress1', 'Install'),
-                    ('Progress2', 'installs'),
-                    ('MaintenanceForm_Action', 'Repair'),
-                    ('ALLUSERS', '2'),
-                    ('MSIINSTALLPERUSER', '1'),
+                ('DistVersion', metadata.get_version()),
+                ('DefaultUIFont', 'DlgFont8'),
+                ('ErrorDialog', 'ErrorDlg'),
+                ('Progress1', 'Install'),
+                ('Progress2', 'installs'),
+                ('MaintenanceForm_Action', 'Repair'),
+                ('ALLUSERS', '2'),
+                ('MSIINSTALLPERUSER', '1'),
             ]
             email = metadata.author_email or metadata.maintainer_email
             if email:
@@ -351,13 +370,10 @@ if CX_FREEZE and sys.platform == 'win32':
                 props.append(("ARPURLINFOABOUT", metadata.url))
             if self.upgrade_code is not None:
                 props.append(("UpgradeCode", self.upgrade_code))
-            #if self.install_icon:
-            #    props.append(('ARPPRODUCTICON', 'InstallIcon'))
             msilib.add_data(self.db, 'Property', props)
-            #if self.install_icon:
-            #    msilib.add_data(self.db, "Icon", [("InstallIcon", msilib.Binary(self.install_icon))])
 
         def add_ui(self):
+            #FIXME - split into separate method
             # dialog from cpython 2.7
             # https://svn.python.org/projects/python/trunk/Tools/msi/msi.py
             whichusers = distutils.command.bdist_msi.PyDialog(
