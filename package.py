@@ -382,8 +382,8 @@ if CX_FREEZE and sys.platform == 'win32':
             # https://docs.microsoft.com/en-us/windows/desktop/Msi/setproperty-controlevent
             c.event("[MSIINSTALLPERUSER]", "{}", 'WhichUsers="ALL"', 1)
             c.event("[MSIINSTALLPERUSER]", "1", 'WhichUsers="JUSTME"', 1)
-            #FIXME: set to the official location %LOCALAPPDATA%\Programs
-            c.event("[TARGETDIR]", "[%%USERPROFILE]\\%s %s" % (NAME, SHORT_VERSION), 'WhichUsers="JUSTME"', 1)
+            # set the target dit ro the default location for per-uer/per-machine installs
+            c.event("[TARGETDIR]", "[ProgramFilesFolder]\\%s %s" % (NAME, SHORT_VERSION), 'WhichUsers="JUSTME"', 1)
             c.event("EndDialog", "Return", 3)
 
             c = whichusers.cancel("Cancel", "AdminInstall")
