@@ -243,7 +243,7 @@ ARGUMENTS = {
     },
     u'sound': {
         u'type': u'string', u'default': u'',
-        u'choices': (u'', u'none', u'beep', u'portaudio', u'interface'),
+        u'choices': (u'', u'none', u'beep', u'portaudio', u'sdl2', u'interface'),
     },
     u'load': {u'type': u'string', u'default': u'', },
     u'run': {u'type': u'string', u'default': u'',  },
