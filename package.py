@@ -306,15 +306,15 @@ if CX_FREEZE and sys.platform == 'win32':
             os.rename('dist/{}-win32.msi'.format(name), 'dist/{}.msi'.format(name))
             wash()
 
-        # mostly copy-paste from cxfreeze
         def add_config(self, fullname):
+            """Override cx_Freeze add_config."""
+            # mostly copy-paste from cxfreeze source, wich some changes
             if self.directories:
                 msilib.add_data(self.db, "Directory", self.directories)
             msilib.add_data(
                 self.db, 'CustomAction',
                 [("A_SET_TARGET_DIR", 256 + 51, "TARGETDIR", self.initial_target_dir)]
             )
-            #FIXME: don't set this for per-user
             if self.add_to_path:
                 msilib.add_data(
                 self.db, 'Environment', [("E_PATH", "=-*Path", r"[~];[TARGETDIR]", "TARGETDIR")]
@@ -350,8 +350,9 @@ if CX_FREEZE and sys.platform == 'win32':
             for tableName, data in self.data.items():
                 msilib.add_data(self.db, tableName, data)
 
-        # mostly copy-paste from cxfreeze
         def add_properties(self):
+            """Override cx_Freeze add_properties."""
+            # mostly copy-paste from cxfreeze
             metadata = self.distribution.metadata
             props = [
                 ('DistVersion', metadata.get_version()),
@@ -372,9 +373,9 @@ if CX_FREEZE and sys.platform == 'win32':
                 props.append(("UpgradeCode", self.upgrade_code))
             msilib.add_data(self.db, 'Property', props)
 
-        def add_ui(self):
-            #FIXME - split into separate method
-            # dialog from cpython 2.7
+        def _add_whichusers_dialog(self):
+            """Per-user or per-machine install dialog."""
+            # based on dialog from cpython 2.7 source code
             # https://svn.python.org/projects/python/trunk/Tools/msi/msi.py
             whichusers = distutils.command.bdist_msi.PyDialog(
                 self.db, "WhichUsersDlg", self.x, self.y, self.width, self.height,
@@ -405,6 +406,8 @@ if CX_FREEZE and sys.platform == 'win32':
             c = whichusers.cancel("Cancel", "AdminInstall")
             c.event("SpawnDialog", "CancelDlg")
 
+        def add_ui(self):
+            self._add_whichusers_dialog()
             cx_Freeze.bdist_msi.add_ui(self)
 
 
