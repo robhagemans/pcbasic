@@ -6,7 +6,6 @@ Windows packaging
 This file is released under the GNU GPL version 3 or later.
 """
 
-import sys
 import os
 import distutils
 import msilib
@@ -311,5 +310,4 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
     ]
 
     # call cx_Freeze's setup() with command bdist_msi
-    sys.argv[1:] = ['bdist_msi']
-    cx_Freeze.setup(**SETUP_OPTIONS)
+    cx_Freeze.setup(script_args=['bdist_msi'], **SETUP_OPTIONS)

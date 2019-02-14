@@ -77,7 +77,7 @@ INCLUDE_FILES = (
 
 # python files to exclude from distributions
 EXCLUDE_FILES = (
-    'package.py', 'test/',
+    'package.py', 'test/', 'package/'
 )
 
 ###############################################################################
