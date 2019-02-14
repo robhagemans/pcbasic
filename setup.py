@@ -94,7 +94,8 @@ if __name__ == '__main__':
             'bdist_wheel', 'sdist', 'bdist_rpm', 'bdist_deb', 'bdist_msi', 'bdist_dmg', 'build_docs'
         )):
         print(
-            'setup.py is the install script only, please use package.py to build, package or deploy.'
+            'setup.py is the sdist install script only, '
+            'please use distribute.py to build, package or deploy.'
         )
     else:
         # perform the installation
