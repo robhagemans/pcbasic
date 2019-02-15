@@ -75,15 +75,6 @@ SETUP_OPTIONS = {
 
 }
 
-if os.path.isdir('resources') and sys.platform.startswith('linux'):
-    # these are for linux packaging only, but these files are simply not present otherwise
-    SETUP_OPTIONS['data_files'] = [
-        ('/usr/local/share/man/man1/', ['resources/pcbasic.1.gz']),
-        ('/usr/local/share/applications/', ['resources/pcbasic.desktop']),
-        ('/usr/local/share/icons', ['resources/pcbasic.png']),
-    ]
-
-
 ###############################################################################
 # run the setup
 

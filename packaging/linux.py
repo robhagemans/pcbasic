@@ -15,11 +15,11 @@ from io import open
 from setuptools import setup
 
 
-from .common import wash, new_command, _build_icon, _build_manifest, _stamp_release, _mkdir, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .common import wash, new_command, _build_icon, _build_manifest, _stamp_release, _mkdir, _remove
+from .common import HERE, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 
 
 def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
-
 
     XDG_DESKTOP_ENTRY = {
         u'Name': u'PC-BASIC',
@@ -30,6 +30,8 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
         u'Icon': u'pcbasic',
         u'Categories': u'Development;IDE;',
     }
+
+    SETUP_CFG = os.path.join(HERE, 'setup.cfg')
 
     def _gather_resources():
         """Bring required resources together."""
@@ -43,6 +45,17 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
             xdg_file.write(u'\n')
         _build_icon()
         shutil.copy('doc/pcbasic.1.gz', 'resources/pcbasic.1.gz')
+        # prepare a setup.cfg in the root
+        # so that desktop files get picked up by setup.py install and hence by fpm
+        with open(SETUP_CFG, 'w') as setup_cfg:
+            setup_cfg.write('\n'.join([
+                u'[options.data_files]',
+                u'/usr/local/share/man/man1 = resources/pcbasic.1.gz',
+                u'/usr/local/share/applications = resources/pcbasic.desktop',
+                u'/usr/local/share/icons = resources/pcbasic.png',
+                u''
+            ]))
+
 
     def bdist_rpm():
         """create .rpm package (requires fpm)"""
@@ -59,6 +72,7 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
             '..'
         ), cwd='dist')
         wash()
+        _remove(SETUP_CFG)
 
     def bdist_deb():
         """create .deb package (requires fpm)"""
@@ -75,13 +89,13 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
             '..'
         ), cwd='dist')
         wash()
+        _remove(SETUP_CFG)
 
     SETUP_OPTIONS['cmdclass'] = dict(
         bdist_rpm=new_command(bdist_rpm),
         bdist_deb=new_command(bdist_deb),
         **COMMANDS
     )
-
 
     # run the setuptools setup()
     setup(script_args=['bdist_rpm'], **SETUP_OPTIONS)
