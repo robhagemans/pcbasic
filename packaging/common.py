@@ -69,11 +69,9 @@ RELEASE_ID = {
 # non-python files to include
 INCLUDE_FILES = (
     '*.md',
-    'GPL3.txt',
+    '*.txt',
     'doc/*.html',
-    'pcbasic/data/USAGE.txt',
-    'pcbasic/data/release.json',
-    'pcbasic/data/*/*',
+    'pcbasic/data/',
 )
 
 # python files to exclude from distributions
@@ -166,7 +164,9 @@ def _stamp_release():
 def _build_manifest(includes, excludes):
     """Build the MANIFEST.in."""
     manifest = u''.join(
-        u'include {}\n'.format(_inc) for _inc in includes
+        u'include {}\n'.format(_inc) for _inc in includes if not _inc.endswith('/')
+    ) + u''.join(
+        u'graft {}\n'.format(_inc) for _inc in includes if _inc.endswith('/')
     ) + u''.join(
         u'exclude {}\n'.format(_exc) for _exc in excludes if not _exc.endswith('/')
     ) + u''.join(
