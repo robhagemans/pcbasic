@@ -25,6 +25,7 @@ from distutils import cmd
 import distutils
 
 from setuptools.command import sdist, build_py
+from wheel import bdist_wheel
 from PIL import Image
 
 # get setup.py parameters
@@ -77,7 +78,7 @@ INCLUDE_FILES = (
 
 # python files to exclude from distributions
 EXCLUDE_FILES = (
-    'distribute.py', 'test/', 'packaging/'
+    'distribute.py', 'test/', 'packaging/', 'docsrc/', 'fontsrc/'
 )
 
 ###############################################################################
@@ -208,11 +209,18 @@ def sdist_ext(obj):
     sdist.sdist.run(obj)
     wash()
 
+def bdist_wheel_ext(obj):
+    """Run custom bdist_wheel command."""
+    wash()
+    build_docs()
+    # bdist_wheel calls build_py
+    bdist_wheel.bdist_wheel.run(obj)
+    wash()
+
 def build_py_ext(obj):
     """Run custom build_py command."""
     _stamp_release()
     _build_manifest(INCLUDE_FILES + ('pcbasic/lib/*/*',), EXCLUDE_FILES)
-    #build_docs()
     build_py.build_py.run(obj)
 
 
@@ -221,5 +229,6 @@ COMMANDS = {
     'build_docs': new_command(build_docs),
     'sdist': extend_command(sdist.sdist, sdist_ext),
     'build_py': extend_command(build_py.build_py, build_py_ext),
+    'bdist_wheel': extend_command(bdist_wheel.bdist_wheel, bdist_wheel_ext),
     'wash': new_command(wash),
 }
