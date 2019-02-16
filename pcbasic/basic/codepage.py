@@ -94,7 +94,8 @@ class Codepage(object):
         for c in range(256):
             if int2byte(c) not in self.cp_to_unicode:
                 self.cp_to_unicode[int2byte(c)] = u'\0'
-        self.unicode_to_cp = dict((reversed(item) for item in iteritems(self.cp_to_unicode)))
+        self.unicode_to_cp = dict((reversed(_item) for _item in iteritems(self.cp_to_unicode)))
+        self._inverse_substitutes = dict((reversed(_item) for _item in iteritems(self._substitutes)))
         if self.dbcs_num_chars > 0:
             self.dbcs = True
 
@@ -110,6 +111,10 @@ class Codepage(object):
         # bring cluster on C normal form (combine what can be combined)
         if len(uc) > 1:
             uc = unicodedata.normalize('NFC', uc)
+        try:
+            return self._inverse_substitutes[uc]
+        except KeyError:
+            pass
         try:
             # try to codepage-encode the unicode char
             return self.unicode_to_cp[uc]
