@@ -52,10 +52,10 @@ class Codepage(object):
         """Load and initialise codepage tables."""
         # is the current codepage a double-byte codepage?
         self.dbcs = False
-        # load codepage (overrides the above)
-        self._load(codepage_dict or DEFAULT_CODEPAGE)
         # protect box drawing sequences under dbcs?
         self.box_protect = box_protect
+        # load codepage (overrides the above)
+        self._load(codepage_dict or DEFAULT_CODEPAGE)
 
     def _load(self, codepage_dict):
         """Load codepage to Unicode dict."""
@@ -66,6 +66,7 @@ class Codepage(object):
         self.box_right = [set(), set()]
         self.cp_to_unicode = {}
         self.dbcs_num_chars = 0
+        self._substitutes = {}
         for cp_point, grapheme_cluster in iteritems(codepage_dict):
             # do not redefine printable ASCII, but substitute glyphs
             if (
@@ -74,6 +75,7 @@ class Codepage(object):
                 ):
                 ascii_cp = unichr(ord(cp_point))
                 self.cp_to_unicode[cp_point] = ascii_cp
+                self._substitutes[cp_point] = grapheme_cluster
             else:
                 self.cp_to_unicode[cp_point] = grapheme_cluster
             # track lead and trail bytes
@@ -122,19 +124,24 @@ class Codepage(object):
         """Convert unicode string to codepage string."""
         return b''.join(self.from_unicode(uc, errors=errors) for uc in split_graphemes(ucs))
 
-    def to_unicode(self, cp, replace=u''):
+    def to_unicode(self, cp, replace=u'', use_substitutes=False):
         """Convert codepage point to unicode grapheme cluster."""
+        if use_substitutes and self._substitutes:
+            try:
+                return self._substitutes[cp]
+            except KeyError:
+                pass
         return self.cp_to_unicode.get(cp, replace)
 
-    def str_to_unicode(self, cps, preserve=(), box_protect=None):
+    def str_to_unicode(self, cps, preserve=(), box_protect=None, use_substitutes=False):
         """Convert codepage string to unicode string."""
         if box_protect is None:
             box_protext = self.box_protect
-        return Converter(self, preserve, box_protect).to_unicode(cps, flush=True)
+        return Converter(self, preserve, box_protect, use_substitutes).to_unicode(cps, flush=True)
 
-    def get_converter(self, preserve=()):
+    def get_converter(self, preserve=(), use_substitutes=False):
         """Get converter from codepage to unicode."""
-        return Converter(self, preserve, self.box_protect)
+        return Converter(self, preserve, self.box_protect, use_substitutes=use_substitutes)
 
     def wrap_output_stream(self, stream, preserve=()):
         """Wrap a stream so that we can write codepage bytes to it."""
@@ -291,7 +298,7 @@ box_right_unicode = [u'\u2500', u'\u2550']
 class Converter(object):
     """Buffered converter to Unicode - supports DBCS and box-drawing protection."""
 
-    def __init__(self, codepage, preserve=(), box_protect=None):
+    def __init__(self, codepage, preserve=(), box_protect=None, use_substitutes=False):
         """Initialise with empty buffer."""
         self._cp = codepage
         # hold one or two bytes
@@ -302,6 +309,7 @@ class Converter(object):
         self._preserve = set(preserve)
         # may override box protection defaults
         self._box_protect = box_protect or self._cp.box_protect
+        self._use_substitutes = use_substitutes
         self._dbcs = self._cp.dbcs
         self._bset = -1
         self._last = b''
@@ -318,7 +326,7 @@ class Converter(object):
             (
                 _seq.decode('ascii', errors='ignore')
                 if (_seq in self._preserve)
-                else self._cp.to_unicode(_seq)
+                else self._cp.to_unicode(_seq, use_substitutes=self._use_substitutes)
             )
             for _seq in sequences
         ]

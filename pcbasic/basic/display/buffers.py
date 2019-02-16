@@ -340,7 +340,7 @@ class VideoBuffer(object):
         """Update the DBCS buffer."""
         raw = b''.join(self._rows[row-1].chars)
         # get a new converter each time so we don't share state between calls
-        conv = self._codepage.get_converter(preserve=b'')
+        conv = self._codepage.get_converter(preserve=b'', use_substitutes=True)
         sequences = conv.to_unicode_list(raw, flush=True)
         updated = [old != new for old, new in zip(self._dbcs_text[row-1], sequences)]
         self._dbcs_text[row-1] = sequences
@@ -352,13 +352,6 @@ class VideoBuffer(object):
             start, stop = len(updated), 0
         start, stop = min(start, orig_start), max(stop, orig_stop)
         return start, stop
-
-    def _dbcs_to_unicode(self, char_list):
-        """Convert list of dbcs chars to list of unicode; fullwidth must be trailed by empty u''."""
-        return [
-            (self._codepage.to_unicode(_c, u'\0') if _c else u'')
-            for _c in char_list
-        ]
 
     ###########################################################################
     # submit to interface

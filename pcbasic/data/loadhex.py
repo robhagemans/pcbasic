@@ -13,7 +13,6 @@ import binascii
 
 from ..compat import iteritems, itervalues, unichr
 
-from ..basic.codepage import PRINTABLE_ASCII
 from .resources import get_data, ResourceFailed
 
 
@@ -43,18 +42,6 @@ def read_fonts(codepage_dict, font_families):
     unicode_needed = set(itervalues(codepage_dict))
     # break up any grapheme clusters and add components to set of needed glyphs
     unicode_needed |= set(c for cluster in unicode_needed if len(cluster) > 1 for c in cluster)
-    # substitutes is in reverse order: { yen: backslash }
-    substitutes = {
-        _grapheme_cluster: unichr(ord(_cp_point))
-        for _cp_point, _grapheme_cluster in iteritems(codepage_dict)
-        if (
-            _cp_point in PRINTABLE_ASCII
-            and (
-                len(_grapheme_cluster) > 1
-                or ord(_grapheme_cluster) != ord(_cp_point)
-            )
-        )
-    }
     # load font resources
     font_files = {
         _height: [
@@ -66,17 +53,16 @@ def read_fonts(codepage_dict, font_families):
     }
     # convert
     uc_fonts = {
-        _height: load_hex(_font_file, _height, unicode_needed, substitutes)
+        _height: load_hex(_font_file, _height, unicode_needed)
         for _height, _font_file in iteritems(font_files)
         if _font_file
     }
     return uc_fonts
 
 
-def load_hex(hex_resources, height, unicode_needed, substitutes):
+def load_hex(hex_resources, height, all_needed):
     """Load a set of overlaying unifont .hex files."""
     fontdict = {}
-    all_needed = unicode_needed | set(substitutes)
     for hexres in reversed(hex_resources):
         if hexres is None:
             continue
@@ -110,18 +96,12 @@ def load_hex(hex_resources, height, unicode_needed, substitutes):
                 fontdict[c] = binascii.unhexlify(fonthex)
             except Exception as e:
                 logging.warning('Could not parse line in font file: %s', repr(line))
-    # substitute code points
-    fontdict.update({
-        old: fontdict[new]
-        for (new, old) in iteritems(substitutes)
-        if new in fontdict
-    })
     # fill missing with nulls
-    missing = unicode_needed - set(fontdict)
+    missing = all_needed - set(fontdict)
     fontdict.update({_u: b'\0' * height for _u in missing})
     # char 0 should always be defined and empty
     fontdict[u'\0'] = b'\0' * height
-    _combine_glyphs(height, fontdict, unicode_needed)
+    _combine_glyphs(height, fontdict, all_needed)
     # warn if we miss needed glyphs
     _warn_missing(missing)
     return fontdict

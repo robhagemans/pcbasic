@@ -157,7 +157,7 @@ class Font(object):
 
     def _byte_to_char(self, byte):
         """Map single byte value to unicode character."""
-        return self._codepage.to_unicode(int2byte(byte))
+        return self._codepage.to_unicode(int2byte(byte), use_substitutes=True)
 
     def _get_glyph(self, char, fullwidth):
         """Retrieve a glyph, building if needed."""
