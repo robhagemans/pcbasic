@@ -1,6 +1,6 @@
 {
     "name": "pcbasic",
-    "licence": "GPLv3",
+    "license": "GPLv3",
     "url": "http://pc-basic.org",
     "author_email": "robhagemans@yahoo.co.uk",
     "description": "A free, cross-platform emulator for the GW-BASIC family of interpreters.",
