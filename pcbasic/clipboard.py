@@ -2,16 +2,22 @@
 PC-BASIC - clipboard.py
 Clipboard handling
 
-(c) 2013, 2014, 2015, 2016 Rob Hagemans
+(c) 2013, 2014, 2015, 2016, 2019 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
 import subprocess
-try:
-    import pygame
-except ImportError:
-    pygame = None
 import os
+import sys
+
+with open(os.devnull, 'w') as null:
+    save_stdout, sys.stdout = sys.stdout, null
+    try:
+        import pygame
+    except ImportError:
+        pygame = None
+    sys.stdout = save_stdout
+
 
 import plat
 import logging

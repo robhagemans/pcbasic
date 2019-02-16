@@ -2,14 +2,19 @@
 PC-BASIC - audio_pygame.py
 Sound interface based on PyGame
 
-(c) 2013, 2014, 2015 Rob Hagemans
+(c) 2013, 2014, 2015, 2019 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
-try:
-    import pygame
-except ImportError:
-    pygame = None
+import os
+
+with open(os.devnull, 'w') as null:
+    save_stdout, sys.stdout = sys.stdout, null
+    try:
+        import pygame
+    except ImportError:
+        pygame = None
+    sys.stdout = save_stdout
 
 try:
     import numpy
