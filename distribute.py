@@ -55,4 +55,5 @@ if set(sys.argv) & set(('bdist_msi', 'bdist_dmg', 'bdist_deb', 'build_rpm')):
 
 else:
     # sdist, bdist_wheel, build_docs, wash
-    setup(cmdclass=COMMANDS, **SETUP_OPTIONS)
+    # universal wheel: same code works in py2 and py3, no C extensions
+    setup(cmdclass=COMMANDS, script_args=sys.argv[1:]+['--universal'], **SETUP_OPTIONS)
