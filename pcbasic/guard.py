@@ -18,14 +18,13 @@ from contextlib import contextmanager
 from subprocess import check_output, CalledProcessError
 
 from .basic.base import error, signals
-from .basic import VERSION
-from .data import get_data, ResourceFailed, RELEASE_ID
+from .basic import VERSION, LONG_VERSION
+from .data import get_data, ResourceFailed
 
 
 LOG_PATTERN = u'crash-%Y%m%d-'
 PAUSE_MESSAGE = u'Fatal error. Press a key to close this window.'
 
-TAG, TIMESTAMP, COMMIT = (RELEASE_ID[_key] for _key in (u'tag', u'timestamp', u'commit'))
 
 class NoGuard(object):
     """Null context manager."""
@@ -99,7 +98,7 @@ class ExceptionGuard(object):
         message = [
             (0x70, u'FATAL ERROR\n'),
             (0x17, u'version   '),
-            (0x1f, u'%s [%s] %s %s' % (VERSION, COMMIT, TAG, TIMESTAMP)),
+            (0x1f, LONG_VERSION),
             (0x17, u'\npython    '),
             (0x1f, u'%s [%s] %s' % (
                 platform.python_version(), u' '.join(platform.architecture()), frozen

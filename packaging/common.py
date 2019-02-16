@@ -178,7 +178,7 @@ def stamp_release():
     json_str = json.dumps(RELEASE_ID)
     if isinstance(json_str, bytes):
         json_str = json_str.decode('ascii', 'ignore')
-    with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as release_json:
+    with open(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'), 'w') as release_json:
         release_json.write(json_str)
 
 def build_manifest(includes, excludes):

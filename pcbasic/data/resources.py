@@ -65,11 +65,6 @@ ICON = (
     (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 )
 
-try:
-    RELEASE_ID = json.loads(get_data('release.json'))
-except (ResourceFailed, ValueError):
-    RELEASE_ID = {u'tag': u'', u'commit': u'unreleased', u'timestamp': u''}
-
 
 ###############################################################################
 # bundled programs

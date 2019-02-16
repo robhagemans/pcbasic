@@ -12,3 +12,13 @@ _METADATA = json.loads(resource_string(__name__, 'meta.json'))
 NAME, VERSION, AUTHOR, COPYRIGHT = (_METADATA[_key] for _key in (
     'name', 'version', 'author', 'copyright'
 ))
+
+try:
+    _RELEASE_ID = json.loads(resource_string(__name__, 'release.json'))
+except EnvironmentError:
+    _RELEASE_ID = {u'tag': u'', u'commit': u'unreleased', u'timestamp': u''}
+TAG, TIMESTAMP, COMMIT = (_RELEASE_ID[_key] for _key in (u'tag', u'timestamp', u'commit'))
+if COMMIT in TAG:
+    LONG_VERSION = u'%s [%s %s]' % (VERSION, TAG, TIMESTAMP)
+else:
+    LONG_VERSION = u'%s [%s %s %s]' % (VERSION, TAG, COMMIT, TIMESTAMP)

@@ -17,7 +17,7 @@ from . import basic
 from . import state
 from . import config
 from .guard import ExceptionGuard, NOGUARD
-from .basic import NAME, VERSION, COPYRIGHT
+from .basic import NAME, VERSION, LONG_VERSION, COPYRIGHT
 from .basic import debug
 from .interface import Interface, InitFailed
 from .compat import stdin, stdout
@@ -73,9 +73,11 @@ def show_usage():
 
 def show_version(settings):
     """Show version with optional debugging details."""
-    stdout.write(u'%s %s\n%s\n' % (NAME, VERSION, COPYRIGHT))
     if settings.debug:
+        stdout.write(u'%s %s\n%s\n' % (NAME, LONG_VERSION, COPYRIGHT))
         stdout.write(debug.get_platform_info())
+    else:
+        stdout.write(u'%s %s\n%s\n' % (NAME, VERSION, COPYRIGHT))
 
 def convert(settings):
     """Perform file format conversion."""
