@@ -28,9 +28,6 @@ from setuptools.command import sdist, build_py
 from wheel import bdist_wheel
 from PIL import Image
 
-# get setup.py parameters
-from setup import SETUP_OPTIONS
-
 # we're not setup.py and not being called by the sdist installer
 # so we can import from the package if we want
 from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT

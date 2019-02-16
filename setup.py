@@ -26,14 +26,12 @@ with open(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'meta.json'), 'r') as m
     VERSION = _METADATA['version']
     AUTHOR = _METADATA['author']
 
-with open(os.path.join(HERE, 'setup.json'), encoding='utf-8') as setup_data:
-    SETUP_DATA = json.load(setup_data)
-
 
 ###############################################################################
 # setup parameters
 
 SETUP_OPTIONS = dict(
+    name='pcbasic',
     version=VERSION,
     author=AUTHOR,
 
@@ -48,8 +46,6 @@ SETUP_OPTIONS = dict(
     entry_points=dict(
         console_scripts=['pcbasic=pcbasic:main'],
     ),
-
-    **SETUP_DATA
 )
 
 ###############################################################################
