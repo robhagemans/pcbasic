@@ -46,8 +46,29 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
         _build_icon()
         shutil.copy('doc/pcbasic.1.gz', 'resources/pcbasic.1.gz')
         # prepare a setup.cfg in the root
-        # so that desktop files get picked up by setup.py install and hence by fpm
         with open(SETUP_CFG, 'w') as setup_cfg:
+            setup_cfg.write(u'\n'.join((
+                u'[metadata]',
+                u'version = {}'.format(VERSION),
+                u'author = {}'.format(AUTHOR),
+                u'\n'.join((
+                    u'{} = {}'.format(_key, _value)
+                    for _key, _value in SETUP_OPTIONS.items()
+                    if _key in (
+                        u'url', u'author_email', u'license', u'description', u'long_description',
+                        u'keywords', u'classifiers'
+                    )
+                )),
+                u'',
+                #u'[options]',
+                #u'include_package_data = True',
+                #u'packages = {}'.format(u','.join(packages),
+                #u'',
+                #u'[options.entry_points]',
+                #u'console_scripts = pcbasic=pcbasic:main',
+                #u'',
+            )))
+            # so that desktop files get picked up by setup.py install and hence by fpm
             setup_cfg.write('\n'.join([
                 u'[options.data_files]',
                 u'/usr/local/share/man/man1 = resources/pcbasic.1.gz',
