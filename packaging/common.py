@@ -187,7 +187,10 @@ def wash():
     # remove intermediate builds
     _prune(os.path.join(HERE, 'build'))
     # remove bytecode files
-    for root, _, files in os.walk(HERE):
+    for root, dirs, files in os.walk(HERE):
+        for name in dirs:
+            if name == '__pycache__':
+                _prune(os.path.join(root, name))
         for name in files:
             if (name.endswith('.pyc') or name.endswith('.pyo')) and 'test' not in root:
                 _remove(os.path.join(root, name))
