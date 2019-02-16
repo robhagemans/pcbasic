@@ -13,6 +13,14 @@ from io import open
 
 from setuptools import find_packages, setup
 
+# check we're not using the wrong script
+if set(sys.argv) & set((
+        'bdist_wheel', 'sdist', 'bdist_rpm', 'bdist_deb', 'bdist_msi', 'bdist_dmg', 'build_docs'
+    )):
+    sys.exit(
+        'setup.py is the sdist install script only, '
+        'please use distribute.py to build, package or deploy.'
+    )
 
 ###############################################################################
 # get descriptions and version number
@@ -51,16 +59,5 @@ SETUP_OPTIONS = dict(
 ###############################################################################
 # run the setup
 
-if __name__ == '__main__':
-
-    # check we're not using the wrong script
-    if set(sys.argv) & set((
-            'bdist_wheel', 'sdist', 'bdist_rpm', 'bdist_deb', 'bdist_msi', 'bdist_dmg', 'build_docs'
-        )):
-        print(
-            'setup.py is the sdist install script only, '
-            'please use distribute.py to build, package or deploy.'
-        )
-    else:
-        # perform the installation
-        setup(**SETUP_OPTIONS)
+# perform the installation
+setup(**SETUP_OPTIONS)
