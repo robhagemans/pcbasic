@@ -219,7 +219,7 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
         (
             'MyProgramMenu',
             'StartMenuFolder',
-            'PCBASI~1|PC-BASIC 2.0',
+            'PCBASI~1|PC-BASIC {}'.format(SHORT_VERSION),
         ),
     ]
     # https://stackoverflow.com/questions/15734703/use-cx-freeze-to-create-an-msi-that-adds-a-shortcut-to-the-desktop#15736406
@@ -245,6 +245,20 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
             'Documentation',          # Name
             'TARGETDIR',              # Component_
             '[TARGETDIR]PC-BASIC_documentation.html',# Target
+            None,                     # Arguments
+            None,                     # Description
+            None,                     # Hotkey
+            None,                     # Icon
+            None,                     # IconIndex
+            None,                     # ShowCmd
+            'TARGETDIR'               # WkDir
+        ),
+        (
+            'SettingsShortcut',            # Shortcut
+            'MyProgramMenu',          # Directory_
+            'Settings'     ,          # Name
+            'TARGETDIR',              # Component_
+            '[AppDataFolder]pcbasic-{}\\PCBASIC.INI'.format(SHORT_VERSION), # Target
             None,                     # Arguments
             None,                     # Description
             None,                     # Hotkey
