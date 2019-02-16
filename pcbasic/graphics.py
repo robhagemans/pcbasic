@@ -18,6 +18,7 @@ except ImportError:
 
 import error
 import fp
+import math
 import state
 import vartypes
 import util
@@ -782,8 +783,8 @@ class Drawing(object):
         rotate = self.draw_angle
         aspect = self.screen.mode.pixel_aspect
         yfac = aspect[1] / (1.*aspect[0])
-        x1 = (scale*sx) / 4
-        y1 = (scale*sy) / 4
+        x1 = math.trunc(scale*sx / 4.)
+        y1 = math.trunc(scale*sy / 4.)
         if rotate == 0 or rotate == 360:
             pass
         elif rotate == 90:
