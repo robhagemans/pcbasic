@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import os
+import json
 from io import open
 
 from setuptools import find_packages, setup
@@ -19,7 +20,10 @@ from setuptools import find_packages, setup
 # file location
 HERE = os.path.abspath(os.path.dirname(__file__))
 
-# obtain metadata without importing the package (to avoid breaking setup)
+# obtain metadata without importing the package (to avoid breaking sdist install)
+with open(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'meta.json'), 'r') as meta:
+    VERSION = json.load(meta)['version']
+
 with open(os.path.join(HERE, 'pcbasic', 'metadata.py'), encoding='utf-8') as f:
     exec(f.read())
 

@@ -17,14 +17,15 @@ from datetime import datetime
 from contextlib import contextmanager
 from subprocess import check_output, CalledProcessError
 
-from .metadata import VERSION
 from .basic.base import error, signals
-from .data import get_data, ResourceFailed
+from .basic import VERSION
+from .data import get_data, ResourceFailed, RELEASE_ID
 
 
 LOG_PATTERN = u'crash-%Y%m%d-'
 PAUSE_MESSAGE = u'Fatal error. Press a key to close this window.'
 
+TAG, TIMESTAMP, COMMIT = (RELEASE_ID[_key] for _key in (u'tag', u'timestamp', u'commit'))
 
 class NoGuard(object):
     """Null context manager."""
@@ -34,16 +35,6 @@ class NoGuard(object):
         yield
 
 NOGUARD = NoGuard()
-
-try:
-    RELEASE_ID = json.loads(get_data('release.json'))
-    TAG = RELEASE_ID[u'tag']
-    COMMIT = RELEASE_ID[u'commit']
-    TIMESTAMP = RELEASE_ID[u'timestamp']
-except (ResourceFailed, ValueError):
-    TAG = u''
-    TIMESTAMP = u''
-    COMMIT = u'unreleased'
 
 
 class ExceptionGuard(object):

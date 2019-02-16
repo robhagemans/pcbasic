@@ -17,7 +17,7 @@ from . import basic
 from . import state
 from . import config
 from .guard import ExceptionGuard, NOGUARD
-from .metadata import NAME, VERSION, COPYRIGHT
+from .basic import NAME, VERSION, COPYRIGHT
 from .basic import debug
 from .interface import Interface, InitFailed
 from .compat import stdin, stdout

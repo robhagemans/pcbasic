@@ -5,8 +5,10 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .api import Session
-from ..metadata import VERSION as __version__
+from .data import NAME, VERSION, COPYRIGHT
+from .api import Session, codepage, font
 from .debug import DebugSession
 from .base.error import *
 from .base import signals, scancode, eascii
+
+__version__ = VERSION

@@ -15,7 +15,7 @@ from contextlib import contextmanager
 
 from ..compat import queue, text_type
 
-from ..metadata import NAME, VERSION, COPYRIGHT
+from .data import NAME, VERSION, COPYRIGHT
 from .base import error
 from .base import tokens as tk
 from .base import signals

@@ -32,8 +32,9 @@ from PIL import Image
 from setup import SETUP_OPTIONS
 
 # we're not setup.py and not being called by the sdist installer
-# so we can import form the package if we want
-from pcbasic.metadata import NAME, AUTHOR, VERSION, COPYRIGHT
+# so we can import from the package if we want
+from pcbasic.metadata import AUTHOR
+from pcbasic.basic import NAME, VERSION, COPYRIGHT
 from pcbasic.data import ICON
 from pcbasic.compat import int2byte
 
@@ -72,6 +73,7 @@ INCLUDE_FILES = (
     '*.txt',
     'doc/*.html',
     'pcbasic/data/',
+    'pcbasic/basic/data/',
 )
 
 # python files to exclude from distributions

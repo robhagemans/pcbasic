@@ -6,12 +6,9 @@ import os
 from os import path
 from io import open
 
-
-# obtain metadata without importing the package (to avoid breaking setup)
-with open(
-        path.join(path.abspath(path.dirname(__file__)), '..', 'pcbasic', 'metadata.py'),
-        encoding='utf-8') as f:
-    exec(f.read())
+# we're not being called from setup.py install, so we can simply import pcbasic
+from pcbasic.metadata import *
+from pcbasic.basic import NAME, VERSION, COPYRIGHT
 
 basepath = os.path.dirname(os.path.realpath(__file__))
 

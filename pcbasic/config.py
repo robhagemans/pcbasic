@@ -26,7 +26,7 @@ from .compat import console, stdout, stdin, stderr, IS_CONSOLE_APP
 from .compat import TemporaryDirectory
 
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
-from .metadata import VERSION, NAME
+from .basic import VERSION, NAME
 from . import data
 
 
