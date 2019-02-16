@@ -9,4 +9,6 @@ from pkg_resources import resource_string
 import json
 
 _METADATA = json.loads(resource_string(__name__, 'meta.json'))
-NAME, VERSION, COPYRIGHT = (_METADATA[_key] for _key in ('name', 'version', 'copyright'))
+NAME, VERSION, AUTHOR, COPYRIGHT = (_METADATA[_key] for _key in (
+    'name', 'version', 'author', 'copyright'
+))

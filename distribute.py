@@ -14,8 +14,7 @@ from setup import SETUP_OPTIONS
 
 # we're not setup.py and not being called by the sdist installer
 # so we can import from the package if we want
-from pcbasic.metadata import AUTHOR
-from pcbasic.basic import NAME, VERSION, COPYRIGHT
+from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
 
 # setup commands
 from packaging.common import COMMANDS, SHORT_VERSION
