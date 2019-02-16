@@ -147,7 +147,7 @@ def package(**setup_options):
                 self.modal, self.title, "AdminInstall", "Next", "Cancel"
             )
             whichusers.title(
-                "Select whether to install [ProductName] for all users of this computer."
+                "Select for which users to install [ProductName]."
             )
             # A radio group with two options: allusers, justme
             radio = whichusers.radiogroup(
