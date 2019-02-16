@@ -8,6 +8,8 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 
+from .common import COMMANDS
+
 if sys.platform == 'win32':
     from .windows import package
 elif sys.platform == 'darwin':

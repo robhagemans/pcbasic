@@ -13,48 +13,53 @@ import msilib
 import cx_Freeze
 from cx_Freeze import Executable
 
-from .common import wash, _build_icon, _build_manifest, _prune, _remove, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .common import wash, build_icon, build_manifest, prune, remove
+from .common import COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .common import NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT
 
 
-def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
-    """Build a Windows MSI package."""
+UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
+PRODUCT_CODE = msilib.gen_uuid()
 
+
+def package(**setup_options):
+    """Build a Windows .MSI package."""
 
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""
 
         def run(self):
             """Run build_exe command."""
-            _build_icon()
+            build_icon()
             # only include 32-bit DLLs
-            _build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
+            build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
             build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
             # so remove some stuff we don't need
-            for root, dirs, files in os.walk(build_dir + 'lib'):
+            for root, _, files in os.walk(build_dir + 'lib'):
                 testing = set(root.split(os.sep)) & set(('test', 'tests', 'testing', 'examples'))
-                for f in files:
-                    name = os.path.join(root, f)
+                for fname in files:
+                    name = os.path.join(root, fname)
                     if (
                             # remove superfluous copies of python27.dll in lib/
                             # as there is a copy in the package root already
-                            f.lower() == 'python27.dll' or f.lower() == 'msvcr90.dll'
+                            fname.lower() == 'python27.dll' or fname.lower() == 'msvcr90.dll'
                             # remove tests and examples
                             or testing
                             # we're only producing packages for win32_x86
                             or 'win32_x64' in name or name.endswith('.dylib')
                         ):
-                        _remove(name)
+                        remove(name)
             # remove lib dir altogether to avoid it getting copied into the msi
             # as everything in there is copied once already
-            _prune('build/lib')
+            prune('build/lib')
             # remove c++ runtime etc
-            _remove(build_dir + 'msvcm90.dll')
-            _remove(build_dir + 'msvcp90.dll')
+            remove(build_dir + 'msvcm90.dll')
+            remove(build_dir + 'msvcp90.dll')
             # remove modules that can be left out
             for module in ('distutils', 'setuptools', 'pydoc_data'):
-                _prune(build_dir + 'lib/%s' % module)
+                prune(build_dir + 'lib/%s' % module)
 
 
     class BdistMsiCommand(cx_Freeze.bdist_msi):
@@ -63,7 +68,7 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
         def run(self):
             """Run build_msi command."""
             name = '{}-{}'.format(NAME, VERSION)
-            _remove('dist/{}.msi'.format(name))
+            remove('dist/{}.msi'.format(name))
             cx_Freeze.bdist_msi.run(self)
             # close the database file so we can rename the file
             del self.db
@@ -81,38 +86,34 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
             )
             if self.add_to_path:
                 msilib.add_data(
-                self.db, 'Environment', [("E_PATH", "=-*Path", r"[~];[TARGETDIR]", "TARGETDIR")]
+                    self.db, 'Environment', [("E_PATH", "=-*Path", r"[~];[TARGETDIR]", "TARGETDIR")]
                 )
-            msilib.add_data(
-                self.db, 'InstallUISequence', [
-                    ("PrepareDlg", None, 140),
-                    # this is new
-                    # sould probably be conditional on "not already installed" or smth
-                    ("WhichUsersDlg", "not Installed", 400),
-                    ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
-                    ("SelectDirectoryDlg", "not Installed", 1230),
-                    ("MaintenanceTypeDlg", "Installed and not Resume and not Preselected", 1250),
-                    ("ProgressDlg", None, 1280),
-
+            msilib.add_data(self.db, 'InstallUISequence', [
+                ("PrepareDlg", None, 140),
+                # this is new
+                # sould probably be conditional on "not already installed" or smth
+                ("WhichUsersDlg", "not Installed", 400),
+                ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
+                ("SelectDirectoryDlg", "not Installed", 1230),
+                ("MaintenanceTypeDlg", "Installed and not Resume and not Preselected", 1250),
+                ("ProgressDlg", None, 1280),
             ])
-            msilib.add_data(
-                self.db, 'InstallExecuteSequence', [
-                    ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
-                    ('WriteEnvironmentStrings', 'MSIINSTALLPERUSER=""', 5200),
-                ]
-            )
+            msilib.add_data(self.db, 'InstallExecuteSequence', [
+                ("A_SET_TARGET_DIR", 'TARGETDIR=""', 401),
+                ('WriteEnvironmentStrings', 'MSIINSTALLPERUSER=""', 5200),
+            ])
             for index, executable in enumerate(self.distribution.executables):
                 if executable.shortcutName is not None and executable.shortcutDir is not None:
-                    baseName = os.path.basename(executable.targetName)
+                    base_name = os.path.basename(executable.targetName)
                     msilib.add_data(
                         self.db, "Shortcut", [(
                             "S_APP_%s" % index, executable.shortcutDir, executable.shortcutName,
-                            "TARGETDIR", "[TARGETDIR]%s" % baseName,
+                            "TARGETDIR", "[TARGETDIR]%s" % base_name,
                             None, None, None, None, None, None, None
                         )]
                     )
-            for tableName, data in self.data.items():
-                msilib.add_data(self.db, tableName, data)
+            for table_name, data in self.data.items():
+                msilib.add_data(self.db, table_name, data)
 
         def add_properties(self):
             """Override cx_Freeze add_properties."""
@@ -149,26 +150,30 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
                 "Select whether to install [ProductName] for all users of this computer."
             )
             # A radio group with two options: allusers, justme
-            g = whichusers.radiogroup(
+            radio = whichusers.radiogroup(
                 "AdminInstall", 135, 60, 235, 80, 3, "WhichUsers", "", "Next"
             )
-            g.condition("Disable", "VersionNT=600") # Not available on Vista and Windows 2008
-            g.add("ALL", 0, 5, 150, 20, "Install for all users")
-            g.add("JUSTME", 0, 25, 235, 20, "Install just for me")
+            radio.condition("Disable", "VersionNT=600") # Not available on Vista and Windows 2008
+            radio.add("ALL", 0, 5, 150, 20, "Install for all users")
+            radio.add("JUSTME", 0, 25, 235, 20, "Install just for me")
 
             whichusers.back("Back", None, active=0)
 
-            c = whichusers.next("Next >", "Cancel")
+            button = whichusers.next("Next >", "Cancel")
             # SetProperty events
             # https://docs.microsoft.com/en-us/windows/desktop/Msi/setproperty-controlevent
-            c.event("[MSIINSTALLPERUSER]", "{}", 'WhichUsers="ALL"', 1)
-            c.event("[MSIINSTALLPERUSER]", "1", 'WhichUsers="JUSTME"', 1)
+            button.event("[MSIINSTALLPERUSER]", "{}", 'WhichUsers="ALL"', 1)
+            button.event("[MSIINSTALLPERUSER]", "1", 'WhichUsers="JUSTME"', 1)
             # set the target dir to the default location for per-user/per-machine installs
-            c.event("[TARGETDIR]", "[ProgramFilesFolder]\\%s %s" % (NAME, SHORT_VERSION), 'WhichUsers="JUSTME"', 1)
-            c.event("EndDialog", "Return", 3)
+            button.event(
+                "[TARGETDIR]",
+                "[ProgramFilesFolder]\\%s %s" % (NAME, SHORT_VERSION),
+                'WhichUsers="JUSTME"', 1
+            )
+            button.event("EndDialog", "Return", 3)
 
-            c = whichusers.cancel("Cancel", "AdminInstall")
-            c.event("SpawnDialog", "CancelDlg")
+            button = whichusers.cancel("Cancel", "AdminInstall")
+            button.event("SpawnDialog", "CancelDlg")
 
         def add_ui(self):
             self._add_whichusers_dialog()
@@ -182,13 +187,10 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
     for index, info in enumerate(sequence):
         if info[0] == u'WriteEnvironmentStrings':
             break
-    else:
-        raise 0
-    env_sequence = sequence[index]
     del sequence[index]
 
     # setup commands
-    SETUP_OPTIONS['cmdclass'] = dict(
+    setup_options['cmdclass'] = dict(
         build_exe=BuildExeCommand,
         bdist_msi=BdistMsiCommand,
         **COMMANDS
@@ -196,19 +198,16 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
 
     numversion = '.'.join(v for v in VERSION.encode('ascii').split('.') if v.isdigit())
 
-    UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
-    PRODUCT_CODE = msilib.gen_uuid()
-
     # these must be bytes for cx_Freeze bdist_msi
-    SETUP_OPTIONS['name'] = NAME.encode('ascii')
-    SETUP_OPTIONS['author'] = AUTHOR.encode('ascii')
-    SETUP_OPTIONS['version'] = numversion
+    setup_options['name'] = NAME.encode('ascii')
+    setup_options['author'] = AUTHOR.encode('ascii')
+    setup_options['version'] = numversion
 
     # compile separately, as they end up in the wrong place anyway
-    SETUP_OPTIONS['ext_modules'] = []
+    setup_options['ext_modules'] = []
 
     # gui launcher
-    SETUP_OPTIONS['entry_points']['gui_scripts'] = ['pcbasicw=pcbasic:main']
+    setup_options['entry_points']['gui_scripts'] = ['pcbasicw=pcbasic:main']
 
     directory_table = [
         (
@@ -244,7 +243,7 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
             'MyProgramMenu',          # Directory_
             'Documentation',          # Name
             'TARGETDIR',              # Component_
-            '[TARGETDIR]PC-BASIC_documentation.html',# Target
+            '[TARGETDIR]PC-BASIC_documentation.html', # Target
             None,                     # Arguments
             None,                     # Description
             None,                     # Hotkey
@@ -256,7 +255,7 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
         (
             'SettingsShortcut',            # Shortcut
             'MyProgramMenu',          # Directory_
-            'Settings'     ,          # Name
+            'Settings',               # Name
             'TARGETDIR',              # Component_
             '[AppDataFolder]pcbasic-{}\\PCBASIC.INI'.format(SHORT_VERSION), # Target
             None,                     # Arguments
@@ -291,7 +290,7 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
     }
 
     # cx_Freeze options
-    SETUP_OPTIONS['options'] = {
+    setup_options['options'] = {
         'build_exe': {
             'packages': ['pkg_resources._vendor'],
             'excludes': [
@@ -313,7 +312,7 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
         },
     }
 
-    SETUP_OPTIONS['executables'] = [
+    setup_options['executables'] = [
         Executable(
             'pc-basic', base='Console', targetName='pcbasic.exe', icon='resources/pcbasic.ico',
             copyright=COPYRIGHT),
@@ -324,4 +323,4 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
     ]
 
     # call cx_Freeze's setup() with command bdist_msi
-    cx_Freeze.setup(script_args=['bdist_msi'], **SETUP_OPTIONS)
+    cx_Freeze.setup(script_args=['bdist_msi'], **setup_options)

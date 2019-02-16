@@ -16,11 +16,10 @@ from setuptools import find_packages, setup
 
 # we're not setup.py and not being called by the sdist installer
 # so we can import from the package if we want
-from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
+from pcbasic import VERSION, AUTHOR
 
 # setup commands
-from packaging import package
-from packaging.common import COMMANDS, SHORT_VERSION
+from packaging import COMMANDS, package
 
 
 # file location
@@ -50,10 +49,13 @@ SETUP_OPTIONS = dict(
 )
 
 
-if set(sys.argv) & set(('bdist_msi', 'bdist_dmg', 'bdist_deb', 'build_rpm')):
-    package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT)
-
-else:
-    # sdist, bdist_wheel, build_docs, wash
+if 'package' in sys.argv[1:]:
+    package(**SETUP_OPTIONS)
+elif 'bdist_wheel' in sys.argv[1:]:
     # universal wheel: same code works in py2 and py3, no C extensions
     setup(cmdclass=COMMANDS, script_args=sys.argv[1:]+['--universal'], **SETUP_OPTIONS)
+elif set(sys.argv[1:]) & set(('sdist', 'build_docs', 'wash')):
+    # universal wheel: same code works in py2 and py3, no C extensions
+    setup(cmdclass=COMMANDS, **SETUP_OPTIONS)
+else:
+    sys.exit('supported commands: package, sdist, bdist_wheel, build_docs, wash')

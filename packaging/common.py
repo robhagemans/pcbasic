@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-PC-BASIC packaging script
-Python, Windows, MacOS and Linux packaging
+PC-BASIC packaging.common
+Python, Windows, MacOS and Linux packaging utilities
 
 (c) 2015--2019 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -14,15 +14,12 @@ import os
 import shutil
 import glob
 import json
-import subprocess
 import datetime
-import time
 from subprocess import check_output, CalledProcessError
 from contextlib import contextmanager
 from io import open
 from distutils.util import get_platform
 from distutils import cmd
-import distutils
 
 from setuptools.command import sdist, build_py
 from wheel import bdist_wheel
@@ -80,7 +77,8 @@ EXCLUDE_FILES = (
 ###############################################################################
 # icon
 
-def _build_icon():
+def build_icon():
+    """Create an icon file for the present platform."""
     try:
         os.mkdir('resources')
     except EnvironmentError:
@@ -130,36 +128,36 @@ def os_safe(message, name):
     print('... {} {} ... '.format(message, name), end='')
     try:
         yield
-    except EnvironmentError as e:
-        print(e)
+    except EnvironmentError as err:
+        print(err)
     else:
         print('ok')
 
 
-def _prune(path):
+def prune(path):
     """Recursively remove a directory."""
     with os_safe('pruning', path):
         shutil.rmtree(path)
 
-def _remove(path):
+def remove(path):
     """Remove a file."""
     with os_safe('removing', path):
         os.remove(path)
 
-def _mkdir(name):
+def mkdir(name):
     """Create a directory."""
     with os_safe('creating', name):
         os.mkdir(name)
 
-def _stamp_release():
+def stamp_release():
     """Place the relase ID file."""
-    with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as f:
-        json_str = json.dumps(RELEASE_ID)
-        if isinstance(json_str, bytes):
-            json_str = json_str.decode('ascii', 'ignore')
-        f.write(json_str)
+    json_str = json.dumps(RELEASE_ID)
+    if isinstance(json_str, bytes):
+        json_str = json_str.decode('ascii', 'ignore')
+    with open(os.path.join(HERE, 'pcbasic', 'data', 'release.json'), 'w') as release_json:
+        release_json.write(json_str)
 
-def _build_manifest(includes, excludes):
+def build_manifest(includes, excludes):
     """Build the MANIFEST.in."""
     manifest = u''.join(
         u'include {}\n'.format(_inc) for _inc in includes if not _inc.endswith('/')
@@ -183,29 +181,29 @@ def wash():
     """clean the workspace of build files; leave in-place compiled files"""
     # remove traces of egg
     for path in glob.glob(os.path.join(HERE, '*.egg-info')):
-        _prune(path)
+        prune(path)
     # remove intermediate builds
-    _prune(os.path.join(HERE, 'build'))
+    prune(os.path.join(HERE, 'build'))
     # remove bytecode files
     for root, dirs, files in os.walk(HERE):
         for name in dirs:
             if name == '__pycache__':
-                _prune(os.path.join(root, name))
+                prune(os.path.join(root, name))
         for name in files:
             if (name.endswith('.pyc') or name.endswith('.pyo')) and 'test' not in root:
-                _remove(os.path.join(root, name))
+                remove(os.path.join(root, name))
     # remove distribution resources
-    _prune(os.path.join(HERE, 'resources'))
+    prune(os.path.join(HERE, 'resources'))
     # remove release stamp
-    _remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
+    remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
     # remove manifest
-    _remove(os.path.join(HERE, 'MANIFEST.in'))
+    remove(os.path.join(HERE, 'MANIFEST.in'))
 
 def sdist_ext(obj):
     """Run custom sdist command."""
     wash()
-    _stamp_release()
-    _build_manifest(INCLUDE_FILES + ('pcbasic/lib/README.md',), EXCLUDE_FILES)
+    stamp_release()
+    build_manifest(INCLUDE_FILES + ('pcbasic/lib/README.md',), EXCLUDE_FILES)
     build_docs()
     sdist.sdist.run(obj)
     wash()
@@ -220,8 +218,8 @@ def bdist_wheel_ext(obj):
 
 def build_py_ext(obj):
     """Run custom build_py command."""
-    _stamp_release()
-    _build_manifest(INCLUDE_FILES + ('pcbasic/lib/*/*',), EXCLUDE_FILES)
+    stamp_release()
+    build_manifest(INCLUDE_FILES + ('pcbasic/lib/*/*',), EXCLUDE_FILES)
     build_py.build_py.run(obj)
 
 

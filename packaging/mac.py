@@ -1,5 +1,5 @@
 """
-PC-BASIC - packagig.mac
+PC-BASIC - packaging.mac
 MacOS packaging
 
 (c) 2015--2019 Rob Hagemans
@@ -15,13 +15,15 @@ import subprocess
 from io import open
 
 import cx_Freeze
-from cx_Freeze import Executable, setup
+from cx_Freeze import Executable
 
-from .common import wash, _build_icon, _build_manifest, _prune, _remove, _mkdir, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .common import wash, build_icon, build_manifest, prune, remove, mkdir
+from .common import COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .common import NAME, VERSION, SHORT_VERSION, COPYRIGHT
 
 
-def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
-
+def package(**setup_options):
+    """Build a Mac .DMG package."""
 
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""
@@ -29,22 +31,22 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
         def run(self):
             """Run build_exe command."""
             # include dylibs
-            _build_manifest(INCLUDE_FILES + ('pcbasic/lib/darwin/*',), EXCLUDE_FILES)
+            build_manifest(INCLUDE_FILES + ('pcbasic/lib/darwin/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
             build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
             # so remove some stuff we don't need
-            for root, dirs, files in os.walk(build_dir + 'lib'):
+            for root, _, files in os.walk(build_dir + 'lib'):
                 testing = set(root.split(os.sep)) & set(('test', 'tests', 'testing', 'examples'))
-                for f in files:
-                    name = os.path.join(root, f)
+                for fname in files:
+                    name = os.path.join(root, fname)
                     # remove tests and examples
                     # remove windows DLLs and PYDs
                     if (testing or 'win32_' in name or name.endswith('.dll')):
-                        _remove(name)
+                        remove(name)
             # remove modules that can be left out
             for module in ('distutils', 'setuptools', 'pydoc_data'):
-                _prune(build_dir + 'lib/%s' % module)
+                prune(build_dir + 'lib/%s' % module)
 
 
     class BdistMacCommand(cx_Freeze.bdist_mac):
@@ -61,17 +63,17 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
                 '@loader_path/libSDL2.dylib', file_path
             ))
             # remove some files we don't need
-            _remove('build/PC-BASIC-2.0.app/Contents/MacOS/libSDL2.dylib')
+            remove('build/PC-BASIC-2.0.app/Contents/MacOS/libSDL2.dylib')
             for path in glob.glob('build/PC-BASIC-2.0.app/Contents/MacOS/libnpymath*'):
-                _remove(path)
+                remove(path)
 
         def copy_file(self, src, dst):
             # catch copy errors, these happen with relative references with funny bracketed names
             # like libnpymath.a(npy_math.o)
             try:
                 cx_Freeze.bdist_mac.copy_file(self, src, dst)
-            except Exception as e:
-                print('ERROR: %s' % (e,))
+            except Exception as err:
+                print('ERROR: %s' % (err,))
                 # create an empty file
                 open(dst, 'w').close()
 
@@ -81,10 +83,10 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
 
         def run(self):
             """Run bdist_dmg command."""
-            _build_icon()
+            build_icon()
             cx_Freeze.bdist_dmg.run(self)
             # move the disk image to dist/
-            _mkdir('dist/')
+            mkdir('dist/')
             if os.path.exists('dist/' + os.path.basename(self.dmgName)):
                 os.unlink('dist/' + os.path.basename(self.dmgName))
             dmg_name = '{}-{}.dmg'.format(NAME, VERSION)
@@ -97,8 +99,8 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
             if os.path.exists(self.dmgName):
                 os.unlink(self.dmgName)
             # hdiutil with multiple -srcfolder hangs, so create a temp dir
-            _prune('build/dmg')
-            _mkdir('build/dmg')
+            prune('build/dmg')
+            mkdir('build/dmg')
             shutil.copytree(self.bundleDir, 'build/dmg/' + os.path.basename(self.bundleDir))
             # include the docs at them top level in the dmg
             shutil.copy('doc/PC-BASIC_documentation.html', 'build/dmg/Documentation.html')
@@ -112,13 +114,13 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
             if os.spawnvp(os.P_WAIT, 'hdiutil', createargs) != 0:
                 raise OSError('creation of the dmg failed')
 
-    SETUP_OPTIONS['cmdclass'] = COMMANDS
-    SETUP_OPTIONS['cmdclass']['build_exe'] = BuildExeCommand
-    SETUP_OPTIONS['cmdclass']['bdist_mac'] = BdistMacCommand
-    SETUP_OPTIONS['cmdclass']['bdist_dmg'] = BdistDmgCommand
+    setup_options['cmdclass'] = COMMANDS
+    setup_options['cmdclass']['build_exe'] = BuildExeCommand
+    setup_options['cmdclass']['bdist_mac'] = BdistMacCommand
+    setup_options['cmdclass']['bdist_dmg'] = BdistDmgCommand
 
     # cx_Freeze options
-    SETUP_OPTIONS['options'] = {
+    setup_options['options'] = {
         'build_exe': {
             'packages': ['pkg_resources._vendor'],
             'excludes': [
@@ -135,7 +137,7 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
             'volume_label': '%s-%s' % (NAME, SHORT_VERSION),
         },
     }
-    SETUP_OPTIONS['executables'] = [
+    setup_options['executables'] = [
         Executable(
             'pc-basic', base='Console', targetName='pcbasic',
             icon='resources/pcbasic.icns', copyright=COPYRIGHT
@@ -143,4 +145,4 @@ def package(SETUP_OPTIONS, NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT):
     ]
 
     # run the cx_Freeze setup()
-    cx_Freeze.setup(script_args=['bdist_dmg'], **SETUP_OPTIONS)
+    cx_Freeze.setup(script_args=['bdist_dmg'], **setup_options)
