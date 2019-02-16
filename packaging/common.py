@@ -21,6 +21,7 @@ from io import open
 from distutils.util import get_platform
 from distutils import cmd
 
+from setuptools import find_packages
 from setuptools.command import sdist, build_py
 from wheel import bdist_wheel
 from PIL import Image
@@ -34,6 +35,9 @@ from pcbasic.compat import int2byte
 
 # root location
 HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+with open(os.path.join(HERE, 'setup.json'), encoding='utf-8') as setup_data:
+    SETUP_DATA = json.load(setup_data)
 
 # platform tag (build directories etc.)
 PLATFORM_TAG = '{}-{}.{}'.format(
@@ -73,6 +77,26 @@ INCLUDE_FILES = (
 EXCLUDE_FILES = (
     'distribute.py', 'test/', 'packaging/', 'docsrc/', 'fontsrc/'
 )
+
+SETUP_OPTIONS = dict(
+    version=VERSION,
+    author=AUTHOR,
+
+    # contents
+    # only include subpackages of pcbasic: exclude test, docsrc, packaging etc
+    # even if these are excluded in the manifest, bdist_wheel will pick them up (but sdist won't)
+    packages=find_packages(exclude=[_name for _name in os.listdir(HERE) if _name != 'pcbasic']),
+    ext_modules=[],
+    # include package data from MANIFEST.in (which is created by packaging script)
+    include_package_data=True,
+    # launchers
+    entry_points=dict(
+        console_scripts=['pcbasic=pcbasic:main'],
+    ),
+
+    **SETUP_DATA
+)
+
 
 ###############################################################################
 # icon
