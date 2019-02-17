@@ -236,7 +236,8 @@ if numpass:
 
 print()
 slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)[:20]
-print('Slowest tests:', ' '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests))
+print('\033[00;37mSlowest tests:')
+print('    ' + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests))
 
 if cov:
     cov.stop()
