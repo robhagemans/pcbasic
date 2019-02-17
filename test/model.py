@@ -46,7 +46,7 @@ shutil.copytree(
 )
 CALL = [
     'dosbox',
-    '-conf', '{}'.format(SETTINGS['conf']),
+    '-conf', '{}'.format(os.path.join('_settings', SETTINGS['conf'])),
     '-c', 'MOUNT C {}'.format(MODEL),
     '-c', 'MOUNT E {}'.format(SETTINGS['dir']),
     '-c', 'C:',
