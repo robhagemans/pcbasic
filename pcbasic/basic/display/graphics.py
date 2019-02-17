@@ -890,11 +890,13 @@ class Graphics(object):
                     # never match zero pattern (special case)
                     rtile != ZERO_TILE[0, :rtile.width]
                     and pattern == repeated_tile[0, tile_x : tile_x+pattern.width]
-                    and (
-                        not back
+                )
+                # background tile specified: don't stop if we match the background tile (fully!)
+                if back:
+                    has_same_pattern = has_same_pattern and (
+                        pattern.width < back.width
                         or pattern != repeated_back[0, tile_x : tile_x+pattern.width]
                     )
-                )
                 # we've reached a border colour, append our interval & start a new one
                 # don't append if same fill colour/pattern,
                 # to avoid infinite loops over bits already painted (eg. 00 shape)
