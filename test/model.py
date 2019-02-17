@@ -29,7 +29,7 @@ except ValueError:
 
 GW_OPTIONS = sys.argv[2:]
 
-with open(os.path.join(HERE, 'settings.json')) as settings:
+with open(os.path.join(HERE, '_settings', 'settings.json')) as settings:
     SETTINGS = json.load(settings)[PRESET]
 
 PATH = os.path.join(HERE, 'basic', PRESET, TESTNAME)
