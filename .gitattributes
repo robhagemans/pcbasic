@@ -23,3 +23,4 @@ test/correctness/*/*/* binary
 test/correctness/* binary
 test/correctness/*/* binary
 test/**/*.BAS binary
+test/**/*.TXT binary
