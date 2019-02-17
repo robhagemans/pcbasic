@@ -23,7 +23,7 @@ except ValueError:
     PRESET = 'gwbasic'
 
 PATH = os.path.join(HERE, 'basic', PRESET)
-TEMPLATE = os.path.join(HERE, 'templates', PRESET)
+TEMPLATE = os.path.join(HERE, '_templates', PRESET)
 
 if not os.path.isdir(TEMPLATE):
     sys.exit('Test template {} not found.'.format(TEMPLATE))
