@@ -17,7 +17,10 @@ import traceback
 import time
 from copy import copy, deepcopy
 
+HERE = os.path.dirname(os.path.abspath(__file__))
 
+
+# make pcbasic package accessible
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 pythonpath = copy(sys.path)
 
@@ -54,13 +57,9 @@ def contained(arglist, elem):
     return True
 
 args = sys.argv[1:]
-basedir = os.path.join('.', 'correctness')
 
 do_suppress = not contained(args, '--loud')
 reraise = contained(args, '--reraise')
-
-if contained(args, '--nonumpy'):
-    sys.modules['numpy'] = None
 
 if contained(args, '--coverage'):
     import coverage
@@ -71,11 +70,9 @@ else:
 
 if not args or '--all' in args:
     args = [
-        f for f in sorted(os.listdir(basedir))
-        if (
-            os.path.isdir(os.path.join(basedir, f))
-            and os.path.isdir(os.path.join(basedir, f, 'model'))
-        )
+        os.path.join('basic', _preset, _test)
+        for _preset in os.listdir(os.path.join(HERE, 'basic'))
+        for _test in os.listdir(os.path.join(HERE, 'basic', _preset))
     ]
 
 numtests = 0
@@ -88,8 +85,6 @@ import pcbasic
 start_time = time.time()
 start_clock = time.clock()
 
-args = [os.path.basename(n) for n in args]
-
 # preserve environment
 startdir = os.path.abspath(os.getcwd())
 save_env = deepcopy(os.environ)
@@ -99,8 +94,23 @@ for name in args:
     os.chdir(startdir)
     os.environ = deepcopy(save_env)
 
-    print('\033[00;37mRunning test \033[01m%s \033[00;37m.. ' % name, end='')
-    dirname = os.path.join(basedir, name)
+    TESTNAME = name
+
+    if TESTNAME.endswith('/'):
+        TESTNAME = TESTNAME[:-1]
+
+    # e.g. basic/gwbasic/TestName
+    try:
+        DIR, TESTNAME = os.path.split(TESTNAME)
+        _, PRESET = os.path.split(DIR)
+    except ValueError:
+        PRESET = 'gwbasic'
+
+
+    PATH = os.path.join(HERE, 'basic', PRESET, TESTNAME)
+
+    print('\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (PRESET, TESTNAME), end='')
+    dirname = PATH
     if not os.path.isdir(dirname):
         print('\033[01;31mno such test.\033[00;37m')
         continue

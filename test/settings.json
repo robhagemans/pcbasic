@@ -1,0 +1,12 @@
+{
+    "gwbasic": {
+        "dir": "~/Projects/oldgames/basic/c/gwbasic/",
+        "exe": "GWBASIC.EXE",
+        "conf": "dosbox-gwbasic.conf"
+    },
+    "tandy": {
+        "dir": "~/Projects/oldgames/basic/c/gwbasic/",
+        "exe": "GW-TANDY.EXE",
+        "conf": "dosbox-tandy.conf"
+    }
+}
