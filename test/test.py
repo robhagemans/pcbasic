@@ -72,7 +72,7 @@ if not args or '--all' in args:
     args = [
         os.path.join('basic', _preset, _test)
         for _preset in os.listdir(os.path.join(HERE, 'basic'))
-        for _test in os.listdir(os.path.join(HERE, 'basic', _preset))
+        for _test in sorted(os.listdir(os.path.join(HERE, 'basic', _preset)))
     ]
 
 numtests = 0
