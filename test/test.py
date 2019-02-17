@@ -17,12 +17,15 @@ import traceback
 import time
 from copy import copy, deepcopy
 
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-
 # make pcbasic package accessible
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-pythonpath = copy(sys.path)
+sys.path.append(os.path.join(HERE, '..'))
+PYTHONPATH = copy(sys.path)
+
+import pcbasic
+
 
 def is_same(file1, file2):
     try:
@@ -80,8 +83,7 @@ failed = []
 knowfailed = []
 oldfailed = []
 crashed = []
-
-import pcbasic
+times = {}
 
 start_time = time.time()
 start_clock = time.clock()
@@ -99,6 +101,8 @@ for name in args:
 
     if TESTNAME.endswith('/'):
         TESTNAME = TESTNAME[:-1]
+
+    _, name = TESTNAME.split(os.sep, 1)
 
     # e.g. basic/gwbasic/TestName
     try:
@@ -130,7 +134,8 @@ for name in args:
     os.chdir(output_dir)
     sys.stdout.flush()
     # we need to include the output dir in the PYTHONPATH for it to find extension modules
-    sys.path = pythonpath + [os.path.abspath('.')]
+    sys.path = PYTHONPATH + [os.path.abspath('.')]
+    test_start_time = time.time()
     # -----------------------------------------------------------
     # suppress output and logging and call PC-BASIC
     with suppress_stdio(do_suppress):
@@ -142,6 +147,7 @@ for name in args:
             if reraise:
                 raise
     # -----------------------------------------------------------
+    times[name] = time.time() - test_start_time
     os.chdir(top)
     passed = True
     known = True
@@ -227,6 +233,10 @@ if knowfailed:
 numpass = numtests - len(failed) - len(knowfailed)- len(crashed) - len(oldfailed)
 if numpass:
     print('    %d passes' % numpass)
+
+print()
+slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)[:20]
+print('Slowest tests:', ' '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests))
 
 if cov:
     cov.stop()
