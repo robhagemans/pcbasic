@@ -21,7 +21,7 @@ from copy import copy, deepcopy
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # make pcbasic package accessible
-sys.path.append(os.path.join(HERE, '..'))
+sys.path = [os.path.join(HERE, '..')] + sys.path
 PYTHONPATH = copy(sys.path)
 
 import pcbasic
