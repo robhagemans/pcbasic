@@ -15,16 +15,19 @@ import filecmp
 import contextlib
 import traceback
 import time
+import json
 from copy import copy, deepcopy
 
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-
 # make pcbasic package accessible
+HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path = [os.path.join(HERE, '..')] + sys.path
-PYTHONPATH = copy(sys.path)
 
 import pcbasic
+
+
+PYTHONPATH = copy(sys.path)
+SLOWTESTS = os.path.join(HERE, '_settings', 'slowtest.json')
 
 
 def is_same(file1, file2):
@@ -63,6 +66,9 @@ args = sys.argv[1:]
 
 do_suppress = not contained(args, '--loud')
 reraise = contained(args, '--reraise')
+fast = contained(args, '--fast')
+all = contained(args, '--all')
+
 
 if contained(args, '--coverage'):
     import coverage
@@ -71,12 +77,23 @@ if contained(args, '--coverage'):
 else:
     cov = None
 
-if not args or '--all' in args:
+if not args or all:
     args = [
         os.path.join('basic', _preset, _test)
         for _preset in os.listdir(os.path.join(HERE, 'basic'))
         for _test in sorted(os.listdir(os.path.join(HERE, 'basic', _preset)))
     ]
+
+if fast:
+    try:
+        with open(SLOWTESTS) as slowfile:
+            slowtests = dict(json.load(slowfile))
+    except EnvironmentError:
+        pass
+    else:
+        slowtests = set(os.path.join('basic', _key) for _key in slowtests)
+        args = [_arg for _arg in args if _arg not in slowtests]
+
 
 numtests = 0
 failed = []
@@ -238,6 +255,11 @@ print()
 slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)[:20]
 print('\033[00;37mSlowest tests:')
 print('    ' + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests))
+
+# update slow-tests file
+if all and not fast:
+    with open(SLOWTESTS, 'w') as slowfile:
+        json.dump(dict(slowtests), slowfile)
 
 if cov:
     cov.stop()
