@@ -28,6 +28,27 @@ PATH = os.path.join(HERE, 'basic', PRESET, TESTNAME)
 MODEL = os.path.join(PATH, 'model')
 OUTPUT = os.path.join(PATH, 'output')
 
+
+def count_diff(file1, file2):
+    lines1 = open(file1, 'rb').readlines()
+    lines2 = open(file2, 'rb').readlines()
+    n = len(lines1)
+    count = 0
+    for one, two in zip(lines1, lines2):
+        if one != two:
+            count += 1
+    return n, count
+
+for failname in os.listdir(MODEL):
+    try:
+        n, count = count_diff(
+            os.path.join(OUTPUT, failname), os.path.join(MODEL, failname)
+        )
+        pct = 100.*count/float(n) if n != 0 else 0
+        print('    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct))
+    except EnvironmentError as e:
+        print('    %s: %s' % (failname, e))
+
 for name in os.listdir(MODEL):
     print()
     print(name, '-'*80)

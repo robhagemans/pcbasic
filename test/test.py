@@ -40,16 +40,6 @@ def is_same(file1, file2):
     except EnvironmentError:
         return False
 
-def count_diff(file1, file2):
-    lines1 = open(file1, 'rb').readlines()
-    lines2 = open(file2, 'rb').readlines()
-    n = len(lines1)
-    count = 0
-    for one, two in zip(lines1, lines2):
-        if one != two:
-            count += 1
-    return n, count
-
 @contextlib.contextmanager
 def suppress_stdio(do_suppress):
     if not do_suppress:
@@ -215,30 +205,12 @@ def run_tests(args, all, fast, loud, reraise, cover):
                     print('\033[00;33mfailed.\033[00;37m')
                 else:
                     print('\033[01;31mfailed.\033[00;37m')
-                for failname in failfiles:
-                    try:
-                        n, count = count_diff(
-                            os.path.join(output_dir, failname), os.path.join(model_dir, failname)
-                        )
-                        pct = 100.*count/float(n) if n != 0 else 0
-                        print('    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct))
-                    except EnvironmentError as e:
-                        print('    %s: %s' % (failname, e))
                 if old_fail:
                     oldfailed.append(name)
                 else:
                     failed.append(name)
             else:
                 print('\033[00;36maccepted.\033[00;37m')
-                for failname in failfiles:
-                    try:
-                        n, count = count_diff(
-                            os.path.join(output_dir, failname), os.path.join(model_dir, failname)
-                        )
-                        pct = 100.*count/float(n) if n != 0 else 0
-                        print('    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct))
-                    except EnvironmentError as e:
-                        print('    %s: %s' % (failname, e))
                 knowfailed.append(name)
         else:
             print('\033[00;32mpassed.\033[00;37m')
