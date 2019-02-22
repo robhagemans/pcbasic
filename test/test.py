@@ -155,10 +155,12 @@ class CrashChecker(object):
 class Timer(object):
 
     @contextmanager
-    def time_run(self):
-        test_start_time = time.time()
+    def time(self):
+        start_time = time.time()
+        start_cpu = time.clock()
         yield self
-        self.run_time = time.time() - test_start_time
+        self.wall_time = time.time() - start_time
+        self.cpu_time = time.clock() - start_cpu
 
 
 def run_tests(args, all, fast, loud, reraise, cover):
@@ -197,70 +199,69 @@ def run_tests(args, all, fast, loud, reraise, cover):
     crashed = []
     times = {}
 
-    start_time = time.time()
-    start_clock = time.clock()
+    with Timer().time() as overall_timer:
 
-    # preserve environment
-    startdir = os.path.abspath(os.getcwd())
-    save_env = deepcopy(os.environ)
+        # preserve environment
+        startdir = os.path.abspath(os.getcwd())
+        save_env = deepcopy(os.environ)
 
-    for name in args:
-        # reset testing environment
-        os.chdir(startdir)
-        os.environ = deepcopy(save_env)
+        for name in args:
+            # reset testing environment
+            os.chdir(startdir)
+            os.environ = deepcopy(save_env)
 
-        TESTNAME = name
+            TESTNAME = name
 
-        if TESTNAME.endswith('/'):
-            TESTNAME = TESTNAME[:-1]
+            if TESTNAME.endswith('/'):
+                TESTNAME = TESTNAME[:-1]
 
-        _, name = TESTNAME.split(os.sep, 1)
+            _, name = TESTNAME.split(os.sep, 1)
 
-        # e.g. basic/gwbasic/TestName
-        try:
-            DIR, TESTNAME = os.path.split(TESTNAME)
-            _, PRESET = os.path.split(DIR)
-        except ValueError:
-            PRESET = 'gwbasic'
-        PATH = os.path.join(HERE, 'basic', PRESET, TESTNAME)
-        print('\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (PRESET, TESTNAME), end='')
-        dirname = PATH
-        if not os.path.isdir(dirname):
-            print('\033[01;31mno such test.\033[00;37m')
-            continue
-        with OutputChecker(dirname) as output_checker:
-            # we need to include the output dir in the PYTHONPATH for it to find extension modules
-            sys.path = PYTHONPATH + [os.path.abspath('.')]
-            with Timer().time_run() as timer:
-                with suppress_stdio(not loud):
-                    with CrashChecker(reraise).guard() as crash_checker:
-                        pcbasic.run('--interface=none')
-        times[name] = timer.run_time
-        if crash_checker.crash or not output_checker.passed:
-            if crash_checker.crash:
-                print('\033[01;37;41mEXCEPTION.\033[00;37m')
-                print('    %r' % crash_checker.crash)
-                crashed.append(name)
-            elif not output_checker.known:
-                if output_checker.old_fail:
-                    print('\033[00;33mfailed.\033[00;37m')
+            # e.g. basic/gwbasic/TestName
+            try:
+                DIR, TESTNAME = os.path.split(TESTNAME)
+                _, PRESET = os.path.split(DIR)
+            except ValueError:
+                PRESET = 'gwbasic'
+            PATH = os.path.join(HERE, 'basic', PRESET, TESTNAME)
+            print('\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (PRESET, TESTNAME), end='')
+            dirname = PATH
+            if not os.path.isdir(dirname):
+                print('\033[01;31mno such test.\033[00;37m')
+                continue
+            with OutputChecker(dirname) as output_checker:
+                # we need to include the output dir in the PYTHONPATH for it to find extension modules
+                sys.path = PYTHONPATH + [os.path.abspath('.')]
+                with Timer().time() as timer:
+                    with suppress_stdio(not loud):
+                        with CrashChecker(reraise).guard() as crash_checker:
+                            pcbasic.run('--interface=none')
+            times[name] = timer.wall_time
+            if crash_checker.crash or not output_checker.passed:
+                if crash_checker.crash:
+                    print('\033[01;37;41mEXCEPTION.\033[00;37m')
+                    print('    %r' % crash_checker.crash)
+                    crashed.append(name)
+                elif not output_checker.known:
+                    if output_checker.old_fail:
+                        print('\033[00;33mfailed.\033[00;37m')
+                    else:
+                        print('\033[01;31mfailed.\033[00;37m')
+                    if output_checker.old_fail:
+                        oldfailed.append(name)
+                    else:
+                        failed.append(name)
                 else:
-                    print('\033[01;31mfailed.\033[00;37m')
-                if output_checker.old_fail:
-                    oldfailed.append(name)
-                else:
-                    failed.append(name)
+                    print('\033[00;36maccepted.\033[00;37m')
+                    knowfailed.append(name)
             else:
-                print('\033[00;36maccepted.\033[00;37m')
-                knowfailed.append(name)
-        else:
-            print('\033[00;32mpassed.\033[00;37m')
-        numtests += 1
+                print('\033[00;32mpassed.\033[00;37m')
+            numtests += 1
 
     print()
     print(
         '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):' %
-        (numtests, time.time() - start_time, time.clock() - start_clock)
+        (numtests, overall_timer.wall_time, overall_timer.cpu_time)
     )
     if crashed:
         print('    %d exceptions: \033[01;37;41m%s\033[00m' % (len(crashed), ' '.join(crashed)))
