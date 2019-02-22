@@ -134,6 +134,22 @@ class OutputChecker(object):
             shutil.rmtree(self._output_dir)
 
 
+class CrashChecker(object):
+
+    def __init__(self, reraise):
+        self._reraise = reraise
+
+    @contextmanager
+    def guard(self):
+        self.crash = None
+        try:
+            yield self
+        except Exception as e:
+            self.crash = e
+            if self._reraise:
+                raise
+
+
 def run_tests(args, all, fast, loud, reraise, cover):
 
     if all:
@@ -209,16 +225,12 @@ def run_tests(args, all, fast, loud, reraise, cover):
             # -----------------------------------------------------------
             # suppress output and logging and call PC-BASIC
             with suppress_stdio(not loud):
-                crash = None
-                try:
+                with CrashChecker(reraise).guard() as crash_checker:
                     pcbasic.run('--interface=none')
-                except Exception as e:
-                    crash = e
-                    if reraise:
-                        raise
             # -----------------------------------------------------------
             times[name] = time.time() - test_start_time
         passed, known, failfiles = output_checker.passed, output_checker.known, output_checker.failfiles
+        crash = crash_checker.crash
         if crash or not passed:
             if crash:
                 print('\033[01;37;41mEXCEPTION.\033[00;37m')
