@@ -218,37 +218,37 @@ def run_tests(args, all, fast, loud, reraise, cover):
             # preserve environment
             startdir = os.path.abspath(os.getcwd())
             save_env = deepcopy(os.environ)
-
+            # run all tests
             for name in args:
                 # reset testing environment
                 os.chdir(startdir)
                 os.environ = deepcopy(save_env)
-
-                TESTNAME = name
-
-                if TESTNAME.endswith('/'):
-                    TESTNAME = TESTNAME[:-1]
-
-                _, name = TESTNAME.split(os.sep, 1)
-
+                # normalise test name
+                if name.endswith('/'):
+                    name = name[:-1]
+                _, name = name.split(os.sep, 1)
                 # e.g. basic/gwbasic/TestName
                 try:
-                    DIR, TESTNAME = os.path.split(TESTNAME)
-                    _, PRESET = os.path.split(DIR)
+                    _dir, name = os.path.split(name)
+                    _, category = os.path.split(_dir)
                 except ValueError:
-                    PRESET = 'gwbasic'
-                PATH = os.path.join(HERE, 'basic', PRESET, TESTNAME)
-                print('\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (PRESET, TESTNAME), end='')
-                dirname = PATH
+                    category = 'gwbasic'
+                dirname = os.path.join(HERE, 'basic', category, name)
+                print(
+                    '\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (category, name),
+                    end=''
+                )
                 if not os.path.isdir(dirname):
                     print('\033[01;31mno such test.\033[00;37m')
                     continue
                 with OutputChecker(dirname) as output_checker:
-                    # we need to include the output dir in the PYTHONPATH for it to find extension modules
-                    sys.path = PYTHONPATH + [os.path.abspath('.')]
                     with Timer().time() as timer:
                         with suppress_stdio(not loud):
                             with CrashChecker(reraise).guard() as crash_checker:
+                                # we need to include the output dir in the PYTHONPATH
+                                # for it to find extension modules
+                                sys.path = PYTHONPATH + [os.path.abspath('.')]
+                                # run PC-BASIC
                                 pcbasic.run('--interface=none')
                 times[name] = timer.wall_time
                 if crash_checker.crash or not output_checker.passed:
