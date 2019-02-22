@@ -43,6 +43,9 @@ def is_same(file1, file2):
 
 @contextlib.contextmanager
 def suppress_stdio(do_suppress):
+    # flush last outbut before muffling
+    sys.stderr.flush()
+    sys.stdout.flush()
     if not do_suppress:
         yield
     else:
@@ -77,9 +80,9 @@ class OutputChecker(object):
         self._output_dir = os.path.join(self._dirname, 'output')
         self._model_dir = os.path.join(self._dirname, 'model')
         self._known_dir = os.path.join(self._dirname, 'known')
-        old_fail = False
+        self.old_fail = False
         if os.path.isdir(self._output_dir):
-            old_fail = True
+            self.old_fail = True
             shutil.rmtree(self._output_dir)
         os.mkdir(self._output_dir)
         for filename in os.listdir(self._dirname):
@@ -148,6 +151,14 @@ class CrashChecker(object):
             self.crash = e
             if self._reraise:
                 raise
+
+class Timer(object):
+
+    @contextmanager
+    def time_run(self):
+        test_start_time = time.time()
+        yield self
+        self.run_time = time.time() - test_start_time
 
 
 def run_tests(args, all, fast, loud, reraise, cover):
@@ -218,30 +229,24 @@ def run_tests(args, all, fast, loud, reraise, cover):
             print('\033[01;31mno such test.\033[00;37m')
             continue
         with OutputChecker(dirname) as output_checker:
-            sys.stdout.flush()
             # we need to include the output dir in the PYTHONPATH for it to find extension modules
             sys.path = PYTHONPATH + [os.path.abspath('.')]
-            test_start_time = time.time()
-            # -----------------------------------------------------------
-            # suppress output and logging and call PC-BASIC
-            with suppress_stdio(not loud):
-                with CrashChecker(reraise).guard() as crash_checker:
-                    pcbasic.run('--interface=none')
-            # -----------------------------------------------------------
-            times[name] = time.time() - test_start_time
-        passed, known, failfiles = output_checker.passed, output_checker.known, output_checker.failfiles
-        crash = crash_checker.crash
-        if crash or not passed:
-            if crash:
+            with Timer().time_run() as timer:
+                with suppress_stdio(not loud):
+                    with CrashChecker(reraise).guard() as crash_checker:
+                        pcbasic.run('--interface=none')
+        times[name] = timer.run_time
+        if crash_checker.crash or not output_checker.passed:
+            if crash_checker.crash:
                 print('\033[01;37;41mEXCEPTION.\033[00;37m')
-                print('    %r' % crash)
+                print('    %r' % crash_checker.crash)
                 crashed.append(name)
-            elif not known:
-                if old_fail:
+            elif not output_checker.known:
+                if output_checker.old_fail:
                     print('\033[00;33mfailed.\033[00;37m')
                 else:
                     print('\033[01;31mfailed.\033[00;37m')
-                if old_fail:
+                if output_checker.old_fail:
                     oldfailed.append(name)
                 else:
                     failed.append(name)
