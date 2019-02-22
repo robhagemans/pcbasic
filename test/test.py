@@ -26,8 +26,12 @@ sys.path = [os.path.join(HERE, '..')] + sys.path
 import pcbasic
 
 
+# copy of pythonpath for use by testing cycle
 PYTHONPATH = copy(sys.path)
+# test timing file
 SLOWTESTS = os.path.join(HERE, '_settings', 'slowtest.json')
+# umber of slowest tests to show or exclude
+SLOWSHOW = 20
 
 
 def is_same(file1, file2):
@@ -67,8 +71,7 @@ args = sys.argv[1:]
 do_suppress = not contained(args, '--loud')
 reraise = contained(args, '--reraise')
 fast = contained(args, '--fast')
-all = contained(args, '--all')
-
+all = not args or contained(args, '--all')
 
 if contained(args, '--coverage'):
     import coverage
@@ -77,7 +80,7 @@ if contained(args, '--coverage'):
 else:
     cov = None
 
-if not args or all:
+if all:
     args = [
         os.path.join('basic', _preset, _test)
         for _preset in os.listdir(os.path.join(HERE, 'basic'))
@@ -91,7 +94,10 @@ if fast:
     except EnvironmentError:
         pass
     else:
-        slowtests = set(os.path.join('basic', _key) for _key in slowtests)
+        # get slowest tests
+        slowtests = sorted(slowtests.items(), key=lambda _p: _p[1], reverse=True)[:SLOWSHOW]
+        # exclude
+        slowtests = set(os.path.join('basic', _key) for _key, _ in slowtests)
         args = [_arg for _arg in args if _arg not in slowtests]
 
 
@@ -252,9 +258,9 @@ if numpass:
     print('    %d passes' % numpass)
 
 print()
-slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)[:20]
+slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)
 print('\033[00;37mSlowest tests:')
-print('    ' + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests))
+print('    ' + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests[:SLOWSHOW]))
 
 # update slow-tests file
 if all and not fast:
