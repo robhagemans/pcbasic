@@ -17,6 +17,7 @@ import traceback
 import time
 import json
 from copy import copy, deepcopy
+from contextlib import contextmanager
 
 
 # make pcbasic package accessible
@@ -67,50 +68,70 @@ def parse_args():
     return args, all, fast, loud, reraise, cover
 
 
-def prepare_outputs(dirname):
-    output_dir = os.path.join(dirname, 'output')
-    model_dir = os.path.join(dirname, 'model')
-    known_dir = os.path.join(dirname, 'known')
-    old_fail = False
-    if os.path.isdir(output_dir):
-        old_fail = True
-        shutil.rmtree(output_dir)
-    os.mkdir(output_dir)
-    for filename in os.listdir(dirname):
-        if os.path.isfile(os.path.join(dirname, filename)):
-            shutil.copy(os.path.join(dirname, filename), os.path.join(output_dir, filename))
-    return output_dir, model_dir, known_dir
+class OutputChecker(object):
 
-def compare_outputs(dirname, output_dir, model_dir, known_dir):
-    passed = True
-    known = True
-    failfiles = []
-    for path, dirs, files in os.walk(model_dir):
-        for f in files:
-            if f.endswith('.pyc'):
-                continue
-            filename = os.path.join(path[len(model_dir)+1:], f)
-            if (not is_same(os.path.join(output_dir, filename), os.path.join(model_dir, filename))
-                    and not os.path.isfile(os.path.join(dirname, filename))):
-                failfiles.append(filename)
-                known = (
-                    os.path.isdir(known_dir) and
-                    is_same(os.path.join(output_dir, filename), os.path.join(known_dir, filename))
+    def __init__(self, dirname):
+        self._dirname = dirname
+
+    def __enter__(self):
+        self._output_dir = os.path.join(self._dirname, 'output')
+        self._model_dir = os.path.join(self._dirname, 'model')
+        self._known_dir = os.path.join(self._dirname, 'known')
+        old_fail = False
+        if os.path.isdir(self._output_dir):
+            old_fail = True
+            shutil.rmtree(self._output_dir)
+        os.mkdir(self._output_dir)
+        for filename in os.listdir(self._dirname):
+            if os.path.isfile(os.path.join(self._dirname, filename)):
+                shutil.copy(
+                    os.path.join(self._dirname, filename),
+                    os.path.join(self._output_dir, filename)
                 )
-                passed = False
-    for path, dirs, files in os.walk(output_dir):
-        for f in files:
-            if f.endswith('.pyc'):
-                continue
-            filename = os.path.join(path[len(output_dir)+1:], f)
-            if (
-                    not os.path.isfile(os.path.join(model_dir, filename))
-                    and not os.path.isfile(os.path.join(dirname, filename))
-                ):
-                failfiles.append(filename)
-                passed = False
-                known = False
-    return passed, known, failfiles
+        self._top = os.getcwd()
+        os.chdir(self._output_dir)
+        return self
+
+    def __exit__(self, one, two, three):
+        self.passed = True
+        self.known = True
+        self.failfiles = []
+        for path, dirs, files in os.walk(self._model_dir):
+            for f in files:
+                if f.endswith('.pyc'):
+                    continue
+                filename = os.path.join(path[len(self._model_dir)+1:], f)
+                if (
+                        not is_same(
+                            os.path.join(self._output_dir, filename),
+                            os.path.join(self._model_dir, filename)
+                        )
+                        and not os.path.isfile(os.path.join(self._dirname, filename))
+                    ):
+                    self.failfiles.append(filename)
+                    self.known = (
+                        os.path.isdir(self._known_dir) and
+                        is_same(
+                            os.path.join(self._output_dir, filename),
+                            os.path.join(self._known_dir, filename)
+                        )
+                    )
+                    self.passed = False
+        for path, dirs, files in os.walk(self._output_dir):
+            for f in files:
+                if f.endswith('.pyc'):
+                    continue
+                filename = os.path.join(path[len(self._output_dir)+1:], f)
+                if (
+                        not os.path.isfile(os.path.join(self._model_dir, filename))
+                        and not os.path.isfile(os.path.join(self._dirname, filename))
+                    ):
+                    self.failfiles.append(filename)
+                    self.passed = False
+                    self.known = False
+        os.chdir(self._top)
+        if self.passed:
+            shutil.rmtree(self._output_dir)
 
 
 def run_tests(args, all, fast, loud, reraise, cover):
@@ -180,29 +201,24 @@ def run_tests(args, all, fast, loud, reraise, cover):
         if not os.path.isdir(dirname):
             print('\033[01;31mno such test.\033[00;37m')
             continue
-        output_dir, model_dir, known_dir = prepare_outputs(dirname)
-        top = os.getcwd()
-        os.chdir(output_dir)
-        sys.stdout.flush()
-        # we need to include the output dir in the PYTHONPATH for it to find extension modules
-        sys.path = PYTHONPATH + [os.path.abspath('.')]
-        test_start_time = time.time()
-        # -----------------------------------------------------------
-        # suppress output and logging and call PC-BASIC
-        with suppress_stdio(not loud):
-            crash = None
-            try:
-                pcbasic.run('--interface=none')
-            except Exception as e:
-                crash = e
-                if reraise:
-                    raise
-        # -----------------------------------------------------------
-        times[name] = time.time() - test_start_time
-        os.chdir(top)
-
-        passed, known, failfiles = compare_outputs(dirname, output_dir, model_dir, known_dir)
-
+        with OutputChecker(dirname) as output_checker:
+            sys.stdout.flush()
+            # we need to include the output dir in the PYTHONPATH for it to find extension modules
+            sys.path = PYTHONPATH + [os.path.abspath('.')]
+            test_start_time = time.time()
+            # -----------------------------------------------------------
+            # suppress output and logging and call PC-BASIC
+            with suppress_stdio(not loud):
+                crash = None
+                try:
+                    pcbasic.run('--interface=none')
+                except Exception as e:
+                    crash = e
+                    if reraise:
+                        raise
+            # -----------------------------------------------------------
+            times[name] = time.time() - test_start_time
+        passed, known, failfiles = output_checker.passed, output_checker.known, output_checker.failfiles
         if crash or not passed:
             if crash:
                 print('\033[01;37;41mEXCEPTION.\033[00;37m')
@@ -222,7 +238,6 @@ def run_tests(args, all, fast, loud, reraise, cover):
                 knowfailed.append(name)
         else:
             print('\033[00;32mpassed.\033[00;37m')
-            shutil.rmtree(output_dir)
         numtests += 1
 
     print()
