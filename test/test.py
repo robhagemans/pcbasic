@@ -67,6 +67,52 @@ def parse_args():
     return args, all, fast, loud, reraise, cover
 
 
+def prepare_outputs(dirname):
+    output_dir = os.path.join(dirname, 'output')
+    model_dir = os.path.join(dirname, 'model')
+    known_dir = os.path.join(dirname, 'known')
+    old_fail = False
+    if os.path.isdir(output_dir):
+        old_fail = True
+        shutil.rmtree(output_dir)
+    os.mkdir(output_dir)
+    for filename in os.listdir(dirname):
+        if os.path.isfile(os.path.join(dirname, filename)):
+            shutil.copy(os.path.join(dirname, filename), os.path.join(output_dir, filename))
+    return output_dir, model_dir, known_dir
+
+def compare_outputs(dirname, output_dir, model_dir, known_dir):
+    passed = True
+    known = True
+    failfiles = []
+    for path, dirs, files in os.walk(model_dir):
+        for f in files:
+            if f.endswith('.pyc'):
+                continue
+            filename = os.path.join(path[len(model_dir)+1:], f)
+            if (not is_same(os.path.join(output_dir, filename), os.path.join(model_dir, filename))
+                    and not os.path.isfile(os.path.join(dirname, filename))):
+                failfiles.append(filename)
+                known = (
+                    os.path.isdir(known_dir) and
+                    is_same(os.path.join(output_dir, filename), os.path.join(known_dir, filename))
+                )
+                passed = False
+    for path, dirs, files in os.walk(output_dir):
+        for f in files:
+            if f.endswith('.pyc'):
+                continue
+            filename = os.path.join(path[len(output_dir)+1:], f)
+            if (
+                    not os.path.isfile(os.path.join(model_dir, filename))
+                    and not os.path.isfile(os.path.join(dirname, filename))
+                ):
+                failfiles.append(filename)
+                passed = False
+                known = False
+    return passed, known, failfiles
+
+
 def run_tests(args, all, fast, loud, reraise, cover):
 
     if all:
@@ -128,26 +174,13 @@ def run_tests(args, all, fast, loud, reraise, cover):
             _, PRESET = os.path.split(DIR)
         except ValueError:
             PRESET = 'gwbasic'
-
-
         PATH = os.path.join(HERE, 'basic', PRESET, TESTNAME)
-
         print('\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (PRESET, TESTNAME), end='')
         dirname = PATH
         if not os.path.isdir(dirname):
             print('\033[01;31mno such test.\033[00;37m')
             continue
-        output_dir = os.path.join(dirname, 'output')
-        model_dir = os.path.join(dirname, 'model')
-        known_dir = os.path.join(dirname, 'known')
-        old_fail = False
-        if os.path.isdir(output_dir):
-            old_fail = True
-            shutil.rmtree(output_dir)
-        os.mkdir(output_dir)
-        for filename in os.listdir(dirname):
-            if os.path.isfile(os.path.join(dirname, filename)):
-                shutil.copy(os.path.join(dirname, filename), os.path.join(output_dir, filename))
+        output_dir, model_dir, known_dir = prepare_outputs(dirname)
         top = os.getcwd()
         os.chdir(output_dir)
         sys.stdout.flush()
@@ -167,34 +200,9 @@ def run_tests(args, all, fast, loud, reraise, cover):
         # -----------------------------------------------------------
         times[name] = time.time() - test_start_time
         os.chdir(top)
-        passed = True
-        known = True
-        failfiles = []
-        for path, dirs, files in os.walk(model_dir):
-            for f in files:
-                if f.endswith('.pyc'):
-                    continue
-                filename = os.path.join(path[len(model_dir)+1:], f)
-                if (not is_same(os.path.join(output_dir, filename), os.path.join(model_dir, filename))
-                        and not os.path.isfile(os.path.join(dirname, filename))):
-                    failfiles.append(filename)
-                    known = (
-                        os.path.isdir(known_dir) and
-                        is_same(os.path.join(output_dir, filename), os.path.join(known_dir, filename))
-                    )
-                    passed = False
-        for path, dirs, files in os.walk(output_dir):
-            for f in files:
-                if f.endswith('.pyc'):
-                    continue
-                filename = os.path.join(path[len(output_dir)+1:], f)
-                if (
-                        not os.path.isfile(os.path.join(model_dir, filename))
-                        and not os.path.isfile(os.path.join(dirname, filename))
-                    ):
-                    failfiles.append(filename)
-                    passed = False
-                    known = False
+
+        passed, known, failfiles = compare_outputs(dirname, output_dir, model_dir, known_dir)
+
         if crash or not passed:
             if crash:
                 print('\033[01;37;41mEXCEPTION.\033[00;37m')
