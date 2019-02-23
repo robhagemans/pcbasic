@@ -19,6 +19,14 @@ import json
 from copy import copy, deepcopy
 from contextlib import contextmanager
 
+try:
+    from colorama import init
+    init()
+except ImportError:
+    # only needed on Windows
+    # without it we still work but look a bit garbled
+    pass
+
 # make pcbasic package accessible
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path = [os.path.join(HERE, '..')] + sys.path
