@@ -45,6 +45,13 @@ class Environment(object):
         assert isinstance(key, bytes), type(key)
         assert isinstance(value, bytes), type(value)
         ukey = self._codepage.str_to_unicode(key, box_protect=False)
+        # only accept ascii-128 for keys
+        try:
+            ukey.encode('ascii')
+        except UnicodeError:
+            raise error.BASICError(error.IFC)
+        # enforce uppercase
+        ukey = ukey.upper()
         uvalue = self._codepage.str_to_unicode(value, box_protect=False)
         setenvu(ukey, uvalue)
 
@@ -52,6 +59,13 @@ class Environment(object):
         """Get environment (bytes) value or b''."""
         assert isinstance(key, bytes), type(key)
         ukey = self._codepage.str_to_unicode(key, box_protect=False)
+        # only accept ascii-128 for keys
+        try:
+            ukey.encode('ascii')
+        except UnicodeError:
+            raise error.BASICError(error.IFC)
+        # enforce uppercase
+        ukey = ukey.upper()
         return self._codepage.from_unicode(getenvu(ukey, u''))
 
     def _getenv_item(self, index):

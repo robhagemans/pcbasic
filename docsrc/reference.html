@@ -1111,7 +1111,8 @@
         <ul>
             <li>
                 If <code><var>x</var></code> has a string value, returns the value for the environment variable <code><var>x</var></code> or the empty
-                string if no variable with the name <code><var>x</var></code> is set in the environment table.
+                string if no variable with the name <code><var>x</var></code> is set in the environment table. The environment variable must be an
+                ASCII string and will be converted to uppercase on case-sensitive systems.
             </li>
             <li>
                 If <code><var>x</var></code> has a numeric value, it must be in <code>[1&#8212;255]</code>. Returns the <code><var>x</var></code>th entry in
@@ -1122,6 +1123,9 @@
         <ul>
             <li>
                 <code><var>x</var></code> is the empty string: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> contains non-ASCII characters: <samp>Illegal function call</samp>.
             </li>
             <li>
                 <code><var>x</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
@@ -4942,6 +4946,10 @@
                 to unset <code><var>VARIABLE</var></code>.
             </dd>
         </dl>
+        <p>
+            <code><var>VARIABLE</var></code> must be an
+            ASCII string and will be converted to uppercase on case-sensitive systems.
+        </p>
         <h5>Errors</h5>
         <ul>
             <li>
@@ -4949,6 +4957,9 @@
             </li>
             <li>
                 <code><var>command_string</var></code> is not of the required form: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>VARIABLE</var></code> contains characters outside of ASCII: <samp>Illegal function call</samp>.
             </li>
         </ul>
     </section>
