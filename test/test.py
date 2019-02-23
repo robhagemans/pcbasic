@@ -91,10 +91,11 @@ def parse_args():
 
 class TestFrame(object):
 
-    def __init__(self, category, name, reraise, skip):
+    def __init__(self, category, name, reraise, skip, loud):
         self._dirname = os.path.join(HERE, 'basic', category, name)
         self._reraise = reraise
         self.skip = testname(category, name) in skip
+        self._loud = loud
 
     @contextmanager
     def check_output(self):
@@ -173,6 +174,9 @@ class TestFrame(object):
             self.crash = e
             if self._reraise:
                 raise
+            if self._loud:
+                traceback.print_exc()
+
 
     @contextmanager
     def guard(self):
@@ -279,7 +283,7 @@ def run_tests(args, all, fast, loud, reraise, cover):
                 )
                 with suppress_stdio(not loud):
                     with Timer().time() as timer:
-                        with TestFrame(category, name, reraise, skip).guard() as test_frame:
+                        with TestFrame(category, name, reraise, skip, loud).guard() as test_frame:
                             if test_frame.exists and not test_frame.skip:
                                 # we need to include the output dir in the PYTHONPATH
                                 # for it to find extension modules
@@ -287,15 +291,13 @@ def run_tests(args, all, fast, loud, reraise, cover):
                                 # run PC-BASIC
                                 pcbasic.run('--interface=none')
                 # update test time
-                if test_frame.exists and not test_frame.skip:
+                if test_frame.exists and not test_frame.skip and not test_frame.crash:
                     times[testname(category, name)] = timer.wall_time
                 # report status
                 results[testname(category, name)] = test_frame.status
                 print('\033[%sm%s.\033[00;37m' % (
                     STATUS_COLOURS[test_frame.status], test_frame.status
                 ))
-                if test_frame.crash:
-                    print('    %r' % test_frame.crash)
     # update stored times
     with open(TEST_TIMES, 'w') as timefile:
         json.dump(times, timefile)
