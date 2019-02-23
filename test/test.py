@@ -19,7 +19,6 @@ import json
 from copy import copy, deepcopy
 from contextlib import contextmanager
 
-
 # make pcbasic package accessible
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path = [os.path.join(HERE, '..')] + sys.path
@@ -34,14 +33,26 @@ TEST_TIMES = os.path.join(HERE, '_settings', 'slowtest.json')
 # umber of slowest tests to show or exclude
 SLOWSHOW = 20
 
+# statuses
+CRASHED = 'exception'
+PASSED = 'passed'
+ACCEPTED = 'accepted'
+OLDFAILED = 'failed (old)'
+NEWFAILED = 'failed'
+SKIPPED = 'skipped'
+NONESUCH = 'no such test'
+
 # ANSI colours for test status
 STATUS_COLOURS = {
-    'exception': '01;37;41',
-    'passed': '00;32',
-    'accepted': '00;36',
-    'failed (old)': '00;33',
-    'failed': '01;31',
+    CRASHED: '01;37;41',
+    PASSED: '00;32',
+    ACCEPTED: '00;36',
+    OLDFAILED: '00;33',
+    NEWFAILED: '01;31',
+    SKIPPED: '00;30',
+    NONESUCH: '01;31',
 }
+
 
 def is_same(file1, file2):
     try:
@@ -68,7 +79,6 @@ def contained(arglist, elem):
         return False
     return True
 
-
 def parse_args():
     args = sys.argv[1:]
     loud = contained(args, '--loud')
@@ -81,12 +91,22 @@ def parse_args():
 
 class TestFrame(object):
 
-    def __init__(self, dirname, reraise):
-        self._dirname = dirname
+    def __init__(self, category, name, reraise, skip):
+        self._dirname = os.path.join(HERE, 'basic', category, name)
         self._reraise = reraise
+        self.skip = testname(category, name) in skip
 
     @contextmanager
     def check_output(self):
+        if os.path.isdir(self._dirname):
+            self.exists = True
+        else:
+            self.exists = False
+            yield self
+            return
+        if self.skip:
+            yield self
+            return
         self._output_dir = os.path.join(self._dirname, 'output')
         self._model_dir = os.path.join(self._dirname, 'model')
         self._known_dir = os.path.join(self._dirname, 'known')
@@ -162,15 +182,19 @@ class TestFrame(object):
 
     @property
     def status(self):
+        if not self.exists:
+            return NONESUCH
+        if self.skip:
+            return SKIPPED
         if self.crash:
-            return 'exception'
+            return CRASHED
         if self.passed:
-            return 'passed'
+            return PASSED
         if self.known:
-            return 'accepted'
+            return ACCEPTED
         if self.old_fail:
-            return 'failed (old)'
-        return 'failed'
+            return OLDFAILED
+        return NEWFAILED
 
 
 class Timer(object):
@@ -206,6 +230,17 @@ class Coverage(object):
 def testname(cat, name):
     return '/'.join((cat, name))
 
+def normalise(name):
+    if name.endswith('/'):
+        name = name[:-1]
+    _, name = name.split(os.sep, 1)
+    # e.g. basic/gwbasic/TestName
+    try:
+        _dir, name = os.path.split(name)
+        _, category = os.path.split(_dir)
+    except ValueError:
+        category = 'gwbasic'
+    return category, name
 
 
 def run_tests(args, all, fast, loud, reraise, cover):
@@ -238,34 +273,20 @@ def run_tests(args, all, fast, loud, reraise, cover):
                 os.chdir(startdir)
                 os.environ = deepcopy(save_env)
                 # normalise test name
-                if name.endswith('/'):
-                    name = name[:-1]
-                _, name = name.split(os.sep, 1)
-                # e.g. basic/gwbasic/TestName
-                try:
-                    _dir, name = os.path.split(name)
-                    _, category = os.path.split(_dir)
-                except ValueError:
-                    category = 'gwbasic'
-                dirname = os.path.join(HERE, 'basic', category, name)
+                category, name = normalise(name)
                 print(
                     '\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (category, name),
                     end=''
                 )
-                if testname(category, name) in skip:
-                    print('\033[00;30mskipped.\033[00;37m')
-                    continue
-                if not os.path.isdir(dirname):
-                    print('\033[01;31mno such test.\033[00;37m')
-                    continue
                 with suppress_stdio(not loud):
                     with Timer().time() as timer:
-                        with TestFrame(dirname, reraise).guard() as test_frame:
-                            # we need to include the output dir in the PYTHONPATH
-                            # for it to find extension modules
-                            sys.path = PYTHONPATH + [os.path.abspath('.')]
-                            # run PC-BASIC
-                            pcbasic.run('--interface=none')
+                        with TestFrame(category, name, reraise, skip).guard() as test_frame:
+                            if test_frame.exists and not test_frame.skip:
+                                # we need to include the output dir in the PYTHONPATH
+                                # for it to find extension modules
+                                sys.path = PYTHONPATH + [os.path.abspath('.')]
+                                # run PC-BASIC
+                                pcbasic.run('--interface=none')
                 times[testname(category, name)] = timer.wall_time
                 results[testname(category, name)] = test_frame.status
                 print('\033[%sm%s.\033[00;37m' % (
@@ -286,12 +307,12 @@ def report_results(results, times, overall_timer):
     }
     print()
     print(
-        '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):' %
+        '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):\033[00;37m' %
         (len(results), overall_timer.wall_time, overall_timer.cpu_time)
     )
     for status, tests in res_stat.items():
         print('    %d %s' % (len(tests), status), end='')
-        if status == 'passed':
+        if status == PASSED:
             print('.')
         else:
             print(': \033[%sm%s.\033[00;37m' % (
@@ -305,7 +326,6 @@ def report_results(results, times, overall_timer):
         '    '
         + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests[:SLOWSHOW])
     )
-
 
 
 if __name__ == '__main__':
