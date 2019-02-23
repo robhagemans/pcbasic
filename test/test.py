@@ -107,7 +107,7 @@ class TestFrame(object):
 
     @contextmanager
     def check_output(self):
-        if os.path.isdir(self._dirname):
+        if os.path.isdir(self._dirname) and 'PCBASIC.INI' in os.listdir(self._dirname):
             self.exists = True
         else:
             self.exists = False
