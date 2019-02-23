@@ -250,17 +250,16 @@ def run_tests(args, all, fast, loud, reraise, cover):
             for _preset in os.listdir(os.path.join(HERE, 'basic'))
             for _test in sorted(os.listdir(os.path.join(HERE, 'basic', _preset)))
         ]
-    skip = {}
+    try:
+        with open(TEST_TIMES) as timefile:
+            times = dict(json.load(timefile))
+    except EnvironmentError:
+        times = {}
     if fast:
-        try:
-            with open(TEST_TIMES) as timefile:
-                times = dict(json.load(timefile))
-        except EnvironmentError:
-            pass
-        else:
-            # exclude slowest tests
-            skip = dict(sorted(times.items(), key=lambda _p: _p[1], reverse=True)[:SLOWSHOW])
-    times = {}
+        # exclude slowest tests
+        skip = dict(sorted(times.items(), key=lambda _p: _p[1], reverse=True)[:SLOWSHOW])
+    else:
+        skip = {}
     results = {}
     with Coverage(cover).track() as coverage:
         with Timer().time() as overall_timer:
@@ -287,7 +286,10 @@ def run_tests(args, all, fast, loud, reraise, cover):
                                 sys.path = PYTHONPATH + [os.path.abspath('.')]
                                 # run PC-BASIC
                                 pcbasic.run('--interface=none')
-                times[testname(category, name)] = timer.wall_time
+                # update test time
+                if test_frame.exists and not test_frame.skip:
+                    times[testname(category, name)] = timer.wall_time
+                # report status
                 results[testname(category, name)] = test_frame.status
                 print('\033[%sm%s.\033[00;37m' % (
                     STATUS_COLOURS[test_frame.status], test_frame.status
@@ -295,9 +297,8 @@ def run_tests(args, all, fast, loud, reraise, cover):
                 if test_frame.crash:
                     print('    %r' % test_frame.crash)
     # update stored times
-    if all and not fast:
-        with open(TEST_TIMES, 'w') as timefile:
-            json.dump(times, timefile)
+    with open(TEST_TIMES, 'w') as timefile:
+        json.dump(times, timefile)
     return results, times, overall_timer
 
 def report_results(results, times, overall_timer):
@@ -321,7 +322,7 @@ def report_results(results, times, overall_timer):
     # update slow-tests file
     slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)
     print()
-    print('\033[00;37mSlowest tests:')
+    print('\033[00;37mSlow tests:')
     print(
         '    '
         + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests[:SLOWSHOW])
