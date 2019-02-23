@@ -30,7 +30,7 @@ import pcbasic
 # copy of pythonpath for use by testing cycle
 PYTHONPATH = copy(sys.path)
 # test timing file
-SLOWTESTS = os.path.join(HERE, '_settings', 'slowtest.json')
+TEST_TIMES = os.path.join(HERE, '_settings', 'slowtest.json')
 # umber of slowest tests to show or exclude
 SLOWSHOW = 20
 
@@ -203,6 +203,11 @@ class Coverage(object):
             yield
 
 
+def testname(cat, name):
+    return '/'.join((cat, name))
+
+
+
 def run_tests(args, all, fast, loud, reraise, cover):
     if all:
         args = [
@@ -210,18 +215,16 @@ def run_tests(args, all, fast, loud, reraise, cover):
             for _preset in os.listdir(os.path.join(HERE, 'basic'))
             for _test in sorted(os.listdir(os.path.join(HERE, 'basic', _preset)))
         ]
+    skip = {}
     if fast:
         try:
-            with open(SLOWTESTS) as slowfile:
-                slowtests = dict(json.load(slowfile))
+            with open(TEST_TIMES) as timefile:
+                times = dict(json.load(timefile))
         except EnvironmentError:
             pass
         else:
-            # get slowest tests
-            slowtests = sorted(slowtests.items(), key=lambda _p: _p[1], reverse=True)[:SLOWSHOW]
-            # exclude
-            slowtests = set(os.path.join('basic', _key) for _key, _ in slowtests)
-            args = [_arg for _arg in args if _arg not in slowtests]
+            # exclude slowest tests
+            skip = dict(sorted(times.items(), key=lambda _p: _p[1], reverse=True)[:SLOWSHOW])
     times = {}
     results = {}
     with Coverage(cover).track() as coverage:
@@ -249,6 +252,9 @@ def run_tests(args, all, fast, loud, reraise, cover):
                     '\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (category, name),
                     end=''
                 )
+                if testname(category, name) in skip:
+                    print('\033[00;30mskipped.\033[00;37m')
+                    continue
                 if not os.path.isdir(dirname):
                     print('\033[01;31mno such test.\033[00;37m')
                     continue
@@ -260,17 +266,17 @@ def run_tests(args, all, fast, loud, reraise, cover):
                             sys.path = PYTHONPATH + [os.path.abspath('.')]
                             # run PC-BASIC
                             pcbasic.run('--interface=none')
-                times[name] = timer.wall_time
-                results[name] = test_frame.status
+                times[testname(category, name)] = timer.wall_time
+                results[testname(category, name)] = test_frame.status
                 print('\033[%sm%s.\033[00;37m' % (
                     STATUS_COLOURS[test_frame.status], test_frame.status
                 ))
                 if test_frame.crash:
                     print('    %r' % test_frame.crash)
-    # update slow-tests file
+    # update stored times
     if all and not fast:
-        with open(SLOWTESTS, 'w') as slowfile:
-            json.dump(dict(slowtests), slowfile)
+        with open(TEST_TIMES, 'w') as timefile:
+            json.dump(times, timefile)
     return results, times, overall_timer
 
 def report_results(results, times, overall_timer):
@@ -302,10 +308,14 @@ def report_results(results, times, overall_timer):
     if 'passed' in res_stat:
         print('    %d passes' % len(res_stat['passed']))
 
-    print()
+    # update slow-tests file
     slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)
+    print()
     print('\033[00;37mSlowest tests:')
-    print('    ' + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests[:SLOWSHOW]))
+    print(
+        '    '
+        + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests[:SLOWSHOW])
+    )
 
 
 
