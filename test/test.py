@@ -78,7 +78,8 @@ if not args or '--all' in args:
 numtests = 0
 failed = []
 knowfailed = []
-
+oldfailed = []
+crashed = []
 
 import pcbasic
 
@@ -117,7 +118,9 @@ for name in args:
     output_dir = os.path.join(dirname, 'output')
     model_dir = os.path.join(dirname, 'model')
     known_dir = os.path.join(dirname, 'known')
+    old_fail = False
     if os.path.isdir(output_dir):
+        old_fail = True
         shutil.rmtree(output_dir)
     os.mkdir(output_dir)
     for filename in os.listdir(dirname):
@@ -170,11 +173,14 @@ for name in args:
                 known = False
     if crash or not passed:
         if crash:
-            print('\033[01;31mEXCEPTION.\033[00;37m')
+            print('\033[01;37;41mEXCEPTION.\033[00;37m')
             print('    %r' % crash)
-            failed.append(name)
+            crashed.append(name)
         elif not known:
-            print('\033[01;31mfailed.\033[00;37m')
+            if old_fail:
+                print('\033[00;33mfailed.\033[00;37m')
+            else:
+                print('\033[01;31mfailed.\033[00;37m')
             for failname in failfiles:
                 try:
                     n, count = count_diff(
@@ -184,9 +190,12 @@ for name in args:
                     print('    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct))
                 except EnvironmentError as e:
                     print('    %s: %s' % (failname, e))
-            failed.append(name)
+            if old_fail:
+                oldfailed.append(name)
+            else:
+                failed.append(name)
         else:
-            print('\033[00;36mknown failure.\033[00;37m')
+            print('\033[00;36maccepted.\033[00;37m')
             for failname in failfiles:
                 try:
                     n, count = count_diff(
@@ -207,11 +216,15 @@ print(
     '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):' %
     (numtests, time.time() - start_time, time.clock() - start_clock)
 )
+if crashed:
+    print('    %d exceptions: \033[01;37;41m%s\033[00m' % (len(crashed), ' '.join(crashed)))
 if failed:
     print('    %d new failures: \033[01;31m%s\033[00m' % (len(failed), ' '.join(failed)))
+if oldfailed:
+    print('    %d old failures: \033[00;33m%s\033[00m' % (len(oldfailed), ' '.join(oldfailed)))
 if knowfailed:
-    print('    %d known failures: \033[00;36m%s\033[00m' % (len(knowfailed), ' '.join(knowfailed)))
-numpass = numtests - len(failed) - len(knowfailed)
+    print('    %d accepts: \033[00;36m%s\033[00m' % (len(knowfailed), ' '.join(knowfailed)))
+numpass = numtests - len(failed) - len(knowfailed)- len(crashed) - len(oldfailed)
 if numpass:
     print('    %d passes' % numpass)
 

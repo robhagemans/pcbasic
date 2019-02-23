@@ -1,4 +1,3 @@
 .coverage
 html-cov/
-correctness/*/output/
-correctness/gwbasicdir
+basic/*/*/output/
