@@ -657,7 +657,7 @@ if PY2:
         def write(self, bytestr):
             if not isinstance(bytestr, bytes):
                 raise TypeError('write() argument must be bytes, not %s' % type(bytestr))
-            unistr = bytestr.decode(self.encoding)
+            unistr = bytestr.decode(self.encoding, errors='replace')
             _write_console(self._handle, unistr)
 
 
@@ -673,7 +673,7 @@ if PY2:
                 key = console.read_key()
                 if isinstance(key, int):
                     continue
-                output.append(key.encode(self.encoding))
+                output.append(key.encode(self.encoding, errors='replace'))
             return bytes(output)
 
 
