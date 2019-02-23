@@ -77,6 +77,9 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
 def next_string(args):
     """Retrieve a string from an iterator and return as Python value."""
     expr = next(args)
+    return to_string_or_none(expr)
+
+def to_string_or_none(expr):
     if isinstance(expr, strings.String):
         return expr.to_value()
     elif expr is None:

@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 from collections import deque
 import datetime
 
-from ..compat import iterchar
+from ..compat import iterchar, zip
 from .base import error
 from .base import signals
 from .base import tokens as tk
@@ -268,7 +268,7 @@ class Sound(object):
     def play_(self,  args):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
         # retrieve Music Macro Language string
-        mml_list = list(values.next_string(args) for _ in range(3))
+        mml_list = [values.to_string_or_none(arg) for arg, _ in zip(args, range(3))]
         list(args)
         # at least one string must be specified
         if not any(mml_list):

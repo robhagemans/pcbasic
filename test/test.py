@@ -18,6 +18,11 @@ import time
 import json
 from copy import copy, deepcopy
 from contextlib import contextmanager
+# process_time not in py2; clock deprecated in py3
+try:
+    from time import process_time
+except ImportError:
+    from time import clock as process_time
 
 try:
     from colorama import init
@@ -214,10 +219,10 @@ class Timer(object):
     @contextmanager
     def time(self):
         start_time = time.time()
-        start_cpu = time.clock()
+        start_cpu = process_time()
         yield self
         self.wall_time = time.time() - start_time
-        self.cpu_time = time.clock() - start_cpu
+        self.cpu_time = process_time() - start_cpu
 
 
 class Coverage(object):
