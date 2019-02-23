@@ -289,25 +289,14 @@ def report_results(results, times, overall_timer):
         '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):' %
         (len(results), overall_timer.wall_time, overall_timer.cpu_time)
     )
-    if 'exception' in res_stat:
-        print('    %d exceptions: \033[01;37;41m%s\033[00m' % (
-            len(res_stat['exception']), ' '.join(res_stat['exception'])
-        ))
-    if 'failed' in res_stat:
-        print('    %d new failures: \033[01;31m%s\033[00m' % (
-            len(res_stat['failed']), ' '.join(res_stat['failed'])
-        ))
-    if 'failed (old)' in res_stat:
-        print('    %d old failures: \033[00;33m%s\033[00m' % (
-            len(res_stat['failed (old)']), ' '.join(res_stat['failed (old)'])
-        ))
-    if 'accepted' in res_stat:
-        print('    %d accepts: \033[00;36m%s\033[00m' % (
-            len(res_stat['accepted']), ' '.join(res_stat['accepted'])
-        ))
-    if 'passed' in res_stat:
-        print('    %d passes' % len(res_stat['passed']))
-
+    for status, tests in res_stat.items():
+        print('    %d %s' % (len(tests), status), end='')
+        if status == 'passed':
+            print('.')
+        else:
+            print(': \033[%sm%s.\033[00;37m' % (
+                STATUS_COLOURS[status], ' '.join(tests)
+            ))
     # update slow-tests file
     slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)
     print()
