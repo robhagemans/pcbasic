@@ -34,6 +34,14 @@ SLOWTESTS = os.path.join(HERE, '_settings', 'slowtest.json')
 # umber of slowest tests to show or exclude
 SLOWSHOW = 20
 
+# ANSI colours for test status
+STATUS_COLOURS = {
+    'exception': '01;37;41',
+    'passed': '00;32',
+    'accepted': '00;36',
+    'failed (old)': '00;33',
+    'failed': '01;31',
+}
 
 def is_same(file1, file2):
     try:
@@ -71,12 +79,14 @@ def parse_args():
     return args, all, fast, loud, reraise, cover
 
 
-class OutputChecker(object):
+class TestFrame(object):
 
-    def __init__(self, dirname):
+    def __init__(self, dirname, reraise):
         self._dirname = dirname
+        self._reraise = reraise
 
-    def __enter__(self):
+    @contextmanager
+    def check_output(self):
         self._output_dir = os.path.join(self._dirname, 'output')
         self._model_dir = os.path.join(self._dirname, 'model')
         self._known_dir = os.path.join(self._dirname, 'known')
@@ -93,9 +103,7 @@ class OutputChecker(object):
                 )
         self._top = os.getcwd()
         os.chdir(self._output_dir)
-        return self
-
-    def __exit__(self, one, two, three):
+        yield self
         self.passed = True
         self.known = True
         self.failfiles = []
@@ -136,14 +144,8 @@ class OutputChecker(object):
         if self.passed:
             shutil.rmtree(self._output_dir)
 
-
-class CrashChecker(object):
-
-    def __init__(self, reraise):
-        self._reraise = reraise
-
     @contextmanager
-    def guard(self):
+    def check_crash(self):
         self.crash = None
         try:
             yield self
@@ -151,6 +153,24 @@ class CrashChecker(object):
             self.crash = e
             if self._reraise:
                 raise
+
+    @contextmanager
+    def guard(self):
+        with self.check_output():
+            with self.check_crash():
+                yield self
+
+    @property
+    def status(self):
+        if self.crash:
+            return 'exception'
+        if self.passed:
+            return 'passed'
+        if self.known:
+            return 'accepted'
+        if self.old_fail:
+            return 'failed (old)'
+        return 'failed'
 
 
 class Timer(object):
@@ -184,14 +204,12 @@ class Coverage(object):
 
 
 def run_tests(args, all, fast, loud, reraise, cover):
-
     if all:
         args = [
             os.path.join('basic', _preset, _test)
             for _preset in os.listdir(os.path.join(HERE, 'basic'))
             for _test in sorted(os.listdir(os.path.join(HERE, 'basic', _preset)))
         ]
-
     if fast:
         try:
             with open(SLOWTESTS) as slowfile:
@@ -204,15 +222,8 @@ def run_tests(args, all, fast, loud, reraise, cover):
             # exclude
             slowtests = set(os.path.join('basic', _key) for _key, _ in slowtests)
             args = [_arg for _arg in args if _arg not in slowtests]
-
-
-    numtests = 0
-    failed = []
-    knowfailed = []
-    oldfailed = []
-    crashed = []
     times = {}
-
+    results = {}
     with Coverage(cover).track() as coverage:
         with Timer().time() as overall_timer:
             # preserve environment
@@ -241,65 +252,64 @@ def run_tests(args, all, fast, loud, reraise, cover):
                 if not os.path.isdir(dirname):
                     print('\033[01;31mno such test.\033[00;37m')
                     continue
-                with OutputChecker(dirname) as output_checker:
+                with suppress_stdio(not loud):
                     with Timer().time() as timer:
-                        with suppress_stdio(not loud):
-                            with CrashChecker(reraise).guard() as crash_checker:
-                                # we need to include the output dir in the PYTHONPATH
-                                # for it to find extension modules
-                                sys.path = PYTHONPATH + [os.path.abspath('.')]
-                                # run PC-BASIC
-                                pcbasic.run('--interface=none')
+                        with TestFrame(dirname, reraise).guard() as test_frame:
+                            # we need to include the output dir in the PYTHONPATH
+                            # for it to find extension modules
+                            sys.path = PYTHONPATH + [os.path.abspath('.')]
+                            # run PC-BASIC
+                            pcbasic.run('--interface=none')
                 times[name] = timer.wall_time
-                if crash_checker.crash or not output_checker.passed:
-                    if crash_checker.crash:
-                        print('\033[01;37;41mEXCEPTION.\033[00;37m')
-                        print('    %r' % crash_checker.crash)
-                        crashed.append(name)
-                    elif not output_checker.known:
-                        if output_checker.old_fail:
-                            print('\033[00;33mfailed.\033[00;37m')
-                        else:
-                            print('\033[01;31mfailed.\033[00;37m')
-                        if output_checker.old_fail:
-                            oldfailed.append(name)
-                        else:
-                            failed.append(name)
-                    else:
-                        print('\033[00;36maccepted.\033[00;37m')
-                        knowfailed.append(name)
-                else:
-                    print('\033[00;32mpassed.\033[00;37m')
-                numtests += 1
+                results[name] = test_frame.status
+                print('\033[%sm%s.\033[00;37m' % (
+                    STATUS_COLOURS[test_frame.status], test_frame.status
+                ))
+                if test_frame.crash:
+                    print('    %r' % test_frame.crash)
+    # update slow-tests file
+    if all and not fast:
+        with open(SLOWTESTS, 'w') as slowfile:
+            json.dump(dict(slowtests), slowfile)
+    return results, times, overall_timer
 
+def report_results(results, times, overall_timer):
+    res_stat = {
+        _status: [_test for _test, _teststatus in results.items() if _teststatus == _status]
+        for _status in set(results.values())
+    }
     print()
     print(
         '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):' %
-        (numtests, overall_timer.wall_time, overall_timer.cpu_time)
+        (len(results), overall_timer.wall_time, overall_timer.cpu_time)
     )
-    if crashed:
-        print('    %d exceptions: \033[01;37;41m%s\033[00m' % (len(crashed), ' '.join(crashed)))
-    if failed:
-        print('    %d new failures: \033[01;31m%s\033[00m' % (len(failed), ' '.join(failed)))
-    if oldfailed:
-        print('    %d old failures: \033[00;33m%s\033[00m' % (len(oldfailed), ' '.join(oldfailed)))
-    if knowfailed:
-        print('    %d accepts: \033[00;36m%s\033[00m' % (len(knowfailed), ' '.join(knowfailed)))
-    numpass = numtests - len(failed) - len(knowfailed)- len(crashed) - len(oldfailed)
-    if numpass:
-        print('    %d passes' % numpass)
+    if 'exception' in res_stat:
+        print('    %d exceptions: \033[01;37;41m%s\033[00m' % (
+            len(res_stat['exception']), ' '.join(res_stat['exception'])
+        ))
+    if 'failed' in res_stat:
+        print('    %d new failures: \033[01;31m%s\033[00m' % (
+            len(res_stat['failed']), ' '.join(res_stat['failed'])
+        ))
+    if 'failed (old)' in res_stat:
+        print('    %d old failures: \033[00;33m%s\033[00m' % (
+            len(res_stat['failed (old)']), ' '.join(res_stat['failed (old)'])
+        ))
+    if 'accepted' in res_stat:
+        print('    %d accepts: \033[00;36m%s\033[00m' % (
+            len(res_stat['accepted']), ' '.join(res_stat['accepted'])
+        ))
+    if 'passed' in res_stat:
+        print('    %d passes' % len(res_stat['passed']))
 
     print()
     slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)
     print('\033[00;37mSlowest tests:')
     print('    ' + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests[:SLOWSHOW]))
 
-    # update slow-tests file
-    if all and not fast:
-        with open(SLOWTESTS, 'w') as slowfile:
-            json.dump(dict(slowtests), slowfile)
 
 
 if __name__ == '__main__':
     args = parse_args()
-    run_tests(*args)
+    results = run_tests(*args)
+    report_results(*results)
