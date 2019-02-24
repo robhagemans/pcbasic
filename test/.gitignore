@@ -1,3 +1,4 @@
 .coverage
-html-cov/
+htmlcov/
 basic/*/*/output/
+_settings/slowtest.json
