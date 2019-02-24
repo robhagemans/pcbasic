@@ -15,7 +15,8 @@ from collections import deque
 import subprocess
 from subprocess import Popen, PIPE
 
-from ..compat import SHELL_ENCODING, HIDE_WINDOW, split_quoted, getenvu, setenvu, iterenvu
+from ..compat import SHELL_ENCODING, HIDE_WINDOW
+from ..compat import which, split_quoted, getenvu, setenvu, iterenvu
 from .codepage import CONTROL
 from .base import error
 from . import values
@@ -140,6 +141,11 @@ class Shell(object):
             logging.warning('SHELL statement not enabled: no command interpreter specified.')
             raise error.BASICError(error.IFC)
         cmd = split_quoted(self._shell)
+        # find executable on path
+        cmd[0] = which(cmd[0], path='.' + os.pathsep + os.environ.get("PATH"))
+        if not cmd[0]:
+            logging.warning(u'SHELL: command interpreter `%s` not found.', self._shell)
+            raise error.BASICError(error.IFC)
         if command:
             cmd += [SHELL_COMMAND_SWITCH, self._codepage.str_to_unicode(command, box_protect=False)]
         # get working directory; also raises IFC if current_device is CAS1
@@ -147,11 +153,22 @@ class Shell(object):
         try:
             p = Popen(
                 cmd, shell=False, cwd=work_dir,
-                stdin=PIPE, stdout=PIPE, stderr=PIPE, startupinfo=HIDE_WINDOW
+                stdin=PIPE, stdout=PIPE, stderr=PIPE,
+                # first try with HIDE_WINDOW to avoid ugly command window popping up on windows
+                startupinfo=HIDE_WINDOW
             )
-        except (EnvironmentError, UnicodeEncodeError) as e:
-            logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
-            raise error.BASICError(error.IFC)
+        except EnvironmentError:
+            try:
+                # HIDE_WINDOW not allowed on Windows when called from console
+                p = Popen(
+                    cmd, shell=False, cwd=work_dir,
+                    stdin=PIPE, stdout=PIPE, stderr=PIPE,
+                )
+            except EnvironmentError as err:
+                logging.warning(
+                    u'SHELL: command interpreter `%s` not accessible: %s', self._shell, err
+                )
+                raise error.BASICError(error.IFC)
         shell_output = self._launch_reader_thread(p.stdout)
         shell_cerr = self._launch_reader_thread(p.stderr)
         try:
