@@ -47,13 +47,13 @@ TEST_TIMES = os.path.join(HERE, '_settings', 'slowtest.json')
 SLOWSHOW = 20
 
 # statuses
-CRASHED = 'exception'
+CRASHED = 'crashed'
 PASSED = 'passed'
 ACCEPTED = 'accepted'
-OLDFAILED = 'failed (old)'
+OLDFAILED = 'failed before'
 NEWFAILED = 'failed'
 SKIPPED = 'skipped'
-NONESUCH = 'no such test'
+NONESUCH = 'not found'
 
 # ANSI colours for test status
 STATUS_COLOURS = {
@@ -63,7 +63,7 @@ STATUS_COLOURS = {
     OLDFAILED: '00;33',
     NEWFAILED: '01;31',
     SKIPPED: '00;30',
-    NONESUCH: '01;31',
+    NONESUCH: '00;31',
 }
 
 
