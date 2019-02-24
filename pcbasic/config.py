@@ -532,10 +532,6 @@ class Settings(object):
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
             'font': data.read_fonts(codepage_dict, self.get('font')),
-            # inserted keystrokes
-            # we first need to encode the unicode to bytes before we can decode it
-            # this preserves unicode as \x (if latin-1) and \u escapes
-            'keys': self.get('keys').encode('ascii', 'backslashreplace').decode('unicode-escape'),
             # find program for PCjr TERM command
             'term': self.get('term'),
             'shell': self.get('shell'),
@@ -783,6 +779,10 @@ class Settings(object):
             'resume': self.get('resume'),
             'state_file': self._get_state_file(),
             'commands': commands,
+            # inserted keystrokes
+            # we first need to encode the unicode to bytes before we can decode it
+            # this preserves unicode as \x (if latin-1) and \u escapes
+            'keys': self.get('keys').encode('ascii', 'backslashreplace').decode('unicode-escape'),
             'debug': self.get('debug'),
             }
         launch_params.update(self.session_params)
