@@ -542,7 +542,7 @@ class Win32Console(object):
             if not self._input_buffer:
                 return None
         output = u''.join(
-            _char for _char in self._input_buffer
+            _char for _char, _, _ in self._input_buffer
         )
         self._input_buffer.clear()
         if closed:
