@@ -101,7 +101,7 @@ def launch_session(settings):
 def run_session(
         interface=None, guard=NOGUARD,
         resume=False, debug=False, state_file=None,
-        prog=None, commands=(), **session_params
+        prog=None, commands=(), keys=u'', **session_params
     ):
     """Run an interactive BASIC session."""
     Session = basic.DebugSession if debug else basic.Session
@@ -111,6 +111,7 @@ def run_session(
                 if prog:
                     with session.bind_file(prog) as progfile:
                         session.execute(b'LOAD "%s"' % (progfile,))
+                session.press_keys(keys)
                 for cmd in commands:
                     session.execute(cmd)
                 session.interact()

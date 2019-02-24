@@ -172,22 +172,22 @@ class KeyboardBuffer(object):
 ###############################################################################
 # keyboard operations
 
-def _split_eascii(cp_s):
-    """Split a string of e-ascii/codepage into keystrokes."""
-    d = b''
-    for c in iterchar(cp_s):
-        if d or c != b'\0':
-            yield d + c
-            d = b''
-        elif c == b'\0':
+def _iter_keystrokes(ueascii_seq):
+    """Iterate over e-ascii/unicode sequences."""
+    out = u''
+    for char in ueascii_seq:
+        if out or char != u'\0':
+            yield out + char
+            out = u''
+        elif char == u'\0':
             # eascii code is \0 plus one char
-            d = c
+            out = char
 
 
 class Keyboard(object):
     """Keyboard handling."""
 
-    def __init__(self, queues, values, codepage, keystring, check_full):
+    def __init__(self, queues, values, codepage, check_full):
         """Initilise keyboard state."""
         self._values = values
         # needed for wait() in wait_char()
@@ -205,9 +205,6 @@ class Keyboard(object):
         self._ignore_caps = True
         # pre-inserted keystrings
         self._codepage = codepage
-        with self.buf.ignore_limit():
-            for ea_char in _split_eascii(self._codepage.str_from_unicode(keystring)):
-                self.buf.append(ea_char, None)
         # stream buffer
         self._stream_buffer = deque()
         # redirected input stream has closed
@@ -290,8 +287,14 @@ class Keyboard(object):
 
     def _stream_chars(self, us):
         """Insert eascii/unicode string into stream buffer."""
-        for ea_char in _split_eascii(self._codepage.str_from_unicode(us)):
-            self._stream_buffer.append(ea_char)
+        for ea_char in _iter_keystrokes(us):
+            self._stream_buffer.append(self._codepage.str_from_unicode(ea_char))
+
+    def inject_keystrokes(self, keystring):
+        """Insert eascii/unicode string into keyboard buffer."""
+        with self.buf.ignore_limit():
+            for ea_char in _iter_keystrokes(keystring):
+                self.buf.append(self._codepage.str_from_unicode(ea_char), None)
 
     def _close_input(self):
         """Signal that input stream has closed."""

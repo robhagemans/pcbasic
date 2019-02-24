@@ -57,7 +57,7 @@ class Implementation(object):
             video=u'cga', monitor=u'rgb',
             devices=None, current_device=u'Z:', mount=None,
             textfile_encoding=None, soft_linefeed=False,
-            keys=u'', check_keybuffer_full=True, ctrl_c_is_break=True,
+            check_keybuffer_full=True, ctrl_c_is_break=True,
             hide_listing=None, hide_protected=False,
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429, video_memory=262144,
@@ -132,7 +132,7 @@ class Implementation(object):
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
         # EventHandler needed for wait() only
         self.keyboard = inputs.Keyboard(
-            self.queues, self.values, self.codepage, keys, check_keybuffer_full
+            self.queues, self.values, self.codepage, check_keybuffer_full
         )
         self.pen = inputs.Pen()
         self.stick = inputs.Stick(self.values)

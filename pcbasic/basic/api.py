@@ -117,6 +117,11 @@ class Session(object):
         self.start()
         return self._impl.get_converter(type(value), to_type)(value)
 
+    def press_keys(self, keys):
+        """Insert keypresses."""
+        self.start()
+        self._impl.keyboard.inject_keystrokes(keys)
+
     def interact(self):
         """Interactive interpreter session."""
         self.start()
