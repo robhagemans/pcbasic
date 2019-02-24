@@ -334,14 +334,6 @@ def report_results(results, times, overall_timer):
             print(': \033[%sm%s.\033[00;37m' % (
                 STATUS_COLOURS[status], ' '.join(tests)
             ))
-    # update slow-tests file
-    slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)
-    print()
-    print('\033[00;37mSlow tests:')
-    print(
-        '    '
-        + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests[:SLOWSHOW])
-    )
 
 
 if __name__ == '__main__':
