@@ -47,6 +47,10 @@ TYPE_TO_CLASS = {
     DBL: numbers.Double
 }
 
+# cutoff for trigonometric functions
+# above this machine precision makes the result useless and machine/os dependent
+# this is close to what gw uses but not quite equivalent
+TRIG_MAX = 5e16
 
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
@@ -530,17 +534,17 @@ def exp_(args):
 def sin_(args):
     """Sine."""
     x, = args
-    return _call_float_function(math.sin, x)
+    return _call_float_function(lambda _x: math.sin(_x) if abs(_x) < TRIG_MAX else 0., x)
 
 def cos_(args):
     """Cosine."""
     x, = args
-    return _call_float_function(math.cos, x)
+    return _call_float_function(lambda _x: math.cos(_x) if abs(_x) < TRIG_MAX else 1., x)
 
 def tan_(args):
     """Tangent."""
     x, = args
-    return _call_float_function(math.tan, x)
+    return _call_float_function(lambda _x: math.tan(_x) if abs(_x) < TRIG_MAX else 0., x)
 
 def atn_(args):
     """Inverse tangent."""
