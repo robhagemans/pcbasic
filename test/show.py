@@ -11,6 +11,7 @@ import os
 import sys
 import subprocess
 import difflib
+from io import open
 
 try:
     from colorama import init
@@ -49,14 +50,14 @@ def count_diff(lines1, lines2):
     return n, count
 
 def print_diffline(line):
-    if line.startswith('+'):
+    if line.startswith(u'+'):
         print('\033[0;32m', end='')
-    elif line.startswith('-'):
+    elif line.startswith(u'-'):
         print('\033[0;31m', end='')
-    elif not line.startswith('@'):
+    elif not line.startswith(u'@'):
         print('\033[0;36m', end='')
-    if not line.startswith('@') and not line.startswith('+++') and not line.startswith('---'):
-        line = line.encode('unicode_escape').decode('ascii')
+    if not line.startswith(u'@') and not line.startswith(u'+++') and not line.startswith(u'---'):
+        line = line.encode('unicode_escape', errors='replace').decode('latin-1', errors='replace')
     else:
         line = line.strip()
     print(line, end='')
@@ -89,6 +90,9 @@ for name in os.listdir(MODEL):
             acclines = accepted.readlines()
     except EnvironmentError:
         acclines = []
+    outlines = [_line.decode('latin-1') for _line in outlines]
+    modlines = [_line.decode('latin-1') for _line in modlines]
+    acclines = [_line.decode('latin-1') for _line in acclines]
     for line in difflib.unified_diff(outlines, modlines, 'output', 'model', n=10):
         print_diffline(line)
     print()
