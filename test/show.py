@@ -10,6 +10,16 @@ from __future__ import print_function
 import os
 import sys
 import subprocess
+import difflib
+
+try:
+    from colorama import init
+    init()
+except ImportError:
+    # only needed on Windows
+    # without it we still work but look a bit garbled
+    pass
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TESTNAME = sys.argv[1]
@@ -52,4 +62,16 @@ for failname in os.listdir(MODEL):
 for name in os.listdir(MODEL):
     print()
     print(name, '-'*80)
-    subprocess.call(['colordiff', os.path.join(OUTPUT, name), os.path.join(MODEL, name)])
+    with open(os.path.join(OUTPUT, name)) as output:
+        outlines = output.readlines()
+    with open(os.path.join(MODEL, name)) as model:
+        modlines = model.readlines()
+    for line in difflib.unified_diff(outlines, modlines, 'output', 'model', n=10):
+        if line.startswith('+'):
+            print('\033[0;32m', end='')
+        elif line.startswith('-'):
+            print('\033[0;31m', end='')
+        elif not line.startswith('@'):
+            print('\033[0;36m', end='')
+        print(line.encode('unicode_escape').decode('ascii'), end='')
+        print('\033[0m')
