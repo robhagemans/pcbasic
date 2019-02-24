@@ -23,6 +23,6 @@
     "extras_require": {
         "ports": ["pyserial", "pyparallel"],
         "full": ["pyserial", "pyparallel", "pygame", "pyaudio"],
-        "dev": ["lxml", "markdown", "pylint", "coverage", "cx_Freeze", "Pillow", "twine", "wheel"]
+        "dev": ["lxml", "markdown", "pylint", "coverage", "cx_Freeze", "Pillow", "twine", "wheel", "colorama"]
     }
 }

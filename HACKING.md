@@ -64,6 +64,7 @@ The following additional packages are used for development, testing and packagin
 | [Prince](https://www.princexml.com/download/)                                                                  | all               | documentation
 | [`pylint`](https://pypi.python.org/pypi/pylint/1.7.6)                                                          | all               | testing
 | [`coverage`](https://pypi.python.org/pypi/coverage)                                                            | all               | testing
+| [`colorama`](https://pypi.python.org/pypi/colorama)                                                            | Windows           | testing
 | [`wheel`](https://pypi.python.org/pypi/wheel)                                                                  | all               | packaging
 | [`twine`](https://pypi.python.org/pypi/twine)                                                                  | all               | packaging
 | [`Pillow`](https://python-pillow.org/)                                                                         | all               | packaging
