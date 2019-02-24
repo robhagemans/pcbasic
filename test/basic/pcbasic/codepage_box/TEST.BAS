@@ -1,5 +1,5 @@
 1 ' test box-protection algorithm in codepage 936
-' by writing a mix of characters and box-drawing to a utf-8 file
+2 ' by writing a mix of characters and box-drawing to a utf-8 file
 10 X=1:Y=1:L=16:N=4
 20 open "output.txt" for output as 1
 90 M$(1)="  1.  选项一    ":M$(2)="  2.  选项三    "
