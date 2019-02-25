@@ -340,3 +340,7 @@ if __name__ == '__main__':
     args = parse_args()
     results = run_tests(*args)
     report_results(*results)
+    print()
+    if args[1]: #--all
+        from unit import *
+        unittest.main(argv=['test.py'])
