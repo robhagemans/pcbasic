@@ -13,6 +13,12 @@ import pcbasic.basic.values
 from pcbasic.basic.values.numbers import *
 from pcbasic.basic.values import numbers
 
+# ALLWORD.DAT is generated like so:
+# with open('input/ALLWORD.DAT', 'wb') as f:
+#     for i in range(256):
+#         for j in range(256):
+#             f.write(int2byte(j)+int2byte(i)+'\0'+'\x80')
+
 
 class TestSingle(unittest.TestCase):
     """Test frame for single-precision MBF math."""
@@ -20,11 +26,6 @@ class TestSingle(unittest.TestCase):
     def setUp(self):
         """Create the Values object."""
         self._vm = values.Values(None, False)
-
-        # with open('input/ALLWORD.DAT', 'wb') as f:
-        #     for i in range(256):
-        #         for j in range(256):
-        #             f.write(int2byte(j)+int2byte(i)+'\0'+'\x80')
 
     def test_single(self):
         """Test MBF single representation."""
@@ -49,8 +50,8 @@ class TestSingle(unittest.TestCase):
                         buf = bytearray(f.read(4))
                         if len(buf) < 4:
                             break
-                        bufl = bytearray('%c\0\0\x80' % buf[0])
-                        bufr = bytearray('%c\0\0\x80' % buf[1])
+                        bufl = bytearray(b'%c\0\0\x80' % buf[0])
+                        bufr = bytearray(b'%c\0\0\x80' % buf[1])
                         l = Single(bufl, self._vm)
                         #bufs = bytes(bufl), bytes(bufr)
                         r = Single(bufr, self._vm)
@@ -70,8 +71,8 @@ class TestSingle(unittest.TestCase):
                         buf = bytearray(f.read(4))
                         if len(buf) < 4:
                             break
-                        bufl = bytearray('%c\0\0\x80' % buf[0])
-                        bufr = bytearray('%c\0\0\x80' % buf[1])
+                        bufl = bytearray(b'%c\0\0\x80' % buf[0])
+                        bufr = bytearray(b'%c\0\0\x80' % buf[1])
                         l = Single(bufl, self._vm)
                         #bufs = bytes(bufl), bytes(bufr)
                         r = Single(bufr, self._vm)
@@ -84,19 +85,19 @@ class TestSingle(unittest.TestCase):
 
     def test_exponents(self):
         """Test adding with various exponents."""
-        for shift in [0,] + range(9, 11):
+        for shift in [0,] + list(range(9, 11)):
             r = self._vm.new_single()
-            letter = int2byte(ord('0')+shift) if shift<10 else int2byte(ord('A')-10+shift)
+            letter = ord('0')+shift if shift<10 else ord('A')-10+shift
             with open('input/ALLWORD.DAT', 'rb') as f:
-                with open('model/GWBASAL'+letter+'.DAT', 'rb') as h:
-                    with open('output/ALLWORD'+letter+'.DAT', 'wb') as g:
+                with open('model/GWBASAL%c.DAT' % (letter,), 'rb') as h:
+                    with open('output/ALLWORD%c.DAT' % (letter,), 'wb') as g:
                         while True:
                             l = r
                             l.view()[3:] = int2byte(0x80+shift)
                             buf = bytearray(f.read(4))
                             if len(buf) < 4:
                                 break
-                            buf[2:] = '\0\x80'
+                            buf[2:] = b'\0\x80'
                             r = Single(buf, self._vm)
                             ll = l.clone()
                             #bufs = bytes(l.to_bytes()), bytes(buf)
@@ -113,17 +114,17 @@ class TestSingle(unittest.TestCase):
         """Test adding with various exponents."""
         for shift in range(17):
             r = self._vm.new_single()
-            letter = int2byte(ord('0')+shift) if shift<10 else int2byte(ord('A')-10+shift)
+            letter = ord('0')+shift if shift<10 else ord('A')-10+shift
             with open('input/BYTES.DAT', 'rb') as f:
-                with open ('model/GWBASLO'+letter+'.DAT', 'rb') as h:
-                    with open('output/LO'+letter+'.DAT', 'wb') as g:
+                with open ('model/GWBASLO%c.DAT' % (letter,), 'rb') as h:
+                    with open('output/LO%c.DAT' % (letter,), 'wb') as g:
                         while True:
                             l = r
                             l.view()[3:] = int2byte(0x80+shift)
                             buf = bytearray(f.read(4))
                             if len(buf) < 4:
                                 break
-                            buf[2:] = '\0\x80'
+                            buf[2:] = b'\0\x80'
                             r = Single(buf, self._vm)
                             ll = l.clone()
                             #bufs = bytes(l.to_bytes()), bytes(buf)
@@ -158,8 +159,8 @@ class TestSingle(unittest.TestCase):
                         l = ll
         # two additions are slightly different
         accepted = {
-            '920a03ce': '930a03ce',
-            '52810dbe': '53810dbe',
+            b'920a03ce': b'930a03ce',
+            b'52810dbe': b'53810dbe',
         }
         assert fails == accepted
 
@@ -185,13 +186,13 @@ class TestSingle(unittest.TestCase):
                             fails[hexlify(inp)] = hexlify(out)
                         l = ll
         accepted = {
-            '922ed14b': '932ed14b',
-            '80c02477': '81c02477',
-            'fe4b89df': 'ff4b89df',
-            'a9b37594': 'a8b37594',
-            'bc3e8549': 'bd3e8549',
-            'b2337a91': 'b3337a91',
-            '2ef4007a': '2ff4007a'
+            b'922ed14b': b'932ed14b',
+            b'80c02477': b'81c02477',
+            b'fe4b89df': b'ff4b89df',
+            b'a9b37594': b'a8b37594',
+            b'bc3e8549': b'bd3e8549',
+            b'b2337a91': b'b3337a91',
+            b'2ef4007a': b'2ff4007a'
         }
         assert fails == accepted
 
