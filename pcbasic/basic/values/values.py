@@ -204,6 +204,7 @@ class Values(object):
         self.stringspace = string_space
         # double-precision EXP, SIN, COS, TAN, ATN, LOG
         self.double_math = double_math
+        self.error_handler = None
 
     def set_handler(self, handler):
         """Initialise the error message console."""
