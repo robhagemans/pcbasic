@@ -53,14 +53,11 @@ class TestSingle(unittest.TestCase):
                         bufl = bytearray(b'%c\0\0\x80' % buf[0])
                         bufr = bytearray(b'%c\0\0\x80' % buf[1])
                         l = Single(bufl, self._vm)
-                        #bufs = bytes(bufl), bytes(bufr)
                         r = Single(bufr, self._vm)
                         out = bytes(l.iadd(r).to_bytes())
                         g.write(out)
                         inp = h.read(4)
                         assert out == inp
-                        #if out != inp:
-                        #    print hexlify(out), hexlify(inp)
 
     def test_all_bytes_sub(self):
         """Test subtracting singles, all first-byte combinations."""
@@ -74,14 +71,11 @@ class TestSingle(unittest.TestCase):
                         bufl = bytearray(b'%c\0\0\x80' % buf[0])
                         bufr = bytearray(b'%c\0\0\x80' % buf[1])
                         l = Single(bufl, self._vm)
-                        #bufs = bytes(bufl), bytes(bufr)
                         r = Single(bufr, self._vm)
                         out = bytes(l.isub(r).to_bytes())
                         g.write(out)
                         inp = h.read(4)
                         assert out == inp
-                        #if out != inp:
-                        #    print hexlify(out), hexlify(inp)
 
     def test_exponents(self):
         """Test adding with various exponents."""
@@ -100,12 +94,9 @@ class TestSingle(unittest.TestCase):
                             buf[2:] = b'\0\x80'
                             r = Single(buf, self._vm)
                             ll = l.clone()
-                            #bufs = bytes(l.to_bytes()), bytes(buf)
                             out = bytes(l.iadd(r).to_bytes())
                             g.write(out)
                             inp = h.read(4)
-                            #if out != inp:
-                            #    print hexlify(out), hexlify(inp)
                             l = ll
                             assert out == inp
 
@@ -127,12 +118,9 @@ class TestSingle(unittest.TestCase):
                             buf[2:] = b'\0\x80'
                             r = Single(buf, self._vm)
                             ll = l.clone()
-                            #bufs = bytes(l.to_bytes()), bytes(buf)
                             out = bytes(l.iadd(r).to_bytes())
                             g.write(out)
                             inp = h.read(4)
-                            #if out != inp:
-                            #    print hexlify(out), hexlify(inp)
                             l = ll
                             assert out == inp
 
@@ -150,7 +138,6 @@ class TestSingle(unittest.TestCase):
                             break
                         r = Single(buf, self._vm)
                         ll = l.clone()
-                        #bufs = bytes(l.to_bytes()), bytes(buf)
                         out = bytes(l.iadd(r).to_bytes())
                         g.write(out)
                         inp = h.read(4)
@@ -178,7 +165,6 @@ class TestSingle(unittest.TestCase):
                             break
                         r = Single(buf, self._vm)
                         ll = l.clone()
-                        #bufs = bytes(l.to_bytes()), bytes(buf)
                         out = bytes(l.iadd(r).to_bytes())
                         g.write(out)
                         inp = h.read(4)
@@ -209,7 +195,6 @@ class TestSingle(unittest.TestCase):
                             break
                         r = Single(buf, self._vm)
                         ll = l.clone()
-                        #bufs = bytes(l.to_bytes()), bytes(buf)
                         try:
                             l.imul(r)
                         except OverflowError:
@@ -217,8 +202,6 @@ class TestSingle(unittest.TestCase):
                         out = bytes(l.to_bytes())
                         g.write(out)
                         inp = h.read(4)
-                        #if out != inp:
-                        #    print hexlify(out), hexlify(inp)
                         l = ll
                         assert out == inp
 
