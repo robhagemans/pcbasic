@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-
-""" PC-BASIC test script
+"""
+PC-BASIC test script
 
 (c) 2015--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.

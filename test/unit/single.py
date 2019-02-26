@@ -1,17 +1,22 @@
+"""
+PC-BASIC test.single
+unit tests for single precision MBF floats
+
+(c) 2019 Rob Hagemans
+This file is released under the GNU GPL version 3 or later.
+"""
 
 import sys
 import os
 from binascii import hexlify
 import unittest
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(HERE, '..', '..'))
-
 from pcbasic.compat import int2byte
-from pcbasic.basic.values import *
-import pcbasic.basic.values
-from pcbasic.basic.values.numbers import *
-from pcbasic.basic.values import numbers
+from pcbasic.basic.values import Values, Single
+
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+
 
 # ALLWORD.DAT is generated like so:
 # with open('input/ALLWORD.DAT', 'wb') as f:
@@ -25,7 +30,7 @@ class TestSingle(unittest.TestCase):
 
     def setUp(self):
         """Create the Values object."""
-        self._vm = values.Values(None, False)
+        self._vm = Values(None, False)
 
     def test_single(self):
         """Test MBF single representation."""
