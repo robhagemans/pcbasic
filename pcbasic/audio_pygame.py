@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3.
 """
 
 import os
+import sys
 
 with open(os.devnull, 'w') as null:
     save_stdout, sys.stdout = sys.stdout, null

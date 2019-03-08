@@ -6,6 +6,7 @@ Graphical interface based on PyGame
 This file is released under the GNU GPL version 3.
 """
 
+import sys
 import os
 import logging
 
