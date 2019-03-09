@@ -546,8 +546,10 @@ class Float(Number):
     def ifloor(self):
         """Truncate towards negative infinity in-place."""
         oldval = self.clone()
+        # we need to check negativity first, as itrunc() may take us to zero
+        was_negative = self.is_negative()
         self.itrunc()
-        if not self.eq(oldval) and self.is_negative():
+        if not self.eq(oldval) and was_negative:
             self.isub(self.new().from_bytes(self._one))
         return self
 
