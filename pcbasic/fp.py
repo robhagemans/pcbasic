@@ -235,7 +235,9 @@ class Float(object):
         if self.is_zero():
             return self
         n = self.from_int(self.trunc_to_int())
-        if n.neg and not self.equals(n):
+        # this is necessary for self.equals(n) to work, not sure why
+        n.apply_carry()
+        if self.neg and not self.equals(n):
             self = sub(n, n.one)
         else:
             self = n
