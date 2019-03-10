@@ -1,2 +1,0 @@
-10 PRINT 1 SPC(VAL(INPUT$(1))) 9
-
