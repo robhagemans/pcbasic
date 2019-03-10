@@ -93,6 +93,8 @@ class Program(object):
     def get_line_number(self, pos):
         """Get line number for stream position."""
         pre = -1
+        if pos is None:
+            pos = -1
         for linum in self.line_numbers:
             linum_pos = self.line_numbers[linum]
             if linum_pos <= pos and linum > pre:
