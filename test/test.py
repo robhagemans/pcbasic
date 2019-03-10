@@ -342,5 +342,8 @@ if __name__ == '__main__':
     report_results(*results)
     print()
     if args[1]: #--all
+        sys.stdout.flush()
+        sys.stderr.write('Running unit tests: ')
         from unit import *
-        unittest.main(argv=['test.py'])
+        with pcbasic.compat.muffle(sys.stdout):
+            unittest.main(argv=['test.py'])
