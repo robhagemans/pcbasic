@@ -288,7 +288,11 @@ class Keyboard(object):
     def _stream_chars(self, us):
         """Insert eascii/unicode string into stream buffer."""
         for ea_char in _iter_keystrokes(us):
-            self._stream_buffer.append(self._codepage.str_from_unicode(ea_char))
+            ea_cp = self._codepage.str_from_unicode(ea_char)
+            # don't append empty strings arising from unknown unicode
+            # as this will be interpreted as end of stream, terminating the interpreter
+            if ea_cp:
+                self._stream_buffer.append(ea_cp)
 
     def inject_keystrokes(self, keystring):
         """Insert eascii/unicode string into keyboard buffer."""
