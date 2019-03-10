@@ -30,8 +30,7 @@ _CARRY_ROW_9_BYTES = tuple(range(0xb0, 0xdf+1))
 #   http://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/dos/cpi/
 # CPIDOS is Copyright (C) 2002-2011 by Henrique Peron (hperon@terra.com.br)
 # and licensed under the GNU GPL version 2 or later.
-DEFAULT_FONT = {
-    int2byte(_i): binascii.unhexlify(_v) for _i, _v in enumerate((
+_DEFAULT_FONT = (
     '0000000000000000', '7e81a581bd99817e', '7effdbffc3e7ff7e', '6cfefefe7c381000',
     '10387cfe7c381000', '387c38fefed61038', '10387cfefe7c1038', '0000183c3c180000',
     'ffffe7c3c3e7ffff', '003c664242663c00', 'ffc399bdbd99c3ff', '0f070f7dcccccc78',
@@ -96,7 +95,7 @@ DEFAULT_FONT = {
     '0e1b1b1818181818', '1818181818d8d870', '000018007e001800', '000076dc0076dc00',
     '00386c6c38000000', '0000000018180000', '0000000018000000', '0f0c0c0cec6c3c1c',
     '006c363636360000', '00780c18307c0000', '00003c3c3c3c0000', '0000000000000000',
-))}
+)
 
 
 class Font(object):
@@ -106,16 +105,19 @@ class Font(object):
         """Initialise the font."""
         self._width = 8
         self._height = int(height)
+        self._codepage = codepage
         if not fontdict:
             if height == 8:
-                fontdict = DEFAULT_FONT
+                fontdict = {
+                    self._byte_to_char(_i): binascii.unhexlify(_glyph)
+                    for _i, _glyph in enumerate(_DEFAULT_FONT)
+                }
             else:
                 raise ValueError(
                     'No font dictionary specified and no %d-pixel default available.' % (height,)
                 )
         self._fontdict = fontdict
         self._glyphs = {}
-        self._codepage = codepage
         self._carry_row_9_chars = [self._byte_to_char(_b) for _b in _CARRY_ROW_9_BYTES]
         self._carry_col_9_chars = [self._byte_to_char(_b) for _b in _CARRY_COL_9_BYTES]
 
