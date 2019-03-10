@@ -156,9 +156,12 @@ class Tokeniser(object):
                     allow_number = True
                 elif c in (b'(', b'['):
                     allow_number = True
-                elif c == b')' and spc_or_tab:
-                    spc_or_tab = False
-                    allow_jumpnum, allow_number = False, True
+                elif c == b')':
+                    if spc_or_tab:
+                        spc_or_tab = False
+                        allow_jumpnum = False
+                    # closing bracket does not affect line number mode
+                    allow_number = True
                 else:
                     allow_jumpnum, allow_number = False, False
                 # replace all other nonprinting chars by spaces;
