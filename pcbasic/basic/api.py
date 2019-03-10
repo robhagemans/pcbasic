@@ -122,6 +122,16 @@ class Session(object):
         self.start()
         self._impl.keyboard.inject_keystrokes(keys)
 
+    def get_text(self):
+        """Get currently displayed text, as tuple of bytes."""
+        self.start()
+        return self._impl.text_screen.get_chars()
+
+    def get_pixels(self):
+        """Get currently displayed pixels, as tuple of tuples of int attributes."""
+        self.start()
+        return self._impl.display.vpage.pixels[:, :].to_rows()
+
     def interact(self):
         """Interactive interpreter session."""
         self.start()

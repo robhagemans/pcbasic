@@ -109,6 +109,10 @@ class Display(object):
         """Active-page video buffers."""
         return self.pages[self.apagenum]
 
+    @property
+    def vpage(self):
+        """Visible-page video buffers."""
+        return self.pages[self.vpagenum]
 
     ###########################################################################
     # video modes
