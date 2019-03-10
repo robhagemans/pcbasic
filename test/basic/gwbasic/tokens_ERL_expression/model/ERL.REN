@@ -1,0 +1,12 @@
+10 ' test tokenising ERL expressions
+20 ' i.e. do the numbers in the expression get interpreted as line numbers?
+30 ON ERROR GOTO 50
+40 K
+50 PRINT ERR, ERL
+60 PRINT ERL+30
+70 PRINT ERL=65000
+80 PRINT X+65000!
+90 PRINT (ERL+60)/2
+100 PRINT (ERL+51)/2
+110 PRINT 77+(ERL+51)/2-100
+
