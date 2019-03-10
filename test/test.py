@@ -99,7 +99,16 @@ def parse_args():
     fast = contained(args, '--fast')
     all = not args or contained(args, '--all')
     cover = contained(args, '--coverage')
-    return args, all, fast, loud, reraise, cover
+    unit = contained(args, '--unit')
+    return {
+        'all': all,
+        'fast': fast,
+        'loud': loud,
+        'reraise': reraise,
+        'coverage': cover,
+        'unit': unit,
+        'tests': args,
+    }
 
 
 class TestFrame(object):
@@ -260,9 +269,9 @@ def normalise(name):
     return category, name
 
 
-def run_tests(args, all, fast, loud, reraise, cover):
+def run_tests(tests, all, fast, loud, reraise, coverage, **dummy):
     if all:
-        args = [
+        tests = [
             os.path.join('basic', _preset, _test)
             for _preset in os.listdir(os.path.join(HERE, 'basic'))
             for _test in sorted(os.listdir(os.path.join(HERE, 'basic', _preset)))
@@ -278,13 +287,13 @@ def run_tests(args, all, fast, loud, reraise, cover):
     else:
         skip = {}
     results = {}
-    with Coverage(cover).track() as coverage:
+    with Coverage(coverage).track():
         with Timer().time() as overall_timer:
             # preserve environment
             startdir = os.path.abspath(os.getcwd())
             save_env = deepcopy(os.environ)
             # run all tests
-            for name in args:
+            for name in tests:
                 # reset testing environment
                 os.chdir(startdir)
                 os.environ = deepcopy(save_env)
@@ -331,17 +340,17 @@ def report_results(results, times, overall_timer):
         if status == PASSED:
             print('.')
         else:
-            print(': \033[%sm%s.\033[00;37m' % (
+            print(': \033[%sm%s\033[00;37m.' % (
                 STATUS_COLOURS[status], ' '.join(tests)
             ))
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    results = run_tests(*args)
+    arg_dict = parse_args()
+    results = run_tests(**arg_dict)
     report_results(*results)
     print()
-    if args[1]: #--all
+    if arg_dict['all'] or arg_dict['unit']:
         sys.stdout.flush()
         sys.stderr.write('Running unit tests: ')
         from unit import *
