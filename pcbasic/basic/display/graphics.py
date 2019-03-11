@@ -1107,7 +1107,7 @@ class Graphics(object):
             self._mode.pixel_height * self._screen_aspect[0],
             self._mode.pixel_width * self._screen_aspect[1]
         )
-        yfac = aspect[1] / (1.*aspect[0])
+        yfac = float(aspect[1]) / float(aspect[0])
         x1 = int(math.trunc(scale*sx / 4.))
         y1 = int(math.trunc(scale*sy / 4.))
         if rotate == 0 or rotate == 360:
@@ -1123,10 +1123,9 @@ class Graphics(object):
             # degrees to radians
             phi = rotate * math.pi / 180.
             sinr, cosr = math.sin(phi), math.cos(phi)
-            fxfac = float(aspect[0]) / float(aspect[1])
-            fx = cosr*fx + (sinr*fy) / fxfac
-            fy = (cosr*fy) * fxfac - sinr*fx
-            x1, y1 = int(round(fx)), int(round(fy))
+            x1 = cosr * fx + sinr*fy * yfac
+            y1 = cosr * fy - sinr*fx / yfac
+            x1, y1 = int(round(x1)), int(round(y1))
         y1 += y0
         x1 += x0
         if plot:
