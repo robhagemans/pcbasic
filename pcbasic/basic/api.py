@@ -16,6 +16,7 @@ from . import implementation
 
 from ..data import read_codepage as codepage
 from ..data import read_fonts as font
+from .values import TYPE_TO_CLASS as SIGILS
 
 
 class Session(object):
@@ -103,6 +104,8 @@ class Session(object):
         if isinstance(name, text_type):
             name = name.encode('ascii')
         name = name.upper()
+        if name.split(b'(')[0][-1:] not in SIGILS:
+            raise ValueError('Sigil must be explicit')
         self._impl.set_variable(name, value)
 
     def get_variable(self, name, as_type=None):
@@ -110,6 +113,8 @@ class Session(object):
         self.start()
         if isinstance(name, text_type):
             name = name.encode('ascii')
+        if name.split(b'(')[0][-1:] not in SIGILS:
+            raise ValueError('Sigil must be explicit')
         return self._impl.get_variable(name, as_type)
 
     def convert(self, value, to_type):

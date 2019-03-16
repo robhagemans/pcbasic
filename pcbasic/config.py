@@ -20,7 +20,7 @@ from collections import deque
 from .compat import iteritems, text_type, iterchar
 from .compat import configparser
 from .compat import WIN32, get_short_pathname, argv, getcwdu
-from .compat import USER_CONFIG_HOME, USER_DATA_HOME
+from .compat import USER_CONFIG_HOME, USER_DATA_HOME, PY2
 from .compat import split_quoted, split_pair
 from .compat import console, stdout, stdin, stderr, IS_CONSOLE_APP
 from .compat import TemporaryDirectory
@@ -1019,7 +1019,10 @@ class ArgumentParser(object):
             # use utf_8_sig to ignore a BOM if it's at the start of the file
             # (e.g. created by Notepad)
             with io.open(config_file, 'r', encoding='utf_8_sig', errors='replace') as f:
-                config.readfp(WhitespaceStripper(f))
+                if PY2:
+                    config.readfp(WhitespaceStripper(f))
+                else:
+                    config.read_file(WhitespaceStripper(f))
         except (configparser.Error, IOError):
             logging.warning(
                 u'Error in configuration file %s. Configuration not loaded.', config_file
