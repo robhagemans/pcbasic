@@ -353,6 +353,10 @@ if __name__ == '__main__':
     if arg_dict['all'] or arg_dict['unit']:
         sys.stdout.flush()
         sys.stderr.write('Running unit tests: ')
-        from unit import *
         with pcbasic.compat.muffle(sys.stdout):
-            unittest.main(argv=['test.py'])
+            import unittest
+            # OK so I had to debug the cpython unittest module to find out how to call
+            # automatic test discovery, as this is undocumented or simply doesn't work.
+            # no idea why the below works, but it does.
+            # I can't quite believe how such a near-unusable module made it into the standard library
+            unittest.main(module=None, argv=['test.py', 'discover'])
