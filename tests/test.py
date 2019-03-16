@@ -241,7 +241,7 @@ class Coverage(object):
     def track(self):
         if self._on:
             import coverage
-            cov = coverage.coverage(omit=[os.path.join(HERE,'basic','*'), '/usr/local/lib/*'])
+            cov = coverage.coverage(omit=[os.path.join(HERE, '*'), '/usr/local/lib/*'])
             cov.start()
             yield self
             cov.stop()
