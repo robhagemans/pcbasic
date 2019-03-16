@@ -36,8 +36,6 @@ except ImportError:
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path = [os.path.join(HERE, '..')] + sys.path
 
-import pcbasic
-
 
 # copy of pythonpath for use by testing cycle
 PYTHONPATH = copy(sys.path)
@@ -243,7 +241,7 @@ class Coverage(object):
     def track(self):
         if self._on:
             import coverage
-            cov = coverage.coverage()
+            cov = coverage.coverage(omit=[os.path.join(HERE,'basic','*'), '/usr/local/lib/*'])
             cov.start()
             yield self
             cov.stop()
@@ -269,7 +267,7 @@ def normalise(name):
     return category, name
 
 
-def run_tests(tests, all, fast, loud, reraise, coverage, **dummy):
+def run_tests(tests, all, fast, loud, reraise, **dummy):
     if all:
         tests = [
             os.path.join('basic', _preset, _test)
@@ -287,39 +285,38 @@ def run_tests(tests, all, fast, loud, reraise, coverage, **dummy):
     else:
         skip = {}
     results = {}
-    with Coverage(coverage).track():
-        with Timer().time() as overall_timer:
-            # preserve environment
-            startdir = os.path.abspath(os.getcwd())
-            save_env = deepcopy(os.environ)
-            # run all tests
-            for name in tests:
-                # reset testing environment
-                os.chdir(startdir)
-                os.environ = deepcopy(save_env)
-                # normalise test name
-                category, name = normalise(name)
-                print(
-                    '\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (category, name),
-                    end=''
-                )
-                with suppress_stdio(not loud):
-                    with Timer().time() as timer:
-                        with TestFrame(category, name, reraise, skip, loud).guard() as test_frame:
-                            if test_frame.exists and not test_frame.skip:
-                                # we need to include the output dir in the PYTHONPATH
-                                # for it to find extension modules
-                                sys.path = PYTHONPATH + [os.path.abspath('.')]
-                                # run PC-BASIC
-                                pcbasic.run('--interface=none')
-                # update test time
-                if test_frame.exists and not test_frame.skip and not test_frame.crash:
-                    times[testname(category, name)] = timer.wall_time
-                # report status
-                results[testname(category, name)] = test_frame.status
-                print('\033[%sm%s.\033[00;37m' % (
-                    STATUS_COLOURS[test_frame.status], test_frame.status
-                ))
+    with Timer().time() as overall_timer:
+        # preserve environment
+        startdir = os.path.abspath(os.getcwd())
+        save_env = deepcopy(os.environ)
+        # run all tests
+        for name in tests:
+            # reset testing environment
+            os.chdir(startdir)
+            os.environ = deepcopy(save_env)
+            # normalise test name
+            category, name = normalise(name)
+            print(
+                '\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (category, name),
+                end=''
+            )
+            with suppress_stdio(not loud):
+                with Timer().time() as timer:
+                    with TestFrame(category, name, reraise, skip, loud).guard() as test_frame:
+                        if test_frame.exists and not test_frame.skip:
+                            # we need to include the output dir in the PYTHONPATH
+                            # for it to find extension modules
+                            sys.path = PYTHONPATH + [os.path.abspath('.')]
+                            # run PC-BASIC
+                            pcbasic.run('--interface=none')
+            # update test time
+            if test_frame.exists and not test_frame.skip and not test_frame.crash:
+                times[testname(category, name)] = timer.wall_time
+            # report status
+            results[testname(category, name)] = test_frame.status
+            print('\033[%sm%s.\033[00;37m' % (
+                STATUS_COLOURS[test_frame.status], test_frame.status
+            ))
     # update stored times
     with open(TEST_TIMES, 'w') as timefile:
         json.dump(times, timefile)
@@ -347,16 +344,18 @@ def report_results(results, times, overall_timer):
 
 if __name__ == '__main__':
     arg_dict = parse_args()
-    results = run_tests(**arg_dict)
-    report_results(*results)
-    print()
-    if arg_dict['all'] or arg_dict['unit']:
-        sys.stdout.flush()
-        sys.stderr.write('Running unit tests: ')
-        with pcbasic.compat.muffle(sys.stdout):
-            import unittest
-            # OK so I had to debug the cpython unittest module to find out how to call
-            # automatic test discovery, as this is undocumented or simply doesn't work.
-            # no idea why the below works, but it does.
-            # I can't quite believe how such a near-unusable module made it into the standard library
-            unittest.main(module=None, argv=['test.py', 'discover'])
+    with Coverage(arg_dict['coverage']).track():
+        # import late because of coverage
+        # see https://stackoverflow.com/questions/22146864/pytest-2-5-2-coverage-reports-missing-lines-which-must-have-been-processed
+        import pcbasic
+        results = run_tests(**arg_dict)
+        report_results(*results)
+        print()
+        if arg_dict['all'] or arg_dict['unit']:
+            sys.stdout.flush()
+            sys.stderr.write('Running unit tests: ')
+            with pcbasic.compat.muffle(sys.stdout):
+                # I can't quite believe how this near-unusable module made it into the standard library
+                import unittest
+                suite = unittest.loader.defaultTestLoader.discover(HERE+'/unit', 'test*.py', None)
+                unittest.TextTestRunner().run(suite)
