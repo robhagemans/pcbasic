@@ -1,0 +1,9 @@
+1 ' Ctrl+Break during syntax error trap:
+2 ' in GW-BASIC, the edit prompt is shown after the Ok prompt
+3 ' e.g. press ctrl+break in the following program
+10 ON ERROR GOTO 100
+20 FG
+30 END
+100 A$=INKEY$: IF A$="" THEN 100
+110 RESUME NEXT
+
