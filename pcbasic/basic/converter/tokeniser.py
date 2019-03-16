@@ -115,7 +115,7 @@ class Tokeniser(object):
             elif c in (b'&', ) or (
                     allow_number and not allow_jumpnum and c in DIGITS + b'.'
                 ):
-                outs.write(self.tokenise_number(ins))
+                outs.write(self._tokenise_number(ins))
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):
             elif c in self._ascii_operators:
                 ins.read(1)
@@ -265,12 +265,10 @@ class Tokeniser(object):
                 break
         return word
 
-    def tokenise_number(self, ins):
+    def _tokenise_number(self, ins):
         """Convert Python-string number representation to number token."""
         word = ins.read_number()
-        if not word:
-            return b''
-        elif word[:2] == b'&H':
+        if word[:2] == b'&H':
             # hex constant
             return self._values.new_integer().from_hex(word[2:]).to_token_hex()
         elif word[:2] == b'&O':
