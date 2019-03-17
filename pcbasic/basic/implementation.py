@@ -375,7 +375,9 @@ class Implementation(object):
             else:
                 prompt = numstr + b' '
             line = self.console.read_line(prompt, from_start=True)
-            line = b'%s %s' % (numstr, line[len(numstr)+1:])
+            # remove *, if present
+            if line[:len(numstr)+1] == b'%s*' % (numstr,):
+                line = b'%s %s' % (numstr, line[len(numstr)+1:])
             # run or store it; don't clear lines or raise undefined line number
             self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
             c = self.interpreter.direct_line.peek()
