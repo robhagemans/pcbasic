@@ -181,7 +181,7 @@ class CassetteTest(unittest.TestCase):
         except EnvironmentError:
             pass
         with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
-            s.execute('open "cas1:\x02\x01" for output as 1')
+            s.execute(b'open "cas1:\x02\x01" for output as 1')
             output = [_row.strip() for _row in s.get_text()]
             assert output[0] == b'Bad file number\xff'
 
@@ -207,7 +207,7 @@ class CassetteTest(unittest.TestCase):
             s.execute('? LOF(1)')
             s.execute('? LOC(1)')
             output = [_row.strip() for _row in s.get_text()]
-            assert output[:2] == ['Illegal function call\xff', 'Illegal function call\xff']
+            assert output[:2] == [b'Illegal function call\xff', b'Illegal function call\xff']
 
 
 if __name__ == '__main__':

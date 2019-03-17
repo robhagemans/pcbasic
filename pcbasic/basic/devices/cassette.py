@@ -13,7 +13,7 @@ import struct
 import logging
 from chunk import Chunk
 
-from ...compat import int2byte
+from ...compat import int2byte, iterchar, zip
 
 from ..base import error
 from ..base import tokens as tk
@@ -47,7 +47,7 @@ class CASDevice(object):
     """Cassette tape device (CASn:) """
 
     # control characters not allowed in file name on tape
-    _illegal_chars = set(map(int2byte, range(0x20)))
+    _illegal_chars = set(int2byte(_i) for _i in range(0x20))
 
     def __init__(self, arg, console):
         """Initialise tape device."""
@@ -87,7 +87,7 @@ class CASDevice(object):
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
         if self.tapestream.is_open:
             raise error.BASICError(error.FILE_ALREADY_OPEN)
-        if set(param) & self._illegal_chars:
+        if set(iterchar(param)) & self._illegal_chars:
             # Cassette BASIC throws bad file NUMBER, for some reason.
             raise error.BASICError(error.BAD_FILE_NUMBER)
         try:
@@ -240,7 +240,7 @@ class CassetteStream(object):
         self.rwmode = 'r'
         while True:
             record = self._read_record(None)
-            if record and record[0] == b'\xa5':
+            if record and record[0:1] == b'\xa5':
                 break
             else:
                 # unknown record type
@@ -287,7 +287,7 @@ class CassetteStream(object):
         record = b''
         block_num = 0
         byte_count = 0
-        while byte_count < reclen or reclen is None:
+        while reclen is None or byte_count < reclen:
             data = self._read_block()
             record += data
             byte_count += len(data)
@@ -333,11 +333,11 @@ class CassetteStream(object):
         """Write a 256-byte block to tape."""
         # fill out short blocks with last byte
         data += data[-1:]*(256-len(data))
-        for b in data:
+        for b in iterchar(data):
             self.bitstream.write_byte(ord(b))
         crc_word = crc(data)
         # crc is written big-endian
-        lo, hi = map(ord, struct.pack('<H', crc_word))
+        lo, hi = (ord(_b) for _b in iterchar(struct.pack('<H', crc_word)))
         self.bitstream.write_byte(hi)
         self.bitstream.write_byte(lo)
 
@@ -355,7 +355,7 @@ class CassetteStream(object):
             # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
             self.record_stream = io.BytesIO()
             record = self._read_record(256)
-            num_bytes = ord(record[0])
+            num_bytes = ord(record[0:1])
             record = record[1:]
             if num_bytes != 0:
                 record = record[:num_bytes-1]
@@ -428,8 +428,9 @@ class TapeBitStream(object):
     def read_intro(self):
         """Try to read intro; ensure image not empty."""
         for b in bytearray(self.intro):
-            c = self.read_byte()
-            if c == b'':
+            try:
+                c = self.read_byte()
+            except EndOfTape:
                 # empty or short file
                 return False
             if c != b:
@@ -557,7 +558,7 @@ class CASBitStream(TapeBitStream):
             except EnvironmentError:
                 self.cas = io.open(self.cas_name, 'rb')
             self.current_byte = self.cas.read(1)
-            if self.current_byte == '' or not self.read_intro():
+            if self.current_byte == b'' or not self.read_intro():
                 self.cas.close()
                 self._create()
         self.switch_mode(mode)
@@ -597,7 +598,7 @@ class CASBitStream(TapeBitStream):
         if self.mask <= 0:
             self.current_byte = self.cas.read(1)
             if not self.current_byte:
-                raise EndOfTape
+                raise EndOfTape()
             self.mask = 0x80
         if (ord(self.current_byte) & self.mask == 0):
             return 0
@@ -809,7 +810,7 @@ class WAVBitStream(TapeBitStream):
             length_up, length_dn = next(self.read_half), next(self.read_half)
         except StopIteration:
             self.read_half = self._gen_read_halfpulse()
-            raise EndOfTape
+            raise EndOfTape()
         if (length_up > self.halflength_max or length_dn > self.halflength_max or
                 length_up < self.halflength_min or length_dn < self.halflength_min):
             return None
@@ -838,10 +839,13 @@ class WAVBitStream(TapeBitStream):
             raise EndOfTape
         # convert MSBs to int (data stored little endian)
         # note that we simply throw away all the less significant bytes
-        frames = map(ord, frames[self.sampwidth-1::self.sampwidth])
+        frames = (ord(_c) for _c in iterchar(frames[self.sampwidth-1::self.sampwidth]))
         # sum frames over channels
         frames = map(sum, zip(*[iter(frames)]*self.nchannels))
-        frames = [ x-self.subtractor if x >= self.sub_threshold else x for x in frames ]
+        frames = [
+            _x-self.subtractor if _x >= self.sub_threshold else _x
+            for _x in frames
+        ]
         return self.filter.send(frames)
 
     def _gen_read_halfpulse(self):
@@ -870,7 +874,7 @@ class WAVBitStream(TapeBitStream):
 
     def write_pause(self, milliseconds):
         """Write a pause of given length to the tape."""
-        length = (milliseconds * self.framerate / 1000)
+        length = int(milliseconds * self.framerate / 1000)
         zero = {1: b'\x7f', 2: b'\x00\x00'}
         self.wav.write(zero[self.sampwidth] * self.nchannels * length)
         self.wav_pos += length
