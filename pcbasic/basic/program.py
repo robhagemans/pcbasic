@@ -78,6 +78,7 @@ class Program(object):
         self.line_numbers = {65536: 0}
         self.last_stored = None
         self.code_size = self.bytecode.tell()
+        self.bytecode.truncate()
 
     def truncate(self, rest=b''):
         """Write bytecode and cut the program of beyond the current position."""
