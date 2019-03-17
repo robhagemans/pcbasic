@@ -35,10 +35,10 @@ class CassetteTest(unittest.TestCase):
             s.execute('list')
             output = [_row.strip() for _row in s.get_text()]
         assert output[:4] == [
-            'not this.B Skipped.',
-            'test    .B Found.',
-            '10 OPEN "output.txt" FOR OUTPUT AS 1',
-            '20 PRINT#1, "cassette test"'
+            b'not this.B Skipped.',
+            b'test    .B Found.',
+            b'10 OPEN "output.txt" FOR OUTPUT AS 1',
+            b'20 PRINT#1, "cassette test"'
         ]
 
     def test_cas_save_load(self):
@@ -50,9 +50,9 @@ class CassetteTest(unittest.TestCase):
             s.execute('list')
             output = [_row.strip() for _row in s.get_text()]
         assert output[:3] == [
-            'test    .B Found.',
-            '10 OPEN "output.txt" FOR OUTPUT AS 1',
-            '20 PRINT#1, "cassette test"'
+            b'test    .B Found.',
+            b'10 OPEN "output.txt" FOR OUTPUT AS 1',
+            b'20 PRINT#1, "cassette test"'
         ]
 
     def test_cas_text(self):
@@ -131,6 +131,83 @@ class CassetteTest(unittest.TestCase):
             # load whatever is next (this should be Prog 2)
             s.execute('run "cas1:"')
             assert s.get_variable('A%') == 12345
+
+    def test_cas_empty(self):
+        """Attach empty CAS file."""
+        try:
+            os.remove(_output_file('empty.cas'))
+        except EnvironmentError:
+            pass
+        # create empty file
+        open(_output_file('empty.cas'), 'wb').close()
+        with Session(devices={b'CAS1:': _output_file('empty.cas')}) as s:
+            s.execute('save "cas1:"')
+            s.execute('load "cas1:"')
+            output = [_row.strip() for _row in s.get_text()]
+        # device timeout given at end of tape
+        assert output[0] == b'Device Timeout\xff'
+
+    def test_cas_unavailable(self):
+        """Try to attach directory as CAS file."""
+        try:
+            os.rmdir(_output_file('empty'))
+        except EnvironmentError:
+            pass
+        # create empty dir
+        os.mkdir(_output_file('empty'))
+        with Session(devices={b'CAS1:': _output_file('empty')}) as s:
+            s.execute('load "cas1:"')
+            output = [_row.strip() for _row in s.get_text()]
+            assert output[0] == b'Device Unavailable\xff'
+            # check internal api function
+            assert not s._impl.files.device_available(b'CAS1:')
+
+    def test_cas_already_open(self):
+        """Try to open file twice."""
+        try:
+            os.remove(_output_file('test_data.cas'))
+        except EnvironmentError:
+            pass
+        with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
+            s.execute('open "cas1:data" for output as 1')
+            s.execute('open "cas1:data" for output as 2')
+            output = [_row.strip() for _row in s.get_text()]
+            assert output[0] == b'File already open\xff'
+
+    def test_cas_bad_name(self):
+        """Try to open file with funny name."""
+        try:
+            os.remove(_output_file('test_data.cas'))
+        except EnvironmentError:
+            pass
+        with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
+            s.execute('open "cas1:\x02\x01" for output as 1')
+            output = [_row.strip() for _row in s.get_text()]
+            assert output[0] == b'Bad file number\xff'
+
+    def test_cas_bad_mode(self):
+        """Try to open file with illegal mode."""
+        try:
+            os.remove(_output_file('test_data.cas'))
+        except EnvironmentError:
+            pass
+        with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
+            s.execute('open "cas1:test" for random as 1')
+            output = [_row.strip() for _row in s.get_text()]
+            assert output[0] == b'Bad file mode\xff'
+
+    def test_cas_bad_operation(self):
+        """Try to perform illegal operations."""
+        try:
+            os.remove(_output_file('test_data.cas'))
+        except EnvironmentError:
+            pass
+        with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
+            s.execute('open "cas1:test" for output as 1')
+            s.execute('? LOF(1)')
+            s.execute('? LOC(1)')
+            output = [_row.strip() for _row in s.get_text()]
+            assert output[:2] == ['Illegal function call\xff', 'Illegal function call\xff']
 
 
 if __name__ == '__main__':
