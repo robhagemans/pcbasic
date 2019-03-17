@@ -103,6 +103,24 @@ class SessionTest(unittest.TestCase):
             # sigil must be explicit
             with self.assertRaises(ValueError):
                 s.get_variable('B', 0.)
+            # boolean
+            s.set_variable(b'A%', True)
+            assert s.get_variable(b'A%') is -1
+            # single
+            s.set_variable(b'A!', 1.1)
+            self.assertAlmostEqual(s.get_variable(b'A!'), 1.1, places=6)
+            # double
+            s.set_variable(b'A#', 0.1234567890123)
+            self.assertAlmostEqual(s.get_variable(b'A#'), 0.1234567890123, places=14)
+            # bytes string
+            s.set_variable(b'A$', b'1')
+            assert s.get_variable(b'A$') == b'1'
+            # unicode string value (sterling sign)
+            s.set_variable(b'A$', u'\xc2\xa3')
+            # bytes output, in cp437
+            assert s.get_variable(b'A$') == b'\x9C'
+            # unset array
+            assert s.get_variable('A%()') == []
 
     def test_session_evaluate(self):
         """Test Session.set_variable and Session.get_variable."""
@@ -110,6 +128,8 @@ class SessionTest(unittest.TestCase):
             s.set_variable(b'A!', 1)
             assert s.evaluate(b'A') == 1
             assert s.evaluate(u'A') == 1
+            # syntax error
+            assert s.evaluate(b'LOG+1') is None
 
     def test_resume(self):
         """Test resume."""
@@ -160,9 +180,49 @@ class SessionTest(unittest.TestCase):
             s.execute('input#1, a$')
             assert s.get_variable('A$') == b'x'
 
+    def test_session_greeting(self):
+        """Test welcome screen."""
+        with Session() as s:
+            # SYSTEM, enter
+            s.press_keys(u'SYSTEM\r')
+            s.interact()
+        output = [_row.strip() for _row in s.get_text()]
+        assert output[0].startswith(b'PC-BASIC ')
+        assert output[1].startswith(b'(C) Copyright 2013--')
+        assert output[1].endswith(b' Rob Hagemans.')
+        assert output[2] == b'60300 Bytes free'
+        assert output[3] == b'Ok\xff'
+        assert output[-1] == (
+            b'1LIST   2RUN\x1b   3LOAD"  4SAVE"  5CONT\x1b'
+            b'  6,"LPT1 7TRON\x1b  8TROFF\x1b 9KEY    0SCREEN'
+        )
+
+    def test_session_press_keys(self):
+        """Test Session.press_keys."""
+        with Session() as s:
+            # eascii: up, esc, SYSTEM, enter
+            s.press_keys(u'\0\x48\x1bSYSTEM\r')
+            s.interact()
+        output = [_row.strip() for _row in s.get_text()]
+        # OK prompt should have been overwritten
+        assert output[3] == b'SYSTEM'
+
+    def test_session_execute(self):
+        """Test Session.execute."""
+        with Session() as s:
+            # statement
+            s.execute(b'?LOG(1)')
+            # break
+            s.execute(b'STOP')
+            # error
+            s.execute(b'A')
+        output = [_row.strip() for _row in s.get_text()]
+        # \xff checked against DOSbox/GW-BASIC
+        assert output[:3] == [b'0', b'Break\xff', b'Syntax error\xff']
+        assert output[3:] == [b''] * 22
 
     def test_extension(self):
-        """Text extensions."""
+        """Test extensions."""
 
         class Extension(object):
             @staticmethod
