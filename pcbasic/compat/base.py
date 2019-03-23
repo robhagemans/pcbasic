@@ -12,6 +12,7 @@ import contextlib
 import sys
 import platform
 import codecs
+import io
 
 
 # Python major version
@@ -113,9 +114,17 @@ def muffle(std_stream):
         except EnvironmentError:
             yield
             return
+        # check for file-like objects that expect unicode, raw output otherwise
+        if isinstance(std_stream, (
+                io.TextIOWrapper, io.StringIO,
+                codecs.StreamReaderWriter, codecs.StreamWriter,
+            )):
+            write_mode = 'w'
+        else:
+            write_mode = 'wb'
         # http://stackoverflow.com/questions/977840/
         # redirecting-fortran-called-via-f2py-output-in-python/978264#978264
-        with open(os.devnull, 'w') as null:
+        with io.open(os.devnull, write_mode) as null:
             # put /dev/null fds on 1 (stdout) or 2 (stderr)
             os.dup2(null.fileno(), std_stream.fileno())
             # do stuff
