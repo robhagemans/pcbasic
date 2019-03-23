@@ -208,15 +208,12 @@ class SessionTest(unittest.TestCase):
     def test_session_greeting(self):
         """Test welcome screen."""
         with Session() as s:
-            # SYSTEM, enter
-            s.press_keys(u'SYSTEM\r')
-            s.interact()
-        output = [_row.strip() for _row in s.get_text()]
+            s.greet()
+            output = [_row.strip() for _row in s.get_text()]
         assert output[0].startswith(b'PC-BASIC ')
         assert output[1].startswith(b'(C) Copyright 2013--')
         assert output[1].endswith(b' Rob Hagemans.')
         assert output[2] == b'60300 Bytes free'
-        assert output[3] == b'Ok\xff'
         assert output[-1] == (
             b'1LIST   2RUN\x1b   3LOAD"  4SAVE"  5CONT\x1b'
             b'  6,"LPT1 7TRON\x1b  8TROFF\x1b 9KEY    0SCREEN'
@@ -228,9 +225,11 @@ class SessionTest(unittest.TestCase):
             # eascii: up, esc, SYSTEM, enter
             s.press_keys(u'\0\x48\x1bSYSTEM\r')
             s.interact()
+            # note that SYSTEM raises an exception absorbed by the context manager
+            # no nothing further in this block will be executed
         output = [_row.strip() for _row in s.get_text()]
         # OK prompt should have been overwritten
-        assert output[3] == b'SYSTEM'
+        assert output[0] == b'SYSTEM'
 
     def test_session_execute(self):
         """Test Session.execute."""

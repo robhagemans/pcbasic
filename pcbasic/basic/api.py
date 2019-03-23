@@ -137,6 +137,11 @@ class Session(object):
         self.start()
         return self._impl.display.vpage.pixels[:, :].to_rows()
 
+    def greet(self):
+        """Emit the interpreter greeting and show the key bar."""
+        self.start()
+        self._impl.execute(implementation.GREETING)
+
     def interact(self):
         """Interactive interpreter session."""
         self.start()

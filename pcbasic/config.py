@@ -563,8 +563,6 @@ class Settings(object):
             'extension': self.get('extension'),
             # ignore key buffer in console-based interfaces, to allow pasting text in console
             'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses'),
-            # following GW, don't write greeting for redirected input or command-line filter run
-            'greeting': (not params['input_streams']),
         })
         # deprecated arguments
         if self.get('utf8', get_default=False) is not None:
@@ -765,11 +763,14 @@ class Settings(object):
         """Dict of launch parameters."""
         # build list of commands to execute on session startup
         commands = []
+        greeting = False
         if not self.get('resume'):
             run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
             # treat colons as CRs
             commands = split_quoted(self.get('exec'), split_by=u':', quote=u"'", strip_quotes=True)
             # note that executing commands (or RUN) will suppress greeting
+            # following GW, don't write greeting for redirected input or command-line filter run
+            greeting = not run and not commands and not self.session_params['input_streams']
             if run:
                 commands.append('RUN')
             if self.get('quit'):
@@ -777,6 +778,7 @@ class Settings(object):
         launch_params = {
             'prog': self.get('run') or self.get('load') or self.get(0),
             'resume': self.get('resume'),
+            'greeting': greeting,
             'state_file': self._get_state_file(),
             'commands': commands,
             # inserted keystrokes
