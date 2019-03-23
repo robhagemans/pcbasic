@@ -61,12 +61,13 @@ class IOStreams(object):
             f.flush()
 
     def write(self, s):
-        """Write a string/bytearray to all stream outputs."""
+        """Write bytes to all stream outputs."""
         for f in self._output_echos:
             f.write(s)
 
     def toggle_echo(self, stream):
         """Toggle copying of all screen I/O to stream."""
+        stream = self._codepage.wrap_output_stream(stream, preserve=CONTROL)
         if stream in self._output_echos:
             self._output_echos.remove(stream)
         else:
