@@ -162,23 +162,48 @@ class SessionTest(unittest.TestCase):
             s.execute('input#1, a$')
             assert s.get_variable('A$') == b'x'
         # create file by name
+        native_name = os.path.join(loc, u'new-test-file')
         try:
-            os.remove(os.path.join(loc, 'new-test-file'))
+            os.remove(native_name)
         except EnvironmentError:
             pass
         with Session() as s:
-            name = s.bind_file(os.path.join(loc, 'new-test-file'), create=True)
+            name = s.bind_file(native_name, create=True)
             s.execute('open "{0}" for output as 1: print#1, "test";: close'.format(name))
-        with open(os.path.join(loc, 'new-test-file'), 'rb') as f:
+        with open(native_name, 'rb') as f:
             output = f.read()
         assert output == b'test\x1a'
         # existing file by BASIC name
         with Session(mount={b'Z': (loc, u'')}) as s:
-            name = s.bind_file('Z:TESTFILE')
+            name = s.bind_file(b'Z:TESTFILE')
             # write to file
             s.execute('open "{0}" for input as 1'.format(name))
             s.execute('input#1, a$')
             assert s.get_variable('A$') == b'x'
+        # create file by name , provide BASIC name (bytes)
+        native_name = os.path.join(loc, b'new-test-file')
+        try:
+            os.remove(native_name)
+        except EnvironmentError:
+            pass
+        with Session() as s:
+            name = s.bind_file(native_name, name=b'A B C', create=True)
+            s.execute(b'open "@:A B C" for output as 1: print#1, "test";: close')
+        with open(native_name, 'rb') as f:
+            output = f.read()
+        assert output == b'test\x1a'
+        # create file by name , provide BASIC name (unicode)
+        native_name = os.path.join(loc, b'new-test-file')
+        try:
+            os.remove(native_name)
+        except EnvironmentError:
+            pass
+        with Session() as s:
+            name = s.bind_file(native_name, name=u'A B C', create=True)
+            s.execute(u'open "@:A B C" for output as 1: print#1, "test";: close')
+        with open(native_name, 'rb') as f:
+            output = f.read()
+        assert output == b'test\x1a'
 
     def test_session_greeting(self):
         """Test welcome screen."""
