@@ -218,12 +218,13 @@ class DiskTest(unittest.TestCase):
         os.mkdir(test_dir)
         with Session(mount={b'A': (test_dir, u'')}, textfile_encoding='utf-8') as s:
             s.execute('open "a:data" for output as 1')
-            s.execute('print#1, "\x9C"')
+            # we're embedding codepage in this string, so should be bytes
+            s.execute(b'print#1, "\x9C"')
         # utf8-sig, followed by pound sign
         assert open(os.path.join(test_dir, 'DATA'), 'rb').read() == b'\xef\xbb\xbf\xc2\xa3\r\n\x1a'
         with Session(mount={b'A': (test_dir, u'')}, textfile_encoding='utf-8') as s:
             s.execute('open "a:data" for append as 1')
-            s.execute('print#1, "\x9C"')
+            s.execute(b'print#1, "\x9C"')
         assert open(os.path.join(test_dir, 'DATA'), 'rb').read() == (
             b'\xef\xbb\xbf\xc2\xa3\r\n\xc2\xa3\r\n\x1a'
         )
@@ -237,7 +238,7 @@ class DiskTest(unittest.TestCase):
             pass
         os.mkdir(test_dir)
         with open(os.path.join(test_dir, 'DATA'), 'wb') as f:
-            f.write('a\nb\r\nc')
+            f.write(b'a\nb\r\nc')
         with Session(mount={b'A': (test_dir, u'')}, soft_linefeed=True) as s:
             s.execute('open "a:data" for input as 1')
             s.execute('line input#1, a$')
@@ -306,7 +307,7 @@ class DiskTest(unittest.TestCase):
             pass
         os.mkdir(test_dir)
         # this will be case sensitive on some platforms but should be picked up correctly anyway
-        open(os.path.join(test_dir, 'MixCase.txt'), 'w')
+        open(os.path.join(test_dir, 'MixCase.txt'), 'w').close()
         with Session(mount={b'A': (test_dir, u'')}) as s:
             s.execute('open "a:mixcase.txt" for output as 1')
             s.execute('print#1, 1234')
@@ -315,7 +316,7 @@ class DiskTest(unittest.TestCase):
             s.execute('input#1, A%')
             assert s.get_variable('A%') == 1234
         # check we've used the pre-existing file
-        assert open(os.path.join(test_dir, 'MixCase.txt'), 'rb').read() == ' 1234 \r\n\x1a'
+        assert open(os.path.join(test_dir, 'MixCase.txt'), 'rb').read() == b' 1234 \r\n\x1a'
 
     def test_match_name_non_ascii(self):
         """Test non-matching of names that are not ascii."""
@@ -328,8 +329,8 @@ class DiskTest(unittest.TestCase):
         # this will be case sensitive on some platforms but should be picked up correctly anyway
         open(os.path.join(test_dir, u'MY\xc2\xa30.02'), 'w')
         with Session(mount={b'A': (test_dir, u'')}) as s:
-            # non-ascii not allowed
-            s.execute('open "a:MY\x9c0.02" for output as 1')
+            # non-ascii not allowed - cp437 &h9c is pound sign
+            s.execute('open "a:MY"+chr$(&h9c)+"0.02" for output as 1')
             # search for a match in the presence of non-ascii files
             s.execute('open "a:MY0.02" for input as 1')
             output = [_row.strip() for _row in s.get_text()]

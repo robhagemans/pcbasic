@@ -675,8 +675,8 @@ def istype(native_path, native_name, isdir):
     name = os.path.join(native_path, native_name)
     try:
         return os.path.isdir(name) if isdir else os.path.isfile(name)
-    except TypeError:
-        # happens for name == u'\0'
+    except (TypeError, ValueError):
+        # name == u'\0' - python2 raises TypeError, python3 ValueError
         return False
 
 
