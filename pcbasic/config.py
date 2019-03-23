@@ -642,50 +642,12 @@ class Settings(object):
         current_device = self.get('current-device').upper()
         # build mount dictionary
         mount_list = self.get('mount', False)
-        mount_dict = {}
-        if mount_list is not None:
-            for a in mount_list:
-                # the last one that's specified will stick
-                try:
-                    letter, path = a.split(u':', 1)
-                    letter = letter.encode('ascii', errors='replace').upper()
-                    # take abspath first to ensure unicode, realpath gives bytes for u'.'
-                    path = os.path.realpath(os.path.abspath(path))
-                    if not os.path.isdir(path):
-                        logging.warning(u'Could not mount %s', a)
-                    else:
-                        mount_dict[letter] = (path, u'')
-                except (TypeError, ValueError) as e:
-                    logging.warning(u'Could not mount %s: %s', a, e)
+        if mount_list is None:
+            mount_dict = self._get_default_drives()
+            if not current_device:
+                current_device = self._get_default_current_device()
         else:
-            if WIN32:
-                # get all drives in use by windows
-                # if started from CMD.EXE, get the 'current working dir' for each drive
-                # if not in CMD.EXE, there's only one cwd
-                save_current = getcwdu()
-                for letter in iterchar(UPPERCASE):
-                    try:
-                        os.chdir(letter + b':')
-                        cwd = get_short_pathname(getcwdu()) or getcwdu()
-                    except EnvironmentError:
-                        # doesn't exist or can't access, do not mount this drive
-                        pass
-                    else:
-                        # must not start with \\
-                        path, cwd = cwd[:3], cwd[3:]
-                        mount_dict[letter] = (path, cwd)
-                os.chdir(save_current)
-                if not current_device:
-                    try:
-                        current_device = (
-                            os.path.abspath(save_current).split(u':')[0].encode('ascii')
-                        )
-                    except UnicodeEncodeError:
-                        pass
-            else:
-                # non-Windows systems simply have 'Z:' set to their their cwd by default
-                mount_dict[b'Z'] = (getcwdu(), u'')
-                current_device = b'Z'
+            mount_dict = self._get_drives_from_list(mount_list)
         # fallbacks for current device
         if (
                 current_device != 'CAS1' and
@@ -698,9 +660,74 @@ class Settings(object):
                 # if nothing mounted at all and not set to CAS1, current device will be @:
                 current_device = b'@'
         # directory for bundled BASIC programs accessible through @:
-        mount_dict[b'@'] = (PROGRAM_PATH, u'')
+        mount_dict[b'@'] = PROGRAM_PATH
         return current_device, mount_dict
 
+    def _get_drives_from_list(self, mount_list):
+        """Assign drive letters based on mount specification."""
+        mount_dict = {}
+        for spec in mount_list:
+            # the last one that's specified will stick
+            try:
+                letter, path = spec.split(u':', 1)
+                try:
+                    letter = letter.encode('ascii').upper()
+                except UnicodeError:
+                    logging.error(u'Could not mount `%s`: invalid drive letter', spec)
+                # take abspath first to ensure unicode, realpath gives bytes for u'.'
+                path = os.path.realpath(os.path.abspath(path))
+                if not os.path.isdir(path):
+                    logging.error(u'Could not mount `%s`: not a directory', spec)
+                else:
+                    mount_dict[letter] = path
+            except (TypeError, ValueError) as e:
+                logging.error(u'Could not mount `%s`: %s', spec, e)
+        return mount_dict
+
+    def _get_default_drives(self):
+        """Assign default drive letters."""
+        mount_dict = {}
+        if WIN32:
+            # get all drives in use by windows
+            # if started from CMD.EXE, get the 'current working dir' for each drive
+            # if not in CMD.EXE, there's only one cwd
+            save_current = getcwdu()
+            for letter in iterchar(UPPERCASE):
+                try:
+                    os.chdir(letter + b':')
+                    cwd = get_short_pathname(getcwdu()) or getcwdu()
+                except EnvironmentError:
+                    # doesn't exist or can't access, do not mount this drive
+                    pass
+                else:
+                    path, cwd = os.path.splitdrive(cwd)
+                    if path:
+                        # cwd must not start with \\
+                        if cwd[:1] == u'\\':
+                            path += u'\\'
+                            cwd = cwd[1:]
+                        if cwd:
+                            mount_dict[letter] = u':'.join((path, cwd))
+                        else:
+                            mount_dict[letter] = path
+                    else:
+                        logging.warning('Not mounting `%s`: no drive letter.', cwd)
+            os.chdir(save_current)
+        else:
+            # non-Windows systems simply have 'Z:' set to their their cwd by default
+            mount_dict[b'Z'] = getcwdu()
+        return mount_dict
+
+    def _get_default_current_device(self):
+        """Get the current drive letter or Z:"""
+        if WIN32:
+            letter, _ = os.path.splitdrive(os.path.abspath(os.getcwdu()))
+            try:
+                current_device = letter.encode('ascii')
+            except UnicodeError:
+                pass
+        else:
+            current_device = b'Z'
 
     ##########################################################################
     # interface parameters

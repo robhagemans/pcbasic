@@ -13,6 +13,7 @@ import io
 
 from ...compat import xrange, int2byte, text_type
 from ...compat import iterchar, getcwdu
+from ...compat import split_quoted
 
 from ..base import error
 from ..base import tokens as tk
@@ -29,7 +30,7 @@ from . import parports
 DOS_DEVICE_FILES = (b'AUX', b'CON', b'NUL', b'PRN')
 
 # default mount dictionary
-DEFAULT_MOUNTS = {b'Z': (getcwdu(), u'')}
+DEFAULT_MOUNTS = {b'Z': getcwdu()}
 
 # allowable drive letters in GW-BASIC are letters or @
 DRIVE_LETTERS = b'@' + tk.UPPERCASE
@@ -560,7 +561,6 @@ class Files(object):
         return self._values.new_integer()
 
 
-
     ###########################################################################
     # disk devices
 
@@ -577,7 +577,17 @@ class Files(object):
             if not mount_dict:
                 mount_dict = {}
             if letter in mount_dict:
-                path, cwd = mount_dict[letter]
+                # drive can be non-empty only on Windows, needs to be split out first as we use :
+                drive, drivepath = os.path.splitdrive(mount_dict[letter])
+                params = split_quoted(
+                    drivepath, split_by=u':', quote=u'"', strip_quotes=True
+                )
+                path = drive + params[0]
+                if len(params) > 1:
+                    cwd = params[1]
+                    # ignore any further specifiers
+                else:
+                    cwd = u''
             else:
                 path, cwd = None, u''
             # treat device @: separately - internal disk
