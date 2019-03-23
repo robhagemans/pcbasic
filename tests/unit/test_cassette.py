@@ -28,6 +28,13 @@ def _output_file(name):
 class CassetteTest(unittest.TestCase):
     """Cassette tests."""
 
+    def setUp(self):
+        """Ensure output directory exists."""
+        try:
+            os.mkdir(_output_file(u''))
+        except EnvironmentError:
+            pass
+
     def test_cas_load(self):
         """Load from a CAS file."""
         with Session(devices={b'CAS1:': _input_file('test.cas')}) as s:
@@ -53,6 +60,26 @@ class CassetteTest(unittest.TestCase):
             b'test    .B Found.',
             b'10 OPEN "output.txt" FOR OUTPUT AS 1',
             b'20 PRINT#1, "cassette test"'
+        ]
+
+    def test_cas_current_device(self):
+        """Save and load to cassette as current device."""
+        with Session(
+                devices={b'CAS1:': _output_file('test_current.cas')},
+                current_device=b'CAS1:'
+            ) as s:
+            s.execute('10 ?')
+            s.execute('save "Test"')
+        with Session(
+                devices={b'CAS1:': _output_file('test_current.cas')},
+                current_device=b'CAS1:'
+            ) as s:
+            s.execute('load "Test"')
+            s.execute('list')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[:2] == [
+            b'Test    .B Found.',
+            b'10 PRINT',
         ]
 
     def test_cas_text(self):
@@ -209,6 +236,19 @@ class CassetteTest(unittest.TestCase):
             output = [_row.strip() for _row in s.get_text()]
             assert output[:2] == [b'Illegal function call\xff', b'Illegal function call\xff']
 
+    def test_cas_no_name(self):
+        """Save and load to cassette without a filename."""
+        with Session(devices={b'CAS1:': _output_file('test_current.cas')}) as s:
+            s.execute('10 ?')
+            s.execute('save "cas1:"')
+        with Session(devices={b'CAS1:': _output_file('test_current.cas')}) as s:
+            s.execute('load "cas1:"')
+            s.execute('list')
+            output = [_row.rstrip() for _row in s.get_text()]
+        assert output[:2] == [
+            b'        .B Found.',
+            b'10 PRINT',
+        ]
 
 if __name__ == '__main__':
     unittest.main()
