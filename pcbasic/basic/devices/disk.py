@@ -242,13 +242,7 @@ class DiskDevice(object):
         # current native working directory on this drive
         self._native_cwd = u''
         if self._native_root:
-            try:
-                self._native_cwd = cwd
-            except error.BASICError:
-                logging.warning(
-                    'Could not open working directory %s on drive %s:. Using drive root instead.',
-                    cwd, letter
-                )
+            self._native_cwd = cwd
         # locks are drive-specific
         self._locks = Locks()
         # text file settings
@@ -281,13 +275,14 @@ class DiskDevice(object):
             except KeyError:
                 filetype = b'A'
         # unicode or bytes input for text & ascii-program files
+        # not for random-access files
         if filetype in b'DA':
             if mode in (b'O', b'A'):
                 # if the input stream is unicode: decode codepage bytes
                 fhandle = self._codepage.wrap_output_stream(
                     fhandle, preserve=CONTROL+(b'\x1A',)
                 )
-            else:
+            elif mode == b'I':
                 # if the input stream is unicode: encode codepage bytes
                 # replace newlines with \r in text mode
                 fhandle = self._codepage.wrap_input_stream(
@@ -365,7 +360,7 @@ class DiskDevice(object):
                     if f.read(1) == b'\x1a':
                         f.seek(-1, 1)
                         f.truncate()
-                except IOError:
+                except EnvironmentError:
                     pass
                 f.close()
             access_mode = ACCESS_MODES[mode]
@@ -418,7 +413,8 @@ class DiskDevice(object):
         for dos_elem in dospath_elements:
             # find a matching directory for every step in the path;
             native_elem = self._get_native_name(
-                    path, dos_elem, defext=b'', isdir=True, create=False)
+                path, dos_elem, defext=b'', isdir=True, create=False
+            )
             # append found name to path
             path = os.path.join(path, native_elem)
         # return relative path only
