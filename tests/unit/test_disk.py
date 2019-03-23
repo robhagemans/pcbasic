@@ -120,6 +120,11 @@ class DiskTest(unittest.TestCase):
             s.execute('files "A:aa?.txt"')
             output = [_row.strip() for _row in s.get_text()]
         assert output[1] == b'AAA     .TXT      AAB     .TXT'
+        # no match
+        with Session(devices={b'A': self._test_dir}) as s:
+            s.execute('files "A:b*.txt"')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[1] == b'File not found\xff'
 
     def test_internal_disk_files(self):
         """Test directory listing, current directory and free space report on special @: disk."""
@@ -357,6 +362,103 @@ class DiskTest(unittest.TestCase):
         assert output[:2] == [b'A:\\A', b'.   <DIR>         ..  <DIR>']
         assert output[4:6] == [b'A:\\A', b'.   <DIR>']
         assert output[8:10] == [b'A:\\A', b'.   <DIR>         ..  <DIR> A           <DIR>']
+
+    def test_files_no_disk(self):
+        """Test directory listing, non-existing device."""
+        with Session() as s:
+            s.execute('files "A:"')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[0] == b'File not found\xff'
+
+    def test_close_not_open(self):
+        """Test closing a file number that is not open."""
+        with Session() as s:
+            s.execute('close#2')
+            output = [_row.strip() for _row in s.get_text()]
+        # no error
+        assert output[0] == b''
+
+    def test_mount_dict_spec(self):
+        """Test mount dict specification."""
+        with Session(devices={b'A': self._test_dir}) as s:
+            s.execute('open "A:test" for output as 1: print#1, 42: close 1')
+        # lowercase
+        with Session(devices={b'a': self._test_dir}) as s:
+            s.execute('open "A:test" for input as 1: input#1, A%')
+            assert s.get_variable('A%') == 42
+        # with :
+        with Session(devices={b'A:': self._test_dir}) as s:
+            s.execute('open "A:test" for input as 1: input#1, A%')
+            assert s.get_variable('A%') == 42
+        # unicode
+        with Session(devices={u'a:': self._test_dir}) as s:
+            s.execute('open "A:test" for input as 1: input#1, A%')
+            assert s.get_variable('A%') == 42
+
+    def test_bad_mount(self):
+        """Test bad mount dict specification."""
+        with Session(devices={b'#': self._test_dir}) as s:
+            s.execute('open "A:test" for output as 1: print#1, 42: close 1')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[0] == b'Path not found\xff'
+        with Session(devices={b'\0': self._test_dir}) as s:
+            s.execute('open "A:test" for output as 1: print#1, 42: close 1')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[0] == b'Path not found\xff'
+        with Session(devices={u'\xc4': self._test_dir}) as s:
+            s.execute('open "A:test" for output as 1: print#1, 42: close 1')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[0] == b'Path not found\xff'
+
+    def test_bad_current(self):
+        """Test bad current device."""
+        with Session(devices={'A': self._test_dir, 'Z': None}, current_device='B') as s:
+            s.execute('open "test" for output as 1: print#1, 42: close 1')
+        assert os.path.isfile(self._output_path('TEST'))
+        with Session(devices={'A': self._test_dir, 'Z': None}, current_device='#') as s:
+            s.execute('open "test2" for output as 1: print#1, 42: close 1')
+        assert os.path.isfile(self._output_path('TEST2'))
+
+    def test_bytes_mount(self):
+        """Test specifying mount dir as bytes."""
+        with Session(devices={'A': self._test_dir.encode('ascii'), 'Z': None}) as s:
+            s.execute('open "test" for output as 1: print#1, 42: close 1')
+        assert os.path.isfile(self._output_path('TEST'))
+        # must be ascii
+        with Session(devices={'A': b'ab\xc2', 'Z': None}) as s:
+            s.execute('files')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[0] == b'@:\\'
+
+    def test_open_bad_device(self):
+        """Test open on a bad device name."""
+        with Session(devices={b'A': self._test_dir}) as s:
+            s.execute('open "#:test" for output as 1: print#1, 42: close 1')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[0] == b'Bad file number\xff'
+
+    def test_open_null_device(self):
+        """Test the NUL device."""
+        with Session(devices={b'A': self._test_dir}) as s:
+            s.execute('open "NUL" for output as 1: print#1, 42: close 1')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[0] == b''
+
+    def test_open_bad_number(self):
+        """Test opening to a bad file number."""
+        with Session(devices={b'A': self._test_dir}) as s:
+            s.execute('open "TEST" for output as 4')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[0] == b'Bad file number\xff'
+
+    def test_open_reuse_number(self):
+        """Test opening to a number taht's already in use."""
+        with Session(devices={b'A': self._test_dir}) as s:
+            s.execute('open "TEST" for output as 1')
+            s.execute('open "TEST2" for output as 1')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[0] == 'File already open\xff'
+
 
 if __name__ == '__main__':
     unittest.main()

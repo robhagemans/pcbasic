@@ -130,8 +130,8 @@ class Files(object):
         ):
         """Initialise devices."""
         device_params = self._normalise_params(device_params)
-        current_device = self._normalise_current_device(current_device, device_params)
         # screen device, for files_()
+        current_device = self._normalise_current_device(current_device, device_params)
         self._console = console
         self._devices = {
             b'SCRN:': devicebase.SCRNDevice(display, console),
@@ -162,11 +162,20 @@ class Files(object):
         if current_device and current_device != b'CAS1' and current_device not in DRIVE_LETTERS:
             logging.error('Invalid current device `%s`', current_device)
             current_device = b''
-        if (not current_device or current_device not in device_params.keys()):
+        if (
+                not current_device or current_device not in device_params.keys()
+                or b'Z' in device_params and not device_params[b'Z']
+            ):
             if device_params:
                 if b'Z' in device_params and not device_params[b'Z']:
                     # if not set or not sensible, set current device to last disk available
-                    current_device = sorted(_k for _k in device_params.keys() if len(_k) == 1)[-1]
+                    available = sorted(
+                        _k for _k in device_params.keys() if len(_k) == 1 and device_params[_k]
+                    )
+                    if available:
+                        current_device = available[-1]
+                    else:
+                        current_device = b'@'
                 else:
                     current_device = b'Z'
             else:
@@ -274,10 +283,8 @@ class Files(object):
             number = values.to_int(number)
             error.range_check(0, 255, number)
             at_least_one = True
-            try:
-                self.close(number)
-            except KeyError:
-                pass
+            # close() deals with non-open numbers
+            self.close(number)
         # if no file number given, close everything
         if not at_least_one:
             self.close_all()
@@ -629,6 +636,8 @@ class Files(object):
         # disk devices
         for letter in iterchar(DRIVE_LETTERS):
             if letter in device_params:
+                if not device_params[letter]:
+                    continue
                 # drive can be non-empty only on Windows, needs to be split out first as we use :
                 drive, drivepath = os.path.splitdrive(device_params[letter])
                 params = split_quoted(
@@ -647,10 +656,8 @@ class Files(object):
             self._devices[letter + b':'] = disk_class(
                 letter, path, cwd, codepage, text_mode, soft_linefeed
             )
-        # allow upper or lower case, unicode or bytes, with or without :
-        if isinstance(current_device, text_type):
-            current_device = current_device.encode('ascii')
-        self._current_device = current_device.split(b':')[0].upper()
+        # current_device value is normalised
+        self._current_device = current_device
 
     def _get_diskdevice_and_path(self, path):
         """Return the disk device and remaining path for given file spec."""
