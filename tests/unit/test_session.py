@@ -174,7 +174,7 @@ class SessionTest(unittest.TestCase):
             output = f.read()
         assert output == b'test\x1a'
         # existing file by BASIC name
-        with Session(mount={b'Z': (loc, u'')}) as s:
+        with Session(devices={b'Z': loc}) as s:
             name = s.bind_file(b'Z:TESTFILE')
             # write to file
             s.execute('open "{0}" for input as 1'.format(name))

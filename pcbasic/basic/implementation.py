@@ -55,7 +55,7 @@ class Implementation(object):
             output_streams=sys.stdout, input_streams=sys.stdin,
             codepage=None, box_protect=True, font=None, text_width=80,
             video=u'cga', monitor=u'rgb',
-            devices=None, current_device=u'Z:', mount=None,
+            devices=None, current_device=u'Z:',
             textfile_encoding=None, soft_linefeed=False,
             check_keybuffer_full=True, ctrl_c_is_break=True,
             hide_listing=None, hide_protected=False,
@@ -153,7 +153,7 @@ class Implementation(object):
         self.files = Files(
             self.values, self.memory, self.queues, self.keyboard, self.display, self.console,
             max_files, max_reclen, serial_buffer_size,
-            devices, current_device, mount,
+            devices, current_device,
             self.codepage, textfile_encoding, soft_linefeed
         )
         # enable printer echo from console

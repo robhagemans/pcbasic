@@ -506,10 +506,11 @@ class Settings(object):
             pass
         # devices and mounts
         device_params = {
-            key.upper()+':' : self.get(key)
+            key.upper(): self.get(key)
             for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')
         }
         current_device, mount_dict = self._get_drives()
+        device_params.update(mount_dict)
         # memory setting
         max_list = self.get('max-memory')
         max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
@@ -539,7 +540,6 @@ class Settings(object):
             # device settings
             'devices': device_params,
             'current_device': current_device,
-            'mount': mount_dict,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
             'textfile_encoding': self.get('text-encoding'),
@@ -648,17 +648,6 @@ class Settings(object):
                 current_device = self._get_default_current_device()
         else:
             mount_dict = self._get_drives_from_list(mount_list)
-        # fallbacks for current device
-        if (
-                current_device != 'CAS1' and
-                (not current_device or current_device not in mount_dict.keys())
-            ):
-            if mount_dict:
-                # if not set or not sensible, set current device to lowest available
-                current_device = sorted(mount_dict.keys())[0]
-            else:
-                # if nothing mounted at all and not set to CAS1, current device will be @:
-                current_device = b'@'
         # directory for bundled BASIC programs accessible through @:
         mount_dict[b'@'] = PROGRAM_PATH
         return current_device, mount_dict
@@ -728,6 +717,7 @@ class Settings(object):
                 pass
         else:
             current_device = b'Z'
+        return current_device
 
     ##########################################################################
     # interface parameters

@@ -39,43 +39,43 @@ class DiskTest(unittest.TestCase):
 
     def test_text(self):
         """Save and load in plaintext to a file."""
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             s.execute('10 A%=1234')
             s.execute('save "prog",A')
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             s.execute('run "prog"')
             assert s.get_variable('A%') == 1234
 
     def test_binary(self):
         """Save and load in binary format to a file."""
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             s.execute('10 A%=1234')
             s.execute('save "prog"')
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             s.execute('run "prog"')
             assert s.get_variable('A%') == 1234
 
     def test_protected(self):
         """Save and load in protected format to a file."""
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             s.execute('10 A%=1234')
             s.execute('save "prog", P')
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             s.execute('run "prog"')
             assert s.get_variable('A%') == 1234
 
     def test_text_letter(self):
         """Save and load in plaintext to a file, explicit drive letter."""
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('10 A%=1234')
             s.execute('save "A:prog",A')
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('run "A:prog"')
             assert s.get_variable('A%') == 1234
 
     def test_files(self):
         """Test directory listing, current directory and free space report."""
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('save "A:prog",A')
             s.execute('files "A:"')
             s.execute('print "##"')
@@ -87,7 +87,7 @@ class DiskTest(unittest.TestCase):
             assert output[2].endswith(b' Bytes free')
             # empty line between files and next output
             assert output[3:5] == [b'', b'##']
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             s.execute('files')
             output = [_row.strip() for _row in s.get_text()]
             assert output[:2] == [
@@ -98,7 +98,7 @@ class DiskTest(unittest.TestCase):
     def test_files_longname(self):
         """Test directory listing with long name."""
         open(self._output_path('very_long_name_and.extension'), 'w')
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('files "A:"')
             output = [_row.strip() for _row in s.get_text()]
             assert output[:2] == [
@@ -112,18 +112,18 @@ class DiskTest(unittest.TestCase):
         open(self._output_path('aab.txt'), 'w')
         open(self._output_path('abc.txt'), 'w')
         open(self._output_path('aa_long_file_name.txt'), 'w')
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('files "A:*.txt"')
             output = [_row.strip() for _row in s.get_text()]
         assert output[1] == b'AAA     .TXT      AAB     .TXT      ABC     .TXT      aa_long+.txt'
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('files "A:aa?.txt"')
             output = [_row.strip() for _row in s.get_text()]
         assert output[1] == b'AAA     .TXT      AAB     .TXT'
 
     def test_internal_disk_files(self):
         """Test directory listing, current directory and free space report on special @: disk."""
-        with Session(mount={b'@': (self._test_dir, u'')}) as s:
+        with Session(devices={b'@': self._test_dir}) as s:
             s.execute('save "@:prog",A')
             s.execute('files "@:"')
             output = [_row.strip() for _row in s.get_text()]
@@ -135,7 +135,7 @@ class DiskTest(unittest.TestCase):
 
     def test_internal_disk_unbound_files(self):
         """Test directory listing, current directory and free space report on unbound @: disk."""
-        with Session(mount={}) as s:
+        with Session(devices={}) as s:
             s.execute('save "@:prog",A')
             s.execute('files "@:"')
             output = [_row.strip() for _row in s.get_text()]
@@ -148,23 +148,23 @@ class DiskTest(unittest.TestCase):
 
     def test_disk_data(self):
         """Write and read data to a text file."""
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('open "a:data" for output as 1')
             s.execute('print#1, 1234')
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('open "a:data" for input as 1')
             s.execute('input#1, A%')
             assert s.get_variable('A%') == 1234
 
     def test_disk_data_utf8(self):
         """Write and read data to a text file, utf-8 encoding."""
-        with Session(mount={b'A': (self._test_dir, u'')}, textfile_encoding='utf-8') as s:
+        with Session(devices={b'A': self._test_dir}, textfile_encoding='utf-8') as s:
             s.execute('open "a:data" for output as 1')
             # we're embedding codepage in this string, so should be bytes
             s.execute(b'print#1, "\x9C"')
         # utf8-sig, followed by pound sign
         assert open(self._output_path('DATA'), 'rb').read() == b'\xef\xbb\xbf\xc2\xa3\r\n\x1a'
-        with Session(mount={b'A': (self._test_dir, u'')}, textfile_encoding='utf-8') as s:
+        with Session(devices={b'A': self._test_dir}, textfile_encoding='utf-8') as s:
             s.execute('open "a:data" for append as 1')
             s.execute(b'print#1, "\x9C"')
         assert open(self._output_path('DATA'), 'rb').read() == (
@@ -175,7 +175,7 @@ class DiskTest(unittest.TestCase):
         """Write and read data to a text file, soft and hard linefeed."""
         with open(self._output_path('DATA'), 'wb') as f:
             f.write(b'a\nb\r\nc')
-        with Session(mount={b'A': (self._test_dir, u'')}, soft_linefeed=True) as s:
+        with Session(devices={b'A': self._test_dir}, soft_linefeed=True) as s:
             s.execute('open "a:data" for input as 1')
             s.execute('line input#1, a$')
             s.execute('line input#1, b$')
@@ -183,7 +183,7 @@ class DiskTest(unittest.TestCase):
         assert s.get_variable('A$') == b'a\nb'
         assert s.get_variable('B$') == b'c'
         assert s.get_variable('C$') == b''
-        with Session(mount={b'A': (self._test_dir, u'')}, soft_linefeed=False) as s:
+        with Session(devices={b'A': self._test_dir}, soft_linefeed=False) as s:
             s.execute('open "a:data" for input as 1')
             s.execute('line input#1, a$')
             s.execute('line input#1, b$')
@@ -194,13 +194,13 @@ class DiskTest(unittest.TestCase):
 
     def test_disk_data_append(self):
         """Append data to a text file."""
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('open "a:data" for output as 1')
             s.execute('print#1, 1234')
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('open "a:data" for append as 1')
             s.execute('print#1, "abcde"')
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('open "a:data" for input as 1')
             s.execute('line input#1, a$')
             s.execute('line input#1, b$')
@@ -209,13 +209,13 @@ class DiskTest(unittest.TestCase):
 
     def test_disk_random(self):
         """Write and read data to a random access file."""
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('open "a:data" for random as 1')
             s.execute('field#1, 20 as a$, 20 as b$')
             s.execute('lset b$="abcde"')
             s.execute('print#1, 1234')
             s.execute('put#1, 1')
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('open "a:data" for random as 1')
             s.execute('field#1, 20 as a$, 20 as b$')
             s.execute('get#1, 1')
@@ -226,10 +226,10 @@ class DiskTest(unittest.TestCase):
         """Test case-insensitive matching of native file name."""
         # this will be case sensitive on some platforms but should be picked up correctly anyway
         open(self._output_path('MixCase.txt'), 'w').close()
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('open "a:mixcase.txt" for output as 1')
             s.execute('print#1, 1234')
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             s.execute('open "a:MIXCASE.TXT" for input as 1')
             s.execute('input#1, A%')
             assert s.get_variable('A%') == 1234
@@ -240,7 +240,7 @@ class DiskTest(unittest.TestCase):
         """Test non-matching of names that are not ascii."""
         # this will be case sensitive on some platforms but should be picked up correctly anyway
         open(self._output_path(u'MY\xc2\xa30.02'), 'w')
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             # non-ascii not allowed - cp437 &h9c is pound sign
             s.execute('open "a:MY"+chr$(&h9c)+"0.02" for output as 1')
             # search for a match in the presence of non-ascii files
@@ -250,7 +250,7 @@ class DiskTest(unittest.TestCase):
 
     def test_name_illegal_chars(self):
         """Test non-matching of names that are not ascii."""
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             # control chars not allowed
             s.execute('open chr$(0) for output as 1')
             s.execute('open chr$(1) for output as 1')
@@ -260,7 +260,7 @@ class DiskTest(unittest.TestCase):
 
     def test_name_slash(self):
         """Test non-matching of names with forward slash."""
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             # forward slash not allowed
             s.execute('open "b/c" for output as 1')
             output = [_row.strip() for _row in s.get_text()]
@@ -269,7 +269,7 @@ class DiskTest(unittest.TestCase):
 
     def test_unavailable_drive(self):
         """Test attempt to access unavailable drive letter."""
-        with Session(mount={b'A': (self._test_dir, u'')}) as s:
+        with Session(devices={b'A': self._test_dir}) as s:
             # drive b: not mounted
             s.execute('open "b:test" for output as 1')
             output = [_row.strip() for _row in s.get_text()]
@@ -279,7 +279,7 @@ class DiskTest(unittest.TestCase):
         """Test accessing file through path."""
         os.mkdir(self._output_path('a'))
         os.mkdir(self._output_path('a', 'B'))
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             # simple relative path
             s.execute('open "a\\b\\rel" for output as 1:close')
             # convoluted path
@@ -299,7 +299,7 @@ class DiskTest(unittest.TestCase):
 
     def test_directory_ops(self):
         """Test directory operations."""
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             s.execute('mkdir "test"')
             s.execute('mkdir "test\\test2"')
             s.execute('chdir "test"')
@@ -317,7 +317,7 @@ class DiskTest(unittest.TestCase):
         open(self._output_path('delete2.txt'), 'w').close()
         open(self._output_path('delete3'), 'w').close()
         with Session(
-                mount={b'A': (self._test_dir, u''), b'B': (self._test_dir, u'')}, current_device='A:'
+                devices={b'A': self._test_dir, b'B': self._test_dir}, current_device='A:'
             ) as s:
             s.execute('name "testfile" as "newname"')
             # rename across disks
@@ -348,7 +348,7 @@ class DiskTest(unittest.TestCase):
     def test_files_cwd(self):
         """Test directory listing, not on root."""
         os.mkdir(self._output_path('a'))
-        with Session(mount={b'A': (self._test_dir, u'')}, current_device='A:') as s:
+        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             s.execute('chdir "a"')
             s.execute('files')
             s.execute('files ".."')

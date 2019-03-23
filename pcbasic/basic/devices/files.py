@@ -12,7 +12,7 @@ import logging
 import io
 
 from ...compat import xrange, int2byte, text_type
-from ...compat import iterchar, getcwdu
+from ...compat import iterchar, iteritems, getcwdu
 from ...compat import split_quoted
 
 from ..base import error
@@ -29,9 +29,6 @@ from . import parports
 # MS-DOS device files
 DOS_DEVICE_FILES = (b'AUX', b'CON', b'NUL', b'PRN')
 
-# default mount dictionary
-DEFAULT_MOUNTS = {b'Z': getcwdu()}
-
 # allowable drive letters in GW-BASIC are letters or @
 DRIVE_LETTERS = b'@' + tk.UPPERCASE
 
@@ -45,7 +42,7 @@ class Files(object):
     def __init__(
             self, values, memory, queues, keyboard, display, console,
             max_files, max_reclen, serial_buffer_size,
-            device_params, current_device, mount_dict,
+            device_params, current_device,
             codepage, text_mode, soft_linefeed
         ):
         """Initialise files."""
@@ -58,7 +55,7 @@ class Files(object):
         self.max_reclen = max_reclen
         self._init_devices(
             values, queues, display, console, keyboard,
-            device_params, current_device, mount_dict,
+            device_params, current_device,
             serial_buffer_size, codepage, text_mode, soft_linefeed
         )
 
@@ -128,35 +125,92 @@ class Files(object):
 
     def _init_devices(
             self, values, queues, display, console, keyboard,
-            device_params, current_device, mount_dict,
+            device_params, current_device,
             serial_in_size, codepage, text_mode, soft_linefeed
         ):
         """Initialise devices."""
+        device_params = self._normalise_params(device_params)
+        current_device = self._normalise_current_device(current_device, device_params)
         # screen device, for files_()
         self._console = console
-        device_params = device_params or {}
         self._devices = {
             b'SCRN:': devicebase.SCRNDevice(display, console),
             # KYBD: device needs display as it can set the screen width
             b'KYBD:': devicebase.KYBDDevice(keyboard, display),
             # cassette: needs text screen to display Found and Skipped messages
-            b'CAS1:': cassette.CASDevice(device_params.get(b'CAS1:', None), self._console),
+            b'CAS1:': cassette.CASDevice(device_params.get(b'CAS1', None), self._console),
             # serial devices
-            b'COM1:': ports.COMDevice(device_params.get(b'COM1:', None), queues, serial_in_size),
-            b'COM2:': ports.COMDevice(device_params.get(b'COM2:', None), queues, serial_in_size),
+            b'COM1:': ports.COMDevice(device_params.get(b'COM1', None), queues, serial_in_size),
+            b'COM2:': ports.COMDevice(device_params.get(b'COM2', None), queues, serial_in_size),
             # parallel devices - LPT1: must always be available
             b'LPT1:': parports.LPTDevice(
-                device_params.get(b'LPT1:', None), devicebase.nullstream(), codepage
+                device_params.get(b'LPT1', None), devicebase.nullstream(), codepage
             ),
-            b'LPT2:': parports.LPTDevice(device_params.get(b'LPT2:', None), None, codepage),
-            b'LPT3:': parports.LPTDevice(device_params.get(b'LPT3:', None), None, codepage),
+            b'LPT2:': parports.LPTDevice(device_params.get(b'LPT2', None), None, codepage),
+            b'LPT3:': parports.LPTDevice(device_params.get(b'LPT3', None), None, codepage),
         }
         # device files
         self.scrn_file = self._devices[b'SCRN:'].device_file
         self.kybd_file = self._devices[b'KYBD:'].device_file
         self.lpt1_file = self._devices[b'LPT1:'].device_file
         # disks
-        self._init_disk_devices(mount_dict, current_device, codepage, text_mode, soft_linefeed)
+        self._init_disk_devices(device_params, current_device, codepage, text_mode, soft_linefeed)
+
+    def _normalise_current_device(self, current_device, device_params):
+        """Normalise current device specification."""
+        current_device = self._normalise_device_name(current_device)
+        if current_device and current_device != b'CAS1' and current_device not in DRIVE_LETTERS:
+            logging.error('Invalid current device `%s`', current_device)
+            current_device = b''
+        if (not current_device or current_device not in device_params.keys()):
+            if device_params:
+                if b'Z' in device_params and not device_params[b'Z']:
+                    # if not set or not sensible, set current device to last disk available
+                    current_device = sorted(_k for _k in device_params.keys() if len(_k) == 1)[-1]
+                else:
+                    current_device = b'Z'
+            else:
+                # if nothing mounted at all and not set to CAS1, current device will be @:
+                current_device = b'@'
+        return current_device
+
+    def _normalise_params(self, device_params):
+        """Normalise keys in device parameter dict."""
+        if not device_params:
+            return {}
+        output_dict = {}
+        for key, value in iteritems(device_params):
+            key = self._normalise_device_name(key)
+            if not key:
+                continue
+            # convert value to unicode
+            if isinstance(value, bytes):
+                try:
+                    value = value.decode('ascii')
+                except UnicodeError:
+                    logging.error(
+                        'Invalid device parameter value: `%s` must be ascii if given as bytes.', key
+                    )
+                    continue
+            output_dict[key] = value
+        return output_dict
+
+    def _normalise_device_name(self, key):
+        """Normalise device name to uppercase ascii bytes without colon."""
+        if not key:
+            return b''
+        if isinstance(key, text_type):
+            try:
+                key = key.encode('ascii')
+            except UnicodeError:
+                logging.error('Invalid device name: `%s` is not ascii.', key)
+                return b''
+        # strip off trailing : if provided
+        if key.endswith(b':'):
+            key = key[:-1]
+        # convert to uppercase
+        key = key.upper()
+        return key
 
     def close_devices(self):
         """Close device master files."""
@@ -565,20 +619,18 @@ class Files(object):
     # disk devices
 
     def _init_disk_devices(
-            self, mount_dict, current_device,
+            self, device_params, current_device,
             codepage, text_mode, soft_linefeed
         ):
         """Initialise disk devices."""
-        # use None to request default mounts, use {} for no mounts
-        if mount_dict is None:
-            mount_dict = DEFAULT_MOUNTS
+        # if Z not specified, mount to cwd by default (override by specifying 'Z': None)
+        if b'Z' not in device_params:
+            device_params[b'Z'] = getcwdu()
         # disk devices
         for letter in iterchar(DRIVE_LETTERS):
-            if not mount_dict:
-                mount_dict = {}
-            if letter in mount_dict:
+            if letter in device_params:
                 # drive can be non-empty only on Windows, needs to be split out first as we use :
-                drive, drivepath = os.path.splitdrive(mount_dict[letter])
+                drive, drivepath = os.path.splitdrive(device_params[letter])
                 params = split_quoted(
                     drivepath, split_by=u':', quote=u'"', strip_quotes=True
                 )
@@ -590,7 +642,7 @@ class Files(object):
                     cwd = u''
             else:
                 path, cwd = None, u''
-            # treat device @: separately - internal disk
+            # treat device @: separately - internal disk must exist but may remain unmounted
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
             self._devices[letter + b':'] = disk_class(
                 letter, path, cwd, codepage, text_mode, soft_linefeed
