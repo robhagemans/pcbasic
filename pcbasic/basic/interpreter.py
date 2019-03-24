@@ -552,8 +552,6 @@ class Interpreter(object):
                 value = self._values.from_str_at(word, address)
             else:
                 word = self._program_code.read_number()
-                if word is None:
-                    word = b''
                 value = self._values.from_repr(word, allow_nonnum=False)
                 # anything after the number is a syntax error, but assignment has taken place)
                 if (self._program_code.skip_blank() not in (tk.END_STATEMENT + (b',',))):
