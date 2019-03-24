@@ -16,7 +16,7 @@
 80 date$="01-01-2099":print#1, date$
 90 date$="01-01-2100":print#1, date$
 100 date$="01-01-20100":print#1, date$
-110 date$="30-02-2000":print#1, date$
+110 date$="02-30-2000":print#1, date$
 999 end
 1000 print#2, err, erl
 1010 resume next
