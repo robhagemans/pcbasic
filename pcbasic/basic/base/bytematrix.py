@@ -26,9 +26,7 @@ class ByteMatrix(object):
         else:
             # assume iterable, TypeError if not
             data = list(data)
-            if len(data) == 1:
-                self._rows = [bytearray(data)*width for _ in xrange(self._height)]
-            elif len(data) == height:
+            if len(data) == height:
                 assert len(data[0]) == width
                 self._rows = [bytearray(_row) for _row in data]
             else:
@@ -76,21 +74,27 @@ class ByteMatrix(object):
         else:
             if isinstance(value, ByteMatrix):
                 value = value._rows
-            if isinstance(y, slice):
-                # this will fail if we're self-assigning a slice of a view to the original view
-                # as we'll be overwriting the source while writing to the destination.
-                # in those cases, we'll need to copy first
-                for _dst, _src in zip(self._rows[y], value):
-                    # if x is a slice, this will copy too -> e.g. array[:] = another_array
-                    # but not if rhs is a view?
-                    _dst[x] = _src
-            elif isinstance(x, slice):
-                assert len(value) == 1
-                self._rows[y][x] = value[0]
-            else:
+            elif type(value) not in (list, int):
                 raise TypeError(
                     'Can only assign ByteMatrix, list of bytes-like or int, not %s.' % type(value)
                 )
+            if isinstance(y, slice):
+                if isinstance(x, slice):
+                    # this will fail if we're self-assigning a slice of a view to the original view
+                    # as we'll be overwriting the source while writing to the destination.
+                    # in those cases, we'll need to copy first
+                    for _dst, _src in zip(self._rows[y], value):
+                        # if x is a slice, this will copy too -> e.g. array[:] = another_array
+                        # but not if rhs is a view?
+                        _dst[x] = bytearray(_src)
+                else:
+                    for _dst, _src in zip(self._rows[y], value):
+                        # if x is a slice, this will copy too -> e.g. array[:] = another_array
+                        # but not if rhs is a view?
+                        _dst[x] = _src[0]
+            elif isinstance(x, slice):
+                assert len(value) == 1
+                self._rows[y][x] = value[0]
 
     def __eq__(self, rhs):
         """Equality to other byte matrix."""
@@ -345,7 +349,7 @@ def unpack_bytes(packed, items_per_byte):
     shifts = [8 - bpp - _sh for _sh in range(0, 8, bpp)]
     return bytearray(
         (_byte >> _shift) & mask
-        for _byte in packed
+        for _byte in iterbytes(packed)
         for _shift in shifts
     )
 
