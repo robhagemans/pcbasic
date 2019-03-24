@@ -10,6 +10,8 @@ import unittest
 import os
 
 from pcbasic import Session, run
+from pcbasic.basic.base.error import BASICError
+from pcbasic.basic.base.signals import Event, QUIT
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -286,6 +288,16 @@ class SessionTest(unittest.TestCase):
                 b = _uniform(a, 25.6)
             ''')
             self.assertAlmostEqual(s.evaluate('b'), 16.3693256378, places=10)
+
+    def test_exception(self):
+        """Test exceptions."""
+        assert repr(BASICError(100)) == 'Unprintable error'
+
+    def test_event_signal(self):
+        """Test event signals."""
+        print repr(repr(Event(QUIT)) )
+        assert repr(Event(QUIT)) == '<Event quit: ()>'
+
 
 
 if __name__ == '__main__':
