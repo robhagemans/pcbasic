@@ -12,6 +12,7 @@ import os
 from pcbasic.basic.base.error import BASICError
 from pcbasic.basic.base.signals import Event, QUIT
 from pcbasic.basic.base.bytestream import ByteStream
+from pcbasic.basic.base.codestream import CodeStream, TokenisedStream
 from pcbasic.basic.base.bytematrix import ByteMatrix, hstack, vstack
 
 
@@ -68,6 +69,122 @@ class ByteStreamTest(unittest.TestCase):
         bs = ByteStream(buf)
         with self.assertRaises(TypeError):
             bs.read(b'1')
+
+
+class CodeStreamTest(unittest.TestCase):
+    """Unit tests for code stream."""
+
+    def test_backskip_blank(self):
+        """Test backskip_blank."""
+        buf = bytearray(b'a  \n\t b')
+        cs = CodeStream(buf)
+        cs.read(6)
+        assert cs.backskip_blank() == b'a'
+
+    def test_read_to(self):
+        """Test read_to."""
+        buf = bytearray(b'a  \n\t b')
+        cs = CodeStream(buf)
+        assert cs.read_to(b' ') == b'a'
+        assert cs.read_to(b'c') == b'  \n\t b'
+
+    def test_read_name(self):
+        """Test read_name."""
+        buf = bytearray(b'abc1\0hjk')
+        cs = CodeStream(buf)
+        assert cs.read_name() == b'ABC1'
+        buf = bytearray(b'  abc1$jhjk')
+        cs = CodeStream(buf)
+        assert cs.read_name() == b'ABC1$'
+        buf = bytearray(b'1abc1$jhjk')
+        cs = CodeStream(buf)
+        assert cs.read_name() == b''
+
+    def test_read_number(self):
+        """Test read_number."""
+        buf = bytearray(b'123ab')
+        cs = CodeStream(buf)
+        assert cs.read_number() == b'123'
+        buf = bytearray(b'')
+        cs = CodeStream(buf)
+        assert cs.read_number() == b''
+        buf = bytearray(b'a')
+        cs = CodeStream(buf)
+        assert cs.read_number() == b''
+        buf = bytearray(b'&ha')
+        cs = CodeStream(buf)
+        assert cs.read_number() == b'&Ha'
+        buf = bytearray(b'&7')
+        cs = CodeStream(buf)
+        assert cs.read_number() == b'&O7'
+
+    def test_read_string(self):
+        """Test read_string."""
+        buf = bytearray(b'123ab')
+        cs = CodeStream(buf)
+        assert cs.read_string() == b''
+        buf = bytearray(b'"123ab"ghj')
+        cs = CodeStream(buf)
+        cs.end_line = (b'', b'\n')
+        assert cs.read_string() == b'"123ab"'
+        buf = bytearray(b'"123ab')
+        cs = CodeStream(buf)
+        cs.end_line = (b'', b'\n')
+        assert cs.read_string() == b'"123ab'
+
+
+class TokenisedStreamTest(unittest.TestCase):
+    """Unit tests for tokenised stream."""
+
+    def test_read_number_token(self):
+        """Test read_number_token."""
+        cs = TokenisedStream()
+        cs.write(b'\x0b\x01\x00ghja')
+        cs.seek(0)
+        assert cs.read_number_token() == b'\x0b\x01\x00'
+        cs.seek(0)
+        cs.write(b'\x0c\x01\x00ghja')
+        cs.seek(0)
+        assert cs.read_number_token() == b'\x0c\x01\x00'
+        cs.seek(0)
+        cs.write(b'\x11\x01\x00ghja')
+        cs.seek(0)
+        assert cs.read_number_token() == b'\x11'
+        cs.seek(0)
+        cs.write(b'\x0f\xff\x00ghja')
+        cs.seek(0)
+        assert cs.read_number_token() == b'\x0f\xff'
+        cs.seek(0)
+        cs.write(b'\x1c\xff\x00ghja')
+        cs.seek(0)
+        assert cs.read_number_token() == b'\x1c\xff\x00'
+        cs.seek(0)
+        cs.write(b'\x1d\xff\x00ghja')
+        cs.seek(0)
+        assert cs.read_number_token() == b'\x1d\xff\x00gh'
+        cs.seek(0)
+        cs.write(b'\x1f\xff\x00ghjagh007')
+        cs.seek(0)
+        assert cs.read_number_token() == b'\x1f\xff\x00ghjagh'
+        cs.seek(0)
+        cs.write(b'\x00\xff\x00ghja')
+        cs.seek(0)
+        assert cs.read_number_token() == b''
+
+    def test_skip_to_token_not_found(self):
+        """Test skip_to_token where token is not found."""
+        cs = TokenisedStream()
+        cs.write(b'\x0b\x01\x00ghja')
+        cs.seek(0)
+        assert cs.skip_to_token(b'\x91') is None
+
+    def test_skip_block_not_found(self):
+        """Test skip_block where token is not found."""
+        cs = TokenisedStream()
+        cs.write(b'\x0b\x01\x00ghja')
+        cs.seek(0)
+        cs.skip_block(b'\x91', b'\x90')
+        assert cs.tell() == 7
 
 
 class ByteMatrixTest(unittest.TestCase):
