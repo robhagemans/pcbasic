@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import unittest
 import os
 import shutil
+import platform
 
 from pcbasic import Session
 
@@ -478,6 +479,50 @@ class DiskTest(unittest.TestCase):
             b'LongFileName2.bas': b'LONGFILE.BAS',
             b'LongFileName2.': b'LONGFILE',
             b'Long.FileName.2': b'LONG.FIL'
+        }
+        with Session(devices={b'A': self._test_dir}) as s:
+            for name in names:
+                with open(os.path.join(self._test_dir.encode('ascii'), name), 'wb') as f:
+                    f.write(b'1000 a$="%s"\r\n' % (name,))
+            for name, found in basicnames.items():
+                s.execute(b'run "a:%s"' % (name,))
+                assert s.get_variable('a$') == found
+
+    def test_dot_filename(self):
+        """Test handling of filenames ending in dots."""
+        # skip on Windows as it does not allow filenames ending in dots
+        # except if the file is accessed with UNC absolute path e.g. \\?\c:\blah
+        if platform.system() == 'Windows':
+            return
+        names = (
+            b'LONG.FIL',
+            b'LONGFILE',
+            b'LONGFILE.',
+            b'LONGFILE..',
+            b'LONGFILE.BAS',
+            b'LongFileName',
+            b'LongFileName.',
+            b'LongFileName..',
+            b'Long.FileName',
+            b'Long.FileName.',
+            b'LongFileName.BAS',
+            b'LongFileName.bas',
+        )
+        basicnames = {
+            b'LongFileName.bas': b'LongFileName.bas',
+            b'LongFileName': b'LongFileName.BAS',
+            # exact match if available
+            b'LongFileName.': b'LongFileName.',
+            b'LongFileName..': b'LongFileName..',
+            # use a dot at the end to suppress ".BAS"
+            b'LongFileName2': b'LONGFILE.BAS',
+            b'LongFileName2.bas': b'LONGFILE.BAS',
+            b'LongFileName2.': b'LONGFILE',
+            #b'LongFileName2..': # bad file name
+            # extension starts after first dot
+            b'Long.FileName.': b'Long.FileName.',
+            b'Long.FileName.2': b'LONG.FIL',
+            b'Long.FileName2..': b'LONG.FIL',
         }
         with Session(devices={b'A': self._test_dir}) as s:
             for name in names:
