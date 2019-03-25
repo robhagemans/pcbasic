@@ -460,6 +460,33 @@ class DiskTest(unittest.TestCase):
             output = [_row.strip() for _row in s.get_text()]
         assert output[0] == b'File already open\xff'
 
+    def test_long_filename(self):
+        """Test handling of long filenames."""
+        names = (
+            b'LONG.FIL',
+            b'LONGFILE',
+            b'LONGFILE.BAS',
+            b'LongFileName',
+            b'Long.FileName',
+            b'LongFileName.BAS'
+        )
+        basicnames = {
+            b'LongFileName': b'LongFileName.BAS',
+            b'LongFileName.BAS': b'LongFileName.BAS',
+            b'Long.FileName': b'Long.FileName',
+            b'LongFileName2': b'LONGFILE.BAS',
+            b'LongFileName2.bas': b'LONGFILE.BAS',
+            b'LongFileName2.': b'LONGFILE',
+            b'Long.FileName.2': b'LONG.FIL'
+        }
+        with Session(devices={b'A': self._test_dir}) as s:
+            for name in names:
+                with open(os.path.join(self._test_dir.encode('ascii'), name), 'wb') as f:
+                    f.write(b'1000 a$="%s"\r\n' % (name,))
+            for name, found in basicnames.items():
+                s.execute(b'run "a:%s"' % (name,))
+                assert s.get_variable('a$') == found
+
 
 if __name__ == '__main__':
     unittest.main()
