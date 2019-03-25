@@ -532,6 +532,22 @@ class DiskTest(unittest.TestCase):
                 s.execute(b'run "a:%s"' % (name,))
                 assert s.get_variable('a$') == found
 
+    def test_kill_long_filename(self):
+        """Test deleting files with long filenames."""
+        names = (b'test.y', b'verylong.ext', b'veryLongFilename.ext')
+        for name in names:
+            open(os.path.join(self._test_dir.encode('ascii'), name), 'wb').close()
+        with Session(devices={b'A': self._test_dir}) as s:
+            s.execute('kill "VERYLONG.EXT"')
+            assert not os.path.exists(b'verylong.ext')
+            s.execute('''
+                kill "VERYLONGFILENAME.EXT"
+                kill "VERYLONG.EXT"
+                kill "veryLongFilename.ext"
+            ''')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[:3] == [b'File not found\xff']*3
+
 
 if __name__ == '__main__':
     unittest.main()
