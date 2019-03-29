@@ -19,7 +19,7 @@ from pcbasic.data import read_codepage
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
-class SessionTest(unittest.TestCase):
+class CodepageTest(unittest.TestCase):
     """Unit tests for Session."""
 
     def setUp(self):
@@ -60,7 +60,30 @@ class SessionTest(unittest.TestCase):
             assert f.read() == u'\ufeff┌──────────┐\n\x1a'
         assert output_bytes[0] == b'\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf'
         assert output_unicode[0] == u'┌──────────┐'
-        print
+
+    def test_box2(self):
+        """Test box protection cases."""
+        cp_936 = read_codepage('936')
+        with Session(
+                codepage=cp_936, box_protect=True, textfile_encoding='utf-8',
+                devices={'c': self._test_dir},
+            ) as s:
+            s.execute('a$= "+"+STRING$(3,CHR$(196))+"+"')
+            s.execute('b$= "+"+STRING$(2,CHR$(196))+"+"')
+            s.execute('c$= "+"+STRING$(1,CHR$(196))+"+"')
+            s.execute('d$= "+"+CHR$(196)+chr$(196)+chr$(190)+chr$(196)+"+"')
+            assert s.get_variable('a$') == b'+\xc4\xc4\xc4+'
+            assert s.get_variable('b$') == b'+\xc4\xc4+'
+            assert s.get_variable('c$') == b'+\xc4+'
+            assert s.get_variable('d$') == b'+\xc4\xc4\xbe\xc4+'
+            # three consecutive lines are protected
+            assert s.get_variable('a$', as_type=type(u'')) == u'+\u2500\u2500\u2500+'
+            # two consecutive lines are not
+            assert s.get_variable('b$', as_type=type(u'')) == u'+\u54ea+'
+            # single lead byte is shown as box drawing
+            assert s.get_variable('c$', as_type=type(u'')) == u'+\u2500+'
+            # two box lines followed by a non-box lead & trail byte - not protected
+            assert s.get_variable('d$', as_type=type(u'')) == u'+\u54ea\u7078+'
 
     def test_nobox(self):
         """Test no box protection."""
@@ -122,6 +145,18 @@ class SessionTest(unittest.TestCase):
                 assert s.get_variable('a$', as_type=type(u'')) == hi
                 output_unicode = [_row.strip() for _row in s.get_text(as_type=type(u''))]
                 assert output_unicode[0] == hi
+
+    def test_missing(self):
+        """Test codepage with missing codepoints."""
+        cp = {b'\xff': u'B'}
+        with Session(
+            codepage=cp, textfile_encoding='utf-8', devices={'c': self._test_dir},
+            ) as s:
+            s.execute('a$ = "abcde" + chr$(255)')
+            assert s.get_variable('a$') == b'abcde\xff'
+            assert s.get_variable('a$', as_type=type(u'')) == u'\0\0\0\0\0B'
+
+
 
 
 if __name__ == '__main__':
