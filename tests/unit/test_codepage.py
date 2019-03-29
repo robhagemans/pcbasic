@@ -40,6 +40,27 @@ class CodepageTest(unittest.TestCase):
         """Test output file name."""
         return os.path.join(self._test_dir, *name)
 
+    def test_nobox(self):
+        """Test no box protection."""
+        cp_936 = read_codepage('936')
+        with Session(
+                codepage=cp_936, box_protect=False, textfile_encoding='utf-8',
+                devices={'c': self._test_dir},
+            ) as s:
+            s.execute('open "c:boxtest.txt" for output as 1')
+            s.execute('PRINT#1, CHR$(218);STRING$(10,CHR$(196));CHR$(191)')
+            # to screen
+            s.execute('PRINT CHR$(218);STRING$(10,CHR$(196));CHR$(191)')
+            # bytes text
+            # bytes text
+            output_bytes = [_row.strip() for _row in s.get_text()]
+            # unicode text
+            output_unicode = [_row.strip() for _row in s.get_text(as_type=type(u''))]
+        with open(self._output_path('BOXTEST.TXT'), 'r') as f:
+            assert f.read() == u'\ufeff谀哪哪哪哪目\n\x1a'
+        assert output_bytes[0] == b'\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf'
+        assert output_unicode[0] == u'谀哪哪哪哪目'
+
     def test_box(self):
         """Test box protection."""
         cp_936 = read_codepage('936')
@@ -64,10 +85,7 @@ class CodepageTest(unittest.TestCase):
     def test_box2(self):
         """Test box protection cases."""
         cp_936 = read_codepage('936')
-        with Session(
-                codepage=cp_936, box_protect=True, textfile_encoding='utf-8',
-                devices={'c': self._test_dir},
-            ) as s:
+        with Session(codepage=cp_936, box_protect=True) as s:
             s.execute('a$= "+"+STRING$(3,CHR$(196))+"+"')
             s.execute('b$= "+"+STRING$(2,CHR$(196))+"+"')
             s.execute('c$= "+"+STRING$(1,CHR$(196))+"+"')
@@ -84,27 +102,6 @@ class CodepageTest(unittest.TestCase):
             assert s.get_variable('c$', as_type=type(u'')) == u'+\u2500+'
             # two box lines followed by a non-box lead & trail byte - not protected
             assert s.get_variable('d$', as_type=type(u'')) == u'+\u54ea\u7078+'
-
-    def test_nobox(self):
-        """Test no box protection."""
-        cp_936 = read_codepage('936')
-        with Session(
-                codepage=cp_936, box_protect=False, textfile_encoding='utf-8',
-                devices={'c': self._test_dir},
-            ) as s:
-            s.execute('open "c:boxtest.txt" for output as 1')
-            s.execute('PRINT#1, CHR$(218);STRING$(10,CHR$(196));CHR$(191)')
-            # to screen
-            s.execute('PRINT CHR$(218);STRING$(10,CHR$(196));CHR$(191)')
-            # bytes text
-            # bytes text
-            output_bytes = [_row.strip() for _row in s.get_text()]
-            # unicode text
-            output_unicode = [_row.strip() for _row in s.get_text(as_type=type(u''))]
-        with open(self._output_path('BOXTEST.TXT'), 'r') as f:
-            assert f.read() == u'\ufeff谀哪哪哪哪目\n\x1a'
-        assert output_bytes[0] == b'\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf'
-        assert output_unicode[0] == u'谀哪哪哪哪目'
 
     def test_hello(self):
         """Hello world in 9 codepages."""
@@ -149,14 +146,48 @@ class CodepageTest(unittest.TestCase):
     def test_missing(self):
         """Test codepage with missing codepoints."""
         cp = {b'\xff': u'B'}
-        with Session(
-            codepage=cp, textfile_encoding='utf-8', devices={'c': self._test_dir},
-            ) as s:
+        with Session(codepage=cp) as s:
             s.execute('a$ = "abcde" + chr$(255)')
             assert s.get_variable('a$') == b'abcde\xff'
             assert s.get_variable('a$', as_type=type(u'')) == u'\0\0\0\0\0B'
 
+    def test_non_nfc(self):
+        """Test conversion of non-NFC sequences."""
+        with Session() as s:
+            # a-acute in NFD
+            s.execute(u'a$ = "a\u0301"')
+            # codepage 437 for a-acute
+            assert s.get_variable('a$') == b'\xa0'
 
+
+##############################################################################
+
+from pcbasic.basic.codepage import split_graphemes
+
+
+class GraphemeTest(unittest.TestCase):
+    """Unit tests for split_graphemes."""
+
+    def test_split_graphemes(self):
+        """Unit test for split_graphemes."""
+        # test base ascii
+        assert split_graphemes(u'abcde') == list(u'abcde')
+        # test crlf
+        assert split_graphemes(u'abc\r\nde') == [u'a', u'b', u'c', u'\r\n', u'd', u'e']
+        # test controls
+        assert split_graphemes(u'\a\n\r') == [u'\a', u'\n', u'\r']
+        # test Hangul syllables
+        assert split_graphemes(u'\u1100\u1160\u11a8\u11a8\u1100\uac01\u1100\uac00\u11a8') == [
+            # L, V, T, T; L, LVT; L, LV, T
+            u'\u1100\u1160\u11a8\u11a8', u'\u1100\uac01', u'\u1100\uac00\u11a8'
+        ]
+        # regional indicators
+        assert split_graphemes(u'a\U0001f1e6\U0001f1e7b') == [u'a', u'\U0001f1e6\U0001f1e7', u'b']
+        # extend
+        assert split_graphemes(u'a\u0301') == [u'a\u0301',]
+        # spacing mark
+        assert split_graphemes(u'a\u0903b') == [u'a\u0903', u'b']
+        # prepend - we don't seem to have characters with this property...
 
 
 if __name__ == '__main__':
