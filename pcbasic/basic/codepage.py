@@ -42,10 +42,10 @@ DEFAULT_CODEPAGE = {int2byte(_i): _c for _i, _c in enumerate(
 )}
 
 # left-connecting box drawing chars for two box-character sets (single line, double line)
-BOX_LEFT_UNICODE = (u'\u2500', u'\u2550')
+_BOX_LEFT_UNICODE = (u'\u2500', u'\u2550')
 
 # right-connecting box drawing chars (single line, double line)
-BOX_RIGHT_UNICODE = (u'\u2500', u'\u2550')
+_BOX_RIGHT_UNICODE = (u'\u2500', u'\u2550')
 
 
 # all box-drawing chars
@@ -130,9 +130,9 @@ class Codepage(object):
             # track box drawing chars
             else:
                 for i in (0, 1):
-                    if grapheme_cluster in BOX_LEFT_UNICODE[i]:
+                    if grapheme_cluster in _BOX_LEFT_UNICODE[i]:
                         self.box_left[i].add(cp_point[0:1])
-                    if grapheme_cluster in BOX_RIGHT_UNICODE[i]:
+                    if grapheme_cluster in _BOX_RIGHT_UNICODE[i]:
                         self.box_right[i].add(cp_point[0:1])
         # fill up any undefined 1-byte codepoints
         for c in range(256):
@@ -218,7 +218,7 @@ class Codepage(object):
 ##############################################################################
 # stream wrappers
 
-class StreamWrapperBase(object):
+class _StreamWrapperBase(object):
     """Base class for delegated stream wrappers."""
 
     def __init__(self, stream):
@@ -234,7 +234,7 @@ class StreamWrapperBase(object):
             raise AttributeError()
 
 
-class OutputStreamWrapper(StreamWrapperBase):
+class OutputStreamWrapper(_StreamWrapperBase):
     """
     Converter stream wrapper, takes bytes input.
     Stream must be a unicode (text) stream.
@@ -251,7 +251,7 @@ class OutputStreamWrapper(StreamWrapperBase):
         self._stream.write(self._conv.to_unicode(s))
 
 
-class InputStreamWrapper(StreamWrapperBase):
+class InputStreamWrapper(_StreamWrapperBase):
     """
     Converter stream wrapper, produces bytes output.
     Stream must be a unicode (text) stream.
@@ -273,18 +273,18 @@ class InputStreamWrapper(StreamWrapperBase):
             unistr = u''
         converted = (self._buffer + self._codepage.str_from_unicode(unistr, errors='replace'))
         if n < 0:
-            coutput = converted
+            output = converted
         else:
             output, self._buffer = converted[:n], converted[n:]
         return output
 
 
-class NewlineWrapper(StreamWrapperBase):
+class NewlineWrapper(_StreamWrapperBase):
     """Replace newlines on input stream. Wraps a bytes stream."""
 
     def __init__(self, stream):
         """Set up codec."""
-        StreamWrapperBase.__init__(self, stream)
+        _StreamWrapperBase.__init__(self, stream)
         self._last = b''
 
     def read(self, n=-1):
@@ -500,7 +500,7 @@ class Converter(object):
 ##################################################
 # grapheme cluster boundaries
 
-class BaseInterval(object):
+class _BaseInterval(object):
     """Implement a contiguous interval of integers."""
 
     def __init__(self, lower, upper=None):
@@ -513,12 +513,12 @@ class BaseInterval(object):
         return self._lower <= value < self._upper
 
 
-class Interval(BaseInterval):
+class _Interval(_BaseInterval):
     """Implement a non-contiguous interval of integers."""
 
     def __init__(self, base_intervals):
         """Initialise from tuples as a sequence of contiguous intervals."""
-        self._base_intervals = tuple(BaseInterval(*bounds) for bounds in base_intervals)
+        self._base_intervals = tuple(_BaseInterval(*bounds) for bounds in base_intervals)
 
     def __contains__(self, value):
         """Implement the `in` operator."""
@@ -527,11 +527,11 @@ class Interval(BaseInterval):
 
 # sets of code points by grapheme break property
 # http://www.unicode.org/Public/UCD/latest/ucd/auxiliary/GraphemeBreakProperty.txt
-GRAPHEME_BREAK = {
-    'LF': Interval(((10,),)),
-    'CR': Interval(((13,),)),
-    'Regional_Indicator': Interval(((127462, 127488),)),
-    'Control': Interval((
+_GRAPHEME_BREAK = {
+    'LF': _Interval(((10,),)),
+    'CR': _Interval(((13,),)),
+    'Regional_Indicator': _Interval(((127462, 127488),)),
+    'Control': _Interval((
         (0, 10), (11, 13), (14, 32), (127, 160), (173,),
         (1536, 1542), (1564,), (1757,), (1807,), (6158,),
         (8203,), (8206, 8208), (8232, 8239), (8288, 8304),
@@ -539,7 +539,7 @@ GRAPHEME_BREAK = {
         (113824, 113828), (119155, 119163), (917504, 917760),
         (918000, 921600)
     )),
-    'Extend': Interval((
+    'Extend': _Interval((
         (768, 880), (1155, 1162),
         (1425, 1470), (1471,), (1473, 1475), (1476, 1478), (1479,),
         (1552, 1563), (1611, 1632), (1648,), (1750, 1757),
@@ -606,7 +606,7 @@ GRAPHEME_BREAK = {
         (121461,), (121476,), (121499, 121504), (121505, 121520),
         (125136, 125143), (917760, 918000)
     )),
-    'SpacingMark': Interval((
+    'SpacingMark': _Interval((
         (2307,), (2363,), (2366, 2369), (2377, 2381),
         (2382, 2384), (2434, 2436), (2495, 2497), (2503, 2505),
         (2507, 2509), (2563,), (2622, 2625), (2691,), (2750, 2753),
@@ -638,10 +638,10 @@ GRAPHEME_BREAK = {
         (71230,), (71340,), (71342, 71344), (71350,), (71456, 71458),
         (71462,), (94033, 94079), (119142,), (119149,)
     )),
-    'V': Interval(((4448, 4520), (55216, 55239))),
-    'L': Interval(((4352, 4448), (43360, 43389))),
-    'T': Interval(((4520, 4608), (55243, 55292))),
-    'LV': Interval((
+    'V': _Interval(((4448, 4520), (55216, 55239))),
+    'L': _Interval(((4352, 4448), (43360, 43389))),
+    'T': _Interval(((4520, 4608), (55243, 55292))),
+    'LV': _Interval((
         (44032,), (44060,), (44088,), (44116,), (44144,), (44172,), (44200,),
         (44228,), (44256,), (44284,), (44312,), (44340,), (44368,), (44396,),
         (44424,), (44452,), (44480,), (44508,), (44536,), (44564,), (44592,),
@@ -700,7 +700,7 @@ GRAPHEME_BREAK = {
         (54812,), (54840,), (54868,), (54896,), (54924,), (54952,), (54980,),
         (55008,), (55036,), (55064,), (55092,), (55120,), (55148,), (55176,)
     )),
-    'LVT': Interval((
+    'LVT': _Interval((
         (44033, 44060), (44061, 44088), (44089, 44116),
         (44117, 44144), (44145, 44172), (44173, 44200),
         (44201, 44228), (44229, 44256), (44257, 44284),
@@ -839,7 +839,7 @@ GRAPHEME_BREAK = {
 
 def _get_grapheme_break(c):
     """Get grapheme break property of unicode char."""
-    for key, value in iteritems(GRAPHEME_BREAK):
+    for key, value in iteritems(_GRAPHEME_BREAK):
         if ord(c) in value:
             return key
     # no grapheme break property found
