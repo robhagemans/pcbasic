@@ -190,5 +190,60 @@ class GraphemeTest(unittest.TestCase):
         # prepend - we don't seem to have characters with this property...
 
 
+##############################################################################
+
+from io import StringIO
+import pickle
+from pcbasic.compat import copyreg
+
+from pcbasic.basic.codepage import InputStreamWrapper, OutputStreamWrapper
+from pcbasic.basic.codepage import Codepage
+#from pcbasic import state
+
+
+def unpickle_stringio(buffer, pos):
+    f = StringIO(buffer)
+    f.seek(pos)
+    return f
+
+def pickle_stringio(f):
+    return unpickle_stringio, (f.getvalue(), f.tell())
+
+copyreg.pickle(StringIO, pickle_stringio)
+
+
+class StreamWrapperTest(unittest.TestCase):
+    """Unit tests for split_graphemes."""
+
+    def test_read(self):
+        """Test InputStreamWrapper.read()."""
+        # unicode stream
+        stream = StringIO(u'£abcde£')
+        # use default codepage 437
+        wrapper = InputStreamWrapper(stream, Codepage())
+        # read codepage bytes
+        assert wrapper.read(1) == b'\x9c'
+        assert wrapper.read(1) == b'a'
+        assert wrapper.read() == b'bcde\x9c'
+
+    def test_write(self):
+        """Test OutputStreamWrapper.write()."""
+        stream = StringIO()
+        wrapper = OutputStreamWrapper(stream, Codepage())
+        wrapper.write(b'\x9cabcde\x9c')
+        assert stream.getvalue() == u'£abcde£'
+
+    def test_pickle(self):
+        """Wrapped streams must be picklable."""
+        # unicode stream
+        stream = StringIO(u'£abcde£')
+        # use default codepage 437
+        wrapper = InputStreamWrapper(stream, Codepage())
+        wrapper.read(2)
+        pstr = pickle.dumps(wrapper)
+        wrapper2 = pickle.loads(pstr)
+        assert wrapper2.read() == b'bcde\x9c'
+
+
 if __name__ == '__main__':
     unittest.main()
