@@ -18,7 +18,7 @@ try:
 except EnvironmentError:
     _RELEASE_ID = {u'tag': u'', u'commit': u'unreleased', u'timestamp': u''}
 TAG, TIMESTAMP, COMMIT = (_RELEASE_ID[_key] for _key in (u'tag', u'timestamp', u'commit'))
-if COMMIT in TAG:
+if COMMIT in TAG: # pragma: no cover
     LONG_VERSION = u'%s [%s %s]' % (VERSION, TAG, TIMESTAMP)
-else:
+else: # pragma: no cover
     LONG_VERSION = u'%s [%s %s %s]' % (VERSION, TAG, COMMIT, TIMESTAMP)
