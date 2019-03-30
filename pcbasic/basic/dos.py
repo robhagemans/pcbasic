@@ -45,29 +45,27 @@ class Environment(object):
         """Set environment (bytes) key to (bytes) value."""
         assert isinstance(key, bytes), type(key)
         assert isinstance(value, bytes), type(value)
-        ukey = self._codepage.str_to_unicode(key, box_protect=False)
         # only accept ascii-128 for keys
         try:
-            ukey.encode('ascii')
+            ukey = key.decode('ascii')
         except UnicodeError:
             raise error.BASICError(error.IFC)
         # enforce uppercase
         ukey = ukey.upper()
-        uvalue = self._codepage.str_to_unicode(value, box_protect=False)
+        uvalue = self._codepage.str_to_unicode(value)
         setenvu(ukey, uvalue)
 
     def _getenv(self, key):
         """Get environment (bytes) value or b''."""
         assert isinstance(key, bytes), type(key)
-        ukey = self._codepage.str_to_unicode(key, box_protect=False)
         # only accept ascii-128 for keys
         try:
-            ukey.encode('ascii')
+            ukey = key.decode('ascii')
         except UnicodeError:
             raise error.BASICError(error.IFC)
         # enforce uppercase
         ukey = ukey.upper()
-        return self._codepage.from_unicode(getenvu(ukey, u''))
+        return self._codepage.str_from_unicode(getenvu(ukey, u''))
 
     def _getenv_item(self, index):
         """Get environment (bytes) 'key=value' or b'', by zero-based index."""
@@ -77,8 +75,8 @@ class Environment(object):
         except IndexError:
             return b''
         else:
-            key = self._codepage.from_unicode(ukey)
-            value = self._codepage.from_unicode(getenvu(ukey, u''))
+            key = self._codepage.str_from_unicode(ukey)
+            value = self._codepage.str_from_unicode(getenvu(ukey, u''))
             return b'%s=%s' % (key, value)
 
     def environ_(self, args):

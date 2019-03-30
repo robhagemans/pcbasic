@@ -147,7 +147,7 @@ class Codepage(object):
         """Return True if c and d connect according to box-drawing set bset."""
         return c in self.box_right[bset] and d in self.box_left[bset]
 
-    def from_unicode(self, uc, errors='ignore'):
+    def _from_unicode(self, uc, errors='ignore'):
         """Convert normalised unicode grapheme cluster to codepage char sequence."""
         # pass through eascii clusters
         if uc and uc[0] == u'\0':
@@ -171,9 +171,9 @@ class Codepage(object):
 
     def str_from_unicode(self, ucs, errors='ignore'):
         """Convert unicode string to codepage string."""
-        return b''.join(self.from_unicode(uc, errors=errors) for uc in split_graphemes(ucs))
+        return b''.join(self._from_unicode(uc, errors=errors) for uc in split_graphemes(ucs))
 
-    def to_unicode(self, cp, replace=u'', use_substitutes=False):
+    def codepoint_to_unicode(self, cp, replace=u'', use_substitutes=False):
         """Convert codepage point to unicode grapheme cluster."""
         if use_substitutes and self._substitutes:
             try:
@@ -333,7 +333,7 @@ class Converter(object):
             (
                 _seq.decode('ascii', errors='ignore')
                 if (_seq in self._preserve)
-                else self._cp.to_unicode(_seq, use_substitutes=self._use_substitutes)
+                else self._cp.codepoint_to_unicode(_seq, use_substitutes=self._use_substitutes)
             )
             for _seq in sequences
         ]
