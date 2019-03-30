@@ -218,11 +218,25 @@ class ByteMatrixTest(unittest.TestCase):
         assert bm.height == 2
         assert bm.to_bytes() == b'123456'
 
-    def test_bytes(self):
+    def test_bytearray(self):
         """Create matrix from bytearray."""
         bm = ByteMatrix(2, 3, bytearray(b'123456'))
         assert bm.width == 3
         assert bm.height == 2
+        assert bm.to_bytes() == b'123456'
+
+    def test_bytearray_wide(self):
+        """Create 1-row matrix from bytearray."""
+        bm = ByteMatrix(1, 6, bytearray(b'123456'))
+        assert bm.width == 6
+        assert bm.height == 1
+        assert bm.to_bytes() == b'123456'
+
+    def test_bytearray_tall(self):
+        """Create 1-column matrix from bytearray."""
+        bm = ByteMatrix(6, 1, bytearray(b'123456'))
+        assert bm.width == 1
+        assert bm.height == 6
         assert bm.to_bytes() == b'123456'
 
     def test_list_of_bytes(self):
