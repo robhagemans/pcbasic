@@ -87,7 +87,7 @@ class Session(object):
         with self._impl.io_streams.activate():
             for cmd in command.splitlines():
                 if isinstance(cmd, text_type):
-                    cmd = self._impl.codepage.str_from_unicode(cmd)
+                    cmd = self._impl.codepage.unicode_to_bytes(cmd)
                 self._impl.execute(cmd)
 
     def evaluate(self, expression):
@@ -95,7 +95,7 @@ class Session(object):
         self.start()
         with self._impl.io_streams.activate():
             if isinstance(expression, text_type):
-                expression = self._impl.codepage.str_from_unicode(expression)
+                expression = self._impl.codepage.unicode_to_bytes(expression)
             return self._impl.evaluate(expression)
 
     def set_variable(self, name, value):

@@ -265,7 +265,7 @@ class Implementation(object):
         """Set a variable in memory."""
         name = name.upper()
         if isinstance(value, text_type):
-            value = self.codepage.str_from_unicode(value)
+            value = self.codepage.unicode_to_bytes(value)
         elif isinstance(value, bool):
             value = -1 if value else 0
         if b'(' in name:
@@ -279,8 +279,8 @@ class Implementation(object):
         if to_type is None or from_type == to_type:
             return lambda _x: _x
         converter = {
-            (bytes, text_type): partial(self.codepage.str_to_unicode, preserve=cp.CONTROL),
-            (text_type, bytes): self.codepage.str_from_unicode,
+            (bytes, text_type): partial(self.codepage.bytes_to_unicode, preserve=cp.CONTROL),
+            (text_type, bytes): self.codepage.unicode_to_bytes,
             (int, bool): bool,
             (float, bool): bool,
             (bool, int): lambda _bool: (-1 if _bool else 0),

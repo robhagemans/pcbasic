@@ -110,7 +110,7 @@ class DebugSession(api.Session):
             try:
                 val = self._impl.parser.expression_parser.parse(outs)
                 if isinstance(val, values.String):
-                    outstr += u'"%s"' % self._impl.codepage.str_to_unicode(val.to_str())
+                    outstr += u'"%s"' % self._impl.codepage.bytes_to_unicode(val.to_str())
                 else:
                     outstr += values.to_repr(val, leading_space=False, type_sign=True)
             except Exception as e:
@@ -162,7 +162,7 @@ class DebugSession(api.Session):
 
     def logprint(self, *args):
         """Write arguments to log."""
-        logging.debug(self._impl.codepage.str_to_unicode(' '.join(bytes(arg) for arg in args)))
+        logging.debug(self._impl.codepage.bytes_to_unicode(' '.join(bytes(arg) for arg in args)))
 
     def logwrite(self, *args):
         """Write arguments to log."""
@@ -193,7 +193,7 @@ class DebugSession(api.Session):
     def showscreen(self):
         """Copy the screen buffer to the log."""
         for s in repr(self._impl.display.text_screen).split('\n'):
-            logging.debug(self._impl.codepage.str_to_unicode(s))
+            logging.debug(self._impl.codepage.bytes_to_unicode(s))
 
     def showprogram(self):
         """Write a marked-up hex dump of the program to the log."""

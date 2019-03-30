@@ -606,12 +606,12 @@ class DiskDevice(object):
         if dos_name[-1:] == b'.' and b'.' not in dos_name[:-1]:
             # ends in single dot; first try with dot
             # but if it doesn't exist, base everything off dotless name
-            uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
+            uni_name = self._codepage.bytes_to_unicode(dos_name, box_protect=False)
             if istype(native_path, uni_name, isdir):
                 return uni_name
             dos_name = dos_name[:-1]
         # check if the name exists as-is; should also match Windows short names.
-        uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
+        uni_name = self._codepage.bytes_to_unicode(dos_name, box_protect=False)
         if istype(native_path, uni_name, isdir):
             return uni_name
         # original name does not exist; try matching dos-names or create one
@@ -646,7 +646,7 @@ class DiskDevice(object):
             if dos_is_legal_name(ascii_name):
                 return dos_normalise_name(ascii_name)
         # convert to codepage
-        cp_name = self._codepage.str_from_unicode(native_name, errors='replace')
+        cp_name = self._codepage.unicode_to_bytes(native_name, errors='replace')
         # clip overlong & mark as shortened
         trunk, ext = dos_splitext(cp_name)
         if len(trunk) > 8:
@@ -719,7 +719,7 @@ class BoundFile(object):
 
     def __unicode__(self):
         """Get BASIC file name."""
-        return self._codepage.str_to_unicode(bytes(self), box_protect=False)
+        return self._codepage.bytes_to_unicode(bytes(self), box_protect=False)
 
 
 @add_str
@@ -729,7 +729,7 @@ class NameWrapper(object):
     def __init__(self, codepage, name):
         """Initialise."""
         if isinstance(name, text_type):
-            name = codepage.str_from_unicode(name)
+            name = codepage.unicode_to_bytes(name)
         self._file = name
         self._codepage = codepage
 
@@ -746,7 +746,7 @@ class NameWrapper(object):
 
     def __unicode__(self):
         """Get BASIC file name."""
-        return self._codepage.str_to_unicode(bytes(self), box_protect=False)
+        return self._codepage.bytes_to_unicode(bytes(self), box_protect=False)
 
 
 class InternalDiskDevice(DiskDevice):
@@ -771,14 +771,14 @@ class InternalDiskDevice(DiskDevice):
                 logging.error('No internal bound-file names available')
                 raise error.BASICError(error.TOO_MANY_FILES)
         elif isinstance(name, text_type):
-            name = self._codepage.str_from_unicode(name)
+            name = self._codepage.unicode_to_bytes(name)
         self._bound_files[name] = BoundFile(self, self._codepage, file_name_or_object, name)
         return self._bound_files[name]
 
     def unbind(self, name):
         """Unbind bound file."""
         if isinstance(name, text_type):
-            name = self._codepage.str_from_unicode(name)
+            name = self._codepage.unicode_to_bytes(name)
         del self._bound_files[name]
 
     def open(

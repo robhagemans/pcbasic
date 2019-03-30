@@ -169,7 +169,7 @@ class Codepage(object):
             # ignore everything else (unicode chars not in codepage)
             return uc.encode('ascii', errors=errors)
 
-    def str_from_unicode(self, ucs, errors='ignore'):
+    def unicode_to_bytes(self, ucs, errors='ignore'):
         """Convert unicode string to codepage string."""
         return b''.join(self._from_unicode(uc, errors=errors) for uc in split_graphemes(ucs))
 
@@ -182,7 +182,7 @@ class Codepage(object):
                 pass
         return self.cp_to_unicode.get(cp, replace)
 
-    def str_to_unicode(self, cps, preserve=(), box_protect=None, use_substitutes=False):
+    def bytes_to_unicode(self, cps, preserve=(), box_protect=None, use_substitutes=False):
         """Convert codepage string to unicode string."""
         if box_protect is None:
             box_protext = self.box_protect
@@ -271,7 +271,7 @@ class InputStreamWrapper(_StreamWrapperBase):
             unistr = self._stream.read()
         else:
             unistr = u''
-        converted = (self._buffer + self._codepage.str_from_unicode(unistr, errors='replace'))
+        converted = (self._buffer + self._codepage.unicode_to_bytes(unistr, errors='replace'))
         if n < 0:
             output = converted
         else:

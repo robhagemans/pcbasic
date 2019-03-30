@@ -138,7 +138,7 @@ class NonBlockingInputWrapper(object):
             # raw input means it's already in the BASIC codepage
             # but the keyboard functions use unicode
             # for input, don't use lead-byte buffering beyond the convert call
-            s = self._codepage.str_to_unicode(s, preserve=CONTROL)
+            s = self._codepage.bytes_to_unicode(s, preserve=CONTROL)
         # replace CRLF (and, if desired, LF) with CR
         s = s.replace(u'\r\n', u'\r')
         if self._lfcr:
