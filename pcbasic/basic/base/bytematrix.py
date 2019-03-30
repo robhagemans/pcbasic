@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import operator
 from binascii import hexlify, unhexlify
 
-from ...compat import zip, int2byte, xrange, iterbytes
+from ...compat import zip, int2byte, xrange, iterbytes, iterchar
 
 
 class ByteMatrix(object):
@@ -27,8 +27,12 @@ class ByteMatrix(object):
             # assume iterable, TypeError if not
             data = list(data)
             if len(data) == height:
-                assert len(data[0]) == width
-                self._rows = [bytearray(_row) for _row in data]
+                if isinstance(data[0], int):
+                    # bytearrays and python3 bytes
+                    self._rows = [bytearray([_row]) for _row in data]
+                else:
+                    assert len(data[0]) == width
+                    self._rows = [bytearray(_row) for _row in data]
             else:
                 assert len(data) == height * width
                 self._rows = [

@@ -282,12 +282,11 @@ class SessionTest(unittest.TestCase):
                         g.write(b' ')
 
         with Session(extension=Extension) as s:
-            s.execute('''
+            s.execute(b'''
                 _OUTPUT "one", 2, 3!, 4#
                 _output "!\x9c$"
             ''')
         with open(outfile, 'rb') as f:
-            #print repr(f.read())
             assert f.read() == b'one 2 3 4 !\x9c$ '
 
     def test_extended_session(self):
