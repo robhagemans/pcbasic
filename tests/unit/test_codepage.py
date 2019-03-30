@@ -162,36 +162,6 @@ class CodepageTest(unittest.TestCase):
 
 ##############################################################################
 
-from pcbasic.basic.codepage import split_graphemes
-
-
-class GraphemeTest(unittest.TestCase):
-    """Unit tests for split_graphemes."""
-
-    def test_split_graphemes(self):
-        """Unit test for split_graphemes."""
-        # test base ascii
-        assert split_graphemes(u'abcde') == list(u'abcde')
-        # test crlf
-        assert split_graphemes(u'abc\r\nde') == [u'a', u'b', u'c', u'\r\n', u'd', u'e']
-        # test controls
-        assert split_graphemes(u'\a\n\r') == [u'\a', u'\n', u'\r']
-        # test Hangul syllables
-        assert split_graphemes(u'\u1100\u1160\u11a8\u11a8\u1100\uac01\u1100\uac00\u11a8') == [
-            # L, V, T, T; L, LVT; L, LV, T
-            u'\u1100\u1160\u11a8\u11a8', u'\u1100\uac01', u'\u1100\uac00\u11a8'
-        ]
-        # regional indicators
-        assert split_graphemes(u'a\U0001f1e6\U0001f1e7b') == [u'a', u'\U0001f1e6\U0001f1e7', u'b']
-        # extend
-        assert split_graphemes(u'a\u0301') == [u'a\u0301',]
-        # spacing mark
-        assert split_graphemes(u'a\u0903b') == [u'a\u0903', u'b']
-        # prepend - we don't seem to have characters with this property...
-
-
-##############################################################################
-
 from io import StringIO
 import pickle
 from pcbasic.compat import copyreg
