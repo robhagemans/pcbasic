@@ -1,5 +1,5 @@
 """
-PC-BASIC test.display
+PC-BASIC test_display
 unit tests for display features of Session API
 
 (c) 2019 Rob Hagemans
