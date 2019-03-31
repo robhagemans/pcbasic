@@ -10,6 +10,7 @@ import unittest
 import os
 import shutil
 import platform
+from io import BytesIO
 
 from pcbasic import Session
 
@@ -208,6 +209,26 @@ class ConsoleTest(_TestCase):
         with Session() as s:
             s.execute(b'print "  1" chr$(&h1f) chr$(&h1f) "2" chr$(&h1e) "3" chr$(&h0c) "4"')
         assert self._get_text_stripped(s) == [b'4'] + [b''] * 24
+
+    def test_input_wrapping_line(self):
+        """Test ctrl-home in console."""
+        with Session() as s:
+            s.press_keys(u'1\r')
+            s.execute(b'cls:print "%s"' % (_LIPSUM[:200],))
+            s.execute(b'locate 1,1: input a$')
+            assert s.get_variable('a$') == b'1'
+            assert self._get_text_stripped(s)[0] == (
+                b'? 1em ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i'
+            )
+
+    def test_close_stream(self):
+        """Test ctrl-home in console."""
+        with open(self._output_path(u'input.txt'), 'wb') as f:
+            f.write(b'?1\r')
+        input_stream = open(self._output_path(u'input.txt'), 'rb')
+        with Session(input_streams=input_stream) as s:
+            s.interact()
+        assert self._get_text_stripped(s) == [b'Ok\xff', b'?1', b' 1', 'Ok\xff'] + [b''] * 21
 
 
 if __name__ == '__main__':
