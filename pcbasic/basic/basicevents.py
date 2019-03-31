@@ -74,13 +74,6 @@ class BasicEvents(object):
         """Activate or deactivate event checking."""
         self.active = active
 
-    @contextmanager
-    def suspend(self):
-        """Context guard to suspend events."""
-        self.suspend_all, store = True, self.suspend_all
-        yield
-        self.suspend_all = store
-
     def command(self, handler, command_char):
         """Turn the event ON, OFF and STOP."""
         if command_char == tk.ON:
@@ -93,9 +86,6 @@ class BasicEvents(object):
                 self.enabled.discard(handler)
         elif command_char == tk.STOP:
             handler.stopped = True
-        else:
-            return False
-        return True
 
 
     ##########################################################################
