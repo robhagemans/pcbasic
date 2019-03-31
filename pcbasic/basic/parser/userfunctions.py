@@ -82,10 +82,6 @@ class UserFunctionManager(object):
         self._values = values
         self._expression_parser = expression_parser
 
-    def __contains__(self, name):
-        """Check if a function of the given (complete) name exists."""
-        return self._memory.complete_name(name) in self._fn_dict
-
     def clear(self):
         """Clear all user-defined functions."""
         self._fn_dict.clear()
