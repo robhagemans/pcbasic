@@ -266,15 +266,15 @@ class Console(object):
         self._text_screen.set_wrap(self.current_row, False)
         out_chars = []
         for c in iterchar(s):
-            row, col = self.current_row, self.current_col
-            if c in b'\n\r\a\x0B\x0C\x1C\x1D\x1E\x1F':
+            if c in b'\t\n\r\a\x0B\x0C\x1C\x1D\x1E\x1F':
                 # non-printing or position-dependent chars, dump buffer first
                 self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=True)
                 out_chars = []
+                row, col = self.current_row, self.current_col
                 if c == b'\t':
                     # TAB
                     num = (8 - (col - 1 - 8 * int((col-1) // 8)))
-                    self._text_screen.write_chars(b' ' * num)
+                    self._text_screen.write_chars(b' ' * num, do_scroll_down=False)
                 elif c == b'\n':
                     # LF
                     # exclude CR/LF

@@ -418,8 +418,8 @@ class TextScreen(object):
         elif self.row_length(row) == self.mode.width:
             # case 1
             wrap_char_attr = (
-                self._apage.get_char(row+1, 0),
-                self._apage.get_attr(row+1, 0)
+                self._apage.get_char(row+1, 1),
+                self._apage.get_attr(row+1, 1)
             )
             if self.row_length(row + 1) == 0:
                 wrap_char_attr = None
