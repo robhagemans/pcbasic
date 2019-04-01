@@ -16,8 +16,6 @@ from pcbasic.basic.base.codestream import CodeStream, TokenisedStream
 from pcbasic.basic.base.bytematrix import ByteMatrix, hstack, vstack
 
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-
 
 class BaseTest(unittest.TestCase):
     """Unit tests for small classes in base."""

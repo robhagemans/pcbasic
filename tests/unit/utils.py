@@ -22,6 +22,8 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.__init__(self, *args, **kwargs)
         here = os.path.dirname(os.path.abspath(__file__))
         self._dir = os.path.join(here, u'output', self.tag)
+        # does not need to exist
+        self._model_dir = os.path.join(here, u'model', self.tag)
 
     def setUp(self):
         """Ensure output directory exists and is empty."""
@@ -34,6 +36,10 @@ class TestCase(unittest.TestCase):
     def output_path(self, *names):
         """Output file name."""
         return os.path.join(self._dir, *names)
+
+    def model_path(self, *names):
+        """Model file name."""
+        return os.path.join(self._model_dir, *names)
 
     def get_text_stripped(self, s):
         """Get screen text stripped of trailing spaces."""

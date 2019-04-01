@@ -11,13 +11,13 @@ import os
 
 from pcbasic import Session
 from pcbasic.compat import int2byte
+from tests.unit.utils import TestCase, run_tests
 
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-
-
-class DisplayTest(unittest.TestCase):
+class DisplayTest(TestCase):
     """Unit tests for display."""
+
+    tag = u'display'
 
     def test_pixels(self):
         """Display all characters in default font."""
@@ -30,7 +30,7 @@ class DisplayTest(unittest.TestCase):
                 50 NEXT
                 RUN
             ''')
-            with open(os.path.join(HERE, 'model', 'display', 'pixels.bin'), 'rb') as model:
+            with open(self.model_path('pixels.bin'), 'rb') as model:
                 model_pix = model.read()
             assert bytes(bytearray(_c for _r in s.get_pixels() for _c in _r)) == model_pix
 
@@ -45,10 +45,10 @@ class DisplayTest(unittest.TestCase):
                 50 NEXT
                 RUN
             ''')
-            with open(os.path.join(HERE, 'model', 'display', 'characters.bin'), 'rb') as model:
+            with open(self.model_path('characters.bin'), 'rb') as model:
                 model_chars = model.read()
             assert bytes(bytearray(_c for _r in s.get_text() for _c in _r)) == model_chars
 
 
 if __name__ == '__main__':
-    unittest.main()
+    run_tests()

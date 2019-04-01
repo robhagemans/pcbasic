@@ -8,44 +8,25 @@ codepage functionality tests
 This file is released under the GNU GPL version 3 or later.
 """
 
-import unittest
-import os
-import shutil
 from io import open
 
 from pcbasic import Session, run
 from pcbasic.data import read_codepage
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+from tests.unit.utils import TestCase, run_tests
 
 
-class CodepageTest(unittest.TestCase):
+class CodepageTest(TestCase):
     """Unit tests for Session."""
 
-    def setUp(self):
-        """Ensure output directory exists."""
-        try:
-            os.mkdir(os.path.join(HERE, u'output', u'codepage'))
-        except EnvironmentError:
-            pass
-        # create directory to mount
-        self._test_dir = os.path.join(HERE, u'output', u'codepage', u'test_dir')
-        try:
-            shutil.rmtree(self._test_dir)
-        except EnvironmentError:
-            pass
-        os.mkdir(self._test_dir)
-
-    def _output_path(self, *name):
-        """Test output file name."""
-        return os.path.join(self._test_dir, *name)
+    tag = u'codepage'
 
     def test_nobox(self):
         """Test no box protection."""
         cp_936 = read_codepage('936')
         with Session(
                 codepage=cp_936, box_protect=False, textfile_encoding='utf-8',
-                devices={'c': self._test_dir},
+                devices={'c': self.output_path()},
             ) as s:
             s.execute('open "c:boxtest.txt" for output as 1')
             s.execute('PRINT#1, CHR$(218);STRING$(10,CHR$(196));CHR$(191)')
@@ -56,7 +37,7 @@ class CodepageTest(unittest.TestCase):
             output_bytes = [_row.strip() for _row in s.get_text()]
             # unicode text
             output_unicode = [_row.strip() for _row in s.get_text(as_type=type(u''))]
-        with open(self._output_path('BOXTEST.TXT'), 'r') as f:
+        with open(self.output_path('BOXTEST.TXT'), 'r') as f:
             assert f.read() == u'\ufeff谀哪哪哪哪目\n\x1a'
         assert output_bytes[0] == b'\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf'
         assert output_unicode[0] == u'谀哪哪哪哪目'
@@ -66,7 +47,7 @@ class CodepageTest(unittest.TestCase):
         cp_936 = read_codepage('936')
         with Session(
                 codepage=cp_936, box_protect=True, textfile_encoding='utf-8',
-                devices={'c': self._test_dir},
+                devices={'c': self.output_path()},
             ) as s:
             # to file
             s.execute('open "c:boxtest.txt" for output as 1')
@@ -77,7 +58,7 @@ class CodepageTest(unittest.TestCase):
             output_bytes = [_row.strip() for _row in s.get_text()]
             # unicode text
             output_unicode = [_row.strip() for _row in s.get_text(as_type=type(u''))]
-        with open(self._output_path('BOXTEST.TXT'), 'r') as f:
+        with open(self.output_path('BOXTEST.TXT'), 'r') as f:
             assert f.read() == u'\ufeff┌──────────┐\n\x1a'
         assert output_bytes[0] == b'\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf'
         assert output_unicode[0] == u'┌──────────┐'
@@ -124,11 +105,11 @@ class CodepageTest(unittest.TestCase):
         # note that we're making a round-trip conversion unicode -> codepage -> unicode
         # this doesn't always work
         for cp, hi in hello.items():
-            with open(self._output_path(hi), 'w') as f:
+            with open(self.output_path(hi), 'w') as f:
                 f.write(hi)
             cp_dict = read_codepage(cp)
             with Session(
-                    codepage=cp_dict, textfile_encoding='utf-8', devices={'c': self._test_dir},
+                    codepage=cp_dict, textfile_encoding='utf-8', devices={'c': self.output_path()},
                 ) as s:
                 s.execute(u'cls:print "{}"'.format(hi))
 
@@ -182,8 +163,10 @@ def pickle_stringio(f):
 copyreg.pickle(StringIO, pickle_stringio)
 
 
-class StreamWrapperTest(unittest.TestCase):
+class StreamWrapperTest(TestCase):
     """Unit tests for split_graphemes."""
+
+    tag = u'codepage'
 
     def test_read(self):
         """Test InputStreamWrapper.read()."""
@@ -216,4 +199,4 @@ class StreamWrapperTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    run_tests()
