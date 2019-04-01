@@ -6,13 +6,8 @@ Tests for console
 This file is released under the GNU GPL version 3 or later.
 """
 
-import unittest
-import os
-import shutil
-import platform
-from io import BytesIO
-
 from pcbasic import Session
+from tests.unit.utils import TestCase, run_tests
 
 
 _LIPSUM = (
@@ -24,35 +19,7 @@ _LIPSUM = (
 )
 
 
-class _TestCase(unittest.TestCase):
-    """Base class for test cases."""
-
-    tag = None
-
-    def __init__(self, *args, **kwargs):
-        """Define output dir name."""
-        unittest.TestCase.__init__(self, *args, **kwargs)
-        here = os.path.dirname(os.path.abspath(__file__))
-        self._dir = os.path.join(here, u'output', self.tag)
-
-    def setUp(self):
-        """Ensure output directory exists and is empty."""
-        try:
-            shutil.rmtree(self._dir)
-        except EnvironmentError:
-            pass
-        os.mkdir(self._dir)
-
-    def _output_path(self, *names):
-        """Output file name."""
-        return os.path.join(self._dir, *names)
-
-    def _get_text_stripped(self, s):
-        """Get screen text stripped of trailing spaces."""
-        return [_row.rstrip() for _row in s.get_text()]
-
-
-class ConsoleTest(_TestCase):
+class ConsoleTest(TestCase):
     """Console tests."""
 
     tag = u'console'
@@ -94,7 +61,7 @@ class ConsoleTest(_TestCase):
             s.press_keys(u'\0\x48')
             s.press_keys(u'system\r')
             s.interact()
-        assert self._get_text_stripped(s) == [
+        assert self.get_text_stripped(s) == [
             b'1orem 3p54m 2olor 7t amet, 89',
             b'Ok\xff',
             b'                             system'
@@ -116,7 +83,7 @@ class ConsoleTest(_TestCase):
             # down, system, enter
             s.press_keys(u'\0\x50system\r')
             s.interact()
-        assert self._get_text_stripped(s) == [
+        assert self.get_text_stripped(s) == [
             b'Ok\xff', b'123     45', b'6', b'', b'8', b' system',
         ] + [b''] * 19
 
@@ -134,7 +101,7 @@ class ConsoleTest(_TestCase):
             # down, system, enter
             s.press_keys(u'\0\x50\0\x50\0\x50\0\x50system\r')
             s.interact()
-        assert self._get_text_stripped(s) == [
+        assert self.get_text_stripped(s) == [
             b'1orem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i',
             b'ncididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostru',
             b'd exercitation ullamco laboris nisi ut a',
@@ -150,7 +117,7 @@ class ConsoleTest(_TestCase):
             s.press_keys(u'\0\x77')
             s.press_keys(u'system\r')
             s.interact()
-        assert self._get_text_stripped(s) == [b'system'] + [b''] * 24
+        assert self.get_text_stripped(s) == [b'system'] + [b''] * 24
 
     def test_control_home(self):
         """Test ctrl-home in console."""
@@ -163,7 +130,7 @@ class ConsoleTest(_TestCase):
             # down, esc, system, enter
             s.press_keys(u'\0\x50\x1bsystem\r')
             s.interact()
-        assert self._get_text_stripped(s) == [
+        assert self.get_text_stripped(s) == [
             b'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i',
             b'ncididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostru',
             b'd exercitation ullamco laboris nisi ut a',
@@ -172,14 +139,14 @@ class ConsoleTest(_TestCase):
 
     def test_control_printscreen(self):
         """Test ctrl+printscreen in console."""
-        with Session(devices={'lpt1:': 'FILE:'+self._output_path(u'printscr.txt')}) as s:
+        with Session(devices={'lpt1:': 'FILE:'+self.output_path(u'printscr.txt')}) as s:
             s.execute(b'cls:print "%s"' % (_LIPSUM[:200],))
             # ctrl + prtscr
             s.press_keys(u'\0\x72')
             # down, system, enter
             s.press_keys(u'\0\x50\0\x50\0\x50\0\x50system\r')
             s.interact()
-        with open(self._output_path(u'printscr.txt'), 'rb') as f:
+        with open(self.output_path(u'printscr.txt'), 'rb') as f:
             assert f.read() == b'system\r\n'
 
     def test_control_c(self):
@@ -189,26 +156,26 @@ class ConsoleTest(_TestCase):
             s.press_keys(u'\x03')
             s.press_keys(u'system\r')
             s.interact()
-        assert self._get_text_stripped(s) == [b'Ok\xff', b'', b'system'] + [b'']*22
+        assert self.get_text_stripped(s) == [b'Ok\xff', b'', b'system'] + [b'']*22
 
     def test_print_control(self):
         """Test printing control chars."""
         with Session() as s:
             s.execute(b'print chr$(7) "1" chr$(9) "2" chr$(&h1c) "3" chr$(&h1d) "4"')
             s.execute(b'print chr$(7)+"1"+chr$(9)+"2"+chr$(&h1c)+"3"+chr$(&h1d)+"4"')
-        assert self._get_text_stripped(s) == [b'1       2 4', b'1       2 4'] + [b''] * 23
+        assert self.get_text_stripped(s) == [b'1       2 4', b'1       2 4'] + [b''] * 23
 
     def test_print_control_2(self):
         """Test printing control chars."""
         with Session() as s:
             s.execute(b'print "  1" chr$(&h1f) chr$(&h1f) "2" chr$(&h1e) "3" chr$(&h0b) "4"')
-        assert self._get_text_stripped(s) == [b'4 1', b'    3', b'   2'] +[b''] * 22
+        assert self.get_text_stripped(s) == [b'4 1', b'    3', b'   2'] +[b''] * 22
 
     def test_print_control_3(self):
         """Test printing control chars."""
         with Session() as s:
             s.execute(b'print "  1" chr$(&h1f) chr$(&h1f) "2" chr$(&h1e) "3" chr$(&h0c) "4"')
-        assert self._get_text_stripped(s) == [b'4'] + [b''] * 24
+        assert self.get_text_stripped(s) == [b'4'] + [b''] * 24
 
     def test_input_wrapping_line(self):
         """Test ctrl-home in console."""
@@ -217,19 +184,19 @@ class ConsoleTest(_TestCase):
             s.execute(b'cls:print "%s"' % (_LIPSUM[:200],))
             s.execute(b'locate 1,1: input a$')
             assert s.get_variable('a$') == b'1'
-            assert self._get_text_stripped(s)[0] == (
+            assert self.get_text_stripped(s)[0] == (
                 b'? 1em ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i'
             )
 
     def test_close_stream(self):
         """Test ctrl-home in console."""
-        with open(self._output_path(u'input.txt'), 'wb') as f:
+        with open(self.output_path(u'input.txt'), 'wb') as f:
             f.write(b'?1\r')
-        input_stream = open(self._output_path(u'input.txt'), 'rb')
+        input_stream = open(self.output_path(u'input.txt'), 'rb')
         with Session(input_streams=input_stream) as s:
             s.interact()
-        assert self._get_text_stripped(s) == [b'Ok\xff', b'?1', b' 1', 'Ok\xff'] + [b''] * 21
+        assert self.get_text_stripped(s) == [b'Ok\xff', b'?1', b' 1', b'Ok\xff'] + [b''] * 21
 
 
 if __name__ == '__main__':
-    unittest.main()
+    run_tests()
