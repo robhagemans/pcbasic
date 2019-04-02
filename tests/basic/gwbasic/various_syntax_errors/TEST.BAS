@@ -5,6 +5,8 @@
 40 ON PRINT GOSUB 2000
 45 ' illegal function call
 50 AUTO 10,
+55 ' missing operand
+60 PRINT USING "\\";
 99 close:end
 1000 print#1, err, erl
 1010 resume next

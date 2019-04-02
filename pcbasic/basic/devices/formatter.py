@@ -115,6 +115,7 @@ class Formatter(object):
                             else:
                                 self._output.write(fors.read(1))
                             continue
+                    format_chars = True
                     value = next(args)
                     if value is None:
                         newline = False
@@ -122,8 +123,9 @@ class Formatter(object):
                     if start_cycle:
                         self._output.write(initial_literal)
                         start_cycle = False
-                        format_chars = True
                     self._output.write(format_field.format(value))
+            # consume any remaining arguments / finish parser
+            list(args)
         except StopIteration:
             pass
         if not format_chars:
