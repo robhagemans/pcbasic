@@ -463,7 +463,7 @@ class Parser(object):
         """Parse nothing."""
         # e.g. TRON LAH raises error but TRON will have been executed
         return
-        yield
+        yield # pragme: no cover
 
     def _parse_end(self, ins):
         """Parse end-of-statement before executing argumentless statement."""
@@ -471,19 +471,19 @@ class Parser(object):
         ins.require_end()
         # empty generator
         return
-        yield
+        yield # pragme: no cover
 
     def _skip_line(self, ins):
         """Ignore the rest of the line."""
         ins.skip_to(tk.END_LINE)
         return
-        yield
+        yield # pragme: no cover
 
     def _skip_statement(self, ins):
         """Ignore rest of statement."""
         ins.skip_to(tk.END_STATEMENT)
         return
-        yield
+        yield # pragme: no cover
 
     ###########################################################################
     # single argument

@@ -400,9 +400,11 @@ class Memory(object):
     def call_(self, args):
         """CALL or CALLS: Call machine language procedure."""
         addr_var = next(args)
+        # call procedure address must be numeric
         if self._memory.complete_name(addr_var)[-1:] == values.STR:
             # type mismatch
             raise error.BASICError(error.TYPE_MISMATCH)
+        # ignore well-shaped arguments
         list(args)
         logging.warning('CALL/CALLS statement not implemented')
 

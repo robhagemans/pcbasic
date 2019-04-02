@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-PC-BASIC test.codepage
-codepage functionality tests
+PC-BASIC tests.test_codepage
+Codepage functionality tests
 
 (c) 2019 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -10,7 +10,7 @@ This file is released under the GNU GPL version 3 or later.
 
 from io import open
 
-from pcbasic import Session, run
+from pcbasic import Session
 from pcbasic.data import read_codepage
 
 from tests.unit.utils import TestCase, run_tests
