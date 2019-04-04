@@ -17,7 +17,9 @@
 85 ' syntax error
 90 a$="12345"
 91 MID$[a$,1,1] = "a"
-99 close:end
+99 ' syntax error
+100 a = INPUT(1)
+999 close:end
 1000 print#1, err, erl
 1010 resume next
 2000 return

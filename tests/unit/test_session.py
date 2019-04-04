@@ -253,13 +253,19 @@ class SessionTest(unittest.TestCase):
             def add(x, y):
                 return '%s plus %s equals %s' % (repr(x), repr(y), repr(x+y))
 
+            @staticmethod
+            def one():
+                return 1
+
         with Session(extension=Extension) as s:
             s.execute('''
                 10 a=5
                 run
                 b$ = _add(a, 1)
+                c% = _one
             ''')
             assert s.get_variable("a!") == 5
+            assert s.get_variable("c%") == 1
             assert s.get_variable("b$") == b'5.0 plus 1 equals 6.0'
 
     def test_extension_statement(self):
