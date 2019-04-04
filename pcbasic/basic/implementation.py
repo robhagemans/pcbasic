@@ -599,7 +599,7 @@ class Implementation(object):
         if jumpnum is not None:
             jumpnum = values.to_int(jumpnum, unsigned=True)
         common_all, delete_lines = next(args), next(args)
-        from_line, to_line = delete_lines if delete_lines else None, None
+        from_line, to_line = delete_lines if delete_lines else (None, None)
         if to_line is not None and to_line not in self.program.line_numbers:
             raise error.BASICError(error.IFC)
         list(args)
@@ -785,8 +785,6 @@ class Implementation(object):
         # get string variable
         readvar, indices = next(args)
         list(args)
-        if not readvar:
-            raise error.BASICError(error.STX)
         readvar = self.memory.complete_name(readvar)
         if readvar[-1:] != values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
