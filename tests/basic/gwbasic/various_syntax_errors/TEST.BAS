@@ -1,4 +1,5 @@
-10 ' test ON event syntax error 
+10 ' test assorted statements raising errors
+11 ' these exercise corner cases in the code
 20 open"errors.txt"for output as 1
 30 on error goto 1000
 35 ' syntax error
@@ -19,6 +20,10 @@
 91 MID$[a$,1,1] = "a"
 99 ' syntax error
 100 a = INPUT(1)
+110 ' illegal function call
+120 CHAIN "test" ,,DELETE 60000-61000
+130 ' type mismatch
+140 LINE INPUT A
 999 close:end
 1000 print#1, err, erl
 1010 resume next
