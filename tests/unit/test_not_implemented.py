@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 PC-BASIC tests.test_not_implemented
 Exercise not-implemented and part-implemented statements and functions
@@ -8,9 +6,7 @@ Exercise not-implemented and part-implemented statements and functions
 This file is released under the GNU GPL version 3 or later.
 """
 
-
 from pcbasic import Session
-from pcbasic.data import read_codepage
 
 from tests.unit.utils import TestCase, run_tests
 
