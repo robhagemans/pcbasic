@@ -8,14 +8,16 @@ This file is released under the GNU GPL version 3 or later.
 
 import unittest
 import os
+import io
 
 from pcbasic import Session, run
+from tests.unit.utils import TestCase, run_tests
 
-HERE = os.path.dirname(os.path.abspath(__file__))
 
-
-class SessionTest(unittest.TestCase):
+class SessionTest(TestCase):
     """Unit tests for Session."""
+
+    tag = u'session'
 
     def test_session(self):
         """Test basic Session API."""
@@ -133,36 +135,37 @@ class SessionTest(unittest.TestCase):
 
     def test_resume(self):
         """Test resume."""
-        loc = os.path.join(HERE, 'output', 'session')
-        run("--exec='A=1:open\"z:output.txt\" for output as 1:SYSTEM'", '--mount=z:%s' % loc, '-b')
+        run(
+            "--exec='A=1:open\"z:output.txt\" for output as 1:SYSTEM'",
+            '--mount=z:%s' % self.output_path(), '-b'
+        )
         run('--resume', '--keys=?#1,A:close:system\r', '-b')
-        with open(os.path.join(loc, 'OUTPUT.TXT'), 'rb') as outfile:
+        with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
             output = outfile.read()
         assert output == b' 1 \r\n\x1a'
 
     def test_session_bind_file(self):
         """test Session.bind_file."""
         # open file object
-        loc = os.path.join(HERE, 'output', 'session')
-        with open(os.path.join(loc, 'testfile'), 'wb') as f:
+        with open(self.output_path('testfile'), 'wb') as f:
             with Session() as s:
                 name = s.bind_file(f)
                 # can use name as string
                 assert len(str(name)) <= 12
                 # write to file
                 s.execute('open "{0}" for output as 1: print#1, "x"'.format(name))
-        with open(os.path.join(loc, 'testfile'), 'rb') as f:
+        with open(self.output_path('testfile'), 'rb') as f:
             output = f.read()
         assert output == b'x\r\n\x1a'
         # existing file by name
         with Session() as s:
-            name = s.bind_file(os.path.join(loc, 'testfile'))
+            name = s.bind_file(self.output_path('testfile'))
             # write to file
             s.execute('open "{0}" for input as 1'.format(name))
             s.execute('input#1, a$')
             assert s.get_variable('A$') == b'x'
         # create file by name
-        native_name = os.path.join(loc, u'new-test-file')
+        native_name = self.output_path(u'new-test-file')
         try:
             os.remove(native_name)
         except EnvironmentError:
@@ -174,14 +177,14 @@ class SessionTest(unittest.TestCase):
             output = f.read()
         assert output == b'test\x1a'
         # existing file by BASIC name
-        with Session(devices={b'Z': loc}) as s:
+        with Session(devices={b'Z': self.output_path()}) as s:
             name = s.bind_file(b'Z:TESTFILE')
             # write to file
             s.execute('open "{0}" for input as 1'.format(name))
             s.execute('input#1, a$')
             assert s.get_variable('A$') == b'x'
-        # create file by name , provide BASIC name (bytes)
-        native_name = os.path.join(loc.encode('ascii'), b'new-test-file')
+        # create file by name, provide BASIC name (bytes)
+        native_name = self.output_path(u'new-test-file').encode('ascii')
         try:
             os.remove(native_name)
         except EnvironmentError:
@@ -192,8 +195,8 @@ class SessionTest(unittest.TestCase):
         with open(native_name, 'rb') as f:
             output = f.read()
         assert output == b'test\x1a'
-        # create file by name , provide BASIC name (unicode)
-        native_name = os.path.join(loc.encode('ascii'), b'new-test-file')
+        # create file by name, provide BASIC name (unicode)
+        native_name = self.output_path(u'new-test-file')
         try:
             os.remove(native_name)
         except EnvironmentError:
@@ -245,6 +248,65 @@ class SessionTest(unittest.TestCase):
         assert output[:3] == [b'0', b'Break\xff', b'Syntax error\xff']
         assert output[3:] == [b''] * 22
 
+    def test_session_no_streams(self):
+        """Test Session without stream copy."""
+        with Session(input_streams=None, output_streams=None) as s:
+            s.execute(b'a=1')
+            s.execute(b'print a')
+        output = self.get_text_stripped(s)
+        assert output[:1] == [b' 1']
+
+    def test_session_iostreams(self):
+        """Test Session with copy to BytesIO."""
+        bi = io.BytesIO()
+        with Session(input_streams=None, output_streams=bi) as s:
+            s.execute(b'a=1')
+            s.execute(b'print a')
+        assert bi.getvalue() == b' 1 \r\n'
+
+    def test_session_printcopy(self):
+        """Test Session with ctrl print-screen copy."""
+        with Session(
+                input_streams=None, output_streams=None,
+                devices={'LPT1': 'FILE:{}'.format(self.output_path('print.txt'))}
+            ) as s:
+            # ctrl+printscreen
+            s.press_keys(u'\0\x72')
+            s.press_keys(u'system\r')
+            s.interact()
+        with open(self.output_path('print.txt')) as f:
+            assert f.read() == 'system\r\n'
+
+    def test_session_no_printcopy(self):
+        """Test Session switching off ctrl print-screen copy."""
+        with Session(
+                input_streams=None, output_streams=None,
+                devices={'LPT1': 'FILE:{}'.format(self.output_path('print.txt'))}
+            ) as s:
+            # ctrl+printscreen
+            s.press_keys(u'\0\x72\0\x72')
+            s.press_keys(u'system\r')
+            s.interact()
+        with open(self.output_path('print.txt')) as f:
+            assert f.read() == ''
+
+
+from pcbasic.basic import iostreams
+from pcbasic.basic.codepage import Codepage
+
+class NonBlockingInputWrapperTest(TestCase):
+    """Unit tests for NonBlockingInputWrapper."""
+
+    tag = u'nonblockinginputwrapper'
+
+    def test_read_lfcr(self):
+        """Test read() with LF/CR conversion."""
+        with io.open(self.output_path('inp.txt'), 'w') as f:
+            f.write(u'12\n34')
+        stream = io.open(self.output_path('inp.txt'), 'r')
+        nbiw = iostreams.NonBlockingInputWrapper(stream, Codepage(), lfcr=True)
+        assert nbiw.read() == u'12\r34'
+
 
 if __name__ == '__main__':
-    unittest.main()
+    run_tests()
