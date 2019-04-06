@@ -62,7 +62,7 @@ class Implementation(object):
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
-            extension=None
+            extension=()
         ):
         """Initialise the interpreter session."""
         ######################################################################
