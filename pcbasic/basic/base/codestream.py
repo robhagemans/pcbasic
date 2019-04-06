@@ -14,7 +14,23 @@ from . import tokens as tk
 from .tokens import DIGITS, HEXDIGITS, OCTDIGITS, LETTERS
 
 
-class CodeStream(io.BytesIO):
+class StreamWrapper(object):
+    """Base class for delegated stream wrappers."""
+
+    def __init__(self, stream):
+        """Set up codec."""
+        self._stream = stream
+
+    def __getattr__(self, name):
+        """Delegate methods to stream."""
+        if '_stream' in self.__dict__ and name not in ('__getstate__', '__dict__'):
+            return getattr(self._stream, name)
+        else:
+            # this is needed for pickle to be able to reconstruct the class
+            raise AttributeError()
+
+
+class CodeStream(StreamWrapper):
     """Stream of various kinds of code."""
 
     # whitespace
@@ -24,7 +40,9 @@ class CodeStream(io.BytesIO):
 
     def __init__(self, bytesbuffer):
         """Initialise the stream."""
-        io.BytesIO.__init__(self, bytesbuffer)
+        self._buffer = bytesbuffer
+        # we need delegation rather than inheritance to allow pickling under Python 2
+        StreamWrapper.__init__(self, io.BytesIO(bytesbuffer))
 
     def peek(self, n=1):
         """Peek next char in stream."""
@@ -239,6 +257,7 @@ class TokenisedStream(CodeStream):
         """Initialise tokenised stream."""
         # memory address, if any
         self._addr = addr
+        CodeStream.__init__(self, b'')
 
     def tell_address(self):
         """Get memory address for current stream position."""

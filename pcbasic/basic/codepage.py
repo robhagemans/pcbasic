@@ -15,6 +15,8 @@ import io
 
 from ..compat import iterchar, iteritems, int2byte, unichr
 
+from .base.codestream import StreamWrapper
+
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
@@ -239,23 +241,8 @@ class Codepage(object):
 ##############################################################################
 # stream wrappers
 
-class _StreamWrapperBase(object):
-    """Base class for delegated stream wrappers."""
 
-    def __init__(self, stream):
-        """Set up codec."""
-        self._stream = stream
-
-    def __getattr__(self, name):
-        """Delegate methods to stream."""
-        if '_stream' in self.__dict__ and name not in ('__getstate__', '__dict__'):
-            return getattr(self._stream, name)
-        else:
-            # this is needed for pickle to be able to reconstruct the class
-            raise AttributeError()
-
-
-class OutputStreamWrapper(_StreamWrapperBase):
+class OutputStreamWrapper(StreamWrapper):
     """
     Converter stream wrapper, takes bytes input.
     Stream must be a unicode (text) stream.
@@ -272,7 +259,7 @@ class OutputStreamWrapper(_StreamWrapperBase):
         self._stream.write(self._conv.to_unicode(s))
 
 
-class InputStreamWrapper(_StreamWrapperBase):
+class InputStreamWrapper(StreamWrapper):
     """
     Converter stream wrapper, produces bytes output.
     Stream must be a unicode (text) stream.
@@ -300,12 +287,12 @@ class InputStreamWrapper(_StreamWrapperBase):
         return output
 
 
-class NewlineWrapper(_StreamWrapperBase):
+class NewlineWrapper(StreamWrapper):
     """Replace newlines on input stream. Wraps a bytes stream."""
 
     def __init__(self, stream):
         """Set up codec."""
-        _StreamWrapperBase.__init__(self, stream)
+        StreamWrapper.__init__(self, stream)
         self._last = b''
 
     def read(self, n=-1):
