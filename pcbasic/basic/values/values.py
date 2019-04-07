@@ -185,13 +185,11 @@ class FloatErrorHandler(object):
             # message should not include line number or trailing \xFF
             self._console.write_line(error.BASICError(math_error).message)
         # return max value for the appropriate float type
-        if e.args and e.args[0]:
-            if isinstance(e.args[0], numbers.Float):
-                return e.args[0]
-            elif isinstance(e.args[0], numbers.Integer):
-                # integer values are not soft-handled
-                raise error.BASICError(math_error)
-        return numbers.Single(None, self).from_bytes(numbers.Single.pos_max)
+        # integer operations should just raise the BASICError directly, they are not handled
+        if e.args and isinstance(e.args[0], numbers.Float):
+            return e.args[0]
+        else: # pragma: no cover
+            return numbers.Single(None, self).from_bytes(numbers.Single.pos_max)
 
 
 ###############################################################################
