@@ -6,7 +6,6 @@ unit tests for session API
 This file is released under the GNU GPL version 3 or later.
 """
 
-import unittest
 import os
 import io
 
