@@ -2477,6 +2477,8 @@ def exec_width(ins):
             # gives illegal function call, not syntax error
         util.require(ins, tk.end_statement, err=error.IFC)
     util.require(ins, tk.end_statement)
+    if not dev:
+        raise error.RunError(error.DEVICE_UNAVAILABLE)
     dev.set_width(w)
 
 def exec_screen(ins):
