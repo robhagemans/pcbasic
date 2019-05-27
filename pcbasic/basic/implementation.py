@@ -454,7 +454,7 @@ class Implementation(object):
             # select video memory size (Tandy/PCjr only)
             video_size = next(args)
             if video_size is not None:
-                video_size = values.round(video_size).to_value()
+                video_size = round(video_size.to_value())
                 self.display.set_video_memory_size(video_size)
             # execute any remaining parsing steps
             next(args)

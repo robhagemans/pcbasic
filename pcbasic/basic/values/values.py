@@ -308,12 +308,6 @@ class Values(object):
         return self.new_single().from_decimal(mantissa, exp10)
 
 
-@float_safe
-def round(x):
-    """Round to nearest whole number without converting to int."""
-    return pass_number(x).to_float().iround()
-
-
 ###############################################################################
 # conversions
 

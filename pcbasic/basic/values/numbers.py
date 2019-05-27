@@ -286,10 +286,6 @@ class Integer(Number):
 
     # operations
 
-    def iround(self):
-        """Round in-place (no-op)."""
-        return self
-
     def itrunc(self):
         """Truncate towards zero in-place (no-op)."""
         return self
@@ -530,10 +526,6 @@ class Float(Number):
         """Absolute value in-place."""
         self._buffer[-2:-1] = int2byte(bytearray(self._buffer)[-2] & 0x7F)
         return self
-
-    def iround(self):
-        """Round in-place."""
-        return self.from_int(self.to_int())
 
     def itrunc(self):
         """Truncate towards zero in-place."""
