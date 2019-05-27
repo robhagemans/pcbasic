@@ -153,6 +153,25 @@ class ValuesTest(TestCase):
         assert isinstance(values.pow(d, s), Single)
         assert isinstance(values.pow(s, s), Single)
 
+    def test_repr(self):
+        """Test representation."""
+        vm = values.Values(None, double_math=False)
+        i = vm.new_integer().from_int(1)
+        s = vm.new_single().from_int(1)
+        d = vm.new_double().from_int(1)
+        st = vm.new_string()
+        assert isinstance(repr(i), type(''))
+        assert isinstance(repr(s), type(''))
+        assert isinstance(repr(d), type(''))
+        assert isinstance(repr(st), type(''))
+
+    def test_integer_from_token_error(self):
+        """Test Integer.from_token()."""
+        vm = values.Values(None, double_math=False)
+        with self.assertRaises(ValueError):
+            vm.new_integer().from_token(b'abc')
+
+
 
 if __name__ == '__main__':
     run_tests()

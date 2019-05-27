@@ -1,11 +1,11 @@
 10 ' test float and integer division by zero 
-20 ? 1./0/0
-30 ? 1#/0/0
-32 ? 1\0
-34 ? 1 MOD 0
+25 ? (-1.)/0/0
+31 ? (-1#)/0/0
+33 ? (-1)\0
+35 ? (-1) MOD 0
 39 on error goto 500
-40 ? 1\0\0
-55 ? 1 MOD 0 MOD 0
+50 ? (-1)\0\0
+57 ? (-1) MOD 0 MOD 0
 60 end
 500 print "error:", err, erl
 510 resume next
