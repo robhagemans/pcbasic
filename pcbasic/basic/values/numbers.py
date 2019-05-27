@@ -221,10 +221,6 @@ class Integer(Number):
         else:
             return tk.T_INT + self._buffer.tobytes()
 
-    def to_token_linenum(self):
-        """Return unsigned value as line number token."""
-        return tk.T_UINT + self._buffer.tobytes()
-
     def to_token_hex(self):
         """Return unsigned value as hex token."""
         return tk.T_HEX + self._buffer.tobytes()
