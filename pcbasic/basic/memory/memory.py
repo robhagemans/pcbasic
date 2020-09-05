@@ -337,7 +337,7 @@ class DataSegment(object):
             return max(0, self._get_basic_memory(addr))
 
     def set_memory(self, addr, val):
-        """Set datat in data memory."""
+        """Set data in data memory."""
         addr -= self.data_segment*0x10
         if addr >= self.var_start():
             # POKING in variables
