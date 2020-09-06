@@ -268,13 +268,15 @@ class VideoCLI(VideoTextBase):
         """Initialise video mode """
         self._text = [[u' '] * text_width for _ in range(text_height)]
 
-    def _redraw_row(self, row):
+    def _redraw_row(self, row, until=None):
         """Draw the stored text in a row."""
         if not row:
             return
-        self._update_col(1)
-        rowtext = (u''.join(self._text[row-1]))
-        console.write(rowtext.replace(u'\0', u' '))
+        console.write('\r')
+        rowtext = (u''.join(self._text[row-1])).replace(u'\0', u' ')
+        if until:
+            rowtext = rowtext[:(until-1)]
+        console.write(rowtext)
         self._col = len(self._text[row-1])+1
 
     def _update_position(self, row, col):
@@ -287,15 +289,13 @@ class VideoCLI(VideoTextBase):
             self._last_row = row
             # show what's on the line where we are.
             self._redraw_row(row)
-        self._update_col(col)
-
-    def _update_col(self, col):
-        """Move terminal print column."""
-        if col != self._col:
-            if self._col > col:
-                console.move_cursor_left(self._col-col)
-            elif self._col < col:
-                console.move_cursor_right(col-self._col)
+            # redraw until current column to put cursor in the right position
+            if col:
+                self._redraw_row(row, until=col)
+        elif row and col and col != self._col:
+            # we're on the current row
+            # only redraw if column has changed
+            self._redraw_row(row, until=col)
             self._col = col
 
 
