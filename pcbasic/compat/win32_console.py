@@ -408,14 +408,16 @@ class Win32Console(object):
         )
         _SetConsoleCursorPosition(HSTDOUT, wintypes._COORD(0, 0))
 
-    def clear_row(self):
+    def clear_row(self, width=None):
         """Clear the current row."""
         csbi = GetConsoleScreenBufferInfo(HSTDOUT)
         from_coord = wintypes._COORD(0, csbi.dwCursorPosition.Y)
-        # fill the entire screen with blanks
-        FillConsoleOutputCharacter(HSTDOUT, u' ', csbi.dwSize.X, from_coord)
+        # fill the entire row with blanks
+        if width is None:
+            width = csbi.dwSize.X
+        FillConsoleOutputCharacter(HSTDOUT, u' ', width, from_coord)
         # now set the buffer's attributes accordingly
-        FillConsoleOutputAttribute(HSTDOUT, self._attrs, csbi.dwSize.X, from_coord)
+        FillConsoleOutputAttribute(HSTDOUT, self._attrs, width, from_coord)
 
     def set_cursor_colour(self, colour):
         """Set the current cursor colour attribute - not supported."""

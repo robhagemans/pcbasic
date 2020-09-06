@@ -40,9 +40,10 @@ else:
 # ANSI escape sequences
 # these are supported by xterm
 ANSI = SimpleNamespace(
-    RESET = u'\x1Bc',
+    # clearing
     CLEAR_SCREEN = u'\x1B[2J',
     CLEAR_LINE = u'\x1B[2K',
+    CLEAR_LINE_TO = u'\x1B7\x1B[%iG\x1B[1K\x1B8',
     # scrolling
     RESET_SCROLL_AREA = u'\x1B[r',
     SET_SCROLL_AREA = u'\x1B[%i;%ir',
@@ -253,9 +254,12 @@ class PosixConsole(object):
             ANSI.MOVE_CURSOR % (1, 1)
         )
 
-    def clear_row(self):
+    def clear_row(self, width=None):
         """Clear the current row."""
-        self._emit_ansi(ANSI.CLEAR_LINE)
+        if width is None:
+            self._emit_ansi(ANSI.CLEAR_LINE)
+        else:
+            self._emit_ansi(ANSI.CLEAR_LINE_TO % (width,))
 
     def show_cursor(self, block=False):
         """Show the cursor."""

@@ -306,6 +306,8 @@ class VideoCurses(VideoPlugin):
                 self.window.clrtoeol()
             except curses.error:
                 pass
+        # fix border
+        self.set_border_attr(self.border_attr)
 
     def set_palette(self, attributes, dummy_pack_pixels):
         """Build the palette."""
