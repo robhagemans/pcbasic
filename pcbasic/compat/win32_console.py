@@ -328,7 +328,7 @@ class _ConsoleWriter:
             else:
                 if cls._overflow and ch not in (u'\n', u'\r', u'\b'):
                     _WriteConsoleW(
-                        handle, u'\n', 1,
+                        handle, u'\r\n', 1,
                         byref(wintypes.DWORD()), byref(wintypes.DWORD())
                     )
                     col = 0
@@ -337,7 +337,7 @@ class _ConsoleWriter:
                     handle, ch, 1,
                     byref(wintypes.DWORD()), byref(wintypes.DWORD())
                 )
-            if ch == u'\r' or ch == u'\n':
+            if ch == u'\r':
                 col = 0
                 cls._overflow = False
             elif ch == b'\b':
