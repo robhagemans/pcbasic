@@ -21,15 +21,10 @@ import atexit
 from collections import deque
 try:
     import curses
-except Exception:
+except ImportError:
     curses = None
 
 from .base import MACOS, PY2, HOME_DIR, wrap_input_stream, wrap_output_stream
-
-if PY2:
-    from .python2 import SimpleNamespace
-else:
-    from types import SimpleNamespace
 
 
 # ANSI escape codes
@@ -49,22 +44,29 @@ else:
 # - we use the delete/insert lines sequences rather than scroll as they are better supported
 # unfortunately terminfo is spotty on cursor shape and palette functionality,
 # plus most consoles claim to be xterm anyway
-ANSI = SimpleNamespace(
-    # 1 blinking block 2 block 3 blinking line 4 line
-    SET_CURSOR_BLOCK = u'\x1B[1 q', # Ss 1 ?
-    SET_CURSOR_LINE = u'\x1B[3 q', # Ss 3 ?
-    SET_CURSOR_COLOUR = u'\x1B]12;#%02x%02x%02x\a', # Cs ?
-    # window properties
-    RESIZE_TERM = u'\x1B[8;%i;%i;t', ## ?
-    SET_TITLE = u'\x1B]2;%s\a', ## ?
-)
 
-# overrides for the linux framebuffer console
 if os.getenv('TERM').startswith('linux'):
-    # 1 invisible 2 line 3 third 4 half block 5 two thirds 6 full block
-    ANSI.SET_CURSOR_BLOCK = u'\x1B[?4c'
-    ANSI.SET_CURSOR_LINE = u'\x1B[?2c'
-
+    # linux framebuffer console
+    ANSI_OVERRIDES = dict(
+        # 1 invisible 2 line 3 third 4 half block 5 two thirds 6 full block
+        _cursor_block = b'\x1B[?4c',
+        _cursor_line = b'\x1B[?2c',
+    )
+else:
+    # xterm and family
+    ANSI_OVERRIDES = dict(
+        # 1 blinking block 2 block 3 blinking line 4 line
+        _cursor_block = b'\x1B[1 q', # Ss 1 ?
+        _cursor_line = b'\x1B[3 q', # Ss 3 ?
+        # follow the format of initc
+        # Cs ?
+        _cursor_color = b'\x1b]12;#%p1%{255}%*%{1000}%/%2.2X%p2%{255}%*%{1000}%/%2.2X%p3%{255}%*%{1000}%/%2.2X\a',
+        # window properties
+        _resize = b'\x1B[8;%p1%d;%p2%d;t', ## ?
+        # status line (caption)
+        tsl = b'\x1B]2;',
+        fsl = b'\a',
+    )
 
 # ANSI base key codes
 BASE_KEYS = dict(
@@ -226,27 +228,28 @@ class PosixConsole(object):
         stdout.write(unicode_str)
         stdout.flush()
 
-    def _emit_ansi(self, ansistr):
-        """Emit escape code."""
-        stdout.write(ansistr)
-        stdout.flush()
-
     def _emit_ti(self, capability, *args):
         """Emit escape code."""
         if not curses:
             return
-        pattern = curses.tigetstr(capability)
+        try:
+            pattern = ANSI_OVERRIDES[capability]
+        except KeyError:
+            pattern = curses.tigetstr(capability)
         if pattern:
             ansistr = curses.tparm(pattern, *args).decode('ascii')
-            self._emit_ansi(ansistr)
+            stdout.write(ansistr)
+            stdout.flush()
 
     def set_caption(self, caption):
         """Set terminal caption."""
-        self._emit_ansi(ANSI.SET_TITLE % (caption,))
+        self._emit_ti('tsl')
+        stdout.write(caption)
+        self._emit_ti('fsl')
 
     def resize(self, height, width):
         """Resize terminal."""
-        self._emit_ansi(ANSI.RESIZE_TERM % (height, width))
+        self._emit_ti('_resize', height, width)
         self._height = height
         # start below the current output
         self.clear()
@@ -270,9 +273,9 @@ class PosixConsole(object):
         """Show the cursor."""
         self._emit_ti('cnorm')
         if block:
-            self._emit_ansi(ANSI.SET_CURSOR_BLOCK)
+            self._emit_ti('_cursor_block')
         else:
-            self._emit_ansi(ANSI.SET_CURSOR_LINE)
+            self._emit_ti('_cursor_line')
 
     def hide_cursor(self):
         """Hide the cursor."""
@@ -298,8 +301,8 @@ class PosixConsole(object):
     def set_cursor_colour(self, colour):
         """Set the current cursor colour attribute."""
         try:
-            rgb = self._palette[colour]
-            self._emit_ansi(ANSI.SET_CURSOR_COLOUR % rgb)
+            red, green, blue = self._palette[colour]
+            self._emit_ti('_cursor_color', (red*1000)//255, (green*1000)//255, (blue*1000)//255)
         except KeyError:
             pass
 
@@ -309,11 +312,9 @@ class PosixConsole(object):
         self._emit_ti('op')
         self._emit_ti('sgr0')
         self._emit_ti('cnorm')
-        self._emit_ansi(
-            ANSI.RESIZE_TERM % self._orig_size +
-            ANSI.SET_CURSOR_COLOUR % (0xff, 0xff, 0xff) +
-            ANSI.SET_CURSOR_BLOCK
-        )
+        self._emit_ti('_resize', *self._orig_size)
+        self._emit_ti('_cursor_color', 1000, 1000, 1000)
+        self._emit_ti('_cursor_block')
 
     def set_attributes(self, fore, back, blink, underline):
         """Set current attributes."""
