@@ -18,8 +18,11 @@ import fcntl
 import array
 import struct
 import atexit
-import curses
 from collections import deque
+try:
+    import curses
+except Exception:
+    curses = None
 
 from .base import MACOS, PY2, HOME_DIR, wrap_input_stream, wrap_output_stream
 
@@ -191,7 +194,8 @@ class PosixConsole(object):
         # palette
         self._palette = list(DEFAULT_PALETTE)
         # needed to access curses.tiget* functions
-        curses.setupterm()
+        if curses:
+            curses.setupterm()
 
     ##########################################################################
     # terminal modes
@@ -229,6 +233,8 @@ class PosixConsole(object):
 
     def _emit_ti(self, capability, *args):
         """Emit escape code."""
+        if not curses:
+            return
         pattern = curses.tigetstr(capability)
         if pattern:
             ansistr = curses.tparm(pattern, *args).decode('ascii')
