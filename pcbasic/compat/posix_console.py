@@ -38,7 +38,13 @@ else:
 
 
 # ANSI escape sequences
-# these are supported by xterm
+# - these are supported by xterm, gnome-terminal
+# - konsole and Terminal.app ignore the palette sequences
+# - konsole (pre 18.08) breaks on the cursor shape sequence
+# - Terminal.app ignores cursor shape but does not break
+# - we use the delete/insert lines sequences rather than scroll as thy are better supported
+# unfortunately terminfo is spotty on cursor shape and palette functionality,
+# plus most consoles claim to be xterm anyway
 ANSI = SimpleNamespace(
     # clearing
     CLEAR_SCREEN = u'\x1B[2J',
@@ -47,8 +53,11 @@ ANSI = SimpleNamespace(
     # scrolling
     RESET_SCROLL_AREA = u'\x1B[r',
     SET_SCROLL_AREA = u'\x1B[%i;%ir',
-    SCROLL_UP = u'\x1B[%iS',
-    SCROLL_DOWN = u'\x1B[%iT',
+    # aka delete lines & insert lines
+    # unlike S & T these require the cursor the be set to the top of the scroll area
+    # but they are more widely supported
+    SCROLL_UP = u'\x1B[%iM', #S
+    SCROLL_DOWN = u'\x1B[%iL', #T
     # location
     MOVE_CURSOR = u'\x1B[%i;%if',
     MOVE_N_RIGHT = u'\x1B[%iC',
@@ -63,17 +72,21 @@ ANSI = SimpleNamespace(
     # colours
     SET_COLOUR = u'\x1B[%im',
     SET_PALETTE_ENTRY = u'\x1B]4;%i;#%02x%02x%02x\a',
-    RESET_PALETTE_ENTRY = u'\x1B]104;%i\a',
+    RESET_PALETTE = u'\x1B]104\a',
     # window properties
     RESIZE_TERM = u'\x1B[8;%i;%i;t',
     SET_TITLE = u'\x1B]2;%s\a',
 )
 
 # overrides for the linux framebuffer console
-if os.getenv('TERM') == 'linux':
+if os.getenv('TERM').startswith('linux'):
     # 1 invisible 2 line 3 third 4 half block 5 two thirds 6 full block
     ANSI.SET_CURSOR_BLOCK = u'\x1B[?4c'
     ANSI.SET_CURSOR_LINE = u'\x1B[?2c'
+    # framebuffer console doesn't refresh characters until they are revisited
+    # but it's better than nothing
+    ANSI.SET_PALETTE_ENTRY = u'\x1B]P%01x%02x%02x%02x'
+    ANSI.RESET_PALETTE = u'\x1B]R'
 
 
 # ANSI base key codes
@@ -290,12 +303,16 @@ class PosixConsole(object):
             if rows < 0:
                 self._emit_ansi(
                     ANSI.SET_SCROLL_AREA % (top, bottom) +
+                    # necesary on framebuffer console
+                    ANSI.MOVE_CURSOR % (top, 1) +
                     ANSI.SCROLL_UP % (-rows,) +
                     ANSI.RESET_SCROLL_AREA
                 )
             elif rows > 0:
                 self._emit_ansi(
                     ANSI.SET_SCROLL_AREA % (top, bottom) +
+                    # necesary on framebuffer console
+                    ANSI.MOVE_CURSOR % (top, 1) +
                     ANSI.SCROLL_DOWN % (rows,) +
                     ANSI.RESET_SCROLL_AREA
                 )
@@ -312,7 +329,7 @@ class PosixConsole(object):
         """Reset to defaults."""
         self._emit_ansi(
             ANSI.RESIZE_TERM % self._orig_size +
-            u''.join(ANSI.RESET_PALETTE_ENTRY % (attr,) for attr in range(16)) +
+            ANSI.RESET_PALETTE +
             ANSI.SET_COLOUR % (0,) +
             ANSI.SHOW_CURSOR +
             ANSI.SET_CURSOR_COLOUR % (0xff, 0xff, 0xff) +
