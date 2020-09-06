@@ -456,20 +456,6 @@ class Win32Console(object):
         curs_info.bVisible = False
         SetConsoleCursorInfo(HSTDOUT, curs_info)
 
-    def move_cursor_left(self, n):
-        """Move cursor n cells to the left."""
-        self._move_cursor(0, -n)
-
-    def move_cursor_right(self, n):
-        """Move cursor n cells to the right."""
-        self._move_cursor(0, n)
-
-    def _move_cursor(self, rows, cols):
-        """Move cursor relative to current position."""
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
-        position = csbi.dwCursorPosition
-        self.move_cursor_to(position.Y+1 + rows, position.X+1 + cols)
-
     def move_cursor_to(self, row, col):
         """Move cursor to a new position (1,1 is top left)."""
         csbi = GetConsoleScreenBufferInfo(HSTDOUT)

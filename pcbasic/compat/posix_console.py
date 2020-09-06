@@ -18,6 +18,7 @@ import fcntl
 import array
 import struct
 import atexit
+import curses
 from collections import deque
 
 from .base import MACOS, PY2, HOME_DIR, wrap_input_stream, wrap_output_stream
@@ -42,40 +43,17 @@ else:
 # - konsole and Terminal.app ignore the palette sequences
 # - konsole (pre 18.08) breaks on the cursor shape sequence
 # - Terminal.app ignores cursor shape but does not break
-# - we use the delete/insert lines sequences rather than scroll as thy are better supported
+# - we use the delete/insert lines sequences rather than scroll as they are better supported
 # unfortunately terminfo is spotty on cursor shape and palette functionality,
 # plus most consoles claim to be xterm anyway
 ANSI = SimpleNamespace(
-    # clearing
-    CLEAR_SCREEN = u'\x1B[2J',
-    CLEAR_LINE = u'\x1B[2K',
-    CLEAR_LINE_TO = u'\x1B7\x1B[%iG\x1B[1K\x1B8',
-    # scrolling
-    RESET_SCROLL_AREA = u'\x1B[r',
-    SET_SCROLL_AREA = u'\x1B[%i;%ir',
-    # aka delete lines & insert lines
-    # unlike S & T these require the cursor the be set to the top of the scroll area
-    # but they are more widely supported
-    SCROLL_UP = u'\x1B[%iM', #S
-    SCROLL_DOWN = u'\x1B[%iL', #T
-    # location
-    MOVE_CURSOR = u'\x1B[%i;%if',
-    MOVE_N_RIGHT = u'\x1B[%iC',
-    MOVE_N_LEFT = u'\x1B[%iD',
-    # cursor
-    SHOW_CURSOR = u'\x1B[?25h',
-    HIDE_CURSOR = u'\x1B[?25l',
     # 1 blinking block 2 block 3 blinking line 4 line
-    SET_CURSOR_BLOCK = u'\x1B[1 q',
-    SET_CURSOR_LINE = u'\x1B[3 q',
-    SET_CURSOR_COLOUR = u'\x1B]12;#%02x%02x%02x\a',
-    # colours
-    SET_COLOUR = u'\x1B[%im',
-    SET_PALETTE_ENTRY = u'\x1B]4;%i;#%02x%02x%02x\a',
-    RESET_PALETTE = u'\x1B]104\a',
+    SET_CURSOR_BLOCK = u'\x1B[1 q', # Ss 1 ?
+    SET_CURSOR_LINE = u'\x1B[3 q', # Ss 3 ?
+    SET_CURSOR_COLOUR = u'\x1B]12;#%02x%02x%02x\a', # Cs ?
     # window properties
-    RESIZE_TERM = u'\x1B[8;%i;%i;t',
-    SET_TITLE = u'\x1B]2;%s\a',
+    RESIZE_TERM = u'\x1B[8;%i;%i;t', ## ?
+    SET_TITLE = u'\x1B]2;%s\a', ## ?
 )
 
 # overrides for the linux framebuffer console
@@ -83,10 +61,6 @@ if os.getenv('TERM').startswith('linux'):
     # 1 invisible 2 line 3 third 4 half block 5 two thirds 6 full block
     ANSI.SET_CURSOR_BLOCK = u'\x1B[?4c'
     ANSI.SET_CURSOR_LINE = u'\x1B[?2c'
-    # framebuffer console doesn't refresh characters until they are revisited
-    # but it's better than nothing
-    ANSI.SET_PALETTE_ENTRY = u'\x1B]P%01x%02x%02x%02x'
-    ANSI.RESET_PALETTE = u'\x1B]R'
 
 
 # ANSI base key codes
@@ -211,10 +185,13 @@ class PosixConsole(object):
         self._term_attr = termios.tcgetattr(sys.stdin.fileno())
         # preserve original terminal size
         self._orig_size = self.get_size()
+        self._height, _ = self._orig_size
         # input buffer
         self._read_buffer = deque()
         # palette
         self._palette = list(DEFAULT_PALETTE)
+        # needed to access curses.tiget* functions
+        curses.setupterm()
 
     ##########################################################################
     # terminal modes
@@ -250,6 +227,13 @@ class PosixConsole(object):
         stdout.write(ansistr)
         stdout.flush()
 
+    def _emit_ti(self, capability, *args):
+        """Emit escape code."""
+        pattern = curses.tigetstr(capability)
+        if pattern:
+            ansistr = curses.tparm(pattern, *args).decode('ascii')
+            self._emit_ansi(ansistr)
+
     def set_caption(self, caption):
         """Set terminal caption."""
         self._emit_ansi(ANSI.SET_TITLE % (caption,))
@@ -257,65 +241,53 @@ class PosixConsole(object):
     def resize(self, height, width):
         """Resize terminal."""
         self._emit_ansi(ANSI.RESIZE_TERM % (height, width))
+        self._height = height
         # start below the current output
         self.clear()
 
     def clear(self):
-        """Clear the screen."""
-        self._emit_ansi(
-            ANSI.CLEAR_SCREEN +
-            ANSI.MOVE_CURSOR % (1, 1)
-        )
+        """Clear the screen and home the cursor."""
+        self._emit_ti('clear')
 
     def clear_row(self, width=None):
         """Clear the current row."""
         if width is None:
-            self._emit_ansi(ANSI.CLEAR_LINE)
+            self._emit_ti('cr')
+            self._emit_ti('el')
         else:
-            self._emit_ansi(ANSI.CLEAR_LINE_TO % (width,))
+            self._emit_ti('sc')
+            self._emit_ti('hpa', width-1)
+            self._emit_ti('el1')
+            self._emit_ti('rc')
 
     def show_cursor(self, block=False):
         """Show the cursor."""
-        self._emit_ansi(
-            ANSI.SHOW_CURSOR +
-            (ANSI.SET_CURSOR_BLOCK if block else ANSI.SET_CURSOR_LINE)
-        )
+        self._emit_ti('cnorm')
+        if block:
+            self._emit_ansi(ANSI.SET_CURSOR_BLOCK)
+        else:
+            self._emit_ansi(ANSI.SET_CURSOR_LINE)
 
     def hide_cursor(self):
         """Hide the cursor."""
-        self._emit_ansi(ANSI.HIDE_CURSOR)
-
-    def move_cursor_left(self, n):
-        """Move cursor n cells to the left."""
-        self._emit_ansi(ANSI.MOVE_N_LEFT % (n,))
-
-    def move_cursor_right(self, n):
-        """Move cursor n cells to the right."""
-        self._emit_ansi(ANSI.MOVE_N_RIGHT % (n,))
+        self._emit_ti('civis')
 
     def move_cursor_to(self, row, col):
         """Move cursor to a new position."""
-        self._emit_ansi(ANSI.MOVE_CURSOR % (row, col))
+        self._emit_ti('hpa', col-1)
+        self._emit_ti('vpa', row-1)
 
     def scroll(self, top, bottom, rows):
         """Scroll the region between top and bottom one row up (-) or down (+)."""
         if bottom > top:
+            self._emit_ti('csr', top-1, bottom-1)
+            self._emit_ti('hpa', 0)
+            self._emit_ti('vpa', top-1)
             if rows < 0:
-                self._emit_ansi(
-                    ANSI.SET_SCROLL_AREA % (top, bottom) +
-                    # necesary on framebuffer console
-                    ANSI.MOVE_CURSOR % (top, 1) +
-                    ANSI.SCROLL_UP % (-rows,) +
-                    ANSI.RESET_SCROLL_AREA
-                )
+                self._emit_ti('dl', -rows)
             elif rows > 0:
-                self._emit_ansi(
-                    ANSI.SET_SCROLL_AREA % (top, bottom) +
-                    # necesary on framebuffer console
-                    ANSI.MOVE_CURSOR % (top, 1) +
-                    ANSI.SCROLL_DOWN % (rows,) +
-                    ANSI.RESET_SCROLL_AREA
-                )
+                self._emit_ti('il', rows)
+            self._emit_ti('csr', 0, self._height-1)
 
     def set_cursor_colour(self, colour):
         """Set the current cursor colour attribute."""
@@ -327,11 +299,12 @@ class PosixConsole(object):
 
     def reset(self):
         """Reset to defaults."""
+        self._emit_ti('oc')
+        self._emit_ti('op')
+        self._emit_ti('sgr0')
+        self._emit_ti('cnorm')
         self._emit_ansi(
             ANSI.RESIZE_TERM % self._orig_size +
-            ANSI.RESET_PALETTE +
-            ANSI.SET_COLOUR % (0,) +
-            ANSI.SHOW_CURSOR +
             ANSI.SET_CURSOR_COLOUR % (0xff, 0xff, 0xff) +
             ANSI.SET_CURSOR_BLOCK
         )
@@ -339,25 +312,21 @@ class PosixConsole(object):
     def set_attributes(self, fore, back, blink, underline):
         """Set current attributes."""
         # use "bold" ANSI colours for the upper 8 EGA attributes
-        style = 90 if (fore > 8) else 30
-        self._emit_ansi(
-            ANSI.SET_COLOUR % (0,) +
-            ANSI.SET_COLOUR % (40 + EGA_TO_ANSI[back],) +
-            ANSI.SET_COLOUR % (style + EGA_TO_ANSI[fore % 8],)
-        )
+        self._emit_ti('sgr0')
+        self._emit_ti('setaf', 8 * (fore // 8) + EGA_TO_ANSI[fore % 8])
+        self._emit_ti('setab', EGA_TO_ANSI[back])
         if blink:
-            self._emit_ansi(ANSI.SET_COLOUR % (5,))
+            self._emit_ti('blink')
         if underline:
-            self._emit_ansi(ANSI.SET_COLOUR % (4,))
+            self._emit_ti('smul')
 
     def set_palette_entry(self, attr, red, green, blue):
         """Set palette entry for attribute (0--16)."""
         # keep a record, mainly for cursor colours
         self._palette[attr] = red, green, blue
         # set the ANSI palette
-        self._emit_ansi(ANSI.SET_PALETTE_ENTRY % (
-            8*(attr//8) + EGA_TO_ANSI[attr%8], red, green, blue
-        ))
+        ansi_attr = 8*(attr//8) + EGA_TO_ANSI[attr%8]
+        self._emit_ti('initc', ansi_attr, (red*1000)//255, (green*1000)//255, (blue*1000)//255)
 
     ##########################################################################
     # input

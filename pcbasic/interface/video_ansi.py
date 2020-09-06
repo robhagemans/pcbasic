@@ -84,7 +84,7 @@ class VideoANSI(video_cli.VideoTextBase):
         for row in range(self._height):
             console.move_cursor_to(row+1 + self._border_y, 1)
             console.write(u' ' * self._border_x)
-            console.move_cursor_right(self._width)
+            console.move_cursor_to(row+1 + self._border_y, self._width + self._border_x + 1)
             console.write(u' ' * self._border_x)
         # draw bottom
         for row in range(self._border_y):
