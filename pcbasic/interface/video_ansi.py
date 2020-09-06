@@ -213,6 +213,10 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
+        # set the default background
+        # as some (not all) consoles use the background color when inserting/deleting
+        # and if they can't resize this leads to glitches outside the window
+        self._set_attributes(7, 0, False, False)
         if direction == -1:
             self._scroll_up(from_line, scroll_height, back_attr)
         else:
