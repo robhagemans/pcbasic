@@ -304,26 +304,47 @@ HSTDOUT = _GetStdHandle(-11)
 HSTDERR = _GetStdHandle(-12)
 
 
-def _write_console(handle, unistr):
-    """Write character to console, avoid scroll on bottom line."""
-    csbi = CONSOLE_SCREEN_BUFFER_INFO()
-    _GetConsoleScreenBufferInfo(handle, byref(csbi))
-    col, row = csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y
-    width, height = csbi.dwSize.X, csbi.dwSize.Y
-    for ch in unistr:
-        if (row == height-1 and col >= width - 1 and ch != u'\n'):
-            ci = CHAR_INFO(ch, csbi.wAttributes)
-            # do not advance cursor if we're on the last position of the
-            # screen buffer, to avoid unwanted scrolling.
-            _WriteConsoleOutputW(
-                handle, byref(ci), wintypes._COORD(1, 1), wintypes._COORD(0, 0),
-                wintypes.SMALL_RECT(col, row, col, row)
-            )
-        else:
-            _WriteConsoleW(
-                handle, ch, 1,
-                byref(wintypes.DWORD()), byref(wintypes.DWORD())
-            )
+class _ConsoleWriter:
+    """Singleton to manage writing to console and consequent scrolling."""
+
+    _overflow = False
+
+    @classmethod
+    def write(cls, handle, unistr):
+        """Write character to console, avoid scroll on bottom line."""
+        csbi = CONSOLE_SCREEN_BUFFER_INFO()
+        _GetConsoleScreenBufferInfo(handle, byref(csbi))
+        col, row = csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y
+        width, height = csbi.dwSize.X, csbi.dwSize.Y
+        for ch in unistr:
+            if (col >= width - 1 and ch not in (u'\n', u'\b', u'\r') and not cls._overflow):
+                ci = CHAR_INFO(ch, csbi.wAttributes)
+                # do not advance cursor if we're on the last position of the
+                # screen buffer, to avoid unwanted scrolling.
+                _WriteConsoleOutputW(
+                    handle, byref(ci), wintypes._COORD(1, 1), wintypes._COORD(0, 0),
+                    wintypes.SMALL_RECT(col, row, col, row)
+                )
+            else:
+                if cls._overflow and ch not in (u'\n', u'\r', u'\b'):
+                    _WriteConsoleW(
+                        handle, u'\n', 1,
+                        byref(wintypes.DWORD()), byref(wintypes.DWORD())
+                    )
+                    col = 0
+                    cls._overflow = False
+                _WriteConsoleW(
+                    handle, ch, 1,
+                    byref(wintypes.DWORD()), byref(wintypes.DWORD())
+                )
+            if ch == u'\r' or ch == u'\n':
+                col = 0
+                cls._overflow = False
+            elif ch == b'\b':
+                col = max(col-1, 0)
+                cls._overflow = False
+            else:
+                col = min(col+1, width-1)
 
 
 ##############################################################################
@@ -393,7 +414,7 @@ class Win32Console(object):
 
     def write(self, unistr):
         """Write text to the console."""
-        _write_console(HSTDOUT, unistr)
+        _ConsoleWriter.write(HSTDOUT, unistr)
 
     def clear(self):
         """Clear the screen."""
@@ -578,7 +599,7 @@ class Win32Console(object):
                             # ctrl-z is end of input on windows console
                             return
                         if self._echo:
-                            _write_console(HSTDOUT, char.replace(u'\r', u'\n'))
+                            _ConsoleWriter.write(HSTDOUT, char.replace(u'\r', u'\n'))
             time.sleep(0.01)
 
     def _translate_event(self, event):
@@ -660,7 +681,7 @@ if PY2:
             if not isinstance(bytestr, bytes):
                 raise TypeError('write() argument must be bytes, not %s' % type(bytestr))
             unistr = bytestr.decode(self.encoding, errors='replace')
-            _write_console(self._handle, unistr)
+            _ConsoleWriter.write(self._handle, unistr)
 
 
     class _ConsoleInput(_StreamWrapper):
