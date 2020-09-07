@@ -245,11 +245,15 @@ class PosixConsole(object):
 
     def start_screen(self):
         """Enter full-screen/application mode."""
+        # switch to alternate buffer
         self._emit_ti('smcup')
+        # set application keypad / keypad transmit mode
+        self._emit_ti('smkx')
 
     def close_screen(self):
         """Leave full-screen/application mode."""
         self.reset()
+        self._emit_ti('rmkx')
         if not self._emit_ti('rmcup'):
             self._emit_ti('clear')
 
