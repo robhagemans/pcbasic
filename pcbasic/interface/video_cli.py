@@ -242,7 +242,7 @@ class VideoCLI(VideoTextBase):
         self._text[start-1:stop] = [[u' '] * len(self._text[0]) for _ in range(start-1, stop)]
         if start <= self._cursor_row and stop >= self._cursor_row:
             self._update_position(self._cursor_row, 1)
-            console.clear_row()
+            self._redraw_row(self._cursor_row)
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
