@@ -97,6 +97,18 @@ BASE_KEYS = dict(
     PAGEDOWN = u'\x1B[6~',
 )
 
+# used by the linux framebuffer console
+LINUX_KEYS = dict(
+    F1 = u'\x1B[[A',
+    F2 = u'\x1B[[B',
+    F3 = u'\x1B[[C',
+    F4 = u'\x1B[[D',
+    F5 = u'\x1B[[E',
+    END = u'\x1B[4~',
+    HOME = u'\x1B[1~',
+    # also, \e[25~ is shift+F1, etc
+)
+
 # CSI-based key codes
 CSI_KEYS = dict(
     END = u'\x1B[F',
@@ -115,6 +127,10 @@ SS3_KEYS = dict(
     F4 = u'\x1BOS',
     END = u'\x1BOF',
     HOME = u'\x1BOH',
+    UP = u'\x1BOA',
+    DOWN = u'\x1BOB',
+    RIGHT = u'\x1BOC',
+    LEFT = u'\x1BOD',
 )
 
 def _mod_csi(number):
@@ -142,6 +158,7 @@ ANSI_TO_KEYMOD = {
     for key, sequence in mod_key_dict.items()
 }
 ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in BASE_KEYS.items()})
+ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in LINUX_KEYS.items()})
 ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in CSI_KEYS.items()})
 ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in SS3_KEYS.items()})
 
