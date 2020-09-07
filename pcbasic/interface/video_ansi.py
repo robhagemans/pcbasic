@@ -52,19 +52,16 @@ class VideoANSI(video_cli.VideoTextBase):
     def __enter__(self):
         """Open ANSI interface."""
         video_cli.VideoTextBase.__enter__(self)
-        # prevent stderr from defacing the screen
-        self._muffle = muffle(sys.stderr)
-        self._muffle.__enter__()  # pylint: disable=no-member
         self.set_caption_message(u'')
+        # go into alternate screen buffer
+        # stderr continues on the primary buffer
+        console.start_screen()
         console.set_attributes(0, 0, False, False)
 
     def __exit__(self, type, value, traceback):
         """Close ANSI interface."""
         try:
-            console.reset()
-            console.clear()
-            # re-enable logger
-            self._muffle.__exit__(type, value, traceback)  # pylint: disable=no-member
+            console.close_screen()
         finally:
             video_cli.VideoTextBase.__exit__(self, type, value, traceback)
 

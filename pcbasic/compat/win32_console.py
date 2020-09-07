@@ -383,6 +383,12 @@ class Win32Console(object):
         self._echo = True
         _SetConsoleMode(HSTDOUT, self._orig_stdin_mode)
 
+    def start_screen(self):
+        """Enter full-screen/application mode."""
+
+    def close_screen(self):
+        """Leave full-screen/application mode."""
+
     def key_pressed(self):
         """key pressed on keyboard."""
         return msvcrt.kbhit()

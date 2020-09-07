@@ -51,6 +51,7 @@ if os.getenv('TERM').startswith('linux'):
         # 1 invisible 2 line 3 third 4 half block 5 two thirds 6 full block
         _cursor_block = b'\x1B[?4c',
         _cursor_line = b'\x1B[?2c',
+        _reset_cursor = b'\x1B[?0c',
     )
 else:
     # xterm and family
@@ -58,6 +59,8 @@ else:
         # 1 blinking block 2 block 3 blinking line 4 line
         _cursor_block = b'\x1B[1 q', # Ss 1 ?
         _cursor_line = b'\x1B[3 q', # Ss 3 ?
+        # reset colour and shape
+        _reset_cursor = b'\x1B]112\a\x1B[1 q',
         # follow the format of initc
         # Cs ?
         _cursor_color = b'\x1b]12;#%p1%{255}%*%{1000}%/%2.2X%p2%{255}%*%{1000}%/%2.2X%p3%{255}%*%{1000}%/%2.2X\a',
@@ -223,6 +226,25 @@ class PosixConsole(object):
     ##########################################################################
     # ansi output
 
+    def start_screen(self):
+        """Enter full-screen/application mode."""
+        self._emit_ti('smcup')
+
+    def close_screen(self):
+        """Leave full-screen/application mode."""
+        self.reset()
+        if not self._emit_ti('rmcup'):
+            self._emit_ti('clear')
+
+    def reset(self):
+        """Reset to defaults."""
+        self._emit_ti('oc')
+        self._emit_ti('op')
+        self._emit_ti('sgr0')
+        self._emit_ti('cnorm')
+        self._emit_ti('_reset_cursor')
+        self._emit_ti('_resize', *self._orig_size)
+
     def write(self, unicode_str):
         """Write unicode to console."""
         stdout.write(unicode_str)
@@ -240,12 +262,14 @@ class PosixConsole(object):
             ansistr = curses.tparm(pattern, *args).decode('ascii')
             stdout.write(ansistr)
             stdout.flush()
+            return True
+        return False
 
     def set_caption(self, caption):
         """Set terminal caption."""
-        self._emit_ti('tsl')
-        stdout.write(caption)
-        self._emit_ti('fsl')
+        if self._emit_ti('tsl'):
+            stdout.write(caption)
+            self._emit_ti('fsl')
 
     def resize(self, height, width):
         """Resize terminal."""
@@ -305,16 +329,6 @@ class PosixConsole(object):
             self._emit_ti('_cursor_color', (red*1000)//255, (green*1000)//255, (blue*1000)//255)
         except KeyError:
             pass
-
-    def reset(self):
-        """Reset to defaults."""
-        self._emit_ti('oc')
-        self._emit_ti('op')
-        self._emit_ti('sgr0')
-        self._emit_ti('cnorm')
-        self._emit_ti('_resize', *self._orig_size)
-        self._emit_ti('_cursor_color', 1000, 1000, 1000)
-        self._emit_ti('_cursor_block')
 
     def set_attributes(self, fore, back, blink, underline):
         """Set current attributes."""
