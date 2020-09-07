@@ -49,118 +49,137 @@ if os.getenv('TERM').startswith('linux'):
     # linux framebuffer console
     ANSI_OVERRIDES = dict(
         # 1 invisible 2 line 3 third 4 half block 5 two thirds 6 full block
-        _cursor_block = b'\x1B[?4c',
-        _cursor_line = b'\x1B[?2c',
-        _reset_cursor = b'\x1B[?0c',
+        _cursor_block = b'\x1b[?4c',
+        _cursor_line = b'\x1b[?2c',
+        _reset_cursor = b'\x1b[?0c',
     )
 else:
     # xterm and family
     ANSI_OVERRIDES = dict(
         # 1 blinking block 2 block 3 blinking line 4 line
-        _cursor_block = b'\x1B[1 q', # Ss 1 ?
-        _cursor_line = b'\x1B[3 q', # Ss 3 ?
+        _cursor_block = b'\x1b[1 q', # Ss 1 ?
+        _cursor_line = b'\x1b[3 q', # Ss 3 ?
         # reset colour and shape
-        _reset_cursor = b'\x1B]112\a\x1B[1 q',
+        _reset_cursor = b'\x1b]112\a\x1b[1 q',
         # follow the format of initc
         # Cs ?
         _cursor_color = b'\x1b]12;#%p1%{255}%*%{1000}%/%2.2X%p2%{255}%*%{1000}%/%2.2X%p3%{255}%*%{1000}%/%2.2X\a',
         # window properties
-        _resize = b'\x1B[8;%p1%d;%p2%d;t', ## ?
+        _resize = b'\x1b[8;%p1%d;%p2%d;t', ## ?
         # status line (caption)
-        tsl = b'\x1B]2;',
+        tsl = b'\x1b]2;',
         fsl = b'\a',
     )
 
-# ANSI base key codes
-BASE_KEYS = dict(
-    F1 = u'\x1B[11~',
-    F2 = u'\x1B[12~',
-    F3 = u'\x1B[13~',
-    F4 = u'\x1B[14~',
-    F5 = u'\x1B[15~',
-    F6 = u'\x1B[17~',
-    F7 = u'\x1B[18~',
-    F8 = u'\x1B[19~',
-    F9 = u'\x1B[20~',
-    F10 = u'\x1B[21~',
-    F11 = u'\x1B[23~',
-    F12 = u'\x1B[24~',
-    END = u'\x1B[1F',
-    HOME = u'\x1B[1H',
-    UP = u'\x1B[1A',
-    DOWN = u'\x1B[1B',
-    RIGHT = u'\x1B[1C',
-    LEFT = u'\x1B[1D',
-    INSERT = u'\x1B[2~',
-    DELETE = u'\x1B[3~',
-    PAGEUP = u'\x1B[5~',
-    PAGEDOWN = u'\x1B[6~',
-)
 
-# used by the linux framebuffer console
-LINUX_KEYS = dict(
-    F1 = u'\x1B[[A',
-    F2 = u'\x1B[[B',
-    F3 = u'\x1B[[C',
-    F4 = u'\x1B[[D',
-    F5 = u'\x1B[[E',
-    END = u'\x1B[4~',
-    HOME = u'\x1B[1~',
-    # also, \e[25~ is shift+F1, etc
-)
+# input key codes
+###################################################################################################
 
-# CSI-based key codes
-CSI_KEYS = dict(
-    END = u'\x1B[F',
-    HOME = u'\x1B[H',
-    UP = u'\x1B[A',
-    DOWN = u'\x1B[B',
-    RIGHT = u'\x1B[C',
-    LEFT = u'\x1B[D',
-)
+# terminfo has only a few keycodes
+# fortunately we can just include all codes for all systems
+# as there are no conflicting definitions
 
-# SS3-based key codes
-SS3_KEYS = dict(
-    F1 = u'\x1BOP',
-    F2 = u'\x1BOQ',
-    F3 = u'\x1BOR',
-    F4 = u'\x1BOS',
-    END = u'\x1BOF',
-    HOME = u'\x1BOH',
-    UP = u'\x1BOA',
-    DOWN = u'\x1BOB',
-    RIGHT = u'\x1BOC',
-    LEFT = u'\x1BOD',
-)
-
-def _mod_csi(number):
-    """Generate dict of modified CSI key sequences."""
-    return {
-        key: sequence[:-1] + u';%d' % (number,) + sequence[-1]
-        for key, sequence in BASE_KEYS.items()
-    }
-
-# modified key codes
-MOD_KEYS = {
-    ('SHIFT',): _mod_csi(2),
-    ('ALT',): _mod_csi(3),
-    ('SHIFT', 'ALT'): _mod_csi(4),
-    ('CTRL',): _mod_csi(5),
-    ('SHIFT', 'CTRL'): _mod_csi(6),
-    ('CTRL', 'ALT'): _mod_csi(7),
-    ('SHIFT', 'CTRL', 'ALT'): _mod_csi(8),
+# xterm keys that support modifiers
+_MOD_PATTERNS = {
+    u'\x1b[11%s~': 'F1',
+    u'\x1b[12%s~': 'F2',
+    u'\x1b[13%s~': 'F3',
+    u'\x1b[14%s~': 'F4',
+    u'\x1b[15%s~': 'F5',
+    u'\x1b[17%s~': 'F6',
+    u'\x1b[18%s~': 'F7',
+    u'\x1b[19%s~': 'F8',
+    u'\x1b[20%s~': 'F9',
+    u'\x1b[21%s~': 'F10',
+    u'\x1b[23%s~': 'F11',
+    u'\x1b[24%s~': 'F12',
+    u'\x1b[1%sF': 'END',
+    u'\x1b[1%sH': 'HOME',
+    u'\x1b[1%sA': 'UP',
+    u'\x1b[1%sB': 'DOWN',
+    u'\x1b[1%sC': 'RIGHT',
+    u'\x1b[1%sD': 'LEFT',
+    u'\x1b[2%s~': 'INSERT',
+    u'\x1b[3%s~': 'DELETE',
+    u'\x1b[5%s~': 'PAGEUP',
+    u'\x1b[6%s~': 'PAGEDOWN',
 }
 
-# construct ansi to output mapping
+# xterm modifier codes
+_MOD_CODES = {
+    u'': set(),
+    u';2': {'SHIFT'},
+    u';3': {'ALT'},
+    u';4': {'SHIFT', 'ALT'},
+    u';5': {'CTRL'},
+    u';6': {'SHIFT', 'CTRL'},
+    u':7': {'CTRL', 'ALT'},
+    u';8': {'SHIFT', 'CTRL', 'ALT'},
+}
+
+# construct ansi to output mapping for xterm codes
 ANSI_TO_KEYMOD = {
-    sequence: (key, set(mods))
-    for mods, mod_key_dict in MOD_KEYS.items()
-    for key, sequence in mod_key_dict.items()
+    pattern % (modcode,): (key, mods)
+    for modcode, mods in _MOD_CODES.items()
+    for pattern, key in _MOD_PATTERNS.items()
 }
-ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in BASE_KEYS.items()})
-ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in LINUX_KEYS.items()})
-ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in CSI_KEYS.items()})
-ANSI_TO_KEYMOD.update({sequence: (key, set()) for key, sequence in SS3_KEYS.items()})
+
+# unmodified keys
+_UNMOD_KEYS = {
+    # used by the linux framebuffer console
+    # also, \e[25~ is shift+F1, etc
+    u'\x1b[[A': 'F1',
+    u'\x1b[[B': 'F2',
+    u'\x1b[[C': 'F3',
+    u'\x1b[[D': 'F4',
+    u'\x1b[[E': 'F5',
+    u'\x1b[4~': 'END',
+    u'\x1b[1~': 'HOME',
+    # CSI-based key codes (without the number 1)
+    u'\x1b[F': 'END',
+    u'\x1b[H': 'HOME',
+    u'\x1b[A': 'UP',
+    u'\x1b[B': 'DOWN',
+    u'\x1b[C': 'RIGHT',
+    u'\x1b[D': 'LEFT',
+    # SS3-based key codes (used by xterm in smkx mode)
+    u'\x1bOP': 'F1',
+    u'\x1bOQ': 'F2',
+    u'\x1bOR': 'F3',
+    u'\x1bOS': 'F4',
+    u'\x1bOF': 'END',
+    u'\x1bOH': 'HOME',
+    u'\x1bOA': 'UP',
+    u'\x1bOB': 'DOWN',
+    u'\x1bOC': 'RIGHT',
+    u'\x1bOD': 'LEFT',
+}
+ANSI_TO_KEYMOD.update({sequence: (key, set()) for sequence, key in _UNMOD_KEYS.items()})
+
+# shifted keys
+_SHIFT_KEYS = {
+    # shifted F-keys used by the linux framebuffer console
+    u'\x1b[25~': 'F1',
+    u'\x1b[26~': 'F2',
+    u'\x1b[28~': 'F3',
+    u'\x1b[29~': 'F4',
+    u'\x1b[31~': 'F5',
+    u'\x1b[32~': 'F6',
+    u'\x1b[33~': 'F7',
+    u'\x1b[34~': 'F8',
+    # xterm shift+TAB
+    u'\x1b[[Z': 'TAB',
+}
+ANSI_TO_KEYMOD.update({sequence: (key, {'SHIFT'}) for sequence, key in _SHIFT_KEYS.items()})
+
+# keypad codes with numlock off
+# arrow keys, ins, del etc already included
+# u'\x1bOE': keypad 5
+# u'\x1bOM': keypad Enter
+# u'\x1bOk': keypad +
+# u'\x1bOm': keypad -
+# u'\x1bOj': keypad *
+# u'\x1bOo': keypad /
 
 # esc + char means alt+key; lowercase
 ANSI_TO_KEYMOD.update({u'\x1b%c' % (c + 32,): (chr(c + 32), {'ALT'}) for c in range(65, 91)})
@@ -170,6 +189,9 @@ ANSI_TO_KEYMOD.update({u'\x1b%c' % (c,): (chr(c + 32), {'ALT', 'SHIFT'}) for c i
 ANSI_TO_KEYMOD.update({u'\x1b%c' % (c,): (chr(c), {'ALT'}) for c in range(0, 65)})
 ANSI_TO_KEYMOD.update({u'\x1b%c' % (c,): (chr(c), {'ALT'}) for c in range(91, 128)})
 
+
+# colour palettes
+###################################################################################################
 
 # mapping of the first 8 attributes of the default CGA palette
 # so that non-RGB terminals use sensible colours
@@ -185,6 +207,9 @@ DEFAULT_PALETTE = (
     (0xff, 0x55, 0x55), (0xff, 0x55, 0xff), (0xff, 0xff, 0x55), (0xff, 0xff, 0xff)
 )
 
+
+# implementation
+###################################################################################################
 
 # output buffer for ioctl call
 _sock_size = array.array('i', [0])
