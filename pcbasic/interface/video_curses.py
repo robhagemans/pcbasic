@@ -254,19 +254,22 @@ class VideoCurses(VideoPlugin):
                         back*16+fore+1, self.default_colors[fore], self.default_colors[back]
                     )
         else:
-            for back in range(8):
-                for fore in range(8):
-                    if back == 0 and fore == 7:
-                        # black on white mandatorily mapped on color 0
-                        pass
-                    elif back == 0:
-                        curses.init_pair(
-                            back*8+fore+1, self.default_colors[fore], self.default_colors[back]
-                        )
-                    else:
-                        curses.init_pair(
-                            back*8+fore, self.default_colors[fore], self.default_colors[back]
-                        )
+            try:
+                for back in range(8):
+                    for fore in range(8):
+                        if back == 0 and fore == 7:
+                            # black on white mandatorily mapped on color 0
+                            pass
+                        elif back == 0:
+                            curses.init_pair(
+                                back*8+fore+1, self.default_colors[fore], self.default_colors[back]
+                            )
+                        else:
+                            curses.init_pair(
+                                back*8+fore, self.default_colors[fore], self.default_colors[back]
+                            )
+            except curses.error:
+                pass
 
     def _curses_colour(self, fore, back, blink):
         """Convert split attribute to curses colour."""
