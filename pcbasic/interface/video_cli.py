@@ -162,18 +162,6 @@ class VideoTextBase(VideoPlugin):
         # start the stdin thread for non-blocking reads
         self._input_handler = InputHandlerCLI(input_queue)
 
-    def __enter__(self):
-        """Open text-based interface."""
-        VideoPlugin.__enter__(self)
-        console.set_raw()
-
-    def __exit__(self, exc_type, value, traceback):
-        """Close text-based interface."""
-        try:
-            console.unset_raw()
-        finally:
-            VideoPlugin.__exit__(self, exc_type, value, traceback)
-
     def _check_input(self):
         """Handle keyboard events."""
         self._input_handler.drain_queue()
@@ -197,11 +185,18 @@ class VideoCLI(VideoTextBase):
         # text buffer
         self._text = [[u' '] * 80 for _ in range(25)]
 
+
+    def __enter__(self):
+        """Open command-line interface."""
+        VideoTextBase.__enter__(self)
+        console.set_raw()
+
     def __exit__(self, type, value, traceback):
         """Close command-line interface."""
         try:
             if self._col != 1:
                 console.write(u'\r\n')
+            console.unset_raw()
         finally:
             VideoTextBase.__exit__(self, type, value, traceback)
 

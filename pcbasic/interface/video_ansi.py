@@ -12,7 +12,7 @@ from .video import VideoPlugin
 from .base import video_plugins
 from . import video_cli
 from ..compat import console, zip
-from ..compat import muffle, iter_chunks
+from ..compat import iter_chunks
 
 
 # CGA colours: black, cyan, magenta, white

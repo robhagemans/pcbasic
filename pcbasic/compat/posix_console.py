@@ -24,7 +24,7 @@ try:
 except ImportError:
     curses = None
 
-from .base import MACOS, PY2, HOME_DIR, wrap_input_stream, wrap_output_stream
+from .base import MACOS, PY2, HOME_DIR, wrap_input_stream, wrap_output_stream, muffle
 
 
 # ANSI escape codes
@@ -243,6 +243,7 @@ class PosixConsole(object):
         # needed to access curses.tiget* functions
         if curses:
             curses.setupterm()
+        self._muffle = None
 
     ##########################################################################
     # terminal modes
@@ -270,6 +271,10 @@ class PosixConsole(object):
 
     def start_screen(self):
         """Enter full-screen/application mode."""
+        # suppress stderr to avoid log messages defacing the application screen
+        self._muffle = muffle(sys.stderr, preserve=True)
+        self._muffle.__enter__()  # pylint: disable=no-member
+        self.set_raw()
         # switch to alternate buffer
         self._emit_ti('smcup')
         # set application keypad / keypad transmit mode
@@ -281,6 +286,9 @@ class PosixConsole(object):
         self._emit_ti('rmkx')
         if not self._emit_ti('rmcup'):
             self._emit_ti('clear')
+        self.unset_raw()
+        if self._muffle is not None:
+            self._muffle.__exit__(None, None, None)  # pylint: disable=no-member
 
     def reset(self):
         """Reset to defaults."""
@@ -292,14 +300,14 @@ class PosixConsole(object):
         self._emit_ti('_resize', *self._orig_size)
 
     def write(self, unicode_str):
-        """Write unicode to console."""
+        """Write (unicode) text to console."""
         stdout.write(unicode_str)
         stdout.flush()
 
     def _emit_ti(self, capability, *args):
         """Emit escape code."""
         if not curses:
-            return
+            return False
         try:
             pattern = ANSI_OVERRIDES[capability]
         except KeyError:

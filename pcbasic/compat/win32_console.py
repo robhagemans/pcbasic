@@ -385,9 +385,11 @@ class Win32Console(object):
 
     def start_screen(self):
         """Enter full-screen/application mode."""
+        self.set_raw()
 
     def close_screen(self):
         """Leave full-screen/application mode."""
+        set.unset_raw()
 
     def key_pressed(self):
         """key pressed on keyboard."""
@@ -419,7 +421,7 @@ class Win32Console(object):
     # output
 
     def write(self, unistr):
-        """Write text to the console."""
+        """Write (unicode) text to the console."""
         _ConsoleWriter.write(HSTDOUT, unistr)
 
     def clear(self):
