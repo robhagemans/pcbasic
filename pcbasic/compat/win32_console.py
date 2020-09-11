@@ -429,6 +429,7 @@ class Win32Console(object):
     def close_screen(self):
         """Leave full-screen/application mode."""
         self.unset_raw()
+        self.reset()
         self._hstdout = self._save_stdout
         _SetConsoleActiveScreenBuffer(self._hstdout)
 
