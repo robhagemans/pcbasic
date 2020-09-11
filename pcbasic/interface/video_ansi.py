@@ -52,10 +52,10 @@ class VideoANSI(video_cli.VideoTextBase):
     def __enter__(self):
         """Open ANSI interface."""
         video_cli.VideoTextBase.__enter__(self)
-        self.set_caption_message(u'')
         # go into alternate screen buffer
         # stderr continues on the primary buffer
         console.start_screen()
+        self.set_caption_message(u'')
         console.set_attributes(0, 0, False, False)
 
     def __exit__(self, type, value, traceback):
