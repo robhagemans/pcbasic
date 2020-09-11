@@ -18,7 +18,6 @@ import sys
 import time
 import msvcrt
 import ctypes
-import logging
 from collections import deque
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
@@ -423,7 +422,7 @@ class Win32Console(object):
             wintypes.DWORD(1), # CONSOLE_TEXTMODE_BUFFER
             None
         )
-        result = (_SetConsoleActiveScreenBuffer(new_buffer))
+        _SetConsoleActiveScreenBuffer(new_buffer)
         self._save_stdout, self._hstdout = self._hstdout, new_buffer
         self.set_raw()
 
@@ -431,7 +430,7 @@ class Win32Console(object):
         """Leave full-screen/application mode."""
         self.unset_raw()
         self._hstdout = self._save_stdout
-        result = (_SetConsoleActiveScreenBuffer(self._hstdout))
+        _SetConsoleActiveScreenBuffer(self._hstdout)
 
     def key_pressed(self):
         """key pressed on keyboard."""
