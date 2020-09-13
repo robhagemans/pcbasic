@@ -49,6 +49,7 @@ if os.getenv('TERM').startswith('linux'):
     # linux framebuffer console
     ANSI_OVERRIDES = dict(
         # 1 invisible 2 line 3 third 4 half block 5 two thirds 6 full block
+        # https://linuxgazette.net/137/anonymous.html
         _cursor_block = b'\x1b[?4c',
         _cursor_line = b'\x1b[?2c',
         _reset_cursor = b'\x1b[?0c',
