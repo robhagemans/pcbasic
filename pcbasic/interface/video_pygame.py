@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import logging
+import ctypes
 
 from ..compat import iteritems, unichr, muffle
 
@@ -17,14 +18,10 @@ try:
 except ImportError:
     pygame = None
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 
 from ..basic.base import signals
 from ..basic.base import scancode
+from ..basic.base import bytematrix
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
 from ..compat import WIN32, MACOS, PY2
@@ -69,8 +66,6 @@ class VideoPygame(VideoPlugin):
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
             raise InitFailed('Module `pygame` not found')
-        if not numpy:
-            raise InitFailed('Module `numpy` not found')
         # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
         set_dpi_aware()
         # ensure we have the correct video driver for SDL 1.2
@@ -185,7 +180,9 @@ class VideoPygame(VideoPlugin):
         height, width = len(mask), len(mask[0])
         icon = pygame.Surface((width, height), depth=8) # pylint: disable=E1121,E1123
         icon.fill(0)
-        icon.blit(glyph_to_surface(mask), (0, 0, width, height))
+        array = bytematrix.ByteMatrix(height, width, mask)
+        #icon.blit(glyph_to_surface(mask), (0, 0, width, height))
+        pygame.surfarray.blit_array(icon, _BufferWrapper(array))
         icon.set_palette_at(0, (0, 0, 0))
         icon.set_palette_at(1, (0xff, 0xff, 0xff))
         pygame.transform.scale2x(icon)
@@ -595,17 +592,25 @@ class VideoPygame(VideoPlugin):
         self.put_rect(x0, y0, glyphs)
 
     def put_rect(self, x0, y0, array):
-        """Apply numpy array [y][x] of attribytes to an area."""
-        array = numpy.array(array._rows)
-        height, width = array.shape
-        if y0 + height > self.size[1] or x0 + width > self.size[0]:
+        """Apply array [y][x] of attribytes to an area."""
+        if y0 + array.height > self.size[1] or x0 +array. width > self.size[0]:
             array = array[:self.size[1]-y0, :self.size[0]-x0]
-        height, width = array.shape
         # reference the destination area
-        pygame.surfarray.pixels2d(
-            self.canvas.subsurface(pygame.Rect(x0, y0, width, height))
-        )[:] = array.T
+        subsurface = self.canvas.subsurface(pygame.Rect(x0, y0, array.width, array.height))
+        pygame.surfarray.blit_array(subsurface, _BufferWrapper(array))
         self.busy = True
+
+
+class _BufferWrapper(object):
+
+    def __init__(self, array):
+        self._buffer = ctypes.create_string_buffer(array.to_bytes())
+        self.__array_interface__ = dict(
+            shape=(array.width, array.height),
+            strides=(1, array.width),
+            typestr='|u1', version=3, data=(ctypes.addressof(self._buffer), False)
+        )
+
 
 
 ###############################################################################
@@ -950,18 +955,5 @@ if pygame:
 
 def apply_composite_artifacts(screen, bpp_out, bpp_in):
     """Process the canvas to apply composite colour artifacts."""
-    src_array = pygame.surfarray.array2d(screen)
-    width, _ = src_array.shape
-    mask = 1<<bpp_in - 1
-    step = bpp_out // bpp_in
-    s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
-    packed = numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
-    return pygame.surfarray.make_surface(packed)
-
-
-def glyph_to_surface(glyph):
-    """Build a sprite surface for the given character glyph."""
-    glyph = numpy.asarray(glyph).T
-    surf = pygame.Surface(glyph.shape, depth=8) # pylint: disable=E1121,E1123
-    pygame.surfarray.pixels2d(surf)[:] = glyph
-    return surf
+    # not implemented
+    return screen
