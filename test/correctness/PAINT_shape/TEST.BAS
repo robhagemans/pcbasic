@@ -1,0 +1,14 @@
+1 ' draw a spiral shape and flood-fill it with a pattern
+10 SCREEN 9: CLS
+100 PSET (100,100),15
+110 DRAW "l5d5r15u15l25d25r35u35"
+120 DRAW "l5d30l25u15r15d5l5
+130 PAINT (101, 101),"ZA",15
+140 LINE (80,75)-(125,120),4,B
+150 DIM A%(46*12+2)
+160 GET  (80,75)-(125,120),A%
+165 OPEN "output.txt" FOR OUTPUT AS 1
+167 PRINT#1, A%(0),A%(1)
+170 FOR I=0 TO 45:FOR J=0 TO 12: PRINT#1, HEX$(A%(2+I*12+J));" ";:NEXT: PRINT#1,: NEXT
+175 CLOSE
+

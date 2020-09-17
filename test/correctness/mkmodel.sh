@@ -15,5 +15,6 @@ cd ..
 for file in *
 do
   rm "model/$file"
+  echo "removing $file"
 done
 cd ..

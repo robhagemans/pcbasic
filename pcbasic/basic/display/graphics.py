@@ -761,12 +761,6 @@ class Graphics(object):
         # if paint *attribute* specified, border default = current foreground
         if border is None:
             border = c
-        if (
-                not self._mode.build_tile.background_match_allowed
-                and pattern and background
-                and background[:len(pattern)] == pattern
-            ):
-            raise error.BASICError(error.IFC)
         self._flood_fill(coord, c, pattern, border, background)
 
     def _flood_fill(self, lcoord, c, pattern, border, background):
@@ -778,11 +772,21 @@ class Graphics(object):
         # unless this pattern is also equal to the background pattern.
         c, border = self._get_attr_index(c), self._get_attr_index(border)
         solid = (pattern is None)
-        if not solid:
-            tile = self._mode.build_tile(bytearray(pattern)) if pattern else None
-            back = self._mode.build_tile(bytearray(background)) if background else None
+        back = None
+        if solid:
+            tile = bytematrix.ByteMatrix(1, 8, c)
         else:
-            tile, back = bytematrix.ByteMatrix(1, 8, c), None
+            tile = self._mode.build_tile(bytearray(pattern)) if pattern else None
+            if background:
+                back = self._mode.build_tile(bytearray(background))
+                # only use first row of background
+                back = back[:1, :]
+                # illegal tile/background combo's:
+                # all, or more than two consecutive, rows equal background
+                for row in range(max(1, tile.height-2)):
+                    comptile = tile[row:row+3, :]
+                    if comptile == back.vtile(comptile.height):
+                        raise error.BASICError(error.IFC)
         # viewport bounds in viewport coordinates
         bound_x0, bound_y0, bound_x1, bound_y1 = self.graph_view.get_bounds()
         x, y = self._get_window_physical(*lcoord)
@@ -873,8 +877,8 @@ class Graphics(object):
         rtile = tile[y % tile.height, :]
         repeated_tile = rtile.htile(1 - (-max_width // rtile.width))
         if back:
-            rback = back[y % back.height, :]
-            repeated_back = rback.htile(1 - (-max_width // rback.width))
+            # back is only one row
+            repeated_back = back.htile(1 - (-max_width // back.width))
         x = x_start
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
@@ -886,11 +890,13 @@ class Graphics(object):
                     # never match zero pattern (special case)
                     rtile != ZERO_TILE[0, :rtile.width]
                     and pattern == repeated_tile[0, tile_x : tile_x+pattern.width]
-                    and (
-                        not back
+                )
+                # background tile specified: don't stop if we match the background tile (fully!)
+                if back:
+                    has_same_pattern = has_same_pattern and (
+                        pattern.width < back.width
                         or pattern != repeated_back[0, tile_x : tile_x+pattern.width]
                     )
-                )
                 # we've reached a border colour, append our interval & start a new one
                 # don't append if same fill colour/pattern,
                 # to avoid infinite loops over bits already painted (eg. 00 shape)
