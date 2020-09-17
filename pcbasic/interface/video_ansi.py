@@ -79,7 +79,7 @@ class VideoANSI(video_cli.VideoTextBase):
         # draw top
         for row in range(self._border_y):
             console.move_cursor_to(row+1, 1)
-            console.clear_row()
+            console.clear_row(self._width + 2 * self._border_x)
         # draw sides
         for row in range(self._height):
             console.move_cursor_to(row+1 + self._border_y, 1)
@@ -89,7 +89,7 @@ class VideoANSI(video_cli.VideoTextBase):
         # draw bottom
         for row in range(self._border_y):
             console.move_cursor_to(row+1 + self._border_y + self._height, 1)
-            console.clear_row()
+            console.clear_row(self._width + 2 * self._border_x)
         console.move_cursor_to(
             self._cursor_row + self._border_y, self._cursor_col + self._border_x
         )
@@ -143,8 +143,10 @@ class VideoANSI(video_cli.VideoTextBase):
         """Change screen mode."""
         self._height = text_height
         self._width = text_width
+        console.set_attributes(0, 0, False, False)
         console.resize(self._height + 2*self._border_y, self._width + 2*self._border_x)
         console.clear()
+        self._redraw_border()
         return True
 
     def clear_rows(self, back_attr, start, stop):
@@ -152,7 +154,7 @@ class VideoANSI(video_cli.VideoTextBase):
         self._set_attributes(7, back_attr, False, False)
         for row in range(start, stop+1):
             console.move_cursor_to(row + self._border_y, 1 + self._border_x)
-            console.clear_row()
+            console.clear_row(self._width + 2 * self._border_x)
         # draw border
         self._set_attributes(
             0, self.default_colours[self._border_attr%16], False, False
@@ -211,6 +213,10 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
+        # set the default background
+        # as some (not all) consoles use the background color when inserting/deleting
+        # and if they can't resize this leads to glitches outside the window
+        self._set_attributes(7, 0, False, False)
         if direction == -1:
             self._scroll_up(from_line, scroll_height, back_attr)
         else:

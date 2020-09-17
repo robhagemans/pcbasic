@@ -57,7 +57,7 @@ else:
 
 if MACOS:
     # on MacOS, if launched from Finder, ignore the additional "process serial number" argument
-    argv = [_arg for _arg in argv if not _arg.startswith(b'-psn_')]
+    argv = [_arg for _arg in argv if not _arg.startswith('-psn_')]
     # for macOS - if no console, presumably we're launched as a bundle
     # set working directory to user home
     # bit of a hack but I don't know a better way
