@@ -15,11 +15,52 @@ import filecmp
 import contextlib
 import traceback
 import time
+import json
 from copy import copy, deepcopy
+from contextlib import contextmanager
+
+try:
+    from colorama import init
+    init()
+except ImportError:
+    # only needed on Windows
+    # without it we still work but look a bit garbled
+    pass
+
+# make pcbasic package accessible
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path = [os.path.join(HERE, '..')] + sys.path
+
+import pcbasic
 
 
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-pythonpath = copy(sys.path)
+# copy of pythonpath for use by testing cycle
+PYTHONPATH = copy(sys.path)
+# test timing file
+TEST_TIMES = os.path.join(HERE, '_settings', 'slowtest.json')
+# umber of slowest tests to show or exclude
+SLOWSHOW = 20
+
+# statuses
+CRASHED = 'exception'
+PASSED = 'passed'
+ACCEPTED = 'accepted'
+OLDFAILED = 'failed (old)'
+NEWFAILED = 'failed'
+SKIPPED = 'skipped'
+NONESUCH = 'no such test'
+
+# ANSI colours for test status
+STATUS_COLOURS = {
+    CRASHED: '01;37;41',
+    PASSED: '00;32',
+    ACCEPTED: '00;36',
+    OLDFAILED: '00;33',
+    NEWFAILED: '01;31',
+    SKIPPED: '00;30',
+    NONESUCH: '01;31',
+}
+
 
 def is_same(file1, file2):
     try:
@@ -27,18 +68,11 @@ def is_same(file1, file2):
     except EnvironmentError:
         return False
 
-def count_diff(file1, file2):
-    lines1 = open(file1, 'rb').readlines()
-    lines2 = open(file2, 'rb').readlines()
-    n = len(lines1)
-    count = 0
-    for one, two in zip(lines1, lines2):
-        if one != two:
-            count += 1
-    return n, count
-
 @contextlib.contextmanager
 def suppress_stdio(do_suppress):
+    # flush last outbut before muffling
+    sys.stderr.flush()
+    sys.stdout.flush()
     if not do_suppress:
         yield
     else:
@@ -53,159 +87,259 @@ def contained(arglist, elem):
         return False
     return True
 
-args = sys.argv[1:]
-basedir = os.path.join('.', 'correctness')
-
-do_suppress = not contained(args, '--loud')
-reraise = contained(args, '--reraise')
-
-if contained(args, '--nonumpy'):
-    sys.modules['numpy'] = None
-
-if contained(args, '--coverage'):
-    import coverage
-    cov = coverage.coverage()
-    cov.start()
-else:
-    cov = None
-
-if not args or '--all' in args:
-    args = [
-        f for f in sorted(os.listdir(basedir))
-        if (
-            os.path.isdir(os.path.join(basedir, f))
-            and os.path.isdir(os.path.join(basedir, f, 'model'))
-        )
-    ]
-
-numtests = 0
-failed = []
-knowfailed = []
+def parse_args():
+    args = sys.argv[1:]
+    loud = contained(args, '--loud')
+    reraise = contained(args, '--reraise')
+    fast = contained(args, '--fast')
+    all = not args or contained(args, '--all')
+    cover = contained(args, '--coverage')
+    return args, all, fast, loud, reraise, cover
 
 
-import pcbasic
+class TestFrame(object):
 
-start_time = time.time()
-start_clock = time.clock()
+    def __init__(self, category, name, reraise, skip, loud):
+        self._dirname = os.path.join(HERE, 'basic', category, name)
+        self._reraise = reraise
+        self.skip = testname(category, name) in skip
+        self._loud = loud
 
-args = [os.path.basename(n) for n in args]
-
-# preserve environment
-startdir = os.path.abspath(os.getcwd())
-save_env = deepcopy(os.environ)
-
-for name in args:
-    # reset testing environment
-    os.chdir(startdir)
-    os.environ = deepcopy(save_env)
-
-    print('\033[00;37mRunning test \033[01m%s \033[00;37m.. ' % name, end='')
-    dirname = os.path.join(basedir, name)
-    if not os.path.isdir(dirname):
-        print('\033[01;31mno such test.\033[00;37m')
-        continue
-    output_dir = os.path.join(dirname, 'output')
-    model_dir = os.path.join(dirname, 'model')
-    known_dir = os.path.join(dirname, 'known')
-    if os.path.isdir(output_dir):
-        shutil.rmtree(output_dir)
-    os.mkdir(output_dir)
-    for filename in os.listdir(dirname):
-        if os.path.isfile(os.path.join(dirname, filename)):
-            shutil.copy(os.path.join(dirname, filename), os.path.join(output_dir, filename))
-    top = os.getcwd()
-    os.chdir(output_dir)
-    sys.stdout.flush()
-    # we need to include the output dir in the PYTHONPATH for it to find extension modules
-    sys.path = pythonpath + [os.path.abspath('.')]
-    # -----------------------------------------------------------
-    # suppress output and logging and call PC-BASIC
-    with suppress_stdio(do_suppress):
-        crash = None
-        try:
-            pcbasic.run('--interface=none')
-        except Exception as e:
-            crash = e
-            if reraise:
-                raise
-    # -----------------------------------------------------------
-    os.chdir(top)
-    passed = True
-    known = True
-    failfiles = []
-    for path, dirs, files in os.walk(model_dir):
-        for f in files:
-            if f.endswith('.pyc'):
-                continue
-            filename = os.path.join(path[len(model_dir)+1:], f)
-            if (not is_same(os.path.join(output_dir, filename), os.path.join(model_dir, filename))
-                    and not os.path.isfile(os.path.join(dirname, filename))):
-                failfiles.append(filename)
-                known = (
-                    os.path.isdir(known_dir) and
-                    is_same(os.path.join(output_dir, filename), os.path.join(known_dir, filename))
-                )
-                passed = False
-    for path, dirs, files in os.walk(output_dir):
-        for f in files:
-            if f.endswith('.pyc'):
-                continue
-            filename = os.path.join(path[len(output_dir)+1:], f)
-            if (
-                    not os.path.isfile(os.path.join(model_dir, filename))
-                    and not os.path.isfile(os.path.join(dirname, filename))
-                ):
-                failfiles.append(filename)
-                passed = False
-                known = False
-    if crash or not passed:
-        if crash:
-            print('\033[01;31mEXCEPTION.\033[00;37m')
-            print('    %r' % crash)
-            failed.append(name)
-        elif not known:
-            print('\033[01;31mfailed.\033[00;37m')
-            for failname in failfiles:
-                try:
-                    n, count = count_diff(
-                        os.path.join(output_dir, failname), os.path.join(model_dir, failname)
-                    )
-                    pct = 100.*count/float(n) if n != 0 else 0
-                    print('    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct))
-                except EnvironmentError as e:
-                    print('    %s: %s' % (failname, e))
-            failed.append(name)
+    @contextmanager
+    def check_output(self):
+        if os.path.isdir(self._dirname) and 'PCBASIC.INI' in os.listdir(self._dirname):
+            self.exists = True
         else:
-            print('\033[00;36mknown failure.\033[00;37m')
-            for failname in failfiles:
-                try:
-                    n, count = count_diff(
-                        os.path.join(output_dir, failname), os.path.join(model_dir, failname)
+            self.exists = False
+            yield self
+            return
+        if self.skip:
+            yield self
+            return
+        self._output_dir = os.path.join(self._dirname, 'output')
+        self._model_dir = os.path.join(self._dirname, 'model')
+        self._known_dir = os.path.join(self._dirname, 'known')
+        self.old_fail = False
+        if os.path.isdir(self._output_dir):
+            self.old_fail = True
+            shutil.rmtree(self._output_dir)
+        os.mkdir(self._output_dir)
+        for filename in os.listdir(self._dirname):
+            if os.path.isfile(os.path.join(self._dirname, filename)):
+                shutil.copy(
+                    os.path.join(self._dirname, filename),
+                    os.path.join(self._output_dir, filename)
+                )
+        self._top = os.getcwd()
+        os.chdir(self._output_dir)
+        yield self
+        self.passed = True
+        self.known = True
+        self.failfiles = []
+        for path, dirs, files in os.walk(self._model_dir):
+            for f in files:
+                if f.endswith('.pyc'):
+                    continue
+                filename = os.path.join(path[len(self._model_dir)+1:], f)
+                if (
+                        not is_same(
+                            os.path.join(self._output_dir, filename),
+                            os.path.join(self._model_dir, filename)
+                        )
+                        and not os.path.isfile(os.path.join(self._dirname, filename))
+                    ):
+                    self.failfiles.append(filename)
+                    self.known = (
+                        os.path.isdir(self._known_dir) and
+                        is_same(
+                            os.path.join(self._output_dir, filename),
+                            os.path.join(self._known_dir, filename)
+                        )
                     )
-                    pct = 100.*count/float(n) if n != 0 else 0
-                    print('    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct))
-                except EnvironmentError as e:
-                    print('    %s: %s' % (failname, e))
-            knowfailed.append(name)
+                    self.passed = False
+        for path, dirs, files in os.walk(self._output_dir):
+            for f in files:
+                if f.endswith('.pyc'):
+                    continue
+                filename = os.path.join(path[len(self._output_dir)+1:], f)
+                if (
+                        not os.path.isfile(os.path.join(self._model_dir, filename))
+                        and not os.path.isfile(os.path.join(self._dirname, filename))
+                    ):
+                    self.failfiles.append(filename)
+                    self.passed = False
+                    self.known = False
+        os.chdir(self._top)
+        if self.passed:
+            shutil.rmtree(self._output_dir)
+
+    @contextmanager
+    def check_crash(self):
+        self.crash = None
+        try:
+            yield self
+        except Exception as e:
+            self.crash = e
+            if self._reraise:
+                raise
+            if self._loud:
+                traceback.print_exc()
+
+
+    @contextmanager
+    def guard(self):
+        with self.check_output():
+            with self.check_crash():
+                yield self
+
+    @property
+    def status(self):
+        if not self.exists:
+            return NONESUCH
+        if self.skip:
+            return SKIPPED
+        if self.crash:
+            return CRASHED
+        if self.passed:
+            return PASSED
+        if self.known:
+            return ACCEPTED
+        if self.old_fail:
+            return OLDFAILED
+        return NEWFAILED
+
+
+class Timer(object):
+
+    @contextmanager
+    def time(self):
+        start_time = time.time()
+        start_cpu = time.clock()
+        yield self
+        self.wall_time = time.time() - start_time
+        self.cpu_time = time.clock() - start_cpu
+
+
+class Coverage(object):
+
+    def __init__(self, cover):
+        self._on = cover
+
+    @contextmanager
+    def track(self):
+        if self._on:
+            import coverage
+            cov = coverage.coverage()
+            cov.start()
+            yield self
+            cov.stop()
+            cov.save()
+            cov.html_report()
+        else:
+            yield
+
+
+def testname(cat, name):
+    return '/'.join((cat, name))
+
+def normalise(name):
+    if name.endswith('/'):
+        name = name[:-1]
+    _, name = name.split(os.sep, 1)
+    # e.g. basic/gwbasic/TestName
+    try:
+        _dir, name = os.path.split(name)
+        _, category = os.path.split(_dir)
+    except ValueError:
+        category = 'gwbasic'
+    return category, name
+
+
+def run_tests(args, all, fast, loud, reraise, cover):
+    if all:
+        args = [
+            os.path.join('basic', _preset, _test)
+            for _preset in os.listdir(os.path.join(HERE, 'basic'))
+            for _test in sorted(os.listdir(os.path.join(HERE, 'basic', _preset)))
+        ]
+    try:
+        with open(TEST_TIMES) as timefile:
+            times = dict(json.load(timefile))
+    except EnvironmentError:
+        times = {}
+    if fast:
+        # exclude slowest tests
+        skip = dict(sorted(times.items(), key=lambda _p: _p[1], reverse=True)[:SLOWSHOW])
     else:
-        print('\033[00;32mpassed.\033[00;37m')
-        shutil.rmtree(output_dir)
-    numtests += 1
+        skip = {}
+    results = {}
+    with Coverage(cover).track() as coverage:
+        with Timer().time() as overall_timer:
+            # preserve environment
+            startdir = os.path.abspath(os.getcwd())
+            save_env = deepcopy(os.environ)
+            # run all tests
+            for name in args:
+                # reset testing environment
+                os.chdir(startdir)
+                os.environ = deepcopy(save_env)
+                # normalise test name
+                category, name = normalise(name)
+                print(
+                    '\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (category, name),
+                    end=''
+                )
+                with suppress_stdio(not loud):
+                    with Timer().time() as timer:
+                        with TestFrame(category, name, reraise, skip, loud).guard() as test_frame:
+                            if test_frame.exists and not test_frame.skip:
+                                # we need to include the output dir in the PYTHONPATH
+                                # for it to find extension modules
+                                sys.path = PYTHONPATH + [os.path.abspath('.')]
+                                # run PC-BASIC
+                                pcbasic.run('--interface=none')
+                # update test time
+                if test_frame.exists and not test_frame.skip and not test_frame.crash:
+                    times[testname(category, name)] = timer.wall_time
+                # report status
+                results[testname(category, name)] = test_frame.status
+                print('\033[%sm%s.\033[00;37m' % (
+                    STATUS_COLOURS[test_frame.status], test_frame.status
+                ))
+    # update stored times
+    with open(TEST_TIMES, 'w') as timefile:
+        json.dump(times, timefile)
+    return results, times, overall_timer
 
-print()
-print(
-    '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):' %
-    (numtests, time.time() - start_time, time.clock() - start_clock)
-)
-if failed:
-    print('    %d new failures: \033[01;31m%s\033[00m' % (len(failed), ' '.join(failed)))
-if knowfailed:
-    print('    %d known failures: \033[00;36m%s\033[00m' % (len(knowfailed), ' '.join(knowfailed)))
-numpass = numtests - len(failed) - len(knowfailed)
-if numpass:
-    print('    %d passes' % numpass)
+def report_results(results, times, overall_timer):
+    res_stat = {
+        _status: [_test for _test, _teststatus in results.items() if _teststatus == _status]
+        for _status in set(results.values())
+    }
+    print()
+    print(
+        '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):\033[00;37m' %
+        (len(results), overall_timer.wall_time, overall_timer.cpu_time)
+    )
+    for status, tests in res_stat.items():
+        print('    %d %s' % (len(tests), status), end='')
+        if status == PASSED:
+            print('.')
+        else:
+            print(': \033[%sm%s.\033[00;37m' % (
+                STATUS_COLOURS[status], ' '.join(tests)
+            ))
+    # update slow-tests file
+    slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)
+    print()
+    print('\033[00;37mSlow tests:')
+    print(
+        '    '
+        + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests[:SLOWSHOW])
+    )
 
-if cov:
-    cov.stop()
-    cov.save()
-    cov.html_report()
+
+if __name__ == '__main__':
+    args = parse_args()
+    results = run_tests(*args)
+    report_results(*results)
