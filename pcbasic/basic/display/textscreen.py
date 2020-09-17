@@ -57,8 +57,8 @@ class TextScreen(object):
         self.attr = attr
         self.apagenum = apagenum
         self.vpagenum = vpagenum
-        # set up glyph cache and preload halfwidth glyphs (i.e. single-byte code points)
-        self._glyphs = font.GlyphCache(self.mode, self.fonts, self.codepage, self.queues)
+        # get glyph cache and initialise for this mode's font width (8 or 9 pixels)
+        self._glyphs = self.fonts[self.mode.font_height].init_mode(self.mode.font_width)
         # build the screen buffer
         self.text = TextBuffer(
             self.attr, self.mode.width, self.mode.height, self.mode.num_pages,
@@ -362,28 +362,47 @@ class TextScreen(object):
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Redraw a section of a screen row, assuming DBCS buffer has been set."""
-        therow = self.text.pages[pagenum].row[row-1]
-        col = start
+        col, last_col = start, start
+        last_attr = None
+        chars = []
+        chunks = []
+        # collect chars in chunks with the same attribute
         while col <= stop:
-            r, c = row, col
             char, attr = self.text.get_fullchar_attr(pagenum, row, col)
+            if attr != last_attr:
+                if last_attr is not None:
+                    chunks.append((last_col, chars, last_attr))
+                last_col, last_attr = col, attr
+                chars = []
+            chars.append(char)
             col += len(char)
-            # ensure glyph is stored
-            glyph = self._glyphs.check_char(char)
-            fore, back, blink, underline = self.mode.split_attr(attr)
+        if chars:
+            chunks.append((last_col, chars, attr))
+        for col, chars, attr in chunks:
+            self._draw_text(pagenum, row, col, chars, attr, text_only)
+
+    def _draw_text(self, pagenum, row, col, chars, attr, text_only):
+        """Draw a chunk of text in a single attribute."""
+        fore, back, blink, underline = self.mode.split_attr(attr)
+        glyphs = self._glyphs.get_glyphs(chars)
+        # mark full-width chars by a trailing empty string to preserve column counts
+        text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
+        text = [self.codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_PUT_TEXT, (
+                pagenum, row, col, text,
+                fore, back, blink, underline,
+                glyphs
+            )
+        ))
+        if not self.mode.is_text_mode and not text_only:
+            left, top = self.mode.text_to_pixel_pos(row, col)
+            sprite, width, height = self._glyphs.render_text(chars, fore, back)
+            right, bottom = left+width-1, top+height-1
+            self.pixels.pages[self.apagenum].put_rect(left, top, right, bottom, sprite, tk.PSET)
             self.queues.video.put(signals.Event(
-                signals.VIDEO_PUT_GLYPH, (
-                    pagenum, r, c, self.codepage.to_unicode(char, u'\0'),
-                    len(char) > 1, fore, back, blink, underline, glyph
-                )
+                signals.VIDEO_PUT_RECT, (self.apagenum, left, top, right, bottom, sprite)
             ))
-            if not self.mode.is_text_mode and not text_only:
-                # update pixel buffer
-                x0, y0, x1, y1, sprite = self._glyphs.get_sprite(r, c, char, fore, back)
-                self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1, sprite, tk.PSET)
-                self.queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_RECT, (self.apagenum, x0, y0, x1, y1, sprite)
-                ))
 
     def _redraw_row(self, start, row, wrap=True):
         """Draw the screen row, wrapping around and reconstructing DBCS buffer."""

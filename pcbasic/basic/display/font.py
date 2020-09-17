@@ -15,7 +15,7 @@ try:
 except ImportError:
     numpy = None
 
-from ...compat import iteritems, int2byte
+from ...compat import iteritems, int2byte, zip
 
 from ..base import signals
 
@@ -109,169 +109,171 @@ class Font(object):
 
     def __init__(self, height=8, fontdict=None):
         """Initialise the font."""
-        self._height = height
-        if height == 8 and not fontdict:
-            fontdict = DEFAULT_FONT
+        self._width = None
+        self._height = int(height)
+        if not fontdict:
+            if height == 8:
+                fontdict = DEFAULT_FONT
+            else:
+                raise ValueError(
+                    'No font dictionary specified and no %d-pixel default available.' % (height,)
+                )
         self._fontdict = fontdict
+        self._glyphs = {}
 
-    def get_byte(self, charvalue, offset):
-        """Get byte sequency for character."""
-        return ord(self._fontdict[int2byte(charvalue)][offset])
+    def init_mode(self, width):
+        """Preload SBCS glyphs at mode switch."""
+        if self._width != width:
+            self._width = width
+            for _c in map(int2byte, range(256)):
+                self._build_glyph(_c)
+        return self
 
-    def set_byte(self, charvalue, offset, byte):
-        """Set byte sequency for character."""
-        old = self._fontdict[int2byte(charvalue)]
-        self._fontdict[int2byte(charvalue)] = old[:offset%8] + byte + old[offset%8+1:]
-        #self.screen.rebuild_glyph(charvalue)
+    def get_byte(self, char, offset):
+        """Get byte value from character sequence."""
+        return ord(self._fontdict[char][offset])
 
-    def build_glyph(self, c, req_width, req_height):
+    def set_byte(self, char, offset, byte_value):
+        """Set byte value for character sequence."""
+        old = self._fontdict[char]
+        self._fontdict[char] = old[:offset%8] + byte_value + old[offset%8+1:]
+        if char in self._glyphs:
+            self._build_glyph(char)
+
+    def get_glyph(self, char):
+        """Retrieve a glyph, building if needed."""
+        try:
+            return self._glyphs[char]
+        except KeyError:
+            self._build_glyph(char)
+            return self._glyphs[char]
+
+    def _build_glyph(self, char):
         """Build a glyph for the given codepage character."""
         try:
-            face = bytearray(self._fontdict[c])
+            byteseq = bytearray(self._fontdict[char])
         except KeyError:
-            logging.debug('Code point [%r] not represented in font, replacing with blank glyph.', c)
-            face = bytearray(int(self._height))
+            logging.debug('No glyph for code point %r; replacing with blank.', char)
+            byteseq = bytearray(self._height)
         # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
-        code_height = 8 if req_height == 9 else req_height
-        code_width = (8 * len(face)) // code_height
-        force_double = req_width >= code_width * 2
-        force_single = code_width >= (req_width-1) * 2
-        if force_double or force_single:
-            # i.e. we need a double-width char but got single or v.v.
-            logging.debug(
-                'Incorrect glyph width for code point [%r]: %d-pixel requested, %d-pixel found.',
-                c, req_width, code_width
-            )
-        return _unpack_glyph(
-            face, code_height, code_width, req_height, req_width,
-            force_double, force_single,
-            c in CARRY_COL_9_CHARS, c in CARRY_ROW_9_CHARS
-        )
+        code_height = 8 if self._height == 9 else self._height
+        glyph = _unpack_sequence(byteseq, code_height)
+        # stretch or sqeeze if necessary
+        req_width = self._width * len(char)
+        if req_width >= len(glyph[0]) * 2:
+            logging.debug('Code point %r stretched to full-width.', char)
+            glyph = _force_fullwidth(glyph)
+        elif len(glyph[0]) >= (req_width-1) * 2:
+            logging.debug('Code point %r squeezed to half-width.', char)
+            glyph = _force_halfwidth(glyph)
+        # repeat last rows (e.g. for 9-bit high chars)
+        if self._height > len(glyph):
+            glyph = _extend_height(glyph, char in CARRY_ROW_9_CHARS)
+        # repeat last cols (e.g. for 9-bit wide chars)
+        if req_width > len(glyph[0]):
+            glyph = _extend_width(glyph, char in CARRY_COL_9_CHARS)
+        self._glyphs[char] = glyph
+
+    def render_text(self, char_list, fore, back):
+        """Return a sprite, width and height for given row of text."""
+        mask = self.get_glyphs(char_list)
+        glyph = _render(mask, fore, back)
+        return glyph, len(glyph[0]), len(glyph)
+
+    def get_glyphs(self, char_list):
+        """Retrieve a row of text as a single matrix [y][x]."""
+        return _hstack(self.get_glyph(_c) for _c in char_list)
+
 
 if numpy:
 
-    def _unpack_glyph(
-            face, code_height, code_width, req_height, req_width,
-            force_double, force_single, carry_col_9, carry_row_9
-        ):
-        """Convert byte list to glyph pixels, numpy implementation."""
-        glyph = numpy.unpackbits(face, axis=0).reshape((code_height, code_width)).astype(bool)
-        # repeat last rows (e.g. for 9-bit high chars)
-        if req_height > glyph.shape[0]:
-            if carry_row_9:
-                repeat_row = glyph[-1]
-            else:
-                repeat_row = numpy.zeros((1, code_width), dtype=numpy.uint8)
-            while req_height > glyph.shape[0]:
-                glyph = numpy.vstack((glyph, repeat_row))
-        if force_double:
-            glyph = glyph.repeat(2, axis=1)
-        elif force_single:
-            glyph = glyph[:, ::2]
-        # repeat last cols (e.g. for 9-bit wide chars)
-        if req_width > glyph.shape[1]:
-            if carry_col_9:
-                repeat_col = numpy.atleast_2d(glyph[:,-1]).T
-            else:
-                repeat_col = numpy.zeros((code_height, 1), dtype=numpy.uint8)
-            while req_width > glyph.shape[1]:
-                glyph = numpy.hstack((glyph, repeat_col))
-        return glyph
+    def _render(mask, fore, back):
+        """Set attributes of glyph."""
+        return mask*(fore-back) + back
+
+    def _unpack_sequence(byteseq, code_height):
+        """Return base glyph for sequence."""
+        return numpy.unpackbits(byteseq, axis=0).reshape((code_height, -1)).astype(numpy.int8)
+
+    def _extend_height(glyph, carry_last):
+        """Extend the character height by a row."""
+        if carry_last:
+            repeat_row = glyph[-1:, :]
+        else:
+            repeat_row = numpy.zeros((1, glyph.shape[1]), dtype=numpy.uint8)
+        return numpy.vstack((glyph, repeat_row))
+
+    def _extend_width(glyph, carry_last):
+        """Extend the character width by a column."""
+        # use two empty columns if doublewidth
+        if glyph.shape[1] >= 16:
+            repeat_col = numpy.zeros((glyph.shape[0], 2), dtype=numpy.uint8)
+        elif carry_last:
+            repeat_col = glyph[:, -1:]
+        else:
+            repeat_col = numpy.zeros((glyph.shape[0], 1), dtype=numpy.uint8)
+        return numpy.hstack((glyph, repeat_col))
+
+    def _force_fullwidth(glyph):
+        """Double the width of a given glyph."""
+        return glyph.repeat(2, axis=1)
+
+    def _force_halfwidth(glyph):
+        """Halve the width of a given glyph."""
+        return glyph[:, ::2]
+
+    def _hstack(glyphs):
+        """Horizontally concatenate glyph matrices."""
+        return numpy.hstack(glyphs)
 
 else:
 
-    def _unpack_glyph(
-            face, code_height, code_width, req_height, req_width,
-            force_double, force_single, carry_col_9, carry_row_9
-        ):
-        """Convert byte list to glyph pixels, non-numpy implementation."""
-        # req_width can be 8, 9 (SBCS), 16, 18 (DBCS) only
-        req_width_base = req_width if req_width <= 9 else req_width // 2
-        # if our code glyph is too wide for request, we need to make space
-        start_width = req_width*2 if force_single else req_width
-        glyph = [ [False]*start_width for _ in range(req_height) ]
-        for yy in range(code_height):
-            for half in range(code_width//8):
-                line = face[yy*(code_width//8)+half]
-                for xx in range(8):
-                    if (line >> (7-xx)) & 1 == 1:
-                        glyph[yy][half*8 + xx] = True
-            # halve the width if code width incorrect
-            if force_single:
-                glyph[yy] = glyph[yy][::2]
-            # MDA/VGA 9-bit characters
-            # carry_col_9 will be ignored for double-width glyphs
-            if carry_col_9 and req_width == 9:
-                glyph[yy][8] = glyph[yy][7]
-        # tandy 9-bit high characters
-        if carry_row_9 and req_height == 9:
-            for xx in range(8):
-                glyph[8][xx] = glyph[7][xx]
-        # double the width if code width incorrect
-        if force_double:
-            for yy in range(code_height):
-                for xx in range(req_width_base-1, -1, -1):
-                    glyph[yy][2*xx+1] = glyph[yy][xx]
-                    glyph[yy][2*xx] = glyph[yy][xx]
+    def _render(mask, fore, back):
+        """Set attributes of glyph."""
+        return [[(fore if _bit else back) for _bit in _row] for _row in mask]
+
+    def _unpack_sequence(byteseq, code_height):
+        """Return base glyph for sequence."""
+        glyph = [
+            [(_char >> (7 - _row)) & 1 for _row in range(8)]
+            for _char in byteseq
+        ]
+        # pairwise join rows for fullwidth chars
+        if len(glyph) >= code_height*2:
+            glyph = [_left + _right for _left, _right in zip(glyph[::2], glyph[1::2])]
         return glyph
 
+    def _extend_height(glyph, carry_last):
+        """Extend the character height by a row."""
+        if carry_last:
+            repeat_row = glyph[-1]
+        else:
+            repeat_row = [0] * len(glyph[-1])
+        return glyph + repeat_row
 
-#######################################################################################
-# glyph cache
+    def _extend_width(glyph, carry_last):
+        """Extend the character width by a column."""
+        # use two empty columns if doublewidth
+        if len(glyph[0]) >= 16:
+            return [_row + [0, 0] for _row in glyph]
+        if carry_last:
+            return [_row + _row[-1:] for _row in glyph]
+        return [_row + [0] for _row in glyph]
 
-class GlyphCache(object):
+    def _force_fullwidth(glyph):
+        """Double the width of a given glyph."""
+        return [
+            [_pixel for _pixel in _row  for _ in range(2)]
+            for _row in glyph
+        ]
 
-    def __init__(self, mode, fonts, codepage, queues):
-        """Initialise glyph set."""
-        self._queues = queues
-        self._mode = mode
-        self._fonts = fonts
-        self._codepage = codepage
-        # preload SBCS glyphs
-        self._glyphs = {
-            c: self._fonts[mode.font_height].build_glyph(c, mode.font_width, mode.font_height)
-            for c in map(int2byte, range(256))
-        }
+    def _force_halfwidth(glyph):
+        """Halve the width of a given glyph."""
+        return [_row[::2] for _row in glyph]
 
-    def rebuild_glyph(self, ordval):
-        """Rebuild a text-mode character after POKE."""
-        if self._mode.is_text_mode:
-            # force rebuilding the character by deleting and requesting
-            del self._glyphs[int2byte(ordval)]
-            self._submit_char(int2byte(ordval))
-
-    def _submit_char(self, char):
-        """Rebuild glyph."""
-        self._glyphs[char] = self._fonts[self._mode.font_height].build_glyph(
-            char, self._mode.font_width*2, self._mode.font_height
-        )
-
-    def check_char(self, char):
-        """Retrieve a glyph, building if needed."""
-        if self._mode.is_text_mode and char not in self._glyphs:
-            self._submit_char(char)
-        return self._glyphs[char]
-
-    if numpy:
-        def get_sprite(self, row, col, char, fore, back):
-            """Return a sprite for a given character."""
-            if char not in self._glyphs:
-                self._submit_char(char)
-            mask = self._glyphs[char]
-            # set background
-            glyph = numpy.full(mask.shape, back, dtype=int)
-            # stamp foreground mask
-            glyph[mask] = fore
-            x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height
-            x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
-            return x0, y0, x1, y1, glyph
-    else:
-        def get_sprite(self, row, col, char, fore, back):
-            """Return a sprite for a given character."""
-            if char not in self._glyphs:
-                self._submit_char(char)
-            mask = self._glyphs[char]
-            glyph = [[(fore if _bit else back) for _bit in _row] for _row in mask]
-            x0, y0 = (col-1) * self._mode.font_width, (row-1) * self._mode.font_height
-            x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
-            return x0, y0, x1, y1, glyph
+    def _hstack(glyphs):
+        """Horizontally concatenate glyph matrices."""
+        return [
+            sum((_glyphrow for _glyphrow in _row), [])
+            for _row in zip(*glyphs)
+        ]

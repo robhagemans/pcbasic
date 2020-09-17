@@ -215,20 +215,17 @@ class VideoCLI(VideoTextBase):
 
     ###############################################################################
 
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, glyph):
-        """Put a character at a given position."""
-        if char == u'\0':
-            char = u' '
-        self._text[pagenum][row-1][col-1] = char
-        if is_fullwidth:
-            self._text[pagenum][row-1][col] = u''
+    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+        """Put text at a given position."""
+        unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
+        self._text[pagenum][row-1][col-1:col-1+len(unicode_list)] = unicode_list
         # show the character only if it's on the cursor row
         if self._vpagenum == pagenum and row == self._cursor_row:
             # may have to update row!
             if row != self._last_row or col != self._col:
                 self._update_position(row, col)
-            console.write(char)
-            self._col = (col+2) if is_fullwidth else (col+1)
+            console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
+            self._col = col + len(unicode_list)
         # the terminal cursor has moved, so we'll need to move it back later
         # if that's not where we want to be
         # but often it is anyway

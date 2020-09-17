@@ -392,20 +392,19 @@ class VideoCurses(VideoPlugin):
             console.show_cursor(block=self.cursor_shape == 2)
         #curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
-    def put_glyph(self, pagenum, row, col, c, is_fullwidth, fore, back, blink, underline, glyph):
-        """Put a character at a given position."""
-        if c == u'\0':
-            c = u' '
+    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+        """Put text at a given position."""
+        unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
         colour = self._curses_colour(fore, back, blink)
-        self.text[pagenum][row-1][col-1] = c, colour
-        if is_fullwidth:
-            self.text[pagenum][row-1][col] = u'', colour
+        self.text[pagenum][row-1][col-1:col-1+len(unicode_list)] = [
+            (_c, colour) for _c in unicode_list
+        ]
         if pagenum == self.vpagenum:
             if colour != self.last_colour:
                 self.last_colour = colour
                 self.window.bkgdset(32, colour)
             try:
-                self.window.addstr(row-1, col-1, _to_str(c), colour)
+                self.window.addstr(row-1, col-1, _to_str(u''.join(unicode_list)), colour)
             except curses.error:
                 pass
 

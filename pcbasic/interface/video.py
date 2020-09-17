@@ -23,7 +23,7 @@ class VideoPlugin(object):
         self._video_queue = video_queue
         self._handlers = {
             signals.VIDEO_SET_MODE: self.set_mode,
-            signals.VIDEO_PUT_GLYPH: self.put_glyph,
+            signals.VIDEO_PUT_TEXT: self.put_text,
             signals.VIDEO_CLEAR_ROWS: self.clear_rows,
             signals.VIDEO_SCROLL_UP: self.scroll_up,
             signals.VIDEO_SCROLL_DOWN: self.scroll_down,
@@ -130,8 +130,8 @@ class VideoPlugin(object):
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
 
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, glyph):
-        """Put a character at a given position."""
+    def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
+        """Put text at a given position."""
 
     def set_cursor_shape(self, width, from_line, to_line):
         """Build a sprite for the cursor."""

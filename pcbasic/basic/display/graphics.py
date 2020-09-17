@@ -171,17 +171,23 @@ class Drawing(object):
             self._text.put_char_attr(self._apagenum, row, col, b' ', self._attr)
         fore, back, blink, underline = self._mode.split_attr(self._attr)
         self._queues.video.put(signals.Event(
-            signals.VIDEO_PUT_GLYPH,
+            signals.VIDEO_PUT_TEXT,
             # glyph=None only works because this gets ignored by graphical interface in text mode
             # and gets ignored by text interface in all cases.
-            (self._apagenum, row, col, u' ', False, fore, back, blink, underline, None)
+            (self._apagenum, row, col, [u' '], fore, back, blink, underline, None)
         ))
 
     def clear_text_area(self, x0, y0, x1, y1):
         """Remove all characters from the text buffer on a rectangle of the graphics screen."""
         row0, col0, row1, col1 = self._mode.pixel_to_text_area(x0, y0, x1, y1)
-        # use attr = 0 ? pagenum parameter? are we actually sending anything to the queue?
+        # use attr = 0 ? pagenum parameter?
         self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
+        fore, back, blink, underline = self._mode.split_attr(self._attr)
+        for row in range(row0, row1+1):
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_PUT_TEXT,
+                (self._apagenum, row, col0, [u' ']*(col1-col0), fore, back, blink, underline, None)
+            ))
 
     ### graphics primitives
 

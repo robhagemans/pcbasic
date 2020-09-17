@@ -266,8 +266,10 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, values, data_memory, files, display, keyboard,
-                font_8, interpreter, peek_values, syntax):
+    def __init__(
+            self, values, data_memory, files, display, keyboard,
+            font_8, interpreter, peek_values, syntax
+        ):
         """Initialise memory."""
         self._values = values
         # data segment initialised elsewhere
@@ -507,7 +509,7 @@ class Memory(object):
             char = addr // 8
             if char > 127 or char < 0:
                 return -1
-            return self.font_8.get_byte(char, addr%8)
+            return self.font_8.get_byte(int2byte(char), addr%8)
 
     def _get_font_memory(self, addr):
         """Retrieve RAM font data."""
@@ -515,7 +517,7 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return -1
-        return self.font_8.get_byte(char, addr%8)
+        return self.font_8.get_byte(int2byte(char), addr%8)
 
     def _set_font_memory(self, addr, value):
         """Retrieve RAM font data."""
@@ -523,8 +525,7 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return
-        self.font_8.set_byte(char, addr%8, value)
-        self.screen.rebuild_glyph(char)
+        self.font_8.set_byte(int2byte(char), addr%8, value)
 
     #################################################################################
 

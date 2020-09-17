@@ -43,7 +43,7 @@ VIDEO_MOVE_CURSOR = 5
 # set border attribute
 VIDEO_SET_BORDER_ATTR = 7
 # put character glyph
-VIDEO_PUT_GLYPH = 8
+VIDEO_PUT_TEXT = 8
 # clear rows
 VIDEO_CLEAR_ROWS = 10
 # scroll

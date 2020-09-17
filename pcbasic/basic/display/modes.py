@@ -514,8 +514,15 @@ class VideoMode(object):
         row1 = min(self.height, max(1, 1 + y1 // self.font_height))
         return row0, col0, row1, col1
 
+    def text_to_pixel_pos(self, row, col):
+        """Convert text position to pixel position."""
+        # area bounds are all inclusive
+        return (
+            (col-1) * self.font_width, (row-1) * self.font_height,
+        )
+
     def text_to_pixel_area(self, row0, col0, row1, col1):
-        """Convert area text area to pixel area."""
+        """Convert text area to pixel area."""
         # area bounds are all inclusive
         return (
             (col0-1) * self.font_width, (row0-1) * self.font_height,
