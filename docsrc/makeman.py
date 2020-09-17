@@ -1,19 +1,18 @@
-from lxml import etree, html
-import re
-from io import StringIO
-import gzip
 import os
+import re
+import json
+import gzip
+from lxml import etree, html
+from io import StringIO, open
 from os import path
-from io import open
 
-
-# obtain metadata without importing the package (to avoid breaking setup)
-with open(
-        path.join(path.abspath(path.dirname(__file__)), '..', 'pcbasic', 'metadata.py'),
-        encoding='utf-8') as f:
-    exec(f.read())
+# we're not being called from setup.py install, so we can simply import pcbasic
+from pcbasic.basic import NAME, VERSION, COPYRIGHT
 
 basepath = os.path.dirname(os.path.realpath(__file__))
+
+with open(os.path.join(basepath, '..', 'setup.json'), encoding='utf-8') as setup_data:
+    SETUP_DATA = json.load(setup_data)
 
 
 def html_to_man(html):
@@ -60,8 +59,8 @@ def html_to_man(html):
 
 
 def makeman():
-    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % DESCRIPTION
-    desc_html = '<h3>Description</h2><p>%s</p>\n' % LONG_DESCRIPTION
+    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % SETUP_DATA['description']
+    desc_html = '<h3>Description</h2><p>%s</p>\n' % SETUP_DATA['long_description']
     options_html = open(basepath + '/options.html', mode='r').read()
     examples_html = open(basepath + '/examples.html', mode='r').read()
     more_html = open(basepath + '/moreman.html', mode='r').read()

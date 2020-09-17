@@ -11,7 +11,7 @@ import logging
 
 from ..compat import iteritems, int2byte
 
-from ..metadata import NAME, VERSION, COPYRIGHT
+from .data import NAME, VERSION, COPYRIGHT
 from .base import error
 from . import values
 from . import devices

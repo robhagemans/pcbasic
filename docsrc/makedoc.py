@@ -1,23 +1,24 @@
-import sys
 import os
-from os import path
+import sys
+import json
 import shutil
-from io import StringIO
+from os import path
 from datetime import datetime
-from io import open
+from io import StringIO, open
 
 from lxml import etree
 import markdown
 from markdown.extensions.toc import TocExtension
 import markdown.extensions.headerid
 
-# obtain metadata without importing the package (to avoid breaking setup)
-with open(
-        path.join(path.abspath(path.dirname(__file__)), '..', 'pcbasic', 'metadata.py'),
-        encoding='utf-8') as f:
-    exec(f.read())
+# we're not being called from setup.py install, so we can simply import pcbasic
+from pcbasic.basic import NAME, VERSION, COPYRIGHT
+
 
 basepath = os.path.dirname(os.path.realpath(__file__))
+
+with open(os.path.join(basepath, '..', 'setup.json'), encoding='utf-8') as setup_data:
+    SETUP_DATA = json.load(setup_data)
 
 
 def mdtohtml(md_file, outf, prefix='', baselevel=1):
@@ -152,7 +153,7 @@ def makedoc(header=None, output=None, embedded_style=True):
     <h1>PC-BASIC documentation</h1>
     <small>Version {0}</small>
 </header>
-""".format(VERSION, now, DESCRIPTION, LONG_DESCRIPTION)
+""".format(VERSION, now, SETUP_DATA['description'], SETUP_DATA['long_description'])
     else:
         subheader_html = u''
     subheader_html += u"""
@@ -178,7 +179,7 @@ def makedoc(header=None, output=None, embedded_style=True):
         <li><strong><a href="#dev">Developer's Guide</a></strong>, using PC-BASIC as a Python module</li>
     </ul>
 
-""".format(VERSION, now, DESCRIPTION, LONG_DESCRIPTION)
+""".format(VERSION, now, SETUP_DATA['description'], SETUP_DATA['long_description'])
     if not embedded_style:
         subheader_html += u"""
     <p>

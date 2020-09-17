@@ -19,7 +19,7 @@ import struct
 import logging
 from contextlib import contextmanager
 
-from .metadata import VERSION
+from .basic import VERSION
 from .compat import PY2, copyreg, stdout, stdin
 
 # session file header
