@@ -157,8 +157,9 @@ class Cursor(object):
                                 to_line -= 1
         self.from_line = max(0, min(from_line, fy-1))
         self.to_line = max(0, min(to_line, fy-1))
-        self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
-                            (self.width, fy, self.from_line, self.to_line)))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_CURSOR_SHAPE, (self.width, self.from_line, self.to_line))
+        )
 
     def set_default_shape(self, overwrite_shape):
         """Set the cursor to one of two default shapes."""
@@ -185,8 +186,9 @@ class Cursor(object):
         # update cursor shape to new width if necessary
         if new_width != self.width:
             self.width = new_width
-            self._queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
-                    (self.width, self._height, self.from_line, self.to_line)))
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_SET_CURSOR_SHAPE, (self.width, self.from_line, self.to_line))
+            )
 
 
 ###############################################################################

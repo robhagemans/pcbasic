@@ -35,12 +35,7 @@ class VideoPlugin(object):
             signals.VIDEO_SET_PAGE: self.set_page,
             signals.VIDEO_COPY_PAGE: self.copy_page,
             signals.VIDEO_SET_BORDER_ATTR: self.set_border_attr,
-            signals.VIDEO_BUILD_GLYPHS: self.build_glyphs,
-            signals.VIDEO_PUT_PIXEL: self.put_pixel,
-            signals.VIDEO_PUT_INTERVAL: self.put_interval,
-            signals.VIDEO_FILL_INTERVAL: self.fill_interval,
             signals.VIDEO_PUT_RECT: self.put_rect,
-            signals.VIDEO_FILL_RECT: self.fill_rect,
             signals.VIDEO_SET_CAPTION: self.set_caption_message,
             signals.VIDEO_SET_CLIPBOARD_TEXT: self.set_clipboard_text,
         }
@@ -135,26 +130,11 @@ class VideoPlugin(object):
     def scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
 
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
+    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline, glyph):
         """Put a character at a given position."""
 
-    def build_glyphs(self, new_dict):
-        """Build a dict of glyphs for use in text mode."""
-
-    def set_cursor_shape(self, width, height, from_line, to_line):
+    def set_cursor_shape(self, width, from_line, to_line):
         """Build a sprite for the cursor."""
-
-    def put_pixel(self, pagenum, x, y, index):
-        """Put a pixel on the screen; callback to empty character buffer."""
-
-    def fill_rect(self, pagenum, x0, y0, x1, y1, index):
-        """Fill a rectangle in a solid attribute."""
-
-    def fill_interval(self, pagenum, x0, x1, y, index):
-        """Fill a scanline interval in a solid attribute."""
-
-    def put_interval(self, pagenum, x, y, colours):
-        """Write a list of attributes to a scanline interval."""
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attribytes to an area."""

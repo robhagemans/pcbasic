@@ -118,8 +118,6 @@ class VideoPygame(VideoPlugin):
         # buffer for text under cursor
         self.under_top_left = None
         # fonts
-        # prebuilt glyphs
-        self.glyph_dict = {}
         # joystick and mouse
         # available joysticks
         self.joysticks = []
@@ -485,7 +483,7 @@ class VideoPygame(VideoPlugin):
         self._window_sizer.set_canvas_size(*self.size, fullscreen=self.fullscreen)
         self._resize_display()
         # set standard cursor
-        self.set_cursor_shape(self.font_width, self.font_height, 0, self.font_height)
+        self.set_cursor_shape(self.font_width, 0, self.font_height)
         # whole screen (blink on & off)
         self.canvas = [
             pygame.Surface(self.size, depth=8) # pylint: disable=E1121,E1123
@@ -599,7 +597,7 @@ class VideoPygame(VideoPlugin):
         self.canvas[self.apagenum].set_clip(None)
         self.busy = True
 
-    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, glyph):
         """Put a single-byte character at a given position."""
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
@@ -611,14 +609,6 @@ class VideoPygame(VideoPlugin):
             # guaranteed to be blank, saves time on some BLOADs
             self.canvas[pagenum].fill(bg, (x0, y0, self.font_width, self.font_height))
         else:
-            try:
-                glyph = self.glyph_dict[cp]
-            except KeyError:
-                if u'\0' not in self.glyph_dict:
-                    logging.error('No glyph received for code point 0')
-                    return
-                logging.warning('No glyph received for code point %s', hex(ord(cp)))
-                glyph = self.glyph_dict[u'\0']
             if glyph.get_palette_at(0) != bg:
                 glyph.set_palette_at(0, bg)
             if glyph.get_palette_at(1) != color:
@@ -628,13 +618,9 @@ class VideoPygame(VideoPlugin):
             self.canvas[pagenum].fill(color, (x0, y0 + self.font_height - 1, self.font_width, 1))
         self.busy = True
 
-    def build_glyphs(self, new_dict):
-        """Build a dict of glyphs for use in text mode."""
-        for char, glyph in iteritems(new_dict):
-            self.glyph_dict[char] = glyph_to_surface(glyph)
-
-    def set_cursor_shape(self, width, height, from_line, to_line):
+    def set_cursor_shape(self, width, from_line, to_line):
         """Build a sprite for the cursor."""
+        height = self.font_height
         self.cursor_width = width
         self.cursor_from, self.cursor_to = from_line, to_line
         self.cursor = pygame.Surface((width, height), depth=8) # pylint: disable=E1121,E1123
@@ -644,35 +630,14 @@ class VideoPygame(VideoPlugin):
         self.cursor.fill(color, (0, from_line, width, min(to_line-from_line+1, height-from_line)))
         self.busy = True
 
-    def put_pixel(self, pagenum, x, y, index):
-        """Put a pixel on the screen; callback to empty character buffer."""
-        self.canvas[pagenum].set_at((x,y), index)
-        self.busy = True
-
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
         self.canvas[pagenum].fill(index, rect)
         self.busy = True
 
-    def fill_interval(self, pagenum, x0, x1, y, index):
-        """Fill a scanline interval in a solid attribute."""
-        dx = x1 - x0 + 1
-        self.canvas[pagenum].fill(index, (x0, y, dx, 1))
-        self.busy = True
-
-    def put_interval(self, pagenum, x, y, colours):
-        """Write a list of attributes to a scanline interval."""
-        # reference the interval on the canvas
-        pygame.surfarray.pixels2d(self.canvas[pagenum])[x:x+len(colours), y] = (
-            numpy.array(colours).astype(int)
-        )
-        self.busy = True
-
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attribytes to an area."""
-        if (x1 < x0) or (y1 < y0):
-            return
         # reference the destination area
         pygame.surfarray.pixels2d(
             self.canvas[pagenum].subsurface(

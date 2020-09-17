@@ -170,10 +170,12 @@ class Drawing(object):
         if col >= 1 and row >= 1 and col <= self._mode.width and row <= self._mode.height:
             self._text.put_char_attr(self._apagenum, row, col, b' ', self._attr)
         fore, back, blink, underline = self._mode.split_attr(self._attr)
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_GLYPH,
-            (self._apagenum, row, col, u' ', False, fore, back, blink, underline))
-        )
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_PUT_GLYPH,
+            # glyph=None only works because this gets ignored by graphical interface in text mode
+            # and gets ignored by text interface in all cases.
+            (self._apagenum, row, col, u' ', False, fore, back, blink, underline, None)
+        ))
 
     def clear_text_area(self, x0, y0, x1, y1):
         """Remove all characters from the text buffer on a rectangle of the graphics screen."""
@@ -188,8 +190,10 @@ class Drawing(object):
         if pagenum is None:
             pagenum = self._apagenum
         if self.graph_view.contains(x, y):
-            self._pixels.pages[pagenum].put_pixel(x, y, index)
-            self._queues.video.put(signals.Event(signals.VIDEO_PUT_PIXEL, (pagenum, x, y, index)))
+            rect = self._pixels.pages[pagenum].put_pixel(x, y, index)
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_PUT_RECT, (pagenum, x, y, x, y, rect))
+            )
             self.clear_text_at(x, y)
 
     def get_pixel(self, x, y, pagenum=None):
@@ -205,18 +209,18 @@ class Drawing(object):
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """Write a list of attributes to a scanline interval."""
         x, y, colours = self.graph_view.clip_list(x, y, colours)
-        newcolours = self._pixels.pages[pagenum].put_interval(x, y, colours, mask)
+        new_rect = self._pixels.pages[pagenum].put_interval(x, y, colours, mask)
         self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours))
+            signals.Event(signals.VIDEO_PUT_RECT, (pagenum, x, y, x+len(colours), y, new_rect))
         )
         self.clear_text_area(x, y, x+len(colours), y)
 
     def fill_interval(self, x0, x1, y, index):
         """Fill a scanline interval in a solid attribute."""
         x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
-        self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
+        rect = self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
         self._queues.video.put(
-            signals.Event(signals.VIDEO_FILL_INTERVAL, (self._apagenum, x0, x1, y, index))
+            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y, x1, y, rect))
         )
         self.clear_text_area(x0, y, x1, y)
 
@@ -242,9 +246,9 @@ class Drawing(object):
     def fill_rect(self, x0, y0, x1, y1, index):
         """Fill a rectangle in a solid attribute."""
         x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
-        self._pixels.pages[self._apagenum].fill_rect(x0, y0, x1, y1, index)
+        rect = self._pixels.pages[self._apagenum].fill_rect(x0, y0, x1, y1, index)
         self._queues.video.put(
-            signals.Event(signals.VIDEO_FILL_RECT, (self._apagenum, x0, y0, x1, y1, index))
+            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, x1, y1, rect))
         )
         self.clear_text_area(x0, y0, x1, y1)
 

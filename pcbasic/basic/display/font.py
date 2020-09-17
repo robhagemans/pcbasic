@@ -232,18 +232,6 @@ class GlyphCache(object):
             c: self._fonts[mode.font_height].build_glyph(c, mode.font_width, mode.font_height)
             for c in map(int2byte, range(256))
         }
-        self.submit()
-
-    def submit(self):
-        """Send glyph dict to interface."""
-        if self._mode.is_text_mode:
-            # send glyphs to signals; copy is necessary
-            # as dict may change here while the other thread is working on it
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_BUILD_GLYPHS, (
-                    {self._codepage.to_unicode(k, u'\0'): v for k, v in iteritems(self._glyphs)},
-                )
-            ))
 
     def rebuild_glyph(self, ordval):
         """Rebuild a text-mode character after POKE."""
@@ -253,20 +241,16 @@ class GlyphCache(object):
             self._submit_char(int2byte(ordval))
 
     def _submit_char(self, char):
-        """Rebuild glyph and send to interface."""
-        mask = self._fonts[self._mode.font_height].build_glyph(
+        """Rebuild glyph."""
+        self._glyphs[char] = self._fonts[self._mode.font_height].build_glyph(
             char, self._mode.font_width*2, self._mode.font_height
         )
-        self._glyphs[char] = mask
-        if self._mode.is_text_mode:
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_BUILD_GLYPHS, ({self._codepage.to_unicode(char, u'\0'): mask},)
-            ))
 
     def check_char(self, char):
-        """Submit glyph if needed."""
+        """Retrieve a glyph, building if needed."""
         if self._mode.is_text_mode and char not in self._glyphs:
             self._submit_char(char)
+        return self._glyphs[char]
 
     if numpy:
         def get_sprite(self, row, col, char, fore, back):

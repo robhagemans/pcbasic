@@ -61,6 +61,7 @@ class PixelPage(object):
         """Put a pixel in the buffer."""
         try:
             self.buffer[y][x] = attr
+            return self.buffer[y:y+1][x:x+1]
         except IndexError:
             pass
 
@@ -75,6 +76,7 @@ class PixelPage(object):
         """Write a list of attributes to a scanline interval."""
         try:
             self.buffer[y][x0:x1+1] = [attr]*(x1-x0+1)
+            return self.buffer[y:y+1][x0:x1+1]
         except IndexError:
             pass
 
@@ -97,9 +99,9 @@ class PixelPage(object):
             try:
                 self.buffer[y, x:x+len(colours)] &= inv_mask
                 self.buffer[y, x:x+len(colours)] |= colours
-                return self.buffer[y, x:x+len(colours)]
+                return self.buffer[y:y+1, x:x+len(colours)]
             except IndexError:
-                return numpy.zeros(len(colours), dtype=numpy.int8)
+                return numpy.zeros((1, len(colours)), dtype=numpy.int8)
 
         def get_interval(self, x, y, length):
             """Return *view of* attributes of a scanline interval."""
@@ -114,6 +116,7 @@ class PixelPage(object):
                 return
             try:
                 self.buffer[y0:y1+1, x0:x1+1].fill(attr)
+                return self.buffer[y0:y1+1, x0:x1+1]
             except IndexError:
                 pass
 
@@ -182,7 +185,7 @@ class PixelPage(object):
                 (c & mask) | (self.buffer[y][x+i] & inv_mask)
                 for i, c in enumerate(colours)
             ]
-            return self.buffer[y][x:x+len(colours)]
+            return [self.buffer[y][x:x+len(colours)]]
 
         def get_interval(self, x, y, length):
             """Return *view of* attributes of a scanline interval."""
@@ -198,6 +201,7 @@ class PixelPage(object):
             try:
                 for y in range(y0, y1+1):
                     self.buffer[y][x0:x1+1] = [attr] * (x1-x0+1)
+                return [self.buffer[y][x0:x1+1] for y in range(y0, y1+1)]
             except IndexError:
                 pass
 
