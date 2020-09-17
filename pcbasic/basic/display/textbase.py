@@ -34,34 +34,9 @@ class BottomBar(object):
         for i, c in enumerate(iterchar(s)):
             self._contents[col + i] = (c, reverse)
 
-    def show(self, on, screen):
-        """Switch bottom bar visibility."""
-        # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
-        error.throw_if(on and screen.scroll_area.bottom == screen.mode.height)
-        self.visible, was_visible = on, self.visible
-        if self.visible != was_visible:
-            self.redraw(screen)
-
-    def redraw(self, screen):
-        """Redraw bottom bar if visible, clear if not."""
-        key_row = screen.mode.height
-        # Keys will only be visible on the active page at which KEY ON was given,
-        # and only deleted on page at which KEY OFF given.
-        screen.clear_rows(key_row, key_row)
-        if not screen.mode.is_text_mode:
-            reverse_attr = screen.attr
-        elif (screen.attr >> 4) & 0x7 == 0:
-            reverse_attr = 0x70
-        else:
-            reverse_attr = 0x07
-        if self.visible:
-            # always show only complete 8-character cells
-            # this matters on pcjr/tandy width=20 mode
-            for i in range((screen.mode.width//8) * 8):
-                c, reverse = self._contents[i]
-                a = reverse_attr if reverse else screen.attr
-                screen.put_char_attr(screen.apagenum, key_row, i+1, c, a)
-            screen.text.pages[screen.apagenum].row[key_row-1].end = screen.mode.width
+    def get_char_reverse(self, col):
+        """Retrieve char and reverse attribute."""
+        return self._contents[col]
 
 
 #######################################################################################
@@ -237,11 +212,6 @@ class ScrollArea(object):
         # _top and _bottom are inclusive and count rows from 1
         self._top = start
         self._bottom = stop
-        #  need this:
-        #set_pos(start, 1)
-        #  or this:
-        #self.overflow = False
-        #self._move_cursor(start, 1)
 
     def unset(self):
         """Unset scroll area."""

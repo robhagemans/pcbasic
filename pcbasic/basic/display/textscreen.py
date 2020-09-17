@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
+from contextlib import contextmanager
 
 from ...compat import iterchar, iteritems, int2byte
 
@@ -49,7 +50,7 @@ class TextScreen(object):
             for height, font_dict in iteritems(fonts)
         }
         # function key macros
-        self.bottom_bar = BottomBar()
+        self._bottom_bar = BottomBar()
 
     def init_mode(self, mode, pixels, attr, vpagenum, apagenum):
         """Reset the text screen for new video mode."""
@@ -67,7 +68,7 @@ class TextScreen(object):
         # pixel buffer
         self.pixels = pixels
         # redraw key line
-        self.bottom_bar.redraw(self)
+        self.redraw_bar()
         # initialise text viewport & move cursor home
         self.scroll_area.init_mode(self.mode)
         self.set_pos(self.scroll_area.top, 1)
@@ -91,36 +92,6 @@ class TextScreen(object):
                 mode.font_height, mode.name
             )
             raise error.BASICError(error.IFC)
-
-    def rebuild(self):
-        """Completely resubmit the text screen to the interface."""
-        # fix the cursor
-        self.queues.video.put(signals.Event(
-            signals.VIDEO_SET_CURSOR_SHAPE,
-            (self.cursor.width, self.cursor.from_line, self.cursor.to_line)
-        ))
-        self.queues.video.put(signals.Event(
-            signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col)
-        ))
-        if self.mode.is_text_mode:
-            attr = self.text.get_attr(self.apagenum, self.current_row, self.current_col)
-            fore, _, _, _ = self.mode.split_attr(attr & 0xf)
-        else:
-            fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
-        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (fore,)))
-        self.cursor.reset_visibility()
-        # redraw the text screen and rebuild text buffers in video plugin
-        for pagenum in range(self.mode.num_pages):
-            for row in range(self.mode.height):
-                self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
-            # redraw graphics
-            if not self.mode.is_text_mode:
-                self.queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_RECT, (
-                        pagenum, 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
-                        self.pixels.pages[pagenum].buffer
-                    )
-                ))
 
     def __repr__(self):
         """Return an ascii representation of the screen buffer (for debugging)."""
@@ -202,9 +173,12 @@ class TextScreen(object):
         if len(line) == self.mode.width and self.current_row > 2:
             self.text.pages[self.apagenum].row[self.current_row-3].wrap = False
 
+
+    ###########################################################################
+
     def write_char(self, c, do_scroll_down=False):
         """Put one character at the current position."""
-        # check if scroll& repositioning needed
+        # check if scroll & repositioning needed
         if self.overflow:
             self.current_col += 1
             self.overflow = False
@@ -213,10 +187,10 @@ class TextScreen(object):
         # move cursor and see if we need to scroll up
         self._check_pos(scroll_ok=True)
         # put the character
-        self.put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
-        # adjust end of line marker
-        if (self.current_col > self.text.pages[self.apagenum].row[self.current_row-1].end):
-            self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col
+        start, stop = self.text.put_char_attr(
+            self.apagenum, self.current_row, self.current_col, c, self.attr, adjust_end=True
+        )
+        self.refresh_range(self.apagenum, self.current_row, start, stop)
         # move cursor. if on col 80, only move cursor to the next row
         # when the char is printed
         if self.current_col < self.mode.width:
@@ -230,12 +204,12 @@ class TextScreen(object):
         """Wrap if we need to."""
         if self.current_col > self.mode.width:
             if self.current_row < self.mode.height:
-                # wrap line
-                self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
                 if do_scroll_down:
                     # scroll down (make space by shifting the next rows down)
                     if self.current_row < self.scroll_area.bottom:
                         self.scroll_down(self.current_row+1)
+                # wrap line
+                self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
                 # move cursor and reset cursor attribute
                 self._move_cursor(self.current_row + 1, 1)
             else:
@@ -253,6 +227,26 @@ class TextScreen(object):
     ###########################################################################
     # cursor position
 
+    def incr_pos(self):
+        """Increase the current position by a char width."""
+        # on a trail byte: just go one to the right
+        step = self.text.step_right(self.apagenum, self.current_row, self.current_col)
+        self.set_pos(self.current_row, self.current_col + step, scroll_ok=False)
+
+    def decr_pos(self):
+        """Decrease the current position by a char width."""
+        step = self.text.step_left(self.apagenum, self.current_row, self.current_col)
+        self.set_pos(self.current_row, self.current_col - step, scroll_ok=False)
+
+    def move_to_end(self):
+        """Jump to end of logical line; follow wraps (END)."""
+        row = self.text.find_end_of_line(self.apagenum, self.current_row)
+        if self.text.pages[self.apagenum].row[row-1].end == self.mode.width:
+            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end)
+            self.overflow = True
+        else:
+            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end+1)
+
     def set_pos(self, to_row, to_col, scroll_ok=True):
         """Set the current position."""
         self.overflow = False
@@ -260,25 +254,6 @@ class TextScreen(object):
         # move cursor and reset cursor attribute
         # this may alter self.current_row, self.current_col
         self._check_pos(scroll_ok)
-
-    def incr_pos(self):
-        """Increase the current position by a char width."""
-        # on a trail byte: just go one to the right
-        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col) or 1
-        self.set_pos(self.current_row, self.current_col + width, scroll_ok=False)
-
-    def decr_pos(self):
-        """Decrease the current position by a char width."""
-        # previous is trail byte: go two to the left
-        # lead byte: go three to the left
-        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col-1)
-        if width == 0:
-            skip = 2
-        elif width == 2:
-            skip = 3
-        else:
-            skip = 1
-        self.set_pos(self.current_row, self.current_col - skip, scroll_ok=False)
 
     def _check_pos(self, scroll_ok=True):
         """Check if we have crossed the screen boundaries and move as needed."""
@@ -337,31 +312,42 @@ class TextScreen(object):
             signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col))
         )
 
-    def move_to_end(self):
-        """Jump to end of logical line; follow wraps (END)."""
-        row = self.text.find_end_of_line(self.apagenum, self.current_row)
-        if self.text.pages[self.apagenum].row[row-1].end == self.mode.width:
-            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end)
-            self.overflow = True
+    ###########################################################################
+    # update pixel buffer and interface
+
+    def rebuild(self):
+        """Completely resubmit the text and graphics screen to the interface."""
+        # fix the cursor
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_SET_CURSOR_SHAPE,
+            (self.cursor.width, self.cursor.from_line, self.cursor.to_line)
+        ))
+        self.queues.video.put(signals.Event(
+            signals.VIDEO_MOVE_CURSOR, (self.current_row, self.current_col)
+        ))
+        if self.mode.is_text_mode:
+            attr = self.text.get_attr(self.apagenum, self.current_row, self.current_col)
+            fore, _, _, _ = self.mode.split_attr(attr & 0xf)
         else:
-            self.set_pos(row, self.text.pages[self.apagenum].row[row-1].end+1)
-
-    ###########################################################################
-
-    def put_char_attr(self, pagenum, row, col, c, attr, one_only=False):
-        """Put a byte to the screen, redrawing as necessary."""
-        if not self.mode.is_text_mode:
-            attr = attr & 0xf
-        start, stop = self.text.put_char_attr(pagenum, row, col, c, attr)
-        if one_only:
-            stop = start
-        # update the screen
-        self.refresh_range(pagenum, row, start, stop)
-
-    ###########################################################################
+            fore, _, _, _ = self.mode.split_attr(self.mode.cursor_index or self.attr)
+        self.queues.video.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, (fore,)))
+        self.cursor.reset_visibility()
+        # redraw the text screen and rebuild text buffers in video plugin
+        for pagenum in range(self.mode.num_pages):
+            # resubmit the text buffer without changing the pixel buffer
+            for row in range(self.mode.height):
+                self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
+            # redraw graphics
+            if not self.mode.is_text_mode:
+                self.queues.video.put(signals.Event(
+                    signals.VIDEO_PUT_RECT, (
+                        pagenum, 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
+                        self.pixels.pages[pagenum].buffer
+                    )
+                ))
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
-        """Redraw a section of a screen row, assuming DBCS buffer has been set."""
+        """Draw a section of a screen row to pixels and interface."""
         col, last_col = start, start
         last_attr = None
         chars = []
@@ -382,7 +368,10 @@ class TextScreen(object):
             self._draw_text(pagenum, row, col, chars, attr, text_only)
 
     def _draw_text(self, pagenum, row, col, chars, attr, text_only):
-        """Draw a chunk of text in a single attribute."""
+        """Draw a chunk of text in a single attribute to pixels and interface."""
+        if row < 1 or col < 1 or row > self.mode.height or col > self.mode.width:
+            logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
+            return
         fore, back, blink, underline = self.mode.split_attr(attr)
         glyphs = self._glyphs.get_glyphs(chars)
         # mark full-width chars by a trailing empty string to preserve column counts
@@ -404,55 +393,8 @@ class TextScreen(object):
                 signals.VIDEO_PUT_RECT, (self.apagenum, left, top, right, bottom, sprite)
             ))
 
-    def _redraw_row(self, start, row, wrap=True):
-        """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
-        while True:
-            for i in range(start, self.text.pages[self.apagenum].row[row-1].end):
-                # redrawing changes colour attributes to current foreground (cf. GW)
-                # don't update all dbcs chars behind at each put
-                char = int2byte(self.text.get_char(self.apagenum, row, i+1))
-                self.put_char_attr(self.apagenum, row, i+1, char, self.attr, one_only=True)
-            if (
-                    wrap and self.text.pages[self.apagenum].row[row-1].wrap and
-                    row >= 0 and row < self.text.height-1
-                ):
-                row += 1
-                start = 0
-            else:
-                break
-
-    def clear_from(self, srow, scol):
-        """Clear from given position to end of logical line (CTRL+END)."""
-        self.text.pages[self.apagenum].row[srow-1].clear_from(scol, self.attr)
-        row = srow
-        # can use self.text.find_end_of_line
-        while self.text.pages[self.apagenum].row[row-1].wrap:
-            row += 1
-            self.text.pages[self.apagenum].row[row-1].clear(self.attr)
-        for r in range(row, srow, -1):
-            self.text.pages[self.apagenum].row[r-1].wrap = False
-            self.scroll(r)
-        therow = self.text.pages[self.apagenum].row[srow-1]
-        therow.wrap = False
-        self.set_pos(srow, scol)
-        save_end = therow.end
-        therow.end = self.mode.width
-        if scol > 1:
-            self._redraw_row(scol-1, srow)
-        else:
-            # inelegant: we're clearing the text buffer for a second time now
-            self.clear_rows(srow, srow)
-        therow.end = save_end
-
-    ###########################################################################
-    # clearing text screen
-
-    def clear_rows(self, start, stop):
-        """Clear text and graphics on given (inclusive) text row range."""
-        for r in self.text.pages[self.apagenum].row[start-1:stop]:
-            r.clear(self.attr)
-            # can't we just do this in row.clear?
-            r.wrap = False
+    def _clear_rows_refresh(self, start, stop):
+        """Clear row range to pixels and interface."""
         if not self.mode.is_text_mode:
             x0, y0, x1, y1 = self.mode.text_to_pixel_area(start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
@@ -460,36 +402,37 @@ class TextScreen(object):
         _, back, _, _ = self.mode.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
-    def _clear_area(self, start_row, stop_row):
-        """Clear the screen or the scroll area."""
+    ###########################################################################
+    # clearing text screen
+
+    def clear_view(self):
+        """Clear the scroll area."""
+        with self._modify_attr_on_clear():
+            self._clear_rows(self.scroll_area.top, self.scroll_area.bottom)
+            self.set_pos(self.scroll_area.top, 1)
+
+    def clear(self):
+        """Clear the screen."""
+        with self._modify_attr_on_clear():
+            self._clear_rows(1, self.mode.height)
+            self.set_pos(1, 1)
+
+    def _clear_rows(self, start, stop):
+        """Clear text and graphics on given (inclusive) text row range."""
+        self.text.clear_rows(self.apagenum, start, stop, self.attr)
+        self._clear_rows_refresh(start, stop)
+
+    @contextmanager
+    def _modify_attr_on_clear(self):
+        """On some adapters, modify current attributes when clearing the scroll area."""
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
-        self.clear_rows(start_row, stop_row)
-        # ensure the cursor is shown in the right position
-        self.set_pos(start_row, 1)
-        if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
-            # restore attr
+            yield
             self.set_attr(attr_save)
-
-    def clear_view(self):
-        """Clear the scroll area."""
-        self._clear_area(self.scroll_area.top, self.scroll_area.bottom)
-
-    def clear(self):
-        """Clear the screen."""
-        self._clear_area(1, self.mode.height)
-
-    ###########################################################################
-    # text viewport / scroll area
-
-    def _set_scroll_area(self, start, stop):
-        """Set the scroll area."""
-        self.scroll_area.set(start, stop)
-        #set_pos(start, 1)
-        self.overflow = False
-        self._move_cursor(start, 1)
+        else:
+            yield
 
     ###########################################################################
     # scrolling
@@ -533,118 +476,153 @@ class TextScreen(object):
     ###########################################################################
     # console operations
 
-    def delete_fullchar(self):
-        """Delete the character (single/double width) at the current position."""
-        row, col = self.current_row, self.current_col
-        cwidth = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
-        if cwidth == 0:
-            logging.debug('DBCS trail byte delete at %d, %d.', self.current_row, self.current_col)
-            self.set_pos(self.current_row, self.current_col-1)
-            cwidth = 2
-        text = self.text.get_logical_line(self.apagenum, self.current_row, self.current_col)
-        lastrow = self.text.find_end_of_line(self.apagenum, self.current_row)
-        if self.current_col > self.text.pages[self.apagenum].row[self.current_row-1].end:
-            # past the end. if this row ended with LF, attach next row and scroll further rows up
-            # if not, do nothing
-            if not self.text.pages[self.apagenum].row[self.current_row-1].wrap:
-                return
-            # else: LF case; scroll up without changing attributes
-            self.text.pages[self.apagenum].row[self.current_row-1].wrap = (
-                self.text.pages[self.apagenum].row[self.current_row].wrap
-            )
-            self.scroll(self.current_row + 1)
-            # redraw from the LF
-            self._rewrite_for_delete(text[1:] + b' ' * cwidth)
-        else:
-            # rewrite the contents (with the current attribute!)
-            self._rewrite_for_delete(text[cwidth:] + b' ' * cwidth)
-            # if last row was empty, scroll up.
-            if (
-                    self.text.pages[self.apagenum].row[lastrow-1].end == 0 and
-                    self.text.pages[self.apagenum].row[lastrow-2].wrap
-                ):
-                self.text.pages[self.apagenum].row[lastrow-2].wrap = False
-                self.scroll(lastrow)
-        # restore original position
-        self.set_pos(row, col)
+    # delete
 
-    def _rewrite_for_delete(self, text):
-        """Rewrite text contents (with the current attribute)."""
-        for c in iterchar(text):
-            if c == b'\n':
-                self.put_char_attr(
-                    self.apagenum, self.current_row, self.current_col, b' ', self.attr
-                )
-                self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col-1
-                break
-            else:
-                self.put_char_attr(self.apagenum, self.current_row, self.current_col, c, self.attr)
-                self.set_pos(self.current_row, self.current_col+1)
+    def delete_fullchar(self):
+        """Delete the character (half/fullwidth) at the current position."""
+        width = self.text.get_charwidth(self.apagenum, self.current_row, self.current_col)
+        # on a halfwidth char, delete once; lead byte, delete twice; trail byte, do nothing
+        if width > 0:
+            self._delete_at(self.current_row, self.current_col)
+        if width == 2:
+            self._delete_at(self.current_row, self.current_col)
+
+    def _delete_at(self, row, col, remove_depleted=False):
+        """Delete the halfwidth character at the given position."""
+        # case 0) non-wrapping row:
+        #           0a) left of or at logical end -> redraw until logical end
+        #           0b) beyond logical end -> do nothing
+        # case 1) full wrapping row -> redraw until physical end -> recurse for next row
+        # case 2) LF row:
+        #           2a) left of LF logical end ->  redraw until logical end
+        #           2b) at or beyond LF logical end
+        #                   -> attach next row's contents at current postion until physical end
+        #                   -> if next row now empty, scroll it up & stop; otherwise recurse
+        # note that the last line recurses into a multi-character delete!
+        therow = self.text.pages[self.apagenum].row[row-1]
+        nextrow = self.text.pages[self.apagenum].row[row]
+        if not therow.wrap:
+            # case 0b
+            if col > therow.end:
+                return
+            # case 0a
+            start_col, stop_col = therow.delete_char_attr(col, self.attr)
+            # if the row is depleted, drop it and scroll up from below
+            if remove_depleted and therow.end == 0:
+                self.scroll(row)
+        elif therow.end == therow.width:
+            # case 1
+            wrap_char_attr = nextrow.buf[0]
+            if nextrow.end == 0:
+                wrap_char_attr = None
+            start_col, stop_col = therow.delete_char_attr(col, self.attr, wrap_char_attr)
+            self._delete_at(row+1, 1, remove_depleted=True)
+        elif col < therow.end:
+            # case 2a
+            start_col, stop_col = therow.delete_char_attr(col, self.attr)
+        elif remove_depleted and col == therow.end:
+            # case 2b (ii) while on the first LF row deleting the last char immediately appends
+            # the next row, any subsequent LF rows are only removed once they are fully empty and
+            # DEL is pressed another time
+            start_col, stop_col = therow.delete_char_attr(col, self.attr)
+        elif remove_depleted and therow.end == 0:
+            # case 2b (iii) this is where the empty row mentioned at 2b (ii) gets removed
+            self.scroll(row)
+            return
         else:
-            # we're on the position after the additional space
-            if self.current_col == 1:
-                self.current_row -= 1
-                self.text.pages[self.apagenum].row[self.current_row-1].end = self.mode.width - 1
-            else:
-                # adjust row end
-                self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col - 2
+            # case 2b (i) perform multi_character delete by looping single chars
+            for newcol in range(col, therow.width+1):
+                if nextrow.end == 0:
+                    break
+                wrap_char, _ = nextrow.buf[0]
+                therow.put_char_attr(newcol, wrap_char, self.attr, adjust_end=True)
+                self._delete_at(row+1, 1, remove_depleted=True)
+            start_col, stop_col = col, newcol
+        # refresh all that has been changed
+        self.refresh_range(self.apagenum, row, start_col, stop_col)
+
+    # insert
 
     def insert_fullchars(self, sequence):
-        """Insert one or more single- or double-width characters and adjust cursor."""
+        """Insert one or more half- or fullwidth characters and adjust cursor."""
         # insert one at a time at cursor location
         # to let cursor position logic deal with scrolling
         for c in iterchar(sequence):
-            if self._insert_fullchar_at(self.current_row, self.current_col, c, self.attr):
+            if self._insert_at(self.current_row, self.current_col, c, self.attr):
                 # move cursor by one character
                 # this will move to next row when necessary
-                self.set_pos(self.current_row, self.current_col+1)
+                self.incr_pos()
 
-    def _insert_fullchar_at(self, row, col, c, attr):
-        """Insert one single- or double-width character at the given position."""
+    def _insert_at(self, row, col, c, attr):
+        """Insert one halfwidth character at the given position."""
         therow = self.text.pages[self.apagenum].row[row-1]
         if therow.end < self.mode.width:
-            therow.buf.insert(col-1, (c, attr))
-            c, attr = therow.buf.pop()
-            if therow.end > col-1:
-                therow.end += 1
-            else:
-                therow.end = col
-            self._redraw_row(col-1, row)
-            if  therow.wrap and therow.end == self.mode.width:
+            # insert the new char and ignore what drops off at the end
+            # this changes the attribute of everything that has been redrawn
+            _, _, start_col, stop_col = therow.insert_char_attr(col, c, attr)
+            # redraw everything that has changed
+            self.refresh_range(self.apagenum, row, start_col, stop_col)
+            # the insert has now filled the row and we used to be a row ending in LF:
+            # scroll and continue into the new row
+            if therow.wrap and therow.end == self.mode.width:
+                # since we used to be an LF row, wrap == True already
+                # then, the newly added row should wrap - TextBuffer.scroll_down takes care of this
                 self.scroll_down(row+1)
-                therow.wrap = True
+            # if we filled out the row but aren't wrapping, we scroll & wrap at the *next* insert
             return True
         else:
-            # pushing the end of the row past the screen edge
-            # if we're not a wrapping line, make space by scrolling
+            # we have therow.end == width, so we're pushing the end of the row past the screen edge
+            # if we're not a wrapping line, make space by scrolling and wrap into the new line
             if not therow.wrap and row < self.scroll_area.bottom:
                 self.scroll_down(row+1)
                 therow.wrap = True
             if row >= self.scroll_area.bottom:
                 # once the end of the line hits the bottom, start scrolling the start of the line up
-                # until that hist the top of the screen. After that, stop inserting & drop chars
                 start = self.text.find_start_of_line(self.apagenum, self.current_row)
-                if start > self.scroll_area.top:
-                    self.scroll()
-                    row -= 1
-                else:
+                # if we hist the top of the screen, stop inserting & drop chars
+                if start <= self.scroll_area.top:
                     return False
-            therow.buf.insert(col-1, (c, attr))
-            c, attr = therow.buf.pop()
-            self._redraw_row(col-1, row)
+                # scroll up
+                self.scroll()
+                # adjust working row number
+                row -= 1
+                assert therow is self.text.pages[self.apagenum].row[row-1]
+            c, _, start_col, stop_col = therow.insert_char_attr(col, c, attr)
+            # redraw everything that has changed on this row
+            self.refresh_range(self.apagenum, row, start_col, stop_col)
             # insert the character in the next row
-            return self._insert_fullchar_at(row+1, 1, c, attr)
+            return self._insert_at(row+1, 1, c, attr)
+
+    def clear_from(self, srow, scol):
+        """Clear from given position to end of logical line (CTRL+END)."""
+        end_row = self.text.find_end_of_line(self.apagenum, srow)
+        # clear the first row of te logical line
+        self.text.pages[self.apagenum].row[srow-1].clear(
+            self.attr, from_col=scol, clear_wrap=True,
+        )
+        if scol > 1:
+            # redraw the last char before the clear too, as it may have been changed by dbcs logic
+            self.refresh_range(self.apagenum, srow, scol-1, self.mode.width)
+        else:
+            # just clear out the whole row
+            self._clear_rows_refresh(srow, srow)
+        # remove the additional rows in the logical line by scrolling up
+        for row in range(end_row, srow, -1):
+            self.scroll(row)
+        self.set_pos(srow, scol)
+
+    # line feed
 
     def line_feed(self):
         """Move the remainder of the line to the next row and wrap (LF)."""
-        if self.current_col < self.text.pages[self.apagenum].row[self.current_row-1].end:
+        this_row = self.text.pages[self.apagenum].row[self.current_row-1]
+        if self.current_col < this_row.end:
             # insert characters, preserving cursor position
             cursor = self.current_row, self.current_col
-            self.insert_fullchars(b' ' * (self.mode.width-self.current_col+1))
+            self.insert_fullchars(b' ' * (this_row.width-self.current_col+1))
             self.set_pos(*cursor, scroll_ok=False)
             # adjust end of line and wrapping flag - LF connects lines like word wrap
-            self.text.pages[self.apagenum].row[self.current_row-1].end = self.current_col - 1
-            self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
+            this_row.put_line_feed(self.current_col)
             # cursor stays in place after line feed!
         else:
             # find last row in logical line
@@ -660,13 +638,52 @@ class TextScreen(object):
             # self.current_row has changed, don't use row var
             if self.current_row < self.mode.height:
                 self.scroll_down(self.current_row+1)
-                # if we were already a wrapping row, make sure the new empty row wraps
-                #if self.text.pages[self.apagenum].row[self.current_row-1].wrap:
-                #    self.text.pages[self.apagenum].row[self.current_row].wrap = True
             # ensure the current row now wraps
             self.text.pages[self.apagenum].row[self.current_row-1].wrap = True
             # cursor moves to start of next line
             self.set_pos(self.current_row+1, 1)
+
+    ###########################################################################
+    # bottom bar
+
+    def update_bar(self, descriptions):
+        """Update thekey descriptions in the bottom bar."""
+        self._bottom_bar.clear()
+        for i, text in enumerate(descriptions):
+            kcol = 1 + 8*i
+            self._bottom_bar.write((b'%d' % (i+1,))[-1:], kcol, False)
+            self._bottom_bar.write(text, kcol+1, True)
+
+    def show_bar(self, on):
+        """Switch bottom bar visibility."""
+        # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
+        error.throw_if(on and self.scroll_area.bottom == self.mode.height)
+        self._bottom_bar.visible, was_visible = on, self._bottom_bar.visible
+        if self._bottom_bar.visible != was_visible:
+            self.redraw_bar()
+
+    def redraw_bar(self):
+        """Redraw bottom bar if visible, clear if not."""
+        key_row = self.mode.height
+        # Keys will only be visible on the active page at which KEY ON was given,
+        # and only deleted on page at which KEY OFF given.
+        self._clear_rows(key_row, key_row)
+        if not self.mode.is_text_mode:
+            reverse_attr = self.attr
+        elif (self.attr >> 4) & 0x7 == 0:
+            reverse_attr = 0x70
+        else:
+            reverse_attr = 0x07
+        if self._bottom_bar.visible:
+            # always show only complete 8-character cells
+            # this matters on pcjr/tandy width=20 mode
+            for i in range((self.mode.width//8) * 8):
+                c, reverse = self._bottom_bar.get_char_reverse(i)
+                a = reverse_attr if reverse else self.attr
+                start, stop = self.text.put_char_attr(self.apagenum, key_row, i+1, c, a)
+            self.text.pages[self.apagenum].row[-1].end = self.mode.width
+            # update the screen
+            self.refresh_range(self.apagenum, key_row, 1, self.mode.width)
 
     ###########################################################################
     # vpage text retrieval
@@ -680,12 +697,12 @@ class TextScreen(object):
 
     def copy_clipboard(self, start_row, start_col, stop_row, stop_col, is_mouse_selection):
         """Copy selected screen area to clipboard."""
-        clips = self.text.get_text_logical(
+        text = self.text.get_text_logical(
             self.vpagenum, start_row, start_col, stop_row, stop_col
         )
-        text = u'\n'.join(self.codepage.str_to_unicode(clip) for clip in clips)
+        text = u''.join(self.codepage.str_to_unicode(_chunk) for _chunk in text.split(b'\n'))
         self.queues.video.put(signals.Event(
-                signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)
+            signals.VIDEO_SET_CLIPBOARD_TEXT, (text, is_mouse_selection)
         ))
 
     ###########################################################################
@@ -699,7 +716,7 @@ class TextScreen(object):
         row = self.current_row if row is None else row
         col = self.current_col if col is None else col
         cmode = self.mode
-        error.throw_if(row == cmode.height and self.bottom_bar.visible)
+        error.throw_if(row == cmode.height and self._bottom_bar.visible)
         if self.scroll_area.active:
             error.range_check(self.scroll_area.top, self.scroll_area.bottom, row)
         else:
@@ -725,8 +742,10 @@ class TextScreen(object):
     def csrlin_(self, args):
         """CSRLIN: get the current screen row."""
         list(args)
-        if (self.overflow and self.current_col == self.mode.width and
-                                    self.current_row < self.scroll_area.bottom):
+        if (
+                self.overflow and self.current_col == self.mode.width
+                and self.current_row < self.scroll_area.bottom
+            ):
             # in overflow position, return row+1 except on the last row
             csrlin = self.current_row + 1
         else:
@@ -776,10 +795,13 @@ class TextScreen(object):
         if start is None and stop is None:
             self.scroll_area.unset()
         else:
-            if self.capabilities in ('pcjr', 'tandy') and not self.bottom_bar.visible:
+            if self.capabilities in ('pcjr', 'tandy') and not self._bottom_bar.visible:
                 max_line = 25
             else:
                 max_line = 24
             error.range_check(1, max_line, start, stop)
             error.throw_if(stop < start)
-            self._set_scroll_area(start, stop)
+            self.scroll_area.set(start, stop)
+            #set_pos(start, 1)
+            self.overflow = False
+            self._move_cursor(start, 1)

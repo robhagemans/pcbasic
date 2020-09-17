@@ -58,7 +58,6 @@ class FunctionKeyMacros(object):
         """Initialise user-definable key list."""
         self._keyboard = keyboard
         self._screen = screen
-        self._bar = screen.bottom_bar
         self._num_fn_keys = num_fn_keys
         self._update_bar()
 
@@ -80,21 +79,26 @@ class FunctionKeyMacros(object):
         """KEY: show/hide/list macros."""
         command, = args
         if command == tk.ON:
-            self._bar.show(True, self._screen)
+            self._screen.show_bar(True)
         elif command == tk.OFF:
-            self._bar.show(False, self._screen)
+            self._screen.show_bar(False)
         elif command == tk.LIST:
             self.list_keys()
 
     def _update_bar(self):
         """Show/hide the function keys line on the active page."""
-        self._bar.clear()
-        for i in range(10):
-            text = self._keyboard.get_macro(i)[:6]
-            text = b''.join(self._replace_chars.get(s, s) for s in iterchar(text))
-            kcol = 1 + 8*i
-            self._bar.write((b'%d' % (i+1,))[-1:], kcol, False)
-            self._bar.write(text, kcol+1, True)
+        macros = (
+            self._keyboard.get_macro(_i)
+            for _i in range(10)
+        )
+        descriptions = [
+            b''.join(
+                self._replace_chars.get(_s, _s)
+                for _s in iterchar(_macro[:6])
+            )
+            for _macro in macros
+        ]
+        self._screen.update_bar(descriptions)
 
 
 class Editor(object):
