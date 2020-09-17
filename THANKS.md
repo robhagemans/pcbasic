@@ -31,9 +31,9 @@ Avid testers and bug hunters
 
 PC-BASIC incorporates code derived from other projects, in particular:
 
-  * **J-L Morel**'s [Win32::Console::ANSI](http://search.cpan.org/~jlmorel/Win32-Console-ANSI-1.11/lib/Win32/Console/ANSI.pm)
-  * **Valentin Lab**'s [win_subprocess.py](https://gist.github.com/vaab/2ad7051fc193167f15f85ef573e54eb9)
   * **Marcus von Appen**'s [PySDL2](https://pysdl2.readthedocs.org/en/latest/)
+  * **Jonathan Hartley**'s [colorama](https://github.com/tartley/colorama)
+  * **Valentin Lab**'s [win_subprocess.py](https://gist.github.com/vaab/2ad7051fc193167f15f85ef573e54eb9)
 
 PC-BASIC depends on the following open-source projects:
 
@@ -52,6 +52,7 @@ PC-BASIC would not have been what it is without the following open-source projec
 which it has depended on in the past:
 
   * **Tom Rothamel**'s [PyGame Subset for Android](https://web.archive.org/web/20150712040220/http://pygame.renpy.org/) (superseded by [RAPT](http://www.renpy.org/doc/html/android.html))
+  * **J-L Morel**'s [Win32::Console::ANSI](http://search.cpan.org/~jlmorel/Win32-Console-ANSI-1.11/lib/Win32/Console/ANSI.pm)
   * [Python for Windows Extensions (PyWin32)](https://sourceforge.net/projects/pywin32/)
   * [PExpect](http://pexpect.readthedocs.org/en/latest/)
   * [PyGame](http://www.pygame.org)

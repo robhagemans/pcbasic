@@ -1099,8 +1099,8 @@ class Graphics(object):
             self._mode.pixel_width * self._screen_aspect[1]
         )
         yfac = aspect[1] / (1.*aspect[0])
-        x1 = (scale*sx) // 4
-        y1 = (scale*sy) // 4
+        x1 = int(math.trunc(scale*sx / 4.))
+        y1 = int(math.trunc(scale*sy / 4.))
         if rotate == 0 or rotate == 360:
             pass
         elif rotate == 90:
