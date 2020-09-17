@@ -9,9 +9,9 @@ This file is released under the GNU GPL version 3 or later.
 import math
 import operator
 
+from ...compat import int2byte
 from ..base import error
 from ..base import tokens as tk
-from ..base import signals
 from ..base import bytematrix
 from .. import values
 from .. import mlparser
@@ -23,16 +23,19 @@ ZERO_TILE = bytematrix.ByteMatrix(1, 8)
 class GraphicsViewPort(object):
     """Graphics viewport (clip area) functions."""
 
-    def __init__(self, max_width, max_height):
+    def __init__(self, pixel_buffer):
         """Initialise graphics viewport."""
-        self._width, self._height = max_width, max_height
+        self._pixels = pixel_buffer
+        self._max_width, self._max_height = self._pixels.width, self._pixels.height
         self._absolute = False
-        self._rect = None
+        self._rect = 0, 0, self._max_width-1, self._max_height-1
+        self._active = False
 
     def unset(self):
         """Unset the graphics viewport."""
         self._absolute = False
-        self._rect = None
+        self._rect = 0, 0, self._max_width-1, self._max_height-1
+        self._active = False
 
     def set(self, x0, y0, x1, y1, absolute):
         """Set the graphics viewport."""
@@ -41,72 +44,136 @@ class GraphicsViewPort(object):
         y0, y1 = min(y0, y1), max(y0, y1)
         self._absolute = absolute
         self._rect = x0, y0, x1, y1
+        self._active = True
 
-    def is_set(self):
+    @property
+    def active(self):
         """Return whether the graphics viewport is set."""
-        return self._rect is not None
+        return self._active
 
-    def get(self):
-        """Return the graphics viewport or full screen dimensions if not set."""
-        if self._rect:
+    def set_page(self, pixel_buffer):
+        """Set the pixel buffer (without adjusting the viewport."""
+        assert pixel_buffer.width == self.width
+        assert pixel_buffer.height == self.height
+        self._pixels = pixel_buffer
+
+    @property
+    def height(self):
+        """Height of the viewport."""
+        return self._rect[3] - self._rect[1] + 1
+
+    @property
+    def width(self):
+        """Width of the viewport."""
+        return self._rect[2] - self._rect[0] + 1
+
+    def __setitem__(self, index, data):
+        """Set pixels in viewport."""
+        self._pixels[self._convert_slice(index)] = data
+
+    def __getitem__(self, index):
+        """Get pixels in viewport."""
+        yslice, xslice = index
+        if not isinstance(yslice, slice) and not isinstance(xslice, slice):
+            # single pixel read can go outside of viewport
+            return self._pixels[self._convert_coords(xslice, yslice)]
+        return self._pixels[self._convert_slice(index)]
+
+    def get_bounds(self):
+        """Return the graphics viewport bounds, in viewport coordinates."""
+        if self._absolute:
             return self._rect
-        else:
-            return 0, 0, self._width-1, self._height-1
+        return 0, 0, self.width-1, self.height-1
 
     def contains(self, x, y):
         """Return whether the specified point is within the graphics view (boundaries inclusive)."""
-        vx0, vy0, vx1, vy1 = self.get()
+        vx0, vy0, vx1, vy1 = self.get_bounds()
         return vx0 <= x <= vx1 and vy0 <= y <= vy1
 
-    def clip_rect(self, x0, y0, x1, y1):
-        """Return rect clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get()
-        return max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
-
-    def clip_area(self, x0, y0, x1, y1, area_buffer):
-        """Return area buffer in ByteMatrix format clipped to view."""
-        nx0, ny0, nx1, ny1 = self.clip_rect(x0, y0, x1, y1)
-        return nx0, ny0, nx1, ny1, area_buffer[ny0-y0 : ny1-y0+1, nx0-x0 : nx1-x0+1]
-
-    def clip_interval(self, x0, x1, y):
-        """Return rect clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get()
-        if not (vy0 <= y <= vy1):
-            return x0, x0-1, y
-        return max(x0, vx0), min(x1, vx1), y
-
     def get_mid(self):
-        """Get the midpoint of the current graphics view."""
-        x0, y0, x1, y1 = self.get()
+        """Get the midpoint of the current graphics view, in viewpoint coordinates."""
+        x0, y0, x1, y1 = self.get_bounds()
         # +1 to match GW-BASIC
-        return x0 + (x1-x0)//2 + 1, y0 + (y1-y0)//2 + 1
+        x, y = (x1-x0) // 2 + 1, (y1-y0) // 2 + 1
+        if self._absolute:
+            return x0 + x, y0 + y
+        return x, y
 
-    def coords(self, x, y):
+    def cutoff_coord(self, x, y):
+        """Ensure coordinates are within screen + 1 pixel."""
+        abs_x, abs_y = self._convert_coords(x, y)
+        offs_x, offs_y = x - abs_x, y - abs_y
+        # clip absolute coornates to physical screen bounds plus one pixel
+        abs_x = min(self._max_width, max(-1, abs_x))
+        abs_y = min(self._max_height, max(-1, abs_y))
+        # return viewpoint coordinates
+        return abs_x + offs_x, abs_y + offs_y
+
+    def _convert_coords(self, x, y):
         """Retrieve absolute coordinates for viewport coordinates."""
-        if (not self._rect) or self._absolute:
+        if self._absolute:
             return x, y
         else:
             return x + self._rect[0], y + self._rect[1]
+
+    def _convert_slice(self, slice_tuple):
+        """Convert viewport to absolute slice tuple."""
+        yslice, xslice = slice_tuple
+        xmin, ymin, xmax, ymax = self.get_bounds()
+        if not isinstance(yslice, slice) and not isinstance(xslice, slice):
+            # single pixel
+            if not self.contains(xslice, yslice):
+                return slice(0, 0), slice(0, 0)
+            xslice, yslice = self._convert_coords(xslice, yslice)
+            return yslice, xslice
+        # note that integer indices are converted to slices n:n+1
+        if not isinstance(yslice, slice):
+            yslice = slice(yslice, yslice+1)
+        if not isinstance(xslice, slice):
+            xslice = slice(xslice, xslice+1)
+        assert yslice.step is None
+        assert xslice.step is None
+        y0, y1 = yslice.start, yslice.stop
+        x0, x1 = xslice.start, xslice.stop
+        if x0 is None:
+            x0 = xmin
+        if y0 is None:
+            y0 = ymin
+        if x1 is None:
+            x1 = xmax
+        if y1 is None:
+            y1 = ymax
+        # clip to bounds
+        x0 = max(x0, xmin)
+        y0 = max(y0, ymin)
+        x1 = min(x1, xmax+1)
+        y1 = min(y1, ymax+1)
+        # convert top-left and bottom-right coordinates
+        x0, y0 = self._convert_coords(x0, y0)
+        x1, y1 = self._convert_coords(x1, y1)
+        # rebuild slices
+        yslice = slice(y0, y1)
+        xslice = slice(x0, x1)
+        return yslice, xslice
 
 
 class Graphics(object):
     """Graphics operations."""
 
-    def __init__(self, queues, input_methods, values, memory, aspect):
+    def __init__(self, input_methods, values, memory, aspect):
         """Initialise graphics object."""
         # for apagenum and attr
-        self._queues = queues
         self._values = values
         self._memory = memory
         # for wait() in paint_
         self._input_methods = input_methods
         # memebers set on mode switch
         self._mode = None
-        self._text_pages = None
-        self._pixel_pages = None
+        self._pages = None
         self._apage = None
         self.graph_view = None
         self._apagenum = None
+        # last accessed coordinate, viewpoint-relative
         self._last_point = None
         self._last_attr = None
         self._draw_scale = None
@@ -114,14 +181,13 @@ class Graphics(object):
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         self._screen_aspect = aspect
 
-    def init_mode(self, mode, text_pages, pixel_pages, num_attr):
+    def init_mode(self, mode, pages, num_attr):
         """Initialise for new graphics mode."""
         self._mode = mode
-        self._text_pages = text_pages
-        self._pixel_pages = pixel_pages
+        self._pages = pages
         self._num_attr = num_attr
         # set graphics viewport
-        self.graph_view = GraphicsViewPort(self._mode.pixel_width, self._mode.pixel_height)
+        self.graph_view = GraphicsViewPort(self._pages[0].pixels)
         self._unset_window()
         self.reset()
 
@@ -141,7 +207,8 @@ class Graphics(object):
     def set_page(self, apagenum):
         """Set the active page."""
         self._apagenum = apagenum
-        self._apage = self._pixel_pages[apagenum]
+        self._apage = self._pages[apagenum]
+        self.graph_view.set_page(self._apage.pixels)
 
     ### attributes
 
@@ -149,82 +216,11 @@ class Graphics(object):
         """Get the index of the specified attribute."""
         if c == -1:
             # foreground; graphics 'background' attrib is always 0
+            # FIXME - isn't this split_attr's job?
             c = self._attr & 0xf
         else:
             c = min(self._num_attr-1, max(0, c))
         return c
-
-    ### text/graphics interaction
-
-    def _submit_rect(self, x, y, rect):
-        """Clear the text under the rect and submit to interface."""
-        row0, col0, row1, col1 = self._mode.pixel_to_text_area(
-            x, y, x+rect.width, y+rect.height
-        )
-        self._text_pages[self._apagenum].clear_area(
-            row0, col0, row1, col1, self._attr, adjust_end=False, clear_wrap=False
-        )
-        #FIXME: dbcs buffer doesn't know screen reality has changed
-        for row in range(row0, row1+1):
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_TEXT,
-                (self._apagenum, row, col0, [u' ']*(col1-col0+1), self._attr, None)
-            ))
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_PUT_RECT, (self._apagenum, x, y, rect)
-        ))
-
-    ### graphics primitives
-
-    def _cutoff_coord(self, x, y):
-        """Ensure coordinates are within screen + 1 pixel."""
-        return min(self._mode.pixel_width, max(-1, x)), min(self._mode.pixel_height, max(-1, y))
-
-    def _put_pixel(self, x, y, index):
-        """Put a pixel on the screen; empty character buffer."""
-        if self.graph_view.contains(x, y):
-            self._apage[y, x] = index
-            rect = self._apage[y, x:x+1]
-            self._submit_rect(x, y, rect)
-
-    def put_interval(self, pagenum, x, y, colours, mask=0xff):
-        """Write a list of attributes to a scanline interval."""
-        x, y, _, _, colours = self.graph_view.clip_area(x, y, x + colours.width, y, colours)
-        width = colours.width
-        rect = (colours & mask) | (self._pixel_pages[pagenum][y, x:x+width] & ~mask)
-        self._pixel_pages[pagenum][y, x:x+width] = rect
-        self._submit_rect(x, y, rect)
-
-    def _fill_interval(self, x0, x1, y, index):
-        """Fill a scanline interval in a solid attribute."""
-        x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
-        self._apage[y, x0:x1+1] = index
-        rect = self._apage[y, x0:x1+1]
-        self._submit_rect(x0, y, rect)
-
-    def _put_rect(self, x0, y0, x1, y1, sprite, operation_token):
-        """Apply an [y][x] array of attributes onto a screen rect."""
-        x0, y0, x1, y1, sprite = self.graph_view.clip_area(x0, y0, x1, y1, sprite)
-        if operation_token == tk.PSET:
-            rect = sprite
-        elif operation_token == tk.PRESET:
-            rect = sprite ^ (2**self._mode.bitsperpixel - 1)
-        elif operation_token == tk.AND:
-            # we use in-place operations as we'll assign back anyway
-            rect = operator.iand(self._apage[y0:y1+1, x0:x1+1], sprite)
-        elif operation_token == tk.OR:
-            rect = operator.ior(self._apage[y0:y1+1, x0:x1+1], sprite)
-        elif operation_token == tk.XOR:
-            rect = operator.ixor(self._apage[y0:y1+1, x0:x1+1], sprite)
-        self._apage[y0:y1+1, x0:x1+1] = rect
-        self._submit_rect(x0, y0, rect)
-
-    def fill_rect(self, x0, y0, x1, y1, index):
-        """Fill a rectangle in a solid attribute."""
-        x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
-        self._apage[y0:y1+1, x0:x1+1] = index
-        rect = self._apage[y0:y1+1, x0:x1+1]
-        self._submit_rect(x0, y0, rect)
 
     ## VIEW graphics viewport
 
@@ -299,9 +295,8 @@ class Graphics(object):
             fx0, fx1 = fx1, fx0
         if cartesian:
             fy0, fy1 = fy1, fy0
-        left, top, right, bottom = self.graph_view.get()
         x0, y0 = 0., 0.
-        x1, y1 = float(right-left), float(bottom-top)
+        x1, y1 = self.graph_view.width-1, self.graph_view.height-1
         scalex = (x1-x0) / (fx1-fx0)
         scaley = (y1-y0) / (fy1-fy0)
         offsetx = x0 - fx0*scalex
@@ -376,11 +371,12 @@ class Graphics(object):
             c = values.to_int(c)
             error.range_check(0, 255, c)
         list(args)
-        x, y = self.graph_view.coords(*self._get_window_physical(x, y, step))
+        x, y = self._get_window_physical(x, y, step)
         c = self._get_attr_index(c)
-        self._put_pixel(x, y, c)
-        self._last_attr = c
+        # record viewpoint-relative physical coordinates
         self._last_point = x, y
+        self._last_attr = c
+        self.graph_view[y, x] = c
 
     ### LINE
 
@@ -409,10 +405,10 @@ class Graphics(object):
         else:
             pattern = values.to_int(pattern)
         if coord0 != (None, None, None):
-            x0, y0 = self.graph_view.coords(*self._get_window_physical(*coord0))
+            x0, y0 = self._get_window_physical(*coord0)
         else:
             x0, y0 = self._last_point
-        x1, y1 = self.graph_view.coords(*self._get_window_physical(*coord1))
+        x1, y1 = self._get_window_physical(*coord1)
         c = self._get_attr_index(c)
         if not shape:
             self._draw_line(x0, y0, x1, y1, c, pattern)
@@ -426,8 +422,8 @@ class Graphics(object):
     def _draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
         """Draw a line between the given physical points."""
         # cut off any out-of-bound coordinates
-        x0, y0 = self._cutoff_coord(x0, y0)
-        x1, y1 = self._cutoff_coord(x1, y1)
+        x0, y0 = self.graph_view.cutoff_coord(x0, y0)
+        x1, y1 = self.graph_view.cutoff_coord(x1, y1)
         if y1 <= y0:
             # work from top to bottom, or from x1,y1 if at the same height. this matters for mask.
             x1, y1, x0, y0 = x0, y0, x1, y1
@@ -445,9 +441,10 @@ class Graphics(object):
         for x in range(x0, x1+sx, sx):
             if pattern & mask != 0:
                 if steep:
-                    self._put_pixel(y, x, c)
+                    # set point (y, x)
+                    self.graph_view[x, y] = c
                 else:
-                    self._put_pixel(x, y, c)
+                    self.graph_view[y, x] = c
             mask >>= 1
             if mask == 0:
                 mask = 0x8000
@@ -458,18 +455,18 @@ class Graphics(object):
 
     def _draw_box_filled(self, x0, y0, x1, y1, c):
         """Draw a filled box between the given corner points."""
-        x0, y0 = self._cutoff_coord(x0, y0)
-        x1, y1 = self._cutoff_coord(x1, y1)
+        x0, y0 = self.graph_view.cutoff_coord(x0, y0)
+        x1, y1 = self.graph_view.cutoff_coord(x1, y1)
         if y1 < y0:
             y0, y1 = y1, y0
         if x1 < x0:
             x0, x1 = x1, x0
-        self.fill_rect(x0, y0, x1, y1, c)
+        self.graph_view[y0:y1+1, x0:x1+1] = c
 
     def _draw_box(self, x0, y0, x1, y1, c, pattern=0xffff):
         """Draw an empty box between the given corner points."""
-        x0, y0 = self._cutoff_coord(x0, y0)
-        x1, y1 = self._cutoff_coord(x1, y1)
+        x0, y0 = self.graph_view.cutoff_coord(x0, y0)
+        x1, y1 = self.graph_view.cutoff_coord(x1, y1)
         mask = 0x8000
         mask = self._draw_straight(x1, y1, x0, y1, c, pattern, mask)
         mask = self._draw_straight(x1, y0, x0, y0, c, pattern, mask)
@@ -489,9 +486,9 @@ class Graphics(object):
         for p in range(p0, p1+sp, sp):
             if pattern & mask != 0:
                 if direction == 'x':
-                    self._put_pixel(p, q, c)
+                    self.graph_view[q, p] = c
                 else:
-                    self._put_pixel(q, p, c)
+                    self.graph_view[p, q] = c
             mask >>= 1
             if mask == 0:
                 mask = 0x8000
@@ -562,7 +559,7 @@ class Graphics(object):
         if aspect is not None:
             aspect = values.to_single(aspect).to_value()
         list(args)
-        x0, y0 = self.graph_view.coords(*self._get_window_physical(x, y, step))
+        x0, y0 = self._get_window_physical(x, y, step)
         if c is None:
             c = -1
         else:
@@ -646,7 +643,8 @@ class Graphics(object):
                         # (don't draw if y is between coo's)
                         if _octant_gt(oct0, y, coo1) and _octant_gt(oct0, coo0, y):
                             continue
-                self._put_pixel(*_octant_coord(octant, x0, y0, x, y), index=c)
+                oct_x, oct_y = _octant_coord(octant, x0, y0, x, y)
+                self.graph_view[oct_y, oct_x] = c
             # remember endpoints for pie sectors
             if y == coo0:
                 coo0x = x
@@ -703,7 +701,8 @@ class Graphics(object):
                     else:
                         if _quadrant_gt(qua0, x, y, x1, y1) and _quadrant_gt(qua0, x0, y0, x, y):
                             continue
-                self._put_pixel(*_quadrant_coord(quadrant, cx, cy, x, y), index=c)
+                quad_x, quad_y = _quadrant_coord(quadrant, cx, cy, x, y)
+                self.graph_view[quad_y, quad_x] = c
             # bresenham error step
             e2 = 2 * err
             if (e2 <= dy):
@@ -720,8 +719,8 @@ class Graphics(object):
         # too early stop of flat vertical ellipses
         # finish tip of ellipse
         while (y < ry):
-            self._put_pixel(cx, cy+y, c)
-            self._put_pixel(cx, cy-y, c)
+            self.graph_view[cy+y, cx] = c
+            self.graph_view[cy-y, cx] = c
             y += 1
         # draw pie-slice lines
         if line0:
@@ -783,22 +782,23 @@ class Graphics(object):
             back = self._mode.build_tile(bytearray(background)) if background else None
         else:
             tile, back = bytematrix.ByteMatrix(1, 8, c), None
-        bound_x0, bound_y0, bound_x1, bound_y1 = self.graph_view.get()
-        x, y = self.graph_view.coords(*self._get_window_physical(*lcoord))
+        # viewport bounds in viewport coordinates
+        bound_x0, bound_y0, bound_x1, bound_y1 = self.graph_view.get_bounds()
+        x, y = self._get_window_physical(*lcoord)
         line_seed = [(x, x, y, 0)]
         # paint nothing if seed is out of bounds
         if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
             return
         self._last_point = x, y
         # paint nothing if we start on border attrib
-        if self._apage[y, x] == border:
+        if self.graph_view[y, x] == border:
             return
         while len(line_seed) > 0:
             # consider next interval
             x_start, x_stop, y, ydir = line_seed.pop()
             # extend interval as far as it goes to left and right
-            x_left = x_start - self._apage.row_until(border, y, x_start-1, bound_x0-1).width
-            x_right = x_stop + self._apage.row_until(border, y, x_stop+1, bound_x1+1).width
+            x_left = x_start - self._scanline_until(border, y, x_start-1, bound_x0-1).width
+            x_right = x_stop + self._scanline_until(border, y, x_stop+1, bound_x1+1).width
             # check next scanlines and add intervals to the list
             if ydir == 0:
                 if y + 1 <= bound_y1:
@@ -826,7 +826,7 @@ class Graphics(object):
                     )
             # draw the pixels for the current interval
             if solid:
-                self._fill_interval(x_left, x_right, y, tile[0, 0])
+                self.graph_view[y, x_left:x_right+1] = tile[0, 0]
             else:
                 # convert tile to a list of attributes
                 tilerow = tile[y % tile.height, :]
@@ -834,11 +834,31 @@ class Graphics(object):
                 tiles = bytematrix.hstack((tilerow,) * n_tiles)
                 interval = tiles[:, x_left % tile.width : x_right - x_left + 1]
                 # put to screen
-                self.put_interval(self._apagenum, x_left, y, interval)
+                self.graph_view[y, x_left:x_right+1] = interval
             # allow interrupting the paint
             if y % 4 == 0:
                 self._input_methods.wait()
         self._last_attr = c
+
+    def _scanline_until(self, element, y, x0, x1):
+        """Get row until given element."""
+        if x0 == x1:
+            return bytematrix.ByteMatrix()
+        elif x1 > x0:
+            row = self.graph_view[y, x0:x1]
+            try:
+                # pyton2 won't do bytearray.index(int)
+                index = row.to_bytes().index(int2byte(element))
+                return row[:, :index]
+            except ValueError:
+                return row
+        else:
+            row = self.graph_view[y, x1+1:x0+1]
+            try:
+                index = 1 + row.to_bytes().rindex(int2byte(element))
+                return row[:, index:]
+            except ValueError:
+                return row
 
     def _check_scanline(
             self, line_seed, x_start, x_stop, y,
@@ -857,7 +877,7 @@ class Graphics(object):
         x = x_start
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
-            pattern = self._apage.row_until(border, y, x, x_stop+1)
+            pattern = self._scanline_until(border, y, x, x_stop+1)
             if pattern.width > 0:
                 # check if scanline pattern matches fill pattern
                 tile_x = x % rtile.width
@@ -892,7 +912,7 @@ class Graphics(object):
             raise error.BASICError(error.IFC)
         elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
-        x0, y0 = self.graph_view.coords(*self._get_window_physical(x0, y0))
+        x0, y0 = self._get_window_physical(x0, y0)
         self._last_point = x0, y0
         packed_sprite = self._memory.arrays.view_full_buffer(array_name)
         sprite = self._mode.sprite_builder.unpack(packed_sprite)
@@ -901,7 +921,18 @@ class Graphics(object):
         error.throw_if(not self.graph_view.contains(x0, y0))
         error.throw_if(not self.graph_view.contains(x1, y1))
         # apply the sprite to the screen
-        self._put_rect(x0, y0, x1, y1, sprite, operation_token)
+        if operation_token == tk.PSET:
+            rect = sprite
+        elif operation_token == tk.PRESET:
+            rect = sprite ^ (2**self._mode.bitsperpixel - 1)
+        elif operation_token == tk.AND:
+            # we use in-place operations as we'll assign back anyway
+            rect = operator.iand(self.graph_view[y0:y1+1, x0:x1+1], sprite)
+        elif operation_token == tk.OR:
+            rect = operator.ior(self.graph_view[y0:y1+1, x0:x1+1], sprite)
+        elif operation_token == tk.XOR:
+            rect = operator.ixor(self.graph_view[y0:y1+1, x0:x1+1], sprite)
+        self.graph_view[y0:y1+1, x0:x1+1] = rect
 
     def get_(self, args):
         """GET: Read a sprite from the screen."""
@@ -916,8 +947,8 @@ class Graphics(object):
             raise error.BASICError(error.IFC)
         elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
-        x0, y0 = self.graph_view.coords(*self._get_window_physical(x0, y0))
-        x1, y1 = self.graph_view.coords(*self._get_window_physical(x, y, step))
+        x0, y0 = self._get_window_physical(x0, y0)
+        x1, y1 = self._get_window_physical(x, y, step)
         self._last_point = x1, y1
         byte_array = self._memory.arrays.view_full_buffer(array_name)
         y0, y1 = sorted((y0, y1))
@@ -930,7 +961,7 @@ class Graphics(object):
         error.throw_if(not self.graph_view.contains(x1, y1))
         # set size record
         # read from screen and convert to byte array
-        sprite = self._apage[y0:y1+1, x0:x1+1]
+        sprite = self.graph_view[y0:y1+1, x0:x1+1]
         packed_sprite = self._mode.sprite_builder.pack(sprite)
         try:
             byte_array[:len(packed_sprite)] = packed_sprite
@@ -1121,11 +1152,11 @@ class Graphics(object):
             arg1 = values.pass_number(arg1)
             list(args)
             x, y = values.to_single(arg0).to_value(), values.to_single(arg1).to_value()
-            x, y = self.graph_view.coords(*self._get_window_physical(x, y))
+            x, y = self._get_window_physical(x, y)
             if x < 0 or x >= self._mode.pixel_width or y < 0 or y >= self._mode.pixel_height:
                 point = -1
             else:
-                point = self._apage[y, x]
+                point = self.graph_view[y, x]
             return self._values.new_integer().from_int(point)
 
     def pmap_(self, args):

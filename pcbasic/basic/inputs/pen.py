@@ -50,7 +50,7 @@ class Pen(object):
         """Report a pen-move event at graphical x,y """
         self._pos = x, y
 
-    def poll(self, fn, enabled, mode):
+    def poll(self, fn, enabled, video_buffer):
         """PEN: poll the light pen."""
         fn = values.to_int(fn)
         error.range_check(0, 9, fn)
@@ -71,14 +71,14 @@ class Pen(object):
         elif fn == 5:
             return self._pos[1]
         elif fn == 6:
-            row, _ = mode.pixel_to_text_pos(*self._down_pos)
+            row, _ = video_buffer.pixel_to_text_pos(*self._down_pos)
             return row
         elif fn == 7:
-            _, col = mode.pixel_to_text_pos(*self._down_pos)
+            _, col = video_buffer.pixel_to_text_pos(*self._down_pos)
             return col
         elif fn == 8:
-            row, _ = mode.pixel_to_text_pos(*self._pos)
+            row, _ = video_buffer.pixel_to_text_pos(*self._pos)
             return row
         elif fn == 9:
-            _, col = mode.pixel_to_text_pos(*self._pos)
+            _, col = video_buffer.pixel_to_text_pos(*self._pos)
             return col

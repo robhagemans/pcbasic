@@ -267,27 +267,6 @@ class ByteMatrix(object):
             for _row in self._rows
         ])
 
-    def row_until(self, element, y, x0, x1):
-        """Get row until given element."""
-        if x0 == x1:
-            return self.__class__()
-        elif x1 > x0:
-            row = self._rows[y][x0:x1]
-            try:
-                # pyton2 won't do bytearray.index(int)
-                index = row.index(int2byte(element))
-                return self[y, x0:x0+index]
-            except ValueError:
-                return self[y, x0:x1]
-        else:
-            row = self._rows[y][x1+1:x0+1]
-            try:
-                index = 1 + row.rindex(int2byte(element))
-                return self[y, x1+1+index:x0+1]
-            except ValueError:
-                return self[y, x1+1:x0+1]
-
-
     def move(self, sy0, sy1, sx0, sx1, ty0, tx0):
         """Move a submatrix, replacing with attribute 0."""
         # copy or this won't work on a view

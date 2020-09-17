@@ -17,8 +17,7 @@ from . import graphics
 from . import modes
 from . import font
 
-from ..base.bytematrix import ByteMatrix
-from .textbuffer import TextPage
+from .buffers import VideoBuffer
 from .textscreen import TextScreen
 from .colours import MONO_TINT
 from .cursor import Cursor
@@ -70,14 +69,13 @@ class Display(object):
         # as opposed to the loadable 8-pixel memory font used in graphics modes
         self._bios_font_8 = self._fonts[8].copy()
         # text screen
-        self.codepage = codepage
+        self._codepage = codepage
         self.cursor = Cursor(queues, self.mode)
         self.text_screen = TextScreen(
-            self._queues, self._values, self.mode, self.cursor, self._adapter, codepage
+            self._queues, self._values, self.mode, self.cursor, self._adapter
         )
-        # pixel buffer, set by _set_mode
-        self.text_pages = None
-        self.pixel_pages = None
+        # page buffers, set by _set_mode
+        self.pages = None
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         # all adapters including PCjr target 4x3, except Tandy
         if self._adapter == 'tandy':
@@ -96,7 +94,7 @@ class Display(object):
         #     and I don't think it was really checked on Tandy -- dosbox won't run SCREEN 3
         # graphics operations
         self.graphics = graphics.Graphics(
-            self._queues, input_methods, self._values, self._memory, aspect
+            input_methods, self._values, self._memory, aspect
         )
         # colour palette
         self.colourmap = self.mode.colourmap(
@@ -104,6 +102,11 @@ class Display(object):
         )
         # initialise a fresh textmode screen
         self._set_mode(self.mode, 1, 0, 0, erase=True)
+
+    @property
+    def apage(self):
+        """Active-page video buffers."""
+        return self.pages[self.apagenum]
 
 
     ###########################################################################
@@ -213,34 +216,30 @@ class Display(object):
         self.colourmap = new_mode.colourmap(
             self._queues, self._adapter, self._monitor, self.colorswitch
         )
-        # initialise pixel buffers
-        self.pixel_pages = [
-            ByteMatrix(self.mode.pixel_height, self.mode.pixel_width)
-            for _ in range(self.mode.num_pages)
-        ]
-        # initialise character buffers
-        self.text_pages = [
-            TextPage(self.attr, self.mode.width, self.mode.height)
-            for _ in range(self.mode.num_pages)
-        ]
         # rebuild the cursor
         if not self.mode.is_text_mode and self.mode.cursor_attr:
             self.cursor.init_mode(self.mode, self.mode.cursor_attr, self.colourmap)
         else:
             self.cursor.init_mode(self.mode, self.attr, self.colourmap)
+        # initialise pixel and character buffers
+        self.pages = [
+            VideoBuffer(
+                self._queues,
+                self.mode.pixel_height, self.mode.pixel_width,
+                self.mode.height, self.mode.width,
+                self.colourmap, self.attr, font, self._codepage,
+                do_fullwidth=(self.mode.is_text_mode and self.mode.font_height >= 14),
+                pagenum=_pagenum,
+            )
+            for _pagenum in range(self.mode.num_pages)
+        ]
         # initialise text screen
-        self.text_screen.init_mode(
-            self.mode, self.pixel_pages, self.text_pages,
-            self.attr, new_vpagenum, new_apagenum, font, self.colourmap,
-            do_fullwidth=(self.mode.font_height >= 14)
-        )
+        self.text_screen.init_mode(self.mode, self.pages, self.attr, new_vpagenum, new_apagenum)
         # restore emulated video memory in new mode
         if not erase:
             self.mode.memorymap.set_memory(self, saved_addr, saved_buffer)
         # center graphics cursor, reset window, etc.
-        self.graphics.init_mode(
-            self.mode, self.text_pages, self.pixel_pages, self.colourmap.num_attr
-        )
+        self.graphics.init_mode(self.mode, self.pages, self.colourmap.num_attr)
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics attribute
@@ -423,9 +422,7 @@ class Display(object):
         dst = values.to_int(next(args))
         list(args)
         error.range_check(0, self.mode.num_pages-1, dst)
-        self.text_pages[dst].copy_from(self.text_pages[dst])
-        self.pixel_pages[dst][:, :] = self.pixel_pages[src]
-        self._queues.video.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
+        self.pages[dst].copy_from(self.pages[dst])
 
     def color_(self, args):
         """COLOR: set colour attributes."""
@@ -496,12 +493,13 @@ class Display(object):
         list(args)
         # CLS is only executed if no errors have occurred
         if not self.mode.is_text_mode and (
-                val == 1 or (val is None and self.graphics.graph_view.is_set())
+                val == 1 or (val is None and self.graphics.graph_view.active)
             ):
             # CLS 1: in graphics mode, clear the graphics viewport
-            self.graphics.fill_rect(*self.graphics.graph_view.get(), index=(self.attr >> 4) & 0x7)
+            _, back, _, _ = self.colourmap.split_attr(self.attr)
+            self.graphics.graph_view[:, :] = back
             self.graphics.reset()
-            if not self.graphics.graph_view.is_set():
+            if not self.graphics.graph_view.active:
                 self.text_screen.redraw_bar()
                 self.text_screen.set_pos(1, 1)
         elif val == 0 or (val is None and not self.text_screen.scroll_area.active):

@@ -247,40 +247,16 @@ class VideoMode(object):
         """Number of available pages."""
         return self.memorymap.num_pages
 
-    def pixel_to_text_pos(self, x, y):
-        """Convert pixel position to text position."""
-        return 1 + y // self.font_height, 1 + x // self.font_width
-
-    def pixel_to_text_area(self, x0, y0, x1, y1):
-        """Convert from pixel area to text area."""
-        col0 = min(self.width, max(1, 1 + x0 // self.font_width))
-        row0 = min(self.height, max(1, 1 + y0 // self.font_height))
-        col1 = min(self.width, max(1, 1 + x1 // self.font_width))
-        row1 = min(self.height, max(1, 1 + y1 // self.font_height))
-        return row0, col0, row1, col1
-
-    def text_to_pixel_pos(self, row, col):
-        """Convert text position to pixel position."""
-        # area bounds are all inclusive
-        return (
-            (col-1) * self.font_width, (row-1) * self.font_height,
-        )
-
-    def text_to_pixel_area(self, row0, col0, row1, col1):
-        """Convert text area to pixel area."""
-        # area bounds are all inclusive
-        return (
-            (col0-1) * self.font_width, (row0-1) * self.font_height,
-            col1 * self.font_width - 1, row1 * self.font_height - 1
-        )
-
     def __eq__(self, rhs):
-        """Check equality with another mode or mode name."""
+        """Equality with another mode or mode name."""
         if isinstance(rhs, VideoMode):
             return self.name == rhs.name
         else:
             return self.name == rhs
 
+    def __ne__(self, rhs):
+        """Inequality with another mode or mode name."""
+        return not self.__eq__(rhs)
 
 
 ##############################################################################
