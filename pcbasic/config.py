@@ -506,10 +506,11 @@ class Settings(object):
             pass
         # devices and mounts
         device_params = {
-            key.upper()+':' : self.get(key)
+            key.upper(): self.get(key)
             for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')
         }
         current_device, mount_dict = self._get_drives()
+        device_params.update(mount_dict)
         # memory setting
         max_list = self.get('max-memory')
         max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
@@ -539,7 +540,6 @@ class Settings(object):
             # device settings
             'devices': device_params,
             'current_device': current_device,
-            'mount': mount_dict,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
             'textfile_encoding': self.get('text-encoding'),
@@ -563,8 +563,6 @@ class Settings(object):
             'extension': self.get('extension'),
             # ignore key buffer in console-based interfaces, to allow pasting text in console
             'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses'),
-            # following GW, don't write greeting for redirected input or command-line filter run
-            'greeting': (not params['input_streams']),
         })
         # deprecated arguments
         if self.get('utf8', get_default=False) is not None:
@@ -644,65 +642,82 @@ class Settings(object):
         current_device = self.get('current-device').upper()
         # build mount dictionary
         mount_list = self.get('mount', False)
-        mount_dict = {}
-        if mount_list is not None:
-            for a in mount_list:
-                # the last one that's specified will stick
-                try:
-                    letter, path = a.split(u':', 1)
-                    letter = letter.encode('ascii', errors='replace').upper()
-                    # take abspath first to ensure unicode, realpath gives bytes for u'.'
-                    path = os.path.realpath(os.path.abspath(path))
-                    if not os.path.isdir(path):
-                        logging.warning(u'Could not mount %s', a)
-                    else:
-                        mount_dict[letter] = (path, u'')
-                except (TypeError, ValueError) as e:
-                    logging.warning(u'Could not mount %s: %s', a, e)
+        if mount_list is None:
+            mount_dict = self._get_default_drives()
+            if not current_device:
+                current_device = self._get_default_current_device()
         else:
-            if WIN32:
-                # get all drives in use by windows
-                # if started from CMD.EXE, get the 'current working dir' for each drive
-                # if not in CMD.EXE, there's only one cwd
-                save_current = getcwdu()
-                for letter in iterchar(UPPERCASE):
-                    try:
-                        os.chdir(letter + b':')
-                        cwd = get_short_pathname(getcwdu()) or getcwdu()
-                    except EnvironmentError:
-                        # doesn't exist or can't access, do not mount this drive
-                        pass
-                    else:
-                        # must not start with \\
-                        path, cwd = cwd[:3], cwd[3:]
-                        mount_dict[letter] = (path, cwd)
-                os.chdir(save_current)
-                if not current_device:
-                    try:
-                        current_device = (
-                            os.path.abspath(save_current).split(u':')[0].encode('ascii')
-                        )
-                    except UnicodeEncodeError:
-                        pass
-            else:
-                # non-Windows systems simply have 'Z:' set to their their cwd by default
-                mount_dict[b'Z'] = (getcwdu(), u'')
-                current_device = b'Z'
-        # fallbacks for current device
-        if (
-                current_device != 'CAS1' and
-                (not current_device or current_device not in mount_dict.keys())
-            ):
-            if mount_dict:
-                # if not set or not sensible, set current device to lowest available
-                current_device = sorted(mount_dict.keys())[0]
-            else:
-                # if nothing mounted at all and not set to CAS1, current device will be @:
-                current_device = b'@'
+            mount_dict = self._get_drives_from_list(mount_list)
         # directory for bundled BASIC programs accessible through @:
-        mount_dict[b'@'] = (PROGRAM_PATH, u'')
+        mount_dict[b'@'] = PROGRAM_PATH
         return current_device, mount_dict
 
+    def _get_drives_from_list(self, mount_list):
+        """Assign drive letters based on mount specification."""
+        mount_dict = {}
+        for spec in mount_list:
+            # the last one that's specified will stick
+            try:
+                letter, path = spec.split(u':', 1)
+                try:
+                    letter = letter.encode('ascii').upper()
+                except UnicodeError:
+                    logging.error(u'Could not mount `%s`: invalid drive letter', spec)
+                # take abspath first to ensure unicode, realpath gives bytes for u'.'
+                path = os.path.realpath(os.path.abspath(path))
+                if not os.path.isdir(path):
+                    logging.error(u'Could not mount `%s`: not a directory', spec)
+                else:
+                    mount_dict[letter] = path
+            except (TypeError, ValueError) as e:
+                logging.error(u'Could not mount `%s`: %s', spec, e)
+        return mount_dict
+
+    def _get_default_drives(self):
+        """Assign default drive letters."""
+        mount_dict = {}
+        if WIN32:
+            # get all drives in use by windows
+            # if started from CMD.EXE, get the 'current working dir' for each drive
+            # if not in CMD.EXE, there's only one cwd
+            save_current = getcwdu()
+            for letter in iterchar(UPPERCASE):
+                try:
+                    os.chdir(letter + b':')
+                    cwd = get_short_pathname(getcwdu()) or getcwdu()
+                except EnvironmentError:
+                    # doesn't exist or can't access, do not mount this drive
+                    pass
+                else:
+                    path, cwd = os.path.splitdrive(cwd)
+                    if path:
+                        # cwd must not start with \\
+                        if cwd[:1] == u'\\':
+                            path += u'\\'
+                            cwd = cwd[1:]
+                        if cwd:
+                            mount_dict[letter] = u':'.join((path, cwd))
+                        else:
+                            mount_dict[letter] = path
+                    else:
+                        logging.warning('Not mounting `%s`: no drive letter.', cwd)
+            os.chdir(save_current)
+        else:
+            # non-Windows systems simply have 'Z:' set to their their cwd by default
+            mount_dict[b'Z'] = getcwdu()
+        return mount_dict
+
+    def _get_default_current_device(self):
+        """Get the current drive letter or Z:"""
+        if WIN32:
+            letter, _ = os.path.splitdrive(os.path.abspath(os.getcwdu()))
+            try:
+                current_device = letter.encode('ascii')
+            except UnicodeError:
+                pass
+        else:
+            current_device = b'Z'
+        return current_device
 
     ##########################################################################
     # interface parameters
@@ -765,11 +780,14 @@ class Settings(object):
         """Dict of launch parameters."""
         # build list of commands to execute on session startup
         commands = []
+        greeting = False
         if not self.get('resume'):
             run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
             # treat colons as CRs
             commands = split_quoted(self.get('exec'), split_by=u':', quote=u"'", strip_quotes=True)
             # note that executing commands (or RUN) will suppress greeting
+            # following GW, don't write greeting for redirected input or command-line filter run
+            greeting = not run and not commands and not self.session_params['input_streams']
             if run:
                 commands.append('RUN')
             if self.get('quit'):
@@ -777,6 +795,7 @@ class Settings(object):
         launch_params = {
             'prog': self.get('run') or self.get('load') or self.get(0),
             'resume': self.get('resume'),
+            'greeting': greeting,
             'state_file': self._get_state_file(),
             'commands': commands,
             # inserted keystrokes

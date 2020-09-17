@@ -52,26 +52,26 @@ def run(*arguments):
         settings = config.Settings(temp_dir, arguments)
         if settings.version:
             # print version and exit
-            show_version(settings)
+            _show_version(settings)
         elif settings.help:
             # print usage and exit
-            show_usage()
+            _show_usage()
         elif settings.convert:
             # convert and exit
-            convert(settings)
+            _convert(settings)
         elif settings.interface:
             # start an interpreter session with interface
-            launch_session(settings)
+            _launch_session(settings)
         else:
             # start an interpreter session with standard i/o
-            run_session(**settings.launch_params)
+            _run_session(**settings.launch_params)
 
-def show_usage():
+def _show_usage():
     """Show usage description."""
     usage = pkg_resources.resource_string(__name__, 'data/USAGE.txt').decode('utf-8', 'replace')
     stdout.write(usage)
 
-def show_version(settings):
+def _show_version(settings):
     """Show version with optional debugging details."""
     if settings.debug:
         stdout.write(u'%s %s\n%s\n' % (NAME, LONG_VERSION, COPYRIGHT))
@@ -79,7 +79,7 @@ def show_version(settings):
     else:
         stdout.write(u'%s %s\n%s\n' % (NAME, VERSION, COPYRIGHT))
 
-def convert(settings):
+def _convert(settings):
     """Perform file format conversion."""
     mode, in_name, out_name = settings.conv_params
     with basic.Session(**settings.session_params) as session:
@@ -90,24 +90,26 @@ def convert(settings):
             mode_suffix = b',%s' % (mode,) if mode.upper() in (b'A', b'P') else b''
             session.execute(b'SAVE "%s"%s' % (outfile, mode_suffix))
 
-def launch_session(settings):
+def _launch_session(settings):
     """Start an interactive interpreter session."""
     guard = ExceptionGuard(**settings.guard_params)
     try:
-        Interface(guard, **settings.iface_params).launch(run_session, **settings.launch_params)
+        Interface(guard, **settings.iface_params).launch(_run_session, **settings.launch_params)
     except InitFailed as e:
         logging.error(e)
 
-def run_session(
+def _run_session(
         interface=None, guard=NOGUARD,
         resume=False, debug=False, state_file=None,
-        prog=None, commands=(), keys=u'', **session_params
+        prog=None, commands=(), keys=u'', greeting=True, **session_params
     ):
     """Run an interactive BASIC session."""
     Session = basic.DebugSession if debug else basic.Session
     with Session(interface, **session_params) as s:
         with state.manage_state(s, state_file, resume) as session:
             with guard.protect(interface, session):
+                if greeting:
+                    session.greet()
                 if prog:
                     with session.bind_file(prog) as progfile:
                         session.execute(b'LOAD "%s"' % (progfile,))

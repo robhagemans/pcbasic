@@ -55,14 +55,14 @@ class Implementation(object):
             output_streams=sys.stdout, input_streams=sys.stdin,
             codepage=None, box_protect=True, font=None, text_width=80,
             video=u'cga', monitor=u'rgb',
-            devices=None, current_device=u'Z:', mount=None,
+            devices=None, current_device=u'Z:',
             textfile_encoding=None, soft_linefeed=False,
             check_keybuffer_full=True, ctrl_c_is_break=True,
             hide_listing=None, hide_protected=False,
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
-            extension=None, greeting=True,
+            extension=None
         ):
         """Initialise the interpreter session."""
         ######################################################################
@@ -78,8 +78,6 @@ class Implementation(object):
         self._edit_prompt = False
         # terminal program for TERM command
         self._term_program = term
-        # option to suppress greeting
-        self._greeting = greeting
         ######################################################################
         # data segment
         ######################################################################
@@ -155,7 +153,7 @@ class Implementation(object):
         self.files = Files(
             self.values, self.memory, self.queues, self.keyboard, self.display, self.console,
             max_files, max_reclen, serial_buffer_size,
-            devices, current_device, mount,
+            devices, current_device,
             self.codepage, textfile_encoding, soft_linefeed
         )
         # enable printer echo from console
@@ -249,8 +247,6 @@ class Implementation(object):
 
     def execute(self, command):
         """Execute a BASIC statement."""
-        # don't greet if an interactive session is opened afterwards
-        self._greeting = False
         with self._handle_exceptions():
             self._store_line(command)
             self.interpreter.loop()
@@ -314,9 +310,6 @@ class Implementation(object):
 
     def interact(self):
         """Interactive interpreter session."""
-        # greet at most once per session: execute() will switch off greeting
-        if self._greeting:
-            self.execute(GREETING)
         while True:
             with self._handle_exceptions():
                 self.interpreter.loop()
