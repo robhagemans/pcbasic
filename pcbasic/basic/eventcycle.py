@@ -128,17 +128,7 @@ class EventQueues(object):
 
     def check_events(self, event_check_input=()):
         """Main event cycle."""
-        # check input first to avoid hang if the interface plugin has crashed
-        # and we have put a lot of work on the queue
-        # this works because Interface will send QUIT on termination
         self._check_input(event_check_input)
-        # avoid screen lockups if video queue fills up
-        if self.video.qsize() > self.max_video_qsize:
-            # note that this really slows down screen writing
-            # because it triggers a sleep() in the video backend
-            self.video.join()
-        if self.audio.qsize() > self.max_audio_qsize:
-            self.audio.join()
 
     def _check_input(self, event_check_input):
         """Handle input events."""
