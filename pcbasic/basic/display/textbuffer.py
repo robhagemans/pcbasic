@@ -188,16 +188,13 @@ class TextPage(object):
         """Retrieve attribute from the screen."""
         return self._rows[row-1].attrs[col-1]
 
-    def get_text_raw(self):
-        """Retrieve all raw text on this page."""
-        return tuple(self.get_row_text_raw(row) for row in range(self._rows))
-
-    def get_row_text_raw(self, row):
-        """Retrieve raw text on a row."""
+    def get_row(self, row):
+        """Retrieve characters on a row, as bytes."""
         return b''.join(self._rows[row-1].chars)
 
-    ###########################################################################
-    # logical lines
+    def get_text(self):
+        """Retrieve all characters on this page, as tuple of bytes."""
+        return tuple(self.get_row(_row) for _row in range(self._height))
 
     def find_start_of_line(self, srow):
         """Find the start of the logical line that includes our current position."""
@@ -212,62 +209,3 @@ class TextPage(object):
         while srow <= self._height and self.wraps(srow):
             srow += 1
         return srow
-
-    def get_text_logical(self, start_row, start_col, stop_row, stop_col):
-        """Retrieve section of logical text for copying."""
-        if start_row == stop_row:
-            return self._get_row_logical(start_row, start_col, stop_col)
-        text = [
-            self._get_row_logical(start_row, from_col=start_col)
-        ]
-        text.extend(
-            self._get_row_logical(_row)
-            for _row in range(start_row, stop_row-1)
-        )
-        text.append(self._get_row_logical(stop_row, to_col=stop_col))
-        return b''.join(text)
-
-    def _get_row_logical(self, row, from_col=1, to_col=None):
-        """Get the text between given columns (inclusive), don't go beyond end."""
-        if to_col is None:
-            to_col = self.row_length(row)
-        else:
-            to_col = min(to_col, self.row_length(row))
-        text = b''.join(self._rows[row-1].chars[from_col-1:to_col])
-        # wrap on line that is not full means LF
-        if self.row_length(row) < self._width or not self.wraps(row):
-            text += b'\n'
-        return text
-
-    def get_logical_line(self, from_row, from_column=None):
-        """Get the contents of the logical line."""
-        # find start and end of logical line
-        if from_column is None:
-            start_row, start_col = self.find_start_of_line(from_row), 1
-        else:
-            start_row, start_col = from_row, from_column
-        stop_row = self.find_end_of_line(from_row)
-        return self.get_text_logical(start_row, start_col, stop_row, stop_col=None)
-
-    def get_logical_line_from(self, srow, prompt_row, left, right):
-        """Get bytearray of the contents of the logical line, adapted for INPUT."""
-        # INPUT: the prompt starts at the beginning of a logical line
-        # but the row may have moved up: this happens on line 24
-        # in this case we need to move up to the start of the logical line
-        prompt_row = self.find_start_of_line(prompt_row)
-        # find start of logical line
-        srow = self.find_start_of_line(srow)
-        # INPUT returns empty string if enter pressed below prompt row
-        if srow > prompt_row:
-            return b''
-        text = []
-        # add all rows of the logical line
-        for row in range(srow, self._height+1):
-            # exclude prompt, if any; only go from furthest_left to furthest_right
-            if row == prompt_row:
-                text.append(self._get_row_logical(row, from_col=left, to_col=right))
-            else:
-                text.append(self._get_row_logical(row))
-            if not self.wraps(row):
-                break
-        return b''.join(text)

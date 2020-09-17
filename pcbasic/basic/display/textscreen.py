@@ -344,7 +344,7 @@ class TextScreen(object):
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Draw a section of a screen row to pixels and interface."""
         # mark out replaced char and changed following dbcs characters to be redrawn
-        raw = self._text_pages[pagenum].get_row_text_raw(row)
+        raw = self._text_pages[pagenum].get_row(row)
         if self._dbcs_enabled:
             marks = self._conv.mark(raw, flush=True)
             tuples = ((_seq,) if len(_seq) == 1 else (_seq, b'') for _seq in marks)
@@ -505,14 +505,19 @@ class TextScreen(object):
     ###########################################################################
     # console operations
 
-    def get_logical_line(self, from_start, prompt_row, left, right):
-        """Get contents of the logical line (INPUT and console interaction)."""
-        if from_start:
-            return self._apage.get_logical_line(self.current_row)
-        else:
-            return self._apage.get_logical_line_from(
-                self.current_row, prompt_row, left, right
-            )
+    def find_start_of_line(self, row):
+        """Find the start of the logical line that includes our current position."""
+        return self._apage.find_start_of_line(row)
+
+    def get_logical_line(self, from_row):
+        """Get the contents of the logical line."""
+        # find start and end of logical line
+        start_row = self._apage.find_start_of_line(from_row)
+        stop_row = self._apage.find_end_of_line(from_row)
+        return b''.join(
+            self._apage.get_row(_row)[:self._apage.row_length(_row)]
+            for _row in range(start_row, stop_row+1)
+        )
 
     # delete
 
@@ -830,17 +835,21 @@ class TextScreen(object):
         """Output the visible page to file in raw bytes."""
         if not target_file:
             return
-        for line in self._text_pages[self._vpagenum].get_text_raw():
+        for line in self._text_pages[self._vpagenum].get_text():
             target_file.write_line(line.replace(b'\0', b' '))
 
     def copy_clipboard(self, start_row, start_col, stop_row, stop_col):
         """Copy selected screen area to clipboard."""
-        text = self._text_pages[self._vpagenum].get_text_logical(
-            start_row, start_col, stop_row, stop_col
-        )
-        text = u''.join(self._codepage.str_to_unicode(_chunk) for _chunk in text.split(b'\n'))
+        vpage = self._text_pages[self._vpagenum]
+        text = [
+            vpage.get_row(_row)[:vpage.row_length(_row)]
+            for _row in range(start_row, stop_row+1)
+        ]
+        text[0] = text[0][start_col-1:]
+        text[-1] = text[-1][:stop_col]
+        clip_text = u'\n'.join(self._codepage.str_to_unicode(_row) for _row in text)
         self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_CLIPBOARD_TEXT, (text,)
+            signals.VIDEO_SET_CLIPBOARD_TEXT, (clip_text,)
         ))
 
     ###########################################################################
