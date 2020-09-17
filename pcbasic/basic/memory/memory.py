@@ -575,11 +575,7 @@ class DataSegment(object):
         right = self._view_buffer(name2, index2, True)
         # swap the contents
         left[:], right[:] = right.tobytes(), left.tobytes()
-        # drop caches
-        if name1 in self.arrays:
-            self.arrays.set_cache(name1, None)
-        if name2 in self.arrays:
-            self.arrays.set_cache(name2, None)
+        # drop caches here if we have them
 
     def fre_(self, args):
         """FRE: get free memory and optionally collect garbage."""

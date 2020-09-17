@@ -45,7 +45,6 @@ class Arrays(object):
         """Clear arrays."""
         self._dims = {}
         self._buffers = {}
-        self._cache = {}
         self._array_memory = {}
         self.current = 0
 
@@ -63,7 +62,6 @@ class Arrays(object):
             # delete buffers
             del self._dims[name]
             del self._buffers[name]
-            del self._cache[name]
             del self._array_memory[name]
             # update memory model
             for name in self._array_memory:
@@ -101,14 +99,6 @@ class Arrays(object):
     def dimensions(self, name):
         """Return the dimensions of an array."""
         return self._dims[name]
-
-    def get_cache(self, name):
-        """Retrieve the sprite cache for the given array."""
-        return self._cache[name]
-
-    def set_cache(self, name, item):
-        """Store a sprite in the cache for a given array."""
-        self._cache[name] = item
 
     def dim_(self, args):
         """DIM: dimension arrays."""
@@ -158,7 +148,6 @@ class Arrays(object):
         self._array_memory[name] = (name_ptr, array_ptr)
         self._buffers[name] = bytearray(array_bytes)
         self._dims[name] = dimensions
-        self._cache[name] = None
 
     def check_dim(self, name, index):
         """
@@ -215,8 +204,7 @@ class Arrays(object):
             self._memory.strings.fix_temporaries()
         # copy value into array
         self.view_buffer(name, index)[:] = values.to_type(name[-1:], value).to_bytes()
-        # drop cache
-        self._cache[name] = None
+        # drop cache here
 
     def varptr(self, name, indices):
         """Retrieve the address of an array."""
