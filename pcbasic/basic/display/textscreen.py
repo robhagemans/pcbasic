@@ -44,7 +44,7 @@ class TextScreen(object):
         # function key macros
         self._bottom_bar = BottomBar()
 
-    def init_mode(self, mode, pixels, attr, vpagenum, apagenum, font, colourmap):
+    def init_mode(self, mode, pixel_pages, attr, vpagenum, apagenum, font, colourmap):
         """Reset the text screen for new video mode."""
         self.mode = mode
         self.attr = attr
@@ -58,7 +58,7 @@ class TextScreen(object):
             self.codepage, do_fullwidth=(self.mode.font_height >= 14)
         )
         # pixel buffer
-        self.pixels = pixels
+        self.pixel_pages = pixel_pages
         # redraw key line
         self.redraw_bar()
         # initialise text viewport & move cursor home
@@ -315,16 +315,9 @@ class TextScreen(object):
         # redraw the text screen and rebuild text buffers in video plugin
         for pagenum in range(self.mode.num_pages):
             # resubmit the text buffer without changing the pixel buffer
+            # redraw graphics
             for row in range(self.mode.height):
                 self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
-            # redraw graphics
-            if not self.mode.is_text_mode:
-                rect = self.pixels.pages[pagenum].get_rect(
-                    0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
-                )
-                self.queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_RECT, (pagenum, 0, 0, rect)
-                ))
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
         """Draw a section of a screen row to pixels and interface."""
@@ -353,15 +346,14 @@ class TextScreen(object):
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
             return
         _, back, _, underline = self._colourmap.split_attr(attr)
-        # mark full-width chars by a trailing empty string to preserve column counts
+        # update pixel buffer
+        left, top = self.mode.text_to_pixel_pos(row, col)
         sprite = self._glyphs.render_text(chars, attr, back, underline)
-        if not self.mode.is_text_mode and not text_only:
-            left, top = self.mode.text_to_pixel_pos(row, col)
-            width, height = sprite.width, sprite.height
-            right, bottom = left + width - 1, top + height - 1
-            self.pixels.pages[self.apagenum].put_rect(left, top, right, bottom, sprite, tk.PSET)
-        if text_only:
-            sprite = None
+        if not text_only:
+            self.pixel_pages[self.apagenum][top:top+sprite.height, left:left+sprite.width] = sprite
+        else:
+            sprite = self.pixel_pages[self.apagenum][top:top+sprite.height, left:left+sprite.width]
+        # mark full-width chars by a trailing empty string to preserve column counts
         text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
         text = [self.codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
         self.queues.video.put(signals.Event(
@@ -370,10 +362,9 @@ class TextScreen(object):
 
     def _clear_rows_refresh(self, start, stop):
         """Clear row range to pixels and interface."""
-        if not self.mode.is_text_mode:
-            x0, y0, x1, y1 = self.mode.text_to_pixel_area(start, 1, stop, self.mode.width)
-            # background attribute must be 0 in graphics mode
-            self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
+        x0, y0, x1, y1 = self.mode.text_to_pixel_area(start, 1, stop, self.mode.width)
+        # background attribute must be 0 in graphics mode
+        self.pixel_pages[self.apagenum][y0:y1+1, x0:x1+1] = 0
         _, back, _, _ = self._colourmap.split_attr(self.attr)
         self.queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
@@ -412,6 +403,13 @@ class TextScreen(object):
     ###########################################################################
     # scrolling
 
+    def _move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
+        """Move pixels from an area to another, replacing with attribute 0."""
+        clip = self.pixel_pages[self.apagenum][sy0:sy1+1, sx0:sx1+1]
+        height, width = sy1 - sy0 + 1, sx1 - sx0 + 1
+        self.pixel_pages[self.apagenum][sy0:sy1+1, sx0:sx1+1] = 0
+        self.pixel_pages[self.apagenum][ty0 : ty0+height, tx0 : tx0+width] = clip
+
     def scroll(self, from_line=None):
         """Scroll the scroll region up by one line, starting at from_line."""
         if from_line is None:
@@ -422,16 +420,16 @@ class TextScreen(object):
         ))
         if self.current_row > from_line:
             self._move_cursor(self.current_row - 1, self.current_col)
-        # sync buffers with the new screen reality:
+        # update text buffer
         self.text.scroll_up(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
-        if not self.mode.is_text_mode:
-            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
-                from_line+1, 1, self.scroll_area.bottom, self.mode.width
-            )
-            tx0, ty0, _, _ = self.mode.text_to_pixel_area(
-                from_line, 1, self.scroll_area.bottom-1, self.mode.width
-            )
-            self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
+        # update pixel buffer
+        sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
+            from_line+1, 1, self.scroll_area.bottom, self.mode.width
+        )
+        tx0, ty0, _, _ = self.mode.text_to_pixel_area(
+            from_line, 1, self.scroll_area.bottom-1, self.mode.width
+        )
+        self._move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
     def scroll_down(self, from_line):
         """Scroll the scroll region down by one line, starting at from_line."""
@@ -441,16 +439,16 @@ class TextScreen(object):
         ))
         if self.current_row >= from_line:
             self._move_cursor(self.current_row + 1, self.current_col)
-        # sync buffers with the new screen reality:
+        # update text buffer
         self.text.scroll_down(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
-        if not self.mode.is_text_mode:
-            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
-                from_line, 1, self.scroll_area.bottom-1, self.mode.width
-            )
-            tx0, ty0, _, _ = self.mode.text_to_pixel_area(
-                from_line+1, 1, self.scroll_area.bottom, self.mode.width
-            )
-            self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
+        # update pixel buffer
+        sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
+            from_line, 1, self.scroll_area.bottom-1, self.mode.width
+        )
+        tx0, ty0, _, _ = self.mode.text_to_pixel_area(
+            from_line+1, 1, self.scroll_area.bottom, self.mode.width
+        )
+        self._move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
     ###########################################################################
     # console operations
