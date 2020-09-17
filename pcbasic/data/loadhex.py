@@ -55,7 +55,7 @@ def read_fonts(codepage_dict, font_families, warn=False):
                 )
             except ResourceFailed as e:
                 if warn:
-                    logging.debug(e)
+                    logging.debug('Failed to load font `%s` with height %d: %s', name, height, e)
         fonts[height] = FontLoader(height).load_hex(
             font_files, unicode_needed, substitutes, warn=warn
         )

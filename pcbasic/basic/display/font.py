@@ -249,7 +249,7 @@ else:
             repeat_row = glyph[-1]
         else:
             repeat_row = [0] * len(glyph[-1])
-        return glyph + repeat_row
+        return glyph + [repeat_row]
 
     def _extend_width(glyph, carry_last):
         """Extend the character width by a column."""
