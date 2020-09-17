@@ -148,6 +148,14 @@ class TextScreen(object):
         self._vpagenum = vpagenum
         self._apagenum = apagenum
         self._apage = self._pages[self._apagenum]
+        # cursor lives on active page
+        # this is technically only the case in graphics mode -
+        # in DOSBox it's visible in text mode if the active page is not visible
+        # but then the cursor location is static and does not equal the text insert location
+        # so this seems acceptable
+        self._cursor.set_active(self._vpagenum == self._apagenum)
+        #FIXME - no need to rebuild dbcs, just resubmit
+        self._apage.rebuild()
 
     def set_attr(self, attr):
         """Set attribute."""
@@ -156,7 +164,7 @@ class TextScreen(object):
     def rebuild(self):
         """Completely resubmit the text and graphics screen to the interface."""
         self._cursor.rebuild()
-        # redraw the text screen and rebuild text buffers in video plugin
+        # redraw the text screen and submit to video plugin
         for page in self._pages:
             page.rebuild()
 
@@ -712,7 +720,7 @@ class TextScreen(object):
         if cursor is not None:
             error.range_check(0, (255 if self._tandytext else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes
-            self._cursor.set_visibility(cursor != 0)
+            self._cursor.set_textmode_override(cursor != 0)
         error.throw_if(start is None and stop is not None)
         if stop is None:
             stop = start

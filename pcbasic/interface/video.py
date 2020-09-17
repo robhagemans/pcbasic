@@ -30,8 +30,6 @@ class VideoPlugin(object):
             signals.VIDEO_SET_CURSOR_SHAPE: self.set_cursor_shape,
             signals.VIDEO_SHOW_CURSOR: self.show_cursor,
             signals.VIDEO_MOVE_CURSOR: self.move_cursor,
-            signals.VIDEO_SET_PAGE: self.set_page,
-            signals.VIDEO_COPY_PAGE: self.copy_page,
             signals.VIDEO_SET_BORDER_ATTR: self.set_border_attr,
             signals.VIDEO_PUT_RECT: self.put_rect,
             signals.VIDEO_SET_CAPTION: self.set_caption_message,
@@ -89,7 +87,7 @@ class VideoPlugin(object):
 
     # signal handlers
 
-    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
+    def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Initialise a given text or graphics mode."""
 
     def set_caption_message(self, msg):
@@ -107,12 +105,6 @@ class VideoPlugin(object):
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
 
-    def set_page(self, vpage, apage):
-        """Set the visible and active page."""
-
-    def copy_page(self, src, dst):
-        """Copy source to destination page."""
-
     def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
 
@@ -122,11 +114,11 @@ class VideoPlugin(object):
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height. direction 1 is down, -1 up."""
 
-    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
+    def put_text(self, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
 
     def set_cursor_shape(self, from_line, to_line):
         """Build a sprite for the cursor."""
 
-    def put_rect(self, pagenum, x0, y0, array):
+    def put_rect(self, x0, y0, array):
         """Apply numpy array [y][x] of attribytes to an area."""

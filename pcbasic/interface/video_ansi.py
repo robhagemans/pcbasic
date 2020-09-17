@@ -31,7 +31,6 @@ class VideoANSI(video_cli.VideoTextBase):
         self._input_handler.quit_on_eof = False
         # window caption
         self._caption = caption
-        self.set_caption_message(u'')
         # cursor is visible
         self._cursor_visible = True
         # cursor is block-shaped (vs line-shaped)
@@ -42,13 +41,11 @@ class VideoANSI(video_cli.VideoTextBase):
         self._last_attributes = None
         self._cursor_attr = None
         # text and colour buffer
-        self._vpagenum, self._apagenum = 0, 0
         self._height, self._width = 25, 80
         self._border_y = int(round((self._height * border_width)/200.))
         self._border_x = int(round((self._width * border_width)/200.))
         self._border_attr = 0
-        self._set_default_colours(16)
-        self._text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
+        self.default_colours = range(16)
         self._attributes = []
 
     def __enter__(self):
@@ -57,6 +54,8 @@ class VideoANSI(video_cli.VideoTextBase):
         # prevent stderr from defacing the screen
         self._muffle = muffle(sys.stderr)
         self._muffle.__enter__()  # pylint: disable=no-member
+        self.set_caption_message(u'')
+        console.set_attributes(0, 0, False, False)
 
     def __exit__(self, type, value, traceback):
         """Close ANSI interface."""
@@ -90,19 +89,6 @@ class VideoANSI(video_cli.VideoTextBase):
         for row in range(self._border_y):
             console.move_cursor_to(row+1 + self._border_y + self._height, 1)
             console.clear_row()
-        console.move_cursor_to(
-            self._cursor_row + self._border_y, self._cursor_col + self._border_x
-        )
-
-    def _redraw(self):
-        """Redraw the screen."""
-        self._redraw_border()
-        # redraw screen
-        for row, textrow in enumerate(self._text[self._vpagenum]):
-            console.move_cursor_to(row+1 + self._border_y, 1 + self._border_x)
-            for char, attr in textrow:
-                self._set_attributes(*attr)
-                console.write(char)
         console.move_cursor_to(
             self._cursor_row + self._border_y, self._cursor_col + self._border_x
         )
@@ -152,58 +138,32 @@ class VideoANSI(video_cli.VideoTextBase):
         for index, rgb in enumerate(rgb_table):
             console.set_palette_entry(index, *rgb)
 
-    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
+    def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Change screen mode."""
         self._height = text_height
         self._width = text_width
-        self._text = [
-            [[(u' ', (7, 0, False, False))] * self._width for _ in range(self._height)]
-            for _ in range(num_pages)
-        ]
         console.resize(self._height + 2*self._border_y, self._width + 2*self._border_x)
-        self._redraw()
+        console.clear()
         return True
-
-    def set_page(self, new_vpagenum, new_apagenum):
-        """Set visible and active page."""
-        if (self._vpagenum, self._apagenum) == (new_vpagenum, new_apagenum):
-            return
-        self._vpagenum, self._apagenum = new_vpagenum, new_apagenum
-        if self._vpagenum != self._apagenum:
-            console.hide_cursor()
-        elif self._cursor_visible:
-            console.show_cursor()
-        self._redraw()
-
-    def copy_page(self, src, dst):
-        """Copy screen pages."""
-        self._text[dst] = [row[:] for row in self._text[src]]
-        if dst == self._vpagenum:
-            self._redraw()
 
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
-        self._text[self._apagenum][start-1:stop] = [
-            [(u' ', (7, 0, False, False))] * len(self._text[self._apagenum][0])
-            for _ in range(start-1, stop)
-        ]
-        if self._vpagenum == self._apagenum:
-            self._set_attributes(7, back_attr, False, False)
-            for row in range(start, stop+1):
-                console.move_cursor_to(row + self._border_y, 1 + self._border_x)
-                console.clear_row()
-            # draw border
-            self._set_attributes(
-                0, self.default_colours[self._border_attr%16], False, False
-            )
-            for row in range(start, stop+1):
-                console.move_cursor_to(row + self._border_y, 1)
-                console.write(u' ' * self._border_x)
-                console.move_cursor_to(row + self._border_y, 1 + self._width + self._border_x)
-                console.write(u' ' * self._border_x)
-            console.move_cursor_to(
-                self._cursor_row + self._border_y, self._cursor_col + self._border_x
-            )
+        self._set_attributes(7, back_attr, False, False)
+        for row in range(start, stop+1):
+            console.move_cursor_to(row + self._border_y, 1 + self._border_x)
+            console.clear_row()
+        # draw border
+        self._set_attributes(
+            0, self.default_colours[self._border_attr%16], False, False
+        )
+        for row in range(start, stop+1):
+            console.move_cursor_to(row + self._border_y, 1)
+            console.write(u' ' * self._border_x)
+            console.move_cursor_to(row + self._border_y, 1 + self._width + self._border_x)
+            console.write(u' ' * self._border_x)
+        console.move_cursor_to(
+            self._cursor_row + self._border_y, self._cursor_col + self._border_x
+        )
 
     def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
@@ -221,8 +181,6 @@ class VideoANSI(video_cli.VideoTextBase):
     def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
         self._cursor_visible = cursor_on
-        if self._vpagenum != self._apagenum:
-            return
         if cursor_on:
             console.show_cursor(block=self._block_cursor)
         else:
@@ -235,15 +193,10 @@ class VideoANSI(video_cli.VideoTextBase):
         if self._cursor_visible:
             console.show_cursor(block=self._block_cursor)
 
-    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
+    def put_text(self, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
         fore, back, blink, underline = self._attributes[attr]
         unicode_list = [_c if _c != u'\0' else u' ' for _c in unicode_list]
-        self._text[pagenum][row-1][col-1:col-1+len(unicode_list)] = [
-            (_c, (fore, back, blink, underline)) for _c in unicode_list
-        ]
-        if self._vpagenum != pagenum:
-            return
         if (row, col) != (self._cursor_row, self._cursor_col):
             console.move_cursor_to(row + self._border_y, col + self._border_x)
         self._set_attributes(fore, back, blink, underline)
@@ -259,23 +212,11 @@ class VideoANSI(video_cli.VideoTextBase):
 
     def _scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
-        self._text[self._apagenum][from_line-1:scroll_height] = (
-            self._text[self._apagenum][from_line:scroll_height] +
-            [[(u' ', 0)] * len(self._text[self._apagenum][0])]
-        )
-        if self._apagenum != self._vpagenum:
-            return
         console.scroll(from_line + self._border_y, scroll_height + self._border_y, rows=-1)
         self.clear_rows(back_attr, scroll_height, scroll_height)
 
     def _scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
-        self._text[self._apagenum][from_line-1:scroll_height] = (
-            [[(u' ', 0)] * len(self._text[self._apagenum][0])] +
-            self._text[self._apagenum][from_line-1:scroll_height-1]
-        )
-        if self._apagenum != self._vpagenum:
-            return
         console.scroll(from_line + self._border_y, scroll_height + self._border_y, rows=1)
         self.clear_rows(back_attr, from_line, from_line)
 

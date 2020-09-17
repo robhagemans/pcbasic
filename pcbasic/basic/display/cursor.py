@@ -9,6 +9,34 @@ This file is released under the GNU GPL version 3 or later.
 from ..base import signals
 
 
+# text mode cursor:
+#   cursor visibility is not affected by visible/active page
+#   but if visible page is not active page, the visible cursor position is not updated (DOSBox)
+#
+#   in direct mode, the cursor is always visible
+#
+#   when a program is running:
+#       the cursor is by default invisible
+#       if LOCATE ,,1 is given the cursor is visible
+#       on INPUT or SHELL, the cursor is visible
+#
+# graphics mode cursor:
+#   the cursor is only visible if the active page is visible
+#
+#   in direct mode, the cursor is always visible
+#
+#   when a program is running:
+#       the cursor is by default invisible
+#       on INPUT or SHELL, the cursor is visible
+
+# summary:
+# active == visible or text mode:
+#   - in direct mode, INPUT or SHELL the cursor is visible.
+#   - if LOCATE,,1 and text mode, the cursor is visible.
+# otherwise, the cursor is invisible
+
+
+
 class Cursor(object):
     """Manage the cursor."""
 
@@ -17,12 +45,18 @@ class Cursor(object):
         self._queues = queues
         self._mode = mode
         self._colourmap = None
-        # are we in parse mode? invisible unless visible_run is True
+        # are we in parse mode? invisible unless override_visible is True
         self._default_visible = True
         # cursor visible in parse mode? user override
-        self._visible_run = False
+        self._override_visible = False
         # actually visible at present
-        self._visible = False
+        # set to None to force a signal when first set to True or False
+        self._visible = None
+        # visibility override flags
+        self._active = True
+        self._direct = False
+        self._override = False
+        self._textmode_override = False
         # cursor shape
         self._from_line = 0
         self._to_line = 0
@@ -36,29 +70,35 @@ class Cursor(object):
         self._mode = mode
         self._height = mode.font_height
         self._colourmap = colourmap
-        self._visible = False
+        self._visible = None
         # set the cursor position and attribute
         self.move(1, 1, attr, new_width=1)
         # cursor width starts out as single char
         self.set_default_shape(True)
-        self.reset_visibility()
+        self._set_visibility()
+
+    def rebuild(self):
+        """Rebuild the cursor on resume."""
+        if self._visible:
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line)
+            ))
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
+            ))
+        # set visibility and blink state
+        # cursor blinks if and only if in text mode
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SHOW_CURSOR, (self._visible, self._mode.is_text_mode)
+        ))
+
+    # attribute
 
     def set_attr(self, new_attr):
         """Set the text cursor attribute and submit."""
         self.move(self._row, self._col, new_attr, None)
 
-    def show(self, do_show):
-        """Force cursor to be visible/invisible."""
-        self._visible = do_show
-        if do_show:
-            # update position and looks
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
-            ))
-        # show or hide the cursor
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SHOW_CURSOR, (do_show, self._mode.is_text_mode)
-        ))
+    # location
 
     def move(self, new_row, new_column, new_attr=None, new_width=None):
         """Move the cursor and submit."""
@@ -85,25 +125,48 @@ class Cursor(object):
         self._fore_attr = fore
         self._width = new_width
 
-    def set_visibility(self, visible_run):
-        """Set cursor visibility when a program is being run."""
-        self._visible_run = visible_run
-        self.reset_visibility()
+    # visibility
 
-    def set_default_visible(self, on):
-        """Set default visibility (parse mode)."""
-        self._default_visible = on
+    def set_active(self, active):
+        """Active page is visible page, so we have a cursor."""
+        self._active = active
+        self._set_visibility()
 
-    def reset_visibility(self):
+    def set_direct(self, direct):
+        """Direct mode - so cursor is visible."""
+        self._direct = direct
+        self._set_visibility()
+
+    def set_override(self, override):
+        """INPUT - so cursor is visible."""
+        self._override = override
+        self._set_visibility()
+
+    def set_textmode_override(self, override):
+        """LOCATE,,1 - so cursor is visible."""
+        self._textmode_override = override
+        self._set_visibility()
+
+    def _set_visibility(self):
         """Set cursor visibility to its default state."""
-        # visible if in interactive mode and invisible when a program is being run
-        visible = self._default_visible
-        # unless forced to be visible
-        # in graphics mode, we can't force the cursor to be visible on execute.
-        if self._mode.is_text_mode:
-            visible = visible or self._visible_run
+        visible = self._active and (
+            self._direct or self._override or (
+                self._textmode_override and self._mode.is_text_mode
+            )
+        )
         if self._visible != visible:
-            self.show(visible)
+            self._visible = visible
+            if visible:
+                # update position, attribute and shape
+                self._queues.video.put(signals.Event(
+                    signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
+                ))
+            # show or hide the cursor and set blink
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_SHOW_CURSOR, (visible, self._mode.is_text_mode)
+            ))
+
+    # shape
 
     @property
     def shape(self):
@@ -152,16 +215,3 @@ class Cursor(object):
         else:
             # half-block cursor for insert
             self.set_shape(self._height//2, self._height-1)
-
-    def rebuild(self):
-        """Rebuild the cursor on resume."""
-        if self._visible:
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line)
-            ))
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
-            ))
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SHOW_CURSOR, (self._visible, self._mode.is_text_mode)
-        ))

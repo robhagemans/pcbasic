@@ -75,7 +75,7 @@ class VideoBuffer(object):
 
     def __init__(
             self, queues, pixel_height, pixel_width, height, width,
-            colourmap, attr, font, codepage, do_fullwidth, pagenum
+            colourmap, attr, font, codepage, do_fullwidth
         ):
         """Initialise the screen buffer to given dimensions."""
         self._rows = [_TextRow(attr, width) for _ in range(height)]
@@ -92,12 +92,16 @@ class VideoBuffer(object):
         # with set_attr that calls submit_rect
         self._pixel_access = _PixelAccess(self)
         # needed for signals only
-        self._pagenum = pagenum
         self._queues = queues
         # dirty rectangle collection
         self._dirty_left = {}
         self._dirty_right = {}
         self._locked = False
+        self._visible = False
+
+    def set_visible(self, visible):
+        """Set the vpage flag."""
+        self._visible = visible
 
     @property
     def pixels(self):
@@ -243,9 +247,9 @@ class VideoBuffer(object):
         self._dbcs_text[:] = src._dbcs_text
         self._pixels[:, :] = src._pixels
         self._pixel_access = _PixelAccess(self)
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_COPY_PAGE, (src._pagenum, self._pagenum)
-        ))
+        # resubmit to interface if needed
+        # FIXME - no need to rebuild dbcs buffers here
+        self.rebuild()
 
     ##########################################################################
     # modify text
@@ -426,9 +430,10 @@ class VideoBuffer(object):
             sprite = self._pixels[top:top+sprite.height, left:left+sprite.width]
         # mark full-width chars by a trailing empty string to preserve column counts
         text = self._dbcs_to_unicode(chars)
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_PUT_TEXT, (self._pagenum, row, col, text, attr, sprite)
-        ))
+        if self._visible:
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_PUT_TEXT, (row, col, text, attr, sprite)
+            ))
 
     def _submit_rect(self, x, y, rect):
         """Clear the text under the rect and submit to interface (assumes graphics mode)."""
@@ -445,14 +450,14 @@ class VideoBuffer(object):
         self._dbcs_text[row0-1:row1] = [
             tuple(iterchar(b' ')) * (col1-col0+1) for _ in range(row1-row0+1)
         ]
-        for row in range(row0, row1+1):
+        if self._visible:
+            for row in range(row0, row1+1):
+                self._queues.video.put(signals.Event(
+                    signals.VIDEO_PUT_TEXT, (row, col0, [u' ']*(col1-col0+1), 0, None)
+                ))
             self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_TEXT,
-                (self._pagenum, row, col0, [u' ']*(col1-col0+1), 0, None)
+                signals.VIDEO_PUT_RECT, (x, y, rect)
             ))
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_PUT_RECT, (self._pagenum, x, y, rect)
-        ))
 
     ###########################################################################
     # clearing
@@ -470,7 +475,8 @@ class VideoBuffer(object):
         _, back, _, _ = self._colourmap.split_attr(attr)
         self._pixels[y0:y1+1, x0:x1+1] = back
         # this should only be called on the active page
-        self._queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
+        if self._visible:
+            self._queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
     def clear_row_from(self, srow, scol, attr):
         """Clear from given position to end of logical line (CTRL+END)."""
@@ -500,9 +506,10 @@ class VideoBuffer(object):
     def scroll_up(self, from_row, to_row, attr):
         """Scroll the scroll region up by one line, starting at from_row."""
         _, back, _, _ = self._colourmap.split_attr(attr)
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SCROLL, (-1, from_row, to_row, back)
-        ))
+        if self._visible:
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_SCROLL, (-1, from_row, to_row, back)
+            ))
         # update text buffer
         new_row = _TextRow(attr, self._width)
         self._rows.insert(to_row, new_row)
@@ -524,9 +531,10 @@ class VideoBuffer(object):
     def scroll_down(self, from_row, to_row, attr):
         """Scroll the scroll region down by one line, starting at from_row."""
         _, back, _, _ = self._colourmap.split_attr(attr)
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SCROLL, (1, from_row, to_row, back)
-        ))
+        if self._visible:
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_SCROLL, (1, from_row, to_row, back)
+            ))
         # update text buffer
         new_row = _TextRow(attr, self._width)
         # insert at row # from_row

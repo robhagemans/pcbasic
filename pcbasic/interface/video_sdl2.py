@@ -376,9 +376,9 @@ class VideoSDL2(VideoPlugin):
         # create the window initially as 720*400 black
         self._window_sizer.set_canvas_size(720, 400, fullscreen=self._fullscreen)
         # canvas surfaces
-        self._window_surface = []
+        self._window_surface = None
         # pixel views of canvases
-        self._canvas_pixels = []
+        self._canvas_pixels = None
         # main window object
         self._display = None
         self._display_surface = None
@@ -397,7 +397,6 @@ class VideoSDL2(VideoPlugin):
         self._text_cursor = True
         self._font_height = None
         self._font_width = None
-        self._num_pages = None
         # cursor
         # cursor is visible
         self._cursor_visible = True
@@ -409,8 +408,6 @@ class VideoSDL2(VideoPlugin):
         self._cursor_width = None
         self._cursor_attr = None
         self._cursor_cache = [None, None]
-        # display pages
-        self._vpagenum, self._apagenum = 0, 0
         # palette
         # { attr: (fore, back, blink, underline) }
         self._attributes = {}
@@ -465,8 +462,8 @@ class VideoSDL2(VideoPlugin):
             for surface in self._display_cache:
                 sdl2.SDL_FreeSurface(surface)
             # free surfaces
-            for surface in self._window_surface:
-                sdl2.SDL_FreeSurface(surface)
+            if self._window_surface:
+                sdl2.SDL_FreeSurface(self._window_surface)
             # free palettes
             for palette in self._palette:
                 sdl2.SDL_FreePalette(palette)
@@ -841,7 +838,7 @@ class VideoSDL2(VideoPlugin):
         if self._pixel_packing:
             work_surface = self._create_composite_surface()
         else:
-            work_surface = self._window_surface[self._vpagenum]
+            work_surface = self._window_surface
         pixelformat = self._display_surface.contents.format
         # apply cursor to work surface
         with self._show_cursor((blink_state % 2) or not self._text_cursor):
@@ -886,7 +883,7 @@ class VideoSDL2(VideoPlugin):
     @contextmanager
     def _show_cursor(self, cursor_state):
         """Draw or remove the cursor on the visible page."""
-        if not self._cursor_visible or self._vpagenum != self._apagenum or not cursor_state:
+        if not self._cursor_visible or not cursor_state:
             yield
         else:
             # cursor shape
@@ -894,7 +891,7 @@ class VideoSDL2(VideoPlugin):
             left = (self._cursor_col-1) * self._font_width
             cursor_slice = slice(top, top+self._cursor_height), slice(left, left+self._cursor_width)
             # canvas_pixels is a view
-            cursor_area = self._canvas_pixels[self._apagenum][cursor_slice]
+            cursor_area = self._canvas_pixels[cursor_slice]
             # copy area under cursor
             under_cursor = cursor_area.copy()
             if self._text_cursor:
@@ -931,7 +928,7 @@ class VideoSDL2(VideoPlugin):
         border_x, border_y = self._window_sizer.border_shift
         # pack pixels into higher bpp, then unpack into lower bpp
         bpp_out, bpp_in = self._pixel_packing
-        packed = self._canvas_pixels[self._vpagenum].packed(8//bpp_in)
+        packed = self._canvas_pixels.packed(8//bpp_in)
         height = lwindow_h - border_y*2
         unpacked = bytematrix.ByteMatrix.frompacked(packed, height, 8//bpp_out)
         unpacked = unpacked.hrepeat(bpp_out // bpp_in)
@@ -947,12 +944,11 @@ class VideoSDL2(VideoPlugin):
     ###########################################################################
     # signal handlers
 
-    def set_mode(self, num_pages, canvas_height, canvas_width, text_height, text_width):
+    def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Initialise a given text or graphics mode."""
         # unpack mode info struct
         self._font_height = -(-canvas_height // text_height)
         self._font_width = canvas_width // text_width
-        self._num_pages = num_pages
         self._text_cursor = False
         self._blink_enabled = False
         # prebuilt glyphs
@@ -977,20 +973,16 @@ class VideoSDL2(VideoPlugin):
         self._cursor_width = self._font_width
         self._cursor_from, self._cursor_height = 0, self._font_height
         # screen pages
-        for surface in self._window_surface:
-            sdl2.SDL_FreeSurface(surface)
+        if self._window_surface:
+            sdl2.SDL_FreeSurface(self._window_surface)
         work_width, work_height = self._window_sizer.window_size_logical
-        self._window_surface = [
-            sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
-            for _ in range(self._num_pages)
-        ]
+        self._window_surface = sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
         border_x, border_y = self._window_sizer.border_shift
-        self._canvas_pixels = [
-            _pixels2d(_surf)[
+        if self._window_surface:
+            self._canvas_pixels = _pixels2d(self._window_surface)[
                 border_y : work_height - border_y,
                 border_x : work_width - border_x
-            ] for _surf in self._window_surface
-        ]
+            ]
         # initialise clipboard
         self._clipboard_interface = clipboard.ClipboardInterface(
             self._clipboard_handler, self._input_queue,
@@ -1040,27 +1032,17 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_Rect(window_w-border_x, 0, border_x, window_h),
             sdl2.SDL_Rect(0, window_h-border_y, window_w, border_y),
         )
-        for canvas in self._window_surface:
-            sdl2.SDL_FillRects(canvas, border_rects, 4, attr)
+        if self._window_surface:
+            sdl2.SDL_FillRects(self._window_surface, border_rects, 4, attr)
         self._border_attr = attr
         self.busy = True
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
-        self._canvas_pixels[self._apagenum][
+        self._canvas_pixels[
             (start-1)*self._font_height : stop*self._font_height,
             0 : self._window_sizer.width
         ] = back_attr
-        self.busy = True
-
-    def set_page(self, vpage, apage):
-        """Set the visible and active page."""
-        self._vpagenum, self._apagenum = vpage, apage
-        self.busy = True
-
-    def copy_page(self, src, dst):
-        """Copy source to destination page."""
-        self._canvas_pixels[dst][:] = self._canvas_pixels[src]
         self.busy = True
 
     def show_cursor(self, cursor_on, cursor_blinks):
@@ -1090,7 +1072,7 @@ class VideoSDL2(VideoPlugin):
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
-        pixels = self._canvas_pixels[self._apagenum]
+        pixels = self._canvas_pixels
         # scroll window, top of rows
         hi_y0, hi_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
         # scroll window, bottom of rows
@@ -1108,20 +1090,20 @@ class VideoSDL2(VideoPlugin):
             pixels[hi_y0:lo_y0, :] = back_attr
         self.busy = True
 
-    def put_text(self, pagenum, row, col, unicode_list, attr, glyphs):
+    def put_text(self, row, col, unicode_list, attr, glyphs):
         """Put text at a given position."""
         if not glyphs:
             return
         top = (row-1) * self._font_height
         left = (col-1) * self._font_width
-        self.put_rect(pagenum, left, top, glyphs)
+        self.put_rect(left, top, glyphs)
 
-    def put_rect(self, pagenum, x0, y0, array):
+    def put_rect(self, x0, y0, array):
         """Apply bytematrix [y, x] of attributes to an area."""
         # reference the destination area
-        pixels = self._canvas_pixels[self._apagenum]
+        pixels = self._canvas_pixels
         # clip to size if needed
         if y0 + array.height > pixels.height or x0 + array.width > pixels.width:
             array = array[:pixels.height-y0, :pixels.width-x0]
-        self._canvas_pixels[pagenum][y0:y0+array.height, x0:x0+array.width] = array
+        pixels[y0:y0+array.height, x0:x0+array.width] = array
         self.busy = True
