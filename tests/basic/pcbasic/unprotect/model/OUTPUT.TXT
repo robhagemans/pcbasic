@@ -1,2 +1,0 @@
-output from protected file
-

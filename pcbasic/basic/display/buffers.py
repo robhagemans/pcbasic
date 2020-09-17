@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 from contextlib import contextmanager
 
-from ...compat import zip, int2byte, iterchar
+from ...compat import zip, int2byte, iterchar, text_type
 from ...compat import iter_chunks
 from ..base import signals
 from ..base.bytematrix import ByteMatrix
@@ -155,9 +155,14 @@ class VideoBuffer(object):
             return 0
         return 1 if self._dbcs_text[row-1][col] else 2
 
-    def get_chars(self):
-        """Retrieve all characters on this page, as tuple of bytes."""
-        return tuple(b''.join(_row.chars) for _row in self._rows)
+    def get_chars(self, as_type=bytes):
+        """Retrieve all characters on this page, as tuple of bytes or unicode."""
+        if as_type == bytes:
+            return tuple(b''.join(_row.chars) for _row in self._rows)
+        elif as_type == text_type:
+            return tuple(u''.join(_row) for _row in self._dbcs_text)
+        else:
+            raise ValueError('`as_type` must be bytes or unicode, not %s.' % type(as_type))
 
     def get_text_bytes(self, start_row, stop_row):
         """Retrieve all logical text on this page, as tuple of bytes."""

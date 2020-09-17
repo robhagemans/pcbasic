@@ -17,7 +17,7 @@ class Event(object):
 
     def __repr__(self):
         """Represent signal as string."""
-        return '<Event %s: %r> ' % (self.event_type, self.params)
+        return '<Event %s: %r>' % (self.event_type, self.params)
 
 
 # general signals

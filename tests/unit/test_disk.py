@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import unittest
 import os
 import shutil
+import platform
 
 from pcbasic import Session
 
@@ -97,7 +98,7 @@ class DiskTest(unittest.TestCase):
 
     def test_files_longname(self):
         """Test directory listing with long name."""
-        open(self._output_path('very_long_name_and.extension'), 'w')
+        open(self._output_path('very_long_name_and.extension'), 'w').close()
         with Session(devices={b'A': self._test_dir}) as s:
             s.execute('files "A:"')
             output = [_row.strip() for _row in s.get_text()]
@@ -108,10 +109,10 @@ class DiskTest(unittest.TestCase):
 
     def test_files_wildcard(self):
         """Test directory listing with wildcards."""
-        open(self._output_path('aaa.txt'), 'w')
-        open(self._output_path('aab.txt'), 'w')
-        open(self._output_path('abc.txt'), 'w')
-        open(self._output_path('aa_long_file_name.txt'), 'w')
+        open(self._output_path('aaa.txt'), 'w').close()
+        open(self._output_path('aab.txt'), 'w').close()
+        open(self._output_path('abc.txt'), 'w').close()
+        open(self._output_path('aa_long_file_name.txt'), 'w').close()
         with Session(devices={b'A': self._test_dir}) as s:
             s.execute('files "A:*.txt"')
             output = [_row.strip() for _row in s.get_text()]
@@ -168,13 +169,13 @@ class DiskTest(unittest.TestCase):
             # we're embedding codepage in this string, so should be bytes
             s.execute(b'print#1, "\x9C"')
         # utf8-sig, followed by pound sign
-        assert open(self._output_path('DATA'), 'rb').read() == b'\xef\xbb\xbf\xc2\xa3\r\n\x1a'
+        with open(self._output_path('DATA'), 'rb') as f:
+            assert f.read() == b'\xef\xbb\xbf\xc2\xa3\r\n\x1a'
         with Session(devices={b'A': self._test_dir}, textfile_encoding='utf-8') as s:
             s.execute('open "a:data" for append as 1')
             s.execute(b'print#1, "\x9C"')
-        assert open(self._output_path('DATA'), 'rb').read() == (
-            b'\xef\xbb\xbf\xc2\xa3\r\n\xc2\xa3\r\n\x1a'
-        )
+        with open(self._output_path('DATA'), 'rb') as f:
+            assert f.read() == b'\xef\xbb\xbf\xc2\xa3\r\n\xc2\xa3\r\n\x1a'
 
     def test_disk_data_lf(self):
         """Write and read data to a text file, soft and hard linefeed."""
@@ -239,12 +240,13 @@ class DiskTest(unittest.TestCase):
             s.execute('input#1, A%')
             assert s.get_variable('A%') == 1234
         # check we've used the pre-existing file
-        assert open(self._output_path('MixCase.txt'), 'rb').read() == b' 1234 \r\n\x1a'
+        with open(self._output_path('MixCase.txt'), 'rb') as f:
+            assert f.read() == b' 1234 \r\n\x1a'
 
     def test_match_name_non_ascii(self):
         """Test non-matching of names that are not ascii."""
         # this will be case sensitive on some platforms but should be picked up correctly anyway
-        open(self._output_path(u'MY\xc2\xa30.02'), 'w')
+        open(self._output_path(u'MY\xc2\xa30.02'), 'w').close()
         with Session(devices={b'A': self._test_dir}) as s:
             # non-ascii not allowed - cp437 &h9c is pound sign
             s.execute('open "a:MY"+chr$(&h9c)+"0.02" for output as 1')
@@ -457,7 +459,94 @@ class DiskTest(unittest.TestCase):
             s.execute('open "TEST" for output as 1')
             s.execute('open "TEST2" for output as 1')
             output = [_row.strip() for _row in s.get_text()]
-        assert output[0] == 'File already open\xff'
+        assert output[0] == b'File already open\xff'
+
+    def test_long_filename(self):
+        """Test handling of long filenames."""
+        names = (
+            b'LONG.FIL',
+            b'LONGFILE',
+            b'LONGFILE.BAS',
+            b'LongFileName',
+            b'Long.FileName',
+            b'LongFileName.BAS'
+        )
+        basicnames = {
+            b'LongFileName': b'LongFileName.BAS',
+            b'LongFileName.BAS': b'LongFileName.BAS',
+            b'Long.FileName': b'Long.FileName',
+            b'LongFileName2': b'LONGFILE.BAS',
+            b'LongFileName2.bas': b'LONGFILE.BAS',
+            b'LongFileName2.': b'LONGFILE',
+            b'Long.FileName.2': b'LONG.FIL'
+        }
+        with Session(devices={b'A': self._test_dir}) as s:
+            for name in names:
+                with open(os.path.join(self._test_dir.encode('ascii'), name), 'wb') as f:
+                    f.write(b'1000 a$="%s"\r\n' % (name,))
+            for name, found in basicnames.items():
+                s.execute(b'run "a:%s"' % (name,))
+                assert s.get_variable('a$') == found
+
+    def test_dot_filename(self):
+        """Test handling of filenames ending in dots."""
+        # skip on Windows as it does not allow filenames ending in dots
+        # except if the file is accessed with UNC absolute path e.g. \\?\c:\blah
+        if platform.system() == 'Windows':
+            return
+        names = (
+            b'LONG.FIL',
+            b'LONGFILE',
+            b'LONGFILE.',
+            b'LONGFILE..',
+            b'LONGFILE.BAS',
+            b'LongFileName',
+            b'LongFileName.',
+            b'LongFileName..',
+            b'Long.FileName',
+            b'Long.FileName.',
+            b'LongFileName.BAS',
+            b'LongFileName.bas',
+        )
+        basicnames = {
+            b'LongFileName.bas': b'LongFileName.bas',
+            b'LongFileName': b'LongFileName.BAS',
+            # exact match if available
+            b'LongFileName.': b'LongFileName.',
+            b'LongFileName..': b'LongFileName..',
+            # use a dot at the end to suppress ".BAS"
+            b'LongFileName2': b'LONGFILE.BAS',
+            b'LongFileName2.bas': b'LONGFILE.BAS',
+            b'LongFileName2.': b'LONGFILE',
+            #b'LongFileName2..': # bad file name
+            # extension starts after first dot
+            b'Long.FileName.': b'Long.FileName.',
+            b'Long.FileName.2': b'LONG.FIL',
+            b'Long.FileName2..': b'LONG.FIL',
+        }
+        with Session(devices={b'A': self._test_dir}) as s:
+            for name in names:
+                with open(os.path.join(self._test_dir.encode('ascii'), name), 'wb') as f:
+                    f.write(b'1000 a$="%s"\r\n' % (name,))
+            for name, found in basicnames.items():
+                s.execute(b'run "a:%s"' % (name,))
+                assert s.get_variable('a$') == found
+
+    def test_kill_long_filename(self):
+        """Test deleting files with long filenames."""
+        names = (b'test.y', b'verylong.ext', b'veryLongFilename.ext')
+        for name in names:
+            open(os.path.join(self._test_dir.encode('ascii'), name), 'wb').close()
+        with Session(devices={b'A': self._test_dir}) as s:
+            s.execute('kill "VERYLONG.EXT"')
+            assert not os.path.exists(b'verylong.ext')
+            s.execute('''
+                kill "VERYLONGFILENAME.EXT"
+                kill "VERYLONG.EXT"
+                kill "veryLongFilename.ext"
+            ''')
+            output = [_row.strip() for _row in s.get_text()]
+        assert output[:3] == [b'File not found\xff']*3
 
 
 if __name__ == '__main__':

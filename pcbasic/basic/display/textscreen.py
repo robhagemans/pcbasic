@@ -668,9 +668,9 @@ class TextScreen(object):
     ###########################################################################
     # vpage text retrieval (clipboard and print screen)
 
-    def get_chars(self):
-        """Get all raw characters on the visible page, as bytes."""
-        return self._pages[self._vpagenum].get_chars()
+    def get_chars(self, as_type=bytes):
+        """Get all raw characters on the visible page, as bytes or unicode."""
+        return self._pages[self._vpagenum].get_chars(as_type=as_type)
 
     def get_text(self, start_row, stop_row):
         """Get all logical text on the visible page, as unicode."""

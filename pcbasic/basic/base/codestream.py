@@ -40,12 +40,6 @@ class CodeStream(io.BytesIO):
             if d == b'' or d not in skip_range:
                 return d + self.read(n-1)
 
-    def skip(self, skip_range, n=1):
-        """Skip chars in skip_range, then peek next."""
-        d = self.skip_read(skip_range, n)
-        self.seek(-len(d), 1)
-        return d
-
     def skip_blank_read(self, n=1):
         """Skip whitespace, then read next."""
         return self.skip_read(self.blanks, n)
@@ -89,6 +83,21 @@ class CodeStream(io.BytesIO):
         self.seek(-len(d), 1)
         return out
 
+    def require_read(self, in_range, err=error.STX):
+        """Skip whitespace, read and raise error if not in range."""
+        d = self.read(1)
+        while d and d in self.blanks:
+            d = self.read(1)
+        c = d + self.read(len(in_range[0])-1)
+        if not c or c not in in_range:
+            self.seek(-len(c), 1)
+            raise error.BASICError(err)
+        return c
+
+    # read specialised items
+    # these are used for both plaintext and tokenised streams:
+    # tokenised streams may contain plaintext literals and names are always plaintext
+
     def read_name(self):
         """Read a variable name."""
         d = self.skip_blank_read()
@@ -112,9 +121,7 @@ class CodeStream(io.BytesIO):
     def read_number(self):
         """Read numeric literal."""
         c = self.peek()
-        if not c:
-            return b''
-        elif c == b'&':
+        if c == b'&':
             # handle hex or oct constants
             self.read(1)
             if self.peek().upper() == b'H':
@@ -123,20 +130,10 @@ class CodeStream(io.BytesIO):
             else:
                 # octal literal
                 return b'&O' + self._read_oct()
-        elif c in DIGITS + b'.+-':
+        elif c and c in DIGITS + b'.+-':
             # decimal literal
             return self._read_dec()
-
-    def require_read(self, in_range, err=error.STX):
-        """Skip whitespace, read and raise error if not in range."""
-        d = self.read(1)
-        while d and d in self.blanks:
-            d = self.read(1)
-        c = d + self.read(len(in_range[0])-1)
-        if not c or c not in in_range:
-            self.seek(-len(c), 1)
-            raise error.BASICError(err)
-        return c
+        return b''
 
     def _read_dec(self):
         """Read decimal literal."""

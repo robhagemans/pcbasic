@@ -246,7 +246,7 @@ class SessionTest(unittest.TestCase):
         assert output[3:] == [b''] * 22
 
     def test_extension(self):
-        """Test extensions."""
+        """Test extension functions."""
 
         class Extension(object):
             @staticmethod
@@ -261,6 +261,34 @@ class SessionTest(unittest.TestCase):
             ''')
             assert s.get_variable("a!") == 5
             assert s.get_variable("b$") == b'5.0 plus 1 equals 6.0'
+
+    def test_extension_statement(self):
+        """Test extension statements."""
+        outfile = os.path.join(HERE, 'output', 'session', 'python-output.txt')
+        try:
+            os.remove(outfile)
+        except EnvironmentError:
+            pass
+
+        class Extension(object):
+            @staticmethod
+            def output(*args):
+                with open(outfile, 'ab') as g:
+                    for arg in args:
+                        if isinstance(arg, bytes):
+                            g.write(arg)
+                        else:
+                            g.write(b'%d' % (arg,))
+                        g.write(b' ')
+
+        with Session(extension=Extension) as s:
+            s.execute('''
+                _OUTPUT "one", 2, 3!, 4#
+                _output "!\x9c$"
+            ''')
+        with open(outfile, 'rb') as f:
+            #print repr(f.read())
+            assert f.read() == b'one 2 3 4 !\x9c$ '
 
     def test_extended_session(self):
         """Test extensions accessing the session."""
