@@ -44,14 +44,14 @@ class Environment(object):
         """Set environment (bytes) key to (bytes) value."""
         assert isinstance(key, bytes), type(key)
         assert isinstance(value, bytes), type(value)
-        ukey = self._codepage.str_to_unicode(key)
-        uvalue = self._codepage.str_to_unicode(value)
+        ukey = self._codepage.str_to_unicode(key, box_protect=False)
+        uvalue = self._codepage.str_to_unicode(value, box_protect=False)
         setenvu(ukey, uvalue)
 
     def _getenv(self, key):
         """Get environment (bytes) value or b''."""
         assert isinstance(key, bytes), type(key)
-        ukey = self._codepage.str_to_unicode(key)
+        ukey = self._codepage.str_to_unicode(key, box_protect=False)
         return self._codepage.from_unicode(getenvu(ukey, u''))
 
     def _getenv_item(self, index):
@@ -127,7 +127,7 @@ class Shell(object):
             raise error.BASICError(error.IFC)
         cmd = split_quoted(self._shell)
         if command:
-            cmd += [SHELL_COMMAND_SWITCH, self._codepage.str_to_unicode(command)]
+            cmd += [SHELL_COMMAND_SWITCH, self._codepage.str_to_unicode(command, box_protect=False)]
         # get working directory; also raises IFC if current_device is CAS1
         work_dir = self._files.get_native_cwd()
         try:
@@ -208,7 +208,9 @@ class Shell(object):
         # for shell input, send CRLF or LF depending on platform
         self._last_command.extend(word)
         bytes_word = b''.join(word) + b'\r\n'
-        unicode_word = self._codepage.str_to_unicode(bytes_word, preserve=CONTROL)
+        unicode_word = self._codepage.str_to_unicode(
+            bytes_word, preserve=CONTROL, box_protect=False
+        )
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
         pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
 

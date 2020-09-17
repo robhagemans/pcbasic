@@ -15,6 +15,10 @@ class Event(object):
         self.event_type = event_type
         self.params = params
 
+    def __repr__(self):
+        """Represent signal as string."""
+        return '<Event %s: %r> ' % (self.event_type, self.params)
+
 
 # audio queue signals
 AUDIO_TONE = 0
