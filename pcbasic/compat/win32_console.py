@@ -141,6 +141,13 @@ class CONSOLE_SCREEN_BUFFER_INFOEX(Structure):
         ('ColorTable', wintypes.DWORD*16),
     )
 
+class SECURITY_ATTRIBUTES(Structure):
+    _fields_ = (
+        ('nLength', wintypes.DWORD),
+        ('lpSecurityDescriptor', wintypes.LPVOID),
+        ('bInheritHandle', wintypes.BOOL),
+    )
+
 _GetStdHandle = windll.kernel32.GetStdHandle
 _GetStdHandle.argtypes = (wintypes.DWORD,)
 _GetStdHandle.restype = wintypes.HANDLE
@@ -215,6 +222,21 @@ _ScrollConsoleScreenBuffer.argtypes = (
     wintypes._COORD,
     POINTER(CHAR_INFO),
 )
+
+_CreateConsoleScreenBuffer = windll.kernel32.CreateConsoleScreenBuffer
+_CreateConsoleScreenBuffer.argtypes = (
+    wintypes.DWORD,
+    wintypes.DWORD,
+    POINTER(SECURITY_ATTRIBUTES),
+    wintypes.DWORD,
+    wintypes.LPVOID
+)
+_CreateConsoleScreenBuffer.restype = wintypes.HANDLE
+
+_SetConsoleActiveScreenBuffer = windll.kernel32.SetConsoleActiveScreenBuffer
+_SetConsoleActiveScreenBuffer.argtypes = (wintypes.HANDLE,)
+_SetConsoleActiveScreenBuffer.restype = wintypes.BOOL
+
 
 _SetConsoleTextAttribute = windll.kernel32.SetConsoleTextAttribute
 _SetConsoleTextAttribute.argtypes = (wintypes.HANDLE, wintypes.WORD)
@@ -299,31 +321,54 @@ def GetConsoleMode(handle):
     return mode
 
 
+# standard stream constants
+# these remain unchanged if we switch to another screen buffer
 HSTDIN = _GetStdHandle(-10)
 HSTDOUT = _GetStdHandle(-11)
 HSTDERR = _GetStdHandle(-12)
 
 
-def _write_console(handle, unistr):
-    """Write character to console, avoid scroll on bottom line."""
-    csbi = CONSOLE_SCREEN_BUFFER_INFO()
-    _GetConsoleScreenBufferInfo(handle, byref(csbi))
-    col, row = csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y
-    width, height = csbi.dwSize.X, csbi.dwSize.Y
-    for ch in unistr:
-        if (row == height-1 and col >= width - 1 and ch != u'\n'):
-            ci = CHAR_INFO(ch, csbi.wAttributes)
-            # do not advance cursor if we're on the last position of the
-            # screen buffer, to avoid unwanted scrolling.
-            _WriteConsoleOutputW(
-                handle, byref(ci), wintypes._COORD(1, 1), wintypes._COORD(0, 0),
-                wintypes.SMALL_RECT(col, row, col, row)
-            )
-        else:
-            _WriteConsoleW(
-                handle, ch, 1,
-                byref(wintypes.DWORD()), byref(wintypes.DWORD())
-            )
+class _ConsoleWriter:
+    """Singleton to manage writing to console and consequent scrolling."""
+
+    _overflow = False
+
+    @classmethod
+    def write(cls, handle, unistr):
+        """Write character to console, avoid scroll on bottom line."""
+        csbi = CONSOLE_SCREEN_BUFFER_INFO()
+        _GetConsoleScreenBufferInfo(handle, byref(csbi))
+        col, row = csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y
+        width, height = csbi.dwSize.X, csbi.dwSize.Y
+        for ch in unistr:
+            if (col >= width - 1 and ch not in (u'\n', u'\b', u'\r') and not cls._overflow):
+                ci = CHAR_INFO(ch, csbi.wAttributes)
+                # do not advance cursor if we're on the last position of the
+                # screen buffer, to avoid unwanted scrolling.
+                _WriteConsoleOutputW(
+                    handle, byref(ci), wintypes._COORD(1, 1), wintypes._COORD(0, 0),
+                    wintypes.SMALL_RECT(col, row, col, row)
+                )
+            else:
+                if cls._overflow and ch not in (u'\n', u'\r', u'\b'):
+                    _WriteConsoleW(
+                        handle, u'\r\n', 1,
+                        byref(wintypes.DWORD()), byref(wintypes.DWORD())
+                    )
+                    col = 0
+                    cls._overflow = False
+                _WriteConsoleW(
+                    handle, ch, 1,
+                    byref(wintypes.DWORD()), byref(wintypes.DWORD())
+                )
+            if ch == u'\r':
+                col = 0
+                cls._overflow = False
+            elif ch == b'\b':
+                col = max(col-1, 0)
+                cls._overflow = False
+            else:
+                col = min(col+1, width-1)
 
 
 ##############################################################################
@@ -348,19 +393,45 @@ class Win32Console(object):
         # input
         self._input_buffer = deque()
         self._echo = True
+        self._save_stdout = None
+        # standard streams - these may change in alternative screen buffe rmode
+        self._hstdin = HSTDIN
+        self._hstdout = HSTDOUT
+        self._hstderr = HSTDERR
 
     def set_raw(self):
         """Enter raw terminal mode (no echo, don't exit on ctrl-C)."""
         self._echo = False
         # unset ENABLE_PROCESSED_INPUT
-        _SetConsoleMode(HSTDIN, wintypes.DWORD(self._orig_stdin_mode.value & ~0x0001))
+        _SetConsoleMode(self._hstdin, wintypes.DWORD(self._orig_stdin_mode.value & ~0x0001))
         # don't exit on ctrl-Break
         _SetConsoleCtrlHandler(_ctrl_handler, True)
 
     def unset_raw(self):
         """Leave raw terminal mode."""
         self._echo = True
-        _SetConsoleMode(HSTDOUT, self._orig_stdin_mode)
+        _SetConsoleMode(self._hstdin, self._orig_stdin_mode)
+
+    def start_screen(self):
+        """Enter full-screen/application mode."""
+        # https://docs.microsoft.com/en-us/windows/console/reading-and-writing-blocks-of-characters-and-attributes
+        new_buffer = _CreateConsoleScreenBuffer(
+            wintypes.DWORD(0xc0000000), # GENERIC_READ | GENERIC_WRITE
+            wintypes.DWORD(0x3), # FILE_SHARE_READ | FILE_SHARE_WRITE
+            None,
+            wintypes.DWORD(1), # CONSOLE_TEXTMODE_BUFFER
+            None
+        )
+        _SetConsoleActiveScreenBuffer(new_buffer)
+        self._save_stdout, self._hstdout = self._hstdout, new_buffer
+        self.set_raw()
+
+    def close_screen(self):
+        """Leave full-screen/application mode."""
+        self.unset_raw()
+        self.reset()
+        self._hstdout = self._save_stdout
+        _SetConsoleActiveScreenBuffer(self._hstdout)
 
     def key_pressed(self):
         """key pressed on keyboard."""
@@ -372,86 +443,72 @@ class Win32Console(object):
 
     def resize(self, height, width):
         """Resize terminal."""
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
+        csbi = GetConsoleScreenBufferInfo(self._hstdout)
         # SetConsoleScreenBufferSize can't make the buffer smaller than the window
         # SetConsoleWindowInfo can't make the window larger than the buffer (in either direction)
         # allow for both shrinking and growing by calling one of them twice,
         # for each direction separately
         new_size = wintypes._COORD(width, csbi.dwSize.Y)
         new_window = wintypes.SMALL_RECT(0, 0, width-1, csbi.dwSize.Y-1)
-        _SetConsoleScreenBufferSize(HSTDOUT, new_size)
-        _SetConsoleWindowInfo(HSTDOUT, True, new_window)
-        _SetConsoleScreenBufferSize(HSTDOUT, new_size)
+        _SetConsoleScreenBufferSize(self._hstdout, new_size)
+        _SetConsoleWindowInfo(self._hstdout, True, new_window)
+        _SetConsoleScreenBufferSize(self._hstdout, new_size)
         new_size = wintypes._COORD(width, height)
         new_window = wintypes.SMALL_RECT(0, 0, width-1, height-1)
-        _SetConsoleScreenBufferSize(HSTDOUT, new_size)
-        _SetConsoleWindowInfo(HSTDOUT, True, new_window)
-        _SetConsoleScreenBufferSize(HSTDOUT, new_size)
+        _SetConsoleScreenBufferSize(self._hstdout, new_size)
+        _SetConsoleWindowInfo(self._hstdout, True, new_window)
+        _SetConsoleScreenBufferSize(self._hstdout, new_size)
 
     ##########################################################################
     # output
 
     def write(self, unistr):
-        """Write text to the console."""
-        _write_console(HSTDOUT, unistr)
+        """Write (unicode) text to the console."""
+        _ConsoleWriter.write(self._hstdout, unistr)
 
     def clear(self):
         """Clear the screen."""
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
+        csbi = GetConsoleScreenBufferInfo(self._hstdout)
         # fill the entire screen with blanks
         FillConsoleOutputCharacter(
-            HSTDOUT, u' ', csbi.dwSize.X * csbi.dwSize.Y, wintypes._COORD(0, 0)
+            self._hstdout, u' ', csbi.dwSize.X * csbi.dwSize.Y, wintypes._COORD(0, 0)
         )
         # now set the buffer's attributes accordingly
         FillConsoleOutputAttribute(
-            HSTDOUT, self._attrs, csbi.dwSize.X * csbi.dwSize.Y, wintypes._COORD(0, 0)
+            self._hstdout, self._attrs, csbi.dwSize.X * csbi.dwSize.Y, wintypes._COORD(0, 0)
         )
-        _SetConsoleCursorPosition(HSTDOUT, wintypes._COORD(0, 0))
+        _SetConsoleCursorPosition(self._hstdout, wintypes._COORD(0, 0))
 
     def clear_row(self, width=None):
         """Clear the current row."""
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
+        csbi = GetConsoleScreenBufferInfo(self._hstdout)
         from_coord = wintypes._COORD(0, csbi.dwCursorPosition.Y)
         # fill the entire row with blanks
         if width is None:
             width = csbi.dwSize.X
-        FillConsoleOutputCharacter(HSTDOUT, u' ', width, from_coord)
+        FillConsoleOutputCharacter(self._hstdout, u' ', width, from_coord)
         # now set the buffer's attributes accordingly
-        FillConsoleOutputAttribute(HSTDOUT, self._attrs, width, from_coord)
+        FillConsoleOutputAttribute(self._hstdout, self._attrs, width, from_coord)
 
     def set_cursor_colour(self, colour):
         """Set the current cursor colour attribute - not supported."""
 
     def show_cursor(self, block=False):
         """Show the cursor."""
-        curs_info = GetConsoleCursorInfo(HSTDOUT)
+        curs_info = GetConsoleCursorInfo(self._hstdout)
         curs_info.bVisible = True
         curs_info.dwSize = 100 if block else 20
-        SetConsoleCursorInfo(HSTDOUT, curs_info)
+        SetConsoleCursorInfo(self._hstdout, curs_info)
 
     def hide_cursor(self):
         """Hide the cursor."""
-        curs_info = GetConsoleCursorInfo(HSTDOUT)
+        curs_info = GetConsoleCursorInfo(self._hstdout)
         curs_info.bVisible = False
-        SetConsoleCursorInfo(HSTDOUT, curs_info)
-
-    def move_cursor_left(self, n):
-        """Move cursor n cells to the left."""
-        self._move_cursor(0, -n)
-
-    def move_cursor_right(self, n):
-        """Move cursor n cells to the right."""
-        self._move_cursor(0, n)
-
-    def _move_cursor(self, rows, cols):
-        """Move cursor relative to current position."""
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
-        position = csbi.dwCursorPosition
-        self.move_cursor_to(position.Y+1 + rows, position.X+1 + cols)
+        SetConsoleCursorInfo(self._hstdout, curs_info)
 
     def move_cursor_to(self, row, col):
         """Move cursor to a new position (1,1 is top left)."""
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
+        csbi = GetConsoleScreenBufferInfo(self._hstdout)
         row, col = row-1, col-1
         while col >= csbi.dwSize.X:
             col -= csbi.dwSize.X
@@ -461,7 +518,7 @@ class Win32Console(object):
             row -= 1
         # If the position is out of range, do nothing.
         if row >= 0 and col >= 0:
-            _SetConsoleCursorPosition(HSTDOUT, wintypes._COORD(col, row))
+            _SetConsoleCursorPosition(self._hstdout, wintypes._COORD(col, row))
 
     def scroll(self, top, bottom, rows):
         """Scroll the region between top and bottom one row up (-) or down (+)."""
@@ -470,7 +527,7 @@ class Win32Console(object):
         # use zero-based indexing
         start, stop = top-1, bottom-1
         # we're using opposuite sign conventions
-        csbi = GetConsoleScreenBufferInfo(HSTDOUT)
+        csbi = GetConsoleScreenBufferInfo(self._hstdout)
         # absolute position of window in screen buffer
         # interpret other coordinates as relative to the window
         window = csbi.srWindow
@@ -494,32 +551,32 @@ class Win32Console(object):
             # first scroll everything up
             clip_rect.Bottom = window.Bottom
             bottom, region.Bottom = region.Bottom, window.Bottom
-            ScrollConsoleScreenBuffer(HSTDOUT, region, clip_rect, new_pos, u' ', self._attrs)
+            ScrollConsoleScreenBuffer(self._hstdout, region, clip_rect, new_pos, u' ', self._attrs)
             # and then scroll the bottom back down
             new_pos.Y = window.Bottom
             region.Top = bottom-1
-            ScrollConsoleScreenBuffer(HSTDOUT, region, clip_rect, new_pos, u' ', self._attrs)
+            ScrollConsoleScreenBuffer(self._hstdout, region, clip_rect, new_pos, u' ', self._attrs)
         else:
-            ScrollConsoleScreenBuffer(HSTDOUT, region, clip_rect, new_pos, u' ', self._attrs)
+            ScrollConsoleScreenBuffer(self._hstdout, region, clip_rect, new_pos, u' ', self._attrs)
 
     def reset(self):
         """Reset to default attributes."""
-        _SetConsoleScreenBufferInfoEx(HSTDOUT, byref(self._orig_csbie))
+        _SetConsoleScreenBufferInfoEx(self._hstdout, byref(self._orig_csbie))
         self._attrs = self._orig_csbie.wAttributes
         self.show_cursor()
 
     def set_attributes(self, fore, back, blink, underline):
         """Set current attributes."""
         self._attrs = fore % 8 + back * 16 + (BRIGHT if fore > 8 else NORMAL)
-        _SetConsoleTextAttribute(HSTDOUT, self._attrs)
+        _SetConsoleTextAttribute(self._hstdout, self._attrs)
 
     def set_palette_entry(self, attr, red, green, blue):
         """Set palette entry for attribute (0--16)."""
-        csbie = GetConsoleScreenBufferInfoEx(HSTDOUT)
+        csbie = GetConsoleScreenBufferInfoEx(self._hstdout)
         csbie.ColorTable[attr] = (
             0x00010000 * blue + 0x00000100 * green + 0x00000001 * red
         )
-        _SetConsoleScreenBufferInfoEx(HSTDOUT, byref(csbie))
+        _SetConsoleScreenBufferInfoEx(self._hstdout, byref(csbie))
 
     ##########################################################################
     # input
@@ -555,7 +612,7 @@ class Win32Console(object):
         """Interpret all key events."""
         while True:
             nevents = wintypes.DWORD()
-            _GetNumberOfConsoleInputEvents(HSTDIN, byref(nevents))
+            _GetNumberOfConsoleInputEvents(self._hstdin, byref(nevents))
             if not nevents.value and not blocking:
                 return
             # only ever block on first loop
@@ -564,7 +621,7 @@ class Win32Console(object):
                 input_buffer = (INPUT_RECORD * nevents.value)()
                 nread = wintypes.DWORD()
                 _ReadConsoleInputW(
-                    HSTDIN,
+                    self._hstdin,
                     cast(input_buffer, POINTER(INPUT_RECORD)),
                     nevents.value, byref(nread)
                 )
@@ -578,7 +635,7 @@ class Win32Console(object):
                             # ctrl-z is end of input on windows console
                             return
                         if self._echo:
-                            _write_console(HSTDOUT, char.replace(u'\r', u'\n'))
+                            _ConsoleWriter.write(self._hstdout, char.replace(u'\r', u'\n'))
             time.sleep(0.01)
 
     def _translate_event(self, event):
@@ -660,7 +717,7 @@ if PY2:
             if not isinstance(bytestr, bytes):
                 raise TypeError('write() argument must be bytes, not %s' % type(bytestr))
             unistr = bytestr.decode(self.encoding, errors='replace')
-            _write_console(self._handle, unistr)
+            _ConsoleWriter.write(self._handle, unistr)
 
 
     class _ConsoleInput(_StreamWrapper):

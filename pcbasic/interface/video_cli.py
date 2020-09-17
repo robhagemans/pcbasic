@@ -162,18 +162,6 @@ class VideoTextBase(VideoPlugin):
         # start the stdin thread for non-blocking reads
         self._input_handler = InputHandlerCLI(input_queue)
 
-    def __enter__(self):
-        """Open text-based interface."""
-        VideoPlugin.__enter__(self)
-        console.set_raw()
-
-    def __exit__(self, exc_type, value, traceback):
-        """Close text-based interface."""
-        try:
-            console.unset_raw()
-        finally:
-            VideoPlugin.__exit__(self, exc_type, value, traceback)
-
     def _check_input(self):
         """Handle keyboard events."""
         self._input_handler.drain_queue()
@@ -197,11 +185,18 @@ class VideoCLI(VideoTextBase):
         # text buffer
         self._text = [[u' '] * 80 for _ in range(25)]
 
+
+    def __enter__(self):
+        """Open command-line interface."""
+        VideoTextBase.__enter__(self)
+        console.set_raw()
+
     def __exit__(self, type, value, traceback):
         """Close command-line interface."""
         try:
             if self._col != 1:
                 console.write(u'\r\n')
+            console.unset_raw()
         finally:
             VideoTextBase.__exit__(self, type, value, traceback)
 
@@ -242,7 +237,7 @@ class VideoCLI(VideoTextBase):
         self._text[start-1:stop] = [[u' '] * len(self._text[0]) for _ in range(start-1, stop)]
         if start <= self._cursor_row and stop >= self._cursor_row:
             self._update_position(self._cursor_row, 1)
-            console.clear_row()
+            self._redraw_row(self._cursor_row)
 
     def scroll(self, direction, from_line, scroll_height, back_attr):
         """Scroll the screen between from_line and scroll_height."""
@@ -268,13 +263,15 @@ class VideoCLI(VideoTextBase):
         """Initialise video mode """
         self._text = [[u' '] * text_width for _ in range(text_height)]
 
-    def _redraw_row(self, row):
+    def _redraw_row(self, row, until=None):
         """Draw the stored text in a row."""
         if not row:
             return
-        self._update_col(1)
-        rowtext = (u''.join(self._text[row-1]))
-        console.write(rowtext.replace(u'\0', u' '))
+        console.write('\r')
+        rowtext = (u''.join(self._text[row-1])).replace(u'\0', u' ')
+        if until:
+            rowtext = rowtext[:(until-1)]
+        console.write(rowtext)
         self._col = len(self._text[row-1])+1
 
     def _update_position(self, row, col):
@@ -287,15 +284,13 @@ class VideoCLI(VideoTextBase):
             self._last_row = row
             # show what's on the line where we are.
             self._redraw_row(row)
-        self._update_col(col)
-
-    def _update_col(self, col):
-        """Move terminal print column."""
-        if col != self._col:
-            if self._col > col:
-                console.move_cursor_left(self._col-col)
-            elif self._col < col:
-                console.move_cursor_right(col-self._col)
+            # redraw until current column to put cursor in the right position
+            if col:
+                self._redraw_row(row, until=col)
+        elif row and col and col != self._col:
+            # we're on the current row
+            # only redraw if column has changed
+            self._redraw_row(row, until=col)
             self._col = col
 
 

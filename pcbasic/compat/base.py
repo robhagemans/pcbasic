@@ -13,6 +13,7 @@ import sys
 import platform
 import codecs
 import io
+import tempfile
 
 
 # Python major version
@@ -104,8 +105,8 @@ def iter_chunks(char_list, attrs):
         yield chars, attr
 
 @contextlib.contextmanager
-def muffle(std_stream):
-    """Suppress stdout or stderr messages."""
+def muffle(std_stream, preserve=False):
+    """Suppress or delay stdout or stderr messages from Python, C or external programs."""
     save = None
     try:
         try:
@@ -119,14 +120,18 @@ def muffle(std_stream):
                 io.TextIOWrapper, io.StringIO,
                 codecs.StreamReaderWriter, codecs.StreamWriter,
             )):
-            write_mode = 'w'
+            mode = ''
         else:
-            write_mode = 'wb'
+            mode = 'b'
+        if preserve:
+            temp_file = tempfile.TemporaryFile('w+' + mode)
+        else:
+            temp_file = io.open(os.devnull, 'w' + mode)
         # http://stackoverflow.com/questions/977840/
         # redirecting-fortran-called-via-f2py-output-in-python/978264#978264
-        with io.open(os.devnull, write_mode) as null:
+        with temp_file as temp:
             # put /dev/null fds on 1 (stdout) or 2 (stderr)
-            os.dup2(null.fileno(), std_stream.fileno())
+            os.dup2(temp.fileno(), std_stream.fileno())
             # do stuff
             try:
                 yield
@@ -134,6 +139,11 @@ def muffle(std_stream):
                 std_stream.flush()
                 # restore file descriptors
                 os.dup2(save, std_stream.fileno())
+                if preserve:
+                    # write contents of temporary file back into stream
+                    temp.flush()
+                    temp.seek(0)
+                    std_stream.write(temp.read())
     finally:
         if save is not None:
             os.close(save)

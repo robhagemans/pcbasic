@@ -12,7 +12,7 @@ from .video import VideoPlugin
 from .base import video_plugins
 from . import video_cli
 from ..compat import console, zip
-from ..compat import muffle, iter_chunks
+from ..compat import iter_chunks
 
 
 # CGA colours: black, cyan, magenta, white
@@ -52,19 +52,16 @@ class VideoANSI(video_cli.VideoTextBase):
     def __enter__(self):
         """Open ANSI interface."""
         video_cli.VideoTextBase.__enter__(self)
-        # prevent stderr from defacing the screen
-        self._muffle = muffle(sys.stderr)
-        self._muffle.__enter__()  # pylint: disable=no-member
+        # go into alternate screen buffer
+        # stderr continues on the primary buffer
+        console.start_screen()
         self.set_caption_message(u'')
         console.set_attributes(0, 0, False, False)
 
     def __exit__(self, type, value, traceback):
         """Close ANSI interface."""
         try:
-            console.reset()
-            console.clear()
-            # re-enable logger
-            self._muffle.__exit__(type, value, traceback)  # pylint: disable=no-member
+            console.close_screen()
         finally:
             video_cli.VideoTextBase.__exit__(self, type, value, traceback)
 
@@ -84,7 +81,7 @@ class VideoANSI(video_cli.VideoTextBase):
         for row in range(self._height):
             console.move_cursor_to(row+1 + self._border_y, 1)
             console.write(u' ' * self._border_x)
-            console.move_cursor_right(self._width)
+            console.move_cursor_to(row+1 + self._border_y, self._width + self._border_x + 1)
             console.write(u' ' * self._border_x)
         # draw bottom
         for row in range(self._border_y):
