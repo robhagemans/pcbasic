@@ -821,7 +821,7 @@ class Drawing(object):
             else:
                 # convert tile to a list of attributes
                 tilerow = tile[y % tile.height, :]
-                n_tiles = 1 + (x_right+1) // 8 - (x_left // 8)
+                n_tiles = 1 + (x_right+1) // tile.width - (x_left // tile.width)
                 tiles = bytematrix.hstack((tilerow,) * n_tiles)
                 interval = tiles[:, x_left % tile.width : x_right - x_left + 1]
                 # put to screen
@@ -838,32 +838,35 @@ class Drawing(object):
         """Append all subintervals between border colours to the scanning stack."""
         if x_stop < x_start:
             return line_seed
-        x_start_next = x_start
-        x_stop_next = x_start_next-1
+        max_width = x_stop - x_start + 1
+        # repeat row ceildiv + 1 times to ensure we can start in the middle of the first tile
         rtile = tile[y % tile.height, :]
+        repeated_tile = rtile.htile(1 - (-max_width // rtile.width))
         if back:
             rback = back[y % back.height, :]
+            repeated_back = rback.htile(1 - (-max_width // rback.width))
         x = x_start
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
             pattern = self._pixels.pages[self._apagenum].get_until(x, x_stop+1, y, border)
-            x_stop_next = x + pattern.width - 1
-            x = x_stop_next + 1
-            # never match zero pattern (special case)
-            has_same_pattern = (rtile != ZERO_TILE)
-            for pat_x in range(pattern.width):
+            if pattern.width > 0:
+                # check if scanline pattern matches fill pattern
+                tile_x = x % rtile.width
+                has_same_pattern = (
+                    # never match zero pattern (special case)
+                    rtile != ZERO_TILE[0, :rtile.width]
+                    and pattern == repeated_tile[0, tile_x : tile_x+pattern.width]
+                    and (
+                        not back
+                        or pattern != repeated_back[0, tile_x : tile_x+pattern.width]
+                    )
+                )
+                # we've reached a border colour, append our interval & start a new one
+                # don't append if same fill colour/pattern,
+                # to avoid infinite loops over bits already painted (eg. 00 shape)
                 if not has_same_pattern:
-                    break
-                tile_x = (x_start_next + pat_x) % 8
-                has_same_pattern &= (pattern[0, pat_x] == rtile[0, tile_x])
-                has_same_pattern &= (not back or pattern[0, pat_x] != rback[0, tile_x])
-            # we've reached a border colour, append our interval & start a new one
-            # don't append if same fill colour/pattern,
-            # to avoid infinite loops over bits already painted (eg. 00 shape)
-            if x_stop_next >= x_start_next and not has_same_pattern:
-                line_seed.append([x_start_next, x_stop_next, y, ydir])
-            x_start_next = x + 1
-            x += 1
+                    line_seed.append([x, x + pattern.width - 1, y, ydir])
+            x += pattern.width + 1
         return line_seed
 
     ### PUT and GET: Sprite operations
