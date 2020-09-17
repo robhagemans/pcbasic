@@ -193,5 +193,5 @@ class ExceptionGuard(object):
         with logfile as f:
             f.write(crashlog.encode('utf-8', 'replace'))
         # put on clipboard
-        impl.queues.video.put(signals.Event(signals.VIDEO_SET_CLIPBOARD_TEXT, (crashlog, False)))
+        impl.queues.video.put(signals.Event(signals.VIDEO_SET_CLIPBOARD_TEXT, (crashlog,)))
         return True
