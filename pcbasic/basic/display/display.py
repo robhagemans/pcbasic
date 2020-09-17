@@ -300,6 +300,10 @@ class Display(object):
         """8-bit memory font (half in ROM, half in RAM and loadable)."""
         return self._fonts[8]
 
+    @property
+    def is_monochrome(self):
+        """Check for monochrome monitor."""
+        return self._monitor == 'mono'
 
     ###########################################################################
 
