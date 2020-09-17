@@ -166,8 +166,8 @@ class ExceptionGuard(object):
             impl.console.write(text.encode('cp437', 'replace').replace(b'\n', b'\r'))
         impl.display.set_attr(bottom[0])
         impl.display.text_screen._bottom_row_allowed = True
-        impl.display.text_screen.set_pos(25, 1, scroll_ok=False)
-        impl.console.write(bottom[1].encode('cp437', 'replace'), scroll_ok=False)
+        impl.display.text_screen.set_pos(25, 1)
+        impl.console.write(bottom[1].encode('cp437', 'replace'))
         # write crash log
         crashlog = u'\n'.join(
             line.decode('cp437', 'replace') if isinstance(line, bytes) else line

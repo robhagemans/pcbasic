@@ -267,7 +267,7 @@ class Console(object):
     ##########################################################################
     # output
 
-    def write(self, s, scroll_ok=True, do_echo=True):
+    def write(self, s, do_echo=True):
         """Write a string to the screen at the current position."""
         if do_echo:
             # CR -> CRLF, CRLF -> CRLF LF
@@ -292,41 +292,41 @@ class Console(object):
                     if last != b'\r':
                         # LF connects lines like word wrap
                         self._text_screen.set_wrap(row, True)
-                        self._text_screen.set_pos(row + 1, 1, scroll_ok)
+                        self._text_screen.set_pos(row + 1, 1, scroll_ok=True)
                 elif c == b'\r':
                     # CR
                     self._text_screen.set_wrap(row, False)
-                    self._text_screen.set_pos(row + 1, 1, scroll_ok)
+                    self._text_screen.set_pos(row + 1, 1, scroll_ok=True)
                 elif c == b'\a':
                     # BEL
                     self._sound.beep()
                 elif c == b'\x0B':
                     # HOME
-                    self._text_screen.set_pos(1, 1, scroll_ok)
+                    self._text_screen.set_pos(1, 1, scroll_ok=True)
                 elif c == b'\x0C':
                     # CLS
                     self._text_screen.clear_view()
                 elif c == b'\x1C':
                     # RIGHT
-                    self._text_screen.set_pos(row, col + 1, scroll_ok)
+                    self._text_screen.set_pos(row, col + 1, scroll_ok=True)
                 elif c == b'\x1D':
                     # LEFT
-                    self._text_screen.set_pos(row, col - 1, scroll_ok)
+                    self._text_screen.set_pos(row, col - 1, scroll_ok=True)
                 elif c == b'\x1E':
                     # UP
-                    self._text_screen.set_pos(row - 1, col, scroll_ok)
+                    self._text_screen.set_pos(row - 1, col, scroll_ok=True)
                 elif c == b'\x1F':
                     # DOWN
-                    self._text_screen.set_pos(row + 1, col, scroll_ok)
+                    self._text_screen.set_pos(row + 1, col, scroll_ok=True)
             else:
                 # includes \b, \0, and non-control chars
                 out_chars.append(c)
             last = c
         self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=True)
 
-    def write_line(self, s=b'', scroll_ok=True, do_echo=True):
+    def write_line(self, s=b'', do_echo=True):
         """Write a string to the screen and end with a newline."""
-        self.write(b'%s\r' % (s,), scroll_ok, do_echo)
+        self.write(b'%s\r' % (s,), do_echo)
 
     def list_line(self, line, newline=True):
         """Print a line from a program listing or EDIT prompt."""
