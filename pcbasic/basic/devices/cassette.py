@@ -49,7 +49,7 @@ class CASDevice(object):
     # control characters not allowed in file name on tape
     _illegal_chars = set(map(int2byte, range(0x20)))
 
-    def __init__(self, arg, screen):
+    def __init__(self, arg, console):
         """Initialise tape device."""
         addr, val = parse_protocol_string(arg)
         ext = val.split(u'.')[-1].upper()
@@ -58,7 +58,7 @@ class CASDevice(object):
         # by default, show messages
         self.is_quiet = False
         # console for messages
-        self.screen = screen
+        self.console = console
         try:
             if not val:
                 self.tapestream = None
@@ -117,13 +117,13 @@ class CASDevice(object):
                     ):
                     message = b'%s.%s Found.' % (trunk, filetype)
                     if not self.is_quiet:
-                        self.screen.write_line(message)
+                        self.console.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
                     return trunk, filetype, seg, offset, length
                 else:
                     message = b'%s.%s Skipped.' % (trunk, filetype)
                     if not self.is_quiet:
-                        self.screen.write_line(message)
+                        self.console.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file

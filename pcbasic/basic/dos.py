@@ -96,12 +96,12 @@ class Environment(object):
 class Shell(object):
     """Launcher for command shell."""
 
-    def __init__(self, queues, keyboard, screen, files, codepage, shell):
+    def __init__(self, queues, keyboard, console, files, codepage, shell):
         """Initialise the shell."""
         self._shell = shell
         self._queues = queues
         self._keyboard = keyboard
-        self._screen = screen
+        self._console = console
         self._files = files
         self._codepage = codepage
         self._last_command = deque()
@@ -115,7 +115,7 @@ class Shell(object):
             # stream ends if process closes
             if not c:
                 return
-            # don't access screen in this thread
+            # don't access console in this thread
             # the other thread already does
             output.append(c)
 
@@ -194,11 +194,11 @@ class Shell(object):
                 # handle backspace
                 if word:
                     word.pop()
-                    self._screen.write(b'\x1D \x1D')
+                    self._console.write(b'\x1D \x1D')
             elif not c.startswith(b'\0'):
                 # exclude e-ascii (arrow keys not implemented)
                 word.append(c)
-                self._screen.write(c)
+                self._console.write(c)
         # drain final output
         self._drain_final(shell_output)
         self._drain_final(shell_cerr)
@@ -227,7 +227,7 @@ class Shell(object):
         return unitext.encode(self._encoding, errors='replace')
 
     def _show_output(self, shell_output):
-        """Write shell output to screen."""
+        """Write shell output to console."""
         # detect sentinel for start of new command
         if shell_output and self._detect_encoding(shell_output):
             # detect sentinel for start of new command
@@ -266,4 +266,4 @@ class Shell(object):
             outstr = outstr.replace(self._enc(u'\x07'), b'')
             outstr = outstr.decode(self._encoding, errors='replace')
             outstr = self._codepage.str_from_unicode(outstr, errors='replace')
-            self._screen.write(outstr)
+            self._console.write(outstr)

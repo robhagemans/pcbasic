@@ -262,9 +262,9 @@ class TextMemoryMapper(_MemoryMapper):
             col = row_offset // 2
             try:
                 if (addr+i) % 2:
-                    mem_bytes[i] = display.text_screen.text.get_attr(page, 1 + row, 1 + col)
+                    mem_bytes[i] = display.text_pages[page].get_attr(1 + row, 1 + col)
                 else:
-                    mem_bytes[i] = display.text_screen.text.get_char(page, 1 + row, 1 + col)
+                    mem_bytes[i] = display.text_pages[page].get_byte(1 + row, 1 + col)
             except IndexError:
                 pass
         return mem_bytes
@@ -279,12 +279,12 @@ class TextMemoryMapper(_MemoryMapper):
             col = row_offset // 2
             try:
                 if (addr+i) % 2:
-                    c = display.text_screen.text.get_char(page, 1+row, 1+col)
+                    c = display.text_pages[page].get_byte(1+row, 1+col)
                     a = mem_bytes[i]
                 else:
                     c = mem_bytes[i]
-                    a = display.text_screen.text.get_attr(page, 1+row, 1+col)
-                display.text_screen.text.put_char_attr(page, 1+row, 1+col, int2byte(c), a)
+                    a = display.text_pages[page].get_attr(1+row, 1+col)
+                display.text_pages[page].put_char_attr(1+row, 1+col, int2byte(c), a)
                 if last_row > 0 and last_row != 1 + row:
                     display.text_screen.refresh_range(page, last_row, 1, self._text_width)
             except IndexError:
@@ -403,7 +403,7 @@ class CGAMemoryMapper(GraphicsMemoryMapper):
             pixarray = bytematrix.ByteMatrix.frompacked(
                 byte_array[ofs:ofs+length], height=1, items_per_byte=self._ppb
             )
-            display.drawing.put_interval(page, x, y, pixarray)
+            display.graphics.put_interval(page, x, y, pixarray)
 
     def get_memory(self, display, addr, num_bytes):
         """Retrieve bytes from CGA memory."""
@@ -491,7 +491,7 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
                     byte_array[ofs:ofs+length], height=1, items_per_byte=8
                 ).render(0, mask)
             )
-            display.drawing.put_interval(page, x, y, pixarray, mask)
+            display.graphics.put_interval(page, x, y, pixarray, mask)
 
 
 class Tandy6MemoryMapper(GraphicsMemoryMapper):
@@ -553,4 +553,4 @@ class Tandy6MemoryMapper(GraphicsMemoryMapper):
                         half[ofs:ofs+length], height=1, items_per_byte=2*self._ppb
                     ) << plane
                 )
-                display.drawing.put_interval(page, x, y, pixarray, mask)
+                display.graphics.put_interval(page, x, y, pixarray, mask)

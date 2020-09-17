@@ -148,9 +148,9 @@ class FloatErrorHandler(object):
     # types of errors that do not always interrupt execution
     soft_types = (error.OVERFLOW, error.DIVISION_BY_ZERO)
 
-    def __init__(self, screen):
+    def __init__(self, console):
         """Setup handler."""
-        self._screen = screen
+        self._console = console
         self._do_raise = False
 
     def suspend(self, do_raise):
@@ -168,7 +168,7 @@ class FloatErrorHandler(object):
             math_error = error.DIVISION_BY_ZERO
         else:
             raise e
-        if (self._do_raise or self._screen is None or
+        if (self._do_raise or self._console is None or
                 math_error not in self.soft_types):
             # also raises exception in error_handle_mode!
             # in that case, prints a normal error message
@@ -176,7 +176,7 @@ class FloatErrorHandler(object):
         else:
             # write a message & continue as normal
             # message should not include line number or trailing \xFF
-            self._screen.write_line(error.BASICError(math_error).message)
+            self._console.write_line(error.BASICError(math_error).message)
         # return max value for the appropriate float type
         if e.args and e.args[0]:
             if isinstance(e.args[0], numbers.Float):
@@ -199,7 +199,7 @@ class Values(object):
         self.double_math = double_math
 
     def set_handler(self, handler):
-        """Initialise the error message screen."""
+        """Initialise the error message console."""
         self.error_handler = handler
 
     def create(self, buf):

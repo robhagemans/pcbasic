@@ -1,46 +1,13 @@
 """
-PC-BASIC - textbase.py
-Text screen helper classes
+PC-BASIC - display.cursor
+Cursor operations
 
 (c) 2013--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
-from ...compat import iterchar
 from ..base import signals
-from ..base import error
-from .. import values
 
-
-#######################################################################################
-# function key macro guide
-
-class BottomBar(object):
-    """Key guide bar at bottom line."""
-
-    def __init__(self):
-        """Initialise bottom bar."""
-        # use 80 here independent of screen width
-        # we store everything in a buffer and only show what fits
-        self.clear()
-        self.visible = False
-
-    def clear(self):
-        """Clear the contents."""
-        self._contents = [(b' ', 0)] * 80
-
-    def write(self, s, col, reverse):
-        """Write chars on virtual bottom bar."""
-        for i, c in enumerate(iterchar(s)):
-            self._contents[col + i] = (c, reverse)
-
-    def get_char_reverse(self, col):
-        """Retrieve char and reverse attribute."""
-        return self._contents[col]
-
-
-#######################################################################################
-# cursor
 
 class Cursor(object):
     """Manage the cursor."""
@@ -181,7 +148,7 @@ class Cursor(object):
         """Set the cursor to one of two default shapes."""
         if overwrite_shape:
             # most modes have cursor on last line
-            self.set_shape(*self._mode.cursor)
+            self.set_shape(*self._mode.cursor_shape)
         else:
             # half-block cursor for insert
             self.set_shape(self._height//2, self._height-1)
@@ -198,58 +165,3 @@ class Cursor(object):
         self._queues.video.put(signals.Event(
             signals.VIDEO_SHOW_CURSOR, (self._visible, self._mode.is_text_mode)
         ))
-
-
-###############################################################################
-# text viewport / scroll area
-
-class ScrollArea(object):
-    """Text viewport / scroll area."""
-
-    def __init__(self, mode):
-        """Initialise the scroll area."""
-        self._height = mode.height
-        self.unset()
-
-    def init_mode(self, mode):
-        """Initialise the scroll area for new screen mode."""
-        self._height = mode.height
-        if self._bottom == self._height:
-            # tandy/pcjr special case: VIEW PRINT to 25 is preserved
-            self.set(1, self._height)
-        else:
-            self.unset()
-
-    @property
-    def active(self):
-        """A viewport has been set."""
-        return self._active
-
-    @property
-    def bounds(self):
-        """Return viewport bounds."""
-        return self._top, self._bottom
-
-    @property
-    def top(self):
-        """Return viewport top bound."""
-        return self._top
-
-    @property
-    def bottom(self):
-        """Return viewport bottom bound."""
-        return self._bottom
-
-    def set(self, start, stop):
-        """Set the scroll area."""
-        self._active = True
-        # _top and _bottom are inclusive and count rows from 1
-        self._top = start
-        self._bottom = stop
-
-    def unset(self):
-        """Unset scroll area."""
-        # there is only one VIEW PRINT setting across all pages.
-        # scroll area normally excludes the bottom bar
-        self.set(1, self._height - 1)
-        self._active = False

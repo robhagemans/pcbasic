@@ -1,6 +1,6 @@
 """
-PC-BASIC - inputmethods.py
-Pen and joystick handling
+PC-BASIC - inputs.stick
+Joystick handling
 
 (c) 2013--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -9,119 +9,9 @@ This file is released under the GNU GPL version 3 or later.
 import datetime
 
 from ..base import error
-from ..base import scancode
 from ..base import tokens as tk
 from ..base import signals
 from .. import values
-
-
-###############################################################################
-# clipboard copy & print screen handler
-
-# clipboard copy & print screen are special cases:
-# they to handle an input signal, read the screen
-# and write the text to an output queue or file
-# independently of what BASIC is doing
-
-class ScreenCopyHandler(object):
-    """Event handler for clipboard copy and print screen."""
-
-    def __init__(self, screen, lpt1_file):
-        """Initialise copy handler."""
-        self._screen = screen
-        self._lpt1_file = lpt1_file
-
-    def check_input(self, signal):
-        """Handle input signals."""
-        if signal.event_type == signals.CLIP_COPY:
-            self._screen.copy_clipboard(*signal.params)
-            return True
-        elif signal.event_type == signals.KEYB_DOWN:
-            c, scan, mod = signal.params
-            if scan == scancode.PRINT and (
-                    scancode.LSHIFT in mod or scancode.RSHIFT in mod):
-                # shift+printscreen triggers a print screen
-                self._screen.print_screen(self._lpt1_file)
-                return True
-        return False
-
-
-###############################################################################
-# light pen
-
-class Pen(object):
-    """Light pen support."""
-
-    def __init__(self):
-        """Initialise light pen."""
-        self._is_down = False
-        self._pos = 0, 0
-        # signal pen has been down for PEN polls in pen_()
-        self._was_down = False
-        self._down_pos = (0, 0)
-
-    def check_input(self, signal):
-        """Handle pen-related input signals."""
-        if signal.event_type == signals.PEN_DOWN:
-            self._down(*signal.params)
-        elif signal.event_type == signals.PEN_UP:
-            self._up()
-        elif signal.event_type == signals.PEN_MOVED:
-            self._moved(*signal.params)
-        else:
-            return False
-        return True
-
-    def _down(self, x, y):
-        """Report a pen-down event at graphical x,y """
-        # TRUE until polled
-        self._was_down = True
-        # TRUE until pen up
-        self._is_down = True
-        self._down_pos = x, y
-
-    def _up(self):
-        """Report a pen-up event at graphical x,y """
-        self._is_down = False
-
-    def _moved(self, x, y):
-        """Report a pen-move event at graphical x,y """
-        self._pos = x, y
-
-    def poll(self, fn, enabled, screen):
-        """PEN: poll the light pen."""
-        fn = values.to_int(fn)
-        error.range_check(0, 9, fn)
-        posx, posy = self._pos
-        if fn == 0:
-            pen_down_old, self._was_down = self._was_down, False
-            pen = -1 if pen_down_old else 0
-        elif fn == 1:
-            pen = self._down_pos[0]
-        elif fn == 2:
-            pen = self._down_pos[1]
-        elif fn == 3:
-            pen = -1 if self._is_down else 0
-        elif fn == 4:
-            pen = posx
-        elif fn == 5:
-            pen = posy
-        elif fn == 6:
-            pen = 1 + self._down_pos[1] // screen.mode.font_height
-        elif fn == 7:
-            pen = 1 + self._down_pos[0] // screen.mode.font_width
-        elif fn == 8:
-            pen = 1 + posy // screen.mode.font_height
-        elif fn == 9:
-            pen = 1 + posx // screen.mode.font_width
-        if not enabled:
-            # should return 0 or char pos 1 if PEN not ON
-            pen = 1 if fn >= 6 else 0
-        return pen
-
-
-###############################################################################
-# joysticks
 
 
 class Stick(object):

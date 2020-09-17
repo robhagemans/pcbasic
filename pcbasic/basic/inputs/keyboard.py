@@ -1,6 +1,6 @@
 """
-PC-BASIC - keyboard.py
-Keyboard and input stream handling
+PC-BASIC - inputs.keyboard
+Keyboard handling
 
 (c) 2013--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.

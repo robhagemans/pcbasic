@@ -1,5 +1,5 @@
 """
-PC-BASIC - display.py
+PC-BASIC - display.display
 Display and video mode operations
 
 (c) 2013--2020 Rob Hagemans
@@ -18,8 +18,10 @@ from . import modes
 from . import font
 
 from ..base.bytematrix import ByteMatrix
+from .textbuffer import TextPage
 from .textscreen import TextScreen
 from .colours import MONO_TINT
+from .cursor import Cursor
 
 
 class Display(object):
@@ -27,7 +29,7 @@ class Display(object):
 
     def __init__(
             self, queues, values, input_methods, memory,
-            initial_width, video_mem_size, adapter, monitor, sound, io_streams,
+            initial_width, video_mem_size, adapter, monitor,
             codepage, fonts
         ):
         """Initialise the display."""
@@ -68,10 +70,13 @@ class Display(object):
         # as opposed to the loadable 8-pixel memory font used in graphics modes
         self._bios_font_8 = self._fonts[8].copy()
         # text screen
+        self.codepage = codepage
+        self.cursor = Cursor(queues, self.mode)
         self.text_screen = TextScreen(
-            self._queues, self._values, self.mode, self._adapter, codepage, io_streams, sound
+            self._queues, self._values, self.mode, self.cursor, self._adapter, codepage
         )
         # pixel buffer, set by _set_mode
+        self.text_pages = None
         self.pixel_pages = None
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         # all adapters including PCjr target 4x3, except Tandy
@@ -90,7 +95,7 @@ class Display(object):
         # --> old value SCREEN 3 pixel aspect 1968/1000 not quite (but almost) consistent with this
         #     and I don't think it was really checked on Tandy -- dosbox won't run SCREEN 3
         # graphics operations
-        self.drawing = graphics.Drawing(
+        self.graphics = graphics.Graphics(
             self._queues, input_methods, self._values, self._memory, aspect
         )
         # colour palette
@@ -213,21 +218,33 @@ class Display(object):
             ByteMatrix(self.mode.pixel_height, self.mode.pixel_width)
             for _ in range(self.mode.num_pages)
         ]
+        # initialise character buffers
+        self.text_pages = [
+            TextPage(self.attr, self.mode.width, self.mode.height)
+            for _ in range(self.mode.num_pages)
+        ]
+        # rebuild the cursor
+        if not self.mode.is_text_mode and self.mode.cursor_attr:
+            self.cursor.init_mode(self.mode, self.mode.cursor_attr, self.colourmap)
+        else:
+            self.cursor.init_mode(self.mode, self.attr, self.colourmap)
         # initialise text screen
         self.text_screen.init_mode(
-            self.mode, self.pixel_pages, self.attr, new_vpagenum, new_apagenum, font, self.colourmap
+            self.mode, self.pixel_pages, self.text_pages,
+            self.attr, new_vpagenum, new_apagenum, font, self.colourmap,
+            do_fullwidth=(self.mode.font_height >= 14)
         )
         # restore emulated video memory in new mode
         if not erase:
             self.mode.memorymap.set_memory(self, saved_addr, saved_buffer)
         # center graphics cursor, reset window, etc.
-        self.drawing.init_mode(
-            self.mode, self.text_screen.text, self.pixel_pages, self.colourmap.num_attr
+        self.graphics.init_mode(
+            self.mode, self.text_pages, self.pixel_pages, self.colourmap.num_attr
         )
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics attribute
-        self.drawing.set_attr(self.attr)
+        self.graphics.set_attr(self.attr)
 
     def set_width(self, to_width):
         """Set the number of columns of the screen, reset pages and change modes."""
@@ -236,6 +253,15 @@ class Display(object):
             return
         new_mode = modes.to_width(self._adapter, self.mode, to_width)
         self.screen(new_mode, None, 0, 0, new_width=to_width)
+
+    def set_height(self, to_height):
+        """Try to change the number of rows."""
+        # number != 25 is ignored on tandy, error elsewhere
+        # otherwise nothing happens
+        if self._adapter in ('pcjr', 'tandy'):
+            error.range_check(0, 25, to_height)
+        else:
+            error.range_check(25, 25, to_height)
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
@@ -315,17 +341,17 @@ class Display(object):
             raise error.BASICError(error.IFC)
         self.vpagenum = new_vpagenum
         self.apagenum = new_apagenum
-        self.drawing.set_page(new_apagenum)
+        self.graphics.set_page(new_apagenum)
         self.text_screen.set_page(new_vpagenum, new_apagenum)
         self._queues.video.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
 
     def set_attr(self, attr):
         """Set the default attribute."""
         self.attr = attr
-        self.drawing.set_attr(attr)
+        self.graphics.set_attr(attr)
         self.text_screen.set_attr(attr)
         if not self.mode.is_text_mode and self.mode.cursor_attr is None:
-            self.text_screen.cursor.set_attr(attr)
+            self.cursor.set_attr(attr)
 
     def set_border(self, attr):
         """Set the border attribute."""
@@ -397,7 +423,7 @@ class Display(object):
         dst = values.to_int(next(args))
         list(args)
         error.range_check(0, self.mode.num_pages-1, dst)
-        self.text_screen.text.copy_page(src, dst)
+        self.text_pages[dst].copy_from(self.text_pages[dst])
         if not self.mode.is_text_mode:
             self.pixel_pages[dst][:, :] = self.pixel_pages[src]
         self._queues.video.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
@@ -468,23 +494,27 @@ class Display(object):
             # tandy gives illegal function call on CLS number
             error.throw_if(self._adapter == 'tandy')
             error.range_check(0, 2, val)
-        else:
-            if self.drawing.graph_view.is_set():
-                val = 1
-            elif self.text_screen.scroll_area.active:
-                val = 2
-            else:
-                val = 0
         list(args)
-        # cls is only executed if no errors have occurred
-        if val == 0:
+        # CLS is only executed if no errors have occurred
+        if not self.mode.is_text_mode and (
+                val == 1 or (val is None and self.graphics.graph_view.is_set())
+            ):
+            # CLS 1: in graphics mode, clear the graphics viewport
+            self.graphics.fill_rect(*self.graphics.graph_view.get(), index=(self.attr >> 4) & 0x7)
+            self.graphics.reset()
+            if not self.graphics.graph_view.is_set():
+                self.text_screen.redraw_bar()
+                self.text_screen.set_pos(1, 1)
+        elif val == 0 or (val is None and not self.text_screen.scroll_area.active):
             self.text_screen.clear()
             self.text_screen.redraw_bar()
-            self.drawing.reset()
-        elif val == 1:
-            # clear the graphics viewport
-            if not self.mode.is_text_mode:
-                self.drawing.fill_rect(*self.drawing.graph_view.get(), index=(self.attr >> 4) & 0x7)
-            self.drawing.reset()
+            self.graphics.reset()
         elif val == 2:
+            # CLS 2 does not reset the graphics pointer (checked with DOSBox)
+            # if vscroll area is not active, this does not clear the bottom bar
             self.text_screen.clear_view()
+        elif val is None:
+            # however, CLS only with active scroll area *does* reset the view
+            # clear_view will clear the whole screen if the view is not set
+            self.text_screen.clear_view()
+            self.graphics.reset()
