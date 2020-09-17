@@ -174,6 +174,16 @@ class Display(object):
         # preserve memory if erase==0; don't distingush erase==1 and erase==2
         if not erase:
             saved_addr, saved_buffer = self.mode.memorymap.get_all_memory(self)
+        # switching to another text mode (width-only change or no change to text mode)
+        text_to_text = self.mode.is_text_mode and new_mode.is_text_mode
+        # mode is changing
+        mode_changes = new_mode != self.mode
+        colorswitch_changes = new_colorswitch != self.colorswitch
+        page_changes = (new_vpagenum, new_apagenum) != (self.vpagenum, self.apagenum)
+        # set the screen mode parameters
+        self.mode = new_mode
+        # set the colorswitch
+        self.colorswitch = new_colorswitch
         # get a font for the new mode
         try:
             # in CGA (8- or 9-pixel) text modes, use the 8-pixel BIOS font, not the POKE-able one
@@ -190,38 +200,14 @@ class Display(object):
                 new_mode.font_height
             )
             font = self._bios_font_8.init_mode(new_mode.font_width)
-        # submit the mode change to the interface
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_MODE, (
-                new_mode.pixel_height, new_mode.pixel_width,
-                new_mode.height, new_mode.width
-            )
-        ))
-        # switching to another text mode (width-only change)
-        width_only = self.mode.is_text_mode and new_mode.is_text_mode
         # attribute and border persist on width-only change
         # otherwise start with black border and default attr
-        if (
-                not width_only
-                or self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
-                or self.colorswitch != new_colorswitch
-            ):
+        if (not text_to_text or page_changes or colorswitch_changes):
             self.attr = new_mode.attr
-        if not width_only and new_mode != self.mode:
-            self.set_border(0)
-        # set the screen mode parameters
-        self.mode = new_mode
-        # set the colorswitch
-        self.colorswitch = new_colorswitch
         # initialise the palette
         self.colourmap = new_mode.colourmap(
             self._queues, self._adapter, self._monitor, self.colorswitch
         )
-        # rebuild the cursor
-        if not self.mode.is_text_mode and self.mode.cursor_attr:
-            self.cursor.init_mode(self.mode, self.mode.cursor_attr, self.colourmap)
-        else:
-            self.cursor.init_mode(self.mode, self.attr, self.colourmap)
         # initialise pixel and character buffers
         self.pages = [
             VideoBuffer(
@@ -233,6 +219,21 @@ class Display(object):
             )
             for _pagenum in range(self.mode.num_pages)
         ]
+        # submit the mode change to the interface
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_MODE, (
+                new_mode.pixel_height, new_mode.pixel_width,
+                new_mode.height, new_mode.width
+            )
+        ))
+        # border persists on width-only change or no change; set to black otherwise
+        if not text_to_text and mode_changes:
+            self.set_border(0)
+        # rebuild the cursor
+        if not self.mode.is_text_mode and self.mode.cursor_attr:
+            self.cursor.init_mode(self.mode, self.mode.cursor_attr, self.colourmap)
+        else:
+            self.cursor.init_mode(self.mode, self.attr, self.colourmap)
         # initialise text screen
         self.text_screen.init_mode(self.mode, self.pages, self.attr, new_vpagenum, new_apagenum)
         # restore emulated video memory in new mode

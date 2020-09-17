@@ -94,7 +94,7 @@ class VideoPygame(VideoPlugin):
         # composite colour artifacts
         self._pixel_packing = False
         # text attributes supported
-        self.mode_has_blink = True
+        self._palette_blinks = True
         # update cycle
         # update flag
         self.busy = False
@@ -356,7 +356,7 @@ class VideoPygame(VideoPlugin):
         if not self._has_window:
             return
         self.blink_state = 0
-        if self.mode_has_blink:
+        if self._palette_blinks or self.text_cursor:
             self.blink_state = 0 if self._cycle < BLINK_CYCLES * 2 else 1
             if self._cycle % BLINK_CYCLES == 0:
                 self.busy = True
@@ -466,12 +466,9 @@ class VideoPygame(VideoPlugin):
     ###########################################################################
     # signal handlers
 
-    def set_mode(
-            self, canvas_height, canvas_width, text_height, text_width
-        ):
+    def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Initialise a given text or graphics mode."""
-        self.mode_has_blink = False
-        # unpack mode info struct
+        # set display geometry
         self.font_height = -(-canvas_height // text_height)
         self.font_width = canvas_width // text_width
         # logical size
@@ -510,8 +507,7 @@ class VideoPygame(VideoPlugin):
         # bottom 128 are non-blink, top 128 blink to background
         self._palette[0] = [_fore for _fore, _, _, _ in attributes]
         self._palette[1] = [_back if _blink else _fore for _fore, _back, _blink, _ in attributes]
-        if self._palette[0] != self._palette[1]:
-            self.mode_has_blink = True
+        self._palette_blinks = self._palette[0] != self._palette[1]
         self._pixel_packing = pack_pixels
         self.busy = True
 
@@ -533,8 +529,6 @@ class VideoPygame(VideoPlugin):
         """Change visibility of cursor."""
         self.cursor_visible = cursor_on
         self.text_cursor = cursor_blinks
-        if cursor_blinks:
-            self.mode_has_blink = True
         self.busy = True
 
     def move_cursor(self, row, col, attr, width):
