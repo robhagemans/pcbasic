@@ -257,7 +257,7 @@ class VideoPygame(VideoPlugin):
                 if self._nokill:
                     self.set_caption_message(NOKILL_MESSAGE)
                 else:
-                    self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+                    self._input_queue.put(signals.Event(signals.QUIT))
 
     def _handle_key_down(self, e):
         """Handle key-down event."""
@@ -584,15 +584,8 @@ class VideoPygame(VideoPlugin):
         self.cursor.set_palette_at(254, pygame.Color(0, self.cursor_attr, self.cursor_attr))
         self.busy = True
 
-    def put_text(self, row, col, unicode_list, attr, glyphs):
-        """Put text at a given position."""
-        if not glyphs:
-            return
-        x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
-        self.put_rect(x0, y0, glyphs)
-
-    def put_rect(self, x0, y0, array):
-        """Apply array [y][x] of attribytes to an area."""
+    def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, array):
+        """Put text or pixels at a given position."""
         if y0 + array.height > self.size[1] or x0 +array. width > self.size[0]:
             array = array[:self.size[1]-y0, :self.size[0]-x0]
         # reference the destination area

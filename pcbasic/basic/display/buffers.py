@@ -10,6 +10,7 @@ import logging
 from contextlib import contextmanager
 
 from ...compat import zip, int2byte, iterchar
+from ...compat import iter_chunks
 from ..base import signals
 from ..base.bytematrix import ByteMatrix
 
@@ -63,11 +64,7 @@ class _PixelAccess(object):
             yslice = slice(yslice, yslice+1)
         if not isinstance(xslice, slice):
             xslice = slice(xslice, xslice+1)
-        # single-attribute fill; ensure we have a complete matrix to submit
-        if not isinstance(data, ByteMatrix):
-            data = self._pixels[yslice, xslice]
-        self._video_buffer._submit_rect(xslice.start, yslice.start, data)
-
+        self._video_buffer._update_pixels(yslice.start, xslice.start, yslice.stop-1, xslice.stop-1)
 
 
 class VideoBuffer(object):
@@ -86,10 +83,10 @@ class VideoBuffer(object):
         # DBCS support
         self._codepage = codepage
         self._dbcs_enabled = codepage.dbcs and do_fullwidth
-        self._dbcs_text = [tuple(iterchar(b' ')) * width for _ in range(height)]
+        self._dbcs_text = [[b' '] * width for _ in range(height)]
         # initialise pixel buffers
         self._pixels = ByteMatrix(pixel_height, pixel_width)
-        # with set_attr that calls submit_rect
+        # with set_attr that calls submit_pixels
         self._pixel_access = _PixelAccess(self)
         # needed for signals only
         self._queues = queues
@@ -101,7 +98,10 @@ class VideoBuffer(object):
 
     def set_visible(self, visible):
         """Set the vpage flag."""
-        self._visible = visible
+        if self._visible != visible:
+            self._visible = visible
+            if visible:
+                self.resubmit()
 
     @property
     def pixels(self):
@@ -247,9 +247,22 @@ class VideoBuffer(object):
         self._dbcs_text[:] = src._dbcs_text
         self._pixels[:, :] = src._pixels
         self._pixel_access = _PixelAccess(self)
-        # resubmit to interface if needed
-        # FIXME - no need to rebuild dbcs buffers here
-        self.rebuild()
+        # resubmit to interface
+        self.resubmit()
+
+    ##########################################################################
+    # modify pixels
+
+    def _update_pixels(self, top, left, bottom, right):
+        """Clear the text under the rect and submit to interface."""
+        row0, col0, row1, col1 = self.pixel_to_text_area(left, top, right, bottom)
+        # clear text area
+        # we can't see or query the attribute in graphics mode - might as well set to zero
+        self._clear_text_area(
+            row0, col0, row1, col1, 0, adjust_end=False, clear_wrap=False
+        )
+        rect = self._pixels[top:bottom+1, left:right+1]
+        self._submit(row0, col0, row1, col1)
 
     ##########################################################################
     # modify text
@@ -319,7 +332,7 @@ class VideoBuffer(object):
     ###########################################################################
     # update DBCS/unicode buffer
 
-    def _update_dbcs(self, row, orig_start, orig_stop):
+    def _refresh_dbcs(self, row, orig_start, orig_stop):
         """Update the DBCS buffer."""
         raw = b''.join(self._rows[row-1].chars)
         if self._dbcs_enabled:
@@ -329,7 +342,7 @@ class VideoBuffer(object):
             tuples = ((_seq,) if len(_seq) == 1 else (_seq, b'') for _seq in marks)
             sequences = [_seq for _tup in tuples for _seq in _tup]
         else:
-            sequences = tuple(iterchar(raw))
+            sequences = list(iterchar(raw))
         updated = [old != new for old, new in zip(self._dbcs_text[row-1], sequences)]
         self._dbcs_text[row-1] = sequences
         try:
@@ -341,20 +354,35 @@ class VideoBuffer(object):
         start, stop = min(start, orig_start), max(stop, orig_stop)
         return start, stop
 
-    def _dbcs_to_unicode(self, chars):
-        """Convert list of dbcs chars to list of unicode; fullwidth trailed by empty u''."""
-        text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
-        return [self._codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
+    def _dbcs_to_unicode(self, char_list):
+        """Convert list of dbcs chars to list of unicode; fullwidth must be trailed by empty u''."""
+        return [
+            (self._codepage.to_unicode(_c, u'\0') if _c else u'')
+            for _c in char_list
+        ]
 
     ###########################################################################
-    # update pixel buffer and interface
+    # submit to interface
 
-    def rebuild(self):
+    def resubmit(self):
         """Completely resubmit the text and graphics screen to the interface."""
-        # resubmit the text buffer without changing the pixel buffer
-        # redraw graphics
-        for row in range(self._height):
-            self._refresh_range(row+1, 1, self._width, update_pixels=False)
+        self._submit(1, 1, self._height, self._width)
+
+    def _submit(self, top, left, bottom, right):
+        """Submit a rectangular screen section to interface (text coordinates)."""
+        if self._visible:
+            text = [
+                self._dbcs_to_unicode(_row[left-1:right]) for _row in self._dbcs_text[top-1:bottom]
+            ]
+            attrs = [_row.attrs[left-1:right] for _row in self._rows[top-1:bottom]]
+            x0, y0 = self.text_to_pixel_pos(top, left)
+            x1, y1 = self.text_to_pixel_pos(bottom+1, right+1)
+            self._queues.video.put(signals.Event(
+                signals.VIDEO_UPDATE, (top, left, text, attrs, y0, x0, self._pixels[y0:y1, x0:x1])
+            ))
+
+    ###########################################################################
+    # text rendering
 
     @contextmanager
     def collect_updates(self):
@@ -368,7 +396,9 @@ class VideoBuffer(object):
             self._locked = False
             # update all dirty rectangles
             for row in self._dirty_left:
-                self._refresh_range(row, self._dirty_left[row], self._dirty_right[row])
+                start, stop = self._refresh_dbcs(row, self._dirty_left[row], self._dirty_right[row])
+                self._draw_text(row, start, row, stop)
+                self._submit(row, start, row, stop)
             self._dirty_left = {}
             self._dirty_right = {}
 
@@ -384,38 +414,22 @@ class VideoBuffer(object):
                 self._dirty_right[row] = stop
             return
         else:
-            self._refresh_range(row, start, stop)
+            start, stop = self._refresh_dbcs(row, start, stop)
+            self._draw_text(row, start, row, stop)
+            self._submit(row, start, row, stop)
 
-    def _refresh_range(self, row, start, stop, update_pixels=True):
-        """Update DBCS buffer, draw text and submit."""
-        start, stop = self._update_dbcs(row, start, stop)
-        self._draw_submit_text(row, start, stop, update_pixels)
+    def _draw_text(self, top, left, bottom, right):
+        """Draw text in a rectangular screen section to pixel buffer."""
+        for row in range(top, bottom+1):
+            gen_chunks = iter_chunks(
+                self._dbcs_text[row-1][left-1:right], self._rows[row-1].attrs[left-1:right]
+            )
+            col = left
+            for chars, attr in gen_chunks:
+                sprite = self._draw_text_chunk(row, col, chars, attr)
+                col += len(chars)
 
-    def _draw_submit_text(self, row, start, stop, update_pixels):
-        """Draw text in a screen row section to pixel buffer and submit."""
-        # we need to plot at least the updated range
-        # as the attribute may have changed
-        col, last_col = start, start
-        last_attr = None
-        chars = []
-        chunks = []
-        # collect chars in chunks with the same attribute
-        while col <= stop:
-            char = self._dbcs_text[row-1][col-1]
-            attr = self.get_attr(row, col)
-            if attr != last_attr:
-                if last_attr is not None:
-                    chunks.append((last_col, chars, last_attr))
-                last_col, last_attr = col, attr
-                chars = []
-            chars.append(char)
-            col += len(char)
-        if chars:
-            chunks.append((last_col, chars, attr))
-        for col, chars, attr in chunks:
-            self._draw_text(row, col, chars, attr, update_pixels)
-
-    def _draw_text(self, row, col, chars, attr, update_pixels):
+    def _draw_text_chunk(self, row, col, chars, attr):
         """Draw a chunk of text in a single attribute to pixels and interface."""
         if row < 1 or col < 1 or row > self._height or col > self._width:
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
@@ -424,40 +438,8 @@ class VideoBuffer(object):
         # update pixel buffer
         left, top = self.text_to_pixel_pos(row, col)
         sprite = self._font.render_text(chars, attr, back, underline)
-        if update_pixels:
-            self._pixels[top:top+sprite.height, left:left+sprite.width] = sprite
-        else:
-            sprite = self._pixels[top:top+sprite.height, left:left+sprite.width]
-        # mark full-width chars by a trailing empty string to preserve column counts
-        text = self._dbcs_to_unicode(chars)
-        if self._visible:
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_TEXT, (row, col, text, attr, sprite)
-            ))
-
-    def _submit_rect(self, x, y, rect):
-        """Clear the text under the rect and submit to interface (assumes graphics mode)."""
-        # we're assuming no dbcs below - should be disabled in graphics mode
-        assert not self._dbcs_enabled
-        row0, col0, row1, col1 = self.pixel_to_text_area(x, y, x+rect.width, y+rect.height)
-        # clear text area
-        # we can't see or query the attribute in graphics mode - might as well set to zero
-        self._clear_text_area(
-            row0, col0, row1, col1, 0, adjust_end=False, clear_wrap=False
-        )
-        # NOTE: no dbcs in graphics mode, so these are all halfwidth
-        # so we don't need to worry about cutting fullwidth chars in half
-        self._dbcs_text[row0-1:row1] = [
-            tuple(iterchar(b' ')) * (col1-col0+1) for _ in range(row1-row0+1)
-        ]
-        if self._visible:
-            for row in range(row0, row1+1):
-                self._queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_TEXT, (row, col0, [u' ']*(col1-col0+1), 0, None)
-                ))
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_PUT_RECT, (x, y, rect)
-            ))
+        self._pixels[top:top+sprite.height, left:left+sprite.width] = sprite
+        return sprite
 
     ###########################################################################
     # clearing
@@ -467,9 +449,6 @@ class VideoBuffer(object):
         self._clear_text_area(
             start, 1, stop, self._width, attr, adjust_end=True, clear_wrap=True
         )
-        self._dbcs_text[start-1:stop] = [
-            tuple(iterchar(b' ')) * self._width for _ in range(stop-start+1)
-        ]
         # clear pixels
         x0, y0, x1, y1 = self.text_to_pixel_area(start, 1, stop, self._width)
         _, back, _, _ = self._colourmap.split_attr(attr)
@@ -478,20 +457,23 @@ class VideoBuffer(object):
         if self._visible:
             self._queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
-    def clear_row_from(self, srow, scol, attr):
+    def clear_row_from(self, row, col, attr):
         """Clear from given position to end of logical line (CTRL+END)."""
-        if scol == 1:
-            self.clear_rows(srow, srow, attr)
+        if col == 1:
+            self.clear_rows(row, row, attr)
         else:
             # clear the first row of the logical line
             self._clear_text_area(
-                srow, scol, srow, self._width, attr, adjust_end=True, clear_wrap=True
+                row, col, row, self._width, attr, adjust_end=True, clear_wrap=True
             )
-            # redraw the last char before the clear too, as it may have been changed by dbcs logic
-            self._update(srow, scol-1, self._width)
+            # submit changes
+            self._update(row, 1, self._width)
 
     def _clear_text_area(self, from_row, from_col, to_row, to_col, attr, clear_wrap, adjust_end):
-        """Clear a rectangular area of the screen (inclusive bounds; 1-based indexing)."""
+        """
+        Clear a rectangular area of the screen (inclusive bounds; 1-based indexing).
+        Does not clear pixels or submit to interface (which allows its use in put_rect).
+        """
         for row in self._rows[from_row-1:to_row]:
             row.chars[from_col-1:to_col] = [b' '] * (to_col - from_col + 1)
             row.attrs[from_col-1:to_col] = [attr] * (to_col - from_col + 1)
@@ -499,6 +481,16 @@ class VideoBuffer(object):
                 row.length = min(row.length, from_col-1)
             if clear_wrap:
                 row.wrap = False
+        # we have to rebuild the DBCS buffer unless clearing the whole row or not enabled
+        # as lead or trail bytes might have been replaced by spaces
+        if self._dbcs_enabled and (to_col-from_col+1) < self._width:
+            for row in range(from_row, to_row+1):
+                # refresh whole row
+                # characters earlier on the row may be affected, e.g. box-protected chars
+                self._refresh_dbcs(row, 1, self._width)
+        else:
+            for row in range(from_row, to_row+1):
+                self._dbcs_text[row-1][from_col-1:to_col] = [b' '] * (to_col-from_col+1)
 
     ###########################################################################
     # scrolling
@@ -520,7 +512,7 @@ class VideoBuffer(object):
         del self._rows[from_row-1]
         # update dbcs buffer
         self._dbcs_text[from_row-1:to_row-1] = self._dbcs_text[from_row:to_row]
-        self._dbcs_text[to_row-1] = (tuple(iterchar(b' ')) * self._width)
+        self._dbcs_text[to_row-1] = [b' '] * self._width
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
             from_row+1, 1, to_row, self._width
@@ -547,7 +539,7 @@ class VideoBuffer(object):
             self._rows[from_row-1].wrap = True
         # update dbcs buffer
         self._dbcs_text[from_row:to_row] = self._dbcs_text[from_row-1:to_row-1]
-        self._dbcs_text[from_row-1] = tuple(iterchar(b' ')) * self._width
+        self._dbcs_text[from_row-1] = [b' '] * self._width
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
             from_row, 1, to_row-1, self._width

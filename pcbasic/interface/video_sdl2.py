@@ -564,7 +564,7 @@ class VideoSDL2(VideoPlugin):
         if self._nokill:
             self.set_caption_message(NOKILL_MESSAGE)
         else:
-            self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+            self._input_queue.put(signals.Event(signals.QUIT))
 
     # window events
 
@@ -1090,20 +1090,14 @@ class VideoSDL2(VideoPlugin):
             pixels[hi_y0:lo_y0, :] = back_attr
         self.busy = True
 
-    def put_text(self, row, col, unicode_list, attr, glyphs):
-        """Put text at a given position."""
-        if not glyphs:
+    def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
+        """Put text or pixels at a given position."""
+        if not sprite:
             return
-        top = (row-1) * self._font_height
-        left = (col-1) * self._font_width
-        self.put_rect(left, top, glyphs)
-
-    def put_rect(self, x0, y0, array):
-        """Apply bytematrix [y, x] of attributes to an area."""
         # reference the destination area
         pixels = self._canvas_pixels
         # clip to size if needed
-        if y0 + array.height > pixels.height or x0 + array.width > pixels.width:
-            array = array[:pixels.height-y0, :pixels.width-x0]
-        pixels[y0:y0+array.height, x0:x0+array.width] = array
+        if y0 + sprite.height > pixels.height or x0 + sprite.width > pixels.width:
+            sprite = sprite[:pixels.height-y0, :pixels.width-x0]
+        pixels[y0:y0+sprite.height, x0:x0+sprite.width] = sprite
         self.busy = True

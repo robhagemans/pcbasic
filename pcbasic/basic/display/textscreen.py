@@ -11,7 +11,6 @@ from contextlib import contextmanager
 
 from ...compat import iterchar
 
-from ..base import signals
 from ..base import error
 from ..base import tokens as tk
 from ..base.tokens import ALPHANUMERIC
@@ -154,19 +153,10 @@ class TextScreen(object):
         # but then the cursor location is static and does not equal the text insert location
         # so this seems acceptable
         self._cursor.set_active(self._vpagenum == self._apagenum)
-        #FIXME - no need to rebuild dbcs, just resubmit
-        self._apage.rebuild()
 
     def set_attr(self, attr):
         """Set attribute."""
         self._attr = attr
-
-    def rebuild(self):
-        """Completely resubmit the text and graphics screen to the interface."""
-        self._cursor.rebuild()
-        # redraw the text screen and submit to video plugin
-        for page in self._pages:
-            page.rebuild()
 
 
     ###########################################################################
@@ -676,26 +666,15 @@ class TextScreen(object):
             self.set_row_length(self.mode.height, self.mode.width)
 
     ###########################################################################
-    # vpage text retrieval
+    # vpage text retrieval (clipboard and print screen)
 
-    def print_screen(self, target_file):
-        """Output the visible page to file in raw bytes."""
-        if not target_file:
-            return
-        for line in self._pages[self._vpagenum].get_chars():
-            target_file.write_line(line.replace(b'\0', b' '))
+    def get_chars(self):
+        """Get all raw characters on the visible page, as bytes."""
+        return self._pages[self._vpagenum].get_chars()
 
-    def copy_clipboard(self, start_row, start_col, stop_row, stop_col):
-        """Copy selected screen area to clipboard."""
-        vpage = self._pages[self._vpagenum]
-        # get all marked unicode text and clip to selection size
-        text = vpage.get_text_unicode(start_row, stop_row)
-        text[0] = text[0][start_col-1:]
-        text[-1] = text[-1][:stop_col]
-        clip_text = u'\n'.join(u''.join(_row) for _row in text)
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_CLIPBOARD_TEXT, (clip_text,)
-        ))
+    def get_text(self, start_row, stop_row):
+        """Get all logical text on the visible page, as unicode."""
+        return self._pages[self._vpagenum].get_text_unicode(start_row, stop_row)
 
     ###########################################################################
     # text screen callbacks

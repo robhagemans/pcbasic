@@ -158,7 +158,7 @@ class Implementation(object):
             devices, current_device, mount,
             self.codepage, textfile_encoding, soft_linefeed
         )
-        # enable print screen from console
+        # enable printer echo from console
         self.console.set_lpt1_file(self.files.lpt1_file)
         ######################################################################
         # other components
@@ -178,7 +178,9 @@ class Implementation(object):
         # register input event handlers
         ######################################################################
         # clipboard and print screen handler
-        self.queues.add_handler(self.console.get_copy_handler())
+        self.queues.add_handler(basicevents.ScreenCopyHandler(
+            self.queues, self.text_screen, self.files.lpt1_file
+        ))
         # keyboard, pen and stick
         self.queues.add_handler(self.keyboard)
         self.queues.add_handler(self.pen)

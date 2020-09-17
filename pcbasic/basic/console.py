@@ -12,7 +12,6 @@ from ..compat import iterchar, int2byte
 
 from .base import error
 from .base import tokens as tk
-from .base import signals
 from .base import scancode
 from .base.eascii import as_bytes as ea
 
@@ -79,25 +78,31 @@ class Console(object):
 
     @property
     def width(self):
+        """Number of columns."""
         return self._text_screen.mode.width
 
     @property
     def height(self):
+        """Number of rows."""
         return self._text_screen.mode.height
 
     @property
     def current_row(self):
+        """Cursor row."""
         return self._text_screen.current_row
 
     @property
     def current_col(self):
+        """Cursor column."""
         return self._text_screen.current_col
 
     @property
     def overflow(self):
+        """Cursor is to the right of rightmost row."""
         return self._text_screen.overflow
 
     def set_pos(self, row, col):
+        """Set cursor position."""
         self._text_screen.set_pos(row, col)
 
     ##########################################################################
@@ -381,43 +386,3 @@ class Console(object):
             for _macro in macros
         ]
         self._text_screen.update_bar(descriptions)
-
-
-    ##########################################################################
-    # clipboard copy & print screen events
-
-    def get_copy_handler(self):
-        """Event handler for clipboard copy and print screen."""
-        # NOTE: lpt1_file must have been initialised
-        return ScreenCopyHandler(self._text_screen, self._lpt1_file)
-
-
-###############################################################################
-# clipboard copy & print screen handler
-
-# clipboard copy & print screen are special cases:
-# they to handle an input signal, read the screen
-# and write the text to an output queue or file
-# independently of what BASIC is doing
-
-class ScreenCopyHandler(object):
-    """Event handler for clipboard copy and print screen."""
-
-    def __init__(self, text_screen, lpt1_file):
-        """Initialise copy handler."""
-        self._text_screen = text_screen
-        self._lpt1_file = lpt1_file
-
-    def check_input(self, signal):
-        """Handle input signals."""
-        if signal.event_type == signals.CLIP_COPY:
-            self._text_screen.copy_clipboard(*signal.params)
-            return True
-        elif signal.event_type == signals.KEYB_DOWN:
-            c, scan, mod = signal.params
-            if scan == scancode.PRINT and (
-                    scancode.LSHIFT in mod or scancode.RSHIFT in mod):
-                # shift+printscreen triggers a print screen
-                self._text_screen.print_screen(self._lpt1_file)
-                return True
-        return False

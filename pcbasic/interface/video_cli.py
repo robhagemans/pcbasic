@@ -214,20 +214,22 @@ class VideoCLI(VideoTextBase):
 
     ###############################################################################
 
-    def put_text(self, row, col, unicode_list, attr, glyphs):
-        """Put text at a given position."""
-        unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
-        self._text[row-1][col-1:col-1+len(unicode_list)] = unicode_list
-        # show the character only if it's on the cursor row
-        if row == self._cursor_row:
-            # may have to update row!
-            if row != self._last_row or col != self._col:
-                self._update_position(row, col)
-            console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
-            self._col = col + len(unicode_list)
-        # the terminal cursor has moved, so we'll need to move it back later
-        # if that's not where we want to be
-        # but often it is anyway
+    def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
+        """Put text or pixels at a given position."""
+        for unicode_list in unicode_matrix:
+            unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
+            self._text[row-1][col-1:col-1+len(unicode_list)] = unicode_list
+            # show the character only if it's on the cursor row
+            if row == self._cursor_row:
+                # may have to update row!
+                if row != self._last_row or col != self._col:
+                    self._update_position(row, col)
+                console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
+                self._col = col + len(unicode_list)
+            row += 1
+            # the terminal cursor has moved, so we'll need to move it back later
+            # if that's not where we want to be
+            # but often it is anyway
 
     def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
@@ -317,7 +319,7 @@ class InputHandlerCLI(object):
                 break
             if uc == EOF and self.quit_on_eof:
                 # ctrl-D (unix) / ctrl-Z (windows)
-                self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+                self._input_queue.put(signals.Event(signals.QUIT))
             elif uc == u'\x7f':
                 # backspace
                 self._input_queue.put(
