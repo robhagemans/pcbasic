@@ -9,21 +9,19 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 import ctypes
 import os
+import functools
+import operator
 from contextlib import contextmanager
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 from ..compat import iteritems, unichr
-from ..compat import WIN32, BASE_DIR, PLATFORM
+from ..compat import WIN32, BASE_DIR, PLATFORM, PY2
 from ..compat import set_dpi_aware
 
 from .base import EnvironmentCache
 from .base import video_plugins, InitFailed, NOKILL_MESSAGE
 from ..basic.base import signals
 from ..basic.base import scancode
+from ..basic.base import bytematrix
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
 from .video import VideoPlugin
@@ -293,17 +291,19 @@ class SDL2Clipboard(clipboard.Clipboard):
 
 ###############################################################################
 
-def _pixels2d(psurface):
+def _pixels2d(surface_ptr):
     """Creates a 2D pixel array view of the passed 8-bit surface."""
-    # limited, specialised version of pysdl2.ext.pixels2d by Marcus von Appen
+    # based on pysdl2.ext.pixels2d by Marcus von Appen
     # original is CC0 public domain with zlib fallback licence
     # https://bitbucket.org/marcusva/py-sdl2
-    strides = (psurface.pitch, 1)
-    srcsize = psurface.h * psurface.pitch
-    shape = psurface.h, psurface.w
-    pxbuf = ctypes.cast(psurface.pixels, ctypes.POINTER(ctypes.c_ubyte * srcsize)).contents
-    # NOTE: transpose() brings it on [x][y] form - we may prefer [y][x] instead
-    return numpy.ndarray(shape, numpy.uint8, pxbuf, 0, strides, 'C').transpose()
+    surface = surface_ptr.contents
+    srcsize = surface.h * surface.pitch
+    pxbuf = ctypes.cast(surface.pixels, ctypes.POINTER(ctypes.c_ubyte * srcsize)).contents
+    # I don't understand this line, but I need it in Python 3
+    # see https://bugs.python.org/issue15944
+    if not PY2:
+        pxbuf = memoryview(pxbuf).cast('B')
+    return bytematrix.ByteMatrix.view_from_buffer(surface.h, surface.w, surface.pitch, pxbuf)
 
 
 ###############################################################################
@@ -323,8 +323,6 @@ class VideoSDL2(VideoPlugin):
         """Initialise SDL2 interface."""
         if not sdl2:
             raise InitFailed('Module `sdl2` not found')
-        if not numpy:
-            raise InitFailed('Module `numpy` not found')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
         set_dpi_aware()
@@ -348,7 +346,7 @@ class VideoSDL2(VideoPlugin):
         # cursor blinks if _is_text_mode and _blink_enabled
         self._blink_enabled = True
         # load the icon
-        self._icon = icon
+        self._icon = bytematrix.ByteMatrix(len(ICON), len(ICON[0]), ICON).hrepeat(2).vrepeat(2)
         # mouse setups
         self._mouse_clip = mouse_clipboard
         # keyboard setup
@@ -459,7 +457,7 @@ class VideoSDL2(VideoPlugin):
     def __exit__(self, exc_type, value, traceback):
         """Close the SDL2 interface."""
         VideoPlugin.__exit__(self, exc_type, value, traceback)
-        if sdl2 and numpy and self._has_window:
+        if sdl2 and self._has_window:
             # free windows
             sdl2.SDL_DestroyWindow(self._display)
             # free caches
@@ -478,9 +476,8 @@ class VideoSDL2(VideoPlugin):
 
     def _set_icon(self):
         """Set the icon on the SDL window."""
-        mask = numpy.array(self._icon).T.repeat(2, 0).repeat(2, 1)
-        icon = sdl2.SDL_CreateRGBSurface(0, mask.shape[0], mask.shape[1], 8, 0, 0, 0, 0)
-        _pixels2d(icon.contents)[:] = mask
+        icon = sdl2.SDL_CreateRGBSurface(0, self._icon.width, self._icon.height, 8, 0, 0, 0, 0)
+        _pixels2d(icon)[:, :] = self._icon
         # icon palette (black & white)
         icon_palette = sdl2.SDL_AllocPalette(256)
         icon_colors = [sdl2.SDL_Color(_c, _c, _c, 255) for _c in [0, 255] + [255]*254]
@@ -891,19 +888,20 @@ class VideoSDL2(VideoPlugin):
         if not self._cursor_visible or self._vpagenum != self._apagenum or not cursor_state:
             yield
         else:
-            pixels = self._canvas_pixels[self._apagenum]
-            height = self._cursor_to + 1 - self._cursor_from
+            # cursor shape
             top = (self._cursor_row-1) * self._font_height + self._cursor_from
             left = (self._cursor_col-1) * self._font_width
-            cursor_area = pixels[left:left+self._cursor_width, top:top+height]
+            cursor_slice = slice(top, top+self._cursor_height), slice(left, left+self._cursor_width)
+            # canvas_pixels is a view
+            cursor_area = self._canvas_pixels[self._apagenum][cursor_slice]
             # copy area under cursor
-            under_cursor = numpy.copy(cursor_area)
+            under_cursor = cursor_area.copy()
             if self._is_text_mode:
-                cursor_area[:] = self._cursor_attr
+                cursor_area[:, :] = self._cursor_attr
             else:
-                cursor_area[:] ^= self._cursor_attr
+                cursor_area[:, :] ^= self._cursor_attr
             yield
-            cursor_area[:] = under_cursor
+            cursor_area[:, :] = under_cursor
 
     def _show_clipboard(self, conv):
         """Show clipboard feedback overlay."""
@@ -930,20 +928,18 @@ class VideoSDL2(VideoPlugin):
         """Pack multiple pixels into one for composite artifacts."""
         lwindow_w, lwindow_h = self._window_sizer.window_size_logical
         border_x, border_y = self._window_sizer.border_shift
-        work_surface = sdl2.SDL_CreateRGBSurface(0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0)
-        # pack pixels into higher bpp
+        # pack pixels into higher bpp, then unpack into lower bpp
         bpp_out, bpp_in = self._pixel_packing
-        src_array = self._canvas_pixels[self._vpagenum]
-        width, _ = src_array.shape
-        mask = 1<<bpp_in - 1
-        step = bpp_out // bpp_in
-        s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
-        packed = numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
-        # apply packed array onto work surface
-        _pixels2d(work_surface.contents)[
-            border_x : (lwindow_w - border_x),
-            border_y : lwindow_h - border_y
-        ] = packed
+        packed = self._canvas_pixels[self._vpagenum].packed(8//bpp_in)
+        height = lwindow_h - border_y*2
+        unpacked = bytematrix.ByteMatrix.frompacked(packed, height, 8//bpp_out)
+        unpacked = unpacked.hrepeat(bpp_out // bpp_in)
+        # copy packed array onto work surface
+        work_surface = sdl2.SDL_CreateRGBSurface(0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0)
+        _pixels2d(work_surface)[
+            border_y : lwindow_h - border_y,
+            border_x : lwindow_w - border_x
+        ] = unpacked
         return work_surface
 
 
@@ -989,10 +985,10 @@ class VideoSDL2(VideoPlugin):
         ]
         border_x, border_y = self._window_sizer.border_shift
         self._canvas_pixels = [
-            _pixels2d(canvas.contents)[
-                border_x : work_width - border_x,
-                border_y : work_height - border_y
-            ] for canvas in self._window_surface
+            _pixels2d(_surf)[
+                border_y : work_height - border_y,
+                border_x : work_width - border_x
+            ] for _surf in self._window_surface
         ]
         # initialise clipboard
         self._clipboard_interface = clipboard.ClipboardInterface(
@@ -1058,8 +1054,8 @@ class VideoSDL2(VideoPlugin):
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
         self._canvas_pixels[self._apagenum][
-            0 : self._window_sizer.width,
-            (start-1)*self._font_height : stop*self._font_height
+            (start-1)*self._font_height : stop*self._font_height,
+            0 : self._window_sizer.width
         ] = back_attr
         self.busy = True
 
@@ -1070,7 +1066,7 @@ class VideoSDL2(VideoPlugin):
 
     def copy_page(self, src, dst):
         """Copy source to destination page."""
-        self._canvas_pixels[dst][:] = self._canvas_pixels[src][:]
+        self._canvas_pixels[dst][:] = self._canvas_pixels[src]
         self.busy = True
 
     def show_cursor(self, cursor_on):
@@ -1091,6 +1087,14 @@ class VideoSDL2(VideoPlugin):
             self.busy = True
         self._cursor_attr = new_attr
 
+    def set_cursor_shape(self, width, from_line, to_line):
+        """Build a sprite for the cursor."""
+        self._cursor_width = width
+        self._cursor_from = from_line
+        self._cursor_height = to_line + 1 - from_line
+        if self._cursor_visible:
+            self.busy = True
+
     def scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
         pixels = self._canvas_pixels[self._apagenum]
@@ -1098,8 +1102,8 @@ class VideoSDL2(VideoPlugin):
         width = self._window_sizer.width
         new_y0, new_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
         old_y0, old_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[0:width, new_y0:new_y1] = pixels[0:width, old_y0:old_y1]
-        pixels[0:width, new_y1:old_y1] = numpy.full((width, old_y1-new_y1), back_attr, dtype=int)
+        pixels[new_y0:new_y1, 0:width] = pixels[old_y0:old_y1, 0:width]
+        pixels[new_y1:old_y1, 0:width] = back_attr
         self.busy = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
@@ -1109,8 +1113,8 @@ class VideoSDL2(VideoPlugin):
         width = self._window_sizer.width
         old_y0, old_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
         new_y0, new_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[0:width, new_y0:new_y1] = pixels[0:width, old_y0:old_y1]
-        pixels[0:width, old_y0:new_y0] = numpy.full((width, new_y0-old_y0), back_attr, dtype=int)
+        pixels[new_y0:new_y1, 0:width] = pixels[old_y0:old_y1, 0:width]
+        pixels[old_y0:new_y0, 0:width] = back_attr
         self.busy = True
 
     def put_text(self, pagenum, row, col, unicode_list, fore, back, blink, underline, glyphs):
@@ -1118,31 +1122,23 @@ class VideoSDL2(VideoPlugin):
         if not self._is_text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
-        chunk = numpy.array(glyphs).T
-        chunk_width = chunk.shape[0]
         left, top = (col-1)*self._font_width, (row-1)*self._font_height
         # render text with attributes
         attr = fore + self._num_fore_attrs*back + 128*blink
         self._canvas_pixels[pagenum][
-            left : left + chunk_width,
-            top : top + self._font_height
-        ] = chunk*(attr-back) + back
+            top : top + glyphs.height,
+            left : left + glyphs.width
+        ] = glyphs.render(back, attr)
         if underline:
             self._canvas_pixels[pagenum][
-            left : left + chunk_width,
-            top + self._font_height - 1 : top + self._font_height
-        ] = attr
+                top + glyphs.height - 1 : top + glyphs.height,
+                left : left + glyphs.width
+            ] = attr
         self.busy = True
 
-    def set_cursor_shape(self, width, from_line, to_line):
-        """Build a sprite for the cursor."""
-        self._cursor_width = width
-        self._cursor_from, self._cursor_to = from_line, to_line
-        if self._cursor_visible:
-            self.busy = True
-
-    def put_rect(self, pagenum, x0, y0, x1, y1, array):
-        """Apply numpy array [y][x] of attributes to an area."""
+    def put_rect(self, pagenum, x0, y0, array):
+        """Apply bytematrix [y, x] of attributes to an area."""
         # reference the destination area
-        self._canvas_pixels[pagenum][x0:x1+1, y0:y1+1] = numpy.array(array).T
+        height, width = array.height, array.width
+        self._canvas_pixels[pagenum][y0:y0+height, x0:x0+width] = array
         self.busy = True

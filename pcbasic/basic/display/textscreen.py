@@ -339,11 +339,11 @@ class TextScreen(object):
                 self.refresh_range(pagenum, row+1, 1, self.mode.width, text_only=True)
             # redraw graphics
             if not self.mode.is_text_mode:
+                rect = self.pixels.pages[pagenum].get_rect(
+                    0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
+                )
                 self.queues.video.put(signals.Event(
-                    signals.VIDEO_PUT_RECT, (
-                        pagenum, 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1,
-                        self.pixels.pages[pagenum].buffer
-                    )
+                    signals.VIDEO_PUT_RECT, (pagenum, 0, 0, rect)
                 ))
 
     def refresh_range(self, pagenum, row, start, stop, text_only=False):
@@ -373,10 +373,10 @@ class TextScreen(object):
             logging.debug('Ignoring out-of-range text rendering request: row %d col %d', row, col)
             return
         fore, back, blink, underline = self.mode.split_attr(attr)
-        glyphs = self._glyphs.get_glyphs(chars)
         # mark full-width chars by a trailing empty string to preserve column counts
         text = [[_c, u''] if len(_c) > 1 else [_c] for _c in chars]
         text = [self.codepage.to_unicode(_c, u'\0') for _list in text for _c in _list]
+        glyphs = self._glyphs.get_glyphs(chars)
         self.queues.video.put(signals.Event(
             signals.VIDEO_PUT_TEXT, (
                 pagenum, row, col, text,
@@ -386,11 +386,12 @@ class TextScreen(object):
         ))
         if not self.mode.is_text_mode and not text_only:
             left, top = self.mode.text_to_pixel_pos(row, col)
-            sprite, width, height = self._glyphs.render_text(chars, fore, back)
+            sprite = self._glyphs.render_text(chars, fore, back)
+            width, height = sprite.width, sprite.height
             right, bottom = left+width-1, top+height-1
             self.pixels.pages[self.apagenum].put_rect(left, top, right, bottom, sprite, tk.PSET)
             self.queues.video.put(signals.Event(
-                signals.VIDEO_PUT_RECT, (self.apagenum, left, top, right, bottom, sprite)
+                signals.VIDEO_PUT_RECT, (self.apagenum, left, top, sprite)
             ))
 
     def _clear_rows_refresh(self, start, stop):
@@ -450,10 +451,12 @@ class TextScreen(object):
         # sync buffers with the new screen reality:
         self.text.scroll_up(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
-            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(from_line+1, 1,
-                self.scroll_area.bottom, self.mode.width)
-            tx0, ty0, _, _ = self.mode.text_to_pixel_area(from_line, 1,
-                self.scroll_area.bottom-1, self.mode.width)
+            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
+                from_line+1, 1, self.scroll_area.bottom, self.mode.width
+            )
+            tx0, ty0, _, _ = self.mode.text_to_pixel_area(
+                from_line, 1, self.scroll_area.bottom-1, self.mode.width
+            )
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
     def scroll_down(self, from_line):
@@ -467,10 +470,12 @@ class TextScreen(object):
         # sync buffers with the new screen reality:
         self.text.scroll_down(self.apagenum, from_line, self.scroll_area.bottom, self.attr)
         if not self.mode.is_text_mode:
-            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(from_line, 1,
-                self.scroll_area.bottom-1, self.mode.width)
-            tx0, ty0, _, _ = self.mode.text_to_pixel_area(from_line+1, 1,
-                self.scroll_area.bottom, self.mode.width)
+            sx0, sy0, sx1, sy1 = self.mode.text_to_pixel_area(
+                from_line, 1, self.scroll_area.bottom-1, self.mode.width
+            )
+            tx0, ty0, _, _ = self.mode.text_to_pixel_area(
+                from_line+1, 1, self.scroll_area.bottom, self.mode.width
+            )
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
 
     ###########################################################################

@@ -136,5 +136,5 @@ class VideoPlugin(object):
     def set_cursor_shape(self, width, from_line, to_line):
         """Build a sprite for the cursor."""
 
-    def put_rect(self, pagenum, x0, y0, x1, y1, array):
+    def put_rect(self, pagenum, x0, y0, array):
         """Apply numpy array [y][x] of attribytes to an area."""

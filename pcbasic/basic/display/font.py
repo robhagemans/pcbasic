@@ -10,14 +10,10 @@ import os
 import logging
 import binascii
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 from ...compat import iteritems, int2byte, zip
 
 from ..base import signals
+from ..base import bytematrix
 
 
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
@@ -140,7 +136,7 @@ class Font(object):
         if char in self._glyphs:
             self._build_glyph(char)
 
-    def get_glyph(self, char):
+    def _get_glyph(self, char):
         """Retrieve a glyph, building if needed."""
         try:
             return self._glyphs[char]
@@ -157,123 +153,44 @@ class Font(object):
             byteseq = bytearray(self._height)
         # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
         code_height = 8 if self._height == 9 else self._height
-        glyph = _unpack_sequence(byteseq, code_height)
+        glyph = bytematrix.ByteMatrix.frompacked(byteseq, code_height, items_per_byte=8)
         # stretch or sqeeze if necessary
         req_width = self._width * len(char)
-        if req_width >= len(glyph[0]) * 2:
+        if req_width >= glyph.width * 2:
             logging.debug('Code point %r stretched to full-width.', char)
-            glyph = _force_fullwidth(glyph)
-        elif len(glyph[0]) >= (req_width-1) * 2:
+            glyph = glyph.hrepeat(2)
+        elif glyph.width >= (req_width-1) * 2:
             logging.debug('Code point %r squeezed to half-width.', char)
-            glyph = _force_halfwidth(glyph)
+            glyph = glyph[:, ::2]
         # repeat last rows (e.g. for 9-bit high chars)
-        if self._height > len(glyph):
+        if self._height > glyph.height:
             glyph = _extend_height(glyph, char in CARRY_ROW_9_CHARS)
         # repeat last cols (e.g. for 9-bit wide chars)
-        if req_width > len(glyph[0]):
+        if req_width > glyph.width:
             glyph = _extend_width(glyph, char in CARRY_COL_9_CHARS)
         self._glyphs[char] = glyph
 
     def render_text(self, char_list, fore, back):
         """Return a sprite, width and height for given row of text."""
-        mask = self.get_glyphs(char_list)
-        glyph = _render(mask, fore, back)
-        return glyph, len(glyph[0]), len(glyph)
+        return self.get_glyphs(char_list).render(back, fore)
 
     def get_glyphs(self, char_list):
         """Retrieve a row of text as a single matrix [y][x]."""
-        return _hstack(self.get_glyph(_c) for _c in char_list)
+        return bytematrix.hstack(self._get_glyph(_c) for _c in char_list)
 
 
-if numpy:
+def _extend_height(glyph, carry_last):
+    """Extend the character height by a row."""
+    if carry_last:
+        return bytematrix.vstack((glyph, glyph[-1, :]))
+    else:
+        return glyph.vextend(1)
 
-    def _render(mask, fore, back):
-        """Set attributes of glyph."""
-        return mask*(fore-back) + back
-
-    def _unpack_sequence(byteseq, code_height):
-        """Return base glyph for sequence."""
-        return numpy.unpackbits(byteseq, axis=0).reshape((code_height, -1)).astype(numpy.int8)
-
-    def _extend_height(glyph, carry_last):
-        """Extend the character height by a row."""
-        if carry_last:
-            repeat_row = glyph[-1:, :]
-        else:
-            repeat_row = numpy.zeros((1, glyph.shape[1]), dtype=numpy.uint8)
-        return numpy.vstack((glyph, repeat_row))
-
-    def _extend_width(glyph, carry_last):
-        """Extend the character width by a column."""
-        # use two empty columns if doublewidth
-        if glyph.shape[1] >= 16:
-            repeat_col = numpy.zeros((glyph.shape[0], 2), dtype=numpy.uint8)
-        elif carry_last:
-            repeat_col = glyph[:, -1:]
-        else:
-            repeat_col = numpy.zeros((glyph.shape[0], 1), dtype=numpy.uint8)
-        return numpy.hstack((glyph, repeat_col))
-
-    def _force_fullwidth(glyph):
-        """Double the width of a given glyph."""
-        return glyph.repeat(2, axis=1)
-
-    def _force_halfwidth(glyph):
-        """Halve the width of a given glyph."""
-        return glyph[:, ::2]
-
-    def _hstack(glyphs):
-        """Horizontally concatenate glyph matrices."""
-        return numpy.hstack(glyphs)
-
-else:
-
-    def _render(mask, fore, back):
-        """Set attributes of glyph."""
-        return [[(fore if _bit else back) for _bit in _row] for _row in mask]
-
-    def _unpack_sequence(byteseq, code_height):
-        """Return base glyph for sequence."""
-        glyph = [
-            [(_char >> (7 - _row)) & 1 for _row in range(8)]
-            for _char in byteseq
-        ]
-        # pairwise join rows for fullwidth chars
-        if len(glyph) >= code_height*2:
-            glyph = [_left + _right for _left, _right in zip(glyph[::2], glyph[1::2])]
-        return glyph
-
-    def _extend_height(glyph, carry_last):
-        """Extend the character height by a row."""
-        if carry_last:
-            repeat_row = glyph[-1]
-        else:
-            repeat_row = [0] * len(glyph[-1])
-        return glyph + [repeat_row]
-
-    def _extend_width(glyph, carry_last):
-        """Extend the character width by a column."""
-        # use two empty columns if doublewidth
-        if len(glyph[0]) >= 16:
-            return [_row + [0, 0] for _row in glyph]
-        if carry_last:
-            return [_row + _row[-1:] for _row in glyph]
-        return [_row + [0] for _row in glyph]
-
-    def _force_fullwidth(glyph):
-        """Double the width of a given glyph."""
-        return [
-            [_pixel for _pixel in _row  for _ in range(2)]
-            for _row in glyph
-        ]
-
-    def _force_halfwidth(glyph):
-        """Halve the width of a given glyph."""
-        return [_row[::2] for _row in glyph]
-
-    def _hstack(glyphs):
-        """Horizontally concatenate glyph matrices."""
-        return [
-            sum((_glyphrow for _glyphrow in _row), [])
-            for _row in zip(*glyphs)
-        ]
+def _extend_width(glyph, carry_last):
+    """Extend the character width by a column."""
+    # use two empty columns if doublewidth
+    if glyph.width >= 16:
+        return glyph.hextend(2)
+    if carry_last:
+        return bytematrix.hstack((glyph, glyph[:, -1]))
+    return glyph.hextend(1)

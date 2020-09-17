@@ -18,7 +18,7 @@ from .base import split_quoted, muffle
 
 if PY2:
     from .python2 import add_str, iterchar
-    from .python2 import xrange, zip, iteritems, itervalues, iterkeys
+    from .python2 import xrange, zip, iteritems, itervalues, iterkeys, iterbytes
     from .python2 import getcwdu, getenvu, setenvu, iterenvu
     from .python2 import configparser, queue, copyreg, which
     from .python2 import SimpleNamespace
@@ -33,7 +33,7 @@ else:
     import configparser, queue, copyreg
     from shutil import which
     from types import SimpleNamespace
-    from .python3 import int2byte, add_str, iterchar
+    from .python3 import int2byte, add_str, iterchar, iterbytes
     from .python3 import xrange, zip, iteritems, itervalues, iterkeys
     from .python3 import getcwdu, getenvu, setenvu, iterenvu
     unichr, text_type = chr, str

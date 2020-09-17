@@ -35,6 +35,12 @@ def iterchar(s):
     """Iterate over bytes, returning char."""
     return s
 
+def iterbytes(s):
+    """Iterate over bytes/bytearray/memoryview, returning int."""
+    if isinstance(s, (bytes, memoryview)):
+        return (ord(_c) for _c in s)
+    return s
+
 def add_str(cls):
     """Decorator to implement the correct str() function."""
     try:

@@ -7,16 +7,13 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import struct
+import functools
+import operator
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
+from ...compat import xrange, int2byte, zip, iterbytes
 
-from ...compat import xrange, int2byte
-
-from .. import values
 from ..base import error
+from ..base import bytematrix
 
 
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
@@ -103,6 +100,7 @@ MONO_TINT = {
     'grey': [255, 255, 255],
     'mono': [0, 255, 0],
 }
+
 
 
 ###############################################################################
@@ -460,6 +458,9 @@ class Video(object):
                 self._mode_data[mode] = graphics_mode['640x400x2']
 
 
+##############################################################################
+# video mode base class
+
 class VideoMode(object):
     """Base class for video modes."""
     def __init__(
@@ -544,6 +545,9 @@ class VideoMode(object):
         """Set bytes in video memory, stub."""
 
 
+##############################################################################
+# text modes
+
 class TextMode(VideoMode):
     """Default settings for a text mode."""
 
@@ -609,6 +613,7 @@ class TextMode(VideoMode):
 
 class MonoTextMode(TextMode):
     """MDA-style text mode with underlining."""
+
     def split_attr(self, attr):
         """Split attribute byte into constituent parts."""
         # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
@@ -630,188 +635,153 @@ class MonoTextMode(TextMode):
         return fore, back, blink, underline
 
 
-# helper functions: convert between attribute lists and byte arrays
 
-if numpy:
-    def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
-        """Convert masked attributes packed into bytes to a scanline interval."""
-        bpp = 8 // pixels_per_byte
-        attrmask = (1<<bpp) - 1
-        bitval = numpy.array([128, 64, 32, 16, 8, 4, 2, 1], dtype=numpy.uint8)
-        bitmask = bitval[0::bpp]
-        for i in range(1, bpp):
-            bitmask |= bitval[i::bpp]
-        pre_mask = numpy.tile(bitmask, len(byte_array))
-        post_shift = numpy.tile(
-            numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp], len(byte_array)
+##############################################################################
+# sprites & tiles
+
+
+class PackedTileBuilder(object):
+    """Packed-pixel (CGA) tiles."""
+
+    def __init__(self, bits_per_pixel):
+        """Initialise tile builder."""
+        self._bitsperpixel = bits_per_pixel
+
+    def __call__(self, pattern):
+        """Build a flood-fill tile for CGA screens."""
+        # in modes 1, (2), 3, 4, 5, 6 colours are encoded in consecutive bits
+        # each byte represents one scan line
+        return bytematrix.ByteMatrix.frompacked(
+            pattern, height=len(pattern), items_per_byte=8//self._bitsperpixel
         )
-        attrs = numpy.right_shift(
-            numpy.repeat(numpy.array(byte_array).astype(int), pixels_per_byte) & pre_mask,
-            post_shift
-        ) & attrmask
-        return numpy.array(attrs) * mask
 
-else:
-    def bytes_to_interval(byte_array, pixels_per_byte, mask=1):
-        """Convert masked attributes packed into bytes to a scanline interval."""
-        bpp = 8 // pixels_per_byte
-        attrmask = (1<<bpp) - 1
-        return [
-            ((byte >> (8-bpp-shift)) & attrmask) * mask
-            for byte in byte_array for shift in range(0, 8, bpp)
-        ]
 
-if numpy:
-    def interval_to_bytes(colours, pixels_per_byte, plane=0):
-        """Convert a scanline interval into masked attributes packed into bytes."""
-        num_pixels = len(colours)
-        num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
-        if odd_out:
-            num_bytes += 1
-        bpp = 8 // pixels_per_byte
-        attrmask = (1<<bpp) - 1
-        colours = numpy.array(colours).astype(int)
-        if odd_out:
-            colours.resize(len(colours)+pixels_per_byte-odd_out)
-        shift = numpy.tile(numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp], num_bytes)
-        attrs = numpy.right_shift(colours, plane)
-        attrs = numpy.left_shift(attrs & attrmask, shift)
-        # below is much faster than:
-        #   return list([ sum(attrs[i:i+pixels_per_byte])
-        #                 for i in range(0, len(attrs), pixels_per_byte) ])
-        # and anything involving numpy.array_split or numpy.dot is even slower.
-        # numpy.roll is ok but this is the fastest I've found:
-        nattrs = attrs[0::pixels_per_byte]
-        for i in range(1, pixels_per_byte):
-            nattrs |= attrs[i::pixels_per_byte]
-        return bytearray(list(nattrs))
+class PlanedTileBuilder(object):
+    """Interlaced-plane (EGA) tiles."""
 
-else:
-    def interval_to_bytes(colours, pixels_per_byte, plane=0):
-        """Convert a scanline interval into masked attributes packed into bytes."""
-        num_pixels = len(colours)
-        num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
-        if odd_out:
-            num_bytes += 1
-        bpp = 8//pixels_per_byte
-        attrmask = (1<<bpp) - 1
-        colours = list(colours)
-        byte_list = bytearray(num_bytes)
-        shift, byte = -1, -1
-        for x in xrange(num_pixels):
-            if shift < 0:
-                shift = 8 - bpp
-                byte += 1
-            byte_list[byte] |= ((colours[x] >> plane) & attrmask) << shift
-            shift -= bpp
-        return byte_list
+    def __init__(self, number_planes):
+        """Initialise sprite builder."""
+        # number of colour planes
+        self._number_planes = number_planes
 
-def walk_memory(self, addr, num_bytes, factor=1):
-    """Yield parts of graphics memory corresponding to pixels."""
-    # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
-    # with alternating planes in even and odd bytes (i.e. ppb==8)
-    ppb = factor * self.ppb
-    page_size = self.page_size//factor
-    bank_size = self.bank_size//factor
-    row_size = self.bytes_per_row//factor
-    # first row
-    page, x, y = self.get_coords(addr)
-    offset = min(row_size - x//ppb, num_bytes)
-    if self.coord_ok(page, x, y):
-        yield page, x, y, 0, offset
-    # full rows
-    bank_offset, page_offset, start_y = 0, 0, y
-    while page_offset + bank_offset + offset < num_bytes:
-        y += self.interleave_times
-        # not an integer number of rows in a bank
-        if offset >= bank_size:
-            bank_offset += bank_size
-            start_y += 1
-            offset, y = 0, start_y
-            if bank_offset >= page_size:
-                page_offset += page_size
-                page += 1
-                bank_offset, offset = 0, 0
-                y, start_y = 0, 0
-        if self.coord_ok(page, 0, y):
-            ofs = page_offset + bank_offset + offset
-            if ofs + row_size > num_bytes:
-                yield page, 0, y, ofs, num_bytes - ofs
-            else:
-                yield page, 0, y, ofs, row_size
-        offset += row_size
+    def __call__(self, pattern):
+        """Build a flood-fill tile."""
+        # append nulls until we can cleanly partition into planes
+        extra_chars = len(pattern) % self._number_planes
+        if extra_chars:
+            pattern.extend(bytearray(self._number_planes - extra_chars))
+        # unpack bytes into pattern
+        allplanes = bytematrix.ByteMatrix.frompacked(
+            pattern, height=len(pattern), items_per_byte=8
+        )
+        planes = (
+            allplanes[_plane::self._number_planes, :] << _plane
+            for _plane in range(self._number_planes)
+        )
+        tile = functools.reduce(operator.__ior__, planes)
+        return tile
 
-def sprite_size_to_record_ega(self, dx, dy):
-    """Write 4-byte record of sprite size in EGA modes."""
-    return struct.pack('<HH', dx, dy)
 
-def record_to_sprite_size_ega(self, byte_array):
-    """Read 4-byte record of sprite size in EGA modes."""
-    return struct.unpack('<HH', byte_array[0:4])
+class PackedSpriteBuilder(object):
+    """Packed-pixel (CGA) sprite builder."""
 
-def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offs):
-    """Build the sprite byte array in EGA modes."""
-    # for EGA modes, sprites have 8 pixels per byte
+    def __init__(self, bits_per_pixel):
+        self._bitsperpixel = bits_per_pixel
+
+    def pack(self, sprite):
+        """Pack the sprite into bytearray."""
+        # sprite size record
+        size_record = struct.pack('<HH', sprite.width * self._bitsperpixel, sprite.height)
+        # interval_to_bytes
+        packed = sprite.packed(items_per_byte=8 // self._bitsperpixel)
+        return size_record + packed
+
+    def unpack(self, array):
+        """Unpack bytearray into sprite."""
+        row_bits, height = struct.unpack('<HH', array[0:4])
+        width = row_bits // self._bitsperpixel
+        row_bytes = (width * self._bitsperpixel + 7) // 8
+        byte_size = row_bytes * height
+        # bytes_to_interval
+        packed = array[4:4+byte_size]
+        # ensure iterations over memoryview yield int, not bytes, in Python 2
+        packed = iterbytes(packed)
+        sprite = bytematrix.ByteMatrix.frompacked(
+            packed, height, items_per_byte=8 // self._bitsperpixel
+        )
+        return sprite
+
+
+class PlanedSpriteBuilder(object):
+    """Sprite builder with interlaced colour planes (EGA sprites)."""
+
+    # ** byte mapping for sprites in EGA modes
+    # sprites have 8 pixels per byte
     # with colour planes in consecutive rows
     # each new row is aligned on a new byte
-    #
-    # this is much faster for wide selections
-    # but for narrow selections storing in an array and indexing take longer
-    # than just getting each pixel separately
-    row_bytes = (dx+7) // 8
-    length = dy * self.bitsperpixel * row_bytes
-    if offs+length > len(byte_array):
-        raise ValueError('Sprite exceeds array byte size')
-    byte_array[offs:offs+length] = b'\0'*length
-    for row in attrs:
-        for plane in range(self.bitsperpixel):
-            byte_array[offs:offs+row_bytes] = interval_to_bytes(row, 8, plane)
-            offs += row_bytes
 
-# elementwise OR, in-place if possible
-if numpy:
-    or_i = numpy.ndarray.__ior__
-else:
-    def or_i(list0, list1):
-        return [ x | y for x, y in zip(list0, list1) ]
+    def __init__(self, number_planes):
+        """Initialise sprite builder."""
+        # number of colour planes
+        self._number_planes = number_planes
 
-def array_to_sprite_ega(self, byte_array, offset, dx, dy):
-    """Build sprite from byte_array in EGA modes."""
-    row_bytes = (dx+7) // 8
-    attrs = []
-    for y in range(dy):
-        row = bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 1)
-        offset += row_bytes
-        for plane in range(1, self.bitsperpixel):
-            row = or_i(row, bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 1 << plane))
-            offset += row_bytes
-        attrs.append(row[:dx])
-    return attrs
+    def pack(self, sprite):
+        """Pack the sprite into bytearray."""
+        # extract colour planes
+        # note that to get the plane this should be bit-masked - (s >> _p) & 1
+        # but bytematrix.packbytes will do this for us
+        sprite_planes = (
+            (sprite >> _plane)  # & 1
+            for _plane in range(self._number_planes)
+        )
+        # pack the bits into bytes
+        #interval_to_bytes
+        packed_planes = list(
+            _sprite.packed(items_per_byte=8)
+            for _sprite in sprite_planes
+        )
+        # interlace row-by-row
+        row_bytes = (sprite.width + 7) // 8
+        length = sprite.height * self._number_planes * row_bytes
+        interlaced = bytearray().join(
+            _packed[_row_offs : _row_offs+row_bytes]
+            for _row_offs in range(0, length, row_bytes)
+            for _packed in packed_planes
+        )
+        size_record = struct.pack('<HH', sprite.width, sprite.height)
+        return size_record + interlaced
 
-def build_tile_cga(self, pattern):
-    """Build a flood-fill tile for CGA screens."""
-    tile = []
-    bpp = self.bitsperpixel
-    strlen = len(pattern)
-    # in modes 1, (2), 3, 4, 5, 6 colours are encoded in consecutive bits
-    # each byte represents one scan line
-    mask = 8 - bpp
-    for y in range(strlen):
-        line = []
-        for x in range(8): # width is 8//bpp
-            c = 0
-            for b in range(bpp-1, -1, -1):
-                c = (c<<1) + ((pattern[y] >> (mask+b)) & 1)
-            mask -= bpp
-            if mask < 0:
-                mask = 8 - bpp
-            line.append(c)
-        tile.append(line)
-    return tile
+    def unpack(self, array):
+        """Build sprite from bytearray in EGA modes."""
+        width, height = struct.unpack('<HH', array[0:4])
+        row_bytes = (width + 7) // 8
+        packed = array[4:4+row_bytes]
+        # ensure iterations over memoryview yield int, not bytes, in Python 2
+        packed = iterbytes(packed)
+        # unpack all planes
+        #bytes_to_interval
+        allplanes = bytematrix.ByteMatrix.frompacked(
+            packed, height=height*self._number_planes, items_per_byte=8
+        )
+        # de-interlace planes
+        sprite_planes = (
+            allplanes[_plane::height, :] << _plane
+            for _plane in range(self._number_planes)
+        )
+        # combine planes
+        sprite = functools.reduce(operator.__ior__, sprite_planes)
+        return sprite
 
+
+##############################################################################
+# graphics modes
 
 class GraphicsMode(VideoMode):
     """Default settings for a graphics mode."""
+
+    # override these
+    _tile_builder = lambda _: None
+    _sprite_builder = lambda _: None
 
     def __init__(
             self, name, pixel_width, pixel_height,
@@ -849,6 +819,15 @@ class GraphicsMode(VideoMode):
             self.pixel_aspect = pixel_aspect
         else:
             self.pixel_aspect = (self.pixel_height * aspect[0], self.pixel_width * aspect[1])
+        # sprite and tile builders
+        self.build_tile = self._tile_builder(self.bitsperpixel)
+        self.sprite_builder = self._sprite_builder(self.bitsperpixel)
+
+
+    def get_coords(self, addr):
+        """Get video page and coordinates for address."""
+        # override
+        return 0, 0, 0
 
     def coord_ok(self, page, x, y):
         """Check if a page and coordinates are within limits."""
@@ -870,9 +849,47 @@ class GraphicsMode(VideoMode):
         """Set the current colour plane mask (EGA only)."""
         pass
 
+    def walk_memory(self, addr, num_bytes, factor=1):
+        """Iterate over graphical memory (pixel-by-pixel, contiguous rows)."""
+        # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
+        # with alternating planes in even and odd bytes (i.e. ppb==8)
+        ppb = factor * self.ppb
+        page_size = self.page_size//factor
+        bank_size = self.bank_size//factor
+        row_size = self.bytes_per_row//factor
+        # first row
+        page, x, y = self.get_coords(addr)
+        offset = min(row_size - x//ppb, num_bytes)
+        if self.coord_ok(page, x, y):
+            yield page, x, y, 0, offset
+        # full rows
+        bank_offset, page_offset, start_y = 0, 0, y
+        while page_offset + bank_offset + offset < num_bytes:
+            y += self.interleave_times
+            # not an integer number of rows in a bank
+            if offset >= bank_size:
+                bank_offset += bank_size
+                start_y += 1
+                offset, y = 0, start_y
+                if bank_offset >= page_size:
+                    page_offset += page_size
+                    page += 1
+                    bank_offset, offset = 0, 0
+                    y, start_y = 0, 0
+            if self.coord_ok(page, 0, y):
+                ofs = page_offset + bank_offset + offset
+                if ofs + row_size > num_bytes:
+                    yield page, 0, y, ofs, num_bytes - ofs
+                else:
+                    yield page, 0, y, ofs, row_size
+            offset += row_size
+
 
 class CGAMode(GraphicsMode):
     """Default settings for a CGA graphics mode."""
+
+    _tile_builder = PackedTileBuilder
+    _sprite_builder = PackedSpriteBuilder
 
     def get_coords(self, addr):
         """Get video page and coordinates for address."""
@@ -888,58 +905,28 @@ class CGAMode(GraphicsMode):
 
     def set_memory(self, screen, addr, byte_array):
         """Set bytes in CGA memory."""
-        for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array)):
-            screen.drawing.put_interval(
-                page, x, y, bytes_to_interval(byte_array[ofs:ofs+length], self.ppb)
+        for page, x, y, ofs, length in self.walk_memory(addr, len(byte_array)):
+            #bytes_to_interval
+            pixarray = bytematrix.ByteMatrix.frompacked(
+                byte_array[ofs:ofs+length], height=1, items_per_byte=self.ppb
             )
+            screen.drawing.put_interval(page, x, y, pixarray)
 
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from CGA memory."""
         byte_array = bytearray(num_bytes)
-        for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
-            byte_array[ofs:ofs+length] = interval_to_bytes(
-                screen.pixels.pages[page].get_interval(x, y, length*self.ppb), self.ppb
-            )
+        for page, x, y, ofs, length in self.walk_memory(addr, num_bytes):
+            #interval_to_bytes
+            pixarray = screen.pixels.pages[page].get_interval(x, y, length*self.ppb)
+            byte_array[ofs:ofs+length] = pixarray.packed(self.ppb)
         return byte_array
-
-    def sprite_size_to_record(self, dx, dy):
-        """Write 4-byte record of sprite size."""
-        return struct.pack('<HH', dx*self.bitsperpixel, dy)
-
-    def record_to_sprite_size(self, byte_array):
-        """Read 4-byte record of sprite size."""
-        w, dy = struct.unpack('<HH', byte_array[0:4])
-        return w // self.bitsperpixel, dy
-
-    def sprite_to_array(self, attrs, dx, dy, byte_array, offs):
-        """Build the sprite byte array."""
-        row_bytes = (dx * self.bitsperpixel + 7) // 8
-        length = row_bytes*dy
-        if offs+length > len(byte_array):
-            # NOTE: if we use memoryviews instead of bytearrays, we won't need
-            # this check as the assignment will fail with ValueError anyway
-            raise ValueError('Sprite exceeds array byte size')
-        byte_array[offs:offs+length] = b'\0'*length
-        for row in attrs:
-            byte_array[offs:offs+row_bytes] = interval_to_bytes(row, 8//self.bitsperpixel, 0)
-            offs += row_bytes
-
-    def array_to_sprite(self, byte_array, offset, dx, dy):
-        """Build sprite from byte_array."""
-        row_bytes = (dx * self.bitsperpixel + 7) // 8
-        # illegal fn call if outside screen boundary
-        attrs = []
-        for y in range(dy):
-            row = bytes_to_interval(byte_array[offset:offset+row_bytes], 8//self.bitsperpixel, 1)
-            offset += row_bytes
-            attrs.append(row[:dx])
-        return attrs
-
-    build_tile = build_tile_cga
 
 
 class EGAMode(GraphicsMode):
     """Default settings for a EGA graphics mode."""
+
+    _tile_builder = PlanedTileBuilder
+    _sprite_builder = PlanedSpriteBuilder
 
     def __init__(
             self, name, pixel_width, pixel_height,
@@ -958,7 +945,7 @@ class EGAMode(GraphicsMode):
             num_pages, has_blink, aspect=aspect
         )
         # EGA uses colour planes, 1 bpp for each plane
-        self.ppb = 8
+        #self.ppb = 8
         self.bytes_per_row = pixel_width // 8
         self.video_segment = 0xa000
         self.planes_used = planes_used
@@ -989,15 +976,14 @@ class EGAMode(GraphicsMode):
 
     def get_memory(self, screen, addr, num_bytes):
         """Retrieve bytes from EGA memory."""
-        plane = self.plane % (max(self.planes_used)+1)
+        plane = self.plane % (max(self.planes_used) + 1)
         byte_array = bytearray(num_bytes)
         if plane not in self.planes_used:
             return byte_array
-        for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
-            byte_array[ofs:ofs+length] = interval_to_bytes(
-                screen.pixels.pages[page].get_interval(x, y, length*self.ppb),
-                self.ppb, plane
-            )
+        for page, x, y, ofs, length in self.walk_memory(addr, num_bytes):
+            pixarray = screen.pixels.pages[page].get_interval(x, y, length*8)
+            #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
+            byte_array[ofs:ofs+length] = (pixarray >> plane).packed(8)
         return byte_array
 
     def set_memory(self, screen, addr, byte_array):
@@ -1010,44 +996,22 @@ class EGAMode(GraphicsMode):
         # return immediately for unused colour planes
         if mask == 0:
             return
-        for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array)):
-            screen.drawing.put_interval(page, x, y,
-                bytes_to_interval(byte_array[ofs:ofs+length], self.ppb, mask), mask
+        for page, x, y, ofs, length in self.walk_memory(addr, len(byte_array)):
+            #pixarray = bytes_to_interval(byte_array[ofs:ofs+length], self.ppb, mask)
+            pixarray = (
+                bytematrix.ByteMatrix.frompacked(
+                    byte_array[ofs:ofs+length], height=1, items_per_byte=8
+                ).render(0, mask)
             )
-
-    sprite_to_array = sprite_to_array_ega
-    array_to_sprite = array_to_sprite_ega
-
-    sprite_size_to_record = sprite_size_to_record_ega
-    record_to_sprite_size = record_to_sprite_size_ega
-
-    def build_tile(self, pattern):
-        """Build a flood-fill tile."""
-        tile = []
-        bpp = self.bitsperpixel
-        while len(pattern) % bpp != 0:
-            # finish off the pattern with zeros
-            pattern.append(0)
-        strlen = len(pattern)
-        # in modes (2), 7, 8, 9 each byte represents 8 bits
-        # colour planes encoded in consecutive bytes
-        mask = 7
-        for y in range(strlen//bpp):
-            line = []
-            for x in range(8):
-                c = 0
-                for b in range(bpp-1, -1, -1):
-                    c = (c<<1) + ((pattern[(y*bpp+b)%strlen] >> mask) & 1)
-                mask -= 1
-                if mask < 0:
-                    mask = 7
-                line.append(c)
-            tile.append(line)
-        return tile
+            screen.drawing.put_interval(page, x, y, pixarray, mask)
 
 
 class Tandy6Mode(GraphicsMode):
     """Default settings for Tandy graphics mode 6."""
+
+    _tile_builder = PackedTileBuilder
+    # initialising this with self.bitsperpixel should do the right thing
+    _sprite_builder = PlanedSpriteBuilder
 
     def __init__(self, *args, **kwargs):
         """Initialise video mode settings."""
@@ -1074,33 +1038,29 @@ class Tandy6Mode(GraphicsMode):
         # low attribute bits stored in even bytes, high bits in odd bytes.
         half_len = (num_bytes+1) // 2
         hbytes = bytearray(half_len), bytearray(half_len)
-        for parity in (0, 1):
-            for page, x, y, ofs, length in walk_memory(self, addr, num_bytes, 2):
-                hbytes[parity][ofs:ofs+length] = interval_to_bytes(
-                    screen.pixels.pages[page].get_interval(x, y, length*self.ppb*2),
-                    self.ppb*2, parity ^ (addr%2)
-                )
+        for parity, byte_array in enumerate(hbytes):
+            plane = parity ^ (addr % 2)
+            for page, x, y, ofs, length in self.walk_memory(addr, num_bytes, 2):
+                pixarray = screen.pixels.pages[page].get_interval(x, y, length * self.ppb * 2)
+                #hbytes[parity][ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb*2, plane)
+                byte_array[ofs:ofs+length] = (pixarray >> plane).packed(self.ppb * 2)
         # resulting array may be too long by one byte, so cut to size
-        return [item for pair in zip(*hbytes) for item in pair] [:num_bytes]
+        return [_item for _pair in zip(*hbytes) for _item in _pair] [:num_bytes]
 
     def set_memory(self, screen, addr, byte_array):
         """Set bytes in Tandy 640x200x4 memory."""
         hbytes = byte_array[0::2], byte_array[1::2]
         # Tandy-6 encodes 8 pixels per byte, alternating colour planes.
         # I.e. even addresses are 'colour plane 0', odd ones are 'plane 1'
-        for parity in (0, 1):
-            mask = 2 ** (parity^(addr%2))
-            for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array), 2):
-                screen.drawing.put_interval(
-                    page, x, y,
-                    bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self.ppb, mask),
-                    mask
+        for parity, half in enumerate(hbytes):
+            plane = parity ^ (addr % 2)
+            mask = 2 ** plane
+            for page, x, y, ofs, length in self.walk_memory(addr, len(byte_array), 2):
+                #pixarray = bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self.ppb, mask)
+                pixarray = (
+                    bytematrix.ByteMatrix.frompacked(
+                        # what's the deal with the empty bytearrays here in some of the tests?
+                        half[ofs:ofs+length], height=1, items_per_byte=2*self.ppb
+                    ) << plane
                 )
-
-    sprite_to_array = sprite_to_array_ega
-    array_to_sprite = array_to_sprite_ega
-
-    sprite_size_to_record = sprite_size_to_record_ega
-    record_to_sprite_size = record_to_sprite_size_ega
-
-    build_tile = build_tile_cga
+                screen.drawing.put_interval(page, x, y, pixarray, mask)
