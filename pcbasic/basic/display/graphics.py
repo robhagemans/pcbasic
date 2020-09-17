@@ -278,7 +278,10 @@ class Graphics(object):
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
         cartesian = not next(args)
-        coords = list(values.to_single(next(args)).to_value() for _ in range(4))
+        try:
+            coords = [values.to_single(next(args)).to_value() for _ in range(4)]
+        except StopIteration:
+            coords = []
         if not coords:
             self._unset_window()
         else:

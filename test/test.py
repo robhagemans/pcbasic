@@ -18,6 +18,11 @@ import time
 import json
 from copy import copy, deepcopy
 from contextlib import contextmanager
+# process_time not in py2; clock deprecated in py3
+try:
+    from time import process_time
+except ImportError:
+    from time import clock as process_time
 
 try:
     from colorama import init
@@ -42,13 +47,13 @@ TEST_TIMES = os.path.join(HERE, '_settings', 'slowtest.json')
 SLOWSHOW = 20
 
 # statuses
-CRASHED = 'exception'
+CRASHED = 'crashed'
 PASSED = 'passed'
 ACCEPTED = 'accepted'
-OLDFAILED = 'failed (old)'
+OLDFAILED = 'failed before'
 NEWFAILED = 'failed'
 SKIPPED = 'skipped'
-NONESUCH = 'no such test'
+NONESUCH = 'not found'
 
 # ANSI colours for test status
 STATUS_COLOURS = {
@@ -58,7 +63,7 @@ STATUS_COLOURS = {
     OLDFAILED: '00;33',
     NEWFAILED: '01;31',
     SKIPPED: '00;30',
-    NONESUCH: '01;31',
+    NONESUCH: '00;31',
 }
 
 
@@ -214,10 +219,10 @@ class Timer(object):
     @contextmanager
     def time(self):
         start_time = time.time()
-        start_cpu = time.clock()
+        start_cpu = process_time()
         yield self
         self.wall_time = time.time() - start_time
-        self.cpu_time = time.clock() - start_cpu
+        self.cpu_time = process_time() - start_cpu
 
 
 class Coverage(object):
@@ -329,14 +334,6 @@ def report_results(results, times, overall_timer):
             print(': \033[%sm%s.\033[00;37m' % (
                 STATUS_COLOURS[status], ' '.join(tests)
             ))
-    # update slow-tests file
-    slowtests = sorted(times.items(), key=lambda _p: _p[1], reverse=True)
-    print()
-    print('\033[00;37mSlow tests:')
-    print(
-        '    '
-        + '\n    '.join('{}: {:.1f}'.format(_k, _v) for _k, _v in slowtests[:SLOWSHOW])
-    )
 
 
 if __name__ == '__main__':

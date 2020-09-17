@@ -125,10 +125,10 @@ class VideoANSI(video_cli.VideoTextBase):
         if len(attributes) > 16:
             # *assume* the first 16 attributes are foreground-on-black
             # this is the usual textmode byte attribute arrangement
-            fore = range(16) * 16
+            fore = list(range(16)) * 16
             back = tuple(_b for _b in range(8) for _ in range(16)) * 2
         else:
-            fore = range(len(attributes))
+            fore = list(range(len(attributes)))
             # assume black background
             # blink dim-to-bright etc won't work on terminals anyway
             back = (0,) * len(attributes)
