@@ -181,7 +181,7 @@ class SessionTest(unittest.TestCase):
             s.execute('input#1, a$')
             assert s.get_variable('A$') == b'x'
         # create file by name , provide BASIC name (bytes)
-        native_name = os.path.join(loc, b'new-test-file')
+        native_name = os.path.join(loc.encode('ascii'), b'new-test-file')
         try:
             os.remove(native_name)
         except EnvironmentError:
@@ -193,7 +193,7 @@ class SessionTest(unittest.TestCase):
             output = f.read()
         assert output == b'test\x1a'
         # create file by name , provide BASIC name (unicode)
-        native_name = os.path.join(loc, b'new-test-file')
+        native_name = os.path.join(loc.encode('ascii'), b'new-test-file')
         try:
             os.remove(native_name)
         except EnvironmentError:
