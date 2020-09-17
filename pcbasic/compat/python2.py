@@ -17,6 +17,7 @@ import shutil
 import codecs
 import contextlib
 import itertools
+import tempfile
 import sys
 import os
 
@@ -169,3 +170,25 @@ class SimpleNamespace(object):
     def __eq__(self, other):
         """Namespaces are equal if their entries are equal."""
         return self.__dict__ == other.__dict__
+
+
+class TemporaryDirectory():
+    """Temporary directory context guard like in Python 3 tempfile."""
+
+    def __init__(self, prefix=u''):
+        """Initialise context guard."""
+        self._prefix = prefix
+        self._temp_dir = None
+
+    def __enter__(self):
+        """Create temp directory."""
+        self._temp_dir = tempfile.mkdtemp(prefix=self._prefix)
+        return self._temp_dir
+
+    def __exit__(self, dummy_1, dummy_2, dummy_3):
+        """Clean up temp directory."""
+        if self._temp_dir:
+            try:
+                shutil.rmtree(self._temp_dir)
+            except EnvironmentError as e:
+                pass

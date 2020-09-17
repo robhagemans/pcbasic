@@ -13,7 +13,7 @@ import os
 
 from .base import PLATFORM, PY2, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
-from .base import split_quoted, muffle
+from .base import split_quoted, split_pair, muffle
 
 
 if PY2:
@@ -21,7 +21,7 @@ if PY2:
     from .python2 import xrange, zip, iteritems, itervalues, iterkeys, iterbytes
     from .python2 import getcwdu, getenvu, setenvu, iterenvu
     from .python2 import configparser, queue, copyreg, which
-    from .python2 import SimpleNamespace
+    from .python2 import SimpleNamespace, TemporaryDirectory
     unichr, int2byte, text_type = unichr, chr, unicode
 
     if WIN32:
@@ -33,6 +33,7 @@ else:
     import configparser, queue, copyreg
     from shutil import which
     from types import SimpleNamespace
+    from tempfile import TemporaryDirectory
     from .python3 import int2byte, add_str, iterchar, iterbytes
     from .python3 import xrange, zip, iteritems, itervalues, iterkeys
     from .python3 import getcwdu, getenvu, setenvu, iterenvu
