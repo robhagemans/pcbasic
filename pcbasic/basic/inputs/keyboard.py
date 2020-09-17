@@ -288,7 +288,7 @@ class Keyboard(object):
     def _stream_chars(self, us):
         """Insert eascii/unicode string into stream buffer."""
         for ea_char in _iter_keystrokes(us):
-            ea_cp = self._codepage.str_from_unicode(ea_char)
+            ea_cp = self._codepage.unicode_to_bytes(ea_char)
             # don't append empty strings arising from unknown unicode
             # as this will be interpreted as end of stream, terminating the interpreter
             if ea_cp:
@@ -298,7 +298,7 @@ class Keyboard(object):
         """Insert eascii/unicode string into keyboard buffer."""
         with self.buf.ignore_limit():
             for ea_char in _iter_keystrokes(keystring):
-                self.buf.append(self._codepage.str_from_unicode(ea_char), None)
+                self.buf.append(self._codepage.unicode_to_bytes(ea_char), None)
 
     def _close_input(self):
         """Signal that input stream has closed."""

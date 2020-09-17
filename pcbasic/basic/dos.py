@@ -45,29 +45,27 @@ class Environment(object):
         """Set environment (bytes) key to (bytes) value."""
         assert isinstance(key, bytes), type(key)
         assert isinstance(value, bytes), type(value)
-        ukey = self._codepage.str_to_unicode(key, box_protect=False)
         # only accept ascii-128 for keys
         try:
-            ukey.encode('ascii')
+            ukey = key.decode('ascii')
         except UnicodeError:
             raise error.BASICError(error.IFC)
         # enforce uppercase
         ukey = ukey.upper()
-        uvalue = self._codepage.str_to_unicode(value, box_protect=False)
+        uvalue = self._codepage.bytes_to_unicode(value)
         setenvu(ukey, uvalue)
 
     def _getenv(self, key):
         """Get environment (bytes) value or b''."""
         assert isinstance(key, bytes), type(key)
-        ukey = self._codepage.str_to_unicode(key, box_protect=False)
         # only accept ascii-128 for keys
         try:
-            ukey.encode('ascii')
+            ukey = key.decode('ascii')
         except UnicodeError:
             raise error.BASICError(error.IFC)
         # enforce uppercase
         ukey = ukey.upper()
-        return self._codepage.from_unicode(getenvu(ukey, u''))
+        return self._codepage.unicode_to_bytes(getenvu(ukey, u''))
 
     def _getenv_item(self, index):
         """Get environment (bytes) 'key=value' or b'', by zero-based index."""
@@ -77,8 +75,8 @@ class Environment(object):
         except IndexError:
             return b''
         else:
-            key = self._codepage.from_unicode(ukey)
-            value = self._codepage.from_unicode(getenvu(ukey, u''))
+            key = self._codepage.unicode_to_bytes(ukey)
+            value = self._codepage.unicode_to_bytes(getenvu(ukey, u''))
             return b'%s=%s' % (key, value)
 
     def environ_(self, args):
@@ -147,7 +145,7 @@ class Shell(object):
             logging.warning(u'SHELL: command interpreter `%s` not found.', self._shell)
             raise error.BASICError(error.IFC)
         if command:
-            cmd += [SHELL_COMMAND_SWITCH, self._codepage.str_to_unicode(command, box_protect=False)]
+            cmd += [SHELL_COMMAND_SWITCH, self._codepage.bytes_to_unicode(command, box_protect=False)]
         # get working directory; also raises IFC if current_device is CAS1
         work_dir = self._files.get_native_cwd()
         try:
@@ -239,7 +237,7 @@ class Shell(object):
         # for shell input, send CRLF or LF depending on platform
         self._last_command.extend(word)
         bytes_word = b''.join(word) + b'\r\n'
-        unicode_word = self._codepage.str_to_unicode(
+        unicode_word = self._codepage.bytes_to_unicode(
             bytes_word, preserve=CONTROL, box_protect=False
         )
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
@@ -298,5 +296,5 @@ class Shell(object):
             # remove BELs (dosemu uses these a lot)
             outstr = outstr.replace(self._enc(u'\x07'), b'')
             outstr = outstr.decode(self._encoding, errors='replace')
-            outstr = self._codepage.str_from_unicode(outstr, errors='replace')
+            outstr = self._codepage.unicode_to_bytes(outstr, errors='replace')
             self._console.write(outstr)
