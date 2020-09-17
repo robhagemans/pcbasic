@@ -18,10 +18,9 @@
 *.TXT text eol=crlf
 
 # Denote all files that are truly binary and should not be modified.
-test/correctness/** binary
-test/correctness/*/*/* binary
-test/correctness/* binary
-test/correctness/*/* binary
 test/**/*.BAS binary
 test/**/*.TXT binary
 test/basic/** binary
+tests/**/*.BAS binary
+tests/**/*.TXT binary
+tests/basic/** binary

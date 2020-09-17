@@ -1,0 +1,11 @@
+10 OPEN "output.txt" FOR OUTPUT AS 1
+20 OPEN "errors.txt" FOR OUTPUT AS 2
+30 ON ERROR GOTO 1000
+40 PRINT#1, "output from protected file"
+50 LIST,"test.lst"
+60 SAVE "test.asc",A
+70 SAVE "test.bin"
+80 END
+1000 PRINT#2, ERR, ERL
+1010 RESUME NEXT 
+

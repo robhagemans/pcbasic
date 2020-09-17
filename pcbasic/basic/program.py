@@ -78,6 +78,7 @@ class Program(object):
         self.line_numbers = {65536: 0}
         self.last_stored = None
         self.code_size = self.bytecode.tell()
+        self.bytecode.truncate()
 
     def truncate(self, rest=b''):
         """Write bytecode and cut the program of beyond the current position."""
@@ -93,6 +94,8 @@ class Program(object):
     def get_line_number(self, pos):
         """Get line number for stream position."""
         pre = -1
+        if pos is None:
+            pos = -1
         for linum in self.line_numbers:
             linum_pos = self.line_numbers[linum]
             if linum_pos <= pos and linum > pre:

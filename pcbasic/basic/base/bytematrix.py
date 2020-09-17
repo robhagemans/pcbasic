@@ -280,6 +280,13 @@ class ByteMatrix(object):
         # we need the bytearray cast - only in case we're a view
         return b''.join(bytes(bytearray(_row)) for _row in self._rows)
 
+    def to_rows(self):
+        """Convert to tuple of tuples of int."""
+        return tuple(
+            tuple(_i for _i in iterbytes(bytearray(_row)))
+            for _row in self._rows
+        )
+
     # views
 
     @property

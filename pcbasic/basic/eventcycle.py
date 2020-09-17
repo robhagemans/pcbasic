@@ -128,6 +128,10 @@ class EventQueues(object):
 
     def check_events(self, event_check_input=()):
         """Main event cycle."""
+        # sleep(0) is needed for responsiveness, e.g. even trapping in programs with tight loops
+        # i.e. 100 goto 100 with event traps active)
+        # it does slow the interpreter down by about 20% in FOR loops
+        time.sleep(0)
         self._check_input(event_check_input)
 
     def _check_input(self, event_check_input):

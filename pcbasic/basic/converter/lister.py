@@ -121,16 +121,14 @@ class Lister(object):
             comment = True
         elif keyword == tk.KW_REM:
             nxt = ins.read(1)
-            if nxt == b'':
-                pass
-            elif nxt == tk.O_REM: # '
+            if nxt == tk.O_REM: # '
                 # if next char is token('), we have the special value REM'
                 # -- replaced by ' below.
                 output += b"'"
             else:
                 # otherwise, it's part of the comment or an EOL or whatever,
                 # pass back to stream so it can be processed
-                ins.seek(-1, 1)
+                ins.seek(-1, len(nxt))
             comment = True
         # check for special cases
         #   [:REM']   ->  [']
@@ -170,9 +168,6 @@ class Lister(object):
         """Convert number token to Python string."""
         ntrail = tk.PLUS_BYTES.get(lead, 0)
         trail = ins.read(ntrail)
-        if len(trail) != ntrail:
-            # not sure what GW does if the file is truncated here - we just stop
-            return
         if lead == tk.T_OCT:
             output += b'&O' + self._values.from_bytes(trail).to_oct()
         elif lead == tk.T_HEX:

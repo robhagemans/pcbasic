@@ -1,0 +1,26 @@
+ 1                                                                              
+Syntax error in 4ÿ                                                              
+Okÿ                                                                             
+4 PRINT 1: X: PRINT 2 ' syntax error here                                       
+            run 1000                                                            
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+

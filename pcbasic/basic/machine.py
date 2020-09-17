@@ -623,12 +623,12 @@ class Memory(object):
             odd = (addr-1024-self.key_buffer_offset) % 2
             c, scan = self.keyboard.buf.ring_read(index)
             if odd:
-                return scan
+                return scan or 0
             elif c == b'':
                 return 0
             else:
                 # however, arrow keys (all extended scancodes?) give 0xe0 instead of 0
-                return ord(c[0])
+                return ord(c[0:1])
         # 1097 screen mode number
         elif addr == 1097:
             # these are the low-level mode numbers used by mode switching interrupt

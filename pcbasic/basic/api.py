@@ -16,6 +16,7 @@ from . import implementation
 
 from ..data import read_codepage as codepage
 from ..data import read_fonts as font
+from .values import TYPE_TO_CLASS as SIGILS
 
 
 class Session(object):
@@ -103,6 +104,8 @@ class Session(object):
         if isinstance(name, text_type):
             name = name.encode('ascii')
         name = name.upper()
+        if name.split(b'(')[0][-1:] not in SIGILS:
+            raise ValueError('Sigil must be explicit')
         self._impl.set_variable(name, value)
 
     def get_variable(self, name, as_type=None):
@@ -110,12 +113,29 @@ class Session(object):
         self.start()
         if isinstance(name, text_type):
             name = name.encode('ascii')
+        if name.split(b'(')[0][-1:] not in SIGILS:
+            raise ValueError('Sigil must be explicit')
         return self._impl.get_variable(name, as_type)
 
     def convert(self, value, to_type):
         """Convert a Python value to another type, consistent with BASIC rules."""
         self.start()
         return self._impl.get_converter(type(value), to_type)(value)
+
+    def press_keys(self, keys):
+        """Insert keypresses."""
+        self.start()
+        self._impl.keyboard.inject_keystrokes(keys)
+
+    def get_text(self):
+        """Get currently displayed text, as tuple of bytes."""
+        self.start()
+        return self._impl.text_screen.get_chars()
+
+    def get_pixels(self):
+        """Get currently displayed pixels, as tuple of tuples of int attributes."""
+        self.start()
+        return self._impl.display.vpage.pixels[:, :].to_rows()
 
     def interact(self):
         """Interactive interpreter session."""

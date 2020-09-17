@@ -20,7 +20,7 @@ from collections import deque
 from .compat import iteritems, text_type, iterchar
 from .compat import configparser
 from .compat import WIN32, get_short_pathname, argv, getcwdu
-from .compat import USER_CONFIG_HOME, USER_DATA_HOME
+from .compat import USER_CONFIG_HOME, USER_DATA_HOME, PY2
 from .compat import split_quoted, split_pair
 from .compat import console, stdout, stdin, stderr, IS_CONSOLE_APP
 from .compat import TemporaryDirectory
@@ -532,10 +532,6 @@ class Settings(object):
             'text_width': self.get('text-width'),
             'video_memory': self.get('video-memory'),
             'font': data.read_fonts(codepage_dict, self.get('font')),
-            # inserted keystrokes
-            # we first need to encode the unicode to bytes before we can decode it
-            # this preserves unicode as \x (if latin-1) and \u escapes
-            'keys': self.get('keys').encode('ascii', 'backslashreplace').decode('unicode-escape'),
             # find program for PCjr TERM command
             'term': self.get('term'),
             'shell': self.get('shell'),
@@ -783,6 +779,10 @@ class Settings(object):
             'resume': self.get('resume'),
             'state_file': self._get_state_file(),
             'commands': commands,
+            # inserted keystrokes
+            # we first need to encode the unicode to bytes before we can decode it
+            # this preserves unicode as \x (if latin-1) and \u escapes
+            'keys': self.get('keys').encode('ascii', 'backslashreplace').decode('unicode-escape'),
             'debug': self.get('debug'),
             }
         launch_params.update(self.session_params)
@@ -1019,7 +1019,10 @@ class ArgumentParser(object):
             # use utf_8_sig to ignore a BOM if it's at the start of the file
             # (e.g. created by Notepad)
             with io.open(config_file, 'r', encoding='utf_8_sig', errors='replace') as f:
-                config.readfp(WhitespaceStripper(f))
+                if PY2:
+                    config.readfp(WhitespaceStripper(f))
+                else:
+                    config.read_file(WhitespaceStripper(f))
         except (configparser.Error, IOError):
             logging.warning(
                 u'Error in configuration file %s. Configuration not loaded.', config_file
