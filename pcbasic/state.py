@@ -55,6 +55,15 @@ def manage_state(session, state_file, do_resume):
             except Exception as e:
                 logging.error('Failed to save session to %s: %s', state_file, e)
 
+def unpickle_bytesio(value, pos):
+    """Unpickle a file object."""
+    stream = io.BytesIO(value)
+    stream.seek(pos)
+    return stream
+
+def pickle_bytesio(f):
+    """Pickle a BytesIO object."""
+    return unpickle_bytesio, (f.getvalue(), f.tell())
 
 def unpickle_file(name, mode, pos):
     """Unpickle a file object."""
@@ -85,8 +94,9 @@ def pickle_file(f):
         return unpickle_file, (None, f.mode, -1)
     try:
         return unpickle_file, (f.name, f.mode, f.tell())
-    except IOError:
-        # not seekable
+    except (IOError, ValueError):
+        # IOError: not seekable
+        # ValueError: closed
         return unpickle_file, (f.name, f.mode, -1)
 
 # register the picklers for file and cStringIO
@@ -96,6 +106,7 @@ copyreg.pickle(io.BufferedReader, pickle_file)
 copyreg.pickle(io.BufferedWriter, pickle_file)
 copyreg.pickle(io.TextIOWrapper, pickle_file)
 copyreg.pickle(io.BufferedRandom, pickle_file)
+copyreg.pickle(io.BytesIO, pickle_bytesio)
 
 
 def load_session(state_file):

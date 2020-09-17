@@ -1,0 +1,26 @@
+Division by zero                                                                
+Division by zero                                                                
+ 1.701412E+38                                                                   
+Division by zero                                                                
+Division by zero                                                                
+ 1.701411834604692D+38                                                          
+Division by zero                                                                
+ 1.701412E+38                                                                   
+Division by zero                                                                
+ 1.701412E+38                                                                   
+error:         11            40                                                 
+error:         11            55                                                 
+Okÿ                                                                             
+run 1000                                                                        
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+

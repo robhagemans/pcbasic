@@ -355,7 +355,7 @@ class Files(object):
         # forcing to single before rounding - this means we don't have enough precision
         # to address each individual record close to the maximum record number
         # but that's in line with GW
-        pos = int(values.round(values.to_single(pos)).to_value())
+        pos = int(round(values.to_single(pos).to_value()))
         # not 2^32-1 as the manual boasts!
         # pos-1 needs to fit in a single-precision mantissa
         error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
@@ -388,11 +388,11 @@ class Files(object):
         if lock_start_rec is None:
             lock_start_rec = 1
         else:
-            lock_start_rec = values.round(values.to_single(lock_start_rec)).to_value()
+            lock_start_rec = round(values.to_single(lock_start_rec).to_value())
         if lock_stop_rec is None:
             lock_stop_rec = lock_start_rec
         else:
-            lock_stop_rec = values.round(values.to_single(lock_stop_rec)).to_value()
+            lock_stop_rec = round(values.to_single(lock_stop_rec).to_value())
         if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
             raise error.BASICError(error.BAD_RECORD_NUMBER)
         return lock_start_rec, lock_stop_rec

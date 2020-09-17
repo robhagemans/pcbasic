@@ -408,7 +408,7 @@ class ExpressionParser(object):
     def _no_argument(self, ins):
         """No arguments to parse."""
         return
-        yield
+        yield # pragma: no cover
 
     def _gen_parse_arguments(self, ins, length=1):
         """Parse a comma-separated list of arguments."""

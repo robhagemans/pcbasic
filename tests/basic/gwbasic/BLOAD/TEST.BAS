@@ -1,17 +1,23 @@
+1 ' test BLOAD into video memory for various screens
+2 ' include BLOAD with offset
 4 CLS: KEY OFF
 5 ON ERROR GOTO 1000
 6 CLEAR,,,32768!
 10 FOR I = 1 TO 10
 15 READ SCR, SEGMENT, SIZE
-20 SCREEN SCR:IF A=I THEN 80
+20 SCREEN SCR:IF A=I THEN 100
 25 DEF SEG=SEGMENT
 30 PRINT "Saving & Loading SCREEN"+STR$(I)
 35 FOR J=1 TO 15:LINE (20*J,20*J)-(20*J+10,20*J+10),J,BF:NEXT
+39 ' first save, then load, then save again
 40 BSAVE "screen"+HEX$(I)+".bsv", 0, SIZE
 50 CLS
 60 BLOAD "screen"+HEX$(I)+".bsv"
-70 BSAVE "screen"+HEX$(I)+".bsv", 0, SIZE
-80 NEXT
+70 BSAVE "screen"+HEX$(I)+"o.bsv", 0, SIZE
+79 ' load with an offset of 1 instead of the saved offset (0)
+80 BLOAD "screen"+HEX$(I)+".bsv", 1
+90 BSAVE "screen"+HEX$(I)+"x.bsv", 0, SIZE
+100 NEXT
 999 END
 1000 A=I:RESUME NEXT
 1999 REM save only half the screen

@@ -131,8 +131,8 @@ def _call_float_function(fn, *args):
         # to_float can overflow on Double.pos_max
         args = [_arg.to_float(values.double_math) for _arg in args]
         floatcls = args[0].__class__
-        args = [_arg.to_value() for _arg in args]
-        result = fn(*args)
+        python_args = [_arg.to_value() for _arg in args]
+        result = fn(*python_args)
         # python3 may return complex values for some real functions
         # where python2 simply raises an error
         if isinstance(result, complex):
@@ -173,10 +173,10 @@ class FloatErrorHandler(object):
             math_error = error.OVERFLOW
         elif isinstance(e, ZeroDivisionError):
             math_error = error.DIVISION_BY_ZERO
-        else:
+        else: # pragma: no cover
+            # shouldn't happen, we're only called with ValueError/ArithmeticError
             raise e
-        if (self._do_raise or self._console is None or
-                math_error not in self.soft_types):
+        if (self._do_raise or self._console is None or math_error not in self.soft_types):
             # also raises exception in error_handle_mode!
             # in that case, prints a normal error message
             raise error.BASICError(math_error)
@@ -185,13 +185,11 @@ class FloatErrorHandler(object):
             # message should not include line number or trailing \xFF
             self._console.write_line(error.BASICError(math_error).message)
         # return max value for the appropriate float type
-        if e.args and e.args[0]:
-            if isinstance(e.args[0], numbers.Float):
-                return e.args[0]
-            elif isinstance(e.args[0], numbers.Integer):
-                # integer values are not soft-handled
-                raise error.BASICError(math_error)
-        return numbers.Single(None, self).from_bytes(numbers.Single.pos_max)
+        # integer operations should just raise the BASICError directly, they are not handled
+        if e.args and isinstance(e.args[0], numbers.Float):
+            return e.args[0]
+        else: # pragma: no cover
+            return numbers.Single(None, self).from_bytes(numbers.Single.pos_max)
 
 
 ###############################################################################
@@ -300,19 +298,14 @@ class Values(object):
             # non-integer characters, try a float
             pass
         except error.BASICError as e:
-            if e.err != error.OVERFLOW:
+            if e.err != error.OVERFLOW: # pragma: no cover
+                # shouldn't happen, from_str only raises Overflow
                 raise
         # if allow_nonnum == False, raises ValueError for non-numerical characters
         is_double, mantissa, exp10 = numbers.str_to_decimal(word, allow_nonnum)
         if is_double:
             return self.new_double().from_decimal(mantissa, exp10)
         return self.new_single().from_decimal(mantissa, exp10)
-
-
-@float_safe
-def round(x):
-    """Round to nearest whole number without converting to int."""
-    return pass_number(x).to_float().iround()
 
 
 ###############################################################################
@@ -713,8 +706,11 @@ def string_(args):
 @float_safe
 def pow(left, right):
     """Left^right."""
+    if isinstance(left, strings.String) or isinstance(right, strings.String):
+        raise error.BASICError(error.TYPE_MISMATCH)
     if left._values.double_math and (
-            isinstance(left, numbers.Double) or isinstance(right, numbers.Double)):
+            isinstance(left, numbers.Double) or isinstance(right, numbers.Double)
+        ):
         return _call_float_function(lambda a, b: a**b, to_double(left), to_double(right))
     elif isinstance(right, numbers.Integer):
         return left.to_single().clone().ipow_int(right)

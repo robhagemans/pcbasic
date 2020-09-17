@@ -229,29 +229,37 @@ class Graphics(object):
         """VIEW: Set/unset the graphics viewport and optionally draw a box."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
+        # VIEW SCREEN
         absolute = next(args)
         # note that list() will absorb stopiteration but [] will not (in python 2)
         bounds = list(
-            int(round(values.to_single(next(args)).to_value()))
+            values.to_int(next(args))
             for _ in range(4)
         )
         if not bounds:
+            # VIEW SCREEN is a syntax error; just VIEW is OK
+            error.throw_if(absolute, error.STX)
             return self._unset_view()
         x0, y0, x1, y1 = bounds
         error.range_check(0, self._mode.pixel_width-1, x0, x1)
         error.range_check(0, self._mode.pixel_height-1, y0, y1)
+        error.throw_if(x0==x1 or y0 == y1)
         fill = next(args)
         if fill is not None:
             fill = values.to_int(fill)
         border = next(args)
         if border is not None:
             border = values.to_int(border)
+        error.range_check(0, 255, fill)
+        error.range_check(0, 255, border)
         list(args)
         self._set_view(x0, y0, x1, y1, absolute, fill, border)
 
     def _set_view(self, x0, y0, x1, y1, absolute, fill, border):
         """Set the graphics viewport and optionally draw a box (VIEW)."""
         # first unset the viewport so that we can draw the box
+        fill = self._get_attr_index(fill)
+        border = self._get_attr_index(border)
         self.graph_view.unset()
         if fill is not None:
             self._draw_box_filled(x0, y0, x1, y1, fill)

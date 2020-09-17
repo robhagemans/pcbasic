@@ -135,9 +135,7 @@ class Console(object):
             # in this case we need to move up to the start of the logical line
             prompt_row == self._text_screen.find_start_of_line(prompt_row)
             if start_row == prompt_row:
-                if self._text_screen.wraps(start_row):
-                    right = self._text_screen.mode.width
-                outstr = outstr[left-1:right]
+                outstr = outstr[left-1:right-1]
         # redirects output exactly the contents of the logical line
         # including any trailing whitespace and chars past 255
         self._io_streams.write(outstr)
@@ -162,12 +160,6 @@ class Console(object):
             # this is where we arrow-keyed on the start line
             furthest_right = self._text_screen.current_col
             while True:
-                row, col = self._text_screen.current_row, self._text_screen.current_col
-                if row == start_row:
-                    furthest_left = min(col, furthest_left)
-                    furthest_right = max(col, furthest_right)
-                    if col == self._text_screen.mode.width and self._text_screen.overflow:
-                        furthest_right += 1
                 # get one e-ASCII or dbcs code
                 d = self._keyboard.get_fullchar_block()
                 if not d:
@@ -199,13 +191,23 @@ class Console(object):
                     self._text_screen.line_feed()
                 elif d == ea.ESCAPE:
                     # ESC, CTRL+[
-                    self._text_screen.clear_line(row, furthest_left)
+                    self._text_screen.clear_line(
+                        self._text_screen.current_row, furthest_left
+                    )
                 elif d in (ea.CTRL_END, ea.CTRL_e):
-                    self._text_screen.clear_from(row, col)
+                    self._text_screen.clear_from(
+                        self._text_screen.current_row, self._text_screen.current_col
+                    )
                 elif d in (ea.UP, ea.CTRL_6):
-                    self._text_screen.set_pos(row - 1, col, scroll_ok=False)
+                    self._text_screen.set_pos(
+                        self._text_screen.current_row - 1, self._text_screen.current_col,
+                        scroll_ok=False
+                    )
                 elif d in (ea.DOWN, ea.CTRL_MINUS):
-                    self._text_screen.set_pos(row + 1, col, scroll_ok=False)
+                    self._text_screen.set_pos(
+                        self._text_screen.current_row + 1, self._text_screen.current_col,
+                        scroll_ok=False
+                    )
                 elif d in (ea.RIGHT, ea.CTRL_BACKSLASH):
                     self._text_screen.incr_pos()
                 elif d in (ea.LEFT, ea.CTRL_RIGHTBRACKET):
@@ -241,6 +243,15 @@ class Console(object):
                             else:
                                 # put all dbcs in before messing with cursor position
                                 self._text_screen.write_chars(d, do_scroll_down=True)
+                if self._text_screen.current_row == start_row:
+                    furthest_left = min(self._text_screen.current_col, furthest_left)
+                    furthest_right = max(self._text_screen.current_col, furthest_right)
+                    if (
+                            self._text_screen.current_col == self._text_screen.mode.width
+                            and self._text_screen.overflow
+                        ):
+                        furthest_right += 1
+
         finally:
             self._set_overwrite_mode(True)
             # reset cursor visibility
@@ -266,15 +277,15 @@ class Console(object):
         self._text_screen.set_wrap(self.current_row, False)
         out_chars = []
         for c in iterchar(s):
-            row, col = self.current_row, self.current_col
-            if c in b'\n\r\a\x0B\x0C\x1C\x1D\x1E\x1F':
+            if c in b'\t\n\r\a\x0B\x0C\x1C\x1D\x1E\x1F':
                 # non-printing or position-dependent chars, dump buffer first
                 self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=True)
                 out_chars = []
+                row, col = self.current_row, self.current_col
                 if c == b'\t':
                     # TAB
                     num = (8 - (col - 1 - 8 * int((col-1) // 8)))
-                    self._text_screen.write_chars(b' ' * num)
+                    self._text_screen.write_chars(b' ' * num, do_scroll_down=False)
                 elif c == b'\n':
                     # LF
                     # exclude CR/LF

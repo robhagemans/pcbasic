@@ -62,7 +62,7 @@ class Implementation(object):
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
-            extension=None
+            extension=()
         ):
         """Initialise the interpreter session."""
         ######################################################################
@@ -454,7 +454,7 @@ class Implementation(object):
             # select video memory size (Tandy/PCjr only)
             video_size = next(args)
             if video_size is not None:
-                video_size = values.round(video_size).to_value()
+                video_size = round(video_size.to_value())
                 self.display.set_video_memory_size(video_size)
             # execute any remaining parsing steps
             next(args)
@@ -599,7 +599,7 @@ class Implementation(object):
         if jumpnum is not None:
             jumpnum = values.to_int(jumpnum, unsigned=True)
         common_all, delete_lines = next(args), next(args)
-        from_line, to_line = delete_lines if delete_lines else None, None
+        from_line, to_line = delete_lines if delete_lines else (None, None)
         if to_line is not None and to_line not in self.program.line_numbers:
             raise error.BASICError(error.IFC)
         list(args)
@@ -766,8 +766,6 @@ class Implementation(object):
             name, indices = v
             word, _ = finp.input_entry(name[-1:], allow_past_end=False)
             value = self.values.from_repr(word, allow_nonnum=True, typechar=name[-1:])
-            if value is None:
-                value = self.values.new(name[-1:])
             self.memory.set_variable(name, indices, value)
 
     def line_input_(self, args):
@@ -785,8 +783,6 @@ class Implementation(object):
         # get string variable
         readvar, indices = next(args)
         list(args)
-        if not readvar:
-            raise error.BASICError(error.STX)
         readvar = self.memory.complete_name(readvar)
         if readvar[-1:] != values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
