@@ -248,7 +248,7 @@ class _StreamWrapperBase(object):
 
     def __getattr__(self, name):
         """Delegate methods to stream."""
-        if hasattr(self, '_stream') and name != '__getstate__':
+        if '_stream' in self.__dict__ and name not in ('__getstate__', '__dict__'):
             return getattr(self._stream, name)
         else:
             # this is needed for pickle to be able to reconstruct the class

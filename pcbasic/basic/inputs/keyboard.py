@@ -266,7 +266,7 @@ class Keyboard(object):
                 and not self._ignore_caps and len(c) == 1
             ):
             c = c.swapcase()
-        self.buf.append(self._codepage.from_unicode(c), scan)
+        self.buf.append(self._codepage.unicode_to_bytes(c), scan)
 
     def _key_up(self, scan):
         """Insert a key-up event."""

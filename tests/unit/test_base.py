@@ -218,6 +218,13 @@ class ByteMatrixTest(unittest.TestCase):
         assert bm.height == 2
         assert bm.to_bytes() == b'123456'
 
+    def test_bytes(self):
+        """Create matrix from bytearray."""
+        bm = ByteMatrix(2, 3, bytearray(b'123456'))
+        assert bm.width == 3
+        assert bm.height == 2
+        assert bm.to_bytes() == b'123456'
+
     def test_list_of_bytes(self):
         """Create matrix from list of bytes."""
         bm = ByteMatrix(2, 3, [b'123', b'456'])
@@ -339,7 +346,7 @@ class ByteMatrixTest(unittest.TestCase):
         assert ByteMatrix(2, 8, 0).hex(8) == b'0000'
         assert ByteMatrix(1, 8, [[0, 1, 2, 4, 8, 16, 32, 64]]).hex(4) == b'1800'
         # zero fill-out
-        assert ByteMatrix(1, 7, 1).hex(8) == 'fe'
+        assert ByteMatrix(1, 7, 1).hex(8) == b'fe'
 
     def test_fromhex(self):
         """Test unpacking packed representation."""
