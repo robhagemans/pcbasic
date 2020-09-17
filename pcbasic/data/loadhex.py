@@ -70,15 +70,7 @@ def read_fonts(codepage_dict, font_families):
         for _height, _font_file in iteritems(font_files)
         if _font_file
     }
-    # convert keys from unicode to codepage
-    fonts = {
-        _height: {
-            _c: _font[_uc]
-            for _c, _uc in iteritems(codepage_dict) if _uc in _font
-        }
-        for _height, _font in iteritems(uc_fonts)
-    }
-    return fonts
+    return uc_fonts
 
 
 def load_hex(hex_resources, height, unicode_needed, substitutes):

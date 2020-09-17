@@ -83,7 +83,7 @@ class VideoBuffer(object):
         # DBCS support
         self._codepage = codepage
         self._dbcs_enabled = codepage.dbcs and do_fullwidth
-        self._dbcs_text = [[b' '] * width for _ in range(height)]
+        self._dbcs_text = [[u' '] * width for _ in range(height)]
         # initialise pixel buffers
         self._pixels = ByteMatrix(pixel_height, pixel_width)
         # with set_attr that calls submit_pixels
@@ -149,7 +149,11 @@ class VideoBuffer(object):
 
     def get_charwidth(self, row, col):
         """Get DBCS width of cell on active page."""
-        return len(self._dbcs_text[row-1][col-1])
+        if col == self._width:
+            return 1
+        if not self._dbcs_text[row-1][col-1]:
+            return 0
+        return 1 if self._dbcs_text[row-1][col] else 2
 
     def get_chars(self):
         """Retrieve all characters on this page, as tuple of bytes."""
@@ -165,7 +169,7 @@ class VideoBuffer(object):
     def get_text_unicode(self, start_row, stop_row):
         """Retrieve all logical text on this page, as tuple of list of unicode."""
         return tuple(
-            self._dbcs_to_unicode(self._dbcs_text[_row-1][:self._rows[_row-1].length])
+            self._dbcs_text[_row-1][:self._rows[_row-1].length]
             for _row in range(start_row, stop_row+1)
         )
 
@@ -335,14 +339,9 @@ class VideoBuffer(object):
     def _refresh_dbcs(self, row, orig_start, orig_stop):
         """Update the DBCS buffer."""
         raw = b''.join(self._rows[row-1].chars)
-        if self._dbcs_enabled:
-            # get a new converter each time so we don't share state between calls
-            conv = self._codepage.get_converter(preserve=b'')
-            marks = conv.mark(raw, flush=True)
-            tuples = ((_seq,) if len(_seq) == 1 else (_seq, b'') for _seq in marks)
-            sequences = [_seq for _tup in tuples for _seq in _tup]
-        else:
-            sequences = list(iterchar(raw))
+        # get a new converter each time so we don't share state between calls
+        conv = self._codepage.get_converter(preserve=b'')
+        sequences = conv.to_unicode_list(raw, flush=True)
         updated = [old != new for old, new in zip(self._dbcs_text[row-1], sequences)]
         self._dbcs_text[row-1] = sequences
         try:
@@ -371,9 +370,7 @@ class VideoBuffer(object):
     def _submit(self, top, left, bottom, right):
         """Submit a rectangular screen section to interface (text coordinates)."""
         if self._visible:
-            text = [
-                self._dbcs_to_unicode(_row[left-1:right]) for _row in self._dbcs_text[top-1:bottom]
-            ]
+            text = [_row[left-1:right] for _row in self._dbcs_text[top-1:bottom]]
             attrs = [_row.attrs[left-1:right] for _row in self._rows[top-1:bottom]]
             x0, y0 = self.text_to_pixel_pos(top, left)
             x1, y1 = self.text_to_pixel_pos(bottom+1, right+1)
@@ -425,9 +422,10 @@ class VideoBuffer(object):
                 self._dbcs_text[row-1][left-1:right], self._rows[row-1].attrs[left-1:right]
             )
             col = left
-            for chars, attr in gen_chunks:
-                sprite = self._draw_text_chunk(row, col, chars, attr)
-                col += len(chars)
+            for text, attr in gen_chunks:
+                sprite = self._draw_text_chunk(row, col, text, attr)
+                # marking by trailing u'' ensures list length is column number
+                col += len(text)
 
     def _draw_text_chunk(self, row, col, chars, attr):
         """Draw a chunk of text in a single attribute to pixels and interface."""
@@ -490,7 +488,7 @@ class VideoBuffer(object):
                 self._refresh_dbcs(row, 1, self._width)
         else:
             for row in range(from_row, to_row+1):
-                self._dbcs_text[row-1][from_col-1:to_col] = [b' '] * (to_col-from_col+1)
+                self._dbcs_text[row-1][from_col-1:to_col] = [u' '] * (to_col-from_col+1)
 
     ###########################################################################
     # scrolling
@@ -512,7 +510,7 @@ class VideoBuffer(object):
         del self._rows[from_row-1]
         # update dbcs buffer
         self._dbcs_text[from_row-1:to_row-1] = self._dbcs_text[from_row:to_row]
-        self._dbcs_text[to_row-1] = [b' '] * self._width
+        self._dbcs_text[to_row-1] = [u' '] * self._width
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
             from_row+1, 1, to_row, self._width
@@ -539,7 +537,7 @@ class VideoBuffer(object):
             self._rows[from_row-1].wrap = True
         # update dbcs buffer
         self._dbcs_text[from_row:to_row] = self._dbcs_text[from_row-1:to_row-1]
-        self._dbcs_text[from_row-1] = [b' '] * self._width
+        self._dbcs_text[from_row-1] = [u' '] * self._width
         # update pixel buffer
         sx0, sy0, sx1, sy1 = self.text_to_pixel_area(
             from_row, 1, to_row-1, self._width

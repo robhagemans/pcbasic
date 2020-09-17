@@ -19,9 +19,9 @@ from ..base import bytematrix
 # Many internet sources say this should be 0xC0--0xDF. However, that would
 # exclude the shading characters. It appears to be traced back to a mistake in
 # IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
-CARRY_COL_9_CHARS = tuple(int2byte(_c) for _c in range(0xb0, 0xdf+1))
+_CARRY_COL_9_BYTES = tuple(range(0xb0, 0xdf+1))
 # ascii codepoints for which to repeat row 8 in row 9 (box drawing)
-CARRY_ROW_9_CHARS = tuple(int2byte(_c) for _c in range(0xb0, 0xdf+1))
+_CARRY_ROW_9_BYTES = tuple(range(0xb0, 0xdf+1))
 
 
 # The glyphs below are extracted from Henrique Peron's CPIDOS v3.0,
@@ -102,7 +102,7 @@ DEFAULT_FONT = {
 class Font(object):
     """Single-height bitfont."""
 
-    def __init__(self, height=8, fontdict=None):
+    def __init__(self, height, fontdict, codepage):
         """Initialise the font."""
         self._width = 8
         self._height = int(height)
@@ -115,6 +115,9 @@ class Font(object):
                 )
         self._fontdict = fontdict
         self._glyphs = {}
+        self._codepage = codepage
+        self._carry_row_9_chars = [self._byte_to_char(_b) for _b in _CARRY_ROW_9_BYTES]
+        self._carry_col_9_chars = [self._byte_to_char(_b) for _b in _CARRY_COL_9_BYTES]
 
     @property
     def width(self):
@@ -126,7 +129,7 @@ class Font(object):
 
     def copy(self):
         """Make a deep copy."""
-        copy = self.__class__(self._height, self._fontdict.copy())
+        copy = self.__class__(self._height, self._fontdict.copy(), self._codepage)
         copy._width = self._width
         return copy
 
@@ -134,31 +137,38 @@ class Font(object):
         """Preload SBCS glyphs at mode switch."""
         if self._width != width:
             self._width = width
-            for _c in map(int2byte, range(256)):
-                self._build_glyph(_c)
+            # buid the basic 256 codepage characters
+            for _c in range(256):
+                self._build_glyph(self._byte_to_char(_c), fullwidth=False)
         return self
 
-    def get_byte(self, char, offset):
+    def get_byte(self, byte, offset):
         """Get byte value from character sequence."""
+        char = self._byte_to_char(byte)
         return ord(self._fontdict[char][offset])
 
-    def set_byte(self, char, offset, byte_value):
+    def set_byte(self, byte, offset, byte_value):
         """Set byte value for character sequence."""
+        char = self._byte_to_char(byte)
         old = self._fontdict[char]
         self._fontdict[char] = old[:offset%8] + int2byte(byte_value) + old[offset%8+1:]
         if char in self._glyphs:
-            self._build_glyph(char)
+            self._build_glyph(char, fullwidth=False)
 
-    def _get_glyph(self, char):
+    def _byte_to_char(self, byte):
+        """Map single byte value to unicode character."""
+        return self._codepage.to_unicode(int2byte(byte))
+
+    def _get_glyph(self, char, fullwidth):
         """Retrieve a glyph, building if needed."""
         try:
             return self._glyphs[char]
         except KeyError:
-            self._build_glyph(char)
+            self._build_glyph(char, fullwidth)
             return self._glyphs[char]
 
-    def _build_glyph(self, char):
-        """Build a glyph for the given codepage character."""
+    def _build_glyph(self, char, fullwidth):
+        """Build a glyph for the given unicode character."""
         try:
             byteseq = bytearray(self._fontdict[char])
         except KeyError:
@@ -168,7 +178,7 @@ class Font(object):
         code_height = 8 if self._height == 9 else self._height
         glyph = bytematrix.ByteMatrix.frompacked(byteseq, code_height, items_per_byte=8)
         # stretch or sqeeze if necessary
-        req_width = self._width * len(char)
+        req_width = self._width * (2 if fullwidth else 1)
         if req_width >= glyph.width * 2:
             logging.debug('Code point %r stretched to full-width.', char)
             glyph = glyph.hrepeat(2)
@@ -177,22 +187,33 @@ class Font(object):
             glyph = glyph[:, ::2]
         # repeat last rows (e.g. for 9-bit high chars)
         if self._height > glyph.height:
-            glyph = _extend_height(glyph, char in CARRY_ROW_9_CHARS)
+            glyph = _extend_height(glyph, char in self._carry_row_9_chars)
         # repeat last cols (e.g. for 9-bit wide chars)
         if req_width > glyph.width:
-            glyph = _extend_width(glyph, char in CARRY_COL_9_CHARS)
+            glyph = _extend_width(glyph, char in self._carry_col_9_chars)
         self._glyphs[char] = glyph
 
-    def render_text(self, char_list, attr, back, underline):
+    def render_text(self, unicode_list, attr, back, underline):
         """Return a sprite, width and height for given row of text."""
-        sprite = self.get_glyphs(char_list).render(back, attr)
+        sprite = self.get_glyphs(unicode_list).render(back, attr)
         if underline:
             sprite[-1:, :] = attr
         return sprite
 
-    def get_glyphs(self, char_list):
-        """Retrieve a row of text as a single matrix [y][x]."""
-        return bytematrix.hstack(self._get_glyph(_c) for _c in char_list)
+    def get_glyphs(self, unicode_list):
+        """
+        Retrieve a row of text as a single matrix [y][x].
+        Text is given as list of unicode, with fullwidth characters marked by trailing u''.
+        """
+        # find width of each character
+        # last character can't be fullwidth as it's not trailed by u''
+        # note that we assign a fw value to u'' markers, but this is ignored below
+        fw_list = (not _next for _next in unicode_list[1:] + [True])
+        # skip u'' markers
+        return bytematrix.hstack(
+            self._get_glyph(_c, _fw)
+            for _c, _fw in zip(unicode_list, fw_list) if _c
+        )
 
 
 def _extend_height(glyph, carry_last):
