@@ -199,15 +199,9 @@ class Console(object):
                         self._text_screen.current_row, self._text_screen.current_col
                     )
                 elif d in (ea.UP, ea.CTRL_6):
-                    self._text_screen.set_pos(
-                        self._text_screen.current_row - 1, self._text_screen.current_col,
-                        scroll_ok=False
-                    )
+                    self._text_screen.up()
                 elif d in (ea.DOWN, ea.CTRL_MINUS):
-                    self._text_screen.set_pos(
-                        self._text_screen.current_row + 1, self._text_screen.current_col,
-                        scroll_ok=False
-                    )
+                    self._text_screen.down()
                 elif d in (ea.RIGHT, ea.CTRL_BACKSLASH):
                     self._text_screen.incr_pos()
                 elif d in (ea.LEFT, ea.CTRL_RIGHTBRACKET):

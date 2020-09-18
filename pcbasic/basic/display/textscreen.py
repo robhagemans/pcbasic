@@ -226,6 +226,14 @@ class TextScreen(object):
     ###########################################################################
     # cursor position
 
+    def up(self):
+        """Move the current position 1 row up."""
+        self.set_pos(self.current_row - 1, self.current_col, scroll_ok=False)
+
+    def down(self):
+        """Move the current position 1 row down."""
+        self.set_pos(self.current_row + 1, self.current_col, scroll_ok=False)
+
     def incr_pos(self):
         """Increase the current position by a char width."""
         step = self._apage.get_charwidth(self.current_row, self.current_col)
