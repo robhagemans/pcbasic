@@ -34,7 +34,6 @@ def _get_font(name, height):
     except ResourceFailed as e:
         logging.debug('Failed to load font `%s` with height %d: %s', name, height, e)
 
-
 def read_fonts(codepage_dict, font_families):
     """Load font typefaces."""
     # load the graphics fonts, including the 8-pixel RAM font
@@ -65,7 +64,8 @@ def load_hex(hex_resources, height, all_needed):
     fontdict = {}
     # transform the (smaller) set of needed chars into sequences for comparison
     # rather than the (larger) set of available sequences into chars
-    needed_sequences = b','.join(b'%04X' % ord(_c) for _c in all_needed)
+    needed_sequences = set(b','.join(b'%04X' % ord(_c) for _c in _s) for _s in all_needed)
+    missing = set(all_needed)
     for hexres in reversed(hex_resources):
         if hexres is None:
             continue
@@ -81,6 +81,8 @@ def load_hex(hex_resources, height, all_needed):
             # skip grapheme clusters we won't need
             if ucs_str not in needed_sequences:
                 continue
+            # remove from needed list
+            needed_sequences -= {ucs_str}
             ucs_sequence = ucs_str.split(b',')
             fonthex = fonthex.split(b'#')[0].strip()
             # extract codepoint and hex string;
@@ -101,8 +103,9 @@ def load_hex(hex_resources, height, all_needed):
                 fontdict[c] = binascii.unhexlify(fonthex)
             except Exception as e:
                 logging.warning('Could not parse line in font file: %s', repr(line))
+            # remove newly found char
             # stop if we have all we need
-            missing = all_needed - set(fontdict)
+            missing -= {c}
             if not missing:
                 break
     # fill missing with nulls
