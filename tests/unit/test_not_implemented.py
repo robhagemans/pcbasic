@@ -41,7 +41,7 @@ class NotImplementedTest(TestCase):
             s.execute('call 0')
             # syntax error
             s.execute('call "a"')
-        assert self.get_text_stripped(s)[:5] == ['Type mismatch\xff'] + ['Syntax error\xff'] * 4
+        assert self.get_text_stripped(s)[:5] == [b'Type mismatch\xff'] + [b'Syntax error\xff'] * 4
 
     def test_calls(self):
         """Exercise CALLS statement."""
@@ -65,7 +65,7 @@ class NotImplementedTest(TestCase):
             s.execute('calls 0')
             # syntax error
             s.execute('calls "a"')
-        assert self.get_text_stripped(s)[:5] == ['Type mismatch\xff'] + ['Syntax error\xff'] * 4
+        assert self.get_text_stripped(s)[:5] == [b'Type mismatch\xff'] + [b'Syntax error\xff'] * 4
 
 
 if __name__ == '__main__':

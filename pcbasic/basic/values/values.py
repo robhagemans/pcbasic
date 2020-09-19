@@ -555,7 +555,7 @@ def log_(args):
 # string representations and characteristics
 
 def to_repr(inp, leading_space, type_sign):
-    """Convert BASIC number to Python str representation."""
+    """Convert BASIC number to Python bytes representation."""
     # PRINT, STR$ - yes leading space, no type sign
     # WRITE - no leading space, no type sign
     # LIST - no loading space, yes type sign

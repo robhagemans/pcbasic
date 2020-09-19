@@ -135,13 +135,13 @@ class SessionTest(TestCase):
     def test_resume(self):
         """Test resume."""
         run(
-            "--exec='A=1:open\"z:output.txt\" for output as 1:SYSTEM'",
+            "--exec=A=1:open\"z:output.txt\" for output as 1:SYSTEM",
             '--mount=z:%s' % self.output_path(), '-b'
         )
-        run('--resume', '--keys=?#1,A:close:system\r', '-b')
+        run('--resume', '--keys=?#1,A:close:system\\r', '-b')
         with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
             output = outfile.read()
-        assert output == b' 1 \r\n\x1a'
+        assert output == b' 1 \r\n\x1a', repr(output)
 
     def test_session_bind_file(self):
         """test Session.bind_file."""
@@ -273,8 +273,8 @@ class SessionTest(TestCase):
             s.press_keys(u'\0\x72')
             s.press_keys(u'system\r')
             s.interact()
-        with open(self.output_path('print.txt')) as f:
-            assert f.read() == 'system\r\n'
+        with open(self.output_path('print.txt'), 'rb') as f:
+            assert f.read() == b'system\r\n'
 
     def test_session_no_printcopy(self):
         """Test Session switching off ctrl print-screen copy."""
