@@ -784,7 +784,7 @@ class Settings(object):
         if not self.get('resume'):
             run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
             # treat colons as CRs
-            commands = split_quoted(self.get('exec'), split_by=u':', quote=u"'", strip_quotes=True)
+            commands = split_quoted(self.get('exec'), split_by=u':', quote=u'"', strip_quotes=False)
             # note that executing commands (or RUN) will suppress greeting
             # following GW, don't write greeting for redirected input or command-line filter run
             greeting = not run and not commands and not self.session_params['input_streams']

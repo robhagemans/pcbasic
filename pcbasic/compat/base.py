@@ -74,7 +74,11 @@ def wrap_input_stream(stream):
 
 def split_quoted(line, split_by=u'\s', quote=u'"', strip_quotes=False):
     """Split by separators, preserving quoted blocks."""
-    chunks = re.findall(u'[^%s%s][^%s]*|%s.+?%s' % (quote, split_by, split_by, quote, quote), line)
+    # https://stackoverflow.com/questions/16710076/python-split-a-string-respect-and-preserve-quotes
+    regexp = r'(?:[^{split_by}{quote}]|{quote}(?:\\.|[^{quote}])*{quote})+'.format(
+        split_by=split_by, quote=quote
+    )
+    chunks = re.findall(regexp, line)
     if strip_quotes:
         chunks = [c.strip(quote) for c in chunks]
     return chunks
