@@ -135,10 +135,11 @@ class Font(object):
         copy._width = self._width
         return copy
 
-    def init_mode(self, width):
+    def init_mode(self, width, height):
         """Preload SBCS glyphs at mode switch."""
-        if self._width != width:
+        if self._width != width or self._height != height:
             self._width = width
+            self._height = height
             # buid the basic 256 codepage characters
             for _c in range(256):
                 self._build_glyph(self._byte_to_char(_c), fullwidth=False)
