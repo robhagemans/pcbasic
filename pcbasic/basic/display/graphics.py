@@ -219,6 +219,8 @@ class Graphics(object):
             # foreground; graphics 'background' attrib is always 0
             # FIXME - isn't this split_attr's job?
             c = self._attr & 0xf
+        elif not c:
+            c = 0
         else:
             c = min(self._num_attr-1, max(0, c))
         return c
