@@ -68,10 +68,13 @@ def pickle_bytesio(f):
 def unpickle_file(name, mode, pos):
     """Unpickle a file object."""
     if name is None:
-        if mode in ('r', 'rb'):
+        if mode == 'rb':
+            return sys.stdin.buffer
+        elif mode == 'r':
             return sys.stdin
-        else:
-            return sys.stdout
+        elif mode == 'wb':
+            return sys.stdout.buffer
+        return sys.stdout
     try:
         if 'w' in mode and pos > 0:
             # preserve existing contents of writable file
