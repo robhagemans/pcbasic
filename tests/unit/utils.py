@@ -31,7 +31,8 @@ class TestCase(unittest.TestCase):
             shutil.rmtree(self._dir)
         except EnvironmentError:
             pass
-        os.mkdir(self._dir)
+        if not os.path.isdir(self._dir):
+            os.mkdir(self._dir)
 
     def output_path(self, *names):
         """Output file name."""

@@ -49,11 +49,16 @@ class IOStreams(object):
         # disable at start
         self._active = False
         # launch a daemon thread for input
+        self._stop_threads = False
         if self._input_streams:
             # launch a thread to allow nonblocking reads on both Windows and Unix
             thread = threading.Thread(target=self._process_input, args=())
             thread.daemon = True
             thread.start()
+
+    def close(self):
+        """Kill threads before exit."""
+        self._stop_threads = True
 
     def flush(self):
         """Flush output streams."""
@@ -92,6 +97,8 @@ class IOStreams(object):
         """Process input from streams."""
         while True:
             time.sleep(TICK)
+            if self._stop_threads:
+                return
             if not self._active:
                 continue
             queue = self._queues.inputs

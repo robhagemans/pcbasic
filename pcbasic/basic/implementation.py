@@ -326,6 +326,8 @@ class Implementation(object):
         # close files if we opened any
         self.files.close_all()
         self.files.close_devices()
+        # kill the iostreams threads so windows doesn't run out
+        self.io_streams.close()
 
     def _show_prompt(self):
         """Show the Ok or EDIT prompt, unless suppressed."""
