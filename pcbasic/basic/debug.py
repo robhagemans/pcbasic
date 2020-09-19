@@ -112,17 +112,19 @@ class DebugSession(api.Session):
                 if isinstance(val, values.String):
                     outstr += u'"%s"' % self._impl.codepage.bytes_to_unicode(val.to_str())
                 else:
-                    outstr += values.to_repr(val, leading_space=False, type_sign=True)
+                    outstr += (
+                        values.to_repr(val, leading_space=False, type_sign=True)
+                        .decode('ascii', 'ignore')
+                    )
             except Exception as e:
-                logging.debug('%s %s', type(e), e)
-                traceback.print_tb(sys.exc_info()[2])
+                self._handle_exception(e)
         if outstr:
             logging.debug(outstr)
 
     def _handle_exception(self, e):
         """Handle exception during debugging."""
-        logging.debug(b'%s %s', type(e), bytes(str(e)))
-        traceback.print_tb(sys.exc_info()[2])
+        logging.debug('%s %s', type(e), str(e))
+        raise
 
     ###########################################################################
     # debugging commands
