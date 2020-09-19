@@ -16,6 +16,7 @@ import io
 import sys
 import zlib
 import struct
+import codecs
 import logging
 from contextlib import contextmanager
 
@@ -113,6 +114,18 @@ copyreg.pickle(io.BufferedWriter, pickle_file)
 copyreg.pickle(io.TextIOWrapper, pickle_file)
 copyreg.pickle(io.BufferedRandom, pickle_file)
 copyreg.pickle(io.BytesIO, pickle_bytesio)
+
+# patch codecs.StreamReader and -Writer
+if PY2:
+    def patched_getstate(self):
+        return vars(self)
+
+    def patched_setstate(self, dict):
+        vars(self).update(dict)
+
+    for streamclass in (codecs.StreamReader, codecs.StreamWriter, codecs.StreamReaderWriter):
+        streamclass.__getstate__ = patched_getstate
+        streamclass.__setstate__ = patched_setstate
 
 
 def load_session(state_file):
