@@ -341,10 +341,12 @@ class Console(object):
             self._text_screen.set_wrap(self._text_screen.current_row-2, False)
 
     def start_line(self):
-        """Move the cursor to the start of the next line, this line if empty."""
+        """
+        Move the cursor to the start of the next line, this line if empty.
+        Used for prompt and error or break messages.
+        """
         if self.current_col != 1:
             self._io_streams.write(b'\r\n')
-            self._text_screen.check_pos(scroll_ok=True)
             self._text_screen.set_pos(self._text_screen.current_row + 1, 1)
         # ensure line above doesn't wrap
         self._text_screen.set_wrap(self._text_screen.current_row-1, False)
