@@ -19,7 +19,7 @@ if set(sys.argv) & set((
     )):
     sys.exit(
         'setup.py is the sdist install script only, '
-        'please use distribute.py to build, package or deploy.'
+        'please use `python -m packaging` to build, package or deploy.'
     )
 
 ###############################################################################

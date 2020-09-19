@@ -13,7 +13,7 @@ The following packages are needed or recommended when installing PC-BASIC:
 
 | Package                                                                       | OS                 | Status       | Used for
 |-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
-| [Python 2.7.12](https://www.python.org/downloads/release/python-2712/)        | all                | required     |
+| [Python 3.5.10 or later](https://www.python.org/downloads/)                   | all                | required     |
 | [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | sound and graphics
 | [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound when using text-based interface
 | [PySerial 3.4](https://github.com/pyserial/pyserial)                          | all                | optional     | physical or emulated serial port access
@@ -39,6 +39,8 @@ is only needed to access physical parallel ports, not for printing to a CUPS or 
 Note that most modern machines do not actually have parallel ports. If you have a parallel port and want to use it with PC-BASIC,
 download and install PyParallel from the link above. Although a `pyparallel` package exists in on PyPI, at present this does not work
 as essential libraries are missing.
+
+Alternatively to the latest Python, for now PC-BASIC remains compatible with [Python 2.7](https://www.python.org/downloads/release/python-2718/).
 
 
 #### External tools ####
