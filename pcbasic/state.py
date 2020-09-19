@@ -68,13 +68,14 @@ def pickle_bytesio(f):
 def unpickle_file(name, mode, pos):
     """Unpickle a file object."""
     if name is None:
-        if mode == 'rb':
-            return sys.stdin.buffer
+        if mode == 'rb' or (PY2 and mode == 'r'):
+            return stdin.buffer
         elif mode == 'r':
-            return sys.stdin
-        elif mode == 'wb':
-            return sys.stdout.buffer
-        return sys.stdout
+            return stdin
+        elif mode == 'wb' or (PY2 and mode == 'w'):
+            return stdout.buffer
+        elif mode == 'w':
+            return stdout
     try:
         if 'w' in mode and pos > 0:
             # preserve existing contents of writable file
@@ -87,9 +88,11 @@ def unpickle_file(name, mode, pos):
             if pos > 0:
                 f.seek(pos)
     except IOError:
-        logging.warning('Could not re-open file %s. Replacing with null file.', name)
-        f = io.open(os.devnull, mode)
-    return f
+        pass
+    else:
+        return f
+    logging.warning('Could not re-open file %s. Replacing with null file.', name)
+    return io.open(os.devnull, mode)
 
 def pickle_file(f):
     """Pickle a file object."""
