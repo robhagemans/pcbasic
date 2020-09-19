@@ -121,7 +121,7 @@ class DebugSession(api.Session):
 
     def _handle_exception(self, e):
         """Handle exception during debugging."""
-        logging.debug(b'%s %s', type(e), bytes(e))
+        logging.debug(b'%s %s', type(e), bytes(str(e)))
         traceback.print_tb(sys.exc_info()[2])
 
     ###########################################################################
@@ -162,7 +162,7 @@ class DebugSession(api.Session):
 
     def logprint(self, *args):
         """Write arguments to log."""
-        logging.debug(self._impl.codepage.bytes_to_unicode(' '.join(bytes(arg) for arg in args)))
+        logging.debug(self._impl.codepage.bytes_to_unicode(b' '.join(bytes(arg) for arg in args)))
 
     def logwrite(self, *args):
         """Write arguments to log."""
