@@ -229,7 +229,7 @@ class ConsoleTest(TestCase):
         # cursor has moved after printing char
         assert s._impl.text_screen.current_row == 2, s._impl.text_screen.current_row
         assert s._impl.text_screen.current_col == 2, s._impl.text_screen.current_col
-        assert self.get_text_stripped(s) == [b' '*79 + 'x', b'y'] + [b''] * 23, repr(self.get_text_stripped(s))
+        assert self.get_text_stripped(s) == [b' '*79 + b'x', b'y'] + [b''] * 23, repr(self.get_text_stripped(s))
 
     def test_cursor_overflow_word(self):
         """Test cursor movement after print a two-char word on last column."""
@@ -247,7 +247,7 @@ class ConsoleTest(TestCase):
         # cursor has moved after printing char, but no extra line for CR
         assert s._impl.text_screen.current_row == 2, s._impl.text_screen.current_row
         assert s._impl.text_screen.current_col == 2, s._impl.text_screen.current_col
-        assert self.get_text_stripped(s) == [b' '*79 + 'x', b'y'] + [b''] * 23, repr(self.get_text_stripped(s))
+        assert self.get_text_stripped(s) == [b' '*79 + b'x', b'y'] + [b''] * 23, repr(self.get_text_stripped(s))
 
 
     def test_cursor_bottom(self):
@@ -258,7 +258,7 @@ class ConsoleTest(TestCase):
         # cursor has not moved to next row, no scroll
         assert s._impl.text_screen.current_row == 24, s._impl.text_screen.current_row
         assert s._impl.text_screen.current_col == 80, s._impl.text_screen.current_col
-        assert self.get_text_stripped(s) == [b''] * 23 + [b' '*79 + 'x', b''], repr(self.get_text_stripped(s))
+        assert self.get_text_stripped(s) == [b''] * 23 + [b' '*79 + b'x', b''], repr(self.get_text_stripped(s))
 
     def test_cursor_bottom_cr(self):
         """Test cursor movement after print two chars on last column, last row."""
@@ -267,7 +267,7 @@ class ConsoleTest(TestCase):
         # cursor has moved after CR, screen has scrolled
         assert s._impl.text_screen.current_row == 24, s._impl.text_screen.current_row
         assert s._impl.text_screen.current_col == 1, s._impl.text_screen.current_col
-        assert self.get_text_stripped(s) == [b''] * 22 + [b' '*79 + 'x', b'', b''], repr(self.get_text_stripped(s))
+        assert self.get_text_stripped(s) == [b''] * 22 + [b' '*79 + b'x', b'', b''], repr(self.get_text_stripped(s))
 
     def test_cursor_bottom_char(self):
         """Test cursor movement after print char and return on last column, last row."""
@@ -276,7 +276,7 @@ class ConsoleTest(TestCase):
         # cursor has moved after printing char, screen has scrolled
         assert s._impl.text_screen.current_row == 24, s._impl.text_screen.current_row
         assert s._impl.text_screen.current_col == 2, s._impl.text_screen.current_col
-        assert self.get_text_stripped(s) == [b''] * 22 + [b' '*79 + 'x', b'y', b''], repr(self.get_text_stripped(s))
+        assert self.get_text_stripped(s) == [b''] * 22 + [b' '*79 + b'x', b'y', b''], repr(self.get_text_stripped(s))
 
     def test_cursor_bottom_cr_char(self):
         """Test cursor movement after print char, return, char on last column, last row."""
@@ -285,7 +285,7 @@ class ConsoleTest(TestCase):
         # cursor has moved after printing char, but no extra line for CR
         assert s._impl.text_screen.current_row == 24, s._impl.text_screen.current_row
         assert s._impl.text_screen.current_col == 2, s._impl.text_screen.current_col
-        assert self.get_text_stripped(s) == [b''] * 22 + [b' '*79 + 'x', b'y', b''], repr(self.get_text_stripped(s))
+        assert self.get_text_stripped(s) == [b''] * 22 + [b' '*79 + b'x', b'y', b''], repr(self.get_text_stripped(s))
 
 
 
