@@ -714,7 +714,7 @@ class Settings(object):
     def _get_default_current_device(self):
         """Get the current drive letter or Z:"""
         if WIN32:
-            letter, _ = os.path.splitdrive(os.path.abspath(os.getcwdu()))
+            letter, _ = os.path.splitdrive(os.path.abspath(getcwdu()))
             try:
                 current_device = letter.encode('ascii')
             except UnicodeError:
