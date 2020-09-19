@@ -469,6 +469,7 @@ class Settings(object):
             raise
         # prepare global logger for use by main program
         lumberjack.prepare(self.get('logfile'), self.get('debug'))
+        self._session_params = None
 
     def get(self, name, get_default=True):
         """Get value of option; choose whether to get default or None if unspecified."""
@@ -493,6 +494,8 @@ class Settings(object):
     @property
     def session_params(self):
         """Return a dictionary of parameters for the Session object."""
+        if self._session_params:
+            return self._session_params
         # don't parse any options on --resume
         if self.get('resume'):
             return {}
@@ -573,6 +576,7 @@ class Settings(object):
             else:
                 logging.warning('Option `utf8` is deprecated; use `text-encoding=utf-8` instead.')
                 params['textfile_encoding'] = u'utf-8' if self.get('utf8') else u''
+        self._session_params = params
         return params
 
     def _get_redirects(self):
