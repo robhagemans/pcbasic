@@ -199,15 +199,9 @@ class Console(object):
                         self._text_screen.current_row, self._text_screen.current_col
                     )
                 elif d in (ea.UP, ea.CTRL_6):
-                    self._text_screen.set_pos(
-                        self._text_screen.current_row - 1, self._text_screen.current_col,
-                        scroll_ok=False
-                    )
+                    self._text_screen.up()
                 elif d in (ea.DOWN, ea.CTRL_MINUS):
-                    self._text_screen.set_pos(
-                        self._text_screen.current_row + 1, self._text_screen.current_col,
-                        scroll_ok=False
-                    )
+                    self._text_screen.down()
                 elif d in (ea.RIGHT, ea.CTRL_BACKSLASH):
                     self._text_screen.incr_pos()
                 elif d in (ea.LEFT, ea.CTRL_RIGHTBRACKET):
@@ -267,7 +261,7 @@ class Console(object):
     ##########################################################################
     # output
 
-    def write(self, s, scroll_ok=True, do_echo=True):
+    def write(self, s, do_echo=True):
         """Write a string to the screen at the current position."""
         if do_echo:
             # CR -> CRLF, CRLF -> CRLF LF
@@ -292,41 +286,41 @@ class Console(object):
                     if last != b'\r':
                         # LF connects lines like word wrap
                         self._text_screen.set_wrap(row, True)
-                        self._text_screen.set_pos(row + 1, 1, scroll_ok)
+                        self._text_screen.set_pos(row + 1, 1, scroll_ok=True)
                 elif c == b'\r':
                     # CR
                     self._text_screen.set_wrap(row, False)
-                    self._text_screen.set_pos(row + 1, 1, scroll_ok)
+                    self._text_screen.set_pos(row + 1, 1, scroll_ok=True)
                 elif c == b'\a':
                     # BEL
                     self._sound.beep()
                 elif c == b'\x0B':
                     # HOME
-                    self._text_screen.set_pos(1, 1, scroll_ok)
+                    self._text_screen.set_pos(1, 1, scroll_ok=True)
                 elif c == b'\x0C':
                     # CLS
                     self._text_screen.clear_view()
                 elif c == b'\x1C':
                     # RIGHT
-                    self._text_screen.set_pos(row, col + 1, scroll_ok)
+                    self._text_screen.set_pos(row, col + 1, scroll_ok=True)
                 elif c == b'\x1D':
                     # LEFT
-                    self._text_screen.set_pos(row, col - 1, scroll_ok)
+                    self._text_screen.set_pos(row, col - 1, scroll_ok=True)
                 elif c == b'\x1E':
                     # UP
-                    self._text_screen.set_pos(row - 1, col, scroll_ok)
+                    self._text_screen.set_pos(row - 1, col, scroll_ok=True)
                 elif c == b'\x1F':
                     # DOWN
-                    self._text_screen.set_pos(row + 1, col, scroll_ok)
+                    self._text_screen.set_pos(row + 1, col, scroll_ok=True)
             else:
                 # includes \b, \0, and non-control chars
                 out_chars.append(c)
             last = c
         self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=True)
 
-    def write_line(self, s=b'', scroll_ok=True, do_echo=True):
+    def write_line(self, s=b'', do_echo=True):
         """Write a string to the screen and end with a newline."""
-        self.write(b'%s\r' % (s,), scroll_ok, do_echo)
+        self.write(b'%s\r' % (s,), do_echo)
 
     def list_line(self, line, newline=True):
         """Print a line from a program listing or EDIT prompt."""
@@ -347,10 +341,12 @@ class Console(object):
             self._text_screen.set_wrap(self._text_screen.current_row-2, False)
 
     def start_line(self):
-        """Move the cursor to the start of the next line, this line if empty."""
+        """
+        Move the cursor to the start of the next line, this line if empty.
+        Used for prompt and error or break messages.
+        """
         if self.current_col != 1:
             self._io_streams.write(b'\r\n')
-            self._text_screen.check_pos(scroll_ok=True)
             self._text_screen.set_pos(self._text_screen.current_row + 1, 1)
         # ensure line above doesn't wrap
         self._text_screen.set_wrap(self._text_screen.current_row-1, False)

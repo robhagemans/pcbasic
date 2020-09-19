@@ -197,6 +197,97 @@ class ConsoleTest(TestCase):
             s.interact()
         assert self.get_text_stripped(s) == [b'Ok\xff', b'?1', b' 1', b'Ok\xff'] + [b''] * 21
 
+    # cursor position and overflow
+
+    def test_cursor_move(self):
+        """Test cursor movement after print."""
+        with Session() as s:
+            s.execute(b'locate 1,1: print"xy";: print csrlin; pos(0);:locate 10,1')
+        # normal behaviour, cursor moves
+        assert self.get_text_stripped(s) == [b'xy 1  6'] + [b'']*24, repr(s.get_text())
+
+    def test_cursor_overflow(self):
+        """Test cursor movement after print on last column."""
+        with Session() as s:
+            s.execute(b'locate 1,80: print"x";')
+        # cursor has not moved to next row
+        assert s._impl.text_screen.current_row == 1, s._impl.text_screen.current_row
+        assert s._impl.text_screen.current_col == 80, s._impl.text_screen.current_col
+
+    def test_cursor_overflow_cr(self):
+        """Test cursor movement after print char and cr on last column."""
+        with Session() as s:
+            s.execute(b'locate 1,80: print"x";chr$(13);')
+        # cursor has moved after CR
+        assert s._impl.text_screen.current_row == 2, s._impl.text_screen.current_row
+        assert s._impl.text_screen.current_col == 1, s._impl.text_screen.current_col
+
+    def test_cursor_overflow_char(self):
+        """Test cursor movement after print two chars on last column."""
+        with Session() as s:
+            s.execute(b'locate 1,80: print"x" "y";')
+        # cursor has moved after printing char
+        assert s._impl.text_screen.current_row == 2, s._impl.text_screen.current_row
+        assert s._impl.text_screen.current_col == 2, s._impl.text_screen.current_col
+        assert self.get_text_stripped(s) == [b' '*79 + 'x', b'y'] + [b''] * 23, repr(self.get_text_stripped(s))
+
+    def test_cursor_overflow_word(self):
+        """Test cursor movement after print a two-char word on last column."""
+        with Session() as s:
+            s.execute(b'locate 1,80: print"xy";')
+        # cursor has moved after printing char
+        assert s._impl.text_screen.current_row == 2, s._impl.text_screen.current_row
+        assert s._impl.text_screen.current_col == 3, s._impl.text_screen.current_col
+        assert self.get_text_stripped(s) == [b'', b'xy'] + [b''] * 23, repr(self.get_text_stripped(s))
+
+    def test_cursor_overflow_cr_char(self):
+        """Test cursor movement after print char, return, char on last column."""
+        with Session() as s:
+            s.execute(b'locate 1,80: print"x" chr$(13) "y";')
+        # cursor has moved after printing char, but no extra line for CR
+        assert s._impl.text_screen.current_row == 2, s._impl.text_screen.current_row
+        assert s._impl.text_screen.current_col == 2, s._impl.text_screen.current_col
+        assert self.get_text_stripped(s) == [b' '*79 + 'x', b'y'] + [b''] * 23, repr(self.get_text_stripped(s))
+
+
+    def test_cursor_bottom(self):
+        """Test cursor movement after print on last column, last row."""
+        with Session() as s:
+            # normal behaviour
+            s.execute(b'locate 24,80: print"x";')
+        # cursor has not moved to next row, no scroll
+        assert s._impl.text_screen.current_row == 24, s._impl.text_screen.current_row
+        assert s._impl.text_screen.current_col == 80, s._impl.text_screen.current_col
+        assert self.get_text_stripped(s) == [b''] * 23 + [b' '*79 + 'x', b''], repr(self.get_text_stripped(s))
+
+    def test_cursor_bottom_cr(self):
+        """Test cursor movement after print two chars on last column, last row."""
+        with Session() as s:
+            s.execute(b'locate 24,80: print"x";chr$(13);')
+        # cursor has moved after CR, screen has scrolled
+        assert s._impl.text_screen.current_row == 24, s._impl.text_screen.current_row
+        assert s._impl.text_screen.current_col == 1, s._impl.text_screen.current_col
+        assert self.get_text_stripped(s) == [b''] * 22 + [b' '*79 + 'x', b'', b''], repr(self.get_text_stripped(s))
+
+    def test_cursor_bottom_char(self):
+        """Test cursor movement after print char and return on last column, last row."""
+        with Session() as s:
+            s.execute(b'locate 24,80: print"x" "y";')
+        # cursor has moved after printing char, screen has scrolled
+        assert s._impl.text_screen.current_row == 24, s._impl.text_screen.current_row
+        assert s._impl.text_screen.current_col == 2, s._impl.text_screen.current_col
+        assert self.get_text_stripped(s) == [b''] * 22 + [b' '*79 + 'x', b'y', b''], repr(self.get_text_stripped(s))
+
+    def test_cursor_bottom_cr_char(self):
+        """Test cursor movement after print char, return, char on last column, last row."""
+        with Session() as s:
+            s.execute(b'locate 24,80: print"x" chr$(13) "y";')
+        # cursor has moved after printing char, but no extra line for CR
+        assert s._impl.text_screen.current_row == 24, s._impl.text_screen.current_row
+        assert s._impl.text_screen.current_col == 2, s._impl.text_screen.current_col
+        assert self.get_text_stripped(s) == [b''] * 22 + [b' '*79 + 'x', b'y', b''], repr(self.get_text_stripped(s))
+
+
 
 if __name__ == '__main__':
     run_tests()
