@@ -63,6 +63,9 @@ def read_fonts(codepage_dict, font_families):
 def load_hex(hex_resources, height, all_needed):
     """Load a set of overlaying unifont .hex files."""
     fontdict = {}
+    # transform the (smaller) set of needed chars into sequences for comparison
+    # rather than the (larger) set of available sequences into chars
+    needed_sequences = b','.join(b'%04X' % ord(_c) for _c in all_needed)
     for hexres in reversed(hex_resources):
         if hexres is None:
             continue
@@ -72,17 +75,19 @@ def load_hex(hex_resources, height, all_needed):
                 continue
             # strip off comments
             # split unicodepoint and hex string (max 32 chars)
-            ucs_str, fonthex = line.split(b'#')[0].split(b':')
+            ucs_str, fonthex = line.split(b':')
+            # get rid of spaces
+            ucs_str = b''.join(ucs_str.split()).upper()
+            # skip grapheme clusters we won't need
+            if ucs_str not in needed_sequences:
+                continue
             ucs_sequence = ucs_str.split(b',')
-            fonthex = fonthex.strip()
+            fonthex = fonthex.split(b'#')[0].strip()
             # extract codepoint and hex string;
             # discard anything following whitespace; ignore malformed lines
             try:
                 # construct grapheme cluster
-                c = u''.join(unichr(int(ucshex.strip(), 16)) for ucshex in ucs_sequence)
-                # skip grapheme clusters we won't need
-                if c not in all_needed:
-                    continue
+                c = u''.join(unichr(int(_ucshex.strip(), 16)) for _ucshex in ucs_sequence)
                 # skip chars we already have
                 if (c in fontdict):
                     continue
@@ -96,8 +101,11 @@ def load_hex(hex_resources, height, all_needed):
                 fontdict[c] = binascii.unhexlify(fonthex)
             except Exception as e:
                 logging.warning('Could not parse line in font file: %s', repr(line))
+            # stop if we have all we need
+            missing = all_needed - set(fontdict)
+            if not missing:
+                break
     # fill missing with nulls
-    missing = all_needed - set(fontdict)
     fontdict.update({_u: b'\0' * height for _u in missing})
     # char 0 should always be defined and empty
     fontdict[u'\0'] = b'\0' * height
