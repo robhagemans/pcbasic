@@ -177,7 +177,7 @@ class TextScreen(object):
         # see if we need to wrap and scroll down
         self._check_wrap(do_scroll_down)
         # move cursor and see if we need to scroll up
-        self.check_pos(scroll_ok=True)
+        self._update_cursor_position(scroll_ok=True)
         # put the character
         self._apage.put_char_attr(
             self.current_row, self.current_col, char, self._attr, adjust_end=True
@@ -189,7 +189,7 @@ class TextScreen(object):
         else:
             self.overflow = True
         # move cursor and see if we need to scroll up
-        self.check_pos(scroll_ok=True)
+        self._update_cursor_position(scroll_ok=True)
 
     def _check_wrap(self, do_scroll_down):
         """Wrap if we need to."""
@@ -270,9 +270,9 @@ class TextScreen(object):
         self.current_row, self.current_col = to_row, to_col
         # move cursor and reset cursor attribute
         # this may alter self.current_row, self.current_col
-        self.check_pos(scroll_ok)
+        self._update_cursor_position(scroll_ok)
 
-    def check_pos(self, scroll_ok=True):
+    def _update_cursor_position(self, scroll_ok=True):
         """Check if we have crossed the screen boundaries and move as needed."""
         oldrow, oldcol = self.current_row, self.current_col
         if self._bottom_row_allowed:
