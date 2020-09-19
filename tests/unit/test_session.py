@@ -273,8 +273,8 @@ class SessionTest(TestCase):
             s.press_keys(u'\0\x72')
             s.press_keys(u'system\r')
             s.interact()
-        with open(self.output_path('print.txt')) as f:
-            assert f.read() == 'system\r\n'
+        with open(self.output_path('print.txt'), 'rb') as f:
+            assert f.read() == b'system\r\n'
 
     def test_session_no_printcopy(self):
         """Test Session switching off ctrl print-screen copy."""
