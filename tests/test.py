@@ -25,12 +25,12 @@ except ImportError:
     from time import clock as process_time
 
 try:
-    from colorama import init
-    init()
+    import colorama
 except ImportError:
     # only needed on Windows
     # without it we still work but look a bit garbled
-    pass
+    class colorama:
+        def init(): pass
 
 # make pcbasic package accessible
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -292,6 +292,7 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
             os.environ = deepcopy(save_env)
             # normalise test name
             category, name = normalise(name)
+            colorama.init()
             print(
                 '\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (category, name),
                 end=''
@@ -310,6 +311,8 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
                 times[testname(category, name)] = timer.wall_time
             # report status
             results[testname(category, name)] = test_frame.status
+            # re-init as pcbasic modifies sys.std**
+            colorama.init()
             print('\033[%sm%s.\033[00;37m' % (
                 STATUS_COLOURS[test_frame.status], test_frame.status
             ))
@@ -319,6 +322,7 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
     return results, times, overall_timer
 
 def report_results(results, times, overall_timer):
+    colorama.init()
     res_stat = {
         _status: [_test for _test, _teststatus in results.items() if _teststatus == _status]
         for _status in set(results.values())
