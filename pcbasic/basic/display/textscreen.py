@@ -679,7 +679,7 @@ class TextScreen(object):
                     char, reverse = self._bottom_bar.get_char_reverse(col)
                     attr = reverse_attr if reverse else self._attr
                     self._apage.put_char_attr(key_row, col+1, char, attr)
-            self._move_cursor(self.current_row, self.current_col)
+            #self._move_cursor(self.current_row, self.current_col)
             self.set_row_length(self.mode.height, self.mode.width)
 
     ###########################################################################
