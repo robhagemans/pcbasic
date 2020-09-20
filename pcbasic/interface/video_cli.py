@@ -205,9 +205,9 @@ class VideoCLI(VideoTextBase):
     def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
         """Put text or pixels at a given position."""
         # if multiple rows are updated, they must be sent in order
-        for unicode_list in unicode_matrix:
+        for ofs, unicode_list in enumerate(unicode_matrix):
             unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
-            self._text[row-1][col-1:col-1+len(unicode_list)] = unicode_list
+            self._text[row-1+ofs][col-1:col-1+len(unicode_list)] = unicode_list
         self._refresh(row)
 
     def move_cursor(self, row, col, attr, width):
