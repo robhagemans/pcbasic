@@ -390,7 +390,7 @@ class VideoBuffer(object):
             yield
             self._locked = False
             # update all dirty rectangles
-            for row in self._dirty_left:
+            for row in sorted(self._dirty_left):
                 start, stop = self._refresh_dbcs(row, self._dirty_left[row], self._dirty_right[row])
                 self._draw_text(row, start, row, stop)
                 self._submit(row, start, row, stop)

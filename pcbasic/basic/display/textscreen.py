@@ -167,6 +167,7 @@ class TextScreen(object):
         with self._apage.collect_updates():
             for char in iterchar(chars):
                 self.write_char(char, do_scroll_down)
+        self._move_cursor(self.current_row, self.current_col)
 
     def write_char(self, char, do_scroll_down=False):
         """Put one character at the current position."""
@@ -323,10 +324,14 @@ class TextScreen(object):
             width = self._apage.get_charwidth(row, col)
             # set the cursor attribute
             attr = self._apage.get_attr(row, col)
-            self._cursor.move(row, col, attr, width)
+            # FIXME: private access
+            if not self._apage._locked:
+                self._cursor.move(row, col, attr, width)
         else:
-            # move the cursor
-            self._cursor.move(row, col)
+            # FIXME: private access
+            if not self._apage._locked:
+                # move the cursor
+                self._cursor.move(row, col)
 
 
     ###########################################################################
@@ -401,6 +406,7 @@ class TextScreen(object):
                 self._delete_at(self.current_row, self.current_col)
             if width == 2:
                 self._delete_at(self.current_row, self.current_col)
+        self._move_cursor(self.current_row, self.current_col)
 
     def _delete_at(self, row, col, remove_depleted=False):
         """Delete the halfwidth character at the given position."""
@@ -468,6 +474,7 @@ class TextScreen(object):
                     # move cursor by one character
                     # this will move to next row when necessary
                     self.incr_pos()
+        self._move_cursor(self.current_row, self.current_col)
 
     def _insert_at(self, row, col, c, attr):
         """Insert one halfwidth character at the given position."""
@@ -671,6 +678,7 @@ class TextScreen(object):
                     char, reverse = self._bottom_bar.get_char_reverse(col)
                     attr = reverse_attr if reverse else self._attr
                     self._apage.put_char_attr(key_row, col+1, char, attr)
+            self._move_cursor(self.current_row, self.current_col)
             self.set_row_length(self.mode.height, self.mode.width)
 
     ###########################################################################
