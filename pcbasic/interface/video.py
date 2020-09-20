@@ -101,7 +101,7 @@ class VideoPlugin(object):
     def set_border_attr(self, attr):
         """Change the border attribute."""
 
-    def clear_rows(self, back_attr, start, stop):
+    def clear_rows(self, back_attr, start_row, stop_row):
         """Clear a range of screen rows."""
 
     def show_cursor(self, cursor_on, cursor_blinks):
@@ -110,8 +110,8 @@ class VideoPlugin(object):
     def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position and set attribute and width."""
 
-    def scroll(self, direction, from_line, scroll_height, back_attr):
-        """Scroll the screen between from_line and scroll_height. direction 1 is down, -1 up."""
+    def scroll(self, direction, start_row, stop_row, back_attr):
+        """Scroll the screen between start_row and stop_row. direction 1 is down, -1 up."""
 
     def set_cursor_shape(self, from_line, to_line):
         """Build a sprite for the cursor."""

@@ -347,6 +347,7 @@ class TextScreen(object):
         """Clear the screen."""
         with self._modify_attr_on_clear():
             self._apage.clear_rows(1, self.mode.height, self._attr)
+            # TODO: force submit on queue
             self.set_pos(1, 1)
 
     @contextmanager

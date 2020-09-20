@@ -177,11 +177,11 @@ class VideoCLI(VideoTextBase):
         # current row and column where the cursor should be
         # keep cursor_row and last_row unset at the start to avoid printing extra line on resume
         # as it will see a move frm whatever we set it at here to the actusl cursor row
-        self._cursor_row, self._cursor_col = None, 1
+        self._cursor_row, self._cursor_col = 1, 1
         # current actual print column
         self._col = 1
         # cursor row on last cycle
-        self._last_row = None
+        self._last_row = 1
         # text buffer
         self._text = [[u' '] * 80 for _ in range(25)]
 
@@ -203,8 +203,6 @@ class VideoCLI(VideoTextBase):
         """Display update cycle."""
         # update cursor row only if it's changed from last work-cycle
         # or if actual printing takes place on the new cursor row
-        if not self._cursor_row:
-            return
         if self._cursor_row != self._last_row or self._cursor_col != self._col:
             self._update_position(self._cursor_row, self._cursor_col)
 
@@ -229,28 +227,34 @@ class VideoCLI(VideoTextBase):
         self._text[start-1:stop] = [[u' '] * len(self._text[0]) for _ in range(start-1, stop)]
         self._refresh(start, stop)
 
-    def scroll(self, direction, from_line, scroll_height, back_attr):
-        """Scroll the screen between from_line and scroll_height."""
+    def scroll(self, direction, start_row, stop_row, back_attr):
+        """Scroll the screen between start_row and stop_row."""
         if direction == -1:
-            self._scroll_up(from_line, scroll_height, back_attr)
+            self._scroll_up(start_row, stop_row, back_attr)
         else:
-            self._scroll_down(from_line, scroll_height, back_attr)
+            self._scroll_down(start_row, stop_row, back_attr)
+        self._refresh(start_row, stop_row)
 
-    def _scroll_up(self, from_line, scroll_height, back_attr):
-        """Scroll the screen up between from_line and scroll_height."""
-        self._text[from_line-1:scroll_height] = (
-            self._text[from_line:scroll_height] + [[u' '] * len(self._text[0])]
+    def _scroll_up(self, start_row, stop_row, back_attr):
+        """Scroll the screen up between start_row and stop_row."""
+        self._text[start_row-1:stop_row] = (
+            self._text[start_row:stop_row] + [[u' '] * len(self._text[0])]
         )
+        if start_row < self._last_row <= stop_row:
+            self._last_row -= 1
 
-    def _scroll_down(self, from_line, scroll_height, back_attr):
-        """Scroll the screen down between from_line and scroll_height."""
-        self._text[from_line-1:scroll_height] = (
-            [[u' '] * len(self._text[0])] + self._text[from_line-1:scroll_height-1]
+    def _scroll_down(self, start_row, stop_row, back_attr):
+        """Scroll the screen down between start_row and stop_row."""
+        self._text[start_row-1:stop_row] = (
+            [[u' '] * len(self._text[0])] + self._text[start_row-1:stop_row-1]
         )
+        if start_row <= self._last_row < stop_row:
+            self._last_row += 1
 
     def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Initialise video mode """
         self._text = [[u' '] * text_width for _ in range(text_height)]
+        self._refresh(1, text_height)
 
     ###############################################################################
 
@@ -277,19 +281,16 @@ class VideoCLI(VideoTextBase):
         """Move terminal print location."""
         # show the intermediate lines up to and including the current
         if row != self._last_row:
-            if self._last_row is not None:
-                if row > self._last_row:
-                    update_range = range(self._last_row, row)
-                elif row == self._last_row-1:
-                    update_range = range(self._last_row, row, -1)
-                    #update_range = (self._last_row,)
-                else:
-                    update_range = ()
-                for update_row in update_range:
-                    #print(update_row)
-                    self._redraw_row(update_row)
-                    # go one row down
-                    console.write(u'\n')
+            if row > self._last_row:
+                update_range = range(self._last_row, row)
+            elif row == self._last_row-1:
+                update_range = (self._last_row,)
+            else:
+                update_range = ()
+            for update_row in update_range:
+                self._redraw_row(update_row)
+                # go one row down
+                console.write(u'\n')
             self._redraw_row(row)
         # redraw until current column to put cursor in the right position
         self._redraw_row(row, until=col)
