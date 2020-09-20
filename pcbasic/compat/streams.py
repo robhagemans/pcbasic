@@ -84,10 +84,11 @@ class StdIOBase:
     """holds standard unicode streams."""
 
     def __init__(self):
+        self._redirected = set()
         self._reattach_streams()
 
     # standard unicode streams
-    def _reattach_streams(self):
+    def _reattach_streams(self, quiet=()):
         self.stdin, self.stdout, self.stderr = sys.stdin, sys.stdout, sys.stderr
 
     @contextmanager
@@ -96,10 +97,14 @@ class StdIOBase:
         if not stream_name:
             with muffle('stdout'):
                 with muffle('stderr'):
+                    self._redirected = self._redirected.union({'stdout', 'stderr'})
                     self._reattach_streams()
                     yield
+            self._redirected -= {'stdout', 'stderr'}
         else:
             with muffle(stream_name):
+                self._redirected.add(stream_name)
                 self._reattach_streams()
                 yield
+            self._redirected -= {stream_name}
         self._reattach_streams()

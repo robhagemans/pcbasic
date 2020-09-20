@@ -750,12 +750,12 @@ class StdIO(StdIOBase):
             else:
                 self.stdin = wrap_input_stream(sys.stdin)
 
-            if sys.stdout.isatty():
+            if sys.stdout.isatty() and not 'stdout' in self._redirected:
                 self.stdout = wrap_output_stream(_ConsoleOutput(sys.stdout, HSTDOUT))
             else:
                 self.stdout = wrap_output_stream(sys.stdout)
 
-            if sys.stderr.isatty():
+            if sys.stderr.isatty() and not 'stderr' in self._redirected:
                 self.stderr = wrap_output_stream(_ConsoleOutput(sys.stderr, HSTDERR))
             else:
                 self.stderr = wrap_output_stream(sys.stderr)
