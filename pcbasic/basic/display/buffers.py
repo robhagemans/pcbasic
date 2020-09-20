@@ -382,20 +382,25 @@ class VideoBuffer(object):
     @contextmanager
     def collect_updates(self):
         """Lock buffer to collect updates and submit them in one go."""
-        # nested call - only lock/unlock outermost
         if self._locked:
+            # nested call - only lock/unlock outermost
             yield
         else:
             self._locked = True
-            yield
-            self._locked = False
-            # update all dirty rectangles
-            for row in sorted(self._dirty_left):
-                start, stop = self._refresh_dbcs(row, self._dirty_left[row], self._dirty_right[row])
-                self._draw_text(row, start, row, stop)
-                self._submit(row, start, row, stop)
-            self._dirty_left = {}
-            self._dirty_right = {}
+            try:
+                yield
+            finally:
+                self._locked = False
+                self.force_submit()
+
+    def force_submit(self):
+        """Update all dirty rectangles."""
+        for row in sorted(self._dirty_left):
+            start, stop = self._refresh_dbcs(row, self._dirty_left[row], self._dirty_right[row])
+            self._draw_text(row, start, row, stop)
+            self._submit(row, start, row, stop)
+        self._dirty_left = {}
+        self._dirty_right = {}
 
     def _update(self, row, start, stop):
         """Mark section of screen row as dirty for update."""
@@ -409,6 +414,7 @@ class VideoBuffer(object):
                 self._dirty_right[row] = stop
             return
         else:
+            # TODO: use force_submit
             start, stop = self._refresh_dbcs(row, start, stop)
             self._draw_text(row, start, row, stop)
             self._submit(row, start, row, stop)
