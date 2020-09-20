@@ -92,19 +92,23 @@ class StdIOBase:
         self.stdin, self.stdout, self.stderr = sys.stdin, sys.stdout, sys.stderr
 
     @contextmanager
-    def quiet(self, stream_name=None):
-        """Silence stdout or stderr."""
-        if not stream_name:
-            with muffle('stdout'):
-                with muffle('stderr'):
-                    self._redirected = self._redirected.union({'stdout', 'stderr'})
-                    self._reattach_streams()
-                    yield
-            self._redirected -= {'stdout', 'stderr'}
-        else:
+    def _quiet(self, stream_name):
+        try:
             with muffle(stream_name):
                 self._redirected.add(stream_name)
                 self._reattach_streams()
                 yield
+        finally:
             self._redirected -= {stream_name}
-        self._reattach_streams()
+            self._reattach_streams()
+
+    @contextmanager
+    def quiet(self, stream_name=None):
+        """Silence stdout or stderr."""
+        if not stream_name:
+            with self._quiet('stdout'):
+                with self._quiet('stderr'):
+                    yield
+        else:
+            with self._quiet(stream_name):
+                yield
