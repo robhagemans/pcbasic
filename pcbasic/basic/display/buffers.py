@@ -404,20 +404,15 @@ class VideoBuffer(object):
 
     def _update(self, row, start, stop):
         """Mark section of screen row as dirty for update."""
-        if self._locked:
-            # merge with existing dirty rects for row
-            if row in self._dirty_left:
-                self._dirty_left[row] = min(start, self._dirty_left[row])
-                self._dirty_right[row] = max(stop, self._dirty_right[row])
-            else:
-                self._dirty_left[row] = start
-                self._dirty_right[row] = stop
-            return
+        # merge with existing dirty rects for row
+        if row in self._dirty_left:
+            self._dirty_left[row] = min(start, self._dirty_left[row])
+            self._dirty_right[row] = max(stop, self._dirty_right[row])
         else:
-            # TODO: use force_submit
-            start, stop = self._refresh_dbcs(row, start, stop)
-            self._draw_text(row, start, row, stop)
-            self._submit(row, start, row, stop)
+            self._dirty_left[row] = start
+            self._dirty_right[row] = stop
+        if not self._locked:
+            self.force_submit()
 
     def _draw_text(self, top, left, bottom, right):
         """Draw text in a rectangular screen section to pixel buffer."""
@@ -455,6 +450,8 @@ class VideoBuffer(object):
         x0, y0, x1, y1 = self.text_to_pixel_area(start, 1, stop, self._width)
         _, back, _, _ = self._colourmap.split_attr(attr)
         self._pixels[y0:y1+1, x0:x1+1] = back
+        # submit dirty rects before clear
+        self.force_submit()
         # this should only be called on the active page
         if self._visible:
             self._queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
@@ -499,21 +496,13 @@ class VideoBuffer(object):
 
     def scroll_up(self, from_row, to_row, attr):
         """Scroll the scroll region up by one line, starting at from_row."""
+        # submit dirty rects before scroll
+        self.force_submit()
         _, back, _, _ = self._colourmap.split_attr(attr)
         if self._visible:
             self._queues.video.put(signals.Event(
                 signals.VIDEO_SCROLL, (-1, from_row, to_row, back)
             ))
-        # update dirty rects
-        if self._locked:
-            for buf in (self._dirty_left, self._dirty_right):
-                # dirty rect buffers are dicts indexed by the base-1 row number
-                # while the text/dbcs buffers are lists indexed by base-0 row number
-                for _k in buf.keys():
-                    if _k > from_row and _k <= to_row:
-                        buf[_k-1] = buf[_k]
-                if to_row in buf:
-                    del buf[to_row]
         # update text buffer
         new_row = _TextRow(attr, self._width)
         self._rows.insert(to_row, new_row)
@@ -534,21 +523,13 @@ class VideoBuffer(object):
 
     def scroll_down(self, from_row, to_row, attr):
         """Scroll the scroll region down by one line, starting at from_row."""
+        # submit dirty rects before scroll
+        self.force_submit()
         _, back, _, _ = self._colourmap.split_attr(attr)
         if self._visible:
             self._queues.video.put(signals.Event(
                 signals.VIDEO_SCROLL, (1, from_row, to_row, back)
             ))
-        # update dirty rects
-        if self._locked:
-            for buf in (self._dirty_left, self._dirty_right):
-                # dirty rect buffers are dicts indexed by the base-1 row number
-                # while the text/dbcs buffers are lists indexed by base-0 row number
-                for _k in buf.keys():
-                    if _k >= from_row and _k < to_row:
-                        buf[_k] = buf[_k-1]
-                if from_row in buf:
-                    del buf[from_row]
         # update text buffer
         new_row = _TextRow(attr, self._width)
         # insert at row # from_row
