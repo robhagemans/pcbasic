@@ -271,7 +271,7 @@ class VideoCLI(VideoTextBase):
             if row > self._last_row:
                 self._redraw_range(self._last_row, row)
             elif row == self._last_row-1:
-                self._redraw_row(self._last_row)
+                self._redraw_row(self._last_row-1)
         # redraw until current column to put cursor in the right position
         self._redraw_row(row, col)
         self._last_row = row
