@@ -31,6 +31,8 @@ def muffle(std_stream_name, preserve=False):
     """Pause/quiet standard streams."""
     # usually stdout -> 1 stderr -> 2
     original_fd = getattr(sys, std_stream_name).fileno()
+    if not PY2:
+        encoding = getattr(sys, std_stream_name).encoding
 
     def _redirect_to(to_fd):
         """Redirect std stream to the given file descriptor."""
@@ -46,7 +48,7 @@ def muffle(std_stream_name, preserve=False):
         if PY2:
             new_stream = os.fdopen(original_fd, 'wb')
         else:
-            new_stream = io.TextIOWrapper(os.fdopen(original_fd, 'wb'))
+            new_stream = io.TextIOWrapper(os.fdopen(original_fd, 'wb'), encoding=encoding)
             # we need a mode attribute for pickling, regular stdio has this
             new_stream.mode = 'w'
         # change sys.std*** to the new stream
