@@ -199,12 +199,6 @@ class VideoCLI(VideoTextBase):
         finally:
             VideoTextBase.__exit__(self, type, value, traceback)
 
-    def _work(self):
-        """Display update cycle."""
-        # update cursor row only if it's changed from last work-cycle
-        # or if actual printing takes place on the new cursor row
-        if self._cursor_row != self._last_row or self._cursor_col != self._col:
-            self._update_position(self._cursor_row, self._cursor_col)
 
     ###############################################################################
 
@@ -221,6 +215,10 @@ class VideoCLI(VideoTextBase):
         # update cursor row only if it's changed from last work-cycle
         # or if actual printing takes place on the new cursor row
         self._cursor_row, self._cursor_col = row, col
+        # update cursor row only if it's changed from last work-cycle
+        # or if actual printing takes place on the new cursor row
+        if self._cursor_row != self._last_row or self._cursor_col != self._col:
+            self._update_position(self._cursor_row, self._cursor_col)
 
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
@@ -266,36 +264,37 @@ class VideoCLI(VideoTextBase):
             self._redraw_row(self._last_row)
             self._redraw_row(self._last_row, self._col)
 
-    def _redraw_row(self, row, until=None):
-        """Draw the stored text in a row."""
-        # go to column 1
-        console.write('\r')
-        rowtext = (u''.join(self._text[row-1])).replace(u'\0', u' ')
-        if until is not None:
-            rowtext = rowtext[:until-1]
-        console.write(rowtext)
-        self._col = len(self._text[row-1])+1
-        self._last_row = row
-
     def _update_position(self, row, col):
         """Move terminal print location."""
         # show the intermediate lines up to and including the current
         if row != self._last_row:
             if row > self._last_row:
-                update_range = range(self._last_row, row)
+                self._redraw_range(self._last_row, row)
             elif row == self._last_row-1:
-                update_range = (self._last_row,)
-            else:
-                update_range = ()
-            for update_row in update_range:
-                self._redraw_row(update_row)
-                # go one row down
-                console.write(u'\n')
-            self._redraw_row(row)
+                self._redraw_row(self._last_row)
         # redraw until current column to put cursor in the right position
-        self._redraw_row(row, until=col)
+        self._redraw_row(row, col)
         self._last_row = row
         self._col = col
+
+    def _redraw_range(self, start_row, stop_row):
+        """Redraw text for a range of rows."""
+        for update_row in range(start_row, stop_row):
+            self._redraw_row(update_row)
+            # go one row down
+            console.write(u'\n')
+        self._redraw_row(stop_row)
+
+    def _redraw_row(self, row, col=None):
+        """Draw the stored text in a row."""
+        # go to column 1
+        console.write('\r')
+        rowtext = (u''.join(self._text[row-1])).replace(u'\0', u' ')
+        if col is not None:
+            rowtext = rowtext[:col-1]
+        console.write(rowtext)
+        self._col = len(self._text[row-1])+1
+        self._last_row = row
 
 
 ###############################################################################
