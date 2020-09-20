@@ -711,6 +711,12 @@ if PY2:
         def __getattr__(self, attr):
             return getattr(self._wrapped, attr)
 
+        def __getstate__(self):
+            return vars(self)
+
+        def __setstate__(self, stdict):
+            return vars(self).update(stdict)
+
 
     class _ConsoleOutput(_StreamWrapper):
         """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
