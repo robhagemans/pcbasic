@@ -80,7 +80,7 @@ def muffle(std_stream_name, preserve=False):
         os.close(saved_fd)
 
 
-class StdIOBase:
+class StdIOBase(object):
     """holds standard unicode streams."""
 
     def __init__(self):
