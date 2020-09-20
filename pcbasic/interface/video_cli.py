@@ -14,7 +14,7 @@ from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from ..compat import EOF, console, stdin, stdout
+from ..compat import EOF, console
 
 
 # escape sequence to scancode

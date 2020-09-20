@@ -73,15 +73,11 @@ def is_same(file1, file2):
 
 @contextlib.contextmanager
 def suppress_stdio(do_suppress):
-    # flush last outbut before muffling
-    sys.stderr.flush()
-    sys.stdout.flush()
     if not do_suppress:
         yield
     else:
-        with pcbasic.compat.muffle(sys.stdout):
-            with pcbasic.compat.muffle(sys.stderr):
-                yield
+        with pcbasic.compat.stdio.quiet():
+            yield
 
 def contained(arglist, elem):
     try:
@@ -352,9 +348,8 @@ if __name__ == '__main__':
         report_results(*results)
         print()
         if arg_dict['all'] or arg_dict['unit']:
-            sys.stdout.flush()
             sys.stderr.write('Running unit tests: ')
-            with pcbasic.compat.muffle(sys.stdout):
+            with pcbasic.compat.stdio.quiet('stdout'):
                 # I can't quite believe how this near-unusable module made it into the standard library
                 import unittest
                 suite = unittest.loader.defaultTestLoader.discover(HERE+'/unit', 'test*.py', None)

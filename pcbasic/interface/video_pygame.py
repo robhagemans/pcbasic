@@ -6,14 +6,13 @@ Graphical interface based on PyGame
 This file is released under the GNU GPL version 3 or later.
 """
 
-import sys
 import logging
 import ctypes
 
-from ..compat import iteritems, unichr, muffle
+from ..compat import iteritems, unichr, stdio
 
 try:
-    with muffle(sys.stdout):
+    with stdio.quiet('stdout'):
         import pygame
 except ImportError:
     pygame = None

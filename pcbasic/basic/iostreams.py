@@ -14,7 +14,7 @@ import io
 from contextlib import contextmanager
 from collections import Iterable
 
-from ..compat import WIN32, read_all_available
+from ..compat import WIN32, read_all_available, stdio
 from .base import signals
 from .codepage import CONTROL
 
@@ -31,13 +31,22 @@ class IOStreams(object):
         """Initialise I/O streams."""
         self._queues = queues
         self._codepage = codepage
-        # input; put in tuple if it's file-like so we do the right thing when looping
+        # input
+        if input_streams in (u'stdio', b'stdio'):
+            # sentinel value
+            # stdin needs to be picked at runtime as both console.stdin and sys.stdin can change
+            # and we would be keeping a reference to a closed/bad file
+            input_streams = stdio.stdin
+        # put in tuple if it's file-like so we do the right thing when looping
         if not input_streams:
             input_streams = ()
         elif hasattr(input_streams, 'read') or not isinstance(input_streams, Iterable):
             input_streams = (input_streams,)
         self._input_streams = [self._wrap_input(stream) for stream in input_streams]
-        # output; put in tuple if it's file-like so we do the right thing when looping
+        # output
+        if output_streams in (u'stdio', b'stdio'):
+            output_streams = stdio.stdout
+        # put in tuple if it's file-like so we do the right thing when looping
         if not output_streams:
             output_streams = ()
         elif hasattr(output_streams, 'write') or not isinstance(output_streams, Iterable):

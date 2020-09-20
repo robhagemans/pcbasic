@@ -18,10 +18,12 @@ import sys
 import time
 import msvcrt
 import ctypes
+from contextlib import contextmanager
 from collections import deque
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
-from .base import PY2, wrap_input_stream, wrap_output_stream
+from .base import PY2
+from .streams import muffle, wrap_input_stream, wrap_output_stream, StdIOBase
 
 if PY2:
     from .python2 import SimpleNamespace
@@ -686,7 +688,7 @@ def read_all_available(stream):
         if is_unicode_stream or unistr is None:
             return unistr
         else:
-            return unistr.encode(stdin.encoding, 'replace')
+            return unistr.encode(stdio.stdin.encoding, 'replace')
     else:
         # this would work on unix too
         # just read the whole file and be done with it
@@ -736,26 +738,31 @@ if PY2:
             return bytes(output)
 
 
-    if sys.stdin.isatty():
-        stdin = wrap_input_stream(_ConsoleInput())
-    else:
-        stdin = wrap_input_stream(sys.stdin)
 
-    if sys.stdout.isatty():
-        stdout = wrap_output_stream(_ConsoleOutput(sys.stdout, HSTDOUT))
-    else:
-        stdout = wrap_output_stream(sys.stdout)
+class StdIO(StdIOBase):
+    """holds standard unicode streams."""
 
-    if sys.stderr.isatty():
-        stderr = wrap_output_stream(_ConsoleOutput(sys.stderr, HSTDERR))
-    else:
-        stderr = wrap_output_stream(sys.stderr)
+    # standard unicode streams
+    def _reattach_streams(self):
+        if PY2:
+            if sys.stdin.isatty():
+                self.stdin = wrap_input_stream(_ConsoleInput())
+            else:
+                self.stdin = wrap_input_stream(sys.stdin)
 
-else:
-    stdin = sys.stdin
-    stdout = sys.stdout
-    stderr = sys.stderr
+            if sys.stdout.isatty():
+                self.stdout = wrap_output_stream(_ConsoleOutput(sys.stdout, HSTDOUT))
+            else:
+                self.stdout = wrap_output_stream(sys.stdout)
 
+            if sys.stderr.isatty():
+                self.stderr = wrap_output_stream(_ConsoleOutput(sys.stderr, HSTDERR))
+            else:
+                self.stderr = wrap_output_stream(sys.stderr)
+        else:
+            StdIOBase._reattach_streams(self)
+
+stdio = StdIO()
 
 # set stdio as binary, to avoid Windows messing around with CRLFs
 # only do this for redirected output, as it breaks interactive Python sessions

@@ -10,11 +10,11 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import os
+import io
 
 from .base import PLATFORM, PY2, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
-from .base import muffle, split_quoted, split_pair, iter_chunks
-
+from .base import split_quoted, split_pair, iter_chunks
 
 if PY2:
     from .python2 import add_str, iterchar
@@ -42,13 +42,15 @@ else:
 
 
 if WIN32:
-    from .win32_console import console, read_all_available, stdin, stdout, stderr, IS_CONSOLE_APP
+    from .win32_console import console, read_all_available, IS_CONSOLE_APP
+    from .win32_console import stdio
     from .win32 import set_dpi_aware, line_print
     from .win32 import get_free_bytes, get_short_pathname, is_hidden
     from .win32 import EOL, EOF
     from .win32 import SHELL_ENCODING, HIDE_WINDOW
 else:
-    from .posix_console import console, read_all_available, stdin, stdout, stderr, IS_CONSOLE_APP
+    from .posix_console import console, read_all_available, IS_CONSOLE_APP
+    from .posix_console import stdio
     from .posix import set_dpi_aware, line_print
     from .posix import get_free_bytes, get_short_pathname, is_hidden
     from .posix import EOL, EOF

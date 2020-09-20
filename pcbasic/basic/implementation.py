@@ -52,7 +52,7 @@ class Implementation(object):
 
     def __init__(
             self, syntax=u'advanced', double=False, term=u'', shell=u'',
-            output_streams=sys.stdout, input_streams=sys.stdin,
+            output_streams=u'stdio', input_streams=u'stdio',
             codepage=None, box_protect=True, font=None, text_width=80,
             video=u'cga', monitor=u'rgb',
             devices=None, current_device=u'Z:',
