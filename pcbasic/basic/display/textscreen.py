@@ -312,8 +312,6 @@ class TextScreen(object):
         elif self.current_row < self.scroll_area.top:
             self.current_row = self.scroll_area.top
         self._move_cursor(self.current_row, self.current_col)
-        # signal position change
-        return (self.current_row == oldrow and self.current_col == oldcol)
 
     def _move_cursor(self, row, col):
         """Move the cursor to a new position."""
