@@ -211,7 +211,7 @@ class SessionTest(TestCase):
         """Test welcome screen."""
         with Session() as s:
             s.greet()
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0].startswith(b'PC-BASIC ')
         assert output[1].startswith(b'(C) Copyright 2013--')
         assert output[1].endswith(b' Rob Hagemans.')
@@ -229,7 +229,7 @@ class SessionTest(TestCase):
             s.interact()
             # note that SYSTEM raises an exception absorbed by the context manager
             # no nothing further in this block will be executed
-        output = [_row.strip() for _row in s.get_text()]
+        output = [_row.strip() for _row in self.get_text(s)]
         # OK prompt should have been overwritten
         assert output[0] == b'SYSTEM'
 
@@ -242,7 +242,7 @@ class SessionTest(TestCase):
             s.execute(b'STOP')
             # error
             s.execute(b'A')
-        output = [_row.strip() for _row in s.get_text()]
+        output = [_row.strip() for _row in self.get_text(s)]
         # \xff checked against DOSbox/GW-BASIC
         assert output[:3] == [b'0', b'Break\xff', b'Syntax error\xff']
         assert output[3:] == [b''] * 22
@@ -274,7 +274,8 @@ class SessionTest(TestCase):
             s.press_keys(u'system\r')
             s.interact()
         with open(self.output_path('print.txt'), 'rb') as f:
-            assert f.read() == b'system\r\n'
+            output = f.read()
+            assert output == b'system\r\n', repr(output)
 
     def test_session_no_printcopy(self):
         """Test Session switching off ctrl print-screen copy."""

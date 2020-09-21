@@ -34,9 +34,9 @@ class CodepageTest(TestCase):
             s.execute('PRINT CHR$(218);STRING$(10,CHR$(196));CHR$(191)')
             # bytes text
             # bytes text
-            output_bytes = [_row.strip() for _row in s.get_text()]
+            output_bytes = [_row.strip() for _row in self.get_text(s)]
             # unicode text
-            output_unicode = [_row.strip() for _row in s.get_text(as_type=type(u''))]
+            output_unicode = [_row.strip() for _row in self.get_text(s, as_type=type(u''))]
         with open(self.output_path('BOXTEST.TXT'), 'r', encoding='utf-8') as f:
             assert f.read() == u'\ufeff谀哪哪哪哪目\n\x1a'
         assert output_bytes[0] == b'\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf'
@@ -55,9 +55,9 @@ class CodepageTest(TestCase):
             # to screen
             s.execute('PRINT CHR$(218);STRING$(10,CHR$(196));CHR$(191)')
             # bytes text
-            output_bytes = [_row.strip() for _row in s.get_text()]
+            output_bytes = [_row.strip() for _row in self.get_text(s)]
             # unicode text
-            output_unicode = [_row.strip() for _row in s.get_text(as_type=type(u''))]
+            output_unicode = [_row.strip() for _row in self.get_text(s, as_type=type(u''))]
         with open(self.output_path('BOXTEST.TXT'), 'r', encoding='utf-8') as f:
             assert f.read() == u'\ufeff┌──────────┐\n\x1a'
         assert output_bytes[0] == b'\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf'
@@ -121,7 +121,7 @@ class CodepageTest(TestCase):
                 s.execute(u'open "c:{}" for input as 1'.format(hi))
                 s.execute('line input#1, a$')
                 assert s.get_variable('a$', as_type=type(u'')) == hi
-                output_unicode = [_row.strip() for _row in s.get_text(as_type=type(u''))]
+                output_unicode = [_row.strip() for _row in self.get_text(s, as_type=type(u''))]
                 assert output_unicode[0] == hi
 
     def test_missing(self):

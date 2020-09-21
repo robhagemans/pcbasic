@@ -61,7 +61,7 @@ class DiskTest(TestCase):
             s.execute('save "A:prog",A')
             s.execute('files "A:"')
             s.execute('print "##"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert output[:2] == [
                 b'A:\\',
                 b'.   <DIR>         ..  <DIR> PROG    .BAS'
@@ -71,7 +71,7 @@ class DiskTest(TestCase):
             assert output[3:5] == [b'', b'##']
         with Session(devices={b'A': self.output_path()}, current_device='A:') as s:
             s.execute('files')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert output[:2] == [
                 b'A:\\',
                 b'.   <DIR>         ..  <DIR> PROG    .BAS'
@@ -82,7 +82,7 @@ class DiskTest(TestCase):
         open(self.output_path('very_long_name_and.extension'), 'w').close()
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert output[:2] == [
                 b'A:\\',
                 b'.   <DIR>         ..  <DIR> very_lo+.ex+'
@@ -96,16 +96,16 @@ class DiskTest(TestCase):
         open(self.output_path('aa_long_file_name.txt'), 'w').close()
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:*.txt"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[1] == b'AAA     .TXT      AAB     .TXT      ABC     .TXT      aa_long+.txt'
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:aa?.txt"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[1] == b'AAA     .TXT      AAB     .TXT'
         # no match
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:b*.txt"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[1] == b'File not found\xff'
 
     def test_internal_disk_files(self):
@@ -113,7 +113,7 @@ class DiskTest(TestCase):
         with Session(devices={b'@': self.output_path()}) as s:
             s.execute('save "@:prog",A')
             s.execute('files "@:"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert output[:2] == [
                 b'@:\\',
                 b'.   <DIR>         ..  <DIR> PROG    .BAS'
@@ -125,7 +125,7 @@ class DiskTest(TestCase):
         with Session(devices={}) as s:
             s.execute('save "@:prog",A')
             s.execute('files "@:"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert output[:4] == [
                 b'Path not found\xff',
                 b'@:\\',
@@ -233,7 +233,7 @@ class DiskTest(TestCase):
             s.execute('open "a:MY"+chr$(&h9c)+"0.02" for output as 1')
             # search for a match in the presence of non-ascii files
             s.execute('open "a:MY0.02" for input as 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[:2] == [b'Bad file name\xff', b'File not found\xff']
 
     def test_name_illegal_chars(self):
@@ -242,7 +242,7 @@ class DiskTest(TestCase):
             # control chars not allowed
             s.execute('open chr$(0) for output as 1')
             s.execute('open chr$(1) for output as 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         # NOTE: gw raises bad file number instead
         assert output[:2] == [b'Bad file name\xff', b'Bad file name\xff']
 
@@ -251,7 +251,7 @@ class DiskTest(TestCase):
         with Session(devices={b'A': self.output_path()}, current_device='A:') as s:
             # forward slash not allowed
             s.execute('open "b/c" for output as 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         # NOTE: gw raises bad file number instead
         assert output[0] == b'Path not found\xff'
 
@@ -260,7 +260,7 @@ class DiskTest(TestCase):
         with Session(devices={b'A': self.output_path()}) as s:
             # drive b: not mounted
             s.execute('open "b:test" for output as 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0] == b'Path not found\xff'
 
     def test_path(self):
@@ -319,7 +319,7 @@ class DiskTest(TestCase):
             s.execute('kill "notfound"')
             # file not found
             s.execute('kill "not*.*"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[:4] == [
             b'Rename across disks\xff',
             b'File already exists\xff',
@@ -341,7 +341,7 @@ class DiskTest(TestCase):
             s.execute('files')
             s.execute('files ".."')
             s.execute('files "..\\"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[:2] == [b'A:\\A', b'.   <DIR>         ..  <DIR>']
         assert output[4:6] == [b'A:\\A', b'.   <DIR>']
         assert output[8:10] == [b'A:\\A', b'.   <DIR>         ..  <DIR> A           <DIR>']
@@ -350,14 +350,14 @@ class DiskTest(TestCase):
         """Test directory listing, non-existing device."""
         with Session() as s:
             s.execute('files "A:"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0] == b'File not found\xff'
 
     def test_close_not_open(self):
         """Test closing a file number that is not open."""
         with Session() as s:
             s.execute('close#2')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         # no error
         assert output[0] == b''
 
@@ -382,15 +382,15 @@ class DiskTest(TestCase):
         """Test bad mount dict specification."""
         with Session(devices={b'#': self.output_path()}) as s:
             s.execute('open "A:test" for output as 1: print#1, 42: close 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0] == b'Path not found\xff'
         with Session(devices={b'\0': self.output_path()}) as s:
             s.execute('open "A:test" for output as 1: print#1, 42: close 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0] == b'Path not found\xff'
         with Session(devices={u'\xc4': self.output_path()}) as s:
             s.execute('open "A:test" for output as 1: print#1, 42: close 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0] == b'Path not found\xff'
 
     def test_bad_current(self):
@@ -410,28 +410,28 @@ class DiskTest(TestCase):
         # must be ascii
         with Session(devices={'A': b'ab\xc2', 'Z': None}) as s:
             s.execute('files')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0] == b'@:\\'
 
     def test_open_bad_device(self):
         """Test open on a bad device name."""
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('open "#:test" for output as 1: print#1, 42: close 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0] == b'Bad file number\xff'
 
     def test_open_null_device(self):
         """Test the NUL device."""
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('open "NUL" for output as 1: print#1, 42: close 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0] == b''
 
     def test_open_bad_number(self):
         """Test opening to a bad file number."""
         with Session(devices={b'A': self.output_path()}, current_device='A') as s:
             s.execute('open "TEST" for output as 4')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0] == b'Bad file number\xff'
 
     def test_open_reuse_number(self):
@@ -439,7 +439,7 @@ class DiskTest(TestCase):
         with Session(devices={b'A': self.output_path()}, current_device='A') as s:
             s.execute('open "TEST" for output as 1')
             s.execute('open "TEST2" for output as 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[0] == b'File already open\xff'
 
     def test_long_filename(self):
@@ -526,7 +526,7 @@ class DiskTest(TestCase):
                 kill "VERYLONG.EXT"
                 kill "veryLongFilename.ext"
             ''')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[:3] == [b'File not found\xff']*3
 
 

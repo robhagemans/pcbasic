@@ -43,5 +43,9 @@ class TestCase(unittest.TestCase):
         return os.path.join(self._model_dir, *names)
 
     def get_text_stripped(self, s):
-        """Get screen text stripped of trailing spaces."""
-        return [_row.rstrip() for _row in s.get_text()]
+        """Get screen chars joined, stripped of trailing spaces."""
+        return [_row.rstrip() for _row in self.get_text(s)]
+
+    def get_text(self, s, as_type=bytes):
+        """Get screen chars joined."""
+        return [as_type().join(_row) for _row in s.get_chars(as_type=as_type)]

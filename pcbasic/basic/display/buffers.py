@@ -156,44 +156,16 @@ class VideoBuffer(object):
         return 1 if self._dbcs_text[row-1][col] else 2
 
     def get_chars(self, as_type=bytes):
-        """Retrieve all characters on this page, as tuple of bytes or unicode."""
+        """Retrieve all characters on this page, as tuple of tuples of bytes (raw) or unicode (dbcs)."""
         if as_type == bytes:
-            return tuple(b''.join(_row.chars) for _row in self._rows)
+            return tuple(tuple(_row.chars) for _row in self._rows)
         elif as_type == text_type:
-            return tuple(u''.join(_row) for _row in self._dbcs_text)
+            return tuple(tuple(_row) for _row in self._dbcs_text)
         else:
             raise ValueError('`as_type` must be bytes or unicode, not %s.' % type(as_type))
 
-    def get_text_bytes(self, start_row, stop_row):
-        """Retrieve all logical text on this page, as tuple of bytes."""
-        return tuple(
-            b''.join(self._rows[_row-1].chars[:self._rows[_row-1].length])
-            for _row in range(start_row, stop_row+1)
-        )
-
-    def get_text_unicode(self, start_row, stop_row):
-        """Retrieve all logical text on this page, as tuple of list of unicode."""
-        return tuple(
-            self._dbcs_text[_row-1][:self._rows[_row-1].length]
-            for _row in range(start_row, stop_row+1)
-        )
-
     ##########################################################################
-    # logical lines
-
-    def find_start_of_line(self, srow):
-        """Find the start of the logical line that includes our current position."""
-        # move up as long as previous line wraps
-        while srow > 1 and self.wraps(srow-1):
-            srow -= 1
-        return srow
-
-    def find_end_of_line(self, srow):
-        """Find the end of the logical line that includes our current position."""
-        # move down as long as this line wraps
-        while srow <= self._height and self.wraps(srow):
-            srow += 1
-        return srow
+    # logical line parameters: wrap and row length
 
     def set_wrap(self, row, wrap):
         """Connect/disconnect rows on active page by line wrap."""
@@ -377,7 +349,7 @@ class VideoBuffer(object):
             ))
 
     ###########################################################################
-    # text rendering
+    # text rendering - dirty rectangles
 
     @contextmanager
     def collect_updates(self):
@@ -393,15 +365,6 @@ class VideoBuffer(object):
                 self._locked = False
                 self.force_submit()
 
-    def force_submit(self):
-        """Update all dirty rectangles."""
-        for row in sorted(self._dirty_left):
-            start, stop = self._refresh_dbcs(row, self._dirty_left[row], self._dirty_right[row])
-            self._draw_text(row, start, row, stop)
-            self._submit(row, start, row, stop)
-        self._dirty_left = {}
-        self._dirty_right = {}
-
     def _update(self, row, start, stop):
         """Mark section of screen row as dirty for update."""
         # merge with existing dirty rects for row
@@ -413,6 +376,18 @@ class VideoBuffer(object):
             self._dirty_right[row] = stop
         if not self._locked:
             self.force_submit()
+
+    def force_submit(self):
+        """Update dbcs, write all dirty text rectangles to pixels and submit."""
+        for row in sorted(self._dirty_left):
+            start, stop = self._refresh_dbcs(row, self._dirty_left[row], self._dirty_right[row])
+            self._draw_text(row, start, row, stop)
+            self._submit(row, start, row, stop)
+        self._dirty_left = {}
+        self._dirty_right = {}
+
+    ###########################################################################
+    # text rendering
 
     def _draw_text(self, top, left, bottom, right):
         """Draw text in a rectangular screen section to pixel buffer."""
@@ -439,7 +414,7 @@ class VideoBuffer(object):
         return sprite
 
     ###########################################################################
-    # clearing
+    # clearing buffers
 
     def clear_rows(self, start, stop, attr):
         """Clear text and graphics on given (inclusive) text row range."""
@@ -457,7 +432,7 @@ class VideoBuffer(object):
             self._queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
     def clear_row_from(self, row, col, attr):
-        """Clear from given position to end of logical line (CTRL+END)."""
+        """Clear from given position to end of row."""
         if col == 1:
             self.clear_rows(row, row, attr)
         else:
@@ -492,10 +467,10 @@ class VideoBuffer(object):
                 self._dbcs_text[row-1][from_col-1:to_col] = [u' '] * (to_col-from_col+1)
 
     ###########################################################################
-    # scrolling
+    # scrolling buffers
 
     def scroll_up(self, from_row, to_row, attr):
-        """Scroll the scroll region up by one line, starting at from_row."""
+        """Scroll up by one line, between from_row and to_row, filling empty row with attr."""
         # submit dirty rects before scroll
         self.force_submit()
         _, back, _, _ = self._colourmap.split_attr(attr)
@@ -522,7 +497,7 @@ class VideoBuffer(object):
         self._pixels.move(sy0, sy1+1, sx0, sx1+1, ty0, tx0)
 
     def scroll_down(self, from_row, to_row, attr):
-        """Scroll the scroll region down by one line, starting at from_row."""
+        """Scroll down by one line, between from_row and to_row, filling empty row with attr."""
         # submit dirty rects before scroll
         self.force_submit()
         _, back, _, _ = self._colourmap.split_attr(attr)

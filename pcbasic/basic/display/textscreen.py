@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 from contextlib import contextmanager
 
-from ...compat import iterchar
+from ...compat import iterchar, text_type
 
 from ..base import error
 from ..base import tokens as tk
@@ -258,7 +258,7 @@ class TextScreen(object):
 
     def move_to_end(self):
         """Jump to end of logical line; follow wraps (END)."""
-        row = self._apage.find_end_of_line(self.current_row)
+        row = self.find_end_of_line(self.current_row)
         if self.row_length(row) == self.mode.width:
             self.set_pos(row, self.row_length(row))
             self.overflow = True
@@ -383,16 +383,19 @@ class TextScreen(object):
     ###########################################################################
     # console operations
 
-    def find_start_of_line(self, row):
+    def find_start_of_line(self, srow):
         """Find the start of the logical line that includes our current position."""
-        return self._apage.find_start_of_line(row)
+        # move up as long as previous line wraps
+        while srow > 1 and self._apage.wraps(srow-1):
+            srow -= 1
+        return srow
 
-    def get_logical_line(self, from_row):
-        """Get the contents of the logical line."""
-        # find start and end of logical line
-        start_row = self._apage.find_start_of_line(from_row)
-        stop_row = self._apage.find_end_of_line(from_row)
-        return b''.join(self._apage.get_text_bytes(start_row, stop_row))
+    def find_end_of_line(self, srow):
+        """Find the end of the logical line that includes our current position."""
+        # move down as long as this line wraps
+        while srow <= self.mode.height and self._apage.wraps(srow):
+            srow += 1
+        return srow
 
     # delete
 
@@ -497,7 +500,7 @@ class TextScreen(object):
                 self.set_wrap(row, True)
             if row >= self.scroll_area.bottom:
                 # once the end of the line hits the bottom, start scrolling the start of the line up
-                start = self._apage.find_start_of_line(self.current_row)
+                start = self.find_start_of_line(self.current_row)
                 # if we hist the top of the screen, stop inserting & drop chars
                 if start <= self.scroll_area.top:
                     return False
@@ -524,11 +527,11 @@ class TextScreen(object):
             # cursor stays in place after line feed!
         else:
             # find last row in logical line
-            end = self._apage.find_end_of_line(self.current_row)
+            end = self.find_end_of_line(self.current_row)
             # if the logical line hits the bottom, start scrolling up to make space...
             if end >= self.scroll_area.bottom:
                 # ... until the it also hits the top; then do nothing
-                start = self._apage.find_start_of_line(self.current_row)
+                start = self.find_start_of_line(self.current_row)
                 if start > self.scroll_area.top:
                     self.scroll()
                 else:
@@ -545,13 +548,11 @@ class TextScreen(object):
 
     def clear_line(self, the_row, from_col=1):
         """Clear whole logical line (ESC), leaving prompt."""
-        self.clear_from(
-            self._apage.find_start_of_line(the_row), from_col
-        )
+        self.clear_from(self.find_start_of_line(the_row), from_col)
 
     def clear_from(self, srow, scol):
         """Clear from given position to end of logical line (CTRL+END)."""
-        end_row = self._apage.find_end_of_line(srow)
+        end_row = self.find_end_of_line(srow)
         # clear the first row of the logical line
         self._apage.clear_row_from(srow, scol, self._attr)
         # remove the additional rows in the logical line by scrolling up
@@ -562,7 +563,7 @@ class TextScreen(object):
     def backspace(self, prompt_row, furthest_left):
         """Delete the char to the left (BACKSPACE)."""
         row, col = self.current_row, self.current_col
-        start_row = self._apage.find_start_of_line(row)
+        start_row = self.find_start_of_line(row)
         # don't backspace through prompt or through start of logical line
         # on the prompt row, don't go any further back than we've been already
         if (
@@ -681,15 +682,44 @@ class TextScreen(object):
             self.set_row_length(self.mode.height, self.mode.width)
 
     ###########################################################################
-    # vpage text retrieval (clipboard and print screen)
+    # text retrieval on vpage (clipboard and print screen)
+    # or apage (input, interactive commands)
 
     def get_chars(self, as_type=bytes):
-        """Get all raw characters on the visible page, as bytes or unicode."""
+        """Get all characters on the visible page, as tuple of tuples of bytes (raw) or unicode (dbcs)."""
         return self._pages[self._vpagenum].get_chars(as_type=as_type)
 
-    def get_text(self, start_row, stop_row):
-        """Get all logical text on the visible page, as unicode."""
-        return self._pages[self._vpagenum].get_text_unicode(start_row, stop_row)
+    def get_text(self, start_row=None, stop_row=None, pagenum=None, as_type=text_type):
+        """
+        Retrieve consecutive rows of text on any page,
+        as tuple of bytes (raw) / tuple of unicode (dbcs).
+        Each row is one (bytes or unicode) string and ends at the row length.
+        So poked characters may not be included.
+        """
+        if pagenum is None:
+            pagenum = self._vpagenum
+        page = self._pages[pagenum]
+        chars = page.get_chars(as_type)
+        if start_row is None:
+            start_row = 1
+        if stop_row is None:
+            stop_row = len(chars)
+        output = tuple(
+            as_type().join(_charrow[:page.row_length(_row0 + 1)])
+            for _row0, _charrow in enumerate(chars)
+            if start_row <= _row0 + 1 <= stop_row
+        )
+        return output
+
+    def get_logical_line(self, from_row, as_type=bytes):
+        """Get the contents of the logical line on the active page, as one bytes string."""
+        # find start and end of logical line
+        start_row = self.find_start_of_line(from_row)
+        stop_row = self.find_end_of_line(from_row)
+        line = as_type().join(
+            self.get_text(start_row, stop_row, pagenum=self._apagenum, as_type=bytes)
+        )
+        return line
 
     ###########################################################################
     # text screen callbacks

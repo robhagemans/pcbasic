@@ -397,8 +397,8 @@ class ScreenCopyHandler(object):
         """Output the visible page to file in raw bytes."""
         if not target_file:
             return
-        for line in self._text_screen.get_chars():
-            target_file.write_line(line.replace(b'\0', b' '))
+        for line in self._text_screen.get_chars(as_type=bytes):
+            target_file.write_line(b''.join(line).replace(b'\0', b' '))
 
     def _copy_clipboard(self, start_row, start_col, stop_row, stop_col):
         """Copy selected screen area to clipboard."""
