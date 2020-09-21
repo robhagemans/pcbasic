@@ -16,8 +16,14 @@ import contextlib
 import traceback
 import time
 import json
+import logging
 from copy import copy, deepcopy
 from contextlib import contextmanager
+try:
+    # Python 3 only
+    from importlib import reload
+except ImportError:
+    pass
 # process_time not in py2; clock deprecated in py3
 try:
     from time import process_time
@@ -350,6 +356,9 @@ if __name__ == '__main__':
         import pcbasic
         results = run_tests(**arg_dict)
         report_results(*results)
+        # fix logger - which is left in broken state, probably due to messing around with stderr
+        # seems it retains a copy of an old stderr file that is now closed
+        reload(logging)
         print()
         if arg_dict['all'] or arg_dict['unit']:
             sys.stderr.write('Running unit tests: ')
@@ -357,4 +366,11 @@ if __name__ == '__main__':
                 # I can't quite believe how this near-unusable module made it into the standard library
                 import unittest
                 suite = unittest.loader.defaultTestLoader.discover(HERE+'/unit', 'test*.py', None)
-                unittest.TextTestRunner().run(suite)
+                runner = unittest.TextTestRunner()
+                # fix for python2 -
+                # I think a stale version of sys.stderr is used because it's a default argument
+                # in TextTestRunner.__init__ on python 2.7
+                # and probably one of the pcbasic dependencies imported unittest
+                # strangely reload(unittest) doesn't help
+                runner.stream.stream = sys.stderr
+                runner.run(suite)
