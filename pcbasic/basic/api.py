@@ -127,8 +127,8 @@ class Session(object):
         self.start()
         self._impl.keyboard.inject_keystrokes(keys)
 
-    def get_text(self, as_type=bytes):
-        """Get currently displayed text, as tuple of bytes."""
+    def get_chars(self, as_type=bytes):
+        """Get currently displayed characters, as tuple of list of bytes / unicode."""
         self.start()
         return self._impl.text_screen.get_chars(as_type=as_type)
 

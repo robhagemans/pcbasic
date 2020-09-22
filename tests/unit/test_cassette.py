@@ -6,11 +6,11 @@ Tests for cassette device
 This file is released under the GNU GPL version 3 or later.
 """
 
-import unittest
 import os
 import shutil
 
 from pcbasic import Session
+from tests.unit.utils import TestCase, run_tests
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -25,8 +25,10 @@ def _output_file(name):
     return os.path.join(HERE, 'output', 'cassette', name)
 
 
-class CassetteTest(unittest.TestCase):
+class CassetteTest(TestCase):
     """Cassette tests."""
+
+    tag = u'cassette'
 
     def setUp(self):
         """Ensure output directory exists."""
@@ -40,7 +42,7 @@ class CassetteTest(unittest.TestCase):
         with Session(devices={b'CAS1:': _input_file('test.cas')}) as s:
             s.execute('load "cas1:test"')
             s.execute('list')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[:4] == [
             b'not this.B Skipped.',
             b'test    .B Found.',
@@ -55,7 +57,7 @@ class CassetteTest(unittest.TestCase):
             s.execute('save "cas1:empty"')
             s.execute('load "cas1:test"')
             s.execute('list')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[:3] == [
             b'test    .B Found.',
             b'10 OPEN "output.txt" FOR OUTPUT AS 1',
@@ -76,7 +78,7 @@ class CassetteTest(unittest.TestCase):
             ) as s:
             s.execute('load "Test"')
             s.execute('list')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         assert output[:2] == [
             b'Test    .B Found.',
             b'10 PRINT',
@@ -93,7 +95,7 @@ class CassetteTest(unittest.TestCase):
             s.execute('save "cas1:prog",A')
         with Session(devices={b'CAS1:': _output_file('test_prog.cas')}) as s:
             s.execute('run "cas1:prog"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert s.get_variable('A%') == 1234
             assert output[0] == b'prog    .A Found.'
 
@@ -109,7 +111,7 @@ class CassetteTest(unittest.TestCase):
         with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
             s.execute('open "cas1:data" for input as 1')
             s.execute('input#1, A%')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert s.get_variable('A%') == 1234
             assert output[0] == b'data    .D Found.'
 
@@ -170,7 +172,7 @@ class CassetteTest(unittest.TestCase):
         with Session(devices={b'CAS1:': _output_file('empty.cas')}) as s:
             s.execute('save "cas1:"')
             s.execute('load "cas1:"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
         # device timeout given at end of tape
         assert output[0] == b'Device Timeout\xff'
 
@@ -184,7 +186,7 @@ class CassetteTest(unittest.TestCase):
         os.mkdir(_output_file('empty'))
         with Session(devices={b'CAS1:': _output_file('empty')}) as s:
             s.execute('load "cas1:"')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert output[0] == b'Device Unavailable\xff'
             # check internal api function
             assert not s._impl.files.device_available(b'CAS1:')
@@ -198,7 +200,7 @@ class CassetteTest(unittest.TestCase):
         with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
             s.execute('open "cas1:data" for output as 1')
             s.execute('open "cas1:data" for output as 2')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert output[0] == b'File already open\xff'
 
     def test_cas_bad_name(self):
@@ -209,7 +211,7 @@ class CassetteTest(unittest.TestCase):
             pass
         with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
             s.execute(b'open "cas1:\x02\x01" for output as 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert output[0] == b'Bad file number\xff'
 
     def test_cas_bad_mode(self):
@@ -220,7 +222,7 @@ class CassetteTest(unittest.TestCase):
             pass
         with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
             s.execute('open "cas1:test" for random as 1')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert output[0] == b'Bad file mode\xff'
 
     def test_cas_bad_operation(self):
@@ -233,7 +235,7 @@ class CassetteTest(unittest.TestCase):
             s.execute('open "cas1:test" for output as 1')
             s.execute('? LOF(1)')
             s.execute('? LOC(1)')
-            output = [_row.strip() for _row in s.get_text()]
+            output = [_row.strip() for _row in self.get_text(s)]
             assert output[:2] == [b'Illegal function call\xff', b'Illegal function call\xff']
 
     def test_cas_no_name(self):
@@ -244,11 +246,11 @@ class CassetteTest(unittest.TestCase):
         with Session(devices={b'CAS1:': _output_file('test_current.cas')}) as s:
             s.execute('load "cas1:"')
             s.execute('list')
-            output = [_row.rstrip() for _row in s.get_text()]
+            output = [_row.rstrip() for _row in self.get_text(s)]
         assert output[:2] == [
             b'        .B Found.',
             b'10 PRINT',
         ]
 
 if __name__ == '__main__':
-    unittest.main()
+    run_tests()

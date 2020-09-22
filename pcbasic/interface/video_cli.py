@@ -177,14 +177,13 @@ class VideoCLI(VideoTextBase):
         # current row and column where the cursor should be
         # keep cursor_row and last_row unset at the start to avoid printing extra line on resume
         # as it will see a move frm whatever we set it at here to the actusl cursor row
-        self._cursor_row, self._cursor_col = None, 1
+        self._cursor_row, self._cursor_col = 1, 1
         # current actual print column
         self._col = 1
         # cursor row on last cycle
-        self._last_row = None
+        self._last_row = 1
         # text buffer
         self._text = [[u' '] * 80 for _ in range(25)]
-
 
     def __enter__(self):
         """Open command-line interface."""
@@ -200,98 +199,102 @@ class VideoCLI(VideoTextBase):
         finally:
             VideoTextBase.__exit__(self, type, value, traceback)
 
-    def _work(self):
-        """Display update cycle."""
-        # update cursor row only if it's changed from last work-cycle
-        # or if actual printing takes place on the new cursor row
-        if self._cursor_row != self._last_row or self._cursor_col != self._col:
-            self._update_position(self._cursor_row, self._cursor_col)
 
     ###############################################################################
 
     def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
         """Put text or pixels at a given position."""
-        for unicode_list in unicode_matrix:
+        # if multiple rows are updated, they must be sent in order
+        for ofs, unicode_list in enumerate(unicode_matrix):
             unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
-            self._text[row-1][col-1:col-1+len(unicode_list)] = unicode_list
-            # show the character only if it's on the cursor row
-            if row == self._cursor_row:
-                # may have to update row!
-                if row != self._last_row or col != self._col:
-                    self._update_position(row, col)
-                console.write(u''.join((_c if _c else u' ') for _c in unicode_list))
-                self._col = col + len(unicode_list)
-            row += 1
-            # the terminal cursor has moved, so we'll need to move it back later
-            # if that's not where we want to be
-            # but often it is anyway
+            self._text[row-1+ofs][col-1:col-1+len(unicode_list)] = unicode_list
+        self._refresh(row)
 
     def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
         # update cursor row only if it's changed from last work-cycle
         # or if actual printing takes place on the new cursor row
         self._cursor_row, self._cursor_col = row, col
+        # update cursor row only if it's changed from last work-cycle
+        # or if actual printing takes place on the new cursor row
+        if self._cursor_row != self._last_row or self._cursor_col != self._col:
+            self._update_position(self._cursor_row, self._cursor_col)
 
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
         self._text[start-1:stop] = [[u' '] * len(self._text[0]) for _ in range(start-1, stop)]
-        if start <= self._cursor_row and stop >= self._cursor_row:
-            self._update_position(self._cursor_row, 1)
-            self._redraw_row(self._cursor_row)
+        self._refresh(start, stop)
 
-    def scroll(self, direction, from_line, scroll_height, back_attr):
-        """Scroll the screen between from_line and scroll_height."""
+    def scroll(self, direction, start_row, stop_row, back_attr):
+        """Scroll the screen between start_row and stop_row."""
         if direction == -1:
-            self._scroll_up(from_line, scroll_height, back_attr)
+            self._scroll_up(start_row, stop_row, back_attr)
         else:
-            self._scroll_down(from_line, scroll_height, back_attr)
+            self._scroll_down(start_row, stop_row, back_attr)
+        self._refresh(start_row, stop_row)
 
-    def _scroll_up(self, from_line, scroll_height, back_attr):
-        """Scroll the screen up between from_line and scroll_height."""
-        self._text[from_line-1:scroll_height] = (
-            self._text[from_line:scroll_height] + [[u' '] * len(self._text[0])]
+    def _scroll_up(self, start_row, stop_row, back_attr):
+        """Scroll the screen up between start_row and stop_row."""
+        self._text[start_row-1:stop_row] = (
+            self._text[start_row:stop_row] + [[u' '] * len(self._text[0])]
         )
-        console.write(u'\r\n')
+        if start_row < self._last_row <= stop_row:
+            self._last_row -= 1
 
-    def _scroll_down(self, from_line, scroll_height, back_attr):
-        """Scroll the screen down between from_line and scroll_height."""
-        self._text[from_line-1:scroll_height] = (
-            [[u' '] * len(self._text[0])] + self._text[from_line-1:scroll_height-1]
+    def _scroll_down(self, start_row, stop_row, back_attr):
+        """Scroll the screen down between start_row and stop_row."""
+        self._text[start_row-1:stop_row] = (
+            [[u' '] * len(self._text[0])] + self._text[start_row-1:stop_row-1]
         )
+        if start_row <= self._last_row < stop_row:
+            self._last_row += 1
 
     def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Initialise video mode """
         self._text = [[u' '] * text_width for _ in range(text_height)]
+        self._refresh(1, text_height)
 
-    def _redraw_row(self, row, until=None):
-        """Draw the stored text in a row."""
-        if not row:
-            return
-        console.write('\r')
-        rowtext = (u''.join(self._text[row-1])).replace(u'\0', u' ')
-        if until:
-            rowtext = rowtext[:(until-1)]
-        console.write(rowtext)
-        self._col = len(self._text[row-1])+1
+    ###############################################################################
+
+    def _refresh(self, start_row, stop_row=None):
+        """Refresh the current row, if between start and stop inclusive."""
+        if stop_row is None:
+            stop_row = start_row
+        if start_row <= self._last_row <= stop_row:
+            self._redraw_row(self._last_row)
+            self._redraw_row(self._last_row, self._col)
 
     def _update_position(self, row, col):
         """Move terminal print location."""
-        # move cursor if necessary
-        if row and row != self._last_row:
-            if self._last_row:
-                console.write(u'\r\n')
-                self._col = 1
-            self._last_row = row
-            # show what's on the line where we are.
-            self._redraw_row(row)
-            # redraw until current column to put cursor in the right position
-            if col:
-                self._redraw_row(row, until=col)
-        elif row and col and col != self._col:
-            # we're on the current row
-            # only redraw if column has changed
-            self._redraw_row(row, until=col)
-            self._col = col
+        # show the intermediate lines up to and including the current
+        if row != self._last_row:
+            if row > self._last_row:
+                self._redraw_range(self._last_row, row)
+            elif row == self._last_row-1:
+                self._redraw_row(self._last_row-1)
+        # redraw until current column to put cursor in the right position
+        self._redraw_row(row, col)
+        self._last_row = row
+        self._col = col
+
+    def _redraw_range(self, start_row, stop_row):
+        """Redraw text for a range of rows."""
+        for update_row in range(start_row, stop_row):
+            self._redraw_row(update_row)
+            # go one row down
+            console.write(u'\n')
+        self._redraw_row(stop_row)
+
+    def _redraw_row(self, row, col=None):
+        """Draw the stored text in a row."""
+        # go to column 1
+        console.write('\r')
+        rowtext = (u''.join(self._text[row-1])).replace(u'\0', u' ')
+        if col is not None:
+            rowtext = rowtext[:col-1]
+        console.write(rowtext)
+        self._col = len(self._text[row-1])+1
+        self._last_row = row
 
 
 ###############################################################################

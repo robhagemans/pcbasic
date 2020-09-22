@@ -47,7 +47,7 @@ class DisplayTest(TestCase):
             ''')
             with open(self.model_path('characters.bin'), 'rb') as model:
                 model_chars = model.read()
-            assert bytes(bytearray(_c for _r in s.get_text() for _c in _r)) == model_chars
+            assert bytes(bytearray(_c for _r in self.get_text(s) for _c in _r)) == model_chars
 
 
 if __name__ == '__main__':
