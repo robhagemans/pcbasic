@@ -9,6 +9,8 @@ This file is released under the GNU GPL version 3 or later.
 import math
 import operator
 
+from itertools import islice
+
 from ...compat import int2byte
 from ..base import error
 from ..base import tokens as tk
@@ -233,11 +235,10 @@ class Graphics(object):
             raise error.BASICError(error.IFC)
         # VIEW SCREEN
         absolute = next(args)
-        # note that list() will absorb stopiteration but [] will not (in python 2)
-        bounds = list(
-            values.to_int(next(args))
-            for _ in range(4)
-        )
+        bounds = [
+            values.to_int(_arg)
+            for _arg in islice(args, 4)
+        ]
         if not bounds:
             # VIEW SCREEN is a syntax error; just VIEW is OK
             error.throw_if(absolute, error.STX)
@@ -289,7 +290,7 @@ class Graphics(object):
             raise error.BASICError(error.IFC)
         cartesian = not next(args)
         try:
-            coords = [values.to_single(next(args)).to_value() for _ in range(4)]
+            coords = [values.to_single(_arg).to_value() for _arg in islice(args, 4)]
         except StopIteration:
             coords = []
         if not coords:
@@ -377,7 +378,7 @@ class Graphics(object):
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
         step = next(args)
-        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
+        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         c = next(args)
         if c is None:
             c = default
@@ -404,7 +405,7 @@ class Graphics(object):
             for _, arg in zip(range(2), args)
         )
         step1 = next(args)
-        x1, y1 = (values.to_single(next(args)).to_value() for _ in range(2))
+        x1, y1 = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         coord0 = x0, y0, step0
         coord1 = x1, y1, step1
         c = next(args)
@@ -557,7 +558,7 @@ class Graphics(object):
             self._mode.pixel_width * self._screen_aspect[1]
         )
         step = next(args)
-        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
+        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         r = values.to_single(next(args)).to_value()
         error.throw_if(r < 0)
         c = next(args)
@@ -749,7 +750,7 @@ class Graphics(object):
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
         step = next(args)
-        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
+        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         coord = x, y, step
         c, pattern = -1, None
         cval = next(args)
@@ -924,7 +925,7 @@ class Graphics(object):
         """PUT: Put a sprite on the screen."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        x0, y0 = (values.to_single(next(args)).to_value() for _ in range(2))
+        x0, y0 = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         array_name, operation_token = args
         array_name = self._memory.complete_name(array_name)
         operation_token = operation_token or tk.XOR
@@ -958,9 +959,9 @@ class Graphics(object):
         """GET: Read a sprite from the screen."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        x0, y0 = (values.to_single(next(args)).to_value() for _ in range(2))
+        x0, y0 = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         step = next(args)
-        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
+        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         array_name, = args
         array_name = self._memory.complete_name(array_name)
         if array_name not in self._memory.arrays:
