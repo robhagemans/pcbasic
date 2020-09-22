@@ -13,6 +13,11 @@ from pcbasic import Session, run
 from tests.unit.utils import TestCase, run_tests
 
 
+def istypeval(val, refval):
+    """Check agreement in both type and value."""
+    return isinstance(val, type(refval)) and val == refval
+
+
 class SessionTest(TestCase):
     """Unit tests for Session."""
 
@@ -28,10 +33,10 @@ class SessionTest(TestCase):
             # string variable
             s.set_variable('B$', 'abcd')
             assert s.get_variable('B$') == b'abcd'
-            assert s.evaluate('LEN(B$)') is 4
+            assert istypeval(s.evaluate('LEN(B$)'), 4)
             # unset variable
             assert s.evaluate('C!') == 0.
-            assert s.get_variable('D%') is 0
+            assert istypeval(s.get_variable('D%'), 0)
             # unset array
             s.set_variable('A%()', [[0,0,5], [0,0,6]])
             assert s.get_variable('A%()') == [
@@ -54,32 +59,32 @@ class SessionTest(TestCase):
         unicode = type(u'')
         with Session() as s:
             # omit to_type
-            assert s.convert(1, None) is 1
+            assert istypeval(s.convert(1, None), 1)
             # from_type == to_type
-            assert s.convert(1, int) is 1
+            assert istypeval(s.convert(1, int), 1)
             # cp437 string to unicode
             assert s.convert(b'\x00\x01\x9C\x86\xe0', unicode) == u'\x00\u263a\xa3\xe5\u03b1'
             # unicode to cp437
             assert s.convert(u'\x00\u263a\xa3\xe5\u03b1', bytes) == b'\x00\x01\x9C\x86\xe0'
             # int to bool
-            assert s.convert(0, bool) == False
-            assert s.convert(-1, bool) == True
-            assert s.convert(1, bool) == True
+            assert istypeval(s.convert(0, bool), False)
+            assert istypeval(s.convert(-1, bool), True)
+            assert istypeval(s.convert(1, bool), True)
             # float to bool
-            assert s.convert(0., bool) == False
-            assert s.convert(-1., bool) == True
+            assert istypeval(s.convert(0., bool), False)
+            assert istypeval(s.convert(-1., bool), True)
             # bool to int
-            assert s.convert(True, int) is -1
-            assert s.convert(False, int) is 0
+            assert istypeval(s.convert(True, int), -1)
+            assert istypeval(s.convert(False, int), 0)
             # bool to float
-            assert s.convert(True, float) == -1.
-            assert s.convert(False, float) == 0.
+            assert istypeval(s.convert(True, float), -1.)
+            assert istypeval(s.convert(False, float), 0.)
             assert isinstance(s.convert(True, float), float)
             # int to float
-            assert s.convert(1, float) == 1.0
+            assert istypeval(s.convert(1, float), 1.0)
             # float to int (floor)
-            assert s.convert(1.1, int) == 1
-            assert s.convert(-0.1, int) == -1
+            assert istypeval(s.convert(1.1, int), 1)
+            assert istypeval(s.convert(-0.1, int), -1)
             # error
             with self.assertRaises(ValueError):
                 s.convert(b'1', int)
@@ -88,16 +93,16 @@ class SessionTest(TestCase):
         """Test Session.set_variable and Session.get_variable."""
         with Session() as s:
             s.set_variable(b'A%', 1)
-            assert s.get_variable(b'A%') is 1
+            assert istypeval(s.get_variable(b'A%'), 1)
             # bytes or unicode argument
             s.set_variable(u'A%', 2)
-            assert s.get_variable(b'A%') is 2
+            assert istypeval(s.get_variable(b'A%'), 2)
             s.set_variable(u'A%', 3)
-            assert s.get_variable(u'A%') is 3
+            assert istypeval(s.get_variable(u'A%'), 3)
             s.set_variable(u'A%', 3)
-            assert s.get_variable(b'A%') is 3
+            assert istypeval(s.get_variable(b'A%'), 3)
             # undefined variable
-            assert s.get_variable('A!') == 0
+            assert istypeval(s.get_variable('A!'), 0.)
             # sigil must be explicit
             with self.assertRaises(ValueError):
                 s.set_variable('B', 0.)
@@ -106,7 +111,7 @@ class SessionTest(TestCase):
                 s.get_variable('B', 0.)
             # boolean
             s.set_variable(b'A%', True)
-            assert s.get_variable(b'A%') is -1
+            assert istypeval(s.get_variable(b'A%'), -1)
             # single
             s.set_variable(b'A!', 1.1)
             self.assertAlmostEqual(s.get_variable(b'A!'), 1.1, places=6)
