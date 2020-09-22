@@ -51,7 +51,7 @@ class VideoPygame(VideoPlugin):
             **kwargs
         ):
         """Initialise pygame interface."""
-        logging.warning('The PyGame interface is deprecated, use the SDL2 interface instead.')
+        logging.warning('The `pygame` interface is deprecated, please use the `graphics` interface instead.')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
         self._smooth = scaling == 'smooth'

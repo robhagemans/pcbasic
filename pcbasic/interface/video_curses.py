@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import os
 import locale
+import logging
 try:
     import curses
 except ImportError:
@@ -22,7 +23,6 @@ from ..compat import iter_chunks
 
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed
-
 
 if PY2:
     # curses works with bytes in Python 2
@@ -44,6 +44,7 @@ if PY2:
             s.append(i)
 
 else:
+
     def _to_str(unistr):
         """Convert unicode to str."""
         return unistr
@@ -88,6 +89,7 @@ class VideoCurses(VideoPlugin):
 
     def __init__(self, input_queue, video_queue, caption=u'', border_width=0, **kwargs):
         """Initialise the text interface."""
+        logging.warning('The `curses` interface is deprecated, please use the `text` interface instead.')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # we need to ensure setlocale() has been run first to allow unicode input
         if not curses:
@@ -146,9 +148,10 @@ class VideoCurses(VideoPlugin):
             self.set_border_attr(0)
             self._resize(self.height, self.width)
             self.screen.clear()
-        except Exception:
-            # if setup fails, don't leve the terminal raw
+        except Exception as e:
+            # if setup fails, don't leave the terminal raw
             self._close()
+            raise
 
     def __exit__(self, type, value, traceback):
         """Close the curses interface."""
@@ -159,15 +162,18 @@ class VideoCurses(VideoPlugin):
 
     def _close(self):
         """Close the curses interface."""
-        curses.noraw()
-        curses.nl()
-        curses.nocbreak()
-        if self.screen:
-            self.screen.keypad(False)
-        curses.echo()
-        curses.endwin()
-        # restore original terminal size, colours and cursor
-        console.reset()
+        try:
+            curses.noraw()
+            curses.nl()
+            curses.nocbreak()
+            if self.screen:
+                self.screen.keypad(False)
+            curses.echo()
+            curses.endwin()
+            # restore original terminal size, colours and cursor
+            console.reset()
+        except Exception as e:
+            logging.error('Exception on closing curses interface: %s', e)
 
     def _work(self):
         """Handle screen and interface events."""
