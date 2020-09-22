@@ -16,8 +16,14 @@ import contextlib
 import traceback
 import time
 import json
+import logging
 from copy import copy, deepcopy
 from contextlib import contextmanager
+try:
+    # Python 3 only
+    from importlib import reload
+except ImportError:
+    pass
 # process_time not in py2; clock deprecated in py3
 try:
     from time import process_time
@@ -25,12 +31,12 @@ except ImportError:
     from time import clock as process_time
 
 try:
-    from colorama import init
-    init()
+    import colorama
 except ImportError:
     # only needed on Windows
     # without it we still work but look a bit garbled
-    pass
+    class colorama:
+        def init(): pass
 
 # make pcbasic package accessible
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -73,15 +79,11 @@ def is_same(file1, file2):
 
 @contextlib.contextmanager
 def suppress_stdio(do_suppress):
-    # flush last outbut before muffling
-    sys.stderr.flush()
-    sys.stdout.flush()
     if not do_suppress:
         yield
     else:
-        with pcbasic.compat.muffle(sys.stdout):
-            with pcbasic.compat.muffle(sys.stderr):
-                yield
+        with pcbasic.compat.stdio.quiet():
+            yield
 
 def contained(arglist, elem):
     try:
@@ -296,6 +298,7 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
             os.environ = deepcopy(save_env)
             # normalise test name
             category, name = normalise(name)
+            colorama.init()
             print(
                 '\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (category, name),
                 end=''
@@ -314,6 +317,8 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
                 times[testname(category, name)] = timer.wall_time
             # report status
             results[testname(category, name)] = test_frame.status
+            # re-init as pcbasic modifies sys.std**
+            colorama.init()
             print('\033[%sm%s.\033[00;37m' % (
                 STATUS_COLOURS[test_frame.status], test_frame.status
             ))
@@ -323,6 +328,7 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
     return results, times, overall_timer
 
 def report_results(results, times, overall_timer):
+    colorama.init()
     res_stat = {
         _status: [_test for _test, _teststatus in results.items() if _teststatus == _status]
         for _status in set(results.values())
@@ -350,12 +356,21 @@ if __name__ == '__main__':
         import pcbasic
         results = run_tests(**arg_dict)
         report_results(*results)
+        # fix logger - which is left in broken state, probably due to messing around with stderr
+        # seems it retains a copy of an old stderr file that is now closed
+        reload(logging)
         print()
         if arg_dict['all'] or arg_dict['unit']:
-            sys.stdout.flush()
             sys.stderr.write('Running unit tests: ')
-            with pcbasic.compat.muffle(sys.stdout):
+            with pcbasic.compat.stdio.quiet('stdout'):
                 # I can't quite believe how this near-unusable module made it into the standard library
                 import unittest
                 suite = unittest.loader.defaultTestLoader.discover(HERE+'/unit', 'test*.py', None)
-                unittest.TextTestRunner().run(suite)
+                runner = unittest.TextTestRunner()
+                # fix for python2 -
+                # I think a stale version of sys.stderr is used because it's a default argument
+                # in TextTestRunner.__init__ on python 2.7
+                # and probably one of the pcbasic dependencies imported unittest
+                # strangely reload(unittest) doesn't help
+                runner.stream.stream = sys.stderr
+                runner.run(suite)

@@ -9,10 +9,10 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 from collections import deque
 
-from ..compat import muffle
+from ..compat import stdio
 
 try:
-    with muffle(sys.stdout):
+    with stdio.quiet('stdout'):
         import pygame
 except ImportError:
     pygame = None

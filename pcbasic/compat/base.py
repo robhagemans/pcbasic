@@ -11,9 +11,6 @@ import re
 import contextlib
 import sys
 import platform
-import codecs
-import io
-import tempfile
 
 
 # Python major version
@@ -55,20 +52,6 @@ else:
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 
 
-# unicode stream wrappers
-
-def wrap_output_stream(stream):
-    """Wrap std bytes streams to make them behave more like in Python 3."""
-    wrapped = codecs.getwriter(stream.encoding or 'utf-8')(stream)
-    wrapped.buffer = stream
-    return wrapped
-
-def wrap_input_stream(stream):
-    """Wrap std bytes streams to make them behave more like in Python 3."""
-    wrapped = codecs.getreader(stream.encoding or 'utf-8')(stream)
-    wrapped.buffer = stream
-    return wrapped
-
 
 # utility functions, this has to go somewhere...
 
@@ -107,47 +90,3 @@ def iter_chunks(char_list, attrs):
         chars.append(char)
     if chars:
         yield chars, attr
-
-@contextlib.contextmanager
-def muffle(std_stream, preserve=False):
-    """Suppress or delay stdout or stderr messages from Python, C or external programs."""
-    save = None
-    try:
-        try:
-            # save the file descriptor for the target stream
-            save = os.dup(std_stream.fileno())
-        except EnvironmentError:
-            yield
-            return
-        # check for file-like objects that expect unicode, raw output otherwise
-        if isinstance(std_stream, (
-                io.TextIOWrapper, io.StringIO,
-                codecs.StreamReaderWriter, codecs.StreamWriter,
-            )):
-            mode = ''
-        else:
-            mode = 'b'
-        if preserve:
-            temp_file = tempfile.TemporaryFile('w+' + mode)
-        else:
-            temp_file = io.open(os.devnull, 'w' + mode)
-        # http://stackoverflow.com/questions/977840/
-        # redirecting-fortran-called-via-f2py-output-in-python/978264#978264
-        with temp_file as temp:
-            # put /dev/null fds on 1 (stdout) or 2 (stderr)
-            os.dup2(temp.fileno(), std_stream.fileno())
-            # do stuff
-            try:
-                yield
-            finally:
-                std_stream.flush()
-                # restore file descriptors
-                os.dup2(save, std_stream.fileno())
-                if preserve:
-                    # write contents of temporary file back into stream
-                    temp.flush()
-                    temp.seek(0)
-                    std_stream.write(temp.read())
-    finally:
-        if save is not None:
-            os.close(save)

@@ -79,13 +79,12 @@ class Cursor(object):
 
     def rebuild(self):
         """Rebuild the cursor on resume."""
-        if self._visible:
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line)
-            ))
-            self._queues.video.put(signals.Event(
-                signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
-            ))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line)
+        ))
+        self._queues.video.put(signals.Event(
+            signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
+        ))
         # set visibility and blink state
         # cursor blinks if and only if in text mode
         self._queues.video.put(signals.Event(

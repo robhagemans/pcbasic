@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
-import sys
 from collections import deque
 from contextlib import contextmanager
 
@@ -16,7 +15,7 @@ try:
 except ImportError:
     pyaudio = None
 
-from ..compat import muffle, zip
+from ..compat import stdio, zip
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser
@@ -50,7 +49,7 @@ class AudioPortAudio(AudioPlugin):
 
     def __enter__(self):
         """Perform any necessary initialisations."""
-        with muffle(sys.stderr):
+        with stdio.quiet('stderr'):
             self._device = pyaudio.PyAudio()
             self._stream = self._device.open(
                 format=pyaudio.paInt8, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,

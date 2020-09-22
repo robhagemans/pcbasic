@@ -22,7 +22,7 @@ from .compat import configparser
 from .compat import WIN32, get_short_pathname, argv, getcwdu
 from .compat import USER_CONFIG_HOME, USER_DATA_HOME, PY2
 from .compat import split_quoted, split_pair
-from .compat import console, stdout, stdin, stderr, IS_CONSOLE_APP
+from .compat import console, IS_CONSOLE_APP, stdio
 from .compat import TemporaryDirectory
 
 from .data import CODEPAGES, FONTS, PROGRAMS, ICON
@@ -360,7 +360,7 @@ class Lumberjack(object):
         if logfile:
             logstream = io.open(logfile, 'w', encoding='utf_8', errors='replace')
         else:
-            logstream = stderr
+            logstream = stdio.stderr
         # write out cached logs
         logstream.write(self._logstream.getvalue())
         handler = logging.StreamHandler(logstream)
@@ -469,6 +469,7 @@ class Settings(object):
             raise
         # prepare global logger for use by main program
         lumberjack.prepare(self.get('logfile'), self.get('debug'))
+        self._session_params = None
 
     def get(self, name, get_default=True):
         """Get value of option; choose whether to get default or None if unspecified."""
@@ -493,6 +494,8 @@ class Settings(object):
     @property
     def session_params(self):
         """Return a dictionary of parameters for the Session object."""
+        if self._session_params:
+            return self._session_params
         # don't parse any options on --resume
         if self.get('resume'):
             return {}
@@ -573,6 +576,7 @@ class Settings(object):
             else:
                 logging.warning('Option `utf8` is deprecated; use `text-encoding=utf-8` instead.')
                 params['textfile_encoding'] = u'utf-8' if self.get('utf8') else u''
+        self._session_params = params
         return params
 
     def _get_redirects(self):
@@ -583,9 +587,9 @@ class Settings(object):
         infile_params = self.get('input').split(u':')
         if infile_params[0].upper() in (u'STDIO', u'STDIN'):
             if u'RAW' in (_x.upper() for _x in infile_params):
-                input_streams.append(stdin.buffer)
+                input_streams.append(stdio.stdin.buffer)
             else:
-                input_streams.append(stdin)
+                input_streams.append(stdio.stdin)
         else:
             if len(infile_params) > 1 and infile_params[0].upper() == u'FILE':
                 infile = infile_params[1]
@@ -600,9 +604,9 @@ class Settings(object):
         outfile_params = self.get('output').split(u':')
         if outfile_params[0].upper() in (u'STDIO', u'STDOUT'):
             if u'RAW' in (_x.upper() for _x in outfile_params):
-                output_streams.append(stdout.buffer)
+                output_streams.append(stdio.stdout.buffer)
             else:
-                output_streams.append(stdout)
+                output_streams.append(stdio.stdout)
         else:
             if len(outfile_params) > 1 and outfile_params[0].upper() == u'FILE':
                 outfile_params = outfile_params[1:]
@@ -615,22 +619,22 @@ class Settings(object):
                     logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
         # implicit stdio redirects
         # add stdio if redirected or no interface
-        if stdin not in input_streams and stdin.buffer not in input_streams:
-            if IS_CONSOLE_APP and not stdin.isatty():
+        if stdio.stdin not in input_streams and stdio.stdin.buffer not in input_streams:
+            if IS_CONSOLE_APP and not stdio.stdin.isatty():
                 # redirected on console; use bytes stream
-                input_streams.append(stdin.buffer)
+                input_streams.append(stdio.stdin.buffer)
             elif IS_CONSOLE_APP and not self.interface:
                 # no interface & on console; use unicode stream
-                input_streams.append(stdin)
+                input_streams.append(stdio.stdin)
         # redirect output as well if input is redirected, but not the other way around
         # this is because (1) GW-BASIC does this from the DOS prompt
         # (2) otherwise we don't see anything - we quit after input closes
         # isatty is also false if we run as a GUI exe, so check that here
-        if stdout not in output_streams and stdout.buffer not in output_streams:
-            if IS_CONSOLE_APP and (not stdout.isatty() or not stdin.isatty()):
-                output_streams.append(stdout.buffer)
+        if stdio.stdout not in output_streams and stdio.stdout.buffer not in output_streams:
+            if IS_CONSOLE_APP and (not stdio.stdout.isatty() or not stdio.stdin.isatty()):
+                output_streams.append(stdio.stdout.buffer)
             elif IS_CONSOLE_APP and not self.interface:
-                output_streams.append(stdout)
+                output_streams.append(stdio.stdout)
         return {
             'output_streams': output_streams,
             'input_streams': input_streams,
@@ -710,7 +714,7 @@ class Settings(object):
     def _get_default_current_device(self):
         """Get the current drive letter or Z:"""
         if WIN32:
-            letter, _ = os.path.splitdrive(os.path.abspath(os.getcwdu()))
+            letter, _ = os.path.splitdrive(os.path.abspath(getcwdu()))
             try:
                 current_device = letter.encode('ascii')
             except UnicodeError:

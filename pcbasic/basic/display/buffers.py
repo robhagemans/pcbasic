@@ -498,6 +498,16 @@ class VideoBuffer(object):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_SCROLL, (-1, from_row, to_row, back)
             ))
+        # update dirty rects
+        if self._locked:
+            for buf in (self._dirty_left, self._dirty_right):
+                # dirty rect buffers are dicts indexed by the base-1 row number
+                # while the text/dbcs buffers are lists indexed by base-0 row number
+                for _k in buf.keys():
+                    if _k > from_row and _k <= to_row:
+                        buf[_k-1] = buf[_k]
+                if to_row in buf:
+                    del buf[to_row]
         # update text buffer
         new_row = _TextRow(attr, self._width)
         self._rows.insert(to_row, new_row)
@@ -523,6 +533,16 @@ class VideoBuffer(object):
             self._queues.video.put(signals.Event(
                 signals.VIDEO_SCROLL, (1, from_row, to_row, back)
             ))
+        # update dirty rects
+        if self._locked:
+            for buf in (self._dirty_left, self._dirty_right):
+                # dirty rect buffers are dicts indexed by the base-1 row number
+                # while the text/dbcs buffers are lists indexed by base-0 row number
+                for _k in buf.keys():
+                    if _k >= from_row and _k < to_row:
+                        buf[_k] = buf[_k-1]
+                if from_row in buf:
+                    del buf[from_row]
         # update text buffer
         new_row = _TextRow(attr, self._width)
         # insert at row # from_row

@@ -52,7 +52,7 @@ class Implementation(object):
 
     def __init__(
             self, syntax=u'advanced', double=False, term=u'', shell=u'',
-            output_streams=sys.stdout, input_streams=sys.stdin,
+            output_streams=u'stdio', input_streams=u'stdio',
             codepage=None, box_protect=True, font=None, text_width=80,
             video=u'cga', monitor=u'rgb',
             devices=None, current_device=u'Z:',
@@ -326,6 +326,8 @@ class Implementation(object):
         # close files if we opened any
         self.files.close_all()
         self.files.close_devices()
+        # kill the iostreams threads so windows doesn't run out
+        self.io_streams.close()
 
     def _show_prompt(self):
         """Show the Ok or EDIT prompt, unless suppressed."""

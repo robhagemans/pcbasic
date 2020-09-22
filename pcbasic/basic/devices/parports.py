@@ -16,7 +16,7 @@ try:
 except Exception:
     parallel = None
 
-from ...compat import line_print, iterchar, stdout
+from ...compat import line_print, iterchar, stdio
 from ..base import error
 from ..codepage import CONTROL
 from .devicebase import Device, DeviceSettings, TextFileBase, parse_protocol_string, safe_io
@@ -287,12 +287,12 @@ class StdIOParallelStream(object):
         """Write to stdout."""
         if self._crlf:
             s = s.replace(b'\r', b'\n')
-        stdout.buffer.write(s)
+        stdio.stdout.buffer.write(s)
         self.flush()
 
     def flush(self):
         """Flush stdout."""
-        stdout.flush()
+        stdio.stdout.flush()
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
         """Set the values of the control pins."""

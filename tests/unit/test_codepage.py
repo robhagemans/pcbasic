@@ -37,7 +37,7 @@ class CodepageTest(TestCase):
             output_bytes = [_row.strip() for _row in s.get_text()]
             # unicode text
             output_unicode = [_row.strip() for _row in s.get_text(as_type=type(u''))]
-        with open(self.output_path('BOXTEST.TXT'), 'r') as f:
+        with open(self.output_path('BOXTEST.TXT'), 'r', encoding='utf-8') as f:
             assert f.read() == u'\ufeff谀哪哪哪哪目\n\x1a'
         assert output_bytes[0] == b'\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf'
         assert output_unicode[0] == u'谀哪哪哪哪目'
@@ -58,7 +58,7 @@ class CodepageTest(TestCase):
             output_bytes = [_row.strip() for _row in s.get_text()]
             # unicode text
             output_unicode = [_row.strip() for _row in s.get_text(as_type=type(u''))]
-        with open(self.output_path('BOXTEST.TXT'), 'r') as f:
+        with open(self.output_path('BOXTEST.TXT'), 'r', encoding='utf-8') as f:
             assert f.read() == u'\ufeff┌──────────┐\n\x1a'
         assert output_bytes[0] == b'\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf'
         assert output_unicode[0] == u'┌──────────┐'
@@ -105,7 +105,7 @@ class CodepageTest(TestCase):
         # note that we're making a round-trip conversion unicode -> codepage -> unicode
         # this doesn't always work
         for cp, hi in hello.items():
-            with open(self.output_path(hi), 'w') as f:
+            with open(self.output_path(hi), 'w', encoding='utf-8') as f:
                 f.write(hi)
             cp_dict = read_codepage(cp)
             with Session(

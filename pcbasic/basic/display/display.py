@@ -196,14 +196,15 @@ class Display(object):
                 font = self._bios_font_8
             else:
                 font = self._fonts[new_mode.font_height]
-            # initialise for this mode's font width (8 or 9 pixels)
-            font.init_mode(new_mode.font_width)
+            # initialise for this mode's font width and height
+            # which is important for wdth or height 9 pixels
+            font.init_mode(new_mode.font_width, new_mode.font_height)
         except KeyError:
             logging.warning(
                 'No %d-pixel font available. Using 8-pixel font instead.',
                 new_mode.font_height
             )
-            font = self._bios_font_8.init_mode(new_mode.font_width)
+            font = self._bios_font_8.init_mode(new_mode.font_width, new_mode.font_height)
         # attribute and border persist on width-only change
         # otherwise start with black border and default attr
         if (not text_to_text or page_changes or colorswitch_changes):

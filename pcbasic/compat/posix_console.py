@@ -19,12 +19,14 @@ import array
 import struct
 import atexit
 from collections import deque
+from contextlib import contextmanager
 try:
     import curses
 except ImportError:
     curses = None
 
-from .base import MACOS, PY2, HOME_DIR, wrap_input_stream, wrap_output_stream, muffle
+from .base import MACOS, PY2, HOME_DIR
+from .streams import muffle, wrap_input_stream, wrap_output_stream, StdIOBase
 
 
 # ANSI escape codes
@@ -212,17 +214,23 @@ DEFAULT_PALETTE = (
 # implementation
 ###################################################################################################
 
+
+class StdIO(StdIOBase):
+    """holds standard unicode streams."""
+
+    def _reattach_streams(self):
+        if PY2:
+            self.stdin = wrap_input_stream(sys.stdin)
+            self.stdout = wrap_output_stream(sys.stdout)
+            self.stderr = wrap_output_stream(sys.stderr)
+        else:
+            StdIOBase._reattach_streams(self)
+
+stdio = StdIO()
+
+
 # output buffer for ioctl call
 _sock_size = array.array('i', [0])
-
-
-# standard unicode streams
-if PY2:
-    stdin = wrap_input_stream(sys.stdin)
-    stdout = wrap_output_stream(sys.stdout)
-    stderr = wrap_output_stream(sys.stderr)
-else:
-    stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
 
 
 class PosixConsole(object):
@@ -273,7 +281,7 @@ class PosixConsole(object):
     def start_screen(self):
         """Enter full-screen/application mode."""
         # suppress stderr to avoid log messages defacing the application screen
-        self._muffle = muffle(sys.stderr, preserve=True)
+        self._muffle = muffle('stderr', preserve=True)
         self._muffle.__enter__()  # pylint: disable=no-member
         self.set_raw()
         # switch to alternate buffer
@@ -302,8 +310,8 @@ class PosixConsole(object):
 
     def write(self, unicode_str):
         """Write (unicode) text to console."""
-        stdout.write(unicode_str)
-        stdout.flush()
+        stdio.stdout.write(unicode_str)
+        stdio.stdout.flush()
 
     def _emit_ti(self, capability, *args):
         """Emit escape code."""
@@ -315,15 +323,15 @@ class PosixConsole(object):
             pattern = curses.tigetstr(capability)
         if pattern:
             ansistr = curses.tparm(pattern, *args).decode('ascii')
-            stdout.write(ansistr)
-            stdout.flush()
+            stdio.stdout.write(ansistr)
+            stdio.stdout.flush()
             return True
         return False
 
     def set_caption(self, caption):
         """Set terminal caption."""
         if self._emit_ti('tsl'):
-            stdout.write(caption)
+            stdio.stdout.write(caption)
             self._emit_ti('fsl')
 
     def resize(self, height, width):
@@ -416,7 +424,7 @@ class PosixConsole(object):
         Read keypress from console. Non-blocking.
         Returns tuple (unicode, keycode, set of mods)
         """
-        sequence = read_all_available(stdin)
+        sequence = read_all_available(stdio.stdin)
         if sequence is None:
             # stream closed, send ctrl-d
             return u'\x04', 'd', {'CTRL'}
