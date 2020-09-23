@@ -33,7 +33,7 @@ def get_platform_info():
         u'python: %s %s %s' % (
         sys.version.replace('\n', ''), ' '.join(platform.architecture()), frozen))
     info.append(u'\nMODULES')
-    modules = ('pyaudio', 'pygame', 'curses', 'serial', 'parallel')
+    modules = ('pyaudio', 'serial', 'parallel')
     for module in modules:
         try:
             m = importlib.import_module(module)
