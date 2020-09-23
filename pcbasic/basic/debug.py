@@ -55,6 +55,7 @@ def get_platform_info():
     info.append(u'\nLIBRARIES')
     try:
         from ..interface import video_sdl2
+        video_sdl2._import_sdl2()
         info.append(u'sdl2: %s' % (video_sdl2.sdl2.get_dll_file()))
         if video_sdl2.sdlgfx:
             info.append(u'sdl2_gfx: %s' % (video_sdl2.sdlgfx.libfile))

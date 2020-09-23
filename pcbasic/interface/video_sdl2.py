@@ -29,8 +29,31 @@ from . import window
 from . import clipboard
 
 
+
+###############################################################################
+# video settings
+
+# refresh cycle parameters
+# number of cycles to change blink state
+BLINK_CYCLES = 5
+# number of distinct blink states
+N_BLINK_STATES = 4
+# ms duration of a blink
+BLINK_TIME = 120
+CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
+
+
+
 ###############################################################################
 # locate and load SDL libraries
+
+if False:
+    # packagers take note
+    from . import sdl2
+
+sdl2 = None
+sdlgfx = None
+_smooth_zoom = None
 
 # platform-specific dll location
 LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
@@ -63,40 +86,29 @@ def _bind_gfx_zoomsurface():
     return None
 
 
-with EnvironmentCache() as _sdl_env:
-    # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
-    # first in LIB_DIR, then in the standard search path
-    # user should remove dll from LIB_DIR they want to use another one
-    _sdl_env.set('PYSDL2_DLL_PATH', LIB_DIR)
-    try:
-        from . import sdl2
-    except ImportError:
-        _sdl_env.set('PYSDL2_DLL_PATH', '')
+def _import_sdl2():
+    """Import the sdl2 bindings and define constants."""
+    global sdl2, _smooth_zoom
+    global SCAN_TO_SCAN, ALT_SCAN_TO_EASCII, MOD_TO_SCAN
+    global KEY_TO_EASCII, SHIFT_KEY_TO_EASCII, CTRL_KEY_TO_EASCII
+
+    with EnvironmentCache() as _sdl_env:
+        # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
+        # first in LIB_DIR, then in the standard search path
+        # user should remove dll from LIB_DIR they want to use another one
+        _sdl_env.set('PYSDL2_DLL_PATH', LIB_DIR)
         try:
             from . import sdl2
         except ImportError:
-            sdl2 = None
-    sdlgfx = None
-    _smooth_zoom = _bind_gfx_zoomsurface()
+            _sdl_env.set('PYSDL2_DLL_PATH', '')
+            # last try, do not catch ImportError
+            from . import sdl2
+        _smooth_zoom = _bind_gfx_zoomsurface()
 
 
-###############################################################################
-# video settings
+    ###############################################################################
+    # keyboard codes
 
-# refresh cycle parameters
-# number of cycles to change blink state
-BLINK_CYCLES = 5
-# number of distinct blink states
-N_BLINK_STATES = 4
-# ms duration of a blink
-BLINK_TIME = 120
-CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
-
-
-###############################################################################
-# keyboard codes
-
-if sdl2:
     # these are PC keyboard scancodes
     SCAN_TO_SCAN = {
         # top row
@@ -321,7 +333,9 @@ class VideoSDL2(VideoPlugin):
             **kwargs
         ):
         """Initialise SDL2 interface."""
-        if not sdl2:
+        try:
+            _import_sdl2()
+        except ImportError:
             raise InitFailed('Module `sdl2` not found')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens

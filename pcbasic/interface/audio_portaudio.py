@@ -10,10 +10,9 @@ import os
 from collections import deque
 from contextlib import contextmanager
 
-try:
+if False:
+    # for detection by packagers
     import pyaudio
-except ImportError:
-    pyaudio = None
 
 from ..compat import stdio, zip
 from .audio import AudioPlugin
@@ -34,7 +33,10 @@ class AudioPortAudio(AudioPlugin):
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
-        if not pyaudio:
+        global pyaudio
+        try:
+            import pyaudio
+        except ImportError:
             raise InitFailed('Module `pyaudio` not found')
         # synthesisers
         self._signal_sources = synthesiser.get_signal_sources()
@@ -49,14 +51,13 @@ class AudioPortAudio(AudioPlugin):
 
     def __enter__(self):
         """Perform any necessary initialisations."""
-        with stdio.quiet('stderr'):
-            self._device = pyaudio.PyAudio()
-            self._stream = self._device.open(
-                format=pyaudio.paInt8, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
-                frames_per_buffer=_BUFSIZE, stream_callback=self._get_next_chunk
-            )
-            self._stream.start_stream()
-            AudioPlugin.__enter__(self)
+        self._device = pyaudio.PyAudio()
+        self._stream = self._device.open(
+            format=pyaudio.paInt8, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
+            frames_per_buffer=_BUFSIZE, stream_callback=self._get_next_chunk
+        )
+        self._stream.start_stream()
+        AudioPlugin.__enter__(self)
 
     def __exit__(self, type, value, traceback):
         """Close down PortAudio."""
