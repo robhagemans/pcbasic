@@ -27,11 +27,10 @@ from .base import PY2
 # i have tried to use close-stdout approach and fix all stale references, however new ones keep popping
 # up e.g. in logging, unittest, curses. there are probably more, which means hard-to-debug future crashes
 # the only reason to redirect c-level stream were:
-# - the python2-pyaudio package on ubuntu is compiled with debugging on, leading to a lot of chatter
-#   which is annoying on a console interface
+# - pyaudio on alsa produces a lot of chatter on init which is annoying on a console interface
 # - pygame prints a "banner" message to the console when imported, which is annoying especially when using another interface
 # since:
-# - the first is a packaging bug that has been fixed at least in python3-pyaudio, so can be avoided by using python 3 which is now preferred
+# - the first is annoying but does not deface the screen during runtime
 # - the second only occurs in a deprecated interface, and can be avoided in other interfaces by delaying module load until it's needed
 # - the whole thing is a bit hacky and clearly likely to break in newer python versions
 # - there are probably still crashes hidden away in some code paths

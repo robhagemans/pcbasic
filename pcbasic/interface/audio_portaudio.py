@@ -51,13 +51,16 @@ class AudioPortAudio(AudioPlugin):
 
     def __enter__(self):
         """Perform any necessary initialisations."""
-        self._device = pyaudio.PyAudio()
-        self._stream = self._device.open(
-            format=pyaudio.paInt8, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
-            frames_per_buffer=_BUFSIZE, stream_callback=self._get_next_chunk
-        )
-        self._stream.start_stream()
-        AudioPlugin.__enter__(self)
+        # quiet - only in py2 this has an effect on external writes
+        # op py3 we still see alsa and pyaudio debug messages
+        with stdio.quiet('stderr'):
+            self._device = pyaudio.PyAudio()
+            self._stream = self._device.open(
+                format=pyaudio.paInt8, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
+                frames_per_buffer=_BUFSIZE, stream_callback=self._get_next_chunk
+            )
+            self._stream.start_stream()
+            AudioPlugin.__enter__(self)
 
     def __exit__(self, type, value, traceback):
         """Close down PortAudio."""
