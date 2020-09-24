@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import logging
 from collections import deque
 from contextlib import contextmanager
 
@@ -14,7 +15,7 @@ if False:
     # for detection by packagers
     import pyaudio
 
-from ..compat import stdio, zip
+from ..compat import stdio, zip, WIN32
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser
@@ -25,6 +26,32 @@ from . import synthesiser
 _CHUNK_LENGTH = 1192 * 4
 # buffer size in sample frames
 _BUFSIZE = 1024
+
+
+# suppress ALSA debug messages
+# https://stackoverflow.com/questions/7088672/pyaudio-working-but-spits-out-error-messages-each-time
+if WIN32:
+    @contextmanager
+    def _quiet_alsa(): yield
+else:
+    @contextmanager
+    def _quiet_alsa():
+        """Set the error handler in alsa to avoid debug messages on the screen."""
+        from ctypes import CFUNCTYPE, c_char_p, c_int, cdll
+        # From alsa-lib Git 3fd4ab9be0db7c7430ebd258f2717a976381715d
+        # $ grep -rn snd_lib_error_handler_t
+        # include/error.h:59:typedef void (*snd_lib_error_handler_t)(const char *file, int line, const char *function, int err, const char *fmt, ...) /* __attribute__ ((format (printf, 5, 6))) */;
+        ERROR_HANDLER_FUNC = CFUNCTYPE(None, c_char_p, c_int, c_char_p, c_int, c_char_p)
+        def py_error_handler(filename, line, function, err, fmt):
+            logging.debug('ALSA: %s:%s: %s', filename, line, fmt)
+        c_error_handler = ERROR_HANDLER_FUNC(py_error_handler)
+        asound = cdll.LoadLibrary('libasound.so')
+        asound.snd_lib_error_set_handler(c_error_handler)
+        try:
+            yield
+        finally:
+            asound.snd_lib_error_set_handler(None)
+
 
 
 @audio_plugins.register('portaudio')
@@ -51,9 +78,7 @@ class AudioPortAudio(AudioPlugin):
 
     def __enter__(self):
         """Perform any necessary initialisations."""
-        # quiet - only in py2 this has an effect on external writes
-        # op py3 we still see alsa and pyaudio debug messages
-        with stdio.quiet('stderr'):
+        with _quiet_alsa():
             self._device = pyaudio.PyAudio()
             self._stream = self._device.open(
                 format=pyaudio.paInt8, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
