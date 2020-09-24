@@ -121,7 +121,11 @@ class StdIOBase(object):
                         # write contents of temporary file back into stream
                         temp.flush()
                         temp.seek(0)
-                        std_stream.write(temp.read())
+                        if PY2:
+                            std_stream.write(temp.read())
+                        else:
+                            std_stream.buffer.write(temp.read())
+
         finally:
             if save is not None:
                 os.close(save)
