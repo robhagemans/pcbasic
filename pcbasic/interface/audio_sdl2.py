@@ -2,7 +2,7 @@
 PC-BASIC - audio_sdl2.py
 Sound interface based on SDL2
 
-(c) 2015--2019 Rob Hagemans
+(c) 2015--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 

@@ -2,7 +2,7 @@
 NAME = u'PC-BASIC'
 PACKAGE = 'pcbasic'
 VERSION = u'2.0.2'
-COPYRIGHT = u'(C) Copyright 2013--2019 Rob Hagemans.'
+COPYRIGHT = u'(C) Copyright 2013--2020 Rob Hagemans.'
 LICENCE = u'GPLv3'
 AUTHOR = u'Rob Hagemans'
 EMAIL = u'robhagemans@yahoo.co.uk'

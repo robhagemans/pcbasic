@@ -2,7 +2,7 @@
 PC-BASIC - state.py
 Support for pickling emulator state
 
-(c) 2014--2019 Rob Hagemans
+(c) 2014--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
