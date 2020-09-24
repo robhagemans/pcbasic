@@ -32,6 +32,7 @@ except ImportError:
 
 try:
     import colorama
+    colorama.init()
 except ImportError:
     # only needed on Windows
     # without it we still work but look a bit garbled
@@ -298,7 +299,6 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
             os.environ = deepcopy(save_env)
             # normalise test name
             category, name = normalise(name)
-            colorama.init()
             print(
                 '\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (category, name),
                 end=''
@@ -318,7 +318,6 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
             # report status
             results[testname(category, name)] = test_frame.status
             # re-init as pcbasic modifies sys.std**
-            colorama.init()
             print('\033[%sm%s.\033[00;37m' % (
                 STATUS_COLOURS[test_frame.status], test_frame.status
             ))
@@ -328,7 +327,6 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
     return results, times, overall_timer
 
 def report_results(results, times, overall_timer):
-    colorama.init()
     res_stat = {
         _status: [_test for _test, _teststatus in results.items() if _teststatus == _status]
         for _status in set(results.values())
@@ -356,9 +354,6 @@ if __name__ == '__main__':
         import pcbasic
         results = run_tests(**arg_dict)
         report_results(*results)
-        # fix logger - which is left in broken state, probably due to messing around with stderr
-        # seems it retains a copy of an old stderr file that is now closed
-        reload(logging)
         print()
         if arg_dict['all'] or arg_dict['unit']:
             sys.stderr.write('Running unit tests: ')
@@ -367,10 +362,4 @@ if __name__ == '__main__':
                 import unittest
                 suite = unittest.loader.defaultTestLoader.discover(HERE+'/unit', 'test*.py', None)
                 runner = unittest.TextTestRunner()
-                # fix for python2 -
-                # I think a stale version of sys.stderr is used because it's a default argument
-                # in TextTestRunner.__init__ on python 2.7
-                # and probably one of the pcbasic dependencies imported unittest
-                # strangely reload(unittest) doesn't help
-                runner.stream.stream = sys.stderr
                 runner.run(suite)

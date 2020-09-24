@@ -23,7 +23,7 @@ from collections import deque
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
 from .base import PY2
-from .streams import muffle, wrap_input_stream, wrap_output_stream, StdIOBase
+from .streams import StdIOBase
 
 if PY2:
     from .python2 import SimpleNamespace
@@ -744,31 +744,28 @@ if PY2:
             return bytes(output)
 
 
-
 class StdIO(StdIOBase):
-    """holds standard unicode streams."""
+    """Holds standard unicode streams."""
 
-    # standard unicode streams
-    def _reattach_streams(self):
-        if PY2:
+    if PY2:
+        def _attach_stdin(self):
             if sys.stdin.isatty():
-                self.stdin = wrap_input_stream(_ConsoleInput())
+                self.stdin = self._wrap_input_stream(_ConsoleInput())
             else:
-                self.stdin = wrap_input_stream(sys.stdin)
+                self.stdin = self._wrap_input_stream(sys.stdin)
 
-            if sys.stdout.isatty() and not 'stdout' in self._redirected:
-                self.stdout = wrap_output_stream(_ConsoleOutput(sys.stdout, HSTDOUT))
+        def _attach_output_stream(self, stream_name, redirected=False):
+            stream = getattr(sys, '__%s__' % (stream_name,))
+            handle = {'stdout': HSTDOUT, 'stderr': HSTDERR}[stream_name]
+            if stream.isatty() and not redirected:
+                new_stream = self._wrap_output_stream(_ConsoleOutput(stream, handle))
             else:
-                self.stdout = wrap_output_stream(sys.stdout)
-
-            if sys.stderr.isatty() and not 'stderr' in self._redirected:
-                self.stderr = wrap_output_stream(_ConsoleOutput(sys.stderr, HSTDERR))
-            else:
-                self.stderr = wrap_output_stream(sys.stderr)
-        else:
-            StdIOBase._reattach_streams(self)
+                encoding = 'utf-8' if redirected else None
+                new_stream = self._wrap_output_stream(stream, encoding)
+            setattr(self, stream_name, new_stream)
 
 stdio = StdIO()
+
 
 # set stdio as binary, to avoid Windows messing around with CRLFs
 # only do this for redirected output, as it breaks interactive Python sessions

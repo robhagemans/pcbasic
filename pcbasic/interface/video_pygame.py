@@ -9,15 +9,11 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 import ctypes
 
-from ..compat import iteritems, unichr, stdio
+if False:
+    # for detection by packagers
+    import pygame
 
-try:
-    with stdio.quiet('stdout'):
-        import pygame
-except ImportError:
-    pygame = None
-
-
+from ..compat import iteritems, unichr
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base import bytematrix
@@ -52,6 +48,10 @@ class VideoPygame(VideoPlugin):
         ):
         """Initialise pygame interface."""
         logging.warning('The `pygame` interface is deprecated, please use the `graphics` interface instead.')
+        try:
+            _import_pygame()
+        except ImportError:
+            raise InitFailed('Module `pygame` not found')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # request smooth scaling
         self._smooth = scaling == 'smooth'
@@ -63,8 +63,6 @@ class VideoPygame(VideoPlugin):
         self.fullscreen = fullscreen
         self._has_window = False
         # set state objects to whatever is now in state (may have been unpickled)
-        if not pygame:
-            raise InitFailed('Module `pygame` not found')
         # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
         set_dpi_aware()
         # ensure we have the correct video driver for SDL 1.2
@@ -689,9 +687,19 @@ def create_feedback(surface, selection_rects):
 
 
 ###############################################################################
+# import PyGame and define constants
+
+pygame = None
 
 
-if pygame:
+def _import_pygame():
+    """Import pygame and define constants."""
+    global pygame
+    global KEY_TO_SCAN, MOD_TO_SCAN, KEY_TO_EASCII_NUM
+    global KEY_TO_EASCII, SHIFT_KEY_TO_EASCII, CTRL_KEY_TO_EASCII, ALT_KEY_TO_EASCII
+
+    import pygame
+
     # these are PC keyboard scancodes
     KEY_TO_SCAN = {
         # top row

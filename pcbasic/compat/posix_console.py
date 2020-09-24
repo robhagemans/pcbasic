@@ -26,7 +26,7 @@ except ImportError:
     curses = None
 
 from .base import MACOS, PY2, HOME_DIR
-from .streams import muffle, wrap_input_stream, wrap_output_stream, StdIOBase
+from .streams import StdIOBase
 
 
 # ANSI escape codes
@@ -216,15 +216,16 @@ DEFAULT_PALETTE = (
 
 
 class StdIO(StdIOBase):
-    """holds standard unicode streams."""
+    """Holds standard unicode streams."""
 
-    def _reattach_streams(self):
-        if PY2:
-            self.stdin = wrap_input_stream(sys.stdin)
-            self.stdout = wrap_output_stream(sys.stdout)
-            self.stderr = wrap_output_stream(sys.stderr)
-        else:
-            StdIOBase._reattach_streams(self)
+    if PY2:
+        def _attach_stdin(self):
+            self.stdin = self._wrap_input_stream(sys.stdin)
+
+        def _attach_output_stream(self, stream_name, redirected=False):
+            stream = getattr(sys, '__%s__' % (stream_name,))
+            new_stream = self._wrap_output_stream(stream)
+            setattr(self, stream_name, new_stream)
 
 stdio = StdIO()
 
@@ -281,7 +282,7 @@ class PosixConsole(object):
     def start_screen(self):
         """Enter full-screen/application mode."""
         # suppress stderr to avoid log messages defacing the application screen
-        self._muffle = muffle('stderr', preserve=True)
+        self._muffle = stdio.pause('stderr')
         self._muffle.__enter__()  # pylint: disable=no-member
         self.set_raw()
         # switch to alternate buffer

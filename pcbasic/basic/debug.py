@@ -33,7 +33,7 @@ def get_platform_info():
         u'python: %s %s %s' % (
         sys.version.replace('\n', ''), ' '.join(platform.architecture()), frozen))
     info.append(u'\nMODULES')
-    modules = ('pyaudio', 'pygame', 'curses', 'serial', 'parallel')
+    modules = ('pyaudio', 'serial', 'parallel')
     for module in modules:
         try:
             m = importlib.import_module(module)
@@ -55,6 +55,7 @@ def get_platform_info():
     info.append(u'\nLIBRARIES')
     try:
         from ..interface import video_sdl2
+        video_sdl2._import_sdl2()
         info.append(u'sdl2: %s' % (video_sdl2.sdl2.get_dll_file()))
         if video_sdl2.sdlgfx:
             info.append(u'sdl2_gfx: %s' % (video_sdl2.sdlgfx.libfile))

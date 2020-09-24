@@ -12,16 +12,21 @@ import logging
 import ctypes
 from collections import deque
 
-try:
-    from . import sdl2
-except ImportError:
-    sdl2 = None
-
 from ..compat import zip
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser
 
+# sdl2 module is imported only at plugin initialisation
+sdl2 = None
+
+if False:
+    # packagers take note
+    from . import sdl2
+
+def _import_sdl2():
+    global sdl2
+    from . import sdl2
 
 # approximate generator chunk length
 # one wavelength at 37 Hz is 1192 samples at 44100 Hz
@@ -40,7 +45,9 @@ class AudioSDL2(AudioPlugin):
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
-        if not sdl2:
+        try:
+            _import_sdl2()
+        except ImportError:
             raise InitFailed('Module `sdl2` not found')
         # synthesisers
         self._signal_sources = synthesiser.get_signal_sources()

@@ -9,18 +9,11 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 from collections import deque
 
-from ..compat import stdio
 
-try:
-    with stdio.quiet('stdout'):
-        import pygame
-except ImportError:
-    pygame = None
-
-if pygame:
+if False:
+    # keep the import for detection by packagers
+    import pygame
     import pygame.mixer as mixer
-else:
-    mixer = None
 
 from ..basic.base import signals
 from .audio import AudioPlugin
@@ -46,9 +39,14 @@ class AudioPygame(AudioPlugin):
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
-        if not pygame:
+        global pygame, mixer
+        try:
+            import pygame
+        except ImportError:
             raise InitFailed('Module `pygame` not found')
-        if not mixer:
+        try:
+            from pygame import mixer
+        except ImportError:
             raise InitFailed('Module `mixer` not found')
         # this must be called before pygame.init() in the video plugin
         # if sample_bits != 16 or -16 I get no sound. seems to ave no effect though
