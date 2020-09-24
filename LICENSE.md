@@ -1,6 +1,6 @@
 ### PC-BASIC interpreter ###
 
-**Copyright © 2013—2018 Rob Hagemans.**
+**Copyright © 2013—2020 Rob Hagemans.**
 
 _Source code available at [https://github.com/robhagemans/pcbasic](https://github.com/robhagemans/pcbasic)._
 
