@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 PC-BASIC test script
 
@@ -17,6 +17,7 @@ import traceback
 import time
 import json
 import logging
+import platform
 from copy import copy, deepcopy
 from contextlib import contextmanager
 try:
@@ -271,6 +272,7 @@ def normalise(name):
 
 
 def run_tests(tests, all, fast, loud, reraise, **dummy):
+    print('Running tests with Python', platform.python_version(), 'on', platform.platform())
     if all:
         tests = [
             os.path.join('basic', _preset, _test)
