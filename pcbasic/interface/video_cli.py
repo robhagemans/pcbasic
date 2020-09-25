@@ -287,13 +287,15 @@ class VideoCLI(VideoTextBase):
 
     def _redraw_row(self, row, col=None):
         """Draw the stored text in a row."""
-        # go to column 1
-        console.write('\r')
-        rowtext = (u''.join(self._text[row-1])).replace(u'\0', u' ')
+        rowtext = self._text[row-1]
+        # we need to slice *before* joining to get the cursor right on dbcs
+        # as double-width characters come through as pairs c, u''
         if col is not None:
             rowtext = rowtext[:col-1]
-        console.write(rowtext)
-        self._col = len(self._text[row-1])+1
+        # go to column 1
+        console.write(u'\r')
+        console.write(u''.join(rowtext))
+        self._col = len(rowtext) + 1
         self._last_row = row
 
 
