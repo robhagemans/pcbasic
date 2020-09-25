@@ -295,8 +295,6 @@ class VideoCLI(VideoTextBase):
         # go to column 1
         console.write(u'\r')
         console.write(u''.join(rowtext))
-        self._col = len(rowtext) + 1
-        self._last_row = row
 
 
 ###############################################################################
