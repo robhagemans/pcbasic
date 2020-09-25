@@ -404,7 +404,8 @@ class ScreenCopyHandler(object):
         """Copy selected screen area to clipboard."""
         text = list(self._text_screen.get_text(start_row, stop_row))
         text[0] = text[0][start_col-1:]
-        text[-1] = text[-1][:stop_col]
+        # stop_row, stop_col is *exclusive*
+        text[-1] = text[-1][:stop_col-1]
         clip_text = u'\n'.join(u''.join(_row) for _row in text)
         self._queues.video.put(signals.Event(
             signals.VIDEO_SET_CLIPBOARD_TEXT, (clip_text,)
