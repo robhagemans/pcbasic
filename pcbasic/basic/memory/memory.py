@@ -468,7 +468,8 @@ class DataSegment(object):
         value = next(args)
         if isinstance(value, values.String):
             # if already permanent, store a deep copy to avoid double referencing
-            if self.strings.is_permanent(value):
+            # if RHS is a field string, deep copy as LHS should not point to the field
+            if self.strings.is_permanent(value) or self.strings.is_field_string(value):
                 value = value.new().from_str(value.dereference())
         self.set_variable(name, indices, value)
 
