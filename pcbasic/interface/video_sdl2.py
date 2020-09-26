@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 import ctypes
 import os
+import sys
 import functools
 import operator
 from contextlib import contextmanager
@@ -93,6 +94,7 @@ def _import_sdl2():
     global KEY_TO_EASCII, SHIFT_KEY_TO_EASCII, CTRL_KEY_TO_EASCII
 
     with EnvironmentCache() as _sdl_env:
+
         # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
         # first in LIB_DIR, then in the standard search path
         # user should remove dll from LIB_DIR they want to use another one
@@ -365,11 +367,15 @@ class VideoSDL2(VideoPlugin):
         self._mouse_clip = mouse_clipboard
         # keyboard setup
         self._f11_active = False
-        # ensure the correct SDL2 video driver is chosen for Windows
-        # since this gets messed up if we also import pygame
         self._env = EnvironmentCache()
         if WIN32:
+            # ensure the correct SDL2 video driver is chosen for Windows
+            # since this gets messed up if we also import pygame
             self._env.set('SDL_VIDEODRIVER', 'windows')
+        else:
+            # this is needed "to make the window manager correctly match the sdl window" (see pygame source)
+            # without it, the icon doesn't get changed
+            self._env.set('SDL_VIDEO_X11_WMCLASS', sys.argv[0])
         # initialise SDL
         if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):
             # SDL not initialised correctly
