@@ -15,7 +15,7 @@ if False:
     # for detection by packagers
     import pyaudio
 
-from ..compat import stdio, zip, WIN32
+from ..compat import zip, WIN32
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser

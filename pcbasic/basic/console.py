@@ -263,6 +263,9 @@ class Console(object):
 
     def write(self, s, do_echo=True):
         """Write a string to the screen at the current position."""
+        if not s:
+            # don't disconnect line wrap if no output
+            return
         if do_echo:
             # CR -> CRLF, CRLF -> CRLF LF
             self._io_streams.write(b''.join([(b'\r\n' if c == b'\r' else c) for c in iterchar(s)]))

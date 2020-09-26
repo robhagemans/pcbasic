@@ -629,6 +629,8 @@ class SCRNFile(RawFile):
 
     def write(self, s, can_break=True):
         """Write string s to SCRN: """
+        if not s:
+            return
         # writes to SCRN files should *not* be echoed
         do_echo = self._is_master
         self._col = self.console.current_col

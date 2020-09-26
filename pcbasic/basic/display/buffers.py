@@ -289,12 +289,11 @@ class VideoBuffer(object):
         # do nothing beyond logical end of row
         if therow.length < col:
             return 0, 0
+        adjust_end = fill_char_attr is None
         if fill_char_attr is None:
             fill_char, fill_attr = b' ', attr
-            adjust_end = True
         else:
             fill_char, fill_attr = fill_char_attr
-        adjust_end = fill_char_attr is None
         therow.chars[:therow.length] = (
             therow.chars[:col-1] + therow.chars[col:therow.length] + [fill_char]
         )

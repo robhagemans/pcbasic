@@ -362,7 +362,7 @@ def pack_bytes(unpacked, items_per_byte):
     bpp = 8 // items_per_byte
     mask = (1 << bpp) - 1
     shifts = [8 - bpp - _sh for _sh in range(0, 8, bpp)]
-    # ceildiv(a,b) == -(floowrdiv(-a,b))
+    # ceildiv(a,b) == -(floordiv(-a,b))
     packed_width = -(-len(unpacked) // items_per_byte)
     prepacked = [
         (_byte & mask) << _shift

@@ -363,10 +363,13 @@ class _ConsoleWriter:
                     handle, ch, 1,
                     byref(wintypes.DWORD()), byref(wintypes.DWORD())
                 )
-            if ch == u'\r':
+            # if we don't include \n here we get glitches on regular console writes
+            # is it necessary to treat CR and LF separately *in raw mode*?
+            # i.e. in raw mode,  shouldn't LF just move a line down without changing the column?
+            if ch in (u'\r', u'\n'):
                 col = 0
                 cls._overflow = False
-            elif ch == b'\b':
+            elif ch == u'\b':
                 col = max(col-1, 0)
                 cls._overflow = False
             else:

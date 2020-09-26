@@ -689,12 +689,13 @@ class TextScreen(object):
         """Get all characters on the visible page, as tuple of tuples of bytes (raw) or unicode (dbcs)."""
         return self._pages[self._vpagenum].get_chars(as_type=as_type)
 
-    def get_text(self, start_row=None, stop_row=None, pagenum=None, as_type=text_type):
+    def get_text(self, start_row=None, stop_row=None, pagenum=None, wrap=True, as_type=text_type):
         """
-        Retrieve consecutive rows of text on any page,
+        Retrieve consecutive rows of text on page `pagenum`,
         as tuple of bytes (raw) / tuple of unicode (dbcs).
         Each row is one (bytes or unicode) string and ends at the row length.
         So poked characters may not be included.
+        Wrapped lines are output as a single row if `wrap=True`.
         """
         if pagenum is None:
             pagenum = self._vpagenum
@@ -709,6 +710,19 @@ class TextScreen(object):
             for _row0, _charrow in enumerate(chars)
             if start_row <= _row0 + 1 <= stop_row
         )
+        if wrap:
+            prev_wraps = [False] + list(
+                page.wraps(_row)
+                # don't include the stop_row as we need previous-row wraps anyway
+                for _row in range(start_row, stop_row)
+            )
+            wrapped_output = []
+            for row, prev_row_wrap in zip(output, prev_wraps):
+                if prev_row_wrap:
+                    wrapped_output[-1] += row
+                else:
+                    wrapped_output.append(row)
+            output = tuple(wrapped_output)
         return output
 
     def get_logical_line(self, from_row, as_type=bytes):
