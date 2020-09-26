@@ -419,7 +419,8 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
         )
         self._video_segment = EGA_SEGMENT
         # EGA uses colour planes, 1 bpp for each plane
-        #self._ppb = 8
+        # this is used by walk_memory to determine strides
+        self._ppb = 8
         self._bytes_per_row = self._pixel_width // 8
         self._planes_used = range(4)
         # additional colour plane mask
@@ -460,7 +461,6 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
             return byte_array
         for page, x, y, ofs, length in self._walk_memory(addr, num_bytes):
             pixarray = display.pages[page].pixels[y, x:x+length*8]
-            #byte_array[ofs:ofs+length] = interval_to_bytes(pixarray, self.ppb, plane)
             byte_array[ofs:ofs+length] = (pixarray >> plane).packed(8)
         return byte_array
 
@@ -475,7 +475,6 @@ class EGAMemoryMapper(GraphicsMemoryMapper):
         if mask == 0:
             return
         for page, x, y, ofs, length in self._walk_memory(addr, len(byte_array)):
-            #pixarray = bytes_to_interval(byte_array[ofs:ofs+length], self.ppb, mask)
             pixarray = (
                 bytematrix.ByteMatrix.frompacked(
                     byte_array[ofs:ofs+length], height=1, items_per_byte=8
