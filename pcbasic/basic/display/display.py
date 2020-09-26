@@ -270,13 +270,18 @@ class Display(object):
 
     def set_video_memory_size(self, new_size):
         """Change the amount of memory available to the video card."""
-        self._video_mem_size = int(new_size)
-        # check if we need to drop out of our current mode
-        page = max(self.vpagenum, self.apagenum)
+        new_size = int(new_size)
+        if self._video_mem_size == new_size:
+            return
+        self._video_mem_size = new_size
         # reload max number of pages; do we fit? if not, drop to text
         self.mode.memorymap.set_video_mem_size(self._video_mem_size)
-        if page >= self.mode.num_pages:
-            self.screen(0, 0, 0, 0, force_reset=True)
+        # if not a no-op, rebuild pages and drop to text
+        # note that we *must* rebuild the list of pages if we have more pages
+        # and also we must do something if we have fewer pages and vpage or apage are currently on a higher page.
+        # apparently pcjr always drops to text when this is not a no-op
+        print('here')
+        self.screen(0, 0, 0, 0, force_reset=True)
 
     def rebuild(self):
         """Completely resubmit the screen to the interface."""
