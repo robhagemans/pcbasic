@@ -25,7 +25,8 @@ class UserFunction(object):
         self._start_loc = code_stream.tell()
         self._is_parsing = False
         self._memory = memory
-        self._varnames = [self._memory.complete_name(_v) for _v in varnames]
+        # if type not specified, it is evaluated at evaluation time, not at creation time
+        self._varnames = varnames
         self._sigil = name[-1:]
         self._expression_parser = expression_parser
 
@@ -44,14 +45,15 @@ class UserFunction(object):
         # parse/evaluate function expression
         # save existing vars
         varsave = {}
-        for name in self._varnames:
+        varnames = [self._memory.complete_name(_v) for _v in self._varnames]
+        for name in varnames:
             # set to 0 if they don't yet exist
             if name not in self._memory.scalars:
                 self._memory.scalars.set(name)
             # copy the buffer
             varsave[name] = self._memory.scalars.view(name).clone()
         # set variables
-        for name, value in zip(self._varnames, args):
+        for name, value in zip(varnames, args):
             # append sigil, if missing
             name = self._memory.complete_name(name)
             self._memory.scalars.set(name, value)
