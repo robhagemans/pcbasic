@@ -304,3 +304,7 @@ class StringSpace(object):
         """Return whether string is in permanent string space."""
         addr = string.address()
         return addr > self._temp
+
+    def is_field_string(self, string):
+        """Return whether string is a FIELD string."""
+        return string.address() < self._memory.code_start
