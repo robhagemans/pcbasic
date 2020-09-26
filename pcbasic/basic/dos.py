@@ -15,7 +15,8 @@ from collections import deque
 import subprocess
 from subprocess import Popen, PIPE
 
-from ..compat import SHELL_ENCODING, HIDE_WINDOW, split_quoted, getenvu, setenvu, iterenvu
+from ..compat import SHELL_ENCODING, HIDE_WINDOW
+from ..compat import which, split_quoted, getenvu, setenvu, iterenvu
 from .codepage import CONTROL
 from .base import error
 from . import values
@@ -44,15 +45,27 @@ class Environment(object):
         """Set environment (bytes) key to (bytes) value."""
         assert isinstance(key, bytes), type(key)
         assert isinstance(value, bytes), type(value)
-        ukey = self._codepage.str_to_unicode(key)
-        uvalue = self._codepage.str_to_unicode(value)
+        # only accept ascii-128 for keys
+        try:
+            ukey = key.decode('ascii')
+        except UnicodeError:
+            raise error.BASICError(error.IFC)
+        # enforce uppercase
+        ukey = ukey.upper()
+        uvalue = self._codepage.bytes_to_unicode(value)
         setenvu(ukey, uvalue)
 
     def _getenv(self, key):
         """Get environment (bytes) value or b''."""
         assert isinstance(key, bytes), type(key)
-        ukey = self._codepage.str_to_unicode(key)
-        return self._codepage.from_unicode(getenvu(ukey, u''))
+        # only accept ascii-128 for keys
+        try:
+            ukey = key.decode('ascii')
+        except UnicodeError:
+            raise error.BASICError(error.IFC)
+        # enforce uppercase
+        ukey = ukey.upper()
+        return self._codepage.unicode_to_bytes(getenvu(ukey, u''))
 
     def _getenv_item(self, index):
         """Get environment (bytes) 'key=value' or b'', by zero-based index."""
@@ -62,8 +75,8 @@ class Environment(object):
         except IndexError:
             return b''
         else:
-            key = self._codepage.from_unicode(ukey)
-            value = self._codepage.from_unicode(getenvu(ukey, u''))
+            key = self._codepage.unicode_to_bytes(ukey)
+            value = self._codepage.unicode_to_bytes(getenvu(ukey, u''))
             return b'%s=%s' % (key, value)
 
     def environ_(self, args):
@@ -96,12 +109,12 @@ class Environment(object):
 class Shell(object):
     """Launcher for command shell."""
 
-    def __init__(self, queues, keyboard, screen, files, codepage, shell):
+    def __init__(self, queues, keyboard, console, files, codepage, shell):
         """Initialise the shell."""
         self._shell = shell
         self._queues = queues
         self._keyboard = keyboard
-        self._screen = screen
+        self._console = console
         self._files = files
         self._codepage = codepage
         self._last_command = deque()
@@ -115,7 +128,7 @@ class Shell(object):
             # stream ends if process closes
             if not c:
                 return
-            # don't access screen in this thread
+            # don't access console in this thread
             # the other thread already does
             output.append(c)
 
@@ -126,18 +139,34 @@ class Shell(object):
             logging.warning('SHELL statement not enabled: no command interpreter specified.')
             raise error.BASICError(error.IFC)
         cmd = split_quoted(self._shell)
+        # find executable on path
+        cmd[0] = which(cmd[0], path='.' + os.pathsep + os.environ.get("PATH"))
+        if not cmd[0]:
+            logging.warning(u'SHELL: command interpreter `%s` not found.', self._shell)
+            raise error.BASICError(error.IFC)
         if command:
-            cmd += [SHELL_COMMAND_SWITCH, self._codepage.str_to_unicode(command)]
+            cmd += [SHELL_COMMAND_SWITCH, self._codepage.bytes_to_unicode(command, box_protect=False)]
         # get working directory; also raises IFC if current_device is CAS1
         work_dir = self._files.get_native_cwd()
         try:
             p = Popen(
                 cmd, shell=False, cwd=work_dir,
-                stdin=PIPE, stdout=PIPE, stderr=PIPE, startupinfo=HIDE_WINDOW
+                stdin=PIPE, stdout=PIPE, stderr=PIPE,
+                # first try with HIDE_WINDOW to avoid ugly command window popping up on windows
+                startupinfo=HIDE_WINDOW
             )
-        except (EnvironmentError, UnicodeEncodeError) as e:
-            logging.warning(u'SHELL: command interpreter `%s` not accessible: %s', self._shell, e)
-            raise error.BASICError(error.IFC)
+        except EnvironmentError:
+            try:
+                # HIDE_WINDOW not allowed on Windows when called from console
+                p = Popen(
+                    cmd, shell=False, cwd=work_dir,
+                    stdin=PIPE, stdout=PIPE, stderr=PIPE,
+                )
+            except EnvironmentError as err:
+                logging.warning(
+                    u'SHELL: command interpreter `%s` not accessible: %s', self._shell, err
+                )
+                raise error.BASICError(error.IFC)
         shell_output = self._launch_reader_thread(p.stdout)
         shell_cerr = self._launch_reader_thread(p.stderr)
         try:
@@ -194,11 +223,11 @@ class Shell(object):
                 # handle backspace
                 if word:
                     word.pop()
-                    self._screen.write(b'\x1D \x1D')
+                    self._console.write(b'\x1D \x1D')
             elif not c.startswith(b'\0'):
                 # exclude e-ascii (arrow keys not implemented)
                 word.append(c)
-                self._screen.write(c)
+                self._console.write(c)
         # drain final output
         self._drain_final(shell_output)
         self._drain_final(shell_cerr)
@@ -208,7 +237,9 @@ class Shell(object):
         # for shell input, send CRLF or LF depending on platform
         self._last_command.extend(word)
         bytes_word = b''.join(word) + b'\r\n'
-        unicode_word = self._codepage.str_to_unicode(bytes_word, preserve=CONTROL)
+        unicode_word = self._codepage.bytes_to_unicode(
+            bytes_word, preserve=CONTROL, box_protect=False
+        )
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
         pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
 
@@ -227,7 +258,7 @@ class Shell(object):
         return unitext.encode(self._encoding, errors='replace')
 
     def _show_output(self, shell_output):
-        """Write shell output to screen."""
+        """Write shell output to console."""
         # detect sentinel for start of new command
         if shell_output and self._detect_encoding(shell_output):
             # detect sentinel for start of new command
@@ -265,5 +296,5 @@ class Shell(object):
             # remove BELs (dosemu uses these a lot)
             outstr = outstr.replace(self._enc(u'\x07'), b'')
             outstr = outstr.decode(self._encoding, errors='replace')
-            outstr = self._codepage.str_from_unicode(outstr, errors='replace')
-            self._screen.write(outstr)
+            outstr = self._codepage.unicode_to_bytes(outstr, errors='replace')
+            self._console.write(outstr)

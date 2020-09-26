@@ -15,7 +15,7 @@ from contextlib import contextmanager
 
 from ..compat import queue, text_type
 
-from ..metadata import NAME, VERSION, COPYRIGHT
+from .data import NAME, VERSION, COPYRIGHT
 from .base import error
 from .base import tokens as tk
 from .base import signals
@@ -26,7 +26,7 @@ from . import eventcycle
 from . import basicevents
 from . import program
 from . import display
-from . import editor
+from . import console
 from . import inputs
 from . import clock
 from . import dos
@@ -52,17 +52,17 @@ class Implementation(object):
 
     def __init__(
             self, syntax=u'advanced', double=False, term=u'', shell=u'',
-            output_streams=sys.stdout, input_streams=sys.stdin,
+            output_streams=u'stdio', input_streams=u'stdio',
             codepage=None, box_protect=True, font=None, text_width=80,
-            video=u'cga', monitor=u'rgb', aspect_ratio=(4, 3), low_intensity=False,
-            devices=None, current_device=u'Z:', mount=None,
+            video=u'cga', monitor=u'rgb',
+            devices=None, current_device=u'Z:',
             textfile_encoding=None, soft_linefeed=False,
-            keys=u'', check_keybuffer_full=True, ctrl_c_is_break=True,
+            check_keybuffer_full=True, ctrl_c_is_break=True,
             hide_listing=None, hide_protected=False,
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
-            extension=None, greeting=True,
+            extension=()
         ):
         """Initialise the interpreter session."""
         ######################################################################
@@ -78,8 +78,6 @@ class Implementation(object):
         self._edit_prompt = False
         # terminal program for TERM command
         self._term_program = term
-        # option to suppress greeting
-        self._greeting = greeting
         ######################################################################
         # data segment
         ######################################################################
@@ -121,26 +119,31 @@ class Implementation(object):
         )
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.memory, syntax)
-        # Sound is needed for the beeps on \a
-        # InputMethods is needed for wait() in graphics
+        # initialise video
         self.display = display.Display(
             self.queues, self.values, self.queues,
             self.memory, text_width, video_memory, video, monitor,
-            self.sound, self.io_streams,
-            low_intensity, aspect_ratio,
             self.codepage, font
         )
-        self.screen = self.display.text_screen
-        self.drawing = self.display.drawing
-        # initilise floating-point error message stream
-        self.values.set_handler(values.FloatErrorHandler(self.screen))
+        self.text_screen = self.display.text_screen
+        self.graphics = self.display.graphics
         # prepare input devices (keyboard, pen, joystick, clipboard-copier)
         # EventHandler needed for wait() only
         self.keyboard = inputs.Keyboard(
-            self.queues, self.values, self.codepage, keys, check_keybuffer_full
+            self.queues, self.values, self.codepage, check_keybuffer_full
         )
         self.pen = inputs.Pen()
         self.stick = inputs.Stick(self.values)
+        # 12 definable function keys for Tandy, 10 otherwise
+        num_fn_keys = 12 if syntax == 'tandy' else 10
+        # initialise the console
+        # Sound is needed for the beeps on \a
+        self.console = console.Console(
+            self.text_screen, self.display.cursor,
+            self.keyboard, self.sound, self.io_streams, num_fn_keys
+        )
+        # initilise floating-point error message stream
+        self.values.set_handler(values.FloatErrorHandler(self.console))
         ######################################################################
         # devices
         ######################################################################
@@ -148,14 +151,20 @@ class Implementation(object):
         # DataSegment needed for COMn and disk FIELD buffers
         # EventCycle needed for wait()
         self.files = Files(
-            self.values, self.memory, self.queues, self.keyboard, self.display,
+            self.values, self.memory, self.queues, self.keyboard, self.display, self.console,
             max_files, max_reclen, serial_buffer_size,
-            devices, current_device, mount, textfile_encoding, soft_linefeed
+            devices, current_device,
+            self.codepage, textfile_encoding, soft_linefeed
         )
+        # enable printer echo from console
+        self.console.set_lpt1_file(self.files.lpt1_file)
+        ######################################################################
+        # other components
+        ######################################################################
         # set up the SHELL command
         # Files needed for current disk device
         self.shell = dos.Shell(
-            self.queues, self.keyboard, self.screen, self.files, self.codepage, shell
+            self.queues, self.keyboard, self.console, self.files, self.codepage, shell
         )
         # set up environment
         self.environment = dos.Environment(self.values, self.codepage)
@@ -167,27 +176,16 @@ class Implementation(object):
         # register input event handlers
         ######################################################################
         # clipboard and print screen handler
-        clip_handler = inputs.ScreenCopyHandler(self.screen, self.files.lpt1_file)
-        self.queues.add_handler(clip_handler)
+        self.queues.add_handler(basicevents.ScreenCopyHandler(
+            self.queues, self.text_screen, self.files.lpt1_file
+        ))
         # keyboard, pen and stick
         self.queues.add_handler(self.keyboard)
         self.queues.add_handler(self.pen)
         self.queues.add_handler(self.stick)
         # set up BASIC event handlers
         self.basic_events = basicevents.BasicEvents(
-            self.values, self.sound, self.clock, self.files,
-            self.screen, self.program, syntax
-        )
-        ######################################################################
-        # editor
-        ######################################################################
-        # key macro guide
-        self.fkey_macros = editor.FunctionKeyMacros(
-            self.keyboard, self.screen, self.basic_events.num_fn_keys
-        )
-        # initialise the editor
-        self.editor = editor.Editor(
-            self.screen, self.keyboard, self.sound, self.io_streams, self.files.lpt1_file
+            self.values, self.sound, self.clock, self.files, self.program, num_fn_keys
         )
         ######################################################################
         # extensions
@@ -200,7 +198,7 @@ class Implementation(object):
         self.parser = parser.Parser(self.values, self.memory, syntax)
         # initialise the interpreter
         self.interpreter = interpreter.Interpreter(
-            self.queues, self.screen, self.files, self.sound,
+            self.queues, self.console, self.display.cursor, self.files, self.sound,
             self.values, self.memory, self.program, self.parser, self.basic_events
         )
         ######################################################################
@@ -209,7 +207,7 @@ class Implementation(object):
         # set up non-data segment memory
         self.all_memory = machine.Memory(
             self.values, self.memory, self.files,
-            self.display, self.keyboard, self.screen.fonts[8],
+            self.display, self.keyboard, self.display.memory_font,
             self.interpreter, peek_values, syntax
         )
         # initialise machine ports
@@ -249,8 +247,6 @@ class Implementation(object):
 
     def execute(self, command):
         """Execute a BASIC statement."""
-        # don't greet if an interactive session is opened afterwards
-        self._greeting = False
         with self._handle_exceptions():
             self._store_line(command)
             self.interpreter.loop()
@@ -269,7 +265,7 @@ class Implementation(object):
         """Set a variable in memory."""
         name = name.upper()
         if isinstance(value, text_type):
-            value = self.codepage.str_from_unicode(value)
+            value = self.codepage.unicode_to_bytes(value)
         elif isinstance(value, bool):
             value = -1 if value else 0
         if b'(' in name:
@@ -283,8 +279,8 @@ class Implementation(object):
         if to_type is None or from_type == to_type:
             return lambda _x: _x
         converter = {
-            (bytes, text_type): partial(self.codepage.str_to_unicode, preserve=cp.CONTROL),
-            (text_type, bytes): self.codepage.str_from_unicode,
+            (bytes, text_type): partial(self.codepage.bytes_to_unicode, preserve=cp.CONTROL),
+            (text_type, bytes): self.codepage.unicode_to_bytes,
             (int, bool): bool,
             (float, bool): bool,
             (bool, int): lambda _bool: (-1 if _bool else 0),
@@ -314,9 +310,6 @@ class Implementation(object):
 
     def interact(self):
         """Interactive interpreter session."""
-        # greet at most once per session: execute() will switch off greeting
-        if self._greeting:
-            self.execute(GREETING)
         while True:
             with self._handle_exceptions():
                 self.interpreter.loop()
@@ -325,7 +318,7 @@ class Implementation(object):
                 else:
                     self._show_prompt()
                     # input loop, checks events
-                    line = self.editor.wait_screenline(from_start=True)
+                    line = self.console.read_line(from_start=True)
                     self._prompt = not self._store_line(line)
 
     def close(self):
@@ -333,6 +326,8 @@ class Implementation(object):
         # close files if we opened any
         self.files.close_all()
         self.files.close_devices()
+        # kill the iostreams threads so windows doesn't run out
+        self.io_streams.close()
 
     def _show_prompt(self):
         """Show the Ok or EDIT prompt, unless suppressed."""
@@ -340,10 +335,10 @@ class Implementation(object):
             linenum, tell = self._edit_prompt
             # unset edit prompt first, in case program.edit throws
             self._edit_prompt = False
-            self.program.edit(self.screen, linenum, tell)
+            self.program.edit(self.console, linenum, tell)
         elif self._prompt:
-            self.screen.start_line()
-            self.screen.write_line(b'Ok\xff')
+            self.console.start_line()
+            self.console.write_line(b'Ok\xff')
 
     def _store_line(self, line):
         """Store a program line or schedule a command line for execution."""
@@ -370,15 +365,14 @@ class Implementation(object):
         """Generate an AUTO line number and wait for input."""
         try:
             numstr = b'%d' % (self._auto_linenum,)
-            self.screen.write(numstr)
             if self._auto_linenum in self.program.line_numbers:
-                self.screen.write(b'*')
-                line = bytearray(self.editor.wait_screenline(from_start=True))
-                if line[:len(numstr)+1] == numstr + b'*':
-                    line[len(numstr)] = b' '
+                prompt = numstr + b'*'
             else:
-                self.screen.write(b' ')
-                line = bytearray(self.editor.wait_screenline(from_start=True))
+                prompt = numstr + b' '
+            line = self.console.read_line(prompt, from_start=True)
+            # remove *, if present
+            if line[:len(numstr)+1] == b'%s*' % (numstr,):
+                line = b'%s %s' % (numstr, line[len(numstr)+1:])
             # run or store it; don't clear lines or raise undefined line number
             self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
             c = self.interpreter.direct_line.peek()
@@ -420,8 +414,8 @@ class Implementation(object):
     def _handle_error(self, e):
         """Handle a BASIC error through error message."""
         # not handled by ON ERROR, stop execution
-        self.screen.start_line()
-        self.screen.write(e.get_message(self.program.get_line_number(e.pos)))
+        self.console.start_line()
+        self.console.write(e.get_message(self.program.get_line_number(e.pos)))
         self.interpreter.set_parse_mode(False)
         self.interpreter.input_mode = False
         # special case: syntax error
@@ -462,7 +456,7 @@ class Implementation(object):
             # select video memory size (Tandy/PCjr only)
             video_size = next(args)
             if video_size is not None:
-                video_size = values.round(video_size).to_value()
+                video_size = round(video_size.to_value())
                 self.display.set_video_memory_size(video_size)
             # execute any remaining parsing steps
             next(args)
@@ -489,7 +483,7 @@ class Implementation(object):
         # reset PLAY state
         self.sound.reset_play()
         # reset DRAW state (angle, scale) and current graphics position
-        self.drawing.reset()
+        self.graphics.reset()
         # reset random number generator
         self.randomiser.clear()
         # reset stacks & pointers
@@ -499,14 +493,14 @@ class Implementation(object):
         """SHELL: open OS shell and optionally execute command."""
         cmd = values.next_string(args)
         list(args)
-        # force cursor visible in all cases
-        self.screen.cursor.show(True)
+        # force cursor visible
+        self.display.cursor.set_override(True)
         # sound stops playing and is forgotten
         self.sound.stop_all_sound()
         # run the os-specific shell
         self.shell.launch(cmd)
         # reset cursor visibility to its previous state
-        self.screen.cursor.reset_visibility()
+        self.display.cursor.set_override(False)
 
     def term_(self, args):
         """TERM: terminal emulator."""
@@ -553,7 +547,7 @@ class Implementation(object):
                 # and interruptible
                 self.queues.wait()
                 # LIST on screen is slightly different from just writing
-                self.screen.list_line(l)
+                self.console.list_line(l)
         # return to direct mode
         self.interpreter.set_pointer(False)
 
@@ -567,7 +561,6 @@ class Implementation(object):
         # throws back to direct mode
         # jump to end of direct line so execution stops
         self.interpreter.set_pointer(False)
-        self.screen.cursor.reset_visibility()
         # request edit prompt
         self._edit_prompt = (from_line, None)
 
@@ -608,7 +601,7 @@ class Implementation(object):
         if jumpnum is not None:
             jumpnum = values.to_int(jumpnum, unsigned=True)
         common_all, delete_lines = next(args), next(args)
-        from_line, to_line = delete_lines if delete_lines else None, None
+        from_line, to_line = delete_lines if delete_lines else (None, None)
         if to_line is not None and to_line not in self.program.line_numbers:
             raise error.BASICError(error.IFC)
         list(args)
@@ -737,13 +730,7 @@ class Implementation(object):
             # readvar is a list of (name, indices) tuples
             # we return a list of (name, indices, values) tuples
             while True:
-                self.screen.write(prompt)
-                # disconnect the wrap between line with the prompt and previous line
-                if self.screen.current_row > 1:
-                    (
-                        self.screen.text.pages[self.screen.apagenum].row[self.screen.current_row-2]
-                    ).wrap = False
-                line = self.editor.wait_screenline(write_endl=newline)
+                line = self.console.read_line(prompt, write_endl=newline)
                 inputstream = InputTextFile(line)
                 # read the values and group them and the separators
                 var, values, seps = [], [], []
@@ -765,7 +752,7 @@ class Implementation(object):
                 # None means a conversion error occurred
                 if (seps[-1] or b'' in seps[:-1] or None in values):
                     # good old Redo!
-                    self.screen.write_line(b'?Redo from start')
+                    self.console.write_line(b'?Redo from start')
                     readvar = var
                 else:
                     varlist = [r + [v] for r, v in zip(var, values)]
@@ -781,8 +768,6 @@ class Implementation(object):
             name, indices = v
             word, _ = finp.input_entry(name[-1:], allow_past_end=False)
             value = self.values.from_repr(word, allow_nonnum=True, typechar=name[-1:])
-            if value is None:
-                value = self.values.new(name[-1:])
             self.memory.set_variable(name, indices, value)
 
     def line_input_(self, args):
@@ -800,8 +785,6 @@ class Implementation(object):
         # get string variable
         readvar, indices = next(args)
         list(args)
-        if not readvar:
-            raise error.BASICError(error.STX)
         readvar = self.memory.complete_name(readvar)
         if readvar[-1:] != values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
@@ -813,8 +796,7 @@ class Implementation(object):
         else:
             self.interpreter.input_mode = True
             self.parser.redo_on_break = True
-            self.screen.write(prompt)
-            line = self.editor.wait_screenline(write_endl=newline)
+            line = self.console.read_line(prompt, write_endl=newline)
             self.parser.redo_on_break = False
             self.interpreter.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
@@ -828,8 +810,7 @@ class Implementation(object):
         else:
             # prompt for random seed if not specified
             while True:
-                self.screen.write(b'Random number seed (-32768 to 32767)? ')
-                seed = self.editor.wait_screenline()
+                seed = self.console.read_line(b'Random number seed (-32768 to 32767)? ')
                 try:
                     val = self.values.from_repr(seed, allow_nonnum=False)
                 except error.BASICError as e:
@@ -842,23 +823,19 @@ class Implementation(object):
         self.randomiser.reseed(val)
 
     def key_(self, args):
-        """KEY: macro or event handler definition."""
+        """KEY: macro or event trigger definition."""
         keynum = values.to_int(next(args))
         error.range_check(1, 255, keynum)
         text = values.next_string(args)
         list(args)
-        if keynum <= self.basic_events.num_fn_keys:
-            self.fkey_macros.set(keynum, text)
-            self.screen.bottom_bar.redraw(self.screen)
-        else:
-            # only length-2 expressions can be assigned to KEYs over 10
-            # in which case it's a key scancode definition
-            if len(text) != 2:
-                raise error.BASICError(error.IFC)
+        try:
+            self.console.set_macro(keynum, text)
+        except ValueError:
+            # if out of range of number of macros (12 on Tandy, else 10), it's a trigger definition
             self.basic_events.key[keynum-1].set_trigger(text)
 
     def pen_fn_(self, args):
         """PEN: poll the light pen."""
         fn, = args
-        result = self.pen.poll(fn, self.basic_events.pen.enabled, self.screen)
+        result = self.pen.poll(fn, self.basic_events.pen.enabled, self.display.apage)
         return self.values.new_integer().from_int(result)

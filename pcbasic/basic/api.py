@@ -16,6 +16,7 @@ from . import implementation
 
 from ..data import read_codepage as codepage
 from ..data import read_fonts as font
+from .values import TYPE_TO_CLASS as SIGILS
 
 
 class Session(object):
@@ -86,7 +87,7 @@ class Session(object):
         with self._impl.io_streams.activate():
             for cmd in command.splitlines():
                 if isinstance(cmd, text_type):
-                    cmd = self._impl.codepage.str_from_unicode(cmd)
+                    cmd = self._impl.codepage.unicode_to_bytes(cmd)
                 self._impl.execute(cmd)
 
     def evaluate(self, expression):
@@ -94,7 +95,7 @@ class Session(object):
         self.start()
         with self._impl.io_streams.activate():
             if isinstance(expression, text_type):
-                expression = self._impl.codepage.str_from_unicode(expression)
+                expression = self._impl.codepage.unicode_to_bytes(expression)
             return self._impl.evaluate(expression)
 
     def set_variable(self, name, value):
@@ -103,6 +104,8 @@ class Session(object):
         if isinstance(name, text_type):
             name = name.encode('ascii')
         name = name.upper()
+        if name.split(b'(')[0][-1:] not in SIGILS:
+            raise ValueError('Sigil must be explicit')
         self._impl.set_variable(name, value)
 
     def get_variable(self, name, as_type=None):
@@ -110,12 +113,34 @@ class Session(object):
         self.start()
         if isinstance(name, text_type):
             name = name.encode('ascii')
+        if name.split(b'(')[0][-1:] not in SIGILS:
+            raise ValueError('Sigil must be explicit')
         return self._impl.get_variable(name, as_type)
 
     def convert(self, value, to_type):
         """Convert a Python value to another type, consistent with BASIC rules."""
         self.start()
         return self._impl.get_converter(type(value), to_type)(value)
+
+    def press_keys(self, keys):
+        """Insert keypresses."""
+        self.start()
+        self._impl.keyboard.inject_keystrokes(keys)
+
+    def get_chars(self, as_type=bytes):
+        """Get currently displayed characters, as tuple of list of bytes / unicode."""
+        self.start()
+        return self._impl.text_screen.get_chars(as_type=as_type)
+
+    def get_pixels(self):
+        """Get currently displayed pixels, as tuple of tuples of int attributes."""
+        self.start()
+        return self._impl.display.vpage.pixels[:, :].to_rows()
+
+    def greet(self):
+        """Emit the interpreter greeting and show the key bar."""
+        self.start()
+        self._impl.execute(implementation.GREETING)
 
     def interact(self):
         """Interactive interpreter session."""

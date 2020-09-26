@@ -25,6 +25,7 @@ class UserFunction(object):
         self._start_loc = code_stream.tell()
         self._is_parsing = False
         self._memory = memory
+        # if type not specified, it is evaluated at evaluation time, not at creation time
         self._varnames = varnames
         self._sigil = name[-1:]
         self._expression_parser = expression_parser
@@ -44,12 +45,15 @@ class UserFunction(object):
         # parse/evaluate function expression
         # save existing vars
         varsave = {}
-        for name in self._varnames:
-            if name in self._memory.scalars:
-                # copy the buffer
-                varsave[name] = self._memory.scalars.view(name).clone()
+        varnames = [self._memory.complete_name(_v) for _v in self._varnames]
+        for name in varnames:
+            # set to 0 if they don't yet exist
+            if name not in self._memory.scalars:
+                self._memory.scalars.set(name)
+            # copy the buffer
+            varsave[name] = self._memory.scalars.view(name).clone()
         # set variables
-        for name, value in zip(self._varnames, args):
+        for name, value in zip(varnames, args):
             # append sigil, if missing
             name = self._memory.complete_name(name)
             self._memory.scalars.set(name, value)
@@ -64,7 +68,7 @@ class UserFunction(object):
             self._codestream.seek(save_loc)
             # unset recursion flag
             self._is_parsing = False
-            # restore existing vars
+            # restore existing vars, remove ones added
             for name in varsave:
                 # re-assign the stored value
                 self._memory.scalars.view(name).copy_from(varsave[name])
@@ -81,10 +85,6 @@ class UserFunctionManager(object):
         self._memory = memory
         self._values = values
         self._expression_parser = expression_parser
-
-    def __contains__(self, name):
-        """Check if a function of the given (complete) name exists."""
-        return self._memory.complete_name(name) in self._fn_dict
 
     def clear(self):
         """Clear all user-defined functions."""
@@ -134,5 +134,6 @@ class UserFunctionManager(object):
         self._memory.scalars.set(memory_name, self._values.from_bytes(pointer))
         for name in fnvars:
             # allocate, but don't set, variables
+            # this is essential for them to be preserved during evaluate()
             name = self._memory.complete_name(name)
             self._memory.scalars.set(name)

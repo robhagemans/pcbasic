@@ -97,22 +97,19 @@ class Interface(object):
                     if not self._audio.busy and not self._video.busy:
                         # nothing to do, come back later
                         self._video.sleep(DELAY)
-                    else:
-                        # tiny delay; significantly reduces cpu load when playing audio or blinking
-                        self._video.sleep(1)
 
     def pause(self, message):
         """Pause and wait for a key."""
         self._video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (message,)))
-        self._video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (False,)))
+        self._video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, (False, False)))
         while True:
             signal = self._input_queue.get()
-            if signal.event_type in (signals.KEYB_DOWN, signals.KEYB_QUIT):
+            if signal.event_type in (signals.KEYB_DOWN, signals.QUIT):
                 break
 
     def quit_input(self):
         """Send signal through the input queue to quit BASIC."""
-        self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+        self._input_queue.put(signals.Event(signals.QUIT))
         # drain video queue (joined in other thread)
         while not self._video_queue.empty():
             try:
@@ -130,5 +127,5 @@ class Interface(object):
 
     def quit_output(self):
         """Send signal through the output queues to quit plugins."""
-        self._video_queue.put(signals.Event(signals.VIDEO_QUIT))
-        self._audio_queue.put(signals.Event(signals.AUDIO_QUIT))
+        self._video_queue.put(signals.Event(signals.QUIT))
+        self._audio_queue.put(signals.Event(signals.QUIT))

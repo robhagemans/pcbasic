@@ -15,10 +15,9 @@ hex_name = 'univga_16.hex'
 
 with tarfile.open(unizip, 'r:gz').extractfile(bdf_name) as infile:
     uni_vga = monobit.load(TextIOWrapper(infile), format='bdf')
-    with open(hex_name, 'w') as outfile:
-        with open(header, 'r') as h:
+    with open(hex_name, 'wb') as outfile:
+        with open(header, 'rb') as h:
             for line in h:
                 outfile.write(line)
-        outfile.write('\n')
+        outfile.write(b'\n')
         uni_vga.save(outfile, format='hex')
-

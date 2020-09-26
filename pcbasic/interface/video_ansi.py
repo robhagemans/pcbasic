@@ -11,7 +11,8 @@ import sys
 from .video import VideoPlugin
 from .base import video_plugins
 from . import video_cli
-from ..compat import console, muffle
+from ..compat import console, zip
+from ..compat import iter_chunks
 
 
 # CGA colours: black, cyan, magenta, white
@@ -31,7 +32,6 @@ class VideoANSI(video_cli.VideoTextBase):
         self._input_handler.quit_on_eof = False
         # window caption
         self._caption = caption
-        self.set_caption_message(u'')
         # cursor is visible
         self._cursor_visible = True
         # cursor is block-shaped (vs line-shaped)
@@ -40,29 +40,28 @@ class VideoANSI(video_cli.VideoTextBase):
         self._cursor_row, self._cursor_col = 1, 1
         # last used colour attributes
         self._last_attributes = None
+        self._cursor_attr = None
         # text and colour buffer
-        self._vpagenum, self._apagenum = 0, 0
         self._height, self._width = 25, 80
         self._border_y = int(round((self._height * border_width)/200.))
         self._border_x = int(round((self._width * border_width)/200.))
         self._border_attr = 0
-        self._set_default_colours(16)
-        self._text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
+        self.default_colours = range(16)
+        self._attributes = []
 
     def __enter__(self):
         """Open ANSI interface."""
         video_cli.VideoTextBase.__enter__(self)
-        # prevent stderr from defacing the screen
-        self._muffle = muffle(sys.stderr)
-        self._muffle.__enter__()  # pylint: disable=no-member
+        # go into alternate screen buffer
+        # stderr continues on the primary buffer
+        console.start_screen()
+        self.set_caption_message(u'')
+        console.set_attributes(0, 0, False, False)
 
     def __exit__(self, type, value, traceback):
         """Close ANSI interface."""
         try:
-            console.reset()
-            console.clear()
-            # re-enable logger
-            self._muffle.__exit__(type, value, traceback)  # pylint: disable=no-member
+            console.close_screen()
         finally:
             video_cli.VideoTextBase.__exit__(self, type, value, traceback)
 
@@ -77,30 +76,17 @@ class VideoANSI(video_cli.VideoTextBase):
         # draw top
         for row in range(self._border_y):
             console.move_cursor_to(row+1, 1)
-            console.clear_row()
+            console.clear_row(self._width + 2 * self._border_x)
         # draw sides
         for row in range(self._height):
             console.move_cursor_to(row+1 + self._border_y, 1)
             console.write(u' ' * self._border_x)
-            console.move_cursor_right(self._width)
+            console.move_cursor_to(row+1 + self._border_y, self._width + self._border_x + 1)
             console.write(u' ' * self._border_x)
         # draw bottom
         for row in range(self._border_y):
             console.move_cursor_to(row+1 + self._border_y + self._height, 1)
-            console.clear_row()
-        console.move_cursor_to(
-            self._cursor_row + self._border_y, self._cursor_col + self._border_x
-        )
-
-    def _redraw(self):
-        """Redraw the screen."""
-        self._redraw_border()
-        # redraw screen
-        for row, textrow in enumerate(self._text[self._vpagenum]):
-            console.move_cursor_to(row+1 + self._border_y, 1 + self._border_x)
-            for char, attr in textrow:
-                self._set_attributes(*attr)
-                console.write(char)
+            console.clear_row(self._width + 2 * self._border_x)
         console.move_cursor_to(
             self._cursor_row + self._border_y, self._cursor_col + self._border_x
         )
@@ -129,131 +115,118 @@ class VideoANSI(video_cli.VideoTextBase):
             self._border_attr = attr
             self._redraw_border()
 
-    def set_palette(self, new_palette, dummy_new_palette1, dummy_pack_pixels):
+    def set_palette(self, attributes, dummy_pack_pixels):
         """Set the colour palette."""
-        for attr, rgb in enumerate(new_palette):
-            console.set_palette_entry(attr, *rgb)
+        self._set_default_colours(len(attributes))
+        rgb_table = [_fore for _fore, _, _, _ in attributes[:16]]
+        if len(attributes) > 16:
+            # *assume* the first 16 attributes are foreground-on-black
+            # this is the usual textmode byte attribute arrangement
+            fore = list(range(16)) * 16
+            back = tuple(_b for _b in range(8) for _ in range(16)) * 2
+        else:
+            fore = list(range(len(attributes)))
+            # assume black background
+            # blink dim-to-bright etc won't work on terminals anyway
+            back = (0,) * len(attributes)
+        blink = tuple(_blink for _, _, _blink, _ in attributes)
+        under = tuple(_under for _, _, _, _under in attributes)
+        int_attributes = list(zip(fore, back, blink, under))
+        self._attributes = int_attributes
+        for index, rgb in enumerate(rgb_table):
+            console.set_palette_entry(index, *rgb)
 
-    def set_mode(self, mode_info):
+    def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Change screen mode."""
-        self._height = mode_info.height
-        self._width = mode_info.width
-        self._text = [
-            [[(u' ', (7, 0, False, False))] * self._width for _ in range(self._height)]
-            for _ in range(mode_info.num_pages)
-        ]
-        self._set_default_colours(len(mode_info.palette))
+        self._height = text_height
+        self._width = text_width
+        console.set_attributes(0, 0, False, False)
         console.resize(self._height + 2*self._border_y, self._width + 2*self._border_x)
-        self._redraw()
+        console.clear()
+        self._redraw_border()
         return True
-
-    def set_page(self, new_vpagenum, new_apagenum):
-        """Set visible and active page."""
-        if (self._vpagenum, self._apagenum) == (new_vpagenum, new_apagenum):
-            return
-        self._vpagenum, self._apagenum = new_vpagenum, new_apagenum
-        if self._vpagenum != self._apagenum:
-            console.hide_cursor()
-        elif self._cursor_visible:
-            console.show_cursor()
-        self._redraw()
-
-    def copy_page(self, src, dst):
-        """Copy screen pages."""
-        self._text[dst] = [row[:] for row in self._text[src]]
-        if dst == self._vpagenum:
-            self._redraw()
 
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
-        self._text[self._apagenum][start-1:stop] = [
-            [(u' ', (7, 0, False, False))] * len(self._text[self._apagenum][0])
-            for _ in range(start-1, stop)
-        ]
-        if self._vpagenum == self._apagenum:
-            self._set_attributes(7, back_attr, False, False)
-            for row in range(start, stop+1):
-                console.move_cursor_to(row + self._border_y, 1 + self._border_x)
-                console.clear_row()
-            # draw border
-            self._set_attributes(
-                0, self.default_colours[self._border_attr%16], False, False
-            )
-            for row in range(start, stop+1):
-                console.move_cursor_to(row + self._border_y, 1)
-                console.write(u' ' * self._border_x)
-                console.move_cursor_to(row + self._border_y, 1 + self._width + self._border_x)
-                console.write(u' ' * self._border_x)
-            console.move_cursor_to(
-                self._cursor_row + self._border_y, self._cursor_col + self._border_x
-            )
+        self._set_attributes(7, back_attr, False, False)
+        for row in range(start, stop+1):
+            console.move_cursor_to(row + self._border_y, 1 + self._border_x)
+            console.clear_row(self._width + 2 * self._border_x)
+        # draw border
+        self._set_attributes(
+            0, self.default_colours[self._border_attr%16], False, False
+        )
+        for row in range(start, stop+1):
+            console.move_cursor_to(row + self._border_y, 1)
+            console.write(u' ' * self._border_x)
+            console.move_cursor_to(row + self._border_y, 1 + self._width + self._border_x)
+            console.write(u' ' * self._border_x)
+        console.move_cursor_to(
+            self._cursor_row + self._border_y, self._cursor_col + self._border_x
+        )
 
-    def move_cursor(self, row, col):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
         if (row, col) != (self._cursor_row, self._cursor_col):
             self._cursor_row, self._cursor_col = row, col
             console.move_cursor_to(
                 self._cursor_row + self._border_y, self._cursor_col + self._border_x
             )
+        # change attribute of cursor
+        # cursor width is controlled by terminal
+        if attr != self._cursor_attr:
+            self._cursor_attr = attr
+            console.set_cursor_colour(self.default_colours[attr%16])
 
-    def set_cursor_attr(self, attr):
-        """Change attribute of cursor."""
-        console.set_cursor_colour(self.default_colours[attr%16])
-
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
         self._cursor_visible = cursor_on
-        if self._vpagenum != self._apagenum:
-            return
         if cursor_on:
             console.show_cursor(block=self._block_cursor)
         else:
             # force move when made visible again
             console.hide_cursor()
 
-    def set_cursor_shape(self, width, height, from_line, to_line):
+    def set_cursor_shape(self, from_line, to_line):
         """Set the cursor shape."""
         self._block_cursor = (to_line-from_line) >= 4
         if self._cursor_visible:
             console.show_cursor(block=self._block_cursor)
 
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
-        """Put a character at a given position."""
-        if char == u'\0':
-            char = u' '
-        self._text[pagenum][row-1][col-1] = char, (fore, back, blink, underline)
-        if is_fullwidth:
-            self._text[pagenum][row-1][col] = u'', (fore, back, blink, underline)
-        if self._vpagenum != pagenum:
-            return
-        if (row, col) != (self._cursor_row, self._cursor_col):
+    def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
+        """Put text or pixels at a given position."""
+        start_col = col
+        curs_row, curs_col = self._cursor_row, self._cursor_col
+        for text, attrs in zip(unicode_matrix, attr_matrix):
             console.move_cursor_to(row + self._border_y, col + self._border_x)
-        self._set_attributes(fore, back, blink, underline)
-        console.write(char)
-        if is_fullwidth:
-            console.write(u' ')
-        self._cursor_row, self._cursor_col = row, col+1
+            for unicode_list, attr in iter_chunks(text, attrs):
+                fore, back, blink, underline = self._attributes[attr]
+                self._set_attributes(fore, back, blink, underline)
+                console.write(u''.join(unicode_list).replace(u'\0', u' '))
+                col += len(unicode_list)
+            row += 1
+            col = start_col
+        console.move_cursor_to(self._cursor_row + self._border_y, self._cursor_col + self._border_x)
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
+    def scroll(self, direction, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height."""
+        # set the default background
+        # as some (not all) consoles use the background color when inserting/deleting
+        # and if they can't resize this leads to glitches outside the window
+        self._set_attributes(7, 0, False, False)
+        if direction == -1:
+            self._scroll_up(from_line, scroll_height, back_attr)
+        else:
+            self._scroll_down(from_line, scroll_height, back_attr)
+
+    def _scroll_up(self, from_line, scroll_height, back_attr):
         """Scroll the screen up between from_line and scroll_height."""
-        self._text[self._apagenum][from_line-1:scroll_height] = (
-            self._text[self._apagenum][from_line:scroll_height] +
-            [[(u' ', 0)] * len(self._text[self._apagenum][0])]
-        )
-        if self._apagenum != self._vpagenum:
-            return
-        console.scroll_up(from_line + self._border_y, scroll_height + self._border_y)
+        console.scroll(from_line + self._border_y, scroll_height + self._border_y, rows=-1)
         self.clear_rows(back_attr, scroll_height, scroll_height)
 
-    def scroll_down(self, from_line, scroll_height, back_attr):
+    def _scroll_down(self, from_line, scroll_height, back_attr):
         """Scroll the screen down between from_line and scroll_height."""
-        self._text[self._apagenum][from_line-1:scroll_height] = (
-            [[(u' ', 0)] * len(self._text[self._apagenum][0])] +
-            self._text[self._apagenum][from_line-1:scroll_height-1]
-        )
-        if self._apagenum != self._vpagenum:
-            return
-        console.scroll_down(from_line + self._border_y, scroll_height + self._border_y)
+        console.scroll(from_line + self._border_y, scroll_height + self._border_y, rows=1)
         self.clear_rows(back_attr, from_line, from_line)
 
     def set_caption_message(self, msg):

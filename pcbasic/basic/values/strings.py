@@ -182,17 +182,12 @@ class StringSpace(object):
         """Copy a string to another string space."""
         return string_space.store(self.view(length, address).tobytes())
 
-    def iterpointers(self):
-        """Iterate over strings in order of addresses."""
-        # we need to enforce the order as it's undefined otherwise
-        return ((len(self._strings[_addr]), _addr )for _addr in sorted(self._strings))
-
     def _retrieve(self, length, address):
         """Retrieve a string by its pointer."""
         # if string length == 0, return empty string
         try:
             return bytearray() if length == 0 else self._strings[address]
-        except KeyError:
+        except KeyError: # pragma: no cover
             raise KeyError(u'Dereferencing detached string at %x (%d)' % (address, address))
 
     def view(self, length, address):
@@ -246,8 +241,8 @@ class StringSpace(object):
             length = len(self._strings[last_address])
             self.current += length
             del self._strings[last_address]
-        except KeyError:
-            # happens if we're called before an out-of-memory exception is handled
+        except KeyError: # pragma: no cover
+            # maybe happens if we're called before an out-of-memory exception is handled
             # and the string wasn't allocated
             pass
 
@@ -309,3 +304,7 @@ class StringSpace(object):
         """Return whether string is in permanent string space."""
         addr = string.address()
         return addr > self._temp
+
+    def is_field_string(self, string):
+        """Return whether string is a FIELD string."""
+        return string.address() < self._memory.code_start

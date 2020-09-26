@@ -109,11 +109,11 @@ class SCRNDevice(Device):
 
     allowed_modes = b'OR'
 
-    def __init__(self, display):
+    def __init__(self, display, console):
         """Initialise screen device."""
         # open a master file on the screen
         Device.__init__(self)
-        self.device_file = SCRNFile(display)
+        self.device_file = SCRNFile(display, console)
 
     def open(
             self, number, param, filetype, mode, access, lock,
@@ -606,21 +606,21 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
 class SCRNFile(RawFile):
     """SCRN: file, allows writing to the screen as a text file."""
 
-    def __init__(self, display):
+    def __init__(self, display, console):
         """Initialise screen file."""
         RawFile.__init__(self, nullstream(), filetype=b'D', mode=b'O')
         # need display object as WIDTH can change graphics mode
         self._display = display
         # screen member is public, needed by print_
-        self.screen = display.text_screen
-        self._width = self.screen.mode.width
-        self._col = self.screen.current_col
+        self.console = console
+        self._width = self.console.width
+        self._col = self.console.current_col
         # on master-file devices, this is the master file.
         self._is_master = True
 
     def open_clone(self, filetype, mode, reclen=128):
         """Clone screen file."""
-        inst = SCRNFile(self._display)
+        inst = SCRNFile(self._display, self.console)
         inst.mode = mode
         inst.reclen = reclen
         inst.filetype = filetype
@@ -629,11 +629,13 @@ class SCRNFile(RawFile):
 
     def write(self, s, can_break=True):
         """Write string s to SCRN: """
+        if not s:
+            return
         # writes to SCRN files should *not* be echoed
         do_echo = self._is_master
-        self._col = self.screen.current_col
+        self._col = self.console.current_col
         # take column 80+overflow into account
-        if self.screen.overflow:
+        if self.console.overflow:
             self._col += 1
         # only break lines at the start of a new string. width 255 means unlimited width
         s_width = 0
@@ -650,32 +652,37 @@ class SCRNFile(RawFile):
             elif c >= b' ':
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
-        if can_break and (self.width != 255 and self.screen.current_row != self.screen.mode.height
+        if can_break and (self.width != 255 and self.console.current_row != self.console.height
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
-            self.screen.write_line(do_echo=do_echo)
+            self.console.write_line(do_echo=do_echo)
             self._col = 1
-        cwidth = self.screen.mode.width
+        cwidth = self.console.width
+        output = []
         for c in iterchar(s):
             if self.width <= cwidth and self.col > self.width:
-                self.screen.write_line(do_echo=do_echo)
+                self.console.write_line(b''.join(output), do_echo=do_echo)
+                output = []
                 self._col = 1
             if self.col <= cwidth or self.width <= cwidth:
-                self.screen.write(c, do_echo=do_echo)
+                output.append(c)
             if c in (b'\n', b'\r'):
+                self.console.write(b''.join(output), do_echo=do_echo)
+                output = []
                 self._col = 1
             else:
                 self._col += 1
+        self.console.write(b''.join(output), do_echo=do_echo)
 
     def write_line(self, inp=b''):
         """Write a string to the screen and follow by CR."""
         self.write(inp)
-        self.screen.write_line(do_echo=self._is_master)
+        self.console.write_line(do_echo=self._is_master)
 
     @property
     def col(self):
         """Return current (virtual) column position."""
         if self._is_master:
-            return self.screen.current_col
+            return self.console.current_col
         else:
             return self._col
 

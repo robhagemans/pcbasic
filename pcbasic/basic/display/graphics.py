@@ -1,146 +1,207 @@
 """
-PC-BASIC - graphics.py
+PC-BASIC - display.graphics
 Graphics operations
 
 (c) 2013--2020 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 import math
+import operator
 
+from itertools import islice
+
+from ...compat import int2byte
 from ..base import error
 from ..base import tokens as tk
-from ..base import signals
+from ..base import bytematrix
 from .. import values
 from .. import mlparser
+
+
+ZERO_TILE = bytematrix.ByteMatrix(1, 8)
 
 
 class GraphicsViewPort(object):
     """Graphics viewport (clip area) functions."""
 
-    def __init__(self, max_width, max_height):
+    def __init__(self, pixel_buffer):
         """Initialise graphics viewport."""
-        self._width, self._height = max_width, max_height
-        self.unset()
+        self._pixels = pixel_buffer
+        self._max_width, self._max_height = self._pixels.width, self._pixels.height
+        self._absolute = False
+        self._rect = 0, 0, self._max_width-1, self._max_height-1
+        self._active = False
 
     def unset(self):
         """Unset the graphics viewport."""
-        self.absolute = False
-        self.rect = None
+        self._absolute = False
+        self._rect = 0, 0, self._max_width-1, self._max_height-1
+        self._active = False
 
     def set(self, x0, y0, x1, y1, absolute):
         """Set the graphics viewport."""
         # VIEW orders the coordinates
         x0, x1 = min(x0, x1), max(x0, x1)
         y0, y1 = min(y0, y1), max(y0, y1)
-        self.absolute = absolute
-        self.rect = x0, y0, x1, y1
+        self._absolute = absolute
+        self._rect = x0, y0, x1, y1
+        self._active = True
 
-    def is_set(self):
+    @property
+    def active(self):
         """Return whether the graphics viewport is set."""
-        return self.rect is not None
+        return self._active
 
-    def get(self):
-        """Return the graphics viewport or full screen dimensions if not set."""
-        if self.rect:
-            return self.rect
-        else:
-            return 0, 0, self._width-1, self._height-1
+    def set_page(self, pixel_buffer):
+        """Set the pixel buffer (without adjusting the viewport."""
+        assert pixel_buffer.width == self.width
+        assert pixel_buffer.height == self.height
+        self._pixels = pixel_buffer
+
+    @property
+    def height(self):
+        """Height of the viewport."""
+        return self._rect[3] - self._rect[1] + 1
+
+    @property
+    def width(self):
+        """Width of the viewport."""
+        return self._rect[2] - self._rect[0] + 1
+
+    def __setitem__(self, index, data):
+        """Set pixels in viewport."""
+        self._pixels[self._convert_slice(index)] = data
+
+    def __getitem__(self, index):
+        """Get pixels in viewport."""
+        yslice, xslice = index
+        if not isinstance(yslice, slice) and not isinstance(xslice, slice):
+            # single pixel read can go outside of viewport
+            x, y = self._convert_coords(xslice, yslice)
+            return self._pixels[y, x]
+        return self._pixels[self._convert_slice(index)]
+
+    def get_bounds(self):
+        """Return the graphics viewport bounds, in viewport coordinates."""
+        if self._absolute:
+            return self._rect
+        return 0, 0, self.width-1, self.height-1
 
     def contains(self, x, y):
         """Return whether the specified point is within the graphics view (boundaries inclusive)."""
-        vx0, vy0, vx1, vy1 = self.get()
+        vx0, vy0, vx1, vy1 = self.get_bounds()
         return vx0 <= x <= vx1 and vy0 <= y <= vy1
 
-    def clip_rect(self, x0, y0, x1, y1):
-        """Return rect clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get()
-        return max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
-
-    def clip_area(self, x0, y0, x1, y1, area_buffer):
-        """Return area buffer in [y][x] format clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get()
-        nx0, ny0, nx1, ny1 =  max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
-        if numpy and type(area_buffer) == numpy.ndarray:
-            nbuf = area_buffer[ny0-y0:ny1-y0+1, nx0-x0:nx1-x0+1]
-        else:
-            nbuf = [row[nx0-x0:nx1-x0+1] for row in area_buffer[ny0-y0:ny1-y0+1]]
-        return nx0, ny0, nx1, ny1, nbuf
-
-    def clip_interval(self, x0, x1, y):
-        """Return rect clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get()
-        if not (vy0 <= y <= vy1):
-            return x0, x0-1, y
-        return max(x0, vx0), min(x1, vx1), y
-
-    def clip_list(self, x0, y0, attr_list):
-        """Return rect clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get()
-        if not (vy0 <= y0 <= vy1):
-            return x0, y0, []
-        nx0, nx1 = max(x0, vx0), min(x0+len(attr_list), vx1)
-        return nx0, y0, attr_list[nx0-x0:nx1-x0+1]
-
     def get_mid(self):
-        """Get the midpoint of the current graphics view."""
-        x0, y0, x1, y1 = self.get()
+        """Get the midpoint of the current graphics view, in viewpoint coordinates."""
+        x0, y0, x1, y1 = self.get_bounds()
         # +1 to match GW-BASIC
-        return x0 + (x1-x0)//2 + 1, y0 + (y1-y0)//2 + 1
+        x, y = (x1-x0) // 2 + 1, (y1-y0) // 2 + 1
+        if self._absolute:
+            return x0 + x, y0 + y
+        return x, y
 
-    def coords(self, x, y):
+    def cutoff_coord(self, x, y):
+        """Ensure coordinates are within screen + 1 pixel."""
+        abs_x, abs_y = self._convert_coords(x, y)
+        offs_x, offs_y = x - abs_x, y - abs_y
+        # clip absolute coornates to physical screen bounds plus one pixel
+        abs_x = min(self._max_width, max(-1, abs_x))
+        abs_y = min(self._max_height, max(-1, abs_y))
+        # return viewpoint coordinates
+        return abs_x + offs_x, abs_y + offs_y
+
+    def _convert_coords(self, x, y):
         """Retrieve absolute coordinates for viewport coordinates."""
-        if (not self.rect) or self.absolute:
+        if self._absolute:
             return x, y
         else:
-            return x + self.rect[0], y + self.rect[1]
+            return x + self._rect[0], y + self._rect[1]
+
+    def _convert_slice(self, slice_tuple):
+        """Convert viewport to absolute slice tuple."""
+        yslice, xslice = slice_tuple
+        xmin, ymin, xmax, ymax = self.get_bounds()
+        if not isinstance(yslice, slice) and not isinstance(xslice, slice):
+            # single pixel
+            if not self.contains(xslice, yslice):
+                return slice(0, 0), slice(0, 0)
+            xslice, yslice = self._convert_coords(xslice, yslice)
+            return yslice, xslice
+        # note that integer indices are converted to slices n:n+1
+        if not isinstance(yslice, slice):
+            yslice = slice(yslice, yslice+1)
+        if not isinstance(xslice, slice):
+            xslice = slice(xslice, xslice+1)
+        assert yslice.step is None
+        assert xslice.step is None
+        y0, y1 = yslice.start, yslice.stop
+        x0, x1 = xslice.start, xslice.stop
+        if x0 is None:
+            x0 = xmin
+        if y0 is None:
+            y0 = ymin
+        if x1 is None:
+            x1 = xmax
+        if y1 is None:
+            y1 = ymax
+        # clip to bounds
+        x0 = max(x0, xmin)
+        y0 = max(y0, ymin)
+        x1 = min(x1, xmax+1)
+        y1 = min(y1, ymax+1)
+        # convert top-left and bottom-right coordinates
+        x0, y0 = self._convert_coords(x0, y0)
+        x1, y1 = self._convert_coords(x1, y1)
+        # rebuild slices
+        yslice = slice(y0, y1)
+        xslice = slice(x0, x1)
+        return yslice, xslice
 
 
-class Drawing(object):
-    """Graphical drawing operations."""
+class Graphics(object):
+    """Graphics operations."""
 
-    def __init__(self, queues, input_methods, values, memory):
+    def __init__(self, input_methods, values, memory, aspect):
         """Initialise graphics object."""
         # for apagenum and attr
-        self._queues = queues
         self._values = values
         self._memory = memory
         # for wait() in paint_
         self._input_methods = input_methods
         # memebers set on mode switch
         self._mode = None
-        self._text = None
-        self._pixels = None
+        self._pages = None
+        self._apage = None
         self.graph_view = None
         self._apagenum = None
-        self.last_point = None
-        self.last_attr = None
-        self.draw_scale = None
-        self.draw_angle = None
+        # last accessed coordinate, viewpoint-relative
+        self._last_point = None
+        self._last_attr = None
+        self._draw_scale = None
+        self._draw_angle = None
+        # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
+        self._screen_aspect = aspect
 
-    def init_mode(self, mode, text, pixels):
+    def init_mode(self, mode, pages, num_attr):
         """Initialise for new graphics mode."""
         self._mode = mode
-        self._text = text
-        self._pixels = pixels
+        self._pages = pages
+        self._num_attr = num_attr
         # set graphics viewport
-        self.graph_view = GraphicsViewPort(self._mode.pixel_width, self._mode.pixel_height)
-        self.unset_window()
+        self.graph_view = GraphicsViewPort(self._pages[0].pixels)
+        self._unset_window()
         self.reset()
 
     def reset(self):
         """Reset graphics state."""
         if self._mode.is_text_mode:
             return
-        self.last_point = self.graph_view.get_mid()
-        self.last_attr = self._mode.attr
-        self.draw_scale = 4
-        self.draw_angle = 0
+        self._last_point = self.graph_view.get_mid()
+        self._last_attr = self._mode.attr
+        self._draw_scale = 4
+        self._draw_angle = 0
 
     def set_attr(self, attr):
         """Set the current attribute."""
@@ -149,104 +210,22 @@ class Drawing(object):
     def set_page(self, apagenum):
         """Set the active page."""
         self._apagenum = apagenum
+        self._apage = self._pages[apagenum]
+        self.graph_view.set_page(self._apage.pixels)
 
     ### attributes
 
-    def get_attr_index(self, c):
+    def _get_attr_index(self, c):
         """Get the index of the specified attribute."""
         if c == -1:
             # foreground; graphics 'background' attrib is always 0
+            # FIXME - isn't this split_attr's job?
             c = self._attr & 0xf
+        elif not c:
+            c = 0
         else:
-            c = min(self._mode.num_attr-1, max(0, c))
+            c = min(self._num_attr-1, max(0, c))
         return c
-
-    ### text/graphics interaction
-
-    def clear_text_at(self, x, y):
-        """Remove the character covering a single pixel."""
-        row, col = self._mode.pixel_to_text_pos(x, y)
-        # use attr = 0 ?
-        if col >= 1 and row >= 1 and col <= self._mode.width and row <= self._mode.height:
-            self._text.put_char_attr(self._apagenum, row, col, b' ', self._attr)
-        fore, back, blink, underline = self._mode.split_attr(self._attr)
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_GLYPH,
-            (self._apagenum, row, col, u' ', False, fore, back, blink, underline))
-        )
-
-    def clear_text_area(self, x0, y0, x1, y1):
-        """Remove all characters from the text buffer on a rectangle of the graphics screen."""
-        row0, col0, row1, col1 = self._mode.pixel_to_text_area(x0, y0, x1, y1)
-        # use attr = 0 ? pagenum parameter? are we actually sending anything to the queue?
-        self._text.clear_area(self._apagenum, row0, col0, row1, col1, self._attr)
-
-    ### graphics primitives
-
-    def put_pixel(self, x, y, index, pagenum=None):
-        """Put a pixel on the screen; empty character buffer."""
-        if pagenum is None:
-            pagenum = self._apagenum
-        if self.graph_view.contains(x, y):
-            self._pixels.pages[pagenum].put_pixel(x, y, index)
-            self._queues.video.put(signals.Event(signals.VIDEO_PUT_PIXEL, (pagenum, x, y, index)))
-            self.clear_text_at(x, y)
-
-    def get_pixel(self, x, y, pagenum=None):
-        """Return the attribute a pixel on the screen."""
-        if pagenum is None:
-            pagenum = self._apagenum
-        return self._pixels.pages[pagenum].get_pixel(x, y)
-
-    def get_interval(self, pagenum, x, y, length):
-        """Read a scanline interval into a list of attributes."""
-        return self._pixels.pages[pagenum].get_interval(x, y, length)
-
-    def put_interval(self, pagenum, x, y, colours, mask=0xff):
-        """Write a list of attributes to a scanline interval."""
-        x, y, colours = self.graph_view.clip_list(x, y, colours)
-        newcolours = self._pixels.pages[pagenum].put_interval(x, y, colours, mask)
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours))
-        )
-        self.clear_text_area(x, y, x+len(colours), y)
-
-    def fill_interval(self, x0, x1, y, index):
-        """Fill a scanline interval in a solid attribute."""
-        x0, x1, y = self.graph_view.clip_interval(x0, x1, y)
-        self._pixels.pages[self._apagenum].fill_interval(x0, x1, y, index)
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_FILL_INTERVAL, (self._apagenum, x0, x1, y, index))
-        )
-        self.clear_text_area(x0, y, x1, y)
-
-    def get_until(self, x0, x1, y, c):
-        """Get the attribute values of a scanline interval."""
-        return self._pixels.pages[self._apagenum].get_until(x0, x1, y, c)
-
-    def get_rect(self, x0, y0, x1, y1):
-        """Read a screen rect into an [y][x] array of attributes."""
-        return self._pixels.pages[self._apagenum].get_rect(x0, y0, x1, y1)
-
-    def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
-        """Apply an [y][x] array of attributes onto a screen rect."""
-        x0, y0, x1, y1, sprite = self.graph_view.clip_area(x0, y0, x1, y1, sprite)
-        rect = self._pixels.pages[self._apagenum].put_rect(
-            x0, y0, x1, y1, sprite, operation_token
-        )
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_PUT_RECT, (self._apagenum, x0, y0, x1, y1, rect))
-        )
-        self.clear_text_area(x0, y0, x1, y1)
-
-    def fill_rect(self, x0, y0, x1, y1, index):
-        """Fill a rectangle in a solid attribute."""
-        x0, y0, x1, y1 = self.graph_view.clip_rect(x0, y0, x1, y1)
-        self._pixels.pages[self._apagenum].fill_rect(x0, y0, x1, y1, index)
-        self._queues.video.put(
-            signals.Event(signals.VIDEO_FILL_RECT, (self._apagenum, x0, y0, x1, y1, index))
-        )
-        self.clear_text_area(x0, y0, x1, y1)
 
     ## VIEW graphics viewport
 
@@ -254,47 +233,54 @@ class Drawing(object):
         """VIEW: Set/unset the graphics viewport and optionally draw a box."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
+        # VIEW SCREEN
         absolute = next(args)
-        # note that list() will absorb stopiteration but [] will not (in python 2)
-        bounds = list(
-            int(round(values.to_single(next(args)).to_value()))
-            for _ in range(4)
-        )
+        bounds = [
+            values.to_int(_arg)
+            for _arg in islice(args, 4)
+        ]
         if not bounds:
-            return self.unset_view()
+            # VIEW SCREEN is a syntax error; just VIEW is OK
+            error.throw_if(absolute, error.STX)
+            return self._unset_view()
         x0, y0, x1, y1 = bounds
         error.range_check(0, self._mode.pixel_width-1, x0, x1)
         error.range_check(0, self._mode.pixel_height-1, y0, y1)
+        error.throw_if(x0==x1 or y0 == y1)
         fill = next(args)
         if fill is not None:
             fill = values.to_int(fill)
         border = next(args)
         if border is not None:
             border = values.to_int(border)
+        error.range_check(0, 255, fill)
+        error.range_check(0, 255, border)
         list(args)
-        self.set_view(x0, y0, x1, y1, absolute, fill, border)
+        self._set_view(x0, y0, x1, y1, absolute, fill, border)
 
-    def set_view(self, x0, y0, x1, y1, absolute, fill, border):
+    def _set_view(self, x0, y0, x1, y1, absolute, fill, border):
         """Set the graphics viewport and optionally draw a box (VIEW)."""
         # first unset the viewport so that we can draw the box
+        fill = self._get_attr_index(fill)
+        border = self._get_attr_index(border)
         self.graph_view.unset()
         if fill is not None:
-            self.draw_box_filled(x0, y0, x1, y1, fill)
-            self.last_attr = fill
+            self._draw_box_filled(x0, y0, x1, y1, fill)
+            self._last_attr = fill
         if border is not None:
-            self.draw_box(x0-1, y0-1, x1+1, y1+1, border)
-            self.last_attr = border
+            self._draw_box(x0-1, y0-1, x1+1, y1+1, border)
+            self._last_attr = border
         self.graph_view.set(x0, y0, x1, y1, absolute)
-        self.last_point = self.graph_view.get_mid()
-        if self.window_bounds is not None:
-            self.set_window(*self.window_bounds)
+        self._last_point = self.graph_view.get_mid()
+        if self._window_bounds is not None:
+            self._set_window(*self._window_bounds)
 
-    def unset_view(self):
+    def _unset_view(self):
         """Unset the graphics viewport."""
         self.graph_view.unset()
-        self.last_point = self.graph_view.get_mid()
-        if self.window_bounds is not None:
-            self.set_window(*self.window_bounds)
+        self._last_point = self.graph_view.get_mid()
+        if self._window_bounds is not None:
+            self._set_window(*self._window_bounds)
 
     ### WINDOW logical coords
 
@@ -303,17 +289,20 @@ class Drawing(object):
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
         cartesian = not next(args)
-        coords = list(values.to_single(next(args)).to_value() for _ in range(4))
+        try:
+            coords = [values.to_single(_arg).to_value() for _arg in islice(args, 4)]
+        except StopIteration:
+            coords = []
         if not coords:
-            self.unset_window()
+            self._unset_window()
         else:
             x0, y0, x1, y1 = coords
             if x0 == x1 or y0 == y1:
                 raise error.BASICError(error.IFC)
             list(args)
-            self.set_window(x0, y0, x1, y1, cartesian)
+            self._set_window(x0, y0, x1, y1, cartesian)
 
-    def set_window(self, fx0, fy0, fx1, fy1, cartesian=True):
+    def _set_window(self, fx0, fy0, fx1, fy1, cartesian=True):
         """Set the logical coordinate window (WINDOW)."""
         if fy0 > fy1:
             fy0, fy1 = fy1, fy0
@@ -321,37 +310,32 @@ class Drawing(object):
             fx0, fx1 = fx1, fx0
         if cartesian:
             fy0, fy1 = fy1, fy0
-        left, top, right, bottom = self.graph_view.get()
         x0, y0 = 0., 0.
-        x1, y1 = float(right-left), float(bottom-top)
+        x1, y1 = self.graph_view.width-1, self.graph_view.height-1
         scalex = (x1-x0) / (fx1-fx0)
         scaley = (y1-y0) / (fy1-fy0)
         offsetx = x0 - fx0*scalex
         offsety = y0 - fy0*scaley
-        self.window = scalex, scaley, offsetx, offsety
-        self.window_bounds = fx0, fy0, fx1, fy1, cartesian
+        self._window = scalex, scaley, offsetx, offsety
+        self._window_bounds = fx0, fy0, fx1, fy1, cartesian
 
-    def unset_window(self):
+    def _unset_window(self):
         """Unset the logical coordinate window."""
-        self.window = None
-        self.window_bounds = None
+        self._window = None
+        self._window_bounds = None
 
-    def window_is_set(self):
-        """Return whether the logical coordinate window is set."""
-        return self.window is not None
-
-    def get_window_physical(self, fx, fy, step=False):
+    def _get_window_physical(self, fx, fy, step=False):
         """Convert logical to physical coordinates."""
-        if self.window:
-            scalex, scaley, offsetx, offsety = self.window
+        if self._window:
+            scalex, scaley, offsetx, offsety = self._window
             if step:
-                fx0, fy0 = self.get_window_logical(*self.last_point)
+                fx0, fy0 = self._get_window_logical(*self._last_point)
             else:
                 fx0, fy0 = 0., 0.
             x = int(round(offsetx + (fx0+fx) * scalex))
             y = int(round(offsety + (fy0+fy) * scaley))
         else:
-            x, y = self.last_point if step else (0, 0)
+            x, y = self._last_point if step else (0, 0)
             x += int(round(fx))
             y += int(round(fy))
         # overflow check
@@ -359,19 +343,19 @@ class Drawing(object):
             raise error.BASICError(error.OVERFLOW)
         return x, y
 
-    def get_window_logical(self, x, y):
+    def _get_window_logical(self, x, y):
         """Convert physical to logical coordinates."""
         x, y = float(x), float(y)
-        if self.window:
-            scalex, scaley, offsetx, offsety = self.window
+        if self._window:
+            scalex, scaley, offsetx, offsety = self._window
             return (x - offsetx) / scalex,  (y - offsety) / scaley
         else:
             return x, y
 
     def _get_window_scale(self, fx, fy):
         """Get logical to physical scale factor."""
-        if self.window:
-            scalex, scaley, _, _ = self.window
+        if self._window:
+            scalex, scaley, _, _ = self._window
             x, y = int(round(fx * scalex)), int(round(fy * scaley))
         else:
             x, y = int(round(fx)), int(round(fy))
@@ -394,7 +378,7 @@ class Drawing(object):
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
         step = next(args)
-        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
+        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         c = next(args)
         if c is None:
             c = default
@@ -402,11 +386,12 @@ class Drawing(object):
             c = values.to_int(c)
             error.range_check(0, 255, c)
         list(args)
-        x, y = self.graph_view.coords(*self.get_window_physical(x, y, step))
-        c = self.get_attr_index(c)
-        self.put_pixel(x, y, c)
-        self.last_attr = c
-        self.last_point = x, y
+        x, y = self._get_window_physical(x, y, step)
+        c = self._get_attr_index(c)
+        # record viewpoint-relative physical coordinates
+        self._last_point = x, y
+        self._last_attr = c
+        self.graph_view[y, x] = c
 
     ### LINE
 
@@ -420,7 +405,7 @@ class Drawing(object):
             for _, arg in zip(range(2), args)
         )
         step1 = next(args)
-        x1, y1 = (values.to_single(next(args)).to_value() for _ in range(2))
+        x1, y1 = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         coord0 = x0, y0, step0
         coord1 = x1, y1, step1
         c = next(args)
@@ -435,25 +420,25 @@ class Drawing(object):
         else:
             pattern = values.to_int(pattern)
         if coord0 != (None, None, None):
-            x0, y0 = self.graph_view.coords(*self.get_window_physical(*coord0))
+            x0, y0 = self._get_window_physical(*coord0)
         else:
-            x0, y0 = self.last_point
-        x1, y1 = self.graph_view.coords(*self.get_window_physical(*coord1))
-        c = self.get_attr_index(c)
+            x0, y0 = self._last_point
+        x1, y1 = self._get_window_physical(*coord1)
+        c = self._get_attr_index(c)
         if not shape:
-            self.draw_line(x0, y0, x1, y1, c, pattern)
+            self._draw_line(x0, y0, x1, y1, c, pattern)
         elif shape == b'B':
-            self.draw_box(x0, y0, x1, y1, c, pattern)
+            self._draw_box(x0, y0, x1, y1, c, pattern)
         elif shape == b'BF':
-            self.draw_box_filled(x0, y0, x1, y1, c)
-        self.last_point = x1, y1
-        self.last_attr = c
+            self._draw_box_filled(x0, y0, x1, y1, c)
+        self._last_point = x1, y1
+        self._last_attr = c
 
-    def draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
+    def _draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
         """Draw a line between the given physical points."""
         # cut off any out-of-bound coordinates
-        x0, y0 = self._mode.cutoff_coord(x0, y0)
-        x1, y1 = self._mode.cutoff_coord(x1, y1)
+        x0, y0 = self.graph_view.cutoff_coord(x0, y0)
+        x1, y1 = self.graph_view.cutoff_coord(x1, y1)
         if y1 <= y0:
             # work from top to bottom, or from x1,y1 if at the same height. this matters for mask.
             x1, y1, x0, y0 = x0, y0, x1, y1
@@ -471,9 +456,10 @@ class Drawing(object):
         for x in range(x0, x1+sx, sx):
             if pattern & mask != 0:
                 if steep:
-                    self.put_pixel(y, x, c)
+                    # set point (y, x)
+                    self.graph_view[x, y] = c
                 else:
-                    self.put_pixel(x, y, c)
+                    self.graph_view[y, x] = c
             mask >>= 1
             if mask == 0:
                 mask = 0x8000
@@ -482,30 +468,30 @@ class Drawing(object):
                 y += sy
                 line_error += dx
 
-    def draw_box_filled(self, x0, y0, x1, y1, c):
+    def _draw_box_filled(self, x0, y0, x1, y1, c):
         """Draw a filled box between the given corner points."""
-        x0, y0 = self._mode.cutoff_coord(x0, y0)
-        x1, y1 = self._mode.cutoff_coord(x1, y1)
+        x0, y0 = self.graph_view.cutoff_coord(x0, y0)
+        x1, y1 = self.graph_view.cutoff_coord(x1, y1)
         if y1 < y0:
             y0, y1 = y1, y0
         if x1 < x0:
             x0, x1 = x1, x0
-        self.fill_rect(x0, y0, x1, y1, c)
+        self.graph_view[y0:y1+1, x0:x1+1] = c
 
-    def draw_box(self, x0, y0, x1, y1, c, pattern=0xffff):
+    def _draw_box(self, x0, y0, x1, y1, c, pattern=0xffff):
         """Draw an empty box between the given corner points."""
-        x0, y0 = self._mode.cutoff_coord(x0, y0)
-        x1, y1 = self._mode.cutoff_coord(x1, y1)
+        x0, y0 = self.graph_view.cutoff_coord(x0, y0)
+        x1, y1 = self.graph_view.cutoff_coord(x1, y1)
         mask = 0x8000
-        mask = self.draw_straight(x1, y1, x0, y1, c, pattern, mask)
-        mask = self.draw_straight(x1, y0, x0, y0, c, pattern, mask)
+        mask = self._draw_straight(x1, y1, x0, y1, c, pattern, mask)
+        mask = self._draw_straight(x1, y0, x0, y0, c, pattern, mask)
         # verticals always drawn top to bottom
         if y0 < y1:
             y0, y1 = y1, y0
-        mask = self.draw_straight(x1, y1, x1, y0, c, pattern, mask)
-        mask = self.draw_straight(x0, y1, x0, y0, c, pattern, mask)
+        mask = self._draw_straight(x1, y1, x1, y0, c, pattern, mask)
+        mask = self._draw_straight(x0, y1, x0, y0, c, pattern, mask)
 
-    def draw_straight(self, x0, y0, x1, y1, c, pattern, mask):
+    def _draw_straight(self, x0, y0, x1, y1, c, pattern, mask):
         """Draw a horizontal or vertical line."""
         if x0 == x1:
             p0, p1, q, direction = y0, y1, x0, 'y'
@@ -515,9 +501,9 @@ class Drawing(object):
         for p in range(p0, p1+sp, sp):
             if pattern & mask != 0:
                 if direction == 'x':
-                    self.put_pixel(p, q, c)
+                    self.graph_view[q, p] = c
                 else:
-                    self.put_pixel(q, p, c)
+                    self.graph_view[p, q] = c
             mask >>= 1
             if mask == 0:
                 mask = 0x8000
@@ -566,8 +552,13 @@ class Drawing(object):
         """CIRCLE: Draw a circle, ellipse, arc or sector."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
+        # determine pixel aspect ratio
+        pixel_aspect = (
+            self._mode.pixel_height * self._screen_aspect[0],
+            self._mode.pixel_width * self._screen_aspect[1]
+        )
         step = next(args)
-        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
+        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         r = values.to_single(next(args)).to_value()
         error.throw_if(r < 0)
         c = next(args)
@@ -583,14 +574,14 @@ class Drawing(object):
         if aspect is not None:
             aspect = values.to_single(aspect).to_value()
         list(args)
-        x0, y0 = self.graph_view.coords(*self.get_window_physical(x, y, step))
+        x0, y0 = self._get_window_physical(x, y, step)
         if c is None:
             c = -1
         else:
             error.range_check(0, 255, c)
-        c = self.get_attr_index(c)
+        c = self._get_attr_index(c)
         if aspect is None:
-            aspect = self._mode.pixel_aspect[0] / float(self._mode.pixel_aspect[1])
+            aspect = pixel_aspect[0] / float(pixel_aspect[1])
         if aspect == 1.:
             rx, _ = self._get_window_scale(r, 0.)
             ry = rx
@@ -607,7 +598,7 @@ class Drawing(object):
         if stop:
             stop_octant, stop_coord, stop_line = _get_octant(stop, rx, ry)
         if aspect == 1.:
-            self.draw_circle(
+            self._draw_circle(
                 x0, y0, rx, c,
                 start_octant, start_coord, start_line,
                 stop_octant, stop_coord, stop_line
@@ -620,15 +611,15 @@ class Drawing(object):
             if stop is not None:
                 stopx = abs(int(round(rx * math.cos(stop))))
                 stopy = abs(int(round(ry * math.sin(stop))))
-            self.draw_ellipse(
+            self._draw_ellipse(
                 x0, y0, rx, ry, c,
                 start_octant//2, startx, starty, start_line,
                 stop_octant//2, stopx, stopy, stop_line
             )
-        self.last_attr = c
-        self.last_point = x0, y0
+        self._last_attr = c
+        self._last_point = x0, y0
 
-    def draw_circle(
+    def _draw_circle(
             self, x0, y0, r, c,
             oct0=-1, coo0=-1, line0=False,
             oct1=-1, coo1=-1, line1=False
@@ -667,7 +658,8 @@ class Drawing(object):
                         # (don't draw if y is between coo's)
                         if _octant_gt(oct0, y, coo1) and _octant_gt(oct0, coo0, y):
                             continue
-                self.put_pixel(*_octant_coord(octant, x0, y0, x, y), index=c)
+                oct_x, oct_y = _octant_coord(octant, x0, y0, x, y)
+                self.graph_view[oct_y, oct_x] = c
             # remember endpoints for pie sectors
             if y == coo0:
                 coo0x = x
@@ -682,11 +674,11 @@ class Drawing(object):
                 bres_error += 2*(y-x+1)
         # draw pie-slice lines
         if line0:
-            self.draw_line(x0, y0, *_octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
+            self._draw_line(x0, y0, *_octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
         if line1:
-            self.draw_line(x0, y0, *_octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
+            self._draw_line(x0, y0, *_octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
 
-    def draw_ellipse(
+    def _draw_ellipse(
             self, cx, cy, rx, ry, c,
             qua0=-1, x0=-1, y0=-1, line0=False,
             qua1=-1, x1=-1, y1=-1, line1=False
@@ -724,7 +716,8 @@ class Drawing(object):
                     else:
                         if _quadrant_gt(qua0, x, y, x1, y1) and _quadrant_gt(qua0, x0, y0, x, y):
                             continue
-                self.put_pixel(*_quadrant_coord(quadrant, cx, cy, x, y), index=c)
+                quad_x, quad_y = _quadrant_coord(quadrant, cx, cy, x, y)
+                self.graph_view[quad_y, quad_x] = c
             # bresenham error step
             e2 = 2 * err
             if (e2 <= dy):
@@ -741,14 +734,14 @@ class Drawing(object):
         # too early stop of flat vertical ellipses
         # finish tip of ellipse
         while (y < ry):
-            self.put_pixel(cx, cy+y, c)
-            self.put_pixel(cx, cy-y, c)
+            self.graph_view[cy+y, cx] = c
+            self.graph_view[cy-y, cx] = c
             y += 1
         # draw pie-slice lines
         if line0:
-            self.draw_line(cx, cy, *_quadrant_coord(qua0, cx, cy, x0, y0), c=c)
+            self._draw_line(cx, cy, *_quadrant_coord(qua0, cx, cy, x0, y0), c=c)
         if line1:
-            self.draw_line(cx, cy, *_quadrant_coord(qua1, cx, cy, x1, y1), c=c)
+            self._draw_line(cx, cy, *_quadrant_coord(qua1, cx, cy, x1, y1), c=c)
 
     ### PAINT: Flood fill
 
@@ -757,7 +750,7 @@ class Drawing(object):
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
         step = next(args)
-        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
+        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         coord = x, y, step
         c, pattern = -1, None
         cval = next(args)
@@ -782,111 +775,148 @@ class Drawing(object):
         # if paint *attribute* specified, border default = current foreground
         if border is None:
             border = c
-        # only in screen 7,8,9 is this an error (use ega memory as a check)
-        if (pattern and background and background[:len(pattern)] == pattern and
-                self._mode.video_segment == 0xa000):
-            raise error.BASICError(error.IFC)
-        self.flood_fill(coord, c, pattern, border, background)
+        self._flood_fill(coord, c, pattern, border, background)
 
-    def flood_fill(self, lcoord, c, pattern, border, background):
+    def _flood_fill(self, lcoord, c, pattern, border, background):
         """Fill an area defined by a border attribute with a tiled pattern."""
         # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
         # flood fill stops on border colour in all directions;
         # it also stops on scanlines in fill_colour
         # pattern tiling stops at intervals that equal the pattern to be drawn,
         # unless this pattern is also equal to the background pattern.
-        c, border = self.get_attr_index(c), self.get_attr_index(border)
+        c, border = self._get_attr_index(c), self._get_attr_index(border)
         solid = (pattern is None)
-        if not solid:
-            tile = self._mode.build_tile(bytearray(pattern)) if pattern else None
-            back = self._mode.build_tile(bytearray(background)) if background else None
+        back = None
+        if solid:
+            tile = bytematrix.ByteMatrix(1, 8, c)
         else:
-            tile, back = [[c]*8], None
-        bound_x0, bound_y0, bound_x1, bound_y1 = self.graph_view.get()
-        x, y = self.graph_view.coords(*self.get_window_physical(*lcoord))
+            tile = self._mode.build_tile(bytearray(pattern)) if pattern else None
+            if background:
+                back = self._mode.build_tile(bytearray(background))
+                # only use first row of background
+                back = back[:1, :]
+                # illegal tile/background combo's:
+                # all, or more than two consecutive, rows equal background
+                for row in range(max(1, tile.height-2)):
+                    comptile = tile[row:row+3, :]
+                    if comptile == back.vtile(comptile.height):
+                        raise error.BASICError(error.IFC)
+        # viewport bounds in viewport coordinates
+        bound_x0, bound_y0, bound_x1, bound_y1 = self.graph_view.get_bounds()
+        x, y = self._get_window_physical(*lcoord)
         line_seed = [(x, x, y, 0)]
         # paint nothing if seed is out of bounds
         if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
             return
-        self.last_point = x, y
+        self._last_point = x, y
         # paint nothing if we start on border attrib
-        if self.get_pixel(x,y) == border:
+        if self.graph_view[y, x] == border:
             return
         while len(line_seed) > 0:
             # consider next interval
             x_start, x_stop, y, ydir = line_seed.pop()
             # extend interval as far as it goes to left and right
-            x_left = x_start - len(self.get_until(x_start-1, bound_x0-1, y, border))
-            x_right = x_stop + len(self.get_until(x_stop+1, bound_x1+1, y, border))
+            x_left = x_start - self._scanline_until(border, y, x_start-1, bound_x0-1).width
+            x_right = x_stop + self._scanline_until(border, y, x_stop+1, bound_x1+1).width
             # check next scanlines and add intervals to the list
             if ydir == 0:
                 if y + 1 <= bound_y1:
-                    line_seed = self.check_scanline(
+                    line_seed = self._check_scanline(
                         line_seed, x_left, x_right, y+1, c, tile, back, border, 1
                     )
                 if y - 1 >= bound_y0:
-                    line_seed = self.check_scanline(
+                    line_seed = self._check_scanline(
                         line_seed, x_left, x_right, y-1, c, tile, back, border, -1
                     )
             else:
                 # check the same interval one scanline onward in the same direction
                 if y+ydir <= bound_y1 and y+ydir >= bound_y0:
-                    line_seed = self.check_scanline(
+                    line_seed = self._check_scanline(
                         line_seed, x_left, x_right, y+ydir, c, tile, back, border, ydir
                     )
                 # check any bit of the interval that was extended one scanline backward
                 # this is where the flood fill goes around corners.
                 if y-ydir <= bound_y1 and y-ydir >= bound_y0:
-                    line_seed = self.check_scanline(
+                    line_seed = self._check_scanline(
                         line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir
                     )
-                    line_seed = self.check_scanline(
+                    line_seed = self._check_scanline(
                         line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir
                     )
             # draw the pixels for the current interval
             if solid:
-                self.fill_interval(x_left, x_right, y, tile[0][0])
+                self.graph_view[y, x_left:x_right+1] = tile[0, 0]
             else:
-                interval = tile_to_interval(x_left, x_right, y, tile)
-                self.put_interval(self._apagenum, x_left, y, interval)
+                # convert tile to a list of attributes
+                tilerow = tile[y % tile.height, :]
+                n_tiles = 1 + (x_right+1) // tile.width - (x_left // tile.width)
+                tiles = bytematrix.hstack((tilerow,) * n_tiles)
+                interval = tiles[:, (x_left%tile.width) : (x_left%tile.width) + x_right - x_left + 1]
+                # put to screen
+                self.graph_view[y, x_left:x_right+1] = interval
             # allow interrupting the paint
-            if y%4 == 0:
+            if y % 4 == 0:
                 self._input_methods.wait()
-        self.last_attr = c
+        self._last_attr = c
 
-    def check_scanline(
+    def _scanline_until(self, element, y, x0, x1):
+        """Get row until given element."""
+        if x0 == x1:
+            return bytematrix.ByteMatrix()
+        elif x1 > x0:
+            row = self.graph_view[y, x0:x1]
+            try:
+                # pyton2 won't do bytearray.index(int)
+                index = row.to_bytes().index(int2byte(element))
+                return row[:, :index]
+            except ValueError:
+                return row
+        else:
+            row = self.graph_view[y, x1+1:x0+1]
+            try:
+                index = 1 + row.to_bytes().rindex(int2byte(element))
+                return row[:, index:]
+            except ValueError:
+                return row
+
+    def _check_scanline(
             self, line_seed, x_start, x_stop, y,
             c, tile, back, border, ydir
         ):
         """Append all subintervals between border colours to the scanning stack."""
         if x_stop < x_start:
             return line_seed
-        x_start_next = x_start
-        x_stop_next = x_start_next-1
-        rtile = tile[y%len(tile)]
+        max_width = x_stop - x_start + 1
+        # repeat row ceildiv + 1 times to ensure we can start in the middle of the first tile
+        rtile = tile[y % tile.height, :]
+        repeated_tile = rtile.htile(1 - (-max_width // rtile.width))
         if back:
-            rback = back[y%len(back)]
+            # back is only one row
+            repeated_back = back.htile(1 - (-max_width // back.width))
         x = x_start
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
-            pattern = self.get_until(x, x_stop+1, y, border)
-            x_stop_next = x + len(pattern) - 1
-            x = x_stop_next + 1
-            # never match zero pattern (special case)
-            has_same_pattern = (rtile != [0]*8)
-            for pat_x in range(len(pattern)):
+            pattern = self._scanline_until(border, y, x, x_stop+1)
+            if pattern.width > 0:
+                # check if scanline pattern matches fill pattern
+                tile_x = x % rtile.width
+                has_same_pattern = (
+                    # never match zero pattern (special case)
+                    rtile != ZERO_TILE[0, :rtile.width]
+                    and pattern == repeated_tile[0, tile_x : tile_x+pattern.width]
+                )
+                # background tile specified: don't stop if we match the background tile (fully!)
+                if back:
+                    has_same_pattern = has_same_pattern and (
+                        pattern.width < back.width
+                        or pattern != repeated_back[0, tile_x : tile_x+pattern.width]
+                    )
+                # we've reached a border colour, append our interval & start a new one
+                # don't append if same fill colour/pattern,
+                # to avoid infinite loops over bits already painted (eg. 00 shape)
                 if not has_same_pattern:
-                    break
-                tile_x = (x_start_next + pat_x) % 8
-                has_same_pattern &= (pattern[pat_x] == rtile[tile_x])
-                has_same_pattern &= (not back or pattern[pat_x] != rback[tile_x])
-            # we've reached a border colour, append our interval & start a new one
-            # don't append if same fill colour/pattern,
-            # to avoid infinite loops over bits already painted (eg. 00 shape)
-            if x_stop_next >= x_start_next and not has_same_pattern:
-                line_seed.append([x_start_next, x_stop_next, y, ydir])
-            x_start_next = x + 1
-            x += 1
+                    line_seed.append([x, x + pattern.width - 1, y, ydir])
+            x += pattern.width + 1
         return line_seed
 
     ### PUT and GET: Sprite operations
@@ -895,7 +925,7 @@ class Drawing(object):
         """PUT: Put a sprite on the screen."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        x0, y0 = (values.to_single(next(args)).to_value() for _ in range(2))
+        x0, y0 = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         array_name, operation_token = args
         array_name = self._memory.complete_name(array_name)
         operation_token = operation_token or tk.XOR
@@ -903,75 +933,62 @@ class Drawing(object):
             raise error.BASICError(error.IFC)
         elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
-        x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
-        self.last_point = x0, y0
-        try:
-            byte_array = self._memory.arrays.view_full_buffer(array_name)
-            spriterec = self._memory.arrays.get_cache(array_name)
-        except KeyError:
-            byte_array = bytearray()
-            spriterec = None
-        if spriterec is not None:
-            dx, dy, sprite = spriterec
-        else:
-            # we don't have it stored or it has been modified
-            dx, dy = self._mode.record_to_sprite_size(byte_array)
-            sprite = self._mode.array_to_sprite(byte_array, 4, dx, dy)
-            # store it now that we have it!
-            self._memory.arrays.set_cache(array_name, (dx, dy, sprite))
-        # sprite must be fully inside *viewport* boundary
-        x1, y1 = x0+dx-1, y0+dy-1
-        # Tandy screen 6 sprites are twice as wide as claimed
-        if self._mode.name == '640x200x4':
-            x1 = x0 + 2*dx - 1
-        # illegal fn call if outside viewport boundary
-        vx0, vy0, vx1, vy1 = self.graph_view.get()
-        error.range_check(vx0, vx1, x0, x1)
-        error.range_check(vy0, vy1, y0, y1)
+        x0, y0 = self._get_window_physical(x0, y0)
+        self._last_point = x0, y0
+        packed_sprite = self._memory.arrays.view_full_buffer(array_name)
+        sprite = self._mode.sprite_builder.unpack(packed_sprite)
+        x1, y1 = x0 + sprite.width - 1, y0 + sprite.height - 1
+        # the whole sprite must fit or it's IFC
+        error.throw_if(not self.graph_view.contains(x0, y0))
+        error.throw_if(not self.graph_view.contains(x1, y1))
         # apply the sprite to the screen
-        self.put_rect(x0, y0, x1, y1, sprite, operation_token)
+        if operation_token == tk.PSET:
+            rect = sprite
+        elif operation_token == tk.PRESET:
+            rect = sprite ^ (2**self._mode.bitsperpixel - 1)
+        elif operation_token == tk.AND:
+            # we use in-place operations as we'll assign back anyway
+            rect = operator.iand(self.graph_view[y0:y1+1, x0:x1+1], sprite)
+        elif operation_token == tk.OR:
+            rect = operator.ior(self.graph_view[y0:y1+1, x0:x1+1], sprite)
+        elif operation_token == tk.XOR:
+            rect = operator.ixor(self.graph_view[y0:y1+1, x0:x1+1], sprite)
+        self.graph_view[y0:y1+1, x0:x1+1] = rect
 
     def get_(self, args):
         """GET: Read a sprite from the screen."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        x0, y0 = (values.to_single(next(args)).to_value() for _ in range(2))
+        x0, y0 = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         step = next(args)
-        x, y = (values.to_single(next(args)).to_value() for _ in range(2))
-        lcoord1 = x, y, step
+        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         array_name, = args
         array_name = self._memory.complete_name(array_name)
         if array_name not in self._memory.arrays:
             raise error.BASICError(error.IFC)
         elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
-        x0, y0 = self.graph_view.coords(*self.get_window_physical(x0, y0))
-        x1, y1 = self.graph_view.coords(*self.get_window_physical(*lcoord1))
-        self.last_point = x1, y1
-        try:
-            byte_array = self._memory.arrays.view_full_buffer(array_name)
-        except KeyError:
-            raise error.BASICError(error.IFC)
+        x0, y0 = self._get_window_physical(x0, y0)
+        x1, y1 = self._get_window_physical(x, y, step)
+        self._last_point = x1, y1
+        byte_array = self._memory.arrays.view_full_buffer(array_name)
         y0, y1 = sorted((y0, y1))
         x0, x1 = sorted((x0, x1))
-        dx, dy = x1-x0+1, y1-y0+1
         # Tandy screen 6 simply GETs twice the width, it seems
-        if self._mode.name == '640x200x4':
-            x1 = x0 + 2*dx - 1
-        # illegal fn call if outside viewport boundary
-        vx0, vy0, vx1, vy1 = self.graph_view.get()
-        error.range_check(vx0, vx1, x0, x1)
-        error.range_check(vy0, vy1, y0, y1)
+        width = x1 - x0 + 1
+        x1 = x0 + self._mode.sprite_builder.width_factor * width - 1
+        # the whole sprite must fit or it's IFC
+        error.throw_if(not self.graph_view.contains(x0, y0))
+        error.throw_if(not self.graph_view.contains(x1, y1))
         # set size record
-        byte_array[0:4] = self._mode.sprite_size_to_record(dx, dy)
         # read from screen and convert to byte array
-        sprite = self.get_rect(x0, y0, x1, y1)
+        sprite = self.graph_view[y0:y1+1, x0:x1+1]
+        packed_sprite = self._mode.sprite_builder.pack(sprite)
         try:
-            self._mode.sprite_to_array(sprite, dx, dy, byte_array, 4)
-        except ValueError as e:
+            byte_array[:len(packed_sprite)] = packed_sprite
+        except ValueError:
+            # cannot modify size of memoryview object - sprite larger than array
             raise error.BASICError(error.IFC)
-        # store a copy in the sprite store
-        self._memory.arrays.set_cache(array_name, (dx, dy, sprite))
 
     ### DRAW statement
 
@@ -980,10 +997,10 @@ class Drawing(object):
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
         gml = values.next_string(args)
-        self.draw(gml)
+        self._draw(gml)
         list(args)
 
-    def draw(self, gml):
+    def _draw(self, gml):
         """Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = mlparser.MLParser(gml, self._memory, self._values)
@@ -1003,48 +1020,48 @@ class Drawing(object):
             elif c == b'X':
                 # execute substring
                 sub = gmls.parse_string()
-                self.draw(sub)
+                self._draw(sub)
             elif c == b'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
                 if gmls.skip_blank() == b';':
-                    self.last_attr = 0
+                    self._last_attr = 0
                 else:
                     attr = gmls.parse_number()
                     # 100000 seems to be GW's limit
                     error.range_check(-99999, 99999, attr)
-                    self.last_attr = attr
+                    self._last_attr = attr
             elif c == b'S':
                 # set scale
                 scale = gmls.parse_number()
                 error.range_check(1, 255, scale)
-                self.draw_scale = scale
+                self._draw_scale = scale
             elif c == b'A':
                 # set angle
                 # allow empty spec (default 0), but only if followed by a semicolon
                 if gmls.skip_blank() == b';':
-                    self.draw_angle = 0
+                    self._draw_angle = 0
                 else:
                     angle = gmls.parse_number()
                     error.range_check(0, 3, angle)
-                    self.draw_angle = 90 * angle
+                    self._draw_angle = 90 * angle
             elif c == b'T':
                 # 'turn angle' - set (don't turn) the angle to any value
                 if gmls.read(1).upper() != b'A':
                     raise error.BASICError(error.IFC)
                 # allow empty spec (default 0), but only if followed by a semicolon
                 if gmls.skip_blank() == b';':
-                    self.draw_angle = 0
+                    self._draw_angle = 0
                 else:
                     angle = gmls.parse_number()
                     error.range_check(-360, 360, angle)
-                    self.draw_angle = angle
+                    self._draw_angle = angle
             # one-variable movement commands:
             elif c in (b'U', b'D', b'L', b'R', b'E', b'F', b'G', b'H'):
                 step = gmls.parse_number(default=1)
                 # 100000 seems to be GW's limit
                 error.range_check(-99999, 99999, step)
-                x0, y0 = self.last_point
+                x0, y0 = self._last_point
                 x1, y1 = 0, 0
                 if c in (b'U', b'E', b'H'):
                     y1 -= step
@@ -1054,7 +1071,7 @@ class Drawing(object):
                     x1 -= step
                 elif c in (b'R', b'E', b'F'):
                     x1 += step
-                self.draw_step(x0, y0, x1, y1, plot, goback)
+                self._draw_step(x0, y0, x1, y1, plot, goback)
                 plot = True
                 goback = False
             # two-variable movement command
@@ -1068,15 +1085,15 @@ class Drawing(object):
                     gmls.read(1)
                 y = gmls.parse_number()
                 error.range_check(-9999, 9999, y)
-                x0, y0 = self.last_point
+                x0, y0 = self._last_point
                 if relative:
-                    self.draw_step(x0, y0, x, y, plot, goback)
+                    self._draw_step(x0, y0, x, y, plot, goback)
                 else:
                     if plot:
-                        self.draw_line(x0, y0, x, y, self.last_attr)
-                    self.last_point = x, y
+                        self._draw_line(x0, y0, x, y, self._last_attr)
+                    self._last_point = x, y
                     if goback:
-                        self.last_point = x0, y0
+                        self._last_point = x0, y0
                 plot = True
                 goback = False
             elif c == b'P':
@@ -1087,19 +1104,23 @@ class Drawing(object):
                     raise error.BASICError(error.IFC)
                 bound = gmls.parse_number()
                 error.range_check(0, 9999, bound)
-                x, y = self.get_window_logical(*self.last_point)
-                self.flood_fill((x, y, False), colour, None, bound, None)
+                x, y = self._get_window_logical(*self._last_point)
+                self._flood_fill((x, y, False), colour, None, bound, None)
             else:
                 raise error.BASICError(error.IFC)
 
-    def draw_step(self, x0, y0, sx, sy, plot, goback):
+    def _draw_step(self, x0, y0, sx, sy, plot, goback):
         """Make a DRAW step, drawing a line and returning if requested."""
-        scale = self.draw_scale
-        rotate = self.draw_angle
-        aspect = self._mode.pixel_aspect
-        yfac = aspect[1] / (1.*aspect[0])
-        x1 = (scale*sx) // 4
-        y1 = (scale*sy) // 4
+        scale = self._draw_scale
+        rotate = self._draw_angle
+        # pixel aspect ratio
+        aspect = (
+            self._mode.pixel_height * self._screen_aspect[0],
+            self._mode.pixel_width * self._screen_aspect[1]
+        )
+        yfac = float(aspect[1]) / float(aspect[0])
+        x1 = int(math.trunc(scale*sx / 4.))
+        y1 = int(math.trunc(scale*sy / 4.))
         if rotate == 0 or rotate == 360:
             pass
         elif rotate == 90:
@@ -1113,17 +1134,16 @@ class Drawing(object):
             # degrees to radians
             phi = rotate * math.pi / 180.
             sinr, cosr = math.sin(phi), math.cos(phi)
-            fxfac = float(aspect[0]) / float(aspect[1])
-            fx = cosr*fx + (sinr*fy) / fxfac
-            fy = (cosr*fy) * fxfac - sinr*fx
-            x1, y1 = int(round(fx)), int(round(fy))
+            x1 = cosr * fx + sinr*fy * yfac
+            y1 = cosr * fy - sinr*fx / yfac
+            x1, y1 = int(round(x1)), int(round(y1))
         y1 += y0
         x1 += x0
         if plot:
-            self.draw_line(x0, y0, x1, y1, self.last_attr)
-        self.last_point = x1, y1
+            self._draw_line(x0, y0, x1, y1, self._last_attr)
+        self._last_point = x1, y1
         if goback:
-            self.last_point = x0, y0
+            self._last_point = x0, y0
 
     ### POINT and PMAP
 
@@ -1142,9 +1162,9 @@ class Drawing(object):
             if self._mode.is_text_mode:
                 return self._values.new_single()
             if fn in (0, 1):
-                point = self.last_point[fn]
+                point = self._last_point[fn]
             elif fn in (2, 3):
-                point = self.get_window_logical(*self.last_point)[fn - 2]
+                point = self._get_window_logical(*self._last_point)[fn - 2]
             return self._values.new_single().from_value(point)
         else:
             if self._mode.is_text_mode:
@@ -1152,11 +1172,11 @@ class Drawing(object):
             arg1 = values.pass_number(arg1)
             list(args)
             x, y = values.to_single(arg0).to_value(), values.to_single(arg1).to_value()
-            x, y = self.graph_view.coords(*self.get_window_physical(x, y))
+            x, y = self._get_window_physical(x, y)
             if x < 0 or x >= self._mode.pixel_width or y < 0 or y >= self._mode.pixel_height:
                 point = -1
             else:
-                point = self.get_pixel(x, y)
+                point = self.graph_view[y, x]
             return self._values.new_integer().from_int(point)
 
     def pmap_(self, args):
@@ -1172,27 +1192,15 @@ class Drawing(object):
                 values.to_integer(coord)
             value = 0
         elif mode == 0:
-            value, _ = self.get_window_physical(values.to_single(coord).to_value(), 0.)
+            value, _ = self._get_window_physical(values.to_single(coord).to_value(), 0.)
         elif mode == 1:
-            _, value = self.get_window_physical(0., values.to_single(coord).to_value())
+            _, value = self._get_window_physical(0., values.to_single(coord).to_value())
         elif mode == 2:
-            value, _ = self.get_window_logical(values.to_integer(coord).to_int(), 0)
+            value, _ = self._get_window_logical(values.to_integer(coord).to_int(), 0)
         elif mode == 3:
-            _, value = self.get_window_logical(0, values.to_integer(coord).to_int())
+            _, value = self._get_window_logical(0, values.to_integer(coord).to_int())
         return self._values.new_single().from_value(value)
 
-
-def tile_to_interval(x0, x1, y, tile):
-    """Convert a tile to a list of attributes."""
-    dx = x1 - x0 + 1
-    h = len(tile)
-    w = len(tile[0])
-    if numpy:
-        # fast method using numpy instead of loop
-        ntile = numpy.roll(numpy.array(tile).astype(int)[y % h], int(-x0 % 8))
-        return numpy.tile(ntile, (dx+w-1) // w)[:dx]
-    else:
-        return [tile[y % h][x % 8] for x in range(x0, x1+1)]
 
 
 ###############################################################################

@@ -16,11 +16,12 @@ import io
 import sys
 import zlib
 import struct
+import codecs
 import logging
 from contextlib import contextmanager
 
-from .metadata import VERSION
-from .compat import PY2, copyreg, stdout, stdin
+from .basic import VERSION
+from .compat import PY2, copyreg, stdio
 
 # session file header
 HEADER_FORMAT = '<LIIIII'
@@ -55,14 +56,27 @@ def manage_state(session, state_file, do_resume):
             except Exception as e:
                 logging.error('Failed to save session to %s: %s', state_file, e)
 
+def unpickle_bytesio(value, pos):
+    """Unpickle a file object."""
+    stream = io.BytesIO(value)
+    stream.seek(pos)
+    return stream
+
+def pickle_bytesio(f):
+    """Pickle a BytesIO object."""
+    return unpickle_bytesio, (f.getvalue(), f.tell())
 
 def unpickle_file(name, mode, pos):
     """Unpickle a file object."""
     if name is None:
-        if mode in ('r', 'rb'):
-            return sys.stdin
-        else:
-            return sys.stdout
+        if mode == 'rb' or (PY2 and mode == 'r'):
+            return stdio.stdin.buffer
+        elif mode == 'r':
+            return stdio.stdin
+        elif mode == 'wb' or (PY2 and mode == 'w'):
+            return stdio.stdout.buffer
+        elif mode == 'w':
+            return stdio.stdout
     try:
         if 'w' in mode and pos > 0:
             # preserve existing contents of writable file
@@ -75,18 +89,25 @@ def unpickle_file(name, mode, pos):
             if pos > 0:
                 f.seek(pos)
     except IOError:
-        logging.warning('Could not re-open file %s. Replacing with null file.', name)
-        f = io.open(os.devnull, mode)
-    return f
+        pass
+    else:
+        return f
+    logging.warning('Could not re-open file %s. Replacing with null file.', name)
+    return io.open(os.devnull, mode)
 
 def pickle_file(f):
     """Pickle a file object."""
-    if f in (sys.stdout, sys.stdin, stdout, stdin, stdout.buffer, stdin.buffer):
+    if f in (
+            sys.stdout, sys.stdin,
+            stdio.stdout, stdio.stdin,
+            stdio.stdout.buffer, stdio.stdin.buffer
+        ):
         return unpickle_file, (None, f.mode, -1)
     try:
         return unpickle_file, (f.name, f.mode, f.tell())
-    except IOError:
-        # not seekable
+    except (IOError, ValueError):
+        # IOError: not seekable
+        # ValueError: closed
         return unpickle_file, (f.name, f.mode, -1)
 
 # register the picklers for file and cStringIO
@@ -96,6 +117,19 @@ copyreg.pickle(io.BufferedReader, pickle_file)
 copyreg.pickle(io.BufferedWriter, pickle_file)
 copyreg.pickle(io.TextIOWrapper, pickle_file)
 copyreg.pickle(io.BufferedRandom, pickle_file)
+copyreg.pickle(io.BytesIO, pickle_bytesio)
+
+# patch codecs.StreamReader and -Writer
+if PY2:
+    def patched_getstate(self):
+        return vars(self)
+
+    def patched_setstate(self, dict):
+        vars(self).update(dict)
+
+    for streamclass in (codecs.StreamReader, codecs.StreamWriter, codecs.StreamReaderWriter):
+        streamclass.__getstate__ = patched_getstate
+        streamclass.__setstate__ = patched_setstate
 
 
 def load_session(state_file):

@@ -9,23 +9,11 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 from collections import deque
 
-from ..compat import muffle
 
-try:
-    with muffle(sys.stdout):
-        import pygame
-except ImportError:
-    pygame = None
-
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
-if pygame:
+if False:
+    # keep the import for detection by packagers
+    import pygame
     import pygame.mixer as mixer
-else:
-    mixer = None
 
 from ..basic.base import signals
 from .audio import AudioPlugin
@@ -51,15 +39,19 @@ class AudioPygame(AudioPlugin):
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
-        if not pygame:
+        global pygame, mixer
+        try:
+            import pygame
+        except ImportError:
             raise InitFailed('Module `pygame` not found')
-        if not numpy:
-            raise InitFailed('Mdoule `numpy` not found')
-        if not mixer:
+        try:
+            from pygame import mixer
+        except ImportError:
             raise InitFailed('Module `mixer` not found')
         # this must be called before pygame.init() in the video plugin
+        # if sample_bits != 16 or -16 I get no sound. seems to ave no effect though
         mixer.pre_init(
-            synthesiser.SAMPLE_RATE, -synthesiser.SAMPLE_BITS, channels=1, buffer=BUFSIZE
+            synthesiser.SAMPLE_RATE, -16, channels=1, buffer=BUFSIZE
         )
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
@@ -156,7 +148,7 @@ class AudioPygame(AudioPlugin):
             mixer.Channel(channel).stop()
             # play short silence to avoid blocking the channel
             # otherwise it won't play on queue()
-            silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
+            silence = pygame.sndarray.make_sound(bytearray(1))
             mixer.Channel(channel).play(silence)
 
     def _check_init_mixer(self):

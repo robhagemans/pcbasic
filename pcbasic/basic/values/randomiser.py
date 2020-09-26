@@ -54,7 +54,7 @@ class Randomiser(object):
         # unpack to signed integer
         n, = struct.unpack('<h', final_two)
         self._seed &= 0xff
-        self._cycle(1) # RND(1)
+        self._cycle()
         self._seed += n * self._step
         self._seed %= self._period
 
@@ -62,25 +62,24 @@ class Randomiser(object):
         """Get a value from the random number generator."""
         f, = args
         if f is None:
-            self._cycle(1)
+            # RND
+            self._cycle()
         else:
             f = values.to_single(f)
             if f.is_zero():
-                self._cycle(0)
+                # RND(0) returns last value
+                pass
             else:
-                # use integer value of mantissa
-                self._cycle(f.mantissa())
+                if f.is_negative():
+                    # re-seed with integer value of mantissa
+                    # so RND(-1) does not mean n==-1 but n==-2**23
+                    self._seed = -f.mantissa()
+                self._cycle()
         # seed/period
         return self._values.new_single().from_int(self._seed).idiv(
             self._values.new_single().from_int(self._period)
         )
 
-    def _cycle(self, n):
-        """Get a value from the random number generator (int argument)."""
-        if n < 0:
-            n = -n
-            while n < 2**23:
-                n *= 2
-            self._seed = n
-        if n != 0:
-            self._seed = (self._seed*self._multiplier + self._increment) % self._period
+    def _cycle(self):
+        """Move the random number generator to the next state."""
+        self._seed = (self._seed*self._multiplier + self._increment) % self._period

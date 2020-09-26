@@ -17,13 +17,13 @@ from datetime import datetime
 from contextlib import contextmanager
 from subprocess import check_output, CalledProcessError
 
-from .metadata import VERSION
 from .basic.base import error, signals
+from .basic import VERSION, LONG_VERSION
 from .data import get_data, ResourceFailed
 
 
 LOG_PATTERN = u'crash-%Y%m%d-'
-PAUSE_MESSAGE = u'Fatal error. Press a key to close this window'
+PAUSE_MESSAGE = u'Fatal error. Press a key to close this window.'
 
 
 class NoGuard(object):
@@ -34,21 +34,6 @@ class NoGuard(object):
         yield
 
 NOGUARD = NoGuard()
-
-try:
-    RELEASE_ID = json.loads(get_data('release.json'))
-    TAG = RELEASE_ID[u'tag']
-    COMMIT = RELEASE_ID[u'commit']
-    TIMESTAMP = RELEASE_ID[u'timestamp']
-except ResourceFailed:
-    TAG = u''
-    TIMESTAMP = u''
-    try:
-        COMMIT = check_output(
-            ['git', 'describe', '--always'], cwd=os.path.dirname(__file__)
-        ).strip().decode('ascii', 'ignore')
-    except (CalledProcessError, EnvironmentError):
-        COMMIT = u'unknown'
 
 
 class ExceptionGuard(object):
@@ -69,6 +54,7 @@ class ExceptionGuard(object):
         except BaseException:
             if not self._bluescreen(session._impl, interface, *sys.exc_info()):
                 raise
+            interface.pause(PAUSE_MESSAGE)
             interface.pause(PAUSE_MESSAGE)
 
     def _bluescreen(self, impl, iface, exc_type, exc_value, exc_traceback):
@@ -112,7 +98,7 @@ class ExceptionGuard(object):
         message = [
             (0x70, u'FATAL ERROR\n'),
             (0x17, u'version   '),
-            (0x1f, u'%s [%s] %s %s' % (VERSION, COMMIT, TAG, TIMESTAMP)),
+            (0x1f, LONG_VERSION),
             (0x17, u'\npython    '),
             (0x1f, u'%s [%s] %s' % (
                 platform.python_version(), u' '.join(platform.architecture()), frozen
@@ -130,20 +116,17 @@ class ExceptionGuard(object):
             (0x1f, u'{0}:'.format(exc_type.__name__)),
             (0x17, u' {0}\n\n'.format(exc_value)),
             (0x70, u'This is a bug in PC-BASIC.\n'),
-            (0x17, u'Sorry about that. '),
-            (0x17, u'To help improve PC-BASIC, '),
-            (0x70, u'please file a bug report'),
-            (0x17, u' at\n  '),
-            (0x1f, u'https://github.com/robhagemans/pcbasic/issues'),
-            (0x17, u'\nPlease include the messages above and '),
-            (0x17, u'as much information as you can about what you were doing and '),
-            (0x17, u'how this happened. Please attach the log file\n  '),
+            (0x17, u'Sorry about that. You can help improve PC-BASIC:\n\n'),
+            (0x17, u'- Please file a bug report, including this message and the steps you took\n'),
+            (0x17, u'  just before the crash. Go to:\n'),
+            (0x17, u'    '),
+            (0x1f, u'https://github.com/robhagemans/pcbasic/issues\n\n'),
+            (0x17, u'- Please include the full crash log in your report.\n'),
+            (0x17, u'  You can paste it from the clipboard or from the file at:\n    '),
             (0x1f, logfile.name),
-            (0x17, u'\nThank you!\n\n'),
-            (0x17, u'Press a key to close this window.'),
         ]
         bottom = (0x70,
-            u'This message has been copied onto the clipboard. You can paste it with Ctrl-V.'
+            u'Thank you! Press a key to close this window.'
         )
         # create crash log
         crashlog = [
@@ -177,14 +160,14 @@ class ExceptionGuard(object):
         impl.display.set_attr(0x17)
         impl.display.set_border(1)
         impl.display.text_screen.clear()
-        impl.display.text_screen._bottom_row_allowed = True
         # show message on screen
         for attr, text in message:
             impl.display.set_attr(attr)
-            impl.display.text_screen.write(text.replace('\n', '\r').encode('cp437', 'replace'))
-        impl.display.text_screen.set_pos(25, 1)
+            impl.console.write(text.encode('cp437', 'replace').replace(b'\n', b'\r'))
         impl.display.set_attr(bottom[0])
-        impl.display.text_screen.write(bottom[1].replace('\n', '\r').encode('cp437', 'replace'))
+        impl.display.text_screen._bottom_row_allowed = True
+        impl.display.text_screen.set_pos(25, 1)
+        impl.console.write(bottom[1].encode('cp437', 'replace'))
         # write crash log
         crashlog = u'\n'.join(
             line.decode('cp437', 'replace') if isinstance(line, bytes) else line
@@ -193,5 +176,5 @@ class ExceptionGuard(object):
         with logfile as f:
             f.write(crashlog.encode('utf-8', 'replace'))
         # put on clipboard
-        impl.queues.video.put(signals.Event(signals.VIDEO_SET_CLIPBOARD_TEXT, (crashlog, False)))
+        impl.queues.video.put(signals.Event(signals.VIDEO_SET_CLIPBOARD_TEXT, (crashlog,)))
         return True

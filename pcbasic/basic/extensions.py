@@ -87,7 +87,7 @@ class Extensions(object):
         """Extension function: call a python function as a function."""
         result = self.call_as_statement(args)
         if isinstance(result, text_type):
-            result = self._codepage.str_from_unicode(result)
+            return self._values.new_string().from_str(self._codepage.unicode_to_bytes(result))
         if isinstance(result, bytes):
             return self._values.from_value(result, values.STR)
         elif isinstance(result, bool):

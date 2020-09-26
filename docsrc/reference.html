@@ -1111,7 +1111,8 @@
         <ul>
             <li>
                 If <code><var>x</var></code> has a string value, returns the value for the environment variable <code><var>x</var></code> or the empty
-                string if no variable with the name <code><var>x</var></code> is set in the environment table.
+                string if no variable with the name <code><var>x</var></code> is set in the environment table. The environment variable must be an
+                ASCII string and will be converted to uppercase on case-sensitive systems.
             </li>
             <li>
                 If <code><var>x</var></code> has a numeric value, it must be in <code>[1&#8212;255]</code>. Returns the <code><var>x</var></code>th entry in
@@ -1122,6 +1123,9 @@
         <ul>
             <li>
                 <code><var>x</var></code> is the empty string: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> contains non-ASCII characters: <samp>Illegal function call</samp>.
             </li>
             <li>
                 <code><var>x</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
@@ -4942,6 +4946,10 @@
                 to unset <code><var>VARIABLE</var></code>.
             </dd>
         </dl>
+        <p>
+            <code><var>VARIABLE</var></code> must be an
+            ASCII string and will be converted to uppercase on case-sensitive systems.
+        </p>
         <h5>Errors</h5>
         <ul>
             <li>
@@ -4949,6 +4957,9 @@
             </li>
             <li>
                 <code><var>command_string</var></code> is not of the required form: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>VARIABLE</var></code> contains characters outside of ASCII: <samp>Illegal function call</samp>.
             </li>
         </ul>
     </section>
@@ -8447,11 +8458,16 @@
             A tiling flood fill also stops at scan line intervals that are the same as
             the tiling pattern for that line, unless a background pattern is specified
             and the interval also equals the background pattern for that line.</p>
+        <p>
+            The background tile pattern is constructed just like the tile pattern. However, only
+            the first row of the background tile is taken into account; the rest is ignored.
+            The background tile must not match the attribute tile, or more than two consecutive rows of it.
+        </p>
         <h5>Errors</h5>
         <ul>
             <li>
-                In <code>SCREEN 7</code>, <code>8</code>, <code>9</code>, if <code><var>background</var></code> equals <code><var>attrib</var></code> up to the length of
-                <code><var>attrib</var></code>: <samp>Illegal function call</samp>.
+                If more than two consecutive rows of the attribute tile (or all rows, if there are less than three)
+                equal the first row of the background tile: <samp>Illegal function call</samp>.
             </li>
             <li>
                 <code><var>background</var></code> has a number value: <samp>Illegal function call</samp>.

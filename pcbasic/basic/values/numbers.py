@@ -221,10 +221,6 @@ class Integer(Number):
         else:
             return tk.T_INT + self._buffer.tobytes()
 
-    def to_token_linenum(self):
-        """Return unsigned value as line number token."""
-        return tk.T_UINT + self._buffer.tobytes()
-
     def to_token_hex(self):
         """Return unsigned value as hex token."""
         return tk.T_HEX + self._buffer.tobytes()
@@ -289,10 +285,6 @@ class Integer(Number):
         return self.from_int(int(valstr))
 
     # operations
-
-    def iround(self):
-        """Round in-place (no-op)."""
-        return self
 
     def itrunc(self):
         """Truncate towards zero in-place (no-op)."""
@@ -535,10 +527,6 @@ class Float(Number):
         self._buffer[-2:-1] = int2byte(bytearray(self._buffer)[-2] & 0x7F)
         return self
 
-    def iround(self):
-        """Round in-place."""
-        return self.from_int(self.to_int())
-
     def itrunc(self):
         """Truncate towards zero in-place."""
         return self.from_int(self.to_int_truncate())
@@ -546,8 +534,10 @@ class Float(Number):
     def ifloor(self):
         """Truncate towards negative infinity in-place."""
         oldval = self.clone()
+        # we need to check negativity first, as itrunc() may take us to zero
+        was_negative = self.is_negative()
         self.itrunc()
-        if not self.eq(oldval) and self.is_negative():
+        if not self.eq(oldval) and was_negative:
             self.isub(self.new().from_bytes(self._one))
         return self
 

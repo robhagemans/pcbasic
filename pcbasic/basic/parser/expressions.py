@@ -155,14 +155,14 @@ class ExpressionParser(object):
             tk.ERDEV + b'$': session.files.erdev_str_,
             tk.VARPTR: session.memory.varptr_,
             tk.VARPTR + b'$': session.memory.varptr_str_,
-            tk.SCREEN: session.screen.screen_fn_,
+            tk.SCREEN: session.text_screen.screen_fn_,
             tk.FN: None,
             tk.ERL: session.interpreter.erl_,
             tk.ERR: session.interpreter.err_,
             tk.STRING: values.string_,
             tk.INSTR: values.instr_,
-            tk.CSRLIN: session.screen.csrlin_,
-            tk.POINT: session.drawing.point_,
+            tk.CSRLIN: session.text_screen.csrlin_,
+            tk.POINT: session.graphics.point_,
             tk.INKEY: session.keyboard.inkey_,
             tk.CVI: values.cvi_,
             tk.CVS: values.cvs_,
@@ -175,7 +175,7 @@ class ExpressionParser(object):
             tk.TIME: session.clock.time_fn_,
             tk.PLAY: session.sound.play_fn_,
             tk.TIMER: session.clock.timer_,
-            tk.PMAP: session.drawing.pmap_,
+            tk.PMAP: session.graphics.pmap_,
             tk.LEFT: values.left_,
             tk.RIGHT: values.right_,
             tk.MID: values.mid_,
@@ -192,7 +192,7 @@ class ExpressionParser(object):
             tk.ATN: values.atn_,
             tk.FRE: session.memory.fre_,
             tk.INP: session.machine.inp_,
-            tk.POS: session.screen.pos_,
+            tk.POS: session.text_screen.pos_,
             tk.LEN: values.len_,
             tk.STR: values.str_,
             tk.VAL: values.val_,
@@ -408,7 +408,7 @@ class ExpressionParser(object):
     def _no_argument(self, ins):
         """No arguments to parse."""
         return
-        yield
+        yield # pragma: no cover
 
     def _gen_parse_arguments(self, ins, length=1):
         """Parse a comma-separated list of arguments."""

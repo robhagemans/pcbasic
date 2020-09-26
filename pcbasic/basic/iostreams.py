@@ -14,7 +14,7 @@ import io
 from contextlib import contextmanager
 from collections import Iterable
 
-from ..compat import WIN32, read_all_available
+from ..compat import WIN32, read_all_available, stdio
 from .base import signals
 from .codepage import CONTROL
 
@@ -31,13 +31,22 @@ class IOStreams(object):
         """Initialise I/O streams."""
         self._queues = queues
         self._codepage = codepage
-        # input; put in tuple if it's file-like so we do the right thing when looping
+        # input
+        if input_streams in (u'stdio', b'stdio'):
+            # sentinel value
+            # stdin needs to be picked at runtime as both console.stdin and sys.stdin can change
+            # and we would be keeping a reference to a closed/bad file
+            input_streams = stdio.stdin
+        # put in tuple if it's file-like so we do the right thing when looping
         if not input_streams:
             input_streams = ()
         elif hasattr(input_streams, 'read') or not isinstance(input_streams, Iterable):
             input_streams = (input_streams,)
         self._input_streams = [self._wrap_input(stream) for stream in input_streams]
-        # output; put in tuple if it's file-like so we do the right thing when looping
+        # output
+        if output_streams in (u'stdio', b'stdio'):
+            output_streams = stdio.stdout
+        # put in tuple if it's file-like so we do the right thing when looping
         if not output_streams:
             output_streams = ()
         elif hasattr(output_streams, 'write') or not isinstance(output_streams, Iterable):
@@ -49,11 +58,16 @@ class IOStreams(object):
         # disable at start
         self._active = False
         # launch a daemon thread for input
+        self._stop_threads = False
         if self._input_streams:
             # launch a thread to allow nonblocking reads on both Windows and Unix
             thread = threading.Thread(target=self._process_input, args=())
             thread.daemon = True
             thread.start()
+
+    def close(self):
+        """Kill threads before exit."""
+        self._stop_threads = True
 
     def flush(self):
         """Flush output streams."""
@@ -61,12 +75,13 @@ class IOStreams(object):
             f.flush()
 
     def write(self, s):
-        """Write a string/bytearray to all stream outputs."""
+        """Write bytes to all stream outputs."""
         for f in self._output_echos:
             f.write(s)
 
     def toggle_echo(self, stream):
         """Toggle copying of all screen I/O to stream."""
+        stream = self._codepage.wrap_output_stream(stream, preserve=CONTROL)
         if stream in self._output_echos:
             self._output_echos.remove(stream)
         else:
@@ -91,6 +106,8 @@ class IOStreams(object):
         """Process input from streams."""
         while True:
             time.sleep(TICK)
+            if self._stop_threads:
+                return
             if not self._active:
                 continue
             queue = self._queues.inputs
@@ -137,7 +154,7 @@ class NonBlockingInputWrapper(object):
             # raw input means it's already in the BASIC codepage
             # but the keyboard functions use unicode
             # for input, don't use lead-byte buffering beyond the convert call
-            s = self._codepage.str_to_unicode(s, preserve=CONTROL)
+            s = self._codepage.bytes_to_unicode(s, preserve=CONTROL)
         # replace CRLF (and, if desired, LF) with CR
         s = s.replace(u'\r\n', u'\r')
         if self._lfcr:

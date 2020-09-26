@@ -13,19 +13,18 @@ The following packages are needed or recommended when installing PC-BASIC:
 
 | Package                                                                       | OS                 | Status       | Used for
 |-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
-| [Python 2.7.12](https://www.python.org/downloads/release/python-2712/)        | all                | required     |
+| [Python 3.5.10 or later](https://www.python.org/downloads/)                   | all                | required     |
 | [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | sound and graphics
-| [NumPy](https://sourceforge.net/projects/numpy/files/)                        | all                | recommended  | sound and graphics
-| [PySerial 3.4](https://pypi.python.org/pypi/pyserial)                         | all                | optional     | physical or emulated serial port access
-| [PyParallel](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/) | Windows, Linux     | optional     | physical parallel port access
-| [PyGame 1.9.3](http://www.pygame.org)                                         | all                | optional     | sound and graphics (PyGame interface)
-| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound (PortAudio engine)
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound when using text-based interface
+| [PySerial 3.4](https://github.com/pyserial/pyserial)                          | all                | optional     | physical or emulated serial port access
+| [PyParallel](https://github.com/pyserial/pyparallel)                          | Windows, Linux     | optional     | physical parallel port access
+| [PyGame 1.9.3](http://www.pygame.org)                                         | all                | deprecated   | sound and graphics
 
 
 `setuptools` and `pip` are included with Python.
 Once you have a working Python installation, most dependencies can be installed with `pip`:
 
-        pip install numpy pygame pyaudio pyserial
+        pip install pyaudio pyserial
 
 To use the graphical interface, you will also need to install the [SDL2](https://www.libsdl.org/download-2.0.php) library.
 Install the library in your OS's standard location for libraries.
@@ -40,6 +39,8 @@ is only needed to access physical parallel ports, not for printing to a CUPS or 
 Note that most modern machines do not actually have parallel ports. If you have a parallel port and want to use it with PC-BASIC,
 download and install PyParallel from the link above. Although a `pyparallel` package exists in on PyPI, at present this does not work
 as essential libraries are missing.
+
+Alternatively to the latest Python, for now PC-BASIC remains compatible with [Python 2.7](https://www.python.org/downloads/release/python-2718/).
 
 
 #### External tools ####
@@ -65,6 +66,7 @@ The following additional packages are used for development, testing and packagin
 | [Prince](https://www.princexml.com/download/)                                                                  | all               | documentation
 | [`pylint`](https://pypi.python.org/pypi/pylint/1.7.6)                                                          | all               | testing
 | [`coverage`](https://pypi.python.org/pypi/coverage)                                                            | all               | testing
+| [`colorama`](https://pypi.python.org/pypi/colorama)                                                            | Windows           | testing
 | [`wheel`](https://pypi.python.org/pypi/wheel)                                                                  | all               | packaging
 | [`twine`](https://pypi.python.org/pypi/twine)                                                                  | all               | packaging
 | [`Pillow`](https://python-pillow.org/)                                                                         | all               | packaging
@@ -126,13 +128,6 @@ Those who prefer to use the [MinGW](http://mingw.org/) GCC compiler, follow thes
         make
         gcc -shared -o SDL2_gfx.dll *.o SDL2.dll
 
-
-#### Installing with PyGame ####
-The preferred graphical interface is SDL2. However, a PyGame interface is also available.
-
-The 1.9.1 release of PyGame, currently still standard on some distributions (e.g. Ubuntu 16.04 LTS),
-unfortunately contains a few bugs that have been resolved in newer releases. Please use the latest
-PyGame release from pygame.org, or install with `pip install pygame`.
 
 #### Contributing code ####
 

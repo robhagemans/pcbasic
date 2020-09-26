@@ -242,13 +242,7 @@ class DiskDevice(object):
         # current native working directory on this drive
         self._native_cwd = u''
         if self._native_root:
-            try:
-                self._native_cwd = cwd
-            except error.BASICError:
-                logging.warning(
-                    'Could not open working directory %s on drive %s:. Using drive root instead.',
-                    cwd, letter
-                )
+            self._native_cwd = cwd
         # locks are drive-specific
         self._locks = Locks()
         # text file settings
@@ -281,13 +275,14 @@ class DiskDevice(object):
             except KeyError:
                 filetype = b'A'
         # unicode or bytes input for text & ascii-program files
+        # not for random-access files
         if filetype in b'DA':
             if mode in (b'O', b'A'):
                 # if the input stream is unicode: decode codepage bytes
                 fhandle = self._codepage.wrap_output_stream(
                     fhandle, preserve=CONTROL+(b'\x1A',)
                 )
-            else:
+            elif mode == b'I':
                 # if the input stream is unicode: encode codepage bytes
                 # replace newlines with \r in text mode
                 fhandle = self._codepage.wrap_input_stream(
@@ -365,7 +360,7 @@ class DiskDevice(object):
                     if f.read(1) == b'\x1a':
                         f.seek(-1, 1)
                         f.truncate()
-                except IOError:
+                except EnvironmentError:
                     pass
                 f.close()
             access_mode = ACCESS_MODES[mode]
@@ -418,7 +413,8 @@ class DiskDevice(object):
         for dos_elem in dospath_elements:
             # find a matching directory for every step in the path;
             native_elem = self._get_native_name(
-                    path, dos_elem, defext=b'', isdir=True, create=False)
+                path, dos_elem, defext=b'', isdir=True, create=False
+            )
             # append found name to path
             path = os.path.join(path, native_elem)
         # return relative path only
@@ -610,12 +606,12 @@ class DiskDevice(object):
         if dos_name[-1:] == b'.' and b'.' not in dos_name[:-1]:
             # ends in single dot; first try with dot
             # but if it doesn't exist, base everything off dotless name
-            uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
+            uni_name = self._codepage.bytes_to_unicode(dos_name, box_protect=False)
             if istype(native_path, uni_name, isdir):
                 return uni_name
             dos_name = dos_name[:-1]
         # check if the name exists as-is; should also match Windows short names.
-        uni_name = self._codepage.str_to_unicode(dos_name, box_protect=False)
+        uni_name = self._codepage.bytes_to_unicode(dos_name, box_protect=False)
         if istype(native_path, uni_name, isdir):
             return uni_name
         # original name does not exist; try matching dos-names or create one
@@ -650,7 +646,7 @@ class DiskDevice(object):
             if dos_is_legal_name(ascii_name):
                 return dos_normalise_name(ascii_name)
         # convert to codepage
-        cp_name = self._codepage.str_from_unicode(native_name, errors='replace')
+        cp_name = self._codepage.unicode_to_bytes(native_name, errors='replace')
         # clip overlong & mark as shortened
         trunk, ext = dos_splitext(cp_name)
         if len(trunk) > 8:
@@ -679,8 +675,8 @@ def istype(native_path, native_name, isdir):
     name = os.path.join(native_path, native_name)
     try:
         return os.path.isdir(name) if isdir else os.path.isfile(name)
-    except TypeError:
-        # happens for name == u'\0'
+    except (TypeError, ValueError):
+        # name == u'\0' - python2 raises TypeError, python3 ValueError
         return False
 
 
@@ -723,7 +719,7 @@ class BoundFile(object):
 
     def __unicode__(self):
         """Get BASIC file name."""
-        return self._codepage.str_to_unicode(bytes(self))
+        return self._codepage.bytes_to_unicode(bytes(self), box_protect=False)
 
 
 @add_str
@@ -733,7 +729,7 @@ class NameWrapper(object):
     def __init__(self, codepage, name):
         """Initialise."""
         if isinstance(name, text_type):
-            name = codepage.str_from_unicode(name)
+            name = codepage.unicode_to_bytes(name)
         self._file = name
         self._codepage = codepage
 
@@ -750,7 +746,7 @@ class NameWrapper(object):
 
     def __unicode__(self):
         """Get BASIC file name."""
-        return self._codepage.str_to_unicode(bytes(self))
+        return self._codepage.bytes_to_unicode(bytes(self), box_protect=False)
 
 
 class InternalDiskDevice(DiskDevice):
@@ -775,14 +771,14 @@ class InternalDiskDevice(DiskDevice):
                 logging.error('No internal bound-file names available')
                 raise error.BASICError(error.TOO_MANY_FILES)
         elif isinstance(name, text_type):
-            name = self._codepage.str_from_unicode(name)
+            name = self._codepage.unicode_to_bytes(name)
         self._bound_files[name] = BoundFile(self, self._codepage, file_name_or_object, name)
         return self._bound_files[name]
 
     def unbind(self, name):
         """Unbind bound file."""
         if isinstance(name, text_type):
-            name = self._codepage.str_from_unicode(name)
+            name = self._codepage.unicode_to_bytes(name)
         del self._bound_files[name]
 
     def open(

@@ -14,7 +14,7 @@ from .base import video_plugins, InitFailed
 from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base.eascii import as_unicode as uea
-from ..compat import EOF, console, stdin, stdout
+from ..compat import EOF, console
 
 
 # escape sequence to scancode
@@ -162,18 +162,6 @@ class VideoTextBase(VideoPlugin):
         # start the stdin thread for non-blocking reads
         self._input_handler = InputHandlerCLI(input_queue)
 
-    def __enter__(self):
-        """Open text-based interface."""
-        VideoPlugin.__enter__(self)
-        console.set_raw()
-
-    def __exit__(self, exc_type, value, traceback):
-        """Close text-based interface."""
-        try:
-            console.unset_raw()
-        finally:
-            VideoPlugin.__exit__(self, exc_type, value, traceback)
-
     def _check_input(self):
         """Handle keyboard events."""
         self._input_handler.drain_queue()
@@ -189,131 +177,124 @@ class VideoCLI(VideoTextBase):
         # current row and column where the cursor should be
         # keep cursor_row and last_row unset at the start to avoid printing extra line on resume
         # as it will see a move frm whatever we set it at here to the actusl cursor row
-        self._cursor_row, self._cursor_col = None, 1
+        self._cursor_row, self._cursor_col = 1, 1
         # current actual print column
         self._col = 1
         # cursor row on last cycle
-        self._last_row = None
+        self._last_row = 1
         # text buffer
-        self._vpagenum, self._apagenum = 0, 0
-        self._text = [[[u' '] * 80 for _ in range(25)]]
+        self._text = [[u' '] * 80 for _ in range(25)]
+
+    def __enter__(self):
+        """Open command-line interface."""
+        VideoTextBase.__enter__(self)
+        console.set_raw()
 
     def __exit__(self, type, value, traceback):
         """Close command-line interface."""
         try:
             if self._col != 1:
                 console.write(u'\r\n')
+            console.unset_raw()
         finally:
             VideoTextBase.__exit__(self, type, value, traceback)
 
-    def _work(self):
-        """Display update cycle."""
+
+    ###############################################################################
+
+    def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
+        """Put text or pixels at a given position."""
+        # if multiple rows are updated, they must be sent in order
+        for ofs, unicode_list in enumerate(unicode_matrix):
+            unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
+            self._text[row-1+ofs][col-1:col-1+len(unicode_list)] = unicode_list
+        self._refresh(row)
+
+    def move_cursor(self, row, col, attr, width):
+        """Move the cursor to a new position."""
+        # update cursor row only if it's changed from last work-cycle
+        # or if actual printing takes place on the new cursor row
+        self._cursor_row, self._cursor_col = row, col
         # update cursor row only if it's changed from last work-cycle
         # or if actual printing takes place on the new cursor row
         if self._cursor_row != self._last_row or self._cursor_col != self._col:
             self._update_position(self._cursor_row, self._cursor_col)
 
-    ###############################################################################
-
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
-        """Put a character at a given position."""
-        if char == u'\0':
-            char = u' '
-        self._text[pagenum][row-1][col-1] = char
-        if is_fullwidth:
-            self._text[pagenum][row-1][col] = u''
-        # show the character only if it's on the cursor row
-        if self._vpagenum == pagenum and row == self._cursor_row:
-            # may have to update row!
-            if row != self._last_row or col != self._col:
-                self._update_position(row, col)
-            console.write(char)
-            self._col = (col+2) if is_fullwidth else (col+1)
-        # the terminal cursor has moved, so we'll need to move it back later
-        # if that's not where we want to be
-        # but often it is anyway
-
-    def move_cursor(self, row, col):
-        """Move the cursor to a new position."""
-        # update cursor row only if it's changed from last work-cycle
-        # or if actual printing takes place on the new cursor row
-        self._cursor_row, self._cursor_col = row, col
-
     def clear_rows(self, back_attr, start, stop):
         """Clear screen rows."""
-        self._text[self._apagenum][start-1:stop] = [
-                [u' '] * len(self._text[self._apagenum][0])
-                for _ in range(start-1, stop)
-            ]
-        if (self._vpagenum == self._apagenum and
-                start <= self._cursor_row and stop >= self._cursor_row):
-            self._update_position(self._cursor_row, 1)
-            console.clear_row()
+        self._text[start-1:stop] = [[u' '] * len(self._text[0]) for _ in range(start-1, stop)]
+        self._refresh(start, stop)
 
-    def scroll_up(self, from_line, scroll_height, back_attr):
-        """Scroll the screen up between from_line and scroll_height."""
-        self._text[self._apagenum][from_line-1:scroll_height] = (
-                self._text[self._apagenum][from_line:scroll_height]
-                + [[u' '] * len(self._text[self._apagenum][0])]
-            )
-        if self._vpagenum != self._apagenum:
-            return
-        console.write(u'\r\n')
+    def scroll(self, direction, start_row, stop_row, back_attr):
+        """Scroll the screen between start_row and stop_row."""
+        if direction == -1:
+            self._scroll_up(start_row, stop_row, back_attr)
+        else:
+            self._scroll_down(start_row, stop_row, back_attr)
+        self._refresh(start_row, stop_row)
 
-    def scroll_down(self, from_line, scroll_height, back_attr):
-        """Scroll the screen down between from_line and scroll_height."""
-        self._text[self._apagenum][from_line-1:scroll_height] = (
-                [[u' '] * len(self._text[self._apagenum][0])] +
-                self._text[self._apagenum][from_line-1:scroll_height-1]
-            )
+    def _scroll_up(self, start_row, stop_row, back_attr):
+        """Scroll the screen up between start_row and stop_row."""
+        self._text[start_row-1:stop_row] = (
+            self._text[start_row:stop_row] + [[u' '] * len(self._text[0])]
+        )
+        if start_row < self._last_row <= stop_row:
+            self._last_row -= 1
 
-    def set_mode(self, mode_info):
+    def _scroll_down(self, start_row, stop_row, back_attr):
+        """Scroll the screen down between start_row and stop_row."""
+        self._text[start_row-1:stop_row] = (
+            [[u' '] * len(self._text[0])] + self._text[start_row-1:stop_row-1]
+        )
+        if start_row <= self._last_row < stop_row:
+            self._last_row += 1
+
+    def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Initialise video mode """
-        self._text = [
-                [[u' '] * mode_info.width for _ in range(mode_info.height)]
-                for _ in range(mode_info.num_pages)
-            ]
+        self._text = [[u' '] * text_width for _ in range(text_height)]
+        self._refresh(1, text_height)
 
-    def set_page(self, new_vpagenum, new_apagenum):
-        """Set visible and active page."""
-        self._vpagenum, self._apagenum = new_vpagenum, new_apagenum
-        self._redraw_row(self._cursor_row)
+    ###############################################################################
 
-    def copy_page(self, src, dst):
-        """Copy screen pages."""
-        self._text[dst] = [row[:] for row in self._text[src]]
-        if dst == self._vpagenum:
-            self._redraw_row(self._cursor_row)
-
-    def _redraw_row(self, row):
-        """Draw the stored text in a row."""
-        if not row:
-            return
-        self._update_col(1)
-        rowtext = (u''.join(self._text[self._vpagenum][row-1]))
-        console.write(rowtext.replace(u'\0', u' '))
-        self._col = len(self._text[self._vpagenum][row-1])+1
+    def _refresh(self, start_row, stop_row=None):
+        """Refresh the current row, if between start and stop inclusive."""
+        if stop_row is None:
+            stop_row = start_row
+        if start_row <= self._last_row <= stop_row:
+            self._redraw_row(self._last_row)
+            self._redraw_row(self._last_row, self._col)
 
     def _update_position(self, row, col):
         """Move terminal print location."""
-        # move cursor if necessary
-        if row and row != self._last_row:
-            if self._last_row:
-                console.write(u'\r\n')
-                self._col = 1
-            self._last_row = row
-            # show what's on the line where we are.
-            self._redraw_row(row)
-        self._update_col(col)
+        # show the intermediate lines up to and including the current
+        if row != self._last_row:
+            if row > self._last_row:
+                self._redraw_range(self._last_row, row)
+            elif row == self._last_row-1:
+                self._redraw_row(self._last_row-1)
+        # redraw until current column to put cursor in the right position
+        self._redraw_row(row, col)
+        self._last_row = row
+        self._col = col
 
-    def _update_col(self, col):
-        """Move terminal print column."""
-        if col != self._col:
-            if self._col > col:
-                console.move_cursor_left(self._col-col)
-            elif self._col < col:
-                console.move_cursor_right(col-self._col)
-            self._col = col
+    def _redraw_range(self, start_row, stop_row):
+        """Redraw text for a range of rows."""
+        for update_row in range(start_row, stop_row):
+            self._redraw_row(update_row)
+            # go one row down
+            console.write(u'\n')
+        self._redraw_row(stop_row)
+
+    def _redraw_row(self, row, col=None):
+        """Draw the stored text in a row."""
+        rowtext = self._text[row-1]
+        # we need to slice *before* joining to get the cursor right on dbcs
+        # as double-width characters come through as pairs c, u''
+        if col is not None:
+            rowtext = rowtext[:col-1]
+        # go to column 1
+        console.write(u'\r')
+        console.write(u''.join(rowtext))
 
 
 ###############################################################################
@@ -336,7 +317,7 @@ class InputHandlerCLI(object):
                 break
             if uc == EOF and self.quit_on_eof:
                 # ctrl-D (unix) / ctrl-Z (windows)
-                self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+                self._input_queue.put(signals.Event(signals.QUIT))
             elif uc == u'\x7f':
                 # backspace
                 self._input_queue.put(

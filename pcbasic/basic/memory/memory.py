@@ -337,7 +337,7 @@ class DataSegment(object):
             return max(0, self._get_basic_memory(addr))
 
     def set_memory(self, addr, val):
-        """Set datat in data memory."""
+        """Set data in data memory."""
         addr -= self.data_segment*0x10
         if addr >= self.var_start():
             # POKING in variables
@@ -468,7 +468,8 @@ class DataSegment(object):
         value = next(args)
         if isinstance(value, values.String):
             # if already permanent, store a deep copy to avoid double referencing
-            if self.strings.is_permanent(value):
+            # if RHS is a field string, deep copy as LHS should not point to the field
+            if self.strings.is_permanent(value) or self.strings.is_field_string(value):
                 value = value.new().from_str(value.dereference())
         self.set_variable(name, indices, value)
 
@@ -575,11 +576,7 @@ class DataSegment(object):
         right = self._view_buffer(name2, index2, True)
         # swap the contents
         left[:], right[:] = right.tobytes(), left.tobytes()
-        # drop caches
-        if name1 in self.arrays:
-            self.arrays.set_cache(name1, None)
-        if name2 in self.arrays:
-            self.arrays.set_cache(name2, None)
+        # drop caches here if we have them
 
     def fre_(self, args):
         """FRE: get free memory and optionally collect garbage."""

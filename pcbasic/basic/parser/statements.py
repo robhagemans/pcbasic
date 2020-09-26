@@ -329,10 +329,10 @@ class Parser(object):
             tk.BLOAD: session.all_memory.bload_,
             tk.SOUND: session.sound.sound_,
             tk.BEEP: session.sound.beep_,
-            tk.PSET: session.drawing.pset_,
-            tk.PRESET: session.drawing.preset_,
+            tk.PSET: session.graphics.pset_,
+            tk.PRESET: session.graphics.preset_,
             tk.SCREEN: session.display.screen_,
-            tk.LOCATE: session.screen.locate_,
+            tk.LOCATE: session.text_screen.locate_,
             tk.FILES: session.files.files_,
             tk.FIELD: session.files.field_,
             tk.NAME: session.files.name_,
@@ -342,10 +342,10 @@ class Parser(object):
             tk.CHAIN: session.chain_,
             tk.DATE: session.clock.date_,
             tk.TIME: session.clock.time_,
-            tk.PAINT: session.drawing.paint_,
+            tk.PAINT: session.graphics.paint_,
             tk.COM: session.basic_events.com_,
-            tk.CIRCLE: session.drawing.circle_,
-            tk.DRAW: session.drawing.draw_,
+            tk.CIRCLE: session.graphics.circle_,
+            tk.DRAW: session.graphics.draw_,
             tk.TIMER: session.basic_events.timer_,
             tk.IOCTL: session.files.ioctl_statement_,
             tk.CHDIR: session.files.chdir_,
@@ -353,7 +353,7 @@ class Parser(object):
             tk.RMDIR: session.files.rmdir_,
             tk.SHELL: session.shell_,
             tk.ENVIRON: session.environment.environ_statement_,
-            tk.WINDOW: session.drawing.window_,
+            tk.WINDOW: session.graphics.window_,
             tk.LCOPY: session.files.lcopy_,
             tk.PCOPY: session.display.pcopy_,
             tk.LOCK: session.files.lock_,
@@ -374,24 +374,24 @@ class Parser(object):
             tk.DEF + tk.USR: session.all_memory.def_usr_,
             tk.DEF: session.all_memory.def_seg_,
             tk.LINE + tk.INPUT: session.line_input_,
-            tk.LINE: session.drawing.line_,
-            tk.KEY + tk.ON: session.fkey_macros.key_,
-            tk.KEY + tk.OFF: session.fkey_macros.key_,
-            tk.KEY + tk.LIST: session.fkey_macros.key_,
+            tk.LINE: session.graphics.line_,
+            tk.KEY + tk.ON: session.console.key_,
+            tk.KEY + tk.OFF: session.console.key_,
+            tk.KEY + tk.LIST: session.console.key_,
             tk.KEY + b'(': session.basic_events.key_,
             tk.KEY: session.key_,
-            tk.PUT + b'(': session.drawing.put_,
+            tk.PUT + b'(': session.graphics.put_,
             tk.PUT: session.files.put_,
-            tk.GET + b'(': session.drawing.get_,
+            tk.GET + b'(': session.graphics.get_,
             tk.GET: session.files.get_,
             tk.PLAY + tk.ON: session.basic_events.play_,
             tk.PLAY + tk.OFF: session.basic_events.play_,
             tk.PLAY + tk.STOP: session.basic_events.play_,
             tk.PLAY: session.sound.play_,
-            tk.VIEW + tk.PRINT: session.screen.view_print_,
-            tk.VIEW: session.drawing.view_,
-            tk.PALETTE + tk.USING: session.display.palette.palette_using_,
-            tk.PALETTE: session.display.palette.palette_,
+            tk.VIEW + tk.PRINT: session.text_screen.view_print_,
+            tk.VIEW: session.graphics.view_,
+            tk.PALETTE + tk.USING: session.display.palette_using_,
+            tk.PALETTE: session.display.palette_,
             tk.STRIG + tk.ON: session.stick.strig_statement_,
             tk.STRIG + tk.OFF: session.stick.strig_statement_,
             tk.STRIG: session.basic_events.strig_,
@@ -463,7 +463,7 @@ class Parser(object):
         """Parse nothing."""
         # e.g. TRON LAH raises error but TRON will have been executed
         return
-        yield
+        yield # pragma: no cover
 
     def _parse_end(self, ins):
         """Parse end-of-statement before executing argumentless statement."""
@@ -471,19 +471,19 @@ class Parser(object):
         ins.require_end()
         # empty generator
         return
-        yield
+        yield # pragma: no cover
 
     def _skip_line(self, ins):
         """Ignore the rest of the line."""
         ins.skip_to(tk.END_LINE)
         return
-        yield
+        yield # pragma: no cover
 
     def _skip_statement(self, ins):
         """Ignore rest of statement."""
         ins.skip_to(tk.END_STATEMENT)
         return
-        yield
+        yield # pragma: no cover
 
     ###########################################################################
     # single argument
@@ -581,10 +581,10 @@ class Parser(object):
 
     def _parse_on_event(self, ins):
         """Helper function for ON event trap definitions."""
+        # token is known to be in (tk.PEN, tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG)
+        # before we call this generator
         token = ins.read_keyword_token()
         yield token
-        if token not in (tk.PEN, tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
-            raise error.BASICError(error.STX)
         if token != tk.PEN:
             yield self._parse_bracket(ins)
         else:
@@ -1277,7 +1277,7 @@ class Parser(object):
         yield self._parse_variable(ins)
 
     ###########################################################################
-    # console and editor statements
+    # console / text screen statements
 
     def _parse_key_macro(self, ins):
         """Parse KEY ON/OFF/LIST syntax."""

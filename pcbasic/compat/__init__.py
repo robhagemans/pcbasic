@@ -10,18 +10,18 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import os
+import io
 
 from .base import PLATFORM, PY2, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
-from .base import split_quoted, muffle
-
+from .base import split_quoted, split_pair, iter_chunks
 
 if PY2:
     from .python2 import add_str, iterchar
-    from .python2 import xrange, zip, iteritems, itervalues, iterkeys
+    from .python2 import xrange, zip, iteritems, itervalues, iterkeys, iterbytes
     from .python2 import getcwdu, getenvu, setenvu, iterenvu
     from .python2 import configparser, queue, copyreg, which
-    from .python2 import SimpleNamespace
+    from .python2 import SimpleNamespace, TemporaryDirectory
     unichr, int2byte, text_type = unichr, chr, unicode
 
     if WIN32:
@@ -33,7 +33,8 @@ else:
     import configparser, queue, copyreg
     from shutil import which
     from types import SimpleNamespace
-    from .python3 import int2byte, add_str, iterchar
+    from tempfile import TemporaryDirectory
+    from .python3 import int2byte, add_str, iterchar, iterbytes
     from .python3 import xrange, zip, iteritems, itervalues, iterkeys
     from .python3 import getcwdu, getenvu, setenvu, iterenvu
     unichr, text_type = chr, str
@@ -41,13 +42,15 @@ else:
 
 
 if WIN32:
-    from .win32_console import console, read_all_available, stdin, stdout, stderr, IS_CONSOLE_APP
+    from .win32_console import console, read_all_available, IS_CONSOLE_APP
+    from .win32_console import stdio
     from .win32 import set_dpi_aware, line_print
     from .win32 import get_free_bytes, get_short_pathname, is_hidden
     from .win32 import EOL, EOF
     from .win32 import SHELL_ENCODING, HIDE_WINDOW
 else:
-    from .posix_console import console, read_all_available, stdin, stdout, stderr, IS_CONSOLE_APP
+    from .posix_console import console, read_all_available, IS_CONSOLE_APP
+    from .posix_console import stdio
     from .posix import set_dpi_aware, line_print
     from .posix import get_free_bytes, get_short_pathname, is_hidden
     from .posix import EOL, EOF
@@ -56,7 +59,7 @@ else:
 
 if MACOS:
     # on MacOS, if launched from Finder, ignore the additional "process serial number" argument
-    argv = [_arg for _arg in argv if not _arg.startswith(b'-psn_')]
+    argv = [_arg for _arg in argv if not _arg.startswith('-psn_')]
     # for macOS - if no console, presumably we're launched as a bundle
     # set working directory to user home
     # bit of a hack but I don't know a better way

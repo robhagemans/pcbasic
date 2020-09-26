@@ -15,76 +15,71 @@ class Event(object):
         self.event_type = event_type
         self.params = params
 
+    def __repr__(self):
+        """Represent signal as string."""
+        return '<Event %s: %r>' % (self.event_type, self.params)
+
+
+# general signals
+
+QUIT = 'quit'
+
 
 # audio queue signals
-AUDIO_TONE = 0
-AUDIO_STOP = 1
-AUDIO_NOISE = 2
-AUDIO_QUIT = 4
-AUDIO_PERSIST = 6
+
+# play tone
+AUDIO_TONE = 'tone'
+# play noise
+AUDIO_NOISE = 'noise'
+# stop sound
+AUDIO_STOP = 'hush'
+# keep sound engine alive even if quiet
+AUDIO_PERSIST = 'persist'
+
 
 # video queue signals
-# save state and quit
-VIDEO_QUIT = 0
+
 # change video mode
-VIDEO_SET_MODE = 1
-# switch page
-VIDEO_SET_PAGE = 2
-# set cursor shape
-VIDEO_SET_CURSOR_SHAPE = 3
-# move cursor
-VIDEO_MOVE_CURSOR = 5
-# set cursor attribute
-VIDEO_SET_CURSOR_ATTR = 6
-# set border attribute
-VIDEO_SET_BORDER_ATTR = 7
-# put character glyph
-VIDEO_PUT_GLYPH = 8
-# clear rows
-VIDEO_CLEAR_ROWS = 10
-# scroll
-VIDEO_SCROLL_UP = 11
-VIDEO_SCROLL_DOWN = 12
+VIDEO_SET_MODE = 'set_mode'
 # show/hide cursor
-VIDEO_SHOW_CURSOR = 14
+VIDEO_SHOW_CURSOR = 'show_cursor'
+# set cursor shape
+VIDEO_SET_CURSOR_SHAPE = 'set_cursor_shape'
+# move cursor
+VIDEO_MOVE_CURSOR = 'move_cursor'
+# set border attribute
+VIDEO_SET_BORDER_ATTR = 'set_border_attr'
+# clear rows
+VIDEO_CLEAR_ROWS = 'clear_rows'
+# scroll
+VIDEO_SCROLL = 'scroll'
 # set palette
-VIDEO_SET_PALETTE = 15
-# build glyphs
-VIDEO_BUILD_GLYPHS = 16
-# put pixel
-VIDEO_PUT_PIXEL = 17
-# put interval
-VIDEO_PUT_INTERVAL = 18
-VIDEO_FILL_INTERVAL = 19
-# put rect
-VIDEO_PUT_RECT = 20
-VIDEO_FILL_RECT = 21
-# copy page
-VIDEO_COPY_PAGE = 28
+VIDEO_SET_PALETTE = 'set_palette'
+# update screen section
+VIDEO_UPDATE = 'update'
 # set caption message
-VIDEO_SET_CAPTION = 29
+VIDEO_SET_CAPTION = 'set_caption'
 # clipboard copy reply
-VIDEO_SET_CLIPBOARD_TEXT = 30
+VIDEO_SET_CLIPBOARD_TEXT = 'set_clipboard_text'
+
 
 # input queue signals
-# quit interpreter
-KEYB_QUIT = 0
-# insert keydown
-KEYB_DOWN = 5
-# insert keyup
-KEYB_UP = 6
+
 # redirect or stdio input
-STREAM_CHAR = 7
+STREAM_CHAR = 'stream_char'
 # redirect or stdio closed
-STREAM_CLOSED = 8
+STREAM_CLOSED = 'stream_closed'
+# keyboard events
+KEYB_DOWN = 'key_down'
+KEYB_UP = 'key_up'
 # light pen events
-PEN_DOWN = 101
-PEN_UP = 102
-PEN_MOVED = 103
+PEN_DOWN = 'pen_down'
+PEN_UP = 'pen_up'
+PEN_MOVED = 'pen_moved'
 # joystick events
-STICK_DOWN = 201
-STICK_UP = 202
-STICK_MOVED = 203
+STICK_DOWN = 'stick_down'
+STICK_UP = 'stick_up'
+STICK_MOVED = 'stick_moved'
 # clipboard events
-CLIP_COPY = 254
-CLIP_PASTE = 255
+CLIP_COPY = 'clip_copy'
+CLIP_PASTE = 'clip_paste'

@@ -41,6 +41,10 @@ def iterchar(s):
     """Iterate over bytes, returning char."""
     return (s[_i:_i+1] for _i in range(len(s)))
 
+def iterbytes(s):
+    """Iterate over bytes/bytearray/memoryview, returning int."""
+    return s
+
 def iteritems(d, **kw):
     return iter(d.items(**kw))
 

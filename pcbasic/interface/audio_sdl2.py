@@ -12,32 +12,32 @@ import logging
 import ctypes
 from collections import deque
 
-try:
-    from . import sdl2
-except ImportError:
-    sdl2 = None
-
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
+from ..compat import zip
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser
 
+# sdl2 module is imported only at plugin initialisation
+sdl2 = None
+
+if False:
+    # packagers take note
+    from . import sdl2
+
+def _import_sdl2():
+    global sdl2
+    from . import sdl2
 
 # approximate generator chunk length
 # one wavelength at 37 Hz is 1192 samples at 44100 Hz
-CHUNK_LENGTH = 1192 * 4
+_CHUNK_LENGTH = 1192 * 4
 # length of chunks to be consumed by callback
-CALLBACK_CHUNK_LENGTH = 2048
+_CALLBACK_CHUNK_LENGTH = 2048
 # number of samples below which to replenish the buffer
-MIN_SAMPLES_BUFFER = 2*CALLBACK_CHUNK_LENGTH
+_MIN_SAMPLES_BUFFER = 2 * _CALLBACK_CHUNK_LENGTH
+# pause audio device after given number of ticks without sound
+_QUIET_QUIT = 100
 
-
-##############################################################################
-# plugin
 
 @audio_plugins.register('sdl2')
 class AudioSDL2(AudioPlugin):
@@ -45,67 +45,75 @@ class AudioSDL2(AudioPlugin):
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""
-        if not sdl2:
+        try:
+            _import_sdl2()
+        except ImportError:
             raise InitFailed('Module `sdl2` not found')
-        if not numpy:
-            raise InitFailed('Module `numpy` module not found')
         # synthesisers
-        self.signal_sources = synthesiser.get_signal_sources()
+        self._signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
-        self.generators = [deque(), deque(), deque(), deque()]
+        self._generators = [deque() for _ in synthesiser.VOICES]
         # buffer of samples; drained by callback, replenished by _play_sound
-        self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
-        # SDL AudioDevice and specifications
-        self.audiospec = sdl2.SDL_AudioSpec(0, 0, 0, 0)
-        self.audiospec.freq = synthesiser.SAMPLE_RATE
-        # samples are 16-bit signed ints
-        self.audiospec.format = sdl2.AUDIO_S16SYS
-        self.audiospec.channels = 1
-        self.audiospec.samples = CALLBACK_CHUNK_LENGTH
-        self.audiospec.callback = sdl2.SDL_AudioCallback(self._get_next_chunk)
-        self.dev = None
+        self._samples = [bytearray() for _ in synthesiser.VOICES]
+        self._next_tone = [None for _ in synthesiser.VOICES]
+        self._device = None
+        self._audiospec = None
+        self._quiet_ticks = 0
         AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
         # init sdl audio in this thread separately
         sdl2.SDL_Init(sdl2.SDL_INIT_AUDIO)
-        self.dev = sdl2.SDL_OpenAudioDevice(None, 0, self.audiospec, None, 0)
-        if self.dev == 0:
+        # SDL AudioDevice and specifications
+        # S8 gives ticks on pausing and unpausing so we use S16
+        audiospec = sdl2.SDL_AudioSpec(
+            freq=synthesiser.SAMPLE_RATE, aformat=sdl2.AUDIO_S16LSB, channels=1,
+            samples=_CALLBACK_CHUNK_LENGTH, callback=sdl2.SDL_AudioCallback(self._get_next_chunk)
+        )
+        self._device = sdl2.SDL_OpenAudioDevice(None, False, audiospec, None, 0)
+        if self._device == 0:
             logging.warning('Could not open audio device: %s', sdl2.SDL_GetError())
-        # unpause the audio device
-        sdl2.SDL_PauseAudioDevice(self.dev, 0)
+        # prevent audiospec from being garbage collected as it goes out of scope
+        self._audiospec = audiospec
         return AudioPlugin.__enter__(self)
 
     def tone(self, voice, frequency, duration, loop, volume):
         """Enqueue a tone."""
-        self.generators[voice].append(synthesiser.SoundGenerator(
-            self.signal_sources[voice], synthesiser.FEEDBACK_TONE,
+        self._generators[voice].append(synthesiser.SoundGenerator(
+            self._signal_sources[voice], synthesiser.FEEDBACK_TONE,
             frequency, duration, loop, volume
         ))
 
     def noise(self, source, frequency, duration, loop, volume):
         """Enqueue a noise."""
         feedback = synthesiser.FEEDBACK_NOISE if source else synthesiser.FEEDBACK_PERIODIC
-        self.generators[3].append(synthesiser.SoundGenerator(
-            self.signal_sources[3], feedback,
+        self._generators[synthesiser.NOISE_VOICE].append(synthesiser.SoundGenerator(
+            self._signal_sources[synthesiser.NOISE_VOICE], feedback,
             frequency, duration, loop, volume
         ))
 
     def hush(self):
         """Stop sound."""
-        for voice in range(4):
-            self._next_tone[voice] = None
-            while self.generators[voice]:
-                self.generators[voice].popleft()
-        sdl2.SDL_LockAudioDevice(self.dev)
-        self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
-        sdl2.SDL_UnlockAudioDevice(self.dev)
+        self._next_tone = [None for _ in synthesiser.VOICES]
+        for gen in self._generators:
+            gen.clear()
+        sdl2.SDL_LockAudioDevice(self._device)
+        self._samples = [bytearray() for _ in synthesiser.VOICES]
+        sdl2.SDL_UnlockAudioDevice(self._device)
 
     def _work(self):
         """Replenish sample buffer."""
-        for voice in range(4):
-            if len(self.samples[voice]) > MIN_SAMPLES_BUFFER:
+        if not any(self._generators) and not any(self._next_tone):
+            if self._quiet_ticks >= _QUIET_QUIT:
+                sdl2.SDL_PauseAudioDevice(self._device, 1)
+            self._quiet_ticks += 1
+            return
+        else:
+            self._quiet_ticks = 0
+            sdl2.SDL_PauseAudioDevice(self._device, 0)
+        for voice in synthesiser.VOICES:
+            if len(self._samples[voice]) > _MIN_SAMPLES_BUFFER:
                 # nothing to do
                 continue
             while True:
@@ -113,38 +121,38 @@ class AudioSDL2(AudioPlugin):
                     try:
                         # looping tone will be interrupted
                         # by any new tone appearing in the generator queue
-                        self._next_tone[voice] = self.generators[voice].popleft()
+                        self._next_tone[voice] = self._generators[voice].popleft()
                     except IndexError:
                         if self._next_tone[voice] is None:
                             current_chunk = None
                             break
-                current_chunk = self._next_tone[voice].build_chunk(CHUNK_LENGTH)
+                current_chunk = self._next_tone[voice].build_chunk(_CHUNK_LENGTH)
                 if current_chunk is not None:
                     break
                 self._next_tone[voice] = None
             if current_chunk is not None:
                 # append chunk to samples list
                 # lock to ensure callback doesn't try to access the list too
-                sdl2.SDL_LockAudioDevice(self.dev)
-                self.samples[voice] = numpy.concatenate((self.samples[voice], current_chunk))
-                sdl2.SDL_UnlockAudioDevice(self.dev)
+                sdl2.SDL_LockAudioDevice(self._device)
+                self._samples[voice] = bytearray().join((self._samples[voice], current_chunk))
+                sdl2.SDL_UnlockAudioDevice(self._device)
 
     def _get_next_chunk(self, notused, stream, length_bytes):
         """Callback function to generate the next chunk to be played."""
-        # this is for 16-bit samples
+        # this assumes 8-bit samples
         length = length_bytes // 2
-        samples = [self.samples[voice][:length] for voice in range(4)]
-        self.samples = [self.samples[voice][length:] for voice in range(4)]
         # if samples have run out, add silence
-        for voice in range(4):
-            if len(samples[voice]) < length:
-                silence = numpy.zeros(length-len(samples[voice]), numpy.int16)
-                samples[voice] = numpy.concatenate((samples[voice], silence))
-        # mix the samples by averaging
-        # we need the int32 intermediate step, for int16 numpy will average [32767, 32767] to -1
-        mixed = bytearray(
-            numpy.array(numpy.mean(samples, axis=0, dtype=numpy.int32), dtype=numpy.int16).data
+        samples = (
+            _samp.ljust(length, b'\0') if len(_samp) < length else _samp[:length]
+            for _samp in self._samples
         )
+        # mix the samples
+        mixed = bytearray(sum(_b) & 0xff for _b in zip(*samples))
+        # convert from S8 to S16 (little-endian)
+        # interlace with leading zeros to multiply by 256
+        mixed_16 = bytearray(length_bytes)
+        mixed_16[1::2] = mixed
+        self._samples = [_samp[length:] for _samp in self._samples]
         ctypes.memmove(
-            stream, (ctypes.c_char * length_bytes).from_buffer(mixed[:length_bytes]), length_bytes
+            stream, (ctypes.c_char * length_bytes).from_buffer(mixed_16), length_bytes
         )

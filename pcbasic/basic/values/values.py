@@ -47,6 +47,10 @@ TYPE_TO_CLASS = {
     DBL: numbers.Double
 }
 
+# cutoff for trigonometric functions
+# above this machine precision makes the result useless and machine/os dependent
+# this is close to what gw uses but not quite equivalent
+TRIG_MAX = 5e16
 
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
@@ -77,6 +81,9 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
 def next_string(args):
     """Retrieve a string from an iterator and return as Python value."""
     expr = next(args)
+    return to_string_or_none(expr)
+
+def to_string_or_none(expr):
     if isinstance(expr, strings.String):
         return expr.to_value()
     elif expr is None:
@@ -124,8 +131,8 @@ def _call_float_function(fn, *args):
         # to_float can overflow on Double.pos_max
         args = [_arg.to_float(values.double_math) for _arg in args]
         floatcls = args[0].__class__
-        args = [_arg.to_value() for _arg in args]
-        result = fn(*args)
+        python_args = [_arg.to_value() for _arg in args]
+        result = fn(*python_args)
         # python3 may return complex values for some real functions
         # where python2 simply raises an error
         if isinstance(result, complex):
@@ -148,9 +155,9 @@ class FloatErrorHandler(object):
     # types of errors that do not always interrupt execution
     soft_types = (error.OVERFLOW, error.DIVISION_BY_ZERO)
 
-    def __init__(self, screen):
+    def __init__(self, console):
         """Setup handler."""
-        self._screen = screen
+        self._console = console
         self._do_raise = False
 
     def suspend(self, do_raise):
@@ -166,25 +173,23 @@ class FloatErrorHandler(object):
             math_error = error.OVERFLOW
         elif isinstance(e, ZeroDivisionError):
             math_error = error.DIVISION_BY_ZERO
-        else:
+        else: # pragma: no cover
+            # shouldn't happen, we're only called with ValueError/ArithmeticError
             raise e
-        if (self._do_raise or self._screen is None or
-                math_error not in self.soft_types):
+        if (self._do_raise or self._console is None or math_error not in self.soft_types):
             # also raises exception in error_handle_mode!
             # in that case, prints a normal error message
             raise error.BASICError(math_error)
         else:
             # write a message & continue as normal
             # message should not include line number or trailing \xFF
-            self._screen.write_line(error.BASICError(math_error).message)
+            self._console.write_line(error.BASICError(math_error).message)
         # return max value for the appropriate float type
-        if e.args and e.args[0]:
-            if isinstance(e.args[0], numbers.Float):
-                return e.args[0]
-            elif isinstance(e.args[0], numbers.Integer):
-                # integer values are not soft-handled
-                raise error.BASICError(math_error)
-        return numbers.Single(None, self).from_bytes(numbers.Single.pos_max)
+        # integer operations should just raise the BASICError directly, they are not handled
+        if e.args and isinstance(e.args[0], numbers.Float):
+            return e.args[0]
+        else: # pragma: no cover
+            return numbers.Single(None, self).from_bytes(numbers.Single.pos_max)
 
 
 ###############################################################################
@@ -197,9 +202,10 @@ class Values(object):
         self.stringspace = string_space
         # double-precision EXP, SIN, COS, TAN, ATN, LOG
         self.double_math = double_math
+        self.error_handler = None
 
     def set_handler(self, handler):
-        """Initialise the error message screen."""
+        """Initialise the error message console."""
         self.error_handler = handler
 
     def create(self, buf):
@@ -292,19 +298,14 @@ class Values(object):
             # non-integer characters, try a float
             pass
         except error.BASICError as e:
-            if e.err != error.OVERFLOW:
+            if e.err != error.OVERFLOW: # pragma: no cover
+                # shouldn't happen, from_str only raises Overflow
                 raise
         # if allow_nonnum == False, raises ValueError for non-numerical characters
         is_double, mantissa, exp10 = numbers.str_to_decimal(word, allow_nonnum)
         if is_double:
             return self.new_double().from_decimal(mantissa, exp10)
         return self.new_single().from_decimal(mantissa, exp10)
-
-
-@float_safe
-def round(x):
-    """Round to nearest whole number without converting to int."""
-    return pass_number(x).to_float().iround()
 
 
 ###############################################################################
@@ -527,17 +528,17 @@ def exp_(args):
 def sin_(args):
     """Sine."""
     x, = args
-    return _call_float_function(math.sin, x)
+    return _call_float_function(lambda _x: math.sin(_x) if abs(_x) < TRIG_MAX else 0., x)
 
 def cos_(args):
     """Cosine."""
     x, = args
-    return _call_float_function(math.cos, x)
+    return _call_float_function(lambda _x: math.cos(_x) if abs(_x) < TRIG_MAX else 1., x)
 
 def tan_(args):
     """Tangent."""
     x, = args
-    return _call_float_function(math.tan, x)
+    return _call_float_function(lambda _x: math.tan(_x) if abs(_x) < TRIG_MAX else 0., x)
 
 def atn_(args):
     """Inverse tangent."""
@@ -554,7 +555,7 @@ def log_(args):
 # string representations and characteristics
 
 def to_repr(inp, leading_space, type_sign):
-    """Convert BASIC number to Python str representation."""
+    """Convert BASIC number to Python bytes representation."""
     # PRINT, STR$ - yes leading space, no type sign
     # WRITE - no leading space, no type sign
     # LIST - no loading space, yes type sign
@@ -705,8 +706,11 @@ def string_(args):
 @float_safe
 def pow(left, right):
     """Left^right."""
+    if isinstance(left, strings.String) or isinstance(right, strings.String):
+        raise error.BASICError(error.TYPE_MISMATCH)
     if left._values.double_math and (
-            isinstance(left, numbers.Double) or isinstance(right, numbers.Double)):
+            isinstance(left, numbers.Double) or isinstance(right, numbers.Double)
+        ):
         return _call_float_function(lambda a, b: a**b, to_double(left), to_double(right))
     elif isinstance(right, numbers.Integer):
         return left.to_single().clone().ipow_int(right)

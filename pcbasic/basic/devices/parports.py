@@ -16,7 +16,7 @@ try:
 except Exception:
     parallel = None
 
-from ...compat import line_print, iterchar, stdout
+from ...compat import line_print, iterchar, stdio
 from ..base import error
 from ..codepage import CONTROL
 from .devicebase import Device, DeviceSettings, TextFileBase, parse_protocol_string, safe_io
@@ -201,8 +201,8 @@ class PrinterStream(io.BytesIO):
         self.seek(0)
         self.truncate()
         # any naked lead bytes in DBCS will remain just that - avoid in-line flushes.
-        utf8buf = self.codepage.str_to_unicode(
-            printbuf, preserve=CONTROL
+        utf8buf = self.codepage.bytes_to_unicode(
+            printbuf, preserve=CONTROL,
         ).encode('utf-8', 'replace')
         line_print(utf8buf, self.printer_name)
 
@@ -287,12 +287,12 @@ class StdIOParallelStream(object):
         """Write to stdout."""
         if self._crlf:
             s = s.replace(b'\r', b'\n')
-        stdout.buffer.write(s)
+        stdio.stdout.buffer.write(s)
         self.flush()
 
     def flush(self):
         """Flush stdout."""
-        stdout.flush()
+        stdio.stdout.flush()
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
         """Set the values of the control pins."""

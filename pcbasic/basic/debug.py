@@ -33,8 +33,7 @@ def get_platform_info():
         u'python: %s %s %s' % (
         sys.version.replace('\n', ''), ' '.join(platform.architecture()), frozen))
     info.append(u'\nMODULES')
-    # try numpy before pygame to avoid strange ImportError on FreeBSD
-    modules = ('numpy', 'pygame', 'curses', 'serial', 'parallel')
+    modules = ('pyaudio', 'serial', 'parallel')
     for module in modules:
         try:
             m = importlib.import_module(module)
@@ -56,6 +55,7 @@ def get_platform_info():
     info.append(u'\nLIBRARIES')
     try:
         from ..interface import video_sdl2
+        video_sdl2._import_sdl2()
         info.append(u'sdl2: %s' % (video_sdl2.sdl2.get_dll_file()))
         if video_sdl2.sdlgfx:
             info.append(u'sdl2_gfx: %s' % (video_sdl2.sdlgfx.libfile))
@@ -111,19 +111,21 @@ class DebugSession(api.Session):
             try:
                 val = self._impl.parser.expression_parser.parse(outs)
                 if isinstance(val, values.String):
-                    outstr += u'"%s"' % self._impl.codepage.str_to_unicode(val.to_str())
+                    outstr += u'"%s"' % self._impl.codepage.bytes_to_unicode(val.to_str())
                 else:
-                    outstr += values.to_repr(val, leading_space=False, type_sign=True)
+                    outstr += (
+                        values.to_repr(val, leading_space=False, type_sign=True)
+                        .decode('ascii', 'ignore')
+                    )
             except Exception as e:
-                logging.debug('%s %s', type(e), e)
-                traceback.print_tb(sys.exc_info()[2])
+                self._handle_exception(e)
         if outstr:
             logging.debug(outstr)
 
     def _handle_exception(self, e):
         """Handle exception during debugging."""
-        logging.debug(b'%s %s', type(e), bytes(e))
-        traceback.print_tb(sys.exc_info()[2])
+        logging.debug('%s %s', type(e), str(e))
+        raise
 
     ###########################################################################
     # debugging commands
@@ -163,7 +165,7 @@ class DebugSession(api.Session):
 
     def logprint(self, *args):
         """Write arguments to log."""
-        logging.debug(self._impl.codepage.str_to_unicode(' '.join(bytes(arg) for arg in args)))
+        logging.debug(self._impl.codepage.bytes_to_unicode(b' '.join(bytes(arg) for arg in args)))
 
     def logwrite(self, *args):
         """Write arguments to log."""
@@ -194,7 +196,7 @@ class DebugSession(api.Session):
     def showscreen(self):
         """Copy the screen buffer to the log."""
         for s in repr(self._impl.display.text_screen).split('\n'):
-            logging.debug(self._impl.codepage.str_to_unicode(s))
+            logging.debug(self._impl.codepage.bytes_to_unicode(s))
 
     def showprogram(self):
         """Write a marked-up hex dump of the program to the log."""

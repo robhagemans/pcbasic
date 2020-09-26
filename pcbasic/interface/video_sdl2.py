@@ -9,21 +9,20 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 import ctypes
 import os
+import sys
+import functools
+import operator
 from contextlib import contextmanager
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 from ..compat import iteritems, unichr
-from ..compat import WIN32, BASE_DIR, PLATFORM
+from ..compat import WIN32, BASE_DIR, PLATFORM, PY2
 from ..compat import set_dpi_aware
 
 from .base import EnvironmentCache
 from .base import video_plugins, InitFailed, NOKILL_MESSAGE
 from ..basic.base import signals
 from ..basic.base import scancode
+from ..basic.base import bytematrix
 from ..basic.base.eascii import as_unicode as uea
 from ..data.resources import ICON
 from .video import VideoPlugin
@@ -31,8 +30,31 @@ from . import window
 from . import clipboard
 
 
+
+###############################################################################
+# video settings
+
+# refresh cycle parameters
+# number of cycles to change blink state
+BLINK_CYCLES = 5
+# number of distinct blink states
+N_BLINK_STATES = 4
+# ms duration of a blink
+BLINK_TIME = 120
+CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
+
+
+
 ###############################################################################
 # locate and load SDL libraries
+
+if False:
+    # packagers take note
+    from . import sdl2
+
+sdl2 = None
+sdlgfx = None
+_smooth_zoom = None
 
 # platform-specific dll location
 LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
@@ -65,40 +87,30 @@ def _bind_gfx_zoomsurface():
     return None
 
 
-with EnvironmentCache() as _sdl_env:
-    # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
-    # first in LIB_DIR, then in the standard search path
-    # user should remove dll from LIB_DIR they want to use another one
-    _sdl_env.set('PYSDL2_DLL_PATH', LIB_DIR)
-    try:
-        from . import sdl2
-    except ImportError:
-        _sdl_env.set('PYSDL2_DLL_PATH', '')
+def _import_sdl2():
+    """Import the sdl2 bindings and define constants."""
+    global sdl2, _smooth_zoom
+    global SCAN_TO_SCAN, ALT_SCAN_TO_EASCII, MOD_TO_SCAN
+    global KEY_TO_EASCII, SHIFT_KEY_TO_EASCII, CTRL_KEY_TO_EASCII
+
+    with EnvironmentCache() as _sdl_env:
+
+        # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
+        # first in LIB_DIR, then in the standard search path
+        # user should remove dll from LIB_DIR they want to use another one
+        _sdl_env.set('PYSDL2_DLL_PATH', LIB_DIR)
         try:
             from . import sdl2
         except ImportError:
-            sdl2 = None
-    sdlgfx = None
-    _smooth_zoom = _bind_gfx_zoomsurface()
+            _sdl_env.set('PYSDL2_DLL_PATH', '')
+            # last try, do not catch ImportError
+            from . import sdl2
+        _smooth_zoom = _bind_gfx_zoomsurface()
 
 
-###############################################################################
-# video settings
+    ###############################################################################
+    # keyboard codes
 
-# refresh cycle parameters
-# number of cycles to change blink state
-BLINK_CYCLES = 5
-# number of distinct blink states
-N_BLINK_STATES = 4
-# ms duration of a blink
-BLINK_TIME = 120
-CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
-
-
-###############################################################################
-# keyboard codes
-
-if sdl2:
     # these are PC keyboard scancodes
     SCAN_TO_SCAN = {
         # top row
@@ -279,11 +291,11 @@ class SDL2Clipboard(clipboard.Clipboard):
         clipboard.Clipboard.__init__(self)
         self.ok = (sdl2 is not None)
 
-    def copy(self, text, mouse=False):
+    def copy(self, text):
         """Put unicode text on clipboard."""
         sdl2.SDL_SetClipboardText(text.encode('utf-8', errors='replace'))
 
-    def paste(self, mouse=False):
+    def paste(self):
         """Return unicode text from clipboard."""
         text = sdl2.SDL_GetClipboardText()
         if text is None:
@@ -293,17 +305,19 @@ class SDL2Clipboard(clipboard.Clipboard):
 
 ###############################################################################
 
-def _pixels2d(psurface):
+def _pixels2d(surface_ptr):
     """Creates a 2D pixel array view of the passed 8-bit surface."""
-    # limited, specialised version of pysdl2.ext.pixels2d by Marcus von Appen
+    # based on pysdl2.ext.pixels2d by Marcus von Appen
     # original is CC0 public domain with zlib fallback licence
     # https://bitbucket.org/marcusva/py-sdl2
-    strides = (psurface.pitch, 1)
-    srcsize = psurface.h * psurface.pitch
-    shape = psurface.h, psurface.w
-    pxbuf = ctypes.cast(psurface.pixels, ctypes.POINTER(ctypes.c_ubyte * srcsize)).contents
-    # NOTE: transpose() brings it on [x][y] form - we may prefer [y][x] instead
-    return numpy.ndarray(shape, numpy.uint8, pxbuf, 0, strides, 'C').transpose()
+    surface = surface_ptr.contents
+    srcsize = surface.h * surface.pitch
+    pxbuf = ctypes.cast(surface.pixels, ctypes.POINTER(ctypes.c_ubyte * srcsize)).contents
+    # I don't understand this line, but I need it in Python 3
+    # see https://bugs.python.org/issue15944
+    if not PY2:
+        pxbuf = memoryview(pxbuf).cast('B')
+    return bytematrix.ByteMatrix.view_from_buffer(surface.h, surface.w, surface.pitch, pxbuf)
 
 
 ###############################################################################
@@ -321,10 +335,10 @@ class VideoSDL2(VideoPlugin):
             **kwargs
         ):
         """Initialise SDL2 interface."""
-        if not sdl2:
+        try:
+            _import_sdl2()
+        except ImportError:
             raise InitFailed('Module `sdl2` not found')
-        if not numpy:
-            raise InitFailed('Module `numpy` not found')
         VideoPlugin.__init__(self, input_queue, video_queue)
         # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
         set_dpi_aware()
@@ -345,21 +359,23 @@ class VideoSDL2(VideoPlugin):
         self._cycle = 0
         self._last_tick = 0
         # blink is enabled, should be True in text modes with blink and ega mono
-        # cursor blinks if _is_text_mode and _blink_enabled
-        self._blink_enabled = True
+        # set to true if blinking attributes occur in palette
+        self._palette_blinks = False
         # load the icon
-        self._icon = icon
+        self._icon = bytematrix.ByteMatrix(len(ICON), len(ICON[0]), ICON).hrepeat(2).vrepeat(2)
         # mouse setups
         self._mouse_clip = mouse_clipboard
         # keyboard setup
         self._f11_active = False
-        # we need a set_mode call to be really up and running
-        self._has_window = False
-        # ensure the correct SDL2 video driver is chosen for Windows
-        # since this gets messed up if we also import pygame
         self._env = EnvironmentCache()
         if WIN32:
+            # ensure the correct SDL2 video driver is chosen for Windows
+            # since this gets messed up if we also import pygame
             self._env.set('SDL_VIDEODRIVER', 'windows')
+        else:
+            # this is needed "to make the window manager correctly match the sdl window" (see pygame source)
+            # without it, the icon doesn't get changed
+            self._env.set('SDL_VIDEO_X11_WMCLASS', sys.argv[0])
         # initialise SDL
         if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):
             # SDL not initialised correctly
@@ -377,9 +393,9 @@ class VideoSDL2(VideoPlugin):
         # create the window initially as 720*400 black
         self._window_sizer.set_canvas_size(720, 400, fullscreen=self._fullscreen)
         # canvas surfaces
-        self._window_surface = []
+        self._window_surface = None
         # pixel views of canvases
-        self._canvas_pixels = []
+        self._canvas_pixels = None
         # main window object
         self._display = None
         self._display_surface = None
@@ -394,13 +410,10 @@ class VideoSDL2(VideoPlugin):
         self._clipboard_interface = None
         # event handlers
         self._event_handlers = self._register_handlers()
-        # glyph cache
-        self._glyph_dict = {}
         # video mode settings
-        self._is_text_mode = True
+        self._text_cursor = True
         self._font_height = None
         self._font_width = None
-        self._num_pages = None
         # cursor
         # cursor is visible
         self._cursor_visible = True
@@ -408,17 +421,15 @@ class VideoSDL2(VideoPlugin):
         self._cursor_row, self._cursor_col = 1, 1
         # cursor shape
         self._cursor_from = None
-        self._cursor_to = None
+        self._cursor_height = None
         self._cursor_width = None
         self._cursor_attr = None
         self._cursor_cache = [None, None]
-        # display pages
-        self._vpagenum, self._apagenum = 0, 0
         # palette
+        # { attr: (fore, back, blink, underline) }
+        self._attributes = {}
         # display palettes for blink states 0, 1
         self._palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
-        self._num_fore_attrs = 16
-        self._num_back_attrs = 8
         # pixel packing is active (composite artifacts)
         self._pixel_packing = False
         # last keypress
@@ -461,28 +472,29 @@ class VideoSDL2(VideoPlugin):
     def __exit__(self, exc_type, value, traceback):
         """Close the SDL2 interface."""
         VideoPlugin.__exit__(self, exc_type, value, traceback)
-        if sdl2 and numpy and self._has_window:
+        if not sdl2:
+            return
+        if self._display:
             # free windows
             sdl2.SDL_DestroyWindow(self._display)
-            # free caches
-            for surface in self._display_cache:
-                sdl2.SDL_FreeSurface(surface)
-            # free surfaces
-            for surface in self._window_surface:
-                sdl2.SDL_FreeSurface(surface)
-            # free palettes
-            for palette in self._palette:
-                sdl2.SDL_FreePalette(palette)
-            # close IME
-            sdl2.SDL_StopTextInput()
-            # close SDL2
-            sdl2.SDL_Quit()
+        # free caches
+        for surface in self._display_cache:
+            sdl2.SDL_FreeSurface(surface)
+        # free surfaces
+        if self._window_surface:
+            sdl2.SDL_FreeSurface(self._window_surface)
+        # free palettes
+        for palette in self._palette:
+            sdl2.SDL_FreePalette(palette)
+        # close IME
+        sdl2.SDL_StopTextInput()
+        # close SDL2
+        sdl2.SDL_Quit()
 
     def _set_icon(self):
         """Set the icon on the SDL window."""
-        mask = numpy.array(self._icon).T.repeat(2, 0).repeat(2, 1)
-        icon = sdl2.SDL_CreateRGBSurface(0, mask.shape[0], mask.shape[1], 8, 0, 0, 0, 0)
-        _pixels2d(icon.contents)[:] = mask
+        icon = sdl2.SDL_CreateRGBSurface(0, self._icon.width, self._icon.height, 8, 0, 0, 0, 0)
+        _pixels2d(icon)[:, :] = self._icon
         # icon palette (black & white)
         icon_palette = sdl2.SDL_AllocPalette(256)
         icon_colors = [sdl2.SDL_Color(_c, _c, _c, 255) for _c in [0, 255] + [255]*254]
@@ -534,8 +546,8 @@ class VideoSDL2(VideoPlugin):
 
     def _check_input(self):
         """Handle screen and interface events."""
-        # don't try to handle events before set_mode
-        if not self._has_window:
+        # don't try to handle events before display is set up
+        if not self._display:
             return
         # check and handle input events
         self._last_keypress = None
@@ -571,7 +583,7 @@ class VideoSDL2(VideoPlugin):
         if self._nokill:
             self.set_caption_message(NOKILL_MESSAGE)
         else:
-            self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+            self._input_queue.put(signals.Event(signals.QUIT))
 
     # window events
 
@@ -618,7 +630,7 @@ class VideoSDL2(VideoPlugin):
                 )
             elif event.button.button == sdl2.SDL_BUTTON_MIDDLE:
                 # MIDDLE button: paste
-                text = self._clipboard_handler.paste(mouse=True)
+                text = self._clipboard_handler.paste()
                 self._clipboard_interface.paste(text)
             self.busy = True
         if event.button.button == sdl2.SDL_BUTTON_LEFT:
@@ -629,7 +641,7 @@ class VideoSDL2(VideoPlugin):
         """Handle mouse-up event."""
         self._input_queue.put(signals.Event(signals.PEN_UP))
         if self._mouse_clip and event.button.button == sdl2.SDL_BUTTON_LEFT:
-            self._clipboard_interface.copy(mouse=True)
+            self._clipboard_interface.copy()
             self._clipboard_interface.stop()
             self.busy = True
 
@@ -795,7 +807,7 @@ class VideoSDL2(VideoPlugin):
 
     def _work(self):
         """Check screen and blink events; update screen if necessary."""
-        if not self._has_window:
+        if not self._window_surface:
             return
         #               0      0      1      1
         # cycle         0 1234 5 6789 0 1234 5 6789 (0)
@@ -804,7 +816,7 @@ class VideoSDL2(VideoPlugin):
         # blink         on     on     off    off
         #
         # blink state remains constant if blink not enabled
-        # cursor blinks only if _is_text_mode and _blink_enabled
+        # cursor blinks only if _text_cursor
         # cursor visible every cycle between 5 and 10, 15 and 20
         tick = sdl2.SDL_GetTicks()
         if tick - self._last_tick >= CYCLE_TIME:
@@ -814,14 +826,14 @@ class VideoSDL2(VideoPlugin):
                 self._cycle = 0
             # blink state
             blink_state, blink_tock = divmod(self._cycle, BLINK_CYCLES)
-            if not self._blink_enabled:
+            if not self._palette_blinks and not self._text_cursor:
                 blink_state = 1
             # flip display fully if changed, use cache if just blinking
             if self.busy:
                 self._clear_display_cache()
                 self._flip_busy(blink_state)
                 self.busy = False
-            elif self._blink_enabled and blink_tock == 0:
+            elif (self._palette_blinks or self._text_cursor) and blink_tock == 0:
                 self._flip_lazy(blink_state)
 
     def _clear_display_cache(self):
@@ -845,10 +857,10 @@ class VideoSDL2(VideoPlugin):
         if self._pixel_packing:
             work_surface = self._create_composite_surface()
         else:
-            work_surface = self._window_surface[self._vpagenum]
+            work_surface = self._window_surface
         pixelformat = self._display_surface.contents.format
         # apply cursor to work surface
-        with self._show_cursor(blink_state % 2):
+        with self._show_cursor((blink_state % 2) or not self._text_cursor):
             # convert 8-bit work surface to (usually) 32-bit display surface format
             sdl2.SDL_SetSurfacePalette(work_surface, self._palette[blink_state // 2])
             conv = sdl2.SDL_ConvertSurface(work_surface, pixelformat, 0)
@@ -890,22 +902,23 @@ class VideoSDL2(VideoPlugin):
     @contextmanager
     def _show_cursor(self, cursor_state):
         """Draw or remove the cursor on the visible page."""
-        if not self._cursor_visible or self._vpagenum != self._apagenum or not cursor_state:
+        if not self._cursor_visible or not cursor_state:
             yield
         else:
-            pixels = self._canvas_pixels[self._apagenum]
-            height = self._cursor_to + 1 - self._cursor_from
+            # cursor shape
             top = (self._cursor_row-1) * self._font_height + self._cursor_from
             left = (self._cursor_col-1) * self._font_width
-            cursor_area = pixels[left:left+self._cursor_width, top:top+height]
+            cursor_slice = slice(top, top+self._cursor_height), slice(left, left+self._cursor_width)
+            # canvas_pixels is a view
+            cursor_area = self._canvas_pixels[cursor_slice]
             # copy area under cursor
-            under_cursor = numpy.copy(cursor_area)
-            if self._is_text_mode:
-                cursor_area[:] = self._cursor_attr
+            under_cursor = cursor_area.copy()
+            if self._text_cursor:
+                cursor_area[:, :] = self._cursor_attr
             else:
-                cursor_area[:] ^= self._cursor_attr
+                cursor_area[:, :] ^= self._cursor_attr
             yield
-            cursor_area[:] = under_cursor
+            cursor_area[:, :] = under_cursor
 
     def _show_clipboard(self, conv):
         """Show clipboard feedback overlay."""
@@ -932,39 +945,33 @@ class VideoSDL2(VideoPlugin):
         """Pack multiple pixels into one for composite artifacts."""
         lwindow_w, lwindow_h = self._window_sizer.window_size_logical
         border_x, border_y = self._window_sizer.border_shift
-        work_surface = sdl2.SDL_CreateRGBSurface(0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0)
-        # pack pixels into higher bpp
+        # pack pixels into higher bpp, then unpack into lower bpp
         bpp_out, bpp_in = self._pixel_packing
-        src_array = self._canvas_pixels[self._vpagenum]
-        width, _ = src_array.shape
-        mask = 1<<bpp_in - 1
-        step = bpp_out // bpp_in
-        s = [(src_array[_p:width:step] & mask) << _p for _p in range(step)]
-        packed = numpy.repeat(numpy.array(s).sum(axis=0), step, axis=0)
-        # apply packed array onto work surface
-        _pixels2d(work_surface.contents)[
-            border_x : (lwindow_w - border_x),
-            border_y : lwindow_h - border_y
-        ] = packed
+        packed = self._canvas_pixels.packed(8//bpp_in)
+        height = lwindow_h - border_y*2
+        unpacked = bytematrix.ByteMatrix.frompacked(packed, height, 8//bpp_out)
+        unpacked = unpacked.hrepeat(bpp_out // bpp_in)
+        # copy packed array onto work surface
+        work_surface = sdl2.SDL_CreateRGBSurface(0, lwindow_w, lwindow_h, 8, 0, 0, 0, 0)
+        _pixels2d(work_surface)[
+            border_y : lwindow_h - border_y,
+            border_x : lwindow_w - border_x
+        ] = unpacked
         return work_surface
 
 
     ###########################################################################
     # signal handlers
 
-    def set_mode(self, mode_info):
+    def set_mode(self, canvas_height, canvas_width, text_height, text_width):
         """Initialise a given text or graphics mode."""
-        # unpack mode info struct
-        self._is_text_mode = mode_info.is_text_mode
-        self._font_height = mode_info.font_height
-        self._font_width = mode_info.font_width
-        self._num_pages = mode_info.num_pages
-        self._blink_enabled = mode_info.has_blink
-        # prebuilt glyphs
-        # NOTE: [x][y] format - change this if we change _pixels2d
-        self._glyph_dict = {u'\0': numpy.zeros((self._font_width, self._font_height))}
+        # set geometry
+        self._font_height = -(-canvas_height // text_height)
+        self._font_width = canvas_width // text_width
+        # set standard cursor
+        self._cursor_width = self._font_width
+        self._cursor_from, self._cursor_height = 0, self._font_height
         # logical size
-        canvas_width, canvas_height = mode_info.pixel_width, mode_info.pixel_height
         size_changed = self._window_sizer.set_canvas_size(
             canvas_width, canvas_height, fullscreen=self._fullscreen, resize_window=False
         )
@@ -981,63 +988,46 @@ class VideoSDL2(VideoPlugin):
                 )
                 # need to update surface pointer after a change in window size
                 self._reset_display_caches()
-        # set standard cursor
-        self.set_cursor_shape(self._font_width, self._font_height, 0, self._font_height)
         # screen pages
-        for surface in self._window_surface:
-            sdl2.SDL_FreeSurface(surface)
+        if self._window_surface:
+            sdl2.SDL_FreeSurface(self._window_surface)
         work_width, work_height = self._window_sizer.window_size_logical
-        self._window_surface = [
-            sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
-            for _ in range(self._num_pages)
-        ]
+        self._window_surface = sdl2.SDL_CreateRGBSurface(0, work_width, work_height, 8, 0, 0, 0, 0)
         border_x, border_y = self._window_sizer.border_shift
-        self._canvas_pixels = [
-            _pixels2d(canvas.contents)[
-                border_x : work_width - border_x,
-                border_y : work_height - border_y
-            ] for canvas in self._window_surface
+        self._canvas_pixels = _pixels2d(self._window_surface)[
+            border_y : work_height - border_y, border_x : work_width - border_x
         ]
         # initialise clipboard
         self._clipboard_interface = clipboard.ClipboardInterface(
             self._clipboard_handler, self._input_queue,
-            mode_info.width, mode_info.height, self._font_width, self._font_height,
+            text_width, text_height, self._font_width, self._font_height,
             (canvas_width, canvas_height)
         )
         self.busy = True
-        self._has_window = True
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
         title = self._caption + (u' - ' + msg if msg else u'')
         sdl2.SDL_SetWindowTitle(self._display, title.encode('utf-8', errors='replace'))
 
-    def set_clipboard_text(self, text, mouse):
+    def set_clipboard_text(self, text):
         """Put text on the clipboard."""
-        self._clipboard_handler.copy(text, mouse)
+        self._clipboard_handler.copy(text)
 
-    def set_palette(self, rgb_palette_0, rgb_palette_1, pack_pixels):
+    def set_palette(self, attributes, pack_pixels):
         """Build the palette."""
-        self._num_fore_attrs = min(16, len(rgb_palette_0))
-        self._num_back_attrs = min(8, self._num_fore_attrs)
-        rgb_palette_1 = rgb_palette_1 or rgb_palette_0
-        # fill up the 8-bit palette with all combinations we need
+        self._attributes = attributes
+        palette_blink_up = [_fore for _fore, _, _, _ in attributes]
+        palette_blink_down = [_back if _blink else _fore for _fore, _back, _blink, _ in attributes]
+        self._palette_blinks = palette_blink_up != palette_blink_down
         # blink states: 0 light up, 1 light down
-        # bottom 128 are non-blink, top 128 blink to background
-        show_palette_0 = rgb_palette_0[:self._num_fore_attrs] * (256//self._num_fore_attrs)
-        show_palette_1 = rgb_palette_1[:self._num_fore_attrs] * (128//self._num_fore_attrs)
-        for attr in (
-                rgb_palette_1[:self._num_back_attrs] *
-                (128 // self._num_fore_attrs // self._num_back_attrs)
-            ):
-            show_palette_1 += [attr]*self._num_fore_attrs
         colors_0 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)
-            for (_r, _g, _b) in show_palette_0
+            for (_r, _g, _b) in palette_blink_up
         ))
         colors_1 = (sdl2.SDL_Color * 256)(*(
             sdl2.SDL_Color(_r, _g, _b, 255)
-            for (_r, _g, _b) in show_palette_1
+            for (_r, _g, _b) in palette_blink_down
         ))
         sdl2.SDL_SetPaletteColors(self._palette[0], colors_0, 0, 256)
         sdl2.SDL_SetPaletteColors(self._palette[1], colors_1, 0, 256)
@@ -1054,140 +1044,70 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_Rect(window_w-border_x, 0, border_x, window_h),
             sdl2.SDL_Rect(0, window_h-border_y, window_w, border_y),
         )
-        for canvas in self._window_surface:
-            sdl2.SDL_FillRects(canvas, border_rects, 4, attr)
+        if self._window_surface:
+            sdl2.SDL_FillRects(self._window_surface, border_rects, 4, attr)
         self._border_attr = attr
         self.busy = True
 
     def clear_rows(self, back_attr, start, stop):
         """Clear a range of screen rows."""
-        self._canvas_pixels[self._apagenum][
-            0 : self._window_sizer.width,
-            (start-1)*self._font_height : stop*self._font_height
+        self._canvas_pixels[
+            (start-1)*self._font_height : stop*self._font_height,
+            0 : self._window_sizer.width
         ] = back_attr
         self.busy = True
 
-    def set_page(self, vpage, apage):
-        """Set the visible and active page."""
-        self._vpagenum, self._apagenum = vpage, apage
-        self.busy = True
-
-    def copy_page(self, src, dst):
-        """Copy source to destination page."""
-        self._canvas_pixels[dst][:] = self._canvas_pixels[src][:]
-        self.busy = True
-
-    def show_cursor(self, cursor_on):
+    def show_cursor(self, cursor_on, cursor_blinks):
         """Change visibility of cursor."""
+        self._text_cursor = cursor_blinks
         self._cursor_visible = cursor_on
         self.busy = True
 
-    def move_cursor(self, new_row, new_col):
+    def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
-        if self._cursor_visible and (self._cursor_row, self._cursor_col) != (new_row, new_col):
+        if self._cursor_visible and (
+                self._cursor_row, self._cursor_col, self._cursor_attr, self._cursor_width
+            ) != (row, col, attr, width):
             self.busy = True
-        self._cursor_row, self._cursor_col = new_row, new_col
-
-    def set_cursor_attr(self, attr):
-        """Change attribute of cursor."""
-        new_attr = attr % self._num_fore_attrs
-        if self._cursor_visible and self._cursor_attr != new_attr:
-            self.busy = True
-        self._cursor_attr = new_attr
-
-    def scroll_up(self, from_line, scroll_height, back_attr):
-        """Scroll the screen up between from_line and scroll_height."""
-        pixels = self._canvas_pixels[self._apagenum]
-        # these are exclusive ranges [x0, x1) etc
-        width = self._window_sizer.width
-        new_y0, new_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
-        old_y0, old_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[0:width, new_y0:new_y1] = pixels[0:width, old_y0:old_y1]
-        pixels[0:width, new_y1:old_y1] = numpy.full((width, old_y1-new_y1), back_attr, dtype=int)
-        self.busy = True
-
-    def scroll_down(self, from_line, scroll_height, back_attr):
-        """Scroll the screen down between from_line and scroll_height."""
-        pixels = self._canvas_pixels[self._apagenum]
-        # these are exclusive ranges [x0, x1) etc
-        width = self._window_sizer.width
-        old_y0, old_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
-        new_y0, new_y1 = from_line*self._font_height, scroll_height*self._font_height
-        pixels[0:width, new_y0:new_y1] = pixels[0:width, old_y0:old_y1]
-        pixels[0:width, old_y0:new_y0] = numpy.full((width, new_y0-old_y0), back_attr, dtype=int)
-        self.busy = True
-
-    def put_glyph(self, pagenum, row, col, char, is_fullwidth, fore, back, blink, underline):
-        """Put a character at a given position."""
-        if not self._is_text_mode:
-            # in graphics mode, a put_rect call does the actual drawing
-            return
-        # NOTE: in pygame plugin we used a surface fill for the NUL character
-        # which was an optimisation early on -- consider if we need speedup.
-        try:
-            glyph = self._glyph_dict[char]
-        except KeyError:
-            logging.warning('No glyph received for code point %s', hex(ord(char)))
-            try:
-                glyph = self._glyph_dict[u'\0']
-            except KeyError:
-                logging.error('No glyph received for code point 0')
-                return
-        # _pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
-        glyph_width = glyph.shape[0]
-        left, top = (col-1)*self._font_width, (row-1)*self._font_height
-        attr = fore + self._num_fore_attrs*back + 128*blink
-        # changle glyph color by numpy scalar mult (is there a better way?)
-        self._canvas_pixels[pagenum][
-            left : left+glyph_width,
-            top : top+self._font_height
-        ] = glyph*(attr-back) + back
-        if underline:
-            self._canvas_pixels[pagenum][
-            left : left+glyph_width,
-            top + self._font_height - 1 : top + self._font_height
-        ] = attr
-        self.busy = True
-
-    def build_glyphs(self, new_dict):
-        """Build a dict of glyphs for use in text mode."""
-        for char, glyph in iteritems(new_dict):
-            # transpose because _pixels2d uses column-major mode and hence [x][y] indexing
-            # (we can change this)
-            self._glyph_dict[char] = numpy.asarray(glyph).T
-
-    def set_cursor_shape(self, width, height, from_line, to_line):
-        """Build a sprite for the cursor."""
+        self._cursor_row, self._cursor_col = row, col
+        self._cursor_attr = attr
         self._cursor_width = width
-        self._cursor_from, self._cursor_to = from_line, to_line
+
+    def set_cursor_shape(self, from_line, to_line):
+        """Build a sprite for the cursor."""
+        self._cursor_from = from_line
+        self._cursor_height = to_line + 1 - from_line
         if self._cursor_visible:
             self.busy = True
 
-    def put_pixel(self, pagenum, x, y, index):
-        """Put a pixel on the screen."""
-        self._canvas_pixels[pagenum][x, y] = index
+    def scroll(self, direction, from_line, scroll_height, back_attr):
+        """Scroll the screen between from_line and scroll_height."""
+        pixels = self._canvas_pixels
+        # scroll window, top of rows
+        hi_y0, hi_y1 = (from_line-1)*self._font_height, (scroll_height-1)*self._font_height
+        # scroll window, bottom of rows
+        lo_y0, lo_y1 = from_line*self._font_height, scroll_height*self._font_height
+        if direction == -1:
+            # scroll up
+            pixels[hi_y0:hi_y1, :] = pixels[lo_y0:lo_y1, :]
+            # clear the new empty line
+            pixels[hi_y1:lo_y1, :] = back_attr
+        else:
+            # scroll down
+            # copy is needed here as bytearray-view self-slice assignment will self-overwrite
+            pixels[lo_y0:lo_y1, :] = pixels[hi_y0:hi_y1, :].copy()
+            # clear the new empty line
+            pixels[hi_y0:lo_y0, :] = back_attr
         self.busy = True
 
-    def fill_rect(self, pagenum, x0, y0, x1, y1, index):
-        """Fill a rectangle in a solid attribute."""
-        self._canvas_pixels[pagenum][x0:x1+1, y0:y1+1] = index
-        self.busy = True
-
-    def fill_interval(self, pagenum, x0, x1, y, index):
-        """Fill a scanline interval in a solid attribute."""
-        self._canvas_pixels[pagenum][x0:x1+1, y] = index
-        self.busy = True
-
-    def put_interval(self, pagenum, x, y, colours):
-        """Write a list of attributes to a scanline interval."""
-        # reference the interval on the canvas
-        self._canvas_pixels[pagenum][x:x+len(colours), y] = numpy.array(colours).astype(int)
-        self.busy = True
-
-    def put_rect(self, pagenum, x0, y0, x1, y1, array):
-        """Apply numpy array [y][x] of attributes to an area."""
-        if (x1 < x0) or (y1 < y0):
+    def update(self, row, col, unicode_matrix, attr_matrix, y0, x0, sprite):
+        """Put text or pixels at a given position."""
+        if not sprite:
             return
         # reference the destination area
-        self._canvas_pixels[pagenum][x0:x1+1, y0:y1+1] = numpy.array(array).T
+        pixels = self._canvas_pixels
+        # clip to size if needed
+        if y0 + sprite.height > pixels.height or x0 + sprite.width > pixels.width:
+            sprite = sprite[:pixels.height-y0, :pixels.width-x0]
+        pixels[y0:y0+sprite.height, x0:x0+sprite.width] = sprite
         self.busy = True
