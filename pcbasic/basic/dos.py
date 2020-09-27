@@ -138,7 +138,8 @@ class Shell(object):
         if not self._shell:
             logging.warning('SHELL statement not enabled: no command interpreter specified.')
             raise error.BASICError(error.IFC)
-        cmd = split_quoted(self._shell)
+        # split by whitespace but protect quotes
+        cmd = split_quoted(self._shell, quote=u'"', strip_quotes=False)
         # find executable on path
         cmd[0] = which(cmd[0], path='.' + os.pathsep + os.environ.get("PATH"))
         if not cmd[0]:

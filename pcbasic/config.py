@@ -171,21 +171,21 @@ DEFAULT_SECTION = [u'pcbasic']
 # short-form arguments
 
 SHORT_ARGS = {
-    u'd': u'double',
-    u'f': u'max-files',
-    u's': u'max-reclen',
-    u'b': u'interface=cli',
-    u't': u'interface=text',
-    u'n': u'interface=none',
-    u'l': u'load',
-    u'h': u'help',
-    u'r': u'run',
-    u'q': u'quit',
-    u'e': u'exec',
-    u'k': u'keys',
-    u'v': u'version',
-    u'w': u'wait',
-    }
+    u'd': (u'double', u'True'),
+    u'h': (u'help', u'True'),
+    u'q': (u'quit', u'True'),
+    u'v': (u'version', u'True'),
+    u'w': (u'wait', u'True'),
+    u'b': (u'interface', u'cli'),
+    u't': (u'interface', u'text'),
+    u'n': (u'interface', u'none'),
+    u'f': (u'max-files', None),
+    u's': (u'max-reclen', None),
+    u'l': (u'load', None),
+    u'r': (u'run', None),
+    u'e': (u'exec', None),
+    u'k': (u'keys', None),
+}
 
 
 ##############################################################################
@@ -472,10 +472,10 @@ class Settings(object):
         self._session_params = None
 
     def get(self, name, get_default=True):
-        """Get value of option; choose whether to get default or None if unspecified."""
+        """Get value of option; choose whether to get default or None (unspecified) or '' (empty)."""
         try:
             value = self._options[name]
-            if value is None or value == u'':
+            if get_default and (value is None or value == u''):
                 raise KeyError
         except KeyError:
             if get_default:
@@ -599,7 +599,7 @@ class Settings(object):
                 try:
                     input_streams.append(io.open(infile, 'rb'))
                 except EnvironmentError as e:
-                    logging.warning(u'Could not open input file %s: %s', infile, e.strerror)
+                    logging.warning(u'Could not open input file `%s`: %s', infile, e.strerror)
         # output redirects
         outfile_params = self.get('output').split(u':')
         if outfile_params[0].upper() in (u'STDIO', u'STDOUT'):
@@ -616,7 +616,7 @@ class Settings(object):
                 try:
                     output_streams.append(io.open(outfile, 'ab' if append else 'wb'))
                 except EnvironmentError as e:
-                    logging.warning(u'Could not open output file %s: %s', outfile, e.strerror)
+                    logging.warning(u'Could not open output file `%s`: %s', outfile, e.strerror)
         # implicit stdio redirects
         # add stdio if redirected or no interface
         if stdio.stdin not in input_streams and stdio.stdin.buffer not in input_streams:
@@ -786,7 +786,12 @@ class Settings(object):
         commands = []
         greeting = False
         if not self.get('resume'):
-            run = (self.get(0) != '' and self.get('load') == '') or (self.get('run') != '')
+            run = (
+                # positional argument and --load or -l not specified (empty is specified)
+                (self.get(0) and self.get('load', get_default=False) is None)
+                # or run specified explicitly
+                or self.get('run')
+            )
             # treat colons as CRs
             commands = split_quoted(self.get('exec'), split_by=u':', quote=u'"', strip_quotes=False)
             # note that executing commands (or RUN) will suppress greeting
@@ -872,11 +877,11 @@ class ArgumentParser(object):
     def retrieve_options(self, uargv, temp_dir):
         """Retrieve command line and option file options."""
         # convert command line arguments to string dictionary form
-        remaining = self._get_arguments(uargv)
+        remaining = self._get_arguments_dict(uargv)
         # unpack any packages
-        package = self._parse_package(remaining, temp_dir)
+        package = self._parse_package_arg_and_unpack(remaining, temp_dir)
         # get preset groups from specified config file
-        preset_dict = self._parse_config(remaining)
+        preset_dict = self._parse_config_arg_and_process_config_file(remaining)
         # parse default presets nested in config presets
         preset_dict = {
             _key: self._merge_arguments(
@@ -896,8 +901,10 @@ class ArgumentParser(object):
                 'Ignored unrecognised option `%s=%s` in configuration file', key, value
             )
         args = {_k: _v for _k, _v in iteritems(args) if _k in ARGUMENTS}
-        # parse rest of command line
-        self._merge_arguments(args, self._parse_args(remaining))
+        # parse rest of command line args
+        cmd_line_args = self._parse_args(remaining)
+        # command-line args override config file settings
+        self._merge_arguments(args, cmd_line_args)
         # parse GW-BASIC style options
         self._parse_gw_options(args)
         # clean up arguments
@@ -911,50 +918,77 @@ class ArgumentParser(object):
         """Append short arguments and value to dict."""
         for i, short_arg in enumerate(key[1:]):
             try:
-                skey, svalue = split_pair(SHORT_ARGS[short_arg], u'=')
-                if not svalue and not skey:
-                    continue
-                if (not svalue) and i == len(key)-2:
-                    # assign value to last argument specified
-                    self._append_arg(args, skey, value)
-                else:
-                    self._append_arg(args, skey, svalue)
+                long_arg, long_arg_value = SHORT_ARGS[short_arg]
             except KeyError:
                 logging.warning(u'Ignored unrecognised option `-%s`', short_arg)
+            else:
+                if i == len(key)-2:
+                    # assign provided value to last argument specified
+                    if long_arg_value and value:
+                        logging.debug(
+                            u'Value `%s` provided to option `-%s` interpreted as positional',
+                            value, short_arg
+                        )
+                    self._append_arg(args, long_arg, long_arg_value or value or u'')
+                else:
+                    self._append_arg(args, long_arg, long_arg_value or u'')
+        # if value provided not used, push back as positional
+        if long_arg_value and value:
+            return value
+        return None
 
     def _append_arg(self, args, key, value):
         """Update a single list-type argument by appending a value."""
+        if not value:
+            # if we call _append_arg it means the key may be empty but is at least specified
+            value = u''
         if key in args and args[key]:
             if value:
                 args[key] += u',' + value
         else:
             args[key] = value
 
-    def _get_arguments(self, argv):
-        """Convert arguments to dictionary."""
+    def _get_arguments_dict(self, argv):
+        """Convert command-line arguments to dictionary."""
         args = {}
         arg_deque = deque(argv)
-        # positional arguments must come before any options
-        for pos in range(NUM_POSITIONAL):
-            if not arg_deque or arg_deque[0].startswith(u'-'):
-                break
-            args[pos] = arg_deque.popleft()
+        # positional arguments
+        pos = 0
+        # use -- to end option parsing, everything is a positional argument afterwards
+        options_ended = False
         while arg_deque:
             arg = arg_deque.popleft()
-            key, value = split_pair(arg, u'=')
-            if not value:
-                if arg_deque and not arg_deque[0].startswith(u'-') and u'=' not in arg_deque[0]:
-                    value = arg_deque.popleft()
-            if key:
-                if key[0:2] == u'--':
+            if not arg.startswith(u'-') or options_ended:
+                # not an option flag, interpret as positional
+                # strip enclosing quotes, but only if paired
+                for quote in u'"\'':
+                    if arg.startswith(quote) and arg.endswith(quote):
+                        arg = arg.strip(quote)
+                args[pos] = arg
+                pos += 1
+            elif arg == u'--':
+                options_ended = True
+            else:
+                key, value = split_pair(arg, split_by=u'=', quote=u'"\'')
+                # we know arg starts with -, not =, so key is not empty
+                if key.startswith(u'--'):
+                    # long option
                     if key[2:]:
                         self._append_arg(args, key[2:], value)
-                elif key[0] == u'-':
-                    self._append_short_args(args, key, value)
                 else:
-                    logging.warning(u'Ignored surplus positional argument `%s`', arg)
-            else:
-                logging.warning(u'Ignored unrecognised option `=%s`', value)
+                    # starts with one dash
+                    if not value:
+                        # -key value, without = to connect
+                        # only accept this for short options, long options with -- must have a =
+                        # otherwise options with optional =True will absorb the option following
+                        # only use the next value if it does not itself look like an option flag
+                        if arg_deque:
+                            if not arg_deque[0].startswith(u'-'):
+                                value = arg_deque.popleft()
+                    unused_value = self._append_short_args(args, key, value)
+                    # if the value picked up is not used by the short option, push back as positional.
+                    if unused_value:
+                        arg_deque.appendleft(unused_value)
         return args
 
     def _parse_presets(self, remaining, conf_dict):
@@ -972,7 +1006,7 @@ class ArgumentParser(object):
                     self._merge_arguments(argdict, conf_dict[p])
                 except KeyError:
                     if p not in DEFAULT_SECTION:
-                        logging.warning(u'Ignored undefined preset "%s"', p)
+                        logging.warning(u'Ignored undefined preset `%s`', p)
             # look for more presets in expended arglist
             try:
                 presets = self._to_list(u'preset', argdict.pop(u'preset'))
@@ -980,8 +1014,8 @@ class ArgumentParser(object):
                 break
         return argdict
 
-    def _parse_package(self, remaining, temp_dir):
-        """Unpack BAZ package, if specified, and make its temp dir current."""
+    def _parse_package_arg_and_unpack(self, remaining, temp_dir):
+        """Unpack zipfile package, if specified, and make its temp dir current."""
         # first positional arg: program or package name
         package = None
         try:
@@ -1018,7 +1052,7 @@ class ArgumentParser(object):
         # make package setting available
         return package
 
-    def _parse_config(self, remaining):
+    def _parse_config_arg_and_process_config_file(self, remaining):
         """Find the correct config file and read it."""
         # always read default config files; private config overrides system config
         # we update a whole preset at once, there's no joining of settings.
@@ -1048,23 +1082,28 @@ class ArgumentParser(object):
                     config.read_file(WhitespaceStripper(f))
         except (configparser.Error, IOError):
             logging.warning(
-                u'Error in configuration file %s. Configuration not loaded.', config_file
+                u'Error in configuration file `%s`. Configuration not loaded.', config_file
             )
             return {u'pcbasic': {}}
         presets = {header: dict(config.items(header)) for header in config.sections()}
         return presets
 
     def _parse_args(self, remaining):
-        """Retrieve command line options."""
+        """Process command line options."""
         # set arguments
         known = list(ARGUMENTS.keys()) + list(range(NUM_POSITIONAL))
         args = {d: remaining[d] for d in remaining if d in known}
         not_recognised = {d: remaining[d] for d in remaining if d not in known}
         for d in not_recognised:
             if not_recognised[d]:
-                logging.warning(
-                    u'Ignored unrecognised command-line argument `%s=%s`', d, not_recognised[d]
-                )
+                if isinstance(d, int):
+                    logging.warning(
+                        u'Ignored surplus positional command-line argument #%s: `%s`', d, not_recognised[d]
+                    )
+                else:
+                    logging.warning(
+                        u'Ignored unrecognised command-line argument `%s=%s`', d, not_recognised[d]
+                    )
             else:
                 logging.warning(u'Ignored unrecognised command-line argument `%s`', d)
         return args
@@ -1085,7 +1124,7 @@ class ArgumentParser(object):
                     arg, val = 0, option
             if val[:1] == u':':
                 val = val[1:]
-            arg, suffix = split_pair(arg, ':')
+            arg, suffix = split_pair(arg, split_by=':', quote='"\'')
             args[arg] = val + (u':' + suffix if suffix else u'')
         return args
 
@@ -1132,13 +1171,13 @@ class ArgumentParser(object):
         if u'choices' in ARGUMENTS[d]:
             if first_arg and first_arg not in ARGUMENTS[d][u'choices']:
                 logging.warning(
-                    u'Value "%s=%s" ignored; should be one of (%s)',
-                    d, arg, u', '.join(text_type(x) for x in ARGUMENTS[d][u'choices'])
+                    u'Value `%s=%s` ignored; should be one of (`%s`)',
+                    d, arg, u'`, `'.join(text_type(x) for x in ARGUMENTS[d][u'choices'])
                 )
                 arg = u''
         if u'check' in ARGUMENTS[d]:
             if arg and not ARGUMENTS[d][u'check'](first_arg):
-                logging.warning(u'Value "%s=%s" ignored; not recognised', d, arg)
+                logging.warning(u'Value `%s=%s` ignored; not recognised', d, arg)
                 arg = u''
         return arg
 
@@ -1159,8 +1198,8 @@ class ArgumentParser(object):
             lst += [None] * (-length-len(lst))  # pylint: disable=invalid-unary-operand-type
         if length != u'*' and (len(lst) > abs(length) or len(lst) < length):
             logging.warning(
-                u'Option "%s=%s" ignored, should have %d elements',
-                argname, strval, abs(length)
+                u'Option `%s=%s` ignored: list should have %d elements, found %d',
+                argname, strval, abs(length), len(lst)
             )
             lst = []
         return lst
@@ -1169,14 +1208,16 @@ class ArgumentParser(object):
         """Convert bool string to bool. Empty string (i.e. specified) means True."""
         if strval == u'':
             return True
-        try:
-            if strval.upper() in TRUES:
-                return True
-            elif strval.upper() in FALSES:
-                return False
-        except AttributeError:
-            logging.warning(u'Option "%s=%s" ignored; should be a boolean', argname, strval)
-        return None
+        if strval.upper() in TRUES:
+            return True
+        elif strval.upper() in FALSES:
+            return False
+        else:
+            logging.warning(
+                u'Boolean option `%s=%s` interpreted as `%s=True`',
+                argname, strval, argname
+            )
+        return True
 
     def _to_int(self, argname, strval):
         """Convert int string to int."""
@@ -1184,7 +1225,10 @@ class ArgumentParser(object):
             try:
                 return int(strval)
             except ValueError:
-                logging.warning(u'Option "%s=%s" ignored; should be an integer', argname, strval)
+                logging.warning(
+                    u'Option `%s=%s` ignored: value should be an integer',
+                    argname, strval
+                )
         return None
 
 
