@@ -93,6 +93,19 @@
             Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
         </dd>
 
+
+        <dt id="-c">
+            <code id="-c"><b>-c=</b><var>statement</var>[<b>:</b><var>statement</var> ...]</code>
+        </dt>
+        <dd>
+            Execute commands as a shell. This is a convenience shorthand and identical to
+            <code>
+                <b><a href="#--interface">--interface</a>=none</b>
+                <b><a href="#--quit">--quit</a>=True</b>
+                <b><a href="#--exec">--exec</a>=</b><var>statement</var>[<b>:</b><var>statement</var> ...]
+            </code>.
+        </dd>
+
         <dt id="--caption">
             <code><b>--caption=</b><var>title</var></code>
         </dt>
@@ -359,10 +372,10 @@
             Execute BASIC statements. The <code><var>statement</var></code>s are executed
             after loading any program but before entering into direct mode or
             running it. Multiple statements can be entered by separating them with colons <code><b>:</b></code>.
-            These will be executed as if they were entered as separate statements, not as a single compound statement;
-            even if statements such as <code>GOTO</code> can be included, the following statements will be executed.
-            If a <code><b>:</b></code> is intended to be part of a statement, the statement must be quoted with
-            single quotes <code><b>'</b></code>. If your calling shell interprets such quotes, you should properly escape them.
+            These will be executed as if they were entered as separate statements, not as a single compound statement:
+            even if statements such as <code>GOTO</code> or <code>LIST</code> are included, the following statements will still be executed.
+            The character <code><b>:</b></code> will be interpreted as part of a string if quoted with
+            single quotes <code><b>"</b></code>. If your calling shell interprets such quotes, you should properly escape them.
         </dd>
 
         <dt id="--extension">
@@ -430,6 +443,7 @@
         </dd>
 
         <dt id="--input">
+            <code id="-i"><b>-i=</b>{<var>input_file</var>|{<b>STDIO</b>|<b>STDIN</b>}[<b>:RAW</b>]}</code>
             <code><b>--input=</b>{<var>input_file</var>|{<b>STDIO</b>|<b>STDIN</b>}[<b>:RAW</b>]}</code>
         </dt>
         <dd>
@@ -671,6 +685,7 @@
         </dd>
 
         <dt id="--output">
+            <code id="-o"><b>-o=</b><var>output_file</var>[<b>:append</b>]</code>
             <code><b>--output=</b><var>output_file</var>[<b>:append</b>]</code>
         </dt>
         <dd>
