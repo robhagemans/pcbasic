@@ -185,8 +185,14 @@ SHORT_ARGS = {
     u'r': (u'run', None),
     u'e': (u'exec', None),
     u'k': (u'keys', None),
+    u'i': (u'input', None),
+    u'o': (u'output', None),
 }
 
+# -c means the same as -q -n -e
+SHORTHAND = {
+    u'c': u'qne',
+}
 
 ##############################################################################
 # GWBASIC-style options
@@ -916,6 +922,9 @@ class ArgumentParser(object):
 
     def _append_short_args(self, args, key, value):
         """Append short arguments and value to dict."""
+        # apply shorthands
+        for short_arg, replacement in iteritems(SHORTHAND):
+            key = key.replace(short_arg, replacement)
         for i, short_arg in enumerate(key[1:]):
             try:
                 long_arg, long_arg_value = SHORT_ARGS[short_arg]
