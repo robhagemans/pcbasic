@@ -164,9 +164,9 @@ A2:10F2
 A3:10F3
 A4:10F4
 A5:10F5
-# this glyph looks like GEORGIAN LETTER SHIN with an unknown modifier
-# doesn't seem to have a unicode codepoint; assign to pua
-A6:f400
+# GEORGIAN LETTER U-BRJGU - precomposed letter un with circumflex or caron; rejected for inclusion in unicode
+# note the glyph here has a caron
+A6:10e3,030c
 a7:00ba
 a8:00bf
 a9:2310
