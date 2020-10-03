@@ -33,7 +33,7 @@ def main():
     except OSError:
         pass
     try:
-        os.mkdir('hex')
+        os.mkdir('work/hex')
     except OSError:
         pass
 
@@ -61,7 +61,7 @@ def main():
             fonts[font.pixel_size][(cpi_name, codepage)] = font
 
     # retrieve preferred picks from choices file
-    logging.info(f'Processing choices')
+    logging.info('Processing choices')
     choices = defaultdict(list)
     with open(CHOICES, 'r') as f:
         for line in f:
@@ -82,7 +82,7 @@ def main():
         comments = tuple(_line[2:].rstrip() for _line in header)
 
     # merge preferred picks
-    logging.info(f'Merging choices')
+    logging.info('Merging choices')
     final_font = {}
     for size, fontdict in fonts.items():
         final_font[size] = monobit.font.Font(
@@ -97,18 +97,21 @@ def main():
                     final_font[size] = final_font[size].merged_with(font.subset(labels))
 
     # merge other fonts
-    logging.info(f'Merging remaining fonts')
+    logging.info('Merging remaining fonts')
     for size, fontdict in fonts.items():
         for font in fontdict.values():
             final_font[size] = final_font[size].merged_with(font)
 
     # exclude personal use area code points
-    logging.info(f'Removing private use keys')
+    logging.info('Removing private use area')
     pua_keys = set(f'u+{_code:04x}' for _code in range(0xe000, 0xf900))
+    pua_font = {_size: _font.subset(pua_keys) for _size, _font in final_font.items()}
+    for size, font in pua_font.items():
+        monobit.Typeface([font]).save(f'work/pua_{size:02d}.hex', format='hext')
     final_font = {_size: _font.without(pua_keys) for _size, _font in final_font.items()}
 
     # output
-    logging.info(f'Writing output')
+    logging.info('Writing output')
     for size, font in final_font.items():
         monobit.Typeface([font]).save(f'freedos_{size:02d}.hex', format='hext')
 
