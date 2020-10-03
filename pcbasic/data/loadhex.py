@@ -11,7 +11,7 @@ import pkg_resources
 import logging
 import binascii
 
-from ..compat import iteritems, itervalues, unichr
+from ..compat import iteritems, itervalues, unichr, iterchar
 
 from .resources import get_data, ResourceFailed
 
@@ -32,7 +32,7 @@ def _get_font(name, height):
     try:
         return get_data(FONT_PATTERN, path=FONT_DIR, name=name, height=height)
     except ResourceFailed as e:
-        logging.debug('Failed to load font `%s` with height %d: %s', name, height, e)
+        logging.debug('Failed to load %d-pixel font `%s`: %s', height, name, e)
 
 def read_fonts(codepage_dict, font_families):
     """Load font typefaces."""
@@ -62,6 +62,9 @@ def read_fonts(codepage_dict, font_families):
 def load_hex(hex_resources, height, all_needed):
     """Load a set of overlaying unifont .hex files."""
     fontdict = {}
+    # get elements of codepoint sequences in case we need to combine glyphs
+    elements = set.union(*(set(_c) for _c in all_needed))
+    all_needed = set(all_needed).union(elements)
     # transform the (smaller) set of needed chars into sequences for comparison
     # rather than the (larger) set of available sequences into chars
     needed_sequences = set(b','.join(b'%04X' % ord(_c) for _c in _s) for _s in all_needed)
@@ -108,18 +111,20 @@ def load_hex(hex_resources, height, all_needed):
             missing -= {c}
             if not missing:
                 break
+    missing = _combine_glyphs(height, fontdict, missing)
     # fill missing with nulls
     fontdict.update({_u: b'\0' * height for _u in missing})
     # char 0 should always be defined and empty
     fontdict[u'\0'] = b'\0' * height
-    _combine_glyphs(height, fontdict, all_needed)
+    missing -= {u'\0'}
     # warn if we miss needed glyphs
-    _warn_missing(missing)
+    _warn_missing(height, missing)
     return fontdict
 
-def _combine_glyphs(height, fontdict, unicode_needed):
+def _combine_glyphs(height, fontdict, missing):
     """Fix missing grapheme clusters by combining components."""
-    for cluster in unicode_needed:
+    success = set()
+    for cluster in missing:
         if cluster not in fontdict:
             # try to combine grapheme clusters first
             if len(cluster) > 1:
@@ -127,20 +132,24 @@ def _combine_glyphs(height, fontdict, unicode_needed):
                 clusterglyph = bytearray(height)
                 try:
                     for c in cluster:
-                        for y, row in enumerate(fontdict[c]):
+                        for y, row in enumerate(iterchar(fontdict[c])):
                             clusterglyph[y] |= ord(row)
                 except KeyError as e:
                     logging.debug(
-                        'Could not combine grapheme cluster %s, missing %r [%s]', cluster, c, c
+                        '%d-pixel font: Could not combine grapheme cluster %s, missing u+%04x [%s]',
+                        height, cluster, ord(c), c
                     )
                 fontdict[cluster] = bytes(clusterglyph)
+                success.add(cluster)
+    return missing - success
 
-def _warn_missing(missing, max_warnings=3):
+def _warn_missing(height, missing, max_warnings=5):
     """Warn if we miss needed glyphs."""
     warnings = 0
     for u in missing:
         warnings += 1
-        logging.debug('Code point u+%x not represented in font', ord(u))
+        sequence = ','.join('u+%04x' % ord(_c) for _c in u)
+        logging.debug('Code point sequence %s not represented in %d-pixel font', sequence, height)
         if warnings == max_warnings:
             logging.debug('Further code point warnings suppressed.')
             break
