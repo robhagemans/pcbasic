@@ -34,7 +34,7 @@ def main():
     except OSError:
         pass
     try:
-        os.mkdir('work/hex')
+        os.mkdir('work/yaff')
     except OSError:
         pass
 
@@ -56,8 +56,8 @@ def main():
             codepage = font.encoding # always starts with `cp`
             height = font.bounding_box[1]
             # save intermediate file
-            monobit.Typeface([font]).save(
-                f'work/hex/{cpi_name}_{codepage}_{font.pixel_size:02d}.hext'
+            monobit.Typeface([font.add_glyph_names()]).save(
+                f'work/yaff/{cpi_name}_{codepage}_{font.pixel_size:02d}.yaff'
             )
             fonts[font.pixel_size][(cpi_name, codepage)] = font
 
