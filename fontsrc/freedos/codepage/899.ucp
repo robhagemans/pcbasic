@@ -253,5 +253,5 @@ fb:0585
 fc:0556
 fd:0586
 fe:055a
-# another kind of apostrophe - meant to be a variant of U+055A, U+055B or U+0027 ?
-ff:F704
+# 16-pixel codepage has another kind of apostrophe glyph here, but others are empty
+ff:0000

@@ -8,10 +8,8 @@
 # The glyphs were mapped onto Unicode and converted to .HEX by Rob Hagemans.
 #
 # NOTES:
-# - CPIDOS contains several glyphs that have no corresponding code point in
-#   Unicode. These are not included in this file. Examples include
-#   Georgian Mkhedruli capital letters, the złoty and forint signs, and
-#   letters with multiple precomposed diacritics.
+# - CPIDOS contains several glyphs, such as the złoty sign, that have no
+#   corresponding code point in Unicode. These are not included in this file.
 # - A choice has been made between multiple glyph variants included in CPIDOS
 #   for some code points. In particular, for Greek glyphs, the variants from
 #   the Greek codepages have been preferred over those from the Latin pages.
@@ -19,8 +17,10 @@
 #   MICRO SIGN (U+00B5) GREEK THETA SYMBOL (U+03D1) GREEK PHI SYMBOL (U+03A6)
 #   GREEK LUNATE EPSILON SYMBOL (U+03F5).
 # - The UniFont .HEX format only provides for 16-pixel-high glyphs, but is also
-#   used here to encode a 14- or 8-pixel font. FOr those fonts, the last few
+#   used here to encode a 14- and an 8-pixel font. For those fonts, the last few
 #   bytes of each glyph string should remain zero.
+# - In a further extension to the .HEX format, we allow a sequence of combining codepoints
+#   to identify a single glyph; these code points are separated by commas.
 #
 # AUTHORS:
 # Henrique Peron

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # build HEX font file from FreeDOS CPIDOS font
 
@@ -6,201 +6,113 @@
 import os
 import sys
 import zipfile
-import binascii
 import subprocess
+import logging
+from collections import defaultdict
 
-# tools
+import monobit
 
-def load_codepage(name):
-    """ Load codepage to Unicode table. """
-    cp_to_unicode = {}
-    f = open(name, 'rb')
-    for line in f:
-        # ignore empty lines and comment lines (first char is #)
-        if (not line) or (line[0] == '#'):
-            continue
-        # split unicodepoint and hex string
-        splitline = line.split(':')
-        # ignore malformed lines
-        if len(splitline) < 2:
-            continue
-        # extract codepage point
-        cp_point = binascii.unhexlify(splitline[0].strip())
-        # extract unicode points
-        ucs = u''
-        for cp_str in splitline[1].split()[0].strip().split(','):
-            ucs += unichr(int('0x' + cp_str.strip(), 16))
-        cp_to_unicode[cp_point] = ucs
-    # fill up any undefined 1-byte codepoints
-    for c in range(256):
-        if chr(c) not in cp_to_unicode:
-            cp_to_unicode[chr(c)] = u'\0'
-    return cp_to_unicode
+logging.basicConfig(level=logging.INFO)
 
-
-def chars_to_uint(c):
-    return ord(c[0]) + ord(c[1])*0x100
-
-def chars_to_ulong(c):
-    return ord(c[0]) + ord(c[1])*0x100 + ord(c[2])*0x10000 + ord(c[3])*0x1000000
-
-def read_codepage_header(cpi):
-    size = chars_to_uint(cpi.read(2))
-    chars_to_ulong(cpi.read(4)) # offset to next header, ignore this and assume header - page - header - page etc.
-    cpi.read(2) # device_type
-    cpi.read(8) # device name
-    codepage = chars_to_uint(cpi.read(2))
-    cpi.read(6) # reserved
-    cpi.read(size-24) # pointer to CPIInfoHeader or 0
-    return codepage
-
-def read_font_header(cpi):
-    # skip version number
-    cpi.read(2)
-    num_fonts = chars_to_uint(cpi.read(2))
-    chars_to_uint(cpi.read(2))  # size
-    return num_fonts
-
-def load_cpi_font(cpi):
-    height = ord(cpi.read(1))
-    width = ord(cpi.read(1))
-    cpi.read(2)
-    num_chars = chars_to_uint(cpi.read(2))
-    font = []
-    for _ in range(num_chars):
-        lines = cpi.read(height*(width//8))    # we assume width==8
-        font += [lines]
-    return height, font
-
-def save_rom_font(font, out_name):
-    out = open(out_name, 'wb')
-    for glyph in font:
-        out.write(glyph)
-
-def write_hex(outfile, font, unitbl):
-    with open(outfile, 'w') as of:
-        for i, f in enumerate(font):
-            of.write(hexline(unitbl[chr(i)], f))
-
-def hexline(ucp, glyph):
-    s = binascii.hexlify(glyph).upper()
-    tohex = s + '0'*(32-len(s))
-    ucp_str = ','.join(['%04X' % ord(c) for c in ucp])
-    return "%s:%s\n" % (ucp_str, tohex)
-
-def add_to_multidict(mdict, key, value):
-    try:
-        mdict[key].add(value)
-    except KeyError:
-        mdict[key] = set([value])
-
-
-fdzip = 'cpidos30.zip'
-ucp_loc = 'codepage/'
-cpi_prefix = 'BIN/'
-cpi_names = ['ega.cpx'] + ['ega%d.cpx'% i for i in range(2, 19)]
-
+FDZIP = 'cpidos30.zip'
+CODEPAGE_DIR = 'codepage/'
+CPI_DIR = 'BIN/'
+CPI_NAMES = ['ega.cpx'] + [f'ega{_i}.cpx' for _i in range(2, 19)]
+HEADER = 'header.txt'
+CHOICES = 'choices'
 
 def main():
+
+    # register custom FreeDOS codepages
+    for filename in os.listdir(CODEPAGE_DIR):
+        cp_name, ext = os.path.splitext(os.path.basename(filename))
+        if ext == '.ucp':
+            monobit.font.Codepage.override(f'cp{cp_name}', f'{os.getcwd()}/{CODEPAGE_DIR}/{filename}')
+
     try:
         os.mkdir('work')
     except OSError:
         pass
-    os.chdir('work')
     try:
-        os.mkdir('hex')
-    except OSError:
-        pass
-    try:
-        os.mkdir('rom')
+        os.mkdir('work/yaff')
     except OSError:
         pass
 
     # unpack zipfile
-    pack = zipfile.ZipFile('../' + fdzip, 'r')
-    for name in cpi_names:
-        pack.extract(cpi_prefix + name)
-        subprocess.call(['upx', '-d', cpi_prefix + name])
+    os.chdir('work')
+    pack = zipfile.ZipFile('../' + FDZIP, 'r')
+    # extract cpi files from compressed cpx files
+    for name in CPI_NAMES:
+        pack.extract(CPI_DIR + name)
+        subprocess.call(['upx', '-d', CPI_DIR + name])
+    os.chdir('..')
 
-    # retrieve forced choices
-    forced = {}
-    multidict = {8: {}, 14: {}, 16: {}}
-    dropped = {8: {}, 14: {}, 16: {}}
-    with open('../choices', 'r') as f:
+    # load CPIs and add to dictionary
+    fonts = {8: {}, 14: {}, 16: {}}
+    for cpi_name in CPI_NAMES:
+        logging.info(f'Reading {cpi_name}')
+        cpi = monobit.load(f'work/{CPI_DIR}{cpi_name}', format='cpi')
+        for font in cpi:
+            codepage = font.encoding # always starts with `cp`
+            height = font.bounding_box[1]
+            # save intermediate file
+            monobit.Typeface([font.add_glyph_names()]).save(
+                f'work/yaff/{cpi_name}_{codepage}_{font.pixel_size:02d}.yaff'
+            )
+            fonts[font.pixel_size][(cpi_name, codepage)] = font
+
+    # retrieve preferred picks from choices file
+    logging.info('Processing choices')
+    choices = defaultdict(list)
+    with open(CHOICES, 'r') as f:
         for line in f:
             if line and line[0] in ('#', '\n'):
                 continue
             codepoint, codepagestr = line.strip('\n').split(':', 1)
-            ucs = unichr(int(codepoint, 16))
-            codepage = codepagestr.split(':')
-            forced[ucs] = (int(codepage[0]), codepage[1] if codepage[1:] else None)
-    # load CPIs and add to dictionary
-    for cpi_name in cpi_names:
-        print
-        print cpi_name
-        cpi = open(cpi_prefix + cpi_name, 'rb')
-        # 23-byte header
-        cpi.read(23)
-        # get number codepages in this file
-        num = chars_to_uint(cpi.read(2))
-        for _ in range(num):
-            codepage = read_codepage_header(cpi)
-            num_fonts = read_font_header(cpi)
-            fonts = {}
-            print '[', codepage, ']',
-            for _ in range(num_fonts):
-                height, font = load_cpi_font(cpi)
-                print height,
-                # save intermediate ROM font
-                save_rom_font(font, 'rom/%s_%d_%02d.fnt' % (cpi_name, codepage, height))
-                try:
-                    unitbl = load_codepage(os.path.join('..', ucp_loc, str(codepage)+'.ucp'))
-                except Exception as e:
-                    print codepage, height, e
-                else:
-                    for key, value in unitbl.iteritems():
-                        unikey = unitbl[key]
-                        glyph = font[ord(key)]
-                        if (unikey in forced and
-                                    (codepage, cpi_name) != forced[unikey] and
-                                    (codepage, None) != forced[unikey]):
-                            # do not add forced chars
-                            #print "dropping", hex(ord(unikey)), codepage, cpi_name, repr(forced[unikey])
-                            add_to_multidict(dropped[height], unikey, glyph)
-                        else:
-                            add_to_multidict(multidict[height], unikey, glyph)
-                    # save intermediate HEX
-                    write_hex('hex/%s_%d_%02d.hex' % (cpi_name, codepage, height), font, unitbl)
-            print
-    pua = range(0xe000, 0xf900)
-    for height in (8, 14, 16):
-        keys = sorted(multidict[height].keys())
-        # write out all except pua
-        with open('base_%02d.hex' % height, 'w') as f:
-            # header
-            with open ('../header.txt', 'r') as h:
-                for line in h:
-                    f.write(line)
-            for key in keys:
-                if len(key) > 1 or ord(key) not in pua:
-                    for glyph in multidict[height][key]:
-                        f.write(hexline(key, glyph))
-        # write out pua
-        with open('pua_%02d.hex' % height, 'w') as f:
-            for unicp in pua:
-                try:
-                    for glyph in multidict[height][unichr(unicp)]:
-                        f.write(hexline(unichr(unicp), glyph))
-                except KeyError:
-                    pass
-        # write out dropped glyphs
-        with open('dropped_%02d.hex' % height, 'w') as f:
-            for unicp, glyphset in dropped[height].iteritems():
-                for glyph in glyphset:
-                    # only output what differs from base
-                    if unicp not in multidict[height] or glyph not in multidict[height][unicp]:
-                        f.write(hexline(unicp, glyph))
+            label = f'u+{codepoint}'.lower()
+            codepage_info = codepagestr.split(':') # e.g. 852:ega.cpx
+            if len(codepage_info) > 1:
+                codepage, cpi_name = codepage_info[:2]
+            else:
+                codepage, cpi_name = codepage_info[0], None
+            choices[(cpi_name, f'cp{codepage}')].append(label)
 
-        #print multidict[16].keys()
+    # read header
+    logging.info('Processing header')
+    with open(HEADER, 'r') as header:
+        comments = tuple(_line[2:].rstrip() for _line in header)
+
+    # merge preferred picks
+    logging.info('Merging choices')
+    final_font = {}
+    for size, fontdict in fonts.items():
+        final_font[size] = monobit.font.Font([], comments=comments)
+        for (cpi_name_0, codepage_0), labels in choices.items():
+            for (cpi_name_1, codepage_1), font in fontdict.items():
+                if (
+                        (codepage_0 == codepage_1)
+                        and (cpi_name_0 is None or cpi_name_0 == cpi_name_1)
+                    ):
+                    final_font[size] = final_font[size].merged_with(font.subset(labels))
+
+    # merge other fonts
+    logging.info('Merging remaining fonts')
+    for size, fontdict in fonts.items():
+        for font in fontdict.values():
+            final_font[size] = final_font[size].merged_with(font)
+
+    # exclude personal use area code points
+    logging.info('Removing private use area')
+    pua_keys = set(f'u+{_code:04x}' for _code in range(0xe000, 0xf900))
+    pua_font = {_size: _font.subset(pua_keys) for _size, _font in final_font.items()}
+    for size, font in pua_font.items():
+        monobit.Typeface([font]).save(f'work/pua_{size:02d}.hex', format='hext')
+    final_font = {_size: _font.without(pua_keys) for _size, _font in final_font.items()}
+
+    # output
+    logging.info('Writing output')
+    for size, font in final_font.items():
+        monobit.Typeface([font]).save(f'freedos_{size:02d}.hex', format='hext')
+
 
 main()

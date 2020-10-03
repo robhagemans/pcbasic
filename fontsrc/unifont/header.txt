@@ -1,19 +1,25 @@
 # GNU UniFont
 #
-# This file includes the Unicode Plane 0 glyphs from GNU UniFont 8.0.01.
-# Unassigned, non-character and private use code points are left blank.
-# In other words, it consists of the following .HEX files concatenated:
-#   plane00/hangul-syllables.hex  
-#   plane00/spaces.hex  
-#   plane00/unifont-base.hex  
+# This file includes the Unicode Plane 0 glyphs from GNU UniFont 13.0.03.
+# Unassigned, nonprinting and private use code points are left blank.
+#
+# In other words, it consists of the following .HEX files:
+#   plane00/hangul-syllables.hex
+#   plane00/spaces.hex
+#   plane00/thaana.hex
+#   plane00/unifont-base.hex
 #   plane00/wqy.hex
-# GNU UniFont can be obtained at 
-# * https://savannah.gnu.org/projects/unifont
+# of which nonprinting ranges 00-1F and 7F-9F have been omitted.
+#
+# The source tarball can be obtained at
+# * https://ftp.gnu.org/gnu/unifont/unifont-13.0.03/unifont-13.0.03.tar.gz
+# GNU UniFont project pages
 # * http://unifoundry.com/unifont.html
+# * https://savannah.gnu.org/projects/unifont
 #
 # AUTHORS:
 #     Roman Czyborra created the original GNU Unifont, including the
-#     .hex format. 
+#     .hex format.
 #
 #     David Starner aggregated many glyphs contributed by others and
 #     incorporated these into pre-2004 Unifont releases.
