@@ -187,10 +187,10 @@ b9:2563
 ba:2551
 bb:2557
 bc:255d
-# Latin capital letter IE
-bd:f521
-# Latin small letter IE
-be:f522
+# Latin capital letter IE - I, zwj, E
+bd:0049,200d,0045
+# Latin small letter IE - i, zwj, e
+be:0069,200d,0065
 bf:2510
 c0:2514
 c1:2534
@@ -225,10 +225,10 @@ d9:2518
 da:250c
 db:2588
 dc:2584
-# Latin capital letter UO
-dd:f525
-# Latin small letter UO
-de:f526
+# Latin capital letter UO - U, zwj, O
+dd:0055,200d,004f
+# Latin small letter UO - u, zwj, o
+de:0075,200d,006f
 df:2580
 e0:0440
 e1:0441

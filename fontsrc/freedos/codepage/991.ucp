@@ -153,8 +153,8 @@
 98:015a
 99:00d6
 9a:00dc
-# Polish Zloty sign
-9b:f401
+# Polish Zloty sign - encode as z, zwj, ł
+9b:007a,200d,0142
 9c:0141
 9d:00a5
 9e:015b

@@ -163,8 +163,8 @@
 9c:00a3
 9d:00a5
 9e:20a7
-# forint sign, Ft - mapped to private use area
-9f:f402
+# forint sign, Ft - encode as F, zwj, t
+9f:0046,200d,0074
 a0:00e1
 a1:00ed
 a2:00f3
