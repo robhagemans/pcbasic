@@ -242,9 +242,8 @@ f0:00ad
 f1:00b1
 f2:2017
 f3:00be
-# variant glyph of 0x14, map to PUA
-f4:F702
-#f4:00b6
+# variant of 0x14
+f4:00b6
 f5:00a7
 f6:00f7
 f7:00b8

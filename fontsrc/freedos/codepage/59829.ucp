@@ -164,6 +164,7 @@ A2:10F2
 A3:10F3
 A4:10F4
 A5:10F5
+# this glyph looks like GEORGIAN LETTER SHIN with an unknown modifier
 # doesn't seem to have a unicode codepoint; assign to pua
 A6:f400
 a7:00ba
