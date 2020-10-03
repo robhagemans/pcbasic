@@ -34,6 +34,7 @@ def _get_font(name, height):
     except ResourceFailed as e:
         logging.debug('Failed to load %d-pixel font `%s`: %s', height, name, e)
 
+
 def read_fonts(codepage_dict, font_families):
     """Load font typefaces."""
     # load the graphics fonts, including the 8-pixel RAM font
@@ -72,45 +73,7 @@ def load_hex(hex_resources, height, all_needed):
     for hexres in reversed(hex_resources):
         if hexres is None:
             continue
-        for line in hexres.splitlines():
-            # ignore empty lines and comment lines (first char is #)
-            if (not line) or (line[:1] == b'#'):
-                continue
-            # strip off comments
-            # split unicodepoint and hex string (max 32 chars)
-            ucs_str, fonthex = line.split(b':')
-            # get rid of spaces
-            ucs_str = b''.join(ucs_str.split()).upper()
-            # skip grapheme clusters we won't need
-            if ucs_str not in needed_sequences:
-                continue
-            # remove from needed list
-            needed_sequences -= {ucs_str}
-            ucs_sequence = ucs_str.split(b',')
-            fonthex = fonthex.split(b'#')[0].strip()
-            # extract codepoint and hex string;
-            # discard anything following whitespace; ignore malformed lines
-            try:
-                # construct grapheme cluster
-                c = u''.join(unichr(int(_ucshex.strip(), 16)) for _ucshex in ucs_sequence)
-                # skip chars we already have
-                if (c in fontdict):
-                    continue
-                # string must be 32-byte or 16-byte; cut to required font size
-                if len(fonthex) < 32:
-                    raise ValueError
-                if len(fonthex) < 64:
-                    fonthex = fonthex[:2*height]
-                else:
-                    fonthex = fonthex[:4*height]
-                fontdict[c] = binascii.unhexlify(fonthex)
-            except Exception as e:
-                logging.warning('Could not parse line in font file: %s', repr(line))
-            # remove newly found char
-            # stop if we have all we need
-            missing -= {c}
-            if not missing:
-                break
+        missing = _get_glyphs_from_hex(height, hexres, fontdict, missing, needed_sequences)
     missing = _combine_glyphs(height, fontdict, missing)
     # fill missing with nulls
     fontdict.update({_u: b'\0' * height for _u in missing})
@@ -120,6 +83,50 @@ def load_hex(hex_resources, height, all_needed):
     # warn if we miss needed glyphs
     _warn_missing(height, missing)
     return fontdict
+
+
+def _get_glyphs_from_hex(height, hexres, fontdict, missing, needed_sequences):
+    for line in hexres.splitlines():
+        # ignore empty lines and comment lines (first char is #)
+        if (not line) or (line[:1] == b'#'):
+            continue
+        # strip off comments
+        # split unicodepoint and hex string (max 32 chars)
+        ucs_str, fonthex = line.split(b':')
+        # get rid of spaces
+        ucs_str = b''.join(ucs_str.split()).upper()
+        # skip grapheme clusters we won't need
+        if ucs_str not in needed_sequences:
+            continue
+        # remove from needed list
+        needed_sequences -= {ucs_str}
+        ucs_sequence = ucs_str.split(b',')
+        fonthex = fonthex.split(b'#')[0].strip()
+        # extract codepoint and hex string;
+        # discard anything following whitespace; ignore malformed lines
+        try:
+            # construct grapheme cluster
+            c = u''.join(unichr(int(_ucshex.strip(), 16)) for _ucshex in ucs_sequence)
+            # skip chars we already have
+            if (c in fontdict):
+                continue
+            # cut to required font size
+            if len(fonthex) < 64:
+                # 8xN glyph
+                fonthex = fonthex[:2*height]
+            else:
+                # 16x16 glyph
+                fonthex = fonthex[:4*height]
+            fontdict[c] = binascii.unhexlify(fonthex)
+        except Exception as e:
+            logging.warning('Could not parse line in font file: %s: %s', repr(line), e)
+        # remove newly found char
+        # stop if we have all we need
+        missing -= {c}
+        if not missing:
+            break
+    return missing
+
 
 def _combine_glyphs(height, fontdict, missing):
     """Fix missing grapheme clusters by combining components."""
@@ -142,6 +149,7 @@ def _combine_glyphs(height, fontdict, missing):
                 fontdict[cluster] = bytes(clusterglyph)
                 success.add(cluster)
     return missing - success
+
 
 def _warn_missing(height, missing, max_warnings=5):
     """Warn if we miss needed glyphs."""
