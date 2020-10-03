@@ -33,10 +33,6 @@ def main():
     except OSError:
         pass
     os.chdir('work')
-    #try:
-    #    os.mkdir('yaff')
-    #except OSError:
-    #    pass
     try:
         os.mkdir('hex')
     except OSError:
@@ -49,7 +45,6 @@ def main():
         pack.extract(CPI_DIR + name)
         subprocess.call(['upx', '-d', CPI_DIR + name])
 
-
     # load CPIs and add to dictionary
     fonts = {8: {}, 14: {}, 16: {}}
     for cpi_name in CPI_NAMES:
@@ -57,18 +52,12 @@ def main():
         cpi = monobit.load(f'{CPI_DIR}{cpi_name}', format='cpi')
         for font in cpi:
             codepage = font.encoding # always starts with `cp`
-            # save intermediate file
-            #monobit.Typeface([font]).save(
-            #    f'yaff/{cpi_name}_{codepage}_{font.pixel_size:02d}.yaff'
-            #)
             height = font.bounding_box[1]
-            # resize to allow saving as HEX
-            font = font.expand(0, 0, 0, 16-height)
-            fonts[font.pixel_size][(cpi_name, codepage)] = font
             # save intermediate file
             monobit.Typeface([font]).save(
                 f'hex/{cpi_name}_{codepage}_{font.pixel_size:02d}.hext'
             )
+            fonts[font.pixel_size][(cpi_name, codepage)] = font
 
     # retrieve preferred picks from choices file
     logging.info(f'Processing choices')
