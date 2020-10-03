@@ -19,7 +19,7 @@ CODEPAGE_DIR = 'codepage/'
 CPI_DIR = 'BIN/'
 CPI_NAMES = ['ega.cpx'] + [f'ega{_i}.cpx' for _i in range(2, 19)]
 HEADER = 'header.txt'
-
+CHOICES = 'choices'
 
 def main():
 
@@ -32,37 +32,38 @@ def main():
         os.mkdir('work')
     except OSError:
         pass
-    os.chdir('work')
     try:
         os.mkdir('hex')
     except OSError:
         pass
 
     # unpack zipfile
+    os.chdir('work')
     pack = zipfile.ZipFile('../' + FDZIP, 'r')
     # extract cpi files from compressed cpx files
     for name in CPI_NAMES:
         pack.extract(CPI_DIR + name)
         subprocess.call(['upx', '-d', CPI_DIR + name])
+    os.chdir('..')
 
     # load CPIs and add to dictionary
     fonts = {8: {}, 14: {}, 16: {}}
     for cpi_name in CPI_NAMES:
         logging.info(f'Reading {cpi_name}')
-        cpi = monobit.load(f'{CPI_DIR}{cpi_name}', format='cpi')
+        cpi = monobit.load(f'work/{CPI_DIR}{cpi_name}', format='cpi')
         for font in cpi:
             codepage = font.encoding # always starts with `cp`
             height = font.bounding_box[1]
             # save intermediate file
             monobit.Typeface([font]).save(
-                f'hex/{cpi_name}_{codepage}_{font.pixel_size:02d}.hext'
+                f'work/hex/{cpi_name}_{codepage}_{font.pixel_size:02d}.hext'
             )
             fonts[font.pixel_size][(cpi_name, codepage)] = font
 
     # retrieve preferred picks from choices file
     logging.info(f'Processing choices')
     choices = defaultdict(list)
-    with open('../choices', 'r') as f:
+    with open(CHOICES, 'r') as f:
         for line in f:
             if line and line[0] in ('#', '\n'):
                 continue
@@ -77,7 +78,7 @@ def main():
 
     # read header
     logging.info('Processing header')
-    with open('../' + HEADER, 'r') as header:
+    with open(HEADER, 'r') as header:
         comments = tuple(_line[2:].rstrip() for _line in header)
 
     # merge preferred picks
@@ -100,9 +101,6 @@ def main():
     for size, fontdict in fonts.items():
         for font in fontdict.values():
             final_font[size] = final_font[size].merged_with(font)
-        monobit.Typeface([final_font[size]]).save(
-            f'base_{size:02d}.hex', format='hext'
-        )
 
     # exclude personal use area code points
     logging.info(f'Removing private use keys')
@@ -112,7 +110,7 @@ def main():
     # output
     logging.info(f'Writing output')
     for size, font in final_font.items():
-        monobit.Typeface([font]).save(f'base_{size:02d}.hex', format='hext')
+        monobit.Typeface([font]).save(f'freedos_{size:02d}.hex', format='hext')
 
 
 main()
