@@ -14,46 +14,47 @@ import monobit
 
 logging.basicConfig(level=logging.INFO)
 
-fdzip = 'cpidos30.zip'
-ucp_loc = 'codepage/'
-cpi_prefix = 'BIN/'
-cpi_names = ['ega.cpx'] + [f'ega{i}.cpx' for i in range(2, 19)]
+FDZIP = 'cpidos30.zip'
+CODEPAGE_DIR = 'codepage/'
+CPI_DIR = 'BIN/'
+CPI_NAMES = ['ega.cpx'] + [f'ega{_i}.cpx' for _i in range(2, 19)]
+HEADER = 'header.txt'
 
 
 def main():
 
     # register custom FreeDOS codepages
-    for filename in os.listdir(ucp_loc):
+    for filename in os.listdir(CODEPAGE_DIR):
         cp_name, _ = os.path.splitext(os.path.basename(filename))
-        monobit.font.Codepage.override(f'cp{cp_name}', f'{os.getcwd()}/{ucp_loc}/{filename}')
+        monobit.font.Codepage.override(f'cp{cp_name}', f'{os.getcwd()}/{CODEPAGE_DIR}/{filename}')
 
     try:
         os.mkdir('work')
     except OSError:
         pass
     os.chdir('work')
-    try:
-        os.mkdir('yaff')
-    except OSError:
-        pass
+    #try:
+    #    os.mkdir('yaff')
+    #except OSError:
+    #    pass
     try:
         os.mkdir('hex')
     except OSError:
         pass
 
     # unpack zipfile
-    pack = zipfile.ZipFile('../' + fdzip, 'r')
+    pack = zipfile.ZipFile('../' + FDZIP, 'r')
     # extract cpi files from compressed cpx files
-    for name in cpi_names:
-        pack.extract(cpi_prefix + name)
-        subprocess.call(['upx', '-d', cpi_prefix + name])
+    for name in CPI_NAMES:
+        pack.extract(CPI_DIR + name)
+        subprocess.call(['upx', '-d', CPI_DIR + name])
 
 
     # load CPIs and add to dictionary
     fonts = {8: {}, 14: {}, 16: {}}
-    for cpi_name in cpi_names:
+    for cpi_name in CPI_NAMES:
         logging.info(f'Reading {cpi_name}')
-        cpi = monobit.load(f'{cpi_prefix}{cpi_name}', format='cpi')
+        cpi = monobit.load(f'{CPI_DIR}{cpi_name}', format='cpi')
         for font in cpi:
             codepage = font.encoding # always starts with `cp`
             # save intermediate file
@@ -85,11 +86,18 @@ def main():
                 codepage, cpi_name = codepage_info[0], None
             choices[(cpi_name, f'cp{codepage}')].append(label)
 
+    # read header
+    logging.info('Processing header')
+    with open('../' + HEADER, 'r') as header:
+        comments = tuple(_line[2:].rstrip() for _line in header)
+
     # merge preferred picks
     logging.info(f'Merging choices')
     final_font = {}
     for size, fontdict in fonts.items():
-        final_font[size] = monobit.font.Font([])
+        final_font[size] = monobit.font.Font(
+            [], comments=comments, properties=dict(encoding='unicode')
+        )
         for (cpi_name_0, codepage_0), labels in choices.items():
             for (cpi_name_1, codepage_1), font in fontdict.items():
                 if (
