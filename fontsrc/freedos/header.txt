@@ -8,10 +8,8 @@
 # The glyphs were mapped onto Unicode and converted to .HEX by Rob Hagemans.
 #
 # NOTES:
-# - CPIDOS contains several glyphs that have no corresponding code point in
-#   Unicode. These are not included in this file. Examples include
-#   Georgian Mkhedruli capital letters, the złoty and forint signs, and
-#   letters with multiple precomposed diacritics.
+# - CPIDOS contains several glyphs, such as the złoty sign, that have no
+#   corresponding code point in Unicode. These are not included in this file.
 # - A choice has been made between multiple glyph variants included in CPIDOS
 #   for some code points. In particular, for Greek glyphs, the variants from
 #   the Greek codepages have been preferred over those from the Latin pages.
