@@ -86,9 +86,7 @@ def main():
     logging.info('Merging choices')
     final_font = {}
     for size, fontdict in fonts.items():
-        final_font[size] = monobit.font.Font(
-            [], comments=comments, properties=dict(encoding='unicode')
-        )
+        final_font[size] = monobit.font.Font([], comments=comments)
         for (cpi_name_0, codepage_0), labels in choices.items():
             for (cpi_name_1, codepage_1), font in fontdict.items():
                 if (
