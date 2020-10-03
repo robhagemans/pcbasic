@@ -25,8 +25,9 @@ def main():
 
     # register custom FreeDOS codepages
     for filename in os.listdir(CODEPAGE_DIR):
-        cp_name, _ = os.path.splitext(os.path.basename(filename))
-        monobit.font.Codepage.override(f'cp{cp_name}', f'{os.getcwd()}/{CODEPAGE_DIR}/{filename}')
+        cp_name, ext = os.path.splitext(os.path.basename(filename))
+        if ext == '.ucp':
+            monobit.font.Codepage.override(f'cp{cp_name}', f'{os.getcwd()}/{CODEPAGE_DIR}/{filename}')
 
     try:
         os.mkdir('work')
