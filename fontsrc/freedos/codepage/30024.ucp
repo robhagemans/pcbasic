@@ -256,9 +256,9 @@ f9:0161
 fa:025b,0331,0308
 # latin capital letter open e with diaeresis and macron below
 fb:0190,0331,0308
-# latin small letter open o with diaeresis and macron below
-fc:0254,0331,0308
-# latin capital letter open o with diaeresis and macron below
-fd:0186,0331,0308
+# latin small letter open o with macron below
+fc:0254,0331
+# latin capital letter open o with macron below
+fd:0186,0331
 fe:25a0
 ff:00a0
