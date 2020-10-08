@@ -21,8 +21,7 @@ CPI_DIR = 'BIN/'
 CPI_NAMES = ['ega.cpx'] + [f'ega{_i}.cpx' for _i in range(2, 19)]
 HEADER = 'header.txt'
 CHOICES = 'choices'
-COMBINING = 'combining.yaff'
-ADDITIONS = 'additions.yaff'
+COMPONENTS = ('combining.yaff', 'additions.yaff', 'precomposed.yaff')
 
 
 def fullname(char):
@@ -117,17 +116,12 @@ def main():
 
     final_font = {}
     for size in fonts.keys():
-        if size != 16:
-            final_font[size] = monobit.font.Font([], comments=comments)
-        else:
-            # merge combining diacritics
-            logging.info('Merging combining diacritics.')
-            final_font[size] = monobit.load(COMBINING)[0]
-
-            # merging additions
-            logging.info('Merging non-FreeDOS glyphs.')
-            final_font[size] = final_font[size].merged_with(monobit.load(ADDITIONS)[0])
-
+        final_font[size] = monobit.font.Font([], comments=comments)
+        if size == 16:
+            for yaff in COMPONENTS:
+                # merging additions
+                logging.info(f'Merging {yaff}.')
+                final_font[size] = final_font[size].merged_with(monobit.load(yaff)[0])
 
     # merge preferred picks
     logging.info('Merging choices')
