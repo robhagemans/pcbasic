@@ -128,6 +128,7 @@ def main():
             logging.info('Merging non-FreeDOS glyphs.')
             final_font[size] = final_font[size].merged_with(monobit.load(ADDITIONS)[0])
 
+
     # merge preferred picks
     logging.info('Merging choices')
     for size, fontdict in fonts.items():
@@ -138,7 +139,6 @@ def main():
                         and (cpi_name_0 is None or cpi_name_0 == cpi_name_1)
                     ):
                     final_font[size] = final_font[size].merged_with(font.subset(labels))
-
 
     # merge other fonts
     logging.info('Merging remaining fonts')
@@ -158,6 +158,33 @@ def main():
     for size, font in pua_font.items():
         monobit.Typeface([font]).save(f'work/pua_{size:02d}.hex', format='hext')
     final_font = {_size: _font.without(pua_keys) for _size, _font in final_font.items()}
+
+    logging.info('Sorting glyphs')
+    for size in final_font.keys():
+        # first take the 437 subset
+        # note this'll be the Freedos 437 as we overrode it
+        keys437 = list(monobit.font.Codepage('cp437')._mapping.values())
+        glyphs437 = [
+            final_font[size].get_char(key)
+            for key in keys437
+        ]
+        labels437 = {
+            monobit.font.Label.from_unicode(_c): _i
+            for _i, _c in enumerate(keys437)
+        }
+        font437 = monobit.font.Font(
+            glyphs437, labels437, final_font[size]._comments
+        )
+        sorteddict = dict(sorted(
+            (str(unilabel), glyph)
+            for unilabel, glyph in final_font[size].iter_unicode()
+        ))
+        labeldict = {
+            label: index
+            for index, label in enumerate(sorteddict.keys())
+        }
+        sortedfont = monobit.font.Font(sorteddict.values(), labeldict)
+        final_font[size] = font437.merged_with(sortedfont)
 
     # output
     logging.info('Writing output')
