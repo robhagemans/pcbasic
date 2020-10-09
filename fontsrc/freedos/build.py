@@ -10,6 +10,7 @@ import subprocess
 import logging
 from unicodedata import normalize, name
 from collections import defaultdict
+from itertools import chain
 
 import monobit
 
@@ -22,13 +23,26 @@ CPI_NAMES = ['ega.cpx'] + [f'ega{_i}.cpx' for _i in range(2, 19)]
 HEADER = 'header.txt'
 CHOICES = 'choices'
 COMPONENTS = ('combining.yaff', 'additions.yaff', 'precomposed.yaff')
+UNIVGA = '../univga/univga_16.hex'
+
+# don't rebaseline box-drawing and vertically continuous characters
+UNIVGA_UNSHIFTED = chain(
+    range(0x2308, 0x230c), range(0x2320, 0x23b4), range(0x23b7, 0x23ba),
+    range(0x2500, 0x2600),
+)
+# exclude glyphs for nonprinting characters
+UNIVGA_NONPRINTING = chain(
+    range(0x2000, 0x2010), range(0x2011, 0x2012), range(0xfeff, 0xff00),
+)
 
 
 def fullname(char):
+    """Unicode codepoint and name."""
     return ','.join(f'U+{ord(_c):04X} {name(_c)}' for _c in char)
 
 
-def precompose(font):
+def precompose(font, max_glyphs):
+    """Create composed glyphs from combining up to `max_glyphs` glyphs."""
     composed_glyphs = {}
     codepoints = [cp.unicode for cp, _ in font.iter_unicode()]
     # run through all of plane 0
@@ -44,7 +58,7 @@ def precompose(font):
                 )
             else:
                 decomp = normalize('NFD', char)
-                if all(c in codepoints for c in decomp):
+                if len(decomp) <= max_glyphs and all(c in codepoints for c in decomp):
                     logging.info(f'Composing {fullname(char)} as {fullname(decomp)}.')
                     glyphs = (font.get_char(c) for c in decomp)
                     composed = monobit.glyph.Glyph.superimpose(glyphs)
@@ -113,7 +127,6 @@ def main():
     with open(HEADER, 'r') as header:
         comments = tuple(_line[2:].rstrip() for _line in header)
 
-
     final_font = {}
     for size in fonts.keys():
         final_font[size] = monobit.font.Font([], comments=comments)
@@ -140,10 +153,22 @@ def main():
         for font in fontdict.values():
             final_font[size] = final_font[size].merged_with(font)
 
-    # precompose glyphs
-    logging.info('Precompose glyphs.')
+    # assign length-1 equivalents
+    logging.info('Assign canonical equivalents.')
     for size in final_font.keys():
-        final_font[size] = precompose(final_font[size])
+        final_font[size] = precompose(final_font[size], max_glyphs=1)
+
+    # read univga
+    logging.info('Add uni-vga box-drawing glyphs.')
+    univga = monobit.load(UNIVGA)[0]
+    box_glyphs = univga.subset(f'u+{_code:04x}' for _code in UNIVGA_UNSHIFTED)
+    final_font[16] = final_font[16].merged_with(box_glyphs)
+
+    # shift uni-vga baseline down by one
+    logging.info('Add remaining uni-vga glyphs after rebaselining.')
+    univga_rebaselined = univga.without(f'u+{_code:04x}' for _code in UNIVGA_NONPRINTING)
+    univga_rebaselined = univga_rebaselined.expand(top=1).crop(bottom=1)
+    final_font[16] = final_font[16].merged_with(univga_rebaselined)
 
     # exclude personal use area code points
     logging.info('Removing private use area')
