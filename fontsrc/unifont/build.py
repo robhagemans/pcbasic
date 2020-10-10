@@ -3,7 +3,10 @@
 import tarfile
 from io import TextIOWrapper
 from itertools import chain
+from urllib import request
 
+
+UNIFONT_URL = 'https://ftp.gnu.org/gnu/unifont/unifont-13.0.03/unifont-13.0.03.tar.gz'
 UNIFONT = 'unifont-13.0.03.tar.gz'
 LOC = 'unifont-13.0.03/font/plane00/'
 HEXFILES = ('spaces.hex', 'unifont-base.hex', 'hangul-syllables.hex', 'wqy.hex', 'thaana.hex')
@@ -12,6 +15,9 @@ OUTPUT = 'unifont_16.hex'
 
 # remove nonprinting characters in unifont-base.hex
 NONPRINTING = tuple(f'{_c:04X}' for _c in chain(range(0x20), range(0x7f, 0xa0)))
+
+
+request.urlretrieve(UNIFONT_URL, UNIFONT)
 
 # concatenate header and extracted hex files
 with open(OUTPUT, 'w') as outfile:

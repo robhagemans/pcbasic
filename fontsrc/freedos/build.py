@@ -11,11 +11,13 @@ import logging
 from unicodedata import normalize, name
 from collections import defaultdict
 from itertools import chain
+from urllib import request
 
 import monobit
 
 logging.basicConfig(level=logging.INFO)
 
+CPIDOS_URL = 'http://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/dos/cpi/cpidos30.zip'
 FDZIP = 'cpidos30.zip'
 CODEPAGE_DIR = 'codepage/'
 CPI_DIR = 'BIN/'
@@ -82,6 +84,10 @@ def main():
         os.mkdir('work/yaff')
     except OSError:
         pass
+
+    # obtain original zip file
+    logging.info('Downloading CPIDOS.')
+    request.urlretrieve(CPIDOS_URL, FDZIP)
 
     # unpack zipfile
     os.chdir('work')
