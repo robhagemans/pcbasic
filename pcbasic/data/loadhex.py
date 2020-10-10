@@ -10,6 +10,7 @@ import sys
 import pkg_resources
 import logging
 import binascii
+import unicodedata
 
 from ..compat import iteritems, itervalues, unichr, iterchar
 
@@ -64,7 +65,7 @@ def load_hex(hex_resources, height, all_needed):
     """Load a set of overlaying unifont .hex files."""
     fontdict = {}
     # get elements of codepoint sequences in case we need to combine glyphs
-    elements = set.union(*(set(_c) for _c in all_needed))
+    elements = set.union(*(set(unicodedata.normalize('NFD', _c)) for _c in all_needed))
     all_needed = set(all_needed).union(elements)
     # transform the (smaller) set of needed chars into sequences for comparison
     # rather than the (larger) set of available sequences into chars
@@ -133,12 +134,14 @@ def _combine_glyphs(height, fontdict, missing):
     success = set()
     for cluster in missing:
         if cluster not in fontdict:
+            # fully decompose the grapheme cluster
+            decomposed = unicodedata.normalize('NFD', cluster)
             # try to combine grapheme clusters first
-            if len(cluster) > 1:
+            if len(decomposed) > 1:
                 # combine strings
                 clusterglyph = bytearray(height)
                 try:
-                    for c in cluster:
+                    for c in decomposed:
                         for y, row in enumerate(iterchar(fontdict[c])):
                             clusterglyph[y] |= ord(row)
                 except KeyError as e:
