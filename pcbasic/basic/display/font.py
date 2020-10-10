@@ -140,7 +140,7 @@ class Font(object):
         if self._width != width or self._height != height:
             self._width = width
             self._height = height
-            # buid the basic 256 codepage characters
+            # build the basic 256 codepage characters
             for _c in range(256):
                 self._build_glyph(self._byte_to_char(_c), fullwidth=False)
         return self
@@ -179,6 +179,8 @@ class Font(object):
             byteseq = bytearray(self._height)
         # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
         code_height = 8 if self._height == 9 else self._height
+        if len(byteseq) < code_height:
+            byteseq = byteseq.ljust(code_height, b'\0')
         glyph = bytematrix.ByteMatrix.frompacked(byteseq, code_height, items_per_byte=8)
         # stretch or sqeeze if necessary
         req_width = self._width * (2 if fullwidth else 1)
