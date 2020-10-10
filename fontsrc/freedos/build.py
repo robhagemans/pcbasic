@@ -34,6 +34,7 @@ UNIVGA_UNSHIFTED = chain(
 )
 # exclude glyphs for nonprinting characters
 UNIVGA_NONPRINTING = chain(
+    range(0x0000, 0x0020), range(0x007f, 0x00a0),
     range(0x2000, 0x2010), range(0x2011, 0x2012), range(0xfeff, 0xff00),
 )
 
