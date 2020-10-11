@@ -93,13 +93,14 @@ class Display(object):
         # .833 == 5:6 corresponding to screen aspect ratio of 4:3
         # --> old value SCREEN 3 pixel aspect 1968/1000 not quite (but almost) consistent with this
         #     and I don't think it was really checked on Tandy -- dosbox won't run SCREEN 3
-        # graphics operations
-        self.graphics = graphics.Graphics(
-            input_methods, self._values, self._memory, aspect
-        )
+        #
         # colour palette
         self.colourmap = self.mode.colourmap(
             self._queues, self._adapter, self._monitor, self.colorswitch
+        )
+        # graphics operations
+        self.graphics = graphics.Graphics(
+            input_methods, self._values, self._memory, aspect, self.colourmap
         )
         # initialise a fresh textmode screen
         self._set_mode(self.mode, 1, 0, 0, erase=True)

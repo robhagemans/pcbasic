@@ -163,7 +163,7 @@ class GraphicsViewPort(object):
 class Graphics(object):
     """Graphics operations."""
 
-    def __init__(self, input_methods, values, memory, aspect):
+    def __init__(self, input_methods, values, memory, aspect, colourmap):
         """Initialise graphics object."""
         # for apagenum and attr
         self._values = values
@@ -183,6 +183,7 @@ class Graphics(object):
         self._draw_angle = None
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         self._screen_aspect = aspect
+        self._colourmap = colourmap
 
     def init_mode(self, mode, pages, num_attr):
         """Initialise for new graphics mode."""
@@ -219,8 +220,8 @@ class Graphics(object):
         """Get the colour attribute for the specified index."""
         if attr_index == -1:
             # foreground; graphics 'background' attrib is always 0
-            # FIXME - isn't this split_attr's job?
-            return self._attr & 0xf
+            attr, _, _, _ = self._colourmap.split_attr(self._attr)
+            return attr
         elif not attr_index:
             return 0
         return min(self._num_attr-1, max(0, attr_index))
