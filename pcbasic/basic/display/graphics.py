@@ -821,26 +821,26 @@ class Graphics(object):
             if ydir == 0:
                 if y + 1 <= bound_y1:
                     line_seed = self._check_scanline(
-                        line_seed, x_left, x_right, y+1, tile, bg_tile, border_attr, 1
+                        line_seed, x_left, x_right, y+1, tile, is_solid, bg_tile, border_attr, 1
                     )
                 if y - 1 >= bound_y0:
                     line_seed = self._check_scanline(
-                        line_seed, x_left, x_right, y-1, tile, bg_tile, border_attr, -1
+                        line_seed, x_left, x_right, y-1, tile, is_solid, bg_tile, border_attr, -1
                     )
             else:
                 # check the same interval one scanline onward in the same direction
                 if y+ydir <= bound_y1 and y+ydir >= bound_y0:
                     line_seed = self._check_scanline(
-                        line_seed, x_left, x_right, y+ydir, tile, bg_tile, border_attr, ydir
+                        line_seed, x_left, x_right, y+ydir, tile, is_solid, bg_tile, border_attr, ydir
                     )
                 # check any bit of the interval that was extended one scanline backward
                 # this is where the flood fill goes around corners.
                 if y-ydir <= bound_y1 and y-ydir >= bound_y0:
                     line_seed = self._check_scanline(
-                        line_seed, x_left, x_start-1, y-ydir, tile, bg_tile, border_attr, -ydir
+                        line_seed, x_left, x_start-1, y-ydir, tile, is_solid, bg_tile, border_attr, -ydir
                     )
                     line_seed = self._check_scanline(
-                        line_seed, x_stop+1, x_right, y-ydir, tile, bg_tile, border_attr, -ydir
+                        line_seed, x_stop+1, x_right, y-ydir, tile, is_solid, bg_tile, border_attr, -ydir
                     )
             # draw the pixels for the current interval
             if is_solid:
@@ -883,7 +883,7 @@ class Graphics(object):
 
     def _check_scanline(
             self, line_seed, x_start, x_stop, y,
-            tile, bg_tile, border_attr, ydir
+            tile, is_solid, bg_tile, border_attr, ydir
         ):
         """Append all subintervals between border colours to the scanning stack."""
         if x_stop < x_start:
@@ -903,8 +903,10 @@ class Graphics(object):
                 # check if scanline pattern matches fill pattern
                 tile_x = x % rtile.width
                 has_same_pattern = (
-                    # never match zero pattern (special case)
-                    rtile != ZERO_TILE[0, :rtile.width]
+                    # don't match zero row unless pattern is solid (special case)
+                    # - avoid breaking off pattern filling on zero rows
+                    # - but also don't loop forever on solid background fills
+                    (is_solid or rtile != ZERO_TILE[0, :rtile.width])
                     and pattern == repeated_tile[0, tile_x : tile_x+pattern.width]
                 )
                 # background tile specified: don't stop if we match the background tile (fully!)
