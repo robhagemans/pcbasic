@@ -907,6 +907,8 @@ class Graphics(object):
                     # don't match zero row unless pattern is solid (special case)
                     # - avoid breaking off pattern filling on zero rows
                     # - but also don't loop forever on solid background fills
+                    # - if the fill attribute is not 0, the behaviour differs:
+                    #   here, the fill breaks off on encountering the matching solid line
                     (is_solid or rtile != ZERO_TILE[0, :rtile.width])
                     and pattern == repeated_tile[0, tile_x : tile_x+pattern.width]
                 )
