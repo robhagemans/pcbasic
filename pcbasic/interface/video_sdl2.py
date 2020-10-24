@@ -24,7 +24,6 @@ from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base import bytematrix
 from ..basic.base.eascii import as_unicode as uea
-from ..data.resources import ICON
 from .video import VideoPlugin
 from . import window
 from . import clipboard
@@ -43,6 +42,9 @@ N_BLINK_STATES = 4
 BLINK_TIME = 120
 CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
 
+
+# blank icon
+BLANK_ICON = ((0,) * 16) * 16
 
 
 ###############################################################################
@@ -329,7 +331,7 @@ class VideoSDL2(VideoPlugin):
 
     def __init__(
             self, input_queue, video_queue,
-            caption=u'', icon=ICON,
+            caption=u'', icon=BLANK_ICON,
             scaling=None, dimensions=None, aspect_ratio=(4, 3), border_width=0, fullscreen=False,
             prevent_close=False, mouse_clipboard=True,
             **kwargs
@@ -362,7 +364,7 @@ class VideoSDL2(VideoPlugin):
         # set to true if blinking attributes occur in palette
         self._palette_blinks = False
         # load the icon
-        self._icon = bytematrix.ByteMatrix(len(ICON), len(ICON[0]), ICON).hrepeat(2).vrepeat(2)
+        self._icon = bytematrix.ByteMatrix(len(icon), len(icon[0]), icon).hrepeat(2).vrepeat(2)
         # mouse setups
         self._mouse_clip = mouse_clipboard
         # keyboard setup
