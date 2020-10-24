@@ -26,6 +26,7 @@ HEADER = 'header.txt'
 CHOICES = 'choices'
 COMPONENTS = ('combining.yaff', 'additions.yaff', 'precomposed.yaff')
 UNIVGA = '../univga/univga_16.hex'
+SIZES = (8, 14, 16)
 
 # don't rebaseline box-drawing and vertically continuous characters
 UNIVGA_UNSHIFTED = chain(
@@ -75,7 +76,7 @@ def main():
     for filename in os.listdir(CODEPAGE_DIR):
         cp_name, ext = os.path.splitext(os.path.basename(filename))
         if ext == '.ucp':
-            monobit.font.Codepage.override(f'cp{cp_name}', f'{os.getcwd()}/{CODEPAGE_DIR}/{filename}')
+            monobit.Codepage.override(f'cp{cp_name}', f'{os.getcwd()}/{CODEPAGE_DIR}/{filename}')
 
     try:
         os.mkdir('work')
@@ -85,6 +86,17 @@ def main():
         os.mkdir('work/yaff')
     except OSError:
         pass
+
+    # read header
+    logging.info('Processing header')
+    with open(HEADER, 'r') as header:
+        comments = tuple(_line[2:].rstrip() for _line in header)
+
+    # create empty fonts with header
+    final_font = {
+        size: monobit.font.Font([], comments=comments)
+        for size in SIZES
+    }
 
     # obtain original zip file
     logging.info('Downloading CPIDOS.')
@@ -100,7 +112,7 @@ def main():
     os.chdir('..')
 
     # load CPIs and add to dictionary
-    fonts = {8: {}, 14: {}, 16: {}}
+    freedos_fonts = {_size: {} for _size in SIZES}
     for cpi_name in CPI_NAMES:
         logging.info(f'Reading {cpi_name}')
         cpi = monobit.load(f'work/{CPI_DIR}{cpi_name}', format='cpi')
@@ -108,10 +120,11 @@ def main():
             codepage = font.encoding # always starts with `cp`
             height = font.bounding_box[1]
             # save intermediate file
-            monobit.Typeface([font.add_glyph_names()]).save(
+            monobit.save(
+                font.add_glyph_names(),
                 f'work/yaff/{cpi_name}_{codepage}_{font.pixel_size:02d}.yaff'
             )
-            fonts[font.pixel_size][(cpi_name, codepage)] = font
+            freedos_fonts[font.pixel_size][(cpi_name, codepage)] = font
 
     # retrieve preferred picks from choices file
     logging.info('Processing choices')
@@ -129,23 +142,16 @@ def main():
                 codepage, cpi_name = codepage_info[0], None
             choices[(cpi_name, f'cp{codepage}')].append(label)
 
-    # read header
-    logging.info('Processing header')
-    with open(HEADER, 'r') as header:
-        comments = tuple(_line[2:].rstrip() for _line in header)
-
-    final_font = {}
-    for size in fonts.keys():
-        final_font[size] = monobit.font.Font([], comments=comments)
+    # merge locally drawn glyphs
+    for size in SIZES:
         if size == 16:
             for yaff in COMPONENTS:
-                # merging additions
                 logging.info(f'Merging {yaff}.')
-                final_font[size] = final_font[size].merged_with(monobit.load(yaff)[0])
+                final_font[size] = final_font[size].merged_with(monobit.load(yaff))
 
-    # merge preferred picks
-    logging.info('Merging choices')
-    for size, fontdict in fonts.items():
+    # merge preferred picks from FreeDOS fonts
+    logging.info('Add freedos preferred glyphs')
+    for size, fontdict in freedos_fonts.items():
         for (cpi_name_0, codepage_0), labels in choices.items():
             for (cpi_name_1, codepage_1), font in fontdict.items():
                 if (
@@ -155,8 +161,8 @@ def main():
                     final_font[size] = final_font[size].merged_with(font.subset(labels))
 
     # merge other fonts
-    logging.info('Merging remaining fonts')
-    for size, fontdict in fonts.items():
+    logging.info('Add remaining freedos glyphs')
+    for size, fontdict in freedos_fonts.items():
         for font in fontdict.values():
             final_font[size] = final_font[size].merged_with(font)
 
@@ -167,7 +173,7 @@ def main():
 
     # read univga
     logging.info('Add uni-vga box-drawing glyphs.')
-    univga = monobit.load(UNIVGA)[0]
+    univga = monobit.load(UNIVGA)
     box_glyphs = univga.subset(f'u+{_code:04x}' for _code in UNIVGA_UNSHIFTED)
     final_font[16] = final_font[16].merged_with(box_glyphs)
 
@@ -182,14 +188,14 @@ def main():
     pua_keys = set(f'u+{_code:04x}' for _code in range(0xe000, 0xf900))
     pua_font = {_size: _font.subset(pua_keys) for _size, _font in final_font.items()}
     for size, font in pua_font.items():
-        monobit.Typeface([font]).save(f'work/pua_{size:02d}.hex', format='hext')
+        monobit.save(font, f'work/pua_{size:02d}.hex', format='hext')
     final_font = {_size: _font.without(pua_keys) for _size, _font in final_font.items()}
 
     logging.info('Sorting glyphs')
     for size in final_font.keys():
         # first take the 437 subset
         # note this'll be the Freedos 437 as we overrode it
-        keys437 = list(monobit.font.Codepage('cp437')._mapping.values())
+        keys437 = list(monobit.Codepage('cp437')._mapping.values())
         glyphs437 = [
             final_font[size].get_char(key)
             for key in keys437
@@ -199,7 +205,7 @@ def main():
             for _i, _c in enumerate(keys437)
         }
         font437 = monobit.font.Font(
-            glyphs437, labels437, final_font[size]._comments
+            glyphs437, labels437, final_font[size].get_comments()
         )
         sorteddict = dict(sorted(
             (str(unilabel), glyph)
@@ -210,12 +216,12 @@ def main():
             for index, label in enumerate(sorteddict.keys())
         }
         sortedfont = monobit.font.Font(sorteddict.values(), labeldict)
-        final_font[size] = font437.merged_with(sortedfont)
+        final_font[size] = font437.merged_with(sortedfont).drop_comments()
 
     # output
     logging.info('Writing output')
     for size, font in final_font.items():
-        monobit.Typeface([font.drop_comments()]).save(f'freedos_{size:02d}.hex', format='hext')
+        monobit.save(font, f'freedos_{size:02d}.hex', format='hext')
 
 
 main()
