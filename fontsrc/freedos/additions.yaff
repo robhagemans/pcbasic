@@ -751,6 +751,25 @@ u+0243:
     ........
     ........
 
+# U+0244 LATIN CAPITAL LETTER U BAR
+u+0244:
+    ........
+    ........
+    ........
+    .@@..@@.
+    .@@..@@.
+    .@@..@@.
+    .@@..@@.
+    @@@@@@@@
+    .@@..@@.
+    .@@..@@.
+    .@@..@@.
+    .@@..@@.
+    ..@@@@..
+    ........
+    ........
+    ........
+
 
 # U+0248 LATIN CAPITAL LETTER J WITH STROKE
 u+0248:
@@ -977,6 +996,26 @@ u+0277:
     ........
 
 
+# present in freedos but redefined
+# uni-vga, rebaselined
+# U+0289 LATIN SMALL LETTER U BAR
+u+0289:
+    ........
+    ........
+    ........
+    ........
+    ........
+    ........
+    .@@..@@.
+    .@@..@@.
+    .@@..@@.
+    @@@@@@@@
+    .@@..@@.
+    .@@..@@.
+    ..@@@.@@
+    ........
+    ........
+    ........
 
 
 # [ʓ] LATIN SMALL LETTER EZH WITH CURL
@@ -1143,7 +1182,7 @@ u+0256:
     .....@@.
 
 
-# present in feedos but redefined
+# present in freedos but redefined
 # uni-vga, rebaselined
 # [ɗ] LATIN SMALL LETTER D WITH HOOK
 u+0257:
