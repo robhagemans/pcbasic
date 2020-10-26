@@ -24,9 +24,13 @@ CPI_DIR = 'BIN/'
 CPI_NAMES = ['ega.cpx'] + [f'ega{_i}.cpx' for _i in range(2, 19)]
 HEADER = 'header.txt'
 CHOICES = 'choices'
-COMPONENTS = ('combining.yaff', 'additions.yaff', 'precomposed.yaff')
 UNIVGA = '../univga/univga_16.hex'
 SIZES = (8, 14, 16)
+COMPONENTS = {
+    8: ('additions_08.yaff',),
+    14: ('additions_14.yaff',),
+    16: ('combining.yaff', 'additions.yaff', 'precomposed.yaff'),
+}
 
 # don't rebaseline box-drawing and vertically continuous characters
 UNIVGA_UNSHIFTED = chain(
@@ -141,10 +145,9 @@ def main():
 
     # merge locally drawn glyphs
     for size in SIZES:
-        if size == 16:
-            for yaff in COMPONENTS:
-                logging.info(f'Merging {yaff}.')
-                final_font[size] = final_font[size].merged_with(monobit.load(yaff))
+        for yaff in COMPONENTS[size]:
+            logging.info(f'Merging {yaff}.')
+            final_font[size] = final_font[size].merged_with(monobit.load(yaff))
 
     # merge preferred picks from FreeDOS fonts
     logging.info('Add freedos preferred glyphs')
