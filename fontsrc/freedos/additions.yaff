@@ -1015,7 +1015,6 @@ u+0277:
 
 
 # present in freedos but redefined
-# uni-vga, rebaselined
 # U+0289 LATIN SMALL LETTER U BAR
 u+0289:
     ........
@@ -1196,49 +1195,6 @@ u+02af:
     ......@@
 
 
-
-# present in freedos but redefined
-# uni-vga, rebaselined
-# [ɖ] LATIN SMALL LETTER D WITH TAIL
-u+0256:
-    ........
-    ........
-    ........
-    ...@@@..
-    ....@@..
-    ....@@..
-    ..@@@@..
-    .@@.@@..
-    @@..@@..
-    @@..@@..
-    @@..@@..
-    @@..@@..
-    .@@@@@..
-    ....@@..
-    ....@@.@
-    .....@@.
-
-
-# present in freedos but redefined
-# uni-vga, rebaselined
-# [ɗ] LATIN SMALL LETTER D WITH HOOK
-u+0257:
-    ........
-    ........
-    ........
-    .....@@.
-    ....@@.@
-    ....@@..
-    ..@@@@..
-    .@@.@@..
-    @@..@@..
-    @@..@@..
-    @@..@@..
-    @@..@@..
-    .@@@.@@.
-    ........
-    ........
-    ........
 
 
 # [ϒ] GREEK UPSILON WITH HOOK SYMBOL

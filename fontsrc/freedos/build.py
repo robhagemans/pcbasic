@@ -32,6 +32,13 @@ COMPONENTS = {
     16: ('combining.yaff', 'additions.yaff', 'precomposed.yaff'),
 }
 
+# don't use the glyphs from freedos, use uni-vga instead
+FREEDOS_DROP = (
+    '\u0256', # U+0256 LATIN SMALL LETTER D WITH TAIL
+    '\u0257', # U+0257 LATIN SMALL LETTER D WITH HOOK
+)
+
+
 # don't rebaseline box-drawing and vertically continuous characters
 UNIVGA_UNSHIFTED = chain(
     range(0x2308, 0x230c), range(0x2320, 0x23b4), range(0x23b7, 0x23ba),
@@ -178,6 +185,9 @@ def main():
     logging.info('Assign canonical equivalents.')
     for size in final_font.keys():
         final_font[size] = precompose(final_font[size], max_glyphs=1)
+
+    # drop glyphs with better alternatives in uni-vga
+    final_font[16] = final_font[16].without(FREEDOS_DROP)
 
     # read univga
     univga_orig = monobit.load(UNIVGA)
