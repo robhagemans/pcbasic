@@ -38,6 +38,13 @@ FREEDOS_DROP = (
     '\u0257', # U+0257 LATIN SMALL LETTER D WITH HOOK
 )
 
+FREEDOS_COPY = {
+    '\u2107': '\u0190', # U+2107 EULER CONSTANT <-- U+0190 LATIN CAPITAL LETTER OPEN E
+}
+
+UNIVGA_COPY = {
+    '\u2011': '\u2010', # U+2011 NON-BREAKING HYPHEN <-- U+2010 HYPHEN
+}
 
 # don't rebaseline box-drawing and vertically continuous characters
 UNIVGA_UNSHIFTED = chain(
@@ -189,6 +196,13 @@ def main():
     # drop glyphs with better alternatives in uni-vga
     final_font[16] = final_font[16].without(FREEDOS_DROP)
 
+    # copy glyphs (canonical equivalents have been covered before)
+    for size in final_font.keys():
+        for copy, orig in FREEDOS_COPY.items():
+            final_font[size] = final_font[size].with_glyph(
+                final_font[size].get_glyph(orig).set_annotations(char=copy)
+            )
+
     # read univga
     univga_orig = monobit.load(UNIVGA)
     # replace code points where necessary
@@ -205,6 +219,12 @@ def main():
     univga_rebaselined = univga.without(chr(_code) for _code in UNIVGA_NONPRINTING)
     univga_rebaselined = univga_rebaselined.expand(top=1).crop(bottom=1)
     final_font[16] = final_font[16].merged_with(univga_rebaselined)
+
+    # copy glyphs from uni-vga
+    for copy, orig in UNIVGA_COPY.items():
+        final_font[16] = final_font[16].with_glyph(
+            final_font[size].get_glyph(orig).set_annotations(char=copy)
+        )
 
     # exclude personal use area code points
     logging.info('Removing private use area')
