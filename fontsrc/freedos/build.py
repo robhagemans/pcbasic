@@ -36,6 +36,8 @@ COMPONENTS = {
 UNIVGA_UNSHIFTED = chain(
     range(0x2308, 0x230c), range(0x2320, 0x23b4), range(0x23b7, 0x23ba),
     range(0x2500, 0x2600),
+    # not a box drawing glyph but fits with 058d if unshifted
+    range(0x058e, 0x058f),
 )
 # exclude glyphs for nonprinting characters
 UNIVGA_NONPRINTING = chain(
@@ -43,6 +45,12 @@ UNIVGA_NONPRINTING = chain(
     range(0x2000, 0x2010), range(0x2011, 0x2012), range(0xfeff, 0xff00),
 )
 
+# wrong code points in uni-vga
+UNIVGA_REPLACE = {
+    '\u208f': '\u2099', # U+2099 LATIN SUBSCRIPT SMALL LETTER N
+    '\u0530': '\u058e', # U+058E LEFT-FACING ARMENIAN ETERNITY SIGN
+    # or just mirror 058d...
+}
 
 def fullname(char):
     """Unicode codepoint and name."""
@@ -172,8 +180,13 @@ def main():
         final_font[size] = precompose(final_font[size], max_glyphs=1)
 
     # read univga
+    univga_orig = monobit.load(UNIVGA)
+    # replace code points where necessary
+    univga = univga_orig.without(UNIVGA_REPLACE.keys())
+    for orig, repl in UNIVGA_REPLACE.items():
+        univga = univga.with_glyph(univga_orig.get_glyph(orig).set_annotations(char=repl))
+
     logging.info('Add uni-vga box-drawing glyphs.')
-    univga = monobit.load(UNIVGA)
     box_glyphs = univga.subset(chr(_code) for _code in UNIVGA_UNSHIFTED)
     final_font[16] = final_font[16].merged_with(box_glyphs)
 
