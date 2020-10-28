@@ -39,7 +39,28 @@ FREEDOS_DROP = (
 )
 
 FREEDOS_COPY = {
-    '\u2107': '\u0190', # U+2107 EULER CONSTANT <-- U+0190 LATIN CAPITAL LETTER OPEN E
+    # U+2107 EULER CONSTANT <-- U+0190 LATIN CAPITAL LETTER OPEN E
+    '\u2107': '\u0190',
+}
+
+FREEDOS_MIRROR = {
+    # U+01B8 LATIN CAPITAL LETTER EZH REVERSED <-- U+01B7 LATIN CAPITAL LETTER EZH
+    '\u01b8' : '\u01b7',
+    # U+01B9 LATIN SMALL LETTER EZH REVERSED <-- U+0292 LATIN SMALL LETTER EZH
+    '\u01b9': '\u0292',
+    # [ʕ] LATIN LETTER PHARYNGEAL VOICED FRICATIVE <-- U+0294 LATIN LETTER GLOTTAL STOP
+    '\u0295': '\u0294',
+    # U+02A2 LATIN LETTER REVERSED GLOTTAL STOP WITH STROKE <-- U+02A1 LATIN LETTER GLOTTAL STOP WITH STROKE
+    '\u02a2': '\u02a1',
+}
+
+FREEDOS_FLIP = {
+    # U+01BE LATIN LETTER INVERTED GLOTTAL STOP WITH STROKE <-- U+02A1 LATIN LETTER GLOTTAL STOP WITH STROKE
+    '\u01be': '\u02a1',
+    # U+0296 LATIN LETTER INVERTED GLOTTAL STOP <-- U+0294 LATIN LETTER GLOTTAL STOP
+    '\u0296': '\u0294',
+    # U+2127 INVERTED OHM SIGN <-- U+03A9 GREEK CAPITAL LETTER OMEGA
+    '\u2127': '\u03a9'
 }
 
 UNIVGA_COPY = {
@@ -199,9 +220,26 @@ def main():
     # copy glyphs (canonical equivalents have been covered before)
     for size in final_font.keys():
         for copy, orig in FREEDOS_COPY.items():
-            final_font[size] = final_font[size].with_glyph(
-                final_font[size].get_glyph(orig).set_annotations(char=copy)
-            )
+            try:
+                final_font[size] = final_font[size].with_glyph(
+                    final_font[size].get_glyph(orig).set_annotations(char=copy)
+                )
+            except KeyError as e:
+                logging.warning(e)
+        for copy, orig in FREEDOS_MIRROR.items():
+            try:
+                final_font[size] = final_font[size].with_glyph(
+                    final_font[size].get_glyph(orig).mirror().set_annotations(char=copy)
+                )
+            except KeyError as e:
+                logging.warning(e)
+        for copy, orig in FREEDOS_FLIP.items():
+            try:
+                final_font[size] = final_font[size].with_glyph(
+                    final_font[size].get_glyph(orig).flip().set_annotations(char=copy)
+                )
+            except KeyError as e:
+                logging.warning(e)
 
     # read univga
     univga_orig = monobit.load(UNIVGA)
