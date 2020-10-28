@@ -1,16 +1,4 @@
 
-name: combining 16
-point-size: 16
-spacing: character-cell
-
-# 0001--001f: controls
-# 007f--009f: controls
-
-
-###########################
-# Combining diacritical marks
-
-
 # [̀] COMBINING GRAVE ACCENT
 u+0300:
     .@@.....
@@ -89,6 +77,7 @@ u+0303:
     ........
     ........
     ........
+
 
 # U+0304 COMBINING MACRON
 u+0304:
@@ -229,6 +218,7 @@ u+030a:
     ........
     ........
 
+
 # U+030B COMBINING DOUBLE ACUTE
 u+030b:
     .@@..@@.
@@ -327,6 +317,7 @@ u+030f:
     ........
     ........
     ........
+
 
 # U+0310 COMBINING CANDRABINDU
 u+0310:
@@ -487,6 +478,7 @@ u+0317:
     ...@@...
     ..@@....
 
+
 # U+0318 COMBINING LEFT TACK BELOW
 u+0318:
     ........
@@ -546,6 +538,7 @@ u+031a:
     ........
     ........
 
+
 # U+031B COMBINING HORN
 u+031b:
     ........
@@ -566,7 +559,6 @@ u+031b:
     ........
 
 
-
 # U+031C COMBINING LEFT HALF RING BELOW
 u+031c:
     ........
@@ -585,8 +577,6 @@ u+031c:
     ..@@....
     .@@.....
     ..@@....
-
-
 
 
 # U+031D COMBINING UP TACK BELOW
@@ -648,6 +638,7 @@ u+031f:
     .@@@@@..
     ...@....
 
+
 # U+0320 COMBINING MINUS SIGN BELOW
 u+0320:
     ........
@@ -706,7 +697,6 @@ u+0322:
     ..@@....
     ..@@..@.
     ...@@@..
-
 
 
 # [̣] COMBINING DOT BELOW
@@ -828,6 +818,7 @@ u+0328:
     ..@@....
     ...@@@@.
 
+
 # U+0329 COMBINING VERTICAL LINE BELOW
 u+0329:
     ........
@@ -846,7 +837,6 @@ u+0329:
     ...@@...
     ...@@...
     ...@@...
-
 
 
 # U+032A COMBINING BRIDGE BELOW
@@ -1028,6 +1018,7 @@ u+0332:
     @@@@@@@@
     ........
 
+
 # U+0333 COMBINING DOUBLE LOW LINE
 u+0333:
     ........
@@ -1087,6 +1078,7 @@ u+0335:
     ........
     ........
 
+
 # U+0336 COMBINING LONG STROKE OVERLAY
 u+0336:
     ........
@@ -1145,7 +1137,6 @@ u+0338:
     .@......
     ........
     ........
-
 
 
 # U+0339 COMBINING RIGHT HALF RING BELOW
@@ -1288,15 +1279,12 @@ u+033f:
     ........
 
 
-
 # [̀] COMBINING GRAVE TONE MARK
 # u+0340 == u+0300
-
-
+#
 # [́] COMBINING ACUTE TONE MARK
 # u+0341 == u+0301
-
-
+#
 # U+0342 COMBINING GREEK PERISPOMENI
 u+0342:
     ..@@.@..
@@ -1319,10 +1307,10 @@ u+0342:
 
 # U+0343 COMBINING GREEK KORONIS
 # == u+0313
-
+#
 # U+0344 COMBINING GREEK DIALYTIKA TONOS
 # == u+0308,u+0301
-
+#
 # U+0345 COMBINING GREEK YPOGEGRAMMENI
 u+0345:
     ........
@@ -1402,6 +1390,7 @@ u+0348:
     .@@..@@.
     .@@..@@.
 
+
 # U+0349 COMBINING LEFT ANGLE BELOW
 u+0349:
     ........
@@ -1420,6 +1409,7 @@ u+0349:
     ........
     .@@@@@@.
     .....@@.
+
 
 # U+034A COMBINING NOT TILDE ABOVE
 u+034a:
@@ -1440,6 +1430,7 @@ u+034a:
     ........
     ........
 
+
 # U+034B COMBINING HOMOTHETIC ABOVE
 u+034b:
     .....@..
@@ -1458,6 +1449,7 @@ u+034b:
     ........
     ........
     ........
+
 
 # U+034C COMBINING ALMOST EQUAL TO ABOVE
 u+034c:
@@ -1518,10 +1510,10 @@ u+034e:
     ...@....
     ...@....
 
+
 # U+034F COMBINING GRAPHEME JOINER
 # non-printing
-
-
+#
 # U+0350 COMBINING RIGHT ARROWHEAD ABOVE
 u+0350:
     .....@..
@@ -1541,6 +1533,7 @@ u+0350:
     ........
     ........
 
+
 # U+0351 COMBINING LEFT HALF RING ABOVE
 u+0351:
     ..@@....
@@ -1559,6 +1552,7 @@ u+0351:
     ........
     ........
     ........
+
 
 # U+0352 COMBINING FERMATA
 u+0352:
@@ -1598,7 +1592,6 @@ u+0353:
     .@@.@@..
     ..@@@...
     .@@.@@..
-
 
 
 # U+0354 COMBINING LEFT ARROWHEAD BELOW
@@ -1659,7 +1652,6 @@ u+0356:
     .@......
     ..@..@..
     .@..@.@.
-
 
 
 # U+0357 COMBINING RIGHT HALF RING ABOVE
