@@ -29,7 +29,7 @@ SIZES = (8, 14, 16)
 COMPONENTS = {
     8: ('combining_08.yaff', 'additions_08.yaff', 'more_08.yaff',),
     14: ('combining_14.yaff', 'additions_14.yaff',),
-    16: ('combining.yaff', 'additions.yaff', 'precomposed.yaff'),
+    16: ('combining.yaff', 'additions.yaff', 'precomposed.yaff', 'composed_16.yaff'),
 }
 
 # don't use the glyphs from freedos, use uni-vga instead
@@ -173,7 +173,7 @@ def precompose(font, max_glyphs):
                 decomp = normalize('NFD', char)
                 if len(decomp) <= max_glyphs and all(c in codepoints for c in decomp):
                     logging.info(f'Composing {fullname(char)} as {fullname(decomp)}.')
-                    glyphs = (font.get_char(c) for c in decomp)
+                    glyphs = (font.get_glyph(c) for c in decomp)
                     composed = monobit.Glyph.superimpose(glyphs).set_annotations(char=char)
                     font = font.with_glyph(composed)
     return font
@@ -365,6 +365,15 @@ def main():
     logging.info('Writing output')
     for size, font in final_font.items():
         monobit.save(font.drop_comments(), f'freedos_{size:02d}.hex', format='hext')
+
+    composed = {
+        size: precompose(font, max_glyphs=4)
+                .without(font.get_chars()).drop_comments().add_glyph_names()
+        for size, font in final_font.items()
+    }
+
+    for size, font in composed.items():
+        monobit.save(font, f'autocomposed_{size:02d}.yaff')
 
 
 main()
