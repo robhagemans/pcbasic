@@ -27,8 +27,8 @@ CHOICES = 'choices'
 UNIVGA = '../univga/univga_16.hex'
 SIZES = (8, 14, 16)
 COMPONENTS = {
-    8: ('additions_08.yaff',),
-    14: ('additions_14.yaff',),
+    8: ('combining_08.yaff', 'additions_08.yaff', 'more_08.yaff',),
+    14: ('combining_14.yaff', 'additions_14.yaff',),
     16: ('combining.yaff', 'additions.yaff', 'precomposed.yaff'),
 }
 
@@ -41,6 +41,22 @@ FREEDOS_DROP = (
 FREEDOS_COPY = {
     # U+2107 EULER CONSTANT <-- U+0190 LATIN CAPITAL LETTER OPEN E
     '\u2107': '\u0190',
+    # U+01A9 LATIN CAPITAL LETTER ESH <-- U+03A3 GREEK CAPITAL LETTER SIGMA
+    '\u01a9': '\u03a3',
+    # U+03DC GREEK LETTER DIGAMMA
+    '\u03dc': 'F',
+    # U+03F2 GREEK LUNATE SIGMA SYMBOL
+    '\u03f2': 'c',
+    # U+03F3 GREEK LETTER YOT
+    '\u03f3': 'j',
+    # U+0400 CYRILLIC CAPITAL LETTER IE WITH GRAVE
+    # U+00C8 LATIN CAPITAL LETTER E WITH GRAVE
+    '\u0400': '\u00c8',
+    # U+0450 CYRILLIC SMALL LETTER IE WITH GRAVE
+    # U+00E8 LATIN SMALL LETTER E WITH GRAVE
+    '\u0450': '\u00e8',
+    # U+0589 ARMENIAN FULL STOP
+    '\u0589': ':',
 }
 
 FREEDOS_MIRROR = {
@@ -48,12 +64,25 @@ FREEDOS_MIRROR = {
     '\u01b8' : '\u01b7',
     # U+01B9 LATIN SMALL LETTER EZH REVERSED <-- U+0292 LATIN SMALL LETTER EZH
     '\u01b9': '\u0292',
-    # [ʕ] LATIN LETTER PHARYNGEAL VOICED FRICATIVE <-- U+0294 LATIN LETTER GLOTTAL STOP
+    # U+0295 LATIN LETTER PHARYNGEAL VOICED FRICATIVE <-- U+0294 LATIN LETTER GLOTTAL STOP
     '\u0295': '\u0294',
     # U+02A2 LATIN LETTER REVERSED GLOTTAL STOP WITH STROKE <-- U+02A1 LATIN LETTER GLOTTAL STOP WITH STROKE
     '\u02a2': '\u02a1',
-    # U+0252 LATIN SMALL LETTER TURNED ALPHA <-- U+0251 LATIN SMALL LETTER ALPHA
-    '\u0252': '\u0251',
+    # U+01A7 LATIN CAPITAL LETTER TONE TWO <-- LATIN CAPITAL LETTER S
+    '\u01a7': 'S',
+    # U+01A8 LATIN SMALL LETTER TONE TWO <-- LATIN SMALL LETTER S
+    '\u01a8': 's',
+    # U+0258 LATIN SMALL LETTER REVERSED E <-- LATIN SMALL LETTER E
+    '\u0258': 'e',
+    # U+027F LATIN SMALL LETTER REVERSED R WITH FISHHOOK
+    # U+027E LATIN SMALL LETTER R WITH FISHHOOK
+    '\u027f': '\u027e',
+    # U+025E LATIN SMALL LETTER CLOSED REVERSED OPEN E
+    # U+029A LATIN SMALL LETTER CLOSED OPEN E
+    '\u025e': '\u029a',
+    # U+058E LEFT-FACING ARMENIAN ETERNITY SIGN
+    # U+058D RIGHT-FACING ARMENIAN ETERNITY SIGN
+    '\u058e': '\u058d',
 }
 
 FREEDOS_FLIP = {
@@ -62,7 +91,40 @@ FREEDOS_FLIP = {
     # U+0296 LATIN LETTER INVERTED GLOTTAL STOP <-- U+0294 LATIN LETTER GLOTTAL STOP
     '\u0296': '\u0294',
     # U+2127 INVERTED OHM SIGN <-- U+03A9 GREEK CAPITAL LETTER OMEGA
-    '\u2127': '\u03a9'
+    '\u2127': '\u03a9',
+    # U+0280 LATIN LETTER SMALL CAPITAL R
+    # U+0281 LATIN LETTER SMALL CAPITAL INVERTED R
+    '\u0281': '\u0280',
+}
+
+
+FREEDOS_TURN = {
+    # should have descender
+    # U+018D LATIN SMALL LETTER TURNED DELTA <-- U+1E9F LATIN SMALL LETTER DELTA
+    '\u018d': '\u1e9f',
+    # U+0250 LATIN SMALL LETTER TURNED A <-- LATIN SMALL LETTER A
+    '\u0250': 'a',
+    # U+0252 LATIN SMALL LETTER TURNED ALPHA <-- U+0251 LATIN SMALL LETTER ALPHA
+    '\u0252': '\u0251',
+    # U+0265 LATIN SMALL LETTER TURNED H
+    '\u0265': 'h',
+    # U+026F LATIN SMALL LETTER TURNED M
+    '\u026f': 'm',
+    # U+0279 LATIN SMALL LETTER TURNED R
+    '\u0279': 'r',
+    # U+027A LATIN SMALL LETTER TURNED R WITH LONG LEG
+    # should have descender
+    # U+027C LATIN SMALL LETTER R WITH LONG LEG
+    '\u027a': '\u027c',
+    # U+0287 LATIN SMALL LETTER TURNED T
+    '\u0287': 't',
+    # U+028D LATIN SMALL LETTER TURNED W
+    '\u028d': 'w',
+    # U+028E LATIN SMALL LETTER TURNED Y
+    '\u028e': 'y',
+    # should have descender
+    # U+029E LATIN SMALL LETTER TURNED K
+    '\u029e': 'k',
 }
 
 UNIVGA_COPY = {
@@ -230,18 +292,31 @@ def main():
                 logging.warning(e)
         for copy, orig in FREEDOS_MIRROR.items():
             try:
-                final_font[size] = final_font[size].with_glyph(
-                    final_font[size].get_glyph(orig).mirror().set_annotations(char=copy)
-                )
+                orig = final_font[size].get_glyph(orig)
             except KeyError as e:
                 logging.warning(e)
+            else:
+                offsets = orig.ink_offsets
+                mirrored = orig.crop(*offsets).mirror().expand(*offsets)
+                final_font[size] = final_font[size].with_glyph(mirrored.set_annotations(char=copy))
         for copy, orig in FREEDOS_FLIP.items():
             try:
-                final_font[size] = final_font[size].with_glyph(
-                    final_font[size].get_glyph(orig).flip().set_annotations(char=copy)
-                )
+                orig = final_font[size].get_glyph(orig)
             except KeyError as e:
                 logging.warning(e)
+            else:
+                offsets = orig.ink_offsets
+                flipped = orig.crop(*offsets).flip().expand(*offsets)
+                final_font[size] = final_font[size].with_glyph(flipped.set_annotations(char=copy))
+        for copy, orig in FREEDOS_TURN.items():
+            try:
+                orig = final_font[size].get_glyph(orig)
+            except KeyError as e:
+                logging.warning(e)
+            else:
+                offsets = orig.ink_offsets
+                flipped = orig.crop(*offsets).flip().mirror().expand(*offsets)
+                final_font[size] = final_font[size].with_glyph(flipped.set_annotations(char=copy))
 
     # read univga
     univga_orig = monobit.load(UNIVGA)
