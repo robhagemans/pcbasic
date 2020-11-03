@@ -375,5 +375,9 @@ def main():
     for size, font in composed.items():
         monobit.save(font, f'autocomposed_{size:02d}.yaff')
 
+    for size, font in final_font.items():
+        wrong_size = [f'{ord(g.char):04x}' for g in font.glyphs if g.height != size or g.width != 8]
+        if wrong_size:
+            logging.warning(f'Wrong-size glyphs in {size}px font: {wrong_size}')
 
 main()
