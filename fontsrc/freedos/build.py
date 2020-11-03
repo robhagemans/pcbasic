@@ -28,7 +28,7 @@ UNIVGA = '../univga/univga_16.hex'
 SIZES = (8, 14, 16)
 COMPONENTS = {
     8: ('combining_08.yaff', 'additions_08.yaff', 'more_08.yaff', 'composed_08.yaff'),
-    14: ('combining_14.yaff', 'additions_14.yaff',),
+    14: ('combining_14.yaff', 'additions_14.yaff', 'more_14.yaff', 'composed_14.yaff'),
     16: ('combining.yaff', 'additions.yaff', 'precomposed.yaff', 'composed_16.yaff'),
 }
 
