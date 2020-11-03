@@ -1,36 +1,3 @@
-# FreeDOS font
-#
-# This font contains glyphs from the following sources:
-# + CPIDOS v3.0
-#   Copyright (C) 2002-2011 by Henrique Peron (hperon@terra.com.br)
-#   This software is free software, and is distributed under the GNU-GPL license version 2.0 or later.
-#   http://www.freedos.org/software/?prog=cpidos
-#   http://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/dos/cpi/
-#
-# + UNI-VGA
-#   Copyright (c) 2001 Dmitry Bolkhovityanov, bolkhov@inp.nsk.su
-#   The UNI-VGA font can be distributed and modified freely, according to the X license.
-#   http://www.inp.nsk.su/~bolkhov/files/fonts/univga/
-#
-# + Glyphs drawn by Rob Hagemans
-#
-# The glyphs were mapped onto Unicode, rebaselined,
-# collated and converted to the present format by Rob Hagemans.
-#
-# AUTHORS:
-# + Henrique Peron
-# + Dmitry Bolkhovityanov
-# + Behdad Esfahbod
-# + Rob Hagemans
-#
-# LICENCE:
-# This file is distributed under the GNU GPL version 2.0 or, at your option, any later version.
-#
-
-name: 16
-point-size: 16
-spacing: character-cell
-encoding: unicode
 
 
 # [̈́] COMBINING GREEK DIALYTIKA TONOS
