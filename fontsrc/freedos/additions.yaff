@@ -1174,6 +1174,48 @@ u+03d4:
     ........
 
 
+# [Ѽ] CYRILLIC CAPITAL LETTER OMEGA WITH TITLO
+# actually "ornate omega", doesn't have a titlo
+u+047c:
+    .@@@@@..
+    @.....@.
+    ..@@@...
+    ........
+    .@@.@@..
+    @@...@@.
+    @@...@@.
+    @@.@.@@.
+    @@.@.@@.
+    @@.@.@@.
+    @@.@.@@.
+    @@@@@@@.
+    .@@.@@..
+    ........
+    ........
+    ........
+
+
+# [ѽ] CYRILLIC SMALL LETTER OMEGA WITH TITLO
+# actually "ornate omega", doesn't have a titlo
+u+047d:
+    ........
+    ........
+    .@@@@@..
+    @.....@.
+    ..@@@...
+    ........
+    .@@.@@..
+    @@...@@.
+    @@.@.@@.
+    @@.@.@@.
+    @@.@.@@.
+    @@@@@@@.
+    .@@.@@..
+    ........
+    ........
+    ........
+
+
 # U+1E9C LATIN SMALL LETTER LONG S WITH DIAGONAL STROKE
 u+1e9c:
     ........
