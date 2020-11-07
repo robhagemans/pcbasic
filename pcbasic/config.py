@@ -272,7 +272,7 @@ ARGUMENTS = {
     u'codepage': {u'type': u'string', u'choices': CODEPAGES, u'default': u'437',},
     u'font': {
         u'type': u'string', u'list': u'*', u'choices': FONTS,
-        u'default': [u'unifont', u'univga', u'freedos'],
+        u'default': [u'default'],
     },
     u'dimensions': {u'type': u'int', u'list': 2, u'default': [],},
     u'fullscreen': {u'type': u'bool', u'default': False,},

@@ -24,8 +24,10 @@ FONTS = sorted(
     for name in pkg_resources.resource_listdir(__name__, FONT_DIR)
     if name.lower().endswith(u'.hex'))
 )
-
 _HEIGHTS = (8, 14, 16)
+_DEFAULT_NAME = 'default'
+# (deprecated) aliases for the default font
+_DEFAULT_ALIASES = ('freedos', 'univga', 'unifont')
 
 
 def _get_font(name, height):
@@ -33,11 +35,16 @@ def _get_font(name, height):
     try:
         return get_data(FONT_PATTERN, path=FONT_DIR, name=name, height=height)
     except ResourceFailed as e:
-        logging.debug('Failed to load %d-pixel font `%s`: %s', height, name, e)
+        if name in _DEFAULT_ALIASES:
+            return get_data(FONT_PATTERN, path=FONT_DIR, name=_DEFAULT_NAME, height=height)
+        else:
+            logging.debug('Failed to load %d-pixel font `%s`: %s', height, name, e)
 
 
 def read_fonts(codepage_dict, font_families):
     """Load font typefaces."""
+    # default font is fallback
+    font_families = list(font_families) + [_DEFAULT_NAME]
     # load the graphics fonts, including the 8-pixel RAM font
     # use set() for speed - lookup is O(1) rather than O(n) for list
     unicode_needed = set(itervalues(codepage_dict))
