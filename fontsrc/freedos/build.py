@@ -25,6 +25,7 @@ CPI_NAMES = ['ega.cpx'] + [f'ega{_i}.cpx' for _i in range(2, 19)]
 HEADER = 'header.txt'
 CHOICES = 'choices'
 UNIVGA = '../univga/univga_16.hex'
+UNIFONT = '../unifont/unifont_16.hex'
 SIZES = (8, 14, 16)
 COMPONENTS = {
     8: ('combining_08.yaff', 'additions_08.yaff', 'more_08.yaff', 'composed_08.yaff'),
@@ -150,6 +151,50 @@ UNIVGA_REPLACE = {
     '\u0530': '\u058e', # U+058E LEFT-FACING ARMENIAN ETERNITY SIGN
     # or just mirror 058d...
 }
+
+
+# ranges to take from unifont
+UNIFONT_RANGES = chain(
+    # 0E00-0E7F Thai
+    range(0x0e00, 0x0f00),
+    # 2300-23FF Miscellaneous Technical
+    range(0x2300, 0x2400),
+    # 2400-243F Control Pictures
+    range(0x2400, 0x2440),
+    # 2460-24FF Enclosed Alphanumerics
+    range(0x2460, 0x2500),
+    # 2600-26FF Miscellaneous Symbols
+    range(0x2600, 0x2700),
+    # 2E80-2EFF CJK Radicals Supplement
+    range(0x2e80, 0x2f00),
+    # 2F00-2FDF Kangxi Radicals
+    range(0x2f00, 0x2fdf),
+    # 3000-303F CJK Symbols and Punctuation
+    # 3040-309F Hiragana
+    # 30A0-30FF Katakana
+    range(0x3000, 0x3100),
+    # 3100-312F Bopomofo
+    # 3130-318F Hangul Compatibility Jamo
+    range(0x3100, 0x3190),
+    # 31C0-31EF CJK Strokes
+    range(0x31c0, 0x31f0),
+    # 3200-32FF Enclosed CJK Letters and Months
+    # 3300-33FF CJK Compatibility
+    range(0x3200, 0x3400),
+    # 3400-4DBF CJK Unified Ideographs Extension A
+    range(0x3400, 0x4dc0),
+    # 4E00-9FFF CJK Unified Ideographs
+    range(0x4e00, 0xa000),
+    # AC00-D7AF Hangul Syllables
+    range(0xac00, 0xd7b0),
+    # F900-FAFF CJK Compatibility Ideographs
+    range(0xf900, 0xfb00),
+    # FE30-FE4F CJK Compatibility Forms
+    range(0xfe30, 0xfe50),
+    # FF00-FFEF Halfwidth and Fullwidth Forms
+    range(0xff00, 0xfff0),
+
+)
 
 def fullname(char):
     """Unicode codepoint and name."""
@@ -341,6 +386,12 @@ def main():
             final_font[size].get_glyph(orig).set_annotations(char=copy)
         )
 
+    # read unifont
+    logging.info('Add glyphs from unifont.')
+    unifont = monobit.load(UNIFONT)
+    unifont_glyphs = unifont.subset(chr(_code) for _code in UNIFONT_RANGES)
+    final_font[16] = final_font[16].merged_with(unifont_glyphs)
+
     # exclude personal use area code points
     logging.info('Removing private use area')
     pua_keys = set(chr(_code) for _code in range(0xe000, 0xf900))
@@ -364,19 +415,19 @@ def main():
     # output
     logging.info('Writing output')
     for size, font in final_font.items():
-        monobit.save(font.drop_comments(), f'freedos_{size:02d}.hex', format='hext')
+        monobit.save(font.drop_comments(), f'default_{size:02d}.hex', format='hext')
 
-    composed = {
-        size: precompose(font, max_glyphs=4)
-                .without(font.get_chars()).drop_comments().add_glyph_names()
-        for size, font in final_font.items()
-    }
+    #composed = {
+    #    size: precompose(font, max_glyphs=4)
+    #            .without(font.get_chars()).drop_comments().add_glyph_names()
+    #    for size, font in final_font.items()
+    #}
 
-    for size, font in composed.items():
-        monobit.save(font, f'autocomposed_{size:02d}.yaff')
+    #for size, font in composed.items():
+    #    monobit.save(font, f'autocomposed_{size:02d}.yaff')
 
     for size, font in final_font.items():
-        wrong_size = [f'{ord(g.char):04x}' for g in font.glyphs if g.height != size or g.width != 8]
+        wrong_size = [f'{ord(g.char):04x}' for g in font.glyphs if g.height != size or g.width not in (8, 16)]
         if wrong_size:
             logging.warning(f'Wrong-size glyphs in {size}px font: {wrong_size}')
 
