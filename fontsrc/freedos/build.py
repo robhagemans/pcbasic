@@ -6,8 +6,10 @@
 import os
 import sys
 import zipfile
+import tarfile
 import subprocess
 import logging
+from io import TextIOWrapper
 from unicodedata import normalize, name
 from collections import defaultdict
 from itertools import chain
@@ -18,14 +20,26 @@ import monobit
 logging.basicConfig(level=logging.INFO)
 
 CPIDOS_URL = 'http://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/dos/cpi/cpidos30.zip'
-FDZIP = 'cpidos30.zip'
-CODEPAGE_DIR = 'codepage/'
+UNIVGA_URL = 'http://www.inp.nsk.su/~bolkhov/files/fonts/univga/uni-vga.tgz'
+UNIFONT_URL = 'https://ftp.gnu.org/gnu/unifont/unifont-13.0.03/unifont-13.0.03.tar.gz'
+
+CPIDOS_ZIP = 'cpidos30.zip'
+UNIVGA_ZIP = 'uni-vga.tgz'
+UNIFONT_ZIP = 'unifont-13.0.03.tar.gz'
+
+UNIVGA_BDF = 'uni_vga/u_vga16.bdf'
+
+UNIFONT_DIR = 'unifont-13.0.03/font/plane00/'
+UNIFONT_NAMES = ('spaces.hex', 'unifont-base.hex', 'hangul-syllables.hex', 'wqy.hex', 'thaana.hex')
+
 CPI_DIR = 'BIN/'
 CPI_NAMES = ['ega.cpx'] + [f'ega{_i}.cpx' for _i in range(2, 19)]
+
+
+CODEPAGE_DIR = 'codepage/'
 HEADER = 'header.txt'
 CHOICES = 'choices'
-UNIVGA = '../univga/univga_16.hex'
-UNIFONT = '../unifont/unifont_16.hex'
+
 SIZES = (8, 14, 16)
 COMPONENTS = {
     8: ('combining_08.yaff', 'additions_08.yaff', 'more_08.yaff', 'composed_08.yaff'),
@@ -252,13 +266,28 @@ def main():
         for size in SIZES
     }
 
-    # obtain original zip file
-    logging.info('Downloading CPIDOS.')
-    request.urlretrieve(CPIDOS_URL, FDZIP)
+    # obtain original source files
+    os.chdir('work')
+    logging.info('Downloading originals.')
+    for source in (CPIDOS_URL, UNIVGA_URL, UNIFONT_URL):
+        target = source.split('/')[-1]
+        if not os.path.isfile(target):
+            logging.info(f'Downloading {source}.')
+            request.urlretrieve(source, target)
+
+    # process unifont package
+    with tarfile.open(UNIFONT_ZIP, 'r:gz') as unizip:
+        for name in UNIFONT_NAMES:
+            unizip.extract(UNIFONT_DIR + name)
+
+    # process univga package
+    with tarfile.open(UNIVGA_ZIP, 'r:gz') as univga:
+        univga.extract(UNIVGA_BDF)
+
+    # process CPIDOS package
 
     # unpack zipfile
-    os.chdir('work')
-    pack = zipfile.ZipFile('../' + FDZIP, 'r')
+    pack = zipfile.ZipFile(CPIDOS_ZIP, 'r')
     # extract cpi files from compressed cpx files
     for name in CPI_NAMES:
         pack.extract(CPI_DIR + name)
@@ -364,11 +393,14 @@ def main():
                 final_font[size] = final_font[size].with_glyph(flipped.set_annotations(char=copy))
 
     # read univga
-    univga_orig = monobit.load(UNIVGA)
+    univga_orig = monobit.load(f'work/{UNIVGA_BDF}')
     # replace code points where necessary
     univga = univga_orig.without(UNIVGA_REPLACE.keys())
     for orig, repl in UNIVGA_REPLACE.items():
         univga = univga.with_glyph(univga_orig.get_glyph(orig).set_annotations(char=repl))
+
+    # drop labels to avoid retaing chars on merge
+    univga = monobit.Font(_g.set_annotations(labels=()) for _g in univga.glyphs)
 
     logging.info('Add uni-vga box-drawing glyphs.')
     box_glyphs = univga.subset(chr(_code) for _code in UNIVGA_UNSHIFTED)
@@ -380,17 +412,21 @@ def main():
     univga_rebaselined = univga_rebaselined.expand(top=1).crop(bottom=1)
     final_font[16] = final_font[16].merged_with(univga_rebaselined)
 
+
     # copy glyphs from uni-vga
     for copy, orig in UNIVGA_COPY.items():
         final_font[16] = final_font[16].with_glyph(
-            final_font[size].get_glyph(orig).set_annotations(char=copy)
+            final_font[16].get_glyph(orig).set_annotations(char=copy)
         )
 
     # read unifont
     logging.info('Add glyphs from unifont.')
-    unifont = monobit.load(UNIFONT)
+    unifont = monobit.Font().set_encoding('unicode')
+    for name in UNIFONT_NAMES:
+        unifont = unifont.merged_with(monobit.load(f'work/{UNIFONT_DIR}/{name}'))
     unifont_glyphs = unifont.subset(chr(_code) for _code in UNIFONT_RANGES)
     final_font[16] = final_font[16].merged_with(unifont_glyphs)
+
 
     # exclude personal use area code points
     logging.info('Removing private use area')
