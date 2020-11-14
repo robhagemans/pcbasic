@@ -37,6 +37,8 @@ CPI_NAMES = ['ega.cpx'] + [f'ega{_i}.cpx' for _i in range(2, 19)]
 
 
 CODEPAGE_DIR = 'codepage/'
+TARGET_DIR = '../pcbasic/data/fonts/'
+
 HEADER = 'header.txt'
 CHOICES = 'choices'
 
@@ -451,7 +453,7 @@ def main():
     # output
     logging.info('Writing output')
     for size, font in final_font.items():
-        monobit.save(font.drop_comments(), f'default_{size:02d}.hex', format='hext')
+        monobit.save(font.drop_comments(), f'{TARGET_DIR}/default_{size:02d}.hex', format='hext')
 
     #composed = {
     #    size: precompose(font, max_glyphs=4)
