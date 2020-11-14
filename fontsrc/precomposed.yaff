@@ -1,10 +1,4 @@
 
-name: univga-modified-glyphs 16
-point-size: 16
-spacing: character-cell
-
-
-
 
 # [Č] LATIN CAPITAL LETTER C WITH CARON
 u+010c:
@@ -26,24 +20,6 @@ u+010c:
     ........
 
 
-# [Ǆ] LATIN CAPITAL LETTER DZ WITH CARON
-u+01c4:
-    ........
-    ...@@.@@
-    ....@@@.
-    ........
-    @@@@.@@@
-    @@.@@..@
-    @@.@@..@
-    @@.@@.@.
-    @@.@@.@.
-    @@.@@.@.
-    @@.@@@..
-    @@.@@@..
-    @@@@.@@@
-    ........
-    ........
-    ........
 
 
 # [Ǔ] LATIN CAPITAL LETTER U WITH CARON
@@ -86,9 +62,6 @@ u+01d7:
     ........
 
 
-
-
-
 # [Ǚ] LATIN CAPITAL LETTER U WITH DIAERESIS AND CARON
 u+01d9:
     .@@.@@..
@@ -129,11 +102,10 @@ u+01da:
     ........
 
 
-
 # [Ǜ] LATIN CAPITAL LETTER U WITH DIAERESIS AND GRAVE
 u+01db:
-    .@@....
-    ..@@.,..
+    .@@.....
+    ..@@....
     @@...@@.
     ........
     @@...@@.
@@ -148,7 +120,6 @@ u+01db:
     ........
     ........
     ........
-
 
 
 # [Ǡ] LATIN CAPITAL LETTER A WITH DOT ABOVE AND MACRON
@@ -231,7 +202,6 @@ u+01ec:
     ...@@@@.
 
 
-
 # [Ǹ] LATIN CAPITAL LETTER N WITH GRAVE
 u+01f8:
     .@@.....
@@ -290,7 +260,6 @@ u+0200:
     ........
     ........
     ........
-
 
 
 # [Ȃ] LATIN CAPITAL LETTER A WITH INVERTED BREVE
@@ -432,6 +401,7 @@ u+0208:
     ........
     ........
 
+
 # [ȉ] LATIN SMALL LETTER I WITH DOUBLE GRAVE
 u+0209:
     ........
@@ -572,7 +542,6 @@ u+020f:
     ........
 
 
-
 # [Ȑ] LATIN CAPITAL LETTER R WITH DOUBLE GRAVE
 u+0210:
     @@..@@..
@@ -651,8 +620,6 @@ u+0213:
     ........
     ........
     ........
-
-
 
 
 # [Ȕ] LATIN CAPITAL LETTER U WITH DOUBLE GRAVE
@@ -835,7 +802,6 @@ u+0226:
     ........
 
 
-
 # [Ȩ] LATIN CAPITAL LETTER E WITH CEDILLA
 u+0228:
     ........
@@ -874,8 +840,6 @@ u+0229:
     ...@@...
     ....@@..
     .@@@@...
-
-
 
 
 # [Ѐ] CYRILLIC CAPITAL LETTER IE WITH GRAVE
@@ -957,24 +921,6 @@ u+045d:
     ........
     ........
 
-# [Ѽ] CYRILLIC CAPITAL LETTER OMEGA WITH TITLO
-u+047c:
-    .....@..
-    .@@@@@..
-    .@......
-    ........
-    .@@.@@..
-    @@...@@.
-    @@...@@.
-    @@.@.@@.
-    @@.@.@@.
-    @@.@.@@.
-    @@.@.@@.
-    @@@@@@@.
-    .@@.@@..
-    ........
-    ........
-    ........
 
 
 # [Ҋ] CYRILLIC CAPITAL LETTER SHORT I WITH TAIL
@@ -995,7 +941,6 @@ u+048a:
     ......@@
     .......@
     ........
-
 
 
 # [Ḁ] LATIN CAPITAL LETTER A WITH RING BELOW
@@ -1038,7 +983,6 @@ u+1e01:
     ..@@@...
 
 
-
 # [Ḉ] LATIN CAPITAL LETTER C WITH CEDILLA AND ACUTE
 u+1e08:
     ....@@..
@@ -1077,6 +1021,7 @@ u+1e14:
     ........
     ........
     ........
+
 
 # [ḕ] LATIN SMALL LETTER E WITH MACRON AND GRAVE
 u+1e15:
@@ -1158,7 +1103,6 @@ u+1e19:
     .@@.@@..
 
 
-
 # [Ḝ] LATIN CAPITAL LETTER E WITH CEDILLA AND BREVE
 u+1e1c:
     @@...@@.
@@ -1238,6 +1182,7 @@ u+1e21:
     @@..@@..
     .@@@@...
 
+
 # [Ḣ] LATIN CAPITAL LETTER H WITH DOT ABOVE
 u+1e22:
     ..@@....
@@ -1256,6 +1201,7 @@ u+1e22:
     ........
     ........
     ........
+
 
 # [ḣ] LATIN SMALL LETTER H WITH DOT ABOVE
 u+1e23:
@@ -1376,6 +1322,7 @@ u+1e28:
     ..@@....
     @@@.....
 
+
 # [ḩ] LATIN SMALL LETTER H WITH CEDILLA
 u+1e29:
     ........
@@ -1415,6 +1362,7 @@ u+1e2a:
     @@...@@.
     .@@@@@..
 
+
 # [ḫ] LATIN SMALL LETTER H WITH BREVE BELOW
 u+1e2b:
     ........
@@ -1433,8 +1381,6 @@ u+1e2b:
     ........
     @@...@@.
     .@@@@@..
-
-
 
 
 # [Ḯ] LATIN CAPITAL LETTER I WITH DIAERESIS AND ACUTE
@@ -1457,7 +1403,6 @@ u+1e2e:
     ........
 
 
-
 # [ḯ] LATIN SMALL LETTER I WITH DIAERESIS AND ACUTE
 u+1e2f:
     .....@@.
@@ -1476,6 +1421,7 @@ u+1e2f:
     ........
     ........
     ........
+
 
 # [Ḱ] LATIN CAPITAL LETTER K WITH ACUTE
 u+1e30:
@@ -1496,6 +1442,7 @@ u+1e30:
     ........
     ........
 
+
 # [ḱ] LATIN SMALL LETTER K WITH ACUTE
 u+1e31:
     ....@@..
@@ -1514,7 +1461,6 @@ u+1e31:
     ........
     ........
     ........
-
 
 
 # [Ḵ] LATIN CAPITAL LETTER K WITH LINE BELOW
@@ -1555,6 +1501,7 @@ u+1e35:
     ........
     @@@@@@@.
     ........
+
 
 # [Ḹ] LATIN CAPITAL LETTER L WITH DOT BELOW AND MACRON
 u+1e38:
@@ -1635,6 +1582,7 @@ u+1e3b:
     @@@@@@@.
     ........
 
+
 # [Ḿ] LATIN CAPITAL LETTER M WITH ACUTE
 u+1e3e:
     ....@@..
@@ -1653,6 +1601,7 @@ u+1e3e:
     ........
     ........
     ........
+
 
 # [ḿ] LATIN SMALL LETTER M WITH ACUTE
 u+1e3f:
@@ -1754,7 +1703,6 @@ u+1e47:
     ..@@....
 
 
-
 # [Ṉ] LATIN CAPITAL LETTER N WITH LINE BELOW
 u+1e48:
     ........
@@ -1835,7 +1783,6 @@ u+1e4d:
     ........
 
 
-
 # [Ṏ] LATIN CAPITAL LETTER O WITH TILDE AND DIAERESIS
 u+1e4e:
     @@...@@.
@@ -1874,7 +1821,6 @@ u+1e4f:
     ........
     ........
     ........
-
 
 
 # [Ṑ] LATIN CAPITAL LETTER O WITH MACRON AND GRAVE
@@ -1935,6 +1881,7 @@ u+1e52:
     ........
     ........
     ........
+
 
 # [Ṕ] LATIN CAPITAL LETTER P WITH ACUTE
 u+1e54:
@@ -2016,7 +1963,6 @@ u+1e59:
     ........
 
 
-
 # [Ṛ] LATIN CAPITAL LETTER R WITH DOT BELOW
 u+1e5a:
     ........
@@ -2095,6 +2041,7 @@ u+1e5d:
     ........
     .@@.....
     .@@.....
+
 
 # [Ṟ] LATIN CAPITAL LETTER R WITH LINE BELOW
 u+1e5e:
@@ -2175,6 +2122,7 @@ u+1e65:
     ........
     ........
 
+
 # [Ṧ] LATIN CAPITAL LETTER S WITH CARON AND DOT ABOVE
 u+1e66:
     @@.@@.@@
@@ -2253,7 +2201,6 @@ u+1e69:
     ........
     ..@@....
     ..@@....
-
 
 
 # [Ṯ] LATIN CAPITAL LETTER T WITH LINE BELOW
@@ -2336,7 +2283,6 @@ u+1e73:
     ........
 
 
-
 # [Ṵ] LATIN CAPITAL LETTER U WITH TILDE BELOW
 u+1e74:
     ........
@@ -2377,7 +2323,6 @@ u+1e75:
     @@.@@@..
 
 
-
 # [Ṷ] LATIN CAPITAL LETTER U WITH CIRCUMFLEX BELOW
 u+1e76:
     ........
@@ -2396,7 +2341,6 @@ u+1e76:
     ........
     ..@@@...
     .@@.@@..
-
 
 
 # [ṷ] LATIN SMALL LETTER U WITH CIRCUMFLEX BELOW
@@ -2438,6 +2382,7 @@ u+1e78:
     ........
     ........
 
+
 # [ṹ] LATIN SMALL LETTER U WITH TILDE AND ACUTE
 u+1e79:
     ....@@..
@@ -2476,7 +2421,6 @@ u+1e7a:
     ........
     ........
     ........
-
 
 
 # [ṻ] LATIN SMALL LETTER U WITH MACRON AND DIAERESIS
@@ -2579,9 +2523,9 @@ u+1e91:
     ........
 
 
-
 # [Ẕ] LATIN CAPITAL LETTER Z WITH LINE BELOW
 u+1e94:
+    ........
     ........
     ........
     @@@@@@@.
@@ -2597,11 +2541,11 @@ u+1e94:
     ........
     @@@@@@@.
     ........
-    ........
 
 
 # [ẕ] LATIN SMALL LETTER Z WITH LINE BELOW
 u+1e95:
+    ........
     ........
     ........
     ........
@@ -2617,8 +2561,6 @@ u+1e95:
     ........
     @@@@@@@.
     ........
-    ........
-
 
 
 # [ẖ] LATIN SMALL LETTER H WITH LINE BELOW

@@ -1,23 +1,14 @@
 PC-BASIC typefaces
 ------------------
 
-This directory contains 8-bit typefaces in unifont .HEX format for use with PC-BASIC. They have been derived from the sources below.
+This directory contains 8-bit typefaces in extended Unifont .HEX format for use with PC-BASIC. They have been derived from the sources below.
 In most cases, the only change has been to extract a subset and to encode them in the .HEX format. The resulting derivative work is
 released under the same licensing terms as the original.
 
 Below is a summary of the authors and licences of the fonts in this directory.
 Please check the individual .HEX file for original licence terms.
 
-**unifont**: GNU Unifont 7.0.03 (plane 0) - Roman Czyborra, Qianqian Fang et al.  
-https://savannah.gnu.org/projects/unifont  
-licence: GNU GPL v2.0+ with font exception  
-
-**univga**: UNI-VGA - Dmitry Bolkhovityanov  
-http://www.inp.nsk.su/~bolkhov/files/fonts/univga/  
-licence: X11 license  
-
-**freedos**: FreeDOS CPIDOS pack - Henrique Peron  
-http://www.freedos.org/software/?prog=cpidos  
+**default**: based on CPIDOS, UNI-VGA and GNU Unifont
 licence: GNU GPL v2.0 or later  
 
 **vga**: DOSBox  

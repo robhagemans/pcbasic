@@ -294,8 +294,8 @@ f8:00b0
 # LATIN SMALL LETTER S WITH DIAERESIS [titus]
 f9:0073,0308
 fa:00b7
-# LATIN CAPITAL LETTER TRESILLO WITH GRAVE
-fb:a72a,0300
+# LATIN CAPITAL LETTER TRESILLO WITH ACUTE
+fb:a72a,0301
 # perhaps this was intended to be a variant of tresillo?
 fc:0454
 # perhaps this was intended to be a variant of tresillo?

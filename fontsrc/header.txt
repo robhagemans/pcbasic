@@ -1,6 +1,7 @@
-# FreeDOS font
+# PC-BASIC default font
 #
 # This font contains glyphs from the following sources:
+#
 # + CPIDOS v3.0
 #   Copyright (C) 2002-2011 by Henrique Peron (hperon@terra.com.br)
 #   This software is free software, and is distributed under the GNU-GPL license version 2.0 or later.
@@ -12,16 +13,26 @@
 #   The UNI-VGA font can be distributed and modified freely, according to the X license.
 #   http://www.inp.nsk.su/~bolkhov/files/fonts/univga/
 #
+# + GNU Unifont v13.0.03
+#   (c) 1998-2020 Roman Czyborra, Qianqian Fang, Paul Hardy et al.
+#   All glyphs are released under the GNU General Public License
+#   (GPL) version 2 or (at your option) a later version, with the
+#   GNU font embedding exception.
+#   http://unifoundry.com/unifont.html
+#   https://ftp.gnu.org/gnu/unifont/unifont-13.0.03/
+#
 # + Glyphs drawn by Rob Hagemans
 #
-# The glyphs were mapped onto Unicode, rebaselined,
+# The glyphs were mapped onto Unicode and rebaselined where necessary,
 # collated and converted to the present format by Rob Hagemans.
 #
-# AUTHORS:
-# + Henrique Peron
+# KNOWN AUTHORS OF INCLUDED GLYPHS:
 # + Dmitry Bolkhovityanov
+# + Roman Czyborra
 # + Behdad Esfahbod
+# + Qianqian Fang
 # + Rob Hagemans
+# + Henrique Peron
 #
 # LICENCE:
 # This file is distributed under the GNU GPL version 2.0 or, at your option, any later version.
