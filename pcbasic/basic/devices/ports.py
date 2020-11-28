@@ -258,7 +258,7 @@ class COMDevice(Device):
         with safe_io(error.DEVICE_FAULT):
             self._check_open()
             self._serial.baudrate = speed
-            self._serial.parity = parity
+            self._serial.parity = parity.decode('ascii')
             self._serial.bytesize = bytesize
             self._serial.stopbits = stop
 
@@ -267,7 +267,7 @@ class COMDevice(Device):
         with safe_io(error.DEVICE_FAULT):
             self._check_open()
             return (
-                self._serial.baudrate, self._serial.parity,
+                self._serial.baudrate, self._serial.parity.encode('ascii'),
                 self._serial.bytesize, self._serial.stopbits
             )
 
@@ -424,7 +424,7 @@ class SerialStdIO(object):
         self._crlf = crlf
         # dummy parameters
         self.baudrate = 300
-        self.parity = b'E'
+        self.parity = 'E'
         self.bytesize = 8
         self.stopbits = 2
         # dummy output pins
