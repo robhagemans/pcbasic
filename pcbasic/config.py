@@ -242,7 +242,7 @@ def _check_max_memory(arglist):
     mem_sizes = [arglist[0], arglist[1]*16 if arglist[1] else None]
 
     if min((mem_size for mem_size in mem_sizes if mem_size), default=MAX_MEMORY_SIZE) > MAX_MEMORY_SIZE:
-        logging.warning("--max-memory value > %s", MAX_MEMORY_SIZE)
+        logging.warning("max-memory value > %s", MAX_MEMORY_SIZE)
         return False
     return True
 
