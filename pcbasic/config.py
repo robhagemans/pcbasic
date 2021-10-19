@@ -235,7 +235,7 @@ def _check_max_memory(arglist):
 
     mem_sizes = [arglist[0], arglist[1]*16 if arglist[1] else None]
 
-    if min((mem_size for mem_size in mem_sizes if mem_size is not None), default=MAX_MEMORY_SIZE) > MAX_MEMORY_SIZE:
+    if min((mem_size for mem_size in mem_sizes if mem_size), default=MAX_MEMORY_SIZE) > MAX_MEMORY_SIZE:
         logging.warning("--max-memory value > %s", MAX_MEMORY_SIZE)
         return False
     return True
@@ -320,7 +320,7 @@ ARGUMENTS = {
     u'config': {u'type': u'string', u'default': u'',},
     u'logfile': {u'type': u'string', u'default': u'',},
     # negative list length means 'optionally up to'
-    u'max-memory': {u'type': u'int', u'list': -2, u'default': [65534, 4096], u'listcheck': _check_max_memory},
+    u'max-memory': {u'type': u'int', u'list': -2, u'default': [MAX_MEMORY_SIZE, 4096], u'listcheck': _check_max_memory},
     u'allow-code-poke': {u'type': u'bool', u'default': False,},
     u'reserved-memory': {u'type': u'int', u'default': 3429,},
     u'caption': {u'type': u'string', u'default': NAME,},
