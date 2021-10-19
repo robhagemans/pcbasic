@@ -50,6 +50,9 @@ STATE_NAME = 'pcbasic.session'
 # @: target drive for bundled programs
 PROGRAM_PATH = os.path.join(STATE_PATH, u'bundled_programs')
 
+# maximum memory size
+MAX_MEMORY_SIZE = 65534
+
 # format for log files
 LOGGING_FORMAT = u'[%(asctime)s.%(msecs)04d] %(levelname)s: %(message)s'
 LOGGING_FORMATTER = logging.Formatter(fmt=LOGGING_FORMAT, datefmt=u'%H:%M:%S')
@@ -233,6 +236,16 @@ def _check_text_encoding(arg):
         return False
     return True
 
+def _check_max_memory(arglist):
+    """Check if max-memory argument is acceptable."""
+
+    mem_sizes = [arglist[0], arglist[1]*16 if arglist[1] else None]
+
+    if min((mem_size for mem_size in mem_sizes if mem_size is not None), default=MAX_MEMORY_SIZE) > MAX_MEMORY_SIZE:
+        logging.warning("--max-memory value > %s", MAX_MEMORY_SIZE)
+        return False
+    return True
+
 
 # number of positional arguments
 NUM_POSITIONAL = 2
@@ -313,7 +326,7 @@ ARGUMENTS = {
     u'config': {u'type': u'string', u'default': u'',},
     u'logfile': {u'type': u'string', u'default': u'',},
     # negative list length means 'optionally up to'
-    u'max-memory': {u'type': u'int', u'list': -2, u'default': [65534, 4096]},
+    u'max-memory': {u'type': u'int', u'list': -2, u'default': [65534, 4096], u'listcheck': _check_max_memory},
     u'allow-code-poke': {u'type': u'bool', u'default': False,},
     u'reserved-memory': {u'type': u'int', u'default': 3429,},
     u'caption': {u'type': u'string', u'default': NAME,},
@@ -1211,6 +1224,10 @@ class ArgumentParser(object):
                 argname, strval, abs(length), len(lst)
             )
             lst = []
+        if lst and u'listcheck' in ARGUMENTS[argname]:
+            if not ARGUMENTS[argname][u'listcheck'](lst):
+                logging.warning(u'Value "%s=%s" ignored; invalid', argname, strval)
+                lst = []
         return lst
 
     def _to_bool(self, argname, strval):
