@@ -401,6 +401,8 @@ class VideoSDL2(VideoPlugin):
         # main window object
         self._display = None
         self._display_surface = None
+        # has mode been set at least once?
+        self._mode_set = False
         # one cache per blink state
         self._display_cache = [None] * N_BLINK_STATES
         self._has_display_cache = [False] * N_BLINK_STATES
@@ -549,7 +551,7 @@ class VideoSDL2(VideoPlugin):
     def _check_input(self):
         """Handle screen and interface events."""
         # don't try to handle events before display is set up
-        if not self._display:
+        if not self._display or not self._mode_set:
             return
         # check and handle input events
         self._last_keypress = None
@@ -1005,6 +1007,7 @@ class VideoSDL2(VideoPlugin):
             text_width, text_height, self._font_width, self._font_height,
             (canvas_width, canvas_height)
         )
+        self._mode_set = True
         self.busy = True
 
     def set_caption_message(self, msg):
