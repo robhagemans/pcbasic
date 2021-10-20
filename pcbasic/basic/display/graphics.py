@@ -163,7 +163,7 @@ class GraphicsViewPort(object):
 class Graphics(object):
     """Graphics operations."""
 
-    def __init__(self, input_methods, values, memory, aspect):
+    def __init__(self, input_methods, values, memory, aspect, colourmap):
         """Initialise graphics object."""
         # for apagenum and attr
         self._values = values
@@ -183,6 +183,7 @@ class Graphics(object):
         self._draw_angle = None
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         self._screen_aspect = aspect
+        self._colourmap = colourmap
 
     def init_mode(self, mode, pages, num_attr):
         """Initialise for new graphics mode."""
@@ -215,17 +216,15 @@ class Graphics(object):
 
     ### attributes
 
-    def _get_attr_index(self, c):
-        """Get the index of the specified attribute."""
-        if c == -1:
+    def _get_attr_index(self, attr_index):
+        """Get the colour attribute for the specified index."""
+        if attr_index == -1:
             # foreground; graphics 'background' attrib is always 0
-            # FIXME - isn't this split_attr's job?
-            c = self._attr & 0xf
-        elif not c:
-            c = 0
-        else:
-            c = min(self._num_attr-1, max(0, c))
-        return c
+            attr, _, _, _ = self._colourmap.split_attr(self._attr)
+            return attr
+        elif not attr_index:
+            return 0
+        return min(self._num_attr-1, max(0, attr_index))
 
     ## VIEW graphics viewport
 
@@ -379,19 +378,19 @@ class Graphics(object):
             raise error.BASICError(error.IFC)
         step = next(args)
         x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
-        c = next(args)
-        if c is None:
-            c = default
+        attr_index = next(args)
+        if attr_index is None:
+            attr_index = default
         else:
-            c = values.to_int(c)
-            error.range_check(0, 255, c)
+            attr_index = values.to_int(attr_index)
+            error.range_check(0, 255, attr_index)
         list(args)
         x, y = self._get_window_physical(x, y, step)
-        c = self._get_attr_index(c)
+        attr = self._get_attr_index(attr_index)
         # record viewpoint-relative physical coordinates
         self._last_point = x, y
-        self._last_attr = c
-        self.graph_view[y, x] = c
+        self._last_attr = attr
+        self.graph_view[y, x] = attr
 
     ### LINE
 
@@ -408,13 +407,13 @@ class Graphics(object):
         x1, y1 = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         coord0 = x0, y0, step0
         coord1 = x1, y1, step1
-        c = next(args)
-        if c:
-            c = values.to_int(c)
-            error.range_check(0, 255, c)
+        attr_index = next(args)
+        if attr_index:
+            attr_index = values.to_int(attr_index)
+            error.range_check(0, 255, attr_index)
         shape, pattern = args
-        if c is None:
-            c = -1
+        if attr_index is None:
+            attr_index = -1
         if pattern is None:
             pattern = 0xffff
         else:
@@ -424,17 +423,17 @@ class Graphics(object):
         else:
             x0, y0 = self._last_point
         x1, y1 = self._get_window_physical(*coord1)
-        c = self._get_attr_index(c)
+        attr = self._get_attr_index(attr_index)
         if not shape:
-            self._draw_line(x0, y0, x1, y1, c, pattern)
+            self._draw_line(x0, y0, x1, y1, attr, pattern)
         elif shape == b'B':
-            self._draw_box(x0, y0, x1, y1, c, pattern)
+            self._draw_box(x0, y0, x1, y1, attr, pattern)
         elif shape == b'BF':
-            self._draw_box_filled(x0, y0, x1, y1, c)
+            self._draw_box_filled(x0, y0, x1, y1, attr)
         self._last_point = x1, y1
-        self._last_attr = c
+        self._last_attr = attr
 
-    def _draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
+    def _draw_line(self, x0, y0, x1, y1, attr, pattern=0xffff):
         """Draw a line between the given physical points."""
         # cut off any out-of-bound coordinates
         x0, y0 = self.graph_view.cutoff_coord(x0, y0)
@@ -457,9 +456,9 @@ class Graphics(object):
             if pattern & mask != 0:
                 if steep:
                     # set point (y, x)
-                    self.graph_view[x, y] = c
+                    self.graph_view[x, y] = attr
                 else:
-                    self.graph_view[y, x] = c
+                    self.graph_view[y, x] = attr
             mask >>= 1
             if mask == 0:
                 mask = 0x8000
@@ -468,7 +467,7 @@ class Graphics(object):
                 y += sy
                 line_error += dx
 
-    def _draw_box_filled(self, x0, y0, x1, y1, c):
+    def _draw_box_filled(self, x0, y0, x1, y1, attr):
         """Draw a filled box between the given corner points."""
         x0, y0 = self.graph_view.cutoff_coord(x0, y0)
         x1, y1 = self.graph_view.cutoff_coord(x1, y1)
@@ -476,22 +475,22 @@ class Graphics(object):
             y0, y1 = y1, y0
         if x1 < x0:
             x0, x1 = x1, x0
-        self.graph_view[y0:y1+1, x0:x1+1] = c
+        self.graph_view[y0:y1+1, x0:x1+1] = attr
 
-    def _draw_box(self, x0, y0, x1, y1, c, pattern=0xffff):
+    def _draw_box(self, x0, y0, x1, y1, attr, pattern=0xffff):
         """Draw an empty box between the given corner points."""
         x0, y0 = self.graph_view.cutoff_coord(x0, y0)
         x1, y1 = self.graph_view.cutoff_coord(x1, y1)
         mask = 0x8000
-        mask = self._draw_straight(x1, y1, x0, y1, c, pattern, mask)
-        mask = self._draw_straight(x1, y0, x0, y0, c, pattern, mask)
+        mask = self._draw_straight(x1, y1, x0, y1, attr, pattern, mask)
+        mask = self._draw_straight(x1, y0, x0, y0, attr, pattern, mask)
         # verticals always drawn top to bottom
         if y0 < y1:
             y0, y1 = y1, y0
-        mask = self._draw_straight(x1, y1, x1, y0, c, pattern, mask)
-        mask = self._draw_straight(x0, y1, x0, y0, c, pattern, mask)
+        mask = self._draw_straight(x1, y1, x1, y0, attr, pattern, mask)
+        mask = self._draw_straight(x0, y1, x0, y0, attr, pattern, mask)
 
-    def _draw_straight(self, x0, y0, x1, y1, c, pattern, mask):
+    def _draw_straight(self, x0, y0, x1, y1, attr, pattern, mask):
         """Draw a horizontal or vertical line."""
         if x0 == x1:
             p0, p1, q, direction = y0, y1, x0, 'y'
@@ -501,9 +500,9 @@ class Graphics(object):
         for p in range(p0, p1+sp, sp):
             if pattern & mask != 0:
                 if direction == 'x':
-                    self.graph_view[q, p] = c
+                    self.graph_view[q, p] = attr
                 else:
-                    self.graph_view[p, q] = c
+                    self.graph_view[p, q] = attr
             mask >>= 1
             if mask == 0:
                 mask = 0x8000
@@ -561,9 +560,9 @@ class Graphics(object):
         x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         r = values.to_single(next(args)).to_value()
         error.throw_if(r < 0)
-        c = next(args)
-        if c is not None:
-            c = values.to_int(c)
+        attr_index = next(args)
+        if attr_index is not None:
+            attr_index = values.to_int(attr_index)
         start = next(args)
         if start is not None:
             start = values.to_single(start).to_value()
@@ -575,11 +574,11 @@ class Graphics(object):
             aspect = values.to_single(aspect).to_value()
         list(args)
         x0, y0 = self._get_window_physical(x, y, step)
-        if c is None:
-            c = -1
+        if attr_index is None:
+            attr_index = -1
         else:
-            error.range_check(0, 255, c)
-        c = self._get_attr_index(c)
+            error.range_check(0, 255, attr_index)
+        attr = self._get_attr_index(attr_index)
         if aspect is None:
             aspect = pixel_aspect[0] / float(pixel_aspect[1])
         if aspect == 1.:
@@ -599,7 +598,7 @@ class Graphics(object):
             stop_octant, stop_coord, stop_line = _get_octant(stop, rx, ry)
         if aspect == 1.:
             self._draw_circle(
-                x0, y0, rx, c,
+                x0, y0, rx, attr,
                 start_octant, start_coord, start_line,
                 stop_octant, stop_coord, stop_line
             )
@@ -612,15 +611,15 @@ class Graphics(object):
                 stopx = abs(int(round(rx * math.cos(stop))))
                 stopy = abs(int(round(ry * math.sin(stop))))
             self._draw_ellipse(
-                x0, y0, rx, ry, c,
+                x0, y0, rx, ry, attr,
                 start_octant//2, startx, starty, start_line,
                 stop_octant//2, stopx, stopy, stop_line
             )
-        self._last_attr = c
+        self._last_attr = attr
         self._last_point = x0, y0
 
     def _draw_circle(
-            self, x0, y0, r, c,
+            self, x0, y0, r, attr,
             oct0=-1, coo0=-1, line0=False,
             oct1=-1, coo1=-1, line1=False
         ):
@@ -659,7 +658,7 @@ class Graphics(object):
                         if _octant_gt(oct0, y, coo1) and _octant_gt(oct0, coo0, y):
                             continue
                 oct_x, oct_y = _octant_coord(octant, x0, y0, x, y)
-                self.graph_view[oct_y, oct_x] = c
+                self.graph_view[oct_y, oct_x] = attr
             # remember endpoints for pie sectors
             if y == coo0:
                 coo0x = x
@@ -674,12 +673,12 @@ class Graphics(object):
                 bres_error += 2*(y-x+1)
         # draw pie-slice lines
         if line0:
-            self._draw_line(x0, y0, *_octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
+            self._draw_line(x0, y0, *_octant_coord(oct0, x0, y0, coo0x, coo0), attr=attr)
         if line1:
-            self._draw_line(x0, y0, *_octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
+            self._draw_line(x0, y0, *_octant_coord(oct1, x0, y0, coo1x, coo1), attr=attr)
 
     def _draw_ellipse(
-            self, cx, cy, rx, ry, c,
+            self, cx, cy, rx, ry, attr,
             qua0=-1, x0=-1, y0=-1, line0=False,
             qua1=-1, x1=-1, y1=-1, line1=False
         ):
@@ -717,7 +716,7 @@ class Graphics(object):
                         if _quadrant_gt(qua0, x, y, x1, y1) and _quadrant_gt(qua0, x0, y0, x, y):
                             continue
                 quad_x, quad_y = _quadrant_coord(quadrant, cx, cy, x, y)
-                self.graph_view[quad_y, quad_x] = c
+                self.graph_view[quad_y, quad_x] = attr
             # bresenham error step
             e2 = 2 * err
             if (e2 <= dy):
@@ -734,14 +733,14 @@ class Graphics(object):
         # too early stop of flat vertical ellipses
         # finish tip of ellipse
         while (y < ry):
-            self.graph_view[cy+y, cx] = c
-            self.graph_view[cy-y, cx] = c
+            self.graph_view[cy+y, cx] = attr
+            self.graph_view[cy-y, cx] = attr
             y += 1
         # draw pie-slice lines
         if line0:
-            self._draw_line(cx, cy, *_quadrant_coord(qua0, cx, cy, x0, y0), c=c)
+            self._draw_line(cx, cy, *_quadrant_coord(qua0, cx, cy, x0, y0), attr=attr)
         if line1:
-            self._draw_line(cx, cy, *_quadrant_coord(qua1, cx, cy, x1, y1), c=c)
+            self._draw_line(cx, cy, *_quadrant_coord(qua1, cx, cy, x1, y1), attr=attr)
 
     ### PAINT: Flood fill
 
@@ -752,7 +751,7 @@ class Graphics(object):
         step = next(args)
         x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
         coord = x, y, step
-        c, pattern = -1, None
+        fill_attr_index, pattern = -1, None
         cval = next(args)
         if isinstance(cval, values.String):
             # pattern given; copy
@@ -761,45 +760,46 @@ class Graphics(object):
             error.throw_if(not pattern)
             # default for border, if pattern is specified as string: foreground attr
         elif cval is not None:
-            c = values.to_int(cval)
-            error.range_check(0, 255, c)
-        border = next(args)
-        if border is not None:
-            border = values.to_int(border)
-            error.range_check(0, 255, border)
-        background = next(args)
-        if background is not None:
-            background = values.pass_string(background, err=error.IFC).to_str()
+            fill_attr_index = values.to_int(cval)
+            error.range_check(0, 255, fill_attr_index)
+        border_index = next(args)
+        if border_index is not None:
+            border_index = values.to_int(border_index)
+            error.range_check(0, 255, border_index)
+        bg_pattern = next(args)
+        if bg_pattern is not None:
+            bg_pattern = values.pass_string(bg_pattern, err=error.IFC).to_str()
         list(args)
         # if paint *colour* specified, border default = paint colour
         # if paint *attribute* specified, border default = current foreground
-        if border is None:
-            border = c
-        self._flood_fill(coord, c, pattern, border, background)
+        if border_index is None:
+            border_index = fill_attr_index
+        fill_attr = self._get_attr_index(fill_attr_index)
+        border_attr = self._get_attr_index(border_index)
+        self._flood_fill(coord, fill_attr, pattern, border_attr, bg_pattern)
 
-    def _flood_fill(self, lcoord, c, pattern, border, background):
+    def _flood_fill(self, lcoord, fill_attr, pattern, border_attr, bg_pattern):
         """Fill an area defined by a border attribute with a tiled pattern."""
         # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
         # flood fill stops on border colour in all directions;
         # it also stops on scanlines in fill_colour
         # pattern tiling stops at intervals that equal the pattern to be drawn,
         # unless this pattern is also equal to the background pattern.
-        c, border = self._get_attr_index(c), self._get_attr_index(border)
-        solid = (pattern is None)
-        back = None
-        if solid:
-            tile = bytematrix.ByteMatrix(1, 8, c)
+        is_solid = (pattern is None)
+        bg_tile = None
+        if is_solid:
+            tile = bytematrix.ByteMatrix(1, 8, fill_attr)
         else:
             tile = self._mode.build_tile(bytearray(pattern)) if pattern else None
-            if background:
-                back = self._mode.build_tile(bytearray(background))
+            if bg_pattern:
+                bg_tile = self._mode.build_tile(bytearray(bg_pattern))
                 # only use first row of background
-                back = back[:1, :]
+                bg_tile = bg_tile[:1, :]
                 # illegal tile/background combo's:
                 # all, or more than two consecutive, rows equal background
                 for row in range(max(1, tile.height-2)):
                     comptile = tile[row:row+3, :]
-                    if comptile == back.vtile(comptile.height):
+                    if comptile == bg_tile.vtile(comptile.height):
                         raise error.BASICError(error.IFC)
         # viewport bounds in viewport coordinates
         bound_x0, bound_y0, bound_x1, bound_y1 = self.graph_view.get_bounds()
@@ -810,54 +810,57 @@ class Graphics(object):
             return
         self._last_point = x, y
         # paint nothing if we start on border attrib
-        if self.graph_view[y, x] == border:
+        if self.graph_view[y, x] == border_attr:
             return
         while len(line_seed) > 0:
             # consider next interval
             x_start, x_stop, y, ydir = line_seed.pop()
             # extend interval as far as it goes to left and right
-            x_left = x_start - self._scanline_until(border, y, x_start-1, bound_x0-1).width
-            x_right = x_stop + self._scanline_until(border, y, x_stop+1, bound_x1+1).width
+            x_left = x_start - self._scanline_until(border_attr, y, x_start-1, bound_x0-1).width
+            x_right = x_stop + self._scanline_until(border_attr, y, x_stop+1, bound_x1+1).width
             # check next scanlines and add intervals to the list
             if ydir == 0:
                 if y + 1 <= bound_y1:
                     line_seed = self._check_scanline(
-                        line_seed, x_left, x_right, y+1, c, tile, back, border, 1
+                        line_seed, x_left, x_right, y+1, tile, is_solid, bg_tile, border_attr, 1
                     )
                 if y - 1 >= bound_y0:
                     line_seed = self._check_scanline(
-                        line_seed, x_left, x_right, y-1, c, tile, back, border, -1
+                        line_seed, x_left, x_right, y-1, tile, is_solid, bg_tile, border_attr, -1
                     )
             else:
                 # check the same interval one scanline onward in the same direction
                 if y+ydir <= bound_y1 and y+ydir >= bound_y0:
                     line_seed = self._check_scanline(
-                        line_seed, x_left, x_right, y+ydir, c, tile, back, border, ydir
+                        line_seed, x_left, x_right, y+ydir, tile, is_solid, bg_tile, border_attr, ydir
                     )
                 # check any bit of the interval that was extended one scanline backward
                 # this is where the flood fill goes around corners.
                 if y-ydir <= bound_y1 and y-ydir >= bound_y0:
                     line_seed = self._check_scanline(
-                        line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir
+                        line_seed, x_left, x_start-1, y-ydir, tile, is_solid, bg_tile, border_attr, -ydir
                     )
                     line_seed = self._check_scanline(
-                        line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir
+                        line_seed, x_stop+1, x_right, y-ydir, tile, is_solid, bg_tile, border_attr, -ydir
                     )
             # draw the pixels for the current interval
-            if solid:
+            if is_solid:
                 self.graph_view[y, x_left:x_right+1] = tile[0, 0]
             else:
                 # convert tile to a list of attributes
                 tilerow = tile[y % tile.height, :]
                 n_tiles = 1 + (x_right+1) // tile.width - (x_left // tile.width)
                 tiles = bytematrix.hstack((tilerow,) * n_tiles)
-                interval = tiles[:, (x_left%tile.width) : (x_left%tile.width) + x_right - x_left + 1]
+                interval = tiles[
+                    :,
+                    (x_left%tile.width) : (x_left%tile.width) + x_right - x_left + 1
+                ]
                 # put to screen
                 self.graph_view[y, x_left:x_right+1] = interval
             # allow interrupting the paint
             if y % 4 == 0:
                 self._input_methods.wait()
-        self._last_attr = c
+        self._last_attr = fill_attr
 
     def _scanline_until(self, element, y, x0, x1):
         """Get row until given element."""
@@ -866,7 +869,7 @@ class Graphics(object):
         elif x1 > x0:
             row = self.graph_view[y, x0:x1]
             try:
-                # pyton2 won't do bytearray.index(int)
+                # python2 won't do bytearray.index(int)
                 index = row.to_bytes().index(int2byte(element))
                 return row[:, :index]
             except ValueError:
@@ -881,7 +884,7 @@ class Graphics(object):
 
     def _check_scanline(
             self, line_seed, x_start, x_stop, y,
-            c, tile, back, border, ydir
+            tile, is_solid, bg_tile, border_attr, ydir
         ):
         """Append all subintervals between border colours to the scanning stack."""
         if x_stop < x_start:
@@ -890,25 +893,29 @@ class Graphics(object):
         # repeat row ceildiv + 1 times to ensure we can start in the middle of the first tile
         rtile = tile[y % tile.height, :]
         repeated_tile = rtile.htile(1 - (-max_width // rtile.width))
-        if back:
-            # back is only one row
-            repeated_back = back.htile(1 - (-max_width // back.width))
+        if bg_tile:
+            # bg_tile is only one row
+            repeated_back = bg_tile.htile(1 - (-max_width // bg_tile.width))
         x = x_start
         while x <= x_stop:
             # scan horizontally until border colour found, then append interval & continue scanning
-            pattern = self._scanline_until(border, y, x, x_stop+1)
+            pattern = self._scanline_until(border_attr, y, x, x_stop+1)
             if pattern.width > 0:
                 # check if scanline pattern matches fill pattern
                 tile_x = x % rtile.width
                 has_same_pattern = (
-                    # never match zero pattern (special case)
-                    rtile != ZERO_TILE[0, :rtile.width]
+                    # don't match zero row unless pattern is solid (special case)
+                    # - avoid breaking off pattern filling on zero rows
+                    # - but also don't loop forever on solid background fills
+                    # - if the fill attribute is not 0, the behaviour differs:
+                    #   here, the fill breaks off on encountering the matching solid line
+                    (is_solid or rtile != ZERO_TILE[0, :rtile.width])
                     and pattern == repeated_tile[0, tile_x : tile_x+pattern.width]
                 )
                 # background tile specified: don't stop if we match the background tile (fully!)
-                if back:
+                if bg_tile:
                     has_same_pattern = has_same_pattern and (
-                        pattern.width < back.width
+                        pattern.width < bg_tile.width
                         or pattern != repeated_back[0, tile_x : tile_x+pattern.width]
                     )
                 # we've reached a border colour, append our interval & start a new one
@@ -1098,14 +1105,16 @@ class Graphics(object):
                 goback = False
             elif c == b'P':
                 # paint - flood fill
-                colour = gmls.parse_number()
-                error.range_check(0, 9999, colour)
+                fill_idx = gmls.parse_number()
+                error.range_check(0, 9999, fill_idx)
                 if gmls.skip_blank_read() != b',':
                     raise error.BASICError(error.IFC)
-                bound = gmls.parse_number()
-                error.range_check(0, 9999, bound)
+                border_idx = gmls.parse_number()
+                error.range_check(0, 9999, border_idx)
                 x, y = self._get_window_logical(*self._last_point)
-                self._flood_fill((x, y, False), colour, None, bound, None)
+                fill_attr = self._get_attr_index(fill_idx)
+                border_attr = self._get_attr_index(border_idx)
+                self._flood_fill((x, y, False), fill_attr, None, border_attr, None)
             else:
                 raise error.BASICError(error.IFC)
 

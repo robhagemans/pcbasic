@@ -487,7 +487,8 @@ class Float(Number):
             man += 0x80
         # note that -man >> 8 and -(man >> 8) are different
         # due to Python's rounding rules
-        return -(man >> 8) if neg else man >> 8
+        # python2: int() converts from type long if possible
+        return int(-(man >> 8) if neg else man >> 8)
 
     def from_int(self, in_int):
         """Set value to Python int."""
@@ -508,7 +509,8 @@ class Float(Number):
         """Truncate float to integer."""
         man, neg = self._to_int_den()
         # discard carry
-        return -(man >> 8) if neg else man >> 8
+        # python2: int() converts from type long if possible
+        return int(-(man >> 8) if neg else man >> 8)
 
     def mantissa(self):
         """Integer value of mantissa."""
