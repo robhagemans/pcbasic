@@ -591,10 +591,10 @@ class Graphics(object):
             rx, _ = self._get_window_scale(r, 0.)
             ry = int(round(r * aspect))
         start_octant, start_coord, start_line = -1, -1, False
-        if start:
+        if start is not None:
             start_octant, start_coord, start_line = _get_octant(start, rx, ry)
         stop_octant, stop_coord, stop_line = -1, -1, False
-        if stop:
+        if stop is not None:
             stop_octant, stop_coord, stop_line = _get_octant(stop, rx, ry)
         if aspect == 1.:
             self._draw_circle(
