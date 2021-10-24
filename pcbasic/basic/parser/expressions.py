@@ -252,7 +252,6 @@ class ExpressionParser(object):
                     break
                 elif d in op.OPERATORS:
                     ins.read(len(d))
-                    prec = op.PRECEDENCE[d]
                     # get combined operators such as >=
                     if d in op.COMBINABLE:
                         nxt = ins.skip_blank()
@@ -265,12 +264,14 @@ class ExpressionParser(object):
                         # because it will be seen as an illegal unary
                         try:
                             oper = op.UNARY[d]
+                            prec = op.PRECEDENCE[(d, nargs)]
                         except KeyError:
                             raise error.BASICError(error.STX)
                     else:
                         nargs = 2
                         try:
                             oper = op.BINARY[d]
+                            prec = op.PRECEDENCE[(d, nargs)]
                         except KeyError:
                             # illegal combined ops like == raise syntax error here
                             raise error.BASICError(error.STX)
