@@ -123,7 +123,7 @@ class MachinePorts(object):
                     _, parity, bytesize, stopbits = com_port.get_params()
                     value = self.com_enable_baud_write[com_port_nr] * 0x80
                     value += self.com_break[com_port_nr] * 0x40
-                    value += {b'S': 0x38, b'M': 0x28, b'E': 0x18, b'O': 0x8, b'N': 0}[parity]
+                    value += {'S': 0x38, 'M': 0x28, 'E': 0x18, 'O': 0x8, 'N': 0}[parity]
                     if stopbits > 1:
                         value += 0x4
                     value += bytesize - 5
@@ -233,7 +233,7 @@ class MachinePorts(object):
                     # break condition
                     self.com_break[com_port_nr] = (val & 0x40) != 0
                     # parity
-                    parity = {0x38: b'S', 0x28: b'M', 0x18: b'E', 0x8: b'O', 0: b'N'}[val&0x38]
+                    parity = {0x38: 'S', 0x28: 'M', 0x18: 'E', 0x8: 'O', 0: 'N'}[val&0x38]
                     # stopbits
                     if val & 0x4:
                         # 2 or 1.5 stop bits

@@ -12,6 +12,7 @@ import os
 import datetime
 import io
 from contextlib import contextmanager
+import platform
 
 from ...compat import iteritems
 from ...compat import console, stdio
@@ -33,6 +34,7 @@ from ..base import error
 from .. import values
 from .devicebase import Device, DeviceSettings, TextFileBase, RealTimeInputMixin
 from .devicebase import parse_protocol_string
+python_version = platform.python_version_tuple()
 
 
 ###############################################################################
@@ -54,6 +56,7 @@ class COMDevice(Device):
         self.device_file = DeviceSettings()
         # only one file open at a time
         self._file = None
+
 
     def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
         """Open a file on COMn: """
@@ -85,32 +88,34 @@ class COMDevice(Device):
     def _parse_params(self, param):
         """Parse serial port connection parameters """
         max_param = 10
-        param_list = param.upper().split(b',')
+        if python_version[0]>'2': #For python3: convert byte string into str
+            param=param.decode('latin1')
+        param_list = param.upper().split(',')
         if len(param_list) > max_param:
             raise error.BASICError(error.BAD_FILE_NAME)
-        param_list += [b''] * (max_param-len(param_list))
+        param_list += [''] * (max_param-len(param_list))
         speed, parity, data, stop = param_list[:4]
         # set speed
         if speed not in (
-                b'75', b'110', b'150', b'300', b'600', b'1200',
-                b'1800', b'2400', b'4800', b'9600', b''
+                '75', '110', '150', '300', '600', '1200',
+                '1800', '2400', '4800', '9600', ''
             ):
             # Bad file name
             raise error.BASICError(error.BAD_FILE_NAME)
         speed = int(speed) if speed else 300
         # set parity
-        if parity not in (b'S', b'M', b'O', b'E', b'N', b''):
+        if parity not in ('S', 'M', 'O', 'E', 'N', ''):
             raise error.BASICError(error.BAD_FILE_NAME)
-        parity = parity or b'E'
+        parity = parity or 'E'
         # set data bits
-        if data not in (b'4', b'5', b'6', b'7', b'8', b''):
+        if data not in ('4', '5', '6', '7', '8', ''):
             raise error.BASICError(error.BAD_FILE_NAME)
         data = int(data) if data else 7
-        bytesize = data + (parity != b'N')
+        bytesize = data + (parity != 'N')
         if bytesize not in range(5, 9):
             raise error.BASICError(error.BAD_FILE_NAME)
         # set stopbits
-        if stop not in (b'1', b'2', b''):
+        if stop not in ('1', '2', ''):
             raise error.BASICError(error.BAD_FILE_NAME)
         if not stop:
             stop = 2 if (speed in (75, 110)) else 1
@@ -121,23 +126,23 @@ class COMDevice(Device):
             if not named_param:
                 continue
             try:
-                if named_param == b'RS':
+                if named_param == 'RS':
                     # suppress request to send
                     rs = True
-                elif named_param[:2] == b'CS':
+                elif named_param[:2] == 'CS':
                     # set CTS timeout - clear to send
                     # 0 for empty string; BAD FILE NAME if not numeric
                     cs = int(named_param[2:]) if named_param[2:] else 0
-                elif named_param[:2] == b'DS':
+                elif named_param[:2] == 'DS':
                     # set DSR timeout - data set ready
                     ds = int(named_param[2:]) if named_param[2:] else 0
-                elif named_param[:2] == b'CD':
+                elif named_param[:2] == 'CD':
                     # set CD timeout - carrier detect
                     cd = int(named_param[2:]) if named_param[2:] else 0
-                elif named_param == b'LF':
+                elif named_param == 'LF':
                     # send a line feed at each return
                     lf = True
-                elif named_param == b'PE':
+                elif named_param == 'PE':
                     # enable parity checking
                     # not implemented
                     pe = True
