@@ -135,10 +135,10 @@ class Shell(object):
     def launch(self, command):
         """Run a SHELL subprocess."""
         if not self._shell:
-            logging.warning('SHELL statement not enabled: no command interpreter specified to run the SHELL command %r.',command)
+            logging.warning('SHELL statement not enabled: no command interpreter specified to run the SHELL command %r.', command)
             raise error.BASICError(error.IFC)
         else:
-            logging.debug('Executing SHELL command %r through SHELL %r', command,str(self._shell))
+            logging.debug('Executing SHELL command %r through SHELL %r', command, str(self._shell))
         cmd = split_quoted(self._shell)
         # find executable on path
         cmd[0] = which(cmd[0], path='.' + os.pathsep + os.environ.get("PATH"))
@@ -298,5 +298,5 @@ class Shell(object):
             outstr = outstr.replace(self._enc(u'\x07'), b'')
             outstr = outstr.decode(self._encoding, errors='replace')
             outstr = self._codepage.unicode_to_bytes(outstr, errors='replace')
-            logging.debug('SHELL output: %r',outstr)
+            logging.debug('SHELL output: %r', outstr)
             self._console.write(outstr)

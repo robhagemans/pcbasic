@@ -12,10 +12,11 @@ import os
 import datetime
 import io
 from contextlib import contextmanager
-import platform
+
 
 from ...compat import iteritems
 from ...compat import console, stdio
+from ...compat import PY2
 
 from .devicebase import safe_io
 
@@ -34,7 +35,6 @@ from ..base import error
 from .. import values
 from .devicebase import Device, DeviceSettings, TextFileBase, RealTimeInputMixin
 from .devicebase import parse_protocol_string
-python_version = platform.python_version_tuple()
 
 
 ###############################################################################
@@ -88,8 +88,8 @@ class COMDevice(Device):
     def _parse_params(self, param):
         """Parse serial port connection parameters """
         max_param = 10
-        if python_version[0]>'2': #For python3: convert byte string into str
-            param=param.decode('latin1')
+        if not PY2: #For python3: convert byte string into str
+            param = param.decode('latin1')
         param_list = param.upper().split(',')
         if len(param_list) > max_param:
             raise error.BASICError(error.BAD_FILE_NAME)
