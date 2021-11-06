@@ -355,9 +355,6 @@ class Interpreter(object):
                 elif jump_type == tk.GOSUB:
                     self.jump_sub(jumpnum)
                 return
-        if i == onvar-2:
-            # missing jump *just where we need it* is an error
-            raise error.BASICError(error.STX)
 
     ###########################################################################
     # loops
