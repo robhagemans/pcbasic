@@ -47,7 +47,7 @@ from .streams import StdIOBase
 # unfortunately terminfo is spotty on cursor shape and palette functionality,
 # plus most consoles claim to be xterm anyway
 
-if os.getenv('TERM').startswith('linux'):
+if os.getenv('TERM', default='').startswith('linux'):
     # linux framebuffer console
     ANSI_OVERRIDES = dict(
         # 1 invisible 2 line 3 third 4 half block 5 two thirds 6 full block

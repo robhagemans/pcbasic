@@ -33,7 +33,7 @@ else:
 HOME_DIR = os.path.expanduser(u'~')
 
 if WIN32:
-    USER_CONFIG_HOME = os.getenv(u'APPDATA')
+    USER_CONFIG_HOME = os.getenv(u'APPDATA', default=u'')
     USER_DATA_HOME = USER_CONFIG_HOME
 elif MACOS:
     USER_CONFIG_HOME = os.path.join(HOME_DIR, u'Library', u'Application Support')
