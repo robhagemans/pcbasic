@@ -150,7 +150,8 @@ class PlanedSpriteBuilder(object):
         """Build sprite from bytearray in EGA modes."""
         width, height = struct.unpack('<HH', array[:4])
         row_bytes = (width + 7) // 8
-        packed = array[4:4+row_bytes]
+        length = height * self._number_planes * row_bytes
+        packed = array[4:4+length]
         # ensure iterations over memoryview yield int, not bytes, in Python 2
         packed = iterbytes(packed)
         # unpack all planes
@@ -162,7 +163,7 @@ class PlanedSpriteBuilder(object):
         allplanes = allplanes[:, :width]
         # de-interlace planes
         sprite_planes = (
-            allplanes[_plane::height, :] << _plane
+            allplanes[_plane::self._number_planes, :] << _plane
             for _plane in range(self._number_planes)
         )
         # combine planes
