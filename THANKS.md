@@ -26,6 +26,7 @@ Avid testers and bug hunters
 - **Miguel Dorta**
 - **Patrik**
 - **Duane**
+- **Justin R. Miller**
 
 
 ### Shoulders of Giants
