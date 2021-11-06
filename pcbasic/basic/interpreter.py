@@ -355,6 +355,10 @@ class Interpreter(object):
                 elif jump_type == tk.GOSUB:
                     self.jump_sub(jumpnum)
                 return
+        # no jump args is a syntax error
+        # but *only* if the selector equals 1
+        if i == -1 and onvar == 1:
+            raise error.BASICError(error.STX)
 
     ###########################################################################
     # loops
