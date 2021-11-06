@@ -465,6 +465,8 @@ class Display(object):
         if colour is not None:
             colour = values.to_int(colour)
         list(args)
+        # wait a tick to make colour cycling loops work
+        self._queues.wait()
         if attrib is None and colour is None:
             self.colourmap.set_all(self.colourmap.default_palette)
         else:
