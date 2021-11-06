@@ -134,7 +134,7 @@ class Shell(object):
 
     def launch(self, command):
         """Run a SHELL subprocess."""
-        logging.debug('Executing SHELL command %r', command)
+        logging.debug('Executing SHELL command `%r` with command interpreter `%s`', command, self._shell)
         if not self._shell:
             logging.warning('SHELL statement not enabled: no command interpreter specified.')
             raise error.BASICError(error.IFC)
@@ -298,4 +298,5 @@ class Shell(object):
             outstr = outstr.replace(self._enc(u'\x07'), b'')
             outstr = outstr.decode(self._encoding, errors='replace')
             outstr = self._codepage.unicode_to_bytes(outstr, errors='replace')
+            logging.debug('SHELL output: %r', outstr)
             self._console.write(outstr)
