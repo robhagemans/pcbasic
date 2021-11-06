@@ -13,7 +13,7 @@ The following packages are needed or recommended when installing PC-BASIC:
 
 | Package                                                                       | OS                 | Status       | Used for
 |-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
-| [Python 3.5.10 or later](https://www.python.org/downloads/)                   | all                | required     |
+| [Python 3.6.9 or later](https://www.python.org/downloads/)                    | all                | required     |
 | [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | sound and graphics
 | [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound when using text-based interface
 | [PySerial 3.4](https://github.com/pyserial/pyserial)                          | all                | optional     | physical or emulated serial port access
