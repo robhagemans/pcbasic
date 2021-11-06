@@ -14,6 +14,8 @@ Bug fixes and guidance by
 - **Wengier Wu**
 - **Jan Bredenbeek**
 - **WJB**
+- **Rutger van Bergen**
+- **Daniel Santana**
 
 Avid testers and bug hunters
 
@@ -21,7 +23,6 @@ Avid testers and bug hunters
 - **Kenneth Wayne Boyd**
 - **Nauman Umer**
 - **Steve Pagliarulo**
-- **Daniel Santana**
 - **Miguel Dorta**
 - **Patrik**
 - **Duane**
