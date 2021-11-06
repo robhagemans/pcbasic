@@ -181,7 +181,6 @@ class EventHandler(object):
     def reset(self):
         """Reset to untriggered and disabled initial state."""
         self.gosub = None
-        self.enabled = False
         self.stopped = False
         self.triggered = False
 
