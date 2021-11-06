@@ -5,6 +5,7 @@
 50 print#1, 50
 60 a = 0: gosub 500
 61 a = 1: gosub 500
+62 a = 2: gosub 500
 69 a = -1: gosub 500
 70 a = 255: gosub 500
 71 a = 256: gosub 500
@@ -12,6 +13,7 @@
 73 a = 65535: gosub 500
 160 a = 0: gosub 600
 161 a = 1: gosub 600
+162 a = 2: gosub 600
 169 a = -1: gosub 600
 170 a = 255: gosub 600
 171 a = 256: gosub 600
@@ -40,7 +42,7 @@
 710 print#1, 710: return
 800 on a else
 810 print#1, 810: return
-1000 print#1, err, erl
+1000 print#1, err, erl, a
 1010 resume next
 
 
