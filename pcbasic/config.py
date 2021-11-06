@@ -1224,7 +1224,7 @@ class ArgumentParser(object):
                 argname, strval, abs(length), len(lst)
             )
             lst = []
-        if lst and u'listcheck' in ARGUMENTS[argname]:
+        if lst and argname in ARGUMENTS and u'listcheck' in ARGUMENTS[argname]:
             if not ARGUMENTS[argname][u'listcheck'](lst):
                 logging.warning(u'Value "%s=%s" ignored; invalid', argname, strval)
                 lst = []
