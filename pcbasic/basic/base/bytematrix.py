@@ -204,9 +204,12 @@ class ByteMatrix(object):
     @classmethod
     def frompacked(cls, packed, height, items_per_byte):
         """Unpack from packed-bits representation."""
-        if not packed:
+        packed = tuple(packed)
+        if not packed or not height:
             return cls(0, 0)
         width = len(packed) // height
+        if not width:
+            return cls(0, 0)
         return cls._create_from_rows([
             unpack_bytes(packed[_offs : _offs+width], items_per_byte)
             for _offs in xrange(0, len(packed), width)
