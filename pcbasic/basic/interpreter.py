@@ -350,15 +350,14 @@ class Interpreter(object):
         i = -1
         for i, jumpnum in enumerate(args):
             if i == onvar-1:
+                # we counted the right number of commas, then didn't find a line number
+                if jumpnum is None:
+                    raise error.BASICError(error.STX)
                 if jump_type == tk.GOTO:
                     self.jump(jumpnum)
                 elif jump_type == tk.GOSUB:
                     self.jump_sub(jumpnum)
                 return
-        # no jump args is a syntax error
-        # but *only* if the selector equals 1
-        if i == -1 and onvar == 1:
-            raise error.BASICError(error.STX)
 
     ###########################################################################
     # loops

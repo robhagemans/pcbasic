@@ -1473,8 +1473,6 @@ class Parser(object):
         yield ins.require_read((tk.GOTO, tk.GOSUB))
         while True:
             num = self._parse_optional_jumpnum(ins)
-            if num is None:
-                break
             yield num
             if not ins.skip_blank_read_if((b',',)):
                 break
