@@ -73,12 +73,12 @@ setup(
     long_description=long_description,
     url='http://pc-basic.org',
     author='Rob Hagemans',
-    author_email='robhagemans@yahoo.co.uk',
+    author_email='rob.hagemans@hotmail.com',
     license='GPLv3',
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 7 - Inactive',
         'Intended Audience :: End Users/Desktop',
         'Topic :: System :: Emulators',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
