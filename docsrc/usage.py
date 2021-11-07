@@ -83,6 +83,6 @@ def _html_to_text(html):
 
 def makeusage():
     """Build USAGE.txt file."""
-    with open(INPUT_HTML, mode='r') as html_file:
-        with open(OUTPUT_TXT, 'w') as textfile:
+    with open(INPUT_HTML, mode='r', encoding='utf-8') as html_file:
+        with open(OUTPUT_TXT, 'w', encoding='utf-8') as textfile:
             textfile.write(_html_to_text(html_file.read()))
