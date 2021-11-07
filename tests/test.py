@@ -188,7 +188,10 @@ class TestFrame(object):
                     self.known = False
         os.chdir(self._top)
         if self.passed:
-            shutil.rmtree(self._output_dir)
+            try:
+                shutil.rmtree(self._output_dir)
+            except EnvironmentError:
+                pass
 
     @contextmanager
     def check_crash(self):
