@@ -83,8 +83,8 @@ def package(**setup_options):
         """create .rpm package (requires fpm)"""
         wash()
         mkdir('dist/')
-        if os.path.exists('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,)):
-            os.unlink('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,))
+        if os.path.exists('dist/python3-pcbasic-%s-1.noarch.rpm' % (VERSION,)):
+            os.unlink('dist/python3-pcbasic-%s-1.noarch.rpm' % (VERSION,))
         stamp_release()
         _gather_resources()
         build_manifest(INCLUDE_FILES, EXCLUDE_FILES)
@@ -100,14 +100,14 @@ def package(**setup_options):
         """create .deb package (requires fpm)"""
         wash()
         mkdir('dist/')
-        if os.path.exists('dist/python-pcbasic_%s_all.deb' % (VERSION,)):
-            os.unlink('dist/python-pcbasic_%s_all.deb' % (VERSION,))
+        if os.path.exists('dist/python3-pcbasic_%s_all.deb' % (VERSION,)):
+            os.unlink('dist/python3-pcbasic_%s_all.deb' % (VERSION,))
         stamp_release()
         _gather_resources()
         build_manifest(INCLUDE_FILES, EXCLUDE_FILES)
         subprocess.call((
             'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
-            '--depends=python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
+            '--depends=python3-pkg-resources,python3-serial,python3-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
             '..'
         ), cwd='dist')
         wash()
