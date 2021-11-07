@@ -545,18 +545,18 @@ class Drawing(object):
             # check next scanlines and add intervals to the list
             if ydir == 0:
                 if y + 1 <= bound_y1:
-                    line_seed = self.check_scanline(line_seed, x_left, x_right, y+1, c, tile, back, border, 1)
+                    line_seed = self.check_scanline(line_seed, x_left, x_right, y+1, c, tile, solid, back, border, 1)
                 if y - 1 >= bound_y0:
-                    line_seed = self.check_scanline(line_seed, x_left, x_right, y-1, c, tile, back, border, -1)
+                    line_seed = self.check_scanline(line_seed, x_left, x_right, y-1, c, tile, solid, back, border, -1)
             else:
                 # check the same interval one scanline onward in the same direction
                 if y+ydir <= bound_y1 and y+ydir >= bound_y0:
-                    line_seed = self.check_scanline(line_seed, x_left, x_right, y+ydir, c, tile, back, border, ydir)
+                    line_seed = self.check_scanline(line_seed, x_left, x_right, y+ydir, c, tile, solid, back, border, ydir)
                 # check any bit of the interval that was extended one scanline backward
                 # this is where the flood fill goes around corners.
                 if y-ydir <= bound_y1 and y-ydir >= bound_y0:
-                    line_seed = self.check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir)
-                    line_seed = self.check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir)
+                    line_seed = self.check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, solid, back, border, -ydir)
+                    line_seed = self.check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, solid, back, border, -ydir)
             # draw the pixels for the current interval
             if solid:
                 self.screen.fill_interval(x_left, x_right, y, tile[0][0])
@@ -569,7 +569,7 @@ class Drawing(object):
         self.last_attr = c
 
     def check_scanline(self, line_seed, x_start, x_stop, y,
-                       c, tile, back, border, ydir):
+                       c, tile, is_solid, back, border, ydir):
         """ Append all subintervals between border colours to the scanning stack. """
         if x_stop < x_start:
             return line_seed
@@ -584,8 +584,10 @@ class Drawing(object):
             pattern = self.screen.get_until(x, x_stop+1, y, border)
             x_stop_next = x + len(pattern) - 1
             x = x_stop_next + 1
-            # never match zero pattern (special case)
-            has_same_pattern = (rtile != [0]*8)
+            # don't match zero row unless pattern is solid (special case)
+            # - avoid breaking off pattern filling on zero rows
+            # - but also don't loop forever on solid background fills
+            has_same_pattern = (is_solid or rtile != [0]*8)
             for pat_x in range(len(pattern)):
                 if not has_same_pattern:
                     break
