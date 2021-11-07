@@ -2,7 +2,7 @@
 PC-BASIC - docsrc.doc
 HTML documentation builder
 
-(c) 2013--2020 Rob Hagemans
+(c) 2013--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -13,8 +13,7 @@ from io import StringIO, open
 
 from lxml import etree
 import markdown
-from markdown.extensions.toc import TocExtension
-import markdown.extensions.headerid
+from markdown.extensions.toc import TocExtension, slugify
 
 # we're not being called from setup.py install, so we can simply import pcbasic
 from pcbasic.basic import VERSION
@@ -26,21 +25,25 @@ with open(os.path.join(BASEPATH, '..', 'setup.json'), encoding='utf-8') as setup
     SETUP_DATA = json.load(setup_data)
 
 
+def read_file(filename):
+    with open(filename, 'r', encoding='utf-8') as f:
+        return f.read()
+
+
 def _md_to_html(md_file, outf, prefix='', baselevel=1):
     """Convert markdown to html."""
-    with open(md_file, 'r', encoding='utf-8') as inf:
-        mdown = inf.read()
-        toc = TocExtension(
-            baselevel=baselevel,
-            slugify=(
-                lambda value, separator:
-                prefix + markdown.extensions.headerid.slugify(value, separator)
-            )
+    mdown = read_file(md_file)
+    toc = TocExtension(
+        baselevel=baselevel,
+        slugify=(
+            lambda value, separator:
+            prefix + slugify(value, separator)
         )
-        outf.write(markdown.markdown(
-            mdown, extensions=['markdown.extensions.tables', toc],
-            output_format='html5', lazy_ol=False
-        ))
+    )
+    outf.write(markdown.markdown(
+        mdown, extensions=['markdown.extensions.tables', toc],
+        output_format='html5', lazy_ol=False
+    ))
 
 def _maketoc(html_doc, toc):
     """Build table of contents."""
@@ -86,10 +89,10 @@ def _embed_style(html_file):
         href = node.get('href')
         css = os.path.join(BASEPATH, href)
         node.tag = 'style'
-        node.text = '\n' + open(css, 'r').read() + '\n    '
+        node.text = '\n' + read_file(css) + '\n    '
         node.attrib.clear()
         node.set('id', href)
-    with open(html_file, 'w') as f:
+    with open(html_file, 'w', encoding='utf-8') as f:
         f.write(etree.tostring(doc, method="html").decode('utf-8'))
 
 def _get_options(html_file):
@@ -121,7 +124,7 @@ def _embed_options(html_file):
     for node in doc.xpath('//span[@id="placeholder-options"]'):
         node.clear()
         node.extend(_option for _option in _get_options(html_file))
-    with open(html_file, 'w') as htmlf:
+    with open(html_file, 'w', encoding='utf-8') as htmlf:
         htmlf.write(etree.tostring(doc, method='html').decode('utf-8'))
 
 def makedoc(header=None, output=None, embedded_style=True):
@@ -154,21 +157,21 @@ def makedoc(header=None, output=None, embedded_style=True):
     major_version = '.'.join(VERSION.split('.')[:2])
     settings_html = (
         '<article>\n'
-        + open(BASEPATH + '/settings.html', 'r').read().replace('0.0', major_version)
-        + '<hr />\n' + open(BASEPATH + '/options.html', 'r').read()
-        + open(BASEPATH + '/examples.html', 'r').read() + '</article>\n'
+        + read_file(BASEPATH + '/settings.html').replace('0.0', major_version)
+        + '<hr />\n' + read_file(BASEPATH + '/options.html')
+        + read_file(BASEPATH + '/examples.html') + '</article>\n'
     )
     predoc = StringIO()
     predoc.write(quickstart_html)
-    predoc.write(open(BASEPATH + '/documentation.html', 'r').read())
+    predoc.write(read_file(BASEPATH + '/documentation.html'))
     predoc.write(settings_html)
-    predoc.write(open(BASEPATH + '/guide.html', 'r').read())
-    predoc.write(open(BASEPATH + '/reference.html', 'r').read())
-    predoc.write(open(BASEPATH + '/techref.html', 'r').read())
-    predoc.write(open(BASEPATH + '/devguide.html', 'r').read())
+    predoc.write(read_file(BASEPATH + '/guide.html'))
+    predoc.write(read_file(BASEPATH + '/reference.html'))
+    predoc.write(read_file(BASEPATH + '/techref.html'))
+    predoc.write(read_file(BASEPATH + '/devguide.html'))
     predoc.write('<article>\n' + ack_stream.getvalue()  + '</article>\n')
     predoc.write(licenses_html)
-    predoc.write(open(BASEPATH + '/footer.html', 'r').read())
+    predoc.write(read_file(BASEPATH + '/footer.html'))
     predoc.seek(0)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     if embedded_style:
@@ -229,8 +232,8 @@ def makedoc(header=None, output=None, embedded_style=True):
     tocdoc.seek(0)
     toc = StringIO()
     _maketoc(tocdoc, toc)
-    header_html = open(header, 'r').read()
-    with open(output, 'w') as outf:
+    header_html = read_file(header)
+    with open(output, 'w', encoding='utf-8') as outf:
         outf.write(header_html)
         outf.write(subheader_html)
         outf.write(toc.getvalue())

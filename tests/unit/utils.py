@@ -2,7 +2,7 @@
 PC-BASIC tests.utils
 Shared testing utilities
 
-(c) 2020 Rob Hagemans
+(c) 2020--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -32,7 +32,7 @@ class TestCase(unittest.TestCase):
         except EnvironmentError:
             pass
         if not os.path.isdir(self._dir):
-            os.mkdir(self._dir)
+            os.makedirs(self._dir)
 
     def output_path(self, *names):
         """Output file name."""

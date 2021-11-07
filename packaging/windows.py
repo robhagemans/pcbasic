@@ -2,7 +2,7 @@
 PC-BASIC - packaging.windows
 Windows packaging
 
-(c) 2015--2020 Rob Hagemans
+(c) 2015--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -13,7 +13,7 @@ import msilib
 import cx_Freeze
 from cx_Freeze import Executable
 
-from .common import wash, build_icon, build_manifest, prune, remove
+from .common import wash, build_icon, build_docs, build_manifest, prune, remove
 from .common import COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .common import NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT
 
@@ -31,6 +31,7 @@ def package(**setup_options):
         def run(self):
             """Run build_exe command."""
             build_icon()
+            build_docs()
             # only include 32-bit DLLs
             build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)

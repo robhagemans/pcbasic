@@ -2,7 +2,7 @@
 PC-BASIC - video_sdl2.py
 Graphical interface based on PySDL2
 
-(c) 2015--2020 Rob Hagemans
+(c) 2015--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -24,7 +24,6 @@ from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base import bytematrix
 from ..basic.base.eascii import as_unicode as uea
-from ..data.resources import ICON
 from .video import VideoPlugin
 from . import window
 from . import clipboard
@@ -43,6 +42,9 @@ N_BLINK_STATES = 4
 BLINK_TIME = 120
 CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
 
+
+# blank icon
+BLANK_ICON = ((0,) * 16) * 16
 
 
 ###############################################################################
@@ -329,7 +331,7 @@ class VideoSDL2(VideoPlugin):
 
     def __init__(
             self, input_queue, video_queue,
-            caption=u'', icon=ICON,
+            caption=u'', icon=BLANK_ICON,
             scaling=None, dimensions=None, aspect_ratio=(4, 3), border_width=0, fullscreen=False,
             prevent_close=False, mouse_clipboard=True,
             **kwargs
@@ -362,7 +364,7 @@ class VideoSDL2(VideoPlugin):
         # set to true if blinking attributes occur in palette
         self._palette_blinks = False
         # load the icon
-        self._icon = bytematrix.ByteMatrix(len(ICON), len(ICON[0]), ICON).hrepeat(2).vrepeat(2)
+        self._icon = bytematrix.ByteMatrix(len(icon), len(icon[0]), icon).hrepeat(2).vrepeat(2)
         # mouse setups
         self._mouse_clip = mouse_clipboard
         # keyboard setup
@@ -399,6 +401,8 @@ class VideoSDL2(VideoPlugin):
         # main window object
         self._display = None
         self._display_surface = None
+        # has mode been set at least once?
+        self._mode_set = False
         # one cache per blink state
         self._display_cache = [None] * N_BLINK_STATES
         self._has_display_cache = [False] * N_BLINK_STATES
@@ -547,7 +551,7 @@ class VideoSDL2(VideoPlugin):
     def _check_input(self):
         """Handle screen and interface events."""
         # don't try to handle events before display is set up
-        if not self._display:
+        if not self._display or not self._mode_set:
             return
         # check and handle input events
         self._last_keypress = None
@@ -1003,6 +1007,7 @@ class VideoSDL2(VideoPlugin):
             text_width, text_height, self._font_width, self._font_height,
             (canvas_width, canvas_height)
         )
+        self._mode_set = True
         self.busy = True
 
     def set_caption_message(self, msg):

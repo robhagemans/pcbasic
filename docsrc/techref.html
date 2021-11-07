@@ -1,6 +1,6 @@
 <!--
     PC-BASIC documentation
-    Copyright (c) 2014-2020 Rob Hagemans
+    Copyright (c) 2014-2021 Rob Hagemans
     This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
     http://creativecommons.org/licenses/by-sa/4.0/legalcode
 -->
@@ -911,7 +911,7 @@
         <h4 id="hex-file-format">HEX font file format</h4>
         <p>
             The HEX file format for bitfonts was developed by Roman Czyborra for the
-            GNU Unifont package. PC-BASIC uses this file format to store its fonts.
+            GNU Unifont package. PC-BASIC uses an extended version of this file format to store its fonts.
         </p>
         <p>
             A HEX file is an ASCII text file, consisting of lines terminated by <code><i>LF</i></code>.
@@ -925,18 +925,15 @@
                 A comment, starting with a <code>#</code> character.
             </li>
             <li>
-                A 4 or 6-character hexadecimal Unicode code point, followed by a colon,
-                followed by a 16- or 32-character hexadecimal number representing the glyph.
-                A 16-character number represents a halfwidth (8x16) glyph, with
-                each row of 8 pixels represented by two hexadecimal characters.
-                A 32-character number represents a fullwidth (16x16) glyph, with
-                each row of 16 pixels represented by four hexadecimal characters.
+                One or more 4 or 6-character hexadecimal Unicode code points, separated by commas,
+                followed by a colon,
+                followed by a hexadecimal number representing the glyph.
+                A 64-hexdigit or longer number represents a fullwidth (16xN) glyph, with
+                each row of 16 pixels represented by four hexadecimal digits.
+                A shorter number represents a halfwidth (8xN) glyph, with
+                each row of 8 pixels represented by two hexadecimal digits.
             </li>
         </ul>
-        <p>
-            PC-BASIC also encodes 8- and 14-pixel high fonts in this manner; these
-            are encoded as 16-bit high fonts with the remaining rows set to zero.
-        </p>
         <h4 id="ucp-file-format">UCP code page file format</h4>
         <p>
             Unicode-codepage mappings are stored in UCP files.
@@ -956,7 +953,7 @@
                 A 2- or 4-character hexadecimal codepage point, followed by a colon, followed
                 by a comma-separated list of 4- or 6-character hexadecimal Unicode code points.
                 If more than one Unicode code point is provided for a codepage point, the code points
-                must combine into a single glyph.
+                combine into a single glyph.
             </li>
         </ul>
         <h4 id="cas-file-format">CAS tape file format</h4>

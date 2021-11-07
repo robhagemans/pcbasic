@@ -2,7 +2,7 @@
 PC-BASIC - implementation.py
 Top-level implementation and main interpreter loop
 
-(c) 2013--2020 Rob Hagemans
+(c) 2013--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 import io
@@ -837,5 +837,5 @@ class Implementation(object):
     def pen_fn_(self, args):
         """PEN: poll the light pen."""
         fn, = args
-        result = self.pen.poll(fn, self.basic_events.pen.enabled, self.display.apage)
+        result = self.pen.poll(fn, self.basic_events.pen in self.basic_events.enabled, self.display.apage)
         return self.values.new_integer().from_int(result)

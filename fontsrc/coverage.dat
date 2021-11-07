@@ -17,7 +17,8 @@
 07C0-07FF N'Ko
 0800-083F Samaritan
 0840-085F Mandaic
-0860-089F Unassigned
+0860-086F Syriac Supplement
+0870-089F Unassigned
 08A0-08FF Arabic Extended - A
 0900-097F Devanagari
 0980-09FF Bengali
@@ -54,13 +55,14 @@
 19E0-19FF Khmer Symbols
 1A00-1A1F Buginese
 1A20-1AAF Tai Tham
-1AB0-1AFF Unassigned
+1AB0-1AFF Combining Diacritical Marks Extended
 1B00-1B7F Balinese
 1B80-1BBF Sundanese
 1BC0-1BFF Batak
 1C00-1C4F Lepcha
 1C50-1C7F Ol Chiki
-1C80-1CBF Unassigned
+1C80-1C8F Cyrillic Extended - C
+1C90-1CBF Georgian Extended
 1CC0-1CCF Sundanese Supplement
 1CD0-1CFF Vedic Extensions
 1D00-1D7F Phonetic Extensions
@@ -92,13 +94,13 @@
 2980-29FF Miscellaneous Mathematical Symbols - B
 2A00-2AFF Supplemental Mathematical Operators
 2B00-2BFF Miscellaneous Symbols and Arrows
-2C00-2C5F Glagolithic
-2C60-2C7F Latin Extended C
+2C00-2C5F Glagolitic
+2C60-2C7F Latin Extended - C
 2C80-2CFF Coptic
 2D00-2D2F Georgian Supplement
 2D30-2D7F Tifinagh
 2D80-2DDF Ethiopic Extended
-2DE0-2DFF Unassigned
+2DE0-2DFF Cyrillic Extended - A
 2E00-2E7F Supplemental Punctuation
 2E80-2EFF CJK Radicals Supplement
 2F00-2FDF Kangxi Radicals
@@ -117,13 +119,12 @@
 3300-33FF CJK Compatibility
 3400-4DBF CJK Unified Ideographs Extension A
 4DC0-4DFF Yijing Hexagram Symbols
-4E00-9FCF CJK Unified Ideographs
-9FD0-9FFF Unassigned
+4E00-9FFF CJK Unified Ideographs
 A000-A48F Yi Syllables
 A490-A4CF Yi Radicals
 A4D0-A4FF Lisu
 A500-A63F Vai
-A640-A69F Unassigned
+A640-A69F Cyrillic Extended - B
 A6A0-A6FF Bamum
 A700-A71F Modifier Tone Letters
 A720-A7FF Latin Extended - D
@@ -136,13 +137,14 @@ A900-A92F Kayah Li
 A930-A95F Rejang
 A960-A97F Hangul Jamo Extended - A
 A980-A9DF Javanese
-A9E0-A9FF Unassigned
+A9E0-A9FF Myanmar Extended - B
 AA00-AA5F Cham
 AA60-AA7F Myanmar Extended - A
 AA80-AADF Tai Viet
 AAE0-AAFF Meetei Mayek Extensions
 AB00-AB2F Ethiopic Extended - A
-AB30-ABBF Unassigned
+AB30-AB6F Latin Extended - E
+AB70-ABBF Cherokee Supplement
 ABC0-ABFF Meetei Mayek
 AC00-D7AF Hangul Syllables
 D7B0-D7FF Hangul Jamo Extended - B
@@ -162,86 +164,200 @@ FFF0-FFFF Specials
 ;
 ; ===== PLANE 01 =====
 ;
-;    (commented out because unifont.hex just covers Plane 0)
-;
-; 010000-01007F Linear B Syllabary
-; 010080-0100FF Linear B Ideograms
-; 010100-01013F Aegean Numbers
-; 010140-01018F Ancient Greek Numbers
-; 010190-0101CF Ancient Symbols [Unicode 5.1]
-; 0101D0-0101FF Phaistos Disc [Unicode 5.1]
-; 010280-01029F Lycian [Unicode 5.1]
-; 0102A0-0102DF Carian [Unicode 5.1]
-; 010300-01032F Old Italic
-; 010330-01034F Gothic
-; 010380-01039F Ugaritic
-; 0103A0-0103DF Old Persian
-; 010400-01044F Deseret
-; 010450-01047F Shavian
-; 010480-0104AF Osmanya
-; 010800-01083F Cypriot Syllabary
-; 010840-01085F Imperial Aramaic [Unicode 5.2]
-; 010900-01091F Phoenecian
-; 010920-01093F Lydian [Unicode 5.1]
-; 010980-01099F Meroitic Hieroglyphs [Unicode 6.1]
-; 0109A0-0109FF Meroitic Cursive [Unicode 6.1]
-; 010A00-010A5F Kharoshthi
-; 010A60-010A7F Old South Arabian [Unicode 5.2]
-; 010B00-010B3F Avestan [Unicode 5.2]
-; 010B40-010B5F Inscriptional Parthian [Unicode 5.2]
-; 010B60-010B7F Inscriptional Pahlavi [Unicode 5.2]
-; 010C00-010C4F Old Turkic [Unicode 5.2]
-; 010E60-010E7F Rumi Numeral Symbols [Unicode 5.2]
-; 011000-01107F Brahmi [Unicode 6.0]
-; 011080-0110CF Kaithi [Unicode 5.2]
-; 0110D0-0110FF Sora Sompeng [Unicode 6.1]
-; 011100-01114F Chakma [Unicode 6.1]
-; 011180-0111DF Sharada [Unicode 6.1]
-; 011680-0116CF Takri [Unicode 6.1]
-; 012000-0123FF Cuneiform
-; 012400-01247F Cuneiform Numbers and Punctuation
-; 013000-01342F Egyptian Hieroglyphs [Unicode 5.2]
-; 016800-016A3F Bamum Supplement [Unicode 6.0]
-; 016F00-016F9F Miao [Unicode 6.1]
-; 01B000-01B0FF Kana Supplement [Unicode 6.0]
-; 01D000-01D0FF Byzantine Musical Symbols
-; 01D100-01D1FF Musical Symbols
-; 01D200-01D24F Ancient Greek Musical Notation
-; 01D300-01D35F Tai Xuan Jing Symbols
-; 01D360-01D37F Counting Rod Numerals
-; 01D400-01D7FF Mathematical Alphanumeric Symbols
-; 01EE00-01EEFF Arabic Mathematical Alphabetic Symbols [Unicode 6.1]
-; 01F000-01F02F Mahjong Tiles [Unicode 5.1]
-; 01F030-01F09F Domino Tiles [Unicode 5.1]
-; 01F0A0-01F0FF Playing Cards [Unicode 6.0]
-; 01F100-01F1FF Enclosed Alphanumeric Supplement [Unicode 5.2]
-; 01F200-01F2FF Enclosed Ideographic Supplement [Unicode 5.2]
-; 01F300-01F5FF Miscellaneous Symbols and Pictographs [Unicode 6.0]
-; 01F600-01F64F Emoticons [Unicode 6.0]
-; 01F680-01F6FF Transport and Map Symbols [Unicode 6.0]
-; 01F700-01F77F Alchemical Symbols [Unicode 6.0]
+010000-01007F Linear B Syllabary
+010080-0100FF Linear B Ideograms
+010100-01013F Aegean Numbers
+010140-01018F Ancient Greek Numbers
+010190-0101CF Ancient Symbols
+0101D0-0101FF Phaistos Disc
+010200-01027F Unassigned
+010280-01029F Lycian
+0102A0-0102DF Carian
+0102E0-0102FF Coptic Epact Numbers
+010300-01032F Old Italic
+010330-01034F Gothic
+010350-01037F Old Permic
+010380-01039F Ugaritic
+0103A0-0103DF Old Persian
+0103E0-0103FF Unassigned
+010400-01044F Deseret
+010450-01047F Shavian
+010480-0104AF Osmanya
+0104B0-0104FF Osage
+010500-01052F Elbasan
+010530-01056F Caucasian Albanian
+010570-0105FF Unassigned
+010600-01077F Linear A
+010780-0107FF Unassigned
+010800-01083F Cypriot Syllabary
+010840-01085F Imperial Aramaic
+010860-01087F Palmyrene
+010880-0108AF Nabataean
+0108B0-0108DF Unassigned
+0108E0-0108FF Hatran
+010900-01091F Phoenecian
+010920-01093F Lydian
+010940-01097F Unassigned
+010980-01099F Meroitic Hieroglyphs
+0109A0-0109FF Meroitic Cursive
+010A00-010A5F Kharoshthi
+010A60-010A7F Old South Arabian
+010A80-010A9F Old North Arabian
+010AA0-010ABF Unassigned
+010AC0-010AFF Manichaean
+010B00-010B3F Avestan
+010B40-010B5F Inscriptional Parthian
+010B60-010B7F Inscriptional Pahlavi
+010B80-010BAF Psalter Pahlavi
+010BB0-010BFF Unassigned
+010C00-010C4F Old Turkic
+010C50-010C7F Unassigned
+010C80-010CFF Old Hungarian
+010D00-010D3F Hanifi Rohingya
+010D40-010E5F Unassigned
+010E60-010E7F Rumi Numeral Symbols
+010E80-010EBF Yezidi
+010EC0-010EFF Unassigned
+010F00-010F2F Old Sogdian
+010F30-010F6F Sogdian
+010F70-010FAF Unassigned
+010FB0-010FDF Chorasmian
+010FE0-010FFF Elymaic
+011000-01107F Brahmi
+011080-0110CF Kaithi
+0110D0-0110FF Sora Sompeng
+011100-01114F Chakma
+011150-01117F Mahajani
+011180-0111DF Sharada
+0111E0-0111FF Sinhala Archaic Numbers
+011200-01124F Khojki
+011250-01127F Unassigned
+011280-0112AF Multani
+0112B0-0112FF Khudawadi
+011300-01137F Grantha
+011380-0113FF Unassigned
+011400-01147F Newa
+011480-0114DF Tirhuta
+0114E0-01157F Unassigned
+011580-0115FF Siddham
+011600-01165F Modi
+011660-01167F Mongolian Supplement
+011680-0116CF Takri
+0116D0-0116FF Unassigned
+011700-01173F Ahom
+011740-0117FF Unassigned
+011800-01184F Dogra
+011850-01189F Unassigned
+0118A0-0118FF Warang Citi
+011900-01195F Dives Akuru
+011960-01199F Unassigned
+0119A0-0119FF Nandinagari
+011A00-011A4F Zanabazar Square
+011A50-011AAF Soyombo
+011AB0-011ABF Unassigned
+011AC0-011AFF Pau Cin Hau
+011B00-011BFF Unassigned
+011C00-011C6F Bhaiksuki
+011C70-011CBF Marchen
+011CC0-011CFF Unassigned
+011D00-011D5F Masaram Gondi
+011D60-011DAF Gunjala Gondi
+011DB0-011EDF Unassigned
+011EE0-011EFF Makasar
+011F00-011FAF Unassigned
+011FB0-011FBF Lisu Supplement
+011FC0-011FFF Tamil Supplement
+012000-0123FF Cuneiform
+012400-01247F Cuneiform Numbers and Punctuation
+012480-01254F Early Dynastic Cuneiform
+012550-012FFF Unassigned
+013000-01342F Egyptian Hieroglyphs
+013430-01343F Egyptian Hieroglyph Format Controls
+013440-0143FF Unassigned
+014400-01467F Anatolian Hieroglyphs
+014680-0167FF Unassigned
+016800-016A3F Bamum Supplement
+016A40-016A6F Mro
+016A70-016ACF Unassigned
+016AD0-016AFF Bassa Vah
+016B00-016B8F Pahawh Hmong
+016B90-016E3F Unassigned
+016E40-016E9F Medefaidrin
+016EA0-016EFF Unassigned
+016F00-016F9F Miao
+016FA0-016FDF Unassigned
+016FE0-016FFF Ideographic Symbols and Punctuation
+017000-0187FF Tangut
+018800-018AFF Tangut Components
+018B00-018CFF Khitan Small Script
+018D00-018D0F Tangut Supplement
+018D10-01AFFF Unassigned
+01B000-01B0FF Kana Supplement
+01B100-01B12F Kana Extended - A
+01B130-01B16F Small Kana Extension
+01B170-01B2FF Nushu
+01B300-01BBFF Unassigned
+01BC00-01BC9F Duployan
+01BCA0-01BCAF Shorthand Format Controls
+01BCB0-01CFFF Unassigned
+01D000-01D0FF Byzantine Musical Symbols
+01D100-01D1FF Musical Symbols
+01D200-01D24F Ancient Greek Musical Notation
+01D250-01D2DF Unassigned
+01D2E0-01D2FF Mayan Numerals
+01D300-01D35F Tai Xuan Jing Symbols
+01D360-01D37F Counting Rod Numerals
+01D380-01D3FF Unassigned
+01D400-01D7FF Mathematical Alphanumeric Symbols
+01D800-01DAAF Sutton Sign Writing
+01DAB0-01DFFF Unassigned
+01E000-01E02F Glagolitic Supplement
+01E030-01E0FF Unassigned
+01E100-01E14F Nyiakeng Puachue Hmong
+01E150-01E2BF Unassigned
+01E2C0-01E2FF Wancho
+01E300-01E7FF Unassigned
+01E800-01E8DF Mende Kikakui
+01E8E0-01E8FF Unassigned
+01E900-01E95F Adlam
+01E960-01EC6F Unassigned
+01EC70-01ECBF Indic Siyaq Numbers
+01ECC0-01ECFF Unassigned
+01ED00-01ED4F Ottoman Siyaq Numbers
+01ED50-01EDFF Unassigned
+01EE00-01EEFF Arabic Mathematical Alphabetic Symbols
+01EF00-01EFFF Unassigned
+01F000-01F02F Mahjong Tiles
+01F030-01F09F Domino Tiles
+01F0A0-01F0FF Playing Cards
+01F100-01F1FF Enclosed Alphanumeric Supplement
+01F200-01F2FF Enclosed Ideographic Supplement
+01F300-01F5FF Miscellaneous Symbols and Pictographs
+01F600-01F64F Emoticons
+01F650-01F67F Ornamental Dingbats
+01F680-01F6FF Transport and Map Symbols
+01F700-01F77F Alchemical Symbols
+01F780-01F7FF Geometric Shapes Extended
+01F800-01F8FF Supplemental Arrows - C
+01F900-01F9FF Supplemental Symbols and Pictographs
+01FA00-01FA6F Chess Symbols
+01FA70-01FAFF Symbols and Pictographs Extended - A
+01FB00-01FBFF Symbols for Legacy Computing
+01FC00-01FFFF Unassigned
 ;
 ; ===== PLANE 02 =====
 ;
-;    (commented out because unifont.hex just covers Plane 0)
-;
-; 02F800-02F8BF CJK Compatibility Ideographs Supplement
+020000-02A6FF CJK Unified Ideographs Extension B
+02A700-02B73F CJK Unified Ideographs Extension C
+02B740-02B81F CJK Unified Ideographs Extension D
+02B820-02CEAF CJK Unified Ideographs Extension E
+02CEB0-02F7FF CJK Unified Ideographs Extension F
+02F800-02FF7F CJK Compatibility Ideographs Supplement
 ;
 ; ===== PLANE 0E =====
 ;
-;    (commented out because unifont.hex just covers Plane 0)
+0E0000-0E007F Tags
+0E0100-0E01EF Variation Selectors Supplement
 ;
-; 0E0000-0E007F Tags
-; 0E0100-0E01EF Variation Selectors Supplement
+; ===== PLANE 0F (Private Use Area) =====
 ;
-;    (check rendering of all of these)
-; 10A01-10A03
-; 10A05-10A06
-; 10A0C-10A0F
-; 10A38-10A3A
-; 10A3F
-;   (check rendering of all these)
-; 1D165-1D169
-; 1D16D-1D172
-; 1D17B-1D18B
-; 1D1AA-1D1AD

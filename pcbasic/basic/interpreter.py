@@ -2,7 +2,7 @@
 PC-BASIC - interpreter.py
 BASIC interpreter
 
-(c) 2013--2020 Rob Hagemans
+(c) 2013--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -350,14 +350,14 @@ class Interpreter(object):
         i = -1
         for i, jumpnum in enumerate(args):
             if i == onvar-1:
+                # we counted the right number of commas, then didn't find a line number
+                if jumpnum is None:
+                    raise error.BASICError(error.STX)
                 if jump_type == tk.GOTO:
                     self.jump(jumpnum)
                 elif jump_type == tk.GOSUB:
                     self.jump_sub(jumpnum)
                 return
-        if i == onvar-2:
-            # missing jump *just where we need it* is an error
-            raise error.BASICError(error.STX)
 
     ###########################################################################
     # loops

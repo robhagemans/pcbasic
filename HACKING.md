@@ -13,7 +13,7 @@ The following packages are needed or recommended when installing PC-BASIC:
 
 | Package                                                                       | OS                 | Status       | Used for
 |-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
-| [Python 3.5.10 or later](https://www.python.org/downloads/)                   | all                | required     |
+| [Python 3.6.9 or later](https://www.python.org/downloads/)                    | all                | required     |
 | [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | sound and graphics
 | [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound when using text-based interface
 | [PySerial 3.4](https://github.com/pyserial/pyserial)                          | all                | optional     | physical or emulated serial port access
@@ -24,7 +24,7 @@ The following packages are needed or recommended when installing PC-BASIC:
 `setuptools` and `pip` are included with Python.
 Once you have a working Python installation, most dependencies can be installed with `pip`:
 
-        pip install pyaudio pyserial
+        pip3 install pyaudio pyserial
 
 To use the graphical interface, you will also need to install the [SDL2](https://www.libsdl.org/download-2.0.php) library.
 Install the library in your OS's standard location for libraries.
@@ -39,8 +39,6 @@ is only needed to access physical parallel ports, not for printing to a CUPS or 
 Note that most modern machines do not actually have parallel ports. If you have a parallel port and want to use it with PC-BASIC,
 download and install PyParallel from the link above. Although a `pyparallel` package exists in on PyPI, at present this does not work
 as essential libraries are missing.
-
-Alternatively to the latest Python, for now PC-BASIC remains compatible with [Python 2.7](https://www.python.org/downloads/release/python-2718/).
 
 
 #### External tools ####
@@ -129,12 +127,18 @@ Those who prefer to use the [MinGW](http://mingw.org/) GCC compiler, follow thes
         gcc -shared -o SDL2_gfx.dll *.o SDL2.dll
 
 
+#### Deprecation warnings ####
+
+The following features are deprecated and **will be removed in the near future**:
+- Python 2.7 support
+- The PyGame interface
+- The option `--utf8` (use `--text-encoding=utf8`)
+- The aliases `freedos`, `univga`, and `unifont` for the default font (use `--font=default`)
+
+
+
 #### Contributing code ####
 
-The current code base of PC-BASIC was written by a single author, Rob Hagemans.
-That is not to say it should stay that way. If you would like to contribute
-code to PC-BASIC, please contact the author at _robhagemans@users.sourceforge.net_.
-
-You'll need to agree for your code contributions to be licensed under the [Expat MIT License](https://opensource.org/licenses/MIT).
+Code contributions are much appreciated! You'll need to agree for your code contributions to be licensed under the [Expat MIT License](https://opensource.org/licenses/MIT).
 This is a more permissive licence than PC-BASIC is (currently) released under. The reason I ask for
 a permissive licence for contributions is that it allows me to re-license the code at a later date.

@@ -2,7 +2,7 @@
 PC-BASIC - compat.base
 Cross-platform compatibility utilities
 
-(c) 2018--2020 Rob Hagemans
+(c) 2018--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -33,7 +33,7 @@ else:
 HOME_DIR = os.path.expanduser(u'~')
 
 if WIN32:
-    USER_CONFIG_HOME = os.getenv(u'APPDATA')
+    USER_CONFIG_HOME = os.getenv(u'APPDATA', default=u'')
     USER_DATA_HOME = USER_CONFIG_HOME
 elif MACOS:
     USER_CONFIG_HOME = os.path.join(HOME_DIR, u'Library', u'Application Support')
@@ -55,26 +55,52 @@ else:
 
 # utility functions, this has to go somewhere...
 
-def split_quoted(line, split_by=u'\s', quote=u'"', strip_quotes=False):
-    """Split by separators, preserving quoted blocks."""
+def _build_split_regexp(split_by, quote, as_type):
+    """
+    Build regexp for use with split_quoted and split_pair.
+    `split_by` and `quote` must be of type `as_type`.
+    """
+    if not quote:
+        quote = as_type()
+    quote = re.escape(quote)
+    if split_by is None:
+        # by default, split on whitespace
+        split_by = u'\s'
+    else:
+        split_by = re.escape(split_by)
     # https://stackoverflow.com/questions/16710076/python-split-a-string-respect-and-preserve-quotes
-    regexp = r'(?:[^{split_by}{quote}]|{quote}(?:\\.|[^{quote}])*{quote})+'.format(
-        split_by=split_by, quote=quote
+    # note ur'' is not accepted by python 3, and r'' means bytes in python2.
+    # bytes has no .format so using % which is awkward here
+    pattern = (
+        br'(?:[^{%s}{%s}]|[{%s}](?:\\.|[^{%s}])*[{%s}])+'
     )
+    if as_type == type(u''):
+        # we know the template pattern string and ascii is ok
+        pattern = pattern.decode('ascii', 'ignore')
+    regexp = pattern % (split_by, quote, quote, quote, quote)
+    return regexp
+
+def split_quoted(line, split_by=None, quote=None, strip_quotes=False):
+    """
+    Split by separators, preserving quoted blocks; \\ escapes quotes.
+    """
+    regexp = _build_split_regexp(split_by, quote, as_type=type(line))
     chunks = re.findall(regexp, line)
     if strip_quotes:
         chunks = [c.strip(quote) for c in chunks]
     return chunks
 
-def split_pair(s, sep):
-    """Split an argument by separator, always return two elements."""
-    slist = s.split(sep, 1)
-    s0 = slist[0]
-    if len(slist) > 1:
-        s1 = slist[1]
-    else:
-        s1 = u''
-    return s0, s1
+def split_pair(line, split_by=None, quote=None):
+    """
+    Split by separators, preserving quoted blocks; \\ escapes quotes.
+    First match only, always return two values.
+    """
+    regexp = _build_split_regexp(split_by, quote, as_type=type(line))
+    for match in re.finditer(regexp, line):
+        s0 = match.group()
+        s1 = line[match.end()+1:]
+        # only loop once
+        return s0, s1
 
 def iter_chunks(char_list, attrs):
     """Iterate over list yielding chunks of elements with the same attribute."""

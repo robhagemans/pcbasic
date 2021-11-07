@@ -1,23 +1,26 @@
 # OEM 864: MS-DOS Arabic
+# 00-0F, 9F: https://en.wikipedia.org/wiki/Code_page_864
 # 80-FF: http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP864.TXT
-# NOTE: x25 is shown as U+066a ARABIC PERCENT SIGN but treated as %
+# NOTE:
+#   x25 is shown as U+066a ARABIC PERCENT SIGN but treated as %
+#   x2a is shown as U+066d ARABIC FIVE POINTED STAR but treated as *
 #
 00:0000
 01:263a
-02:263b
-03:2665
-04:2666
-05:2663
-06:2660
-07:2022
-08:25d8
-09:25cb
-0a:25d9
-0b:2642
-0c:2640
-0d:266a
-0e:266b
-0f:263c
+02:266a
+03:266b
+04:263c
+05:2550
+06:2551
+07:256c
+08:2563
+09:2566
+0a:2560
+0b:2569
+0c:2557
+0d:2554
+0e:255a
+0f:255d
 10:25ba
 11:25c4
 12:2195
@@ -44,7 +47,7 @@
 27:0027
 28:0028
 29:0029
-2a:002a
+2a:066d
 2b:002b
 2c:002c
 2d:002d
@@ -161,7 +164,7 @@
 9c:0000
 9d:fefb
 9e:fefc
-9f:0000
+9f:fe73
 a0:00a0
 a1:00ad
 a2:fe82

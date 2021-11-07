@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 PC-BASIC packaging.common
 Python, Windows, MacOS and Linux packaging utilities
 
-(c) 2015--2020 Rob Hagemans
+(c) 2015--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -29,7 +29,7 @@ from PIL import Image
 # we're not setup.py and not being called by the sdist installer
 # so we can import from the package if we want
 from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
-from pcbasic.data import ICON
+from pcbasic.basic.data import ICON
 from pcbasic.compat import int2byte
 
 

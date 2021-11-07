@@ -1,6 +1,6 @@
 <!--
     PC-BASIC documentation
-    Copyright (c) 2014-2020 Rob Hagemans
+    Copyright (c) 2014-2021 Rob Hagemans
     This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
     http://creativecommons.org/licenses/by-sa/4.0/legalcode
 -->
@@ -945,12 +945,6 @@
                     <td></td>
                 </tr>
                 <tr>
-                    <td><code>806</code></td>
-                    <td>IBM-PC Devanagari</td>
-                    <td>Hindi</td>
-                    <td></td>
-                </tr>
-                <tr>
                     <td><code>850</code></td>
                     <td>DOS Latin 1</td>
                     <td>Western European languages</td>
@@ -1143,66 +1137,6 @@
                     <td><a href="#bidi"><i>B</i></a></td>
                 </tr>
                 <tr>
-                    <td><code>iscii-as</code></td>
-                    <td>ISCII Assamese</td>
-                    <td>Assamese</td>
-                    <td><a href="#combi"><i>C</i></a></td>
-                </tr>
-                <tr>
-                    <td><code>iscii-be</code></td>
-                    <td>ISCII Bengali</td>
-                    <td>Bengali</td>
-                    <td><a href="#combi"><i>C</i></a></td>
-                </tr>
-                <tr>
-                    <td><code>iscii-de</code></td>
-                    <td>ISCII Devanagari</td>
-                    <td>Hindi, Marathi, Sanskrit, Konkani, Nepali</td>
-                    <td><a href="#combi"><i>C</i></a></td>
-                </tr>
-                <tr>
-                    <td><code>iscii-gu</code></td>
-                    <td>ISCII Gujarati</td>
-                    <td>Gujarati</td>
-                    <td><a href="#combi"><i>C</i></a></td>
-                </tr>
-                <tr>
-                    <td><code>iscii-ka</code></td>
-                    <td>ISCII Kannada</td>
-                    <td>Kannada</td>
-                    <td><a href="#combi"><i>C</i></a></td>
-                </tr>
-                <tr>
-                    <td><code>iscii-ma</code></td>
-                    <td>ISCII Malayalam</td>
-                    <td>Malayalam</td>
-                    <td><a href="#combi"><i>C</i></a></td>
-                </tr>
-                <tr>
-                    <td><code>iscii-or</code></td>
-                    <td>ISCII Oriya</td>
-                    <td>Oriya</td>
-                    <td><a href="#combi"><i>C</i></a></td>
-                </tr>
-                <tr>
-                    <td><code>iscii-pa</code></td>
-                    <td>ISCII Punjabi</td>
-                    <td>Punjabi</td>
-                    <td><a href="#combi"><i>C</i></a></td>
-                </tr>
-                <tr>
-                    <td><code>iscii-ta</code></td>
-                    <td>ISCII Tamil</td>
-                    <td>Tamil</td>
-                    <td><a href="#combi"><i>C</i></a></td>
-                </tr>
-                <tr>
-                    <td><code>iscii-te</code></td>
-                    <td>ISCII Telugu</td>
-                    <td>Telugu</td>
-                    <td><a href="#combi"><i>C</i></a></td>
-                </tr>
-                <tr>
                     <td><code>kamenicky</code></td>
                     <td>Kamenick&#253;; cp895</td>
                     <td>Czech</td>
@@ -1243,12 +1177,6 @@
                     <td>GOST Osnovnoj Variant</td>
                     <td>Russian</td>
                     <td></td>
-                </tr>
-                <tr>
-                    <td><code>pascii</code></td>
-                    <td>PASCII</td>
-                    <td>Kashmiri, Persian, Sindhi, Urdu</td>
-                    <td><a href="#bidi"><i>B</i></a></td>
                 </tr>
                 <tr>
                     <td><code>ruscii</code></td>
@@ -1298,15 +1226,10 @@
                 DOS Latin USA 437.
             </p>
             <p>
-                To support code pages beyond 437, PC-BASIC defaults to the <strong>CPIDOS</strong> font used by
-                default in FreeDOS and DOSBox. This font is very similar in style to the IBM VGA
+                PC-BASIC defaults to a font which is very similar in style to the IBM VGA
                 font but has support for many more code pages, in particular Western and Middle
-                Eastern alphabets. If CPIDOS does not include the characters you need, PC-BASIC
-                tries to find them in <strong>UNI-VGA</strong>, which is also very similar in style to VGA.
-                If that does not suffice, PC-BASIC falls back to <strong>GNU UniFont</strong> for the
-                missing characters. UniFont's Western glyphs are less similar to the VGA font, but
-                it provides support for the full Unicode Basic Multilingual Plane. For example, all Chinese,
-                Japanese and Korean glyphs in PC-BASIC are taken from UniFont.
+                Eastern alphabets. Chinese, Japanese and Korean are supported through "fullwidth"
+                glyphs which take the space of two regular characters.
             </p>
             <p>
                 It is possible to change the choice of font using the <code><a href="#--font">font=</a></code> option.
@@ -1314,7 +1237,7 @@
                 most preferred one.
             </p>
             <p>
-                PC-BASIC reads fonts in the <code>.hex</code> format introduced by UniFont. It's
+                PC-BASIC reads fonts in a variant of the <code>.hex</code> format introduced by UniFont. It's
                 easy to define custom fonts in this format: it can be edited in a regular text editor.
                 See the UniFont project for an authoring tool. You can add custom fonts to PC-BASIC by
                 installing them into the <code>font/</code> subdirectory of PC-BASIC's installation
@@ -1332,22 +1255,10 @@
                     <th>Codepages</th>
                 </tr>
                 <tr>
-                    <td><code>unifont</code></td>
-                    <td>GNU UniFont</td>
-                    <td>16</td>
-                    <td>all</td>
-                </tr>
-                <tr>
-                    <td><code>univga</code></td>
-                    <td>Uni-VGA font</td>
-                    <td>16</td>
-                    <td>many</td>
-                </tr>
-                <tr>
-                    <td><code>freedos</code></td>
-                    <td>FreeDOS CPIDOS font</td>
+                    <td><code>default</code></td>
+                    <td>PC-BASIC default font</td>
                     <td>8, 14, 16</td>
-                    <td>many</td>
+                    <td>all bundled codepages</td>
                 </tr>
                 <tr>
                     <td><code>cga</code></td>
@@ -1387,12 +1298,13 @@
                 </tr>
             </table></div>
             <p>
-                GNU UniFont contains glyphs for all the defined code points of the
-                Basic Multilingual Plane of Unicode 7.0, which makes it an
-                excellent fallback font. Its glyphs are not, however, very similar
-                to those that were used on DOS machines; both Uni-VGA and the
-                FreeDOS CPIDOS fonts are therefore more suitable, when they have
-                the required glyphs.
+                If not all glyphs are found in the specified font(s), the <code>default</code>
+                font is used as a fallback.
+            </p>
+            <p>
+                The font names <code>freedos</code>, <code>univga</code>, and <code>unifont</code>
+                are treated as synonyms of <code>default</code> unless a font with one of these names
+                is available. This behaviour is deprecated.
             </p>
         </section>
         <hr />
@@ -1437,8 +1349,9 @@
             <p>
                 You can use the command-line interface to run one or a few BASIC commands directly, like so:
             </p>
-            <samp class="block">me@mybox$ <b>pcbasic -bqe="?1+1"</b>
-                <b>2</b>
+            <samp class="block">
+                me@mybox$ <b>pcbasic -c '?1+1'</b><br />
+                <b>&nbsp;2</b><br />
                 me@mybox$
             </samp>
             <p>

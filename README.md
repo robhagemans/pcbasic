@@ -27,7 +27,7 @@ If you find bugs, please [open an issue on GitHub](https://github.com/robhageman
 
 PC-BASIC desktop installers for Windows, Mac, and Linux can be downloaded from [GitHub](https://github.com/robhagemans/pcbasic/releases).
 
-Python users can obtain the PC-BASIC package from [PyPI](https://pypi.org/project/pcbasic/) through `pip install pcbasic`.
+Python users can obtain the PC-BASIC package from [PyPI](https://pypi.org/project/pcbasic/) through `pip3 install pcbasic`.
 
 
 #### BASIC survival kit ####

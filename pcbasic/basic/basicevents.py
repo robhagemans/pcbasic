@@ -2,7 +2,7 @@
 PC-BASIC - basicevents.py
 Handlers for BASIC events
 
-(c) 2013--2020 Rob Hagemans
+(c) 2013--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -181,7 +181,6 @@ class EventHandler(object):
     def reset(self):
         """Reset to untriggered and disabled initial state."""
         self.gosub = None
-        self.enabled = False
         self.stopped = False
         self.triggered = False
 

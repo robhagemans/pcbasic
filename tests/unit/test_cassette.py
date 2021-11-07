@@ -2,7 +2,7 @@
 PC-BASIC test.cassette
 Tests for cassette device
 
-(c) 2020 Rob Hagemans
+(c) 2020--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -33,7 +33,7 @@ class CassetteTest(TestCase):
     def setUp(self):
         """Ensure output directory exists."""
         try:
-            os.mkdir(_output_file(u''))
+            os.makedirs(_output_file(u''))
         except EnvironmentError:
             pass
 

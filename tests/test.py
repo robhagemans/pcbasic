@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 PC-BASIC test script
 
-(c) 2015--2020 Rob Hagemans
+(c) 2015--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -139,7 +139,8 @@ class TestFrame(object):
         if os.path.isdir(self._output_dir):
             self.old_fail = True
             shutil.rmtree(self._output_dir)
-        os.mkdir(self._output_dir)
+        os.makedirs(self._output_dir)
+        #os.mkdir(self._output_dir)
         for filename in os.listdir(self._dirname):
             if os.path.isfile(os.path.join(self._dirname, filename)):
                 shutil.copy(
@@ -187,7 +188,10 @@ class TestFrame(object):
                     self.known = False
         os.chdir(self._top)
         if self.passed:
-            shutil.rmtree(self._output_dir)
+            try:
+                shutil.rmtree(self._output_dir)
+            except EnvironmentError:
+                pass
 
     @contextmanager
     def check_crash(self):

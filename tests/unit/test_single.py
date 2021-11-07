@@ -2,7 +2,7 @@
 PC-BASIC test.single
 unit tests for single precision MBF floats
 
-(c) 2020 Rob Hagemans
+(c) 2020--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -45,6 +45,10 @@ class TestSingle(unittest.TestCase):
     def setUp(self):
         """Create the Values object."""
         self._vm = Values(None, False)
+        try:
+            os.makedirs(os.path.join(HERE, 'output', 'single'))
+        except EnvironmentError:
+            pass
 
     def test_single(self):
         """Test MBF single representation."""

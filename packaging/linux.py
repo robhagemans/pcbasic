@@ -2,7 +2,7 @@
 PC-BASIC - packaging.linux
 Linux packaging
 
-(c) 2015--2020 Rob Hagemans
+(c) 2015--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -13,7 +13,7 @@ from io import open
 
 from setuptools import setup
 
-from .common import wash, new_command, build_icon, build_manifest, stamp_release, mkdir, remove
+from .common import wash, new_command, build_icon, build_docs, build_manifest, stamp_release, mkdir, remove
 from .common import HERE, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES
 from .common import AUTHOR, VERSION
 
@@ -45,6 +45,7 @@ def package(**setup_options):
             ))
             xdg_file.write(u'\n')
         build_icon()
+        build_docs()
         shutil.copy('doc/pcbasic.1.gz', 'resources/pcbasic.1.gz')
         # prepare a setup.cfg in the root
         with open(SETUP_CFG, 'w') as setup_cfg:
@@ -83,8 +84,8 @@ def package(**setup_options):
         """create .rpm package (requires fpm)"""
         wash()
         mkdir('dist/')
-        if os.path.exists('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,)):
-            os.unlink('dist/python-pcbasic-%s-1.noarch.rpm' % (VERSION,))
+        if os.path.exists('dist/python3-pcbasic-%s-1.noarch.rpm' % (VERSION,)):
+            os.unlink('dist/python3-pcbasic-%s-1.noarch.rpm' % (VERSION,))
         stamp_release()
         _gather_resources()
         build_manifest(INCLUDE_FILES, EXCLUDE_FILES)
@@ -100,14 +101,14 @@ def package(**setup_options):
         """create .deb package (requires fpm)"""
         wash()
         mkdir('dist/')
-        if os.path.exists('dist/python-pcbasic_%s_all.deb' % (VERSION,)):
-            os.unlink('dist/python-pcbasic_%s_all.deb' % (VERSION,))
+        if os.path.exists('dist/python3-pcbasic_%s_all.deb' % (VERSION,)):
+            os.unlink('dist/python3-pcbasic_%s_all.deb' % (VERSION,))
         stamp_release()
         _gather_resources()
         build_manifest(INCLUDE_FILES, EXCLUDE_FILES)
         subprocess.call((
             'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
-            '--depends=python-serial,python-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
+            '--depends=python3-pkg-resources,python3-serial,python3-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
             '..'
         ), cwd='dist')
         wash()

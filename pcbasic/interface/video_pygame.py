@@ -2,7 +2,7 @@
 PC-BASIC - video_pygame.py
 Graphical interface based on PyGame
 
-(c) 2013--2020 Rob Hagemans
+(c) 2013--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -18,7 +18,6 @@ from ..basic.base import signals
 from ..basic.base import scancode
 from ..basic.base import bytematrix
 from ..basic.base.eascii import as_unicode as uea
-from ..data.resources import ICON
 from ..compat import WIN32, MACOS, PY2
 from ..compat import set_dpi_aware
 from .video import VideoPlugin
@@ -34,6 +33,9 @@ BLINK_CYCLES = 5
 BLINK_TIME = 120
 CYCLE_TIME = BLINK_TIME // BLINK_CYCLES
 
+# blank icon
+BLANK_ICON = ((0,) * 16) * 16
+
 
 @video_plugins.register('pygame')
 class VideoPygame(VideoPlugin):
@@ -41,7 +43,7 @@ class VideoPygame(VideoPlugin):
 
     def __init__(
             self, input_queue, video_queue,
-            caption=u'', icon=ICON,
+            caption=u'', icon=BLANK_ICON,
             scaling=None, dimensions=None, aspect_ratio=(4, 3), border_width=0, fullscreen=False,
             prevent_close=False, mouse_clipboard=True,
             **kwargs

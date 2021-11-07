@@ -2,7 +2,7 @@
 PC-BASIC - interface.audio_portaudio
 Sound interface based on PortAudio
 
-(c) 2015--2020 Rob Hagemans
+(c) 2015--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -73,22 +73,25 @@ class AudioPortAudio(AudioPlugin):
         self._samples = [bytearray() for _ in synthesiser.VOICES]
         self._device = None
         self._stream = None
+        self._alsa_muffle = None
         self._min_samples_buffer = 2 * _BUFSIZE
         AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
-        with _quiet_alsa():
-            self._device = pyaudio.PyAudio()
-            self._stream = self._device.open(
-                format=pyaudio.paInt8, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
-                frames_per_buffer=_BUFSIZE, stream_callback=self._get_next_chunk
-            )
-            self._stream.start_stream()
-            AudioPlugin.__enter__(self)
+        self._alsa_muffle = _quiet_alsa()
+        self._alsa_muffle.__enter__()
+        self._device = pyaudio.PyAudio()
+        self._stream = self._device.open(
+            format=pyaudio.paInt8, channels=1, rate=synthesiser.SAMPLE_RATE, output=True,
+            frames_per_buffer=_BUFSIZE, stream_callback=self._get_next_chunk
+        )
+        self._stream.start_stream()
+        AudioPlugin.__enter__(self)
 
     def __exit__(self, type, value, traceback):
         """Close down PortAudio."""
+        self._alsa_muffle.__exit__(type, value, traceback)
         self._stream.stop_stream()
         self._stream.close()
         self._device.terminate()

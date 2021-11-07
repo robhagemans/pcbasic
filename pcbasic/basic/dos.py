@@ -2,7 +2,7 @@
 PC-BASIC - dos.py
 Operating system shell and environment
 
-(c) 2013--2020 Rob Hagemans
+(c) 2013--2021 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -134,11 +134,12 @@ class Shell(object):
 
     def launch(self, command):
         """Run a SHELL subprocess."""
-        logging.debug('Executing SHELL command %r', command)
+        logging.debug('Executing SHELL command `%r` with command interpreter `%s`', command, self._shell)
         if not self._shell:
             logging.warning('SHELL statement not enabled: no command interpreter specified.')
             raise error.BASICError(error.IFC)
-        cmd = split_quoted(self._shell)
+        # split by whitespace but protect quotes
+        cmd = split_quoted(self._shell, quote=u'"', strip_quotes=False)
         # find executable on path
         cmd[0] = which(cmd[0], path='.' + os.pathsep + os.environ.get("PATH"))
         if not cmd[0]:
@@ -297,4 +298,5 @@ class Shell(object):
             outstr = outstr.replace(self._enc(u'\x07'), b'')
             outstr = outstr.decode(self._encoding, errors='replace')
             outstr = self._codepage.unicode_to_bytes(outstr, errors='replace')
+            logging.debug('SHELL output: %r', outstr)
             self._console.write(outstr)
