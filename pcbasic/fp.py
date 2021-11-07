@@ -535,7 +535,7 @@ def safe(fn, *args):
     except ValueError:
         raise error.RunError(error.IFC)
 
-power = partial(safe, lambda a,b: a**b)
+power = partial(safe, math.pow)
 sqrt = partial(safe, math.sqrt)
 exp  = partial(safe, math.exp)
 sin  = partial(safe, math.sin)
