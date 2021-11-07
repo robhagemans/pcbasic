@@ -29,7 +29,7 @@ from PIL import Image
 # we're not setup.py and not being called by the sdist installer
 # so we can import from the package if we want
 from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
-from pcbasic.data import ICON
+from pcbasic.basic.data import ICON
 from pcbasic.compat import int2byte
 
 

@@ -13,7 +13,7 @@ from io import open
 
 from setuptools import setup
 
-from .common import wash, new_command, build_icon, build_manifest, stamp_release, mkdir, remove
+from .common import wash, new_command, build_icon, build_docs, build_manifest, stamp_release, mkdir, remove
 from .common import HERE, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES
 from .common import AUTHOR, VERSION
 
@@ -45,6 +45,7 @@ def package(**setup_options):
             ))
             xdg_file.write(u'\n')
         build_icon()
+        build_docs()
         shutil.copy('doc/pcbasic.1.gz', 'resources/pcbasic.1.gz')
         # prepare a setup.cfg in the root
         with open(SETUP_CFG, 'w') as setup_cfg:
