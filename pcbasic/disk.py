@@ -38,6 +38,10 @@ import cassette
 
 ENCODING = locale.getpreferredencoding()
 
+# workaround for LookupError
+if ENCODING == 'cp65001':
+    ENCODING = 'utf-8'
+
 
 # GW-BASIC FILE CONTROL BLOCK structure:
 # source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5
