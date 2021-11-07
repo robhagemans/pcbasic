@@ -49,6 +49,9 @@ class Interpreter(object):
         self._init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
+        self.error_device = b''
+        self.error_device_number = 0
+        self.error_extended = [0, 0, 0, 0]
         self.set_pointer(False, 0)
         # interpreter is waiting for INPUT or LINE INPUT
         self.input_mode = False
@@ -219,6 +222,10 @@ class Interpreter(object):
                 e.pos = -1
         self.error_num = e.err
         self.error_pos = e.pos
+        if e.erdev_str:
+            self.error_device = e.erdev_str
+            self.error_device_number = e.erdev
+            self.error_extended = e.exterr
         # don't jump if we're already busy handling an error
         if self.on_error is not None and self.on_error != 0 and not self.error_handle_mode:
             self.error_resume = self.current_statement, self.run_mode
@@ -245,6 +252,24 @@ class Interpreter(object):
         """ERR: get error code of last error."""
         list(args)
         return self._values.new_integer().from_int(self.error_num)
+
+    def erdev_(self, args):
+        """ERDEV: device error value; not implemented."""
+        list(args)
+        return self._values.new_integer().from_int(self.error_device_number)
+
+    def erdev_str_(self, args):
+        """ERDEV$: device error string; not implemented."""
+        list(args)
+        return self._values.new_string().from_str(self.error_device)
+
+    def exterr_(self, args):
+        """EXTERR: device error information; not implemented."""
+        val, = args
+        index = values.to_int(val)
+        error.range_check(0, 3, index)
+        return self._values.new_integer().from_int(self.error_extended[index])
+
 
     ###########################################################################
     # jumps

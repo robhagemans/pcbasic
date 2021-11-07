@@ -602,25 +602,6 @@ class Files(object):
         logging.warning('IOCTL$ function not implemented.')
         raise error.BASICError(error.IFC)
 
-    def erdev_(self, args):
-        """ERDEV: device error value; not implemented."""
-        list(args)
-        logging.warning('ERDEV function not implemented.')
-        return self._values.new_integer()
-
-    def erdev_str_(self, args):
-        """ERDEV$: device error string; not implemented."""
-        list(args)
-        logging.warning('ERDEV$ function not implemented.')
-        return self._values.new_string()
-
-    def exterr_(self, args):
-        """EXTERR: device error information; not implemented."""
-        val, = args
-        logging.warning('EXTERR function not implemented.')
-        error.range_check(0, 3, values.to_int(val))
-        return self._values.new_integer()
-
 
     ###########################################################################
     # disk devices

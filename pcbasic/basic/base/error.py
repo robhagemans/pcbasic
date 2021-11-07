@@ -174,7 +174,7 @@ class BASICError(Interrupt):
         77: b'Deadlock',
     }
 
-    def __init__(self, value, pos=None):
+    def __init__(self, value, pos=None, erdev=0, erdev_str=b'', exterr=None):
         """Initialise error."""
         Interrupt.__init__(self)
         self.err = value
@@ -183,6 +183,9 @@ class BASICError(Interrupt):
             self.message = self.messages[self.err]
         except KeyError:
             self.message = self.default_message
+        self.erdev = erdev
+        self.erdev_str = erdev_str
+        self.exterr = exterr or [0, 0, 0, 0]
 
 
 def range_check(lower, upper, *allvars):

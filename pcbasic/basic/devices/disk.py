@@ -67,26 +67,63 @@ from .diskfiles import BinaryFile, TextFile, RandomFile, Locks
 
 # translate os error codes to BASIC error codes
 OS_ERROR = {
-    # file not found
+    # no such file or directory
     errno.ENOENT: error.FILE_NOT_FOUND,
+    # is a directory
     errno.EISDIR: error.FILE_NOT_FOUND,
-    errno.ENOTDIR: error.FILE_NOT_FOUND,
+    # not a directory
+    errno.ENOTDIR: error.PATH_NOT_FOUND,
+    # try again
+    errno.EAGAIN: error.DEVICE_IO_ERROR,
     # permission denied
-    errno.EAGAIN: error.PERMISSION_DENIED,
     errno.EACCES: error.PERMISSION_DENIED,
+    # device or resource busy
     errno.EBUSY: error.PERMISSION_DENIED,
+    # read-only file system
     errno.EROFS: error.PERMISSION_DENIED,
+    # operation not permitted
     errno.EPERM: error.PERMISSION_DENIED,
-    # disk full
+    # no space left on device
     errno.ENOSPC: error.DISK_FULL,
-    # disk not ready
+    # no such device or address
     errno.ENXIO: error.DISK_NOT_READY,
+    # no such device
     errno.ENODEV: error.DISK_NOT_READY,
-    # device io error
+    # i/o error
     errno.EIO: error.DEVICE_IO_ERROR,
-    # path/file access error
+    # file exists
     errno.EEXIST: error.PATH_FILE_ACCESS_ERROR,
+    # directory not empty
     errno.ENOTEMPTY: error.PATH_FILE_ACCESS_ERROR,
+}
+
+OS_EXTERR = {
+    # no such file or directory
+    errno.ENOENT: [2, 8, 3, 2],
+    errno.EISDIR: [2, 8, 3, 2],
+    errno.ENOTDIR: [3, 8, 3, 2],
+    # try again
+    errno.EAGAIN: [21, 2, 1, 2],
+    # permission denied
+    errno.EACCES: [5, 3, 4, 2],
+    # device or resource busy
+    errno.EBUSY: [54, 2, 2, 2],
+    # read-only file system
+    errno.EROFS: [19, 10, 4, 2],
+    # operation not permitted
+    errno.EPERM: [5, 3, 4, 2],
+    # no space left on device
+    errno.ENOSPC: [18, 1, 4, 2],
+    # no such device or address
+    errno.ENXIO: [15, 8, 3, 2],
+    # no such device
+    errno.ENODEV: [15, 8, 3, 2],
+    # device io error
+    errno.EIO: [31, 13, 4, 2],
+    # file exists
+    errno.EEXIST: [80, 12, 3, 2],
+    # directory not empty
+    errno.ENOTEMPTY: [5, 12, 7, 2],
 }
 
 # allowable characters in DOS file name
@@ -100,26 +137,6 @@ ACCESS_MODES = {b'I': 'r', b'O': 'w', b'R': 'r+', b'A': 'a'}
 
 # aliases for the utf-8 encoding
 UTF_8 = ('utf_8', 'utf-8', 'utf', 'u8', 'utf8')
-
-
-##############################################################################
-# exception handling
-
-def safe(fnname, *fnargs):
-    """Execute OS function and handle errors."""
-    try:
-        return fnname(*fnargs)
-    except EnvironmentError as e:
-        handle_oserror(e)
-
-def handle_oserror(e):
-    """Translate OS and I/O exceptions to BASIC errors."""
-    try:
-        basic_err = OS_ERROR[e.errno]
-    except KeyError:
-        logging.error(u'Unmapped environment exception: %s', e.errno)
-        basic_err = error.DEVICE_IO_ERROR
-    raise error.BASICError(basic_err)
 
 
 ##############################################################################
@@ -257,6 +274,25 @@ class DiskDevice(object):
         """Device is available."""
         return True
 
+    def safe(self, fnname, *fnargs):
+        """Execute OS function and handle errors."""
+        try:
+            return fnname(*fnargs)
+        except EnvironmentError as e:
+            self.handle_oserror(e)
+
+    def handle_oserror(self, e):
+        """Translate OS and I/O exceptions to BASIC errors."""
+        try:
+            basic_err = OS_ERROR[e.errno]
+        except KeyError:
+            logging.error(u'Unmapped environment exception: %d', e.errno)
+            basic_err = error.DEVICE_IO_ERROR
+        if e.errno in OS_EXTERR:
+            raise error.BASICError(basic_err, 12, self.letter + b':', *OS_EXTERR[e.errno])
+        else:
+            raise error.BASICError(basic_err, 12, self.letter + b':')
+
     def _create_file_object(
             self, fhandle, filetype, mode, number=0,
             field=None, reclen=128, seg=0, offset=0, length=0
@@ -377,7 +413,7 @@ class DiskDevice(object):
                 native_name, access_mode, encoding=text_mode, errors='replace', newline=''
             )
         except EnvironmentError as e:
-            handle_oserror(e)
+            self.handle_oserror(e)
         except TypeError:
             # TypeError: stat() argument 1 must be encoded string without null bytes, not str
             # bad file number, which is what GW throws for open chr$(0)
@@ -449,11 +485,13 @@ class DiskDevice(object):
 
     def mkdir(self, dos_path):
         """Create directory at given BASIC path."""
-        safe(os.mkdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=True))
+        self.safe(
+                os.mkdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=True))
 
     def rmdir(self, dos_path):
         """Remove directory at given BASIC path."""
-        safe(os.rmdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=False))
+        self.safe(
+                os.rmdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=False))
 
     def kill(self, dos_pathmask):
         """Remove regular files that match given BASIC path and mask."""
@@ -486,7 +524,7 @@ class DiskDevice(object):
             # don't delete open files
             self.require_file_not_open(dos_path)
         for native_path in to_kill:
-            safe(os.remove, native_path)
+            self.safe(os.remove, native_path)
 
     def rename(self, old_dospath, new_dospath):
         """Rename a file or directory."""
@@ -498,7 +536,7 @@ class DiskDevice(object):
         )
         if os.path.exists(new_native_path):
             raise error.BASICError(error.FILE_ALREADY_EXISTS)
-        safe(os.rename, old_native_path, new_native_path)
+        self.safe(os.rename, old_native_path, new_native_path)
 
     def _split_pathmask(self, dos_pathmask):
         """Split pathmask into path and mask."""
@@ -519,7 +557,7 @@ class DiskDevice(object):
 
     def _get_dirs_files(self, native_path):
         """Get native filenames for native path."""
-        all_names = safe(os.listdir, native_path)
+        all_names = self.safe(os.listdir, native_path)
         dirs = [n for n in all_names if os.path.isdir(os.path.join(native_path, n))]
         fils = [n for n in all_names if not os.path.isdir(os.path.join(native_path, n))]
         return dirs, fils
@@ -711,7 +749,7 @@ class BoundFile(object):
             else:
                 return self._file
         except EnvironmentError as e:
-            handle_oserror(e)
+            self.handle_oserror(e)
 
     def __bytes__(self):
         """Get BASIC file name."""
@@ -791,8 +829,7 @@ class InternalDiskDevice(DiskDevice):
             try:
                 return self._create_file_object(fhandle, filetype, mode)
             except EnvironmentError as e:
-                raise
-                handle_oserror(e)
+                self.handle_oserror(e)
         else:
             return DiskDevice.open(
                 self, number, filespec, filetype, mode, access, lock,
