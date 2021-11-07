@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 PC-BASIC packaging script
 Python, Windows, MacOS and Linux packaging
@@ -39,18 +39,18 @@ elif set(sys.argv[1:]) & set(('sdist', 'build_docs', 'wash')):
 else:
     sys.exit("""USAGE:
 
-   python -m packaging
+   python3 -m packaging
    - build a distribution in this platform's native package format
 
-   python -m packaging sdist
+   python3 -m packaging sdist
    - build a source distribution
 
-   python -m packaging bdist_wheel
+   python3 -m packaging bdist_wheel
    - build a wheel
 
-   python -m packaging build_docs
+   python3 -m packaging build_docs
    - compile the documentation
 
-   python -m packaging wash
+   python3 -m packaging wash
    - clean the workspace
 """)

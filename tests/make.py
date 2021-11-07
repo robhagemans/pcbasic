@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ PC-BASIC test creation
 
 (c) 2020--2021 Rob Hagemans

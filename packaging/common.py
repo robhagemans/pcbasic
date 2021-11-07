@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 PC-BASIC packaging.common
 Python, Windows, MacOS and Linux packaging utilities
