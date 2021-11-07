@@ -1159,19 +1159,17 @@ class Screen(object):
 
     def set_video_memory_size(self, new_size):
         """ Change the amount of memory available to the video card. """
+        new_size = int(new_size)
+        if self.video_mem_size == new_size:
+            return True
         self.video_mem_size = new_size
         # redefine number of available video pages
         self.prepare_modes()
         # text screen modes don't depend on video memory size
         if self.screen_mode == 0:
             return True
-        # check if we need to drop out of our current mode
-        page = max(self.vpagenum, self.apagenum)
-        # reload max number of pages; do we fit? if not, drop to text
-        new_mode = self.mode_data[self.screen_mode]
-        if (page >= new_mode.num_pages):
-            return False
-        self.mode = new_mode
+        # drop back to text
+        self.screen(0, 0, 0, 0)
         return True
 
     def set_page(self, new_vpagenum, new_apagenum):
