@@ -33,7 +33,7 @@ class CassetteTest(TestCase):
     def setUp(self):
         """Ensure output directory exists."""
         try:
-            os.mkdir(_output_file(u''))
+            os.makedirs(_output_file(u''))
         except EnvironmentError:
             pass
 

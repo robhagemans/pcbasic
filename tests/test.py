@@ -139,7 +139,8 @@ class TestFrame(object):
         if os.path.isdir(self._output_dir):
             self.old_fail = True
             shutil.rmtree(self._output_dir)
-        os.mkdir(self._output_dir)
+        os.makedirs(self._output_dir)
+        #os.mkdir(self._output_dir)
         for filename in os.listdir(self._dirname):
             if os.path.isfile(os.path.join(self._dirname, filename)):
                 shutil.copy(

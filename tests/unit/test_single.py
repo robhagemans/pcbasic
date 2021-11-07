@@ -45,6 +45,10 @@ class TestSingle(unittest.TestCase):
     def setUp(self):
         """Create the Values object."""
         self._vm = Values(None, False)
+        try:
+            os.makedirs(os.path.join(HERE, 'output', 'single'))
+        except EnvironmentError:
+            pass
 
     def test_single(self):
         """Test MBF single representation."""

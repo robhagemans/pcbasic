@@ -32,7 +32,7 @@ class TestCase(unittest.TestCase):
         except EnvironmentError:
             pass
         if not os.path.isdir(self._dir):
-            os.mkdir(self._dir)
+            os.makedirs(self._dir)
 
     def output_path(self, *names):
         """Output file name."""
