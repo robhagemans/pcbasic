@@ -91,6 +91,7 @@ def package(**setup_options):
         build_manifest(INCLUDE_FILES, EXCLUDE_FILES)
         subprocess.call((
             'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
+            '--python-package-name-prefix', 'python3',
             '--depends=pyserial,SDL2,SDL2_gfx',
             '..'
         ), cwd='dist')
@@ -108,6 +109,7 @@ def package(**setup_options):
         build_manifest(INCLUDE_FILES, EXCLUDE_FILES)
         subprocess.call((
             'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
+            '--python-package-name-prefix', 'python3',
             '--depends=python3-pkg-resources,python3-serial,python3-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
             '..'
         ), cwd='dist')
