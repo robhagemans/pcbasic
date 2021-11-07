@@ -31,6 +31,13 @@ else:
     from types import SimpleNamespace
 
 
+# stdio become None in GUI mode
+if not sys.stdin:
+    sys.stdin = open(os.devnull, 'r')
+if not sys.stdout:
+    sys.stdout = open(os.devnull, 'w')
+
+
 # Windows virtual key codes, mapped to standard key names
 KEYS = SimpleNamespace(
     PAGEUP = 0x21, # VK_PRIOR
