@@ -17,7 +17,7 @@ from io import open
 import cx_Freeze
 from cx_Freeze import Executable
 
-from .common import wash, build_icon, build_docs, sbuild_manifest, prune, remove, mkdir
+from .common import wash, build_icon, build_docs, build_manifest, prune, remove, mkdir
 from .common import COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .common import NAME, VERSION, SHORT_VERSION, COPYRIGHT
 
