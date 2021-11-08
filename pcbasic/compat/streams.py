@@ -8,6 +8,13 @@ from contextlib import contextmanager
 from .base import PY2
 
 
+# stdio may become None in GUI mode
+if not sys.stdin:
+    sys.stdin = open(os.devnull, 'r')
+if not sys.stdout:
+    sys.stdout = open(os.devnull, 'w')
+
+
 # pause/quiet standard streams
 # ----------------------------
 # previously we had a version that redirected c-level streams, thereby catching non-python output
@@ -47,10 +54,12 @@ class StdIOBase(object):
         self._attach_output_stream('stderr')
 
     def _attach_stdin(self):
-        self.stdin = sys.__stdin__
+        # stdio become None in GUI mode
+        self.stdin = sys.__stdin__ or open(os.devnull, 'r')
 
     def _attach_output_stream(self, stream_name, redirected=False):
-        stream = getattr(sys, '__%s__' % (stream_name,))
+        # stdio become None in GUI mode
+        stream = getattr(sys, '__%s__' % (stream_name,)) or open(os.devnull, 'w')
         setattr(self, stream_name, stream)
 
     # unicode stream wrappers
