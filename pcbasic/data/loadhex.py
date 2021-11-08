@@ -14,14 +14,14 @@ import unicodedata
 
 from ..compat import iteritems, itervalues, unichr, iterchar
 
-from .resources import get_data, ResourceFailed
+from .resources import get_data, ResourceFailed, listdir
 
 
 FONT_DIR = u'fonts'
 FONT_PATTERN = u'{path}/{name}_{height:02d}.hex'
 FONTS = sorted(
     set(name.split(u'_', 1)[0]
-    for name in pkg_resources.resource_listdir(__name__, FONT_DIR)
+    for name in listdir(FONT_DIR)
     if name.lower().endswith(u'.hex'))
 )
 _HEIGHTS = (8, 14, 16)

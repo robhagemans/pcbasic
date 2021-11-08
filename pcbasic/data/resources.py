@@ -7,7 +7,9 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import json
+import os
 import pkg_resources
+import logging
 
 
 ###############################################################################
@@ -38,6 +40,17 @@ def get_data(pattern, **kwargs):
         raise ResourceFailed(name)
     return resource
 
+def listdir(dirname):
+    """Wrapper for resource_listdir."""
+    try:
+        return pkg_resources.resource_listdir(__name__, dirname)
+    except NotImplementedError as e:
+        # this happens with cx_Freeze packages now
+        # as the global ResourceManager is a NullProvider
+        # not clear why but this works around
+        logging.debug('working around pkg_resources error: %s', e)
+        return os.listdir(os.path.join(os.path.dirname(__file__), dirname))
+
 def read_program_file(name):
     """Read a bundled BASIC program file."""
     return get_data(PROGRAM_PATTERN, path=PROGRAM_DIR, name=name)
@@ -50,6 +63,6 @@ PROGRAM_DIR = u'programs'
 PROGRAM_PATTERN = u'{path}/{name}'
 PROGRAMS = (
     name
-    for name in pkg_resources.resource_listdir(__name__, PROGRAM_DIR)
+    for name in listdir(PROGRAM_DIR)
     if name.lower().endswith(u'.bas')
 )

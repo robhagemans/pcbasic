@@ -56,8 +56,12 @@ def package(**setup_options):
             # as everything in there is copied once already
             prune('build/lib')
             # remove c++ runtime etc
+            # these were on python 2.7
             remove(build_dir + 'msvcm90.dll')
             remove(build_dir + 'msvcp90.dll')
+            # chunky libs on python3.7 that I don't think we use
+            remove(build_dir + 'lib/libcrypto-1_1.dll')
+            remove(build_dir + 'lib/libssl-1_1.dll')
             # remove modules that can be left out
             for module in ('distutils', 'setuptools', 'pydoc_data'):
                 prune(build_dir + 'lib/%s' % module)
@@ -104,16 +108,22 @@ def package(**setup_options):
                 ('WriteEnvironmentStrings', 'MSIINSTALLPERUSER=""', 5200),
             ])
             for index, executable in enumerate(self.distribution.executables):
-                if executable.shortcutName is not None and executable.shortcutDir is not None:
-                    base_name = os.path.basename(executable.targetName)
+                if executable.shortcut_name is not None and executable.shortcut_dir is not None:
+                    base_name = os.path.basename(executable.target_name)
                     msilib.add_data(
                         self.db, "Shortcut", [(
-                            "S_APP_%s" % index, executable.shortcutDir, executable.shortcutName,
+                            "S_APP_%s" % index, executable.shortcut_dir, executable.shortcut_name,
                             "TARGETDIR", "[TARGETDIR]%s" % base_name,
                             None, None, None, None, None, None, None
                         )]
                     )
             for table_name, data in self.data.items():
+                col = self._binary_columns.get(table_name)
+                if col is not None:
+                    data = [
+                        (*row[:col], msilib.Binary(row[col].name), *row[col + 1 :])
+                        for row in data
+                    ]
                 msilib.add_data(self.db, table_name, data)
 
         def add_properties(self):
@@ -197,11 +207,11 @@ def package(**setup_options):
         **COMMANDS
     )
 
-    numversion = '.'.join(v for v in VERSION.encode('ascii').split('.') if v.isdigit())
+    numversion = '.'.join(v for v in VERSION.split('.') if v.isdigit())
 
     # these must be bytes for cx_Freeze bdist_msi
-    setup_options['name'] = NAME.encode('ascii')
-    setup_options['author'] = AUTHOR.encode('ascii')
+    setup_options['name'] = NAME
+    setup_options['author'] = AUTHOR
     setup_options['version'] = numversion
 
     # compile separately, as they end up in the wrong place anyway
@@ -286,7 +296,7 @@ def package(**setup_options):
     msi_data = {
         'Directory': directory_table,
         'Shortcut': shortcut_table,
-        'Icon': [('PC-BASIC-Icon', msilib.Binary('resources/pcbasic.ico')),],
+        'Icon': [('PC-BASIC-Icon', msilib.Binary('./resources/pcbasic.ico')),],
         'Property': [('ARPPRODUCTICON', 'PC-BASIC-Icon'),],
     }
 
