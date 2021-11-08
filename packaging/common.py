@@ -75,7 +75,7 @@ INCLUDE_FILES = (
 
 # python files to exclude from distributions
 EXCLUDE_FILES = (
-    'distribute.py', 'test/', 'packaging/', 'docsrc/', 'fontsrc/'
+    'test/', 'packaging/', 'docsrc/', 'fontsrc/'
 )
 
 SETUP_OPTIONS = dict(
