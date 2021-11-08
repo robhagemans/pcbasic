@@ -219,7 +219,7 @@ def wash():
     # remove distribution resources
     prune(os.path.join(HERE, 'resources'))
     # remove release stamp
-    remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
+    remove(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'))
     # remove manifest
     remove(os.path.join(HERE, 'MANIFEST.in'))
 
