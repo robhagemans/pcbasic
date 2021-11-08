@@ -56,8 +56,12 @@ def package(**setup_options):
             # as everything in there is copied once already
             prune('build/lib')
             # remove c++ runtime etc
+            # these were on python 2.7
             remove(build_dir + 'msvcm90.dll')
             remove(build_dir + 'msvcp90.dll')
+            # chunky libs on python3.7 that I don't think we use
+            remove(build_dir + 'lib/libcrypto-1_1.dll')
+            remove(build_dir + 'lib/libssl-1_1.dll')
             # remove modules that can be left out
             for module in ('distutils', 'setuptools', 'pydoc_data'):
                 prune(build_dir + 'lib/%s' % module)
