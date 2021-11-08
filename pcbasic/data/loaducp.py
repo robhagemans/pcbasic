@@ -12,13 +12,13 @@ import binascii
 
 from ..compat import unichr
 
-from .resources import get_data
+from .resources import get_data, listdir
 
 CODEPAGE_DIR = u'codepages'
 CODEPAGE_PATTERN = u'{path}/{name}.ucp'
 CODEPAGES = [
     name.split(u'.', 1)[0]
-    for name in pkg_resources.resource_listdir(__name__, CODEPAGE_DIR)
+    for name in listdir(CODEPAGE_DIR)
     if name.lower().endswith(u'.ucp')
 ]
 

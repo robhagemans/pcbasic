@@ -31,6 +31,7 @@ else:
     from types import SimpleNamespace
 
 
+
 # Windows virtual key codes, mapped to standard key names
 KEYS = SimpleNamespace(
     PAGEUP = 0x21, # VK_PRIOR

@@ -75,7 +75,7 @@ INCLUDE_FILES = (
 
 # python files to exclude from distributions
 EXCLUDE_FILES = (
-    'distribute.py', 'test/', 'packaging/', 'docsrc/', 'fontsrc/'
+    'test/', 'packaging/', 'docsrc/', 'fontsrc/'
 )
 
 SETUP_OPTIONS = dict(
@@ -186,11 +186,11 @@ def build_manifest(includes, excludes):
     manifest = u''.join(
         u'include {}\n'.format(_inc) for _inc in includes if not _inc.endswith('/')
     ) + u''.join(
-        u'graft {}\n'.format(_inc) for _inc in includes if _inc.endswith('/')
+        u'graft {}\n'.format(_inc[:-1]) for _inc in includes if _inc.endswith('/')
     ) + u''.join(
         u'exclude {}\n'.format(_exc) for _exc in excludes if not _exc.endswith('/')
     ) + u''.join(
-        u'prune {}\n'.format(_exc) for _exc in excludes if _exc.endswith('/')
+        u'prune {}\n'.format(_exc[:-1]) for _exc in excludes if _exc.endswith('/')
     )
     with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as manifest_file:
         manifest_file.write(manifest)
@@ -219,7 +219,7 @@ def wash():
     # remove distribution resources
     prune(os.path.join(HERE, 'resources'))
     # remove release stamp
-    remove(os.path.join(HERE, 'pcbasic', 'data', 'release.json'))
+    remove(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'))
     # remove manifest
     remove(os.path.join(HERE, 'MANIFEST.in'))
 
