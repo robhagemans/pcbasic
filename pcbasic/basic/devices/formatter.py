@@ -38,9 +38,7 @@ class Formatter(object):
             else:
                 self._print_value(next(args))
             newline = sep not in (tk.TAB, tk.SPC, b',', b';')
-        if newline:
-            if self._console and self._console.overflow:
-                self._output.write_line()
+        if newline or (self._console and self._console.overflow):
             self._output.write_line()
 
     def _print_value(self, expr):
