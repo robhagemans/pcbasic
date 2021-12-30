@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 from importlib import import_module
-from collections import Iterable
+from collections.abc import Iterable
 
 from ..compat import text_type
 

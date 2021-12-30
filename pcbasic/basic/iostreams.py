@@ -12,7 +12,7 @@ import sys
 import time
 import io
 from contextlib import contextmanager
-from collections import Iterable
+from collections.abc import Iterable
 
 from ..compat import WIN32, read_all_available, stdio
 from .base import signals
