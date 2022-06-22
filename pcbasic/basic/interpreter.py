@@ -288,8 +288,10 @@ class Interpreter(object):
         """Execute jump for a GOSUB."""
         # set return position
         pos = self.get_codestream().tell()
+        # record run mode before executing self.jump, as that sets the runmode to True
+        run_mode = self.run_mode
         self.jump(jumpnum)
-        self.gosub_stack.append((pos, self.run_mode, handler))
+        self.gosub_stack.append((pos, run_mode, handler))
 
     def goto_(self, args):
         """GOTO: jump to line number."""
