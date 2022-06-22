@@ -295,6 +295,21 @@ class SessionTest(TestCase):
         with open(self.output_path('print.txt')) as f:
             assert f.read() == ''
 
+    def test_gosub_from_direct_line(self):
+        """Test for issue#184: GOSUB from direct line should not RETURN into program."""
+        SOURCE = """\
+        10 PRINT "Main"
+        30 A = -42
+        40 END
+        50 PRINT "After End"
+        60 A = 42
+        70 RETURN
+        """
+        with Session() as session:
+            session.execute(SOURCE)
+            session.execute("GOSUB 60")
+            assert session.evaluate('A') == 42
+
 
 from pcbasic.basic import iostreams
 from pcbasic.basic.codepage import Codepage
