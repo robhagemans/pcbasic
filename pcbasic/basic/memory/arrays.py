@@ -308,11 +308,11 @@ class Arrays(object):
             return []
         elif len(remaining_dimensions) == 1:
             return [
-                self.get(name, index+[i+(self._base or 0)]).to_value()
-                for i in range(remaining_dimensions[0])
+                self.get(name, index+[i]).to_value()
+                for i in range((self._base or 0), remaining_dimensions[0] + 1)
             ]
         else:
             return [
-                self._to_list(name, index+[i+(self._base or 0)], remaining_dimensions[1:])
-                for i in range(remaining_dimensions[0])
+                self._to_list(name, index+[i], remaining_dimensions[1:])
+                for i in range((self._base or 0), remaining_dimensions[0] + 1)
             ]
