@@ -12,7 +12,6 @@ import sys
 import time
 import io
 from contextlib import contextmanager
-from collections import Iterable
 
 from ..compat import WIN32, read_all_available, stdio
 from .base import signals
@@ -37,11 +36,16 @@ class IOStreams(object):
             # stdin needs to be picked at runtime as both console.stdin and sys.stdin can change
             # and we would be keeping a reference to a closed/bad file
             input_streams = stdio.stdin
-        # put in tuple if it's file-like so we do the right thing when looping
+        # put in tuple if it's file-like or not a sequence, so we do the right thing when looping
         if not input_streams:
             input_streams = ()
-        elif hasattr(input_streams, 'read') or not isinstance(input_streams, Iterable):
+        elif hasattr(input_streams, 'read'):
             input_streams = (input_streams,)
+        else:
+            try:
+                iter(input_streams)
+            except TypeError:
+                input_streams = (input_streams,)
         self._input_streams = [self._wrap_input(stream) for stream in input_streams]
         # output
         if output_streams in (u'stdio', b'stdio'):
@@ -49,8 +53,13 @@ class IOStreams(object):
         # put in tuple if it's file-like so we do the right thing when looping
         if not output_streams:
             output_streams = ()
-        elif hasattr(output_streams, 'write') or not isinstance(output_streams, Iterable):
+        elif hasattr(output_streams, 'write'):
             output_streams = (output_streams,)
+        else:
+            try:
+                iter(output_streams)
+            except TypeError:
+                output_streams = (output_streams,)
         self._output_echos = [
             self._codepage.wrap_output_stream(stream, preserve=CONTROL)
             for stream in output_streams

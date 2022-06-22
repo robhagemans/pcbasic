@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 from importlib import import_module
-from collections import Iterable
 
 from ..compat import text_type
 
@@ -21,7 +20,14 @@ class Extensions(object):
 
     def __init__(self, extension, values, codepage):
         """Initialise extension handler."""
-        if isinstance(extension, (bytes, text_type)) or not isinstance(extension, Iterable):
+        # `extension` can be an iterable of extensions/names of extensions, just one extension,
+        # or a name of an extension (as bytes or str)
+        try:
+            # test for being iterable
+            iter(extension)
+        except TypeError:
+            extension = [extension]
+        if isinstance(extension, (bytes, text_type)):
             extension = [extension]
         self._extension = list(extension)
         self._values = values
