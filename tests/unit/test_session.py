@@ -310,6 +310,19 @@ class SessionTest(TestCase):
             session.execute("GOSUB 60")
             assert session.evaluate('A') == 42
 
+    def test_to_list_off_by_one(self):
+        """Test for issue #182: range off by one in to_list."""
+        with Session() as session:
+            session.execute("""
+            DIM J2(5,2)
+            J2(1,1)=-1
+            J2(1,2)=-1
+            """)
+            assert session.get_variable('J2!()') == [
+                [0.0, 0.0, 0.0], [0.0, -1.0, -1.0], [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]
+            ]
+
 
 from pcbasic.basic import iostreams
 from pcbasic.basic.codepage import Codepage
