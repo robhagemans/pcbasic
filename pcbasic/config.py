@@ -238,9 +238,7 @@ def _check_text_encoding(arg):
 
 def _check_max_memory(arglist):
     """Check if max-memory argument is acceptable."""
-
     mem_sizes = [arglist[0], arglist[1]*16 if arglist[1] else None]
-
     if min((mem_size for mem_size in mem_sizes if mem_size), default=MAX_MEMORY_SIZE) > MAX_MEMORY_SIZE:
         logging.warning(u'max-memory value > %s', MAX_MEMORY_SIZE)
         return False
@@ -494,7 +492,7 @@ class Settings(object):
         """Get value of option; choose whether to get default or None (unspecified) or '' (empty)."""
         try:
             value = self._options[name]
-            if get_default and (value is None or value == u''):
+            if get_default and (value is None or value == u'' or value == []):
                 raise KeyError
         except KeyError:
             if get_default:
