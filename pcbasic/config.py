@@ -494,7 +494,7 @@ class Settings(object):
         """Get value of option; choose whether to get default or None (unspecified) or '' (empty)."""
         try:
             value = self._options[name]
-            if get_default and (value is None or value == u''):
+            if get_default and (value is None or value == u'' or value == []):
                 raise KeyError
         except KeyError:
             if get_default:
