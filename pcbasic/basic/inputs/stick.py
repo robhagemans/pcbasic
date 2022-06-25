@@ -88,8 +88,9 @@ class Stick(object):
         fn, = args
         fn = values.to_int(fn)
         error.range_check(0, 7, fn)
-        # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
-        joy, trig = fn // 4, (fn//2) % 2
+        # [stick][button]
+        # 0,1 -> [stick 0][button 0] 2,3 -> [1][0]  4,5-> [0][1]  6,7 -> [1][1]
+        joy, trig = (fn//2) % 2, fn // 4
         if fn % 2 == 0:
             # has been fired
             stick_was_trig = self._was_fired[joy][trig]
