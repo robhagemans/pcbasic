@@ -281,7 +281,6 @@ class Display(object):
         # note that we *must* rebuild the list of pages if we have more pages
         # and also we must do something if we have fewer pages and vpage or apage are currently on a higher page.
         # apparently pcjr always drops to text when this is not a no-op
-        print('here')
         self.screen(0, 0, 0, 0, force_reset=True)
 
     def rebuild(self):
