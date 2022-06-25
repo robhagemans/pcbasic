@@ -180,12 +180,14 @@ class Tandy6SpriteBuilder(PlanedSpriteBuilder):
     def pack(self, sprite):
         """Pack sprite, report only half the width packed."""
         record = PlanedSpriteBuilder.pack(self, sprite)
-        width_record = struct.pack('<H', sprite.width // 2)
+        width = sprite.width // self.width_factor
+        width_record = struct.pack('<H', width)
         return width_record + record[2:]
 
     def unpack(self, array):
         """Unpack sprite, twice the width reported."""
-        width = 2 * struct.unpack('<H', array[:2])
+        width, = struct.unpack('<H', array[:2])
+        width *= self.width_factor
         size_record = struct.pack('<H', width)
         return PlanedSpriteBuilder.unpack(self, size_record + array[2:])
 
