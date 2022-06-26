@@ -203,8 +203,6 @@ class PrinterStream(io.BytesIO):
 
     def flush(self):
         """Flush the printer buffer to a printer."""
-        if not self._write_enabled:
-            raise error.BASICError(error.DEVICE_IO_ERROR)
         printbuf = self.getvalue()
         if not printbuf:
             return
@@ -214,7 +212,9 @@ class PrinterStream(io.BytesIO):
         utf8buf = self.codepage.bytes_to_unicode(
             printbuf, preserve=CONTROL,
         ).encode('utf-8', 'replace')
-        line_print(utf8buf, self.printer_name)
+        # Silently skip writing if disabled
+        if self._write_enabled:
+            line_print(utf8buf, self.printer_name)
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
         """Set the values of the control pins."""
