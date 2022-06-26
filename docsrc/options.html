@@ -355,6 +355,45 @@
             Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
         </dd>
 
+        <dt id="--disable-writes">
+            <code><b>--disable-writes=</b>[<var>device_types</var>]</code>
+        </dt>
+        <dd>
+            Disable write operations to (n)one or more device types, as specified with <var>device_types</var>.
+            Device types for which write operations should be disabled are specified using single letters. If write 
+            operations are to be disabled for more than one device type then concatenate the device type letters, 
+            optionally separated by commas (e.g. <code>bds</code> or <code>b,d,s</code>).<br />
+            If a write operation is attempted that has been disabled with this option, a Device I/O Error (57) will
+            be triggered.<br /> 
+            The following device letters are recognized: 
+            <dl class="compact">
+                <dt><code><b>a</b></code></dt>
+                <dd>Disable writes for all device types. This is the same as specifying all other device types.</dd>
+                <dt><code><b>b</b></code></dt>
+                <dd>
+                    Disable saving programs using the <code>SAVE</code> command. If saving programs is allowed, they
+                    can also be saved to devices for which writes are otherwise disabled.
+                </dd>
+                <dt><code><b>c</b></code></dt>
+                <dd>
+                    Disable writes to the cassette device (<code>CAS1</code>). Note that the cassette (WAV) file
+                    specified with <code><b><a href="#--cas1">--cas1</a></b></code> will still be created and 
+                    initialized. 
+                </dd>
+                <dt><code><b>d</b></code></dt>
+                <dd>Disable writes to disk (files).</dd>
+                <dt><code><b>p</b></code></dt>
+                <dd>
+                    Disable writes to parallel ports. If writes to parallel ports are allowed, they can also be
+                    routed to files using <code><b><a href="#--lpt1">--lpt1</a></b></code>, 
+                    <code><b><a href="#--lpt2">--lpt2</a></b></code> and <code><b><a href="#--lpt3">--lpt3</a></b></code>,
+                    even if disk writes are otherwise disabled.
+                </dd>
+                <dt><code><b>s</b></code></dt>
+                <dd>Disable writes to serial ports.</dd>
+            </dl>
+        </dd>
+
         <dt id="--double">
             <code id="-d"><b>-d</b></code>
             <code><b>--double</b>[<b>=True</b>|<b>=False</b>]</code>

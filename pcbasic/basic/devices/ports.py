@@ -43,7 +43,7 @@ class COMDevice(Device):
 
     allowed_modes = b'IOAR'
 
-    def __init__(self, arg, queues, serial_in_size):
+    def __init__(self, arg, queues, serial_in_size, write_enabled):
         """Initialise COMn: device."""
         Device.__init__(self)
         # for wait()
@@ -54,8 +54,9 @@ class COMDevice(Device):
         self.device_file = DeviceSettings()
         # only one file open at a time
         self._file = None
+        self._write_enabled = write_enabled
 
-    def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
+    def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field, force_writable=False):
         """Open a file on COMn: """
         if not self._serial:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -71,7 +72,7 @@ class COMDevice(Device):
         except Exception:
             self.close()
             raise
-        self._file = COMFile(self._serial, field, lf, self._serial_in_size, self._queues)
+        self._file = COMFile(self._serial, field, lf, self._serial_in_size, self._queues, force_writable or self._write_enabled)
         # inherit width settings from device file
         # note that these seem unused for COM files
         self._file.width = self.device_file.width
@@ -309,9 +310,9 @@ class COMDevice(Device):
 class COMFile(TextFileBase, RealTimeInputMixin):
     """COMn: device - serial port."""
 
-    def __init__(self, stream, field, linefeed, serial_in_size, queues):
+    def __init__(self, stream, field, linefeed, serial_in_size, queues, write_enabled):
         """Initialise COMn: file."""
-        TextFileBase.__init__(self, stream, b'D', b'R')
+        TextFileBase.__init__(self, stream, b'D', b'R', write_enabled)
         self._queues = queues
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self._field = field
@@ -371,6 +372,8 @@ class COMFile(TextFileBase, RealTimeInputMixin):
 
     def write(self, s):
         """Write string to port."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         if self._linefeed:
             s = s.replace(b'\r', b'\r\n')
         with safe_io():
@@ -389,6 +392,8 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         """Write num bytes - PUT on COM port."""
         if not num:
             return
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         self.write(bytes(self._field.view_buffer()[:num]))
 
     def loc(self):

@@ -153,7 +153,7 @@ class SessionTest(TestCase):
         """test Session.bind_file."""
         # open file object
         with open(self.output_path('testfile'), 'wb') as f:
-            with Session() as s:
+            with Session(enabled_writes=['disk']) as s:
                 name = s.bind_file(f)
                 # can use name as string
                 assert len(str(name)) <= 12
@@ -175,7 +175,7 @@ class SessionTest(TestCase):
             os.remove(native_name)
         except EnvironmentError:
             pass
-        with Session() as s:
+        with Session(enabled_writes=['disk']) as s:
             name = s.bind_file(native_name, create=True)
             s.execute('open "{0}" for output as 1: print#1, "test";: close'.format(name))
         with open(native_name, 'rb') as f:
@@ -194,7 +194,7 @@ class SessionTest(TestCase):
             os.remove(native_name)
         except EnvironmentError:
             pass
-        with Session() as s:
+        with Session(enabled_writes=['disk']) as s:
             name = s.bind_file(native_name, name=b'A B C', create=True)
             s.execute(b'open "@:A B C" for output as 1: print#1, "test";: close')
         with open(native_name, 'rb') as f:
@@ -206,7 +206,7 @@ class SessionTest(TestCase):
             os.remove(native_name)
         except EnvironmentError:
             pass
-        with Session() as s:
+        with Session(enabled_writes=['disk']) as s:
             name = s.bind_file(native_name, name=u'A B C', create=True)
             s.execute(u'open "@:A B C" for output as 1: print#1, "test";: close')
         with open(native_name, 'rb') as f:
@@ -273,7 +273,8 @@ class SessionTest(TestCase):
         """Test Session with ctrl print-screen copy."""
         with Session(
                 input_streams=None, output_streams=None,
-                devices={'LPT1': 'FILE:{}'.format(self.output_path('print.txt'))}
+                devices={'LPT1': 'FILE:{}'.format(self.output_path('print.txt'))},
+                enabled_writes=['parallel'],
             ) as s:
             # ctrl+printscreen
             s.press_keys(u'\0\x72')
@@ -287,7 +288,8 @@ class SessionTest(TestCase):
         """Test Session switching off ctrl print-screen copy."""
         with Session(
                 input_streams=None, output_streams=None,
-                devices={'LPT1': 'FILE:{}'.format(self.output_path('print.txt'))}
+                devices={'LPT1': 'FILE:{}'.format(self.output_path('print.txt'))},
+                enabled_writes=['parallel'],
             ) as s:
             # ctrl+printscreen
             s.press_keys(u'\0\x72\0\x72')

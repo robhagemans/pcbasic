@@ -60,10 +60,10 @@ class NullDevice(object):
 
     def open(
             self, number, param, filetype, mode, access, lock,
-            reclen, seg, offset, length, field
+            reclen, seg, offset, length, field, force_writable=False
         ):
         """Open a file on the device."""
-        return TextFileBase(nullstream(), filetype, mode)
+        return TextFileBase(nullstream(), filetype, mode, True)
 
     def close(self):
         """Close the device."""
@@ -84,7 +84,7 @@ class Device(object):
 
     def open(
             self, number, param, filetype, mode, access, lock,
-            reclen, seg, offset, length, field
+            reclen, seg, offset, length, field, force_writable=False
         ):
         """Open a file on the device."""
         if not self.device_file:
@@ -117,12 +117,12 @@ class SCRNDevice(Device):
 
     def open(
             self, number, param, filetype, mode, access, lock,
-            reclen, seg, offset, length, field
+            reclen, seg, offset, length, field, force_writable=False
         ):
         """Open a file on the device."""
         new_file = Device.open(
             self, number, param, filetype, mode, access, lock,
-            reclen, seg, offset, length, field
+            reclen, seg, offset, length, field, force_writable=False
         )
         # SAVE "SCRN:" includes a magic byte
         new_file.write(TYPE_TO_MAGIC.get(filetype, b''))
@@ -167,11 +167,12 @@ def safe_io(err=error.DEVICE_IO_ERROR):
 class RawFile(object):
     """File class for raw access to underlying stream."""
 
-    def __init__(self, fhandle, filetype, mode):
+    def __init__(self, fhandle, filetype, mode, write_enabled):
         """Setup the basic properties of the file."""
         self._fhandle = fhandle
         self.filetype = filetype
         self.mode = mode.upper()
+        self._write_enabled = write_enabled
 
     def __enter__(self):
         """Context guard."""
@@ -193,6 +194,8 @@ class RawFile(object):
 
     def write(self, s):
         """Write string to file."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         with safe_io():
             self._fhandle.write(s)
 
@@ -241,9 +244,9 @@ class TextFileBase(RawFile):
     # for INPUT# - numbers read from file can be separated by spaces too
     soft_sep = b' '
 
-    def __init__(self, fhandle, filetype, mode):
+    def __init__(self, fhandle, filetype, mode, write_enabled):
         """Setup the basic properties of the file."""
-        RawFile.__init__(self, fhandle, filetype, mode)
+        RawFile.__init__(self, fhandle, filetype, mode, write_enabled)
         # width=255 means line wrap
         self.width = 255
         self.col = 1
@@ -308,6 +311,8 @@ class TextFileBase(RawFile):
     def write(self, s, can_break=True):
         """Write the string s to the file, taking care of width settings."""
         assert isinstance(s, bytes)
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         # only break lines at the start of a new string. width 255 means unlimited width
         s_width = 0
         newline = False
@@ -446,7 +451,7 @@ class InputTextFile(TextFileBase, InputMixin):
 
     def __init__(self, line):
         """Initialise InputStream."""
-        TextFileBase.__init__(self, io.BytesIO(line), b'D', b'I')
+        TextFileBase.__init__(self, io.BytesIO(line), b'D', b'I', False)
 
 
 #################################################################################
@@ -527,7 +532,7 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
 
     def __init__(self, keyboard, display):
         """Initialise keyboard file."""
-        TextFileBase.__init__(self, nullstream(), filetype=b'D', mode=b'I')
+        TextFileBase.__init__(self, nullstream(), filetype=b'D', mode=b'I', write_enabled=False)
         # buffer for the separator character that broke the last INPUT# field
         # to be attached to the next
         self._keyboard = keyboard
@@ -608,7 +613,7 @@ class SCRNFile(RawFile):
 
     def __init__(self, display, console):
         """Initialise screen file."""
-        RawFile.__init__(self, nullstream(), filetype=b'D', mode=b'O')
+        RawFile.__init__(self, nullstream(), filetype=b'D', mode=b'O', write_enabled=True)
         # need display object as WIDTH can change graphics mode
         self._display = display
         # screen member is public, needed by print_

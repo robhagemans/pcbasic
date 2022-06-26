@@ -53,7 +53,10 @@ class CassetteTest(TestCase):
     def test_cas_save_load(self):
         """Save and load from an existing CAS file."""
         shutil.copy(_input_file('test.cas'), _output_file('test.cas'))
-        with Session(devices={b'CAS1:': _output_file('test.cas')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test.cas')}, 
+            enabled_writes=['save'],
+            ) as s:
             s.execute('save "cas1:empty"')
             s.execute('load "cas1:test"')
             s.execute('list')
@@ -68,7 +71,8 @@ class CassetteTest(TestCase):
         """Save and load to cassette as current device."""
         with Session(
                 devices={b'CAS1:': _output_file('test_current.cas')},
-                current_device=b'CAS1:'
+                current_device=b'CAS1:',
+                enabled_writes=['save'],
             ) as s:
             s.execute('10 ?')
             s.execute('save "Test"')
@@ -90,7 +94,10 @@ class CassetteTest(TestCase):
             os.remove(_output_file('test_prog.cas'))
         except EnvironmentError:
             pass
-        with Session(devices={b'CAS1:': _output_file('test_prog.cas')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test_prog.cas')},
+            enabled_writes=['save'],
+            ) as s:
             s.execute('10 A%=1234')
             s.execute('save "cas1:prog",A')
         with Session(devices={b'CAS1:': _output_file('test_prog.cas')}) as s:
@@ -105,7 +112,10 @@ class CassetteTest(TestCase):
             os.remove(_output_file('test_data.cas'))
         except EnvironmentError:
             pass
-        with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test_data.cas')},
+            enabled_writes=['cas'],
+            ) as s:
             s.execute('open "cas1:data" for output as 1')
             s.execute('print#1, 1234')
         with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
@@ -121,7 +131,10 @@ class CassetteTest(TestCase):
             os.remove(_output_file('test_prog.wav'))
         except EnvironmentError:
             pass
-        with Session(devices={b'CAS1:': _output_file('test_prog.wav')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test_prog.wav')},
+            enabled_writes=['save'],
+            ) as s:
             s.execute('10 A%=1234')
             s.execute('save "cas1:prog",A')
         with Session(devices={b'CAS1:': _output_file('test_prog.wav')}) as s:
@@ -134,7 +147,10 @@ class CassetteTest(TestCase):
             os.remove(_output_file('test_data.wav'))
         except EnvironmentError:
             pass
-        with Session(devices={b'CAS1:': _output_file('test_data.wav')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test_data.wav')},
+            enabled_writes=['cas'],
+            ) as s:
             s.execute('open "cas1:data" for output as 1')
             s.execute('print#1, 1234')
         with Session(devices={b'CAS1:': _output_file('test_data.wav')}) as s:
@@ -149,12 +165,18 @@ class CassetteTest(TestCase):
         except EnvironmentError:
             pass
         # create a WAV file with two programs
-        with Session(devices={b'CAS1:': _output_file('test.wav')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test.wav')},
+            enabled_writes=['save'],
+            ) as s:
             s.execute('10 A%=1234')
             s.execute('save "cas1:prog"')
             s.execute('20 A%=12345')
             s.execute('save "cas1:Prog 2",A')
-        with Session(devices={b'CAS1:': _output_file('test.wav')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test.wav')},
+            enabled_writes=['save'],
+            ) as s:
             # overwrite (part of) the first program
             s.execute('save "cas1:"')
             # load whatever is next (this should be Prog 2)
@@ -169,7 +191,10 @@ class CassetteTest(TestCase):
             pass
         # create empty file
         open(_output_file('empty.cas'), 'wb').close()
-        with Session(devices={b'CAS1:': _output_file('empty.cas')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('empty.cas')},
+            enabled_writes=['save'],
+            ) as s:
             s.execute('save "cas1:"')
             s.execute('load "cas1:"')
             output = [_row.strip() for _row in self.get_text(s)]
@@ -197,7 +222,10 @@ class CassetteTest(TestCase):
             os.remove(_output_file('test_data.cas'))
         except EnvironmentError:
             pass
-        with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test_data.cas')},
+            enabled_writes=['cas'],
+            ) as s:
             s.execute('open "cas1:data" for output as 1')
             s.execute('open "cas1:data" for output as 2')
             output = [_row.strip() for _row in self.get_text(s)]
@@ -209,7 +237,10 @@ class CassetteTest(TestCase):
             os.remove(_output_file('test_data.cas'))
         except EnvironmentError:
             pass
-        with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test_data.cas')},
+            enabled_writes=['cas'],
+            ) as s:
             s.execute(b'open "cas1:\x02\x01" for output as 1')
             output = [_row.strip() for _row in self.get_text(s)]
             assert output[0] == b'Bad file number\xff'
@@ -220,7 +251,10 @@ class CassetteTest(TestCase):
             os.remove(_output_file('test_data.cas'))
         except EnvironmentError:
             pass
-        with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test_data.cas')},
+            enabled_writes=['cas'],
+            ) as s:
             s.execute('open "cas1:test" for random as 1')
             output = [_row.strip() for _row in self.get_text(s)]
             assert output[0] == b'Bad file mode\xff'
@@ -231,7 +265,10 @@ class CassetteTest(TestCase):
             os.remove(_output_file('test_data.cas'))
         except EnvironmentError:
             pass
-        with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test_data.cas')},
+            enabled_writes=['cas'],
+            ) as s:
             s.execute('open "cas1:test" for output as 1')
             s.execute('? LOF(1)')
             s.execute('? LOC(1)')
@@ -240,7 +277,10 @@ class CassetteTest(TestCase):
 
     def test_cas_no_name(self):
         """Save and load to cassette without a filename."""
-        with Session(devices={b'CAS1:': _output_file('test_current.cas')}) as s:
+        with Session(
+            devices={b'CAS1:': _output_file('test_current.cas')},
+            enabled_writes=['save'],
+            ) as s:
             s.execute('10 ?')
             s.execute('save "cas1:"')
         with Session(devices={b'CAS1:': _output_file('test_current.cas')}) as s:
@@ -251,6 +291,44 @@ class CassetteTest(TestCase):
             b'        .B Found.',
             b'10 PRINT',
         ]
+
+    def test_cas_save_no_save_write(self):
+        """Save to a CAS file without save enabled."""
+        try:
+            os.remove(_output_file('test_prog.cas'))
+        except EnvironmentError:
+            pass
+        with Session(
+            devices={b'CAS1:': _output_file('test_prog.cas')}, 
+            enabled_writes=['cas'],
+            ) as s:
+            s.execute('10 ?')
+            s.execute('save "cas1:prog"')
+            output = [_row.strip() for _row in self.get_text(s)]
+        assert output[0] == b'Device I/O error\xff'
+        with Session(devices={b'CAS1:': _output_file('test_prog.cas')}) as s:
+            s.execute('load "cas1:prog"')
+            output = [_row.strip() for _row in self.get_text(s)]
+        assert output[0] == b'Device Timeout\xff'
+
+    def test_cas_write_no_cas_write(self):
+        """Write to a CAS file without CAS write enabled."""
+        try:
+            os.remove(_output_file('test_data.cas'))
+        except EnvironmentError:
+            pass
+        with Session(
+            devices={b'CAS1:': _output_file('test_data.cas')}, 
+            enabled_writes=['save'],
+            ) as s:
+            s.execute('open "cas1:data" for output as 1')
+            s.execute('print#1, 1234')
+            output = [_row.strip() for _row in self.get_text(s)]
+        assert output[0] == b'Device I/O error\xff'
+        with Session(devices={b'CAS1:': _output_file('test_data.cas')}) as s:
+            s.execute('open "cas1:data" for input as 1')
+            output = [_row.strip() for _row in self.get_text(s)]
+        assert output[0] == b'Device Timeout\xff'
 
 if __name__ == '__main__':
     run_tests()

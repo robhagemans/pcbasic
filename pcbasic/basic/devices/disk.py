@@ -230,7 +230,7 @@ class DiskDevice(object):
 
     allowed_modes = b'IOR'
 
-    def __init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed):
+    def __init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed, write_enabled):
         """Initialise a disk device."""
         assert isinstance(cwd, text_type), type(cwd)
         # DOS drive letter
@@ -248,6 +248,7 @@ class DiskDevice(object):
         # text file settings
         self._text_mode = text_mode
         self._soft_linefeed = soft_linefeed
+        self._write_enabled = write_enabled
 
     def close(self):
         """Close disk device."""
@@ -259,7 +260,7 @@ class DiskDevice(object):
 
     def _create_file_object(
             self, fhandle, filetype, mode, number=0,
-            field=None, reclen=128, seg=0, offset=0, length=0
+            field=None, reclen=128, seg=0, offset=0, length=0, force_writable=False
         ):
         """Create disk file object of requested type."""
         # determine file type if needed
@@ -288,19 +289,20 @@ class DiskDevice(object):
                 fhandle = self._codepage.wrap_input_stream(
                     fhandle, replace_newlines=not self._soft_linefeed
                 )
+        writable = force_writable or self._write_enabled
         if filetype in b'BPM':
             # binary [B]LOAD, [B]SAVE
-            return BinaryFile(fhandle, filetype, number, mode, seg, offset, length, self._locks)
+            return BinaryFile(fhandle, filetype, number, mode, seg, offset, length, self._locks, writable)
         elif filetype == b'A':
             # ascii program file
-            return TextFile(fhandle, filetype, number, mode, self._locks)
+            return TextFile(fhandle, filetype, number, mode, self._locks, writable)
         elif filetype == b'D':
             if mode in b'IAO':
                 # data file for input, output, append
-                return TextFile(fhandle, filetype, number, mode, self._locks)
+                return TextFile(fhandle, filetype, number, mode, self._locks, writable)
             else:
                 # data file for random
-                return RandomFile(fhandle, number, field, reclen, self._locks)
+                return RandomFile(fhandle, number, field, reclen, self._locks, writable)
         else:
             # incorrect file type requested
             msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
@@ -308,7 +310,7 @@ class DiskDevice(object):
 
     def open(
             self, number, filespec, filetype, mode, access, lock,
-            reclen, seg, offset, length, field
+            reclen, seg, offset, length, field, force_writable=False
         ):
         """Open a file on a disk drive."""
         # parse the file spec to a definite native name
@@ -335,21 +337,27 @@ class DiskDevice(object):
         self._locks.open_file(dos_basename, number, mode, lock, access)
         try:
             # open the underlying stream
-            fhandle = self.open_stream(native_name, filetype, mode)
+            fhandle = self.open_stream(native_name, filetype, mode, force_writable=force_writable)
             # apply the BASIC file wrapper
             return self._create_file_object(
-                fhandle, filetype, mode, number, field, reclen, seg, offset, length
+                fhandle, filetype, mode, number, field, reclen, seg, offset, length, force_writable
             )
         except Exception:
             self._locks.close_file(number)
             raise
 
-    def open_stream(self, native_name, filetype, mode):
+    def open_stream(self, native_name, filetype, mode, force_writable=False):
         """Open a stream on disk by os-native name with BASIC mode and access level."""
-        try:
+        try:            
+            writable = force_writable or self._write_enabled
+            if mode in b'AO' and not writable:
+                raise error.BASICError(error.DEVICE_IO_ERROR)
+
             # create file if in RANDOM or APPEND mode and doesn't exist yet
             # OUTPUT mode files are created anyway since they're opened with wb
             if ((mode == b'A' or mode == b'R') and not os.path.exists(native_name)):
+                if not writable:
+                    raise error.BASICError(error.DEVICE_IO_ERROR)
                 io.open(native_name, 'wb').close()
             if mode == b'A':
                 f = io.open(native_name, 'r+b')
@@ -449,10 +457,14 @@ class DiskDevice(object):
 
     def mkdir(self, dos_path):
         """Create directory at given BASIC path."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         safe(os.mkdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=True))
 
     def rmdir(self, dos_path):
         """Remove directory at given BASIC path."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         safe(os.rmdir, self._get_native_abspath(dos_path, defext=b'', isdir=True, create=False))
 
     def kill(self, dos_pathmask):
@@ -485,11 +497,15 @@ class DiskDevice(object):
         for dos_path in to_kill_dos:
             # don't delete open files
             self.require_file_not_open(dos_path)
-        for native_path in to_kill:
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
+        for native_path in to_kill:        
             safe(os.remove, native_path)
 
     def rename(self, old_dospath, new_dospath):
         """Rename a file or directory."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         old_native_path = self._get_native_abspath(
             old_dospath, defext=b'', isdir=False, create=False
         )
@@ -752,10 +768,10 @@ class NameWrapper(object):
 class InternalDiskDevice(DiskDevice):
     """Internal disk device for special operations."""
 
-    def __init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed):
+    def __init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed, write_enabled):
         """Initialise internal disk."""
         self._bound_files = {}
-        DiskDevice.__init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed)
+        DiskDevice.__init__(self, letter, path, cwd, codepage, text_mode, soft_linefeed, write_enabled)
 
     def bind(self, file_name_or_object, name=None):
         """Bind a native file name or object to an internal name."""
@@ -783,7 +799,7 @@ class InternalDiskDevice(DiskDevice):
 
     def open(
             self, number, filespec, filetype, mode, access, lock,
-            reclen, seg, offset, length, field
+            reclen, seg, offset, length, field, force_writable=False
         ):
         """Open a file on the internal disk drive."""
         if filespec in self._bound_files:
@@ -796,7 +812,7 @@ class InternalDiskDevice(DiskDevice):
         else:
             return DiskDevice.open(
                 self, number, filespec, filetype, mode, access, lock,
-                reclen, seg, offset, length, field
+                reclen, seg, offset, length, field, force_writable=force_writable
             )
 
     def _split_pathmask(self, pathmask):

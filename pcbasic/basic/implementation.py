@@ -62,9 +62,10 @@ class Implementation(object):
             peek_values=None, allow_code_poke=False, rebuild_offsets=True,
             max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
-            extension=()
+            extension=(), enabled_writes=[]
         ):
         """Initialise the interpreter session."""
+        
         ######################################################################
         # session-level members
         ######################################################################
@@ -78,6 +79,8 @@ class Implementation(object):
         self._edit_prompt = False
         # terminal program for TERM command
         self._term_program = term
+        # indication if writes are enabled
+        self._save_enabled = 'save' in enabled_writes
         ######################################################################
         # data segment
         ######################################################################
@@ -154,7 +157,7 @@ class Implementation(object):
             self.values, self.memory, self.queues, self.keyboard, self.display, self.console,
             max_files, max_reclen, serial_buffer_size,
             devices, current_device,
-            self.codepage, textfile_encoding, soft_linefeed
+            self.codepage, textfile_encoding, soft_linefeed, enabled_writes
         )
         # enable printer echo from console
         self.console.set_lpt1_file(self.files.lpt1_file)
@@ -638,13 +641,16 @@ class Implementation(object):
 
     def save_(self, args):
         """SAVE: save program to a file."""
+        if not self._save_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         name = values.next_string(args)
         mode = (next(args) or b'B').upper()
         list(args)
         with self.files.open(
                 0, name, filetype=mode, mode=b'O',
                 seg=self.memory.data_segment, offset=self.memory.code_start,
-                length=len(self.program.bytecode.getvalue())-1
+                length=len(self.program.bytecode.getvalue())-1,
+                force_writable=True
             ) as f:
             self.program.save(f)
         if mode == b'A':

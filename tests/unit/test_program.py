@@ -50,10 +50,18 @@ class DiskTest(unittest.TestCase):
             b'\xf0\x81S\xf2IR%f\x0f\xc4\xd6\xc8H\xbf{\xf8_c\xcb<\xd2\x82\xd4\x04j\xd3\x06\xfa\x05'
             b'\x1a'
         )
-        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
+        with Session(
+            devices={b'A': self._test_dir}, 
+            current_device='A:',
+            enabled_writes=['save'],
+            ) as s:
             s.execute(plaintext)
             s.execute('save "prog",P')
-        with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
+        with Session(
+            devices={b'A': self._test_dir}, 
+            current_device='A:',
+            enabled_writes=['save','disk'],
+            ) as s:
             # the program saves itself as plaintext and tokenised
             # in gw-basic, illegal funcion call.
             s.execute('run "prog"')

@@ -224,6 +224,21 @@ GW_OPTIONS = {
     u'/m': 'max-memory',
 }
 
+##############################################################################
+# Write operations that can be enabled/disabled. Note that the disabled_writes
+# option also accepts "a" for "all".
+#   b  Saving of programs (SAVE "program")
+#   d  Disk/file modifications
+#   p  Parallel ports
+#   s  Serial ports
+
+TOGGLABLE_WRITES = {
+    u'b': 'save',
+    u'c': 'cas',
+    u'd': 'disk',
+    u'p': 'parallel',
+    u's': 'serial',
+}
 
 ##############################################################################
 # long-form arguments
@@ -338,6 +353,7 @@ ARGUMENTS = {
     u'options': {u'type': u'string', u'default': ''},
     # depecated argument, use text-encoding instead
     u'utf8': {u'type': u'bool', u'default': False,},
+    u'disable-writes': {u'type': u'string', u'default': ''},
 }
 
 
@@ -583,6 +599,7 @@ class Settings(object):
             'extension': self.get('extension'),
             # ignore key buffer in console-based interfaces, to allow pasting text in console
             'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses'),
+            'enabled_writes': self._get_enabled_writes(),
         })
         # deprecated arguments
         if self.get('utf8', get_default=False) is not None:
@@ -595,6 +612,24 @@ class Settings(object):
                 params['textfile_encoding'] = u'utf-8' if self.get('utf8') else u''
         self._session_params = params
         return params
+
+    def _get_enabled_writes(self):
+        """Determine which write operations to allow"""
+        # Enable all writes for starters, then deduct through --disabled_writes
+        enabled_writes = [type for type in TOGGLABLE_WRITES.values()]
+        for toggle in self.get('disable-writes').replace(',', ''):
+            lower_toggle = toggle.lower()
+            if lower_toggle == 'a':
+                return []
+            elif lower_toggle in TOGGLABLE_WRITES:
+                # Catch errors caused by duplicate specification of letters
+                try:
+                    enabled_writes.remove(TOGGLABLE_WRITES[lower_toggle])
+                except ValueError:
+                    pass
+            else:
+                logging.warning('Write toggle `%s` ignored for option `disabled_writes`: not recognised.', toggle)
+        return enabled_writes
 
     def _get_redirects(self):
         """Determine which i/o streams to attach."""

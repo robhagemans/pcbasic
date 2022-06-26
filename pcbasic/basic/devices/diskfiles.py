@@ -31,9 +31,9 @@ from .devicebase import RawFile, TextFileBase, InputMixin, safe_io, TYPE_TO_MAGI
 class BinaryFile(RawFile):
     """File class for binary (B, P, M) files on disk device."""
 
-    def __init__(self, fhandle, filetype, number, mode, seg, offset, length, locks):
+    def __init__(self, fhandle, filetype, number, mode, seg, offset, length, locks, write_enabled):
         """Initialise program file object and write header."""
-        RawFile.__init__(self, fhandle, filetype, mode)
+        RawFile.__init__(self, fhandle, filetype, mode, write_enabled)
         # don't lock binary files
         # we need the Locks object to register file as open
         self._locks = locks
@@ -69,9 +69,9 @@ class BinaryFile(RawFile):
 class TextFile(TextFileBase, InputMixin):
     """Text file on disk device."""
 
-    def __init__(self, fhandle, filetype, number, mode, locks):
+    def __init__(self, fhandle, filetype, number, mode, locks, write_enabled):
         """Initialise text file object."""
-        TextFileBase.__init__(self, fhandle, filetype, mode)
+        TextFileBase.__init__(self, fhandle, filetype, mode, write_enabled)
         self._locks = locks
         self._number = number
         # in append mode, we need to start at end of file
@@ -122,6 +122,8 @@ class TextFile(TextFileBase, InputMixin):
 
     def write(self, s, can_break=True):
         """Write string to file."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         self._locks.try_access(self._number, b'W')
         TextFileBase.write(self, s, can_break)
 
@@ -160,10 +162,10 @@ class TextFile(TextFileBase, InputMixin):
 class FieldFile(TextFile):
     """Text file on FIELD."""
 
-    def __init__(self, field, reclen):
+    def __init__(self, field, reclen, write_enabled):
         """Initialise text file object."""
         # don't let the field file use device locks
-        TextFile.__init__(self, ByteStream(field.view_buffer()), b'D', None, b'I', Locks())
+        TextFile.__init__(self, ByteStream(field.view_buffer()), b'D', None, b'I', Locks(), write_enabled)
         self._field = field
         self._reclen = reclen
 
@@ -223,6 +225,8 @@ class FieldFile(TextFile):
 
     def write(self, bytestr, can_break=True):
         """Write bytes to buffer."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         try:
             TextFile.write(self, bytestr, can_break)
         except ValueError:
@@ -233,17 +237,17 @@ class FieldFile(TextFile):
 class RandomFile(RawFile):
     """Random-access file on disk device."""
 
-    def __init__(self, fhandle, number, field, reclen, locks):
+    def __init__(self, fhandle, number, field, reclen, locks, write_enabled):
         """Initialise random-access file."""
         # note that for random files, output_stream must be a seekable stream.
-        RawFile.__init__(self, fhandle, b'D', b'R')
+        RawFile.__init__(self, fhandle, b'D', b'R', write_enabled)
         self.reclen = reclen
         self._locks = locks
         self._number = number
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
         # touched until PUT or GET.
-        self._field_file = FieldFile(field, reclen)
+        self._field_file = FieldFile(field, reclen, write_enabled)
         # position at start of file
         self._recpos = 0
         self._fhandle.seek(0)
@@ -279,11 +283,15 @@ class RandomFile(RawFile):
 
     def write(self, s, can_break=True):
         """Write the string s to the field."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         with self._field_file.use_mode(b'O'):
             self._field_file.write(s, can_break)
 
     def write_line(self, s=b''):
         """Write string and newline to the field buffer."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         with self._field_file.use_mode(b'O'):
             self._field_file.write_line(s)
 
@@ -323,6 +331,8 @@ class RandomFile(RawFile):
 
     def put(self, pos):
         """Write a record."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         self._set_record_pos(pos)
         self._locks.try_record_access(self._number, self._recpos+1, self._recpos+1, b'W')
         current_length = self.lof()

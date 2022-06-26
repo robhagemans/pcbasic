@@ -49,7 +49,7 @@ class CASDevice(object):
     # control characters not allowed in file name on tape
     _illegal_chars = set(int2byte(_i) for _i in range(0x20))
 
-    def __init__(self, arg, console):
+    def __init__(self, arg, console, write_enabled):
         """Initialise tape device."""
         addr, val = parse_protocol_string(arg)
         ext = val.split(u'.')[-1].upper()
@@ -59,6 +59,7 @@ class CASDevice(object):
         self.is_quiet = False
         # console for messages
         self.console = console
+        self._write_enabled = write_enabled
         try:
             if not val:
                 self.tapestream = None
@@ -81,7 +82,7 @@ class CASDevice(object):
         if self.tapestream:
             self.tapestream.close_tape()
 
-    def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
+    def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field, force_writable=False):
         """Open a file on tape."""
         if not self.tapestream:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -90,8 +91,11 @@ class CASDevice(object):
         if set(iterchar(param)) & self._illegal_chars:
             # Cassette BASIC throws bad file NUMBER, for some reason.
             raise error.BASICError(error.BAD_FILE_NUMBER)
+        writable = force_writable or self._write_enabled
         try:
             if mode == b'O':
+                if not writable:
+                    raise error.BASICError(error.DEVICE_IO_ERROR)
                 self.tapestream.open_write(param, filetype, seg, offset, length)
             elif mode == b'I':
                 _, filetype, seg, offset, length = self._search(param, filetype)
@@ -100,11 +104,11 @@ class CASDevice(object):
         except EnvironmentError:
             raise error.BASICError(error.DEVICE_IO_ERROR)
         if filetype == b'D':
-            return CASTextFile(self.tapestream, filetype, mode)
+            return CASTextFile(self.tapestream, filetype, mode, writable)
         elif filetype == b'A':
-            return CASTextFile(self.tapestream, filetype, mode)
+            return CASTextFile(self.tapestream, filetype, mode, writable)
         else:
-            return CASBinaryFile(self.tapestream, filetype, mode, seg, offset, length)
+            return CASBinaryFile(self.tapestream, filetype, mode, seg, offset, length, writable)
 
     def _search(self, trunk_req=None, filetypes_req=None):
         """Play until a file header record is found for the given filename."""
@@ -143,9 +147,9 @@ class CASDevice(object):
 class CASBinaryFile(RawFile):
     """Program or Memory file on CASn: device."""
 
-    def __init__(self, fhandle, filetype, mode, seg, offset, length):
+    def __init__(self, fhandle, filetype, mode, seg, offset, length, write_enabled):
         """Initialise binary file."""
-        RawFile.__init__(self, fhandle, filetype, mode)
+        RawFile.__init__(self, fhandle, filetype, mode, write_enabled)
         self.seg, self.offset, self.length = seg, offset, length
 
 
@@ -436,8 +440,12 @@ class TapeBitStream(object):
             if c != b:
                 break
         else:
-            for _ in range(7):
-                self.read_bit()
+            try:
+                for _ in range(7):
+                    self.read_bit()
+            except EndOfTape:
+                # empty or short file
+                return False
         return True
 
     def write_intro(self):

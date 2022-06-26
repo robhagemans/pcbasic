@@ -37,11 +37,12 @@ class LPTDevice(Device):
     # in GW-BASIC, FIELD gives a FIELD OVERFLOW; we get BAD FILE MODE.
     allowed_modes = b'OR'
 
-    def __init__(self, arg, default_stream, codepage):
+    def __init__(self, arg, default_stream, codepage, write_enabled):
         """Initialise LPTn: device."""
         Device.__init__(self)
         addr, val = parse_protocol_string(arg)
         self.stream = default_stream
+        self._write_enabled = write_enabled
         if addr == u'FILE':
             try:
                 self.stream = io.open(val, 'wb')
@@ -50,7 +51,7 @@ class LPTDevice(Device):
         elif addr == u'PARPORT':
             # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
             try:
-                self.stream = ParallelStream(val)
+                self.stream = ParallelStream(val, self._write_enabled)
             except EnvironmentError as e:
                 logging.warning(u'Could not attach parallel port %s to LPT device: %s', val, e)
         elif addr == u'STDIO' or (not addr and val == u'STDIO'):
@@ -62,20 +63,20 @@ class LPTDevice(Device):
             options = val.split(u':')
             printer_name = options[0]
             flush_trigger = (options[1:] or [u''])[0]
-            self.stream = PrinterStream(printer_name, flush_trigger, codepage)
+            self.stream = PrinterStream(printer_name, flush_trigger, codepage, self._write_enabled)
         elif val:
             logging.warning(u'Could not attach %s to LPT device', arg)
         # column counter is the same across all LPT files
         self.device_settings = DeviceSettings()
         if self.stream:
-            self.device_file = LPTFile(self.stream, self.device_settings)
+            self.device_file = LPTFile(self.stream, self.device_settings, write_enabled=self._write_enabled)
 
     def open(
             self, number, param, filetype, mode, access, lock,
-            reclen, seg, offset, length, fiekd):
+            reclen, seg, offset, length, field, force_writable=False):
         """Open a file on LPTn: """
         # shared position/width settings across files
-        return LPTFile(self.stream, self.device_settings, bug=True)
+        return LPTFile(self.stream, self.device_settings, bug=True, write_enabled=force_writable or self._write_enabled)
 
     def available(self):
         """Device is available."""
@@ -88,12 +89,12 @@ class LPTDevice(Device):
 class LPTFile(TextFileBase):
     """LPTn: device - line printer or parallel port."""
 
-    def __init__(self, stream, settings, bug=False):
+    def __init__(self, stream, settings, bug=False, write_enabled=False):
         """Initialise LPTn."""
         # GW-BASIC quirk - different LPOS behaviour on LPRINT and LPT1 files
         self._bug = bug
         self._settings = settings
-        TextFileBase.__init__(self, stream, filetype=b'D', mode=b'A')
+        TextFileBase.__init__(self, stream, filetype=b'D', mode=b'A', write_enabled=write_enabled)
         # default width is 80
         # width=255 means line wrap
         self.width = 80
@@ -108,6 +109,8 @@ class LPTFile(TextFileBase):
     def write(self, s, can_break=True):
         """Write a string to the printer buffer."""
         assert isinstance(s, bytes), type(s)
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         with safe_io():
             for c in iterchar(s):
                 # don't replace CR or LF with
@@ -152,8 +155,10 @@ class LPTFile(TextFileBase):
 
     def do_print(self):
         """Actually print, reset column position."""
-        with safe_io():
-            self._fhandle.flush()
+        # Silently don't flush if writes disabled; writes are blocked anyway
+        if self._write_enabled:
+            with safe_io():
+                self._fhandle.flush()
         self._settings.col = 1
         self.col = 1
 
@@ -168,12 +173,13 @@ class LPTFile(TextFileBase):
 class PrinterStream(io.BytesIO):
     """LPT output to printer."""
 
-    def __init__(self, printer_name, flush_trigger, codepage):
+    def __init__(self, printer_name, flush_trigger, codepage, write_enabled):
         """Initialise the printer stream."""
         self.printer_name = printer_name
         self.codepage = codepage
         # flush_trigger can be a char or a code word
         self._flush_trigger = TRIGGERS.get(flush_trigger.lower(), flush_trigger)
+        self._write_enabled = write_enabled
         io.BytesIO.__init__(self)
 
     def close(self):
@@ -182,6 +188,8 @@ class PrinterStream(io.BytesIO):
 
     def write(self, s):
         """Write to printer stream."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         for c in iterchar(s):
             if c == b'\b':
                 # backspace: drop a non-newline character from the buffer
@@ -195,6 +203,8 @@ class PrinterStream(io.BytesIO):
 
     def flush(self):
         """Flush the printer buffer to a printer."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         printbuf = self.getvalue()
         if not printbuf:
             return
@@ -220,7 +230,7 @@ class PrinterStream(io.BytesIO):
 class ParallelStream(object):
     """LPT output to parallel port."""
 
-    def __init__(self, port):
+    def __init__(self, port, write_enabled):
         """Initialise the ParallelStream."""
         if not parallel:
             raise IOError('`parallel` module not found. Parallel port communication not available.')
@@ -229,6 +239,7 @@ class ParallelStream(object):
         except TypeError:
             raise IOError('Invalid port specification.')
         self._port = port
+        self._write_enabled = write_enabled
 
     def __getstate__(self):
         """Get pickling dict for stream."""
@@ -240,6 +251,8 @@ class ParallelStream(object):
 
     def write(self, s):
         """Write to the parallel port."""
+        if not self._write_enabled:
+            raise error.BASICError(error.DEVICE_IO_ERROR)
         with safe_io():
             if self._parallel.getInPaperOut():
                 raise error.BASICError(error.OUT_OF_PAPER)

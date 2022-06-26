@@ -139,7 +139,10 @@ class ConsoleTest(TestCase):
 
     def test_control_printscreen(self):
         """Test ctrl+printscreen in console."""
-        with Session(devices={'lpt1:': 'FILE:'+self.output_path(u'printscr.txt')}) as s:
+        with Session(
+            devices={'lpt1:': 'FILE:'+self.output_path(u'printscr.txt')},
+            enabled_writes=['parallel'],
+            ) as s:
             s.execute(b'cls:print "%s"' % (_LIPSUM[:200],))
             # ctrl + prtscr
             s.press_keys(u'\0\x72')

@@ -43,7 +43,7 @@ class Files(object):
             self, values, memory, queues, keyboard, display, console,
             max_files, max_reclen, serial_buffer_size,
             device_params, current_device,
-            codepage, text_mode, soft_linefeed
+            codepage, text_mode, soft_linefeed, enabled_writes
         ):
         """Initialise files."""
         # for wait() in files_
@@ -56,7 +56,7 @@ class Files(object):
         self._init_devices(
             values, queues, display, console, keyboard,
             device_params, current_device,
-            serial_buffer_size, codepage, text_mode, soft_linefeed
+            serial_buffer_size, codepage, text_mode, soft_linefeed, enabled_writes
         )
 
     ###########################################################################
@@ -78,7 +78,7 @@ class Files(object):
 
     def open(
             self, number, description, filetype, mode=b'I', access=b'', lock=b'',
-            reclen=128, seg=0, offset=0, length=0
+            reclen=128, seg=0, offset=0, length=0, force_writable=False
         ):
         """Open a file on a device specified by description."""
         if (not description) or (number < 0) or (number > self.max_files):
@@ -93,7 +93,7 @@ class Files(object):
         # open the file on the device
         new_file = device.open(
             number, dev_param, filetype, mode, access, lock,
-            reclen, seg, offset, length, field
+            reclen, seg, offset, length, field, force_writable=force_writable
         )
         logging.debug(
             'Opened file %r as #%d (type %s, mode %s)', dev_param, number, filetype, mode
@@ -126,35 +126,37 @@ class Files(object):
     def _init_devices(
             self, values, queues, display, console, keyboard,
             device_params, current_device,
-            serial_in_size, codepage, text_mode, soft_linefeed
+            serial_in_size, codepage, text_mode, soft_linefeed, enabled_writes
         ):
         """Initialise devices."""
         device_params = self._normalise_params(device_params)
         # screen device, for files_()
         current_device = self._normalise_current_device(current_device, device_params)
         self._console = console
+        serial_write_enabled = 'serial' in enabled_writes
+        parallel_write_enabled = 'parallel' in enabled_writes
         self._devices = {
             b'SCRN:': devicebase.SCRNDevice(display, console),
             # KYBD: device needs display as it can set the screen width
             b'KYBD:': devicebase.KYBDDevice(keyboard, display),
             # cassette: needs text screen to display Found and Skipped messages
-            b'CAS1:': cassette.CASDevice(device_params.get(b'CAS1', None), self._console),
+            b'CAS1:': cassette.CASDevice(device_params.get(b'CAS1', None), self._console, 'cas' in enabled_writes),
             # serial devices
-            b'COM1:': ports.COMDevice(device_params.get(b'COM1', None), queues, serial_in_size),
-            b'COM2:': ports.COMDevice(device_params.get(b'COM2', None), queues, serial_in_size),
+            b'COM1:': ports.COMDevice(device_params.get(b'COM1', None), queues, serial_in_size, serial_write_enabled),
+            b'COM2:': ports.COMDevice(device_params.get(b'COM2', None), queues, serial_in_size, serial_write_enabled),
             # parallel devices - LPT1: must always be available
             b'LPT1:': parports.LPTDevice(
-                device_params.get(b'LPT1', None), devicebase.nullstream(), codepage
+                device_params.get(b'LPT1', None), devicebase.nullstream(), codepage, parallel_write_enabled
             ),
-            b'LPT2:': parports.LPTDevice(device_params.get(b'LPT2', None), None, codepage),
-            b'LPT3:': parports.LPTDevice(device_params.get(b'LPT3', None), None, codepage),
+            b'LPT2:': parports.LPTDevice(device_params.get(b'LPT2', None), None, codepage, parallel_write_enabled),
+            b'LPT3:': parports.LPTDevice(device_params.get(b'LPT3', None), None, codepage, parallel_write_enabled),
         }
         # device files
         self.scrn_file = self._devices[b'SCRN:'].device_file
         self.kybd_file = self._devices[b'KYBD:'].device_file
         self.lpt1_file = self._devices[b'LPT1:'].device_file
         # disks
-        self._init_disk_devices(device_params, current_device, codepage, text_mode, soft_linefeed)
+        self._init_disk_devices(device_params, current_device, codepage, text_mode, soft_linefeed, 'disk' in enabled_writes)
 
     def _normalise_current_device(self, current_device, device_params):
         """Normalise current device specification."""
@@ -627,7 +629,7 @@ class Files(object):
 
     def _init_disk_devices(
             self, device_params, current_device,
-            codepage, text_mode, soft_linefeed
+            codepage, text_mode, soft_linefeed, write_enabled
         ):
         """Initialise disk devices."""
         # if Z not specified, mount to cwd by default (override by specifying 'Z': None)
@@ -654,7 +656,7 @@ class Files(object):
             # treat device @: separately - internal disk must exist but may remain unmounted
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
             self._devices[letter + b':'] = disk_class(
-                letter, path, cwd, codepage, text_mode, soft_linefeed
+                letter, path, cwd, codepage, text_mode, soft_linefeed, write_enabled
             )
         # current_device value is normalised
         self._current_device = current_device
