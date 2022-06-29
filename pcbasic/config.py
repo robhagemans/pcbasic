@@ -671,6 +671,9 @@ class Settings(object):
             mount_dict = self._get_drives_from_list(mount_list)
         # directory for bundled BASIC programs accessible through @:
         mount_dict[b'@'] = PROGRAM_PATH
+        # if Z: not specified, override it to avoid mounting through Session default
+        if b'Z' not in mount_dict:
+            mount_dict[b'Z'] = None
         return current_device, mount_dict
 
     def _get_drives_from_list(self, mount_list):

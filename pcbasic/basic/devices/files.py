@@ -162,25 +162,25 @@ class Files(object):
         if current_device and current_device != b'CAS1' and current_device not in DRIVE_LETTERS:
             logging.error('Invalid current device `%s`', current_device)
             current_device = b''
+        # no current device specified, or set to an undefined device
         if (
-                not current_device or current_device not in device_params.keys()
-                or b'Z' in device_params and not device_params[b'Z']
+                not current_device
+                or current_device not in device_params.keys()
+                or not device_params[current_device]
             ):
-            if device_params:
-                if b'Z' in device_params and not device_params[b'Z']:
-                    # if not set or not sensible, set current device to last disk available
-                    available = sorted(
-                        _k for _k in device_params.keys() if len(_k) == 1 and device_params[_k]
-                    )
-                    if available:
-                        current_device = available[-1]
-                    else:
-                        current_device = b'@'
-                else:
-                    current_device = b'Z'
+            if b'Z' in device_params and device_params[b'Z']:
+                # use z: if this is defined
+                current_device = b'Z'
             else:
-                # if nothing mounted at all and not set to CAS1, current device will be @:
-                current_device = b'@'
+                # otherwise, set current device to last disk available
+                # if nothing available, use the internal drive @
+                available = sorted(
+                    _k for _k in device_params.keys() if len(_k) == 1 and device_params[_k]
+                )
+                if available:
+                    current_device = available[-1]
+                else:
+                    current_device = b'@'
         return current_device
 
     def _normalise_params(self, device_params):
@@ -635,9 +635,7 @@ class Files(object):
             device_params[b'Z'] = getcwdu()
         # disk devices
         for letter in iterchar(DRIVE_LETTERS):
-            if letter in device_params:
-                if not device_params[letter]:
-                    continue
+            if letter in device_params and device_params[letter]:
                 # drive can be non-empty only on Windows, needs to be split out first as we use :
                 drive, drivepath = os.path.splitdrive(device_params[letter])
                 params = split_quoted(
