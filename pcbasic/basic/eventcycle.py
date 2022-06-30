@@ -130,7 +130,10 @@ class EventQueues(object):
         """Main event cycle."""
         # sleep(0) is needed for responsiveness, e.g. even trapping in programs with tight loops
         # i.e. 100 goto 100 with event traps active)
+        # this also allows the screen to update between statements
         # it does slow the interpreter down by about 20% in FOR loops
+        time.sleep(0)
+        # bizarrely, we need sleep(0) twice. I don't know why.
         time.sleep(0)
         self._check_input(event_check_input)
 
