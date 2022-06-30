@@ -326,7 +326,7 @@ class Files(object):
         error.range_check(1, self.max_reclen, reclen)
         # can't open file 0, or beyond max_files
         error.range_check_err(1, self.max_files, number, error.BAD_FILE_NUMBER)
-        self.open(number, name, b'D', mode, access, lock, reclen)
+        self.open(number, name, b'D', mode=mode, access=access, lock=lock, reclen=reclen)
 
     ###########################################################################
 

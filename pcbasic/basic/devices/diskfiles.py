@@ -219,7 +219,7 @@ class FieldFile(TextFile):
 
     def get_buffer(self):
         """Get a copy of the contents of the buffer."""
-        return bytearray(self._field.view_buffer())
+        return bytearray(self._field.view_buffer()[:self._reclen])
 
     def write(self, bytestr, can_break=True):
         """Write bytes to buffer."""
