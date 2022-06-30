@@ -189,7 +189,9 @@ class Tandy6SpriteBuilder(PlanedSpriteBuilder):
         width, = struct.unpack('<H', array[:2])
         width *= self.width_factor
         size_record = struct.pack('<H', width)
-        return PlanedSpriteBuilder.unpack(self, size_record + array[2:])
+        # explicit conversion to bytes only needed for Python 2, in Python 3 concatenation is ok
+        # via bytearray as otherwide it gives str representation in Python 2
+        return PlanedSpriteBuilder.unpack(self, size_record + bytes(bytearray(array[2:])))
 
 
 ##############################################################################

@@ -204,7 +204,7 @@ class ByteMatrix(object):
     @classmethod
     def frompacked(cls, packed, height, items_per_byte):
         """Unpack from packed-bits representation."""
-        packed = bytes(packed)
+        packed = bytes(bytearray(packed))
         if not packed or not height:
             return cls(0, 0)
         width = len(packed) // height
