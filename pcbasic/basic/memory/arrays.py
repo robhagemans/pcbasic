@@ -23,8 +23,7 @@ class Arrays(object):
         self._memory = memory
         self._values = values
         self.clear()
-        # OPTION BASE is unset
-        self._base = None
+        self.clear_base()
 
     def __contains__(self, varname):
         """Check if a scalar has been defined."""
@@ -69,6 +68,10 @@ class Arrays(object):
                 if name_ptr > erased_name_ptr:
                     self._array_memory[name] = name_ptr - freed_bytes, array_ptr - freed_bytes
             self.current -= freed_bytes
+        # if all arrays have been cleared and array base was set to 0 implicitly by DIM, unset it
+        # however, if array base was set explicitly by OPTION BASE, it remains set.
+        if not self._dims and self._base_set_by_dim:
+            self.clear_base()
 
     def index(self, index, dimensions):
         """Return the flat index for a given dimensioned index."""
@@ -130,6 +133,7 @@ class Arrays(object):
             return
         if self._base is None:
             self._base = 0
+            self._base_set_by_dim = True
         if name in self._dims:
             raise error.BASICError(error.DUPLICATE_DEFINITION)
         for d in dimensions:
@@ -174,7 +178,10 @@ class Arrays(object):
 
     def clear_base(self):
         """Unset the array base."""
+        # OPTION BASE value. NONE: unset
         self._base = None
+        # OPTION BASE set by DIM rather than explicitly
+        self._base_set_by_dim = False
 
     def option_base_(self, args):
         """Set the array base to 0 or 1 (OPTION BASE). Raise error if already set."""
