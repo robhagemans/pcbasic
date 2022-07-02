@@ -1,3 +1,4 @@
+1 ' test temporary string memory management
 5 OPEN "OUTPUT.TXT" FOR OUTPUT AS 1
 6 ON ERROR GOTO 1000
 10 DIM A$(10000)
