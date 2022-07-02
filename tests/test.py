@@ -285,7 +285,7 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
     if all:
         tests = [
             os.path.join('basic', _preset, _test)
-            for _preset in reversed(sorted(os.listdir(os.path.join(HERE, 'basic'))))
+            for _preset in sorted(os.listdir(os.path.join(HERE, 'basic')))
             for _test in sorted(os.listdir(os.path.join(HERE, 'basic', _preset)))
         ]
     try:
