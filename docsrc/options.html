@@ -471,17 +471,20 @@
                 <dt><code><b>cli</b></code></dt>
                 <dd>Command-line interface. Also <code><b><a href="#-b">-b</a></b></code>.</dd>
                 <dt><code><b>text</b></code></dt>
-                <dd>Text interface. Also <code><b><a href="#-t">-t</a></b></code>.</dd>
+                <dd>ANSI text interface. Also <code><b><a href="#-t">-t</a></b></code>.</dd>
                 <dt><code><b>graphical</b></code></dt>
-                <dd>Graphical interface.</dd>
-                <dt><code><b>sdl2</b></code></dt>
                 <dd>SDL2 graphical interface.</dd>
-                <dt><code><b>pygame</b></code></dt>
-                <dd>PyGame graphical interface <em>(deprecated, please use SDL2 instead)</em>.</dd>
+            </dl>
+            The following values for this option are deprecated:
+            <dl class="compact">
                 <dt><code><b>ansi</b></code></dt>
-                <dd>ANSI text interface.</dd>
+                <dd>ANSI text interface. Synonym for <code><b>text</b></code>.</dd>
+                <dt><code><b>sdl2</b></code></dt>
+                <dd>SDL2 graphical interface. Synonym for <code><b>graphical</b></code>.</dd>
+                <dt><code><b>pygame</b></code></dt>
+                <dd>PyGame graphical interface. Please use <code><b>graphical</b></code> instead.</dd>
                 <dt><code><b>curses</b></code></dt>
-                <dd>NCurses text interface.</dd>
+                <dd>NCurses text interface. Please use <code><b>text</b></code> instead.</dd>
             </dl>
             The default is <code><b>graphical</b></code>.
         </dd>
