@@ -55,6 +55,7 @@ SLOWSHOW = 20
 # statuses
 CRASHED = 'crashed'
 PASSED = 'passed'
+NEWPASSED = 'newly passed'
 ACCEPTED = 'accepted'
 OLDFAILED = 'failed before'
 NEWFAILED = 'failed'
@@ -65,6 +66,7 @@ NONESUCH = 'not found'
 STATUS_COLOURS = {
     CRASHED: '01;37;41',
     PASSED: '00;32',
+    NEWPASSED: '01;32',
     ACCEPTED: '00;36',
     OLDFAILED: '00;33',
     NEWFAILED: '01;31',
@@ -151,7 +153,7 @@ class TestFrame(object):
         os.chdir(self._output_dir)
         yield self
         self.passed = True
-        self.known = True
+        self.known = os.path.isdir(self._known_dir)
         self.failfiles = []
         for path, dirs, files in os.walk(self._model_dir):
             for f in files:
@@ -190,6 +192,7 @@ class TestFrame(object):
         if self.passed:
             try:
                 shutil.rmtree(self._output_dir)
+                shutil.rmtree(self._known_dir)
             except EnvironmentError:
                 pass
 
@@ -221,6 +224,8 @@ class TestFrame(object):
         if self.crash:
             return CRASHED
         if self.passed:
+            if self.known or self.old_fail:
+                return NEWPASSED
             return PASSED
         if self.known:
             return ACCEPTED
