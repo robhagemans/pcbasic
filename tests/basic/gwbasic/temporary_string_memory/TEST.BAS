@@ -1,3 +1,4 @@
+1 ' test temporary string memory management
 5 OPEN"output.txt" FOR OUTPUT AS 1
 10 A$="12345"
 15 PRINT#1, FRE(0)

@@ -86,7 +86,7 @@ for name in os.listdir(MODEL):
     print('-'*80)
 
     try:
-        with open(os.path.join(ACCEPTED, name)) as accepted:
+        with open(os.path.join(ACCEPTED, name), 'rb') as accepted:
             acclines = accepted.readlines()
     except EnvironmentError:
         acclines = []

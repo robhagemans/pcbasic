@@ -1,3 +1,4 @@
+1 ' test PRINT with comma to SCRN:
 5 OPEN "scrn:" for output as 2
 6 open "pos.txt" for output as 1
 210 for w%=1 to 255 
