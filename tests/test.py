@@ -280,7 +280,7 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
     if all:
         tests = [
             os.path.join('basic', _preset, _test)
-            for _preset in os.listdir(os.path.join(HERE, 'basic'))
+            for _preset in reversed(sorted(os.listdir(os.path.join(HERE, 'basic'))))
             for _test in sorted(os.listdir(os.path.join(HERE, 'basic', _preset)))
         ]
     try:
@@ -299,14 +299,18 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
         startdir = os.path.abspath(os.getcwd())
         save_env = deepcopy(os.environ)
         # run all tests
-        for name in tests:
+        for number, fullname in enumerate(tests):
             # reset testing environment
             os.chdir(startdir)
             os.environ = deepcopy(save_env)
             # normalise test name
-            category, name = normalise(name)
+            category, name = normalise(fullname)
+            fullname = testname(category, name)
             print(
-                '\033[00;37mRunning test %s/\033[01m%s \033[00;37m.. ' % (category, name),
+                '\033[00;37mRunning test {number}/{total} [{time:.2f}s] {category}/\033[01m{name} \033[00;37m.. '.format(
+                    number=number+1, total=len(tests), time=times.get(fullname, 0),
+                    category=category, name=name
+                ),
                 end=''
             )
             with suppress_stdio(not loud):
@@ -320,12 +324,12 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
                             pcbasic.run('--interface=none')
             # update test time
             if test_frame.exists and not test_frame.skip and not test_frame.crash:
-                times[testname(category, name)] = timer.wall_time
+                times[fullname] = timer.wall_time
             # report status
-            results[testname(category, name)] = test_frame.status
-            # re-init as pcbasic modifies sys.std**
-            print('\033[%sm%s.\033[00;37m' % (
-                STATUS_COLOURS[test_frame.status], test_frame.status
+            results[fullname] = test_frame.status
+            print('\033[{colour}m{status}.\033[00;37m'.format(
+                colour=STATUS_COLOURS[test_frame.status],
+                status=test_frame.status,
             ))
     # update stored times
     with open(TEST_TIMES, 'w') as timefile:
