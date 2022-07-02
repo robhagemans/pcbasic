@@ -39,6 +39,7 @@ A few essential commands to help you get around:
 
 | Command               | Effect                                                        |
 |-----------------------|---------------------------------------------------------------|
+| `FILES`               | show current working directory and its contents               |
 | `LOAD "PROGRAM"`      | loads the program file named `PROGRAM.BAS` into memory        |
 | `LIST`                | displays the BASIC code of the current program                |
 | `RUN`                 | starts the current program                                    |

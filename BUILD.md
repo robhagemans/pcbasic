@@ -87,16 +87,6 @@ These are the steps to set up the local repository ready to run PC-BASIC:
         pc-basic
 
 
-#### Windows console notes ####
-When using PC-BASIC with a text-based interface on Windows, please note:
-- You need to set the console font to one of the TrueType fonts, for example Lucida Console.
-  The default raster font will not display non-ASCII letters correctly.
-
-- If the Windows console codepage is set to 65001, strange errors may occur when using `pcbasic -n` or the
-  Session API through standard I/O. For example, `IOError: [Errno 0] Error`.
-  This is a [known issue](https://bugs.python.org/issue1602) with
-  Python 2.7 and Windows. There is no fix; to work around it, change to another console codepage.
-
 
 #### Building `SDL2_gfx.dll` on Windows ###
 The [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) plugin is needed if
@@ -134,11 +124,3 @@ The following features are deprecated and **will be removed in the near future**
 - The PyGame interface
 - The option `--utf8` (use `--text-encoding=utf8`)
 - The aliases `freedos`, `univga`, and `unifont` for the default font (use `--font=default`)
-
-
-
-#### Contributing code ####
-
-Code contributions are much appreciated! You'll need to agree for your code contributions to be licensed under the [Expat MIT License](https://opensource.org/licenses/MIT).
-This is a more permissive licence than PC-BASIC is (currently) released under. The reason I ask for
-a permissive licence for contributions is that it allows me to re-license the code at a later date.
