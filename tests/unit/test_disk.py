@@ -11,6 +11,7 @@ import os
 import platform
 
 from pcbasic import Session
+from pcbasic.compat import get_short_pathname
 from tests.unit.utils import TestCase, run_tests
 
 
@@ -79,13 +80,16 @@ class DiskTest(TestCase):
 
     def test_files_longname(self):
         """Test directory listing with long name."""
-        open(self.output_path('very_long_name_and.extension'), 'w').close()
+        longname = self.output_path('very_long_name_and.extension')
+        open(longname, 'w').close()
+        shortname = get_short_pathname(longname) or 'very_lo+.ex+'
+        shortname = os.path.basename(shortname).encode('latin-1')
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:"')
             output = [_row.strip() for _row in self.get_text(s)]
             assert output[:2] == [
                 b'A:\\',
-                b'.   <DIR>         ..  <DIR> very_lo+.ex+'
+                b'.   <DIR>         ..  <DIR> ' + shortname
             ]
 
     def test_files_wildcard(self):
@@ -93,15 +97,23 @@ class DiskTest(TestCase):
         open(self.output_path('aaa.txt'), 'w').close()
         open(self.output_path('aab.txt'), 'w').close()
         open(self.output_path('abc.txt'), 'w').close()
-        open(self.output_path('aa_long_file_name.txt'), 'w').close()
+        longname = self.output_path('aa_long_file_name.txt')
+        open(longname, 'w').close()
+        shortname = get_short_pathname(longname) or 'aa_long+.txt'
+        shortname = os.path.basename(shortname).encode('latin-1')
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:*.txt"')
             output = [_row.strip() for _row in self.get_text(s)]
-        assert output[1] == b'AAA     .TXT      AAB     .TXT      ABC     .TXT      aa_long+.txt'
+        # output order is defined by OS, may not be alphabetic
+        assert b'AAA     .TXT' in output[1]
+        assert b'AAB     .TXT' in output[1]
+        assert b'ABC     .TXT' in output[1]
+        assert shortname in output[1]
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:aa?.txt"')
             output = [_row.strip() for _row in self.get_text(s)]
-        assert output[1] == b'AAA     .TXT      AAB     .TXT'
+        assert b'AAA     .TXT' in output[1]
+        assert b'AAB     .TXT' in output[1]
         # no match
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:b*.txt"')
@@ -471,22 +483,27 @@ class DiskTest(TestCase):
 
     def test_dot_filename(self):
         """Test handling of filenames ending in dots."""
-        # skip on Windows as it does not allow filenames ending in dots
-        # except if the file is accessed with UNC absolute path e.g. \\?\c:\blah
-        if platform.system() == 'Windows':
-            return
+        # check for case insensitive file system
+        open(os.path.join(self.output_path(), 'casetest'), 'w').close()
+        is_case_insensitive = os.path.exists(os.path.join(self.output_path(), 'CASETEST'))
+        # check if os ignores dots at the end of file names (Windows does)
+        open(os.path.join(self.output_path(), 'dottest.'), 'w').close()
+        ignores_dots = os.path.exists(os.path.join(self.output_path(), 'dottest'))
         names = (
             b'LONG.FIL',
-            b'LONGFILE',
-            b'LONGFILE.',
+            # these three will overwrite each other on Windows, write dotless one last
             b'LONGFILE..',
+            b'LONGFILE.',
+            b'LONGFILE',
             b'LONGFILE.BAS',
-            b'LongFileName',
-            b'LongFileName.',
+            # these three will overwrite each other on Windows, write dotless one last
             b'LongFileName..',
+            b'LongFileName.',
+            b'LongFileName',
             b'Long.FileName',
             b'Long.FileName.',
             b'LongFileName.BAS',
+            # this will overwrite the previous on non-case-sensitive filesystems e.g. mac, windows
             b'LongFileName.bas',
         )
         basicnames = {
@@ -505,13 +522,20 @@ class DiskTest(TestCase):
             b'Long.FileName.2': b'LONG.FIL',
             b'Long.FileName2..': b'LONG.FIL',
         }
+        # the last of the case-equivalent writes wins
+        if is_case_insensitive:
+            basicnames[b'LongFileName'] = b'LongFileName.bas'
+        # the last of the dot-equivalent writes wins
+        if ignores_dots:
+            basicnames[b'LongFileName.'] = b'LongFileName'
+            basicnames[b'LongFileName..'] = b'LongFileName'
         with Session(devices={b'A': self.output_path()}) as s:
             for name in names:
                 with open(os.path.join(self.output_path().encode('ascii'), name), 'wb') as f:
                     f.write(b'1000 a$="%s"\r\n' % (name,))
             for name, found in basicnames.items():
                 s.execute(b'run "a:%s"' % (name,))
-                assert s.get_variable('a$') == found
+                assert s.get_variable('a$') == found, s.get_variable('a$') + b' != ' + found
 
     def test_kill_long_filename(self):
         """Test deleting files with long filenames."""
