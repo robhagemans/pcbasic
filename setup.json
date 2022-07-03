@@ -22,7 +22,7 @@
     "install_requires": [],
     "extras_require": {
         "ports": ["pyserial", "pyparallel"],
-        "full": ["pyserial", "pyparallel", "pygame", "pyaudio"],
+        "full": ["pyserial", "pyparallel", "pyaudio"],
         "dev": ["lxml", "markdown", "pylint", "coverage", "cx_Freeze", "Pillow", "twine", "wheel", "colorama"]
     }
 }
