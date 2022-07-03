@@ -9,17 +9,15 @@ The instructions there cover the most common platforms and use cases.
 
 
 #### Dependencies ####
-The following packages are needed or recommended when installing PC-BASIC:
+The following packages are needed, recommended or optional when installing PC-BASIC:
 
 | Package                                                                       | OS                 | Status       | Used for
 |-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
 | [Python 3.6.9 or later](https://www.python.org/downloads/)                    | all                | required     |
-| [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | sound and graphics
-| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound when using text-based interface
+| [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | graphics and sound with `--interface=graphical`
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound with `--interface=text`
 | [PySerial 3.4](https://github.com/pyserial/pyserial)                          | all                | optional     | physical or emulated serial port access
 | [PyParallel](https://github.com/pyserial/pyparallel)                          | Windows, Linux     | optional     | physical parallel port access
-| [PyGame 1.9.3](http://www.pygame.org)                                         | all                | deprecated   | sound and graphics
-
 
 `setuptools` and `pip` are included with Python.
 Once you have a working Python installation, most dependencies can be installed with `pip`:
@@ -34,8 +32,7 @@ If this causes difficulties, you can alternatively place the library in the foll
 - Windows (32-bit Python, 32-bit SDL): `pcbasic\lib\win32_x86\sdl2.dll`  
 - MacOS: `pcbasic/lib/darwin/libSDL2.dylib`  
 
-[PyParallel](https://sourceforge.net/projects/pyserial/files/pyparallel/0.2/)
-is only needed to access physical parallel ports, not for printing to a CUPS or Windows printer.
+[PyParallel](https://github.com/pyserial/pyparallel) is only needed to access physical parallel ports, not for printing to a CUPS or Windows printer.
 Note that most modern machines do not actually have parallel ports. If you have a parallel port and want to use it with PC-BASIC,
 download and install PyParallel from the link above. Although a `pyparallel` package exists in on PyPI, at present this does not work
 as essential libraries are missing.
@@ -121,6 +118,7 @@ Those who prefer to use the [MinGW](http://mingw.org/) GCC compiler, follow thes
 
 The following features are deprecated and **will be removed in the near future**:
 - Python 2.7 support
-- The PyGame interface
+- The [PyGame 1.9.3](www.pygame.org)-based interface
+- The [curses](https://invisible-island.net/ncurses/)-based interface
 - The option `--utf8` (use `--text-encoding=utf8`)
 - The aliases `freedos`, `univga`, and `unifont` for the default font (use `--font=default`)
