@@ -85,9 +85,8 @@ class EventQueues(object):
     max_video_qsize = 500
     max_audio_qsize = 20
 
-    def __init__(self, values, ctrl_c_is_break, inputs=None, video=None, audio=None):
+    def __init__(self, ctrl_c_is_break, inputs=None, video=None, audio=None):
         """Initialise; default is NullQueues."""
-        self._values = values
         # input signal handlers
         self._handlers = []
         # pause-key halts everything until another keypress

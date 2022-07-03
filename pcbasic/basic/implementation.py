@@ -110,9 +110,7 @@ class Implementation(object):
         self.codepage = cp.Codepage(codepage, box_protect)
         # set up input event handler
         # no interface yet; use dummy queues
-        self.queues = eventcycle.EventQueues(
-            self.values, ctrl_c_is_break, inputs=queue.Queue()
-        )
+        self.queues = eventcycle.EventQueues(ctrl_c_is_break, inputs=queue.Queue())
         # prepare I/O streams
         self.io_streams = iostreams.IOStreams(
             self.queues, self.codepage, input_streams, output_streams,
