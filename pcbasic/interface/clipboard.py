@@ -33,7 +33,7 @@ class Clipboard(object):
 
 
 class MacClipboard(Clipboard):
-    """Clipboard handling for OSX."""
+    """Clipboard handling for OSX. Deprecated, used only by PyGame interface."""
 
     def paste(self):
         """Get unicode text from clipboard."""
