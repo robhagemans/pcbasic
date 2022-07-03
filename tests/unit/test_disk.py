@@ -499,10 +499,11 @@ class DiskTest(TestCase):
             b'Long.FileName',
             b'Long.FileName.',
             b'LongFileName.BAS',
-            b'LongFileName.bas',
+            # this will fail on non-case-sensitive filesystems e.g. mac
+            ##b'LongFileName.bas',
         )
         basicnames = {
-            b'LongFileName.bas': b'LongFileName.bas',
+            ##b'LongFileName.bas': b'LongFileName.bas',
             b'LongFileName': b'LongFileName.BAS',
             # exact match if available
             b'LongFileName.': b'LongFileName.',
@@ -523,7 +524,7 @@ class DiskTest(TestCase):
                     f.write(b'1000 a$="%s"\r\n' % (name,))
             for name, found in basicnames.items():
                 s.execute(b'run "a:%s"' % (name,))
-                assert s.get_variable('a$') == found
+                assert s.get_variable('a$') == found, s.get_variable('a$') + b' != ' + found
 
     def test_kill_long_filename(self):
         """Test deleting files with long filenames."""
