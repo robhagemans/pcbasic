@@ -46,8 +46,7 @@ PC-BASIC employs the following external command-line tools, if available:
 | `notepad.exe`                             | Windows           | essential   | printing
 | `lpr`                                     | Mac, Linux, Unix  | essential   | printing
 | `paps`                                    | Mac, Linux, Unix  | recommended | improved Unicode support for printing
-| `pbcopy`  and  `pbpaste`                  | Mac               | optional    | clipboard operation (PyGame interface)
-| `beep`                                    | Mac, Linux, Unix  | optional    | sound in cli/text interface
+| `beep`                                    | Mac, Linux, Unix  | optional    | sound through PC speaker
 
 
 #### Building from GitHub source repository ####
