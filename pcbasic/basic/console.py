@@ -191,9 +191,11 @@ class Console(object):
                     self._text_screen.line_feed()
                 elif d == ea.ESCAPE:
                     # ESC, CTRL+[
-                    self._text_screen.clear_line(
-                        self._text_screen.current_row, furthest_left
-                    )
+                    logic_start = self._text_screen.find_start_of_line(self._text_screen.current_row)
+                    if logic_start == start_row:
+                        self._text_screen.clear_from(logic_start, furthest_left)
+                    else:
+                        self._text_screen.clear_from(logic_start, 1)
                 elif d in (ea.CTRL_END, ea.CTRL_e):
                     self._text_screen.clear_from(
                         self._text_screen.current_row, self._text_screen.current_col
@@ -332,7 +334,6 @@ class Console(object):
         line = line.replace(b'\n\r', b'\n')
         cuts = line.split(b'\n')
         for i, l in enumerate(cuts):
-            # clear_line looks back along wraps, use screen.clear_from instead
             self._text_screen.clear_from(self._text_screen.current_row, 1)
             self.write(l)
             if i != len(cuts) - 1:
