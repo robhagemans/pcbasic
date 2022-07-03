@@ -11,6 +11,7 @@ import os
 import platform
 
 from pcbasic import Session
+from pcbasic.compat import get_short_pathname
 from tests.unit.utils import TestCase, run_tests
 
 
@@ -79,13 +80,16 @@ class DiskTest(TestCase):
 
     def test_files_longname(self):
         """Test directory listing with long name."""
-        open(self.output_path('very_long_name_and.extension'), 'w').close()
+        longname = self.output_path('very_long_name_and.extension')
+        open(longname, 'w').close()
+        shortname = get_short_pathname(longname) or 'very_lo+.ex+'
+        shortname = os.path.basename(shortname).encode('latin-1')
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:"')
             output = [_row.strip() for _row in self.get_text(s)]
             assert output[:2] == [
                 b'A:\\',
-                b'.   <DIR>         ..  <DIR> very_lo+.ex+'
+                b'.   <DIR>         ..  <DIR> ' + shortname
             ]
 
     def test_files_wildcard(self):
@@ -93,15 +97,23 @@ class DiskTest(TestCase):
         open(self.output_path('aaa.txt'), 'w').close()
         open(self.output_path('aab.txt'), 'w').close()
         open(self.output_path('abc.txt'), 'w').close()
-        open(self.output_path('aa_long_file_name.txt'), 'w').close()
+        longname = self.output_path('aa_long_file_name.txt')
+        open(longname, 'w').close()
+        shortname = get_short_pathname(longname) or 'aa_long+.txt'
+        shortname = os.path.basename(shortname).encode('latin-1')
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:*.txt"')
             output = [_row.strip() for _row in self.get_text(s)]
-        assert output[1] == b'AAA     .TXT      AAB     .TXT      ABC     .TXT      aa_long+.txt'
+        # output order is defined by OS, may not be alphabetic
+        assert b'AAA     .TXT' in output[1]
+        assert b'AAB     .TXT' in output[1]
+        assert b'ABC     .TXT' in output[1]
+        assert shortname in output[1]
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:aa?.txt"')
             output = [_row.strip() for _row in self.get_text(s)]
-        assert output[1] == b'AAA     .TXT      AAB     .TXT'
+        assert b'AAA     .TXT' in output[1]
+        assert b'AAB     .TXT' in output[1]
         # no match
         with Session(devices={b'A': self.output_path()}) as s:
             s.execute('files "A:b*.txt"')
