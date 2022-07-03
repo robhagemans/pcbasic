@@ -546,12 +546,8 @@ class TextScreen(object):
 
     # console calls
 
-    def clear_line(self, the_row, from_col=1):
-        """Clear whole logical line (ESC), leaving prompt."""
-        self.clear_from(self.find_start_of_line(the_row), from_col)
-
     def clear_from(self, srow, scol):
-        """Clear from given position to end of logical line (CTRL+END)."""
+        """Clear from given position to end of logical line (CTRL+END, ESC)."""
         end_row = self.find_end_of_line(srow)
         # clear the first row of the logical line
         self._apage.clear_row_from(srow, scol, self._attr)
