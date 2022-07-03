@@ -483,27 +483,31 @@ class DiskTest(TestCase):
 
     def test_dot_filename(self):
         """Test handling of filenames ending in dots."""
-        # skip on Windows as it does not allow filenames ending in dots
-        # except if the file is accessed with UNC absolute path e.g. \\?\c:\blah
-        if platform.system() == 'Windows':
-            return
+        # check for case insensitive file system
+        open(os.path.join(self.output_path(), 'casetest'), 'w').close()
+        is_case_insensitive = os.path.exists(os.path.join(self.output_path(), 'CASETEST'))
+        # check if os ignores dots at the end of file names (Windows does)
+        open(os.path.join(self.output_path(), 'dottest.'), 'w').close()
+        ignores_dots = os.path.exists(os.path.join(self.output_path(), 'dottest'))
         names = (
             b'LONG.FIL',
-            b'LONGFILE',
-            b'LONGFILE.',
+            # these three will overwrite each other on Windows, write dotless one last
             b'LONGFILE..',
+            b'LONGFILE.',
+            b'LONGFILE',
             b'LONGFILE.BAS',
-            b'LongFileName',
-            b'LongFileName.',
+            # these three will overwrite each other on Windows, write dotless one last
             b'LongFileName..',
+            b'LongFileName.',
+            b'LongFileName',
             b'Long.FileName',
             b'Long.FileName.',
             b'LongFileName.BAS',
-            # this will fail on non-case-sensitive filesystems e.g. mac
-            ##b'LongFileName.bas',
+            # this will overwrite the previous on non-case-sensitive filesystems e.g. mac, windows
+            b'LongFileName.bas',
         )
         basicnames = {
-            ##b'LongFileName.bas': b'LongFileName.bas',
+            b'LongFileName.bas': b'LongFileName.bas',
             b'LongFileName': b'LongFileName.BAS',
             # exact match if available
             b'LongFileName.': b'LongFileName.',
@@ -518,6 +522,13 @@ class DiskTest(TestCase):
             b'Long.FileName.2': b'LONG.FIL',
             b'Long.FileName2..': b'LONG.FIL',
         }
+        # the last of the case-equivalent writes wins
+        if is_case_insensitive:
+            basicnames[b'LongFileName'] = b'LongFileName.bas'
+        # the last of the dot-equivalent writes wins
+        if ignores_dots:
+            basicnames[b'LongFileName.'] = b'LongFileName'
+            basicnames[b'LongFileName..'] = b'LongFileName'
         with Session(devices={b'A': self.output_path()}) as s:
             for name in names:
                 with open(os.path.join(self.output_path().encode('ascii'), name), 'wb') as f:
