@@ -108,7 +108,7 @@ class Console(object):
     ##########################################################################
     # interaction
 
-    def read_line(self, prompt=b'', write_endl=True, from_start=False):
+    def read_line(self, prompt=b'', write_endl=True, from_start=False, is_input=False):
         """Enter interactive mode and read string from console."""
         self.write(prompt)
         # disconnect the wrap between line with the prompt and previous line
@@ -118,7 +118,7 @@ class Console(object):
         prompt_width = 0 if from_start else self._text_screen.current_col - 1
         try:
             # give control to user for interactive mode
-            prompt_row, left, right = self._interact(prompt_width)
+            prompt_row, left, right = self._interact(prompt_width, is_input=is_input)
         except error.Break:
             # x0E CR LF is printed to redirects at break
             self._io_streams.write(b'\x0e')
@@ -148,7 +148,7 @@ class Console(object):
         # with trailing whitespace removed
         return outstr[:255].rstrip(b' \t\n')
 
-    def _interact(self, prompt_width):
+    def _interact(self, prompt_width, is_input=False):
         """Manage the interactive mode."""
         # force cursor visibility in all case
         self._cursor.set_override(True)
@@ -193,11 +193,13 @@ class Console(object):
                     # ESC, CTRL+[
                     logic_start = self._text_screen.find_start_of_line(self._text_screen.current_row)
                     if logic_start == start_row:
-                        self._text_screen.clear_from(logic_start, furthest_left)
+                        self._text_screen.clear_line(
+                            logic_start, furthest_left, quirky_scrolling=is_input
+                        )
                     else:
-                        self._text_screen.clear_from(logic_start, 1)
+                        self._text_screen.clear_line(logic_start, 1)
                 elif d in (ea.CTRL_END, ea.CTRL_e):
-                    self._text_screen.clear_from(
+                    self._text_screen.clear_line(
                         self._text_screen.current_row, self._text_screen.current_col
                     )
                 elif d in (ea.UP, ea.CTRL_6):
@@ -247,7 +249,6 @@ class Console(object):
                             and self._text_screen.overflow
                         ):
                         furthest_right += 1
-
         finally:
             self._set_overwrite_mode(True)
             # reset cursor visibility
@@ -334,7 +335,7 @@ class Console(object):
         line = line.replace(b'\n\r', b'\n')
         cuts = line.split(b'\n')
         for i, l in enumerate(cuts):
-            self._text_screen.clear_from(self._text_screen.current_row, 1)
+            self._text_screen.clear_line(self._text_screen.current_row, 1)
             self.write(l)
             if i != len(cuts) - 1:
                 self.write(b'\n')
