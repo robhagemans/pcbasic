@@ -286,15 +286,10 @@ class Console(object):
                     # TAB
                     num = (8 - (col - 1 - 8 * int((col-1) // 8)))
                     self._text_screen.write_chars(b' ' * num, do_scroll_down=False)
-                elif c == b'\n':
-                    # LF
-                    # exclude CR/LF
-                    if last != b'\r':
-                        # LF connects lines like word wrap
-                        self._text_screen.set_wrap(row, True)
-                        self._text_screen.set_pos(row + 1, 1, scroll_ok=True)
-                elif c == b'\r':
-                    # CR
+                elif c == b'\n' or c == b'\r':
+                    # CR or LF
+                    # note that a PRINTed LF chr$(10) does not cause a wrapped/connected line
+                    # in contrast to a typed Ctrl+J
                     self._text_screen.set_wrap(row, False)
                     self._text_screen.set_pos(row + 1, 1, scroll_ok=True)
                 elif c == b'\a':
