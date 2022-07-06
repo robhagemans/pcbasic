@@ -728,7 +728,7 @@ class Implementation(object):
             # readvar is a list of (name, indices) tuples
             # we return a list of (name, indices, values) tuples
             while True:
-                line = self.console.read_line(prompt, write_endl=newline)
+                line = self.console.read_line(prompt, write_endl=newline, is_input=True)
                 inputstream = InputTextFile(line)
                 # read the values and group them and the separators
                 var, values, seps = [], [], []

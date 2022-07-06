@@ -546,15 +546,22 @@ class TextScreen(object):
 
     # console calls
 
-    def clear_from(self, srow, scol):
+    def clear_line(self, start_row, start_col, quirky_scrolling=False):
         """Clear from given position to end of logical line (CTRL+END, ESC)."""
-        end_row = self.find_end_of_line(srow)
+        end_row = self.find_end_of_line(start_row)
         # clear the first row of the logical line
-        self._apage.clear_row_from(srow, scol, self._attr)
+        self._apage.clear_row_from(start_row, start_col, self._attr)
+        # input anomaly: when interacting with INPUT and ESC is pressed,
+        # the first line gets cleared but not scrolled
+        if quirky_scrolling and end_row > start_row:
+            self._apage.clear_row_from(start_row+1, 1, self._attr)
+            scroll_row = start_row + 1
+        else:
+            scroll_row = start_row
         # remove the additional rows in the logical line by scrolling up
-        for row in range(end_row, srow, -1):
+        for row in range(end_row, scroll_row, -1):
             self.scroll(row)
-        self.set_pos(srow, scol)
+        self.set_pos(start_row, start_col)
 
     def backspace(self, prompt_row, furthest_left):
         """Delete the char to the left (BACKSPACE)."""
