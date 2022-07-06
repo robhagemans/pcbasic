@@ -171,10 +171,6 @@ class TextScreen(object):
 
     def write_char(self, char, do_scroll_down=False):
         """Put one character at the current position."""
-        # check if scroll & repositioning needed
-        if self.overflow:
-            self.current_col += 1
-            self.overflow = False
         # see if we need to wrap and scroll down
         self._check_wrap(do_scroll_down)
         # move cursor and see if we need to scroll up
@@ -194,6 +190,10 @@ class TextScreen(object):
 
     def _check_wrap(self, do_scroll_down):
         """Wrap if we need to."""
+        # check if scroll & repositioning needed
+        if self.overflow:
+            self.current_col += 1
+            self.overflow = False
         if self.current_col > self.mode.width:
             if self.current_row < self.mode.height:
                 if do_scroll_down:
@@ -237,13 +237,21 @@ class TextScreen(object):
 
     def incr_pos(self):
         """Increase the current position by a char width."""
-        step = self._apage.get_charwidth(self.current_row, self.current_col)
-        # on a trail byte: go just one to the right
-        step = step or 1
+        if self.overflow:
+            # if we're in overflow, there's no character yet. So it's halfwidth by default.
+            step = 1
+        else:
+            step = self._apage.get_charwidth(self.current_row, self.current_col)
+            # on a trail byte: go just one to the right
+            step = step or 1
         self.set_pos(self.current_row, self.current_col + step, scroll_ok=False)
 
     def decr_pos(self):
         """Decrease the current position by a char width."""
+        # apply overflow to column number
+        if self.overflow:
+            self.current_col += 1
+            self.overflow = False
         # check width of cell to the left
         width = self._apage.get_charwidth(self.current_row, self.current_col-1)
         # previous is trail byte: go two to the left
@@ -267,7 +275,11 @@ class TextScreen(object):
 
     def set_pos(self, to_row, to_col, scroll_ok=True):
         """Set the current position."""
-        self.overflow = False
+        # overflow status is maintained under up or down movements
+        # e.g. if we print a char while on col 80, we end up in overflow position.
+        # down-error from there gets us to overflow position on the next row.
+        if to_col < self.mode.width:
+            self.overflow = False
         self.current_row, self.current_col = to_row, to_col
         # move cursor and reset cursor attribute
         # this may alter self.current_row, self.current_col
