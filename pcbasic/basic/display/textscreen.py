@@ -172,7 +172,7 @@ class TextScreen(object):
     def write_char(self, char, do_scroll_down=False):
         """Put one character at the current position."""
         # see if we need to wrap and scroll down
-        self._check_wrap(do_scroll_down)
+        self._scroll_and_wrap_as_needed_before_write(do_scroll_down)
         # move cursor and see if we need to scroll up
         self._update_cursor_position(scroll_ok=True)
         # put the character
@@ -180,15 +180,18 @@ class TextScreen(object):
             self.current_row, self.current_col, char, self._attr, adjust_end=True
         )
         # move cursor. if on col 80, only move cursor to the next row
-        # when the char is printed
+        # when the char is printed, except if the row already wraps into the next one
         if self.current_col < self.mode.width:
             self.current_col += 1
+        elif self.wraps(self.current_row):
+            self.current_row += 1
+            self.current_col = 1
         else:
             self.overflow = True
         # move cursor and see if we need to scroll up
         self._update_cursor_position(scroll_ok=True)
 
-    def _check_wrap(self, do_scroll_down):
+    def _scroll_and_wrap_as_needed_before_write(self, do_scroll_down):
         """Wrap if we need to."""
         # check if scroll & repositioning needed
         if self.overflow:
@@ -196,12 +199,13 @@ class TextScreen(object):
             self.overflow = False
         if self.current_col > self.mode.width:
             if self.current_row < self.mode.height:
-                if do_scroll_down:
-                    # scroll down (make space by shifting the next rows down)
-                    if self.current_row < self.scroll_area.bottom:
-                        self.scroll_down(self.current_row+1)
-                # wrap line
-                self.set_wrap(self.current_row, True)
+                if not self.wraps(self.current_row):
+                    if do_scroll_down:
+                        # scroll down (make space by shifting the next rows down)
+                        if self.current_row < self.scroll_area.bottom:
+                            self.scroll_down(self.current_row+1)
+                    # wrap line
+                    self.set_wrap(self.current_row, True)
                 # move cursor and reset cursor attribute
                 self._move_cursor(self.current_row + 1, 1)
             else:
