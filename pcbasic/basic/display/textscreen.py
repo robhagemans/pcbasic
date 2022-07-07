@@ -291,14 +291,13 @@ class TextScreen(object):
 
     def _update_cursor_position(self, scroll_ok=True):
         """Check if we have crossed the screen boundaries and move as needed."""
-        oldrow, oldcol = self.current_row, self.current_col
         if self._bottom_row_allowed:
             if self.current_row == self.mode.height:
                 self.current_col = min(self.mode.width, self.current_col)
                 if self.current_col < 1:
                     self.current_col += 1
                 self._move_cursor(self.current_row, self.current_col)
-                return self.current_col == oldcol
+                return
             else:
                 # if row > height, we also end up here
                 # (eg if we do INPUT on the bottom row)
