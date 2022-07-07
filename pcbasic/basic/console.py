@@ -297,22 +297,22 @@ class Console(object):
                     self._sound.beep()
                 elif c == b'\x0B':
                     # HOME
-                    self._text_screen.set_pos(1, 1, scroll_ok=True)
+                    self._text_screen.set_pos(1, 1, scroll_ok=False)
                 elif c == b'\x0C':
                     # CLS
                     self._text_screen.clear_view()
                 elif c == b'\x1C':
                     # RIGHT
-                    self._text_screen.set_pos(row, col + 1, scroll_ok=True)
+                    self._text_screen.set_pos(row, col + 1, scroll_ok=False)
                 elif c == b'\x1D':
                     # LEFT
-                    self._text_screen.set_pos(row, col - 1, scroll_ok=True)
+                    self._text_screen.set_pos(row, col - 1, scroll_ok=False)
                 elif c == b'\x1E':
                     # UP
-                    self._text_screen.set_pos(row - 1, col, scroll_ok=True)
+                    self._text_screen.set_pos(row - 1, col, scroll_ok=False)
                 elif c == b'\x1F':
                     # DOWN
-                    self._text_screen.set_pos(row + 1, col, scroll_ok=True)
+                    self._text_screen.set_pos(row + 1, col, scroll_ok=False)
             else:
                 # includes \b, \0, and non-control chars
                 out_chars.append(c)
