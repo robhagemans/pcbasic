@@ -180,9 +180,12 @@ class TextScreen(object):
             self.current_row, self.current_col, char, self._attr, adjust_end=True
         )
         # move cursor. if on col 80, only move cursor to the next row
-        # when the char is printed
+        # when the char is printed, except if the row already wraps into the next one
         if self.current_col < self.mode.width:
             self.current_col += 1
+        elif self.wraps(self.current_row):
+            self.current_row += 1
+            self.current_col = 1
         else:
             self.overflow = True
         # move cursor and see if we need to scroll up
