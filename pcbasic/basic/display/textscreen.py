@@ -167,7 +167,7 @@ class TextScreen(object):
         with self._apage.collect_updates():
             for char in iterchar(chars):
                 self.write_char(char, do_scroll_down)
-        self._move_cursor(self.current_row, self.current_col)
+        self._refresh_cursor()
 
     def write_char(self, char, do_scroll_down=False):
         """Put one character at the current position."""
@@ -207,7 +207,8 @@ class TextScreen(object):
                     # wrap line
                     self.set_wrap(self.current_row, True)
                 # move cursor and reset cursor attribute
-                self._move_cursor(self.current_row + 1, 1)
+                self.current_row, self.current_col = self.current_row + 1, 1
+                self._refresh_cursor()
             else:
                 self.current_col = self.mode.width
 
@@ -296,7 +297,7 @@ class TextScreen(object):
                 self.current_col = min(self.mode.width, self.current_col)
                 if self.current_col < 1:
                     self.current_col += 1
-                self._move_cursor(self.current_row, self.current_col)
+                self._refresh_cursor()
                 return
             else:
                 # if row > height, we also end up here
@@ -326,11 +327,11 @@ class TextScreen(object):
             self.current_row = self.scroll_area.bottom
         elif self.current_row < self.scroll_area.top:
             self.current_row = self.scroll_area.top
-        self._move_cursor(self.current_row, self.current_col)
+        self._refresh_cursor()
 
-    def _move_cursor(self, row, col):
-        """Move the cursor to a new position."""
-        self.current_row, self.current_col = row, col
+    def _refresh_cursor(self):
+        """Move the cursor to the current position and update its attributes."""
+        row, col = self.current_row, self.current_col
         # in text mode, set the cursor width and attriute to that of the new location
         if self.mode.is_text_mode:
             # set halfwidth/fullwidth cursor
@@ -385,14 +386,16 @@ class TextScreen(object):
             from_row = self.scroll_area.top
         self._apage.scroll_up(from_row, self.scroll_area.bottom, self._attr)
         if self.current_row > from_row:
-            self._move_cursor(self.current_row - 1, self.current_col)
+            self.current_row -= 1
+            self._refresh_cursor()
 
 
     def scroll_down(self, from_row):
         """Scroll the scroll region down by one row, starting at from_row."""
         self._apage.scroll_down(from_row, self.scroll_area.bottom, self._attr)
         if self.current_row >= from_row:
-            self._move_cursor(self.current_row + 1, self.current_col)
+            self.current_row += 1
+            self._refresh_cursor()
 
 
     ###########################################################################
@@ -423,7 +426,7 @@ class TextScreen(object):
                 self._delete_at(self.current_row, self.current_col)
             if width == 2:
                 self._delete_at(self.current_row, self.current_col)
-        self._move_cursor(self.current_row, self.current_col)
+        self._refresh_cursor()
 
     def _delete_at(self, row, col, remove_depleted=False):
         """Delete the halfwidth character at the given position."""
@@ -491,7 +494,7 @@ class TextScreen(object):
                     # move cursor by one character
                     # this will move to next row when necessary
                     self.incr_pos()
-        self._move_cursor(self.current_row, self.current_col)
+        self._refresh_cursor()
 
     def _insert_at(self, row, col, c, attr):
         """Insert one halfwidth character at the given position."""
@@ -696,7 +699,7 @@ class TextScreen(object):
                     char, reverse = self._bottom_bar.get_char_reverse(col)
                     attr = reverse_attr if reverse else self._attr
                     self._apage.put_char_attr(key_row, col+1, char, attr)
-            #self._move_cursor(self.current_row, self.current_col)
+            #self._refresh_cursor()
             self.set_row_length(self.mode.height, self.mode.width)
 
     ###########################################################################
@@ -851,4 +854,5 @@ class TextScreen(object):
             self.scroll_area.set(start, stop)
             #set_pos(start, 1)
             self.overflow = False
-            self._move_cursor(start, 1)
+            self.current_row, self.current_col = start, 1
+            self._refresh_cursor()
