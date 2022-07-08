@@ -169,12 +169,12 @@ class TextScreen(object):
                 self.write_char(char, do_scroll_down)
         self._refresh_cursor()
 
-    def write_char(self, char, do_scroll_down=False):
+    def write_char(self, char, do_scroll_down):
         """Put one character at the current position."""
         # see if we need to wrap and scroll down
-        self._scroll_and_wrap_as_needed_before_write(do_scroll_down)
+        self._consume_overflow_before_write(do_scroll_down)
         # move cursor and see if we need to scroll up
-        self._update_position(scroll_ok=True)
+        self._wrap_around_and_scroll_as_needed(scroll_ok=True)
         self._refresh_cursor()
         # put the character
         self._apage.put_char_attr(
@@ -190,12 +190,11 @@ class TextScreen(object):
         else:
             self.overflow = True
         # move cursor and see if we need to scroll up
-        self._update_position(scroll_ok=True)
+        self._wrap_around_and_scroll_as_needed(scroll_ok=True)
         self._refresh_cursor()
 
-    def _scroll_and_wrap_as_needed_before_write(self, do_scroll_down):
-        """Wrap if we need to."""
-        # check if scroll & repositioning needed
+    def _consume_overflow_before_write(self, do_scroll_down):
+        """Move from overflow position to next line and set wrap flag, scroll down if needed."""
         if self.overflow:
             self.current_col += 1
             self.overflow = False
@@ -290,10 +289,10 @@ class TextScreen(object):
         self.current_row, self.current_col = to_row, to_col
         # move cursor and reset cursor attribute
         # this may alter self.current_row, self.current_col
-        self._update_position(scroll_ok)
+        self._wrap_around_and_scroll_as_needed(scroll_ok)
         self._refresh_cursor()
 
-    def _update_position(self, scroll_ok=True):
+    def _wrap_around_and_scroll_as_needed(self, scroll_ok):
         """Check if we have crossed the screen boundaries and move as needed."""
         if self._bottom_row_allowed:
             if self.current_row == self.mode.height:
