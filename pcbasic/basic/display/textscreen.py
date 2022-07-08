@@ -581,6 +581,11 @@ class TextScreen(object):
             self.scroll(row)
         self.set_pos(start_row, start_col)
 
+    def newline(self, wrap):
+        """Write a newline with or without wrap."""
+        self.set_wrap(self.current_row, wrap)
+        self.set_pos(self.current_row + 1, 1, scroll_ok=True)
+
     def backspace(self, prompt_row, furthest_left):
         """Delete the char to the left (BACKSPACE)."""
         row, col = self.current_row, self.current_col
