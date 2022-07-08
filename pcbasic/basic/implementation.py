@@ -545,7 +545,7 @@ class Implementation(object):
                 # and interruptible
                 self.queues.wait()
                 # LIST on screen is slightly different from just writing
-                self.console.list_line(l)
+                self.console.list_line(l, newline=True)
         # return to direct mode
         self.interpreter.set_pointer(False)
 
