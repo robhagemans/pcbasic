@@ -336,7 +336,8 @@ class Console(object):
                 self._text_screen.newline(wrap=True)
             self._text_screen.clear_line(self._text_screen.current_row, 1)
             self.write(l)
-        self.write_line()
+        if newline:
+            self.write_line()
         # remove wrap after 80-column program line
         if len(line) == self.width and self._text_screen.current_row > 2:
             self._text_screen.set_wrap(self._text_screen.current_row-2, False)
