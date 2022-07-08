@@ -290,8 +290,7 @@ class Console(object):
                     # CR or LF
                     # note that a PRINTed LF chr$(10) does not cause a wrapped/connected line
                     # in contrast to a typed Ctrl+J
-                    self._text_screen.set_wrap(row, False)
-                    self._text_screen.set_pos(row + 1, 1, scroll_ok=True)
+                    self._text_screen.newline(wrap=False)
                 elif c == b'\a':
                     # BEL
                     self._sound.beep()
@@ -323,19 +322,21 @@ class Console(object):
         """Write a string to the screen and end with a newline."""
         self.write(b'%s\r' % (s,), do_echo)
 
-    def list_line(self, line, newline=True):
+    def list_line(self, line, newline):
         """Print a line from a program listing or EDIT prompt."""
         # no wrap if 80-column line, clear row before printing.
         # replace LF CR with LF
         line = line.replace(b'\n\r', b'\n')
         cuts = line.split(b'\n')
         for i, l in enumerate(cuts):
+            if i > 0:
+                # echo
+                self._io_streams.write(b'\n')
+                # when using LIST, we *do* print LF as a wrap
+                self._text_screen.newline(wrap=True)
             self._text_screen.clear_line(self._text_screen.current_row, 1)
             self.write(l)
-            if i != len(cuts) - 1:
-                self.write(b'\n')
-        if newline:
-            self.write_line()
+        self.write_line()
         # remove wrap after 80-column program line
         if len(line) == self.width and self._text_screen.current_row > 2:
             self._text_screen.set_wrap(self._text_screen.current_row-2, False)
