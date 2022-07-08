@@ -284,14 +284,21 @@ class NewlineWrapper(StreamWrapper):
 
     def read(self, n=-1):
         """Read n bytes from stream with codepage conversion."""
-        new_bytes = self._stream.read(n)
-        if new_bytes:
-            new_last = new_bytes[-1:]
-            if self._last == b'\r' and new_bytes.startswith(b'\n'):
+        if n == 0:
+            return b''
+        output = b''
+        while n < 0 or len(output) < n:
+            new_bytes = self._stream.read(n - len(output))
+            # empty means end of file
+            if not new_bytes:
+                break
+            last, self._last = self._last, new_bytes[-1:]
+            # absorb CR LF
+            if last == b'\r' and new_bytes[:1] == b'\n':
                 new_bytes = new_bytes[1:]
-            self._last = new_last
-            new_bytes = new_bytes.replace(b'\r\n', b'\r').replace(b'\n', b'\r')
-        return new_bytes
+            output += new_bytes
+        output = output.replace(b'\n', b'\r')
+        return output
 
 
 ##################################################
