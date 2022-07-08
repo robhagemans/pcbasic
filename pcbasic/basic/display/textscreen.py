@@ -174,7 +174,8 @@ class TextScreen(object):
         # see if we need to wrap and scroll down
         self._scroll_and_wrap_as_needed_before_write(do_scroll_down)
         # move cursor and see if we need to scroll up
-        self._update_cursor_position(scroll_ok=True)
+        self._update_position(scroll_ok=True)
+        self._refresh_cursor()
         # put the character
         self._apage.put_char_attr(
             self.current_row, self.current_col, char, self._attr, adjust_end=True
@@ -189,7 +190,8 @@ class TextScreen(object):
         else:
             self.overflow = True
         # move cursor and see if we need to scroll up
-        self._update_cursor_position(scroll_ok=True)
+        self._update_position(scroll_ok=True)
+        self._refresh_cursor()
 
     def _scroll_and_wrap_as_needed_before_write(self, do_scroll_down):
         """Wrap if we need to."""
@@ -288,16 +290,16 @@ class TextScreen(object):
         self.current_row, self.current_col = to_row, to_col
         # move cursor and reset cursor attribute
         # this may alter self.current_row, self.current_col
-        self._update_cursor_position(scroll_ok)
+        self._update_position(scroll_ok)
+        self._refresh_cursor()
 
-    def _update_cursor_position(self, scroll_ok=True):
+    def _update_position(self, scroll_ok=True):
         """Check if we have crossed the screen boundaries and move as needed."""
         if self._bottom_row_allowed:
             if self.current_row == self.mode.height:
                 self.current_col = min(self.mode.width, self.current_col)
                 if self.current_col < 1:
                     self.current_col += 1
-                self._refresh_cursor()
                 return
             else:
                 # if row > height, we also end up here
@@ -327,7 +329,6 @@ class TextScreen(object):
             self.current_row = self.scroll_area.bottom
         elif self.current_row < self.scroll_area.top:
             self.current_row = self.scroll_area.top
-        self._refresh_cursor()
 
     def _refresh_cursor(self):
         """Move the cursor to the current position and update its attributes."""
