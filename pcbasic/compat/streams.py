@@ -3,6 +3,7 @@ import io
 import os
 import codecs
 import tempfile
+import logging
 from contextlib import contextmanager
 
 from .base import PY2
