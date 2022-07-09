@@ -174,7 +174,7 @@ class Implementation(object):
         # register input event handlers
         ######################################################################
         # clipboard and print screen handler
-        self.queues.add_handler(basicevents.ScreenCopyHandler(
+        self.queues.add_handler(display.ScreenCopyHandler(
             self.queues, self.text_screen, self.files.lpt1_file
         ))
         # keyboard, pen and stick
@@ -183,7 +183,7 @@ class Implementation(object):
         self.queues.add_handler(self.stick)
         # set up BASIC event handlers
         self.basic_events = basicevents.BasicEvents(
-            self.values, self.sound, self.clock, self.files, self.program, num_fn_keys
+            self.sound, self.clock, self.files, self.program, num_fn_keys
         )
         ######################################################################
         # extensions

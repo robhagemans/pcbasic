@@ -72,9 +72,7 @@ class Display(object):
         # text screen
         self._codepage = codepage
         self.cursor = Cursor(queues, self.mode)
-        self.text_screen = TextScreen(
-            self._queues, self._values, self.mode, self.cursor, self._adapter
-        )
+        self.text_screen = TextScreen(self._values, self.mode, self.cursor, self._adapter)
         # page buffers, set by _set_mode
         self.pages = None
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE

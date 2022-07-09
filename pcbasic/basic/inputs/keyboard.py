@@ -18,7 +18,7 @@ from ..base.eascii import as_bytes as ea
 from ..base.eascii import as_unicode as uea
 
 
-# bit flags for modifier keys
+# bit flags for modifier keys - these are exposed via peek(1047) in low memory
 # sticky modifiers
 TOGGLE = {
     scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,

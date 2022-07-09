@@ -81,8 +81,10 @@ class Interpreter(object):
     def parse(self):
         """Parse from the current pointer in current codestream."""
         while True:
+            # update what basic events need to be handled
+            self._queues.set_basic_event_handlers(self._basic_events.enabled)
             # check input and BASIC events. may raise Break, Reset or Exit
-            self._queues.check_events(self._basic_events.enabled)
+            self._queues.check_events()
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()
@@ -256,7 +258,10 @@ class Interpreter(object):
             self._files.lpt1_file.do_print()
         self.run_mode = new_runmode
         # events are active in run mode
-        self._basic_events.set_active(new_runmode)
+        if new_runmode:
+            self._queues.set_basic_event_handlers(self._basic_events.enabled)
+        else:
+            self._queues.set_basic_event_handlers([])
         # keep the sound engine on to avoid delays in run mode
         self._sound.persist(new_runmode)
         # suppress cassette messages in run mode
