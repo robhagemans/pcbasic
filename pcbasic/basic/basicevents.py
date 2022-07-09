@@ -30,8 +30,6 @@ class BasicEvents(object):
         self._files = files
         # for on_event_gosub_
         self._program = program
-        # events start unactivated
-        self.active = False
         # 12 definable function keys for Tandy, 10 otherwise
         self._num_fn_keys = num_fn_keys
         self.reset()
@@ -69,10 +67,6 @@ class BasicEvents(object):
         self.enabled = set()
         # set suspension off
         self.suspend_all = False
-
-    def set_active(self, active):
-        """Activate or deactivate event checking."""
-        self.active = active
 
     def command(self, handler, command_char):
         """Turn the event ON, OFF and STOP."""
@@ -132,7 +126,7 @@ class BasicEvents(object):
         self.command(self.play, command)
 
     def on_event_gosub_(self, args):
-        """ON KEY: define key event trapping."""
+        """ON .. GOSUB: define event trapping subroutine."""
         token = next(args)
         num = next(args)
         jumpnum = next(args)
@@ -168,7 +162,6 @@ class BasicEvents(object):
             comnum = values.to_int(num)
             error.range_check(1, 2, comnum)
             self.com[comnum-1].set_jump(jumpnum)
-
 
 
 class EventHandler(object):

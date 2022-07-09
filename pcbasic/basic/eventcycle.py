@@ -122,12 +122,16 @@ class EventQueues(object):
         """Add an input handler."""
         self._handlers.append(handler)
 
+    def set_basic_event_handlers(self, event_check_input):
+        """Set the handlers for BASIC events."""
+        self._basic_handlers = tuple(event_check_input)
+
     def wait(self):
         """Wait and check events."""
         time.sleep(self.tick)
-        self.check_events(None)
+        self.check_events()
 
-    def check_events(self, event_check_input):
+    def check_events(self):
         """Main event cycle."""
         # sleep(0) is needed for responsiveness, e.g. even trapping in programs with tight loops
         # i.e. 100 goto 100 with event traps active)
@@ -136,12 +140,10 @@ class EventQueues(object):
         time.sleep(0)
         # bizarrely, we need sleep(0) twice. I don't know why.
         time.sleep(0)
-        self._check_input(event_check_input)
+        self._check_input()
 
-    def _check_input(self, event_check_input):
+    def _check_input(self):
         """Handle input events."""
-        if event_check_input is not None:
-            self._basic_handlers = tuple(event_check_input)
         while True:
             # pop input queues
             try:
