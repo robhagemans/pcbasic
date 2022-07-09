@@ -734,7 +734,9 @@ class Implementation(object):
                 var, values, seps = [], [], []
                 for name, indices in readvar:
                     name = self.memory.complete_name(name)
-                    word, sep = inputstream.input_entry(name[-1:], allow_past_end=True)
+                    word, sep = inputstream.input_entry(
+                        name[-1:], allow_past_end=True, suppress_unquoted_linefeed=False
+                    )
                     try:
                         value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1:])
                     except error.BASICError as e:
