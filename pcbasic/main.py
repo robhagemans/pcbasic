@@ -87,7 +87,7 @@ def _convert(settings):
         with session.bind_file(in_name or io.BytesIO(stdio.stdin.buffer.read())) as infile:
             session.execute(b'LOAD "%s"' % (infile,))
         with session.bind_file(out_name or stdio.stdout.buffer, create=True) as outfile:
-            mode_suffix = b',%s' % (mode,) if mode.upper() in (b'A', b'P') else b''
+            mode_suffix = b',%s' % (mode.encode('ascii'),) if mode.upper() in ('A', 'P') else b''
             session.execute(b'SAVE "%s"%s' % (outfile, mode_suffix))
 
 def _launch_session(settings):
