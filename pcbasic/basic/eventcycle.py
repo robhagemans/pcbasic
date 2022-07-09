@@ -89,6 +89,8 @@ class EventQueues(object):
         """Initialise; default is NullQueues."""
         # input signal handlers
         self._handlers = []
+        # basic event handlers
+        self._basic_handlers = ()
         # pause-key halts everything until another keypress
         self._pause = False
         # treat ctrl+c as break interrupt
@@ -123,9 +125,9 @@ class EventQueues(object):
     def wait(self):
         """Wait and check events."""
         time.sleep(self.tick)
-        self.check_events()
+        self.check_events(None)
 
-    def check_events(self, event_check_input=()):
+    def check_events(self, event_check_input):
         """Main event cycle."""
         # sleep(0) is needed for responsiveness, e.g. even trapping in programs with tight loops
         # i.e. 100 goto 100 with event traps active)
@@ -138,6 +140,8 @@ class EventQueues(object):
 
     def _check_input(self, event_check_input):
         """Handle input events."""
+        if event_check_input is not None:
+            self._basic_handlers = tuple(event_check_input)
         while True:
             # pop input queues
             try:
@@ -147,7 +151,7 @@ class EventQueues(object):
                     continue
                 else:
                     # we still need to handle basic events: not all are inputs
-                    for e in event_check_input:
+                    for e in self._basic_handlers:
                         e.check_input(signals.Event(None))
                     break
             self.inputs.task_done()
@@ -156,7 +160,7 @@ class EventQueues(object):
             # handle input events
             for handle_input in (
                     [self._handle_non_trappable_interrupts] +
-                    [e.check_input for e in event_check_input] +
+                    [e.check_input for e in self._basic_handlers] +
                     [self._handle_trappable_interrupts] +
                     [e.check_input for e in self._handlers]
                 ):
