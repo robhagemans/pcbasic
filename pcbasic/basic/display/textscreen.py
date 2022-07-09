@@ -240,9 +240,9 @@ class TextScreen(object):
         """Move the current position 1 row down."""
         self.set_pos(self.current_row + 1, self.current_col, scroll_ok=False)
 
-    def incr_pos(self):
+    def incr_pos(self, force_halfwidth=False):
         """Increase the current position by a char width."""
-        if self.overflow:
+        if self.overflow or force_halfwidth:
             # if we're in overflow, there's no character yet. So it's halfwidth by default.
             step = 1
         else:
@@ -491,14 +491,14 @@ class TextScreen(object):
 
     def insert_fullchars(self, sequence):
         """Insert one or more half- or fullwidth characters and adjust cursor."""
-        # insert one at a time at cursor location
+        # insert one halfwidth character at a time at cursor location
         # to let cursor position logic deal with scrolling
         with self.collect_updates():
             for c in iterchar(sequence):
                 if self._insert_at(self.current_row, self.current_col, c, self._attr):
-                    # move cursor by one character
+                    # move cursor by one halfwidth character
                     # this will move to next row when necessary
-                    self.incr_pos()
+                    self.incr_pos(force_halfwidth=True)
 
     def _insert_at(self, row, col, c, attr):
         """Insert one halfwidth character at the given position."""
@@ -718,7 +718,11 @@ class TextScreen(object):
         """Get all characters on the visible page, as tuple of tuples of bytes (raw) or unicode (dbcs)."""
         return self._pages[self._vpagenum].get_chars(as_type=as_type)
 
-    def get_text(self, start_row=None, stop_row=None, pagenum=None, wrap=True, as_type=text_type):
+    def get_text(
+            self,
+            start_row=None, start_col=None, stop_row=None, stop_col=None,
+            pagenum=None, wrap=True, as_type=text_type,
+        ):
         """
         Retrieve consecutive rows of text on page `pagenum`,
         as tuple of bytes (raw) / tuple of unicode (dbcs).
@@ -734,11 +738,24 @@ class TextScreen(object):
             start_row = 1
         if stop_row is None:
             stop_row = len(chars)
-        output = tuple(
-            as_type().join(_charrow[:page.row_length(_row0 + 1)])
+        # get the rows of separate chars
+        rows = [
+            _charrow[:page.row_length(_row0 + 1)]
             for _row0, _charrow in enumerate(chars)
             if start_row <= _row0 + 1 <= stop_row
-        )
+        ]
+        if start_col is None:
+            start_col = 1
+        if stop_col is None:
+            stop_col = len(rows[-1])
+        # apply start and stop column (inclusive bounds, base-1)
+        if start_row == stop_row:
+            rows[0] = rows[0][start_col-1:stop_col]
+        else:
+            rows[0] = rows[0][start_col-1:]
+            rows[-1] = rows[-1][:stop_col]
+        # join the characters in each row
+        output = tuple(as_type().join(_row) for _row in rows)
         if wrap:
             prev_wraps = [False] + list(
                 page.wraps(_row)
@@ -760,7 +777,9 @@ class TextScreen(object):
         start_row = self.find_start_of_line(from_row)
         stop_row = self.find_end_of_line(from_row)
         line = as_type().join(
-            self.get_text(start_row, stop_row, pagenum=self._apagenum, as_type=bytes)
+            self.get_text(
+                start_row=start_row, stop_row=stop_row, pagenum=self._apagenum, as_type=bytes
+            )
         )
         return line
 
