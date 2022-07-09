@@ -720,8 +720,9 @@ class TextScreen(object):
 
     def get_text(
             self,
-            start_row=None, start_col=None, stop_row=None, stop_col=None,
+            start_row=1, start_col=1, stop_row=None, stop_col=None,
             pagenum=None, wrap=True, as_type=text_type,
+            stop_col_first=None
         ):
         """
         Retrieve consecutive rows of text on page `pagenum`,
@@ -734,24 +735,32 @@ class TextScreen(object):
             pagenum = self._vpagenum
         page = self._pages[pagenum]
         chars = page.get_chars(as_type)
-        if start_row is None:
-            start_row = 1
         if stop_row is None:
             stop_row = len(chars)
         # get the rows of separate chars
         rows = [
-            _charrow[:page.row_length(_row0 + 1)]
-            for _row0, _charrow in enumerate(chars)
-            if start_row <= _row0 + 1 <= stop_row
+            _charrow[:page.row_length(_row1)]
+            for _row1, _charrow in enumerate(chars, start=1)
+            if start_row <= _row1 <= stop_row
         ]
-        if start_col is None:
-            start_col = 1
+        # if a row is not complete and wraps, it has a \n
+        if as_type == bytes:
+            lf = (b'\n',)
+        else:
+            lf = ('\n',)
+        rows = [
+            _charrow + lf if page.has_linefeed(_row1) else _charrow
+            for _row1, _charrow in enumerate(rows, start=start_row)
+        ]
         if stop_col is None:
             stop_col = len(rows[-1])
+        if stop_col_first is None:
+            stop_col_first = len(rows[0])
         # apply start and stop column (inclusive bounds, base-1)
         if start_row == stop_row:
-            rows[0] = rows[0][start_col-1:stop_col]
+            rows[0] = rows[0][start_col-1:min(stop_col, stop_col_first)]
         else:
+            # don't apply stop_col_first / furthest_right if we have multiple rows
             rows[0] = rows[0][start_col-1:]
             rows[-1] = rows[-1][:stop_col]
         # join the characters in each row
@@ -771,17 +780,16 @@ class TextScreen(object):
             output = tuple(wrapped_output)
         return output
 
-    def get_logical_line(self, from_row, as_type=bytes):
+    def get_logical_line(self, from_row, as_type=bytes, furthest_left=1, furthest_right=None):
         """Get the contents of the logical line on the active page, as one bytes string."""
         # find start and end of logical line
-        start_row = self.find_start_of_line(from_row)
-        stop_row = self.find_end_of_line(from_row)
-        line = as_type().join(
-            self.get_text(
-                start_row=start_row, stop_row=stop_row, pagenum=self._apagenum, as_type=bytes
-            )
+        rowtuple = self.get_text(
+            start_row=self.find_start_of_line(from_row),
+            start_col=furthest_left, stop_col_first=furthest_right,
+            stop_row=self.find_end_of_line(from_row),
+            pagenum=self._apagenum, as_type=as_type
         )
-        return line
+        return as_type().join(rowtuple)
 
     ###########################################################################
     # text screen callbacks

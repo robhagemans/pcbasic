@@ -108,14 +108,14 @@ class Console(object):
     ##########################################################################
     # interaction
 
-    def read_line(self, prompt=b'', write_endl=True, from_start=False, is_input=False):
+    def read_line(self, prompt=b'', write_endl=True, is_input=False):
         """Enter interactive mode and read string from console."""
         self.write(prompt)
         # disconnect the wrap between line with the prompt and previous line
         if self._text_screen.current_row > 1:
             self._text_screen.set_wrap(self._text_screen.current_row-1, False)
-        # from_start means direct entry mode, otherwise input mode
-        prompt_width = 0 if from_start else self._text_screen.current_col - 1
+        # read from start in direct entry mode, from prompt in input mode
+        prompt_width = 0 if not is_input else self._text_screen.current_col - 1
         try:
             # give control to user for interactive mode
             prompt_row, left, right = self._interact(prompt_width, is_input=is_input)
@@ -126,16 +126,14 @@ class Console(object):
             self.write_line()
             raise
         # get contents of the logical line
-        outstr = self._text_screen.get_logical_line(self._text_screen.current_row)
-        # if we're on the logical prompt row, only return the contents between left and right
-        if not from_start:
-            start_row = self._text_screen.find_start_of_line(self._text_screen.current_row)
-            # INPUT: the prompt starts at the beginning of a logical line
-            # but the row may have moved up: this happens on line 24
-            # in this case we need to move up to the start of the logical line
-            prompt_row == self._text_screen.find_start_of_line(prompt_row)
-            if start_row == prompt_row:
-                outstr = outstr[left-1:right-1]
+        if not is_input:
+            left, right = 1, None
+        else:
+            # we need *inclusive* bounds
+            right -= 1
+        outstr = self._text_screen.get_logical_line(
+            self._text_screen.current_row, furthest_left=left, furthest_right=right,
+        )
         # redirects output exactly the contents of the logical line
         # including any trailing whitespace and chars past 255
         self._io_streams.write(outstr)
@@ -146,7 +144,8 @@ class Console(object):
             self.write_line()
         # to the parser/INPUT, only the first 255 chars are returned
         # with trailing whitespace removed
-        return outstr[:255].rstrip(b' \t\n')
+        outstr = outstr[:255].rstrip(b' \t\n')
+        return outstr
 
     def _interact(self, prompt_width, is_input=False):
         """Manage the interactive mode."""

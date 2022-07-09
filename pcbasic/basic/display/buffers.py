@@ -183,6 +183,10 @@ class VideoBuffer(object):
         """Return logical length of row."""
         return self._rows[row-1].length
 
+    def has_linefeed(self, row):
+        """Row terminates in a linefeed character."""
+        return self.wraps(row) and self.row_length(row) < self._width
+
     ##########################################################################
     # convert between text and pixel positions
 
