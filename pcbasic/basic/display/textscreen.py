@@ -118,6 +118,7 @@ class TextScreen(object):
         self._vpagenum = 0
         self._pages = None
         self._apage = None
+        self._locked = False
 
     def init_mode(
             self, mode, pages, attr, vpagenum, apagenum,
@@ -163,10 +164,9 @@ class TextScreen(object):
 
     def write_chars(self, chars, do_scroll_down):
         """Put one character at the current position."""
-        with self._apage.collect_updates():
+        with self.collect_updates():
             for char in iterchar(chars):
                 self.write_char(char, do_scroll_down)
-        self._refresh_cursor()
 
     def write_char(self, char, do_scroll_down):
         """Put one character at the current position."""
@@ -328,10 +328,20 @@ class TextScreen(object):
         elif self.current_row < self.scroll_area.top:
             self.current_row = self.scroll_area.top
 
+    @contextmanager
+    def collect_updates(self):
+        """Lock cursor to collect updates and submit them in one go."""
+        save, self._locked = self._locked, True
+        try:
+            with self._apage.collect_updates():
+                yield
+        finally:
+            self._locked = save
+            self._refresh_cursor()
+
     def _refresh_cursor(self):
         """Move the cursor to the current position and update its attributes."""
-        # FIXME: private access
-        if self._apage._locked:
+        if self._locked:
             return
         row, col = self.current_row, self.current_col
         # in text mode, set the cursor width and attriute to that of the new location
@@ -344,7 +354,6 @@ class TextScreen(object):
         else:
             # move the cursor
             self._cursor.move(row, col)
-
 
     ###########################################################################
     # clearing the screen
@@ -418,12 +427,11 @@ class TextScreen(object):
         """Delete the character (half/fullwidth) at the current position."""
         width = self._apage.get_charwidth(self.current_row, self.current_col)
         # on a halfwidth char, delete once; lead byte, delete twice; trail byte, do nothing
-        with self._apage.collect_updates():
+        with self.collect_updates():
             if width > 0:
                 self._delete_at(self.current_row, self.current_col)
             if width == 2:
                 self._delete_at(self.current_row, self.current_col)
-        self._refresh_cursor()
 
     def _delete_at(self, row, col, remove_depleted=False):
         """Delete the halfwidth character at the given position."""
@@ -485,13 +493,12 @@ class TextScreen(object):
         """Insert one or more half- or fullwidth characters and adjust cursor."""
         # insert one at a time at cursor location
         # to let cursor position logic deal with scrolling
-        with self._apage.collect_updates():
+        with self.collect_updates():
             for c in iterchar(sequence):
                 if self._insert_at(self.current_row, self.current_col, c, self._attr):
                     # move cursor by one character
                     # this will move to next row when necessary
                     self.incr_pos()
-        self._refresh_cursor()
 
     def _insert_at(self, row, col, c, attr):
         """Insert one halfwidth character at the given position."""
@@ -694,14 +701,13 @@ class TextScreen(object):
         else:
             reverse_attr = 0x07
         if self._bottom_bar.visible:
-            with self._apage.collect_updates():
+            with self.collect_updates():
                 # always show only complete 8-character cells
                 # this matters on pcjr/tandy width=20 mode
                 for col in range((self.mode.width//8) * 8):
                     char, reverse = self._bottom_bar.get_char_reverse(col)
                     attr = reverse_attr if reverse else self._attr
                     self._apage.put_char_attr(key_row, col+1, char, attr)
-            #self._refresh_cursor()
             self.set_row_length(self.mode.height, self.mode.width)
 
     ###########################################################################
