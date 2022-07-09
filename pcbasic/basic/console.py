@@ -279,7 +279,7 @@ class Console(object):
         for c in iterchar(s):
             if c in b'\t\n\r\a\x0B\x0C\x1C\x1D\x1E\x1F':
                 # non-printing or position-dependent chars, dump buffer first
-                self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=True)
+                self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=False)
                 out_chars = []
                 row, col = self.current_row, self.current_col
                 if c == b'\t':
@@ -316,7 +316,7 @@ class Console(object):
                 # includes \b, \0, and non-control chars
                 out_chars.append(c)
             last = c
-        self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=True)
+        self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=False)
 
     def write_line(self, s=b'', do_echo=True):
         """Write a string to the screen and end with a newline."""
