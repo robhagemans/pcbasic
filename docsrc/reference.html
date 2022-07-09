@@ -6004,6 +6004,7 @@
             suspension, provided that event handling was switched on prior to suspension.
             The event triggered during suspension is handled immediately after the next <code>KEY() ON</code>
             statement.
+            Event trapping can only be active during execution of a program, it does not work in direct mode.
         </p>
         <h5>Parameters</h5>
         <p>
@@ -6120,7 +6121,7 @@
                     <table>
                         <tr>
                             <td><code>CHR$(&amp;h80)</code></td>
-                            <td>Extended</td>
+                            <td>Extended (ignored)</td>
                         </tr>
                         <tr>
                             <td><code>CHR$(&amp;h40)</code></td>
@@ -6129,6 +6130,10 @@
                         <tr>
                             <td><code>CHR$(&amp;h20)</code></td>
                             <td><kbd>Num Lock</kbd></td>
+                        </tr>
+                        <tr>
+                            <td><code>CHR$(&amp;h10)</code></td>
+                            <td><kbd>not used</kbd></td>
                         </tr>
                         <tr>
                             <td><code>CHR$(&amp;h08)</code></td>
@@ -6164,6 +6169,15 @@
                 (or <code>[1&#8212;12]</code> when <code><a href="#--syntax">syntax</a>=tandy</code>),
                 the statement is interpreted as a
                 <a href="#KEY-def">function-key macro definition</a>.
+            </li>
+            <li>
+                The <em>extended</em> modifier <code>&amp;h80</code> refers to the additional keys
+                that were introduced with the Model M 101-key keyboard in th earea between the main
+                keyboard and the numerical keypad. These are the arrow keys,
+                <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>PgUp</kbd>, <kbd>PgDn</kbd>, <kbd>Ins</kbd>,
+                <kbd>Del</kbd> as separate from the numerical keypad.
+                PC-BASIC ignores this modifier; in a key definition, it does not make a difference
+                whether or not it is set.
             </li>
         </ul>
         <h5>Errors</h5>

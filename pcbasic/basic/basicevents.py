@@ -281,11 +281,14 @@ class KeyHandler(EventHandler):
     #   32       if NumLock is activated
     #   64       if CapsLock is activated
     #  128       if we are defining some extended key
-    # extended keys are for example the arrow keys on the non-numerical keyboard
-    # presumably all the keys in the middle region of a standard PC keyboard?
+    #
+    # "extended keys" are the additional keys brought in with the 101-key Type M keyboard
+    # for example the arrow keys, ins, del, home, end, pgp, pgdn on the *non-numerical* keyboard
     #
     # for predefined keys, modifier is ignored
-    # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
+
+    # modifier flags, merging left-shift and right-shift and excluding the "extended" flag
+    # we cannot reliably detect whether a key supplied by the interface is "extended".
     _mod_flags = {
         scancode.CAPSLOCK: 0x40, scancode.NUMLOCK: 0x20,
         scancode.ALT: 0x8, scancode.CTRL: 0x4,
@@ -325,10 +328,19 @@ class KeyHandler(EventHandler):
             raise error.BASICError(error.IFC)
         # can't redefine scancodes for predefined keys 1-14 (pc) 1-16 (tandy)
         if not self._predefined:
-            # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
+            # some modifier codes are different from the ones used internally & seen in peek(1047):
+            #
+            # value | on key   | peek (1047)
+            # ------|----------|------------
+            # 0x80  | Extended | Insert
+            # 0x10  | not used | Scroll Lock
+            #
+            # exclude 0x10 and 0x80 from the modifier mask
+            # this means we're ignoring the "extended" flag
             self._modcode = bytearray(keystr)[0] & 0x6f
             self._scancode = bytearray(keystr)[1]
-            # all shifts are equal
+            # per the docs, &h02 is left-shift and &h01 is right-shift
+            # in reality, all shifts are equal
             if self._modcode & 3:
                 self._modcode |= 3
 
