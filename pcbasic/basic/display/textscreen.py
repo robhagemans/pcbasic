@@ -240,9 +240,9 @@ class TextScreen(object):
         """Move the current position 1 row down."""
         self.set_pos(self.current_row + 1, self.current_col, scroll_ok=False)
 
-    def incr_pos(self):
+    def incr_pos(self, force_halfwidth=False):
         """Increase the current position by a char width."""
-        if self.overflow:
+        if self.overflow or force_halfwidth:
             # if we're in overflow, there's no character yet. So it's halfwidth by default.
             step = 1
         else:
@@ -491,14 +491,14 @@ class TextScreen(object):
 
     def insert_fullchars(self, sequence):
         """Insert one or more half- or fullwidth characters and adjust cursor."""
-        # insert one at a time at cursor location
+        # insert one halfwidth character at a time at cursor location
         # to let cursor position logic deal with scrolling
         with self.collect_updates():
             for c in iterchar(sequence):
                 if self._insert_at(self.current_row, self.current_col, c, self._attr):
-                    # move cursor by one character
+                    # move cursor by one halfwidth character
                     # this will move to next row when necessary
-                    self.incr_pos()
+                    self.incr_pos(force_halfwidth=True)
 
     def _insert_at(self, row, col, c, attr):
         """Insert one halfwidth character at the given position."""
