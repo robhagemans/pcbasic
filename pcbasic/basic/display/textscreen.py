@@ -96,9 +96,8 @@ class BottomBar(object):
 class TextScreen(object):
     """Text screen."""
 
-    def __init__(self, queues, values, mode, cursor, capabilities):
+    def __init__(self, values, mode, cursor, capabilities):
         """Initialise text-related members."""
-        self._queues = queues
         self._values = values
         self._tandytext = capabilities in ('pcjr', 'tandy')
         # cursor

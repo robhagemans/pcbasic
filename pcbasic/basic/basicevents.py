@@ -21,9 +21,8 @@ from . import values
 class BasicEvents(object):
     """Manage BASIC events."""
 
-    def __init__(self, values, sound, clock, files, program, num_fn_keys):
+    def __init__(self, sound, clock, files, program, num_fn_keys):
         """Initialise event triggers."""
-        self._values = values
         self._sound = sound
         self._clock = clock
         # files for com1 and com2
@@ -365,52 +364,3 @@ class StrigHandler(EventHandler):
         """Trigger STRIG events."""
         if (signal.event_type == signals.STICK_DOWN) and (signal.params == self._joybutton):
             self.trigger()
-
-
-###############################################################################
-# clipboard copy & print screen handler
-
-# clipboard copy & print screen are special cases:
-# they handle an input signal, read the screen
-# and write the text to an output queue or file
-# independently of what BASIC is doing
-
-class ScreenCopyHandler(object):
-    """Event handler for clipboard copy and print screen."""
-
-    def __init__(self, queues, text_screen, lpt1_file):
-        """Initialise copy handler."""
-        self._queues = queues
-        self._text_screen = text_screen
-        self._lpt1_file = lpt1_file
-
-    def check_input(self, signal):
-        """Handle input signals."""
-        if signal.event_type == signals.CLIP_COPY:
-            self._copy_clipboard(*signal.params)
-            return True
-        elif signal.event_type == signals.KEYB_DOWN:
-            c, scan, mod = signal.params
-            if scan == scancode.PRINT and (scancode.LSHIFT in mod or scancode.RSHIFT in mod):
-                # shift+printscreen triggers a print screen
-                self._print_screen(self._lpt1_file)
-                return True
-        return False
-
-    def _print_screen(self, target_file):
-        """Output the visible page to file in raw bytes."""
-        if not target_file:
-            return
-        for line in self._text_screen.get_chars(as_type=bytes):
-            target_file.write_line(b''.join(line).replace(b'\0', b' '))
-
-    def _copy_clipboard(self, start_row, start_col, stop_row, stop_col):
-        """Copy selected screen area to clipboard."""
-        text = list(self._text_screen.get_text(start_row, stop_row))
-        text[0] = text[0][start_col-1:]
-        # stop_row, stop_col is *exclusive*
-        text[-1] = text[-1][:stop_col-1]
-        clip_text = u'\n'.join(u''.join(_row) for _row in text)
-        self._queues.video.put(signals.Event(
-            signals.VIDEO_SET_CLIPBOARD_TEXT, (clip_text,)
-        ))
