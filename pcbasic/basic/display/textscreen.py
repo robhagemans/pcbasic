@@ -330,6 +330,9 @@ class TextScreen(object):
 
     def _refresh_cursor(self):
         """Move the cursor to the current position and update its attributes."""
+        # FIXME: private access
+        if self._apage._locked:
+            return
         row, col = self.current_row, self.current_col
         # in text mode, set the cursor width and attriute to that of the new location
         if self.mode.is_text_mode:
@@ -337,14 +340,10 @@ class TextScreen(object):
             width = self._apage.get_charwidth(row, col)
             # set the cursor attribute
             attr = self._apage.get_attr(row, col)
-            # FIXME: private access
-            if not self._apage._locked:
-                self._cursor.move(row, col, attr, width)
+            self._cursor.move(row, col, attr, width)
         else:
-            # FIXME: private access
-            if not self._apage._locked:
-                # move the cursor
-                self._cursor.move(row, col)
+            # move the cursor
+            self._cursor.move(row, col)
 
 
     ###########################################################################
@@ -360,7 +359,6 @@ class TextScreen(object):
         """Clear the screen."""
         with self._modify_attr_on_clear():
             self._apage.clear_rows(1, self.mode.height, self._attr)
-            # TODO: force submit on queue
             self.set_pos(1, 1)
 
     @contextmanager
