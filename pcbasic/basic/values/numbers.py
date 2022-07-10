@@ -2,7 +2,7 @@
 PC-BASIC - numbers.py
 Integer and Floating Point values
 
-(c) 2013--2021 Rob Hagemans
+(c) 2013--2022 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 

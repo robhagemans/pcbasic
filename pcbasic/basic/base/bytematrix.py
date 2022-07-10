@@ -2,7 +2,7 @@
 PC-BASIC - bytematrix.py
 2D matrices of bytes
 
-(c) 2018--2021 Rob Hagemans
+(c) 2018--2022 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 

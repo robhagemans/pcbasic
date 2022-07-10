@@ -5,7 +5,7 @@ Windows console support:
 - scroll prevention
 - ANSI input & adjustable echo
 
-(c) 2018--2021 Rob Hagemans
+(c) 2018--2022 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 
 Borrows code from colorama, which is Copyright Jonathan Hartley 2013. BSD 3-Clause license
