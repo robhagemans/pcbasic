@@ -316,7 +316,7 @@ class Implementation(object):
                 else:
                     self._show_prompt()
                     # input loop, checks events
-                    line = self.console.read_line(from_start=True)
+                    line = self.console.read_line(is_input=False)
                     self._prompt = not self._store_line(line)
 
     def close(self):
@@ -367,7 +367,7 @@ class Implementation(object):
                 prompt = numstr + b'*'
             else:
                 prompt = numstr + b' '
-            line = self.console.read_line(prompt, from_start=True)
+            line = self.console.read_line(prompt, is_input=False)
             # remove *, if present
             if line[:len(numstr)+1] == b'%s*' % (numstr,):
                 line = b'%s %s' % (numstr, line[len(numstr)+1:])
@@ -734,7 +734,9 @@ class Implementation(object):
                 var, values, seps = [], [], []
                 for name, indices in readvar:
                     name = self.memory.complete_name(name)
-                    word, sep = inputstream.input_entry(name[-1:], allow_past_end=True)
+                    word, sep = inputstream.input_entry(
+                        name[-1:], allow_past_end=True, suppress_unquoted_linefeed=False
+                    )
                     try:
                         value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1:])
                     except error.BASICError as e:
@@ -794,7 +796,7 @@ class Implementation(object):
         else:
             self.interpreter.input_mode = True
             self.parser.redo_on_break = True
-            line = self.console.read_line(prompt, write_endl=newline)
+            line = self.console.read_line(prompt, write_endl=newline, is_input=True)
             self.parser.redo_on_break = False
             self.interpreter.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
@@ -808,7 +810,9 @@ class Implementation(object):
         else:
             # prompt for random seed if not specified
             while True:
-                seed = self.console.read_line(b'Random number seed (-32768 to 32767)? ')
+                seed = self.console.read_line(
+                    b'Random number seed (-32768 to 32767)? ', is_input=True
+                )
                 try:
                     val = self.values.from_repr(seed, allow_nonnum=False)
                 except error.BASICError as e:

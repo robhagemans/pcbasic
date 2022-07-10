@@ -376,7 +376,7 @@ class InputMixin(object):
                 self.read_one()
         return c
 
-    def input_entry(self, typechar, allow_past_end):
+    def input_entry(self, typechar, allow_past_end, suppress_unquoted_linefeed=True):
         """Read a number or string entry for INPUT """
         word, blanks = b'', b''
         # fix readahead buffer (self.next_char)
@@ -400,7 +400,7 @@ class InputMixin(object):
             if c == b'"' and quoted:
                 # whitespace after quote will be skipped below
                 break
-            elif c == b'\n' and not quoted:
+            elif suppress_unquoted_linefeed and (c == b'\n' and not quoted):
                 # LF, LFCR are dropped entirely
                 c = self.read_one()
                 if c == b'\r':
