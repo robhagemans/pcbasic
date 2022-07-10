@@ -150,6 +150,7 @@ class EventQueues(object):
                 signal = self.inputs.get(False)
             except queue.Empty:
                 if self._pause:
+                    time.sleep(self.tick)
                     continue
                 else:
                     # we still need to handle basic events: not all are inputs
