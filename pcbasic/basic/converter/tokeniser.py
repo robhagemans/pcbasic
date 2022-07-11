@@ -214,36 +214,16 @@ class Tokeniser(object):
             outs.write(b'.')
 
     def _tokenise_word(self, ins, outs):
-        """Convert a keyword to tokenised form."""
+        """Convert a keyword or name to tokenised form."""
         word = b''
         while True:
             c = ins.read(1)
             word += c.upper()
-            allow_name_chars = False
-            # special cases 'GO     TO' -> 'GOTO', 'GO SUB' -> 'GOSUB'
             if word == b'GO':
-                next_four = ins.peek(4).upper()
-                # GO SUB allows 1 space, allows text after
-                if next_four == b' SUB':
-                    word = tk.KW_GOSUB
-                    ins.read(4)
-                    allow_name_chars = True
-                # GO TO with single space, does not allow text or numbers after
-                elif next_four[:3] == b' TO' and next_four[3:4] not in tk.NAME_CHARS:
-                    word = tk.KW_GOTO
-                    ins.read(3)
-                # GO  TO allows more than 1 spaces, but not \t or \n
-                # and *then* allows text after
-                elif next_four[:2] == b'  ':
-                    pos = ins.tell()
-                    while ins.peek(1) == b' ':
-                        ins.read(1)
-                    next_two = ins.read(2).upper()
-                    if next_two == b'TO':
-                        word = tk.KW_GOTO
-                        allow_name_chars = True
-                    else:
-                        ins.seek(pos)
+                # deal with special cases 'GO     TO' -> 'GOTO', 'GO SUB' -> 'GOSUB'
+                word, allow_name_chars = self._tokenise_wide_goto_gosub(ins)
+            else:
+                allow_name_chars = False
             if word in self._keyword_to_token:
                 # ignore if part of a longer name, except FN, SPC(, TAB(, USR, GO SUB and GO   TO
                 if word not in (tk.KW_FN, tk.KW_SPC, tk.KW_TAB, tk.KW_USR) and not allow_name_chars:
@@ -270,6 +250,34 @@ class Tokeniser(object):
                 outs.write(word)
                 break
         return word
+
+    def _tokenise_wide_goto_gosub(self, ins):
+        """Special cases 'GO     TO' -> 'GOTO', 'GO SUB' -> 'GOSUB'."""
+        word = b'GO'
+        allow_name_chars = False
+        next_four = ins.peek(4).upper()
+        # GO SUB allows 1 space, allows text after
+        if next_four == b' SUB':
+            word = tk.KW_GOSUB
+            ins.read(4)
+            allow_name_chars = True
+        # GO TO with single space, does not allow text or numbers after
+        elif next_four[:3] == b' TO' and next_four[3:4] not in tk.NAME_CHARS:
+            word = tk.KW_GOTO
+            ins.read(3)
+        # GO  TO allows more than 1 spaces, but not \t or \n
+        # and *then* allows text after
+        elif next_four[:2] == b'  ':
+            pos = ins.tell()
+            while ins.peek(1) == b' ':
+                ins.read(1)
+            next_two = ins.read(2).upper()
+            if next_two == b'TO':
+                word = tk.KW_GOTO
+                allow_name_chars = True
+            else:
+                ins.seek(pos)
+        return word, allow_name_chars
 
     def _tokenise_number(self, ins):
         """Convert Python-string number representation to number token."""
