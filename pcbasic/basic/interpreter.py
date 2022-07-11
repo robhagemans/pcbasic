@@ -123,7 +123,6 @@ class Interpreter(object):
             # parse until break or end
             self.parse()
         except error.Break as e:
-            # ctrl-break stops foreground and background sound
             self._sound.stop_all_sound()
             self._handle_break(e)
         # move pointer to the start of direct line (for both on and off!)
@@ -150,11 +149,15 @@ class Interpreter(object):
             else:
                 self._program.bytecode.skip_to(tk.END_STATEMENT)
                 self.stop = self._program.bytecode.tell()
-        self._console.start_line()
-        self._console.write(e.get_message(self._program.get_line_number(pos)))
-        self.set_parse_mode(False)
-        self.input_mode = False
         self.parser.redo_on_break = False
+        if self.error_handle_mode:
+            e.trapped_error_num = self.error_num
+            e.trapped_error_pos = self.error_pos
+            #self.error_handle_mode = False
+        # ensure we can handle the break like an error
+        e.err = 0
+        e.pos = pos
+        raise e
 
     ###########################################################################
     # clear state

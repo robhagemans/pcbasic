@@ -1,0 +1,12 @@
+error trap                              
+Illegal function call in 105ÿ           
+Okÿ                                     
+run 1000                                
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+

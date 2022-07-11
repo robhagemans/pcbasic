@@ -1,0 +1,12 @@
+Okÿ                                     
+EDIT 20                                 
+20 REM line to edit                     
+RUN 1000                                
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+

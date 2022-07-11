@@ -103,10 +103,13 @@ class Break(Interrupt):
 
     message = b'Break'
 
-    def __init__(self, stop=False):
+    def __init__(self, stop=False, pos=None):
         """Initialise break."""
         Interrupt.__init__(self)
         self.stop = stop
+        self.pos = pos
+        self.trapped_error_num = None
+        self.trapped_error_pos = None
 
 
 class BASICError(Interrupt):

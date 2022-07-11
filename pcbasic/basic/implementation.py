@@ -329,14 +329,14 @@ class Implementation(object):
 
     def _show_prompt(self):
         """Show the Ok or EDIT prompt, unless suppressed."""
+        if self._prompt:
+            self.console.start_line()
+            self.console.write_line(b'Ok\xff')
         if self._edit_prompt:
             linenum, tell = self._edit_prompt
             # unset edit prompt first, in case program.edit throws
             self._edit_prompt = False
             self.program.edit(self.console, linenum, tell)
-        elif self._prompt:
-            self.console.start_line()
-            self.console.write_line(b'Ok\xff')
 
     def _store_line(self, line):
         """Store a program line or schedule a command line for execution."""
@@ -400,12 +400,20 @@ class Implementation(object):
         """Context guard to handle BASIC exceptions."""
         try:
             yield
-        except error.Break:
+        except error.Break as e:
+            # ctrl-break stops foreground and background sound
             self.sound.stop_all_sound()
-            self._prompt = False
+            if not self.interpreter.run_mode and not e.stop:
+                self._prompt = False
+            else:
+                self.interpreter.set_pointer(False)
+                # call _handle_error to write a message, etc.
+                self._handle_error(e)
+                # override position of syntax error
+                if e.trapped_error_num == error.STX:
+                    self._syntax_error_edit_prompt(e.trapped_error_pos)
         except error.BASICError as e:
             self._handle_error(e)
-            self._prompt = True
         except error.Exit:
             raise
 
@@ -416,13 +424,18 @@ class Implementation(object):
         self.console.write(e.get_message(self.program.get_line_number(e.pos)))
         self.interpreter.set_parse_mode(False)
         self.interpreter.input_mode = False
+        self._prompt = True
         # special case: syntax error
         if e.err == error.STX:
-            # for some reason, err is reset to zero by GW-BASIC in this case.
-            self.interpreter.error_num = 0
-            if e.pos is not None and e.pos != -1:
-                # line edit gadget appears
-                self._edit_prompt = (self.program.get_line_number(e.pos), e.pos+1)
+            self._syntax_error_edit_prompt(e.pos)
+
+    def _syntax_error_edit_prompt(self, pos):
+        """Show an EDIT prompt at the location of a syntax error."""
+        # for some reason, err is reset to zero by GW-BASIC in this case.
+        self.interpreter.error_num = 0
+        if pos is not None and pos != -1:
+            # line edit gadget appears
+            self._edit_prompt = (self.program.get_line_number(pos), pos+1)
 
     ###########################################################################
     # callbacks
@@ -559,7 +572,8 @@ class Implementation(object):
         # throws back to direct mode
         # jump to end of direct line so execution stops
         self.interpreter.set_pointer(False)
-        # request edit prompt
+        # request edit prompt but no Ok prompt
+        self._prompt = False
         self._edit_prompt = (from_line, None)
 
     def auto_(self, args):
