@@ -219,28 +219,34 @@ class Tokeniser(object):
         while True:
             c = ins.read(1)
             word += c.upper()
+            allow_name_chars = False
             # special cases 'GO     TO' -> 'GOTO', 'GO SUB' -> 'GOSUB'
             if word == b'GO':
-                pos = ins.tell()
-                # GO SUB allows 1 space
-                if ins.peek(4).upper() == b' SUB':
+                next_four = ins.peek(4).upper()
+                # GO SUB allows 1 space, allows text after
+                if next_four == b' SUB':
                     word = tk.KW_GOSUB
                     ins.read(4)
-                else:
-                    # GOTO allows any number of spaces
-                    nxt = ins.skip_blank()
-                    if ins.read(2).upper() == b'TO':
+                    allow_name_chars = True
+                # GO TO with single space, does not allow text or numbers after
+                elif next_four[:3] == b' TO' and next_four[3:4] not in tk.NAME_CHARS:
+                    word = tk.KW_GOTO
+                    ins.read(3)
+                # GO  TO allows more than 1 spaces, but not \t or \n
+                # and *then* allows text after
+                elif next_four[:2] == b'  ':
+                    pos = ins.tell()
+                    while ins.peek(1) == b' ':
+                        ins.read(1)
+                    next_two = ins.read(2).upper()
+                    if next_two == b'TO':
                         word = tk.KW_GOTO
+                        allow_name_chars = True
                     else:
                         ins.seek(pos)
-                if word in (tk.KW_GOTO, tk.KW_GOSUB):
-                    nxt = ins.peek()
-                    if nxt and nxt in tk.NAME_CHARS:
-                        ins.seek(pos)
-                        word = b'GO'
             if word in self._keyword_to_token:
-                # ignore if part of a longer name, except FN, SPC(, TAB(, USR
-                if word not in (tk.KW_FN, tk.KW_SPC, tk.KW_TAB, tk.KW_USR):
+                # ignore if part of a longer name, except FN, SPC(, TAB(, USR, GO SUB and GO   TO
+                if word not in (tk.KW_FN, tk.KW_SPC, tk.KW_TAB, tk.KW_USR) and not allow_name_chars:
                     nxt = ins.peek()
                     if nxt and nxt in tk.NAME_CHARS:
                         continue
