@@ -447,6 +447,8 @@ OPERATOR = (
     O_GT, O_EQ, O_LT, O_PLUS, O_MINUS,
     O_TIMES, O_DIV, O_CARET, O_INTDIV
 )
+# comment tokens
+COMMENT = (O_REM, REM)
 
 # line ending tokens
 END_LINE = (b'\0', b'')

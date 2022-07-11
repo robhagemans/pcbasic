@@ -78,7 +78,7 @@ class Lister(object):
                 output += s
                 litstring = not litstring
             elif s in tk.NUMBER or s in tk.LINE_NUMBER:
-                self._detokenise_number(ins, s, output)
+                output += self._detokenise_number(ins, s)
             elif comment or litstring or (b'\x20' <= s <= b'\x7E'):
                 # honest ASCII
                 output += s
@@ -89,97 +89,88 @@ class Lister(object):
                 # controls that do not double as tokens
                 output += s
             else:
-                ins.seek(-1, 1)
-                comment = self._detokenise_keyword(ins, output)
+                token = self._detokenise_keyword_into(ins, s, output)
+                comment = token in tk.COMMENT
         return output[:255], textpos
 
-    def _detokenise_keyword(self, ins, output):
+    def _detokenise_keyword_into(self, ins, lead, output):
         """Convert a one- or two-byte keyword token to ascii."""
         # try for single-byte token or two-byte token
         # if no match, first char is passed unchanged
-        s = ins.read(1)
+        token = lead
         try:
-            keyword = self._token_to_keyword[s]
+            keyword = self._token_to_keyword[token]
         except KeyError:
-            s += ins.peek()
+            token += ins.peek()
             try:
-                keyword = self._token_to_keyword[s]
+                keyword = self._token_to_keyword[token]
                 ins.read(1)
             except KeyError:
-                output += s[:1]
+                output += token[:1]
                 return False
-        # when we're here, s is an actual keyword token.
         # letter or number followed by token is separated by a space
         if (
-                output and int2byte(output[-1]) in ALPHANUMERIC
-                and s not in tk.OPERATOR
+                token not in tk.OPERATOR
+                and output and output[-1:] in ALPHANUMERIC
+                # we need to check again for FN and USR, but not SPC( and TAB(
+                # because we check the converted output, not the previous token
+                and not (len(output) >= 2 and bytes(output[-2:]) == tk.KW_FN)
+                and not (len(output) >= 3 and bytes(output[-3:]) == tk.KW_USR)
             ):
             output += b' '
-        output += keyword
-        comment = False
-        if keyword == b"'":
-            comment = True
-        elif keyword == tk.KW_REM:
-            nxt = ins.read(1)
-            if nxt == tk.O_REM: # '
-                # if next char is token('), we have the special value REM'
-                # -- replaced by ' below.
-                output += b"'"
-            else:
-                # otherwise, it's part of the comment or an EOL or whatever,
-                # pass back to stream so it can be processed
-                ins.seek(-1, len(nxt))
-            comment = True
         # check for special cases
         #   [:REM']   ->  [']
-        if len(output) > 4 and bytes(output[-5:]) == b":REM'":
-            output[:] = output[:-5] + b"'"
+        # we need to read one ahead at REM, or tk_O_REM would be transcribed as part of the comment
+        # and the replacement code would not work
+        next_char = ins.peek(1)
+        if token == tk.REM and next_char == tk.O_REM and output and bytes(output[-1:]) == b':':
+            ins.read(1)
+            output[:] = output[:-1] + tk.KW_O_REM
         #   [WHILE+]  ->  [WHILE]
-        elif len(output) > 5 and bytes(output[-6:]) == b'WHILE+':
-            output[:] = output[:-1]
+        elif token == tk.O_PLUS and len(output) >= 5 and bytes(output[-5:]) == tk.KW_WHILE:
+            # ignore the +
+            pass
         #   [:ELSE]  ->  [ELSE]
         # note that anything before ELSE gets cut off,
         # e.g. if we have 1ELSE instead of :ELSE it also becomes ELSE
-        # SIC: len(output) > 4 and str(output[-4:])
-        elif len(output) > 4 and bytes(output[-4:]) == tk.KW_ELSE:
-            if (
-                    len(output) > 5 and int2byte(output[-5]) == b':' and
-                    int2byte(output[-6]) in DIGITS
-                ):
-                output[:] = output[:-5] + b' ' + tk.KW_ELSE
+        elif token == tk.ELSE:
+            if not output:
+                # special case at start of line, lone ELSE (not :ELSE) becomes LSE
+                output += keyword[1:]
             else:
-                output[:] = output[:-5] + tk.KW_ELSE
+                output[:] = output[:-1] + keyword
+        else:
+            output += keyword
         # token followed by token or number is separated by a space,
-        # except operator tokens and SPC(, TAB(, FN, USR
-        nxt = ins.peek()
+        # except operator tokens, comment tokens and SPC(, TAB(, FN, USR
         if (
-                not comment
-                and nxt not in tk.END_LINE + tk.OPERATOR + (
+                token not in tk.OPERATOR + tk.COMMENT + (tk.TAB, tk.SPC, tk.USR, tk.FN)
+                and next_char not in tk.END_LINE + tk.OPERATOR + (
                     tk.O_REM, b'"', b',', b';', b' ', b':', b'(', b')', b'$',
                     b'%', b'!', b'#', b'_', b'@', b'~', b'|', b'`'
                 )
-                and s not in tk.OPERATOR + (tk.TAB, tk.SPC, tk.USR, tk.FN)
             ):
             # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
             output += b' '
-        return comment
+        return token
 
-    def _detokenise_number(self, ins, lead, output):
+    def _detokenise_number(self, ins, lead):
         """Convert number token to Python string."""
         ntrail = tk.PLUS_BYTES.get(lead, 0)
         trail = ins.read(ntrail)
         if lead == tk.T_OCT:
-            output += b'&O' + self._values.from_bytes(trail).to_oct()
+            return b'&O' + self._values.from_bytes(trail).to_oct()
         elif lead == tk.T_HEX:
-            output += b'&H' + self._values.from_bytes(trail).to_hex()
+            return b'&H' + self._values.from_bytes(trail).to_hex()
         elif lead == tk.T_BYTE:
-            output += b'%d' % (ord(trail),)
+            return b'%d' % (ord(trail),)
         elif tk.C_0 <= lead <= tk.C_10:
-            output += b'%d' % (ord(lead) - ord(tk.C_0),)
+            return b'%d' % (ord(lead) - ord(tk.C_0),)
         elif lead in tk.LINE_NUMBER:
             # 0D: line pointer (unsigned int) - this token should not be here;
             #     interpret as line number and carry on
             # 0E: line number (unsigned int)
-            output += b'%d' % (struct.unpack('<H', trail)[0],)
+            return b'%d' % (struct.unpack('<H', trail)[0],)
         elif lead in (tk.T_SINGLE, tk.T_DOUBLE, tk.T_INT):
-            output += self._values.from_bytes(trail).to_str(leading_space=False, type_sign=True)
+            return self._values.from_bytes(trail).to_str(leading_space=False, type_sign=True)
+        return b''
