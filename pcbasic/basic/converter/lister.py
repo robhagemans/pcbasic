@@ -115,28 +115,28 @@ class Lister(object):
                 and s not in tk.OPERATOR
                 # we need to check again for FN and USR, but not SPC( and TAB(
                 # because we check the converted output, not the previous token
-                and not (len(output) >= 2 and bytes(output[-2:]) == b'FN')
-                and not (len(output) >= 3 and bytes(output[-3:]) == b'USR')
+                and not (len(output) >= 2 and bytes(output[-2:]) == tk.KW_FN)
+                and not (len(output) >= 3 and bytes(output[-3:]) == tk.KW_USR)
             ):
             output += b' '
         output += keyword
-        comment = keyword in (b"'", tk.KW_REM)
+        comment = keyword in (tk.KW_O_REM, tk.KW_REM) # ' or REM
         if keyword == tk.KW_REM:
             nxt = ins.read(1)
             if nxt == tk.O_REM: # '
                 # if next char is token('), we have the special value REM'
                 # -- replaced by ' below.
-                output += b"'"
+                output += tk.KW_O_REM # '
             else:
                 # otherwise, it's part of the comment or an EOL or whatever,
                 # pass back to stream so it can be processed
                 ins.seek(-1, len(nxt))
         # check for special cases
         #   [:REM']   ->  [']
-        if len(output) > 4 and bytes(output[-5:]) == b":REM'":
+        if len(output) >= 5 and bytes(output[-5:]) == b":" + tk.KW_REM + tk.KW_O_REM:  # :REM'
             output[:] = output[:-5] + b"'"
         #   [WHILE+]  ->  [WHILE]
-        elif len(output) > 5 and bytes(output[-6:]) == b'WHILE+':
+        elif len(output) >= 6 and bytes(output[-6:]) == tk.KW_WHILE + tk.KW_O_PLUS: # WHILE+
             output[:] = output[:-1]
         #   [:ELSE]  ->  [ELSE]
         # note that anything before ELSE gets cut off,
