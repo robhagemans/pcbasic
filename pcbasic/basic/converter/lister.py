@@ -141,13 +141,10 @@ class Lister(object):
         #   [:ELSE]  ->  [ELSE]
         # note that anything before ELSE gets cut off,
         # e.g. if we have 1ELSE instead of :ELSE it also becomes ELSE
-        # SIC: len(output) > 4 and str(output[-4:])
-        elif len(output) > 4 and bytes(output[-4:]) == tk.KW_ELSE:
-            if (
-                    len(output) > 5 and int2byte(output[-5]) == b':' and
-                    int2byte(output[-6]) in DIGITS
-                ):
-                output[:] = output[:-5] + b' ' + tk.KW_ELSE
+        elif len(output) >= 4 and bytes(output[-4:]) == tk.KW_ELSE:
+            if len(output) == 4:
+                # special case at start of line, lone ELSE (not :ELSE) becomes LSE
+                output[:] = output[:-4] + b'LSE'
             else:
                 output[:] = output[:-5] + tk.KW_ELSE
         # token followed by token or number is separated by a space,
