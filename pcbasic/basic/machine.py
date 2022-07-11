@@ -483,7 +483,8 @@ class Memory(object):
 
     def _set_video_memory(self, addr, val):
         """Set a byte in video memory."""
-        return self._display.mode.memorymap.set_memory(self._display, addr, [val])
+        with self._display.text_screen.collect_updates():
+            self._display.mode.memorymap.set_memory(self._display, addr, [val])
 
     def _get_video_memory_block(self, addr, length):
         """Retrieve a contiguous block of bytes from video memory."""
@@ -491,7 +492,8 @@ class Memory(object):
 
     def _set_video_memory_block(self, addr, some_bytes):
         """Set a contiguous block of bytes in video memory."""
-        self._display.mode.memorymap.set_memory(self._display, addr, some_bytes)
+        with self._display.text_screen.collect_updates():
+            self._display.mode.memorymap.set_memory(self._display, addr, some_bytes)
 
     ###############################################################################
 
