@@ -113,6 +113,10 @@ class Lister(object):
         if (
                 output and int2byte(output[-1]) in ALPHANUMERIC
                 and s not in tk.OPERATOR
+                # we need to check again for FN and USR, but not SPC( and TAB(
+                # because we check the converted output, not the previous token
+                and not (len(output) >= 2 and bytes(output[-2:]) == b'FN')
+                and not (len(output) >= 3 and bytes(output[-3:]) == b'USR')
             ):
             output += b' '
         output += keyword
