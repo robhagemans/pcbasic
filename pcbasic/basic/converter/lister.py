@@ -78,7 +78,7 @@ class Lister(object):
                 output += s
                 litstring = not litstring
             elif s in tk.NUMBER or s in tk.LINE_NUMBER:
-                self._detokenise_number(ins, s, output)
+                output += self._detokenise_number(ins, s)
             elif comment or litstring or (b'\x20' <= s <= b'\x7E'):
                 # honest ASCII
                 output += s
@@ -120,10 +120,8 @@ class Lister(object):
             ):
             output += b' '
         output += keyword
-        comment = False
-        if keyword == b"'":
-            comment = True
-        elif keyword == tk.KW_REM:
+        comment = keyword in (b"'", tk.KW_REM)
+        if keyword == tk.KW_REM:
             nxt = ins.read(1)
             if nxt == tk.O_REM: # '
                 # if next char is token('), we have the special value REM'
@@ -133,7 +131,6 @@ class Lister(object):
                 # otherwise, it's part of the comment or an EOL or whatever,
                 # pass back to stream so it can be processed
                 ins.seek(-1, len(nxt))
-            comment = True
         # check for special cases
         #   [:REM']   ->  [']
         if len(output) > 4 and bytes(output[-5:]) == b":REM'":
@@ -168,22 +165,23 @@ class Lister(object):
             output += b' '
         return comment
 
-    def _detokenise_number(self, ins, lead, output):
+    def _detokenise_number(self, ins, lead):
         """Convert number token to Python string."""
         ntrail = tk.PLUS_BYTES.get(lead, 0)
         trail = ins.read(ntrail)
         if lead == tk.T_OCT:
-            output += b'&O' + self._values.from_bytes(trail).to_oct()
+            return b'&O' + self._values.from_bytes(trail).to_oct()
         elif lead == tk.T_HEX:
-            output += b'&H' + self._values.from_bytes(trail).to_hex()
+            return b'&H' + self._values.from_bytes(trail).to_hex()
         elif lead == tk.T_BYTE:
-            output += b'%d' % (ord(trail),)
+            return b'%d' % (ord(trail),)
         elif tk.C_0 <= lead <= tk.C_10:
-            output += b'%d' % (ord(lead) - ord(tk.C_0),)
+            return b'%d' % (ord(lead) - ord(tk.C_0),)
         elif lead in tk.LINE_NUMBER:
             # 0D: line pointer (unsigned int) - this token should not be here;
             #     interpret as line number and carry on
             # 0E: line number (unsigned int)
-            output += b'%d' % (struct.unpack('<H', trail)[0],)
+            return b'%d' % (struct.unpack('<H', trail)[0],)
         elif lead in (tk.T_SINGLE, tk.T_DOUBLE, tk.T_INT):
-            output += self._values.from_bytes(trail).to_str(leading_space=False, type_sign=True)
+            return self._values.from_bytes(trail).to_str(leading_space=False, type_sign=True)
+        return b''
