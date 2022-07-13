@@ -75,7 +75,7 @@ class Font(object):
     def get_byte(self, byte, offset):
         """Get byte value from character sequence."""
         char = self._byte_to_char(byte)
-        return ord(self._fontdict[char][offset])
+        return ord(self._fontdict[char][offset:offset+1])
 
     def set_byte(self, byte, offset, byte_value):
         """Set byte value for character sequence."""
