@@ -390,14 +390,11 @@
             <code><b>--font=</b><var>font_name</var>[<b>,</b><var>font_name</var> ... ]</code></dt>
         <dd>
             Use the specified fonts for the interface. The last fonts specified take precedence, previous ones are
-            fallback. Default is <code><b>unifont,univga,freedos</b></code> (i.e. the
-            <code>freedos</code> font has preference). The available fonts
+            fallback. The available fonts
             are stored in <code>font/</code>. By default, the following fonts are
             available:
             <ul class="compact">
-                <li><code><b>unifont</b></code></li>
-                <li><code><b>univga</b></code></li>
-                <li><code><b>freedos</b></code></li>
+                <li><code><b>default</b></code></li>
                 <li><code><b>cga</b></code></li>
                 <li><code><b>mda</b></code></li>
                 <li><code><b>vga</b></code></li>
@@ -405,6 +402,11 @@
                 <li><code><b>tandy1</b></code></li>
                 <li><code><b>tandy2</b></code></li>
             </ul>.
+
+            The font names <code>freedos</code>, <code>univga</code>, and <code>unifont</code>
+            are treated as synonyms of <code>default</code> unless a font with one of these names
+            is available. This behaviour is deprecated and these synonyms will be removed in a future version.
+
             See the <a href="#fonts">list of fonts</a> in the User's Guide for details.
         </dd>
 
