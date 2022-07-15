@@ -268,6 +268,15 @@ class MachinePorts(object):
 ###############################################################################
 # Memory
 
+
+# RAM font default locations, can be overridden
+
+# segment that holds ram font
+_RAM_FONT_SEGMENT = 0xc000
+# where to find the ram font (chars 128-254)
+_RAM_FONT_ADDR = 0x500
+
+
 class Memory(object):
     """Memory model."""
 
@@ -275,13 +284,9 @@ class Memory(object):
     video_segment = 0xa000
     # read only memory
     rom_segment = 0xf000
-    # segment that holds ram font
-    ram_font_segment = 0xc000
 
     # where to find the rom font (chars 0-127)
     rom_font_addr = 0xfa6e
-    # where to find the ram font (chars 128-254)
-    ram_font_addr = 0x500
 
     key_buffer_offset = 30
     blink_enabled = True
@@ -307,6 +312,10 @@ class Memory(object):
         self.font_8 = font_8
         # initial DEF SEG
         self.segment = self._memory.data_segment
+        # segment that holds ram font
+        self.ram_font_segment = 0xc000
+        # where to find the ram font (chars 128-254)
+        self.ram_font_addr = 0x500
         # pre-defined PEEK outputs
         self._peek_values = peek_values
         # tandy syntax
@@ -417,12 +426,14 @@ class Memory(object):
             # try if there's a preset value
             return self._peek_values[addr]
         except KeyError:
+            if addr >= self.ram_font_segment*0x10:
+                # RAM font
+                value = max(0, self._get_font_memory(addr))
+                if value != -1:
+                    return value
             if addr >= self.rom_segment*0x10:
                 # ROM font
                 return max(0, self._get_rom_memory(addr))
-            elif addr >= self.ram_font_segment*0x10:
-                # RAM font
-                return max(0, self._get_font_memory(addr))
             elif addr >= self.video_segment*0x10:
                 # graphics and text memory
                 return max(0, self._get_video_memory(addr))
