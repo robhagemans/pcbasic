@@ -50,7 +50,7 @@ class Interface(object):
             self._audio = audio_plugins[audio](self._audio_queue, **kwargs)
         except KeyError:
             # ignore if an interface has no audio, but not if an override doesn't exist
-            if audio_override and audio_override != 'none':
+            if audio_override and audio_override not in ('none', 'false'):
                 logging.error('Unknown audio plugin `%s`', audio)
         except InitFailed as e:
             logging.info('Could not initialise audio plugin `%s`: %s', audio, e)
