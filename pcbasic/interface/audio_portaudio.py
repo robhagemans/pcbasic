@@ -54,6 +54,7 @@ else:
 
 
 
+@audio_plugins.register('cli')
 @audio_plugins.register('portaudio')
 class AudioPortAudio(AudioPlugin):
     """SDL2-based audio plugin."""

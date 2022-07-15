@@ -259,8 +259,8 @@ ARGUMENTS = {
         ),
     },
     u'sound': {
-        u'type': u'string', u'default': u'',
-        u'choices': (u'', u'none', u'beep', u'portaudio', u'sdl2', u'interface'),
+        u'type': u'string', u'default': u'true',
+        u'choices': (u'true', u'false', u'none', u'beep', u'portaudio', u'sdl2', u'interface'),
     },
     u'load': {u'type': u'string', u'default': u'', },
     u'run': {u'type': u'string', u'default': u'',  },
@@ -770,7 +770,7 @@ class Settings(object):
                 iface_list = (interface,)
         iface_params = {
             'try_interfaces': iface_list,
-            'audio_override': self.get('sound') != 'interface' and self.get('sound'),
+            'audio_override': self.get('sound') not in ('true', 'interface') and self.get('sound'),
         }
         iface_params.update(self._get_video_parameters())
         iface_params.update(self._get_audio_parameters())

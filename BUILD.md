@@ -121,3 +121,4 @@ The following features are deprecated and **will be removed in the near future**
 - The [curses](https://invisible-island.net/ncurses/)-based interface
 - The option `--utf8` (use `--text-encoding=utf8`)
 - The aliases `freedos`, `univga`, and `unifont` for the default font (use `--font=default`)
+- Support for sound through the PC speaker

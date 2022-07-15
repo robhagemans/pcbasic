@@ -844,16 +844,27 @@
             Choose the sound engine to use.
             Not all sound engines will be available on all systems.
             <dl class="compact">
-                <dt><code><b>none</b></code></dt>
+                <dt><code><b>false</b></code></dt>
                 <dd>Suppress sound output.</dd>
+                <dt><code><b>true</b></code></dt>
+                <dd>Output sound, if a sound driver is available for the interface.</dd>
+            </dl>
+
+            Default is <code><b>interface</b></code>.
+
+            The following values for this option are deprecated; PortAudio will be used by default
+            in the text-based interfaces:
+            <dl class="compact">
+                <dt><code><b>none</b></code></dt>
+                <dd>Suppress sound output. <em>(Use <code><b>false</b></code> instead)</em></dd>
+                <dt><code><b>interface</b></code>  <em>(Use <code><b>true</b></code> instead</dt>
+                <dd>Use the native sound engine of the interface, if available.</dd>
                 <dt><code><b>beep</b></code></dt>
                 <dd>Use the built-in speaker.</dd>
                 <dt><code><b>portaudio</b></code></dt>
                 <dd>Use the PortAudio sound generator.</dd>
-                <dt><code><b>interface</b></code></dt>
-                <dd>Use the native sound engine of the interface, if available.</dd>
             </dl>
-            Default is <code><b>interface</b></code>.
+
         </dd>
 
         <dt id="--state">
