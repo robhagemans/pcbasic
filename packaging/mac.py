@@ -88,17 +88,17 @@ def package(**setup_options):
             cx_Freeze.bdist_dmg.run(self)
             # move the disk image to dist/
             mkdir('dist/')
-            if os.path.exists('dist/' + os.path.basename(self.dmgName)):
-                os.unlink('dist/' + os.path.basename(self.dmgName))
+            if os.path.exists('dist/' + os.path.basename(self.dmg_name)):
+                os.unlink('dist/' + os.path.basename(self.dmg_name))
             dmg_name = '{}-{}.dmg'.format(NAME, VERSION)
-            os.rename(self.dmgName, dmg_name)
+            os.rename(self.dmg_name, dmg_name)
             shutil.move(dmg_name, 'dist/')
             wash()
 
         def buildDMG(self):
             # Remove DMG if it already exists
-            if os.path.exists(self.dmgName):
-                os.unlink(self.dmgName)
+            if os.path.exists(self.dmg_name):
+                os.unlink(self.dmg_name)
             # hdiutil with multiple -srcfolder hangs, so create a temp dir
             prune('build/dmg')
             mkdir('build/dmg')
@@ -109,7 +109,7 @@ def package(**setup_options):
             # Create the dmg
             createargs = [
                 'hdiutil', 'create', '-fs', 'HFSX', '-format', 'UDZO',
-                self.dmgName, '-imagekey', 'zlib-level=9', '-srcfolder',
+                self.dmg_name, '-imagekey', 'zlib-level=9', '-srcfolder',
                 'build/dmg', '-volname', self.volume_label,
             ]
             if os.spawnvp(os.P_WAIT, 'hdiutil', createargs) != 0:
