@@ -111,7 +111,7 @@ class Lister(object):
         # letter or number followed by token is separated by a space
         if (
                 token not in tk.OPERATOR
-                and output and output[-1:] in ALPHANUMERIC
+                and output and bytes(output[-1:]) in ALPHANUMERIC
                 # we need to check again for FN and USR, but not SPC( and TAB(
                 # because we check the converted output, not the previous token
                 and not (len(output) >= 2 and bytes(output[-2:]) == tk.KW_FN)
