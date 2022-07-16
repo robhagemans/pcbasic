@@ -15,7 +15,7 @@ if False:
     # for detection by packagers
     import pyaudio
 
-from ..compat import zip, WIN32
+from ..compat import zip, WIN32, MACOS
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser
@@ -30,7 +30,7 @@ _BUFSIZE = 1024
 
 # suppress ALSA debug messages
 # https://stackoverflow.com/questions/7088672/pyaudio-working-but-spits-out-error-messages-each-time
-if WIN32:
+if WIN32 or MACOS:
     @contextmanager
     def _quiet_alsa(): yield
 else:
