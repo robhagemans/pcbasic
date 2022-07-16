@@ -737,13 +737,24 @@
             <p>
                 The presentation of printed documents is left to your operating system: it
                 will be the default presentation of text files. If you wist to change the way
-                documents are printed, please refer to your OS's settings. On Windows, for example, text files
-                are printed by <code>notepad.exe</code> and changing the default settings in that
-                application will change the way PC-BASIC documents are printed. You will need to set a
-                printer font that includes the characters you need to print. On Unix systems,
-                PC-BASIC will use the <code>paps</code> utility if it is available; this will
-                automatically select fonts that support the characters you need.
+                documents are printed, please refer to your OS's settings.
             </p>
+            <ul>
+                <li>
+                    On Windows, text files are printed the same way as would happen when you drag
+                    a text file and drop it on the printer's icon.
+                    That means the formatting is handled by the application associated to
+                    <code>.txt</code> files; usually this is <code>notepad.exe</code>. To change
+                    the way PC-BASIC documents are printed, change the page setup
+                    in that application. You will need to set a
+                    printer font that includes the characters you need to print.
+                </li>
+                <li>
+                    On Unix systems,
+                    PC-BASIC will use the <code>paps</code> utility if it is available; this will
+                    automatically select fonts that support the characters you need.
+                </li>
+            </ul>
         </section>
         <hr />
 
