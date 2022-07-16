@@ -570,7 +570,7 @@ class Settings(object):
             'hide_listing': self.get('hide-listing'),
             'hide_protected': self.get('hide-protected'),
             'allow_code_poke': self.get('allow-code-poke'),
-            'rebuild_offsets': not self.get('convert'),
+            'rebuild_offsets': not self.convert,
             # max available memory to BASIC (set by /m)
             'max_memory': min(max_list) or 65534,
             # maximum record length (-s)
@@ -859,8 +859,8 @@ class Settings(object):
     def conv_params(self):
         """Get parameters for file conversion."""
         # conversion output
-        # first arg, if given, is mode; second arg, if given, is outfile
-        mode = self.get('convert')
+        # argument is mode
+        mode = self.get('convert', get_default=False)
         # keep uppercase first letter
         mode = mode[0].upper() if mode else 'A'
         name_in = (self.get(0) or self.get('run') or self.get('load'))
@@ -880,7 +880,7 @@ class Settings(object):
     @property
     def convert(self):
         """Converter operating mode."""
-        return self.get('convert')
+        return self.get('convert', get_default=False) is not None
 
     @property
     def debug(self):
