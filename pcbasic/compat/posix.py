@@ -85,36 +85,37 @@ def is_hidden(path):
 ##############################################################################
 # printing
 
-if which('paps'):
-    def line_print(printbuf, printer):
-        """Print the buffer to a LPR printer using PAPS."""
-        options = b''
-        if printer and printer != u'default':
-            options = b'-P "%s"' % (printer.encode(SHELL_ENCODING, 'replace'),)
-        if printbuf:
-            # A4 paper is 595 points wide by 842 points high.
-            # Letter paper is 612 by 792 points.
-            # the below seems to allow 82 chars horizontally on A4; it appears
-            # my PAPS version doesn't quite use cpi correctly as 10cpi should
-            # allow 80 chars on A4 with a narrow margin but only does so with a
-            # margin of 0.
-            pr = subprocess.Popen(
-                b'paps --cpi=11 --lpi=6 --left-margin=20 --right-margin=20 '
-                b'--top-margin=6 --bottom-margin=6 '
-                b'| lpr %s' % (options,), shell=True, stdin=subprocess.PIPE)
-            # PAPS does not recognise CRLF
-            printbuf = printbuf.replace(b'\r\n', b'\n')
-            pr.stdin.write(printbuf)
-            pr.stdin.close()
-
-else:
-    def line_print(printbuf, printer):
-        """Print the buffer to a LPR (CUPS or older UNIX) printer."""
-        options = b''
-        if printer and printer != u'default':
-            options = b'-P "%s"' % (printer.encode(SHELL_ENCODING, 'replace'),)
-        if printbuf:
-            # cups defaults to 10 cpi, 6 lpi.
-            pr = subprocess.Popen(b'lpr %s' % (options,), shell=True, stdin=subprocess.PIPE)
-            pr.stdin.write(printbuf)
-            pr.stdin.close()
+def line_print(printbuf, printer):
+    """Print the buffer to a Unix printer, using PAPS if available."""
+    if not printbuf:
+        return
+    if which('paps'):
+        # PAPS does not recognise CRLF
+        printbuf = printbuf.replace(b'\r\n', b'\n')
+        # A4 paper is 595 points wide by 842 points high.
+        # Letter paper is 612 by 792 points.
+        # the below seems to allow 82 chars horizontally on A4; it appears
+        # my PAPS version doesn't quite use cpi correctly as 10cpi should
+        # allow 80 chars on A4 with a narrow margin but only does so with a
+        # margin of 0.
+        paps = subprocess.Popen((
+                b'paps', b'--cpi=11', b'--lpi=6',
+                b'--left-margin=20', b'--right-margin=20',
+                b'--top-margin=6', b'--bottom-margin=6'
+            ),
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE
+        )
+        lpr_stdin = paps.stdout
+    else:
+        paps = None
+        lpr_stdin = subprocess.PIPE
+    command = [b'lpr']
+    if printer and printer != u'default':
+        command += [b'-P', printer.encode(SHELL_ENCODING, 'replace')]
+    lpr = subprocess.Popen(command, stdin=lpr_stdin)
+    if paps:
+        proc = paps
+    else:
+        proc = lpr
+    proc.stdin.write(printbuf)
+    proc.stdin.close()
