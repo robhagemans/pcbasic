@@ -524,19 +524,17 @@
             <code><b>--lpt1=</b><var>type</var><b>:</b><var>value</var></code>
         </dt>
         <dd>
-            Attach a resource to the <code>LPT1:</code> parallel device.
+            Determine where the output goes when writing to the <code>LPT1:</code> parallel device.
             <code><var>type</var><b>:</b><var>value</var></code> can be
             <dl>
 
                 <dt><code><b>PRINTER:</b>[<var>printer_name</var>][<b>:</b><var>trigger</var>]</code></dt>
                 <dd>
-                    Connect to a Windows, LPR or CUPS printer. If
+                    Output is written to a printer. If
                     <code><var>printer_name</var></code> is not specified, the default
-                    printer is used. <br />
-                    The printer is activated when a file open to it is closed,
-                    a program terminates or PC-BASIC exits. Note that, unlike <code>LPT1:</code>,
-                    printers connected to <code>LPT2:</code> or <code>LPT3:</code>
-                    do <em>not</em> get activated when a program terminates.
+                    printer is used. Windows and CUPS printers are supported.<br />
+                    The printer will be activated when a file on <code>LPT1:</code is closed,
+                    when a BASIC program terminates or when PC-BASIC is closed.
                     If specified, <code><var>trigger</var></code> sets an additional trigger
                     to activate the printer:
                     <dl class="compact">
@@ -547,32 +545,33 @@
                         <dt><code><b>close</b></code>
                         <dd>No additional trigger</dd>
                     </dl>
-                    The default behaviour is that of <code><b>close</b></code>.
+                    The default is <code><b>close</b></code>.
                 </dd>
 
                 <dt><code><b>FILE:</b><var>file_name</var></code></dt>
                 <dd>
-                    Connect to any file or device such as
+                    Output is written to a file or character device such as
                     <code><b>/dev/stdout</b></code> on Unix or <code><b>LPT1</b></code> on Windows.
                 </dd>
 
                 <dt><code><b>STDIO:</b>[<b>CRLF</b>]</code></dt>
                 <dd>
-                    Connect to standard output of the calling shell.
+                    Output is written to the standard output of the calling shell.
                     If <code><b>CRLF</b></code> is specified, PC-BASIC replaces <code>CR</code>
                     characters with <code>LF</code> on its output. This is more intuitive on Unix shells.
                 </dd>
 
                 <dt><code><b>PARPORT:</b><var>port_number</var></code></dt>
                 <dd>
-                    Connect to a Centronics parallel port, where <code><var>port_number</var></code>
+                    Output is written to a Centronics parallel port, where <code><var>port_number</var></code>
                     is <code><b>0</b></code> for the first parallel port, etc.
-                    <code><b>PARPORT</b></code> only works with physical parallel ports; for example, a Windows printer or other
-                    device mapped with <code>NET USE LPT1:</code> can only be attached with <code><b>FILE:LPT1</b></code>
+                    This option only works with physical parallel ports. To write to a Windows printer or other
+                    device mapped with <code>NET USE LPT1:</code>, use <code><b>FILE:LPT1</b></code> instead.
                 </dd>
 
             </dl>
-            If this option is not specified, <code>LPT1:</code> is connected to the default printer.
+            The default is <code><b>PRINTER:</b></code>, so that output goes to the default printer
+            specified by the operating system.
         </dd>
 
         <dt id="--lpt2">
@@ -581,6 +580,9 @@
         <dd>
             Attach a resource to the <code>LPT2:</code> parallel device.
             See <code><b><a href="#--lpt1">--lpt1</a></b></code>.
+            Note that, unlike <code>LPT1:</code>, printers connected to <code>LPT2:</code>
+            do <em>not</em> get activated when a program terminates.
+
             If this option is not specified, <code>LPT2:</code> is unavailable.
         </dd>
 
@@ -590,6 +592,9 @@
         <dd>
             Attach a resource to the <code>LPT3:</code> parallel device.
             See <code><b><a href="#--lpt1">--lpt1</a></b></code>.
+            Note that, unlike <code>LPT1:</code>, printers connected to <code>LPT3:</code>
+            do <em>not</em> get activated when a program terminates.
+
             If this option is not specified, <code>LPT3:</code> is unavailable.
         </dd>
 
