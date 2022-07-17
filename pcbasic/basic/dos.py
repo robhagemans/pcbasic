@@ -253,7 +253,7 @@ class Shell(object):
 
     def _show_output(self, shell_output, remove_echo):
         """Write shell output to console."""
-        if shell_output:
+        if shell_output and u'\n' in shell_output:
             # can't do a comprehension as it will crash if the deque is accessed by the thread
             chars = deque()
             while shell_output:
