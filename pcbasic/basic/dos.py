@@ -241,7 +241,7 @@ class Shell(object):
         unicode_word = self._codepage.bytes_to_unicode(
             bytes_word, preserve=CONTROL, box_protect=False
         )
-        self._last_command = unicode_word
+        self._last_command = unicode_word.replace(u'\r\n', u'\r').replace(u'\n', u'\r')
         logging.debug('SHELL << %r', unicode_word)
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
         shell_word = unicode_word.encode(SHELL_ENCODING, errors='replace')
@@ -274,12 +274,12 @@ class Shell(object):
             if len(chars) % 2 and self._encoding.startswith('utf-16'):
                 shell_output.appendleft(chars.pop())
             outstr = b''.join(chars).decode(self._encoding, errors='replace')
+            logging.debug('SHELL >> %r', outstr)
+            # accept CRLF and LF in output
+            outstr = outstr.replace(u'\r\n', u'\r').replace(u'\n', u'\r')
             # detect echo
             if remove_echo:
                 outstr = self._remove_echo(outstr)
-            logging.debug('SHELL >> %r', outstr)
-            # accept CRLF in output
-            outstr = outstr.replace(u'\r\n', u'\r')
             # remove BELs (dosemu uses these a lot)
             outstr = outstr.replace(u'\x07', u'')
             # transcode from shell encoding to codepage
