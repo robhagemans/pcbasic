@@ -120,22 +120,41 @@ class Shell(object):
         self._codepage = codepage
         self._last_command = u''
 
-    def _process_stdout(self, stream, output):
-        """Retrieve SHELL output and write to console."""
-        first = stream.peek(2)
-        # detect utf-16 (windows unicode shell)
-        encoding = 'utf-16le' if first[1:2] == b'\0' else OEM_ENCODING
-        # set encoding and universal newlines
-        stream = io.TextIOWrapper(stream, encoding=encoding, errors='replace')
-        while True:
-            # blocking read
-            c = stream.read(1)
-            # stream ends if process closes
-            if not c:
-                return
-            # don't access console in this thread
-            # the other thread already does
-            output.append(c)
+    if PY2:
+        def _process_stdout(self, stream, output):
+            """Retrieve SHELL output and write to console."""
+            # hack for python 2: use latin-1 as a passthrough encoding
+            # doesn't work correctly but so be it
+            stream = io.open(stream.fileno(), mode='r', encoding='latin-1', closefd=False)
+            while True:
+                # blocking read
+                c = stream.read(1)
+                # hack for python 2 - ignore NULs so utf-16 encoded ascii comes through sort of ok
+                if c == b'\0':
+                    continue
+                # stream ends if process closes
+                if not c:
+                    return
+                # don't access console in this thread
+                # the other thread already does
+                output.append(c)
+            stream.close()
+    else:
+        def _process_stdout(self, stream, output):
+            """Retrieve SHELL output and write to console."""
+            first = stream.peek(2)
+            # detect utf-16 (windows unicode shell)
+            encoding = 'utf-16le' if first[1:2] == b'\0' else OEM_ENCODING
+            stream = io.TextIOWrapper(stream, encoding=encoding, errors='replace')
+            while True:
+                # blocking read
+                c = stream.read(1)
+                # stream ends if process closes
+                if not c:
+                    return
+                # don't access console in this thread
+                # the other thread already does
+                output.append(c)
 
     def launch(self, command):
         """Run a SHELL subprocess."""
