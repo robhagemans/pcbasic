@@ -47,14 +47,14 @@ if WIN32:
     from .win32 import set_dpi_aware, line_print
     from .win32 import get_free_bytes, get_short_pathname, is_hidden
     from .win32 import EOL, EOF
-    from .win32 import SHELL_ENCODING, HIDE_WINDOW
+    from .win32 import SHELL_ENCODING, OEM_ENCODING, HIDE_WINDOW
 else:
     from .posix_console import console, read_all_available, IS_CONSOLE_APP
     from .posix_console import stdio
     from .posix import set_dpi_aware, line_print
     from .posix import get_free_bytes, get_short_pathname, is_hidden
     from .posix import EOL, EOF
-    from .posix import SHELL_ENCODING, HIDE_WINDOW
+    from .posix import SHELL_ENCODING, OEM_ENCODING, HIDE_WINDOW
 
 
 if MACOS:

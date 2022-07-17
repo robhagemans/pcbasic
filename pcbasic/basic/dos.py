@@ -16,7 +16,7 @@ from collections import deque
 import subprocess
 from subprocess import Popen, PIPE
 
-from ..compat import SHELL_ENCODING, HIDE_WINDOW
+from ..compat import OEM_ENCODING, HIDE_WINDOW, PY2
 from ..compat import which, split_quoted, getenvu, setenvu, iterenvu
 from .codepage import CONTROL
 from .base import error
@@ -124,7 +124,7 @@ class Shell(object):
         """Retrieve SHELL output and write to console."""
         first = stream.peek(2)
         # detect utf-16 (windows unicode shell)
-        encoding = 'utf-16le' if first[1:2] == b'\0' else SHELL_ENCODING
+        encoding = 'utf-16le' if first[1:2] == b'\0' else OEM_ENCODING
         # set encoding and universal newlines
         stream = io.TextIOWrapper(stream, encoding=encoding)
         while True:
@@ -246,7 +246,7 @@ class Shell(object):
         self._last_command = unicode_word.replace(u'\r\n', u'\n').replace(u'\r', u'\n')
         logging.debug('SHELL << %r', unicode_word)
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
-        shell_word = unicode_word.encode(SHELL_ENCODING, errors='replace')
+        shell_word = unicode_word.encode(OEM_ENCODING, errors='replace')
         pipe.write(shell_word)
         # explicit flush as pipe may not be line buffered. blocks in python 3 without
         pipe.flush()

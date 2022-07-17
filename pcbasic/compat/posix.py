@@ -42,6 +42,7 @@ EOL = u'\n'
 # shell conventions
 # console encoding
 SHELL_ENCODING = sys.stdin.encoding or locale.getpreferredencoding()
+OEM_ENCODING = SHELL_ENCODING
 FS_ENCODING = sys.getfilesystemencoding()
 # window suppression not needed on Unix
 HIDE_WINDOW = None
