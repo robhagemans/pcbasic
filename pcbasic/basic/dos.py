@@ -188,7 +188,7 @@ class Shell(object):
         outp.start()
         return shell_output
 
-    def _drain_final(self, shell_output):
+    def _drain_final(self, shell_output, remove_echo):
         """Drain final output from shell."""
         if not shell_output:
             return
@@ -197,14 +197,16 @@ class Shell(object):
             shell_output.append(b'\r')
         elif not shell_output[-1] in (self._enc(u'\r'), self._enc(u'\n')):
             shell_output.append(self._enc(u'\r'))
-        self._show_output(shell_output)
+        self._show_output(shell_output, remove_echo)
 
     def _communicate(self, p, shell_output, shell_cerr):
         """Communicate with launched shell."""
         word = []
         while p.poll() is None:
-            self._show_output(shell_output)
-            self._show_output(shell_cerr)
+            # stderr output should come first
+            # e.g. first print the error message (tsderr), then the prompt (stdout)
+            self._show_output(shell_cerr, remove_echo=False)
+            self._show_output(shell_output, remove_echo=True)
             try:
                 self._queues.wait()
                 # expand=False suppresses key macros
@@ -230,8 +232,8 @@ class Shell(object):
                 word.append(c)
                 self._console.write(c)
         # drain final output
-        self._drain_final(shell_output)
-        self._drain_final(shell_cerr)
+        self._drain_final(shell_cerr, remove_echo=False)
+        self._drain_final(shell_output, remove_echo=True)
 
     def _send_input(self, pipe, word):
         """Write keyboard input to pipe."""
@@ -260,7 +262,7 @@ class Shell(object):
         """Encode argument."""
         return unitext.encode(self._encoding, errors='replace')
 
-    def _show_output(self, shell_output):
+    def _show_output(self, shell_output, remove_echo):
         """Write shell output to console."""
         # detect sentinel for start of new command
         if shell_output and self._detect_encoding(shell_output):
@@ -277,24 +279,10 @@ class Shell(object):
             if self._encoding == 'utf-16le' and lines[-1] != b'\0':
                 shell_output.appendleft(lines.pop())
             # detect echo
-            while not lines[0]:
-                lines.popleft()
-                while lines:
-                    reply = lines.popleft()
-                    if self._encoding == 'utf-16le':
-                        reply += lines.popleft()
-                    try:
-                        cmd = self._last_command.popleft()
-                    except IndexError:
-                        cmd = b''
-                    if self._enc(cmd) != reply:
-                        lines.appendleft(reply)
-                        if reply not in (self._enc(u'\r'), self._enc(u'\n')):
-                            # two CRs, for some reason
-                            lines.appendleft(self._enc(u'\r'))
-                        break
+            if remove_echo:
+                self._remove_echo(lines)
             outstr = b''.join(lines)
-            # accept CRLF or LF in output
+            # accept CRLF in output
             outstr = outstr.replace(self._enc(u'\r\n'), self._enc(u'\r'))
             # remove BELs (dosemu uses these a lot)
             outstr = outstr.replace(self._enc(u'\x07'), b'')
@@ -302,3 +290,27 @@ class Shell(object):
             outstr = self._codepage.unicode_to_bytes(outstr, errors='replace')
             logging.debug('SHELL output: %r', outstr)
             self._console.write(outstr)
+
+    def _remove_echo(self, lines):
+        """Detect if output was an echo of the input and remove."""
+        # remove empties
+        while not lines[0]:
+            lines.popleft()
+            while lines:
+                reply = lines.popleft()
+                if self._encoding == 'utf-16le':
+                    reply += lines.popleft()
+                try:
+                    cmd = self._last_command.popleft()
+                except IndexError:
+                    cmd = b''
+                unicode_cmd = self._codepage.bytes_to_unicode(
+                    cmd, preserve=CONTROL, box_protect=False
+                )
+                unicode_reply = reply.decode(self._encoding, errors='replace')
+                if unicode_cmd != unicode_reply:
+                    lines.appendleft(reply)
+                    if reply not in (self._enc(u'\r'), self._enc(u'\n')):
+                        # two CRs, for some reason
+                        lines.appendleft(self._enc(u'\r'))
+                    break
