@@ -218,9 +218,7 @@ class Shell(object):
             if not c:
                 continue
             elif c in (b'\r', b'\n'):
-                # put sentinel on queue
-                shell_output.append(b'')
-                shell_cerr.append(b'')
+                self._console.write(c)
                 # send the command
                 self._send_input(p.stdin, word)
                 word = []
@@ -239,8 +237,9 @@ class Shell(object):
 
     def _send_input(self, pipe, word):
         """Write keyboard input to pipe."""
+        word.extend([b'\r', b'\n'])
         self._last_command.extend(word)
-        bytes_word = b''.join(word) + b'\r\n'
+        bytes_word = b''.join(word)
         unicode_word = self._codepage.bytes_to_unicode(
             bytes_word, preserve=CONTROL, box_protect=False
         )
@@ -266,54 +265,45 @@ class Shell(object):
 
     def _show_output(self, shell_output, remove_echo):
         """Write shell output to console."""
-        # detect sentinel for start of new command
         if shell_output and self._detect_encoding(shell_output):
-            # detect sentinel for start of new command
-            # wait for at least one LF
-            if not shell_output[0]:
-                if b'\n' not in shell_output:
-                    return
             # can't do a comprehension as it will crash if the deque is accessed by the thread
-            lines = deque()
+            chars = deque()
             while shell_output:
-                lines.append(shell_output.popleft())
+                chars.append(shell_output.popleft())
             # push back last char if not aligned to encoding
-            if self._encoding == 'utf-16le' and lines[-1] != b'\0':
-                shell_output.appendleft(lines.pop())
+            #fixme, assumes second char is always 0?
+            if self._encoding == 'utf-16le' and chars[-1] != b'\0':
+                shell_output.appendleft(chars.pop())
             # detect echo
             if remove_echo:
-                self._remove_echo(lines)
-            outstr = b''.join(lines)
+                self._remove_echo(chars)
+            outstr = b''.join(chars)
             # accept CRLF in output
             outstr = outstr.replace(self._enc(u'\r\n'), self._enc(u'\r'))
             # remove BELs (dosemu uses these a lot)
             outstr = outstr.replace(self._enc(u'\x07'), b'')
+            # transcode from shell encoding to codepage
             outstr = outstr.decode(self._encoding, errors='replace')
             outstr = self._codepage.unicode_to_bytes(outstr, errors='replace')
             logging.debug('SHELL output: %r', outstr)
             self._console.write(outstr)
 
-    def _remove_echo(self, lines):
+    def _remove_echo(self, chars):
         """Detect if output was an echo of the input and remove."""
-        # remove empties
-        while not lines[0]:
-            lines.popleft()
-            while lines:
-                reply = _popchar(lines, self._encoding)
-                try:
-                    cmd = self._last_command.popleft()
-                except IndexError:
-                    cmd = b''
-                unicode_cmd = self._codepage.bytes_to_unicode(
-                    cmd, preserve=CONTROL, box_protect=False
-                )
-                unicode_reply = reply.decode(self._encoding, errors='replace')
-                if unicode_cmd != unicode_reply:
-                    lines.appendleft(reply)
-                    if reply not in (self._enc(u'\r'), self._enc(u'\n')):
-                        # two CRs, for some reason
-                        lines.appendleft(self._enc(u'\r'))
-                    break
+        while chars:
+            try:
+                cmd = self._last_command.popleft()
+            except IndexError:
+                cmd = b''
+            unicode_cmd = self._codepage.bytes_to_unicode(
+                cmd, preserve=CONTROL, box_protect=False
+            )
+            reply = _popchar(chars, self._encoding)
+            unicode_reply = reply.decode(self._encoding, errors='replace')
+            if unicode_cmd != unicode_reply:
+                chars.appendleft(reply)
+                break
+        self._last_command = deque()
 
 def _popchar(deque, encoding):
     """Left-pop 1 or 2 items from the deque, all or nothing, depending on encoding."""
