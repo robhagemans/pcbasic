@@ -172,7 +172,7 @@ class Shell(object):
         if command:
             cmd += [SHELL_COMMAND_SWITCH, self._codepage.bytes_to_unicode(command, box_protect=False)]
         # get working directory; also raises IFC if current_device is CAS1
-        work_dir = self._files.get_native_cwd()
+        work_dir = self._files.get_native_cwd() or '.'
         try:
             p = Popen(
                 cmd, shell=False, cwd=work_dir,

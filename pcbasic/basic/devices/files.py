@@ -648,7 +648,7 @@ class Files(object):
                 else:
                     cwd = u''
             else:
-                path, cwd = None, u''
+                path, cwd = u'', u''
             # treat device @: separately - internal disk must exist but may remain unmounted
             disk_class = disk.InternalDiskDevice if letter == b'@' else disk.DiskDevice
             self._devices[letter + b':'] = disk_class(
