@@ -243,6 +243,8 @@ class Shell(object):
         )
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
         pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
+        # explicit flush as pipe may not be line buffered. blocks in python 3 without
+        pipe.flush()
 
     def _detect_encoding(self, shell_output):
         """Detect UTF-16LE output."""
