@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import io
 import sys
 import logging
 import threading
@@ -118,10 +119,14 @@ class Shell(object):
         self._files = files
         self._codepage = codepage
         self._last_command = u''
-        self._encoding = None
 
     def _process_stdout(self, stream, output):
         """Retrieve SHELL output and write to console."""
+        first = stream.peek(2)
+        # detect utf-16 (windows unicode shell)
+        encoding = 'utf-16le' if first[1:2] == b'\0' else SHELL_ENCODING
+        # set encoding and universal newlines
+        stream = io.TextIOWrapper(stream, encoding=encoding)
         while True:
             # blocking read
             c = stream.read(1)
@@ -192,12 +197,8 @@ class Shell(object):
         """Drain final output from shell."""
         if not shell_output:
             return
-        # add a final CR to the output if there isn't one
-        if not self._detect_encoding(shell_output):
-            # one-char output, must be rare...
-            shell_output.append(b'\r')
-        elif not shell_output[-1] in (self._enc(u'\r'), self._enc(u'\n')):
-            shell_output.append(self._enc(u'\r'))
+        if not shell_output[-1] == u'\n':
+            shell_output.append(u'\n')
         self._show_output(shell_output, remove_echo)
 
     def _communicate(self, p, shell_output, shell_cerr):
@@ -241,7 +242,8 @@ class Shell(object):
         unicode_word = self._codepage.bytes_to_unicode(
             bytes_word, preserve=CONTROL, box_protect=False
         )
-        self._last_command = unicode_word.replace(u'\r\n', u'\r').replace(u'\n', u'\r')
+        # match universal newlines
+        self._last_command = unicode_word.replace(u'\r\n', u'\n').replace(u'\r', u'\n')
         logging.debug('SHELL << %r', unicode_word)
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
         shell_word = unicode_word.encode(SHELL_ENCODING, errors='replace')
@@ -249,40 +251,23 @@ class Shell(object):
         # explicit flush as pipe may not be line buffered. blocks in python 3 without
         pipe.flush()
 
-    def _detect_encoding(self, shell_output):
-        """Detect UTF-16LE output."""
-        if self._encoding:
-            return True
-        elif len(shell_output) > 1:
-            # detect UTF-16 output (assuming the first output char is ascii...)
-            self._encoding = 'utf-16le' if shell_output[1] == b'\0' else SHELL_ENCODING
-            return True
-        return False
-
-    def _enc(self, unitext):
-        """Encode argument."""
-        return unitext.encode(self._encoding, errors='replace')
-
     def _show_output(self, shell_output, remove_echo):
         """Write shell output to console."""
-        if shell_output and self._detect_encoding(shell_output):
+        if shell_output:
             # can't do a comprehension as it will crash if the deque is accessed by the thread
             chars = deque()
             while shell_output:
                 chars.append(shell_output.popleft())
-            # push back last char if not aligned to encoding
-            if len(chars) % 2 and self._encoding.startswith('utf-16'):
-                shell_output.appendleft(chars.pop())
-            outstr = b''.join(chars).decode(self._encoding, errors='replace')
+            outstr = u''.join(chars)
             logging.debug('SHELL >> %r', outstr)
-            # accept CRLF and LF in output
-            outstr = outstr.replace(u'\r\n', u'\r').replace(u'\n', u'\r')
             # detect echo
             if remove_echo:
                 outstr = self._remove_echo(outstr)
             # remove BELs (dosemu uses these a lot)
             outstr = outstr.replace(u'\x07', u'')
-            # transcode from shell encoding to codepage
+            # use BASIC newlines (CR) instead of universal newlines (LF)
+            outstr = outstr.replace(u'\n', u'\r')
+            # encode to codepage
             outbytes = self._codepage.unicode_to_bytes(outstr, errors='replace')
             self._console.write(outbytes)
 
