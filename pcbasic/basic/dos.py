@@ -117,7 +117,7 @@ class Shell(object):
         self._console = console
         self._files = files
         self._codepage = codepage
-        self._last_command = deque()
+        self._last_command = u''
         self._encoding = None
 
     def _process_stdout(self, stream, output):
@@ -131,7 +131,6 @@ class Shell(object):
             # don't access console in this thread
             # the other thread already does
             output.append(c)
-            logging.debug('>>> Response [%s]: %r', stream.name, c)
 
     def launch(self, command):
         """Run a SHELL subprocess."""
@@ -238,14 +237,15 @@ class Shell(object):
     def _send_input(self, pipe, word):
         """Write keyboard input to pipe."""
         word.extend([b'\r', b'\n'])
-        self._last_command.extend(word)
         bytes_word = b''.join(word)
         unicode_word = self._codepage.bytes_to_unicode(
             bytes_word, preserve=CONTROL, box_protect=False
         )
-        logging.debug('>>> Sent %r', unicode_word.encode(SHELL_ENCODING, errors='replace'))
+        self._last_command = unicode_word
+        logging.debug('SHELL << %r', unicode_word)
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
-        pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
+        shell_word = unicode_word.encode(SHELL_ENCODING, errors='replace')
+        pipe.write(shell_word)
         # explicit flush as pipe may not be line buffered. blocks in python 3 without
         pipe.flush()
 
@@ -271,53 +271,24 @@ class Shell(object):
             while shell_output:
                 chars.append(shell_output.popleft())
             # push back last char if not aligned to encoding
-            #fixme, assumes second char is always 0?
-            if self._encoding == 'utf-16le' and chars[-1] != b'\0':
+            if len(chars) % 2 and self._encoding.startswith('utf-16'):
                 shell_output.appendleft(chars.pop())
+            outstr = b''.join(chars).decode(self._encoding, errors='replace')
             # detect echo
             if remove_echo:
-                self._remove_echo(chars)
-            outstr = b''.join(chars)
+                outstr = self._remove_echo(outstr)
+            logging.debug('SHELL >> %r', outstr)
             # accept CRLF in output
-            outstr = outstr.replace(self._enc(u'\r\n'), self._enc(u'\r'))
+            outstr = outstr.replace(u'\r\n', u'\r')
             # remove BELs (dosemu uses these a lot)
-            outstr = outstr.replace(self._enc(u'\x07'), b'')
+            outstr = outstr.replace(u'\x07', u'')
             # transcode from shell encoding to codepage
-            outstr = outstr.decode(self._encoding, errors='replace')
-            outstr = self._codepage.unicode_to_bytes(outstr, errors='replace')
-            logging.debug('SHELL output: %r', outstr)
-            self._console.write(outstr)
+            outbytes = self._codepage.unicode_to_bytes(outstr, errors='replace')
+            self._console.write(outbytes)
 
-    def _remove_echo(self, chars):
+    def _remove_echo(self, unicode_reply):
         """Detect if output was an echo of the input and remove."""
-        while chars:
-            try:
-                cmd = self._last_command.popleft()
-            except IndexError:
-                cmd = b''
-            unicode_cmd = self._codepage.bytes_to_unicode(
-                cmd, preserve=CONTROL, box_protect=False
-            )
-            reply = _popchar(chars, self._encoding)
-            unicode_reply = reply.decode(self._encoding, errors='replace')
-            if unicode_cmd != unicode_reply:
-                chars.appendleft(reply)
-                break
-        self._last_command = deque()
-
-def _popchar(deque, encoding):
-    """Left-pop 1 or 2 items from the deque, all or nothing, depending on encoding."""
-    if encoding.startswith('utf-16'):
-        width = 2
-    else:
-        width = 1
-    char = []
-    for _ in range(width):
-        try:
-            char.append(deque.popleft())
-        except IndexError:
-            # if we can't get all, put back what we have
-            for c in reversed(char):
-                deque.appendleft(c)
-            return b''
-    return b''.join(char)
+        if unicode_reply.startswith(self._last_command):
+            unicode_reply = unicode_reply[len(self._last_command):]
+        self._last_command = u''
+        return unicode_reply
