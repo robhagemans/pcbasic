@@ -20,16 +20,10 @@ import msvcrt
 import ctypes
 from contextlib import contextmanager
 from collections import deque
+from types import SimpleNamespace
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
-from .base import PY2
 from .streams import StdIOBase
-
-if PY2:
-    from .python2 import SimpleNamespace
-else:
-    from types import SimpleNamespace
-
 
 
 # Windows virtual key codes, mapped to standard key names
@@ -702,71 +696,8 @@ def read_all_available(stream):
 ##############################################################################
 # standard i/o
 
-if PY2:
-
-    class _StreamWrapper(object):
-        """Delegating stream wrapper."""
-
-        def __init__(self, stream, handle, encoding='utf-8'):
-            self._wrapped = stream
-            self._handle = handle
-            self.encoding = encoding
-
-        def __getattr__(self, attr):
-            return getattr(self._wrapped, attr)
-
-        def __getstate__(self):
-            return vars(self)
-
-        def __setstate__(self, stdict):
-            return vars(self).update(stdict)
-
-
-    class _ConsoleOutput(_StreamWrapper):
-        """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
-
-        def write(self, bytestr):
-            if not isinstance(bytestr, bytes):
-                raise TypeError('write() argument must be bytes, not %s' % type(bytestr))
-            unistr = bytestr.decode(self.encoding, errors='replace')
-            _ConsoleWriter.write(self._handle, unistr)
-
-
-    class _ConsoleInput(_StreamWrapper):
-        """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdin."""
-
-        def __init__(self, encoding='utf-8'):
-            _StreamWrapper.__init__(self, sys.stdin, HSTDIN, encoding)
-
-        def read(self, size=-1):
-            output = bytearray()
-            while size < 0 or len(output) < size:
-                key = console.read_key()
-                if isinstance(key, int):
-                    continue
-                output.append(key.encode(self.encoding, errors='replace'))
-            return bytes(output)
-
-
 class StdIO(StdIOBase):
     """Holds standard unicode streams."""
-
-    if PY2:
-        def _attach_stdin(self):
-            if sys.stdin.isatty():
-                self.stdin = self._wrap_input_stream(_ConsoleInput())
-            else:
-                self.stdin = self._wrap_input_stream(sys.stdin)
-
-        def _attach_output_stream(self, stream_name, redirected=False):
-            stream = getattr(sys, '__%s__' % (stream_name,))
-            handle = {'stdout': HSTDOUT, 'stderr': HSTDERR}[stream_name]
-            if stream.isatty() and not redirected:
-                new_stream = self._wrap_output_stream(_ConsoleOutput(stream, handle))
-            else:
-                encoding = 'utf-8' if redirected else None
-                new_stream = self._wrap_output_stream(stream, encoding)
-            setattr(self, stream_name, new_stream)
 
 stdio = StdIO()
 

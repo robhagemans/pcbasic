@@ -25,12 +25,9 @@ except locale.Error as e:
     # mis-configured locale can throw an error here, no need to crash
     logging.error(e)
 
-from .base import PY2, HOME_DIR, MACOS
+from .base import HOME_DIR, MACOS
 
-if PY2:
-    from .python2 import which
-else:
-    from shutil import which
+from shutil import which
 
 
 # text conventions
@@ -69,11 +66,6 @@ def get_free_bytes(path):
 def get_short_pathname(native_path):
     """Return Windows short path name or None if not available."""
     return None
-
-if PY2:
-    # the official parameter should be LC_CTYPE but that's None in my locale
-    # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
-    argv = [_arg.decode(FS_ENCODING, errors='replace') for _arg in sys.argv]
 
 def is_hidden(path):
     """File is hidden."""

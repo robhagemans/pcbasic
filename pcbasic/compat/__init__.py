@@ -12,33 +12,19 @@ import sys
 import os
 import io
 
-from .base import PLATFORM, PY2, WIN32, MACOS, X64
+from .base import PLATFORM, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
 from .base import split_quoted, split_pair, iter_chunks
 
-if PY2:
-    from .python2 import add_str, iterchar
-    from .python2 import xrange, zip, iteritems, itervalues, iterkeys, iterbytes
-    from .python2 import getcwdu, getenvu, setenvu, iterenvu
-    from .python2 import configparser, queue, copyreg, which
-    from .python2 import SimpleNamespace, TemporaryDirectory
-    unichr, int2byte, text_type = unichr, chr, unicode
-
-    if WIN32:
-        from . import win32_subprocess
-        from .win32 import argv
-    else:
-        from .posix import argv
-else:
-    import configparser, queue, copyreg
-    from shutil import which
-    from types import SimpleNamespace
-    from tempfile import TemporaryDirectory
-    from .python3 import int2byte, add_str, iterchar, iterbytes
-    from .python3 import xrange, zip, iteritems, itervalues, iterkeys
-    from .python3 import getcwdu, getenvu, setenvu, iterenvu
-    unichr, text_type = chr, str
-    argv = sys.argv
+import configparser, queue, copyreg
+from shutil import which
+from types import SimpleNamespace
+from tempfile import TemporaryDirectory
+from .python3 import int2byte, add_str, iterchar, iterbytes
+from .python3 import xrange, zip, iteritems, itervalues, iterkeys
+from .python3 import getcwdu, getenvu, setenvu, iterenvu
+unichr, text_type = chr, str
+argv = sys.argv
 
 
 if WIN32:

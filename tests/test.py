@@ -20,16 +20,8 @@ import logging
 import platform
 from copy import copy, deepcopy
 from contextlib import contextmanager
-try:
-    # Python 3 only
-    from importlib import reload
-except ImportError:
-    pass
-# process_time not in py2; clock deprecated in py3
-try:
-    from time import process_time
-except ImportError:
-    from time import clock as process_time
+from importlib import reload
+from time import process_time
 
 try:
     import colorama

@@ -6,8 +6,6 @@ import tempfile
 import logging
 from contextlib import contextmanager
 
-from .base import PY2
-
 
 # stdio may become None in GUI mode
 if not sys.stdin:
@@ -83,35 +81,22 @@ class StdIOBase(object):
     def _muffle_one(self, stream_name, preserve):
         """Silence stdout or stderr. On Python 2, also silences external writes."""
         std_stream = getattr(sys, '__%s__' % (stream_name,))
-        if not PY2:
-            encoding = std_stream.encoding
+        encoding = std_stream.encoding
         save = None
         try:
-            if not PY2:
-                save_buffer = std_stream.buffer
-            else:
-                try:
-                    # save the file descriptor for the target stream
-                    save = os.dup(std_stream.fileno())
-                except EnvironmentError as e:
-                    # won't work, give up
-                    logging.error(e)
-                    yield
-                    return
+            save_buffer = std_stream.buffer
             if preserve:
                 temp_file = tempfile.TemporaryFile('w+b')
             else:
                 temp_file = io.open(os.devnull, 'wb')
             with temp_file as temp:
                 std_stream.flush()
-                if not PY2:
-                    # replace the underlying buffer in the TextIOWrapper
-                    # since we're mutating the object, affects all stored references.
-                    std_stream.__init__(temp_file, encoding=encoding) # errors='replace'
-                else:
-                    # the old unix way, doesn't work on python3.6+/windows
-                    # put /dev/null fds on 1 (stdout) or 2 (stderr)
-                    os.dup2(temp.fileno(), std_stream.fileno())
+                # replace the underlying buffer in the TextIOWrapper
+                # since we're mutating the object, affects all stored references.
+                std_stream.__init__(temp_file, encoding=encoding) # errors='replace'
+                # the old unix way, doesn't work on python3.6+/windows
+                # put /dev/null fds on 1 (stdout) or 2 (stderr)
+                #os.dup2(temp.fileno(), std_stream.fileno())
                 # fix our own streams - needed on Windows
                 # as we keep a hacked stream writing to the Windows API
                 self._attach_output_stream(stream_name, redirected=True)
@@ -121,19 +106,13 @@ class StdIOBase(object):
                 finally:
                     std_stream.flush()
                     # restore file descriptors
-                    if not PY2:
-                        std_stream.__init__(save_buffer, encoding=encoding)
-                    else:
-                        os.dup2(save, std_stream.fileno())
+                    std_stream.__init__(save_buffer, encoding=encoding)
                     self._attach_output_stream(stream_name, redirected=False)
                     if preserve:
                         # write contents of temporary file back into stream
                         temp.flush()
                         temp.seek(0)
-                        if PY2:
-                            std_stream.write(temp.read())
-                        else:
-                            std_stream.buffer.write(temp.read())
+                        std_stream.buffer.write(temp.read())
 
         finally:
             if save is not None:

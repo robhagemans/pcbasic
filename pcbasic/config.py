@@ -20,7 +20,7 @@ from collections import deque
 from .compat import iteritems, text_type, iterchar
 from .compat import configparser
 from .compat import WIN32, get_short_pathname, argv, getcwdu
-from .compat import USER_CONFIG_HOME, USER_DATA_HOME, PY2
+from .compat import USER_CONFIG_HOME, USER_DATA_HOME
 from .compat import split_quoted, split_pair
 from .compat import console, IS_CONSOLE_APP, stdio
 from .compat import TemporaryDirectory
@@ -69,21 +69,17 @@ FALSES = (u'NO', u'FALSE', u'OFF', u'0')
 # version checks
 
 # minimum required python versions
-MIN_PYTHON2_VERSION = (2, 7, 12)
-MIN_PYTHON3_VERSION = (3, 5, 0)
+MIN_PYTHON_VERSION = (3, 7, 0)
+
 
 def _validate_version():
     """Initial validations."""
     # sys.version_info tuple's first three elements are guaranteed to be ints
     python_version = sys.version_info[:3]
-    if (
-            (python_version[0] == 2 and python_version < MIN_PYTHON2_VERSION) or
-            (python_version[0] == 3 and python_version < MIN_PYTHON3_VERSION)
-        ):
+    if python_version < MIN_PYTHON_VERSION:
         msg = (
-            'PC-BASIC requires Python version %d.%d.%d, ' % MIN_PYTHON2_VERSION +
-            'version %d.%d.%d, or higher. ' % MIN_PYTHON3_VERSION +
-            'You have %d.%d.%d.' % python_version
+            'PC-BASIC requires Python version %d.%d.%d, or higher; ' % MIN_PYTHON_VERSION +
+            'you have %d.%d.%d.' % python_version
         )
         logging.fatal(msg)
         raise ImportError(msg)
@@ -336,8 +332,6 @@ ARGUMENTS = {
     u'current-device': {u'type': u'string', u'default': ''},
     u'extension': {u'type': u'string', u'list': u'*', u'default': []},
     u'options': {u'type': u'string', u'default': ''},
-    # depecated argument, use text-encoding instead
-    u'utf8': {u'type': u'bool', u'default': False,},
 }
 
 
@@ -584,15 +578,6 @@ class Settings(object):
             # ignore key buffer in console-based interfaces, to allow pasting text in console
             'check_keybuffer_full': self.get('interface') not in ('cli', 'text', 'ansi', 'curses'),
         })
-        # deprecated arguments
-        if self.get('utf8', get_default=False) is not None:
-            if self.get('text-encoding', get_default=False) is not None:
-                logging.warning(
-                    'Deprecated option `utf8` ignored: `text-encoding` takes precedence.'
-                )
-            else:
-                logging.warning('Option `utf8` is deprecated; use `text-encoding=utf-8` instead.')
-                params['textfile_encoding'] = u'utf-8' if self.get('utf8') else u''
         self._session_params = params
         return params
 
@@ -1099,10 +1084,7 @@ class ArgumentParser(object):
             # use utf_8_sig to ignore a BOM if it's at the start of the file
             # (e.g. created by Notepad)
             with io.open(config_file, 'r', encoding='utf_8_sig', errors='replace') as f:
-                if PY2:
-                    config.readfp(WhitespaceStripper(f))
-                else:
-                    config.read_file(WhitespaceStripper(f))
+                config.read_file(WhitespaceStripper(f))
         except (configparser.Error, IOError):
             logging.warning(
                 u'Error in configuration file `%s`. Configuration not loaded.', config_file

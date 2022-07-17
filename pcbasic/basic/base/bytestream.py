@@ -8,8 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 from _pyio import BytesIO, BufferedIOBase
 
-from ...compat import PY2
-
 
 class ByteStream(BytesIO):
     """BytesIO over external buffer."""
@@ -28,23 +26,3 @@ class ByteStream(BytesIO):
     def close(self):
         # _pyio.BytesIO clears buffer here but memoryview has no clear()
         BufferedIOBase.close(self)
-
-    if PY2:
-        def read(self, n=None):
-            if self.closed:
-                raise ValueError("read from closed file")
-            if n is None:
-                n = -1
-            if not isinstance(n, (int, long)):
-                raise TypeError("integer argument expected, got {0!r}".format(
-                    type(n)))
-            if n < 0:
-                n = len(self._buffer)
-            if len(self._buffer) <= self._pos:
-                return b""
-            newpos = min(len(self._buffer), self._pos + n)
-            b = self._buffer[self._pos : newpos]
-            self._pos = newpos
-            # on py2, we have to convert to bytesarray before converting to bytes
-            # or we'll get strings like '<memoryview at ...>'
-            return bytes(bytearray(b))

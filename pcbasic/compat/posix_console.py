@@ -25,7 +25,7 @@ try:
 except ImportError:
     curses = None
 
-from .base import MACOS, PY2, HOME_DIR
+from .base import MACOS, HOME_DIR
 from .streams import StdIOBase
 
 
@@ -217,15 +217,6 @@ DEFAULT_PALETTE = (
 
 class StdIO(StdIOBase):
     """Holds standard unicode streams."""
-
-    if PY2:
-        def _attach_stdin(self):
-            self.stdin = self._wrap_input_stream(sys.stdin)
-
-        def _attach_output_stream(self, stream_name, redirected=False):
-            stream = getattr(sys, '__%s__' % (stream_name,))
-            new_stream = self._wrap_output_stream(stream)
-            setattr(self, stream_name, new_stream)
 
 stdio = StdIO()
 

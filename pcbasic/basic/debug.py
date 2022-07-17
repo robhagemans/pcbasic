@@ -18,7 +18,7 @@ import subprocess
 import importlib
 
 from .base import error
-from ..compat import PY2, WIN32, X64, BASE_DIR, which
+from ..compat import WIN32, X64, BASE_DIR, which
 from . import values
 from . import api
 
@@ -65,7 +65,7 @@ def get_platform_info():
         info.append(u'sdl2: --')
         sdl2 = None
     info.append(u'\nEXTERNAL TOOLS')
-    tools = (u'notepad', u'lpr', u'paps', u'beep', u'pbcopy', u'pbpaste')
+    tools = (u'notepad', u'lpr', u'paps')
     for tool in tools:
         location = which(tool) or u'--'
         info.append(u'%s: %s' % (tool, location))
@@ -136,8 +136,9 @@ class DebugSession(api.Session):
             '    _%s: %s' % (
                 n.upper(), getattr(self, n).__doc__)
                 for n in dir(self)
-                    if '_' not in n and callable(getattr(self, n)) and n not in dir(api.Session)
-            ))
+                if '_' not in n and callable(getattr(self, n)) and n not in dir(api.Session)
+            )
+        )
 
     def crash(self):
         """Simulate a crash."""
@@ -145,7 +146,7 @@ class DebugSession(api.Session):
 
     def python(self, cmd):
         """Execute any Python code."""
-        buf = io.BytesIO() if PY2 else io.StringIO()
+        buf = io.StringIO()
         save_stdout = sys.stdout
         sys.stdout = buf
         try:

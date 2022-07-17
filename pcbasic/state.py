@@ -21,7 +21,7 @@ import logging
 from contextlib import contextmanager
 
 from .basic import VERSION
-from .compat import PY2, copyreg, stdio
+from .compat import copyreg, stdio
 
 # session file header
 HEADER_FORMAT = '<LIIIII'
@@ -69,11 +69,11 @@ def pickle_bytesio(f):
 def unpickle_file(name, mode, pos):
     """Unpickle a file object."""
     if name is None:
-        if mode == 'rb' or (PY2 and mode == 'r'):
+        if mode == 'rb':
             return stdio.stdin.buffer
         elif mode == 'r':
             return stdio.stdin
-        elif mode == 'wb' or (PY2 and mode == 'w'):
+        elif mode == 'wb':
             return stdio.stdout.buffer
         elif mode == 'w':
             return stdio.stdout
@@ -111,25 +111,11 @@ def pickle_file(f):
         return unpickle_file, (f.name, f.mode, -1)
 
 # register the picklers for file and cStringIO
-if PY2:
-    copyreg.pickle(file, pickle_file)  # pylint: disable=undefined-variable
 copyreg.pickle(io.BufferedReader, pickle_file)
 copyreg.pickle(io.BufferedWriter, pickle_file)
 copyreg.pickle(io.TextIOWrapper, pickle_file)
 copyreg.pickle(io.BufferedRandom, pickle_file)
 copyreg.pickle(io.BytesIO, pickle_bytesio)
-
-# patch codecs.StreamReader and -Writer
-if PY2:
-    def patched_getstate(self):
-        return vars(self)
-
-    def patched_setstate(self, dict):
-        vars(self).update(dict)
-
-    for streamclass in (codecs.StreamReader, codecs.StreamWriter, codecs.StreamReaderWriter):
-        streamclass.__getstate__ = patched_getstate
-        streamclass.__setstate__ = patched_setstate
 
 
 def load_session(state_file):

@@ -13,13 +13,9 @@ from .interface import Interface
 from .video import VideoPlugin
 from .video_ansi import VideoANSI
 from .video_cli import VideoCLI
-from .video_curses import VideoCurses
-from .video_pygame import VideoPygame
 from .video_sdl2 import VideoSDL2
 
 # audio plugins
 from .audio import AudioPlugin
-from .audio_beep import AudioBeep
-from .audio_pygame import AudioPygame
 from .audio_sdl2 import AudioSDL2
 from .audio_portaudio import AudioPortAudio

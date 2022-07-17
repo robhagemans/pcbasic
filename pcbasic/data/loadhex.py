@@ -26,8 +26,6 @@ FONTS = sorted(
 )
 _HEIGHTS = (8, 14, 16)
 _DEFAULT_NAME = 'default'
-# (deprecated) aliases for the default font
-_DEFAULT_ALIASES = ('freedos', 'univga', 'unifont')
 
 
 def _get_font(name, height):
@@ -35,10 +33,7 @@ def _get_font(name, height):
     try:
         return get_data(FONT_PATTERN, path=FONT_DIR, name=name, height=height)
     except ResourceFailed as e:
-        if name in _DEFAULT_ALIASES:
-            return get_data(FONT_PATTERN, path=FONT_DIR, name=_DEFAULT_NAME, height=height)
-        else:
-            logging.debug('Failed to load %d-pixel font `%s`: %s', height, name, e)
+        logging.debug('Failed to load %d-pixel font `%s`: %s', height, name, e)
 
 
 def read_fonts(codepage_dict, font_families):

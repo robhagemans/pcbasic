@@ -32,25 +32,6 @@ class Clipboard(object):
         return u''
 
 
-class MacClipboard(Clipboard):
-    """Clipboard handling for OSX. Deprecated, used only by PyGame interface."""
-
-    def paste(self):
-        """Get unicode text from clipboard."""
-        return (
-            subprocess.check_output('pbpaste').decode(ENCODING, 'replace')
-            .replace(u'\r\n', u'\r').replace(u'\n', u'\r')
-        )
-
-    def copy(self, text):
-        """Put unicode text on clipboard."""
-        try:
-            p = subprocess.Popen('pbcopy', stdin=subprocess.PIPE)
-            p.communicate(text.encode(ENCODING, 'replace'))
-        except subprocess.CalledProcessError:
-            pass
-
-
 class XClipboard(Clipboard):
     """Clipboard handling for X Window System using xsel or xclip."""
 

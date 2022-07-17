@@ -15,7 +15,7 @@ import operator
 from contextlib import contextmanager
 
 from ..compat import iteritems, unichr
-from ..compat import WIN32, BASE_DIR, PLATFORM, PY2
+from ..compat import WIN32, BASE_DIR, PLATFORM
 from ..compat import set_dpi_aware
 
 from .base import EnvironmentCache
@@ -317,8 +317,7 @@ def _pixels2d(surface_ptr):
     pxbuf = ctypes.cast(surface.pixels, ctypes.POINTER(ctypes.c_ubyte * srcsize)).contents
     # I don't understand this line, but I need it in Python 3
     # see https://bugs.python.org/issue15944
-    if not PY2:
-        pxbuf = memoryview(pxbuf).cast('B')
+    pxbuf = memoryview(pxbuf).cast('B')
     return bytematrix.ByteMatrix.view_from_buffer(surface.h, surface.w, surface.pitch, pxbuf)
 
 

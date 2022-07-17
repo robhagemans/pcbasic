@@ -10,7 +10,7 @@ import struct
 import functools
 import operator
 
-from ...compat import xrange, int2byte, zip, iterbytes, PY2
+from ...compat import xrange, int2byte, zip, iterbytes
 
 from ..base import bytematrix
 
@@ -91,11 +91,6 @@ class PackedSpriteBuilder(object):
         byte_size = row_bytes * height
         # bytes_to_interval
         packed = array[4:4+byte_size]
-        # ensure iterations over memoryview yield int, not bytes, in Python 2
-        # frompacked can't take interators, would need a width argument
-        #packed = iterbytes(packed)
-        if PY2:
-            packed = bytearray(packed)
         sprite = bytematrix.ByteMatrix.frompacked(
             packed, height, items_per_byte=8 // self._bitsperpixel
         )
