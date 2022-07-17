@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import io
 import sys
 import logging
 import threading
@@ -15,7 +16,7 @@ from collections import deque
 import subprocess
 from subprocess import Popen, PIPE
 
-from ..compat import SHELL_ENCODING, HIDE_WINDOW
+from ..compat import OEM_ENCODING, HIDE_WINDOW, PY2
 from ..compat import which, split_quoted, getenvu, setenvu, iterenvu
 from .codepage import CONTROL
 from .base import error
@@ -117,20 +118,43 @@ class Shell(object):
         self._console = console
         self._files = files
         self._codepage = codepage
-        self._last_command = deque()
-        self._encoding = None
+        self._last_command = u''
 
-    def _process_stdout(self, stream, output):
-        """Retrieve SHELL output and write to console."""
-        while True:
-            # blocking read
-            c = stream.read(1)
-            # stream ends if process closes
-            if not c:
-                return
-            # don't access console in this thread
-            # the other thread already does
-            output.append(c)
+    if PY2:
+        def _process_stdout(self, stream, output):
+            """Retrieve SHELL output and write to console."""
+            # hack for python 2: use latin-1 as a passthrough encoding
+            # doesn't work correctly but so be it
+            stream = io.open(stream.fileno(), mode='r', encoding='latin-1', closefd=False)
+            while True:
+                # blocking read
+                c = stream.read(1)
+                # hack for python 2 - ignore NULs so utf-16 encoded ascii comes through sort of ok
+                if c == b'\0':
+                    continue
+                # stream ends if process closes
+                if not c:
+                    return
+                # don't access console in this thread
+                # the other thread already does
+                output.append(c)
+            stream.close()
+    else:
+        def _process_stdout(self, stream, output):
+            """Retrieve SHELL output and write to console."""
+            first = stream.peek(2)
+            # detect utf-16 (windows unicode shell)
+            encoding = 'utf-16le' if first[1:2] == b'\0' else OEM_ENCODING
+            stream = io.TextIOWrapper(stream, encoding=encoding, errors='replace')
+            while True:
+                # blocking read
+                c = stream.read(1)
+                # stream ends if process closes
+                if not c:
+                    return
+                # don't access console in this thread
+                # the other thread already does
+                output.append(c)
 
     def launch(self, command):
         """Run a SHELL subprocess."""
@@ -148,7 +172,7 @@ class Shell(object):
         if command:
             cmd += [SHELL_COMMAND_SWITCH, self._codepage.bytes_to_unicode(command, box_protect=False)]
         # get working directory; also raises IFC if current_device is CAS1
-        work_dir = self._files.get_native_cwd()
+        work_dir = self._files.get_native_cwd() or '.'
         try:
             p = Popen(
                 cmd, shell=False, cwd=work_dir,
@@ -188,23 +212,22 @@ class Shell(object):
         outp.start()
         return shell_output
 
-    def _drain_final(self, shell_output):
+    def _drain_final(self, shell_output, remove_echo):
         """Drain final output from shell."""
         if not shell_output:
             return
-        elif not self._detect_encoding(shell_output):
-            # one-char output, must be rare...
-            shell_output.append(b'\r')
-        elif not shell_output[-1] in (self._enc(u'\r'), self._enc(u'\n')):
-            shell_output.append(self._enc(u'\r'))
-        self._show_output(shell_output)
+        if not shell_output[-1] == u'\n':
+            shell_output.append(u'\n')
+        self._show_output(shell_output, remove_echo)
 
     def _communicate(self, p, shell_output, shell_cerr):
         """Communicate with launched shell."""
         word = []
         while p.poll() is None:
-            self._show_output(shell_output)
-            self._show_output(shell_cerr)
+            # stderr output should come first
+            # e.g. first print the error message (tsderr), then the prompt (stdout)
+            self._show_output(shell_cerr, remove_echo=False)
+            self._show_output(shell_output, remove_echo=True)
             try:
                 self._queues.wait()
                 # expand=False suppresses key macros
@@ -214,9 +237,7 @@ class Shell(object):
             if not c:
                 continue
             elif c in (b'\r', b'\n'):
-                # put sentinel on queue
-                shell_output.append(b'')
-                shell_cerr.append(b'')
+                self._console.write(c)
                 # send the command
                 self._send_input(p.stdin, word)
                 word = []
@@ -230,73 +251,48 @@ class Shell(object):
                 word.append(c)
                 self._console.write(c)
         # drain final output
-        self._drain_final(shell_output)
-        self._drain_final(shell_cerr)
+        self._drain_final(shell_cerr, remove_echo=False)
+        self._drain_final(shell_output, remove_echo=True)
 
     def _send_input(self, pipe, word):
         """Write keyboard input to pipe."""
-        # for shell input, send CRLF or LF depending on platform
-        self._last_command.extend(word)
-        bytes_word = b''.join(word) + b'\r\n'
+        word.extend([b'\r', b'\n'])
+        bytes_word = b''.join(word)
         unicode_word = self._codepage.bytes_to_unicode(
             bytes_word, preserve=CONTROL, box_protect=False
         )
+        # match universal newlines
+        self._last_command = unicode_word.replace(u'\r\n', u'\n').replace(u'\r', u'\n')
+        logging.debug('SHELL << %r', unicode_word)
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
-        pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
+        shell_word = unicode_word.encode(OEM_ENCODING, errors='replace')
+        pipe.write(shell_word)
+        # explicit flush as pipe may not be line buffered. blocks in python 3 without
+        pipe.flush()
 
-    def _detect_encoding(self, shell_output):
-        """Detect UTF-16LE output."""
-        if self._encoding:
-            return True
-        elif len(shell_output) > 1:
-            # detect UTF-16 output (assuming the first output char is ascii...)
-            self._encoding = 'utf-16le' if shell_output[1] == b'\0' else SHELL_ENCODING
-            return True
-        return False
-
-    def _enc(self, unitext):
-        """Encode argument."""
-        return unitext.encode(self._encoding, errors='replace')
-
-    def _show_output(self, shell_output):
+    def _show_output(self, shell_output, remove_echo):
         """Write shell output to console."""
-        # detect sentinel for start of new command
-        if shell_output and self._detect_encoding(shell_output):
-            # detect sentinel for start of new command
-            # wait for at least one LF
-            if not shell_output[0]:
-                if b'\n' not in shell_output:
-                    return
+        if shell_output and u'\n' in shell_output:
             # can't do a comprehension as it will crash if the deque is accessed by the thread
-            lines = deque()
+            chars = deque()
             while shell_output:
-                lines.append(shell_output.popleft())
-            # push back last char if not aligned to encoding
-            if self._encoding == 'utf-16le' and lines[-1] != b'\0':
-                shell_output.appendleft(lines.pop())
+                chars.append(shell_output.popleft())
+            outstr = u''.join(chars)
+            logging.debug('SHELL >> %r', outstr)
             # detect echo
-            while not lines[0]:
-                lines.popleft()
-                while lines:
-                    reply = lines.popleft()
-                    if self._encoding == 'utf-16le':
-                        reply += lines.popleft()
-                    try:
-                        cmd = self._last_command.popleft()
-                    except IndexError:
-                        cmd = b''
-                    if self._enc(cmd) != reply:
-                        lines.appendleft(reply)
-                        if reply not in (self._enc(u'\r'), self._enc(u'\n')):
-                            # two CRs, for some reason
-                            lines.appendleft(self._enc(u'\r'))
-                        break
-            outstr = b''.join(lines)
-            # accept CRLF or LF in output
-            outstr = outstr.replace(self._enc(u'\r\n'), self._enc(u'\r'))
+            if remove_echo:
+                outstr = self._remove_echo(outstr)
             # remove BELs (dosemu uses these a lot)
-            outstr = outstr.replace(self._enc(u'\x07'), b'')
-            outstr = outstr.decode(self._encoding, errors='replace')
-            outstr = self._codepage.unicode_to_bytes(outstr, errors='replace')
-            logging.debug('SHELL output: %r', outstr)
-            self._console.write(outstr)
+            outstr = outstr.replace(u'\x07', u'')
+            # use BASIC newlines (CR) instead of universal newlines (LF)
+            outstr = outstr.replace(u'\n', u'\r')
+            # encode to codepage
+            outbytes = self._codepage.unicode_to_bytes(outstr, errors='replace')
+            self._console.write(outbytes)
+
+    def _remove_echo(self, unicode_reply):
+        """Detect if output was an echo of the input and remove."""
+        if unicode_reply.startswith(self._last_command):
+            unicode_reply = unicode_reply[len(self._last_command):]
+        self._last_command = u''
+        return unicode_reply
