@@ -299,13 +299,7 @@ class Shell(object):
         while not lines[0]:
             lines.popleft()
             while lines:
-                reply = lines.popleft()
-                if self._encoding == 'utf-16le':
-                    try:
-                        reply += lines.popleft()
-                    except IndexError:
-                        lines.appendleft(reply)
-                        break
+                reply = _popchar(lines, self._encoding)
                 try:
                     cmd = self._last_command.popleft()
                 except IndexError:
@@ -320,3 +314,20 @@ class Shell(object):
                         # two CRs, for some reason
                         lines.appendleft(self._enc(u'\r'))
                     break
+
+def _popchar(deque, encoding):
+    """Left-pop 1 or 2 items from the deque, all or nothing, depending on encoding."""
+    if encoding.startswith('utf-16'):
+        width = 2
+    else:
+        width = 1
+    char = []
+    for _ in range(width):
+        try:
+            char.append(deque.popleft())
+        except IndexError:
+            # if we can't get all, put back what we have
+            for c in reversed(char):
+                deque.appendleft(c)
+            return b''
+    return b''.join(char)
