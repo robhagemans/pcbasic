@@ -126,7 +126,7 @@ class Shell(object):
         # detect utf-16 (windows unicode shell)
         encoding = 'utf-16le' if first[1:2] == b'\0' else OEM_ENCODING
         # set encoding and universal newlines
-        stream = io.TextIOWrapper(stream, encoding=encoding)
+        stream = io.TextIOWrapper(stream, encoding=encoding, errors='replace')
         while True:
             # blocking read
             c = stream.read(1)
