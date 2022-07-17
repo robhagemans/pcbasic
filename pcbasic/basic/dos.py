@@ -131,6 +131,7 @@ class Shell(object):
             # don't access console in this thread
             # the other thread already does
             output.append(c)
+            logging.debug('>>> Response [%s]: %r', stream.name, c)
 
     def launch(self, command):
         """Run a SHELL subprocess."""
@@ -192,7 +193,8 @@ class Shell(object):
         """Drain final output from shell."""
         if not shell_output:
             return
-        elif not self._detect_encoding(shell_output):
+        # add a final CR to the output if there isn't one
+        if not self._detect_encoding(shell_output):
             # one-char output, must be rare...
             shell_output.append(b'\r')
         elif not shell_output[-1] in (self._enc(u'\r'), self._enc(u'\n')):
@@ -237,12 +239,12 @@ class Shell(object):
 
     def _send_input(self, pipe, word):
         """Write keyboard input to pipe."""
-        # for shell input, send CRLF or LF depending on platform
         self._last_command.extend(word)
         bytes_word = b''.join(word) + b'\r\n'
         unicode_word = self._codepage.bytes_to_unicode(
             bytes_word, preserve=CONTROL, box_protect=False
         )
+        logging.debug('>>> Sent %r', unicode_word.encode(SHELL_ENCODING, errors='replace'))
         # cmd.exe /u outputs UTF-16 but does not accept it as input...
         pipe.write(unicode_word.encode(SHELL_ENCODING, errors='replace'))
         # explicit flush as pipe may not be line buffered. blocks in python 3 without
@@ -299,7 +301,11 @@ class Shell(object):
             while lines:
                 reply = lines.popleft()
                 if self._encoding == 'utf-16le':
-                    reply += lines.popleft()
+                    try:
+                        reply += lines.popleft()
+                    except IndexError:
+                        lines.appendleft(reply)
+                        break
                 try:
                     cmd = self._last_command.popleft()
                 except IndexError:
