@@ -5,6 +5,7 @@ ECHO = '-e' in sys.argv[1:]
 PROMPT = '-p' in sys.argv[1:]
 GREET = '-g' in sys.argv[1:]
 UTF16 = '-u' in sys.argv[1:]
+BYE = '-b' in sys.argv[1:]
 
 if '/C' in sys.argv:
     idx = sys.argv.index('/C')
@@ -71,3 +72,8 @@ else:
             break
         else:
             run_command(inp)
+
+    if BYE:
+        # no lf
+        sys.stdout.write('Bye!')
+        sys.stdout.flush()
