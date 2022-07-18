@@ -218,7 +218,7 @@ DEFAULT_PALETTE = (
 class StdIO(StdIOBase):
     """Holds standard unicode streams."""
 
-    if PY2:
+    if PY2: # pragma: no cover
         def _attach_stdin(self):
             self.stdin = self._wrap_input_stream(sys.stdin)
 

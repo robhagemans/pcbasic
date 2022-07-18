@@ -1101,7 +1101,7 @@ class ArgumentParser(object):
             # use utf_8_sig to ignore a BOM if it's at the start of the file
             # (e.g. created by Notepad)
             with io.open(config_file, 'r', encoding='utf_8_sig', errors='replace') as f:
-                if PY2:
+                if PY2: # pragma: no cover
                     config.readfp(WhitespaceStripper(f))
                 else:
                     config.read_file(WhitespaceStripper(f))

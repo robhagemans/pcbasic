@@ -111,7 +111,7 @@ def pickle_file(f):
         return unpickle_file, (f.name, f.mode, -1)
 
 # register the picklers for file and cStringIO
-if PY2:
+if PY2: # pragma: no cover
     copyreg.pickle(file, pickle_file)  # pylint: disable=undefined-variable
 copyreg.pickle(io.BufferedReader, pickle_file)
 copyreg.pickle(io.BufferedWriter, pickle_file)
@@ -120,7 +120,7 @@ copyreg.pickle(io.BufferedRandom, pickle_file)
 copyreg.pickle(io.BytesIO, pickle_bytesio)
 
 # patch codecs.StreamReader and -Writer
-if PY2:
+if PY2: # pragma: no cover
     def patched_getstate(self):
         return vars(self)
 

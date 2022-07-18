@@ -120,7 +120,7 @@ class Shell(object):
         self._codepage = codepage
         self._last_command = u''
 
-    if PY2:
+    if PY2: # pragma: no cover
         def _process_stdout(self, stream, output):
             """Retrieve SHELL output and write to console."""
             # hack for python 2: use latin-1 as a passthrough encoding

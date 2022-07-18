@@ -24,7 +24,7 @@ from ..compat import iter_chunks
 from .video import VideoPlugin
 from .base import video_plugins, InitFailed
 
-if PY2:
+if PY2: # pragma: no cover
     # curses works with bytes in Python 2
     _ENCODING = locale.getpreferredencoding()
 

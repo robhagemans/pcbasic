@@ -94,7 +94,7 @@ class PackedSpriteBuilder(object):
         # ensure iterations over memoryview yield int, not bytes, in Python 2
         # frompacked can't take interators, would need a width argument
         #packed = iterbytes(packed)
-        if PY2:
+        if PY2: # pragma: no cover
             packed = bytearray(packed)
         sprite = bytematrix.ByteMatrix.frompacked(
             packed, height, items_per_byte=8 // self._bitsperpixel

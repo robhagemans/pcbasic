@@ -16,7 +16,7 @@ from .base import PLATFORM, PY2, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
 from .base import split_quoted, split_pair, iter_chunks
 
-if PY2:
+if PY2: # pragma: no cover
     from .python2 import add_str, iterchar
     from .python2 import xrange, zip, iteritems, itervalues, iterkeys, iterbytes
     from .python2 import getcwdu, getenvu, setenvu, iterenvu
