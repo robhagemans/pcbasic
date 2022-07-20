@@ -18,6 +18,9 @@ from ..data import read_codepage as codepage
 from ..data import read_fonts as font
 from .values import TYPE_TO_CLASS as SIGILS
 
+#FIXME - should not be here
+from .inputs.keyboard import MODIFIER as _MODS
+
 
 class Session(object):
     """Public API to BASIC session."""
@@ -125,7 +128,48 @@ class Session(object):
     def press_keys(self, keys):
         """Insert keypresses."""
         self.start()
-        self._impl.keyboard.inject_keystrokes(keys)
+        if isinstance(keys, text_type):
+            self._impl.keyboard.inject_keystrokes(keys)
+        elif isinstance(keys, bytes):
+            raise TypeError(
+                'Key specification must be eascii in unicode, or sequence of scancodes; not bytes.'
+            )
+        else:
+            with self._impl.keyboard.buf.ignore_limit():
+                # must be a sequence type
+                print(repr(keys))
+                for keyspec in keys:
+                    if isinstance(keyspec, int):
+                        # single scancode
+                        eascii, scancode, modifiers = u'', keyspec, set()
+                    elif isinstance(keyspec, text_type):
+                        # single eascii
+                        eascii, scancode, modifiers = keyspec, None, set()
+                    elif isinstance(keyspec, bytes):
+                        raise TypeError('Key specification must not be bytes.')
+                    else:
+                        # combination
+                        eascii, scancode, modifiers = u'', None, set()
+                        for part in keyspec:
+                            if isinstance(part, text_type) and not eascii:
+                                eascii = part
+                            elif isinstance(part, int):
+                                if part in _MODS:
+                                    modifiers.add(part)
+                                elif not scancode:
+                                    scancode = part
+                                else:
+                                    raise ValueError('Invalid key specification %r' % keyspec)
+                            else:
+                                raise TypeError(
+                                    'Key specification must consist of int and unicode, not %s.'
+                                    % type(part)
+                                )
+                    # fixme: private access
+                    print(repr((eascii, scancode, modifiers)))
+                    self._impl.keyboard._key_down(eascii, scancode, modifiers)
+                    self._impl.keyboard._key_up(scancode)
+
 
     def get_chars(self, as_type=bytes):
         """Get currently displayed characters, as tuple of list of bytes / unicode."""
