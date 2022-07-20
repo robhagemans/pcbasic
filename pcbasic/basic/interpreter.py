@@ -182,10 +182,8 @@ class Interpreter(object):
 
     def clear_stacks_and_pointers(self):
         """Initialise the stacks and pointers for a new program."""
-        # stop running if we were
-        self.set_pointer(False)
         # reset loop stacks
-        self.clear_stacks()
+        self._clear_stacks()
         # reset program pointer
         self._program_code.seek(0)
         # reset stop/cont
@@ -193,8 +191,10 @@ class Interpreter(object):
         # reset data reader
         self.data_pos = 0
 
-    def clear_stacks(self):
+    def _clear_stacks(self):
         """Clear loop and jump stacks."""
+        # stop running if we were
+        self.set_pointer(False)
         self.gosub_stack = []
         self.for_stack = []
         self.while_stack = []
@@ -734,9 +734,8 @@ class Interpreter(object):
             raise error.BASICError(error.IFC)
         old_to_new = self._program.renum(self._console, new, old, step)
         # stop running if we were
-        self.set_pointer(False)
         # reset loop stacks
-        self.clear_stacks()
+        self._clear_stacks()
         # renumber error handler
         if self.on_error:
             self.on_error = old_to_new[self.on_error]
