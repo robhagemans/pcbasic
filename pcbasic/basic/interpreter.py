@@ -172,6 +172,8 @@ class Interpreter(object):
         self._basic_events.reset()
         # CLEAR also dumps for_next and while_wend stacks
         self.clear_loop_stacks()
+        # reset stop/cont
+        self.stop = None
         # reset the DATA pointer
         self.data_pos = 0
 
