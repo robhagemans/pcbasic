@@ -1,0 +1,26 @@
+ 1                                      
+Break in 110ÿ                           
+Okÿ                                     
+30 SYNTAX ERROR                         
+cont                                    
+Can't continueÿ                         
+Okÿ                                     
+run 1000                                
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+
