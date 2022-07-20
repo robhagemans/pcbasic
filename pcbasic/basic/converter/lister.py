@@ -38,8 +38,13 @@ class Lister(object):
         # unless first char is TAB
         if ins.peek() != b'\t':
             linum += bytearray(b' ')
-        line, textpos = self.detokenise_compound_statement(ins, bytepos)
-        return current_line, linum + line, textpos + len(linum) + 1
+        find_textpos = bytepos is not None and ins.tell() < bytepos
+        line, found_textpos = self.detokenise_compound_statement(ins, bytepos)
+        if find_textpos:
+            textpos = found_textpos + len(linum) + 1
+        else:
+            textpos = 0
+        return current_line, linum + line, textpos
 
     def detokenise_line_number(self, ins):
         """Parse line number and leave pointer at first char of line."""

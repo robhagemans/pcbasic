@@ -152,7 +152,9 @@ class Interpreter(object):
         self.parser.redo_on_break = False
         if self.error_handle_mode:
             e.trapped_error_num = self.error_num
-            e.trapped_error_pos = self.error_pos
+            # when the error is trapped, error position shifts to start of line
+            line = self._program.get_line_number(self.error_pos)
+            e.trapped_error_pos = self._program.line_numbers[line]
             #self.error_handle_mode = False
         # ensure we can handle the break like an error
         e.err = 0
