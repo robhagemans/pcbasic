@@ -145,10 +145,10 @@ class Interpreter(object):
         if self.run_mode:
             pos = self.current_statement
             if self.parser.redo_on_break:
-                self.stop = pos
+                self.stop_pos = pos
             else:
                 self._program.bytecode.skip_to(tk.END_STATEMENT)
-                self.stop = self._program.bytecode.tell()
+                self.stop_pos = self._program.bytecode.tell()
         self.parser.redo_on_break = False
         if self.error_handle_mode:
             e.trapped_error_num = self.error_num
@@ -176,7 +176,7 @@ class Interpreter(object):
         self.for_stack = []
         self.while_stack = []
         # reset stop/cont
-        self.stop = None
+        self.stop_pos = None
         # reset the DATA pointer
         self.data_pos = 0
 
@@ -187,7 +187,7 @@ class Interpreter(object):
         # reset program pointer
         self._program_code.seek(0)
         # reset stop/cont
-        self.stop = None
+        self.stop_pos = None
         # reset data reader
         self.data_pos = 0
 
@@ -644,10 +644,10 @@ class Interpreter(object):
     def cont_(self, args):
         """CONT: continue STOPped or ENDed execution."""
         list(args)
-        if self.stop is None:
+        if self.stop_pos is None:
             raise error.BASICError(error.CANT_CONTINUE)
         else:
-            self.set_pointer(True, self.stop)
+            self.set_pointer(True, self.stop_pos)
         # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
         # and there's a STOP in the subroutine.
         # CONT then continues and the rest of the original line is executed, printing x
