@@ -173,7 +173,8 @@ class Interpreter(object):
         # disable all event trapping (resets PEN to OFF too)
         self._basic_events.reset()
         # CLEAR also dumps for_next and while_wend stacks
-        self.clear_loop_stacks()
+        self.for_stack = []
+        self.while_stack = []
         # reset stop/cont
         self.stop = None
         # reset the DATA pointer
@@ -195,12 +196,9 @@ class Interpreter(object):
     def clear_stacks(self):
         """Clear loop and jump stacks."""
         self.gosub_stack = []
-        self.clear_loop_stacks()
-
-    def clear_loop_stacks(self):
-        """Clear loop stacks."""
         self.for_stack = []
         self.while_stack = []
+
 
     ###########################################################################
     # event and error handling
