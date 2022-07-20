@@ -145,14 +145,16 @@ class Interpreter(object):
         if self.run_mode:
             pos = self.current_statement
             if self.parser.redo_on_break:
-                self.stop = pos
+                self.stop_pos = pos
             else:
                 self._program.bytecode.skip_to(tk.END_STATEMENT)
-                self.stop = self._program.bytecode.tell()
+                self.stop_pos = self._program.bytecode.tell()
         self.parser.redo_on_break = False
         if self.error_handle_mode:
             e.trapped_error_num = self.error_num
-            e.trapped_error_pos = self.error_pos
+            # when the error is trapped, error position shifts to start of line
+            line = self._program.get_line_number(self.error_pos)
+            e.trapped_error_pos = self._program.line_numbers[line]
             #self.error_handle_mode = False
         # ensure we can handle the break like an error
         e.err = 0
@@ -171,32 +173,32 @@ class Interpreter(object):
         # disable all event trapping (resets PEN to OFF too)
         self._basic_events.reset()
         # CLEAR also dumps for_next and while_wend stacks
-        self.clear_loop_stacks()
+        self.for_stack = []
+        self.while_stack = []
+        # reset stop/cont
+        self.stop_pos = None
         # reset the DATA pointer
         self.data_pos = 0
 
     def clear_stacks_and_pointers(self):
         """Initialise the stacks and pointers for a new program."""
-        # stop running if we were
-        self.set_pointer(False)
         # reset loop stacks
-        self.clear_stacks()
+        self._clear_stacks()
         # reset program pointer
         self._program_code.seek(0)
         # reset stop/cont
-        self.stop = None
+        self.stop_pos = None
         # reset data reader
         self.data_pos = 0
 
-    def clear_stacks(self):
+    def _clear_stacks(self):
         """Clear loop and jump stacks."""
+        # stop running if we were
+        self.set_pointer(False)
         self.gosub_stack = []
-        self.clear_loop_stacks()
-
-    def clear_loop_stacks(self):
-        """Clear loop stacks."""
         self.for_stack = []
         self.while_stack = []
+
 
     ###########################################################################
     # event and error handling
@@ -642,10 +644,10 @@ class Interpreter(object):
     def cont_(self, args):
         """CONT: continue STOPped or ENDed execution."""
         list(args)
-        if self.stop is None:
+        if self.stop_pos is None:
             raise error.BASICError(error.CANT_CONTINUE)
         else:
-            self.set_pointer(True, self.stop)
+            self.set_pointer(True, self.stop_pos)
         # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
         # and there's a STOP in the subroutine.
         # CONT then continues and the rest of the original line is executed, printing x
@@ -732,9 +734,8 @@ class Interpreter(object):
             raise error.BASICError(error.IFC)
         old_to_new = self._program.renum(self._console, new, old, step)
         # stop running if we were
-        self.set_pointer(False)
         # reset loop stacks
-        self.clear_stacks()
+        self._clear_stacks()
         # renumber error handler
         if self.on_error:
             self.on_error = old_to_new[self.on_error]

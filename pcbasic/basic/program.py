@@ -237,34 +237,25 @@ class Program(object):
         # update line number dict
         self.update_line_dict(startpos, afterpos, 0, deleteable, beyond)
 
-    def edit(self, console, from_line, bytepos=None):
+    def edit(self, console, from_line, target_bytepos):
         """Output program line to console and position cursor."""
         if self.protected:
             console.write(b'%d\r' % (from_line,))
             raise error.BASICError(error.IFC)
         # list line
         self.bytecode.seek(self.line_numbers[from_line]+1)
-        _, output, textpos = self.lister.detokenise_line(self.bytecode, bytepos)
-        # no newline to avoid scrolling on line 24
-        console.list_line(bytes(output), newline=False)
-        # find row, column position for textpos
-        newlines, c = 0, 0
-        pos_row, pos_col = 0, 0
-        if not output:
-            return
-        for i, byte in enumerate(output):
-            c += 1
-            if byte == ord(b'\n') or c > console.width:
-                newlines += 1
-                c = 0
-            if i == textpos:
-                pos_row, pos_col = newlines, c
-        if textpos > i:
-            pos_row, pos_col = newlines, c + 1
-        if bytepos:
-            console.set_pos(console.current_row-newlines+pos_row, pos_col)
+        _, output, byte_to_text_positions = self.lister.detokenise_line(self.bytecode)
+        # find text position from byte position
+        if target_bytepos is None:
+            textpos = None
         else:
-            console.set_pos(console.current_row-newlines, 1)
+            textpos = min(
+                _textpos
+                for _bytepos, _textpos in byte_to_text_positions
+                if target_bytepos <= _bytepos
+            )
+        # no newline to avoid scrolling on line 24
+        console.list_line(bytes(output), newline=False, set_text_position=textpos)
 
     def renum(self, console, new_line, start_line, step):
         """Renumber stored program."""

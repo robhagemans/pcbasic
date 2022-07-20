@@ -712,6 +712,9 @@ class Implementation(object):
     def end_(self, args):
         """END: end program execution and return to interpreter."""
         list(args)
+        # enable CONT
+        self.program.bytecode.skip_to(tk.END_STATEMENT)
+        self.interpreter.stop_pos = self.program.bytecode.tell()
         # jump to end of direct line so execution stops
         self.interpreter.set_pointer(False)
         # avoid NO RESUME

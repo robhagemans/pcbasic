@@ -23,7 +23,7 @@ class Lister(object):
         self._values = values
         self._token_to_keyword = token_dict.to_keyword
 
-    def detokenise_line(self, ins, bytepos=None):
+    def detokenise_line(self, ins):
         """Convert a tokenised program line to ascii text."""
         current_line = self.detokenise_line_number(ins)
         if current_line < 0:
@@ -38,8 +38,13 @@ class Lister(object):
         # unless first char is TAB
         if ins.peek() != b'\t':
             linum += bytearray(b' ')
-        line, textpos = self.detokenise_compound_statement(ins, bytepos)
-        return current_line, linum + line, textpos + len(linum) + 1
+        text_positions = [(ins.tell(), 0)]
+        line, line_text_positions = self.detokenise_compound_statement(ins)
+        line_text_positions = [
+            (_bytepos, _textpos+len(linum) + 1)
+            for _bytepos, _textpos in line_text_positions
+        ]
+        return current_line, linum + line, text_positions + line_text_positions
 
     def detokenise_line_number(self, ins):
         """Parse line number and leave pointer at first char of line."""
@@ -56,15 +61,15 @@ class Lister(object):
             return -1
         return struct.unpack_from('<H', trail, 2)[0]
 
-    def detokenise_compound_statement(self, ins, bytepos=None):
+    def detokenise_compound_statement(self, ins):
         """Detokenise tokens until end of line."""
         litstring, comment = False, False
-        textpos = 0
+        text_positions = []
         output = bytearray()
         while True:
             s = ins.read(1)
-            if not textpos and bytepos is not None and ins.tell() >= bytepos:
-                textpos = len(output)
+            # keep track of matching text and binary positions
+            text_positions.append((ins.tell(), len(output)))
             if s in tk.END_LINE:
                 # \x00 ends lines and comments when listed,
                 # if not inside a number constant
@@ -91,7 +96,7 @@ class Lister(object):
             else:
                 token = self._detokenise_keyword_into(ins, s, output)
                 comment = token in tk.COMMENT
-        return output[:255], textpos
+        return output[:255], text_positions
 
     def _detokenise_keyword_into(self, ins, lead, output):
         """Convert a one- or two-byte keyword token to ascii."""
