@@ -1,0 +1,4 @@
+before error
+error handler
+after error
+
