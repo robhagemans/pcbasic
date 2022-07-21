@@ -227,7 +227,7 @@ class Implementation(object):
         # reopen keyboard, in case we quit because it was closed
         self.keyboard._input_closed = False
         # suppress double prompt
-        if not self.interpreter._parse_mode:
+        if not self.interpreter.parse_mode:
             self._prompt = False
 
     def attach_interface(self, interface=None):
@@ -403,7 +403,7 @@ class Implementation(object):
         except error.Break as e:
             # ctrl-break stops foreground and background sound
             self.sound.stop_all_sound()
-            if not self.interpreter.run_mode and not e.stop:
+            if not self.interpreter.parse_mode:
                 self._prompt = False
             else:
                 self.interpreter.set_pointer(False)
