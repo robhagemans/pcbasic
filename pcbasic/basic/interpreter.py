@@ -117,7 +117,7 @@ class Interpreter(object):
 
     def loop(self):
         """Run commands until control returns to user."""
-        if not self._parse_mode:
+        if not self.parse_mode:
             return
         try:
             # parse until break or end
@@ -132,7 +132,7 @@ class Interpreter(object):
 
     def set_parse_mode(self, on):
         """Enter or exit parse mode."""
-        self._parse_mode = on
+        self.parse_mode = on
         self._cursor.set_direct(not on)
 
     def _handle_break(self, e):
