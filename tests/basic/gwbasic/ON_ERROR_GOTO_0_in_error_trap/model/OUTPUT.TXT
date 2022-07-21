@@ -1,8 +1,8 @@
  1                   
+Syntax error in 30ÿ  
 Okÿ                  
+30 SYNTAX ERROR      
           run 1000   
-                     
-                     
                      
                      
                      
