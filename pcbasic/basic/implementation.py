@@ -422,6 +422,9 @@ class Implementation(object):
         # not handled by ON ERROR, stop execution
         self.console.start_line()
         self.console.write(e.get_message(self.program.get_line_number(e.pos)))
+        if not self.interpreter.input_mode:
+            self.console.write(b'\xFF')
+        self.console.write(b'\r')
         self.interpreter.set_parse_mode(False)
         self.interpreter.input_mode = False
         self._prompt = True
