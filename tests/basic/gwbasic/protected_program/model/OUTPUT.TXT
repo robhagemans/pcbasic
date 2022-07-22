@@ -1,0 +1,22 @@
+Okÿ                  
+edit 5               
+Undefined line number
+Okÿ                  
+edit 10              
+10                   
+Illegal function call
+Okÿ                  
+100 rem              
+Illegal function call
+Okÿ                  
+run 1000             
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+
