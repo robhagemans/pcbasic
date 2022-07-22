@@ -81,6 +81,14 @@ class DiskTest(unittest.TestCase):
             ), repr(repr(s._impl.program))
 
 
+    def test_load_non_program(self):
+        """Exercise code for loading from files that are not program files."""
+        class MockNonProgramFile:
+            filetype = 'M'
+        with Session() as s:
+            s.execute("'")
+            s._impl.program.load(MockNonProgramFile())
+        # we're not testing anything, just exercising the code path
 
 
 if __name__ == '__main__':
