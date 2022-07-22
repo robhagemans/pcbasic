@@ -49,7 +49,7 @@ class Program(object):
             last_offset = offset_val
             offset_val = struct.unpack('<H', offset)[0] - (self.code_start + 1)
             linum_val, = struct.unpack('<H', linum)
-            output.append('%s %s (+%03d) %s [%05d] %s' % (
+            output.append(b'%s %s (+%03d) %s [%05d] %s' % (
                 binascii.hexlify(code[p:p+1]),
                 binascii.hexlify(offset),
                 offset_val - last_offset,
@@ -58,13 +58,13 @@ class Program(object):
                 binascii.hexlify(code[p+5:])
             ))
             p = self.line_numbers[key]
-        output.append('%s %s (ENDS) %s %s' % (
+        output.append(b'%s %s (ENDS) %s %s' % (
             binascii.hexlify(code[p:p+1]),
             binascii.hexlify(code[p+1:p+3]),
             binascii.hexlify(code[p+3:p+5]),
             binascii.hexlify(code[p+5:])
         ))
-        return '\n'.join(output)
+        return b'\n'.join(output).decode('ascii', 'replace')
 
     def size(self):
         """Size of code space """
