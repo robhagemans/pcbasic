@@ -67,5 +67,21 @@ class DiskTest(unittest.TestCase):
         assert not os.path.isfile(self._output_path('TEST.LST'))
 
 
+    def test_program_repr(self):
+        """Test Program.__repr__."""
+        with Session() as s:
+            s.execute("""
+                10 ' test
+                20 print "test"
+            """)
+            assert repr(s._impl.program) == (
+                '00 7b12 (+013) 0a00 [00010] 3a8fd9207465737400881214009120227465737422000000\n'
+                '00 8812 (+013) 1400 [00020] 9120227465737422000000\n'
+                '00 0000 (ENDS)  '
+            ), repr(repr(s._impl.program))
+
+
+
+
 if __name__ == '__main__':
     unittest.main()
