@@ -641,8 +641,8 @@ class Float(Number):
             sign = b'-'
         elif leading_space:
             sign = b' '
-        mantissa, exp10 = self.to_decimal()
-        digitstr = _get_digits(mantissa, self.digits, remove_trailing=True)
+        mantissa, exp10 = self.to_decimal(self.digits)
+        digitstr = _get_digits(mantissa, self.digits).rstrip(b'0')
         # exponent for scientific notation
         exp10 += self.digits - 1
         if exp10 > self.digits - 1 or len(digitstr)-exp10 > self.digits + 1:
@@ -658,13 +658,12 @@ class Float(Number):
             valstr = self._decimal_notation(digitstr, exp10, type_sign, force_dot=False)
         return sign + valstr
 
-    def to_decimal(self, digits=None):
-        """Return value as mantissa and decimal exponent."""
-        if digits is None:
+    def to_decimal(self, digits):
+        """Return value as mantissa of length min(digits, self.digits) and decimal exponent."""
+        if digits >= self.digits:
             # we'd be better off storing these (and self._ten) in denormalised form
             lim_bot = self.new().from_bytes(self._lim_bot)
             lim_top = self.new().from_bytes(self._lim_top)
-            digits = self.digits
         elif digits > 0:
             lim_bot = self.new().from_int(10**(digits-1))._just_under()
             lim_top = self.new().from_int(10**digits)._just_under()
@@ -712,7 +711,7 @@ class Float(Number):
         return self._normalise(*den)
 
     def to_str_scientific(self, digits_before_radix, digits_after_radix, always_show_radix):
-        """Put a float in scientific format."""
+        """Put a positive float in scientific format."""
         if self.is_zero():
             if always_show_radix:
                 return b''.join((b'.', b'0' * digits_after_radix, self.exp_sign, b'+00'))
@@ -727,7 +726,7 @@ class Float(Number):
         mantissa, exponent = self.to_decimal(work_digits)
         # radix position in the digit string
         radix_position = exponent + work_digits
-        digitstr = _get_digits(mantissa, work_digits, remove_trailing=False)
+        digitstr = _get_digits(mantissa, work_digits)
         # ensure digitstr has the exact number of digits we're going to show
         # when work_digits == 0, e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
         # we get this because the digitstr is empty
@@ -749,7 +748,7 @@ class Float(Number):
                 return b'0'*n_decimals
             return b'0'
         # convert to integer_mantissa * 10**exponent
-        mantissa, exp10 = self.to_decimal()
+        mantissa, exp10 = self.to_decimal(self.digits)
         # -exp10 is the number of digits after the radix point
         n_after = -exp10
         # bring to decimal form of working precision
@@ -792,7 +791,7 @@ class Float(Number):
             valstr += b'-'
         else:
             valstr += b'+'
-        valstr += _get_digits(abs(exponent), n_digits=2, remove_trailing=False)
+        valstr += _get_digits(abs(exponent), min_digits=2)
         return valstr
 
     def _decimal_notation(self, digitstr, exp10, type_sign, force_dot, group_thousands=False):
@@ -809,7 +808,7 @@ class Float(Number):
         elif exp10 > 0:
             valstr = digitstr[:exp10]
             if group_thousands:
-                valstr = self._group_thousandss(valstr)
+                valstr = self._group_thousands(valstr)
             valstr += b'.' + digitstr[exp10:]
         else:
             valstr = b'.' + b'0'*(-exp10) + digitstr
@@ -1257,10 +1256,6 @@ def str_to_decimal(s, allow_nonnum=True):
         is_double = True
     return is_double, -mantissa if neg else mantissa, exp10
 
-def _get_digits(mantissa, n_digits, remove_trailing):
+def _get_digits(mantissa, min_digits):
     """Get the digits for an int."""
-    digitstr = (b'%d' % abs(mantissa)).rjust(n_digits, b'0')
-    if remove_trailing:
-        return digitstr.rstrip(b'0')
-    else:
-        return digitstr
+    return (b'%d' % abs(mantissa)).rjust(min_digits, b'0')
