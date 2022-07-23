@@ -421,7 +421,7 @@ class DataSegment(object):
         elif addr == 0x35D:
             return (self.var_current() + self.arrays.current) // 256
         elif addr == self.protection_flag_addr:
-            return self.program.protected * 255
+            return self.program.protected * 254
         return -1
 
     def _not_implemented_pass(self, addr, val):
