@@ -630,7 +630,7 @@ class Implementation(object):
             # OPTION BASE is preserved when there are common variables
             self._clear_all(
                     preserve_functions=preserve_all,
-                    preserve_base=(commons or preserve_all),
+                    preserve_base=(common_scalars or common_arrays or preserve_all),
                     preserve_deftype=merge)
             # load new program
             with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
