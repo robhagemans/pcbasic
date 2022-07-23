@@ -29,6 +29,17 @@ class StatementTest(TestCase):
                 s.execute('LLIST')
             assert output.read() == b'10 REM program\r\n20 PRINT 1\r\n'
 
+    def test_cls_pcjr(self):
+        """Test CLS syntax on pcjr."""
+        with Session(syntax='pcjr') as s:
+            s.execute('CLS')
+            assert self.get_text_stripped(s)[0] == b''
+            s.execute('CLS 0')
+            assert self.get_text_stripped(s)[0] == b'Syntax error\xFF'
+            s.execute('CLS 0,')
+            assert self.get_text_stripped(s)[0] == b'Syntax error\xFF'
+            s.execute('CLS ,')
+            assert self.get_text_stripped(s)[0] == b'Syntax error\xFF'
 
 if __name__ == '__main__':
     run_tests()
