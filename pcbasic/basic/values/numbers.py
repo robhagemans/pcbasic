@@ -312,6 +312,7 @@ class Integer(Number):
         """Absolute value in-place."""
         if bytearray(self._buffer)[-1] & 0x80:
             return self.ineg()
+        return self
 
     def iadd(self, rhs):
         """Add another Integer in-place."""
