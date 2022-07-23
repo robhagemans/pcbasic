@@ -341,7 +341,7 @@ class DataSegment(object):
             self.program.set_memory(addr, val)
         elif addr >= self._field_mem_start:
             # file & FIELD memory
-            self._not_implemented_pass(addr, val)
+            self._set_field_memory(addr, val)
         elif addr >= 0:
             self._set_basic_memory(addr, val)
 
@@ -349,7 +349,7 @@ class DataSegment(object):
     # File buffer access
 
     def _get_field_offset(self, address):
-        """Get the field and affset for an address in a FIELD buffer."""
+        """Get the field and offset for an address in a FIELD buffer."""
         # find the file we're in
         start = address - self._field_mem_start
         number = 1 + start // self._field_mem_offset
@@ -368,6 +368,17 @@ class DataSegment(object):
             return self.fields[number].view_buffer()[offset]
         except (KeyError, IndexError):
             return -1
+
+    def _set_field_memory(self, address, value):
+        """Modify data in FIELD buffer."""
+        try:
+            number, offset = self._get_field_offset(address)
+        except ValueError:
+            return
+        try:
+            self.fields[number].view_buffer()[offset] = value
+        except (KeyError, IndexError):
+            return
 
     def view_field_memory(self, address, length):
         """Get a view od data in FIELD buffer."""
