@@ -154,7 +154,10 @@ class Interpreter(object):
             e.trapped_error_num = self.error_num
             # when the error is trapped, error position shifts to start of line
             line = self._program.get_line_number(self.error_pos)
-            e.trapped_error_pos = self._program.line_numbers[line]
+            if 0 <= line <= 65535:
+                e.trapped_error_pos = self._program.line_numbers[line]
+            else:
+                e.trapped_error_pos = self.error_pos
             #self.error_handle_mode = False
         # ensure we can handle the break like an error
         e.err = 0
