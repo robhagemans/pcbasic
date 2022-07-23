@@ -242,9 +242,16 @@ class ValuesTest(TestCase):
         vm = values.Values(None, double_math=False)
         four = vm.new_single().from_int(4)
         two = vm.new_single().from_int(2)
-        zero= vm.new_single().from_int(0)
+        zero = vm.new_single().from_int(0)
         assert four.idiv(two).eq(two)
         assert zero.idiv(two).eq(vm.new_single().from_int(0))
+
+    def test_float_ipow_int(self):
+        """Test in-place power operation on floats."""
+        vm = values.Values(None, double_math=False)
+        four = vm.new_single().from_int(4)
+        zero = vm.new_single().from_int(0)
+        assert four.ipow_int(zero).to_value() == 1.
 
     def test_float_comparisons(self):
         """Test comparison operations between floats and other types."""
