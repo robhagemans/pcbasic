@@ -268,5 +268,31 @@ class ValuesTest(TestCase):
         assert s_one.gt(s_zero)
         assert s_one.gt(d_zero)
 
+    # string representations of floats
+
+    def test_from_decimal_repr(self):
+        """Test converting bytes string in decimal representation to float."""
+        assert values.numbers.str_to_decimal(b'1.0e2a', allow_nonnum=True) == (False, 10, 1)
+        with self.assertRaises(ValueError):
+            values.numbers.str_to_decimal(b'1.0e2a', allow_nonnum=False)
+        assert values.numbers.str_to_decimal(b'x.0e2', allow_nonnum=True) == (False, 0, 0)
+        with self.assertRaises(ValueError):
+            values.numbers.str_to_decimal(b'x.0e2', allow_nonnum=False)
+
+    def test_to_decimal_repr(self):
+        """Test converting float to bytes string in decimal representation."""
+        vm = values.Values(None, double_math=False)
+        one =  vm.new_single().from_int(1)
+        assert one.to_decimal(digits=0) == (0, 0)
+        assert vm.new_single().from_value(1e-5).to_decimal() == (1000000, -11)
+        assert vm.new_single().from_value(1e38).to_decimal() == (1000000, 32)
+        print(vm.new_single().from_value(1e100).to_decimal())
+
+    def test_to_fixed_repr(self):
+        """Test converting float to bytes string in fixed-point representation."""
+        vm = values.Values(None, double_math=False)
+        assert vm.new_single().from_value(0).to_str_fixed(3, False, False) == b'000'
+
+
 if __name__ == '__main__':
     run_tests()
