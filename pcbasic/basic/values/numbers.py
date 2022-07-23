@@ -654,7 +654,7 @@ class Float(Number):
             # use decimal notation
             # usual: n_decimals = -exp10
             # this is self.to_str_fixed
-            #     (self, n_decimals=-exp10, force_dot=False, group_digits=False) but with type_sign
+            #     (self, n_decimals=-exp10, force_dot=False, group_thousands=False) but with type_sign
             valstr = self._decimal_notation(digitstr, exp10, type_sign, force_dot=False)
         return sign + valstr
 
@@ -740,7 +740,7 @@ class Float(Number):
             force_dot=always_show_radix
         )
 
-    def to_str_fixed(self, n_decimals, force_dot, group_digits):
+    def to_str_fixed(self, n_decimals, force_dot, group_thousands):
         """Put a float in fixed-point representation."""
         if self.is_zero():
             if force_dot:
@@ -764,13 +764,14 @@ class Float(Number):
         # fill up with zeros to required number of figures
         digitstr = digitstr.ljust(n_decimals + n_before, b'0')
         return self._decimal_notation(
-            digitstr, n_before-1, type_sign=b'', force_dot=force_dot, group_digits=group_digits
+            digitstr, n_before-1, type_sign=b'',
+            force_dot=force_dot, group_thousands=group_thousands
         )
 
     # implementation: floating- and fixed-point decimal notations
 
-    def _group_digits(self, digitstr):
-        """Insert commas to group digits in a decimal number."""
+    def _group_thousands(self, digitstr):
+        """Insert commas to group digits by thousands in a decimal number."""
         first = len(digitstr) % 3
         chunks = [digitstr[i:i + 3] for i in range(first, len(digitstr), 3)]
         if first:
@@ -794,21 +795,21 @@ class Float(Number):
         valstr += _get_digits(abs(exponent), n_digits=2, remove_trailing=False)
         return valstr
 
-    def _decimal_notation(self, digitstr, exp10, type_sign, force_dot, group_digits=False):
+    def _decimal_notation(self, digitstr, exp10, type_sign, force_dot, group_thousands=False):
         """Put digits in decimal notation."""
         type_sign = b'' if not type_sign else self.sigil
         # digits to decimal point
         exp10 += 1
         if exp10 >= len(digitstr):
             valstr = digitstr + b'0'*(exp10-len(digitstr))
-            if group_digits:
-                valstr = self._group_digits(valstr)
+            if group_thousands:
+                valstr = self._group_thousands(valstr)
             if force_dot:
                 valstr += b'.'
         elif exp10 > 0:
             valstr = digitstr[:exp10]
-            if group_digits:
-                valstr = self._group_digits(valstr)
+            if group_thousands:
+                valstr = self._group_thousandss(valstr)
             valstr += b'.' + digitstr[exp10:]
         else:
             valstr = b'.' + b'0'*(-exp10) + digitstr
