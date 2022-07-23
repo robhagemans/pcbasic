@@ -284,8 +284,8 @@ class ValuesTest(TestCase):
         vm = values.Values(None, double_math=False)
         one = vm.new_single().from_int(1)
         assert one.to_decimal(digits=0) == (0, 1)
-        assert vm.new_single().from_value(1e-5).to_decimal() == (1000000, -11)
-        assert vm.new_single().from_value(1e38).to_decimal() == (1000000, 32)
+        assert vm.new_single().from_value(1e-5).to_decimal(7) == (1000000, -11)
+        assert vm.new_single().from_value(1e38).to_decimal(7) == (1000000, 32)
 
     def test_to_fixed_repr(self):
         """Test converting float to bytes string in fixed-point representation."""
