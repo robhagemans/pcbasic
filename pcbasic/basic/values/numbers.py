@@ -688,7 +688,8 @@ class Float(Number):
         # round to int
         exp, man, neg = den
         exp -= self._bias
-        if exp > 0:
+        if exp > 0: # pragma: no cover
+            # I don't think this happens
             man <<= exp
         else:
             man >>= -exp
@@ -955,8 +956,8 @@ class Float(Number):
 
     def _abs_gt(self, rhs):
         """Absolute values greater than."""
-        # don't compare zeroes
-        if self.is_zero():
+        # don't compare zeroes - failsafe, is not reached in code
+        if self.is_zero(): # pragma: no cover
             return False
         rhscopy = bytearray(rhs._buffer)
         # so long as the sign is the same ...
