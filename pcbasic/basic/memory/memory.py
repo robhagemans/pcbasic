@@ -465,6 +465,9 @@ class DataSegment(object):
             # pre-dim even if this is not a legal statement!
             # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out of range afterwards
             self.arrays.check_dim(name, indices)
+        else:
+            # allocate memory for the new variable prior to calculating the new value
+            self.set_variable(name, indices, None)
         value = next(args)
         if isinstance(value, values.String):
             # if already permanent, store a deep copy to avoid double referencing
