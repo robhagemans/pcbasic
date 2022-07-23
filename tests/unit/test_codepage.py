@@ -143,11 +143,11 @@ class CodepageTest(TestCase):
 
 ##############################################################################
 
-from io import StringIO
+from io import StringIO, BytesIO
 import pickle
 from pcbasic.compat import copyreg
 
-from pcbasic.basic.codepage import InputStreamWrapper, OutputStreamWrapper
+from pcbasic.basic.codepage import InputStreamWrapper, OutputStreamWrapper, NewlineWrapper
 from pcbasic.basic.codepage import Codepage
 #from pcbasic import state
 
@@ -196,6 +196,14 @@ class StreamWrapperTest(TestCase):
         pstr = pickle.dumps(wrapper)
         wrapper2 = pickle.loads(pstr)
         assert wrapper2.read() == b'bcde\x9c'
+
+    def test_newline_read(self):
+        """Exercise NewlineWrapper."""
+        stream = BytesIO(b'1\r\n2\r3\n')
+        wrapper = NewlineWrapper(stream)
+        assert wrapper.read(0) == b''
+        assert wrapper.read(2) == b'1\r'
+        assert wrapper.read() == b'2\r3\r'
 
 
 if __name__ == '__main__':

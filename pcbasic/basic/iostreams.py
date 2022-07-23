@@ -45,7 +45,10 @@ class IOStreams(object):
             try:
                 iter(input_streams)
             except TypeError:
-                input_streams = (input_streams,)
+                raise TypeError(
+                    'input_streams must be "stdio", file-like or a sequence of file-likes, not `%s`'
+                    % (type(input_streams),)
+                )
         self._input_streams = [self._wrap_input(stream) for stream in input_streams]
         # output
         if output_streams in (u'stdio', b'stdio'):
@@ -59,7 +62,10 @@ class IOStreams(object):
             try:
                 iter(output_streams)
             except TypeError:
-                output_streams = (output_streams,)
+                raise TypeError(
+                    'output_streams must be "stdio", file-like or a sequence of file-likes, not `%s`'
+                    % (type(output_streams),)
+                )
         self._output_echos = [
             self._codepage.wrap_output_stream(stream, preserve=CONTROL)
             for stream in output_streams
