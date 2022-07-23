@@ -418,7 +418,10 @@ class Program(object):
         code = self.bytecode.getvalue()
         try:
             return ord(code[offset:offset+1])
-        except IndexError:
+        except IndexError: # pragma: no cover
+            # variable memory starts immediately after the stored program
+            # ao memory access beyond the size of the program should not arrive here
+            logging.debug('PEEK beyond program size handled by Program class.')
             return -1
 
     def get_memory_block(self, offset, length):
@@ -431,17 +434,20 @@ class Program(object):
         """Change program code."""
         if not self.allow_code_poke:
             logging.warning('Ignored POKE into program code')
+            return
+        offset -= self.code_start
+        loc = self.bytecode.tell()
+        # move pointer to end
+        self.bytecode.seek(0, 2)
+        if offset > self.bytecode.tell(): # pragma: no cover
+            # variable memory starts immediately after the stored program
+            # ao memory access beyond the size of the program should not arrive here
+            logging.debug('POKE beyond program size handled by Program class.')
         else:
-            offset -= self.code_start
-            loc = self.bytecode.tell()
+            self.bytecode.seek(offset)
+            self.bytecode.write(int2byte(val))
             # move pointer to end
             self.bytecode.seek(0, 2)
-            if offset > self.bytecode.tell():
-                self.bytecode.write(b'\0' * (offset-self.bytecode.tell()))
-            else:
-                self.bytecode.seek(offset)
-            self.bytecode.write(int2byte(val))
-            self.bytecode.seek(0, 2)
             self.rebuild_line_dict()
-            # restore program pointer
-            self.bytecode.seek(loc)
+        # restore program pointer
+        self.bytecode.seek(loc)
