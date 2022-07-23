@@ -165,13 +165,101 @@ class ValuesTest(TestCase):
         assert isinstance(repr(d), type(''))
         assert isinstance(repr(st), type(''))
 
-    def test_integer_from_token_error(self):
+    def test_from_token_error(self):
         """Test Integer.from_token()."""
         vm = values.Values(None, double_math=False)
         with self.assertRaises(ValueError):
             vm.new_integer().from_token(b'abc')
+        with self.assertRaises(ValueError):
+            vm.new_single().from_token(b'abc')
+        with self.assertRaises(ValueError):
+            vm.new_double().from_token(b'abc')
 
+    def test_integer_ineg(self):
+        """Test in-place negate operations on integers."""
+        vm = values.Values(None, double_math=False)
+        zero = vm.new_integer().from_int(0)
+        one = vm.new_integer().from_int(1)
+        neg_one = vm.new_integer().from_int(-1)
+        assert vm.new_integer().from_int(1).ineg().eq(neg_one)
+        assert vm.new_integer().from_int(0).ineg().eq(zero)
+        assert vm.new_integer().from_int(-1).ineg().eq(one)
+        # overflow -(-32768)
+        with self.assertRaises(error.BASICError):
+            vm.new_integer().from_int(-32768).ineg()
 
+    def test_integer_iabs(self):
+        """Test in-place absolute operations on integers."""
+        vm = values.Values(None, double_math=False)
+        zero = vm.new_integer().from_int(0)
+        one = vm.new_integer().from_int(1)
+        neg_one = vm.new_integer().from_int(-1)
+        assert one.iabs().eq(vm.new_integer().from_int(1))
+        assert zero.iabs().eq(vm.new_integer().from_int(0))
+        assert neg_one.iabs().eq(vm.new_integer().from_int(1))
+
+    def test_integer_isub(self):
+        """Test in-place subtract operations on integers."""
+        vm = values.Values(None, double_math=False)
+        zero = vm.new_integer().from_int(0)
+        one = vm.new_integer().from_int(1)
+        neg_one = vm.new_integer().from_int(-1)
+        assert one.isub(one).eq(zero)
+        assert neg_one.isub(neg_one).eq(zero)
+        assert vm.new_integer().from_int(0).isub(vm.new_integer().from_int(-1)).eq(vm.new_integer().from_int(1))
+        assert vm.new_integer().from_int(0).isub(vm.new_integer().from_int(1)).eq(vm.new_integer().from_int(-1))
+        assert vm.new_integer().from_int(1).isub(vm.new_integer().from_int(-1)).to_int() == 2
+
+    def test_integer_comparisons(self):
+        """Test comparison operations on integers."""
+        vm = values.Values(None, double_math=False)
+        zero = vm.new_integer().from_int(0)
+        one = vm.new_integer().from_int(1)
+        neg_one = vm.new_integer().from_int(-1)
+        twobyte = vm.new_integer().from_int(256)
+        assert one.gt(zero)
+        assert zero.gt(neg_one)
+        assert not neg_one.gt(zero)
+        assert twobyte.gt(one)
+        assert not one.gt(twobyte)
+        assert one.eq(vm.new_integer().from_int(1))
+
+    def test_integer_float_comparisons(self):
+        """Test comparison operations between integers and floats."""
+        vm = values.Values(None, double_math=False)
+        zero = vm.new_integer().from_int(0)
+        one = vm.new_integer().from_int(1)
+        neg_one = vm.new_integer().from_int(-1)
+        d_zero = vm.new_double().from_int(0)
+        s_zero = vm.new_single().from_int(0)
+        assert zero.eq(d_zero)
+        assert zero.eq(s_zero)
+        assert one.gt(d_zero)
+        assert one.gt(s_zero)
+
+    def test_float_idiv(self):
+        """Test in-place divide operations on floats."""
+        vm = values.Values(None, double_math=False)
+        four = vm.new_single().from_int(4)
+        two = vm.new_single().from_int(2)
+        zero= vm.new_single().from_int(0)
+        assert four.idiv(two).eq(two)
+        assert zero.idiv(two).eq(vm.new_single().from_int(0))
+
+    def test_float_comparisons(self):
+        """Test comparison operations between floats and other types."""
+        vm = values.Values(None, double_math=False)
+        zero = vm.new_integer().from_int(0)
+        s_one = vm.new_single().from_int(1)
+        neg_one = vm.new_integer().from_int(-1)
+        d_zero = vm.new_double().from_int(0)
+        s_zero = vm.new_single().from_int(0)
+        assert s_zero.eq(zero)
+        assert s_zero.eq(s_zero)
+        assert s_zero.eq(d_zero)
+        assert s_one.gt(zero)
+        assert s_one.gt(s_zero)
+        assert s_one.gt(d_zero)
 
 if __name__ == '__main__':
     run_tests()
