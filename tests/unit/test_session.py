@@ -275,7 +275,7 @@ class SessionTest(TestCase):
         with self.assertRaises(TypeError):
             Session(input_streams=1).start()
         with self.assertRaises(TypeError):
-            Session(input_streams=2).start()
+            Session(output_streams=2).start()
 
     def test_session_printcopy(self):
         """Test Session with ctrl print-screen copy."""
