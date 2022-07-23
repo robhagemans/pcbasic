@@ -269,6 +269,14 @@ class SessionTest(TestCase):
             s.execute(b'print a')
         assert bi.getvalue() == b' 1 \r\n'
 
+
+    def test_session_bad_type_iostreams(self):
+        """Test Session with iostreams of incorrect type."""
+        with self.assertRaises(TypeError):
+            Session(input_streams=1).start()
+        with self.assertRaises(TypeError):
+            Session(input_streams=2).start()
+
     def test_session_printcopy(self):
         """Test Session with ctrl print-screen copy."""
         with Session(
