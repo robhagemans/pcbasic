@@ -41,5 +41,15 @@ class StatementTest(TestCase):
             s.execute('CLS ,')
             assert self.get_text_stripped(s)[0] == b'Syntax error\xFF'
 
+    def test_wait(self):
+        """Test WAIT syntax."""
+        with Session(syntax='pcjr') as s:
+            s.execute('')
+            s._impl.keyboard.last_scancode = 255
+            s.execute('wait &h60, 255')
+            s._impl.keyboard.last_scancode = 0
+            s.execute('wait &h60, 255, 255')
+            assert self.get_text_stripped(s)[0] == b''
+
 if __name__ == '__main__':
     run_tests()
