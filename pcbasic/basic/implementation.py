@@ -595,12 +595,12 @@ class Implementation(object):
         """LOAD: load program from file."""
         name = values.next_string(args)
         comma_r, = args
+        # clear variables, stacks & pointers
+        self._clear_all()
         with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
             self.program.load(f)
         # reset stacks
         self.interpreter.clear_stacks_and_pointers()
-        # clear variables
-        self._clear_all()
         if comma_r:
             # in ,R mode, don't close files; run the program
             self.interpreter.set_pointer(True, 0)

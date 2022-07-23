@@ -49,7 +49,7 @@ class Program(object):
             last_offset = offset_val
             offset_val = struct.unpack('<H', offset)[0] - (self.code_start + 1)
             linum_val, = struct.unpack('<H', linum)
-            output.append('%s %s (+%03d) %s [%05d] %s' % (
+            output.append(b'%s %s (+%03d) %s [%05d] %s' % (
                 binascii.hexlify(code[p:p+1]),
                 binascii.hexlify(offset),
                 offset_val - last_offset,
@@ -58,13 +58,13 @@ class Program(object):
                 binascii.hexlify(code[p+5:])
             ))
             p = self.line_numbers[key]
-        output.append('%s %s (ENDS) %s %s' % (
+        output.append(b'%s %s (ENDS) %s %s' % (
             binascii.hexlify(code[p:p+1]),
             binascii.hexlify(code[p+1:p+3]),
             binascii.hexlify(code[p+3:p+5]),
             binascii.hexlify(code[p+5:])
         ))
-        return '\n'.join(output)
+        return b'\n'.join(output).decode('ascii', 'replace')
 
     def size(self):
         """Size of code space """
@@ -418,7 +418,10 @@ class Program(object):
         code = self.bytecode.getvalue()
         try:
             return ord(code[offset:offset+1])
-        except IndexError:
+        except IndexError: # pragma: no cover
+            # variable memory starts immediately after the stored program
+            # ao memory access beyond the size of the program should not arrive here
+            logging.debug('PEEK beyond program size handled by Program class.')
             return -1
 
     def get_memory_block(self, offset, length):
@@ -431,17 +434,20 @@ class Program(object):
         """Change program code."""
         if not self.allow_code_poke:
             logging.warning('Ignored POKE into program code')
+            return
+        offset -= self.code_start
+        loc = self.bytecode.tell()
+        # move pointer to end
+        self.bytecode.seek(0, 2)
+        if offset > self.bytecode.tell(): # pragma: no cover
+            # variable memory starts immediately after the stored program
+            # ao memory access beyond the size of the program should not arrive here
+            logging.debug('POKE beyond program size handled by Program class.')
         else:
-            offset -= self.code_start
-            loc = self.bytecode.tell()
+            self.bytecode.seek(offset)
+            self.bytecode.write(int2byte(val))
             # move pointer to end
             self.bytecode.seek(0, 2)
-            if offset > self.bytecode.tell():
-                self.bytecode.write(b'\0' * (offset-self.bytecode.tell()))
-            else:
-                self.bytecode.seek(offset)
-            self.bytecode.write(int2byte(val))
-            self.bytecode.seek(0, 2)
             self.rebuild_line_dict()
-            # restore program pointer
-            self.bytecode.seek(loc)
+        # restore program pointer
+        self.bytecode.seek(loc)

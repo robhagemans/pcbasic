@@ -1,0 +1,9 @@
+1 ' PEEK into the program
+10 GOSUB 100
+20 A=VARPTR(A$)
+40 S=256*PEEK(A+2)+PEEK(A+1)
+50 POKE S, 65
+60 SAVE "POKED", A
+70 END
+100 A$="1":RETURN
+

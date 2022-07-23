@@ -1,0 +1,5 @@
+10  ' test RENUM with GOTO 0
+20 RENUM
+30 END
+40 GOTO 10
+

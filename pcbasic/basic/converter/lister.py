@@ -160,7 +160,7 @@ class Lister(object):
         return token
 
     def _detokenise_number(self, ins, lead):
-        """Convert number token to Python string."""
+        """Convert number token to Python bytes string."""
         ntrail = tk.PLUS_BYTES.get(lead, 0)
         trail = ins.read(ntrail)
         if lead == tk.T_OCT:
@@ -178,4 +178,5 @@ class Lister(object):
             return b'%d' % (struct.unpack('<H', trail)[0],)
         elif lead in (tk.T_SINGLE, tk.T_DOUBLE, tk.T_INT):
             return self._values.from_bytes(trail).to_str(leading_space=False, type_sign=True)
-        return b''
+        # failsafe line, not reached
+        return b'' # pragma: no cover
