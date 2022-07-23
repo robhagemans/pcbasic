@@ -49,7 +49,7 @@ class VideoPygame(VideoPlugin):
             **kwargs
         ):
         """Initialise pygame interface."""
-        logging.warning('The `pygame` interface is deprecated, please use the `graphics` interface instead.')
+        logging.warning('The `pygame` interface is deprecated, please use the `graphical` interface instead.')
         try:
             _import_pygame()
         except ImportError:

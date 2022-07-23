@@ -197,15 +197,10 @@ class DataSegment(object):
         self.reset_fields()
 
     @contextmanager
-    def preserve_commons(self, preserve_common, preserve_all):
+    def preserve_commons(self, common_scalars, common_arrays, preserve_all):
         """Preserve COMMON variables."""
-        # preserve COMMON variables
         if preserve_all:
-            preserve_sc, preserve_ar = self.scalars, self.arrays
-        elif preserve_common:
-            preserve_sc, preserve_ar = preserve_common
-        else:
-            preserve_sc, preserve_ar = set(), set()
+            common_scalars, common_arrays = self.scalars, self.arrays
         # do not collect garbage during string migration
         # it's not going to free up memory and it will break things
         with self.hold_garbage():
@@ -213,12 +208,12 @@ class DataSegment(object):
             # preserve scalars
             common_scalars = {
                 name: self.scalars.get(name)
-                for name in preserve_sc if name in self.scalars
+                for name in common_scalars if name in self.scalars
             }
             # preserve arrays
             common_arrays = {
                 name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
-                for name in preserve_ar if name in self.arrays
+                for name in common_arrays if name in self.arrays
             }
             scalar_strings = {
                 name: value.to_pointer()
@@ -312,10 +307,9 @@ class DataSegment(object):
 
     def set_basic_memory_size(self, new_size):
         """Set the data memory size (on CLEAR) """
-        if new_size == 0:
+        if new_size <= 0:
+            # new_size is unsigned int so < should not happen
             raise error.BASICError(error.IFC)
-        elif new_size < 0:
-            new_size += 0x10000
         if new_size > self.total_memory:
             raise error.BASICError(error.OUT_OF_MEMORY)
         self.total_memory = new_size
