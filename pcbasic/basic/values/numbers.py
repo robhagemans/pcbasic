@@ -648,7 +648,7 @@ class Float(Number):
         if exp10 > self.digits - 1 or len(digitstr)-exp10 > self.digits + 1:
             # use scientific notation
             # this is self.to_str_scientific(
-            #     n_before=1, n_decimals=self.digits-1, force_dot=False, group_digits=False)
+            #     n_before=1, n_decimals=self.digits-1, force_dot=False)
             valstr = self._scientific_notation(digitstr, exp10, digits_to_dot=1, force_dot=False)
         else:
             # use decimal notation
@@ -669,7 +669,8 @@ class Float(Number):
             lim_bot = self.new().from_int(10**(digits-1))._just_under()
             lim_top = self.new().from_int(10**digits)._just_under()
         else:
-            return 0, 0
+            lim_bot = self.new().from_int(0)
+            lim_top = self.new().from_int(10**digits)._just_under()
         tden = lim_top._denormalise()
         bden = lim_bot._denormalise()
         exp10 = 0
@@ -687,7 +688,8 @@ class Float(Number):
         # round to int
         exp, man, neg = den
         exp -= self._bias
-        if exp > 0:
+        if exp > 0: # pragma: no cover
+            # I don't think this happens
             man <<= exp
         else:
             man >>= -exp
@@ -709,29 +711,33 @@ class Float(Number):
             exp10 -= 1
         return self._normalise(*den)
 
-    def to_str_scientific(self, n_before, n_decimals, force_dot, group_digits):
+    def to_str_scientific(self, digits_before_radix, digits_after_radix, always_show_radix):
         """Put a float in scientific format."""
         if self.is_zero():
-            if force_dot:
-                return b''.join((b'.', (b'0' * n_decimals), self.exp_sign, b'+00'))
+            if always_show_radix:
+                return b''.join((b'.', b'0' * digits_after_radix, self.exp_sign, b'+00'))
             # single/double difference: this matches GW output. odd, odd, odd
             if self.exp_sign == b'E':
                 return b'E+00'
             return b'0D+00'
-        n_work = min(self.digits, n_before + n_decimals)
-        # special case when work_digits == 0, see also below
-        # setting to 0 results in incorrect rounding (why?)
-        mantissa, exp10 = self.to_decimal(1 if n_work == 0 else n_work)
-        digitstr = _get_digits(mantissa, n_work, remove_trailing=True)
-        # append zeros if necessary
-        digitstr = digitstr.ljust(n_decimals + n_before, b'0')
-        # this is just to reproduce GW results for no digits:
-        # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
-        if n_work == 0:
-            exp10 += 1
-        exp10 += n_before + n_decimals - 1
+        digits_requested = digits_before_radix + digits_after_radix
+        digits_precision = self.digits
+        work_digits = min(digits_precision, digits_requested)
+        # convert to mantissa of length work_digits and exponent
+        mantissa, exponent = self.to_decimal(work_digits)
+        # radix position in the digit string
+        radix_position = exponent + work_digits
+        digitstr = _get_digits(mantissa, work_digits, remove_trailing=False)
+        # ensure digitstr has the exact number of digits we're going to show
+        # when work_digits == 0, e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
+        # we get this because the digitstr is empty
+        digitstr = digitstr.ljust(digits_requested, b'0')[:digits_requested]
         return self._scientific_notation(
-            digitstr, exp10, digits_to_dot=n_before, force_dot=force_dot, group_digits=group_digits
+            digitstr,
+            # here, exp10 is the exponent if the radix is put after the first digit
+            exp10=radix_position-1,
+            digits_to_dot=digits_before_radix,
+            force_dot=always_show_radix
         )
 
     def to_str_fixed(self, n_decimals, force_dot, group_digits):
@@ -771,11 +777,9 @@ class Float(Number):
             chunks = [digitstr[:first]] + chunks
         return b','.join(chunks)
 
-    def _scientific_notation(self, digitstr, exp10, digits_to_dot, force_dot, group_digits=False):
+    def _scientific_notation(self, digitstr, exp10, digits_to_dot, force_dot):
         """Put digits in scientific E-notation."""
         valstr = digitstr[:digits_to_dot]
-        if group_digits:
-            valstr = self._group_digits(valstr)
         if len(digitstr) > digits_to_dot:
             after_str = digitstr[digits_to_dot:]
             valstr += b'.' + after_str
@@ -952,8 +956,8 @@ class Float(Number):
 
     def _abs_gt(self, rhs):
         """Absolute values greater than."""
-        # don't compare zeroes
-        if self.is_zero():
+        # don't compare zeroes - failsafe, is not reached in code
+        if self.is_zero(): # pragma: no cover
             return False
         rhscopy = bytearray(rhs._buffer)
         # so long as the sign is the same ...

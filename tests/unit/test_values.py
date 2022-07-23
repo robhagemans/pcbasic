@@ -282,11 +282,10 @@ class ValuesTest(TestCase):
     def test_to_decimal_repr(self):
         """Test converting float to bytes string in decimal representation."""
         vm = values.Values(None, double_math=False)
-        one =  vm.new_single().from_int(1)
-        assert one.to_decimal(digits=0) == (0, 0)
+        one = vm.new_single().from_int(1)
+        assert one.to_decimal(digits=0) == (0, 1)
         assert vm.new_single().from_value(1e-5).to_decimal() == (1000000, -11)
         assert vm.new_single().from_value(1e38).to_decimal() == (1000000, 32)
-        print(vm.new_single().from_value(1e100).to_decimal())
 
     def test_to_fixed_repr(self):
         """Test converting float to bytes string in fixed-point representation."""

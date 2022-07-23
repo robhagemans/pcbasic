@@ -266,7 +266,8 @@ class NumberField(object):
         valstr += b'$' if has_dollar else b''
         # format to string
         if b'^' in tokens:
-            valstr += value.to_str_scientific(digits_before, decimals, force_dot, comma)
+            # don't group thousands in scientific notation
+            valstr += value.to_str_scientific(digits_before, decimals, force_dot)
         else:
             valstr += value.to_str_fixed(decimals, force_dot, comma)
         # trailing signs, if any
