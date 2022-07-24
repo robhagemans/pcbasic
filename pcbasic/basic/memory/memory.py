@@ -462,10 +462,8 @@ class DataSegment(object):
             # array is allocated if retrieved and nonexistant
             return self.arrays.get(name, indices)
 
-    def let_(self, args):
-        """LET: assign value to variable or array."""
-        name, indices = next(args)
-        name = self.complete_name(name)
+    def _preallocate(self, name, indices):
+        """Pre-allocate space for variable."""
         if indices != []:
             # pre-dim even if this is not a legal statement!
             # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out of range afterwards
@@ -473,6 +471,12 @@ class DataSegment(object):
         else:
             # allocate memory for the new variable prior to calculating the new value
             self.set_variable(name, indices, None)
+
+    def let_(self, args):
+        """LET: assign value to variable or array."""
+        name, indices = next(args)
+        name = self.complete_name(name)
+        self._preallocate(name, indices)
         value = next(args)
         if isinstance(value, values.String):
             # if already permanent, store a deep copy to avoid double referencing
@@ -620,9 +624,7 @@ class DataSegment(object):
         """MID$: set part of a string."""
         name, indices = next(args)
         name = self.complete_name(name)
-        if indices != []:
-            # pre-dim even if this is not a legal statement!
-            self.arrays.check_dim(name, indices)
+        self._preallocate(name, indices)
         start = values.to_int(next(args))
         num = next(args)
         if num is None:
