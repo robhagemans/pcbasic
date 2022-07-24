@@ -247,7 +247,7 @@ class Arrays(object):
         dimensions = self._dims[the_arr]
         if address >= var_current + arr_addr:
             offset = address - arr_addr - var_current
-            if offset >= self._buffer_size(dimensions):
+            if offset >= self._buffer_size(the_arr, dimensions):
                 return -1
             byte_array = self._buffers[the_arr]
             return byte_array[offset]
@@ -259,7 +259,7 @@ class Arrays(object):
                 offset -= max(3, len(the_arr))+1
                 data_rep = struct.pack(
                     '<HB',
-                    self._buffer_size(dimensions) + 1 + 2*len(dimensions),
+                    self._buffer_size(the_arr, dimensions) + 1 + 2*len(dimensions),
                     len(dimensions)
                 )
                 for d in dimensions:
