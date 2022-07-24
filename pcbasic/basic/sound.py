@@ -102,8 +102,8 @@ class Sound(object):
         # if a synch is requested, emit it at the first tone or pause
         if self._synch:
             self.emit_synch()
-        # no sound if switched off
-        # see https://www.vogons.org/viewtopic.php?t=56735&p=626006
+        # no sound if both SOUND OFF and BEEP OFF - note that dosbox gets this wrong
+        # checked on real hardware, see https://www.vogons.org/viewtopic.php?t=56735&p=626006
         if not (self._beep_on or self._sound_on):
             volume = 0
         tone = signals.Event(signals.AUDIO_TONE, (voice, frequency, fill*duration, loop, volume))
@@ -123,9 +123,7 @@ class Sound(object):
     def emit_noise(self, source, volume, duration, loop):
         """Generate a noise."""
         frequency = self._noise_freq[source]
-        # no sound if switched off
-        if not (self._beep_on or self._sound_on):
-            volume = 0
+        # if not SOUND ON an IFC was raised, so don't check here
         noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, loop, volume))
         self._queues.audio.put(noise)
         self._voice_queue[3].put(noise, None if loop else duration, True)
@@ -152,6 +150,9 @@ class Sound(object):
             if voice is None:
                 voice = 0
             else:
+                # on PCjr, four-parameter SOUND requires SOUND ON
+                if self._multivoice == 'pcjr' and not self._sound_on:
+                    raise error.BASICError(error.IFC)
                 voice = values.to_int(voice)
                 error.range_check(0, 2, voice) # can't address noise channel here
         list(args)
@@ -274,7 +275,7 @@ class Sound(object):
         if not any(mml_list):
             raise error.BASICError(error.MISSING_OPERAND)
         # on PCjr, three-voice PLAY requires SOUND ON
-        if not self._sound_on and len(mml_list) > 1:
+        if (self._multivoice == 'pcjr') and not self._sound_on and len(mml_list) > 1:
             raise error.BASICError(error.STX)
         # a marker is inserted at the start of the PLAY statement
         # this takes up one spot in the buffer and thus affects timings
@@ -293,9 +294,10 @@ class Sound(object):
                 if c == b'':
                     voices.remove(voice)
                     continue
-                elif c == b';':
-                    continue
-                elif c == b'X':
+                if c == b';':
+                    # absorb one (and only one) semicolon
+                    c = mmls.skip_blank_read().upper()
+                if c == b'X':
                     # insert substring
                     sub = mmls.parse_string()
                     pos = mmls.tell()
@@ -389,7 +391,10 @@ class Sound(object):
                         self._foreground = False
                     else:
                         raise error.BASICError(error.IFC)
-                elif c == b'V' and self._multivoice and self._sound_on:
+                elif c == b'V' and (
+                        self._multivoice and self._sound_on
+                        or self._multivoice == 'tandy'
+                    ):
                     vol = mmls.parse_number()
                     error.range_check(-1, 15, vol)
                     if vol == -1:
@@ -428,7 +433,7 @@ class TimedQueue(object):
     def __init__(self):
         """Initialise timed queue."""
         self._deque = deque()
-        # hack to reproduce queue lengths
+        # hack to reproduce queue lengths as reported by GW-BASIC
         self._balloon_popped = False
 
     def __getstate__(self):
@@ -436,12 +441,15 @@ class TimedQueue(object):
         self._check_expired()
         return {
             'deque': self._deque,
-            'now': datetime.datetime.now()}
+            'now': datetime.datetime.now(),
+            'balloon_popped': self._balloon_popped,
+        }
 
     def __setstate__(self, st):
         """Initialise queue from pickling dict."""
         offset = datetime.datetime.now() - st['now']
         self._deque = deque((item, expiry+offset, counts) for (item, expiry, counts) in st['deque'])
+        self._balloon_popped = st['balloon_popped']
 
     def _check_expired(self):
         """Drop expired items from queue."""

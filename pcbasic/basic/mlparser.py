@@ -78,13 +78,11 @@ class MLParser(codestream.CodeStream):
 
     def _parse_const(self):
         """Parse and return a constant value in a macro-language string."""
-        numstr = b''
+        digits = []
         while self.skip_blank() in set(iterchar(DIGITS)):
-            numstr += self.read(1)
-        try:
-            return int(numstr)
-        except ValueError:
-            raise error.BASICError(error.IFC)
+            digits.append(self.read(1))
+        # we only have digits in here so no need to catch ValueError
+        return int(b''.join(digits))
 
     def _parse_indices(self):
         """Parse constant array indices."""

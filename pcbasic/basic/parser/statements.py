@@ -630,7 +630,7 @@ class Parser(object):
             # only look for args 3 and 4 if duration is > 0;
             # otherwise those args are a syntax error (on tandy)
             if (dur.sign() == 1) and ins.skip_blank_read_if((b',',)) and self._syntax in ('pcjr', 'tandy'):
-                yield self.parse_expression(ins)
+                yield self.parse_expression(ins, allow_empty=True)
                 if ins.skip_blank_read_if((b',',)):
                     yield self.parse_expression(ins)
                 else:
