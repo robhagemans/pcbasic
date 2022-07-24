@@ -103,10 +103,13 @@ class Arrays(object):
         # first two bytes: chars of name or 0 if name is one byte long
         return 1 + max(3, len(name)) + 3 + 2*len(dimensions)
 
+    def flat_length(self, dimensions):
+        """Total number of elements."""
+        return self.index(dimensions, dimensions) + 1
+
     def _buffer_size(self, name, dimensions):
         """Calculate size of array buffer in bytes."""
-        flat_length = self.index(dimensions, dimensions) + 1
-        return flat_length * values.size_bytes(name)
+        return self.flat_length(dimensions) * values.size_bytes(name)
 
     def memory_size(self, name, dimensions):
         """Calculate size of array record and buffer in bytes."""
