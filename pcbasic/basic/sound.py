@@ -102,10 +102,8 @@ class Sound(object):
         # if a synch is requested, emit it at the first tone or pause
         if self._synch:
             self.emit_synch()
-        # no sound if switched off
-        # see https://www.vogons.org/viewtopic.php?t=56735&p=626006
-        # PCjr only?
-        # does Tandy always have SOUND ON? no, NOISE is affected by SOUND OFF
+        # no sound if both SOUND OFF and BEEP OFF - note that dosbox gets this wrong
+        # checked on real hardware, see https://www.vogons.org/viewtopic.php?t=56735&p=626006
         if not (self._beep_on or self._sound_on):
             volume = 0
         tone = signals.Event(signals.AUDIO_TONE, (voice, frequency, fill*duration, loop, volume))
