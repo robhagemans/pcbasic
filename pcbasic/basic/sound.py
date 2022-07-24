@@ -299,9 +299,10 @@ class Sound(object):
                 if c == b'':
                     voices.remove(voice)
                     continue
-                elif c == b';':
-                    continue
-                elif c == b'X':
+                if c == b';':
+                    # absorb one (and only one) semicolon
+                    c = mmls.skip_blank_read().upper()
+                if c == b'X':
                     # insert substring
                     sub = mmls.parse_string()
                     pos = mmls.tell()
