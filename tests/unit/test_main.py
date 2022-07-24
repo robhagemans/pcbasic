@@ -210,10 +210,15 @@ class DebugTest(TestCase):
             run('-v', '--debug')
         assert output.getvalue().startswith(b'PC-BASIC')
 
-    def test_crashguard(self):
-        """Exercise graphical run and trigger bluescreen."""
+    def test_crash_direct(self):
+        """Exercise graphical run and trigger bluescreen from direct mode."""
         with stdio.quiet():
             run('--debug', '-qe', '_CRASH')
+
+    def test_crash_in_program(self):
+        """Exercise graphical run and trigger bluescreen from a program line."""
+        with stdio.quiet():
+            run('--debug', '-k', '10 _crash\rrun\r')
 
 
 if __name__ == '__main__':
