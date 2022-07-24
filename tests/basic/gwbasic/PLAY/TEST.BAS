@@ -34,6 +34,7 @@
 275 PLAY "X" + YPTR$ ' detached pointer
 277 PLAY "X" + VARPTR$(Z$(1)) ' undefined array
 278 PLAY "X" + VARPTR$(UNDEF$) ' undefined scalar
+279 PLAY "X" + CHR$(3) + CHR$(4) ' ptrstr too short
 280 A=1: B(0) = 1
 290 PLAY "N=A;"
 300 PLAY "N=B(0);"
