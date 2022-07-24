@@ -545,24 +545,21 @@ class DataSegment(object):
         vps = struct.pack('<BH', values.size_bytes(self.complete_name(name)), var_ptr)
         return self.values.new_string().from_str(vps)
 
-    def dereference(self, address):
-        """Get a value for a variable given its pointer address."""
-        found = self.scalars.dereference(address)
-        if found is not None:
-            return found
-        # no scalar found, try arrays
-        found = self.arrays.dereference(address)
-        if found is not None:
-            return found
-        raise error.BASICError(error.IFC)
-
     def get_value_for_varptrstr(self, varptrstr):
         """Get a value given a VARPTR$ representation."""
         if len(varptrstr) < 3:
             raise error.BASICError(error.IFC)
-        varptrstr = bytearray(varptrstr)
-        varptr, = struct.unpack('<H', varptrstr[1:3])
-        return self.dereference(varptr)
+        size, varptr = struct.unpack('<BH', varptrstr[:3])
+        value = self._dereference(varptr)
+        if value is not None:
+            return value
+        # if the pointer is not attached, return a null value of the right type
+        return self.values.new(values.SIZE_TO_TYPE[size])
+
+    def _dereference(self, address):
+        """Get a value for a variable given its pointer address. None if not found."""
+        # if no matching scalar found, try arrays; return None if not found
+        return self.scalars.dereference(address) or self.arrays.dereference(address)
 
     def _view_buffer(self, name, indices, empty_err):
         """Retrieve a memoryview to a scalar variable or an array element's buffer."""
