@@ -538,6 +538,9 @@ class DataSegment(object):
         error.throw_if(not name, error.STX)
         indices = next(args)
         list(args)
+        if indices != []:
+            # pre-allocate array elements, but not scalars which instead throw IFC if undefined
+            self.arrays.check_dim(name, indices)
         var_ptr = self.varptr(name, indices)
         vps = struct.pack('<BH', values.size_bytes(self.complete_name(name)), var_ptr)
         return self.values.new_string().from_str(vps)
