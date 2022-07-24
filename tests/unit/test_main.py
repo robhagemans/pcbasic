@@ -119,6 +119,22 @@ class MainTest(TestCase):
             output = outfile.read()
         assert output == b' 1  2 \r\n\x1a', repr(output)
 
+    def test_resume_music(self):
+        """Test resume with music queue."""
+        with stdio.quiet():
+            run(
+                '--exec=play"mbcdefgab>cdefgab"','-nq',
+                '--mount=z:%s' % self.output_path(),
+            )
+            run(
+                '--resume',
+                '-nk',
+                'q=play(0)\ropen"z:output.txt" for output as 1:?#1,q:close:system\r'
+            )
+        with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
+            output = outfile.read()
+        assert output == b' 13 \r\n\x1a', repr(output)
+
 
 class ConvertTest(TestCase):
     """Unit tests for convert script."""
