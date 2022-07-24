@@ -428,7 +428,7 @@ class TimedQueue(object):
     def __init__(self):
         """Initialise timed queue."""
         self._deque = deque()
-        # hack to reproduce queue lengths
+        # hack to reproduce queue lengths as reported by GW-BASIC
         self._balloon_popped = False
 
     def __getstate__(self):
@@ -436,12 +436,15 @@ class TimedQueue(object):
         self._check_expired()
         return {
             'deque': self._deque,
-            'now': datetime.datetime.now()}
+            'now': datetime.datetime.now(),
+            'balloon_popped': self._balloon_popped,
+        }
 
     def __setstate__(self, st):
         """Initialise queue from pickling dict."""
         offset = datetime.datetime.now() - st['now']
         self._deque = deque((item, expiry+offset, counts) for (item, expiry, counts) in st['deque'])
+        self._balloon_popped = st['balloon_popped']
 
     def _check_expired(self):
         """Drop expired items from queue."""
