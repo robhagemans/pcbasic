@@ -235,19 +235,19 @@ class Arrays(object):
         """Retrieve data from data memory: array space """
         name_addr = -1
         arr_addr = -1
-        the_arr = None
         for name in self._array_memory:
             name_try, arr_try = self._array_memory[name]
             if name_try <= address and name_try > name_addr:
                 name_addr, arr_addr = name_try, arr_try
                 the_arr = name
-        if the_arr is None:
+                break
+        else: # pragma: no cover
             return -1
         var_current = self._memory.var_current()
         dimensions = self._dims[the_arr]
         if address >= var_current + arr_addr:
             offset = address - arr_addr - var_current
-            if offset >= self._buffer_size(the_arr, dimensions):
+            if offset >= self._buffer_size(the_arr, dimensions): # pragma: no cover
                 return -1
             byte_array = self._buffers[the_arr]
             return byte_array[offset]
@@ -296,17 +296,14 @@ class Arrays(object):
 
     def to_list(self, name):
         """Convert BASIC array to Python list."""
-        if name in self._dims:
-            indices = self._dims[name]
-            return self._to_list(name, [], indices)
-        else:
+        if name not in self._dims:
             return []
+        indices = self._dims[name]
+        return self._to_list(name, [], indices)
 
     def _to_list(self, name, index, remaining_dimensions):
         """Convert BASIC array to Python list."""
-        if not remaining_dimensions:
-            return []
-        elif len(remaining_dimensions) == 1:
+        if len(remaining_dimensions) == 1:
             return [
                 self.get(name, index+[i]).to_value()
                 for i in range((self._base or 0), remaining_dimensions[0] + 1)
