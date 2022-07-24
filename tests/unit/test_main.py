@@ -28,7 +28,6 @@ class MainTest(TestCase):
             run('-v')
         assert output.getvalue().startswith(b'PC-BASIC')
 
-
     def test_debug_version(self):
         """Test debug version call."""
         # currently can only redirect to bytes io
@@ -84,6 +83,41 @@ class MainTest(TestCase):
         """Exercise graphical run."""
         with stdio.quiet():
             run('-qe', 'beep')
+
+    # resume
+
+    def test_resume_output(self):
+        """Test resume with open empty output file."""
+        run(
+            "--exec=A=1:open\"z:output.txt\" for output as 1:SYSTEM",
+            '--mount=z:%s' % self.output_path(), '-b'
+        )
+        run('--resume', '--keys=?#1,A:close:system\\r', '-b')
+        with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
+            output = outfile.read()
+        assert output == b' 1 \r\n\x1a', repr(output)
+
+    def test_resume_output_used(self):
+        """Test resume with open used output file."""
+        run(
+            "--exec=A=1:open\"z:output.txt\" for output as 1:?#1,2:SYSTEM",
+            '--mount=z:%s' % self.output_path(), '-b'
+        )
+        run('--resume', '--keys=?#1,A:close:system\\r', '-b')
+        with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
+            output = outfile.read()
+        assert output == b' 2 \r\n 1 \r\n\x1a', repr(output)
+
+    def test_resume_input(self):
+        """Test resume with open input file."""
+        run(
+            "--exec=open\"z:test.txt\" for output as 1:?#1,1,2:close:open\"z:test.txt\" for input as 1:input#1,a:SYSTEM",
+            '--mount=z:%s' % self.output_path(), '-b'
+        )
+        run('--resume', '--keys=input#1,B:close:open "output.txt" for output as 1:?#1, a; b:close:system\\r', '-b')
+        with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
+            output = outfile.read()
+        assert output == b' 1  2 \r\n\x1a', repr(output)
 
 
 class ConvertTest(TestCase):
