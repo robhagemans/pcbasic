@@ -56,7 +56,7 @@ class Arrays(object):
                 raise error.BASICError(error.IFC)
             dimensions = self._dims[name]
             record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
-            freed_bytes = self.array_len(dimensions) * values.size_bytes(name) + record_len
+            freed_bytes = self._buffer_size(name, dimensions) + record_len
             erased_name_ptr, _ = self._array_memory[name]
             # delete buffers
             del self._dims[name]
@@ -83,18 +83,6 @@ class Arrays(object):
             area *= dimensions[i] + 1 - self._base
         return bigindex
 
-    def array_len(self, dimensions):
-        """Return the flat length for given dimensioned size."""
-        return self.index(dimensions, dimensions) + 1
-
-    def array_size_bytes(self, name):
-        """Return the byte size of an array, if it exists. Return 0 otherwise."""
-        try:
-            dimensions = self._dims[name]
-        except KeyError:
-            return 0
-        return self.array_len(dimensions) * values.size_bytes(name)
-
     def view_full_buffer(self, name):
         """Return a memoryview to a full array."""
         return memoryview(self._buffers[name])
@@ -117,7 +105,8 @@ class Arrays(object):
 
     def _buffer_size(self, name, dimensions):
         """Calculate size of array buffer in bytes."""
-        return self.array_len(dimensions) * values.size_bytes(name)
+        flat_length = self.index(dimensions, dimensions) + 1
+        return flat_length * values.size_bytes(name)
 
     def memory_size(self, name, dimensions):
         """Calculate size of array record and buffer in bytes."""
@@ -252,9 +241,10 @@ class Arrays(object):
         if the_arr is None:
             return -1
         var_current = self._memory.var_current()
+        dimensions = self._dims[the_arr]
         if address >= var_current + arr_addr:
             offset = address - arr_addr - var_current
-            if offset >= self.array_size_bytes(the_arr):
+            if offset >= self._buffer_size(dimensions):
                 return -1
             byte_array = self._buffers[the_arr]
             return byte_array[offset]
@@ -264,10 +254,9 @@ class Arrays(object):
                 return get_name_in_memory(the_arr, offset)
             else:
                 offset -= max(3, len(the_arr))+1
-                dimensions = self._dims[the_arr]
                 data_rep = struct.pack(
                     '<HB',
-                    self.array_size_bytes(the_arr) + 1 + 2*len(dimensions),
+                    self._buffer_size(dimensions) + 1 + 2*len(dimensions),
                     len(dimensions)
                 )
                 for d in dimensions:
