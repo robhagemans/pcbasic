@@ -286,7 +286,7 @@ class Arrays(object):
     def _from_list(self, python_list, name, index):
         """Convert Python list to BASIC array."""
         if not python_list:
-            return
+            raise ValueError('Array must not be empty.')
         if isinstance(python_list[0], list):
             for i, v in enumerate(python_list):
                 self._from_list(v, name, index+[i+(self._base or 0)])
