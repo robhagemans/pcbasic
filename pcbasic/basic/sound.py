@@ -104,6 +104,8 @@ class Sound(object):
             self.emit_synch()
         # no sound if switched off
         # see https://www.vogons.org/viewtopic.php?t=56735&p=626006
+        # PCjr only?
+        # does Tandy always have SOUND ON? no, NOISE is affected by SOUND OFF
         if not (self._beep_on or self._sound_on):
             volume = 0
         tone = signals.Event(signals.AUDIO_TONE, (voice, frequency, fill*duration, loop, volume))
@@ -123,9 +125,7 @@ class Sound(object):
     def emit_noise(self, source, volume, duration, loop):
         """Generate a noise."""
         frequency = self._noise_freq[source]
-        # no sound if switched off
-        if not (self._beep_on or self._sound_on):
-            volume = 0
+        # if not SOUND ON an IFC was raised, so don't check here
         noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, loop, volume))
         self._queues.audio.put(noise)
         self._voice_queue[3].put(noise, None if loop else duration, True)
