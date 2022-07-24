@@ -126,8 +126,11 @@ class SessionTest(TestCase):
             s.set_variable(b'A$', u'\xc2\xa3')
             # bytes output, in cp437
             assert s.get_variable(b'A$') == b'\x9C'
-            # unset array
+            # undefined array
             assert s.get_variable('A%()') == []
+            # can't set array to empty
+            with self.assertRaises(ValueError):
+                s.set_variable('ARR2!()', [])
 
     def test_session_evaluate(self):
         """Test Session.set_variable and Session.get_variable."""

@@ -1,0 +1,16 @@
+start
+program:  4718 
+scalars:  5401 
+arrays :  5441 
+end arr:  5441 
+after MID$(A$, 1, 1)
+program:  4718 
+scalars:  5401 
+arrays :  5448 
+end arr:  5448 
+after MID$(B$(1), 1, 1)
+program:  4718 
+scalars:  5401 
+arrays :  5448 
+end arr:  5490 
+

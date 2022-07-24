@@ -56,7 +56,7 @@ class Arrays(object):
                 raise error.BASICError(error.IFC)
             dimensions = self._dims[name]
             record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
-            freed_bytes = self.array_len(dimensions) * values.size_bytes(name) + record_len
+            freed_bytes = self._buffer_size(name, dimensions) + record_len
             erased_name_ptr, _ = self._array_memory[name]
             # delete buffers
             del self._dims[name]
@@ -83,18 +83,6 @@ class Arrays(object):
             area *= dimensions[i] + 1 - self._base
         return bigindex
 
-    def array_len(self, dimensions):
-        """Return the flat length for given dimensioned size."""
-        return self.index(dimensions, dimensions) + 1
-
-    def array_size_bytes(self, name):
-        """Return the byte size of an array, if it exists. Return 0 otherwise."""
-        try:
-            dimensions = self._dims[name]
-        except KeyError:
-            return 0
-        return self.array_len(dimensions) * values.size_bytes(name)
-
     def view_full_buffer(self, name):
         """Return a memoryview to a full array."""
         return memoryview(self._buffers[name])
@@ -115,9 +103,13 @@ class Arrays(object):
         # first two bytes: chars of name or 0 if name is one byte long
         return 1 + max(3, len(name)) + 3 + 2*len(dimensions)
 
+    def flat_length(self, dimensions):
+        """Total number of elements."""
+        return self.index(dimensions, dimensions) + 1
+
     def _buffer_size(self, name, dimensions):
         """Calculate size of array buffer in bytes."""
-        return self.array_len(dimensions) * values.size_bytes(name)
+        return self.flat_length(dimensions) * values.size_bytes(name)
 
     def memory_size(self, name, dimensions):
         """Calculate size of array record and buffer in bytes."""
@@ -131,16 +123,17 @@ class Arrays(object):
         if not dimensions:
             # DIM A does nothing
             return
+        if name in self._dims:
+            raise error.BASICError(error.DUPLICATE_DEFINITION)
+        # a call that raises ifc does not implicitly set the array base
+        if any(_d < 0 for _d in dimensions):
+            raise error.BASICError(error.IFC)
+        # implicitly set array base
         if self._base is None:
             self._base = 0
             self._base_set_by_dim = True
-        if name in self._dims:
-            raise error.BASICError(error.DUPLICATE_DEFINITION)
-        for d in dimensions:
-            if d < 0:
-                raise error.BASICError(error.IFC)
-            elif d < self._base:
-                raise error.BASICError(error.SUBSCRIPT_OUT_OF_RANGE)
+        elif any(_d < self._base for _d in dimensions):
+            raise error.BASICError(error.SUBSCRIPT_OUT_OF_RANGE)
         # update memory model
         name_ptr = self.current
         record_len = self._record_size(name, dimensions)
@@ -242,18 +235,19 @@ class Arrays(object):
         """Retrieve data from data memory: array space """
         name_addr = -1
         arr_addr = -1
-        the_arr = None
         for name in self._array_memory:
             name_try, arr_try = self._array_memory[name]
             if name_try <= address and name_try > name_addr:
                 name_addr, arr_addr = name_try, arr_try
                 the_arr = name
-        if the_arr is None:
+                break
+        else: # pragma: no cover
             return -1
         var_current = self._memory.var_current()
+        dimensions = self._dims[the_arr]
         if address >= var_current + arr_addr:
             offset = address - arr_addr - var_current
-            if offset >= self.array_size_bytes(the_arr):
+            if offset >= self._buffer_size(the_arr, dimensions): # pragma: no cover
                 return -1
             byte_array = self._buffers[the_arr]
             return byte_array[offset]
@@ -263,10 +257,9 @@ class Arrays(object):
                 return get_name_in_memory(the_arr, offset)
             else:
                 offset -= max(3, len(the_arr))+1
-                dimensions = self._dims[the_arr]
                 data_rep = struct.pack(
                     '<HB',
-                    self.array_size_bytes(the_arr) + 1 + 2*len(dimensions),
+                    self._buffer_size(the_arr, dimensions) + 1 + 2*len(dimensions),
                     len(dimensions)
                 )
                 for d in dimensions:
@@ -293,7 +286,7 @@ class Arrays(object):
     def _from_list(self, python_list, name, index):
         """Convert Python list to BASIC array."""
         if not python_list:
-            return
+            raise ValueError('Array must not be empty.')
         if isinstance(python_list[0], list):
             for i, v in enumerate(python_list):
                 self._from_list(v, name, index+[i+(self._base or 0)])
@@ -303,17 +296,14 @@ class Arrays(object):
 
     def to_list(self, name):
         """Convert BASIC array to Python list."""
-        if name in self._dims:
-            indices = self._dims[name]
-            return self._to_list(name, [], indices)
-        else:
+        if name not in self._dims:
             return []
+        indices = self._dims[name]
+        return self._to_list(name, [], indices)
 
     def _to_list(self, name, index, remaining_dimensions):
         """Convert BASIC array to Python list."""
-        if not remaining_dimensions:
-            return []
-        elif len(remaining_dimensions) == 1:
+        if len(remaining_dimensions) == 1:
             return [
                 self.get(name, index+[i]).to_value()
                 for i in range((self._base or 0), remaining_dimensions[0] + 1)

@@ -615,7 +615,7 @@ class Implementation(object):
         jumpnum = next(args)
         if jumpnum is not None:
             jumpnum = values.to_int(jumpnum, unsigned=True)
-        common_all, delete_lines = next(args), next(args)
+        preserve_all, delete_lines = next(args), next(args)
         from_line, to_line = delete_lines if delete_lines else (None, None)
         if to_line is not None and to_line not in self.program.line_numbers:
             raise error.BASICError(error.IFC)
@@ -623,14 +623,14 @@ class Implementation(object):
         if self.program.protected and merge:
             raise error.BASICError(error.IFC)
         # gather COMMON declarations
-        commons = self.interpreter.gather_commons()
-        with self.memory.preserve_commons(commons, common_all):
+        common_scalars, common_arrays = self.interpreter.gather_commons()
+        with self.memory.preserve_commons(common_scalars, common_arrays, preserve_all):
             # preserve DEFtype on MERGE
             # functions are cleared except when CHAIN ... ALL is specified
             # OPTION BASE is preserved when there are common variables
             self._clear_all(
-                    preserve_functions=common_all,
-                    preserve_base=(commons or common_all),
+                    preserve_functions=preserve_all,
+                    preserve_base=(common_scalars or common_arrays or preserve_all),
                     preserve_deftype=merge)
             # load new program
             with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
