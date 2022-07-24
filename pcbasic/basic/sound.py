@@ -142,9 +142,6 @@ class Sound(object):
             if volume is None:
                 volume = 15
             else:
-                # on PCjr, three-parameter SOUND requires SOUND ON
-                if (self._multivoice == 'pcjr') and not self._sound_on:
-                    raise error.BASICError(error.IFC)
                 volume = values.to_int(volume)
                 error.range_check(-1, 15, volume)
                 if volume == -1:
@@ -154,7 +151,7 @@ class Sound(object):
                 voice = 0
             else:
                 # on PCjr, four-parameter SOUND requires SOUND ON
-                if (self._multivoice == 'pcjr') and not self._sound_on:
+                if self._multivoice == 'pcjr' and not self._sound_on:
                     raise error.BASICError(error.IFC)
                 voice = values.to_int(voice)
                 error.range_check(0, 2, voice) # can't address noise channel here
