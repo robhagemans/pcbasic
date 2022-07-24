@@ -144,6 +144,9 @@ class Sound(object):
             if volume is None:
                 volume = 15
             else:
+                # on PCjr, three-parameter SOUND requires SOUND ON
+                if (self._multivoice == 'pcjr') and not self._sound_on:
+                    raise error.BASICError(error.IFC)
                 volume = values.to_int(volume)
                 error.range_check(-1, 15, volume)
                 if volume == -1:
@@ -152,6 +155,9 @@ class Sound(object):
             if voice is None:
                 voice = 0
             else:
+                # on PCjr, four-parameter SOUND requires SOUND ON
+                if (self._multivoice == 'pcjr') and not self._sound_on:
+                    raise error.BASICError(error.IFC)
                 voice = values.to_int(voice)
                 error.range_check(0, 2, voice) # can't address noise channel here
         list(args)
@@ -274,7 +280,7 @@ class Sound(object):
         if not any(mml_list):
             raise error.BASICError(error.MISSING_OPERAND)
         # on PCjr, three-voice PLAY requires SOUND ON
-        if not self._sound_on and len(mml_list) > 1:
+        if (self._multivoice == 'pcjr') and not self._sound_on and len(mml_list) > 1:
             raise error.BASICError(error.STX)
         # a marker is inserted at the start of the PLAY statement
         # this takes up one spot in the buffer and thus affects timings
@@ -389,7 +395,10 @@ class Sound(object):
                         self._foreground = False
                     else:
                         raise error.BASICError(error.IFC)
-                elif c == b'V' and self._multivoice and self._sound_on:
+                elif c == b'V' and (
+                        self._multivoice and self._sound_on
+                        or self._multivoice == 'tandy'
+                    ):
                     vol = mmls.parse_number()
                     error.range_check(-1, 15, vol)
                     if vol == -1:
