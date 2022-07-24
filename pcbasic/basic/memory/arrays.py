@@ -131,16 +131,17 @@ class Arrays(object):
         if not dimensions:
             # DIM A does nothing
             return
+        if name in self._dims:
+            raise error.BASICError(error.DUPLICATE_DEFINITION)
+        # a call that raises ifc does not implicitly set the array base
+        if any(_d < 0 for _d in dimensions):
+            raise error.BASICError(error.IFC)
+        # implicitly set array base
         if self._base is None:
             self._base = 0
             self._base_set_by_dim = True
-        if name in self._dims:
-            raise error.BASICError(error.DUPLICATE_DEFINITION)
-        for d in dimensions:
-            if d < 0:
-                raise error.BASICError(error.IFC)
-            elif d < self._base:
-                raise error.BASICError(error.SUBSCRIPT_OUT_OF_RANGE)
+        elif any(_d < self._base for _d in dimensions):
+            raise error.BASICError(error.SUBSCRIPT_OUT_OF_RANGE)
         # update memory model
         name_ptr = self.current
         record_len = self._record_size(name, dimensions)
