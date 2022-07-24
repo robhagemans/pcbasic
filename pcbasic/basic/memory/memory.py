@@ -354,7 +354,7 @@ class DataSegment(object):
         start = address - self._field_mem_start
         number = 1 + start // self._field_mem_offset
         offset = start % self._field_mem_offset
-        if (number not in self.fields) or (start < 0):
+        if (number not in self.fields) or (start < 0): # pragma: no cover
             raise ValueError('Address %x is not in FIELD memory' % address)
         return number, offset
 
@@ -362,22 +362,22 @@ class DataSegment(object):
         """Retrieve data from FIELD buffer."""
         try:
             number, offset = self._get_field_offset(address)
-        except ValueError:
+        except ValueError: # pragma: no cover
             return -1
         try:
             return self.fields[number].view_buffer()[offset]
-        except (KeyError, IndexError):
+        except (KeyError, IndexError): # pragma: no cover
             return -1
 
     def _set_field_memory(self, address, value):
         """Modify data in FIELD buffer."""
         try:
             number, offset = self._get_field_offset(address)
-        except ValueError:
+        except ValueError: # pragma: no cover
             return
         try:
             self.fields[number].view_buffer()[offset] = value
-        except (KeyError, IndexError):
+        except (KeyError, IndexError): # pragma: no cover
             return
 
     def view_field_memory(self, address, length):
