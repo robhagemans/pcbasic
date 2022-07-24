@@ -27,6 +27,13 @@
 250 PLAY "XX$;"
 260 PLAY "XA;"
 270 PLAY "X"+VARPTR$(X$)
+271 ' dereference array pointer
+272 Y$(1)="mb c": YPTR$ = VARPTR$(Y$(1))
+273 PLAY "X" + YPTR$
+274 ERASE Y$
+275 PLAY "X" + YPTR$ ' detached pointer
+277 PLAY "X" + VARPTR$(Z$(1)) ' undefined array
+278 PLAY "X" + VARPTR$(UNDEF$) ' undefined scalar
 280 A=1: B(0) = 1
 290 PLAY "N=A;"
 300 PLAY "N=B(0);"
