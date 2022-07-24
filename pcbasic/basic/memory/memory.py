@@ -360,25 +360,11 @@ class DataSegment(object):
 
     def _get_field_memory(self, address):
         """Retrieve data from FIELD buffer."""
-        try:
-            number, offset = self._get_field_offset(address)
-        except ValueError: # pragma: no cover
-            return -1
-        try:
-            return self.fields[number].view_buffer()[offset]
-        except (KeyError, IndexError): # pragma: no cover
-            return -1
+        return bytearray(self.view_field_memory(address, 1))[0]
 
     def _set_field_memory(self, address, value):
         """Modify data in FIELD buffer."""
-        try:
-            number, offset = self._get_field_offset(address)
-        except ValueError: # pragma: no cover
-            return
-        try:
-            self.fields[number].view_buffer()[offset] = value
-        except (KeyError, IndexError): # pragma: no cover
-            return
+        self.view_field_memory(address, 1)[:] = bytearray([value])
 
     def view_field_memory(self, address, length):
         """Get a view od data in FIELD buffer."""
