@@ -24,6 +24,8 @@ class ResourceFailed(Exception):
     def __repr__(self):
         return self._message
 
+    __str__ = __repr__
+
 
 ###############################################################################
 # resource readers

@@ -23,7 +23,7 @@ from .interface import Interface, InitFailed
 from .compat import stdio
 
 
-def main(*arguments):
+def main(*arguments): # pragma: no cover
     """Wrapper for run() to deal with argv encodings, Ctrl-C, stdio and pipes."""
     try:
         run(*arguments)
@@ -95,7 +95,7 @@ def _launch_session(settings):
     guard = ExceptionGuard(**settings.guard_params)
     try:
         Interface(guard, **settings.iface_params).launch(_run_session, **settings.launch_params)
-    except InitFailed as e:
+    except InitFailed as e: # pragma: no cover
         logging.error(e)
 
 def _run_session(

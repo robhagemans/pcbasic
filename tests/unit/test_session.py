@@ -141,17 +141,6 @@ class SessionTest(TestCase):
             # syntax error
             assert s.evaluate(b'LOG+1') is None
 
-    def test_resume(self):
-        """Test resume."""
-        run(
-            "--exec=A=1:open\"z:output.txt\" for output as 1:SYSTEM",
-            '--mount=z:%s' % self.output_path(), '-b'
-        )
-        run('--resume', '--keys=?#1,A:close:system\\r', '-b')
-        with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
-            output = outfile.read()
-        assert output == b' 1 \r\n\x1a', repr(output)
-
     def test_session_bind_file(self):
         """test Session.bind_file."""
         # open file object

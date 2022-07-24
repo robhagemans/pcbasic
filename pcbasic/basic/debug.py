@@ -76,11 +76,13 @@ def get_platform_info():
 
 
 class DebugException(BaseException):
-    """Test exception for debugging purposes"""
+    """This exception was raised deliberately through the debug module."""
     # inherit from BaseException to circumvent extension manager catching Exception
 
     def __repr__(self):
         return self.__doc__
+
+    __str__ = __repr__
 
 
 class DebugSession(api.Session):
