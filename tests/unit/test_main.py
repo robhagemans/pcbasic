@@ -51,6 +51,8 @@ class MainTest(TestCase):
             run('-nqe', '?1')
         assert output.getvalue() == b' 1 \r\n'
 
+    # exercise interfaces
+
     def test_cli(self):
         """Exercise cli run."""
         with stdio.quiet():
@@ -70,6 +72,18 @@ class MainTest(TestCase):
         """Exercise run with bad interface."""
         with stdio.quiet('stdout'):
             run('--interface=_no_such_interface_', '-q')
+
+    # exercise sound
+
+    def test_cli_beep(self):
+        """Exercise cli run."""
+        with stdio.quiet():
+            run('-bqe', 'beep')
+
+    def test_graphical_beep(self):
+        """Exercise graphical run."""
+        with stdio.quiet():
+            run('-qe', 'beep')
 
 
 class ConvertTest(TestCase):
