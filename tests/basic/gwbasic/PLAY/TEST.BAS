@@ -26,6 +26,7 @@
 170 PLAY "P64"
 250 PLAY "XX$;"
 260 PLAY "XA;"
+265 PLAY "X" ' no string follows, IFC
 270 PLAY "X"+VARPTR$(X$)
 271 ' dereference array pointer
 272 Y$(1)="mb c": YPTR$ = VARPTR$(Y$(1))
@@ -45,6 +46,8 @@
 350 PLAY "A+.64"
 360 PLAY "A64+."
 370 PLAY "N1."
+375 PLAY "N=" ' no number follows, IFC
+377 PLAY "N" ' no number follows, IFC
 380 PLAY "P1."
 390 PLAY "P0"
 400 PLAY "P0."
