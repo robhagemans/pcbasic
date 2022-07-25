@@ -70,6 +70,7 @@ def package(**setup_options):
                 #u'console_scripts = pcbasic=pcbasic:main',
                 #u'',
             )))
+            # data_files is deprecated / discouraged, but not clear how else to do this
             # so that desktop files get picked up by setup.py install and hence by fpm
             setup_cfg.write('\n'.join([
                 u'[options.data_files]',
@@ -90,7 +91,10 @@ def package(**setup_options):
         _gather_resources()
         build_manifest(INCLUDE_FILES, EXCLUDE_FILES)
         subprocess.call((
-            'fpm', '-t', 'rpm', '-s', 'python', '--no-auto-depends',
+            'fpm', '-t', 'rpm', '-s',
+            'python', '--verbose', '--no-auto-depends',
+            '--python-scripts-executable', '/usr/bin/env python3',
+            '--python-bin', 'python3',
             '--python-package-name-prefix', 'python3',
             '--depends=pyserial,SDL2,SDL2_gfx',
             '..'
@@ -106,12 +110,18 @@ def package(**setup_options):
             os.unlink('dist/python3-pcbasic_%s_all.deb' % (VERSION,))
         stamp_release()
         _gather_resources()
+        # for some reason, python files in tests/ keep getting included in the fpm package
+        # despite being excluded here. this is in contrast to python files in packages/
+        # the pip wheel correctly excludes both
         build_manifest(INCLUDE_FILES, EXCLUDE_FILES)
         subprocess.call((
-            'fpm', '-t', 'deb', '-s', 'python', '--no-auto-depends',
+            'fpm', '-t', 'deb', '-s',
+            'python', '--verbose', '--no-auto-depends',
+            '--python-scripts-executable', '/usr/bin/env python3',
+            '--python-bin', 'python3',
             '--python-package-name-prefix', 'python3',
             '--depends=python3-pkg-resources,python3-serial,python3-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0',
-            '..'
+            '..',
         ), cwd='dist')
         wash()
         remove(SETUP_CFG)
