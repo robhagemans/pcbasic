@@ -46,7 +46,7 @@ SETUP_OPTIONS = dict(
     # contents
     # only include subpackages of pcbasic: exclude test, docsrc, packaging etc
     # even if these are excluded in the manifest, bdist_wheel will pick them up (but sdist won't)
-    packages=find_packages(exclude=[_name for _name in os.listdir(HERE) if _name != 'pcbasic']),
+    packages=find_packages(exclude=[_name+'*' for _name in os.listdir(HERE) if _name != 'pcbasic']),
     ext_modules=[],
     # include package data from MANIFEST.in (which is created by packaging script)
     include_package_data=True,

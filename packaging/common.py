@@ -75,17 +75,20 @@ INCLUDE_FILES = (
 
 # python files to exclude from distributions
 EXCLUDE_FILES = (
-    'test/', 'packaging/', 'docsrc/', 'fontsrc/'
+    'tests/', 'packaging/', 'docsrc/', 'fontsrc/',
 )
+EXCLUDE_PACKAGES=[
+    _name+'*' for _name in os.listdir(HERE) if _name != 'pcbasic'
+]
 
 SETUP_OPTIONS = dict(
     version=VERSION,
     author=AUTHOR,
 
     # contents
-    # only include subpackages of pcbasic: exclude test, docsrc, packaging etc
+    # only include subpackages of pcbasic: exclude tests, docsrc, packaging etc
     # even if these are excluded in the manifest, bdist_wheel will pick them up (but sdist won't)
-    packages=find_packages(exclude=[_name for _name in os.listdir(HERE) if _name != 'pcbasic']),
+    packages=find_packages(exclude=EXCLUDE_PACKAGES),
     ext_modules=[],
     # include package data from MANIFEST.in (which is created by packaging script)
     include_package_data=True,
@@ -96,7 +99,6 @@ SETUP_OPTIONS = dict(
 
     **SETUP_DATA
 )
-
 
 ###############################################################################
 # icon
@@ -235,6 +237,7 @@ def sdist_ext(obj):
 def bdist_wheel_ext(obj):
     """Run custom bdist_wheel command."""
     wash()
+    #stamp_release() # not needed for wheel? included in pip pkg without this line. called through sdist?
     build_docs()
     # bdist_wheel calls build_py
     bdist_wheel.bdist_wheel.run(obj)
