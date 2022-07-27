@@ -57,9 +57,8 @@ if False:
 
 sdl2 = None
 
-# platform-specific dll location
-LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
-
+# custom dll location
+LIB_DIR = os.path.join(BASE_DIR, 'lib')
 
 
 def _import_sdl2():
