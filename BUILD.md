@@ -22,15 +22,17 @@ The following packages are needed, recommended or optional when installing PC-BA
 `setuptools` and `pip` are included with Python.
 Once you have a working Python installation, most dependencies can be installed with `pip`:
 
-        pip3 install pyaudio pyserial
+        pip3 install pysdl2-dll pyaudio pyserial
 
-To use the graphical interface, you will also need to install the [SDL2](https://www.libsdl.org/download-2.0.php) library.
+For Windows, Mac, and Linux, it is recommended to use the SDL2 and SDL2-gfx libraries provided by the [pysdl2-dll](https://github.com/a-hurst/pysdl2-dll) package.
+Alternatively, you can get the library directly from [libsdl.org](https://www.libsdl.org/download-2.0.php).
 Install the library in your OS's standard location for libraries.
 If this causes difficulties, you can alternatively place the library in the following location:
 
 - Windows (64-bit Python, 64-bit SDL): `pcbasic\lib\win32_x64\sdl2.dll`  
 - Windows (32-bit Python, 32-bit SDL): `pcbasic\lib\win32_x86\sdl2.dll`  
 - MacOS: `pcbasic/lib/darwin/libSDL2.dylib`  
+- Linux: `pcbasic/lib/linux/libSDL2-2.0.so.0`  
 
 [PyParallel](https://github.com/pyserial/pyparallel) is only needed to access physical parallel ports, not for printing to a CUPS or Windows printer.
 Note that most modern machines do not actually have parallel ports. If you have a parallel port and want to use it with PC-BASIC,
