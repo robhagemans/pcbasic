@@ -130,7 +130,10 @@ def package(**setup_options):
             #'optimize': 2,
         },
         'bdist_mac': {
-            'iconfile': 'resources/pcbasic.icns', 'bundle_name': '%s-%s' % (NAME, SHORT_VERSION),
+            'iconfile': 'resources/pcbasic.icns',
+            'bundle_name': '%s-%s' % (NAME, SHORT_VERSION),
+            'codesign-identity': '-',
+            'codesign-deep': True,
         },
         'bdist_dmg': {
             # creating applications shortcut in the DMG fails somehow
