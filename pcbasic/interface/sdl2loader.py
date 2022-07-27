@@ -4,7 +4,7 @@ Locate and link the required SDL2 dlls for use by sdl2.py
 """
 
 """
-This file contains some logic from Marcus von Appen's pysdl2.
+This file contains code from Marcus von Appen's pysdl2.
 The original package is at https://github.com/py-sdl/py-sdl2
 
 pysdl2 licence

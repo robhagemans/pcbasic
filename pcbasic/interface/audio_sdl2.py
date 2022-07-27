@@ -8,24 +8,43 @@ This file is released under the GNU GPL version 3 or later.
 
 # see e.g. http://toomanyideas.net/2014/pysdl2-playing-a-sound-from-a-wav-file.html
 
+import os
 import logging
 import ctypes
 from collections import deque
 
-from ..compat import zip
+from ..compat import zip, BASE_DIR
 from .audio import AudioPlugin
 from .base import audio_plugins, InitFailed
 from . import synthesiser
 
+
+###############################################################################
+# locate and load SDL libraries
+
+if False:
+    # packagers take note, we need these imports to be bundled
+    from . import sdl2loader
+    from . import sdl2
+
 # sdl2 module is imported only at plugin initialisation
 sdl2 = None
 
-if False:
-    # packagers take note
-    from . import sdl2
+# custom dll location
+LIB_DIR = os.path.join(BASE_DIR, 'lib')
+
 
 def _import_sdl2():
+    """Import the sdl2 bindings and define constants."""
     global sdl2
+
+    # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
+    # first in LIB_DIR, then in pysdl2dll module, then the standard search path
+    # this means that user should not have dll in LIB_DIR if they want to use another one
+    from . import sdl2loader
+    sdl2loader.load_dlls(LIB_DIR)
+
+    # this raises ImportError if no library has been found
     from . import sdl2
 
 # approximate generator chunk length
@@ -39,6 +58,8 @@ _MIN_SAMPLES_BUFFER = 2 * _CALLBACK_CHUNK_LENGTH
 _QUIET_QUIT = 100
 
 
+@audio_plugins.register('ansi')
+@audio_plugins.register('cli')
 @audio_plugins.register('sdl2')
 class AudioSDL2(AudioPlugin):
     """SDL2-based audio plugin."""

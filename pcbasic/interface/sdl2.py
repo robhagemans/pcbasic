@@ -1,7 +1,7 @@
 """
 This is a condensed version of Marcus von Appen's pysdl2,
 containing only the functions I need. It is based on version 0.9.5.
-The original package is at https://github.com/marcusva/py-sdl2
+The original package is at https://github.com/py-sdl/py-sdl2
 
 pysdl2 licence
 ==============
