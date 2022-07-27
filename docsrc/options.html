@@ -843,7 +843,7 @@
         </dd>
 
         <dt id="--sound">
-            <code><b>--sound=</b>[<b>none</b>|<b>beep</b>|<b>portaudio</b>|<b>interface</b>]</code>
+            <code><b>--sound=</b>[<b>true</b>|<b>false</b>]</code>
         </dt>
         <dd>
             Choose the sound engine to use.
@@ -852,22 +852,24 @@
                 <dt><code><b>false</b></code></dt>
                 <dd>Suppress sound output.</dd>
                 <dt><code><b>true</b></code></dt>
-                <dd>Output sound, if a sound driver is available for the interface.</dd>
+                <dd>Output sound, if a sound driver is available.</dd>
             </dl>
 
             Default is <code><b>interface</b></code>.
 
-            The following values for this option are deprecated; PortAudio will be used by default
-            in the text-based interfaces:
+            The following values for this option are deprecated. SDL2 will be used by default; if it is not available,
+            but PortAudio is, that will be used.
             <dl class="compact">
                 <dt><code><b>none</b></code></dt>
-                <dd>Suppress sound output. <em>(Use <code><b>false</b></code> instead)</em></dd>
-                <dt><code><b>interface</b></code>  <em>(Use <code><b>true</b></code> instead</dt>
-                <dd>Use the native sound engine of the interface, if available.</dd>
-                <dt><code><b>beep</b></code></dt>
-                <dd>Use the built-in speaker.</dd>
+                <dd>Suppress sound output. Use <code><b>false</b></code> instead.</dd>
+                <dt><code><b>interface</b></code></dt>
+                <dd>Use the native sound engine of the interface. Use <code><b>true</b></code> instead.</dd>
+                <dt><code><b>sdl2</b></code></dt>
+                <dd>Use the SDL2 sound generator.</dd>
                 <dt><code><b>portaudio</b></code></dt>
                 <dd>Use the PortAudio sound generator.</dd>
+                <dt><code><b>beep</b></code></dt>
+                <dd>Use the built-in speaker.</dd>
             </dl>
 
         </dd>
