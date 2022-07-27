@@ -15,24 +15,22 @@ The following packages are needed, recommended or optional when installing PC-BA
 |-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
 | [Python 3.6.9 or later](https://www.python.org/downloads/)                    | all                | required     |
 | [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | graphics and sound with `--interface=graphical`
-| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound with `--interface=text`
 | [PySerial 3.4](https://github.com/pyserial/pyserial)                          | all                | optional     | physical or emulated serial port access
 | [PyParallel](https://github.com/pyserial/pyparallel)                          | Windows, Linux     | optional     | physical parallel port access
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound without SDL2
 
 `setuptools` and `pip` are included with Python.
 Once you have a working Python installation, most dependencies can be installed with `pip`:
 
-        pip3 install pysdl2-dll pyaudio pyserial
+        pip3 install pysdl2-dll pyserial
 
 For Windows, Mac, and Linux, it is recommended to use the SDL2 and SDL2-gfx libraries provided by the [pysdl2-dll](https://github.com/a-hurst/pysdl2-dll) package.
 Alternatively, you can get the library directly from [libsdl.org](https://www.libsdl.org/download-2.0.php).
-Install the library in your OS's standard location for libraries.
-If this causes difficulties, you can alternatively place the library in the following location:
+Install the library in your OS's standard location for libraries. If this causes difficulties, you can alternatively place the library in `pcbasic/lib`.
 
-- Windows (64-bit Python, 64-bit SDL): `pcbasic\lib\win32_x64\sdl2.dll`  
-- Windows (32-bit Python, 32-bit SDL): `pcbasic\lib\win32_x86\sdl2.dll`  
-- MacOS: `pcbasic/lib/darwin/libSDL2.dylib`  
-- Linux: `pcbasic/lib/linux/libSDL2-2.0.so.0`  
+[PyAudio](http://people.csail.mit.edu/hubert/pyaudio/) is only used if SDL2 is not available. The project only distributes binary wheels for Windows.
+On Mac or Linux, `pip3 install pyaudio` will try to compile the module from source; for this to succeed, you need to have [the PortAudio library](http://files.portaudio.com/download.html)
+and the header files for your Python version and for PortAudio installed on your system.
 
 [PyParallel](https://github.com/pyserial/pyparallel) is only needed to access physical parallel ports, not for printing to a CUPS or Windows printer.
 Note that most modern machines do not actually have parallel ports. If you have a parallel port and want to use it with PC-BASIC,
