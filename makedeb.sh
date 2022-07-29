@@ -15,8 +15,8 @@ HIGHEST=11
 DEBDIR=build/python3-pcbasic_"$VERSION"_all
 
 # clear up and prepare for packaging
+python3 -m packaging bdist_wheel
 python3 -m packaging build_resources
-
 
 # entry point
 mkdir -p $DEBDIR/usr/local/bin
