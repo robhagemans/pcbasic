@@ -349,6 +349,8 @@ class Lumberjack(object):
 
     def __init__(self):
         """Set up the global logger temporarily until we know the log stream."""
+        # include messages from warnings madule in the logs
+        logging.captureWarnings(True)
         # we use the awkward logging interface as we can only use basicConfig once
         # get the root logger
         root_logger = logging.getLogger()

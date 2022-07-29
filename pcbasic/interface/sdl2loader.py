@@ -48,7 +48,11 @@ from ctypes.util import find_library
 try:
     # sdl2dll will set the SDL2_DLL_PATH environment variable
     # unlike pysdl2, we do not use this variable
-    import sdl2dll
+    with warnings.catch_warnings():
+        # ignore warnings about the source package
+        # we only want to make noise if we actually want to use SDL2 but can't link the library
+        warnings.simplefilter('ignore')
+        import sdl2dll
 except ImportError:
     sdl2dll = None
 
