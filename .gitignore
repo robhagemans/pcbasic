@@ -1,13 +1,7 @@
 *.pyc
 *.pyd
 *.pyo
-*.dll
-*.dylib
-.android.*
-USAGE.txt
-doc/
 build/
 dist/
-pcbasic.egg-info/
 __pycache__/
 .vscode/
