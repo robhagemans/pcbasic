@@ -34,7 +34,6 @@ elif 'bdist_wheel' in sys.argv[1:]:
     # universal wheel: same code works in py2 and py3, no C extensions
     setup(cmdclass=COMMANDS, script_args=sys.argv[1:]+['--universal'], **SETUP_OPTIONS)
 elif set(sys.argv[1:]) & set(('sdist', 'build_docs', 'wash')):
-    # universal wheel: same code works in py2 and py3, no C extensions
     setup(cmdclass=COMMANDS, **SETUP_OPTIONS)
 else:
     sys.exit("""USAGE:

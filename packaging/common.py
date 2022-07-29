@@ -237,9 +237,8 @@ def sdist_ext(obj):
 def bdist_wheel_ext(obj):
     """Run custom bdist_wheel command."""
     wash()
-    #stamp_release() # not needed for wheel? included in pip pkg without this line. called through sdist?
     build_docs()
-    # bdist_wheel calls build_py
+    # bdist_wheel calls build_py which does stamp_release() and build_docs()
     bdist_wheel.bdist_wheel.run(obj)
     wash()
 
