@@ -57,7 +57,6 @@ except ImportError:
     sdl2dll = None
 
 
-
 # from pysdl2's dll.py
 
 def _finds_libs_at_path(libnames, path, patterns):
@@ -235,13 +234,8 @@ def load_dlls(*library_paths):
     try:
         sdl2_lib = DLL('SDL2', SDL_NAMES, library_paths)
     except RuntimeError as exc:
-        warnings.warn('Failed to load library sdl2: %s' % exc)
+        logging.warning('Failed to load library sdl2: %s' % exc)
     try:
         gfx_lib = DLL('SDL2_gfx', GFX_NAMES, library_paths)
     except RuntimeError as exc:
-        warnings.warn('Failed to load library sdl2_gfx: %s' % exc)
-
-
-def get_dll_file():
-    """Gets the file name of the loaded SDL2 library."""
-    return sdl2_lib.libfile
+        logging.warning('Failed to load library sdl2_gfx: %s' % exc)
