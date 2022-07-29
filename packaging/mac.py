@@ -132,7 +132,7 @@ def package(**setup_options):
         'bdist_mac': {
             'iconfile': 'resources/pcbasic.icns',
             'bundle_name': '%s-%s' % (NAME, SHORT_VERSION),
-            'codesign-identity': '-',
+            'codesign-identity': '_',
             'codesign-deep': True,
         },
         'bdist_dmg': {
