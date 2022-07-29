@@ -6,43 +6,59 @@ Linux packaging
 This file is released under the GNU GPL version 3 or later.
 """
 
-import os
-import shutil
 import subprocess
-from io import open
 
-from setuptools import setup
+from .common import wash, build_icon, build_docs, wash, mkdir
 
-from .common import wash, new_command, build_icon, build_docs, wash, stamp_release, mkdir
-from .common import COMMANDS
-
-XDG_DESKTOP_ENTRY = {
-    u'Name': u'PC-BASIC',
-    u'GenericName': u'GW-BASIC compatible interpreter',
-    u'Exec': u'/usr/local/bin/pcbasic',
-    u'Terminal': u'false',
-    u'Type': u'Application',
-    u'Icon': u'pcbasic',
-    u'Categories': u'Development;IDE;',
-}
 
 def build_desktop_file():
     """Build .desktop file."""
+    XDG_DESKTOP_ENTRY = """\
+[Desktop Entry]
+Name=PC-BASIC
+GenericName=GW-BASIC compatible interpreter
+Exec=/usr/local/bin/pcbasic
+Terminal=false
+Type=Application
+Icon=pcbasic
+Categories=Development;IDE;
+"""
     with open('resources/pcbasic.desktop', 'w') as xdg_file:
-        xdg_file.write(u'[Desktop Entry]\n')
-        xdg_file.write(u'\n'.join(
-            u'{}={}'.format(_key, _value)
-            for _key, _value in XDG_DESKTOP_ENTRY.items()
-        ))
-        xdg_file.write(u'\n')
+        xdg_file.write(XDG_DESKTOP_ENTRY)
 
-def build_resources():
+
+def build_deb_control_file(setup_options):
+    """Build control file for deb package."""
+    CONTROL_PATTERN = """\
+Package: python3-pcbasic
+Version: {version}
+License: {license}
+Vendor: none
+Architecture: all
+Maintainer: <{author_email}>
+Depends: python3-pkg-resources,python3-serial,python3-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0
+Section: default
+Priority: extra
+Homepage: {url}
+Description: {description}
+"""
+    with open('resources/control', 'w') as control_file:
+        control_file.write(CONTROL_PATTERN.format(**setup_options))
+
+
+def build_resources(setup_options):
     """Build desktop and package resources."""
     wash()
-    stamp_release()
     mkdir('resources')
     build_desktop_file()
+    build_deb_control_file(setup_options)
     build_icon()
     build_docs()
 
-COMMANDS.update(dict(build_resources=new_command(build_resources)))
+
+def package(**setup_options):
+    """Build Linux packages."""
+    subprocess.run('python3 -m packaging bdist_wheel', shell=True)
+    build_resources(setup_options)
+    version = setup_options['version']
+    subprocess.run(f'packaging/makedeb.sh {version}', shell=True)

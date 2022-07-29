@@ -14,10 +14,6 @@ HIGHEST=11
 # to be run from repo root
 DEBDIR=build/python3-pcbasic_"$VERSION"_all
 
-# clear up and prepare for packaging
-python3 -m packaging bdist_wheel
-python3 -m packaging build_resources
-
 # entry point
 mkdir -p $DEBDIR/usr/local/bin
 cp ./pc-basic $DEBDIR/usr/local/bin/pcbasic
@@ -26,8 +22,8 @@ cp ./pc-basic $DEBDIR/usr/local/bin/pcbasic
 for PYVER in $(seq $LOWEST $HIGHEST); do
     mkdir -p $DEBDIR/usr/local/lib/python3.$PYVER/dist-packages
 done
-wheel unpack dist/pcbasic-$VERSION-py2.py3-none-any.whl -d dist/
-mv dist/pcbasic-$VERSION/* $DEBDIR/usr/local/lib/python3.$LOWEST/dist-packages
+wheel unpack dist/pcbasic-$VERSION-py2.py3-none-any.whl -d build/
+mv build/pcbasic-$VERSION/* $DEBDIR/usr/local/lib/python3.$LOWEST/dist-packages
 
 # link from other suported python versions
 for PYVER in $(seq $(($LOWEST+1)) $HIGHEST); do
@@ -59,23 +55,12 @@ pushd $DEBDIR
 find usr/ -exec md5sum '{}' \; >> DEBIAN/md5sums
 popd
 
-cat << EOF > $DEBDIR/DEBIAN/control
-Package: python3-pcbasic
-Version: $VERSION
-License: GPLv3
-Vendor: none
-Architecture: all
-Maintainer: <rob@bandicoot>
-Depends: python3-pkg-resources,python3-serial,python3-parallel,libsdl2-2.0-0,libsdl2-gfx-1.0-0
-Section: default
-Priority: extra
-Homepage: http://pc-basic.org
-Description: A free, cross-platform emulator for the GW-BASIC family of interpreters.
-EOF
+# DEBIAN/control file
+cp resources/control $DEBDIR/DEBIAN/control
 
-#TODO
-#Installed-Size: 6845
-du -s build/python3-pcbasic_2.0.5_all/usr/
+# calculate installed size
+echo -n "Installed-Size: " >> $DEBDIR/DEBIAN/control
+du -s build/python3-pcbasic_2.0.5_all/usr/ | awk '{print $1 }' >> $DEBDIR/DEBIAN/control
 
 # build the deb
 dpkg-deb --root-owner-group -b $DEBDIR

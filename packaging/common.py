@@ -171,9 +171,9 @@ def remove(path):
         os.remove(path)
 
 def mkdir(name):
-    """Create a directory."""
+    """Create a directory and all parents needed (mkdir -p)."""
     with os_safe('creating', name):
-        os.mkdir(name)
+        os.makedirs(name)
 
 def stamp_release():
     """Place the relase ID file."""
