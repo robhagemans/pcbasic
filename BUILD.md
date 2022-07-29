@@ -50,7 +50,7 @@ PC-BASIC employs the following external command-line tools, if available:
 
 
 #### Building from GitHub source repository ####
-The following additional packages are used for development, testing and packaging:
+The following additional packages and tools are used for development, testing and packaging:
 
 | Package                                                                                                        | OS                | Used for
 |----------------------------------------------------------------------------------------------------------------|-------------------|-----------------
@@ -65,7 +65,8 @@ The following additional packages are used for development, testing and packagin
 | [`twine`](https://pypi.python.org/pypi/twine)                                                                  | all               | packaging
 | [`Pillow`](https://python-pillow.org/)                                                                         | all               | packaging
 | [`cx_Freeze`](https://pypi.org/project/cx_Freeze/)                                                             | Windows, MacOS    | packaging
-| [`fpm`](https://github.com/jordansissel/fpm)                                                                   | Linux             | packaging
+| `dpkg`                                                                                                         | Linux             | packaging
+| `alien`                                                                                                        | Linux             | packaging
 
 
 These are the steps to set up the local repository ready to run PC-BASIC:
