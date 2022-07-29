@@ -25,7 +25,7 @@ if sys.platform == 'win32':
 elif sys.platform == 'darwin':
     from .mac import package
 else:
-    from .linux import package
+    from . import linux
 
 # usage:
 if not sys.argv[1:]:
@@ -33,7 +33,7 @@ if not sys.argv[1:]:
 elif 'bdist_wheel' in sys.argv[1:]:
     # universal wheel: same code works in py2 and py3, no C extensions
     setup(cmdclass=COMMANDS, script_args=sys.argv[1:]+['--universal'], **SETUP_OPTIONS)
-elif set(sys.argv[1:]) & set(('sdist', 'build_docs', 'wash')):
+elif set(sys.argv[1:]) & set(('sdist', 'build_docs', 'wash', 'build_resources')):
     setup(cmdclass=COMMANDS, **SETUP_OPTIONS)
 else:
     sys.exit("""USAGE:

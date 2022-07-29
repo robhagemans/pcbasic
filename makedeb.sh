@@ -14,6 +14,10 @@ HIGHEST=11
 # to be run from repo root
 DEBDIR=build/python3-pcbasic_"$VERSION"_all
 
+# clear up and prepare for packaging
+python3 -m packaging build_resources
+
+
 # entry point
 mkdir -p $DEBDIR/usr/local/bin
 cp ./pc-basic $DEBDIR/usr/local/bin/pcbasic
@@ -40,10 +44,11 @@ cp resources/pcbasic.desktop $DEBDIR/usr/local/share/applications
 mkdir -p $DEBDIR/usr/local/share/icons
 cp resources/pcbasic.png $DEBDIR/usr/local/share/icons
 
-# manpage
+# manpage and docs
 mkdir -p $DEBDIR/usr/local/share/man
-cp resources/pcbasic.1.gz $DEBDIR/usr/local/share/man
-
+mkdir -p $DEBDIR/usr/local/share/doc
+cp doc/pcbasic.1.gz $DEBDIR/usr/local/share/man
+cp doc/PC-BASIC_documentation.html $DEBDIR/usr/local/share/doc
 
 # package files
 mkdir -p $DEBDIR/DEBIAN
