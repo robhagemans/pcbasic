@@ -436,7 +436,7 @@ class Display(object):
         dst = values.to_int(next(args))
         list(args)
         error.range_check(0, self.mode.num_pages-1, dst)
-        self.pages[dst].copy_from(self.pages[dst])
+        self.pages[dst].copy_from(self.pages[src])
 
     def color_(self, args):
         """COLOR: set colour attributes."""
