@@ -44,11 +44,13 @@ cp resources/pcbasic.desktop $DEBDIR/usr/local/share/applications
 mkdir -p $DEBDIR/usr/local/share/icons
 cp resources/pcbasic.png $DEBDIR/usr/local/share/icons
 
-# manpage and docs
+# manpage
 mkdir -p $DEBDIR/usr/local/share/man
-mkdir -p $DEBDIR/usr/local/share/doc
 cp doc/pcbasic.1.gz $DEBDIR/usr/local/share/man
-cp doc/PC-BASIC_documentation.html $DEBDIR/usr/local/share/doc
+
+# documentation
+#mkdir -p $DEBDIR/usr/local/share/doc/pcbasic
+#cp doc/PC-BASIC_documentation.html $DEBDIR/usr/local/share/doc/pcbasic
 
 # package files
 mkdir -p $DEBDIR/DEBIAN
