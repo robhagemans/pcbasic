@@ -2,6 +2,10 @@
 
 # pc-basic version number
 VERSION=$1
+if [ -z $VERSION ]; then
+    echo "usage: makedeb.sh VERSION"
+    exit 1
+fi
 
 # python versions supported
 LOWEST=6
@@ -66,17 +70,13 @@ EOF
 #Installed-Size: 6845
 du -s build/python3-pcbasic_2.0.5_all/usr/
 
-
-# make root owner
-find $DEBDIR/ -exec sudo chown root:root '{}' \; 
-
-
 # build the deb
-sudo dpkg -b $DEBDIR
+dpkg-deb --root-owner-group -b $DEBDIR
 mkdir dist
 mv $DEBDIR.deb dist/
 
 # build the rpm
 cd dist
-sudo alien --to-rpm --keep-version python3-pcbasic_"$VERSION"_all.deb
+# claims to need sudo but seem s to get root owner correct without
+alien --to-rpm --keep-version python3-pcbasic_"$VERSION"_all.deb
 cd ..
