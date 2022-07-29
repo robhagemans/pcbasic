@@ -45,7 +45,7 @@ def package(**setup_options):
                     if (
                             # remove superfluous copies of python27.dll in lib/
                             # as there is a copy in the package root already
-                            fname.lower() == 'python27.dll' or fname.lower() == 'msvcr90.dll'
+                            fname.lower() == 'python37.dll' or fname.lower() == 'msvcr90.dll'
                             # remove tests and examples
                             or testing
                             # we're only producing packages for win32_x86
@@ -62,8 +62,20 @@ def package(**setup_options):
             # chunky libs on python3.7 that I don't think we use
             remove(build_dir + 'lib/libcrypto-1_1.dll')
             remove(build_dir + 'lib/libssl-1_1.dll')
+            # unneeded sdl2 bits
+            remove(build_dir + 'lib/sdl2dll/dll/SDL2_image.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/SDL2_mixer.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/SDL2_ttf.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libwebp-7.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libtiff-5.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libopus-0.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libmodplug-1.dll')
             # remove modules that can be left out
-            for module in ('distutils', 'setuptools', 'pydoc_data'):
+            for module in (
+                    'distutils', 'setuptools', 'pydoc_data', 'lib2to3', 'pip', 'unittest',
+                    'wheel', 'lxml',
+                    'multiprocessing', 'asyncio'
+                ):
                 prune(build_dir + 'lib/%s' % module)
 
 
