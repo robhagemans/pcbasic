@@ -53,6 +53,7 @@ def make_clean():
                 remove(os.path.join(root, name))
     # remove distribution resources
     prune(os.path.join(HERE, 'resources'))
+    prune(os.path.join(HERE, 'doc'))
     # remove release stamp
     remove(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'))
     # remove manifest
