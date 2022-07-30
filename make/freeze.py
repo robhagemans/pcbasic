@@ -14,7 +14,7 @@ from distutils.util import get_platform
 from setuptools import find_packages
 from setuptools.command import sdist, build_py
 
-from .common import VERSION, AUTHOR, SETUP_DATA, HERE
+from .common import VERSION, AUTHOR, HERE
 from .common import make_clean, make_docs, stamp_release
 
 
@@ -43,8 +43,9 @@ EXCLUDE_PACKAGES=[
 ]
 
 SETUP_OPTIONS = dict(
+    name="pcbasic",
+    version=VERSION,
     author=AUTHOR,
-
     # contents
     # only include subpackages of pcbasic: exclude tests, docsrc, packaging etc
     # even if these are excluded in the manifest, bdist_wheel will pick them up (but sdist won't)
@@ -56,8 +57,6 @@ SETUP_OPTIONS = dict(
     entry_points=dict(
         console_scripts=['pcbasic=pcbasic:main'],
     ),
-
-    **SETUP_DATA
 )
 
 def build_manifest(includes, excludes):
