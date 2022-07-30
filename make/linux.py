@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import subprocess
 
-from .common import wash, build_icon, build_docs, wash, mkdir
+from .common import wash, build_icon, build_docs, wash, mkdir, prepare
 
 
 def build_desktop_file():
@@ -43,7 +43,14 @@ Homepage: {url}
 Description: {description}
 """
     with open('resources/control', 'w') as control_file:
-        control_file.write(CONTROL_PATTERN.format(**setup_options))
+        control_file.write(CONTROL_PATTERN.format(
+            license=setup_options['license']['text'],
+            author_email=setup_options['authors'][0]['email'],
+            url=setup_options['urls']['Homepage'],
+            version=setup_options['version'],
+            description=setup_options['description']
+        )
+    )
 
 
 def build_resources(setup_options):
@@ -58,7 +65,8 @@ def build_resources(setup_options):
 
 def package(**setup_options):
     """Build Linux packages."""
-    subprocess.run('python3 -m make bdist_wheel', shell=True)
+    prepare()
+    subprocess.run(['python3.7', '-m', 'build'])
     build_resources(setup_options)
     version = setup_options['version']
     subprocess.run(f'make/makedeb.sh {version}', shell=True)

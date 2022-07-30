@@ -7,7 +7,6 @@ Python, Windows, MacOS and Linux packaging utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
-from __future__ import print_function
 
 import sys
 import os
@@ -23,6 +22,7 @@ from distutils import cmd
 
 from setuptools import find_packages
 from setuptools.command import sdist, build_py
+from setuptools.config.pyprojecttoml import read_configuration
 from wheel import bdist_wheel
 from PIL import Image
 
@@ -36,8 +36,7 @@ from pcbasic.compat import int2byte
 # root location
 HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-with open(os.path.join(HERE, 'setup.json'), encoding='utf-8') as setup_data:
-    SETUP_DATA = json.load(setup_data)
+SETUP_DATA = read_configuration(os.path.join(HERE, 'pyproject.toml'))['project']
 
 # platform tag (build directories etc.)
 PLATFORM_TAG = '{}-{}.{}'.format(
@@ -119,34 +118,8 @@ def build_icon():
     format = {'win32': 'ico', 'darwin': 'icns'}.get(sys.platform, 'png')
     img.resize((width*2, height*2)).save('resources/pcbasic.%s' % (format,))
 
-
 ###############################################################################
-# setup.py new/extended commands
-# see http://seasonofcode.com/posts/how-to-add-custom-build-steps-and-commands-to-setup-py.html
 
-def new_command(function):
-    """Add a custom command without having to faff around with an overbearing API."""
-
-    class _NewCommand(cmd.Command):
-        description = function.__doc__
-        user_options = []
-        def run(self):
-            function()
-        def initialize_options(self):
-            pass
-        def finalize_options(self):
-            pass
-
-    return _NewCommand
-
-def extend_command(parent, function):
-    """Extend an existing command."""
-
-    class _ExtCommand(parent):
-        def run(self):
-            function(self)
-
-    return _ExtCommand
 
 @contextmanager
 def os_safe(message, name):
@@ -183,21 +156,6 @@ def stamp_release():
     with open(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'), 'w') as release_json:
         release_json.write(json_str)
 
-def build_manifest(includes, excludes):
-    """Build the MANIFEST.in."""
-    manifest = u''.join(
-        u'include {}\n'.format(_inc) for _inc in includes if not _inc.endswith('/')
-    ) + u''.join(
-        u'graft {}\n'.format(_inc[:-1]) for _inc in includes if _inc.endswith('/')
-    ) + u''.join(
-        u'exclude {}\n'.format(_exc) for _exc in excludes if not _exc.endswith('/')
-    ) + u''.join(
-        u'prune {}\n'.format(_exc[:-1]) for _exc in excludes if _exc.endswith('/')
-    )
-    with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as manifest_file:
-        manifest_file.write(manifest)
-
-
 def build_docs():
     """build documentation files"""
     import docsrc
@@ -225,35 +183,8 @@ def wash():
     # remove manifest
     remove(os.path.join(HERE, 'MANIFEST.in'))
 
-def sdist_ext(obj):
-    """Run custom sdist command."""
+def prepare():
+    """Prepare for sdist and wheel builds."""
     wash()
     stamp_release()
-    build_manifest(INCLUDE_FILES + ('pcbasic/lib/README.md',), EXCLUDE_FILES)
     build_docs()
-    sdist.sdist.run(obj)
-    wash()
-
-def bdist_wheel_ext(obj):
-    """Run custom bdist_wheel command."""
-    wash()
-    build_docs()
-    # bdist_wheel calls build_py which does stamp_release() and build_docs()
-    bdist_wheel.bdist_wheel.run(obj)
-    wash()
-
-def build_py_ext(obj):
-    """Run custom build_py command."""
-    stamp_release()
-    build_manifest(INCLUDE_FILES + ('pcbasic/lib/*/*',), EXCLUDE_FILES)
-    build_py.build_py.run(obj)
-
-
-# setup commands
-COMMANDS = {
-    'build_docs': new_command(build_docs),
-    'sdist': extend_command(sdist.sdist, sdist_ext),
-    'build_py': extend_command(build_py.build_py, build_py_ext),
-    'bdist_wheel': extend_command(bdist_wheel.bdist_wheel, bdist_wheel_ext),
-    'wash': new_command(wash),
-}

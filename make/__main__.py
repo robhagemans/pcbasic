@@ -7,18 +7,15 @@ Python, Windows, MacOS and Linux packaging
 This file is released under the GNU GPL version 3 or later.
 """
 
-import os
 import sys
+assert sys.version_info >= (3, 7), 'Packaging requires Python >= 3.7'
+
+import os
 import json
-from io import open
+import subprocess
 
-from setuptools import find_packages, setup
+from .common import SETUP_OPTIONS, prepare, build_docs, wash
 
-# we're not setup.py and not being called by the sdist installer
-# so we can import from the package if we want
-from pcbasic import VERSION, AUTHOR
-
-from .common import COMMANDS, SETUP_OPTIONS
 
 if sys.platform == 'win32':
     from .windows import package
@@ -30,11 +27,15 @@ else:
 # usage:
 if not sys.argv[1:]:
     package(**SETUP_OPTIONS)
-elif 'bdist_wheel' in sys.argv[1:]:
-    # universal wheel: same code works in py2 and py3, no C extensions
-    setup(cmdclass=COMMANDS, script_args=sys.argv[1:]+['--universal'], **SETUP_OPTIONS)
-elif set(sys.argv[1:]) & set(('sdist', 'build_docs', 'wash')):
-    setup(cmdclass=COMMANDS, **SETUP_OPTIONS)
+elif not sys.argv[2:]:
+    if sys.argv[1] in ('wheel', 'bdist_wheel', 'sdist', 'build'):
+        prepare()
+        # universal wheel: same code works in py2 and py3, no C extensions
+        subprocess.run(['python3.7', '-m', 'build'])
+    elif sys.argv[1] == 'build_docs':
+        build_docs()
+    elif sys.argv[1] == 'wash':
+        wash()
 else:
     sys.exit("""USAGE:
 
