@@ -103,16 +103,6 @@ def extend_command(parent, function):
 
     return _ExtCommand
 
-
-def sdist_ext(obj):
-    """Run custom sdist command."""
-    make_clean()
-    stamp_release()
-    build_manifest(INCLUDE_FILES + ('pcbasic/lib/README.md',), EXCLUDE_FILES)
-    make_docs()
-    sdist.sdist.run(obj)
-    make_clean()
-
 def build_py_ext(obj):
     """Run custom build_py command."""
     stamp_release()
@@ -122,6 +112,5 @@ def build_py_ext(obj):
 
 # setup commands
 COMMANDS = {
-    'sdist': extend_command(sdist.sdist, sdist_ext),
     'build_py': extend_command(build_py.build_py, build_py_ext),
 }
