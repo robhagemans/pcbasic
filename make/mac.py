@@ -132,8 +132,8 @@ def package(**setup_options):
         'bdist_mac': {
             'iconfile': 'resources/pcbasic.icns',
             'bundle_name': '%s-%s' % (NAME, SHORT_VERSION),
-            'codesign-identity': '_',
-            'codesign-deep': True,
+            #'codesign_identity': '-',
+            #'codesign_deep': True,
         },
         'bdist_dmg': {
             # creating applications shortcut in the DMG fails somehow
@@ -150,3 +150,5 @@ def package(**setup_options):
 
     # run the cx_Freeze setup()
     cx_Freeze.setup(script_args=['bdist_dmg'], **setup_options)
+    # cx_Freeze's codesign options result in failure with "app is already signed", so trying here
+    subprocess.run(['codesign', '-s', '-', '--deep', f'dist/PC-BASIC-{VERSION}.dmg'])
