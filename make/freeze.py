@@ -113,14 +113,6 @@ def sdist_ext(obj):
     sdist.sdist.run(obj)
     make_clean()
 
-#def bdist_wheel_ext(obj):
-#    """Run custom bdist_wheel command."""
-#    make_clean()
-#    make_docs()
-#    # bdist_wheel calls build_py which does stamp_release() and build_docs()
-#    bdist_wheel.bdist_wheel.run(obj)
-#    make_clean()
-
 def build_py_ext(obj):
     """Run custom build_py command."""
     stamp_release()
@@ -131,6 +123,5 @@ def build_py_ext(obj):
 # setup commands
 COMMANDS = {
     'sdist': extend_command(sdist.sdist, sdist_ext),
-    #'build_py': extend_command(build_py.build_py, build_py_ext),
-    #'bdist_wheel': extend_command(bdist_wheel.bdist_wheel, bdist_wheel_ext),
+    'build_py': extend_command(build_py.build_py, build_py_ext),
 }
