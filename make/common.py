@@ -100,6 +100,20 @@ SETUP_OPTIONS = dict(
     **SETUP_DATA
 )
 
+def build_manifest(includes, excludes):
+    """Build the MANIFEST.in."""
+    manifest = u''.join(
+        u'include {}\n'.format(_inc) for _inc in includes if not _inc.endswith('/')
+    ) + u''.join(
+        u'graft {}\n'.format(_inc[:-1]) for _inc in includes if _inc.endswith('/')
+    ) + u''.join(
+        u'exclude {}\n'.format(_exc) for _exc in excludes if not _exc.endswith('/')
+    ) + u''.join(
+        u'prune {}\n'.format(_exc[:-1]) for _exc in excludes if _exc.endswith('/')
+    )
+    with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as manifest_file:
+        manifest_file.write(manifest)
+
 ###############################################################################
 # icon
 
