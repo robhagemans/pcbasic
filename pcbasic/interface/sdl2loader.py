@@ -42,6 +42,7 @@ import sys
 import os
 import warnings
 import logging
+from platform import machine as cpu_arch
 from ctypes import CDLL
 from ctypes.util import find_library
 
