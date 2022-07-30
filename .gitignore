@@ -5,3 +5,5 @@ build/
 dist/
 __pycache__/
 .vscode/
+pcbasic/data/USAGE.txt
+pcbasic/basic/data/release.json
