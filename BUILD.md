@@ -64,7 +64,7 @@ The following additional packages and tools are used for development, testing an
 | [`wheel`](https://pypi.python.org/pypi/wheel)                                                                  | all               | packaging
 | [`twine`](https://pypi.python.org/pypi/twine)                                                                  | all               | packaging
 | [`Pillow`](https://python-pillow.org/)                                                                         | all               | packaging
-| [`cx_Freeze`](https://pypi.org/project/cx_Freeze/)                                                             | Windows, MacOS    | packaging
+| [`cx_Freeze` 6.11.1](https://pypi.org/project/cx_Freeze/)                                                      | Windows, MacOS    | packaging
 | `dpkg`                                                                                                         | Linux             | packaging
 | `alien`                                                                                                        | Linux             | packaging
 

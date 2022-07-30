@@ -92,7 +92,7 @@ def package(**setup_options):
             os.rename('dist/{}-win32.msi'.format(name), 'dist/{}.msi'.format(name))
             wash()
 
-        def add_config(self, fullname):
+        def add_config(self):
             """Override cx_Freeze add_config."""
             # mostly copy-paste from cxfreeze source, wich some changes
             if self.directories:
@@ -165,7 +165,7 @@ def package(**setup_options):
             """Per-user or per-machine install dialog."""
             # based on dialog from cpython 2.7 source code
             # https://svn.python.org/projects/python/trunk/Tools/msi/msi.py
-            whichusers = distutils.command.bdist_msi.PyDialog(
+            whichusers = cx_Freeze.command.bdist_msi.PyDialog(
                 self.db, "WhichUsersDlg", self.x, self.y, self.width, self.height,
                 self.modal, self.title, "AdminInstall", "Next", "Cancel"
             )
@@ -180,9 +180,9 @@ def package(**setup_options):
             radio.add("ALL", 0, 5, 150, 20, "Install for all users")
             radio.add("JUSTME", 0, 25, 235, 20, "Install just for me")
 
-            whichusers.back("Back", None, active=0)
+            whichusers.backbutton("Back", None, active=0)
 
-            button = whichusers.next("Next >", "Cancel")
+            button = whichusers.nextbutton("Next >", "Cancel")
             # SetProperty events
             # https://docs.microsoft.com/en-us/windows/desktop/Msi/setproperty-controlevent
             button.event("[MSIINSTALLPERUSER]", "{}", 'WhichUsers="ALL"', 1)
@@ -195,7 +195,7 @@ def package(**setup_options):
             )
             button.event("EndDialog", "Return", 3)
 
-            button = whichusers.cancel("Cancel", "AdminInstall")
+            button = whichusers.cancelbutton("Cancel", "AdminInstall")
             button.event("SpawnDialog", "CancelDlg")
 
         def add_ui(self):
