@@ -21,8 +21,8 @@ from pcbasic.basic import VERSION
 
 BASEPATH = os.path.dirname(os.path.realpath(__file__))
 
-with open(os.path.join(BASEPATH, '..', 'setup.json'), encoding='utf-8') as setup_data:
-    SETUP_DATA = json.load(setup_data)
+with open(os.path.join(BASEPATH, 'description.json'), encoding='utf-8') as desc_json:
+    DESCR_STRS = json.load(desc_json)
 
 
 def read_file(filename):
@@ -206,7 +206,7 @@ def makedoc(header=None, output=None, embedded_style=True):
         <li><strong><a href="#dev">Developer's Guide</a></strong>, using PC-BASIC as a Python module</li>
     </ul>
 
-""".format(VERSION, now, SETUP_DATA['description'], SETUP_DATA['long_description'])
+""".format(VERSION, now, DESCR_STRS['description'], DESCR_STRS['long_description'])
     if not embedded_style:
         subheader_html += u"""
     <p>
