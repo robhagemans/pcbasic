@@ -6,10 +6,17 @@ Linux packaging
 This file is released under the GNU GPL version 3 or later.
 """
 
+import os
 import subprocess
 
+import toml
+
 from .common import make_clean, build_icon, make_docs, mkdir, prepare
-from .common import SETUP_DATA
+from .common import HERE, VERSION
+
+
+# project config
+SETUP_DATA = toml.load(os.path.join(HERE, 'pyproject.toml'))['project']
 
 
 def build_desktop_file():
@@ -28,7 +35,7 @@ Categories=Development;IDE;
         xdg_file.write(XDG_DESKTOP_ENTRY)
 
 
-def build_deb_control_file(setup_options):
+def build_deb_control_file():
     """Build control file for deb package."""
     CONTROL_PATTERN = """\
 Package: python3-pcbasic
@@ -45,21 +52,21 @@ Description: {description}
 """
     with open('resources/control', 'w') as control_file:
         control_file.write(CONTROL_PATTERN.format(
-            license=setup_options['license']['text'],
-            author_email=setup_options['authors'][0]['email'],
-            url=setup_options['urls']['Homepage'],
-            version=setup_options['version'],
-            description=setup_options['description']
+            license=SETUP_DATA['license']['text'],
+            author_email=SETUP_DATA['authors'][0]['email'],
+            url=SETUP_DATA['urls']['Homepage'],
+            version=VERSION,
+            description=SETUP_DATA['description']
         )
     )
 
 
-def build_resources(setup_options):
+def build_resources():
     """Build desktop and package resources."""
     make_clean()
     mkdir('resources')
     build_desktop_file()
-    build_deb_control_file(setup_options)
+    build_deb_control_file()
     build_icon()
     make_docs()
 
@@ -67,8 +74,6 @@ def build_resources(setup_options):
 def package():
     """Build Linux packages."""
     prepare()
-    setup_options = SETUP_DATA
     subprocess.run(['python3.7', '-m', 'build'])
-    build_resources(setup_options)
-    version = setup_options['version']
-    subprocess.run(f'make/makedeb.sh {version}', shell=True)
+    build_resources()
+    subprocess.run(f'make/makedeb.sh {VERSION}', shell=True)
