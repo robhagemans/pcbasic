@@ -75,9 +75,9 @@ These are the steps to set up the local repository ready to run PC-BASIC:
 
         git clone --recursive https://github.com/robhagemans/pcbasic.git
 
-2. Compile the documentation
+2. Make pcbasic/data/USAGE.txt
 
-        python3 -m make build_docs
+        python3.7 -m make docs
 
 3. Run pcbasic directly from the source directory
 

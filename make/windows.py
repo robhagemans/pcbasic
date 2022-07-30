@@ -13,7 +13,7 @@ import msilib
 import cx_Freeze
 from cx_Freeze import Executable
 
-from .common import wash, build_icon, build_docs, build_manifest, prune, remove
+from .common import make_clean, build_icon, make_docs, build_manifest, prune, remove
 from .common import COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .common import NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT
 
@@ -31,7 +31,7 @@ def package(**setup_options):
         def run(self):
             """Run build_exe command."""
             build_icon()
-            build_docs()
+            make_docs()
             # only include 32-bit DLLs
             build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
@@ -90,7 +90,7 @@ def package(**setup_options):
             # close the database file so we can rename the file
             del self.db
             os.rename('dist/{}-win32.msi'.format(name), 'dist/{}.msi'.format(name))
-            wash()
+            make_clean()
 
         def add_config(self):
             """Override cx_Freeze add_config."""

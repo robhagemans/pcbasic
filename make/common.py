@@ -26,8 +26,6 @@ from setuptools.config.pyprojecttoml import read_configuration
 from wheel import bdist_wheel
 from PIL import Image
 
-# we're not setup.py and not being called by the sdist installer
-# so we can import from the package if we want
 from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
 from pcbasic.basic.data import ICON
 from pcbasic.compat import int2byte
@@ -156,12 +154,12 @@ def stamp_release():
     with open(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'), 'w') as release_json:
         release_json.write(json_str)
 
-def build_docs():
+def make_docs():
     """build documentation files"""
     import docsrc
     docsrc.build_docs()
 
-def wash():
+def make_clean():
     """clean the workspace of build files; leave in-place compiled files"""
     # remove traces of egg
     for path in glob.glob(os.path.join(HERE, '*.egg-info')):
@@ -185,6 +183,6 @@ def wash():
 
 def prepare():
     """Prepare for sdist and wheel builds."""
-    wash()
+    make_clean()
     stamp_release()
-    build_docs()
+    make_docs()

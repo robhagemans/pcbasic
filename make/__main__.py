@@ -14,7 +14,7 @@ import os
 import json
 import subprocess
 
-from .common import SETUP_OPTIONS, prepare, build_docs, wash
+from .common import SETUP_OPTIONS, prepare, make_docs, make_clean
 
 
 if sys.platform == 'win32':
@@ -32,10 +32,12 @@ elif not sys.argv[2:]:
         prepare()
         # universal wheel: same code works in py2 and py3, no C extensions
         subprocess.run(['python3.7', '-m', 'build'])
-    elif sys.argv[1] == 'build_docs':
-        build_docs()
-    elif sys.argv[1] == 'wash':
-        wash()
+    elif sys.argv[1] == 'docs':
+        make_docs()
+    elif sys.argv[1] == 'clean':
+        make_clean()
+    elif sys.argv[1] == 'ready':
+        prepare()
 else:
     sys.exit("""USAGE:
 
@@ -48,9 +50,12 @@ else:
    python3 -m make bdist_wheel
    - build a wheel
 
-   python3 -m make build_docs
+   python3 -m make docs
    - compile the documentation
 
-   python3 -m make wash
+   python3 -m make ready
+   - only prepare for a build
+
+   python3 -m make clean
    - clean the workspace
 """)

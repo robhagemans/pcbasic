@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import subprocess
 
-from .common import wash, build_icon, build_docs, wash, mkdir, prepare
+from .common import make_clean, build_icon, make_docs, mkdir, prepare
 
 
 def build_desktop_file():
@@ -55,12 +55,12 @@ Description: {description}
 
 def build_resources(setup_options):
     """Build desktop and package resources."""
-    wash()
+    make_clean()
     mkdir('resources')
     build_desktop_file()
     build_deb_control_file(setup_options)
     build_icon()
-    build_docs()
+    make_docs()
 
 
 def package(**setup_options):

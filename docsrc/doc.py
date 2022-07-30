@@ -15,7 +15,6 @@ from lxml import etree
 import markdown
 from markdown.extensions.toc import TocExtension, slugify
 
-# we're not being called from setup.py install, so we can simply import pcbasic
 from pcbasic.basic import VERSION
 
 

@@ -17,7 +17,7 @@ from io import open
 import cx_Freeze
 from cx_Freeze import Executable
 
-from .common import wash, build_icon, build_docs, build_manifest, prune, remove, mkdir
+from .common import make_clean, build_icon, make_docs, build_manifest, prune, remove, mkdir
 from .common import COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .common import NAME, VERSION, SHORT_VERSION, COPYRIGHT
 
@@ -84,7 +84,7 @@ def package(**setup_options):
         def run(self):
             """Run bdist_dmg command."""
             build_icon()
-            build_docs()
+            make_docs()
             cx_Freeze.bdist_dmg.run(self)
             # move the disk image to dist/
             mkdir('dist/')
@@ -93,7 +93,7 @@ def package(**setup_options):
             dmg_name = '{}-{}.dmg'.format(NAME, VERSION)
             os.rename(self.dmg_name, dmg_name)
             shutil.move(dmg_name, 'dist/')
-            wash()
+            make_clean()
 
         def buildDMG(self):
             # Remove DMG if it already exists
