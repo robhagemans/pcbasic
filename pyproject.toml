@@ -45,7 +45,7 @@ full = [
     "pyparallel", "pyaudio",
 ]
 dev = [
-    "lxml", "markdown", "pylint", "coverage", "cx_Freeze", "Pillow", "hatch", "hatch-nodejs-version", "colorama"
+    "lxml", "markdown", "pylint", "coverage", "cx_Freeze", "Pillow", "hatch", "hatch-nodejs-version", "colorama", "toml"
 ]
 
 [project.scripts]

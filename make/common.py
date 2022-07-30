@@ -17,8 +17,8 @@ import datetime
 from subprocess import check_output, CalledProcessError
 from contextlib import contextmanager
 
-from setuptools.config.pyprojecttoml import read_configuration
 from PIL import Image
+import toml
 
 from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
 from pcbasic.basic.data import ICON
@@ -29,7 +29,8 @@ from docsrc import build_docs as make_docs
 HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # project config
-SETUP_DATA = read_configuration(os.path.join(HERE, 'pyproject.toml'))['project']
+SETUP_DATA = toml.load(os.path.join(HERE, 'pyproject.toml'))['project']
+SETUP_DATA['version'] = VERSION
 
 
 ###############################################################################

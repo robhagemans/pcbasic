@@ -14,14 +14,15 @@ import subprocess
 import cx_Freeze
 from cx_Freeze import Executable
 
-from .common import NAME, VERSION, COPYRIGHT
+from .common import NAME, VERSION, AUTHOR, COPYRIGHT
 from .common import make_clean, build_icon, make_docs,  prune, remove, mkdir
-from .freeze import SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .freeze import build_manifest
 
 
-def package(**setup_options):
+def package():
     """Build a Mac .DMG package."""
+    setup_options = SETUP_OPTIONS
 
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""

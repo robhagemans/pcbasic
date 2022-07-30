@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import subprocess
 
 from .common import make_clean, build_icon, make_docs, mkdir, prepare
+from .common import SETUP_DATA
 
 
 def build_desktop_file():
@@ -63,9 +64,10 @@ def build_resources(setup_options):
     make_docs()
 
 
-def package(**setup_options):
+def package():
     """Build Linux packages."""
     prepare()
+    setup_options = SETUP_DATA
     subprocess.run(['python3.7', '-m', 'build'])
     build_resources(setup_options)
     version = setup_options['version']

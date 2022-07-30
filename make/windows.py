@@ -13,17 +13,18 @@ import msilib
 import cx_Freeze
 from cx_Freeze import Executable
 
-from .common import NAME, VERSION, COPYRIGHT
+from .common import NAME, VERSION, AUTHOR, COPYRIGHT
 from .common import make_clean, build_icon, make_docs, prune, remove, mkdir
-from .freeze import SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .freeze import build_manifest
 
 UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
 PRODUCT_CODE = msilib.gen_uuid()
 
 
-def package(**setup_options):
+def package():
     """Build a Windows .MSI package."""
+    setup_options = SETUP_OPTIONS
 
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""

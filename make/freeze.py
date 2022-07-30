@@ -7,10 +7,15 @@ common definitions for cx_Freeze packaging utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
+import sys
+import os
+
 from distutils.util import get_platform
 from setuptools import find_packages
+from setuptools.command import sdist, build_py
 
 from .common import VERSION, AUTHOR, SETUP_DATA, HERE
+from .common import make_clean, make_docs, stamp_release
 
 
 SHORT_VERSION = u'.'.join(VERSION.split('.')[:2])
@@ -38,7 +43,6 @@ EXCLUDE_PACKAGES=[
 ]
 
 SETUP_OPTIONS = dict(
-    version=VERSION,
     author=AUTHOR,
 
     # contents
@@ -69,3 +73,65 @@ def build_manifest(includes, excludes):
     )
     with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as manifest_file:
         manifest_file.write(manifest)
+
+
+
+###############################################################################
+# setup.py new/extended commands
+# see http://seasonofcode.com/posts/how-to-add-custom-build-steps-and-commands-to-setup-py.html
+
+def new_command(function):
+    """Add a custom command without having to faff around with an overbearing API."""
+
+    class _NewCommand(cmd.Command):
+        description = function.__doc__
+        user_options = []
+        def run(self):
+            function()
+        def initialize_options(self):
+            pass
+        def finalize_options(self):
+            pass
+
+    return _NewCommand
+
+def extend_command(parent, function):
+    """Extend an existing command."""
+
+    class _ExtCommand(parent):
+        def run(self):
+            function(self)
+
+    return _ExtCommand
+
+
+def sdist_ext(obj):
+    """Run custom sdist command."""
+    make_clean()
+    stamp_release()
+    build_manifest(INCLUDE_FILES + ('pcbasic/lib/README.md',), EXCLUDE_FILES)
+    make_docs()
+    sdist.sdist.run(obj)
+    make_clean()
+
+#def bdist_wheel_ext(obj):
+#    """Run custom bdist_wheel command."""
+#    make_clean()
+#    make_docs()
+#    # bdist_wheel calls build_py which does stamp_release() and build_docs()
+#    bdist_wheel.bdist_wheel.run(obj)
+#    make_clean()
+
+def build_py_ext(obj):
+    """Run custom build_py command."""
+    stamp_release()
+    build_manifest(INCLUDE_FILES + ('pcbasic/lib/*/*',), EXCLUDE_FILES)
+    build_py.build_py.run(obj)
+
+
+# setup commands
+COMMANDS = {
+    'sdist': extend_command(sdist.sdist, sdist_ext),
+    #'build_py': extend_command(build_py.build_py, build_py_ext),
+    #'bdist_wheel': extend_command(bdist_wheel.bdist_wheel, bdist_wheel_ext),
+}

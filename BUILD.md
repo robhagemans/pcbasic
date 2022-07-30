@@ -63,6 +63,7 @@ The following additional packages and tools are used for development, testing an
 | [`colorama`](https://pypi.python.org/pypi/colorama)                                                            | Windows           | testing
 | [`wheel`](https://pypi.python.org/pypi/wheel)                                                                  | all               | packaging
 | [`twine`](https://pypi.python.org/pypi/twine)                                                                  | all               | packaging
+| [`toml`](https://pypi.python.org/pypi/toml)                                                                    | all               | packaging
 | [`Pillow`](https://python-pillow.org/)                                                                         | all               | packaging
 | [`cx_Freeze` 6.11.1](https://pypi.org/project/cx_Freeze/)                                                      | Windows, MacOS    | packaging
 | `dpkg`                                                                                                         | Linux             | packaging

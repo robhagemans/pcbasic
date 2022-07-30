@@ -14,7 +14,7 @@ import os
 import json
 import subprocess
 
-from .common import SETUP_OPTIONS, prepare, make_docs, make_clean
+from .common import prepare, make_docs, make_clean
 
 
 if sys.platform == 'win32':
@@ -26,7 +26,7 @@ else:
 
 # usage:
 if not sys.argv[1:]:
-    package(**SETUP_OPTIONS)
+    package()
 elif not sys.argv[2:]:
     if sys.argv[1] in ('wheel', 'bdist_wheel', 'sdist', 'build'):
         prepare()
