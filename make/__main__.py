@@ -38,18 +38,18 @@ elif set(sys.argv[1:]) & set(('sdist', 'build_docs', 'wash')):
 else:
     sys.exit("""USAGE:
 
-   python3 -m packaging
+   python3 -m make
    - build a distribution in this platform's native package format
 
-   python3 -m packaging sdist
+   python3 -m make sdist
    - build a source distribution
 
-   python3 -m packaging bdist_wheel
+   python3 -m make bdist_wheel
    - build a wheel
 
-   python3 -m packaging build_docs
+   python3 -m make build_docs
    - compile the documentation
 
-   python3 -m packaging wash
+   python3 -m make wash
    - clean the workspace
 """)

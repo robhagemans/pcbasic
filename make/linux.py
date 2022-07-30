@@ -1,5 +1,5 @@
 """
-PC-BASIC - packaging.linux
+PC-BASIC - make.linux
 Linux packaging
 
 (c) 2015--2022 Rob Hagemans
@@ -58,7 +58,7 @@ def build_resources(setup_options):
 
 def package(**setup_options):
     """Build Linux packages."""
-    subprocess.run('python3 -m packaging bdist_wheel', shell=True)
+    subprocess.run('python3 -m make bdist_wheel', shell=True)
     build_resources(setup_options)
     version = setup_options['version']
-    subprocess.run(f'packaging/makedeb.sh {version}', shell=True)
+    subprocess.run(f'make/makedeb.sh {version}', shell=True)

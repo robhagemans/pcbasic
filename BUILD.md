@@ -77,41 +77,11 @@ These are the steps to set up the local repository ready to run PC-BASIC:
 
 2. Compile the documentation
 
-        python setup.py build_docs
+        python3 -m make build_docs
 
 3. Run pcbasic directly from the source directory
 
         pc-basic
-
-
-
-#### Building `SDL2_gfx.dll` on Windows ###
-The [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) plugin is needed if
-you want to use the SDL2 interface with smooth scaling. Most Linux distributions will include this with their sdl2 package.
-On Windows, you will need to compile from source. To compile from the command line with Microsoft Visual C++:
-
-1. Download and unpack the SDL2 development package for Visual C++ `SDL2-devel-2.x.x-VC.zip` and the SDL2_gfx source code archive.
-
-2. Compile with the following options (for 64-bit):
-
-        cl /LD /D_WIN32 /DWINDOWS /D_USRDLL /DDLL_EXPORT /Ipath_to_unpacked_sdl2_archive\include *.c /link path_to_unpacked_sdl2_archive\lib\x64\sdl2.lib /OUT:SDL2_gfx.dll
-
-   or for 32-bit:
-
-        cl /LD /D_WIN32 /DWINDOWS /D_USRDLL /DDLL_EXPORT /Ipath_to_unpacked_sdl2_archive\include *.c /link path_to_unpacked_sdl2_archive\lib\x86\sdl2.lib /OUT:SDL2_gfx.dll
-
-Those who prefer to use the [MinGW](http://mingw.org/) GCC compiler, follow these steps:  
-
-1. Download and unpack the SDL2 binary, the SDL2 development package for MinGW and the SDL2_gfx source code archive. Note that the SDL2 development package contains several subdirectories for different architectures. You'll need the 32-bit version in `i686-w64-mingw32/`  
-
-2. Place `SDL2.dll` in the directory where you unpacked the SDL2_gfx source code.  
-
-3. In the MinGW shell, run  
-
-        ./autogen.sh
-        ./configure --with-sdl-prefix="/path/to/where/you/put/i686-w64-mingw32/"
-        make
-        gcc -shared -o SDL2_gfx.dll *.o SDL2.dll
 
 
 #### Deprecation warnings ####

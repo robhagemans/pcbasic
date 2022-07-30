@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PC-BASIC packaging.common
+PC-BASIC make.common
 Python, Windows, MacOS and Linux packaging utilities
 
 (c) 2015--2022 Rob Hagemans
@@ -75,7 +75,7 @@ INCLUDE_FILES = (
 
 # python files to exclude from distributions
 EXCLUDE_FILES = (
-    'tests/', 'packaging/', 'docsrc/', 'fontsrc/',
+    'tests/', 'make/', 'docsrc/', 'fontsrc/',
 )
 EXCLUDE_PACKAGES=[
     _name+'*' for _name in os.listdir(HERE) if _name != 'pcbasic'
@@ -86,7 +86,7 @@ SETUP_OPTIONS = dict(
     author=AUTHOR,
 
     # contents
-    # only include subpackages of pcbasic: exclude tests, docsrc, packaging etc
+    # only include subpackages of pcbasic: exclude tests, docsrc, make etc
     # even if these are excluded in the manifest, bdist_wheel will pick them up (but sdist won't)
     packages=find_packages(exclude=EXCLUDE_PACKAGES),
     ext_modules=[],
