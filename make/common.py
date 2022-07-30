@@ -18,30 +18,22 @@ from subprocess import check_output, CalledProcessError
 from contextlib import contextmanager
 from io import open
 from distutils.util import get_platform
-from distutils import cmd
 
 from setuptools import find_packages
 from setuptools.command import sdist, build_py
 from setuptools.config.pyprojecttoml import read_configuration
-from wheel import bdist_wheel
 from PIL import Image
 
 from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
 from pcbasic.basic.data import ICON
-from pcbasic.compat import int2byte
+from docsrc import build_docs as make_docs
 
 
 # root location
 HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
+# project config
 SETUP_DATA = read_configuration(os.path.join(HERE, 'pyproject.toml'))['project']
-
-# platform tag (build directories etc.)
-PLATFORM_TAG = '{}-{}.{}'.format(
-    get_platform(), sys.version_info.major, sys.version_info.minor
-)
-
-SHORT_VERSION = u'.'.join(VERSION.split('.')[:2])
 
 # git commit hash
 try:
@@ -60,6 +52,17 @@ RELEASE_ID = {
     u'commit': COMMIT,
     u'timestamp': str(datetime.datetime.now())
 }
+
+
+###############################################################################
+# cx_Freeze common constants
+
+SHORT_VERSION = u'.'.join(VERSION.split('.')[:2])
+
+# platform tag (build directories etc.)
+PLATFORM_TAG = '{}-{}.{}'.format(
+    get_platform(), sys.version_info.major, sys.version_info.minor
+)
 
 # non-python files to include
 INCLUDE_FILES = (
@@ -110,14 +113,15 @@ def build_icon():
     flat = (_b for _row in ICON for _b in _row)
     rgb = ((_b*255,)*3 for _b in flat)
     rgbflat = (_b for _tuple in rgb for _b in _tuple)
-    imgstr = b''.join(int2byte(_b) for _b in rgbflat)
+    imgstr = bytes(rgbflat)
     width, height = len(ICON[0]), len(ICON)
     img = Image.frombytes('RGB', (width, height), imgstr)
     format = {'win32': 'ico', 'darwin': 'icns'}.get(sys.platform, 'png')
     img.resize((width*2, height*2)).save('resources/pcbasic.%s' % (format,))
 
-###############################################################################
 
+###############################################################################
+# shell utilities
 
 @contextmanager
 def os_safe(message, name):
@@ -146,18 +150,15 @@ def mkdir(name):
     with os_safe('creating', name):
         os.makedirs(name)
 
+
+###############################################################################
+# make targets and components
+
 def stamp_release():
     """Place the relase ID file."""
     json_str = json.dumps(RELEASE_ID)
-    if isinstance(json_str, bytes):
-        json_str = json_str.decode('ascii', 'ignore')
     with open(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'), 'w') as release_json:
         release_json.write(json_str)
-
-def make_docs():
-    """build documentation files"""
-    import docsrc
-    docsrc.build_docs()
 
 def make_clean():
     """clean the workspace of build files; leave in-place compiled files"""
