@@ -13,10 +13,10 @@ import msilib
 import cx_Freeze
 from cx_Freeze import Executable
 
-from .common import make_clean, build_icon, make_docs, build_manifest, prune, remove
-from .common import COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
-from .common import NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT
-
+from .common import NAME, VERSION, COPYRIGHT
+from .common import make_clean, build_icon, make_docs, prune, remove, mkdir
+from .freeze import SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .freeze import build_manifest
 
 UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
 PRODUCT_CODE = msilib.gen_uuid()

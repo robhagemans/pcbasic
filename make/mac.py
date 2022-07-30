@@ -6,20 +6,18 @@ MacOS packaging
 This file is released under the GNU GPL version 3 or later.
 """
 
-from __future__ import print_function
-
 import os
 import shutil
 import glob
 import subprocess
-from io import open
 
 import cx_Freeze
 from cx_Freeze import Executable
 
-from .common import make_clean, build_icon, make_docs, build_manifest, prune, remove, mkdir
-from .common import COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
-from .common import NAME, VERSION, SHORT_VERSION, COPYRIGHT
+from .common import NAME, VERSION, COPYRIGHT
+from .common import make_clean, build_icon, make_docs,  prune, remove, mkdir
+from .freeze import SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .freeze import build_manifest
 
 
 def package(**setup_options):

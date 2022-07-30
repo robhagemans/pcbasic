@@ -16,11 +16,7 @@ import json
 import datetime
 from subprocess import check_output, CalledProcessError
 from contextlib import contextmanager
-from io import open
-from distutils.util import get_platform
 
-from setuptools import find_packages
-from setuptools.command import sdist, build_py
 from setuptools.config.pyprojecttoml import read_configuration
 from PIL import Image
 
@@ -34,6 +30,42 @@ HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # project config
 SETUP_DATA = read_configuration(os.path.join(HERE, 'pyproject.toml'))['project']
+
+
+###############################################################################
+# make targets and components
+
+def make_clean():
+    """clean the workspace of build files; leave in-place compiled files"""
+    # remove traces of egg
+    for path in glob.glob(os.path.join(HERE, '*.egg-info')):
+        prune(path)
+    # remove intermediate builds
+    prune(os.path.join(HERE, 'build'))
+    # remove bytecode files
+    for root, dirs, files in os.walk(HERE):
+        for name in dirs:
+            if name == '__pycache__':
+                prune(os.path.join(root, name))
+        for name in files:
+            if (name.endswith('.pyc') or name.endswith('.pyo')) and 'test' not in root:
+                remove(os.path.join(root, name))
+    # remove distribution resources
+    prune(os.path.join(HERE, 'resources'))
+    # remove release stamp
+    remove(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'))
+    # remove manifest
+    remove(os.path.join(HERE, 'MANIFEST.in'))
+
+def prepare():
+    """Prepare for sdist and wheel builds."""
+    make_clean()
+    stamp_release()
+    make_docs()
+
+
+###############################################################################
+# release stamp
 
 # git commit hash
 try:
@@ -53,66 +85,12 @@ RELEASE_ID = {
     u'timestamp': str(datetime.datetime.now())
 }
 
+def stamp_release():
+    """Place the relase ID file."""
+    json_str = json.dumps(RELEASE_ID)
+    with open(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'), 'w') as release_json:
+        release_json.write(json_str)
 
-###############################################################################
-# cx_Freeze common constants
-
-SHORT_VERSION = u'.'.join(VERSION.split('.')[:2])
-
-# platform tag (build directories etc.)
-PLATFORM_TAG = '{}-{}.{}'.format(
-    get_platform(), sys.version_info.major, sys.version_info.minor
-)
-
-# non-python files to include
-INCLUDE_FILES = (
-    '*.md',
-    '*.txt',
-    'doc/*.html',
-    'pcbasic/data/',
-    'pcbasic/basic/data/',
-)
-
-# python files to exclude from distributions
-EXCLUDE_FILES = (
-    'tests/', 'make/', 'docsrc/', 'fontsrc/',
-)
-EXCLUDE_PACKAGES=[
-    _name+'*' for _name in os.listdir(HERE) if _name != 'pcbasic'
-]
-
-SETUP_OPTIONS = dict(
-    version=VERSION,
-    author=AUTHOR,
-
-    # contents
-    # only include subpackages of pcbasic: exclude tests, docsrc, make etc
-    # even if these are excluded in the manifest, bdist_wheel will pick them up (but sdist won't)
-    packages=find_packages(exclude=EXCLUDE_PACKAGES),
-    ext_modules=[],
-    # include package data from MANIFEST.in (which is created by packaging script)
-    include_package_data=True,
-    # launchers
-    entry_points=dict(
-        console_scripts=['pcbasic=pcbasic:main'],
-    ),
-
-    **SETUP_DATA
-)
-
-def build_manifest(includes, excludes):
-    """Build the MANIFEST.in."""
-    manifest = u''.join(
-        u'include {}\n'.format(_inc) for _inc in includes if not _inc.endswith('/')
-    ) + u''.join(
-        u'graft {}\n'.format(_inc[:-1]) for _inc in includes if _inc.endswith('/')
-    ) + u''.join(
-        u'exclude {}\n'.format(_exc) for _exc in excludes if not _exc.endswith('/')
-    ) + u''.join(
-        u'prune {}\n'.format(_exc[:-1]) for _exc in excludes if _exc.endswith('/')
-    )
-    with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as manifest_file:
-        manifest_file.write(manifest)
 
 ###############################################################################
 # icon
@@ -163,41 +141,3 @@ def mkdir(name):
     """Create a directory and all parents needed (mkdir -p)."""
     with os_safe('creating', name):
         os.makedirs(name)
-
-
-###############################################################################
-# make targets and components
-
-def stamp_release():
-    """Place the relase ID file."""
-    json_str = json.dumps(RELEASE_ID)
-    with open(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'), 'w') as release_json:
-        release_json.write(json_str)
-
-def make_clean():
-    """clean the workspace of build files; leave in-place compiled files"""
-    # remove traces of egg
-    for path in glob.glob(os.path.join(HERE, '*.egg-info')):
-        prune(path)
-    # remove intermediate builds
-    prune(os.path.join(HERE, 'build'))
-    # remove bytecode files
-    for root, dirs, files in os.walk(HERE):
-        for name in dirs:
-            if name == '__pycache__':
-                prune(os.path.join(root, name))
-        for name in files:
-            if (name.endswith('.pyc') or name.endswith('.pyo')) and 'test' not in root:
-                remove(os.path.join(root, name))
-    # remove distribution resources
-    prune(os.path.join(HERE, 'resources'))
-    # remove release stamp
-    remove(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'))
-    # remove manifest
-    remove(os.path.join(HERE, 'MANIFEST.in'))
-
-def prepare():
-    """Prepare for sdist and wheel builds."""
-    make_clean()
-    stamp_release()
-    make_docs()
