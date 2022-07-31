@@ -500,6 +500,9 @@ class VideoSDL2(VideoPlugin):
 
     def _reset_display_caches(self):
         """Reset caches and references to display object."""
+        # this is needed on macOS, we get a null pointer result if not set
+        # and SDL_GetError gives a confusing "No hardware accelerated renderers available"
+        sdl2.SDL_SetHint(b'SDL_FRAMEBUFFER_ACCELERATION', b'opengl')
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         # reset cache sizes
         for surface in self._display_cache:
