@@ -19,7 +19,6 @@ from subprocess import check_output, CalledProcessError
 
 from .basic.base import error, signals
 from .basic import VERSION, LONG_VERSION
-from .data import get_data, ResourceFailed
 
 
 LOG_PATTERN = u'crash-%Y%m%d-'

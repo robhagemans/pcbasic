@@ -18,8 +18,8 @@ import logging
 class ResourceFailed(Exception):
     """Failed to load resource"""
 
-    def __init__(self, name=u''):
-        self._message = u'Failed to load {0}'.format(name)
+    def __init__(self, package=u'', name=u''):
+        self._message = u'Failed to load {0} from {1}'.format(name, package)
 
     def __repr__(self):
         return self._message
@@ -32,14 +32,15 @@ class ResourceFailed(Exception):
 
 def get_data(pattern, **kwargs):
     """Wrapper for resource_string."""
-    dir, _, name = pattern.format(**kwargs).partition('/')
+    path, _, name = pattern.format(**kwargs).partition('/')
+    package = __package__ + '.' + path.replace('/', '.')
     try:
         # this should return None if not available, I thought, but it doesn't
-        resource = resources.read_binary(__package__ + '.' + dir.replace('/', '.'), name)
+        resource = resources.read_binary(package, name)
     except EnvironmentError:
-        raise ResourceFailed(name)
+        raise ResourceFailed(package, name)
     if resource is None:
-        raise ResourceFailed(name)
+        raise ResourceFailed(package, name)
     return resource
 
 def listdir(dirname):
