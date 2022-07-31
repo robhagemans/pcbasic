@@ -2,6 +2,7 @@
 requires = [
     "hatchling>=1.6.0",
     "hatch-nodejs-version",
+    "lxml", "markdown", "pylint", "coverage", "cx_Freeze", "pillow", "colorama", "toml"
 ]
 build-backend = "hatchling.build"
 
@@ -44,9 +45,6 @@ dynamic = [
 [project.optional-dependencies]
 full = [
     "pyparallel", "pyaudio",
-]
-dev = [
-    "lxml", "markdown", "pylint", "coverage", "cx_Freeze", "Pillow", "hatch", "hatch-nodejs-version", "colorama", "toml"
 ]
 
 [project.scripts]

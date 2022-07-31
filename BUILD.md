@@ -11,20 +11,21 @@ The instructions there cover the most common platforms and use cases.
 #### Dependencies ####
 The following packages are needed, recommended or optional when installing PC-BASIC:
 
-| Package                                                                       | OS                 | Status       | Used for
-|-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
-| [Python 3.6.9 or later](https://www.python.org/downloads/)                    | all                | required     |
-| [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | graphics and sound with `--interface=graphical`
-| [PySerial 3.4](https://github.com/pyserial/pyserial)                          | all                | optional     | physical or emulated serial port access
-| [PyParallel](https://github.com/pyserial/pyparallel)                          | Windows, Linux     | optional     | physical parallel port access
-| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound without SDL2
+| Package                                                                       | Status       | Used for
+|-------------------------------------------------------------------------------|--------------|----------------------------------------
+| [Python 3.6.9 or later](https://www.python.org/downloads/)                    | required     |
+| [SDL2](https://www.libsdl.org/download-2.0.php)                               | recommended  | graphics and sound
+| [PySerial 3.4](https://github.com/pyserial/pyserial)                          | optional     | physical or emulated serial port access
+| [PyParallel](https://github.com/pyserial/pyparallel)                          | optional     | physical parallel port access
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | optional     | sound without SDL2
 
-`setuptools` and `pip` are included with Python.
+If you're using Python 3.7 or below you additionally need the compatibility package `importlib_resources`.
+
 Once you have a working Python installation, most dependencies can be installed with `pip`:
 
-        pip3 install pysdl2-dll pyserial
+        pip install pysdl2-dll pyserial importlib_resources
 
-If you're using Python 2.7 or 3.6 you additionally need the compatibility package `importlib_resources`.
+`pip` is usually included with Python.
 
 For Windows, Mac, and Linux, it is recommended to use the SDL2 and SDL2-gfx libraries provided by the [pysdl2-dll](https://github.com/a-hurst/pysdl2-dll) package.
 Alternatively, you can get the library directly from [libsdl.org](https://www.libsdl.org/download-2.0.php).
@@ -66,7 +67,7 @@ The following additional packages and tools are used for development, testing an
 | [`wheel`](https://pypi.python.org/pypi/wheel)                                                                  | all               | packaging
 | [`twine`](https://pypi.python.org/pypi/twine)                                                                  | all               | packaging
 | [`toml`](https://pypi.python.org/pypi/toml)                                                                    | all               | packaging
-| [`Pillow`](https://python-pillow.org/)                                                                         | all               | packaging
+| [`pillow`](https://python-pillow.org/)                                                                         | all               | packaging
 | [`cx_Freeze` 6.11.1](https://pypi.org/project/cx_Freeze/)                                                      | Windows, MacOS    | packaging
 | `dpkg`                                                                                                         | Linux             | packaging
 | `alien`                                                                                                        | Linux             | packaging
