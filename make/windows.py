@@ -72,11 +72,11 @@ def package():
             remove(build_dir + 'lib/sdl2dll/dll/libopus-0.dll')
             remove(build_dir + 'lib/sdl2dll/dll/libmodplug-1.dll')
             # remove modules that can be left out
-            for module in (
-                    'distutils', 'setuptools', 'pydoc_data', 'lib2to3', 'pip', 'unittest',
-                    'wheel', 'lxml',
-                    'multiprocessing', 'asyncio'
-                ):
+            for module in ():
+                #    'distutils', 'setuptools', 'pydoc_data', 'lib2to3', 'pip', 'unittest',
+                #    'wheel', 'lxml',
+                #    'multiprocessing', 'asyncio'
+                #):
                 prune(build_dir + 'lib/%s' % module)
 
 
@@ -91,7 +91,7 @@ def package():
             # close the database file so we can rename the file
             del self.db
             os.rename('dist/{}-win32.msi'.format(name), 'dist/{}.msi'.format(name))
-            make_clean()
+            #make_clean()
 
         def add_config(self):
             """Override cx_Freeze add_config."""
@@ -316,13 +316,12 @@ def package():
     # cx_Freeze options
     setup_options['options'] = {
         'build_exe': {
-            'packages': ['pkg_resources._vendor'],
             'excludes': [
-                'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 'pygame',
-                'pywin', 'win32com', 'test',
+                #'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy',
+                'pygame',
+                #'pywin', 'win32com', 'test',
             ],
             'include_files': ['doc/PC-BASIC_documentation.html'],
-            'include_msvcr': True,
             #'optimize': 2,
         },
         'bdist_msi': {
