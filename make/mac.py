@@ -43,10 +43,6 @@ def package():
                     # remove windows DLLs and PYDs
                     if (testing or 'win32_' in name or name.endswith('.dll')):
                         remove(name)
-            # remove modules that can be left out
-            for module in ('distutils', 'setuptools', 'pydoc_data'):
-                prune(build_dir + 'lib/%s' % module)
-
 
     class BdistMacCommand(cx_Freeze.bdist_mac):
         """Custom bdist_mac command."""
@@ -54,17 +50,24 @@ def package():
         def run(self):
             """Run bdist_mac command."""
             cx_Freeze.bdist_mac.run(self)
-            # fix install names in libraries in lib/ that were modified by cx_Freeze
-            name = 'libSDL2_gfx.dylib'
-            file_path = 'build/PC-BASIC-2.0.app/Contents/MacOS/lib/pcbasic/lib/darwin/' + name
-            subprocess.call((
-                'install_name_tool', '-change', '@executable_path/libSDL2.dylib',
-                '@loader_path/libSDL2.dylib', file_path
-            ))
+            build_dir = 'build/PC-BASIC-2.0.app/Contents/MacOS/'
             # remove some files we don't need
-            remove('build/PC-BASIC-2.0.app/Contents/MacOS/libSDL2.dylib')
             for path in glob.glob('build/PC-BASIC-2.0.app/Contents/MacOS/libnpymath*'):
                 remove(path)
+            # remove modules that can be left out
+            for module in (
+                    'distutils', 'setuptools', 'pydoc_data', 'lib2to3',
+                    'unittest', 'wheel', 'pip', 'lxml', 
+                    'multiprocessing', 'asyncio',
+                ):
+                prune(build_dir + 'lib/%s' % module)
+            # big libs we don't need
+            remove(build_dir + 'libcrypto.1.1.dylib')
+            remove(build_dir + 'libssl.1.1.dylib')
+            # sdl2 stuff we don't need
+            prune(build_dir + 'lib/sdl2dll/dll/SDL2_mixer.framework')
+            prune(build_dir + 'lib/sdl2dll/dll/SDL2_image.framework')
+            prune(build_dir + 'lib/sdl2dll/dll/SDL2_ttf.framework')
 
         def copy_file(self, src, dst):
             # catch copy errors, these happen with relative references with funny bracketed names
@@ -92,7 +95,7 @@ def package():
             dmg_name = '{}-{}.dmg'.format(NAME, VERSION)
             os.rename(self.dmg_name, dmg_name)
             shutil.move(dmg_name, 'dist/')
-            make_clean()
+            #make_clean()
 
         def buildDMG(self):
             # Remove DMG if it already exists
