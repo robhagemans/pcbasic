@@ -17,10 +17,12 @@ from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
 from .base import split_quoted, split_pair, iter_chunks
 
 try:
-    from importlib import resources
+     import importlib_resources as resources
 except ImportError:
-    # python 2.7, 3.6
-    import importlib_resources as resources
+    # python 2.7, 3.6: not available
+    # python 3.7: fails on Windows
+    from importlib import resources
+
 
 if PY2: # pragma: no cover
     from .python2 import add_str, iterchar
