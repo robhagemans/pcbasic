@@ -10,12 +10,16 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import io
+import sys
 
 from pcbasic import Session
 from pcbasic.basic.debug import DebugSession
 from pcbasic.basic import BASICError
 from tests.unit.utils import TestCase, run_tests
 from pcbasic.data import read_codepage
+
+def pythoncall(script):
+    return '"{0}" "{1}"'.format(sys.executable, script)
 
 
 class DosTest(TestCase):
@@ -26,7 +30,7 @@ class DosTest(TestCase):
     def test_shell(self):
         """Test SHELL statement with commands."""
         helper = os.path.join(os.path.dirname(__file__), 'simple_shell_helper.py')
-        with Session(shell='/usr/bin/python3 ' + helper, codepage=read_codepage('850')) as s:
+        with Session(shell=pythoncall(helper), codepage=read_codepage('850')) as s:
             # outputs come through stdout
             s.execute(u'SHELL "echo 1"')
             # test non-ascii char
@@ -35,13 +39,16 @@ class DosTest(TestCase):
             s.execute(u'SHELL "x"')
             # test non-ascii char
             s.execute(u'SHELL "£"')
-        assert self.get_text_stripped(s)[:4] == [b'1', b'\x9c', b"'x' is not recognised.", b"'\x9c' is not recognised."]
+        outstr = self.get_text_stripped(s)[:4]
+        # this fails on Windows, we're getting \xa3 (latin-1 for £)
+        # instead of \xc9 (per cp850, our local codepage))
+        assert outstr == [b'1', b'\x9c', b"'x' is not recognised.", b"'\x9c' is not recognised."], outstr
 
 
     def test_shell_utf16(self):
         """Test SHELL statement to utf-16 script with commands."""
         helper = os.path.join(os.path.dirname(__file__), 'simple_shell_helper.py')
-        with Session(shell='/usr/bin/python3 ' + helper + ' -u', codepage=read_codepage('850')) as s:
+        with Session(shell=pythoncall(helper) + ' -u', codepage=read_codepage('850')) as s:
             # outputs come through stdout
             s.execute(u'SHELL "echo 1"')
             # test non-ascii char
@@ -50,7 +57,8 @@ class DosTest(TestCase):
             s.execute(u'SHELL "x"')
             # test non-ascii char
             s.execute(u'SHELL "£"')
-        assert self.get_text_stripped(s)[:4] == [b'1', b'\x9c', b"'x' is not recognised.", b"'\x9c' is not recognised."]
+        outstr = self.get_text_stripped(s)[:4]
+        assert outstr == [b'1', b'\x9c', b"'x' is not recognised.", b"'\x9c' is not recognised."], outstr
 
     def test_no_shell(self):
         """Test SHELL statement with no shell specified."""
@@ -69,7 +77,7 @@ class DosTest(TestCase):
     def test_interactive_shell(self):
         """Test SHELL statement with interaction."""
         helper = os.path.join(os.path.dirname(__file__), 'simple_shell_helper.py')
-        with Session(shell='/usr/bin/python3 ' + helper, codepage=read_codepage('850')) as s:
+        with Session(shell=pythoncall(helper), codepage=read_codepage('850')) as s:
             s.press_keys(u'echo _check_for_this_')
             # test backspace
             s.press_keys(u'\rexix\bt\r')
@@ -80,7 +88,7 @@ class DosTest(TestCase):
     def test_interactive_shell_no_lf_at_end(self):
         """Test SHELL statement with interaction, helper script ends without LF."""
         helper = os.path.join(os.path.dirname(__file__), 'simple_shell_helper.py')
-        with Session(shell='/usr/bin/python3 ' + helper + ' -b') as s:
+        with Session(shell=pythoncall(helper)+ ' -b') as s:
             s.press_keys(u'exit\r')
             s.execute(u'SHELL')
         assert self.get_text_stripped(s)[1] == b'Bye!'
