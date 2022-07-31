@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import json
 import os
-import pkg_resources
+from ..compat import resources
 import logging
 
 
@@ -32,10 +32,10 @@ class ResourceFailed(Exception):
 
 def get_data(pattern, **kwargs):
     """Wrapper for resource_string."""
-    name = pattern.format(**kwargs)
+    dir, _, name = pattern.format(**kwargs).partition('/')
     try:
         # this should return None if not available, I thought, but it doesn't
-        resource = pkg_resources.resource_string(__name__, name)
+        resource = resources.read_binary(__package__ + '.' + dir.replace('/', '.'), name)
     except EnvironmentError:
         raise ResourceFailed(name)
     if resource is None:
@@ -44,14 +44,7 @@ def get_data(pattern, **kwargs):
 
 def listdir(dirname):
     """Wrapper for resource_listdir."""
-    try:
-        return pkg_resources.resource_listdir(__name__, dirname)
-    except NotImplementedError as e:
-        # this happens with cx_Freeze packages now
-        # as the global ResourceManager is a NullProvider
-        # not clear why but this works around
-        logging.debug('working around pkg_resources error: %s', e)
-        return os.listdir(os.path.join(os.path.dirname(__file__), dirname))
+    return list(resources.contents(__package__ + '.' + dirname))
 
 def read_program_file(name):
     """Read a bundled BASIC program file."""

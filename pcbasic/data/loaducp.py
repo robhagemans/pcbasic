@@ -6,7 +6,6 @@ UCP codepage loader
 This file is released under the GNU GPL version 3 or later.
 """
 
-import pkg_resources
 import logging
 import binascii
 

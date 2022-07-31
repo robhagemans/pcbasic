@@ -14,7 +14,6 @@ import zipfile
 import locale
 import shutil
 import codecs
-import pkg_resources
 from collections import deque
 
 from .compat import iteritems, text_type, iterchar

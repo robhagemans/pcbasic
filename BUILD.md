@@ -24,6 +24,8 @@ Once you have a working Python installation, most dependencies can be installed 
 
         pip3 install pysdl2-dll pyserial
 
+If you're using Python 2.7 or 3.6 you additionally need the compatibility package `importlib_resources`.
+
 For Windows, Mac, and Linux, it is recommended to use the SDL2 and SDL2-gfx libraries provided by the [pysdl2-dll](https://github.com/a-hurst/pysdl2-dll) package.
 Alternatively, you can get the library directly from [libsdl.org](https://www.libsdl.org/download-2.0.php).
 Install the library in your OS's standard location for libraries. If this causes difficulties, you can alternatively place the library in `pcbasic/lib`.
