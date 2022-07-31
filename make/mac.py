@@ -92,7 +92,7 @@ def package():
             dmg_name = '{}-{}.dmg'.format(NAME, VERSION)
             os.rename(self.dmg_name, dmg_name)
             shutil.move(dmg_name, 'dist/')
-            make_clean()
+            #make_clean()
 
         def buildDMG(self):
             # Remove DMG if it already exists
